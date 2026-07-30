@@ -23,7 +23,6 @@ use tokio::task::JoinHandle;
 
 use super::partial_agg;
 use super::{EventSink, IndexEvent};
-use crate::file_system::listing::caching;
 use crate::indexing::paths::routing;
 use crate::indexing::scanner::ScanProgress;
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
@@ -100,7 +99,7 @@ impl ScanProgressReporter {
             // Take the cheap, owned listing snapshot first and let its read lock
             // drop before any path work; don't hold a cross-subsystem lock through
             // normalization.
-            let listings = caching::snapshot_listings();
+            let listings = crate::indexing::host::policy::current().open_listings();
             let hot_paths = partial_agg::collect_hot_paths(&listings, &self.volume_id);
             // Map the firmlink-normalized absolute hot paths into the volume's
             // index-relative space so the writer's `resolve_path_under(ROOT_ID, ..)`

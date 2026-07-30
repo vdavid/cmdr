@@ -8,7 +8,7 @@
 
 use std::time::Duration;
 
-use crate::indexing::host::policy::{HostPolicy, WorkClearance};
+use crate::indexing::host::policy::{HostPolicy, OpenListing, WorkClearance};
 
 use super::{foreground, transfers};
 
@@ -22,6 +22,16 @@ impl HostPolicy for AppHostPolicy {
             volume_idle: foreground::global().idle_for_volume(volume_id, idle_threshold),
             transfer_active: transfers::transfer_active(volume_id),
         }
+    }
+
+    fn open_listings(&self) -> Vec<OpenListing> {
+        crate::file_system::listing::caching::snapshot_listings()
+            .into_iter()
+            .map(|listing| OpenListing {
+                volume_id: listing.volume_id,
+                path: listing.path,
+            })
+            .collect()
     }
 }
 

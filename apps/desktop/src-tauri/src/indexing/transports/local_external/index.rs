@@ -24,6 +24,7 @@
 
 use std::path::PathBuf;
 
+use crate::indexing::host::volumes::MountFacts;
 use crate::indexing::lifecycle::state;
 use tauri::AppHandle;
 use tokio::time::Duration;
@@ -69,40 +70,14 @@ enum Classified {
     FallThrough,
 }
 
-/// The two typed filesystem facts the enable decision needs, read from ONE
-/// `detect_filesystem_for_path` probe (a `statfs` on macOS, `/proc/mounts` on
-/// Linux): whether the mount is a network type (must never be walked by the local
-/// scanner) and whether its inode identity is trustworthy (FAT/exFAT is not).
-/// Blocking — call only inside the timeout guard.
-fn probe_fs_facts(path: &std::path::Path) -> FsFacts {
-    let info = crate::file_system::filesystem_kind::detect_filesystem_for_path(path);
-    #[cfg(target_os = "macos")]
-    let is_network = crate::volumes::is_network_fs_type(info.raw_type.as_deref());
-    #[cfg(target_os = "linux")]
-    let is_network = info
-        .raw_type
-        .as_deref()
-        .map(crate::file_system::linux_mounts::is_network_fs_type)
-        .unwrap_or(false);
-    FsFacts {
-        is_network,
-        inodes_trustworthy: info.kind.has_stable_inodes(),
-    }
-}
-
-/// Typed filesystem facts for the enable decision (see [`probe_fs_facts`]).
-struct FsFacts {
-    is_network: bool,
-    inodes_trustworthy: bool,
-}
-
 /// Resolve the volume and classify it by typed facts. The fs-type probe runs on
 /// the blocking pool under a hard timeout so a hung network mount can never stall
 /// the IPC thread; a timeout is treated as network → fall through (the SMB path
 /// has its own gating). Needs no `AppHandle`, so the classification is testable
 /// with a registered fake volume.
 async fn classify(volume_id: &str) -> Classified {
-    let Some(volume) = crate::file_system::get_volume_manager().get(volume_id) else {
+    let volumes = crate::indexing::host::volumes::current();
+    let Some(volume) = volumes.get(volume_id) else {
         // Not registered — nothing to resolve a mount root from. Let the SMB path
         // report the typed `NotRegistered` refusal.
         return Classified::FallThrough;
@@ -113,17 +88,14 @@ async fn classify(volume_id: &str) -> Classified {
     let probe_root = mount_root.clone();
     let facts = match tokio::time::timeout(
         FS_PROBE_TIMEOUT,
-        tokio::task::spawn_blocking(move || probe_fs_facts(&probe_root)),
+        tokio::task::spawn_blocking(move || crate::indexing::host::volumes::current().mount_facts(&probe_root)),
     )
     .await
     {
         Ok(Ok(facts)) => facts,
         // Timeout or join error: a probe that won't return means a slow/hung
         // mount — treat it as network (and inode-trust is moot; we fall through).
-        _ => FsFacts {
-            is_network: true,
-            inodes_trustworthy: true,
-        },
+        _ => MountFacts::UNPROBEABLE,
     };
 
     if routes_to_local_external(is_smb_session, facts.is_network) {
@@ -179,8 +151,8 @@ mod tests {
     use std::sync::Arc;
 
     use super::*;
-    use crate::file_system::get_volume_manager;
-    use crate::file_system::volume::LocalPosixVolume;
+    use crate::indexing::host::volumes::{self, FakeVolumeProvider};
+    use cmdr_fs::volume::InMemoryVolume;
 
     #[test]
     fn a_plain_local_drive_routes_to_the_local_external_scanner_not_smb() {
@@ -201,27 +173,49 @@ mod tests {
 
     #[tokio::test]
     async fn classify_resolves_a_registered_local_volume_to_its_mount_root() {
-        // A registered LocalPosixVolume on a local temp dir (APFS on macOS) is a
-        // local external drive rooted at that path. This exercises the real
-        // wiring: VolumeManager lookup + fs-type probe + the typed decision.
-        let dir = tempfile::tempdir().expect("temp dir");
+        // A registered volume on a local mount is a local external drive rooted at
+        // that path. Exercises the real wiring: registry lookup + mount probe + the
+        // typed decision, with the host answering both.
+        let mount = std::path::Path::new("/media/LocalExternalClassifyTest");
         let vid = "local-external-classify-test";
-        get_volume_manager().register(vid, Arc::new(LocalPosixVolume::new("Test drive", dir.path())));
+        let provider = FakeVolumeProvider::shared();
+        provider.register(vid, Arc::new(InMemoryVolume::new("Test drive").with_root(mount)));
+
+        let _serialized = volumes::test_lock();
+        let _installed = volumes::install_for_test(provider);
 
         match classify(vid).await {
             Classified::LocalExternal {
                 mount_root,
                 inodes_trustworthy,
             } => {
-                assert_eq!(mount_root, dir.path(), "resolves to the registered mount root");
-                // A temp dir sits on APFS (macOS) / ext4 or tmpfs (Linux), all of
-                // which keep stable inodes, so the drive is inode-trustworthy.
-                assert!(inodes_trustworthy, "a local temp dir has trustworthy inodes");
+                assert_eq!(mount_root, mount, "resolves to the registered mount root");
+                // A local drive keeps stable inodes, so the rename pre-pass may
+                // trust them (FAT/exFAT is the case that wouldn't).
+                assert!(inodes_trustworthy, "a local mount has trustworthy inodes");
             }
-            Classified::FallThrough => panic!("a local temp-dir volume must classify as LocalExternal"),
+            Classified::FallThrough => panic!("a local volume must classify as LocalExternal"),
         }
+    }
 
-        get_volume_manager().unregister(vid);
+    /// The other side of the same decision: a NETWORK mount must fall through to the
+    /// SMB gate, because the local guarded walker must never walk a share.
+    #[tokio::test]
+    async fn classify_falls_through_for_a_network_mount() {
+        let mount = std::path::Path::new("/Volumes/LocalExternalNetworkTest");
+        let vid = "local-external-network-test";
+        let provider = FakeVolumeProvider::shared();
+        provider
+            .register(vid, Arc::new(InMemoryVolume::new("Share").with_root(mount)))
+            .mark_network(mount);
+
+        let _serialized = volumes::test_lock();
+        let _installed = volumes::install_for_test(provider);
+
+        assert!(
+            matches!(classify(vid).await, Classified::FallThrough),
+            "a network mount must fall through to the SMB gate",
+        );
     }
 
     #[tokio::test]

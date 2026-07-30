@@ -888,7 +888,7 @@ pub(crate) fn start_indexing_for_local_external_inner(
 pub(crate) fn registered_mtp_volume_ids_for_device(device_id: &str) -> Vec<String> {
     let reg = INDEX_REGISTRY.lock().expect("INDEX_REGISTRY lock poisoned");
     reg.keys()
-        .filter(|vid| crate::mtp::identity::device_id_of_volume(vid) == Some(device_id))
+        .filter(|vid| cmdr_fs::volume::mtp_ids::device_id_of_volume(vid) == Some(device_id))
         .cloned()
         .collect()
 }

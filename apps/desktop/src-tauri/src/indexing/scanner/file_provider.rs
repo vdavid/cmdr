@@ -1,5 +1,9 @@
 //! Recognizing File Provider domain roots (macOS).
 //!
+//! Lives with the scanner because the exclusion policy is its only consumer: a
+//! domain root looks like an ordinary folder to every mount-based detector, and
+//! walking into one means walking a sync provider's whole tree.
+//!
 //! A File Provider domain (Dropbox, Google Drive, iCloud Drive, MacDroid, …) is
 //! NOT a mount point: its root reports the same `st_dev` as `$HOME` and never
 //! appears in `mount`, so the usual volume-boundary detectors are blind to it.
@@ -16,7 +20,7 @@
 //! contractual, so any code that must stay correct when it disappears needs its own
 //! backstop; a `None` here means "not recognized", never "proven ordinary folder".
 //! Evidence and the authoritative-but-costly `NSFileProviderManager` alternative:
-//! [`/docs/notes/fileprovider-domain-detection.md`](../../../../../docs/notes/fileprovider-domain-detection.md)
+//! [`/docs/notes/fileprovider-domain-detection.md`](../../../../../../docs/notes/fileprovider-domain-detection.md)
 //! (verified on macOS 26.5.2, build 25F84, 2026-07-20).
 
 /// The extended attribute `fileproviderd` writes on every File Provider domain

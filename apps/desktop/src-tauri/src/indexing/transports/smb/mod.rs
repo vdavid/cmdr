@@ -5,6 +5,6 @@
 pub(crate) mod index;
 pub(crate) mod watch;
 
-#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
-#[path = "integration_test.rs"]
-mod integration_test;
+// The live-share half of this scanner's coverage lives app-side, in
+// `file_system/volume/smb_index_scan_test.rs`: it needs a real `SmbVolume`, which
+// only the app can build. The backend-agnostic half is `network_scanner/tests`.

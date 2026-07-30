@@ -522,7 +522,7 @@ mod tests {
     /// pass itself off as the file's bytes or as a per-file fault.
     #[test]
     fn volume_fetch_maps_a_mid_stream_disconnect_to_disconnected() {
-        use crate::file_system::volume::{Volume, VolumeError, VolumeReadStream};
+        use cmdr_fs::volume::{Volume, VolumeError, VolumeReadStream};
         use std::pin::Pin;
 
         struct YankedStream {

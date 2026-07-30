@@ -301,7 +301,7 @@ fn path_to_index_str(path: &std::path::Path) -> String {
 /// Build the absolute MTP URL (`mtp://{device}/{storage}/inner`) for a
 /// storage-relative path, for the FE `index-dir-updated` listing-cache key.
 fn mtp_url_for(volume_id: &str, storage_rel: &std::path::Path) -> String {
-    let (device_id, storage_id) = crate::mtp::identity::split_volume_id(volume_id).unwrap_or((volume_id, 0));
+    let (device_id, storage_id) = cmdr_fs::volume::mtp_ids::split_volume_id(volume_id).unwrap_or((volume_id, 0));
     let inner = storage_rel.to_string_lossy();
     let inner = inner.trim_start_matches('/');
     if inner.is_empty() {
@@ -384,16 +384,14 @@ pub(crate) fn replay_buffered_mtp_changes(volume_id: &str) -> bool {
 /// and any later change re-fires its own event.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 fn resolve_and_apply_buffered_handles(volume_id: &str, handles: Vec<(u32, u32)>) {
-    let Some(device_id) = crate::mtp::identity::device_id_of_volume(volume_id).map(str::to_owned) else {
+    let Some(device_id) = cmdr_fs::volume::mtp_ids::device_id_of_volume(volume_id).map(str::to_owned) else {
         return;
     };
     let volume_id = volume_id.to_string();
+    let volumes = crate::indexing::host::volumes::current();
     crate::indexing::host::runtime::spawn(async move {
         for (storage_id, handle) in handles {
-            match crate::mtp::connection::connection_manager()
-                .resolve_object_for_index(&device_id, storage_id, mtp_rs::ObjectHandle(u64::from(handle)))
-                .await
-            {
+            match volumes.resolve_mtp_object(&device_id, storage_id, handle).await {
                 Ok(obj) => apply_mtp_added_or_changed(
                     &volume_id,
                     MtpUpsert {

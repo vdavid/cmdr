@@ -80,10 +80,9 @@ pub(crate) fn drive_index_should_run(master_on: bool, db_path: &Path, is_root: b
 pub(crate) fn drives_to_resume(app: &tauri::AppHandle) -> Vec<String> {
     let mut ids = vec![crate::indexing::ROOT_VOLUME_ID.to_string()];
     ids.extend(
-        crate::file_system::get_volume_manager()
-            .list_volumes()
+        crate::indexing::host::volumes::current()
+            .volume_ids()
             .into_iter()
-            .map(|(id, _name)| id)
             .filter(|id| id != crate::indexing::ROOT_VOLUME_ID),
     );
     ids.retain(|id| {

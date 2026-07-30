@@ -7,7 +7,7 @@
 //! lets them be unit-tested exhaustively while the timer loop itself stays a dumb
 //! caller.
 
-use crate::file_system::listing::caching::ListingSummary;
+use crate::indexing::host::policy::OpenListing;
 use crate::indexing::paths::firmlinks;
 
 /// How many 500 ms progress ticks between partial-aggregation passes.
@@ -50,12 +50,12 @@ pub(crate) fn should_send_partial_agg(tick: u64, queue_depth: usize) -> bool {
     queue_depth <= PARTIAL_AGG_MAX_QUEUE_DEPTH
 }
 
-/// Turn a snapshot of the live listing cache into the firmlink-normalized "hot
-/// paths" for a partial-aggregation pass: the directories a pane is currently
-/// showing, so the handler can punch their `dir_stats` through the depth cap.
+/// Turn the host's open listings into the firmlink-normalized "hot paths" for a
+/// partial-aggregation pass: the directories a pane is currently showing, so the
+/// handler can punch their `dir_stats` through the depth cap.
 ///
 /// Keeps only listings on the volume being scanned (matched by `volume_id`, the
-/// only reliable signal — `ListingSummary` carries no volume root). This drops,
+/// only reliable signal — an `OpenListing` carries no volume root). This drops,
 /// by construction, every `network` / `search-results` / `mtp-*` listing, SMB
 /// shares, and **other local volumes** like `/Volumes/OtherDisk`: those carry
 /// absolute-looking paths that would otherwise be resolved against the scanned
@@ -65,7 +65,7 @@ pub(crate) fn should_send_partial_agg(tick: u64, queue_depth: usize) -> bool {
 /// Surviving paths are mapped through `firmlinks::normalize_path` so they match
 /// the index's canonical form (`/tmp` → `/private/tmp` etc.), then deduplicated
 /// (two panes on the same dir collapse to one) while preserving first-seen order.
-pub(crate) fn collect_hot_paths(listings: &[ListingSummary], scanned_volume_id: &str) -> Vec<String> {
+pub(crate) fn collect_hot_paths(listings: &[OpenListing], scanned_volume_id: &str) -> Vec<String> {
     let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
     let mut out: Vec<String> = Vec::new();
     for listing in listings {
@@ -85,13 +85,10 @@ mod tests {
     use super::*;
     use std::path::PathBuf;
 
-    fn summary(volume_id: &str, path: &str) -> ListingSummary {
-        ListingSummary {
-            listing_id: format!("listing-{path}"),
+    fn summary(volume_id: &str, path: &str) -> OpenListing {
+        OpenListing {
             volume_id: volume_id.to_string(),
             path: PathBuf::from(path),
-            entry_count: 0,
-            age_ms: 0,
         }
     }
 

@@ -935,6 +935,7 @@ pub trait Volume: Send + Sync {
 // `volume::VolumeError`, `volume::smb_volume_id`, etc. unchanged.
 mod ids;
 mod in_memory;
+pub mod mtp_ids;
 mod types;
 
 /// Typed, word-free classification of why a volume operation failed.

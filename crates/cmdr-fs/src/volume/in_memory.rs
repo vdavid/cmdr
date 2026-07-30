@@ -92,6 +92,14 @@ impl InMemoryVolume {
         }
     }
 
+    /// Roots this volume at `root` instead of `/`, so it can stand in for a drive
+    /// mounted at a real-looking path (`/Volumes/X`, `/media/X`) in a test that
+    /// exercises mount-root resolution.
+    pub fn with_root(mut self, root: impl Into<PathBuf>) -> Self {
+        self.root = root.into();
+        self
+    }
+
     /// Makes [`Volume::create_directory_errors_on_existing_dir`] report `false`,
     /// modeling a backend that allows same-name siblings (MTP). Used by the
     /// remote-archive-edit swap tests to exercise the delete-then-rename path.

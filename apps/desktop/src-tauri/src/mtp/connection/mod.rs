@@ -437,7 +437,7 @@ impl MtpConnectionManager {
         // Register MTP volumes for each storage with the global VolumeManager
         // This enables MTP browsing through the standard file listing pipeline
         for storage in &connected_info.storages {
-            let volume_id = crate::mtp::identity::mtp_volume_id(device_id, storage.id);
+            let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id(device_id, storage.id);
             let volume = Arc::new(MtpVolume::new(device_id, storage.id, &storage.name));
             get_volume_manager().register(&volume_id, volume);
             debug!("Registered MTP volume: {} ({})", volume_id, storage.name);
@@ -504,7 +504,7 @@ impl MtpConnectionManager {
 
         // Unregister MTP volumes from the VolumeManager
         for storage in &entry.storages {
-            let volume_id = crate::mtp::identity::mtp_volume_id(device_id, storage.id);
+            let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id(device_id, storage.id);
             get_volume_manager().unregister(&volume_id);
             debug!("Unregistered MTP volume: {}", volume_id);
         }
@@ -687,7 +687,7 @@ impl MtpConnectionManager {
         drop(device);
 
         // Register the volume
-        let volume_id = crate::mtp::identity::mtp_volume_id(device_id, storage_id);
+        let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id(device_id, storage_id);
         let volume = Arc::new(MtpVolume::new(device_id, storage_id, &storage_info.name));
         get_volume_manager().register(&volume_id, volume);
 
@@ -793,7 +793,7 @@ impl MtpConnectionManager {
 
     /// Handles a StoreRemoved event: unregisters the volume and broadcasts the change.
     pub async fn handle_storage_removed(&self, device_id: &str, storage_id: u32, app: &AppHandle) {
-        let volume_id = crate::mtp::identity::mtp_volume_id(device_id, storage_id);
+        let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id(device_id, storage_id);
 
         // Remove from DeviceEntry
         {
@@ -1219,7 +1219,7 @@ mod tests {
     }
 
     // Device-id ↔ location_id derivation and the `:`-robust volume-id parse are
-    // owned and exhaustively tested by `crate::mtp::identity`; the connect path
+    // owned and exhaustively tested by `cmdr_fs::volume::mtp_ids`; the connect path
     // here only resolves a live id to a location (tested above as the no-match
     // case). No id-string edge cases are re-tested in this module.
 

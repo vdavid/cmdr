@@ -1,10 +1,11 @@
 //! File system module - operations, watchers, volumes, and providers.
 
 pub mod cloud_actions;
-#[cfg(target_os = "macos")]
-pub(crate) mod file_provider;
 pub mod filesystem_kind;
 pub mod git;
+#[cfg(target_os = "macos")]
+/// The app's `VolumeProvider`: what the index asks about mounted volumes.
+pub(crate) mod index_provider;
 #[cfg(target_os = "linux")]
 pub(crate) mod linux_mounts;
 pub(crate) mod listing;

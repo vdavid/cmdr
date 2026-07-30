@@ -245,7 +245,7 @@ pub async fn enable_drive_index(app: AppHandle, volume_id: String) -> Result<Ena
         // it can't return a typed `SmbIndexGateReason`. Route it to the MTP enable
         // path; a plain string error (device not connected / internal start
         // failure) surfaces as a command error.
-        if crate::mtp::identity::is_mtp_volume_id(&volume_id) {
+        if cmdr_fs::volume::mtp_ids::is_mtp_volume_id(&volume_id) {
             indexing::start_indexing_for_mtp(app, volume_id)?;
             return Ok(EnableIndexingOutcome::Started);
         }

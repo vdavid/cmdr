@@ -24,6 +24,7 @@ use std::path::Path;
 use rusqlite::Connection;
 
 use super::firmlinks;
+use crate::indexing::host;
 use crate::indexing::lifecycle::state::{IndexVolumeKind, ROOT_VOLUME_ID, VolumeId};
 use crate::indexing::scanner::ExclusionScope;
 #[cfg(test)]
@@ -47,8 +48,7 @@ use crate::indexing::store::{self, IndexStoreError};
 /// - **Everything else** (the boot disk, and cloud-drive folders in the home dir
 ///   that `root`'s index owns) → `root`.
 pub(crate) fn volume_id_for_local_path(path: &str) -> VolumeId {
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
-    if let Some(smb_id) = crate::indexing::transports::smb::index::smb_volume_id_for_path(path) {
+    if let Some(smb_id) = host::volumes::current().smb_volume_id_for_path(path) {
         return smb_id;
     }
     if let Some(mtp_id) = mtp_volume_id_for_path(path) {
@@ -79,7 +79,7 @@ fn external_mount_volume_id_for_path(path: &str) -> Option<VolumeId> {
     if !crate::indexing::scanner::is_on_mounted_external_volume(path) {
         return None;
     }
-    crate::file_system::get_volume_manager().mount_id_for_path(path)
+    host::volumes::current().mount_id_for_path(path)
 }
 
 /// Map an `mtp://{device_id}/{storage_id}[/…]` path to its MTP volume id
@@ -107,7 +107,7 @@ pub(crate) fn exclusion_scope_for_volume(volume_id: &str) -> ExclusionScope {
     if volume_id == ROOT_VOLUME_ID {
         return ExclusionScope::boot_disk();
     }
-    let mount_root = crate::file_system::get_volume_manager()
+    let mount_root = host::volumes::current()
         .get(volume_id)
         .map(|v| v.root().to_string_lossy().into_owned())
         .unwrap_or_default();
@@ -144,7 +144,7 @@ fn index_read_path_pure(volume_id: &str, normalized_abs: &str, mount_root: Optio
     // segments to the inner `/path` the index stores under (the read-side mirror
     // of how the MTP scan rooted the storage at `ROOT_ID`). A path on a DIFFERENT
     // MTP volume yields `None` (drop rather than mis-root), exactly like SMB.
-    if crate::mtp::identity::is_mtp_volume_id(volume_id) {
+    if cmdr_fs::volume::mtp_ids::is_mtp_volume_id(volume_id) {
         return mtp_index_relative_path(volume_id, normalized_abs);
     }
     let mount_root = mount_root?;
@@ -194,7 +194,7 @@ pub(crate) fn index_read_path(volume_id: &str, abs_path: &str) -> Option<String>
     if volume_id == ROOT_VOLUME_ID {
         return Some(abs_path.to_string());
     }
-    let mount_root = crate::file_system::get_volume_manager()
+    let mount_root = host::volumes::current()
         .get(volume_id)
         .map(|v| v.root().to_string_lossy().into_owned());
     index_read_path_pure(volume_id, abs_path, mount_root.as_deref())
@@ -521,8 +521,8 @@ mod tests {
     fn volume_id_for_local_path_routes_registered_external_mount() {
         use std::sync::Arc;
 
-        use crate::file_system::get_volume_manager;
-        use crate::file_system::volume::LocalPosixVolume;
+        use crate::indexing::host::volumes::{self, FakeVolumeProvider};
+        use cmdr_fs::volume::InMemoryVolume;
 
         // A platform-appropriate external mount root (macOS: `/Volumes/X`; Linux:
         // `/media/X`), plus a cloud-drive folder that sits inside the home dir.
@@ -532,11 +532,15 @@ mod tests {
         let ext_root = "/media/RoutingTestExt";
         let cloud_root = "/Users/routingtest/Library/CloudStorage/RoutingTest";
 
-        let manager = get_volume_manager();
         let ext_id = "volumes-routing-test-ext";
         let cloud_id = "cloud-routing-test";
-        manager.register(ext_id, Arc::new(LocalPosixVolume::new("Ext", ext_root)));
-        manager.register(cloud_id, Arc::new(LocalPosixVolume::new("Cloud", cloud_root)));
+        let provider = FakeVolumeProvider::shared();
+        provider
+            .register(ext_id, Arc::new(InMemoryVolume::new("Ext").with_root(ext_root)))
+            .register(cloud_id, Arc::new(InMemoryVolume::new("Cloud").with_root(cloud_root)));
+
+        let _serialized = volumes::test_lock();
+        let _installed = volumes::install_for_test(provider);
 
         // A path under the external mount → the mount's registered id.
         assert_eq!(
@@ -563,9 +567,6 @@ mod tests {
             ROOT_VOLUME_ID,
             "a cloud-drive folder stays on root so its sizes survive",
         );
-
-        manager.unregister(ext_id);
-        manager.unregister(cloud_id);
     }
 
     /// `volume_id_for_local_path`'s pure MTP half: an `mtp://device/storage` path

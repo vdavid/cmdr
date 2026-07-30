@@ -505,7 +505,7 @@ impl MediaScheduler {
         // The registered volume: source of the mount root (`/Volumes/<share>`, the
         // same source `indexing::routing` uses for the read-side mount strip) AND
         // of the byte-read transport. An unregistered volume (unmounted) is a no-op.
-        let Some(volume) = crate::file_system::get_volume_manager().get(volume_id) else {
+        let Some(volume) = crate::indexing::host::volumes::current().get(volume_id) else {
             log::debug!(target: "media_index", "network enrichment skips '{volume_id}': volume not registered");
             return Ok(PassOutcome::Done(0));
         };

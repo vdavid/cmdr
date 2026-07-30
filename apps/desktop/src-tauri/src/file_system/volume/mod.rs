@@ -39,4 +39,6 @@ mod inmemory_test;
 #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
 mod mtp_scan_oracle_tests;
 #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod smb_index_scan_test;
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
 mod smb_scan_oracle_tests;

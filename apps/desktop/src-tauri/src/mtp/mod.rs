@@ -20,7 +20,6 @@
 
 pub mod connection;
 mod discovery;
-pub mod identity;
 #[cfg(target_os = "macos")]
 pub mod macos_workaround;
 pub mod types;

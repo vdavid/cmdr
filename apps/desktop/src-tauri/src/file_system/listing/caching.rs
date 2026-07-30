@@ -8,28 +8,7 @@ use std::time::{Duration, Instant};
 
 use crate::file_system::listing::metadata::{FileEntry, TagRef};
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, entry_comparator};
-
-/// Describes a change to a directory's contents on a specific volume.
-///
-/// Used by `notify_directory_changed` to apply targeted cache updates
-/// and emit `directory-diff` events to the frontend.
-///
-/// `Clone` so the SMB watch→index translator (`indexing::transports::smb::watch`) can stash a
-/// change in its mid-scan replay buffer without taking ownership away from the
-/// pane-update path.
-#[derive(Clone)]
-pub enum DirectoryChange {
-    /// A single entry was added. Includes the full `FileEntry` to insert.
-    Added(FileEntry),
-    /// A single entry was removed by name.
-    Removed(String),
-    /// A single entry was modified. Includes the updated `FileEntry`.
-    Modified(FileEntry),
-    /// An entry was renamed within the same directory.
-    Renamed { old_name: String, new_entry: FileEntry },
-    /// Unknown or bulk change: trigger a full re-read via the Volume trait.
-    FullRefresh,
-}
+pub use cmdr_fs::volume::DirectoryChange;
 
 /// Result of updating an entry in-place or moving it to a new sorted position.
 pub enum ModifyResult {

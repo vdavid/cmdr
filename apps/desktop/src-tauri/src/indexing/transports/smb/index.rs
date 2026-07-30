@@ -18,7 +18,6 @@ use std::path::PathBuf;
 
 use tauri::AppHandle;
 
-use crate::file_system::get_volume_manager;
 use crate::indexing::lifecycle::freshness;
 use crate::indexing::lifecycle::master;
 use crate::indexing::lifecycle::state;
@@ -63,36 +62,10 @@ impl std::fmt::Display for SmbIndexGateReason {
     }
 }
 
-/// Map an SMB mount path to its index volume id, if the path is on an SMB mount.
-///
-/// Returns `Some(smb_volume_id(server, port, share))` when `path` resolves to an
-/// `smbfs`/`cifs` mount, else `None`. Keyed by `(server, port, share)` (via
-/// `smb_volume_id`), the SAME id the `VolumeManager` registers the share under,
-/// so a listing under `/Volumes/<share>` resolves to the SMB volume's index, not
-/// `root`. Platform-split because the mount-info probe lives in the macOS-only
-/// `volumes` / Linux-only `volumes_linux` module.
-pub(crate) fn smb_volume_id_for_path(path: &str) -> Option<String> {
-    #[cfg(target_os = "macos")]
-    use crate::volumes::get_smb_mount_info;
-    #[cfg(target_os = "linux")]
-    use crate::volumes_linux::get_smb_mount_info;
-
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
-    {
-        let info = get_smb_mount_info(path)?;
-        Some(cmdr_fs::volume::smb_volume_id(&info.server, info.port, &info.share))
-    }
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    {
-        let _ = path;
-        None
-    }
-}
-
 /// Whether the volume registered under `volume_id` is a live, direct (smb2)
 /// SMB volume ready to index right now. Pure inspection — no upgrade attempt.
 fn is_direct_smb(volume_id: &str) -> bool {
-    get_volume_manager()
+    crate::indexing::host::volumes::current()
         .get(volume_id)
         .and_then(|v| v.smb_connection_state())
         .is_some_and(|s| s == SmbConnectionState::Direct)
@@ -106,9 +79,9 @@ fn is_direct_smb(volume_id: &str) -> bool {
 /// `upgrade_to_smb_volume_inner`; a failed/credential-needing upgrade keeps
 /// indexing disabled with a typed reason.
 async fn ensure_direct_smb(volume_id: &str) -> Result<PathBuf, SmbIndexGateReason> {
-    let manager = get_volume_manager();
+    let volumes = crate::indexing::host::volumes::current();
 
-    let Some(volume) = manager.get(volume_id) else {
+    let Some(volume) = volumes.get(volume_id) else {
         // No volume registered for this id. Logged (like every gate refusal) so a
         // future refusal isn't invisible in the logs — the reason the missing
         // local-drive branch stayed hidden for so long.
@@ -132,7 +105,11 @@ async fn ensure_direct_smb(volume_id: &str) -> Result<PathBuf, SmbIndexGateReaso
     // smbfs mount returns `None` from `smb_connection_state`). But a `None` that
     // ISN'T an smbfs mount is a non-SMB volume — reject it rather than trying to
     // upgrade a local disk.
-    if volume.smb_connection_state().is_none() && smb_volume_id_for_path(&volume.root().to_string_lossy()).is_none() {
+    if volume.smb_connection_state().is_none()
+        && volumes
+            .smb_volume_id_for_path(&volume.root().to_string_lossy())
+            .is_none()
+    {
         log::warn!(target: "indexing::smb_index", "SMB index gate: '{volume_id}' is not an SMB volume");
         return Err(SmbIndexGateReason::NotAnSmbVolume);
     }
@@ -160,7 +137,7 @@ async fn ensure_direct_smb(volume_id: &str) -> Result<PathBuf, SmbIndexGateReaso
 
     // Re-fetch: the upgrade replaced the LocalPosixVolume with an SmbVolume.
     if is_direct_smb(volume_id) {
-        let volume = manager.get(volume_id).ok_or(SmbIndexGateReason::NotRegistered)?;
+        let volume = volumes.get(volume_id).ok_or(SmbIndexGateReason::NotRegistered)?;
         Ok(volume.root().to_path_buf())
     } else {
         Err(SmbIndexGateReason::UpgradeFailed)
@@ -355,16 +332,6 @@ mod tests {
                 assert_eq!(i == j, a == b, "{a:?} vs {b:?} equality must track identity");
             }
         }
-    }
-
-    #[test]
-    fn smb_volume_id_for_non_smb_path_is_none() {
-        // A plain local path is never on an SMB mount, so it maps to no SMB
-        // volume id (the caller then treats it as the local `root` index). This
-        // is the boundary that keeps `/Users/...` resolving to `root`, not an
-        // SMB volume.
-        assert!(smb_volume_id_for_path("/Users/someone/Documents").is_none());
-        assert!(smb_volume_id_for_path("/").is_none());
     }
 
     // ── Freshness call sites (the live-watch wiring) ──────────────────────

@@ -219,7 +219,7 @@ impl MtpConnectionManager {
         // raw handle for any scanning storage. Whatever's left needs a live resolve.
         let mut to_resolve_live: Vec<(String, u32)> = Vec::new();
         for volume_id in indexed {
-            let Some(storage_id) = crate::mtp::identity::storage_id_of_volume(&volume_id) else {
+            let Some(storage_id) = cmdr_fs::volume::mtp_ids::storage_id_of_volume(&volume_id) else {
                 continue;
             };
             if crate::indexing::buffer_mtp_handle_if_scanning(&volume_id, storage_id, handle.0 as u32) {
@@ -297,7 +297,7 @@ impl MtpConnectionManager {
             let listings = get_listings_by_volume_prefix(&device_id);
             let mut storage_ids: Vec<u32> = listings
                 .iter()
-                .filter_map(|(_, volume_id, _, _)| crate::mtp::identity::storage_id_of_volume(volume_id))
+                .filter_map(|(_, volume_id, _, _)| cmdr_fs::volume::mtp_ids::storage_id_of_volume(volume_id))
                 .collect();
             storage_ids.sort_unstable();
             storage_ids.dedup();
@@ -350,7 +350,7 @@ impl MtpConnectionManager {
         let listings: Vec<(String, String, PathBuf, Vec<FileEntry>)> = get_listings_by_volume_prefix(device_id)
             .into_iter()
             .filter(|(_, volume_id, path, _)| {
-                crate::mtp::identity::storage_id_of_volume(volume_id) == Some(storage_id)
+                cmdr_fs::volume::mtp_ids::storage_id_of_volume(volume_id) == Some(storage_id)
                     && listing_inner_mtp_path(volume_id, path).as_deref() == Some(affected_dir)
             })
             .collect();
@@ -454,7 +454,7 @@ impl MtpConnectionManager {
         for (listing_id, volume_id, path, old_entries) in listings {
             // Extract storage_id from volume_id (format: "{device_id}:{storage}").
             // rsplit-based parse via identity tolerates a `:` in a serial device id.
-            let Some(storage_id) = crate::mtp::identity::storage_id_of_volume(&volume_id) else {
+            let Some(storage_id) = cmdr_fs::volume::mtp_ids::storage_id_of_volume(&volume_id) else {
                 warn!(
                     "MTP diff: could not parse storage_id from volume_id={}, skipping",
                     volume_id

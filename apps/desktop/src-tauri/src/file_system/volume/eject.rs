@@ -81,7 +81,7 @@ pub fn decide_eject_action(ctx: &EjectContext) -> Result<EjectAction, EjectDecis
     if ctx.is_mtp {
         // rsplit-based parse (identity) so a `:` inside a serial-based device id
         // doesn't truncate it: the storage id is the trailing numeric component.
-        let device_id = crate::mtp::identity::device_id_of_volume(ctx.volume_id)
+        let device_id = cmdr_fs::volume::mtp_ids::device_id_of_volume(ctx.volume_id)
             .map(str::to_string)
             .ok_or_else(|| EjectDecisionError::MtpIdMissingDevicePrefix {
                 volume_id: ctx.volume_id.to_string(),
@@ -308,7 +308,7 @@ pub async fn disconnect_smb(volume_id: &str) -> Result<(), EjectError> {
 /// `commands/volumes.rs::append_mtp_volumes`). Confirm against the live device
 /// list so we don't false-positive on any future ID containing a colon.
 async fn is_mtp_volume_id(volume_id: &str) -> bool {
-    let Some(device_id) = crate::mtp::identity::device_id_of_volume(volume_id) else {
+    let Some(device_id) = cmdr_fs::volume::mtp_ids::device_id_of_volume(volume_id) else {
         return false;
     };
     crate::mtp::connection_manager()

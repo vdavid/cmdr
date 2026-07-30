@@ -189,7 +189,7 @@ impl IndexManager {
 
         // Resolve the live volume handle by id. Gone ⇒ the share unmounted; bail
         // so the caller resets to gray rather than scanning nothing.
-        let volume = crate::file_system::get_volume_manager()
+        let volume = crate::indexing::host::volumes::current()
             .get(&self.volume_id)
             .ok_or_else(|| format!("Volume '{}' is not registered (unmounted?)", self.volume_id))?;
 
@@ -197,11 +197,8 @@ impl IndexManager {
         // The per-kind bucket is picked below, once the walk kind is known.
         let calibration_set = IndexStore::read_scan_calibration_set(self.store.read_conn()).unwrap_or_default();
         let volume_root = self.volume_root.clone();
-        let volume_used_bytes = tokio::task::block_in_place(|| {
-            crate::file_system::volume::backends::get_space_info_for_path(&volume_root)
-                .map(|info| info.used_bytes)
-                .ok()
-        });
+        let volume_used_bytes =
+            tokio::task::block_in_place(|| crate::indexing::host::volumes::current().volume_used_bytes(&volume_root));
 
         // Pre-arm-before-snapshot: flip `scanning` BEFORE truncating, so any live
         // SMB change racing in during/after the truncate is BUFFERED by

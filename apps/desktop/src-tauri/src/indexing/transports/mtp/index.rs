@@ -39,7 +39,7 @@ pub(crate) fn start_indexing_for_mtp(app: AppHandle, volume_id: String) -> Resul
 
     // The MTP volume must be registered (device connected) to resolve its root
     // and list it. A missing registration means the device isn't connected.
-    let volume_root = match crate::file_system::get_volume_manager().get(&volume_id) {
+    let volume_root = match crate::indexing::host::volumes::current().get(&volume_id) {
         Some(v) => v.root().to_path_buf(),
         None => {
             return Err(format!(
@@ -132,7 +132,7 @@ mod tests {
         // The headline D4 transition: when the device's event loop dies, every
         // MTP volume on it goes Fresh ⇒ Stale.
         let device_id = "mtp-DISC-TEST";
-        let volume_id = crate::mtp::identity::mtp_volume_id(device_id, 65537);
+        let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id(device_id, 65537);
         with_reserved_volume(&volume_id, Freshness::Fresh, || {
             on_mtp_watch_continuity_lost(device_id);
             assert_eq!(
@@ -147,7 +147,7 @@ mod tests {
     fn device_disconnect_is_a_noop_for_an_unindexed_volume() {
         // No registered instance ⇒ nothing to transition; must not panic.
         on_mtp_watch_continuity_lost("mtp-never-registered");
-        let volume_id = crate::mtp::identity::mtp_volume_id("mtp-never-registered", 65537);
+        let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id("mtp-never-registered", 65537);
         assert_eq!(get_freshness(&volume_id), None);
     }
 
@@ -157,8 +157,8 @@ mod tests {
         // other (the device-id prefix match must not over-match).
         let dev_a = "mtp-AAA";
         let dev_b = "mtp-BBB";
-        let vol_a = crate::mtp::identity::mtp_volume_id(dev_a, 65537);
-        let vol_b = crate::mtp::identity::mtp_volume_id(dev_b, 65537);
+        let vol_a = cmdr_fs::volume::mtp_ids::mtp_volume_id(dev_a, 65537);
+        let vol_b = cmdr_fs::volume::mtp_ids::mtp_volume_id(dev_b, 65537);
         with_reserved_volume(&vol_a, Freshness::Fresh, || {
             with_reserved_volume(&vol_b, Freshness::Fresh, || {
                 on_mtp_watch_continuity_lost(dev_a);

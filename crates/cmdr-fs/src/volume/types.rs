@@ -9,6 +9,35 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
+use crate::entry::FileEntry;
+
+/// Describes a change to a directory's contents on a specific volume.
+///
+/// Used by `file_system::listing::caching::notify_directory_changed` to apply targeted cache updates
+/// and emit `directory-diff` events to the frontend.
+///
+/// `Clone` so the SMB watch→index translator (`indexing::transports::smb::watch`) can stash a
+/// change in its mid-scan replay buffer without taking ownership away from the
+/// pane-update path.
+#[derive(Clone)]
+pub enum DirectoryChange {
+    /// A single entry was added. Includes the full `FileEntry` to insert.
+    Added(FileEntry),
+    /// A single entry was removed by name.
+    Removed(String),
+    /// A single entry was modified. Includes the updated `FileEntry`.
+    Modified(FileEntry),
+    /// An entry was renamed within the same directory.
+    Renamed {
+        /// The name the entry had before the rename.
+        old_name: String,
+        /// The entry under its new name, with fresh metadata.
+        new_entry: FileEntry,
+    },
+    /// Unknown or bulk change: trigger a full re-read via the Volume trait.
+    FullRefresh,
+}
+
 /// One file the one-pass sequential extractor yields (see
 /// [`Volume::open_sequential_extract`](super::Volume::open_sequential_extract)):
 /// its full source path (in the source volume's namespace, matching what

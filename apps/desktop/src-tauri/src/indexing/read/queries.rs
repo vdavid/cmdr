@@ -381,8 +381,8 @@ mod tests {
     use std::sync::Arc;
 
     use super::*;
-    use crate::file_system::get_volume_manager;
-    use crate::file_system::volume::LocalPosixVolume;
+    use crate::indexing::host::volumes::{self, FakeVolumeProvider};
+    use cmdr_fs::volume::InMemoryVolume;
 
     /// A mounted-but-unindexed external drive reports its OWN index status (`off` —
     /// no index registered under its id), not `root`'s. `cmdr://state`'s
@@ -396,9 +396,12 @@ mod tests {
         #[cfg(not(target_os = "macos"))]
         let ext_root = "/media/StatusTestExt";
 
-        let manager = get_volume_manager();
         let ext_id = "volumes-status-test-ext";
-        manager.register(ext_id, Arc::new(LocalPosixVolume::new("Ext", ext_root)));
+        let provider = FakeVolumeProvider::shared();
+        provider.register(ext_id, Arc::new(InMemoryVolume::new("Ext").with_root(ext_root)));
+
+        let _serialized = volumes::test_lock();
+        let _installed = volumes::install_for_test(provider);
 
         let status = get_volume_index_status_for_path(&format!("{ext_root}/photos"));
         assert_eq!(status.volume_id, ext_id, "status resolves to the drive's own index id");
@@ -408,7 +411,5 @@ mod tests {
             "an unindexed external drive reports off, not root's status"
         );
         assert!(status.freshness.is_none());
-
-        manager.unregister(ext_id);
     }
 }

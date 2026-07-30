@@ -325,7 +325,7 @@ mod device_tests {
     async fn session_reset_keeps_the_volume_in_the_sidebar() {
         let _guard = virtual_device_test_lock().lock().await;
         let device = connect_device().await;
-        let volume_id = crate::mtp::identity::mtp_volume_id(&device.id, device.storage_id);
+        let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id(&device.id, device.storage_id);
 
         assert!(
             connection_manager().tear_down_reset_session(&device.id).await,
@@ -378,7 +378,7 @@ mod device_tests {
     async fn a_wedged_listing_recovers_without_dropping_the_device() {
         let _guard = virtual_device_test_lock().lock().await;
         let device = connect_device().await;
-        let volume_id = crate::mtp::identity::mtp_volume_id(&device.id, device.storage_id);
+        let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id(&device.id, device.storage_id);
         super::super::directory_ops::disconnect_test_hooks::reset_count();
 
         // Arm the one-shot, then drive a real listing. `/DCIM` (not `/`) so the

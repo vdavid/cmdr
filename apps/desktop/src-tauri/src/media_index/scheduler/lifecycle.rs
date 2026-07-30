@@ -325,7 +325,7 @@ pub(super) fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kin
     {
         let excluded = network::config::snapshot().excluded_folders;
         if !excluded.is_empty()
-            && let Some(mount_root) = crate::file_system::get_volume_manager()
+            && let Some(mount_root) = crate::indexing::host::volumes::current()
                 .get(&volume_id)
                 .map(|v| v.root().to_string_lossy().into_owned())
         {

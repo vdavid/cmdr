@@ -666,12 +666,8 @@ impl IndexManager {
         // call below. A bare blocking call on a tokio worker can stall on a wedged
         // mount. Failure → `None`; never block or delay the scan for the denominator.
         let volume_root = self.volume_root.clone();
-        let volume_used_bytes = tokio::task::block_in_place(|| {
-            crate::file_system::volume::backends::get_space_info_for_path(&volume_root)
-                .map(|info| info.used_bytes)
-                .map_err(|e| log::warn!("Failed to read volume used bytes (tier-2 will degrade): {e}"))
-                .ok()
-        });
+        let volume_used_bytes =
+            tokio::task::block_in_place(|| crate::indexing::host::volumes::current().volume_used_bytes(&volume_root));
 
         let calibration = ScanCalibration {
             prior,

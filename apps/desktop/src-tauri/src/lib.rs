@@ -324,6 +324,17 @@ pub fn run() {
                 log::warn!(target: "indexing", "index runtime was already set; keeping the first one ({e:?})");
             }
 
+            // Tell the index which volumes exist. It never touches `VolumeManager`,
+            // the platform mount probes, or the MTP session layer directly — those
+            // are the app's, and they can't follow the index into its own crate.
+            if indexing::host::volumes::set_volume_provider(std::sync::Arc::new(
+                file_system::index_provider::AppVolumeProvider,
+            ))
+            .is_err()
+            {
+                log::warn!(target: "indexing", "index volume provider was already set; keeping the first one");
+            }
+
             // Tell the index whose priority signals to yield to. Same reason as the
             // runtime: the subsystems ask through a seam so they can leave the app
             // crate, and the priority ORDER (interactive > transfers > indexing)

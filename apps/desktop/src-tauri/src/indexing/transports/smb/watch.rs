@@ -51,13 +51,13 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{LazyLock, Mutex};
 
-use crate::file_system::listing::caching::DirectoryChange;
 use crate::indexing::lifecycle::state;
 use crate::indexing::network_scanner::is_recursion_excluded_dir;
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::volume::DirectoryChange;
 
 /// Per-volume buffer of SMB changes that arrived DURING a full (re)scan.
 ///
@@ -308,7 +308,7 @@ fn apply_one_change(volume_id: &str, writer: &IndexWriter, parent_path: &Path, c
         None => return,
     };
 
-    let mount_root = match crate::file_system::get_volume_manager().get(volume_id) {
+    let mount_root = match crate::indexing::host::volumes::current().get(volume_id) {
         Some(v) => v.root().to_string_lossy().into_owned(),
         None => return, // share unmounted; the freshness layer will flip it Stale
     };

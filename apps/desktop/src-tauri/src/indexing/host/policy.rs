@@ -28,6 +28,7 @@
 //! method here. It's asked once at startup, by a pure function, so a trait would be
 //! ceremony. `DETAILS.md` § "The host policy seam".
 
+use std::path::PathBuf;
 use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 
@@ -65,6 +66,20 @@ impl WorkClearance {
     };
 }
 
+/// One directory a pane is showing right now.
+///
+/// Only what the index acts on: which volume it's on and where. The host's listing
+/// cache knows more (listing id, entry count, age); none of it changes an
+/// aggregation decision, so none of it crosses.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct OpenListing {
+    /// The volume the listing is on. The only reliable way to tell a path on the
+    /// scanned volume from a same-looking path on another one.
+    pub(crate) volume_id: String,
+    /// The directory being shown, as the host knows it (not yet firmlink-normalized).
+    pub(crate) path: PathBuf,
+}
+
 /// The host's background-work priority signals.
 pub(crate) trait HostPolicy: Send + Sync {
     /// Whether background work may run at full speed against `volume_id` right now,
@@ -74,6 +89,16 @@ pub(crate) trait HostPolicy: Send + Sync {
     /// Must be cheap: callers take a snapshot at every batch boundary of a running
     /// scan. ❌ Don't do I/O, take a contended lock, or block here.
     fn clearance(&self, volume_id: &str, idle_threshold: Duration) -> WorkClearance;
+
+    /// Every directory a pane is showing right now.
+    ///
+    /// The other half of "what has the user's attention": mid-scan partial
+    /// aggregation uses it to punch exactly the folders being looked at through the
+    /// depth cap, so sizes appear where the user is rather than in scan order.
+    ///
+    /// Unlike [`clearance`](Self::clearance) this allocates, and it's asked on the
+    /// scan-progress reporter's 500 ms tick. ❌ Not from anything faster.
+    fn open_listings(&self) -> Vec<OpenListing>;
 }
 
 /// The host that never asks for anything: used until one is installed, and by every
@@ -84,6 +109,10 @@ pub(crate) struct AlwaysClear;
 impl HostPolicy for AlwaysClear {
     fn clearance(&self, _volume_id: &str, _idle_threshold: Duration) -> WorkClearance {
         WorkClearance::CLEAR
+    }
+
+    fn open_listings(&self) -> Vec<OpenListing> {
+        Vec::new()
     }
 }
 
@@ -126,6 +155,8 @@ pub(crate) struct FakeHostPolicy {
     /// How many times [`HostPolicy::clearance`] has been asked. The evidence for the
     /// per-batch-not-per-entry rule.
     calls: std::sync::atomic::AtomicUsize,
+    /// What [`HostPolicy::open_listings`] reports.
+    open_listings: std::sync::RwLock<Vec<OpenListing>>,
 }
 
 #[cfg(test)]
@@ -157,6 +188,16 @@ impl FakeHostPolicy {
         self.transfer_running.store(false, std::sync::atomic::Ordering::SeqCst);
     }
 
+    /// The user has a pane open on `path` on `volume_id`.
+    pub(crate) fn note_open_listing(&self, volume_id: impl Into<String>, path: impl Into<PathBuf>) -> &Self {
+        use cmdr_fs::ignore_poison::RwLockIgnorePoison;
+        self.open_listings.write_ignore_poison().push(OpenListing {
+            volume_id: volume_id.into(),
+            path: path.into(),
+        });
+        self
+    }
+
     /// How many clearance questions this host has been asked.
     pub(crate) fn call_count(&self) -> usize {
         self.calls.load(std::sync::atomic::Ordering::SeqCst)
@@ -165,6 +206,11 @@ impl FakeHostPolicy {
 
 #[cfg(test)]
 impl HostPolicy for FakeHostPolicy {
+    fn open_listings(&self) -> Vec<OpenListing> {
+        use cmdr_fs::ignore_poison::RwLockIgnorePoison;
+        self.open_listings.read_ignore_poison().clone()
+    }
+
     fn clearance(&self, _volume_id: &str, _idle_threshold: Duration) -> WorkClearance {
         use std::sync::atomic::Ordering::SeqCst;
         self.calls.fetch_add(1, SeqCst);
@@ -224,5 +270,39 @@ mod tests {
         fake.note_transfer_finished();
         assert_eq!(ask(), WorkClearance::CLEAR);
         assert_eq!(fake.call_count(), 4, "every ask is counted");
+    }
+
+    /// The open-listing half of the fake, and the shape `collect_hot_paths` filters
+    /// on: a listing carries its volume, so a same-looking path on another volume
+    /// can be told apart.
+    #[test]
+    fn the_fake_reports_the_listings_it_was_given() {
+        let fake = FakeHostPolicy::shared();
+        assert!(fake.open_listings().is_empty(), "no panes open yet");
+
+        fake.note_open_listing("root", "/Users/david")
+            .note_open_listing("smb-naspi", "/Volumes/naspi/media");
+
+        assert_eq!(
+            fake.open_listings(),
+            vec![
+                OpenListing {
+                    volume_id: "root".into(),
+                    path: PathBuf::from("/Users/david")
+                },
+                OpenListing {
+                    volume_id: "smb-naspi".into(),
+                    path: PathBuf::from("/Volumes/naspi/media")
+                },
+            ]
+        );
+    }
+
+    /// With nothing installed, the reporter sees no open panes rather than
+    /// panicking. Partial aggregation then simply has no hot paths to punch, which
+    /// is the correct degradation.
+    #[test]
+    fn an_uninstalled_policy_reports_no_open_listings() {
+        assert!(current().open_listings().is_empty());
     }
 }

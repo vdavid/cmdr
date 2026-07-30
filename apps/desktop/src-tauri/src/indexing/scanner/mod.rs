@@ -23,6 +23,9 @@ use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::pluralize::{pluralize, pluralize_with};
 
 mod exclusions;
+/// Recognizing macOS File Provider domain roots, the one probe `exclusions` needs
+/// that isn't pure string work.
+mod file_provider;
 pub(in crate::indexing) use exclusions::*;
 
 mod walker;

@@ -91,11 +91,11 @@ impl RootProbes {
 ///
 /// It's an OPTIMIZATION, never a guarantee: the xattr is a private Apple detail, so
 /// a `false` here means "not recognized", not "proven ordinary". See
-/// [`file_provider`](crate::file_system::file_provider).
+/// [`file_provider`](super::file_provider).
 fn is_file_provider_domain_root(path: &str) -> bool {
     #[cfg(target_os = "macos")]
     {
-        crate::file_system::file_provider::domain_id_for_dir(path).is_some()
+        super::file_provider::domain_id_for_dir(path).is_some()
     }
     #[cfg(not(target_os = "macos"))]
     {

@@ -1,5 +1,9 @@
 //! MTP device and volume identity: stable ids and robust parsing.
 //!
+//! Sits beside [`smb_volume_id`](super::smb_volume_id) because it's the same kind of thing: the
+//! vocabulary for naming a volume, needed by the index and by the app's MTP session
+//! layer alike. Pure string work over `std` — no device, no session, no I/O.
+//!
 //! ## Why a stable id matters (plan rabbit hole #1)
 //!
 //! An MTP device id keys the live session registry AND the persisted per-volume
@@ -27,7 +31,7 @@
 
 /// The `mtp-` prefix every MTP device id carries, so a volume id is recognizable
 /// as MTP and distinct from `root` / SMB ids.
-pub(crate) const MTP_DEVICE_ID_PREFIX: &str = "mtp-";
+pub const MTP_DEVICE_ID_PREFIX: &str = "mtp-";
 
 /// Build the stable MTP device id for a device, preferring its serial number.
 ///
@@ -37,7 +41,7 @@ pub(crate) const MTP_DEVICE_ID_PREFIX: &str = "mtp-";
 ///
 /// The serial is taken verbatim (it may contain a `:`; parsing stays robust via
 /// [`split_volume_id`]). An all-whitespace serial is treated as absent.
-pub(crate) fn device_id_for(serial: Option<&str>, location_id: u64) -> String {
+pub fn device_id_for(serial: Option<&str>, location_id: u64) -> String {
     match serial.map(str::trim).filter(|s| !s.is_empty()) {
         Some(serial) => format!("{MTP_DEVICE_ID_PREFIX}{serial}"),
         None => format!("{MTP_DEVICE_ID_PREFIX}{location_id}"),
@@ -47,7 +51,7 @@ pub(crate) fn device_id_for(serial: Option<&str>, location_id: u64) -> String {
 /// Build the MTP volume id from a device id and storage id:
 /// `{device_id}:{storage_id}`. The storage id is numeric and trails, so
 /// [`split_volume_id`] recovers both halves even when the device id holds a `:`.
-pub(crate) fn mtp_volume_id(device_id: &str, storage_id: u32) -> String {
+pub fn mtp_volume_id(device_id: &str, storage_id: u32) -> String {
     format!("{device_id}:{storage_id}")
 }
 
@@ -59,7 +63,7 @@ pub(crate) fn mtp_volume_id(device_id: &str, storage_id: u32) -> String {
 ///
 /// This is the ONE place volume-id parsing happens; every caller that needs the
 /// device id or storage id goes through here rather than re-implementing a split.
-pub(crate) fn split_volume_id(volume_id: &str) -> Option<(&str, u32)> {
+pub fn split_volume_id(volume_id: &str) -> Option<(&str, u32)> {
     let (device_id, storage_str) = volume_id.rsplit_once(':')?;
     let storage_id = storage_str.parse::<u32>().ok()?;
     Some((device_id, storage_id))
@@ -68,25 +72,25 @@ pub(crate) fn split_volume_id(volume_id: &str) -> Option<(&str, u32)> {
 /// The device id half of an MTP volume id (`{device_id}:{storage_id}`), or
 /// `None` if the id isn't a well-formed MTP volume id. Convenience over
 /// [`split_volume_id`] for callers that only need the device.
-pub(crate) fn device_id_of_volume(volume_id: &str) -> Option<&str> {
+pub fn device_id_of_volume(volume_id: &str) -> Option<&str> {
     split_volume_id(volume_id).map(|(device_id, _)| device_id)
 }
 
 /// The storage id half of an MTP volume id, or `None` if malformed. Convenience
 /// over [`split_volume_id`] for callers that only need the storage.
-pub(crate) fn storage_id_of_volume(volume_id: &str) -> Option<u32> {
+pub fn storage_id_of_volume(volume_id: &str) -> Option<u32> {
     split_volume_id(volume_id).map(|(_, storage_id)| storage_id)
 }
 
 /// Whether `id` looks like an MTP device id (carries the `mtp-` prefix). A cheap
 /// shape check; it does NOT prove the device is connected.
-pub(crate) fn is_mtp_device_id(id: &str) -> bool {
+pub fn is_mtp_device_id(id: &str) -> bool {
     id.starts_with(MTP_DEVICE_ID_PREFIX)
 }
 
 /// Whether `volume_id` is a well-formed MTP volume id: an `mtp-`-prefixed device
 /// id plus a numeric storage tail. Shape-only (doesn't prove the volume exists).
-pub(crate) fn is_mtp_volume_id(volume_id: &str) -> bool {
+pub fn is_mtp_volume_id(volume_id: &str) -> bool {
     split_volume_id(volume_id).is_some_and(|(device_id, _)| is_mtp_device_id(device_id))
 }
 

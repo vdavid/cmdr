@@ -11,19 +11,24 @@
 //! ```
 //!
 //! This is the live half of the `Volume`-trait scanner's coverage; the
-//! backend-agnostic half (writer/aggregator reuse, cancellation) is the
-//! in-memory `network_scanner::tests`.
+//! backend-agnostic half (writer/aggregator reuse, cancellation) is the in-memory
+//! `indexing::network_scanner::tests`.
+//!
+//! **It lives app-side on purpose.** It needs a real `SmbVolume`, and every
+//! real-storage backend stays in the app while the index moves to its own crate. So
+//! this is the app proving ITS backend works with the index's scanner — a test
+//! between the two, which belongs on the side that can build both halves.
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
-use crate::file_system::volume::smb::{SmbConnectionParams, connect_smb_volume};
-use crate::file_system::volume::{Volume, smb_volume_id};
+use super::smb::{SmbConnectionParams, connect_smb_volume};
 use crate::indexing::network_scanner::scan_volume_via_trait;
 use crate::indexing::scanner::ScanProgress;
 use crate::indexing::store::{IndexStore, ROOT_ID};
 use crate::indexing::writer::IndexWriter;
+use cmdr_fs::volume::{Volume, smb_volume_id};
 
 fn guest_port() -> u16 {
     std::env::var("SMB_CONSUMER_GUEST_PORT")
@@ -224,8 +229,8 @@ async fn smb_integration_volume_scan_via_connection_pool() {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_watch_event_updates_index() {
-    use super::watch::resolve_and_send_for_test;
-    use crate::file_system::listing::caching::DirectoryChange;
+    use crate::indexing::transports::smb::watch::resolve_and_send_for_test;
+    use cmdr_fs::volume::DirectoryChange;
 
     let vol = connect_public().await;
 
@@ -342,8 +347,8 @@ async fn smb_integration_watch_event_updates_index() {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_enrich_listing_shows_sizes() {
-    use super::watch::index_relative_path;
     use crate::indexing::read::enrichment::enrich_via_parent_id_on;
+    use crate::indexing::transports::smb::watch::index_relative_path;
     use cmdr_fs::entry::FileEntry;
 
     let vol = connect_public().await;
