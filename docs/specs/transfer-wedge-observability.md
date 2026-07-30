@@ -110,7 +110,11 @@ resource-efficiency win.
   every listing render.
 - **M4.5 Cheaper negative path.** This folder is a worst case: with no dataless files, all 764 paths miss the `stat`
   shortcut and take the XPC path. Skip the NSURL query where the answer cannot be interesting, for example outside a
-  known File Provider domain root (`file_provider.rs` already has the hint).
+  known File Provider domain root. **Needs a design decision first**: `file_system/file_provider.rs` (which held the
+  `domain_id_for_dir` hint) has moved to `indexing/scanner/file_provider.rs` under
+  `index-crate-extraction-plan.md`, so the hint now sits inside the tree becoming the `cmdr-index` crate and is not
+  ours to reach into. Either the probe gets duplicated app-side or it belongs in `cmdr-fs` as shared vocabulary; that
+  is the extraction effort's call, so ask before designing around it.
 - **M4.6** Measure before and after: thread count, wall time, and CPU for a 764-file Dropbox folder.
 
 ## M5: stall detection in the UI
@@ -180,6 +184,23 @@ M1 first and alone; land it and get a wedge reproduced or caught in the wild if 
 convenient, since neither depends on a root cause. M4 independently. M5 after M1.2 exists. M6 last: it is the largest
 surface and the lowest severity, and M6.1 is a one-line-shaped fix with a wide blast radius that deserves its own
 careful pass.
+
+### Running alongside the index crate extraction
+
+`index-crate-extraction-plan.md` is in flight on `worktree-david-index-crate-extraction`. The code surfaces do not
+overlap: of its 334 changed files, exactly one (`volume/backends/smb_watcher/archive_refresh_test.rs`) is in this
+spec's working set, and none are in M6's frontend set. `VolumeError`, `ignore_poison`, `pluralize`, and `thread_qos`
+have already moved to `cmdr-fs` without needing changes in any transfer file, so the app-side re-exports hold.
+
+- **M4.5 is blocked on their decision**, as noted above.
+- **Hold M6.7 and M6.8 until the extraction lands.** `FileEntry` in `cmdr-fs` already carries `display_size` and
+  `display_size_tooltip`, so a byte-count newtype would be redesigning a type that effort owns while it owns it.
+  M6.8's lint registers in `scripts/check/checks/registry.go`, which they are reworking.
+- **Expect mechanical conflicts only in shared infrastructure**: `registry.go` and its neighbours, the generated
+  `apps/desktop/src/lib/ipc/bindings.ts` (regenerate, never hand-merge), `docs/specs/index.md`, and `Cargo.toml` if
+  M1.3 bumps `smb2`.
+- **If both are ready together, let the extraction land first.** Rebasing localized additions onto a 334-file move is
+  much cheaper than the reverse.
 
 ## Open questions for David
 
