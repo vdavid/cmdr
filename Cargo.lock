@@ -1281,6 +1281,7 @@ dependencies = [
  "bytes",
  "bzip2",
  "chrono",
+ "cmdr",
  "cmdr-fsevent-stream",
  "cocoon",
  "core-foundation 0.10.1",

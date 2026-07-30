@@ -36,6 +36,12 @@ use proptest as _;
 #[cfg(test)]
 use env_logger as _;
 //noinspection RsUnusedImport
+// We dev-depend on ourselves so the `testing` feature is on for dev targets and
+// off for the shipped binary (see `Cargo.toml`). That makes `cmdr_lib` an extern
+// crate of its own test target, which `unused_crate_dependencies` then reports.
+#[cfg(test)]
+use cmdr_lib as _;
+//noinspection RsUnusedImport
 use mimalloc as _;
 //noinspection ALL
 // smb2 crate is used in network/smb_client module (macOS + Linux)
@@ -175,6 +181,15 @@ mod window_state;
 // other platforms use stubs for all platform-specific features)
 #[cfg(not(target_os = "macos"))]
 mod stubs;
+
+/// `FileEntry` for the index benches. It's `pub` inside a private module, so a
+/// bench (an external crate) can't name it and therefore can't call the `pub`
+/// `indexing::enrich_entries_with_index` that takes it. Re-exported under
+/// `testing` rather than widening `mod file_system`, so the shipped crate's
+/// surface is unchanged. `FileEntry` becomes properly public when it moves to
+/// `cmdr-fs`; this line goes away then.
+#[cfg(any(test, feature = "testing"))]
+pub use file_system::FileEntry;
 
 use menu::{MenuState, ViewMode};
 use tauri::Manager;

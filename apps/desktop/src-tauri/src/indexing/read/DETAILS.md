@@ -16,6 +16,13 @@ lives in the `READ_POOL` module global; non-root pools live in their registry in
 root → `READ_POOL`, non-root → `state::get_instance_read_pool`. (The globals and instance storage are owned by
 `../lifecycle/DETAILS.md`; this area holds the `ReadPool` type and the readers.)
 
+`test_install_root_read_pool` / `test_uninstall_root_read_pool` / `test_read_pool_lock` are gated on
+`any(test, feature = "testing")` rather than plain `cfg(test)`, and are `pub` under it, because
+`apps/desktop/src-tauri/benches/index_benchmarks.rs` compiles as an external crate: without them the enrichment bench
+would measure the no-index-registered early return
+instead of a read. Callers still have to hold the lock — the root pool is a process global. How the feature gets turned
+on for dev targets and only those: `docs/tooling/testing.md` § criterion.
+
 **The thread-local is a small LRU, not one slot.** `THREAD_CONNS` holds up to `sqlite_util::THREAD_CONN_SLOTS` (3) open
 connections per thread, keyed by db path plus the pool's invalidation generation. One slot made the lock-freedom
 expensive in the ordinary two-pane case: a blocking thread alternating between the left pane's volume and the right

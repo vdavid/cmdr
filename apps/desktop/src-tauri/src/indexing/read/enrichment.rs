@@ -90,7 +90,7 @@ pub(crate) static READ_POOL: LazyLock<std::sync::Mutex<Option<Arc<ReadPool>>>> =
     LazyLock::new(|| std::sync::Mutex::new(None));
 
 /// Tests that touch `READ_POOL` must hold this lock to avoid races with parallel test threads.
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 pub(crate) static READ_POOL_TEST_MUTEX: LazyLock<std::sync::Mutex<()>> = LazyLock::new(|| std::sync::Mutex::new(()));
 
 /// Clone the root volume's pool Arc. Lock held for nanoseconds (just an Arc
@@ -134,23 +134,27 @@ pub(crate) fn uninstall_read_pool(volume_id: &str) -> Option<Arc<ReadPool>> {
 /// consumer in a sibling module (media-index scheduler tests) can drive a pass through
 /// `get_read_pool_for("root")`. Callers MUST hold [`test_read_pool_lock`] for the
 /// duration, since the root pool is a process-global shared across parallel tests.
-#[cfg(test)]
-pub(crate) fn test_install_root_read_pool(db_path: PathBuf) -> Result<(), IndexStoreError> {
+///
+/// `pub` under the `testing` feature so `benches/index_benchmarks.rs`, which compiles
+/// as an external crate, can point enrichment at a synthetic index DB. Without it the
+/// bench measures the no-index-registered early return, which is ~40 ns of nothing.
+#[cfg(any(test, feature = "testing"))]
+pub fn test_install_root_read_pool(db_path: PathBuf) -> Result<(), IndexStoreError> {
     install_read_pool(ROOT_VOLUME_ID, Arc::new(ReadPool::new(db_path)?));
     Ok(())
 }
 
 /// Test-only: drop the root read pool installed by [`test_install_root_read_pool`].
-#[cfg(test)]
-pub(crate) fn test_uninstall_root_read_pool() {
+#[cfg(any(test, feature = "testing"))]
+pub fn test_uninstall_root_read_pool() {
     uninstall_read_pool(ROOT_VOLUME_ID);
 }
 
 /// Test-only: the shared lock serializing access to the process-global root read pool
 /// across parallel test threads. A sibling module's test acquires this before
 /// installing the root pool (mirrors `READ_POOL_TEST_MUTEX`'s use inside this module).
-#[cfg(test)]
-pub(crate) fn test_read_pool_lock() -> std::sync::MutexGuard<'static, ()> {
+#[cfg(any(test, feature = "testing"))]
+pub fn test_read_pool_lock() -> std::sync::MutexGuard<'static, ()> {
     READ_POOL_TEST_MUTEX.lock_ignore_poison()
 }
 

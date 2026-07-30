@@ -35,8 +35,10 @@ pub(crate) use events::DEBUG_STATS;
 pub use events::*;
 pub(crate) use read::enrichment::{ReadPool, get_read_pool, get_read_pool_for};
 pub use read::enrichment::{enrich_entries_with_index, enrich_entries_with_index_on_volume};
-#[cfg(test)]
-pub(crate) use read::enrichment::{test_install_root_read_pool, test_read_pool_lock, test_uninstall_root_read_pool};
+// `pub` under `testing` so `benches/index_benchmarks.rs` can install a synthetic
+// index DB; see the items' docs in `read/enrichment.rs`.
+#[cfg(any(test, feature = "testing"))]
+pub use read::enrichment::{test_install_root_read_pool, test_read_pool_lock, test_uninstall_root_read_pool};
 
 pub(crate) use lifecycle::failure::IndexFailureSignal;
 pub(crate) use lifecycle::master::drives_to_resume;

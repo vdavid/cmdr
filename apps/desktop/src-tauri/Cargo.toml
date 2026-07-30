@@ -15,6 +15,12 @@ playwright-e2e = ["dep:tauri-plugin-playwright"]
 virtual-mtp = ["mtp-rs/virtual-device"]
 # Virtual SMB hosts for E2E testing (injects synthetic network hosts). Never enable in production builds.
 smb-e2e = ["smb2/testing"]
+# Widens test-only scaffolding from `#[cfg(test)]` to `pub`, so the benches (which
+# compile against this crate as an EXTERNAL crate and therefore see neither
+# `#[cfg(test)]` items nor `pub(crate)` ones) can build an index fixture.
+# It's enabled automatically for every dev target and only for those; see the
+# self dev-dependency under `[dev-dependencies]`. Never enable in production builds.
+testing = []
 
 [[bin]]
 name = "Cmdr"
@@ -328,6 +334,14 @@ objc2-core-ml = { version = "0.3.2", features = [
 
 
 [dev-dependencies]
+# Depending on ourselves turns the `testing` feature on for every DEV target
+# (tests, benches, examples) and leaves it off for the lib and the `Cmdr` bin, so
+# the shipped binary carries no test scaffolding. Verified both ways: `cargo check
+# --lib` builds with the feature off, `cargo check --all-targets` with it on.
+# The alternative, `required-features = ["testing"]` on the bench targets, would
+# make `cargo clippy --all-targets` silently SKIP them, and an unlinted,
+# never-compiled benchmark harness rots before the next person needs it.
+cmdr = { path = ".", features = ["testing"] }
 # SMB integration tests hash source and destination bytes to catch pipeline
 # corruption (dropped/duplicated chunks, concurrency bleed) that a simple
 # size-check or `Vec<u8>` equality would either miss or report uselessly
@@ -376,4 +390,8 @@ required-features = ["smb-e2e"]
 
 [[bench]]
 name = "icon_benchmarks"
+harness = false
+
+[[bench]]
+name = "index_benchmarks"
 harness = false

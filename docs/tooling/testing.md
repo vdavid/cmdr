@@ -46,6 +46,23 @@ copies the workspace and rebuilds per mutant (~10-15 minutes per file on this ha
 preview the mutant set, then triage manually if a full run is too slow. Aim for ~80-90% mutation score per module; 100%
 chases equivalent mutants and isn't worth it.
 
+### `criterion` (benchmarks)
+
+Two bench targets in `apps/desktop/src-tauri/benches/`: `icon_benchmarks.rs` (icon fetching) and `index_benchmarks.rs`
+(index enrichment, the IPC dir-stats read, and the dir-stats roll-up, over a synthetic index DB built through the public
+`store` API). Run one with `cargo bench --bench <name>`; add `-- --save-baseline <name>` to record a run and
+`-- --baseline <name>` to diff the next one against it. Reports land in `target/criterion/`. No check runs them: they're
+for answering "did this get slower", not for gating. Recorded index numbers and their method:
+`docs/notes/index-extraction-baseline.md`.
+
+A bench compiles against the app as an EXTERNAL crate, so it sees neither `#[cfg(test)]` items nor `pub(crate)` ones.
+The `testing` Cargo feature widens the few scaffolding items a bench needs (today: the root-read-pool installers in
+`indexing/read/enrichment.rs`, and `FileEntry` at the crate root). ❌ Don't reach for `required-features` to enable it:
+`cargo clippy --all-targets` silently SKIPS targets whose required features are off, and an unlinted, never-compiled
+benchmark rots. Instead the package dev-depends on itself (`cmdr = { path = ".", features = ["testing"] }`), which turns
+the feature on for every dev target and leaves it off for the lib and the shipped `Cmdr` binary. That self-dependency is
+load-bearing, and it's why `lib.rs` carries a `#[cfg(test)] use cmdr_lib as _;` marker.
+
 ## Frontend + Svelte
 
 ### `vitest` (test runner)
