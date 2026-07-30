@@ -131,6 +131,10 @@ func ScannerRoots(rootDir, checkID string) ([]string, error) {
 	if jurisdiction.AppTreeOnly {
 		return existingDirs([]string{appRustSrcDir(rootDir)}), nil
 	}
+	if len(jurisdiction.Kinds) == 0 {
+		return nil, fmt.Errorf(
+			"%s declares neither member kinds nor `AppTreeOnly`, so it would scan nothing and pass", checkID)
+	}
 	return RustSrcRoots(rootDir, jurisdiction.Kinds...)
 }
 
@@ -142,6 +146,14 @@ func ScannerMemberKinds(checkID string) ([]MemberKind, error) {
 		return nil, fmt.Errorf(
 			"%s has no entry in `rustScannerJurisdictions`; declare which workspace member kinds it governs "+
 				"(scripts/check/checks/workspace-member-coverage.go)", checkID)
+	}
+	if jurisdiction.AppTreeOnly {
+		return nil, fmt.Errorf(
+			"%s is pinned to the app tree, so it has no member kinds; use ScannerRoots instead", checkID)
+	}
+	if len(jurisdiction.Kinds) == 0 {
+		return nil, fmt.Errorf(
+			"%s declares neither member kinds nor `AppTreeOnly`, so it would govern nothing and pass", checkID)
 	}
 	return jurisdiction.Kinds, nil
 }
@@ -159,6 +171,7 @@ func RunWorkspaceMemberCoverage(ctx *CheckContext) (CheckResult, error) {
 	problems = append(problems, findMemberCoverageGaps(members, classification)...)
 	problems = append(problems, findUnclassifiedRustChecks(memberCoverageRegistry, classification)...)
 	problems = append(problems, findStaleJurisdictions(memberCoverageRegistry, classification)...)
+	problems = append(problems, findMalformedJurisdictions(classification.scanners)...)
 
 	if len(problems) > 0 {
 		sort.Strings(problems)
@@ -265,6 +278,49 @@ func findStaleJurisdictions(defs []CheckDefinition, c rustCheckClassification) [
 		}
 	}
 	return problems
+}
+
+// findMalformedJurisdictions reports entries that don't actually say anything
+// enforceable. The empty declaration is the dangerous one: it makes `ScannerRoots`
+// hand back no roots, and a scanner with no roots scans nothing and passes.
+//
+// The default breadth is app + tool, i.e. every first-party member. Anything
+// narrower carries a `Why`, so a future reader can tell a deliberate exception from
+// coverage that eroded one convenient omission at a time.
+func findMalformedJurisdictions(scanners map[string]ScannerJurisdiction) []string {
+	var problems []string
+	for id, j := range scanners {
+		switch {
+		case j.AppTreeOnly && len(j.Kinds) > 0:
+			problems = append(problems, fmt.Sprintf(
+				"jurisdiction %q declares both `AppTreeOnly` and member kinds; it can only be one", id))
+		case !j.AppTreeOnly && len(j.Kinds) == 0:
+			problems = append(problems, fmt.Sprintf(
+				"jurisdiction %q declares neither member kinds nor `AppTreeOnly`, so the scanner would walk nothing and pass", id))
+		case j.AppTreeOnly && j.Why == "":
+			problems = append(problems, fmt.Sprintf(
+				"jurisdiction %q pins the app tree but records no `Why`; say what remedy only exists in the app crate", id))
+		}
+		if j.AppTreeOnly || j.Why != "" {
+			continue
+		}
+		for _, kind := range []MemberKind{KindApp, KindTool} {
+			if !jurisdictionCovers(j, kind) {
+				problems = append(problems, fmt.Sprintf(
+					"jurisdiction %q leaves out kind %q without a `Why`; a narrowing has to say why", id, kind))
+			}
+		}
+	}
+	return problems
+}
+
+func jurisdictionCovers(j ScannerJurisdiction, kind MemberKind) bool {
+	for _, k := range j.Kinds {
+		if k == kind {
+			return true
+		}
+	}
+	return false
 }
 
 // existingDirs drops paths that aren't directories on disk. Walking a missing root

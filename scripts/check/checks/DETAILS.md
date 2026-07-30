@@ -485,8 +485,10 @@ It asserts three things:
   a scanner and hardcoded a path inside it". Each cargo lane records HOW it reaches the workspace, so a targeted
   invocation can't pass for a sweep — `desktop-rust-groq-smoke` runs one `--lib` test against a live endpoint and says
   so.
-- **No stale classification**: an entry naming a check that no longer exists fails, the same way `ci-coverage` refuses
-  to let an excuse outlive its check.
+- **No stale or empty classification**: an entry naming a check that no longer exists fails, the same way `ci-coverage`
+  refuses to let an excuse outlive its check. So does a jurisdiction that declares neither member kinds nor
+  `AppTreeOnly` — that one makes `ScannerRoots` hand back no roots, and a scanner with no roots scans nothing and
+  passes. The default breadth is app + tool; anything narrower needs a `Why`.
 
 `rustScannerJurisdictions` isn't documentation: each scanner resolves its own roots through `ScannerRoots` /
 `ScannerMemberKinds`, and an undeclared check ID is an error rather than an empty list (an empty list reads as "scanned

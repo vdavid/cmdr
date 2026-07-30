@@ -88,6 +88,13 @@ var pluralizeNounAllowSubstrings = []*regexp.Regexp{
 	regexp.MustCompile(`\b(stash|reflog)@\{`),
 }
 
+// pluralizeRoot is one tree to scan and the file extensions that count in it. The
+// check spans Rust, TypeScript, and Svelte, so the extension travels with the root.
+type pluralizeRoot struct {
+	dir  string
+	exts []string
+}
+
 type pluralizeNounSite struct {
 	relPath string
 	line    int
@@ -115,23 +122,14 @@ func RunPluralizeNoun(ctx *CheckContext) (CheckResult, error) {
 	if err != nil {
 		return CheckResult{}, err
 	}
-	roots := []struct {
-		dir  string
-		exts []string
-	}{
+	roots := []pluralizeRoot{
 		{filepath.Join(ctx.RootDir, "apps", "desktop", "src"), []string{".ts", ".svelte"}},
 		{filepath.Join(ctx.RootDir, "tools"), []string{".rs"}},
 	}
 	for _, m := range rustMembers {
 		roots = append(roots,
-			struct {
-				dir  string
-				exts []string
-			}{m.SrcDir, []string{".rs"}},
-			struct {
-				dir  string
-				exts []string
-			}{filepath.Join(m.Dir, "tests"), []string{".rs"}},
+			pluralizeRoot{m.SrcDir, []string{".rs"}},
+			pluralizeRoot{filepath.Join(m.Dir, "tests"), []string{".rs"}},
 		)
 	}
 

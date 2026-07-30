@@ -140,3 +140,44 @@ func containsSubstring(items []string, needle string) bool {
 	}
 	return false
 }
+
+// A jurisdiction declares EITHER a set of member kinds OR the app-tree pin, never
+// both and never neither. Neither is the dangerous one: an empty kinds list makes
+// `ScannerRoots` return no roots, and a scanner with no roots scans nothing and
+// passes.
+func TestMemberCoverage_FailsOnAMalformedJurisdiction(t *testing.T) {
+	cases := map[string]ScannerJurisdiction{
+		"declares nothing":              {},
+		"declares both":                 {Kinds: []MemberKind{KindApp}, AppTreeOnly: true, Why: "?"},
+		"pins the app tree with no why": {AppTreeOnly: true},
+		"skips the app with no why":     {Kinds: []MemberKind{KindTool}},
+		"skips tools with no why":       {Kinds: []MemberKind{KindApp}},
+	}
+	for name, jurisdiction := range cases {
+		t.Run(name, func(t *testing.T) {
+			problems := findMalformedJurisdictions(map[string]ScannerJurisdiction{"some-check": jurisdiction})
+			if !containsSubstring(problems, "some-check") {
+				t.Fatalf("expected %q to be reported, got: %v", name, problems)
+			}
+		})
+	}
+}
+
+func TestMemberCoverage_AcceptsAWellFormedJurisdiction(t *testing.T) {
+	problems := findMalformedJurisdictions(map[string]ScannerJurisdiction{
+		"broad":    {Kinds: []MemberKind{KindApp, KindTool}},
+		"narrowed": {Kinds: []MemberKind{KindApp}, Why: "the helper it points at is app-private"},
+		"pinned":   {AppTreeOnly: true, Why: "the remedy is a crate-root macro"},
+	})
+	if len(problems) != 0 {
+		t.Fatalf("expected no problems, got: %v", problems)
+	}
+}
+
+// `ScannerMemberKinds` is the wrong accessor for an app-tree pin: it would hand
+// back an empty list that reads like "governs nothing".
+func TestScannerMemberKindsRejectsAnAppTreePin(t *testing.T) {
+	if _, err := ScannerMemberKinds("desktop-rust-log-error-macro"); err == nil {
+		t.Fatal("asking an AppTreeOnly scanner for its member kinds must fail, not return an empty list")
+	}
+}
