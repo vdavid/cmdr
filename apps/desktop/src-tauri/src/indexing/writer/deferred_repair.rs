@@ -175,7 +175,7 @@ mod tests {
     use crate::indexing::writer::delta::propagate_delta_by_id;
     use crate::indexing::writer::tests::setup_db;
     use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
-    use crate::test_support::wait_until;
+    use cmdr_fs::testing::wait_until;
 
     /// Reject every `dir_stats` write for `entry_id`, with a real SQLite failure
     /// (`RAISE(ABORT)`) rather than a mocked store: the propagation walk sees the

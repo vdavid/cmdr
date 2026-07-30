@@ -16,7 +16,7 @@ use crate::indexing::lifecycle::manager::IndexManager;
 use crate::indexing::lifecycle::state::IndexVolumeKind;
 use crate::indexing::scanner::ScanProgress;
 use crate::indexing::writer::{AggSource, IndexWriter};
-use crate::test_support::wait_until_async;
+use cmdr_fs::testing::wait_until_async;
 
 /// A temp volume root with a couple of files and a subdirectory, plus the temp
 /// dir the index DB lives in. Both are returned so the caller keeps them alive.

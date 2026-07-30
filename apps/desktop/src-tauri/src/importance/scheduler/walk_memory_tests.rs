@@ -12,7 +12,7 @@
 
 use super::walk::walk_index_folders;
 use crate::indexing::store::{IndexStore, ROOT_ID};
-use crate::test_support::{count_allocations, heap_bytes_held};
+use crate::indexing::test_support::{count_allocations, heap_bytes_held};
 
 /// Branch folders directly under the home, each holding [`LEAVES_PER_BRANCH`] leaf
 /// folders with a few files in them. The product is what the guards scale against.

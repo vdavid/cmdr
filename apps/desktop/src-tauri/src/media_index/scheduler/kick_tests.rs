@@ -24,7 +24,7 @@ use crate::media_index::network::config::NetworkEnrichConfig;
 use crate::media_index::predicate::MediaKind;
 use crate::media_index::store::{EnrichmentState, MediaStatusRow, MediaStore, media_db_path};
 use crate::media_index::writer::MediaWriter;
-use crate::test_support::wait_until;
+use cmdr_fs::testing::wait_until;
 
 const ROOT: &str = "root";
 

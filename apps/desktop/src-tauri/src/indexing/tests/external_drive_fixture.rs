@@ -426,7 +426,7 @@ mod tests {
 
         // Detach is synchronous, but the /Volumes entry can linger briefly.
         let description = format!("mount point {} to be gone after detach", mount.display());
-        crate::test_support::wait_until(Duration::from_secs(5), &description, || !mount.exists());
+        cmdr_fs::testing::wait_until(Duration::from_secs(5), &description, || !mount.exists());
     }
 
     /// exFAT variant of the attach/populate/detach smoke test, so the later
@@ -460,7 +460,7 @@ mod tests {
 
         // Detach is synchronous, but the /Volumes entry can linger briefly.
         let description = format!("mount point {} to be gone after detach", mount.display());
-        crate::test_support::wait_until(Duration::from_secs(5), &description, || !mount.exists());
+        cmdr_fs::testing::wait_until(Duration::from_secs(5), &description, || !mount.exists());
     }
 
     /// Live-FSEvents regression probe (ports `fsevents-probe.swift` over the

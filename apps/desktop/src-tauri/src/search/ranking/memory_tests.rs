@@ -16,7 +16,7 @@
 use std::collections::HashMap;
 
 use super::ImportanceWeights;
-use crate::test_support::heap_bytes_held;
+use crate::indexing::test_support::heap_bytes_held;
 
 /// Scored folders in the corpus. Sized just under a hashbrown table boundary (a
 /// 262,144-slot table at 76 % load), so the guard measures a realistic load factor

@@ -20,14 +20,19 @@ In `crates/cmdr-fs/src/testing.rs`, behind the `testing` feature, re-exported as
 condition closure, and panic on timeout. The only sanctioned sleep in Rust test code lives inside them. Rules and
 examples: `../testing.md` § "Waiting for background work (Rust)".
 
-### `crate::test_support::count_allocations` / `heap_bytes_held` (memory shape)
+### `indexing::test_support::count_allocations` / `heap_bytes_held` (memory shape)
 
-Same file. Under `cfg(test)` the crate installs a pass-through global allocator that counts allocations and live bytes
-per THREAD (parallel tests can't pollute each other). `count_allocations(|| …)` reports how many allocations a closure
-made; `heap_bytes_held(|| …)` reports the requested bytes its result still holds. Use them to pin a hot path's SHAPE
-against a generous bound ("this walk doesn't allocate per row"), never an exact number: the numbers move with buffer
-growth and allocator internals, the shape is the invariant. Worked examples:
+Under `cfg(test)` this module installs a pass-through global allocator that counts allocations and live bytes per THREAD
+(parallel tests can't pollute each other). `count_allocations(|| …)` reports how many allocations a closure made;
+`heap_bytes_held(|| …)` reports the requested bytes its result still holds. Use them to pin a hot path's SHAPE against a
+generous bound ("this walk doesn't allocate per row"), never an exact number: the numbers move with buffer growth and
+allocator internals, the shape is the invariant. Worked examples:
 `media_index/scheduler/enrich_memory_tests.rs`.
+
+It lives in the indexing tree, not next to `wait_until`, because a `#[global_allocator]` is per BINARY: it has to sit in
+the crate whose test binary is measuring, and a shared crate would give the shipped app a second one. Rust memory
+numbers taken in tests are therefore measured under THIS allocator, not mimalloc — don't compare them with production
+figures.
 
 ### `proptest` (property-based testing)
 

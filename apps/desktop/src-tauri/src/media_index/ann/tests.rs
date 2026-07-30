@@ -376,7 +376,7 @@ fn a_bad_index_kicks_a_background_rebuild_that_heals_it() {
 
     // The background rebuild lands and the route promotes itself to ANN, with the
     // same exact results (the rebuild's completion invalidates the cached route).
-    crate::test_support::wait_until(
+    cmdr_fs::testing::wait_until(
         std::time::Duration::from_secs(10),
         "the background rebuild to heal the corrupt index",
         || {

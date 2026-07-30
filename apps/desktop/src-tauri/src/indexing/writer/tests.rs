@@ -7,7 +7,7 @@ use super::*;
 use crate::indexing::lifecycle::state::IndexVolumeKind;
 use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
 use crate::indexing::stress_test_helpers::TestInstanceGuard;
-use crate::test_support::wait_until;
+use cmdr_fs::testing::wait_until;
 
 /// The budget for the writer's `idle_epoch` to tick after a `flush_blocking`, that is, for the
 /// end-of-iteration hooks (hourglass clear, deferred-repair drain) to run. `flush_blocking` replies

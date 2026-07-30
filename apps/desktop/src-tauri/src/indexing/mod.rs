@@ -27,6 +27,10 @@ pub(crate) mod transports;
 pub(crate) mod watch;
 pub mod writer;
 
+/// The allocation-counting harness behind the memory-shape guards. `cfg(test)` because it
+/// installs a `#[global_allocator]`, which is per binary.
+#[cfg(test)]
+pub(crate) mod test_support;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]

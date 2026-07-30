@@ -9,7 +9,7 @@
 
 use super::enrich::for_each_qualifying_image;
 use crate::indexing::store::{DirTree, IndexStore, ROOT_ID};
-use crate::test_support::{count_allocations, heap_bytes_held};
+use crate::indexing::test_support::{count_allocations, heap_bytes_held};
 
 /// Branch folders directly under the root, each holding [`LEAVES_PER_BRANCH`] childless
 /// leaf folders. The product is what the guard scales against.

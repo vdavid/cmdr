@@ -882,7 +882,7 @@ fn mixed_storm_reaches_consistent_fixed_point() {
             tokio::task::block_in_place(|| writer.flush_blocking().unwrap());
             !reconciler.is_rescan_active_for_test() && reconciler.pending_rescans_snapshot().is_empty()
         };
-        crate::test_support::wait_until_async(Duration::from_secs(30), "the rescans to quiesce", || {
+        cmdr_fs::testing::wait_until_async(Duration::from_secs(30), "the rescans to quiesce", || {
             drained_and_quiet() && drained_and_quiet()
         })
         .await;

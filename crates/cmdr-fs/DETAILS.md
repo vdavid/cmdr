@@ -149,7 +149,8 @@ about an "unexpected `cfg` condition value" and takes the false branch forever.
 - **`detect_filesystem_for_path`** — see cut 3.
 - **`icons/per_path.rs`'s custom-folder-icon half**, the NSWorkspace fetch, and the icon disk cache.
 - **The archive tar decoders**, and everything else under `backends/archive/`.
-- **`test_support.rs`'s allocation-counting harness**, because a `#[global_allocator]` has to be per-binary.
+- **The allocation-counting harness**, because a `#[global_allocator]` has to be per-binary. It now sits in
+  `indexing/test_support.rs`, next to the memory guards that use it.
 
 ## The one place prose is produced here
 
