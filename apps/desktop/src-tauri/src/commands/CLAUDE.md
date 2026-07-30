@@ -7,8 +7,9 @@ module.
 ## Module map
 
 One file per domain (`network.rs`, `mtp.rs`, `clipboard.rs`, etc.), plus `mod.rs` (re-exports + platform gates),
-`util.rs` (timeout helpers, see Must-knows), and `file_system/` (listing, path queries, create/copy/move/delete, scan
-preview, conflict resolution, drag, stat probe). AI and space-poller commands register DIRECTLY from their own modules
+`util.rs` (timeout helpers, see Must-knows), `file_system/` (listing, path queries, create/copy/move/delete, scan
+preview, conflict resolution, drag, stat probe), `media_index/` (the media-index IPC surface, one module per family),
+and `importance.rs` (`record_visit`). AI and space-poller commands register DIRECTLY from their own modules
 (`ai::*`, `space_poller.rs`): there's intentionally no `ai` or `space_poller` module here. Per-file
 inventory and decision rationale: `DETAILS.md`.
 

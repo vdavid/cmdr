@@ -152,7 +152,7 @@ The matching importance-side fix (a fresh/recreated store actually GETS a full p
 `importance/DETAILS.md` § The initial full pass; fixing both means media's read-side check is defense in depth, not the
 only guard.
 
-## Covered-count preview + honest progress (`coverage.rs`, `commands/state.rs`)
+## Covered-count preview + honest progress (`coverage.rs`, `../commands/media_index/state.rs`)
 
 `media_index_covered_count(threshold, volume_ids)` powers the slider's live preview: across the ENABLED volumes
 (master on AND (local, or SMB opted-in); MTP never), how many folders score `≥ threshold` and how many images they hold
@@ -206,7 +206,8 @@ and skipped: 6.4x on the root DB but ~nothing on the image-dense NAS, for a sche
 runs once per session (`docs/notes/m7-ext-index-walk-bench-2026-07-24.md`, incl. why the old 42 s baseline didn't
 reproduce). Revisit only off an in-app measurement showing tens of seconds, or a sparse-image 10M+-file corpus.
 
-## The per-folder accounted aggregate + the index-status indicators (`coverage.rs`, `commands/file_status.rs`)
+## The per-folder accounted aggregate + the index-status indicators (`coverage.rs`,
+`../commands/media_index/file_status.rs`)
 
 The covered-count cache above is the DENOMINATOR (`eligible`: images the drive index says qualify per folder). The quiet
 per-image / per-folder / per-drive index indicators also need the NUMERATOR: how many of those are actually indexed. So
@@ -366,15 +367,15 @@ writes an empty `Done` row instead. Pinned by
 `enrich_tests::a_vanished_image_still_completes_the_pass_at_done_equals_total` and
 `enrichable_totals_excludes_deferred_and_excluded_images`.
 
-## The IPC surface (`commands/`)
+## The IPC surface (`../commands/media_index/`)
 
 One module per command family: `search.rs` (OCR, tag, semantic, find-similar, dedup), `state.rs` (the per-volume state +
 the covered-count preview), `reclaim.rs` (the outside-the-setting preview and prune), `file_status.rs` (the per-file
 overlay + per-folder badge), `clip_model.rs` (install state, download, delete), `thumbnail.rs` (grid tokens), and
 `policy.rs` for the coverage-CHANGING setters, each of which decides whether the change BROADENS coverage and needs an
-immediate pass through a pure `*_should_kick` fn tested in `commands/tests.rs`. `mod.rs` keeps only what several of them
+immediate pass through a pure `*_should_kick` fn tested in `../commands/media_index/tests.rs`. `mod.rs` keeps only what several of them
 need (the hit-limit clamp, the ONE enabled-volume rule) and glob-re-exports every module, so each command keeps its
-`media_index::commands::<name>` path in `ipc.rs` — the glob is deliberate: `#[tauri::command]` also generates hidden
+`commands::media_index::<name>` path in `ipc.rs` — the glob is deliberate: `#[tauri::command]` also generates hidden
 `__cmd__*` / `__tauri_command_name_*` macros that `generate_handler!` resolves through the same path.
 
 Every command is `async` + `spawn_blocking` (a sync `#[tauri::command]` would block the IPC thread), offline-capable,
@@ -492,7 +493,8 @@ Most tests are FFI-free and registry-free. Per-area inventories live in each are
 level owns:
 
 - **Pure, top-level:** the qualification predicate (`predicate.rs`), the covered-count arithmetic over a synthetic
-  counts+scores map (`coverage.rs`), the command limit clamp and the `*_should_kick` decisions (`commands/tests.rs`),
+  counts+scores map (`coverage.rs`), the command limit clamp and the `*_should_kick` decisions
+  (`../commands/media_index/tests.rs`),
   the progress throttle (`progress.rs`).
 - **Privacy retro-delete (all real red→green — deletion is data-safety-critical):** the writer prune primitives
   (`writer/tests.rs`) — `prune_under_folder` deletes rows at or under a folder across ALL four tables and only those,

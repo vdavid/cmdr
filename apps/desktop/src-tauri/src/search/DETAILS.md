@@ -214,7 +214,7 @@ Partial coverage works: covered volumes still return results alongside the note(
 "Text in images" search is a SEPARATE query path from filename search, and it reaches a volume's `media.db` ONLY through
 the [`MediaIndex`](../media_index/read/mod.rs) read API — never a raw `rusqlite` dep on `media.db` (plan Decision 8), so
 that store's `platform_case`/one-writer invariants don't leak into a second subsystem. The door is the
-`media_index_search_ocr` command (`media_index/commands/search.rs`), which returns `OcrHit { path, snippet }` (the
+`media_index_search_ocr` command (`commands/media_index/search.rs`), which returns `OcrHit { path, snippet }` (the
 snippet is the highlighted "why matched" reason). The frontend query-ui that blends OCR hits into the results surface is a later
 slice; `search/` itself takes no dependency on `media_index` today.
 

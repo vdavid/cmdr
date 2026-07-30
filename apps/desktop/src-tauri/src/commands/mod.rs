@@ -18,10 +18,12 @@ pub mod file_viewer;
 pub mod font_metrics;
 pub mod go_to_path;
 pub mod icons;
+pub mod importance;
 pub mod indexing;
 pub mod licensing;
 pub mod logging;
 pub mod mcp;
+pub mod media_index;
 pub mod menu;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod mtp;

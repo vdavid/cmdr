@@ -1,5 +1,5 @@
 //! Managing the CLIP model on disk: the settings install state, the on-demand download,
-//! and the delete-and-reclaim. Semantic search itself is in [`super::search`].
+//! and the delete-and-reclaim. Semantic search itself is in [`search`].
 
 use std::sync::Arc;
 

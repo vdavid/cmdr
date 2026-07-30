@@ -96,7 +96,7 @@ enum ScoringPolicy {
 /// Whether a volume of this kind is background-scored (Local/SMB), as opposed to
 /// on-demand only (MTP). The `record_visit` command uses it to skip persisting a
 /// visit for a volume that's never scored — typed, never a volume-id string check.
-pub(super) fn is_background_scored(kind: IndexVolumeKind) -> bool {
+pub(crate) fn is_background_scored(kind: IndexVolumeKind) -> bool {
     matches!(ScoringPolicy::for_kind(kind), ScoringPolicy::Scored { .. })
 }
 

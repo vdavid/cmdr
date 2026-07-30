@@ -102,6 +102,15 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `indexing/lifecycle/DETAILS.md` § The two indexing switches): `set_indexing_enabled` moves the gate first, then stops
   every volume or resumes only the drives whose per-drive intent says yes, and `enable_drive_index` refuses once,
   transport-neutrally, with `EnableIndexingOutcome::IndexingDisabled` so the FE has one shape to match.
+- **`media_index/`**: the media-index IPC surface, one module per family — `search.rs` (OCR, tag, semantic,
+  find-similar, dedup), `state.rs` (per-volume state + covered-count preview), `reclaim.rs` (preview + prune),
+  `file_status.rs` (per-file overlay + per-folder badge), `clip_model.rs` (install state, download, delete),
+  `thumbnail.rs` (grid tokens), and `policy.rs` (the coverage-CHANGING setters). `mod.rs` keeps the hit-limit clamp and
+  the ONE enabled-volume rule, and glob-re-exports the rest so `generate_handler!` can resolve each command's hidden
+  `__cmd__*` macros through the same path. The subsystem itself is reached through `media_index::read` / `gate` /
+  `network::config`. Behavior rationale: `media_index/DETAILS.md` § "The IPC surface".
+- **`importance.rs`**: `record_visit(Location)`, the fire-and-forget navigation-visit feeder. Gated on the volume's
+  typed kind, failure-silent by contract. Rationale: `importance/DETAILS.md` § "The visit signal".
 - **`clipboard.rs`**: `copy_files_to_clipboard`, `cut_files_to_clipboard`, `copy_paths_to_clipboard` /
   `cut_paths_to_clipboard` (paths-by-value siblings for the search-results pane, which has no backend listing),
   `read_clipboard_files`, `clear_clipboard_cut_state`. macOS uses NSPasteboard via `clipboard::pasteboard`; non-macOS
@@ -170,6 +179,11 @@ empty/none result ("no volumes mounted" vs "timed out before listing volumes"). 
 34-58% SLOWER than JSON despite being 17-19% smaller. Tauri serializes `Vec<u8>` as a JSON array of numbers, so binary
 data gets wrapped in JSON anyway, negating size benefits and adding decode overhead. See
 [benchmark data](../../../../../docs/notes/json-ipc-benchmarks.md).
+
+**The index subsystems' commands DO live here, unlike `ai` and `space_poller`.** `indexing/`, `media_index/`, and
+`importance/` are being extracted into a Tauri-free crate, so a `#[tauri::command]` inside them is a back-edge by
+construction. That reverses the co-location argument below for those three only: the commands sit here, and each one
+stays thin over the subsystem's own read/gate/config entry points.
 
 **No `ai` or `space_poller` module under `commands/`.** Both subsystems have their own complex lifecycle (model
 loading / suggestion pipelines / secret-store keys; poller init/start/watch). A thin wrapper would be pure boilerplate

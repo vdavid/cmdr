@@ -23,8 +23,8 @@ use serde_json::Value;
 use tauri::{AppHandle, Runtime};
 
 use super::{ToolError, ToolResult};
+use crate::commands::media_index::MediaIndexVolumeState;
 use crate::mcp::resources::volumes::{VolumeKind, snapshot_volumes};
-use crate::media_index::commands::MediaIndexVolumeState;
 use crate::media_index::read::{MediaIndex, OcrHit, SemanticHit, TagHit};
 
 /// The default hit cap when the caller doesn't specify one, and the hard ceiling on any
@@ -363,7 +363,7 @@ pub async fn execute_search_photos<R: Runtime>(app: &AppHandle<R>, params: &Valu
     // Per-volume coverage from `media_index`'s own derivation (one source of truth).
     let mut coverage = Vec::new();
     for vid in &volumes {
-        if let Ok(state) = crate::media_index::commands::volume_state(app, vid).await {
+        if let Ok(state) = crate::commands::media_index::volume_state(app, vid).await {
             coverage.push(derive_coverage(vid, &state));
         }
     }

@@ -10,7 +10,6 @@
 //! and the top-level files. Each area subdir documents itself.
 
 pub(crate) mod classify;
-pub mod commands;
 pub mod evals;
 mod last_used;
 pub mod read;

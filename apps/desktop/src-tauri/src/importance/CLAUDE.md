@@ -16,7 +16,7 @@ read it before non-trivial work there.
 - **`evals/CLAUDE.md`** — the ranking-quality suite and the anonymized real-index corpus.
 
 Top-level leaves this file owns: `classify.rs` (the shared categorical classifiers), `signals.rs` (index rows ⇒
-`FolderSignals`), `last_used.rs` (sampled Spotlight `kMDItemLastUsedDate`), `commands.rs` (`record_visit`), `writer.rs`
+`FolderSignals`), `last_used.rs` (sampled Spotlight `kMDItemLastUsedDate`), `writer.rs`
 + `writer_registry.rs` (ONE writer thread per volume), and `fixtures.rs` (`cfg(test)`, `SyntheticHome`).
 
 ## Subsystem-wide must-knows

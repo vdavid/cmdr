@@ -14,7 +14,6 @@
 pub(crate) mod ann;
 pub mod backend;
 pub mod clip;
-pub mod commands;
 pub mod coverage;
 pub mod events;
 pub mod gate;

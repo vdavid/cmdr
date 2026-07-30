@@ -234,7 +234,7 @@ pub async fn execute_image_facts<R: Runtime>(app: &AppHandle<R>, params: &Value)
     // Per-volume coverage from `media_index`'s own derivation (one source of truth).
     let mut coverage = Vec::new();
     for vid in &volumes {
-        if let Ok(state) = crate::media_index::commands::volume_state(app, vid).await {
+        if let Ok(state) = crate::commands::media_index::volume_state(app, vid).await {
             coverage.push(derive_coverage(vid, &state));
         }
     }

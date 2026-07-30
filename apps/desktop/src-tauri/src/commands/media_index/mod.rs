@@ -2,7 +2,7 @@
 //! coverage-CHANGING setters in [`policy`].
 //!
 //! Thin per the commands-layer rule: resolve the app data dir, open the
-//! [`MediaIndex`](super::read::MediaIndex) read API for the volume, and hand off the
+//! [`MediaIndex`](crate::media_index::read::MediaIndex) read API for the volume, and hand off the
 //! query. `search/` reaches `media.db` ONLY through `MediaIndex` — this command layer is
 //! that door, so no consumer takes a raw `rusqlite` dep on `media.db`.
 //!
@@ -32,7 +32,7 @@ mod search;
 mod state;
 mod thumbnail;
 
-// Glob re-exports so every command keeps its `media_index::commands::<name>` path in
+// Glob re-exports so every command keeps its `commands::media_index::<name>` path in
 // `ipc.rs` / `ipc_collectors.rs`. They're globs on purpose: `#[tauri::command]` also
 // generates two hidden macros per function (`__cmd__*`, `__tauri_command_name_*`) that
 // `generate_handler!` resolves through the SAME path, so naming the items one by one
@@ -66,8 +66,8 @@ fn resolve_limit(limit: Option<u32>) -> usize {
 /// the prune, and the per-volume state — so none of them can disagree about which volumes
 /// count, or map a stored path into OS space differently.
 fn resolve_enabled_volumes(volume_ids: &[String]) -> (Vec<(String, String)>, bool) {
-    use super::network::config as network_config;
     use crate::indexing::IndexVolumeKind;
+    use crate::media_index::network::config as network_config;
     let kinds: std::collections::HashMap<String, IndexVolumeKind> =
         crate::indexing::ready_volumes_with_kind().into_iter().collect();
     let mounts: std::collections::HashMap<String, String> = crate::file_system::get_volume_manager()
