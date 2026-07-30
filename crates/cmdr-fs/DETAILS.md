@@ -49,7 +49,7 @@ The default opened with `use crate::file_system::listing::caching::…` and `use
 blow-up ran through those two edges.
 
 **Disposition: the default is now a documented no-op**, and the local-FS behavior lives app-side in
-`file_system::listing::caching::patch_listing_after_local_mutation`.
+`file_system::listing::mutation::patch_listing_after_local_mutation`.
 
 Why this over the alternatives:
 
@@ -57,10 +57,10 @@ Why this over the alternatives:
   which contradicts "no other app file changes" for no gain: every one of them would write `Box::pin(async {})`.
 - **A `MutationObserver` trait** would need an injection point the signature doesn't have, so it would land as a
   `OnceLock` global inside this crate — exactly the shape the extraction is trying to get rid of.
-- The no-op is also a correctness improvement. All four real backends (`LocalPosixVolume`, `SmbVolume`, `MtpVolume`,
-  and the read-only `ArchiveVolume`, which never calls it) already override the method, so **nothing changed
-  behaviorally**. The only consumers of the old default were `InMemoryVolume` and the test doubles — for which
-  "stat the real filesystem through `std::fs`" was never right.
+- The no-op is also a correctness improvement. All four real backends (`LocalPosixVolume`, `SmbVolume`, `MtpVolume`, and
+  the read-only `ArchiveVolume`, which never calls it) already override the method, so **nothing changed behaviorally**.
+  The only consumers of the old default were `InMemoryVolume` and the test doubles — for which "stat the real filesystem
+  through `std::fs`" was never right.
 - `LocalPosixVolume` already carried a verbatim copy of the default body, so extracting the helper **removed** ~50 lines
   of duplication rather than adding any. Two copies of a cache-patching routine is exactly the thing that rots apart.
 
@@ -89,8 +89,8 @@ Stripping the two fields instead was never viable: `FileEntry::new` has 83 call 
 ### 3. `filesystem_kind` split
 
 `detect_filesystem_for_path` reaches `crate::volumes::get_mount_point` (macOS) or `crate::file_system::linux_mounts`
-(Linux). The module's own doc already drew the line — classification is platform-free, detection is thin platform
-wiring — so the classification moved and detection stayed. Callers that want detection stay app-side anyway.
+(Linux). The module's own doc already drew the line — classification is platform-free, detection is thin platform wiring
+— so the classification moved and detection stayed. Callers that want detection stay app-side anyway.
 
 ### 4. The dead scanner/watcher apparatus
 
@@ -101,7 +101,7 @@ callers.
 ## The trap that only showed up at runtime
 
 `thread_qos::set_current_thread_qos` was `#[cfg(all(target_os = "macos", not(test)))]`. That `not(test)` silently stops
-meaning anything the moment the code becomes a dependency: `cfg(test)` is set only while compiling a crate's *own* test
+meaning anything the moment the code becomes a dependency: `cfg(test)` is set only while compiling a crate's _own_ test
 target, so the app's tests started applying the real `QOS_CLASS_UTILITY` to their background threads. Under nextest's
 one-process-per-core parallelism that starved a walker test past its stall watchdog, and
 `walker::tests::a_read_that_keeps_delivering_is_never_abandoned` failed for a completely real reason.
@@ -110,8 +110,8 @@ The condition is now `not(any(test, feature = "testing"))`. The lesson generaliz
 BEHAVIOR (not just a test module) changes meaning when its code moves into a dependency.** Grep for it before moving
 anything else down.
 
-The same shape bit once more, harmlessly: the `Volume::inject_error` E2E hook is `#[cfg(feature = "playwright-e2e")]`,
-a feature that lived only on the app. This crate now declares its own, and the app's enables it via
+The same shape bit once more, harmlessly: the `Volume::inject_error` E2E hook is `#[cfg(feature = "playwright-e2e")]`, a
+feature that lived only on the app. This crate now declares its own, and the app's enables it via
 `cmdr-fs/playwright-e2e`.
 
 ## What the app kept, and why
@@ -120,7 +120,7 @@ a feature that lived only on the app. This crate now declares its own, and the a
   `mtp-rs` / `gix` / mount-detection dependencies. Only their shared trait moved.
 - **`VolumeManager`** — the process-wide registry. The index reaches it through an injected provider, not by importing
   it.
-- **`file_system::listing::caching::patch_listing_after_local_mutation`** — see cut 1.
+- **`file_system::listing::mutation::patch_listing_after_local_mutation`** — see cut 1.
 - **`detect_filesystem_for_path`** — see cut 3.
 - **`icons/per_path.rs`'s custom-folder-icon half**, the NSWorkspace fetch, and the icon disk cache.
 - **The archive tar decoders**, and everything else under `backends/archive/`.
@@ -134,6 +134,6 @@ The API contract says this crate emits no user-facing strings. Two things look l
   leaf with no dependencies, not because copy generation belongs in a filesystem crate. One of its outputs does reach a
   UI: `PhaseRecord.trigger` renders in the developer debug panel, which is diagnostics, not product copy.
 - **`FileEntry::display_size` / `display_size_tooltip`** are `String` fields rendered verbatim in the Size column. They
-  are *written* by the app-side git module; this crate only carries them. The bar is about production, not presence.
+  are _written_ by the app-side git module; this crate only carries them. The bar is about production, not presence.
 
 Anyone grepping `String` in this crate and concluding the bar was abandoned should read this paragraph first.

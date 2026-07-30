@@ -4,6 +4,7 @@ pub(crate) mod brief_columns;
 pub(crate) mod caching;
 pub(crate) mod diff_emitter;
 pub(crate) mod fuzzy_jump;
+pub(crate) mod mutation;
 pub(crate) mod operations;
 pub(crate) mod reading;
 pub(crate) mod sorting;

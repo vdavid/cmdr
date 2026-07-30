@@ -236,7 +236,7 @@ impl Volume for LocalPosixVolume {
             return Box::pin(async {});
         }
         Box::pin(async move {
-            crate::file_system::listing::caching::patch_listing_after_local_mutation(volume_id, parent_path, mutation);
+            crate::file_system::listing::mutation::patch_listing_after_local_mutation(volume_id, parent_path, mutation);
         })
     }
 

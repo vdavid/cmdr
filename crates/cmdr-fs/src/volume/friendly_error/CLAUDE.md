@@ -1,17 +1,16 @@
 # Friendly error CLASSIFICATION
 
 Turns a raw OS error + path into a TYPED, word-free `ListingError` the frontend renders. The split: CLASSIFICATION in
-Rust (errno → reason, provider detection, category/retry/action), WORDS on the frontend (`apps/desktop/src/lib/errors/CLAUDE.md`).
-This module emits zero user-facing prose.
+Rust (errno → reason, provider detection, category/retry/action), WORDS on the frontend
+(`apps/desktop/src/lib/errors/CLAUDE.md`). This module emits zero user-facing prose.
 
-Parent: `crates/cmdr-fs/CLAUDE.md` (the crate) and
-`apps/desktop/src-tauri/src/file_system/volume/CLAUDE.md` (the trait's app-side wiring, backends, capability matrix).
-App-wide error conventions: `docs/guides/error-handling.md`.
+Parent: `crates/cmdr-fs/CLAUDE.md` (the crate) and `apps/desktop/src-tauri/src/file_system/volume/CLAUDE.md` (the
+trait's app-side wiring, backends, capability matrix). App-wide error conventions: `docs/guides/error-handling.md`.
 
 ## Module map
 
-- `mod.rs`: data model (`ListingError`, `ListingErrorReason`, `ErrorCategory`, `ErrorActionKind`) + public re-exports +
-  the typed-mapping tests.
+- `mod.rs`: data model (`ListingError`, `ListingErrorReason`, `ErrorCategory`, `ErrorActionKind`) + public re-exports.
+  `tests.rs`: the typed-mapping tests, which drive the public entry points so they cover every sibling module at once.
 - `git.rs`: `FriendlyGitError` / `FriendlyGitErrorKind` and their `ErrorCategory` mapping. It lives here, not with the
   git module, because the two reference each other: `VolumeError::FriendlyGit` carries the whole thing.
 - `volume_error.rs`: `VolumeError` → `ListingError` (the entry point; dispatches to `errno` for raw `IoError`s).
@@ -32,15 +31,17 @@ App-wide error conventions: `docs/guides/error-handling.md`.
   rides as the `Git` reason carrying its typed `FriendlyGitErrorKind`, so git copy isn't clobbered by the generic I/O
   fallback and is never provider-enriched. Don't reorder it below the errno arms.
 - **`enrich_with_provider` SETS `provider`, never overwrites prose.** Detection stays in Rust (needs path patterns +
-  `statfs`); the FE overlays the provider-specific suggestion. Adding a `Provider` variant also requires updating the
-  FE `provider-error-messages.ts` table AND the `volumes/CLAUDE.md` provider table.
+  `statfs`); the FE overlays the provider-specific suggestion. Adding a `Provider` variant also requires updating the FE
+  `provider-error-messages.ts` table AND the `volumes/CLAUDE.md` provider table.
 - **`raw_detail` is plain text, never markdown** (errno name + code, or the git kind token). It's rendered verbatim in
   the technical-details disclosure, not through snarkdown.
 
 ## Adding a new error message
 
 Recipe (Rust side; FE side is in `apps/desktop/src/lib/errors/CLAUDE.md`): add the `ListingErrorReason` variant (with
-its typed params), add the map arm in `errno.rs` / `volume_error.rs` / `kinds.rs` choosing the `category`/`retry_hint`/`action_kind`,
-and add a typed-mapping test in `mod.rs`. Full recipe + the provider-detection strategy table: `DETAILS.md`.
+its typed params), add the map arm in `errno.rs` / `volume_error.rs` / `kinds.rs` choosing the
+`category`/`retry_hint`/`action_kind`, and add a typed-mapping test in `tests.rs`. Full recipe + the provider-detection
+strategy table: `DETAILS.md`.
 
-Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

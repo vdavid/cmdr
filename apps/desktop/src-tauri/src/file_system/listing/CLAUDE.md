@@ -8,15 +8,17 @@ non-blocking I/O and progress events.
 - **reading.rs**: low-level disk I/O (`list_directory_core()`, `get_single_entry()`, macOS metadata).
 - **streaming.rs**: async streaming with progress events and cancellation, via the `ListingEventSink` trait
   (`TauriListingEventSink` for prod, `CollectorListingEventSink` for tests).
+
 - **operations.rs**: synchronous frontend-facing API (lifecycle, cache accessors). `ListingStats` carries
-  `total_physical_size` and `selected_physical_size` for dual-size display.
+  `total_physical_size` and `selected_physical_size`.
 - **caching.rs**: `LISTING_CACHE` global, `CachedListing`, the incremental cache patch helpers, and the
-  `notify_directory_changed` change-notification API.
+  `notify_directory_changed` change-notification API. **mutation.rs**: what `Volume::notify_mutation` (whose trait
+  default is a no-op) means for a local-FS backend.
 - **diff_emitter.rs**: coalesces all `directory-diff` emits into one event per 50 ms trailing window.
 - **brief_columns.rs**: `compute_brief_column_text_widths()`, per-column widest-filename widths for Brief mode.
 - **sorting.rs**: `SortColumn`, `SortOrder`, `sort_entries()`.
 - **`FileEntry`** lives in `crates/cmdr-fs/src/entry.rs`, aliased here as `listing::metadata`.
-- **fuzzy_jump.rs**: `find_first_match()` (pure) powers type-to-jump, wrapped by the `find_first_fuzzy_match` command.
+- **fuzzy_jump.rs**: `find_first_match()` (pure) powers type-to-jump, behind the `find_first_fuzzy_match` command.
 
 Full details (data flow, caching lifecycle, the orphan reaper, all decisions, cache-helper and notification API
 catalogs, diff coalescing, metadata tiers): `DETAILS.md`.
@@ -32,8 +34,8 @@ catalogs, diff coalescing, metadata tiers): `DETAILS.md`.
   `list_directory_core` always returns Name/Asc, but the listing may use another sort; without the re-sort, diff indices
   are computed against a differently-ordered list and add/remove positions come out wrong.
 - **All `directory-diff` emits must go through `diff_emitter::enqueue_diff`, never `app.emit` directly.** Direct emits
-  bypass the 50 ms coalescing and re-introduce per-file flicker on bulk operations. Cache mutations stay synchronous and
-  inline; only the emit is deferred.
+  bypass the 50 ms coalescing and re-introduce per-file flicker on bulk operations. Cache mutations stay synchronous;
+  only the emit is deferred.
 - **The orphan reaper keys on `last_accessed_ms`, not `created_at`.** Every read accessor and cache patch must bump it,
   or the reaper (6 h idle window) could evict a live pane. Not from `refresh_listing_index_sizes` though
   (background-indexing driven, not user activity).
@@ -46,8 +48,8 @@ catalogs, diff coalescing, metadata tiers): `DETAILS.md`.
   `tauri::async_runtime::spawn`; bare `tokio::spawn` panics ("there is no reactor running") and aborts the app. All
   FullRefresh dispatch funnels through `caching::spawn_full_refresh`, covering every producer (FSEvents, git, SMB, MTP,
   archive) at once. The incremental path stays sync.
-- **Sequence counter lives on `CachedListing`, not `WatchedDirectory`.** SMB/MTP have no `WatchedDirectory`; keeping it
-  there breaks their `directory-diff`.
+- **Sequence counter lives on `CachedListing`, not `WatchedDirectory`.** SMB/MTP have none; keeping it there breaks
+  their `directory-diff`.
 - **A sort change invalidates the frontend's cached range.** Bump `cacheGeneration` to re-fetch.
 - **New listing state hangs off a struct, not a `static`.** Fixtures go through `caching_test_support::TestListing`
   (unique id, RAII teardown); cache-wide assertions need a unique path. `DETAILS.md` § "Test isolation".

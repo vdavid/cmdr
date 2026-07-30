@@ -354,7 +354,7 @@ Per-backend tests live colocated with their backend in `backends/`. See `backend
 `Volume::notify_mutation`'s trait default is a **no-op**, and that's deliberate: the trait lives in `cmdr-fs`, which
 knows nothing about `LISTING_CACHE`. Every backend that can be mutated overrides it.
 
-- `LocalPosixVolume` calls `file_system::listing::caching::patch_listing_after_local_mutation`, which stats the affected
+- `LocalPosixVolume` calls `file_system::listing::mutation::patch_listing_after_local_mutation`, which stats the affected
   entry through `std::fs` and turns it into the right `DirectoryChange`. It early-returns for virtual git paths, whose
   invalidations come through the `.git`-watcher pipeline instead.
 - `SmbVolume` and `MtpVolume` build the entry from their own protocol's `get_metadata` (faster than `std::fs` would be,

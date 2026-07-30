@@ -15,8 +15,8 @@ VolumeError (with errno)
   → ErrorPane.svelte                    → renders markdown, category icon, retry button
 ```
 
-All classification and message authoring happens in Rust (`crates/cmdr-fs/src/volume/friendly_error/`). The frontend renders
-what it receives and never does OS-specific logic.
+All classification and message authoring happens in Rust (`crates/cmdr-fs/src/volume/friendly_error/`). The frontend
+renders what it receives and never does OS-specific logic.
 
 ## Data model
 

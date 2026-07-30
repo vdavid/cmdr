@@ -1,8 +1,8 @@
 # Friendly error copy (the words)
 
 The factories that turn a typed error into the title / explanation / suggestion the user reads. Error CLASSIFICATION
-lives in Rust (`crates/cmdr-fs/src/volume/friendly_error/CLAUDE.md`): it ships a typed, word-free
-`ListingError` (reason + params + category + detected provider + retry/action hints) over IPC.
+lives in Rust (`crates/cmdr-fs/src/volume/friendly_error/CLAUDE.md`): it ships a typed, word-free `ListingError`
+(reason + params + category + detected provider + retry/action hints) over IPC.
 
 The literal English lives in the `errors.*` catalog (`../intl/messages/en/errors.json`); each factory pulls its strings
 via `getMessage('errors.<reason>.<part>')`. Editing copy means editing `errors.json` + `pnpm intl:keys`, not these `.ts`
@@ -53,8 +53,7 @@ files. Writing rules: `docs/style-guide.md` (active voice, friendly, never the w
 FE side: add the `errors.<reason>.{title,explanation,suggestion}` keys (plus `@key` descriptions) to
 `../intl/messages/en/errors.json`, run `pnpm intl:keys`, add the reason to the factory union (a runtime param goes in
 the variant and is escaped + named as a `{token}`), and add it to the parity + style test matrices. Rust side:
-`crates/cmdr-fs/src/volume/friendly_error/CLAUDE.md`. Full recipe + the convergence note:
-`DETAILS.md`.
+`crates/cmdr-fs/src/volume/friendly_error/CLAUDE.md`. Full recipe + the convergence note: `DETAILS.md`.
 
 Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

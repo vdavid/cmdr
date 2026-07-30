@@ -6,10 +6,10 @@ Rust/FE split, and the step-by-step recipes for adding reasons and providers.
 ## Philosophy
 
 The user should never feel alone with a broken state. Every message should feel like the app putting its hand on the
-user's shoulder: "Here's what happened, and here's what you can do." We detect which cloud provider or mount tool manages
-the path so the suggestion can be tailored to that app (a timeout on a Dropbox folder gets different advice than a
-timeout on an SSHFS mount). Power users still get the raw errno name and code in a collapsible technical-details section:
-never hidden, never in your face.
+user's shoulder: "Here's what happened, and here's what you can do." We detect which cloud provider or mount tool
+manages the path so the suggestion can be tailored to that app (a timeout on a Dropbox folder gets different advice than
+a timeout on an SSHFS mount). Power users still get the raw errno name and code in a collapsible technical-details
+section: never hidden, never in your face.
 
 That philosophy is split across two homes now: this module decides WHAT happened (the typed identity), and the frontend
 (`src/lib/errors/`) decides the WORDS. This module owns none of the prose.
@@ -58,8 +58,7 @@ and classification (`transfer-error-messages.ts`). There is no `friendly_error` 
   `raw_detail` technical string.
 - **FE gains** (`src/lib/errors/`): all titles / explanations / suggestions, the provider-suggestion table, provider
   display / app names, the reason / git / provider message factories, the markdown escaper (the XSS boundary), and the
-  `system_strings` pane-name interpolation. See `apps/desktop/src/lib/errors/CLAUDE.md`
-  and its `DETAILS.md`.
+  `system_strings` pane-name interpolation. See `apps/desktop/src/lib/errors/CLAUDE.md` and its `DETAILS.md`.
 
 ## Adding a new error message
 
@@ -80,8 +79,8 @@ Then add the FE factory case and confirm the style + parity tests cover it.
 1. Add a variant to the `Provider` enum in `provider.rs`.
 2. Add path detection in `detect_provider` (CloudStorage prefix, a specific path, or a `statfs` type).
 3. Add the detection unit test in `provider.rs::tests`.
-4. Add the provider's `(provider, category)` suggestions + display / app names to the FE
-   `provider-error-messages.ts`, and add it to the FE parity + style test matrices.
+4. Add the provider's `(provider, category)` suggestions + display / app names to the FE `provider-error-messages.ts`,
+   and add it to the FE parity + style test matrices.
 5. Update the `volumes/CLAUDE.md` provider table to keep the two lists in sync.
 
 ## Provider detection strategies

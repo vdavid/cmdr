@@ -6,9 +6,9 @@ strategy, and the convergence plan.
 ## Where this sits
 
 This is one half of the friendly-error system. The other half is Rust classification
-(`crates/cmdr-fs/src/volume/friendly_error/DETAILS.md`): it decides WHAT happened (a typed
-`ListingError`), this decides the WORDS. The split realizes "smart backend, thin frontend" and seeds an i18n catalog (a
-single home for all error copy).
+(`crates/cmdr-fs/src/volume/friendly_error/DETAILS.md`): it decides WHAT happened (a typed `ListingError`), this decides
+the WORDS. The split realizes "smart backend, thin frontend" and seeds an i18n catalog (a single home for all error
+copy).
 
 The copy/move/delete WRITE-error prose is a sibling of this family but lives outside this directory: the
 `errors.write.*` keys are in `errors.json` alongside ours, yet they're composed by

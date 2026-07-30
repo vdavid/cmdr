@@ -27,7 +27,7 @@ editing app code; use `cmdr_fs::…` from another crate.
   impls stop satisfying `tauri-specta`, which breaks bindings generation.
 - **`Volume::notify_mutation` defaults to a no-op.** A new mutable backend must override it or its destination pane goes
   stale after a copy; the local-FS behavior lives app-side in
-  `file_system::listing::caching::patch_listing_after_local_mutation`. `DETAILS.md` § "What the app kept".
+  `file_system::listing::mutation::patch_listing_after_local_mutation`. `DETAILS.md` § "What the app kept".
 - **`thread_qos` no-ops under `cfg(test)` OR the `testing` feature, and the feature half is load-bearing.** `cfg(test)`
   isn't set when a consumer compiles this crate, so without the feature the real Utility QoS would apply inside every
   consumer's parallel test run and starve slow tests past their timeouts. It did.
