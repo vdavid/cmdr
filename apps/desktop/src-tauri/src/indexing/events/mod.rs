@@ -10,13 +10,16 @@ use std::sync::LazyLock;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
 use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
-use tauri_specta::Event;
 
 use super::store::{IndexFailure, IndexStatus, ScanCalibrationKind};
 
 pub(crate) mod partial_agg;
 pub(crate) mod progress_reporter;
+pub(crate) mod sink;
+
+pub use sink::{Diagnostic, EventSink, IndexErrorReport, IndexEvent, IndexEventKind, NoopEventSink};
+#[cfg(test)]
+pub(crate) use sink::{RecordingSink, one_of_every_kind};
 
 // ── Event payloads (Rust -> Frontend) ────────────────────────────────
 
@@ -69,90 +72,10 @@ impl ScanRunKind {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
-#[tauri_specta(event_name = "index-scan-started")]
-#[serde(rename_all = "camelCase")]
-pub struct IndexScanStartedEvent {
-    pub volume_id: String,
-    /// What kind of run this is, so the frontend's run-kind header and its
-    /// per-step copy state what's actually happening instead of inferring it.
-    pub scan_run_kind: ScanRunKind,
-    /// The previous completed scan OF THIS RUN'S KIND: its final entry count, the
-    /// tier-1 (calibrated) progress denominator. Falls back to the last scan of
-    /// any kind, then to `None` (no calibration yet).
-    pub prior_total_entries: Option<u64>,
-    /// The same prior scan's wall-clock duration, used to seed the tier-1 ETA
-    /// before the sliding window has samples. `None` when there's no calibration.
-    pub prior_scan_duration_ms: Option<u64>,
-    /// The scanned volume's used bytes at scan start, the tier-2 (rough, first-scan)
-    /// progress denominator. `None` when the space-info fetch failed.
-    pub volume_used_bytes: Option<u64>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
-#[tauri_specta(event_name = "index-scan-progress")]
-#[serde(rename_all = "camelCase")]
-pub struct IndexScanProgressEvent {
-    pub volume_id: String,
-    pub entries_scanned: u64,
-    pub dirs_found: u64,
-    /// Resolved post-dedup physical bytes scanned so far, the tier-2 progress
-    /// numerator (apples-to-apples with `volume_used_bytes`).
-    pub bytes_scanned: u64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
-#[tauri_specta(event_name = "index-scan-complete")]
-#[serde(rename_all = "camelCase")]
-pub struct IndexScanCompleteEvent {
-    pub volume_id: String,
-    pub total_entries: u64,
-    pub total_dirs: u64,
-    pub duration_ms: u64,
-}
-
-/// Emitted when a scan ends WITHOUT completing: a network (SMB/MTP) scan that
-/// disconnected, was canceled, timed out, or otherwise aborted. Unlike
-/// `index-scan-complete`, this writes no completion facts (the partial isn't a
-/// finished index) — it exists purely so the frontend clears the volume's live
-/// activity, so an aborted scan doesn't leave a stuck "scanning" row in the
-/// corner indicator or the breadcrumb badge tooltip. Carries the `volume_id` so
-/// only the aborted volume's activity is cleared.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
-#[tauri_specta(event_name = "index-scan-aborted")]
-#[serde(rename_all = "camelCase")]
-pub struct IndexScanAbortedEvent {
-    pub volume_id: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
-#[tauri_specta(event_name = "index-dir-updated")]
-#[serde(rename_all = "camelCase")]
-pub struct IndexDirUpdatedEvent {
-    pub paths: Vec<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
-#[tauri_specta(event_name = "index-replay-progress")]
-#[serde(rename_all = "camelCase")]
-pub struct IndexReplayProgressEvent {
-    pub volume_id: String,
-    pub events_processed: u64,
-    pub estimated_total: Option<u64>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
-#[tauri_specta(event_name = "index-replay-complete")]
-#[serde(rename_all = "camelCase")]
-pub struct IndexReplayCompleteEvent {
-    pub volume_id: String,
-    pub duration_ms: u64,
-}
-
 /// Why a full rescan was triggered instead of incremental replay.
 /// Sent to the frontend as `index-rescan-notification` so the UI can show
 /// a transparent, user-friendly toast.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum RescanReason {
     /// Event ID gap too large: app hasn't run for a long time.
@@ -175,26 +98,6 @@ pub enum RescanReason {
     IngestionBacklog,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
-#[tauri_specta(event_name = "index-rescan-notification")]
-#[serde(rename_all = "camelCase")]
-pub struct IndexRescanNotificationEvent {
-    pub volume_id: String,
-    pub reason: RescanReason,
-    /// Human-readable details for logs (not shown to user directly).
-    pub details: String,
-}
-
-/// Emitted when a full-scan aggregation pass finishes and the UI can dismiss the
-/// progress overlay. Carries the `volume_id` so the FE clears the right drive's
-/// aggregation row (two volumes can aggregate concurrently).
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
-#[tauri_specta(event_name = "index-aggregation-complete")]
-#[serde(rename_all = "camelCase")]
-pub struct IndexAggregationCompleteEvent {
-    pub volume_id: String,
-}
-
 /// What the memory watchdog did, as a typed variant rather than a string the
 /// frontend would have to match on (`no-string-matching`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
@@ -206,68 +109,11 @@ pub enum MemoryWatchdogAction {
     StillGrowingAfterStop,
 }
 
-/// Emitted when the memory watchdog stops indexing to avoid a system crash, and
-/// again whenever memory keeps climbing after that stop. Drives a user-visible
-/// toast.
-///
-/// Byte-precise on purpose: whole-GB rounding turned a 16.9 GB reading into
-/// "16 GB" in shipped reports, and that lost detail is exactly what an incident
-/// needs. The two allocator figures are disjoint and neither is "the heap" on
-/// its own; `crate::process_memory` explains why.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
-#[tauri_specta(event_name = "index-memory-warning")]
-#[serde(rename_all = "camelCase")]
-pub struct IndexMemoryWarningEvent {
-    /// `phys_footprint` at the time, in bytes: the machine-pressure metric the
-    /// watchdog thresholds key on (what Activity Monitor shows, what jetsam
-    /// watches).
-    pub phys_footprint_bytes: u64,
-    /// Resident set size (RSS) at the time, in bytes. Counts graphics and shared
-    /// mappings `phys_footprint` excludes, so it's context, not the trigger.
-    pub resident_bytes: u64,
-    /// Bytes mimalloc (our global allocator, so all Rust allocation including
-    /// indexing) has committed.
-    pub rust_heap_bytes: u64,
-    /// Bytes the system malloc zones hold: WebKit, Objective-C, and C libraries.
-    /// Does NOT include the Rust heap above.
-    pub system_malloc_bytes: u64,
-    /// `phys_footprint` minus both allocators: graphics surfaces, mapped files,
-    /// thread stacks, and anything neither allocator accounts for.
-    pub untracked_bytes: u64,
-    /// What the watchdog did.
-    pub action: MemoryWatchdogAction,
-}
-
-/// Emitted when a volume's freshness changes to a NEW value (blue/green/yellow
-/// transitions). Drives the per-drive freshness UX: the always-visible badge
-/// refreshes, and the FE's one-time stale dialog (D2) fires on the exact
-/// Fresh→Stale edge.
-/// Emitted from `state::apply_freshness_event` only when the value actually
-/// changes, so the FE can subscribe rather than poll.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
-#[tauri_specta(event_name = "index-freshness-changed")]
-#[serde(rename_all = "camelCase")]
-pub struct IndexFreshnessChangedEvent {
-    pub volume_id: String,
-    pub freshness: super::lifecycle::freshness::Freshness,
-}
-
-/// Emit an `index-rescan-notification` event and log the reason at INFO level.
-pub(super) fn emit_rescan_notification(app: &AppHandle, volume_id: &str, reason: RescanReason, details: String) {
-    log::info!("Index rescan triggered ({reason:?}): {details}");
-    let _ = IndexRescanNotificationEvent {
-        volume_id: volume_id.to_string(),
-        reason,
-        details,
-    }
-    .emit(app);
-}
-
 // ── Activity phase tracking ──────────────────────────────────────────
 
 /// What the indexer is currently doing. More granular than `IndexPhase`
 /// (which tracks lifecycle: Disabled/Initializing/Running/ShuttingDown).
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ActivityPhase {
     /// Processing FSEvents journal replay on cold start.
@@ -300,32 +146,6 @@ impl std::fmt::Display for ActivityPhase {
             Self::Failed => write!(f, "Failed"),
         }
     }
-}
-
-/// Emitted when a volume's top-level indexing phase changes (a step in the
-/// `Scanning → Aggregating → Reconciling → Live` pipeline, plus `Replaying` and
-/// `Idle`).
-///
-/// This is the PER-VOLUME counterpart to the global `DEBUG_STATS` phase timeline.
-/// `DEBUG_STATS.set_phase` records ONE app-wide journal for the debug window,
-/// which can't attribute a phase to a drive when two volumes index at once. This
-/// event carries the `volumeId`, so the frontend's per-volume step checklist can
-/// advance the right drive's steps. It's fired ALONGSIDE every `set_phase` call
-/// where a `volumeId` is in scope (via [`set_phase_for`]), never replacing the
-/// global record.
-///
-/// It fires only on TRANSITIONS, so a frontend that joins mid-scan (a window
-/// reload) can't learn the current phase from it. The FE backfills the observable
-/// steps from the scan/aggregation activity instead; the reconcile step is the one
-/// transition with no other signal, so it's briefly unobservable after a reload
-/// that lands mid-reconcile (an accepted, rare gap — see the frontend
-/// `indexing/DETAILS.md`).
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
-#[tauri_specta(event_name = "index-phase-changed")]
-#[serde(rename_all = "camelCase")]
-pub struct IndexPhaseChangedEvent {
-    pub volume_id: String,
-    pub phase: ActivityPhase,
 }
 
 /// A completed or in-progress phase in the indexing timeline.
@@ -639,21 +459,33 @@ impl DebugStats {
 pub(crate) static DEBUG_STATS: LazyLock<DebugStats> = LazyLock::new(DebugStats::new);
 
 /// Record a top-level phase transition in BOTH the global debug timeline and the
-/// per-volume `index-phase-changed` event.
+/// per-volume [`IndexEvent::PhaseChanged`] event.
 ///
-/// Call this instead of `DEBUG_STATS.set_phase` wherever a `volume_id` and an
-/// `AppHandle` are in scope, so the two never drift: the debug window keeps its
-/// app-wide journal, and the frontend's per-volume step checklist learns which
-/// drive changed to which phase. See [`IndexPhaseChangedEvent`] for why the
-/// per-volume event exists. The event is fire-and-forget (a missed UI update is
-/// harmless; the next transition or a status query reconciles it).
-pub(super) fn set_phase_for(app: &AppHandle, volume_id: &str, phase: ActivityPhase, trigger: &str) {
+/// Call this instead of `DEBUG_STATS.set_phase` wherever a `volume_id` and a sink
+/// are in scope, so the two never drift: the debug window keeps its app-wide
+/// journal, and the frontend's per-volume step checklist learns which drive
+/// changed to which phase. Fire-and-forget (a missed UI update is harmless; the
+/// next transition or a status query reconciles it).
+pub(super) fn set_phase_for(events: &dyn EventSink, volume_id: &str, phase: ActivityPhase, trigger: &str) {
     DEBUG_STATS.set_phase(phase.clone(), trigger);
-    let _ = IndexPhaseChangedEvent {
+    events.emit(IndexEvent::PhaseChanged {
         volume_id: volume_id.to_string(),
         phase,
-    }
-    .emit(app);
+    });
+}
+
+/// Report that a full rescan was chosen over incremental replay, and log why.
+///
+/// The log line stays here (it's the diagnostic the scan path wants at the moment
+/// it decides); the event carries the typed reason plus the same details for the
+/// host to ship on.
+pub(super) fn emit_rescan_notification(events: &dyn EventSink, volume_id: &str, reason: RescanReason, details: String) {
+    log::info!("Index rescan triggered ({reason:?}): {details}");
+    events.emit(IndexEvent::RescanScheduled {
+        volume_id: volume_id.to_string(),
+        reason,
+        details: Diagnostic(details),
+    });
 }
 
 #[cfg(test)]

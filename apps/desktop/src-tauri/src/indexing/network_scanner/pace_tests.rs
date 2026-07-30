@@ -30,7 +30,7 @@ async fn browsing_the_share_throttles_the_scan_to_one_listing_in_flight() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = dir.path().join("vol-scan-yield.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
 
     let in_flight = Arc::new(AtomicU64::new(0));
     let max_in_flight = Arc::new(AtomicU64::new(0));
@@ -71,7 +71,7 @@ async fn a_continuously_browsed_share_still_finishes_its_scan() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = dir.path().join("vol-scan-no-starve.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
 
     let n_subdirs = 40;
     let in_flight = Arc::new(AtomicU64::new(0));
@@ -139,7 +139,7 @@ async fn browsing_a_different_volume_does_not_throttle_the_scan() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = dir.path().join("vol-scan-scope.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
 
     let in_flight = Arc::new(AtomicU64::new(0));
     let max_in_flight = Arc::new(AtomicU64::new(0));
@@ -178,7 +178,7 @@ async fn a_transfer_on_the_share_throttles_the_scan_to_one_listing_in_flight() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = dir.path().join("vol-scan-transfer-yield.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
 
     let in_flight = Arc::new(AtomicU64::new(0));
     let max_in_flight = Arc::new(AtomicU64::new(0));
@@ -216,7 +216,7 @@ async fn a_transfer_on_a_different_volume_does_not_throttle_the_scan() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = dir.path().join("vol-scan-transfer-scope.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
 
     let in_flight = Arc::new(AtomicU64::new(0));
     let max_in_flight = Arc::new(AtomicU64::new(0));

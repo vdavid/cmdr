@@ -218,21 +218,6 @@ fn both_truncating_runs_share_one_calibration_bucket() {
 }
 
 #[test]
-fn index_phase_changed_event_serializes_volume_id_as_camel_case() {
-    // The payload crosses IPC as `{ volumeId, phase }`; the FE binding and
-    // `index-state` read exactly those keys.
-    use serde_json::json;
-    let ev = IndexPhaseChangedEvent {
-        volume_id: "smb-nas".to_string(),
-        phase: ActivityPhase::Reconciling,
-    };
-    assert_eq!(
-        serde_json::to_value(&ev).unwrap(),
-        json!({ "volumeId": "smb-nas", "phase": "reconciling" })
-    );
-}
-
-#[test]
 fn close_phase_with_stats_attaches_to_current_phase_only() {
     // Pins `close_phase_with_stats`: attaches to the LAST entry, not to
     // a closed historical one. If this regresses, scan-completion stats

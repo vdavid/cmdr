@@ -3365,18 +3365,22 @@ export type ActivityPhase =
    */
   | 'failed'
 
-// Tauri event payload for aggregation progress updates.
+// A writer's aggregation pass moved through one of its phases.
 export type AggregationProgressEvent = {
   /**
    *  The volume whose writer is aggregating. The writer is spawned per volume,
-   *  so this is known at spawn time and threaded down to every emit site. Lets
-   *  the FE attribute aggregation progress to the right drive even when two
-   *  volumes aggregate concurrently (no more `lastCompletedScanVolumeId` guess).
+   *  so the frontend can attribute progress to the right drive even when two
+   *  volumes aggregate concurrently.
    */
   volumeId: string
-  // One of `phase_to_str`'s outputs: `saving_entries` | `loading` | `sorting` | `computing` | `writing`.
+  /**
+   *  One of `aggregation_phase_name`'s outputs: `saving_entries` | `loading` |
+   *  `sorting` | `computing` | `writing`.
+   */
   phase: string
+  // Units done in this phase.
   current: number
+  // Units total in this phase.
   total: number
 }
 
@@ -4846,11 +4850,12 @@ export type HistoryMode = 'ai' | 'filename' | 'regex'
 export type HostSource = 'discovered' | 'manual'
 
 /**
- *  Emitted when a full-scan aggregation pass finishes and the UI can dismiss the
- *  progress overlay. Carries the `volume_id` so the FE clears the right drive's
+ *  A full-scan aggregation pass finished and the UI can dismiss the progress
+ *  overlay. Carries the `volume_id` so the frontend clears the right drive's
  *  aggregation row (two volumes can aggregate concurrently).
  */
 export type IndexAggregationCompleteEvent = {
+  // The volume that finished aggregating.
   volumeId: string
 }
 
@@ -4909,7 +4914,12 @@ export type IndexDebugStatusResponse = {
   // Base status (same as `get_index_status`)
   IndexStatusResponse
 
+/**
+ *  These directories' recursive sizes changed, so any listing showing them is
+ *  stale.
+ */
 export type IndexDirUpdatedEvent = {
+  // Absolute paths, in the listing's path space.
   paths: string[]
 }
 
@@ -4929,27 +4939,28 @@ export type IndexFailure = {
 }
 
 /**
- *  Emitted when a volume's freshness changes to a NEW value (blue/green/yellow
- *  transitions). Drives the per-drive freshness UX: the always-visible badge
- *  refreshes, and the FE's one-time stale dialog (D2) fires on the exact
- *  Fresh→Stale edge.
- *  Emitted from `state::apply_freshness_event` only when the value actually
- *  changes, so the FE can subscribe rather than poll.
+ *  A volume's freshness changed to a NEW value (blue/green/yellow transitions).
+ *
+ *  Drives the per-drive freshness UX: the always-visible badge refreshes, and the
+ *  frontend's one-time stale dialog fires on the exact Fresh→Stale edge. Emitted
+ *  only when the value actually changes, so the frontend can subscribe rather
+ *  than poll.
  */
 export type IndexFreshnessChangedEvent = {
+  // The volume whose badge changes.
   volumeId: string
+  // The new freshness.
   freshness: Freshness
 }
 
 /**
- *  Emitted when the memory watchdog stops indexing to avoid a system crash, and
- *  again whenever memory keeps climbing after that stop. Drives a user-visible
- *  toast.
+ *  The memory watchdog stopped indexing to avoid a system crash, or memory kept
+ *  climbing after that stop. Drives a user-visible toast.
  *
  *  Byte-precise on purpose: whole-GB rounding turned a 16.9 GB reading into
  *  "16 GB" in shipped reports, and that lost detail is exactly what an incident
- *  needs. The two allocator figures are disjoint and neither is "the heap" on
- *  its own; `crate::process_memory` explains why.
+ *  needs. The two allocator figures are disjoint and neither is "the heap" on its
+ *  own; `cmdr_fs::process_memory` explains why.
  */
 export type IndexMemoryWarningEvent = {
   /**
@@ -4983,71 +4994,97 @@ export type IndexMemoryWarningEvent = {
 }
 
 /**
- *  Emitted when a volume's top-level indexing phase changes (a step in the
+ *  A volume's top-level indexing phase changed (a step in the
  *  `Scanning → Aggregating → Reconciling → Live` pipeline, plus `Replaying` and
  *  `Idle`).
  *
- *  This is the PER-VOLUME counterpart to the global `DEBUG_STATS` phase timeline.
- *  `DEBUG_STATS.set_phase` records ONE app-wide journal for the debug window,
- *  which can't attribute a phase to a drive when two volumes index at once. This
- *  event carries the `volumeId`, so the frontend's per-volume step checklist can
- *  advance the right drive's steps. It's fired ALONGSIDE every `set_phase` call
- *  where a `volumeId` is in scope (via [`set_phase_for`]), never replacing the
- *  global record.
+ *  This is the PER-VOLUME counterpart to the global debug phase timeline, which
+ *  records ONE app-wide journal for the debug window and can't attribute a phase
+ *  to a drive when two volumes index at once. This event carries the `volumeId`,
+ *  so the frontend's per-volume step checklist can advance the right drive.
  *
  *  It fires only on TRANSITIONS, so a frontend that joins mid-scan (a window
- *  reload) can't learn the current phase from it. The FE backfills the observable
- *  steps from the scan/aggregation activity instead; the reconcile step is the one
- *  transition with no other signal, so it's briefly unobservable after a reload
- *  that lands mid-reconcile (an accepted, rare gap — see the frontend
+ *  reload) can't learn the current phase from it. The frontend backfills the
+ *  observable steps from the scan/aggregation activity instead; the reconcile step
+ *  is the one transition with no other signal, so it's briefly unobservable after
+ *  a reload that lands mid-reconcile (an accepted, rare gap — see the frontend
  *  `indexing/DETAILS.md`).
  */
 export type IndexPhaseChangedEvent = {
+  // The volume that changed phase.
   volumeId: string
+  // The phase it moved to.
   phase: ActivityPhase
 }
 
+// Journal replay finished.
 export type IndexReplayCompleteEvent = {
+  // The volume that finished replaying.
   volumeId: string
+  // How long replay took.
   durationMs: number
 }
 
+// Journal replay is working through the backlog.
 export type IndexReplayProgressEvent = {
+  // The volume being replayed.
   volumeId: string
+  // Events applied so far.
   eventsProcessed: number
+  // An approximate total (not every ID in the range belongs to this volume).
   estimatedTotal: number | null
 }
 
+/**
+ *  A full rescan was triggered instead of incremental replay, so the UI can show
+ *  a transparent toast.
+ */
 export type IndexRescanNotificationEvent = {
+  // The volume being rescanned.
   volumeId: string
+  // The typed trigger; the frontend maps it to its own copy.
   reason: RescanReason
-  // Human-readable details for logs (not shown to user directly).
+  /**
+   *  Details for logs, never rendered. The frontend handler reads `reason` and
+   *  resolves a message key from it; this field rides along for the console and
+   *  for support transcripts.
+   */
   details: string
 }
 
 /**
- *  Emitted when a scan ends WITHOUT completing: a network (SMB/MTP) scan that
- *  disconnected, was canceled, timed out, or otherwise aborted. Unlike
- *  `index-scan-complete`, this writes no completion facts (the partial isn't a
- *  finished index) — it exists purely so the frontend clears the volume's live
- *  activity, so an aborted scan doesn't leave a stuck "scanning" row in the
- *  corner indicator or the breadcrumb badge tooltip. Carries the `volume_id` so
- *  only the aborted volume's activity is cleared.
+ *  A scan ended WITHOUT completing: a network (SMB/MTP) scan that disconnected,
+ *  was canceled, timed out, or otherwise aborted.
+ *
+ *  Unlike `index-scan-complete`, this writes no completion facts (the partial
+ *  isn't a finished index). It exists purely so the frontend clears the volume's
+ *  live activity, so an aborted scan doesn't leave a stuck "scanning" row in the
+ *  corner indicator or the breadcrumb badge tooltip.
  */
 export type IndexScanAbortedEvent = {
+  // The volume whose scan ended.
   volumeId: string
 }
 
+// A scan finished cleanly.
 export type IndexScanCompleteEvent = {
+  // The volume that finished scanning.
   volumeId: string
+  // Entries in the finished index.
   totalEntries: number
+  // Directories in the finished index.
   totalDirs: number
+  // How long the scan took.
   durationMs: number
 }
 
+// The running scan's moving counters, on the reporter's 500 ms tick.
 export type IndexScanProgressEvent = {
+  // The volume being scanned.
   volumeId: string
+  // Entries walked so far.
   entriesScanned: number
+  // Directories found so far.
   dirsFound: number
   /**
    *  Resolved post-dedup physical bytes scanned so far, the tier-2 progress
@@ -5056,11 +5093,19 @@ export type IndexScanProgressEvent = {
   bytesScanned: number
 }
 
+/**
+ *  A volume's full scan started.
+ *
+ *  Carries the static per-scan calibration, so the frontend's calibrated-vs-rough
+ *  progress tier is a pure function of this one event and the 500 ms progress
+ *  event can stay counters-only.
+ */
 export type IndexScanStartedEvent = {
+  // The volume being scanned.
   volumeId: string
   /**
-   *  What kind of run this is, so the frontend's run-kind header and its
-   *  per-step copy state what's actually happening instead of inferring it.
+   *  What kind of run this is, so the run-kind header and its per-step copy
+   *  state what's happening instead of inferring it.
    */
   scanRunKind: ScanRunKind
   /**
@@ -5075,8 +5120,8 @@ export type IndexScanStartedEvent = {
    */
   priorScanDurationMs: number | null
   /**
-   *  The scanned volume's used bytes at scan start, the tier-2 (rough, first-scan)
-   *  progress denominator. `None` when the space-info fetch failed.
+   *  The scanned volume's used bytes at scan start, the tier-2 (rough,
+   *  first-scan) progress denominator. `None` when the space-info fetch failed.
    */
   volumeUsedBytes: number | null
 }
@@ -5768,14 +5813,19 @@ export type MediaDimensions = {
 }
 
 /**
- *  Throttled progress for one volume's enrichment pass. `total` / `bytes_total` are the
- *  ENRICHABLE-subset denominators (images passing the coverage gates), NEVER the full
- *  walked set — a raw walked-set denominator rebuilds the never-finishes bug inside the
- *  indicator. Wire name pinned (the `…Event` suffix wouldn't kebab-case to it).
+ *  Throttled progress for one volume's image-enrichment pass.
+ *
+ *  `total` / `bytes_total` are the ENRICHABLE-subset denominators (images passing
+ *  the coverage gates), NEVER the full walked set: a raw walked-set denominator
+ *  rebuilds the never-finishes bug inside the indicator.
  */
 export type MediaEnrichProgressEvent = {
+  // The volume being enriched.
   volumeId: string
-  // Subset images processed so far (enriched, already-current, or quietly skipped).
+  /**
+   *  Subset images processed so far (enriched, already-current, or quietly
+   *  skipped).
+   */
   done: number
   // Total images in the enrichable subset (the honest denominator).
   total: number
@@ -5786,11 +5836,13 @@ export type MediaEnrichProgressEvent = {
 }
 
 /**
- *  A pass ended. EVERY pass exit emits exactly one (see the module docs), so the
- *  indicator row never sticks at "enriching". Wire name pinned.
+ *  An image-enrichment pass ended. EVERY pass exit emits exactly one, so the
+ *  indicator row never sticks at "enriching".
  */
 export type MediaEnrichTerminalEvent = {
+  // The volume whose pass ended.
   volumeId: string
+  // Why it ended.
   reason: MediaEnrichTerminalReason
 }
 

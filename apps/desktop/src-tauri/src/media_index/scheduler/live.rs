@@ -47,8 +47,8 @@ use crate::ignore_poison::IgnorePoison;
 
 use super::enrich::{self, EnrichGates, GcScope, PassHooks, enrich_and_gc_scoped, walk_image_entries_in_dirs};
 use super::{
-    BeginOutcome, EnrichProgressSink, EnrichTerminalGuard, FinishOutcome, MediaEnrichTerminalReason, MediaScheduler,
-    NoopProgressSink, TauriEnrichEmitter, gate, load_statuses, local_should_enrich, network,
+    BeginOutcome, EnrichProgressEmitter, EnrichProgressSink, EnrichTerminalGuard, FinishOutcome,
+    MediaEnrichTerminalReason, MediaScheduler, NoopProgressSink, gate, load_statuses, local_should_enrich, network,
 };
 use crate::indexing::lifecycle::lifecycle_bus;
 
@@ -163,12 +163,16 @@ impl MediaScheduler {
         // full-pass row.
         let (subset_total, _) = enrich::enrichable_totals(&ordered, &should_enrich, &is_excluded);
         let loud = tick_is_loud(subset_total, self.is_enriching(volume_id));
-        let (progress, mut terminal): (Box<dyn EnrichProgressSink>, EnrichTerminalGuard) = match (&self.app, loud) {
-            (Some(app), true) => (
-                Box::new(TauriEnrichEmitter::new(app.clone(), volume_id.to_string())),
-                EnrichTerminalGuard::for_app(app.clone(), volume_id.to_string()),
-            ),
-            _ => (Box::new(NoopProgressSink), EnrichTerminalGuard::disabled()),
+        let (progress, mut terminal): (Box<dyn EnrichProgressSink>, EnrichTerminalGuard) = if loud {
+            (
+                Box::new(EnrichProgressEmitter::new(
+                    Arc::clone(&self.events),
+                    volume_id.to_string(),
+                )),
+                EnrichTerminalGuard::for_sink(Arc::clone(&self.events), volume_id.to_string()),
+            )
+        } else {
+            (Box::new(NoopProgressSink), EnrichTerminalGuard::disabled())
         };
 
         let hooks = PassHooks {

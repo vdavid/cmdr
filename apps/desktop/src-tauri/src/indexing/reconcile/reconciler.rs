@@ -23,7 +23,6 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use rusqlite::Connection;
-use tauri::AppHandle;
 
 use crate::ignore_poison::IgnorePoison;
 use crate::indexing::metadata::{MetadataSnapshot, extract_metadata};
@@ -1622,10 +1621,10 @@ fn collect_ancestor_paths(path: &str) -> Vec<String> {
     ancestors
 }
 
-/// Emit an `index-dir-updated` event to the frontend.
-pub(crate) fn emit_dir_updated(app: &AppHandle, paths: Vec<String>) {
-    use tauri_specta::Event;
-    let _ = crate::indexing::IndexDirUpdatedEvent { paths }.emit(app);
+/// Report that these directories' recursive sizes changed, so any listing
+/// showing them is stale.
+pub(crate) fn emit_dir_updated(events: &dyn crate::indexing::EventSink, paths: Vec<String>) {
+    events.emit(crate::indexing::IndexEvent::DirsUpdated { paths });
 }
 
 // ── Tests ────────────────────────────────────────────────────────────

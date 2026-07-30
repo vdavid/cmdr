@@ -442,7 +442,7 @@ async fn reconcile_from_empty_db_with_non_root_mount_indexes_full_tree() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = dir.path().join("reconcile-empty.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
     let new_epoch = {
         let wconn = IndexStore::open_write_connection(&db_path).unwrap();
         IndexStore::bump_current_epoch(&wconn).unwrap()

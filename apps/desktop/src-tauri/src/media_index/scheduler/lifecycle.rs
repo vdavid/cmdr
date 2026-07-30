@@ -11,7 +11,8 @@ use std::time::Duration;
 
 use tauri::Manager;
 
-use crate::indexing::IndexVolumeKind;
+use crate::events::index_mapping::TauriEventSink;
+use crate::indexing::{EventSink, IndexVolumeKind};
 // The fake backend is production's fallback only off-macOS (macOS uses real Vision);
 // tests import it themselves.
 #[cfg(not(target_os = "macos"))]
@@ -217,7 +218,8 @@ pub fn start(app: &AppHandle) {
         Arc::new(|| Arc::new(FakeVisionBackend::new()) as Arc<dyn VisionBackend>),
     );
     log::info!(target: "media_index", "media enrichment scheduler starting");
-    let scheduler = Arc::new(MediaScheduler::new_with_app(data_dir, backend, factory, app.clone()));
+    let events: Arc<dyn EventSink> = Arc::new(TauriEventSink::new(app.clone()));
+    let scheduler = Arc::new(MediaScheduler::new_with_events(data_dir, backend, factory, events));
     app.manage(Arc::clone(&scheduler));
 
     // Subscribe to registrations FIRST (before the sweep) so a volume registering in

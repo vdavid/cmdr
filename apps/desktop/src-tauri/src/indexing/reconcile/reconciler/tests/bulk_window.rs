@@ -150,7 +150,7 @@ fn a_bulk_window_that_dies_mid_walk_leaves_the_ledger_unpaid_for_the_next_launch
 
     // Relaunch: the manager arms the latch for an unpaid ledger, and the launch
     // flow's aggregate consumes it.
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
     writer.send(WriteMessage::ArmLedgerHealLatch).unwrap();
     writer
         .send(WriteMessage::ComputeAllAggregates { source: AggSource::Sql })

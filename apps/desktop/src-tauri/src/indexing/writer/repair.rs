@@ -190,7 +190,7 @@ mod tests {
     #[test]
     fn delete_subtree_repairs_drifted_ancestor_via_oracle() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+        let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
         // ROOT(1) → A(10) → big(20) → f21(1000), f22(1000)
         //                 → keep(30) → f31(500)
@@ -246,7 +246,7 @@ mod tests {
     #[test]
     fn propagate_delta_none_branch_negative_repairs_not_zeroes() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+        let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
         // ROOT(1) → X(40) → f41(300)
         let entries = vec![dir_entry(40, ROOT_ID, "X"), file_entry(41, 40, "f41", 300)];
@@ -291,7 +291,7 @@ mod tests {
     #[test]
     fn propagate_delta_none_branch_positive_creates_row() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+        let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
         let entries = vec![dir_entry(50, ROOT_ID, "Y")];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
@@ -335,7 +335,7 @@ mod tests {
     #[test]
     fn repair_fixes_wrong_middle_row_and_above() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+        let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
         // ROOT(1) → A(10) → B(20) → f(21, 700)
         let entries = vec![
@@ -370,7 +370,7 @@ mod tests {
     #[test]
     fn repair_short_circuits_leaving_poisoned_ancestor_untouched() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+        let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
         // ROOT(1) → A(10) → B(20) → f(21, 700). Everything correct after aggregate.
         let entries = vec![
@@ -420,7 +420,7 @@ mod tests {
     #[test]
     fn repair_keeps_walking_on_epoch_only_difference() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+        let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
         // ROOT(1) → A(10) → B(20). B is an empty, listed, complete dir at epoch 9;
         // A and ROOT are complete at 9 too. Sizes are all zero (empty dirs).
@@ -482,7 +482,7 @@ mod tests {
     #[test]
     fn repair_handles_missing_row_midchain() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+        let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
         // ROOT(1) → A(10) → B(20, listed) with a file, and C(30, MISSING row).
         let entries = vec![
@@ -538,7 +538,7 @@ mod tests {
     #[test]
     fn repair_recomputes_symlinks_and_epoch() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+        let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
         // ROOT(1) → A(10) → B(20, listed@5) with a symlink child, and
         //                 → C(30, UNLISTED — epoch 0).
@@ -595,7 +595,13 @@ mod tests {
     #[test]
     fn repair_on_mount_rooted_volume_db() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn_for(&db_path, None, false, "smb-share-42".to_string()).unwrap();
+        let writer = IndexWriter::spawn_for(
+            &db_path,
+            crate::indexing::NoopEventSink::shared(),
+            false,
+            "smb-share-42".to_string(),
+        )
+        .unwrap();
 
         // ROOT(1) → share(10) → sub(20) → f(21, 900)
         let entries = vec![

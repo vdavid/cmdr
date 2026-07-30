@@ -5,14 +5,11 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
-use tauri::AppHandle;
-use tauri_specta::Event;
-
 use super::state::{INDEX_REGISTRY, IndexPhase, IndexVolumeKind};
 use crate::ignore_poison::IgnorePoison;
 use crate::indexing::events::progress_reporter::ScanProgressReporter;
 use crate::indexing::events::{
-    ActivityPhase, DEBUG_STATS, IndexDebugStatusResponse, IndexScanStartedEvent, IndexStatusResponse, PhaseRecord,
+    ActivityPhase, DEBUG_STATS, EventSink, IndexDebugStatusResponse, IndexEvent, IndexStatusResponse, PhaseRecord,
     RescanReason, ScanRunKind, emit_rescan_notification, set_phase_for,
 };
 use crate::indexing::reconcile::local_reconcile;
@@ -56,8 +53,8 @@ pub(crate) struct IndexManager {
     /// Live event processing task (runs after reconciliation completes).
     /// Shared with spawned async tasks so they can store the handle.
     live_event_task: Arc<std::sync::Mutex<Option<tauri::async_runtime::JoinHandle<()>>>>,
-    /// Tauri app handle for emitting events
-    pub(super) app: AppHandle,
+    /// Where this volume's scan and phase reports go.
+    pub(super) events: Arc<dyn EventSink>,
     /// Whether a full scan is currently running. Shared with the completion handler.
     pub(super) scanning: Arc<AtomicBool>,
     /// This volume's freshness signal — the SAME `Arc` the registry `IndexInstance`
@@ -290,20 +287,19 @@ pub(in crate::indexing) async fn perform_registry_rescan(volume_id: &str, trigge
 impl IndexManager {
     /// Create a new IndexManager for a volume of the given kind.
     ///
-    /// Opens (or creates) the SQLite database, spawns the writer thread, and
-    /// records the volume kind so `resume_or_scan` picks the right scan strategy.
+    /// Opens (or creates) the SQLite database at `db_path`, spawns the writer
+    /// thread, and records the volume kind so `resume_or_scan` picks the right scan
+    /// strategy. Takes the resolved path rather than resolving it, so nothing here
+    /// needs to reach app-owned configuration.
     pub fn new_for_kind(
         volume_id: String,
         volume_root: PathBuf,
-        app: AppHandle,
+        db_path: PathBuf,
+        events: Arc<dyn EventSink>,
         kind: IndexVolumeKind,
         inodes_trustworthy: bool,
         freshness: Arc<std::sync::Mutex<Option<super::freshness::Freshness>>>,
     ) -> Result<Self, String> {
-        let data_dir = crate::config::resolved_app_data_dir(&app)?;
-
-        let db_path = data_dir.join(format!("index-{volume_id}.db"));
-
         let store = IndexStore::open(&db_path).map_err(|e| format!("Failed to open index store: {e}"))?;
 
         // Only the search-feeding volume's writer bumps the global
@@ -313,7 +309,7 @@ impl IndexManager {
         // feed, or every NAS/phone change-notify event would thrash a full root
         // search reload. See `writer::WRITER_GENERATION` and `indexing/DETAILS.md`.
         let feeds_search = kind.feeds_search();
-        let writer = IndexWriter::spawn_for(&db_path, Some(app.clone()), feeds_search, volume_id.clone())
+        let writer = IndexWriter::spawn_for(&db_path, Arc::clone(&events), feeds_search, volume_id.clone())
             .map_err(|e| format!("Failed to spawn index writer: {e}"))?;
 
         log::debug!(
@@ -331,7 +327,7 @@ impl IndexManager {
             scan_handle: None,
             drive_watcher: None,
             live_event_task: Arc::new(std::sync::Mutex::new(None)),
-            app,
+            events,
             scanning: Arc::new(AtomicBool::new(false)),
             freshness,
             scan_calibration: None,
@@ -419,7 +415,7 @@ impl IndexManager {
             if current_id > 0 && current_id > last_event_id + JOURNAL_GAP_THRESHOLD {
                 let gap = current_id - last_event_id;
                 emit_rescan_notification(
-                    &self.app,
+                    self.events.as_ref(),
                     &self.volume_id,
                     RescanReason::StaleIndex,
                     format!(
@@ -446,7 +442,7 @@ impl IndexManager {
             log::info!("Startup: rescan of the existing index (no journal replay)");
         } else if status.last_event_id.is_some() {
             emit_rescan_notification(
-                &self.app,
+                self.events.as_ref(),
                 &self.volume_id,
                 RescanReason::IncompletePreviousScan,
                 "Index DB exists but scan_completed_at is not set. Previous scan likely didn't \
@@ -509,7 +505,7 @@ impl IndexManager {
                 DEBUG_STATS.watcher_active.store(true, Ordering::Relaxed);
                 let gap = current_id.saturating_sub(since_event_id);
                 set_phase_for(
-                    &self.app,
+                    self.events.as_ref(),
                     &self.volume_id,
                     ActivityPhase::Replaying,
                     &format!("app launch, ~{}", pluralize(gap, "pending FSEvent")),
@@ -518,7 +514,7 @@ impl IndexManager {
             }
             Err(e) => {
                 emit_rescan_notification(
-                    &self.app,
+                    self.events.as_ref(),
                     &self.volume_id,
                     RescanReason::WatcherStartFailed,
                     format!("DriveWatcher failed to start for replay: {e}"),
@@ -541,7 +537,7 @@ impl IndexManager {
 
         // Spawn the replay event processing loop
         let writer = self.writer.clone();
-        let app = self.app.clone();
+        let events = Arc::clone(&self.events);
         let volume_id = self.volume_id.clone();
         let kind = self.kind;
         let inodes_trustworthy = self.inodes_trustworthy;
@@ -567,7 +563,7 @@ impl IndexManager {
             let result = run_replay_event_loop(
                 event_rx,
                 writer.clone(),
-                app.clone(),
+                Arc::clone(&events),
                 ReplayConfig {
                     volume_id: volume_id.clone(),
                     // Journal replay only runs for a journaled volume (the boot disk),
@@ -767,16 +763,20 @@ impl IndexManager {
         // ride this event once; the 500 ms progress event carries only the moving
         // counters, so the FE never re-receives constants. The tier decision
         // (calibrated vs rough) is then a pure function of this one event.
-        let _ = IndexScanStartedEvent {
+        self.events.emit(IndexEvent::ScanStarted {
             volume_id: self.volume_id.clone(),
-            scan_run_kind: calibration.run_kind,
+            run_kind: calibration.run_kind,
             prior_total_entries: calibration.prior.total_entries,
             prior_scan_duration_ms: calibration.prior.scan_duration_ms,
             volume_used_bytes: calibration.volume_used_bytes,
-        }
-        .emit(&self.app);
+        });
 
-        set_phase_for(&self.app, &self.volume_id, ActivityPhase::Scanning, scan_trigger);
+        set_phase_for(
+            self.events.as_ref(),
+            &self.volume_id,
+            ActivityPhase::Scanning,
+            scan_trigger,
+        );
 
         // Freshness ⇒ Scanning (blue). For local `root` this also drives the
         // per-drive badge; the clean-completion handler flips it back
@@ -787,6 +787,7 @@ impl IndexManager {
         // holding the registry lock, so a registry re-lock here deadlocks.
         super::state::apply_freshness_event_on(
             &self.freshness,
+            self.events.as_ref(),
             &self.volume_id,
             super::freshness::FreshnessEvent::ScanStarted,
         );
@@ -834,7 +835,7 @@ impl IndexManager {
         ScanProgressReporter::new(
             Arc::clone(&scan_handle.progress),
             self.writer.clone(),
-            self.app.clone(),
+            Arc::clone(&self.events),
             self.volume_id.clone(),
             partial_agg_source,
         )
@@ -844,7 +845,7 @@ impl IndexManager {
         // Use tauri::async_runtime::spawn because indexing can start from the
         // synchronous Tauri setup() hook where no Tokio runtime context exists.
         let volume_id = self.volume_id.clone();
-        let app = self.app.clone();
+        let events = Arc::clone(&self.events);
         let writer = self.writer.clone();
         let scanning = Arc::clone(&self.scanning);
         // Clone the freshness handle into the completion task so it fires
@@ -861,7 +862,7 @@ impl IndexManager {
                 watcher_overflow_flag,
                 volume_id,
                 space,
-                app,
+                events,
                 writer,
                 freshness,
                 live_event_task_slot,
@@ -876,7 +877,7 @@ impl IndexManager {
 
     /// Stop the active full scan and watcher.
     pub fn stop_scan(&mut self) {
-        set_phase_for(&self.app, &self.volume_id, ActivityPhase::Idle, "stopped");
+        set_phase_for(self.events.as_ref(), &self.volume_id, ActivityPhase::Idle, "stopped");
 
         if let Some(ref handle) = self.scan_handle {
             handle.cancel();
@@ -1007,7 +1008,7 @@ impl IndexManager {
     /// loop to drain its final batch and send `UpdateLastEventId` → shut down
     /// the writer. This ensures `last_event_id` is up-to-date on next restart.
     pub fn shutdown(&mut self) {
-        set_phase_for(&self.app, &self.volume_id, ActivityPhase::Idle, "shutdown");
+        set_phase_for(self.events.as_ref(), &self.volume_id, ActivityPhase::Idle, "shutdown");
 
         // 1. Cancel active scan (but don't abort event loop)
         if let Some(ref handle) = self.scan_handle {

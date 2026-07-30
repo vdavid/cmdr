@@ -54,8 +54,9 @@ pub(crate) mod pool;
 
 mod live;
 
-use super::events::{EnrichTerminalGuard, MediaEnrichTerminalReason, TauriEnrichEmitter};
+use super::events::{EnrichProgressEmitter, EnrichTerminalGuard, MediaEnrichTerminalReason};
 use super::progress::{EnrichProgressSink, NoopProgressSink};
+use crate::indexing::EventSink;
 
 mod reclaim;
 pub use reclaim::{PruneOutcome, StoredCoverage, StoredCoverageCounts};
@@ -104,10 +105,10 @@ pub struct MediaScheduler {
     backend: Arc<dyn VisionBackend>,
     /// Factory for extra parallel workers' backends (plan M2). See [`BackendFactory`].
     backend_factory: BackendFactory,
-    /// The app handle used to emit `media-enrich-progress` / `media-enrich-terminal`
-    /// events. `None` in unit tests (constructed via [`MediaScheduler::new`],
-    /// no app), so a pass emits nothing; production wires it in [`start`].
-    app: Option<AppHandle>,
+    /// Where a pass reports progress and its terminal. A no-op sink in unit tests
+    /// (constructed via [`MediaScheduler::new`]), so a pass reports nothing;
+    /// production wires the real one in [`start`].
+    events: Arc<dyn EventSink>,
     /// Volume ids whose last pass DEFERRED its importance-gated remainder because
     /// importance hadn't scored the volume yet (`folder_scores` was `None`). The
     /// unscored → scored bridge reads and clears this: when importance first
@@ -125,7 +126,7 @@ pub struct MediaScheduler {
 
 impl MediaScheduler {
     /// Construct a scheduler over `data_dir` with the given inference backend, NOT wired
-    /// to an app (so it emits no progress events — the unit-test constructor). The extra-
+    /// to a sink (so it reports nothing — the unit-test constructor). The extra-
     /// worker factory clones the ONE given backend, so a scheduler-level test at N>1 shares
     /// the fake (and worker 0 reuses it anyway); production overrides the factory via
     /// [`new_with_factory`](MediaScheduler::new_with_factory) to make independent real
@@ -133,16 +134,16 @@ impl MediaScheduler {
     pub fn new(data_dir: PathBuf, backend: Arc<dyn VisionBackend>) -> Self {
         let shared = backend.clone();
         let factory: BackendFactory = Arc::new(move || shared.clone());
-        Self::new_with_factory(data_dir, backend, factory, None)
+        Self::new_with_factory(data_dir, backend, factory, crate::indexing::NoopEventSink::shared())
     }
 
-    /// The full constructor: the representative backend, the extra-worker `factory`, and an
-    /// optional app handle (progress + terminal events). `new` and `start` funnel here.
+    /// The full constructor: the representative backend, the extra-worker `factory`, and
+    /// the sink progress + terminal reports go to. `new` and `start` funnel here.
     fn new_with_factory(
         data_dir: PathBuf,
         backend: Arc<dyn VisionBackend>,
         backend_factory: BackendFactory,
-        app: Option<AppHandle>,
+        events: Arc<dyn EventSink>,
     ) -> Self {
         Self {
             coordinator: PassCoordinator::new(),
@@ -150,37 +151,36 @@ impl MediaScheduler {
             writers: super::writer_registry::WriterRegistry::new(),
             backend,
             backend_factory,
-            app,
+            events,
             deferred_for_importance: Mutex::new(HashSet::new()),
             pending_touched_dirs: Mutex::new(HashMap::new()),
         }
     }
 
-    /// Construct a scheduler wired to `app` (progress + terminal events) with an explicit
-    /// extra-worker `factory` — production's constructor, so parallel workers get
+    /// Construct a scheduler wired to `events` (progress + terminal reports) with an
+    /// explicit extra-worker `factory` — production's constructor, so parallel workers get
     /// INDEPENDENT real backends (each its own Vision thread), not clones of one. Used by
     /// [`start`].
-    fn new_with_app(
+    fn new_with_events(
         data_dir: PathBuf,
         backend: Arc<dyn VisionBackend>,
         backend_factory: BackendFactory,
-        app: AppHandle,
+        events: Arc<dyn EventSink>,
     ) -> Self {
-        Self::new_with_factory(data_dir, backend, backend_factory, Some(app))
+        Self::new_with_factory(data_dir, backend, backend_factory, events)
     }
 
-    /// Build the throttled progress sink + terminal guard for a pass. When the
-    /// scheduler has an app, the sink emits `media-enrich-progress` and the guard emits
-    /// `media-enrich-terminal` on drop (its default `Failed` reason covers an error
-    /// bubble); without an app (unit tests) both are no-ops.
+    /// Build the throttled progress sink + terminal guard for a pass: the sink reports
+    /// progress and the guard reports a terminal on drop (its default `Failed` reason
+    /// covers an error bubble). A no-op sink makes both silent.
     fn pass_emitters(&self, volume_id: &str) -> (Box<dyn EnrichProgressSink>, EnrichTerminalGuard) {
-        match &self.app {
-            Some(app) => (
-                Box::new(TauriEnrichEmitter::new(app.clone(), volume_id.to_string())),
-                EnrichTerminalGuard::for_app(app.clone(), volume_id.to_string()),
-            ),
-            None => (Box::new(NoopProgressSink), EnrichTerminalGuard::disabled()),
-        }
+        (
+            Box::new(EnrichProgressEmitter::new(
+                Arc::clone(&self.events),
+                volume_id.to_string(),
+            )),
+            EnrichTerminalGuard::for_sink(Arc::clone(&self.events), volume_id.to_string()),
+        )
     }
 
     /// Mark `volume_id` as having deferred its importance-gated remainder (its last

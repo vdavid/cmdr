@@ -358,6 +358,14 @@ async fn sleep_until(deadline: Instant) {
     }
 }
 
+/// Serializes every test that drives the dispatcher's statics.
+///
+/// `STATE` and `ENABLED` are process-global, so two such tests running in
+/// parallel read each other's debounce window and both flake. Hold this across
+/// any `set_enabled` / `reset_for_test` / `snapshot_for_test` sequence.
+#[cfg(test)]
+pub static TEST_LOCK: Mutex<()> = Mutex::new(());
+
 #[cfg(test)]
 pub fn record_error_for_test(category: &str, message: &str) -> Option<Instant> {
     if !ENABLED.load(Ordering::Relaxed) {

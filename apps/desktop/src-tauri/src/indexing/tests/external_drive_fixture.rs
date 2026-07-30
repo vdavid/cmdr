@@ -555,7 +555,7 @@ mod tests {
         let db_dir = tempfile::tempdir().expect("temp db dir");
         let db_path = db_dir.path().join("external-scan.db");
         IndexStore::open(&db_path).expect("open store");
-        let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+        let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
         writer
             .send(WriteMessage::UpdateMeta {
                 key: CURRENT_EPOCH_KEY.to_string(),

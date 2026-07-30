@@ -1,4 +1,5 @@
 use super::*;
+use crate::indexing::NoopEventSink;
 use crate::indexing::read::enrichment::get_read_pool_for;
 
 /// Every `IndexVolumeKind`, so a new variant can't be added without deciding
@@ -73,7 +74,16 @@ fn read_pool_routing_tracks_registration() {
         let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
         let pending = Arc::new(PendingSizes::new());
         assert!(
-            try_reserve_initializing_phase(name, IndexVolumeKind::Local, store, pool, pending, fresh(None)).is_ok(),
+            try_reserve_initializing_phase(
+                name,
+                IndexVolumeKind::Local,
+                store,
+                pool,
+                pending,
+                fresh(None),
+                NoopEventSink::shared()
+            )
+            .is_ok(),
             "reserve {name} must succeed"
         );
     };
@@ -119,8 +129,30 @@ fn reservations_are_independent_across_volumes() {
     let (s1, p1, pe1) = mk("vol-a");
     let (s2, p2, pe2) = mk("vol-b");
 
-    assert!(try_reserve_initializing_phase("vol-a", IndexVolumeKind::Local, s1, p1, pe1, fresh(None)).is_ok());
-    assert!(try_reserve_initializing_phase("vol-b", IndexVolumeKind::Local, s2, p2, pe2, fresh(None)).is_ok());
+    assert!(
+        try_reserve_initializing_phase(
+            "vol-a",
+            IndexVolumeKind::Local,
+            s1,
+            p1,
+            pe1,
+            fresh(None),
+            NoopEventSink::shared()
+        )
+        .is_ok()
+    );
+    assert!(
+        try_reserve_initializing_phase(
+            "vol-b",
+            IndexVolumeKind::Local,
+            s2,
+            p2,
+            pe2,
+            fresh(None),
+            NoopEventSink::shared()
+        )
+        .is_ok()
+    );
     assert!(is_active("vol-a"));
     assert!(is_active("vol-b"));
     // Each volume routes to ITS OWN pool, never the other's (no cross-talk).
@@ -130,7 +162,16 @@ fn reservations_are_independent_across_volumes() {
     // on the same DB) while vol-b is untouched.
     let (s1b, p1b, pe1b) = mk("vol-a");
     assert!(
-        try_reserve_initializing_phase("vol-a", IndexVolumeKind::Local, s1b, p1b, pe1b, fresh(None)).is_err(),
+        try_reserve_initializing_phase(
+            "vol-a",
+            IndexVolumeKind::Local,
+            s1b,
+            p1b,
+            pe1b,
+            fresh(None),
+            NoopEventSink::shared()
+        )
+        .is_err(),
         "double-start of the same volume must be rejected"
     );
     assert!(is_active("vol-b"), "vol-b unaffected by vol-a's rejected start");
@@ -185,7 +226,8 @@ fn scan_start_freshness_firing_does_not_relock_the_registry() {
             store,
             pool,
             pending,
-            Arc::clone(&freshness)
+            Arc::clone(&freshness),
+            NoopEventSink::shared(),
         )
         .is_ok(),
         "reserve must succeed"
@@ -200,7 +242,7 @@ fn scan_start_freshness_firing_does_not_relock_the_registry() {
         let _reg = INDEX_REGISTRY.lock().expect("registry lock");
         // Fire the scan-start transition through the Arc-direct seam — the
         // manager's `self.freshness` path. This must NOT touch the registry.
-        apply_freshness_event_on(&freshness, "deadlock-test", FreshnessEvent::ScanStarted);
+        apply_freshness_event_on(&freshness, &NoopEventSink, "deadlock-test", FreshnessEvent::ScanStarted);
         let _ = done_tx.send(());
         // Drop `_reg` here, after signalling: the assertion below proves we
         // got this far without blocking on the lock we already hold.
@@ -255,7 +297,8 @@ fn freshness_transitions_through_the_registry() {
             store,
             pool,
             pending,
-            fresh(Some(Freshness::Stale))
+            fresh(Some(Freshness::Stale)),
+            NoopEventSink::shared(),
         )
         .is_ok(),
         "reserve must succeed"
@@ -316,7 +359,8 @@ fn disconnect_keeps_instance_stale_user_cancel_resets_to_gray() {
             store,
             pool,
             pending,
-            fresh(Some(Freshness::Stale))
+            fresh(Some(Freshness::Stale)),
+            NoopEventSink::shared(),
         )
         .is_ok()
     );
@@ -387,7 +431,8 @@ fn forget_stale_index_transitions_to_gray_and_deletes_db() {
             store,
             pool,
             pending,
-            fresh(Some(Freshness::Stale))
+            fresh(Some(Freshness::Stale)),
+            NoopEventSink::shared(),
         )
         .is_ok(),
         "reserve must succeed"
@@ -445,7 +490,8 @@ fn disconnect_storm_two_volumes_never_wedges_the_registry() {
                 store,
                 pool,
                 pending,
-                fresh(Some(Freshness::Stale))
+                fresh(Some(Freshness::Stale)),
+                NoopEventSink::shared(),
             )
             .is_ok(),
             "reserve {vid} must succeed (registry not wedged)"
@@ -533,8 +579,16 @@ fn ready_volumes_with_kind_surfaces_a_fresh_at_launch_volume() {
         let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
         let pending = Arc::new(PendingSizes::new());
         assert!(
-            try_reserve_initializing_phase(vid, IndexVolumeKind::Local, store, pool, pending, fresh(Some(initial)))
-                .is_ok()
+            try_reserve_initializing_phase(
+                vid,
+                IndexVolumeKind::Local,
+                store,
+                pool,
+                pending,
+                fresh(Some(initial)),
+                NoopEventSink::shared(),
+            )
+            .is_ok()
         );
     };
 
@@ -572,7 +626,12 @@ fn scan_completed_publishes_on_the_lifecycle_bus() {
     let freshness = fresh(Some(Freshness::Scanning));
     // Fire completion through the neutral chokepoint (no registry needed — the
     // publish keys off the volume id directly).
-    apply_freshness_event_on(&freshness, "bus-chokepoint-test", FreshnessEvent::ScanCompleted);
+    apply_freshness_event_on(
+        &freshness,
+        &NoopEventSink,
+        "bus-chokepoint-test",
+        FreshnessEvent::ScanCompleted,
+    );
 
     // A subscriber created AFTER the publish still sees the completion (the
     // late-subscriber replay the scheduler relies on).

@@ -10,7 +10,7 @@ use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 #[test]
 fn insert_entries_v2_via_writer() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     let entries = vec![EntryRow {
         id: 10,
@@ -94,12 +94,12 @@ fn handle_insert_entries_v2_only_accumulates_rows_that_landed() {
     let expected = AtomicU64::new(0);
     let mutation_tracker = MutationTracker::new(true);
 
-    let signal = IndexFailureSignal::new();
+    let signal = IndexFailureSignal::new(crate::indexing::NoopEventSink::shared());
     handle_insert_entries_v2(
         &conn,
         entries_dup,
         &mut accumulator,
-        &None,
+        &crate::indexing::NoopEventSink,
         "root",
         &expected,
         &mutation_tracker,
@@ -134,7 +134,7 @@ fn handle_insert_entries_v2_only_accumulates_rows_that_landed() {
 #[test]
 fn upsert_entry_v2_insert_and_update() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Insert via UpsertEntryV2 (entry doesn't exist yet)
     writer
@@ -180,7 +180,7 @@ fn upsert_entry_v2_insert_and_update() {
 #[test]
 fn upsert_entry_v2_initializes_dir_stats_for_new_dirs() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Insert a new directory via UpsertEntryV2
     writer
@@ -217,7 +217,7 @@ fn upsert_entry_v2_initializes_dir_stats_for_new_dirs() {
 #[test]
 fn delete_entry_by_id_via_writer() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Insert an entry
     let entries = vec![EntryRow {
@@ -248,7 +248,7 @@ fn delete_entry_by_id_via_writer() {
 #[test]
 fn delete_subtree_by_id_via_writer() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Build a tree: ROOT -> dir(10) -> file(11) + subdir(12)
     let entries = vec![
@@ -305,7 +305,7 @@ fn delete_subtree_by_id_via_writer() {
 #[test]
 fn delete_entry_by_id_auto_propagates_delta() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Insert a parent dir and a file
     let entries = vec![
@@ -370,7 +370,7 @@ fn delete_entry_by_id_auto_propagates_delta() {
 #[test]
 fn delete_subtree_by_id_auto_propagates_delta() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Build tree: ROOT(1) -> root_dir(10) -> sub(11) -> file.txt(12, 300 bytes)
     let entries = vec![
@@ -464,7 +464,7 @@ fn delete_subtree_by_id_auto_propagates_delta() {
 #[test]
 fn delete_entry_by_id_for_nonexistent_skips_propagation() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Insert a directory and pre-populate its dir_stats
     let entries = vec![EntryRow {
@@ -513,7 +513,7 @@ fn delete_entry_by_id_for_nonexistent_skips_propagation() {
 #[test]
 fn upsert_entry_v2_auto_propagates_delta_on_insert() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Insert a parent directory and pre-populate its dir_stats
     let entries = vec![EntryRow {
@@ -575,7 +575,7 @@ fn upsert_entry_v2_auto_propagates_delta_on_insert() {
 #[test]
 fn upsert_entry_v2_auto_propagates_delta_on_update() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Insert parent dir with dir_stats
     let entries = vec![EntryRow {
@@ -656,7 +656,7 @@ fn upsert_entry_v2_auto_propagates_delta_on_update() {
 #[test]
 fn upsert_entry_v2_auto_propagates_dir_count_on_new_dir() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Pre-populate root dir_stats
     {
@@ -706,7 +706,7 @@ fn upsert_entry_v2_auto_propagates_dir_count_on_new_dir() {
 #[test]
 fn hardlink_dedup_insert_primary_stores_sizes_and_inode() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     writer
         .send(WriteMessage::UpsertEntryV2 {
@@ -737,7 +737,7 @@ fn hardlink_dedup_insert_primary_stores_sizes_and_inode() {
 #[test]
 fn hardlink_dedup_insert_secondary_gets_null_sizes() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Insert primary link
     writer
@@ -786,7 +786,7 @@ fn hardlink_dedup_insert_secondary_gets_null_sizes() {
 #[test]
 fn hardlink_dedup_update_secondary_keeps_null_sizes() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Insert primary
     writer
@@ -852,7 +852,7 @@ fn hardlink_dedup_update_secondary_keeps_null_sizes() {
 #[test]
 fn hardlink_dedup_self_healing_after_primary_deleted() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Pre-populate root dir_stats so delta propagation works
     {
@@ -948,7 +948,7 @@ fn hardlink_dedup_self_healing_after_primary_deleted() {
 #[test]
 fn hardlink_dedup_nlink_1_skips_dedup() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Insert two files with the same inode but nlink=1 (not actually hardlinked)
     writer
@@ -994,7 +994,7 @@ fn hardlink_dedup_nlink_1_skips_dedup() {
 #[test]
 fn hardlink_dedup_no_inode_skips_dedup() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Insert first file with inode
     writer
@@ -1041,7 +1041,7 @@ fn hardlink_dedup_no_inode_skips_dedup() {
 #[test]
 fn hardlink_dedup_dir_stats_only_counts_primary_size() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Insert a parent directory and pre-populate its dir_stats
     let entries = vec![EntryRow {
@@ -1123,7 +1123,7 @@ fn hardlink_dedup_dir_stats_only_counts_primary_size() {
 #[test]
 fn upsert_symlink_propagates_recursive_has_symlinks_up() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Build a 2-level dir tree first (no symlinks).
     // ROOT -> outer (id=10) -> inner (id=11)
@@ -1217,7 +1217,7 @@ fn upsert_symlink_propagates_recursive_has_symlinks_up() {
 #[test]
 fn delete_last_symlink_clears_recursive_has_symlinks_up() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // ROOT -> outer (id=20) -> link (id=21, symlink)
     let entries = vec![
@@ -1285,7 +1285,7 @@ fn delete_last_symlink_clears_recursive_has_symlinks_up() {
 #[test]
 fn delete_subtree_with_symlinks_clears_parent_flag() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // ROOT -> top (id=30)
     //   ├── doomed (id=31) -> link (id=32, symlink)
@@ -1406,7 +1406,7 @@ fn insert_dir_with_stats(
 #[test]
 fn move_entry_v2_same_parent_preserves_dir_stats() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Parent dir + child dir with non-trivial dir_stats. The whole point
     // of MoveEntryV2 vs. delete+insert is preserving these numbers.
@@ -1497,7 +1497,7 @@ fn insert_file(writer: &IndexWriter, id: i64, parent_id: i64, name: &str, size: 
 #[test]
 fn move_entry_v2_destination_collision_replaces_conflicting_file() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // One dir with two files. Moving "draft.txt" onto "final.txt"'s name
     // (a rename-with-overwrite, or a concurrent upsert racing ahead of the
@@ -1551,7 +1551,7 @@ fn move_entry_v2_destination_collision_replaces_conflicting_file() {
 #[test]
 fn move_entry_v2_destination_collision_replaces_conflicting_dir_subtree() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // A/proj (id 20, rich dir_stats) moves to B/proj, but B already has a
     // stale dir row "proj" (id 21) with a child file. The stale subtree must
@@ -1670,7 +1670,7 @@ fn move_entry_v2_destination_collision_replaces_conflicting_dir_subtree() {
 #[test]
 fn move_entry_v2_cross_parent_propagates_deltas() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Two sibling dirs A and B, each with their own pre-populated stats.
     // Then a child dir D under A with non-trivial stats.
@@ -1761,7 +1761,7 @@ fn move_entry_v2_cross_parent_propagates_deltas() {
 #[test]
 fn move_entry_v2_file_cross_parent_propagates_deltas() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Two parent dirs, both starting with empty stats.
     insert_dir_with_stats(
@@ -1839,7 +1839,7 @@ fn move_entry_v2_file_cross_parent_propagates_deltas() {
 #[test]
 fn move_entry_v2_no_op_when_target_matches_current() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     insert_dir_with_stats(
         &writer,
@@ -1892,7 +1892,7 @@ fn move_entry_v2_no_op_when_target_matches_current() {
 #[test]
 fn move_entry_v2_cross_parent_propagates_recursive_has_symlinks() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     insert_dir_with_stats(
         &writer,
@@ -1966,7 +1966,7 @@ fn move_entry_v2_cross_parent_propagates_recursive_has_symlinks() {
 #[test]
 fn move_entry_v2_bumps_writer_generation() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     insert_dir_with_stats(
         &writer,
@@ -2032,7 +2032,7 @@ fn bulk_reconcile_suppresses_per_entry_propagation_until_final_aggregate() {
     const FILE_SIZE: u64 = 100;
 
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Enter bulk-reconcile mode: per-entry ancestor propagation is now OFF.
     writer.send(WriteMessage::SetDeltaPropagation(false)).unwrap();
@@ -2187,7 +2187,7 @@ fn upsert_heals_an_id_counter_that_drifted_behind_the_table() {
     // The counter still points at 40: ids 40 and 41 are already taken.
     let next_id = AtomicI64::new(40);
     let mutation_tracker = MutationTracker::new(true);
-    let signal = IndexFailureSignal::new();
+    let signal = IndexFailureSignal::new(crate::indexing::NoopEventSink::shared());
 
     handle_upsert_entry_v2(
         &conn,
@@ -2236,7 +2236,7 @@ fn upsert_does_not_reassign_an_id_on_a_name_conflict() {
     IndexStore::insert_entries_v2_batch(&conn, &[seed_row(5, "dup.txt")]).unwrap();
 
     let next_id = AtomicI64::new(6);
-    let signal = IndexFailureSignal::new();
+    let signal = IndexFailureSignal::new(crate::indexing::NoopEventSink::shared());
 
     upsert_insert_new(
         &conn,

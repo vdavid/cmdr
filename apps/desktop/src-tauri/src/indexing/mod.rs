@@ -32,6 +32,8 @@ mod tests;
 pub(crate) use tests::stress_test_helpers;
 
 pub(crate) use events::DEBUG_STATS;
+#[cfg(test)]
+pub(crate) use events::one_of_every_kind;
 pub use events::*;
 pub(crate) use read::enrichment::{ReadPool, get_read_pool, get_read_pool_for};
 pub use read::enrichment::{enrich_entries_with_index, enrich_entries_with_index_on_volume};

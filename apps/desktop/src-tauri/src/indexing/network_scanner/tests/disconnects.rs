@@ -16,7 +16,7 @@ async fn disconnect_mid_walk_stops_promptly_and_returns_typed_error() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = dir.path().join("vol-scan-disconnect.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
 
     // Root + 200 empty subdirs (≫ FULL_LISTING_BUDGET). BFS: list root (call 1)
     // discovers 200 dirs, then lists them concurrently (up to FULL_LISTING_BUDGET in
@@ -79,7 +79,7 @@ async fn consecutive_untyped_failures_trip_the_backstop() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = dir.path().join("vol-scan-backstop.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
 
     // Enough subdirs that the backstop (N consecutive) trips well before the
     // queue drains, even with up to FULL_LISTING_BUDGET listings in flight. Root lists
@@ -138,7 +138,7 @@ async fn isolated_transient_failure_does_not_trip_backstop() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = dir.path().join("vol-scan-transient.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
 
     // One subdir fails (untyped), the rest list fine. The scan completes
     // cleanly (the bad dir is skipped, stays listed_epoch=0).

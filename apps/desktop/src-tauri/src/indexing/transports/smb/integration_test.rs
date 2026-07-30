@@ -108,7 +108,7 @@ async fn smb_integration_volume_scan_indexes_share() {
     let dir = tempfile::tempdir().expect("temp db dir");
     let db_path = dir.path().join("smb-scan.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
 
     let cancelled = Arc::new(AtomicBool::new(false));
     let summary = scan_volume_via_trait(
@@ -177,7 +177,7 @@ async fn smb_integration_volume_scan_via_connection_pool() {
     let dir = tempfile::tempdir().expect("temp db dir");
     let db_path = dir.path().join("smb-scan-pool.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
 
     // Bracket the walk exactly as the lifecycle does, so listings fan out across
     // the pool instead of the single browsing session.
@@ -242,7 +242,7 @@ async fn smb_integration_watch_event_updates_index() {
     let dir = tempfile::tempdir().expect("temp db dir");
     let db_path = dir.path().join("smb-watch.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
 
     let cancelled = Arc::new(AtomicBool::new(false));
     scan_volume_via_trait(
@@ -368,7 +368,7 @@ async fn smb_integration_enrich_listing_shows_sizes() {
     let dir = tempfile::tempdir().expect("temp db dir");
     let db_path = dir.path().join("smb-enrich.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
     let cancelled = Arc::new(AtomicBool::new(false));
     scan_volume_via_trait(
         Arc::clone(&vol),

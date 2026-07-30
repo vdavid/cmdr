@@ -21,7 +21,7 @@ use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 #[test]
 fn partial_aggregates_no_op_on_empty_maps() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     let gen_before = writer.mutation_count();
 
@@ -55,7 +55,7 @@ fn partial_aggregates_no_op_on_empty_maps() {
 #[test]
 fn partial_aggregates_shallow_sums_grow_across_batches() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Tree (depths from ROOT_ID): /a (id=10, depth 1) -> /a/b (id=11, depth 2)
     //                             /a/b/c (id=12, depth 3) -> /a/b/c/f1 (file)
@@ -165,7 +165,7 @@ fn partial_aggregates_shallow_sums_grow_across_batches() {
 #[test]
 fn partial_aggregates_depth_limiting() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Chain: /a(10,d1) -> /a/b(11,d2) -> /a/b/c(12,d3) -> /a/b/c/d(13,d4)
     // with a file under the depth-4 dir. d4 = MAX_DEPTH + 1.
@@ -270,7 +270,7 @@ fn partial_aggregates_depth_limiting() {
 #[test]
 fn partial_aggregates_hot_paths_punch_through_depth() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // /a(10,d1)/b(11,d2)/c(12,d3)/d(13,d4)/e(14,d5, child dir of d)
     // plus a 60-byte file under e. /a/b/c/d is the hot path (depth 4).
@@ -411,7 +411,7 @@ fn upsert_and_flush(
 #[test]
 fn sql_partial_works_on_empty_maps_then_final_is_exact() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Reconcile-style: no delta propagation; the final aggregate recomputes.
     writer.send(WriteMessage::SetDeltaPropagation(false)).unwrap();
@@ -515,7 +515,7 @@ fn sql_partial_works_on_empty_maps_then_final_is_exact() {
 #[test]
 fn partial_after_final_aggregate_is_safe_for_both_sources() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Build with InsertEntriesV2 so the maps are populated (the fresh-scan
     // path); the final aggregate then clears them.

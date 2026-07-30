@@ -228,7 +228,7 @@ mod tests {
     /// write connection plus the writer that owns the DB.
     fn seed_chain() -> (IndexWriter, std::path::PathBuf, tempfile::TempDir) {
         let (db_path, dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+        let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
         let entries = vec![
             dir_entry(10, ROOT_ID, "A"),
             dir_entry(20, 10, "B"),

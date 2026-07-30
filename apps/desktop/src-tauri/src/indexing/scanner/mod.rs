@@ -16,6 +16,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use crate::ignore_poison::IgnorePoison;
+use crate::indexing::events::{Diagnostic, IndexErrorReport, IndexEvent};
 use crate::indexing::paths::firmlinks;
 use crate::indexing::store::{EntryRow, IndexStore, resolve_scan_root};
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
@@ -740,13 +741,25 @@ impl DirVisitor for InsertVisitor {
         subdirs
     }
 
+    fn note_worker_spawn_failure(&self, error: &std::io::Error) {
+        // Worth a report: the walk still finishes, but at reduced parallelism, and
+        // a machine that can't spawn threads has a bigger problem than this scan.
+        self.writer.events().emit(IndexEvent::Error {
+            report: IndexErrorReport::WalkWorkerSpawnFailed {
+                detail: Diagnostic(error.to_string()),
+            },
+        });
+    }
+
     fn visit_read_error(&self, dir: &DirTask, err: &WalkReadError) {
         match err {
             WalkReadError::Io(e) => {
                 // Surface TCC-restricted paths so the sidebar can show the "limited
-                // by macOS" styling. `record_denial` filters to known TCC prefixes.
+                // by macOS" styling. The host filters to known TCC prefixes.
                 if e.kind() == std::io::ErrorKind::PermissionDenied {
-                    crate::restricted_paths::record_denial(&dir.path);
+                    self.writer
+                        .events()
+                        .emit(IndexEvent::PathAccessDenied { path: dir.path.clone() });
                 }
                 log::debug!("Scanner: skipping errored dir {}: {e}", dir.path.display());
             }

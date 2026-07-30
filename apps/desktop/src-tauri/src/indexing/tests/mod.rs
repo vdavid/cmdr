@@ -8,6 +8,7 @@
 
 pub(crate) mod stress_test_helpers;
 
+mod event_stream_tests;
 mod integration_tests;
 mod stress_tests_concurrency;
 mod stress_tests_lifecycle;

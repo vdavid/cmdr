@@ -12,14 +12,12 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
 use tokio::sync::oneshot;
 
 #[cfg(test)]
 use crate::ignore_poison::IgnorePoison;
 use crate::indexing::IndexFailureSignal;
-use crate::indexing::aggregator::AggregationPhase;
+use crate::indexing::events::EventSink;
 use crate::indexing::lifecycle::state::ROOT_VOLUME_ID;
 use crate::indexing::store::{EntryRow, IndexStore, IndexStoreError};
 use crate::pluralize::{pluralize, pluralize_with};
@@ -45,34 +43,6 @@ use entries::{
     handle_truncate_data, handle_upsert_entry_v2,
 };
 use maintenance::{handle_incremental_vacuum, request_wal_checkpoint, run_deferred_wal_checkpoint};
-
-// ── Aggregation progress events ──────────────────────────────────────
-
-/// Tauri event payload for aggregation progress updates.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
-#[tauri_specta(event_name = "index-aggregation-progress")]
-#[serde(rename_all = "camelCase")]
-pub struct AggregationProgressEvent {
-    /// The volume whose writer is aggregating. The writer is spawned per volume,
-    /// so this is known at spawn time and threaded down to every emit site. Lets
-    /// the FE attribute aggregation progress to the right drive even when two
-    /// volumes aggregate concurrently (no more `lastCompletedScanVolumeId` guess).
-    pub volume_id: String,
-    /// One of `phase_to_str`'s outputs: `saving_entries` | `loading` | `sorting` | `computing` | `writing`.
-    pub phase: String,
-    pub current: u64,
-    pub total: u64,
-}
-
-pub(super) fn phase_to_str(phase: AggregationPhase) -> &'static str {
-    match phase {
-        AggregationPhase::SavingEntries => "saving_entries",
-        AggregationPhase::LoadingDirectories => "loading",
-        AggregationPhase::Sorting => "sorting",
-        AggregationPhase::Computing => "computing",
-        AggregationPhase::Writing => "writing",
-    }
-}
 
 // ── Writer generation (for search index staleness detection) ─────────
 
@@ -449,6 +419,10 @@ pub struct IndexWriter {
     thread_handle: Arc<std::sync::Mutex<Option<thread::JoinHandle<()>>>>,
     /// Path to the database file (needed by scanner for ScanContext init).
     db_path: PathBuf,
+    /// Where this volume's reports go. Held here so the scan path — which already
+    /// threads a writer everywhere — reaches the sink without a second parameter
+    /// on every walk signature.
+    events: Arc<dyn EventSink>,
     /// Expected total entries from the scan, set by the caller when the scan
     /// completes. The writer thread reads this to report flushing progress as
     /// it processes remaining `InsertEntriesV2` batches.
@@ -492,8 +466,8 @@ impl IndexWriter {
     ///
     /// Opens a WAL-mode write connection to the DB at `db_path`, spawns a
     /// `std::thread` (blocking I/O, not tokio), and returns a handle.
-    /// If `app_handle` is provided, the writer emits `index-aggregation-progress`
-    /// events during `ComputeAllAggregates`.
+    /// The writer reports aggregation progress through `events` during
+    /// `ComputeAllAggregates`.
     ///
     /// `feeds_search` is `true` only for the volume whose DB backs the in-memory
     /// search index (root): its mutations bump the global `WRITER_GENERATION` so
@@ -501,18 +475,18 @@ impl IndexWriter {
     /// never invalidate the root search index it doesn't feed. Tests that don't
     /// care about search isolation use [`spawn`](Self::spawn) (defaults to
     /// search-feeding, preserving prior behavior).
-    pub fn spawn(db_path: &Path, app_handle: Option<AppHandle>) -> Result<Self, IndexStoreError> {
-        Self::spawn_for(db_path, app_handle, true, ROOT_VOLUME_ID.to_string())
+    pub fn spawn(db_path: &Path, events: Arc<dyn EventSink>) -> Result<Self, IndexStoreError> {
+        Self::spawn_for(db_path, events, true, ROOT_VOLUME_ID.to_string())
     }
 
     /// Spawn a writer, explicitly choosing whether it feeds the search index.
     /// See [`spawn`](Self::spawn) for the `feeds_search` contract.
     ///
-    /// `volume_id` is stamped onto every `index-aggregation-progress` event this
-    /// writer emits, so the FE can attribute aggregation to the right drive.
+    /// `volume_id` is stamped onto every aggregation-progress event this writer
+    /// emits, so the frontend can attribute aggregation to the right drive.
     pub fn spawn_for(
         db_path: &Path,
-        app_handle: Option<AppHandle>,
+        events: Arc<dyn EventSink>,
         feeds_search: bool,
         volume_id: String,
     ) -> Result<Self, IndexStoreError> {
@@ -549,26 +523,29 @@ impl IndexWriter {
         let queue_depth_clone = Arc::clone(&queue_depth);
         let idle_epoch = Arc::new(AtomicU64::new(0));
         let idle_epoch_clone = Arc::clone(&idle_epoch);
-        let failure_signal = Arc::new(IndexFailureSignal::new());
+        let failure_signal = Arc::new(IndexFailureSignal::new(Arc::clone(&events)));
         let failure_signal_clone = Arc::clone(&failure_signal);
 
         let handle = thread::Builder::new()
             .name("index-writer".into())
-            .spawn(move || {
-                // Yield CPU to the UI: this thread writes the index DB in the background.
-                crate::thread_qos::set_current_thread_qos(crate::thread_qos::QosClass::Utility);
-                writer_loop(
-                    conn,
-                    receiver,
-                    app_handle,
-                    volume_id,
-                    expected_total_clone,
-                    next_id_clone,
-                    mutation_tracker_clone,
-                    queue_depth_clone,
-                    idle_epoch_clone,
-                    failure_signal_clone,
-                )
+            .spawn({
+                let events = Arc::clone(&events);
+                move || {
+                    // Yield CPU to the UI: this thread writes the index DB in the background.
+                    crate::thread_qos::set_current_thread_qos(crate::thread_qos::QosClass::Utility);
+                    writer_loop(
+                        conn,
+                        receiver,
+                        events,
+                        volume_id,
+                        expected_total_clone,
+                        next_id_clone,
+                        mutation_tracker_clone,
+                        queue_depth_clone,
+                        idle_epoch_clone,
+                        failure_signal_clone,
+                    )
+                }
             })
             .map_err(IndexStoreError::Io)?;
 
@@ -576,6 +553,7 @@ impl IndexWriter {
             sender,
             thread_handle: Arc::new(std::sync::Mutex::new(Some(handle))),
             db_path: db_path.to_path_buf(),
+            events,
             expected_total_entries,
             next_id,
             mutation_tracker,
@@ -591,6 +569,13 @@ impl IndexWriter {
     /// DB error; see `indexing::failure`.
     pub(crate) fn failure_signal(&self) -> Arc<IndexFailureSignal> {
         Arc::clone(&self.failure_signal)
+    }
+
+    /// Where this volume's reports go. The scan path reads it off the writer it
+    /// already holds, so a denial or a worker-spawn failure reaches the host
+    /// without threading a sink through every walk signature.
+    pub(crate) fn events(&self) -> &Arc<dyn EventSink> {
+        &self.events
     }
 
     /// Return the path to the DB file. Used by the scanner to open a
@@ -1014,7 +999,7 @@ impl AccumulatorMaps {
 fn writer_loop(
     conn: rusqlite::Connection,
     receiver: mpsc::Receiver<WriteMessage>,
-    app_handle: Option<AppHandle>,
+    events: Arc<dyn EventSink>,
     volume_id: String,
     expected_total_entries: Arc<AtomicU64>,
     next_id: Arc<AtomicI64>,
@@ -1084,7 +1069,7 @@ fn writer_loop(
                 msg,
                 &stats,
                 &mut accumulator,
-                &app_handle,
+                events.as_ref(),
                 &volume_id,
                 &expected_total_entries,
                 &next_id,
@@ -1103,7 +1088,7 @@ fn writer_loop(
             msg,
             &stats,
             &mut accumulator,
-            &app_handle,
+            events.as_ref(),
             &volume_id,
             &expected_total_entries,
             &next_id,
@@ -1249,7 +1234,7 @@ fn process_message(
     msg: WriteMessage,
     stats: &WriterStats,
     accumulator: &mut AccumulatorMaps,
-    app_handle: &Option<AppHandle>,
+    events: &dyn EventSink,
     volume_id: &str,
     expected_total_entries: &AtomicU64,
     next_id: &AtomicI64,
@@ -1268,7 +1253,7 @@ fn process_message(
                 conn,
                 entries,
                 accumulator,
-                app_handle,
+                events,
                 volume_id,
                 expected_total_entries,
                 mutation_tracker,
@@ -1370,7 +1355,7 @@ fn process_message(
             handle_compute_all_aggregates(
                 conn,
                 accumulator,
-                app_handle,
+                events,
                 volume_id,
                 expected_total_entries,
                 source,
@@ -1379,7 +1364,7 @@ fn process_message(
             );
         }
         WriteMessage::ComputePartialAggregates { hot_paths, source } => {
-            handle_compute_partial_aggregates(conn, accumulator, app_handle, hot_paths, source, signal);
+            handle_compute_partial_aggregates(conn, accumulator, events, hot_paths, source, signal);
         }
         WriteMessage::ComputeSubtreeAggregates { root_id } => {
             handle_compute_subtree_aggregates(conn, root_id, repairs, signal);
@@ -1489,7 +1474,7 @@ fn process_message(
                 handle_compute_all_aggregates(
                     conn,
                     accumulator,
-                    app_handle,
+                    events,
                     volume_id,
                     expected_total_entries,
                     AggSource::Sql,
@@ -1507,9 +1492,7 @@ fn process_message(
         WriteMessage::EmitDirUpdated(paths) => {
             #[cfg(test)]
             mutation_tracker.record_emit(&paths);
-            if let Some(app) = app_handle {
-                reconciler::emit_dir_updated(app, paths);
-            }
+            reconciler::emit_dir_updated(events, paths);
         }
         WriteMessage::Shutdown => return true,
     }

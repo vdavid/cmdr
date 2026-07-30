@@ -8,17 +8,15 @@
 use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
 use std::time::Instant;
 
-use tauri::AppHandle;
-use tauri_specta::Event;
-
 use crate::indexing::IndexFailureSignal;
 use crate::indexing::aggregator::AggregationPhase;
+use crate::indexing::events::{EventSink, IndexEvent};
 use crate::indexing::store::{DirStatsById, EntryRow, IndexStore, IndexStoreError};
 use crate::pluralize::pluralize_with;
 
 use super::deferred_repair::DeferredRepairs;
 use super::delta::{propagate_delta_by_id, propagate_min_subtree_epoch, propagate_recursive_has_symlinks};
-use super::{AccumulatorMaps, AggregationProgressEvent, MutationTracker, phase_to_str};
+use super::{AccumulatorMaps, MutationTracker};
 
 #[allow(
     clippy::too_many_arguments,
@@ -28,7 +26,7 @@ pub(super) fn handle_insert_entries_v2(
     conn: &rusqlite::Connection,
     entries: Vec<EntryRow>,
     accumulator: &mut AccumulatorMaps,
-    app_handle: &Option<AppHandle>,
+    events: &dyn EventSink,
     volume_id: &str,
     expected_total_entries: &AtomicU64,
     mutation_tracker: &MutationTracker,
@@ -96,16 +94,13 @@ pub(super) fn handle_insert_entries_v2(
     mutation_tracker.bump();
     // Emit flushing progress when we know the expected total
     let expected = expected_total_entries.load(Ordering::Relaxed);
-    if expected > 0
-        && let Some(app) = app_handle
-    {
-        let _ = AggregationProgressEvent {
+    if expected > 0 {
+        events.emit(IndexEvent::AggregationProgress {
             volume_id: volume_id.to_string(),
-            phase: phase_to_str(AggregationPhase::SavingEntries).to_string(),
+            phase: AggregationPhase::SavingEntries,
             current: accumulator.entries_inserted,
             total: expected,
-        }
-        .emit(app);
+        });
     }
 }
 

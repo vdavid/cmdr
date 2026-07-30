@@ -362,7 +362,7 @@ mod tests {
     #[test]
     fn handle_incremental_vacuum_reclaims_capped_batch() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+        let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
         // A directory to hang the children off, then a large batch of children.
         // Deleting the subtree frees a few thousand pages onto the freelist with
@@ -431,7 +431,7 @@ mod tests {
     #[test]
     fn truncate_drains_freelist() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+        let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
         // Long names so each row touches its own page; 5000 rows ≥ several
         // thousand pages freed by the truncate's DELETE.
@@ -476,7 +476,7 @@ mod tests {
     #[test]
     fn wal_checkpoint_defers_out_of_an_open_transaction() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+        let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
         writer.send(WriteMessage::BeginTransaction).unwrap();
         let entries: Vec<EntryRow> = (0..2000)
@@ -531,7 +531,7 @@ mod tests {
     #[test]
     fn handle_wal_checkpoint_truncates_wal_file() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+        let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
         // Grow the WAL with a non-trivial insert batch.
         let entries: Vec<EntryRow> = (0..2000)

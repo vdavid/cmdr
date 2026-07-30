@@ -59,6 +59,7 @@ impl TestInstanceGuard {
                 read_pool,
                 pending_sizes: Arc::clone(&tracker),
                 freshness: Arc::new(std::sync::Mutex::new(None)),
+                events: crate::indexing::NoopEventSink::shared(),
             },
         );
         Self { volume_id, tracker }
@@ -94,7 +95,7 @@ pub fn setup_writer() -> (IndexWriter, Connection, tempfile::TempDir) {
     let dir = tempfile::tempdir().expect("create temp dir");
     let db_path = dir.path().join("stress-test.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
     let read_conn = IndexStore::open_read_connection(&db_path).expect("open read conn");
     (writer, read_conn, dir)
 }

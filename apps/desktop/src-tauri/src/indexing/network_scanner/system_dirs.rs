@@ -266,7 +266,8 @@ mod tests {
         }
 
         // What a `Rebuild` scan sends before it walks (`lifecycle/network_scan.rs`).
-        let writer = crate::indexing::writer::IndexWriter::spawn(&db_path, None).expect("spawn writer");
+        let writer = crate::indexing::writer::IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared())
+            .expect("spawn writer");
         writer.send(WriteMessage::TruncateData).expect("truncate");
         writer.send(exclusion_stamp_message()).expect("stamp");
         writer.flush_blocking().expect("flush");

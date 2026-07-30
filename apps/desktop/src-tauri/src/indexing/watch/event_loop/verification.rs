@@ -9,8 +9,6 @@ use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Instant;
 
-use tauri::AppHandle;
-
 use super::verify_guard::{self, VerifyVerdict};
 use crate::indexing::DEBUG_STATS;
 use crate::indexing::ROOT_VOLUME_ID;
@@ -29,7 +27,11 @@ use crate::pluralize::{pluralize, pluralize_with};
 /// Called after live mode starts so the app is responsive immediately.
 /// Corrections found by verification go through the writer channel,
 /// which serializes them with live writes.
-pub(super) async fn run_background_verification(origin_dirs: HashSet<String>, writer: IndexWriter, app: AppHandle) {
+pub(super) async fn run_background_verification(
+    origin_dirs: HashSet<String>,
+    writer: IndexWriter,
+    events: std::sync::Arc<dyn crate::indexing::EventSink>,
+) {
     DEBUG_STATS.verifying.store(true, Ordering::Relaxed);
     let verify_start = Instant::now();
 
@@ -155,7 +157,7 @@ pub(super) async fn run_background_verification(origin_dirs: HashSet<String>, wr
             // its live corrections publish under the local root for the importance
             // scheduler's incremental rescore (plan Decision 5).
             lifecycle_bus::publish_dirs_changed(ROOT_VOLUME_ID, &visible_new_dirs);
-            reconciler::emit_dir_updated(&app, visible_new_dirs);
+            reconciler::emit_dir_updated(events.as_ref(), visible_new_dirs);
         }
 
         // No off-writer ancestor compensation for the new dirs: each `scan_subtree`
@@ -174,7 +176,7 @@ pub(super) async fn run_background_verification(origin_dirs: HashSet<String>, wr
             // changed); the FE emit gets the ancestor closure, whose recursive sizes
             // the corrections moved.
             lifecycle_bus::publish_dirs_changed(ROOT_VOLUME_ID, &origins);
-            reconciler::emit_dir_updated(&app, affected_paths.into_iter().collect());
+            reconciler::emit_dir_updated(events.as_ref(), affected_paths.into_iter().collect());
         }
     }
 
@@ -464,7 +466,7 @@ mod tests {
         let dir = tempfile::tempdir().expect("create temp dir");
         let db_path = dir.path().join("test-index.db");
         let _store = IndexStore::open(&db_path).expect("open store");
-        let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+        let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
         (writer, db_path, dir)
     }
 

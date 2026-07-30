@@ -8,17 +8,15 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Instant;
 
-use tauri::AppHandle;
-use tauri_specta::Event;
-
 use crate::indexing::IndexFailureSignal;
 use crate::indexing::aggregator::{self, AggregationProgress};
+use crate::indexing::events::{EventSink, IndexEvent};
 use crate::indexing::store::IndexStore;
 use crate::pluralize::{pluralize, pluralize_with};
 
 use super::deferred_repair::DeferredRepairs;
 use super::repair::repair_dir_stats_upward;
-use super::{AccumulatorMaps, AggSource, AggregationProgressEvent, phase_to_str};
+use super::{AccumulatorMaps, AggSource};
 use crate::indexing::reconcile::reconciler;
 
 /// Log severity for the count of rows a full scan skipped on a UNIQUE
@@ -115,7 +113,7 @@ const PARTIAL_AGG_SQL_MAX_SUBTREE: u64 = 100_000;
 pub(super) fn handle_compute_partial_aggregates(
     conn: &rusqlite::Connection,
     accumulator: &AccumulatorMaps,
-    app_handle: &Option<AppHandle>,
+    events: &dyn EventSink,
     hot_paths: Vec<String>,
     source: AggSource,
     signal: &IndexFailureSignal,
@@ -155,9 +153,7 @@ pub(super) fn handle_compute_partial_aggregates(
             // `EmitDirUpdated`: the writes just committed on this thread, and
             // `writer_loop` wraps each message in `objc2::rc::autoreleasepool` on
             // macOS, so the ObjC-on-background-thread rule is satisfied.
-            if let Some(app) = app_handle {
-                reconciler::emit_dir_updated(app, vec!["/".to_string()]);
-            }
+            reconciler::emit_dir_updated(events, vec!["/".to_string()]);
         }
         Err(e) => {
             signal.note(&e, &format!("compute_partial_aggregates({source:?})"));
@@ -196,7 +192,7 @@ fn set_heal_key_on_success(conn: &rusqlite::Connection, heal_latch: &mut bool, a
 pub(super) fn handle_compute_all_aggregates(
     conn: &rusqlite::Connection,
     accumulator: &mut AccumulatorMaps,
-    app_handle: &Option<AppHandle>,
+    events: &dyn EventSink,
     volume_id: &str,
     expected_total_entries: &AtomicU64,
     source: AggSource,
@@ -217,7 +213,7 @@ pub(super) fn handle_compute_all_aggregates(
         accumulator.direct_stats.len(),
         accumulator.child_dirs.len(),
     );
-    let mut on_progress = build_progress_callback(app_handle, volume_id);
+    let mut on_progress = build_progress_callback(events, volume_id);
     let result = if !use_maps {
         aggregator::compute_all_aggregates_reported(conn, &mut on_progress)
     } else {
@@ -339,22 +335,15 @@ pub(super) fn handle_backfill_missing_dir_stats(
     }
 }
 
-/// Build a progress callback that emits `index-aggregation-progress` events via the AppHandle.
-/// If no AppHandle is available, returns a no-op closure.
-fn build_progress_callback<'a>(
-    app_handle: &'a Option<AppHandle>,
-    volume_id: &'a str,
-) -> impl FnMut(AggregationProgress) + 'a {
+/// Build a progress callback that reports each aggregation phase step.
+fn build_progress_callback<'a>(events: &'a dyn EventSink, volume_id: &'a str) -> impl FnMut(AggregationProgress) + 'a {
     move |progress: AggregationProgress| {
-        if let Some(app) = app_handle {
-            let _ = AggregationProgressEvent {
-                volume_id: volume_id.to_string(),
-                phase: phase_to_str(progress.phase).to_string(),
-                current: progress.current,
-                total: progress.total,
-            }
-            .emit(app);
-        }
+        events.emit(IndexEvent::AggregationProgress {
+            volume_id: volume_id.to_string(),
+            phase: progress.phase,
+            current: progress.current,
+            total: progress.total,
+        });
     }
 }
 

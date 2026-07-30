@@ -37,14 +37,11 @@ pub fn batch_fe_logs(entries: Vec<FrontendLogEntry>) {
 mod tests {
     //! Tests for the frontend log bridge path.
     //!
-    //! Locked behind a process-global mutex because `auto_dispatcher` keeps state in
-    //! statics, so running these alongside the dispatcher's own tests in parallel would
-    //! race on the shared `STATE` and `ENABLED` flag.
+    //! Locked behind `auto_dispatcher::TEST_LOCK` because the dispatcher keeps state
+    //! in statics, so running these alongside any other test that drives it would race
+    //! on the shared `STATE` and `ENABLED` flag.
     use super::*;
-    use crate::error_reporter::auto_dispatcher::{reset_for_test, set_enabled, snapshot_for_test};
-    use std::sync::Mutex;
-
-    static FE_LOG_BRIDGE_TEST_LOCK: Mutex<()> = Mutex::new(());
+    use crate::error_reporter::auto_dispatcher::{TEST_LOCK, reset_for_test, set_enabled, snapshot_for_test};
 
     /// Regression: a frontend log entry at `Error` level must trip the auto-dispatcher
     /// the same way a Rust-side `log_error!` would. Before the FE-bridge migration to
@@ -52,7 +49,7 @@ mod tests {
     /// errors surfaced from Svelte never opened a Flow B debounce window.
     #[test]
     fn fe_error_entry_trips_auto_dispatcher() {
-        let _guard = FE_LOG_BRIDGE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _guard = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         reset_for_test();
         set_enabled(true);
 
@@ -79,7 +76,7 @@ mod tests {
     /// someone wires every level through the macro by accident.
     #[test]
     fn fe_non_error_entries_do_not_trip_auto_dispatcher() {
-        let _guard = FE_LOG_BRIDGE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _guard = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         reset_for_test();
         set_enabled(true);
 

@@ -12,8 +12,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use rusqlite::Connection;
-use tauri::AppHandle;
-use tauri_specta::Event;
 
 use super::super::churn_monitor::ChurnObserver;
 use super::super::watcher;
@@ -27,9 +25,7 @@ use super::{
 use crate::indexing::ActivityPhase;
 use crate::indexing::DEBUG_STATS;
 use crate::indexing::IndexPathSpace;
-use crate::indexing::events::{
-    IndexReplayCompleteEvent, IndexReplayProgressEvent, RescanReason, emit_rescan_notification, set_phase_for,
-};
+use crate::indexing::events::{EventSink, IndexEvent, RescanReason, emit_rescan_notification, set_phase_for};
 use crate::indexing::lifecycle::lifecycle_bus;
 use crate::indexing::reconcile::reconciler::{self, EventReconciler};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
@@ -74,7 +70,7 @@ const REPLAY_DEDUP_BATCH_SIZE: u64 = 1_000;
 pub(in crate::indexing) async fn run_replay_event_loop(
     mut event_rx: tokio::sync::mpsc::UnboundedReceiver<watcher::FsChangeEvent>,
     writer: IndexWriter,
-    app: AppHandle,
+    events: Arc<dyn EventSink>,
     config: ReplayConfig,
     fallback_tx: tokio::sync::oneshot::Sender<RescanReason>,
     watcher_overflow: Option<Arc<AtomicBool>>,
@@ -144,7 +140,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
             first_event_checked = true;
             if event.event_id > since_event_id + JOURNAL_GAP_THRESHOLD {
                 emit_rescan_notification(
-                    &app,
+                    events.as_ref(),
                     &volume_id,
                     RescanReason::JournalGap,
                     format!(
@@ -232,7 +228,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
         // the app suddenly sees millions of previously hidden paths.
         if event_count >= REPLAY_EVENT_COUNT_LIMIT {
             emit_rescan_notification(
-                &app,
+                events.as_ref(),
                 &volume_id,
                 RescanReason::ReplayOverflow,
                 format!(
@@ -274,7 +270,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                     let queued = event_rx.len();
                     log::warn!("Replay: ingestion queue at {queued} (hard cap); falling back to a full scan");
                     emit_rescan_notification(
-                        &app,
+                        events.as_ref(),
                         &volume_id,
                         RescanReason::IngestionBacklog,
                         format!(
@@ -296,12 +292,11 @@ pub(in crate::indexing) async fn run_replay_event_loop(
 
         // Emit progress every 500ms during replay
         if last_progress.elapsed() >= Duration::from_millis(500) {
-            let _ = IndexReplayProgressEvent {
+            events.emit(IndexEvent::ReplayProgress {
                 volume_id: volume_id.clone(),
                 events_processed: event_count,
                 estimated_total,
-            }
-            .emit(&app);
+            });
             last_progress = Instant::now();
         }
 
@@ -349,31 +344,29 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     }
 
     // Emit final progress
-    let _ = IndexReplayProgressEvent {
+    events.emit(IndexEvent::ReplayProgress {
         volume_id: volume_id.clone(),
         events_processed: event_count,
         estimated_total,
-    }
-    .emit(&app);
+    });
 
     // Emit replay complete
-    let _ = IndexReplayCompleteEvent {
+    events.emit(IndexEvent::ReplayComplete {
         volume_id: volume_id.clone(),
         duration_ms: replay_start.elapsed().as_millis() as u64,
-    }
-    .emit(&app);
+    });
 
     // Emit a single batched index-dir-updated with all collected paths.
     // If origin_dirs overflowed, emit a full refresh notification with
     // just "/" so the frontend refreshes everything.
     if origins_overflow {
-        reconciler::emit_dir_updated(&app, vec!["/".to_string()]);
+        reconciler::emit_dir_updated(events.as_ref(), vec!["/".to_string()]);
     } else if !origin_dirs.is_empty() {
         // The FE refresh needs the recursive-size fact, so expand the origins to
         // their ancestor closure here (the origins alone would leave every ancestor
         // showing a stale size).
         let origins: Vec<String> = origin_dirs.iter().cloned().collect();
-        reconciler::emit_dir_updated(&app, reconciler::with_ancestor_closure(&origins));
+        reconciler::emit_dir_updated(events.as_ref(), reconciler::with_ancestor_closure(&origins));
     }
 
     // Backfill dir_stats for any directories created by the replay
@@ -406,7 +399,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
         ),
         ("affected_dirs", origin_dirs.len().to_string()),
     ]);
-    set_phase_for(&app, &volume_id, ActivityPhase::Live, "post-replay");
+    set_phase_for(events.as_ref(), &volume_id, ActivityPhase::Live, "post-replay");
 
     // Replay done. Allow verifier to run and report scanning=false to frontend.
     scanning.store(false, Ordering::Relaxed);
@@ -420,9 +413,9 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     // Skip verification if the origin set overflowed (no paths to verify).
     if !origins_overflow {
         let verify_writer = writer.clone();
-        let verify_app = app.clone();
+        let verify_events = Arc::clone(&events);
         tauri::async_runtime::spawn(async move {
-            run_background_verification(origin_dirs, verify_writer, verify_app).await;
+            run_background_verification(origin_dirs, verify_writer, verify_events).await;
         });
     }
 
@@ -488,7 +481,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                         if !live_pending_origins.is_empty() {
                             let changed = mark_pending_and_drain(&volume_id, &mut live_pending_origins);
                             lifecycle_bus::publish_dirs_changed(&volume_id, &changed.origins);
-                            reconciler::emit_dir_updated(&app, changed.with_ancestors);
+                            reconciler::emit_dir_updated(events.as_ref(), changed.with_ancestors);
                         }
                         break;
                     }
@@ -499,7 +492,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                 if let Some(ref flag) = watcher_overflow
                     && flag.load(Ordering::Relaxed) {
                         emit_rescan_notification(
-                            &app,
+                            events.as_ref(),
                             &volume_id,
                             RescanReason::WatcherChannelOverflow,
                             format!(
@@ -523,7 +516,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                         let queued = event_rx.len();
                         log::warn!("Replay (live): ingestion queue at {queued} (hard cap); falling back to a full scan");
                         emit_rescan_notification(
-                            &app,
+                            events.as_ref(),
                             &volume_id,
                             RescanReason::IngestionBacklog,
                             format!(
@@ -551,7 +544,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                 if !live_pending_origins.is_empty() {
                     let changed = mark_pending_and_drain(&volume_id, &mut live_pending_origins);
                     lifecycle_bus::publish_dirs_changed(&volume_id, &changed.origins);
-                    reconciler::emit_dir_updated(&app, changed.with_ancestors);
+                    reconciler::emit_dir_updated(events.as_ref(), changed.with_ancestors);
                 }
             }
             _ = throttle_sweep_interval.tick() => {

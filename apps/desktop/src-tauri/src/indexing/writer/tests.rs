@@ -80,7 +80,13 @@ fn non_search_feeding_tracker_does_not_bump_global_generation() {
 #[test]
 fn spawned_non_feeding_writer_does_not_bump_global_generation() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn_for(&db_path, None, false, "root".to_string()).unwrap();
+    let writer = IndexWriter::spawn_for(
+        &db_path,
+        crate::indexing::NoopEventSink::shared(),
+        false,
+        "root".to_string(),
+    )
+    .unwrap();
 
     writer
         .send(WriteMessage::InsertEntriesV2(vec![EntryRow {
@@ -118,7 +124,13 @@ fn spawned_non_feeding_writer_does_not_bump_global_generation() {
 fn mark_dirs_listed_does_not_bump_global_generation() {
     let (db_path, _dir) = setup_db();
     // A root (search-feeding) writer — the one that WOULD bump on a mutation.
-    let writer = IndexWriter::spawn_for(&db_path, None, true, "root".to_string()).unwrap();
+    let writer = IndexWriter::spawn_for(
+        &db_path,
+        crate::indexing::NoopEventSink::shared(),
+        true,
+        "root".to_string(),
+    )
+    .unwrap();
 
     // Insert a dir to stamp, then flush so its row is committed.
     writer
@@ -170,7 +182,13 @@ fn mark_dirs_listed_does_not_bump_global_generation() {
 #[test]
 fn bump_current_epoch_persists_and_does_not_bump_global_generation() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn_for(&db_path, None, true, "root".to_string()).unwrap();
+    let writer = IndexWriter::spawn_for(
+        &db_path,
+        crate::indexing::NoopEventSink::shared(),
+        true,
+        "root".to_string(),
+    )
+    .unwrap();
 
     let conn = IndexStore::open_read_connection(&db_path).unwrap();
     assert_eq!(
@@ -210,7 +228,13 @@ fn root_coverage_epoch_tracks_current_epoch_across_a_continuity_break() {
     use crate::indexing::store::ROOT_ID;
 
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn_for(&db_path, None, false, "root".to_string()).unwrap();
+    let writer = IndexWriter::spawn_for(
+        &db_path,
+        crate::indexing::NoopEventSink::shared(),
+        false,
+        "root".to_string(),
+    )
+    .unwrap();
 
     // A clean scan stamps the root listed at the current epoch, then
     // aggregates. (One root dir, no children: a fully-covered tree.)
@@ -273,7 +297,7 @@ pub(super) fn open_read(db_path: &Path) -> IndexStore {
 #[test]
 fn spawn_and_shutdown() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
     writer.shutdown();
     // Further sends should fail
     let result = writer.send(WriteMessage::Shutdown);
@@ -289,7 +313,7 @@ fn spawn_and_shutdown() {
 #[test]
 fn the_idle_epoch_ticks_every_time_the_writer_catches_up() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     assert_eq!(
         writer.idle_epoch(),
@@ -324,7 +348,13 @@ fn non_root_writer_drain_clears_its_own_tracker_not_root() {
 
     let volume_id = "smb://writer-test-nonroot";
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn_for(&db_path, None, false, volume_id.to_string()).unwrap();
+    let writer = IndexWriter::spawn_for(
+        &db_path,
+        crate::indexing::NoopEventSink::shared(),
+        false,
+        volume_id.to_string(),
+    )
+    .unwrap();
     let instance = TestInstanceGuard::register(volume_id, &db_path, IndexVolumeKind::Smb);
 
     assert!(
@@ -368,7 +398,13 @@ fn non_root_writer_drain_clears_its_own_tracker_not_root() {
 fn writer_drain_clears_transient_marks_but_preserves_held_roots() {
     let volume_id = "smb://writer-test-held-roots";
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn_for(&db_path, None, false, volume_id.to_string()).unwrap();
+    let writer = IndexWriter::spawn_for(
+        &db_path,
+        crate::indexing::NoopEventSink::shared(),
+        false,
+        volume_id.to_string(),
+    )
+    .unwrap();
     let instance = TestInstanceGuard::register(volume_id, &db_path, IndexVolumeKind::Smb);
 
     // A transient mark (dropped wholesale on drain) and a held rescan root (kept).
@@ -403,7 +439,7 @@ fn writer_drain_clears_transient_marks_but_preserves_held_roots() {
 #[test]
 fn get_entry_count_via_writer() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Insert using integer-keyed API (simpler, no path resolution needed)
     let entries = vec![
@@ -446,7 +482,7 @@ fn get_entry_count_via_writer() {
 #[test]
 fn update_meta_via_writer() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     writer
         .send(WriteMessage::UpdateMeta {
@@ -471,7 +507,7 @@ fn update_meta_via_writer() {
 #[test]
 fn update_meta_total_physical_bytes_round_trip() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     writer
         .send(WriteMessage::UpdateMeta {
@@ -491,7 +527,7 @@ fn update_meta_total_physical_bytes_round_trip() {
 #[test]
 fn delete_meta_via_writer_clears_key() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Set, then delete, then expect the key to read back as None.
     writer
@@ -530,7 +566,7 @@ fn delete_meta_via_writer_clears_key() {
 #[tokio::test]
 async fn flush_confirms_prior_writes() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Insert using integer-keyed API
     let entries = vec![EntryRow {
@@ -560,7 +596,7 @@ async fn flush_confirms_prior_writes() {
 #[test]
 fn update_last_event_id_via_writer() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     writer.send(WriteMessage::UpdateLastEventId(12345)).unwrap();
     writer.flush_blocking().unwrap();
@@ -575,7 +611,7 @@ fn update_last_event_id_via_writer() {
 #[test]
 fn db_path_is_available() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
     assert_eq!(writer.db_path(), db_path);
     writer.shutdown();
 }
@@ -588,7 +624,7 @@ fn db_path_is_available() {
 #[test]
 fn try_send_enqueues_and_tracks_queue_depth() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     let sent = writer
         .try_send(WriteMessage::ComputePartialAggregates {
@@ -618,7 +654,7 @@ fn try_send_enqueues_and_tracks_queue_depth() {
 #[test]
 fn try_send_after_shutdown_errors_and_undoes_depth() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
     writer.shutdown();
 
     let depth_before = writer.queue_depth();
@@ -758,7 +794,7 @@ fn a_fatal_storage_error_stops_the_writer_and_trips_the_signal() {
     conn.execute_batch("PRAGMA query_only = ON").expect("enable query_only");
 
     let (sender, receiver) = mpsc::sync_channel::<WriteMessage>(WRITER_CHANNEL_CAPACITY);
-    let signal = Arc::new(IndexFailureSignal::new());
+    let signal = Arc::new(IndexFailureSignal::new(crate::indexing::NoopEventSink::shared()));
     let queue_depth = Arc::new(AtomicUsize::new(0));
 
     // Buffer a write that fails READONLY, then MANY more, BEFORE spawning the loop.
@@ -792,7 +828,7 @@ fn a_fatal_storage_error_stops_the_writer_and_trips_the_signal() {
         writer_loop(
             conn,
             receiver,
-            None,
+            crate::indexing::NoopEventSink::shared(),
             "root".to_string(),
             Arc::new(AtomicU64::new(0)),
             Arc::new(AtomicI64::new(2)),

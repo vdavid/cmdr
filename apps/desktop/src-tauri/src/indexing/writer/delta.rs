@@ -272,7 +272,7 @@ mod tests {
     #[test]
     fn propagate_delta_by_id_via_writer() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+        let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
         // Insert a directory to propagate to
         let entries = vec![EntryRow {
@@ -335,7 +335,7 @@ mod tests {
     #[test]
     fn propagate_delta_by_id_preserves_min_subtree_epoch() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+        let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
         let entries = vec![EntryRow {
             id: 10,
@@ -398,7 +398,7 @@ mod tests {
     #[test]
     fn live_new_dir_drops_ancestor_min_subtree_epoch_to_zero() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+        let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
         // home(10), listed at epoch 5, with complete dir_stats.
         let entries = vec![EntryRow {
@@ -494,7 +494,7 @@ mod tests {
     #[test]
     fn marking_a_filled_dir_lifts_ancestor_coverage() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+        let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
         let entries = vec![EntryRow {
             id: 10,
@@ -580,7 +580,7 @@ mod tests {
     #[test]
     fn subtree_delete_of_incomplete_child_raises_parent() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+        let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
         let entries = vec![
             EntryRow {
@@ -669,7 +669,7 @@ mod tests {
     #[test]
     fn move_recomputes_both_chains_min_subtree_epoch() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+        let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
         // ROOT → src(10) → incomplete(30); ROOT → dst(20). src holds an
         // incomplete child so src is 0; dst is complete at 5.

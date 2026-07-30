@@ -49,6 +49,12 @@ use specta_typescript::Typescript;
 use tauri_specta::{Builder, collect_events};
 
 use crate::commands::search::SearchIndexReadyEvent;
+use crate::events::index_mapping::{
+    AggregationProgressEvent, IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexFreshnessChangedEvent,
+    IndexMemoryWarningEvent, IndexPhaseChangedEvent, IndexReplayCompleteEvent, IndexReplayProgressEvent,
+    IndexRescanNotificationEvent, IndexScanAbortedEvent, IndexScanCompleteEvent, IndexScanProgressEvent,
+    IndexScanStartedEvent, MediaEnrichProgressEvent, MediaEnrichTerminalEvent,
+};
 use crate::file_system::git::watcher::GitStateChangedPayload;
 use crate::file_system::listing::streaming::{
     ListingCancelledEvent, ListingCompleteEvent, ListingErrorEvent, ListingOpeningEvent, ListingProgressEvent,
@@ -60,14 +66,7 @@ use crate::file_system::write_operations::{
     WriteErrorEvent, WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
 };
 use crate::file_system::write_operations::{OperationsChanged, VolumesBusyChanged};
-use crate::indexing::writer::AggregationProgressEvent;
-use crate::indexing::{
-    IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexFreshnessChangedEvent, IndexMemoryWarningEvent,
-    IndexPhaseChangedEvent, IndexReplayCompleteEvent, IndexReplayProgressEvent, IndexRescanNotificationEvent,
-    IndexScanAbortedEvent, IndexScanCompleteEvent, IndexScanProgressEvent, IndexScanStartedEvent,
-};
 use crate::ipc_collectors::collect_all_types;
-use crate::media_index::events::{MediaEnrichProgressEvent, MediaEnrichTerminalEvent};
 use crate::mtp::{
     MtpDeviceConnected, MtpDeviceDisconnected, MtpExclusiveAccessError, MtpPermissionError, MtpPtpcameradRestored,
     MtpPtpcameradSuppressed, MtpStorageRemoved,

@@ -1,31 +1,28 @@
-//! Typed Tauri progress + terminal events for image enrichment: image
-//! indexing joins the top-right indexing indicator as a SECOND publisher alongside the
-//! drive indexer, so the user sees honest per-volume progress + ETA and knows when a
-//! sweep is running.
+//! Progress + terminal reporting for image enrichment: image indexing joins the
+//! top-right indexing indicator as a SECOND publisher alongside the drive indexer, so
+//! the user sees honest per-volume progress + ETA and knows when a sweep is running.
 //!
-//! Two events per pass:
-//! - [`MediaEnrichProgressEvent`] (`media-enrich-progress`), throttled — the live bar.
-//! - [`MediaEnrichTerminalEvent`] (`media-enrich-terminal`), exactly one per pass on
-//!   EVERY exit path (completion, pause, cancel, and the `?`-error bubbles). Its typed
+//! Two reports per pass, both through the injected `EventSink`:
+//! - `IndexEvent::MediaEnrichProgress`, throttled — the live bar.
+//! - `IndexEvent::MediaEnrichTerminal`, exactly one per pass on EVERY exit path
+//!   (completion, pause, cancel, and the `?`-error bubbles). Its typed
 //!   [`MediaEnrichTerminalReason`] tells the frontend to clear the row (completion /
 //!   cancel / failure) or re-voice it paused (the two pause reasons). Without a terminal
 //!   on every exit the row would stick at "enriching" forever — the stuck-row bug
-//!   `index-scan-aborted` fixed for drive scans.
+//!   the drive scans' aborted event fixed.
 //!
 //! The [`EnrichTerminalGuard`] (RAII) guarantees the "on every exit path" property: it
-//! defaults to [`MediaEnrichTerminalReason::Failed`] and emits on `Drop`, so a `?`-error
-//! bubble still reports a terminal; the pass overrides the reason before a clean exit.
-//! Registered in `ipc.rs`'s `collect_events!`; consumed via the typed `on*` wrappers in
-//! `tauri-commands/indexing.ts`.
+//! defaults to [`MediaEnrichTerminalReason::Failed`] and reports on `Drop`, so a
+//! `?`-error bubble still reports a terminal; the pass overrides the reason before a
+//! clean exit. The wire payloads live in `events/index_mapping.rs`.
 
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
-use tauri_specta::Event;
 
 use crate::ignore_poison::IgnorePoison;
+use crate::indexing::{EventSink, IndexEvent};
 
 use super::progress::{EnrichProgress, EnrichProgressSink, should_emit_progress};
 
@@ -34,25 +31,6 @@ use super::progress::{EnrichProgress, EnrichProgressSink, should_emit_progress};
 /// final tick). Keeps emission off the per-image hot path bar a counter + time check.
 const MIN_INTERVAL_MS: u64 = 500;
 const MIN_STEP: u64 = 100;
-
-/// Throttled progress for one volume's enrichment pass. `total` / `bytes_total` are the
-/// ENRICHABLE-subset denominators (images passing the coverage gates), NEVER the full
-/// walked set — a raw walked-set denominator rebuilds the never-finishes bug inside the
-/// indicator. Wire name pinned (the `…Event` suffix wouldn't kebab-case to it).
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
-#[tauri_specta(event_name = "media-enrich-progress")]
-#[serde(rename_all = "camelCase")]
-pub struct MediaEnrichProgressEvent {
-    pub volume_id: String,
-    /// Subset images processed so far (enriched, already-current, or quietly skipped).
-    pub done: u64,
-    /// Total images in the enrichable subset (the honest denominator).
-    pub total: u64,
-    /// Bytes processed so far.
-    pub bytes_done: u64,
-    /// Total bytes across the enrichable subset.
-    pub bytes_total: u64,
-}
 
 /// Why a volume's enrichment pass ended. A typed discriminant, never a string
 /// (`no-string-matching`): the frontend clears the indicator row on `Completed` /
@@ -72,17 +50,7 @@ pub enum MediaEnrichTerminalReason {
     Failed,
 }
 
-/// A pass ended. EVERY pass exit emits exactly one (see the module docs), so the
-/// indicator row never sticks at "enriching". Wire name pinned.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
-#[tauri_specta(event_name = "media-enrich-terminal")]
-#[serde(rename_all = "camelCase")]
-pub struct MediaEnrichTerminalEvent {
-    pub volume_id: String,
-    pub reason: MediaEnrichTerminalReason,
-}
-
-// ── The production progress sink (throttled Tauri emitter) ──────────────────
+// ── The production progress sink (throttled) ────────────────────────────────
 
 /// The mutable throttle state behind the `&self` [`EnrichProgressSink`] contract.
 #[derive(Default)]
@@ -92,21 +60,21 @@ struct ThrottleState {
 }
 
 /// The production progress sink: throttles per the [`should_emit_progress`] cadence and
-/// emits [`MediaEnrichProgressEvent`]. An empty enrichable subset (`total == 0`) shows
-/// no row at all. Constructed per pass; the enrich core calls [`report`](Self::report)
-/// once at start (`done == 0`) and once per processed image.
-pub(crate) struct TauriEnrichEmitter {
-    app: AppHandle,
+/// reports `IndexEvent::MediaEnrichProgress`. An empty enrichable subset (`total == 0`)
+/// shows no row at all. Constructed per pass; the enrich core calls
+/// [`report`](Self::report) once at start (`done == 0`) and once per processed image.
+pub(crate) struct EnrichProgressEmitter {
+    events: Arc<dyn EventSink>,
     volume_id: String,
     clock: Instant,
     state: Mutex<ThrottleState>,
 }
 
-impl TauriEnrichEmitter {
-    /// A sink emitting for `volume_id` over `app`, its clock starting now.
-    pub(crate) fn new(app: AppHandle, volume_id: String) -> Self {
+impl EnrichProgressEmitter {
+    /// A sink reporting for `volume_id` through `events`, its clock starting now.
+    pub(crate) fn new(events: Arc<dyn EventSink>, volume_id: String) -> Self {
         Self {
-            app,
+            events,
             volume_id,
             clock: Instant::now(),
             state: Mutex::new(ThrottleState::default()),
@@ -114,7 +82,7 @@ impl TauriEnrichEmitter {
     }
 }
 
-impl EnrichProgressSink for TauriEnrichEmitter {
+impl EnrichProgressSink for EnrichProgressEmitter {
     fn report(&self, progress: EnrichProgress) {
         // No enrichable images ⇒ no row (an empty pass never lights the indicator).
         if progress.total == 0 {
@@ -135,25 +103,24 @@ impl EnrichProgressSink for TauriEnrichEmitter {
         state.last_emit_ms = Some(now_ms);
         state.last_done = progress.done;
         drop(state);
-        let _ = MediaEnrichProgressEvent {
+        self.events.emit(IndexEvent::MediaEnrichProgress {
             volume_id: self.volume_id.clone(),
             done: progress.done,
             total: progress.total,
             bytes_done: progress.bytes_done,
             bytes_total: progress.bytes_total,
-        }
-        .emit(&self.app);
+        });
     }
 }
 
 // ── The terminal guard (RAII, on-every-exit-path) ───────────────────────────
 
-/// The boxed terminal-emit action the guard fires on drop. Production captures the
-/// `AppHandle`; a test captures a recorder, so the "every exit emits a terminal" and
-/// "an error path emits `Failed`" contracts are unit-testable without an app.
+/// The boxed terminal-report action the guard fires on drop. Production captures the
+/// sink; a test captures a recorder, so the "every exit emits a terminal" and
+/// "an error path emits `Failed`" contracts are unit-testable on their own.
 type TerminalEmit = Box<dyn FnOnce(MediaEnrichTerminalReason) + Send>;
 
-/// Emits a [`MediaEnrichTerminalEvent`] on drop, so EVERY pass exit path (a clean
+/// Reports a terminal on drop, so EVERY pass exit path (a clean
 /// return, a pause, a cancel, or a `?`-error bubble) reports exactly one terminal event.
 /// Defaults to [`MediaEnrichTerminalReason::Failed`]; the pass overrides the
 /// reason via [`set`](Self::set) before a clean / paused / cancelled exit, so only a
@@ -172,14 +139,14 @@ impl EnrichTerminalGuard {
         }
     }
 
-    /// A guard that emits `media-enrich-terminal` for `volume_id` over `app`.
-    pub(crate) fn for_app(app: AppHandle, volume_id: String) -> Self {
+    /// A guard that reports the terminal for `volume_id` through `events`.
+    pub(crate) fn for_sink(events: Arc<dyn EventSink>, volume_id: String) -> Self {
         Self::new(Box::new(move |reason| {
-            let _ = MediaEnrichTerminalEvent { volume_id, reason }.emit(&app);
+            events.emit(IndexEvent::MediaEnrichTerminal { volume_id, reason });
         }))
     }
 
-    /// A guard that emits nothing (the scheduler has no app — unit tests).
+    /// A guard that reports nothing (a silent live tick, or a unit test).
     pub(crate) fn disabled() -> Self {
         Self {
             emit: None,

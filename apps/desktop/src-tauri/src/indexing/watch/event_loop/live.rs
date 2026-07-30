@@ -13,7 +13,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use rusqlite::Connection;
-use tauri::AppHandle;
 
 use super::super::churn_monitor::ChurnObserver;
 use super::super::watcher;
@@ -23,7 +22,9 @@ use super::{
 };
 use crate::indexing::DEBUG_STATS;
 use crate::indexing::IndexPathSpace;
-use crate::indexing::events::{RescanReason, emit_rescan_notification};
+use crate::indexing::events::{
+    Diagnostic, EventSink, IndexErrorReport, IndexEvent, RescanReason, emit_rescan_notification,
+};
 use crate::indexing::lifecycle::{lifecycle_bus, manager};
 use crate::indexing::metadata;
 use crate::indexing::paths::path_prefix;
@@ -94,7 +95,7 @@ pub(in crate::indexing) async fn run_live_event_loop(
     mut event_rx: tokio::sync::mpsc::UnboundedReceiver<watcher::FsChangeEvent>,
     mut reconciler: EventReconciler,
     writer: IndexWriter,
-    app: AppHandle,
+    events: Arc<dyn EventSink>,
     volume_id: String,
     space: IndexPathSpace,
     watcher_overflow: Option<Arc<AtomicBool>>,
@@ -115,9 +116,11 @@ pub(in crate::indexing) async fn run_live_event_loop(
     let conn = match open_read_conn_with_retry(&db_path).await {
         Ok(c) => c,
         Err(e) => {
-            crate::log_error!(
-                "Live event loop: failed to open read connection after retries, live indexing disabled: {e}"
-            );
+            events.emit(IndexEvent::Error {
+                report: IndexErrorReport::LiveEventLoopUnavailable {
+                    detail: Diagnostic(e.to_string()),
+                },
+            });
             return;
         }
     };
@@ -228,7 +231,7 @@ pub(in crate::indexing) async fn run_live_event_loop(
                             "Live event processing: ingestion queue at {queued} (hard cap); falling back to a full scan"
                         );
                         emit_rescan_notification(
-                            &app,
+                            events.as_ref(),
                             &volume_id,
                             RescanReason::IngestionBacklog,
                             format!(
@@ -257,7 +260,7 @@ pub(in crate::indexing) async fn run_live_event_loop(
                 if let Some(ref flag) = watcher_overflow
                     && flag.load(Ordering::Relaxed) {
                         emit_rescan_notification(
-                            &app,
+                            events.as_ref(),
                             &volume_id,
                             RescanReason::WatcherChannelOverflow,
                             format!(

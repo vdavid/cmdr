@@ -15,7 +15,7 @@ async fn scans_in_memory_tree_into_index() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = dir.path().join("vol-scan.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
 
     // Build an in-memory volume with a known tree:
     //   /sub/         (dir)
@@ -73,7 +73,7 @@ async fn errored_listing_is_not_marked() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = dir.path().join("vol-scan-mark.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
 
     // Tree:
     //   /good/        (dir, lists fine, has one file)
@@ -153,7 +153,7 @@ async fn walk_lists_directories_concurrently() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = dir.path().join("vol-scan-concurrency.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
 
     // Root with many empty subdirs (≫ FULL_LISTING_BUDGET): the root listing discovers
     // them all, then they list concurrently up to the cap.
@@ -202,7 +202,7 @@ async fn empty_root_fresh_scan_does_not_complete() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = dir.path().join("vol-scan-empty-root.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
 
     // Root lists fine but has no children at all.
     let vol: Arc<dyn Volume> = Arc::new(InMemoryVolume::with_entries("Test", vec![]));
@@ -242,7 +242,7 @@ async fn failed_root_listing_does_not_complete() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = dir.path().join("vol-scan-root-fail.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
 
     let vol: Arc<dyn Volume> = Arc::new(RootFailsVolume {
         inner: InMemoryVolume::with_entries("Test", vec![entry("a.txt", "/a.txt", false, Some(1))]),
@@ -277,7 +277,7 @@ async fn honors_cancellation_before_first_listing() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = dir.path().join("vol-scan-cancel.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
 
     let vol = InMemoryVolume::with_entries("Test", vec![entry("a.txt", "/a.txt", false, Some(1))]);
     let vol: Arc<dyn Volume> = Arc::new(vol);

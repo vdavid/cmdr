@@ -167,7 +167,13 @@ mod tests {
         let dir = tempfile::tempdir().expect("temp dir");
         let db_path = dir.path().join("rescan-emit.db");
         let _store = IndexStore::open(&db_path).expect("open store");
-        let writer = IndexWriter::spawn_for(&db_path, None, false, volume_id.to_string()).expect("spawn writer");
+        let writer = IndexWriter::spawn_for(
+            &db_path,
+            crate::indexing::NoopEventSink::shared(),
+            false,
+            volume_id.to_string(),
+        )
+        .expect("spawn writer");
         let instance = TestInstanceGuard::register(volume_id, &db_path, IndexVolumeKind::Smb);
         (writer, dir, instance)
     }

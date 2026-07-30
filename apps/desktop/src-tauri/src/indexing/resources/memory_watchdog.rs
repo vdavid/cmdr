@@ -179,21 +179,21 @@ static WATCHDOG_RUNNING: AtomicBool = AtomicBool::new(false);
 /// `phys_footprint` every 5 seconds via `task_info`, for the whole process
 /// lifetime. On other platforms, no-op.
 #[cfg(target_os = "macos")]
-pub fn start(app: tauri::AppHandle) {
+pub fn start(events: std::sync::Arc<dyn crate::indexing::EventSink>) {
     // Idempotent: only the first caller spawns the single global watchdog.
     if WATCHDOG_RUNNING.swap(true, Ordering::SeqCst) {
         return;
     }
-    tauri::async_runtime::spawn(run_watchdog(app));
+    tauri::async_runtime::spawn(run_watchdog(events));
 }
 
 #[cfg(not(target_os = "macos"))]
-pub fn start(_app: tauri::AppHandle) {
+pub fn start(_events: std::sync::Arc<dyn crate::indexing::EventSink>) {
     // No-op on non-macOS platforms
 }
 
 #[cfg(target_os = "macos")]
-async fn run_watchdog(app: tauri::AppHandle) {
+async fn run_watchdog(events: std::sync::Arc<dyn crate::indexing::EventSink>) {
     use std::time::Duration;
 
     let mut interval = tokio::time::interval(Duration::from_secs(CHECK_INTERVAL_SECS));
@@ -212,11 +212,11 @@ async fn run_watchdog(app: tauri::AppHandle) {
         match state.decide(phys_footprint) {
             WatchdogAction::Nothing => {}
             WatchdogAction::Warn => on_warn(phys_footprint),
-            WatchdogAction::Stop => on_stop(&app, phys_footprint),
+            WatchdogAction::Stop => on_stop(events.as_ref(), phys_footprint),
             WatchdogAction::Escalate {
                 escalations,
                 growth_since_stop,
-            } => on_escalate(&app, phys_footprint, escalations, growth_since_stop),
+            } => on_escalate(events.as_ref(), phys_footprint, escalations, growth_since_stop),
             WatchdogAction::Recovered => {
                 log::info!(
                     "Memory watchdog: phys_footprint fell back to {:.2} GB, under the {} GB warning line. \
@@ -244,28 +244,29 @@ fn on_warn(phys_footprint: u64) {
 
 /// Crossed the stop line: stop every volume's index and tell the user.
 #[cfg(target_os = "macos")]
-fn on_stop(app: &tauri::AppHandle, phys_footprint: u64) {
+fn on_stop(events: &dyn crate::indexing::EventSink, phys_footprint: u64) {
     let snapshot = MemorySnapshot::capture();
 
-    // Drives a user-visible toast; exactly the kind of error we want to ship
-    // diagnostic context for when the user has opted in.
-    crate::log_error!(
-        "Memory watchdog: phys_footprint {:.2} GB exceeded the {} GB safety limit. \
-         Stopping all indexing to prevent a system crash.\n{}",
-        gb(phys_footprint),
-        STOP_THRESHOLD / (1024 * 1024 * 1024),
-        snapshot.as_ref().map(MemorySnapshot::report).unwrap_or_default(),
-    );
+    // Worth an error report, with the breakdown attached: exactly the kind of
+    // failure we want diagnostic context for when the user has opted in.
+    events.emit(crate::indexing::IndexEvent::Error {
+        report: crate::indexing::IndexErrorReport::MemoryWatchdog {
+            action: crate::indexing::MemoryWatchdogAction::StoppedIndexing,
+            phys_footprint_bytes: phys_footprint,
+            limit_bytes: STOP_THRESHOLD,
+            growth_since_stop_bytes: None,
+            escalation: None,
+            snapshot: snapshot.as_ref().map(|s| crate::indexing::Diagnostic(s.report())),
+        },
+    });
 
-    // Emit user-visible event, carrying the discriminating figures (not just RSS)
-    // so a shipped error report tells the real story.
-    use tauri_specta::Event;
-    let _ = MemorySnapshot::memory_warning_event(
+    // Report the user-visible warning, carrying the discriminating figures (not
+    // just RSS) so a shipped error report tells the real story.
+    events.emit(MemorySnapshot::memory_warning_event(
         snapshot.as_ref(),
         phys_footprint,
         crate::indexing::MemoryWatchdogAction::StoppedIndexing,
-    )
-    .emit(app);
+    ));
 
     // Global budget: stop EVERY registered volume's index, not just `root`. Scans
     // run in parallel (the wire, not RAM, is the bottleneck), so the safety net is
@@ -276,25 +277,25 @@ fn on_stop(app: &tauri::AppHandle, phys_footprint: u64) {
 /// Memory kept climbing after the stop. Whatever is growing isn't (only)
 /// indexing, so say so loudly and re-run the stop in case something restarted.
 #[cfg(target_os = "macos")]
-fn on_escalate(app: &tauri::AppHandle, phys_footprint: u64, escalations: u32, growth_since_stop: u64) {
+fn on_escalate(events: &dyn crate::indexing::EventSink, phys_footprint: u64, escalations: u32, growth_since_stop: u64) {
     let snapshot = MemorySnapshot::capture();
 
-    crate::log_error!(
-        "Memory watchdog: phys_footprint is STILL climbing {:.2} GB after all indexing was stopped \
-         (now {:.2} GB, escalation #{}). The stop didn't hold, so the growth is not (only) the index scan.\n{}",
-        gb(growth_since_stop),
-        gb(phys_footprint),
-        escalations,
-        snapshot.as_ref().map(MemorySnapshot::report).unwrap_or_default(),
-    );
+    events.emit(crate::indexing::IndexEvent::Error {
+        report: crate::indexing::IndexErrorReport::MemoryWatchdog {
+            action: crate::indexing::MemoryWatchdogAction::StillGrowingAfterStop,
+            phys_footprint_bytes: phys_footprint,
+            limit_bytes: STOP_THRESHOLD,
+            growth_since_stop_bytes: Some(growth_since_stop),
+            escalation: Some(escalations),
+            snapshot: snapshot.as_ref().map(|s| crate::indexing::Diagnostic(s.report())),
+        },
+    });
 
-    use tauri_specta::Event;
-    let _ = MemorySnapshot::memory_warning_event(
+    events.emit(MemorySnapshot::memory_warning_event(
         snapshot.as_ref(),
         phys_footprint,
         crate::indexing::MemoryWatchdogAction::StillGrowingAfterStop,
-    )
-    .emit(app);
+    ));
 
     // Cheap and idempotent: a volume may have been registered again since the
     // stop, and the subsystem hooks only flip atomics.
@@ -489,14 +490,14 @@ impl MemorySnapshot {
         )
     }
 
-    /// Build the frontend event. Falls back to whatever the caller already knows
-    /// (`phys_footprint`) if the full snapshot couldn't be gathered.
+    /// Build the memory-warning report. Falls back to whatever the caller already
+    /// knows (`phys_footprint`) if the full snapshot couldn't be gathered.
     fn memory_warning_event(
         snapshot: Option<&MemorySnapshot>,
         phys_footprint: u64,
         action: crate::indexing::MemoryWatchdogAction,
-    ) -> crate::indexing::IndexMemoryWarningEvent {
-        crate::indexing::IndexMemoryWarningEvent {
+    ) -> crate::indexing::IndexEvent {
+        crate::indexing::IndexEvent::MemoryWarning {
             phys_footprint_bytes: phys_footprint,
             resident_bytes: snapshot.map_or(phys_footprint, |s| s.resident_size),
             rust_heap_bytes: snapshot.map_or(0, |s| s.rust_heap),

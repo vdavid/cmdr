@@ -584,7 +584,7 @@ fn partial_aggregation_is_visible_to_enrichment_mid_scan() {
     let dir = tempfile::tempdir().expect("create temp dir");
     let db_path = dir.path().join("partial-enrich.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = writer::IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = writer::IndexWriter::spawn(&db_path, NoopEventSink::shared()).expect("spawn writer");
 
     // Enrich `entries` against a fresh read connection, exactly as the read path
     // does after a `flush_blocking` barrier commits the writer's partial pass.
@@ -683,7 +683,7 @@ fn enrichment_sees_no_partial_size_without_a_partial_pass() {
     let dir = tempfile::tempdir().expect("create temp dir");
     let db_path = dir.path().join("partial-enrich-teeth.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = writer::IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = writer::IndexWriter::spawn(&db_path, NoopEventSink::shared()).expect("spawn writer");
 
     let batch = vec![
         EntryRow {
@@ -1011,6 +1011,7 @@ fn reserve_initializing_for(volume_id: &str) -> tempfile::TempDir {
         pool,
         pending,
         Arc::new(std::sync::Mutex::new(None)),
+        NoopEventSink::shared(),
     )
     .unwrap_or_else(|_| panic!("reserve {volume_id} must succeed from absent"));
     dir
@@ -1057,6 +1058,7 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
         pool2,
         pending2,
         Arc::new(std::sync::Mutex::new(None)),
+        NoopEventSink::shared(),
     );
     assert!(
         res.is_err(),
@@ -1085,6 +1087,7 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
                 read_pool: pool_sd,
                 pending_sizes: pending_sd,
                 freshness: Arc::new(std::sync::Mutex::new(None)),
+                events: NoopEventSink::shared(),
             },
         );
         // store_sd is unused after insert; the ShuttingDown phase carries no store.
@@ -1102,6 +1105,7 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
         pool4,
         pending4,
         Arc::new(std::sync::Mutex::new(None)),
+        NoopEventSink::shared(),
     );
     assert!(res.is_err(), "reservation from ShuttingDown must fail");
     assert!(
@@ -1216,6 +1220,7 @@ fn shutdown_drain_does_not_hold_indexing_lock() {
                 read_pool: pool,
                 pending_sizes: pending,
                 freshness: Arc::new(std::sync::Mutex::new(None)),
+                events: NoopEventSink::shared(),
             },
         );
     }

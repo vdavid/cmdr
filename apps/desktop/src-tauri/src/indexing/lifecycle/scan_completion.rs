@@ -11,14 +11,10 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use tauri::AppHandle;
-use tauri_specta::Event;
-
 use crate::ignore_poison::IgnorePoison;
 use crate::indexing::IndexPathSpace;
 use crate::indexing::events::{
-    ActivityPhase, DEBUG_STATS, IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexScanAbortedEvent,
-    IndexScanCompleteEvent, RescanReason, emit_rescan_notification, set_phase_for,
+    ActivityPhase, DEBUG_STATS, EventSink, IndexEvent, RescanReason, emit_rescan_notification, set_phase_for,
 };
 use crate::indexing::reconcile::reconciler::{self, EventReconciler};
 use crate::indexing::scanner::{ScanError, ScanSummary};
@@ -53,8 +49,8 @@ pub(super) struct ScanCompletion {
     /// for a mount-rooted external drive). Threaded to the reconciler's post-scan
     /// buffered replay and the live event loop so both resolve in the right space.
     pub space: IndexPathSpace,
-    /// Tauri app handle for emitting events.
-    pub app: AppHandle,
+    /// Where this scan's completion reports go.
+    pub events: Arc<dyn EventSink>,
     /// Writer handle for meta writes, flushing, and backfill.
     pub writer: IndexWriter,
     /// This volume's freshness signal (the same `Arc` the registry holds).
@@ -91,7 +87,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
         watcher_overflow_flag,
         volume_id,
         space,
-        app,
+        events,
         writer,
         freshness,
         live_event_task_slot,
@@ -130,7 +126,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
                 ("dirs", summary.total_dirs.to_string()),
                 ("duration_s", format!("{:.1}", summary.duration_ms as f64 / 1000.0)),
             ]);
-            set_phase_for(&app, &volume_id, ActivityPhase::Aggregating, "post-scan");
+            set_phase_for(events.as_ref(), &volume_id, ActivityPhase::Aggregating, "post-scan");
 
             // Step 4: Reconcile buffered watcher events, in this volume's path space
             // (a mount-rooted drive strips its mount root before `resolve_path`).
@@ -150,7 +146,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
 
             if reconciler.did_buffer_overflow() {
                 emit_rescan_notification(
-                    &app,
+                    events.as_ref(),
                     &volume_id,
                     RescanReason::ReconcilerBufferOverflow,
                     "The filesystem watcher buffered over 500,000 events during the \
@@ -180,13 +176,12 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
             // Order matters: the frontend's scan-complete handler calls
             // resetAggregation(), so the saving_entries event must come
             // after to avoid being immediately cleared.
-            let _ = IndexScanCompleteEvent {
+            events.emit(IndexEvent::ScanComplete {
                 volume_id: volume_id.clone(),
                 total_entries: summary.total_entries,
                 total_dirs: summary.total_dirs,
                 duration_ms: summary.duration_ms,
-            }
-            .emit(&app);
+            });
 
             // Tell the writer how many entries the scan produced, so it
             // can report flushing progress as it drains remaining
@@ -205,20 +200,18 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
             // The flush above drains all queued writes including
             // ComputeAllAggregates, so by this point the UI can dismiss
             // the progress overlay.
-            let _ = IndexAggregationCompleteEvent {
+            events.emit(IndexEvent::AggregationComplete {
                 volume_id: volume_id.clone(),
-            }
-            .emit(&app);
+            });
 
             DEBUG_STATS.close_phase_with_stats(vec![]);
-            set_phase_for(&app, &volume_id, ActivityPhase::Reconciling, "post-scan");
+            set_phase_for(events.as_ref(), &volume_id, ActivityPhase::Reconciling, "post-scan");
 
             // Tell the frontend to refresh all visible listings. Directory
             // sizes are now available for the first time after a full scan.
-            let _ = IndexDirUpdatedEvent {
+            events.emit(IndexEvent::DirsUpdated {
                 paths: vec!["/".to_string()],
-            }
-            .emit(&app);
+            });
 
             // Store scan metadata now, before the reconciler replay which
             // can fail (e.g. "database is locked") and cause an early return.
@@ -301,7 +294,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
 
             // Replay events that arrived after the scan read their paths
             match reconciler.replay(scan_start_event_id, &replay_conn, &writer, &mut |paths| {
-                reconciler::emit_dir_updated(&app, paths)
+                reconciler::emit_dir_updated(events.as_ref(), paths)
             }) {
                 Ok(last_id) => {
                     log::info!("Reconciler: post-scan replay complete (last_event_id={last_id})");
@@ -325,6 +318,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
             if !summary.was_cancelled {
                 super::state::apply_freshness_event_on(
                     &freshness,
+                    events.as_ref(),
                     &volume_id,
                     super::freshness::FreshnessEvent::ScanCompleted,
                 );
@@ -332,7 +326,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
 
             DEBUG_STATS.close_phase_with_stats(vec![("buffered_events", buffered_count.to_string())]);
             set_phase_for(
-                &app,
+                events.as_ref(),
                 &volume_id,
                 ActivityPhase::Live,
                 "post-scan reconciliation complete",
@@ -340,7 +334,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
 
             // Step 5: Start live event processing loop
             let writer_live = writer.clone();
-            let app_live = app.clone();
+            let events_live = Arc::clone(&events);
             let volume_id_live = volume_id.clone();
             let overflow_live = watcher_overflow_flag.clone();
             let space_live = space.clone();
@@ -349,7 +343,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
                     event_rx,
                     reconciler,
                     writer_live,
-                    app_live,
+                    events_live,
                     volume_id_live,
                     space_live,
                     overflow_live,
@@ -373,6 +367,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
             // never the registry (no re-lock).
             super::state::apply_freshness_event_on(
                 &freshness,
+                events.as_ref(),
                 &volume_id,
                 super::freshness::FreshnessEvent::ScanFailed,
             );
@@ -386,15 +381,14 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
             // clean-completion arm only), so the index heals to a rescan on remount.
             if scan_failure_is_vanished_volume(&e) {
                 set_phase_for(
-                    &app,
+                    events.as_ref(),
                     &volume_id,
                     ActivityPhase::Idle,
                     "local scan aborted (volume vanished)",
                 );
-                let _ = IndexScanAbortedEvent {
+                events.emit(IndexEvent::ScanAborted {
                     volume_id: volume_id.clone(),
-                }
-                .emit(&app);
+                });
             }
         }
         Err(_) => {
@@ -404,6 +398,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
             // case). Same honest reset as the `Ok(Err(_))` arm above.
             super::state::apply_freshness_event_on(
                 &freshness,
+                events.as_ref(),
                 &volume_id,
                 super::freshness::FreshnessEvent::ScanFailed,
             );

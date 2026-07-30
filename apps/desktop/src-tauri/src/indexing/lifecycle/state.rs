@@ -114,6 +114,10 @@ pub(crate) struct IndexInstance {
     /// freshness state machine itself lives in `lifecycle/freshness.rs`. See DETAILS §
     /// "The freshness model".
     pub(crate) freshness: Arc<std::sync::Mutex<Option<Freshness>>>,
+    /// Where this volume's reports go. Held per instance rather than in a
+    /// process-wide slot so the handle-free seams (the freshness transition, the
+    /// failure supervisor) stay per-volume, like every other invariant here.
+    pub(crate) events: Arc<dyn crate::indexing::EventSink>,
 }
 
 /// The per-volume index registry: the authority for which volumes are indexed
@@ -127,16 +131,16 @@ pub(crate) struct IndexInstance {
 pub(crate) static INDEX_REGISTRY: LazyLock<std::sync::Mutex<HashMap<VolumeId, IndexInstance>>> =
     LazyLock::new(|| std::sync::Mutex::new(HashMap::new()));
 
-/// App handle for emitting freshness-change events from the (otherwise
-/// handle-free) `apply_freshness_event` seam. Set once in `init`; absent only
-/// before setup or in unit tests, where the emit is silently skipped.
+/// App handle for the paths that still resolve app-owned configuration (the data
+/// dir) or hand one to a start entry point. Set once in `init`; absent only
+/// before setup or in unit tests, where the caller no-ops. Events do NOT go
+/// through here — every emit site holds its volume's `EventSink`.
 static APP_HANDLE: std::sync::OnceLock<AppHandle> = std::sync::OnceLock::new();
 
 // ── Initialization ───────────────────────────────────────────────────
 
-/// Force-initialize the registry static and stash the app handle for freshness
-/// event emission. Called during app setup so the LazyLock is ready before any
-/// async tasks access it.
+/// Force-initialize the registry static and stash the app handle. Called during
+/// app setup so the LazyLock is ready before any async tasks access it.
 pub fn init(app: &AppHandle) {
     drop(INDEX_REGISTRY.lock());
     let _ = APP_HANDLE.set(app.clone());
@@ -265,10 +269,10 @@ pub fn trigger_verification(volume_id: &str, dir_path: &str) {
         }) = reg.get(&volume_id)
         {
             let writer = mgr.writer.clone();
-            let app = mgr.app.clone();
+            let events = Arc::clone(&mgr.events);
             let scanning = mgr.scanning.load(Ordering::Relaxed);
             drop(reg);
-            verifier::maybe_verify(dir_path, writer, app, scanning);
+            verifier::maybe_verify(dir_path, writer, events, scanning);
         }
     });
 }
@@ -386,6 +390,7 @@ pub(crate) fn try_reserve_initializing_phase(
     read_pool: Arc<ReadPool>,
     pending_sizes: Arc<PendingSizes>,
     freshness: Arc<std::sync::Mutex<Option<Freshness>>>,
+    events: Arc<dyn crate::indexing::EventSink>,
 ) -> Result<(), Box<IndexStore>> {
     let mut reg = INDEX_REGISTRY.lock().expect("INDEX_REGISTRY lock poisoned");
     if reg.contains_key(volume_id) {
@@ -401,6 +406,7 @@ pub(crate) fn try_reserve_initializing_phase(
             read_pool,
             pending_sizes,
             freshness,
+            events,
         },
     );
     Ok(())
@@ -422,16 +428,18 @@ pub(crate) fn try_reserve_initializing_phase(
 /// holds directly, so a `force_scan`/fallback caller can hold the registry lock
 /// across `start_scan` without self-deadlocking on this re-lock.
 pub(crate) fn apply_freshness_event(volume_id: &str, event: FreshnessEvent) {
-    // Resolve the volume's freshness Arc UNDER the registry lock, clone it, then
-    // DROP the lock before the transition + emit. The transition itself never
-    // needs the registry, so holding it across the emit (a Tauri call) is both
+    // Resolve the volume's freshness Arc and sink UNDER the registry lock, clone
+    // them, then DROP the lock before the transition + report. The transition
+    // itself never needs the registry, so holding it across the report is both
     // unnecessary and a re-entrancy hazard for any caller already under the lock.
-    let freshness = {
+    let Some((freshness, events)) = ({
         let Ok(reg) = INDEX_REGISTRY.lock() else { return };
-        let Some(instance) = reg.get(volume_id) else { return };
-        Arc::clone(&instance.freshness)
+        reg.get(volume_id)
+            .map(|instance| (Arc::clone(&instance.freshness), Arc::clone(&instance.events)))
+    }) else {
+        return;
     };
-    apply_freshness_event_on(&freshness, volume_id, event);
+    apply_freshness_event_on(&freshness, events.as_ref(), volume_id, event);
 }
 
 /// The actual freshness transition + FE emit, operating on a volume's freshness
@@ -444,6 +452,7 @@ pub(crate) fn apply_freshness_event(volume_id: &str, event: FreshnessEvent) {
 /// that only have a volume id.
 pub(crate) fn apply_freshness_event_on(
     freshness: &std::sync::Mutex<Option<Freshness>>,
+    events: &dyn crate::indexing::EventSink,
     volume_id: &str,
     event: FreshnessEvent,
 ) {
@@ -452,8 +461,8 @@ pub(crate) fn apply_freshness_event_on(
     // transition is meaningful, then apply the event.
     //
     // We compute the next value under the freshness lock, then emit the FE event
-    // AFTER dropping it (emit never needs it, and holding a std Mutex across a
-    // Tauri call risks contention). The event fires only on an actual value
+    // AFTER dropping it (the report never needs it, and holding a std Mutex
+    // across a host call risks contention). The event fires only on an actual value
     // change, so the FE's one-time stale dialog sees the exact Fresh→Stale
     // transition (subscribe-don't-poll).
     let changed_to = {
@@ -464,15 +473,11 @@ pub(crate) fn apply_freshness_event_on(
         (previous != Some(next)).then_some(next)
     };
 
-    if let Some(next) = changed_to
-        && let Some(app) = APP_HANDLE.get()
-    {
-        use tauri_specta::Event;
-        let _ = crate::indexing::events::IndexFreshnessChangedEvent {
+    if let Some(next) = changed_to {
+        events.emit(crate::indexing::IndexEvent::FreshnessChanged {
             volume_id: volume_id.to_string(),
             freshness: next,
-        }
-        .emit(app);
+        });
     }
 
     // Publish scan completion on the neutral in-process lifecycle bus, alongside
@@ -645,7 +650,11 @@ fn start_indexing_for(
         return Ok(());
     }
     log::info!("start_indexing: begin for '{volume_id}' ({kind:?})");
-    crate::indexing::resources::memory_watchdog::start(app.clone());
+    // The one place an `AppHandle` becomes a sink: everything below this line
+    // reports through the trait, so no indexing code names Tauri to say something.
+    let events: Arc<dyn crate::indexing::EventSink> =
+        Arc::new(crate::events::index_mapping::TauriEventSink::new(app.clone()));
+    crate::indexing::resources::memory_watchdog::start(Arc::clone(&events));
 
     // Lock-first reservation, per volume id. We open the init store and the
     // read-path handles, then atomically claim the `(absent) -> Initializing`
@@ -707,6 +716,7 @@ fn start_indexing_for(
         Arc::clone(&pool),
         Arc::clone(&pending),
         Arc::clone(&freshness),
+        Arc::clone(&events),
     )
     .is_err()
     {
@@ -726,7 +736,8 @@ fn start_indexing_for(
     let mut manager = match IndexManager::new_for_kind(
         volume_id.to_string(),
         volume_root,
-        app.clone(),
+        db_path.clone(),
+        Arc::clone(&events),
         kind,
         inodes_trustworthy,
         Arc::clone(&freshness),
@@ -772,7 +783,7 @@ fn start_indexing_for(
             // supervisor fails this volume (stop + `Failed` phase) instead of letting
             // it log-and-retry forever. Spawned now that the volume is `Running` so
             // `fail_index` can tear the manager down out of the registry.
-            spawn_failure_supervisor(app.clone(), volume_id.to_string(), failure_signal);
+            spawn_failure_supervisor(Arc::clone(&events), volume_id.to_string(), failure_signal);
 
             // Periodic DB maintenance every 30 s: reclaim free pages from
             // deletes/rescans (`IncrementalVacuum`) AND truncate the WAL file
@@ -1199,6 +1210,7 @@ pub(crate) fn reserve_initializing_index_for_test(volume_id: &str, kind: IndexVo
         pool,
         pending,
         Arc::new(std::sync::Mutex::new(Some(Freshness::Fresh))),
+        crate::indexing::NoopEventSink::shared(),
     )
     .unwrap_or_else(|_| panic!("reserve {volume_id} must succeed from absent"));
     dir
@@ -1248,7 +1260,11 @@ pub(crate) fn index_failure(volume_id: &str) -> Option<IndexFailure> {
 /// signal is one-shot and its `notified()` resolves even if the trip already
 /// happened (a scan can fail in the Initializing→Running window), so a supervisor
 /// spawned right after Running never misses an early failure.
-pub(crate) fn spawn_failure_supervisor(app: AppHandle, volume_id: String, signal: Arc<IndexFailureSignal>) {
+pub(crate) fn spawn_failure_supervisor(
+    events: Arc<dyn crate::indexing::EventSink>,
+    volume_id: String,
+    signal: Arc<IndexFailureSignal>,
+) {
     tauri::async_runtime::spawn(async move {
         signal.notified().await;
         // The writer records the reason before notifying; default only if a
@@ -1257,7 +1273,7 @@ pub(crate) fn spawn_failure_supervisor(app: AppHandle, volume_id: String, signal
             code: 0,
             extended_code: 0,
         });
-        fail_index(&app, &volume_id, reason);
+        fail_index(events.as_ref(), &volume_id, reason);
     });
 }
 
@@ -1275,7 +1291,7 @@ pub(crate) fn spawn_failure_supervisor(app: AppHandle, volume_id: String, signal
 /// A no-op if the volume isn't `Running` (a concurrent `stop_indexing` /
 /// `clear_index` already removed or replaced it): the trip just meant "stop", and
 /// stopping already happened.
-fn fail_index(app: &AppHandle, volume_id: &str, reason: IndexFailure) {
+fn fail_index(events: &dyn crate::indexing::EventSink, volume_id: &str, reason: IndexFailure) {
     verifier::invalidate();
 
     // Uninstall + invalidate the read-path handles BEFORE the phase flips to
@@ -1347,7 +1363,7 @@ fn fail_index(app: &AppHandle, volume_id: &str, reason: IndexFailure) {
     // learn the volume stopped. Freshness `Failed` is terminal, so a late
     // scan-completion handler can't downgrade it.
     crate::indexing::events::set_phase_for(
-        app,
+        events,
         volume_id,
         crate::indexing::events::ActivityPhase::Failed,
         &format!("fatal storage error (SQLite {}/{})", reason.code, reason.extended_code),

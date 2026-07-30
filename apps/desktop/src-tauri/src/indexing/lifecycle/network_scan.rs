@@ -14,15 +14,10 @@
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
-use tauri_specta::Event;
-
 use super::manager::{IndexManager, ScanCalibration};
 use super::state::IndexVolumeKind;
 use crate::indexing::events::progress_reporter::ScanProgressReporter;
-use crate::indexing::events::{
-    ActivityPhase, DEBUG_STATS, IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexScanAbortedEvent,
-    IndexScanCompleteEvent, IndexScanStartedEvent, ScanRunKind, set_phase_for,
-};
+use crate::indexing::events::{ActivityPhase, DEBUG_STATS, IndexEvent, ScanRunKind, set_phase_for};
 use crate::indexing::store::IndexStore;
 use crate::indexing::writer::{AggSource, WriteMessage};
 
@@ -296,19 +291,24 @@ impl IndexManager {
         // registry re-lock here.
         super::state::apply_freshness_event_on(
             &self.freshness,
+            self.events.as_ref(),
             &self.volume_id,
             super::freshness::FreshnessEvent::ScanStarted,
         );
 
-        let _ = IndexScanStartedEvent {
+        self.events.emit(IndexEvent::ScanStarted {
             volume_id: self.volume_id.clone(),
-            scan_run_kind: run_kind,
+            run_kind,
             prior_total_entries: prior.total_entries,
             prior_scan_duration_ms: prior.scan_duration_ms,
             volume_used_bytes,
-        }
-        .emit(&self.app);
-        set_phase_for(&self.app, &self.volume_id, ActivityPhase::Scanning, scan_trigger);
+        });
+        set_phase_for(
+            self.events.as_ref(),
+            &self.volume_id,
+            ActivityPhase::Scanning,
+            scan_trigger,
+        );
 
         let progress = Arc::new(ScanProgress::new());
         let cancelled = Arc::new(AtomicBool::new(false));
@@ -329,7 +329,7 @@ impl IndexManager {
         ScanProgressReporter::new(
             Arc::clone(&progress),
             self.writer.clone(),
-            self.app.clone(),
+            Arc::clone(&self.events),
             self.volume_id.clone(),
             partial_agg_source,
         )
@@ -338,7 +338,7 @@ impl IndexManager {
         // The walk + completion handler. Runs as a tokio task because the
         // `Volume` API is async. The writer is `Send` and shared by `Arc`.
         let writer = self.writer.clone();
-        let app = self.app.clone();
+        let events = Arc::clone(&self.events);
         let volume_id = self.volume_id.clone();
         let scanning = Arc::clone(&self.scanning);
         // Clone the freshness handle into the completion task so it fires the
@@ -437,17 +437,15 @@ impl IndexManager {
                     });
                     let _ = writer.flush().await;
 
-                    let _ = IndexScanCompleteEvent {
+                    events.emit(IndexEvent::ScanComplete {
                         volume_id: volume_id.clone(),
                         total_entries: summary.total_entries,
                         total_dirs: summary.total_dirs,
                         duration_ms: summary.duration_ms,
-                    }
-                    .emit(&app);
-                    let _ = IndexAggregationCompleteEvent {
+                    });
+                    events.emit(IndexEvent::AggregationComplete {
                         volume_id: volume_id.clone(),
-                    }
-                    .emit(&app);
+                    });
 
                     // Replay changes the live watcher buffered DURING the scan
                     // (pre-arm-before-snapshot): the smb2 watcher ran throughout,
@@ -464,17 +462,22 @@ impl IndexManager {
                         // through the cloned `Arc` (no registry re-lock).
                         super::state::apply_freshness_event_on(
                             &freshness,
+                            events.as_ref(),
                             &volume_id,
                             super::freshness::FreshnessEvent::ScanCompleted,
                         );
                     }
-                    set_phase_for(&app, &volume_id, ActivityPhase::Live, "network scan complete");
+                    set_phase_for(
+                        events.as_ref(),
+                        &volume_id,
+                        ActivityPhase::Live,
+                        "network scan complete",
+                    );
 
                     // Tell the FE sizes are ready for this share's listings.
-                    let _ = IndexDirUpdatedEvent {
+                    events.emit(IndexEvent::DirsUpdated {
                         paths: vec![volume_id.clone()],
-                    }
-                    .emit(&app);
+                    });
                 }
                 // A mid-walk DISCONNECT: keep the honest partial. The scanner
                 // already ran its partial-preserving write sequence (flush +
@@ -504,11 +507,12 @@ impl IndexManager {
                     let _ = writer.send(WriteMessage::BumpCurrentEpoch);
                     super::state::apply_freshness_event_on(
                         &freshness,
+                        events.as_ref(),
                         &volume_id,
                         super::freshness::FreshnessEvent::WatcherDied,
                     );
                     set_phase_for(
-                        &app,
+                        events.as_ref(),
                         &volume_id,
                         ActivityPhase::Idle,
                         "network scan disconnected (honest partial kept)",
@@ -518,10 +522,9 @@ impl IndexManager {
                     // the breadcrumb badge tooltip would keep a stuck "scanning"
                     // row for this volume. The dot still flips to yellow (Stale)
                     // via the freshness change above.
-                    let _ = IndexScanAbortedEvent {
+                    events.emit(IndexEvent::ScanAborted {
                         volume_id: volume_id.clone(),
-                    }
-                    .emit(&app);
+                    });
                 }
                 other => {
                     // User cancel, timeout, or another genuine abort: the partial
@@ -537,10 +540,9 @@ impl IndexManager {
                     // an aborted scan), so the corner indicator and badge tooltip
                     // don't keep a stuck "scanning" row. The dot reverts to gray
                     // (not-indexed) via the freshness reset above.
-                    let _ = IndexScanAbortedEvent {
+                    events.emit(IndexEvent::ScanAborted {
                         volume_id: volume_id.clone(),
-                    }
-                    .emit(&app);
+                    });
                 }
             }
         });

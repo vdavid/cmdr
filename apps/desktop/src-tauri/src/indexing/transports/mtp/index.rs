@@ -115,7 +115,8 @@ mod tests {
                 store,
                 pool,
                 pending,
-                Arc::new(std::sync::Mutex::new(Some(initial)))
+                Arc::new(std::sync::Mutex::new(Some(initial))),
+                crate::indexing::NoopEventSink::shared(),
             )
             .is_ok(),
             "reserve must succeed",

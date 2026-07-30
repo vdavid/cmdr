@@ -16,7 +16,7 @@ async fn skips_recursion_into_nas_system_dirs() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = dir.path().join("vol-scan-skip.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
 
     let vol = InMemoryVolume::with_entries(
         "Test",

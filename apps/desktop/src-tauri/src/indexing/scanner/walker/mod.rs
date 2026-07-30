@@ -197,6 +197,12 @@ pub trait DirVisitor: Send + Sync {
     /// decided not to descend and not to mark the dir listed; this is for the
     /// visitor's own bookkeeping (logging, denial recording).
     fn visit_read_error(&self, dir: &DirTask, err: &WalkReadError);
+
+    /// A worker thread failed to spawn, so the walk runs with less parallelism.
+    /// The engine carries on either way (the remaining workers still drain the
+    /// queue); how loudly to report it is the visitor's call, so this defaults to
+    /// silence and the production visitor overrides it.
+    fn note_worker_spawn_failure(&self, _error: &std::io::Error) {}
 }
 
 /// Default per-subtree consecutive-read-failure budget. Mirrors the network
@@ -574,6 +580,7 @@ impl<V: DirVisitor + 'static> Engine<V> {
     }
 
     fn spawn_worker(self: Arc<Self>, slot: Slot) {
+        let visitor = Arc::clone(&self.visitor);
         let spawned = std::thread::Builder::new()
             .name("index-walk".into())
             .stack_size(WORKER_STACK_SIZE)
@@ -581,7 +588,7 @@ impl<V: DirVisitor + 'static> Engine<V> {
         if let Err(e) = spawned {
             // A failed spawn only reduces capacity; the remaining workers still
             // drain the queue. Never panic a replacement (it'd abort mid-scan).
-            crate::log_error!(target: LOG_TARGET, "failed to spawn walk worker: {e}");
+            visitor.note_worker_spawn_failure(&e);
         }
     }
 

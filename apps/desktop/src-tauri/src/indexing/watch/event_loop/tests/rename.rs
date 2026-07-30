@@ -28,7 +28,7 @@ fn rename_test_setup() -> (IndexWriter, PathBuf, tempfile::TempDir) {
     let dir = tempfile::tempdir().expect("create db temp dir");
     let db_path = dir.path().join("rename-test.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
     (writer, db_path, dir)
 }
 

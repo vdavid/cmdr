@@ -19,7 +19,7 @@ fn setup() -> Harness {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = dir.path().join("local-reconcile.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
     // Seed current_epoch = 1 so the first reconcile stamps a real value.
     writer
         .send(WriteMessage::UpdateMeta {

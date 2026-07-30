@@ -71,7 +71,7 @@ fn lifecycle_transitions_under_load() {
     // re-inserted). That's fine. We verify no corruption, then do a
     // complete rescan.
 
-    let writer2 = IndexWriter::spawn(&db_path, None).expect("spawn second writer");
+    let writer2 = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn second writer");
     let read_conn2 = IndexStore::open_read_connection(&db_path).expect("open read conn 2");
 
     // DB should be openable and queryable (no corruption).
@@ -120,7 +120,8 @@ fn lifecycle_transitions_under_load() {
     // Verifies no resource leaks or DB lock issues across restarts.
 
     for cycle in 0..4 {
-        let w = IndexWriter::spawn(&db_path, None).unwrap_or_else(|e| panic!("spawn failed on cycle {cycle}: {e}"));
+        let w = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared())
+            .unwrap_or_else(|e| panic!("spawn failed on cycle {cycle}: {e}"));
 
         // Send a mix of write operations.
         w.send(WriteMessage::TruncateData).unwrap();
@@ -147,7 +148,7 @@ fn lifecycle_transitions_under_load() {
     // Send entries, send Flush (don't wait on the oneshot), then
     // immediately send Shutdown. The writer should not deadlock.
 
-    let w = IndexWriter::spawn(&db_path, None).expect("spawn for flush test");
+    let w = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn for flush test");
     w.send(WriteMessage::TruncateData).unwrap();
     let flush_tree = build_synthetic_tree(1, 2, 4, 128);
     for chunk in flush_tree.chunks(10) {
@@ -166,7 +167,8 @@ fn lifecycle_transitions_under_load() {
     // Sending Shutdown twice must not panic. The second send returns an
     // error (channel disconnected) which we ignore.
 
-    let w = IndexWriter::spawn(&db_path, None).expect("spawn for double shutdown test");
+    let w =
+        IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn for double shutdown test");
     w.send(WriteMessage::TruncateData).unwrap();
     w.send(WriteMessage::Shutdown).unwrap();
     // allowed-test-sleep: this waits for the writer thread to process Shutdown and exit, which is
@@ -231,7 +233,8 @@ fn lifecycle_clean_start_populate_shutdown() {
     assert_eq!(post_count, tree_len as i64 + 1, "data survives shutdown");
 
     // A new writer should be spawnable on the same DB (no leftover locks)
-    let writer2 = IndexWriter::spawn(&db_path, None).expect("spawn post-shutdown writer");
+    let writer2 =
+        IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn post-shutdown writer");
     writer2.flush_blocking().unwrap();
     writer2.shutdown();
 }
@@ -370,7 +373,8 @@ fn early_shutdown_during_active_writes() {
     assert_eq!(orphans, 0, "no orphaned entries after early shutdown");
 
     // A new writer can start on the same DB
-    let writer2 = IndexWriter::spawn(&db_path, None).expect("spawn after early shutdown");
+    let writer2 =
+        IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn after early shutdown");
     writer2.flush_blocking().unwrap();
     writer2.shutdown();
 }
@@ -388,7 +392,7 @@ fn rapid_start_stop_start_produces_clean_state() {
     let _store = IndexStore::open(&db_path).expect("open store");
 
     // ── Cycle 1: populate with tree A ──────────────────────────────
-    let writer1 = IndexWriter::spawn(&db_path, None).expect("spawn writer 1");
+    let writer1 = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer 1");
     writer1.send(WriteMessage::TruncateData).unwrap();
     writer1.flush_blocking().unwrap();
 
@@ -414,7 +418,7 @@ fn rapid_start_stop_start_produces_clean_state() {
     writer1.shutdown();
 
     // ── Cycle 2: fresh start, populate with tree B ─────────────────
-    let writer2 = IndexWriter::spawn(&db_path, None).expect("spawn writer 2");
+    let writer2 = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer 2");
 
     // Truncate (simulating a fresh scan on restart)
     writer2.send(WriteMessage::TruncateData).unwrap();
@@ -554,7 +558,8 @@ fn shutdown_with_mixed_queued_work() {
     );
 
     // No leftover locks. Another writer can start.
-    let writer2 = IndexWriter::spawn(&db_path, None).expect("spawn after mixed-work shutdown");
+    let writer2 = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared())
+        .expect("spawn after mixed-work shutdown");
     writer2.flush_blocking().unwrap();
     writer2.shutdown();
 }
@@ -587,8 +592,13 @@ fn disconnect_storm_writer_drain_holds_across_volumes() {
         let order: [&std::path::PathBuf; 2] = if round % 2 == 0 { [&db_a, &db_b] } else { [&db_b, &db_a] };
         for db_path in order {
             // Connect: spawn a non-search-feeding writer (the SMB/MTP path).
-            let writer =
-                IndexWriter::spawn_for(db_path, None, false, "root".to_string()).expect("spawn writer under storm");
+            let writer = IndexWriter::spawn_for(
+                db_path,
+                crate::indexing::NoopEventSink::shared(),
+                false,
+                "root".to_string(),
+            )
+            .expect("spawn writer under storm");
             // A small live-write burst (the watch→index path during a session).
             let tree = build_synthetic_tree(2, 2, 3, 256);
             for chunk in tree.chunks(8) {
@@ -611,7 +621,8 @@ fn disconnect_storm_writer_drain_holds_across_volumes() {
     // After the storm both DBs open cleanly (no stale lock), are queryable (no
     // corruption), and accept a fresh writer + full rescan to a consistent state.
     for db_path in [&db_a, &db_b] {
-        let writer = IndexWriter::spawn(db_path, None).expect("spawn after storm: DB not wedged");
+        let writer = IndexWriter::spawn(db_path, crate::indexing::NoopEventSink::shared())
+            .expect("spawn after storm: DB not wedged");
         writer.send(WriteMessage::TruncateData).unwrap();
         let tree = build_synthetic_tree(2, 3, 4, 512);
         let tree_len = tree.len();

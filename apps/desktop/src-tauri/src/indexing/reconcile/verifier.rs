@@ -8,8 +8,6 @@ use std::path::Path;
 use std::sync::{LazyLock, Mutex};
 use std::time::Instant;
 
-use tauri::AppHandle;
-
 use crate::indexing::lifecycle::lifecycle_bus;
 use crate::indexing::metadata::extract_metadata;
 use crate::indexing::paths::firmlinks;
@@ -61,7 +59,12 @@ impl Drop for InFlightGuard {
 
 /// Attempt to verify a directory against the index. Checks dedup/debounce,
 /// spawns an async task if the directory qualifies.
-pub(crate) fn maybe_verify(dir_path: String, writer: IndexWriter, app: AppHandle, scanning: bool) {
+pub(crate) fn maybe_verify(
+    dir_path: String,
+    writer: IndexWriter,
+    events: std::sync::Arc<dyn crate::indexing::EventSink>,
+    scanning: bool,
+) {
     if scanning {
         return;
     }
@@ -109,7 +112,7 @@ pub(crate) fn maybe_verify(dir_path: String, writer: IndexWriter, app: AppHandle
             // publish under the local root for the importance scheduler's
             // incremental rescore (plan Decision 5), alongside the FE emit.
             lifecycle_bus::publish_dirs_changed(crate::indexing::ROOT_VOLUME_ID, &affected_paths);
-            reconciler::emit_dir_updated(&app, affected_paths);
+            reconciler::emit_dir_updated(events.as_ref(), affected_paths);
         }
     });
 }
@@ -442,7 +445,7 @@ mod tests {
         let dir = tempfile::tempdir().expect("create temp dir");
         let db_path = dir.path().join("test-index.db");
         let _store = IndexStore::open(&db_path).expect("open store");
-        let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+        let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
         (writer, db_path, dir)
     }
 

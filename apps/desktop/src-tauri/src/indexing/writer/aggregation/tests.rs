@@ -70,7 +70,7 @@ fn set_epoch(db_path: &std::path::Path, entry_id: i64, epoch: u64) {
 #[test]
 fn subtree_aggregate_grows_ancestors_and_restores_coverage() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // ROOT(1) → A(10) → S(20) → f1(21, 1000). Baseline at epoch 1.
     let entries = vec![
@@ -149,7 +149,7 @@ fn subtree_aggregate_grows_ancestors_and_restores_coverage() {
 #[test]
 fn subtree_aggregate_shrinks_ancestors() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // ROOT(1) → A(10) → S(20) → f1(21,1000), f2(22,1000), D(23) → f3(24,1000)
     let entries = vec![
@@ -216,7 +216,7 @@ fn subtree_aggregate_shrinks_ancestors() {
 #[test]
 fn subtree_aggregate_from_parentless_root_is_noop() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     let entries = vec![dir_row(10, ROOT_ID, "A"), file_row(11, 10, "f", 100)];
     writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
@@ -310,7 +310,7 @@ fn heal_key_not_written_when_latch_disarmed() {
 #[test]
 fn armed_sql_aggregate_heals_drift_and_sets_key() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // ROOT(1) → A(10) → f(11, 900). Correct baseline first.
     writer
@@ -380,7 +380,7 @@ fn armed_sql_aggregate_heals_drift_and_sets_key() {
 #[test]
 fn armed_maps_aggregate_from_scan_flow_sets_key() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // Arm at launch, THEN the scan's own final Maps aggregate.
     writer.send(WriteMessage::ArmLedgerHealLatch).unwrap();
@@ -417,7 +417,7 @@ fn armed_maps_aggregate_from_scan_flow_sets_key() {
 #[test]
 fn unarmed_aggregate_leaves_key_unset() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     writer
         .send(WriteMessage::InsertEntriesV2(vec![file_row(11, ROOT_ID, "f", 100)]))
@@ -481,7 +481,7 @@ fn skip_severity_benign_when_over_floor_but_under_ratio() {
 #[test]
 fn backfill_repairs_stale_ancestors_above_filled_rows() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // ROOT(1) → A(10) → M(20) → f(21, 800). M and its file exist as entries,
     // but M has no `dir_stats` row (Leak C), and A + ROOT carry stale zeroed
@@ -570,7 +570,7 @@ fn backfill_repairs_stale_ancestors_above_filled_rows() {
 #[test]
 fn reconcile_finish_ignores_polluted_maps() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // ROOT(1) → A(10) → fa(11, 500)   [external branch, must stay 500]
     //         → B(20) → fb(21, 700)   [the subtree a verification rescans]
@@ -638,7 +638,7 @@ fn reconcile_finish_ignores_polluted_maps() {
 #[test]
 fn reconcile_finish_interleaved_with_subtree_scan_stays_exact() {
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).unwrap();
 
     // ROOT(1) → A(10) → fa(11, 500)   [external]
     //         → B(20) → fb(21, 700)   [rescanned subtree]
