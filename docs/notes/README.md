@@ -2,3 +2,6 @@ This folder contains notes that are not specs, ADRs, or docs on the system. This
 docs that feel helpful and important for some time, but don't belong anywhere else. Like specs, this folder gets wiped
 periodically once we made sure that all important information like intent behind features and processes is captured
 somewhere else (code or docs).
+
+One note is load-bearing rather than historical: `index-extraction-baseline.md` is the measured "before" that
+`docs/specs/index-crate-extraction-plan.md` compares against at the end. Keep it until that plan is done.
