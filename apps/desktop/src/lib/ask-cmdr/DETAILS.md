@@ -218,10 +218,10 @@ it's decided.
 Two catalog keys per reason (`.named` / `.counted`), not one ICU plural: "name the file" vs "count them" is a display
 choice, and a locale whose plural has only `other` (`zh`, `vi`) couldn't express both from one message.
 
-**Whatever no reason accounts for is still said by class**, with the leftover count ("Left 4 files alone: they
-changed…, or the old name is taken again."). That covers a batch undone before the reason column existed (its rows read
-"reason not recorded") and `alreadyGone`, which maps to no line because it counts as restored. A missing reason must
-never shrink the skipped count the line admits to.
+**Whatever no reason accounts for is still said by class**, with the leftover count ("Left 4 files alone: they changed…,
+or the old name is taken again."). That covers a batch undone before the reason column existed (its rows read "reason
+not recorded") and `alreadyGone`, which maps to no line because it counts as restored. A missing reason must never
+shrink the skipped count the line admits to.
 
 ## Editing a proposed name
 
