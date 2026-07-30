@@ -3,7 +3,6 @@ package checks
 import (
 	"fmt"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -24,10 +23,10 @@ import (
 //     We still wait until the expected services report `running` as a
 //     cheap guard against mid-run zombies; smb2 reconnects if the server
 //     isn't ready on the first write.
-//  2. Invoke `cargo nextest run --run-ignored only -E 'test(smb_integration_)'`
-//     (debug, reusing desktop-rust-tests' build) in apps/desktop/src-tauri. The
-//     expression filter matches every `smb_integration_*` test and skips other
-//     `#[ignore]` tests.
+//  2. Invoke `cargo nextest run --workspace --run-ignored only -E
+//     'test(smb_integration_)'` (debug, reusing desktop-rust-tests' build) from the
+//     repo root. The expression filter matches every `smb_integration_*` test and
+//     skips other `#[ignore]` tests.
 func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 	// Docker is a hard requirement. Surface a clear message instead of a cryptic error.
 	if !CommandExists("docker") {
@@ -41,7 +40,13 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 		)
 	}
 
-	rustDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri")
+	// Workspace-wide, so an `smb_integration_*` test keeps being found after it
+	// moves into a crate. The filter expression is what narrows the run, not the
+	// package selection.
+	selection, err := HostCargoSelectionArgs(ctx.RootDir)
+	if err != nil {
+		return CheckResult{}, err
+	}
 
 	// Wait for the core services to be running (the orchestrator started them,
 	// but they may still be transitioning to `running` when this check
@@ -79,17 +84,17 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 	// `--run-ignored only` rides in baseArgs so the contention re-run inherits it: these
 	// tests are all `#[ignore]`-gated, so a re-run without it would select nothing and
 	// read as "everything passed alone".
-	baseArgs := []string{"--locked", "--run-ignored", "only"}
+	baseArgs := append([]string{"--locked", "--run-ignored", "only"}, selection...)
 	cmd := exec.Command("cargo", append(append([]string{"nextest", "run"}, baseArgs...),
 		"-E", "test(smb_integration_)")...)
-	cmd.Dir = rustDir
+	cmd.Dir = ctx.RootDir
 	output, err := RunCommand(cmd, true)
 	if err != nil {
 		// This lane contends on a SHARED Docker Samba stack as well as on CPU, so a red run
 		// here is even likelier to be starvation than in the default lane. Slowest healthy
 		// test measured 2.8s (whole 53-test suite: 5.3s wall-clock), well inside the
 		// contention-retry profile's 40s headroom.
-		return resolveRustFailure("SMB integration tests failed", rustDir, baseArgs,
+		return resolveRustFailure("SMB integration tests failed", ctx.RootDir, baseArgs,
 			trimRustTestProgress(output))
 	}
 

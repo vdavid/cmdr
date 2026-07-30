@@ -11,6 +11,16 @@ repository = "https://github.com/vdavid/cmdr-fsevent-stream"
 readme = "README.md"
 exclude = [".github/**/*", ".gitignore", ".mergify.yml", "Justfile"]
 
+# This crate compiles on Apple targets only: `ffi.rs` declares
+# `#[link(name = "CoreServices", kind = "framework")]`, which is an E0455 compile
+# error anywhere else. `cmdr` depends on it under a `cfg(target_os = "macos")`
+# target section, so a dependency graph never reaches it off macOS — but a
+# `cargo --workspace` SELECTION does, and the target gate no longer applies there.
+# The check runner reads this key to drop the crate from non-macOS lanes
+# (`scripts/check/checks/cargo-workspace.go`).
+[package.metadata.cmdr]
+platforms = ["macos"]
+
 [features]
 default = ["tokio"]
 tokio = ["tokio1", "tokio-stream"]

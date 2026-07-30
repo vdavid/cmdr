@@ -40,7 +40,10 @@ const goVersion = "1.25.7"
 // stderr (captured by the Go side and shown to the user). The Success message
 // includes the host log path so it's discoverable in the 1% case where someone wants
 // to inspect what got installed.
-var provisionScript = fmt.Sprintf(`set -e
+//
+// The `%s` before `--no-fail-fast` is the package selection, computed for the
+// CONTAINER's OS rather than this machine's (see buildProvisionScript).
+var provisionScriptTemplate = `set -e
 export DEBIAN_FRONTEND=noninteractive
 PROVISION_LOG=/cmdr-logs/provision.log
 mkdir -p /cmdr-logs
@@ -68,7 +71,22 @@ esac
 curl -fsSL https://go.dev/dl/go%s.linux-${ARCH}.tar.gz | tar -xz -C /usr/local
 export PATH=/usr/local/go/bin:$PATH
 curl -LsSf "$NEXTEST_URL" | tar zxf - -C /usr/local/bin
-cargo nextest run --no-fail-fast 2>&1`, goVersion)
+cargo nextest run --locked %s --no-fail-fast 2>&1`
+
+// buildProvisionScript fills in the Go version and the container's package selection.
+//
+// The selection is computed for `linux`, NOT for this machine: the container is
+// always Linux even though the host running the check is a Mac. Getting that wrong
+// leaves `cmdr-fsevent-stream` in the selection set, where it fails at `cargo check`
+// with `E0455: link kind 'framework' is only supported on Apple targets`.
+func buildProvisionScript(rootDir string) (string, error) {
+	members, err := WorkspaceMembers(rootDir)
+	if err != nil {
+		return "", err
+	}
+	selection := strings.Join(CargoSelectionArgs(members, "linux"), " ")
+	return fmt.Sprintf(provisionScriptTemplate, goVersion, selection), nil
+}
 
 // RunRustTestsLinux runs Rust tests in a Linux Docker container.
 // This catches platform-specific issues before CI.
@@ -93,12 +111,18 @@ func RunRustTestsLinux(ctx *CheckContext) (CheckResult, error) {
 	}
 	provisionLog := filepath.Join(logDir, "provision.log")
 
-	// Mount the whole repo so cargo can find the workspace root Cargo.toml (and its Cargo.lock).
-	// Working directory is the Rust crate inside the workspace.
+	provisionScript, err := buildProvisionScript(ctx.RootDir)
+	if err != nil {
+		return CheckResult{}, err
+	}
+
+	// Mount the whole repo so cargo can find the workspace root Cargo.toml (and its
+	// Cargo.lock). Working directory is the workspace root, since the run is
+	// workspace-wide.
 	cmd := exec.Command("docker", "run", "--rm",
 		"-v", ctx.RootDir+":/repo",
 		"-v", logDir+":/cmdr-logs",
-		"-w", "/repo/apps/desktop/src-tauri",
+		"-w", "/repo",
 		"-e", "CARGO_TARGET_DIR=/tmp/cargo-target",
 		"rust:latest",
 		"sh", "-c", provisionScript)

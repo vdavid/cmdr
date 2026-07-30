@@ -3,7 +3,6 @@ package checks
 import (
 	"fmt"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -11,7 +10,13 @@ import (
 
 // RunRustTests runs Rust tests using cargo-nextest.
 func RunRustTests(ctx *CheckContext) (CheckResult, error) {
-	rustDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri")
+	// Every workspace member, not just the app: a member the test lane doesn't
+	// select still compiles and still looks green, so its tests silently stop
+	// running the moment they move into a crate. `member-coverage` guards this.
+	selection, err := HostCargoSelectionArgs(ctx.RootDir)
+	if err != nil {
+		return CheckResult{}, err
+	}
 
 	// Check if cargo-nextest is installed
 	if !CommandExists("cargo-nextest") {
@@ -21,21 +26,23 @@ func RunRustTests(ctx *CheckContext) (CheckResult, error) {
 		}
 	}
 
-	// `--features virtual-mtp` compiles in the virtual MTP device, which is the
-	// only way ~29 MTP tests (backends/mtp_test, mtp_archive_test,
-	// mtp_read_range_test, mtp_scan_oracle_tests, connection/path_cache_sync_test)
-	// can run at all. Without it they're silently filtered out and protect
-	// nothing. The feature is test-only and never enters a production build; it
-	// costs ~2-4 s on a ~27 s suite.
-	baseArgs := []string{"--locked", "--features", "virtual-mtp"}
+	// `cmdr/virtual-mtp` compiles in the virtual MTP device, which is the only way
+	// ~29 MTP tests (backends/mtp_test, mtp_archive_test, mtp_read_range_test,
+	// mtp_scan_oracle_tests, connection/path_cache_sync_test) can run at all.
+	// Without it they're silently filtered out and protect nothing. The feature is
+	// test-only and never enters a production build; it costs ~2-4 s on a ~27 s
+	// suite. It MUST stay package-qualified: a bare `--features virtual-mtp`
+	// changes meaning once more than one package is selected.
+	baseArgs := append([]string{"--locked"}, selection...)
+	baseArgs = append(baseArgs, "--features", "cmdr/virtual-mtp")
 	cmd := exec.Command("cargo", append([]string{"nextest", "run"}, baseArgs...)...)
-	cmd.Dir = rustDir
+	cmd.Dir = ctx.RootDir
 	output, err := RunCommand(cmd, true)
 	if err != nil {
 		// Trim the per-test PASS/SKIP lines (the Linux lane already does): on a 4 800-test
 		// suite they bury the diagnosis and the actual panics under thousands of lines.
 		// FAIL/LEAK/TIMEOUT/SLOW and every panic body survive.
-		return resolveRustFailure("rust tests failed", rustDir, baseArgs, trimRustTestProgress(output))
+		return resolveRustFailure("rust tests failed", ctx.RootDir, baseArgs, trimRustTestProgress(output))
 	}
 
 	// Parse test count from output: "X tests run:"
@@ -82,7 +89,7 @@ func withFailureDiagnosis(output string) string {
 // the suite is told apart from real slowness or a real defect. Only an all-contention
 // outcome softens the result, and even then to a WARN, never a pass: the re-run must not
 // become a silent absorber (that's how the retry budget rotted before it was surfaced).
-func resolveRustFailure(label, rustDir string, baseArgs []string, trimmed string) (CheckResult, error) {
+func resolveRustFailure(label, workDir string, baseArgs []string, trimmed string) (CheckResult, error) {
 	failures := ClassifyRustFailures(trimmed)
 	real := RealFailures(failures)
 	diagnosis := DiagnoseRustFailures(failures)
@@ -92,7 +99,7 @@ func resolveRustFailure(label, rustDir string, baseArgs []string, trimmed string
 		return CheckResult{}, fmt.Errorf("%s\n%s", label, indentOutput(withFailureDiagnosis(trimmed)))
 	}
 
-	results, skipped := MaybeClassifyContention(real, nextestContentionRunner(rustDir, baseArgs), LoadPerCore)
+	results, skipped := MaybeClassifyContention(real, nextestContentionRunner(workDir, baseArgs), LoadPerCore)
 	if skipped {
 		return CheckResult{}, fmt.Errorf("%s\n%s", label,
 			indentOutput(diagnosis+"\n"+ContentionSkippedNote(len(real))+"\n\n"+trimmed))
@@ -142,12 +149,12 @@ func contentionWarnMessage(results []ContentionResult) string {
 var nextestRanRE = regexp.MustCompile(`(?m)^\s*Summary \[`)
 
 // nextestContentionRunner runs a named subset under one of the contention profiles.
-func nextestContentionRunner(rustDir string, baseArgs []string) ContentionRunner {
+func nextestContentionRunner(workDir string, baseArgs []string) ContentionRunner {
 	return func(profile string, names []string) (string, error) {
 		args := append([]string{"nextest", "run", "--profile", profile}, baseArgs...)
 		args = append(args, "-E", NextestFilterExpr(names))
 		cmd := exec.Command("cargo", args...)
-		cmd.Dir = rustDir
+		cmd.Dir = workDir
 		out, err := RunCommand(cmd, true)
 		if err != nil && !nextestRanRE.MatchString(out) {
 			return "", fmt.Errorf("contention re-run under profile %s could not run: %w", profile, err)

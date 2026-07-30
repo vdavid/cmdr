@@ -2,6 +2,8 @@ package checks
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -241,5 +243,34 @@ test bench::throughput ... bench:       1,234 ns/iter (+/- 56)
 	out := trimRustTestProgress(input)
 	if out != input {
 		t.Errorf("expected LEAK/TIMEOUT/SLOW/bench lines to be kept, got:\n%s", out)
+	}
+}
+
+// TestProvisionScriptSelectsForTheContainerNotTheHost pins the trap that makes this
+// lane different from every other cargo lane: the check process runs on a Mac while
+// the cargo command runs inside a Linux container. Computing the selection from the
+// host's OS leaves `cmdr-fsevent-stream` in it, where it dies at `cargo check` with
+// `E0455: link kind 'framework' is only supported on Apple targets`.
+func TestProvisionScriptSelectsForTheContainerNotTheHost(t *testing.T) {
+	root, err := filepath.Abs(filepath.Join("..", "..", ".."))
+	if err != nil {
+		t.Fatalf("failed to resolve repo root: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "Cargo.toml")); err != nil {
+		t.Skipf("repo layout not found from %s: %v", root, err)
+	}
+
+	script, err := buildProvisionScript(root)
+	if err != nil {
+		t.Fatalf("buildProvisionScript: %v", err)
+	}
+	if !strings.Contains(script, "--workspace") {
+		t.Errorf("the container run must be workspace-wide, got:\n%s", script)
+	}
+	if !strings.Contains(script, "--exclude cmdr-fsevent-stream") {
+		t.Errorf("the container is Linux, so the macOS-only member must be excluded, got:\n%s", script)
+	}
+	if !strings.Contains(script, "--locked") {
+		t.Errorf("every operational cargo command passes --locked, got:\n%s", script)
 	}
 }

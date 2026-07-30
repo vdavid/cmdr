@@ -547,7 +547,7 @@ is a maintenance task instead, listed in `docs/maintenance.md`.
 **Decision**: `cargo-deny` advisories check disabled; use `cargo-audit` instead. **Why**: Tauri's transitive
 dependencies (gtk3-rs, unic-\*, fxhash, proc-macro-error, etc.) trigger unmaintained-crate advisories we can't control.
 `cargo-audit` still catches critical security vulnerabilities. License, bans, and sources checks in `cargo-deny` remain
-active. See comment in `src-tauri/deny.toml`.
+active. See comment in `deny.toml`.
 
 **Decision**: `workflows-hardening` check enforces three GitHub Actions invariants and acts as a regression guard.
 **Why**: cmdr's workflows are already correctly hardened (every third-party action is SHA-pinned with a comment, no

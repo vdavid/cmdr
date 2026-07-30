@@ -2,8 +2,14 @@
 name = "index-query"
 version = "0.0.0"
 edition = "2024"
+license = "LicenseRef-BSL-1.1"
 publish = false
 
 [dependencies]
 cmdr = { path = "../../apps/desktop/src-tauri" }
 rusqlite = { version = "0.40", features = ["bundled", "collation"] }
+
+[package.metadata.cargo-machete]
+# The package is `cmdr` but its library target is `cmdr_lib`, so the `use cmdr_lib::…`
+# lines here don't match the name machete greps for. It IS used, in every binary.
+ignored = ["cmdr"]

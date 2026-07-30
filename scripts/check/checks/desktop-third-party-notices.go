@@ -387,7 +387,7 @@ type aboutOutput struct {
 func collectRustCrates(ctx *CheckContext, cargoAboutDir string) (rustCollection, error) {
 	tauriDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri")
 
-	configPath, err := writeAboutConfig(tauriDir)
+	configPath, err := writeAboutConfig(ctx.RootDir, tauriDir)
 	if err != nil {
 		return rustCollection{}, err
 	}
@@ -495,8 +495,8 @@ func crateRelativeSource(sourcePath, rootDir string) string {
 // may depend on, and it shrink-wraps itself (`unused-allowed-license = "deny"`),
 // so it can't drift. A second hand-maintained list here would answer the same
 // question with a different answer sooner or later.
-func writeAboutConfig(tauriDir string) (string, error) {
-	denyPath := filepath.Join(tauriDir, "deny.toml")
+func writeAboutConfig(rootDir, tauriDir string) (string, error) {
+	denyPath := DenyConfigPath(rootDir)
 	denyRaw, err := os.ReadFile(denyPath)
 	if err != nil {
 		return "", fmt.Errorf("couldn't read %s: %w", denyPath, err)

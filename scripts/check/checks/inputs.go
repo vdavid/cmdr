@@ -22,6 +22,12 @@ var rustInputs = []string{
 	"Cargo.toml",
 	"Cargo.lock",
 	"rust-toolchain.toml",
+	// The workspace-root format/lint/policy config. Editing any of these changes
+	// what every Rust lane enforces, so a cached pass from before the edit is a
+	// pass against different rules.
+	"rustfmt.toml",
+	"clippy.toml",
+	"deny.toml",
 	"pnpm-lock.yaml", // bindings-fresh and some Rust tooling resolve node deps
 }
 

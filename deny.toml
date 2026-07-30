@@ -43,4 +43,7 @@ allow-wildcard-paths = true  # cmdr is private (BSL)
 unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
-allow-git = ["https://github.com/vdavid/smb2"]
+# No git sources today: `smb2` and `mtp-rs` both resolve from crates.io. cargo-deny
+# reports an `allow-git` entry nothing matches as `unmatched-source`, so this list
+# stays empty until a git dependency actually lands.
+allow-git = []

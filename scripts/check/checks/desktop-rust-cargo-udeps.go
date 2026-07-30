@@ -24,7 +24,14 @@ func NightlyToolchain() string { return nightlyToolchain }
 // RunCargoUdeps detects unused dependencies.
 func RunCargoUdeps(ctx *CheckContext) (CheckResult, error) {
 	desktopDir := filepath.Join(ctx.RootDir, "apps", "desktop")
-	rustDir := filepath.Join(desktopDir, "src-tauri")
+
+	// Workspace-wide, with the members' own platform declarations supplying the
+	// exclusions: this lane runs on ubuntu in `slow-checks.yml`, where a macOS-only
+	// member fails at `cargo check` before udeps ever gets to look at anything.
+	selection, err := HostCargoSelectionArgs(ctx.RootDir)
+	if err != nil {
+		return CheckResult{}, err
+	}
 
 	// Ensure llama-server binaries exist (downloads on macOS, creates placeholder on Linux)
 	downloadCmd := exec.Command("go", "run", "scripts/download-llama-server.go")
@@ -48,8 +55,9 @@ func RunCargoUdeps(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, err
 	}
 
-	cmd := exec.Command("cargo", "+"+nightlyToolchain, "udeps", "--locked", "--all-targets")
-	cmd.Dir = rustDir
+	args := append([]string{"+" + nightlyToolchain, "udeps", "--locked", "--all-targets"}, selection...)
+	cmd := exec.Command("cargo", args...)
+	cmd.Dir = ctx.RootDir
 	output, err := RunCommand(cmd, true)
 	if err != nil {
 		return CheckResult{}, fmt.Errorf("unused dependencies found\n%s", indentOutput(output))

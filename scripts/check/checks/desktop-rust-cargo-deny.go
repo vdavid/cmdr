@@ -8,12 +8,14 @@ import (
 )
 
 // RunCargoDeny enforces license and dependency policies.
+//
+// `deny.toml` lives at the workspace root, and the check runs from there. The
+// policy was always workspace-wide in effect — cargo-deny reads the whole
+// `cargo metadata` graph regardless of where it starts — but the config sat inside
+// one member, which read as if it governed only that member. With more than one
+// crate in the graph, that reading would have been wrong in a way nobody noticed.
 func RunCargoDeny(ctx *CheckContext) (CheckResult, error) {
-	rustDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri")
-
-	// Check if deny.toml exists
-	denyToml := filepath.Join(rustDir, "deny.toml")
-	if _, err := os.Stat(denyToml); os.IsNotExist(err) {
+	if _, err := os.Stat(DenyConfigPath(ctx.RootDir)); os.IsNotExist(err) {
 		return Skipped("no deny.toml"), nil
 	}
 
@@ -26,10 +28,17 @@ func RunCargoDeny(ctx *CheckContext) (CheckResult, error) {
 	}
 
 	cmd := exec.Command("cargo", "deny", "check", "licenses", "bans", "sources")
-	cmd.Dir = rustDir
+	cmd.Dir = ctx.RootDir
 	output, err := RunCommand(cmd, true)
 	if err != nil {
 		return CheckResult{}, fmt.Errorf("cargo-deny check failed\n%s", indentOutput(output))
 	}
 	return Success("Licenses and deps OK"), nil
+}
+
+// DenyConfigPath is the single place the cargo-deny config's location is written
+// down. `desktop-third-party-notices` derives its accepted-license list from the
+// same file rather than duplicating it, so both have to agree on where it is.
+func DenyConfigPath(rootDir string) string {
+	return filepath.Join(rootDir, "deny.toml")
 }

@@ -2,16 +2,26 @@ package checks
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"time"
 )
 
 // RunClippy runs Clippy linter with auto-fix.
 func RunClippy(ctx *CheckContext) (CheckResult, error) {
 	desktopDir := filepath.Join(ctx.RootDir, "apps", "desktop")
-	rustDir := filepath.Join(desktopDir, "src-tauri")
+
+	// Workspace-wide: a member outside the selection is a lint-free zone, and the
+	// `[workspace.lints]` set it inherits would never actually be enforced.
+	// `--exclude`s come from the members' own manifests, because CI runs this lane
+	// on ubuntu, where a macOS-only member fails at `cargo check`.
+	selection, err := HostCargoSelectionArgs(ctx.RootDir)
+	if err != nil {
+		return CheckResult{}, err
+	}
 
 	// Ensure llama-server binaries exist (downloads on macOS, creates placeholder on Linux)
 	downloadCmd := exec.Command("go", "run", "scripts/download-llama-server.go")
@@ -33,8 +43,10 @@ func RunClippy(ctx *CheckContext) (CheckResult, error) {
 	// the only build pass we do. --fix is reserved for the failure branch
 	// because it ignores -D warnings, can rewrite source files, and re-running
 	// it speculatively doubled wall time on every clean run.
-	cmd := exec.Command("cargo", "clippy", "--locked", "--all-targets", "--", "-D", "warnings")
-	cmd.Dir = rustDir
+	enforcingArgs := append([]string{"clippy", "--locked", "--all-targets"}, selection...)
+	enforcingArgs = append(enforcingArgs, "--", "-D", "warnings")
+	cmd := exec.Command("cargo", enforcingArgs...)
+	cmd.Dir = ctx.RootDir
 	output, err := RunCommand(cmd, true)
 	if err != nil {
 		if ctx.CI {
@@ -42,19 +54,22 @@ func RunClippy(ctx *CheckContext) (CheckResult, error) {
 		}
 
 		// Locally: try to auto-fix, then re-check.
-		fixCmd := exec.Command("cargo", "clippy", "--locked", "--all-targets", "--fix", "--allow-dirty", "--allow-staged")
-		fixCmd.Dir = rustDir
+		fixArgs := append([]string{"clippy", "--locked", "--all-targets"}, selection...)
+		fixArgs = append(fixArgs, "--fix", "--allow-dirty", "--allow-staged")
+		fixCmd := exec.Command("cargo", fixArgs...)
+		fixCmd.Dir = ctx.RootDir
 		_, _ = RunCommand(fixCmd, true)
 
 		// Force a re-lint for the re-check below: `--fix` runs without `-D`, so it
 		// succeeds even with unfixable warnings and caches a clean-with-warnings
 		// build; without this touch the `-D` re-check could reuse it and miss
-		// them. Only reached locally on an already-failing clippy, so it never
-		// touches the warm-path cache the other Rust checks share.
-		libPath := filepath.Join(rustDir, "src", "lib.rs")
-		_ = exec.Command("touch", libPath).Run()
-		cmd = exec.Command("cargo", "clippy", "--all-targets", "--", "-D", "warnings")
-		cmd.Dir = rustDir
+		// them. Every member gets touched, not just the app, or a warning in a
+		// crate survives the re-check. Only reached locally on an already-failing
+		// clippy, so it never touches the warm-path cache the other Rust checks
+		// share.
+		touchWorkspaceCrateRoots(ctx.RootDir)
+		cmd = exec.Command("cargo", enforcingArgs...)
+		cmd.Dir = ctx.RootDir
 		output, err = RunCommand(cmd, true)
 		if err != nil {
 			return CheckResult{}, fmt.Errorf("clippy found unfixable issues\n%s", indentOutput(output))
@@ -82,4 +97,23 @@ func RunClippy(ctx *CheckContext) (CheckResult, error) {
 	}
 
 	return Success("No warnings"), nil
+}
+
+// touchWorkspaceCrateRoots bumps the mtime of every member's crate-root source, so
+// cargo can't hand back a cached lint result for any of them. Best-effort: a member
+// with neither `src/lib.rs` nor `src/main.rs` is simply skipped, and a failed touch
+// only means the re-check may reuse a cached pass for that crate.
+func touchWorkspaceCrateRoots(rootDir string) {
+	members, err := WorkspaceMembers(rootDir)
+	if err != nil {
+		return
+	}
+	for _, m := range members {
+		for _, name := range []string{"lib.rs", "main.rs"} {
+			path := filepath.Join(m.SrcDir, name)
+			if _, statErr := os.Stat(path); statErr == nil {
+				_ = os.Chtimes(path, time.Now(), time.Now())
+			}
+		}
+	}
 }
