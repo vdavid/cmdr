@@ -70,7 +70,7 @@ use std::sync::atomic::{AtomicBool, AtomicU8, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 #[cfg(target_os = "macos")]
 pub(super) mod bulk_read;
@@ -387,7 +387,7 @@ pub fn walk<V: DirVisitor + 'static>(
             .name("index-walk-watchdog".into())
             .spawn(move || {
                 // Utility tier: the whole walk (workers + this watchdog) yields CPU to the UI.
-                crate::thread_qos::set_current_thread_qos(crate::thread_qos::QosClass::Utility);
+                cmdr_fs::thread_qos::set_current_thread_qos(cmdr_fs::thread_qos::QosClass::Utility);
                 engine.run_watchdog(interval)
             })
             .expect("failed to spawn walker watchdog thread")
@@ -595,7 +595,7 @@ impl<V: DirVisitor + 'static> Engine<V> {
     fn run_worker(self: Arc<Self>, slot: Slot) {
         // Yield CPU to the UI: directory-walking is heavy background work. Set once per
         // worker thread (covers both initial and replacement workers).
-        crate::thread_qos::set_current_thread_qos(crate::thread_qos::QosClass::Utility);
+        cmdr_fs::thread_qos::set_current_thread_qos(cmdr_fs::thread_qos::QosClass::Utility);
         loop {
             // Pop the next task, or exit when the walk is done/cancelled.
             let scheduled = {
@@ -744,7 +744,7 @@ impl<V: DirVisitor + 'static> Engine<V> {
                 }
                 *slot.lock_ignore_poison() = None;
                 self.timed_out.fetch_add(1, Ordering::Relaxed);
-                let delivered = crate::pluralize::pluralize_with(entries, "entry", "entries");
+                let delivered = cmdr_fs::pluralize::pluralize_with(entries, "entry", "entries");
                 match reason {
                     AbandonReason::Stalled => log::warn!(
                         target: LOG_TARGET,

@@ -20,7 +20,7 @@ use crate::indexing::reconcile::reconciler;
 use crate::indexing::scanner;
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
-use crate::pluralize::{pluralize, pluralize_with};
+use cmdr_fs::pluralize::{pluralize, pluralize_with};
 
 /// Run post-replay verification in the background.
 ///
@@ -445,9 +445,9 @@ mod tests {
     //! `READ_POOL_TEST_MUTEX`.
 
     use super::*;
-    use crate::ignore_poison::IgnorePoison;
     use crate::indexing::read::enrichment::{READ_POOL, READ_POOL_TEST_MUTEX, ReadPool};
     use crate::indexing::store::{DirStatsById, EntryRow, ROOT_ID};
+    use cmdr_fs::ignore_poison::IgnorePoison;
     use std::fs;
     use std::sync::Arc;
 

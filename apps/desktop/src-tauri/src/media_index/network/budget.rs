@@ -17,7 +17,7 @@
 use std::sync::{Condvar, Mutex};
 use std::time::Duration;
 
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 /// The default prefetch byte budget for a parallel network pass: 256 MB. Enough to keep a
 /// handful of normal photos (a few MB compressed) or a couple of RAWs in flight so fetch

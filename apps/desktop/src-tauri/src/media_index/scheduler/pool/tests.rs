@@ -16,7 +16,6 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
-use crate::ignore_poison::IgnorePoison;
 use crate::media_index::backend::fake::FakeVisionBackend;
 use crate::media_index::backend::{ImageInput, MediaAnalysis, OcrResult, VisionBackend, VisionError};
 use crate::media_index::predicate::MediaKind;
@@ -25,6 +24,7 @@ use crate::media_index::scheduler::enrich::{EnrichGates, GcScope, ImageEntry};
 use crate::media_index::scheduler::pool::{MakeBackend, run_enrich_pool};
 use crate::media_index::store::{MediaStatusRow, MediaStore, media_db_path};
 use crate::media_index::writer::MediaWriter;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 /// A `VisionBackend` that instruments concurrency: it counts per-path calls, tracks the
 /// live and peak in-flight count, and sleeps a little in `analyze_media` so overlap is

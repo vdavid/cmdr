@@ -232,7 +232,7 @@ pub(crate) struct IndexPathSpace {
     /// and the exclusion gate can't disagree about where the volume starts.
     scope: ExclusionScope,
     /// Whether this volume's filesystem inode is a trustworthy identity, resolved
-    /// ONCE per scan from the volume's [`FilesystemKind`](crate::file_system::filesystem_kind::FilesystemKind).
+    /// ONCE per scan from the volume's [`FilesystemKind`](cmdr_fs::filesystem_kind::FilesystemKind).
     /// `false` only for a local external drive on FAT/exFAT (derived, unstable
     /// inodes). When `false`, the local scan/reconcile/live pipeline stores
     /// `inode: None` for every entry so the rename pre-pass can never match — an

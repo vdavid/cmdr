@@ -533,7 +533,7 @@ impl ParallelProbe {
         self.peak.load(std::sync::atomic::Ordering::SeqCst)
     }
     fn max_calls_for_any_path(&self) -> usize {
-        use crate::ignore_poison::IgnorePoison;
+        use cmdr_fs::ignore_poison::IgnorePoison;
         self.calls.lock_ignore_poison().values().copied().max().unwrap_or(0)
     }
 }
@@ -563,7 +563,7 @@ impl crate::media_index::backend::VisionBackend for ParallelProbe {
         want_vision: bool,
         want_clip: bool,
     ) -> Result<crate::media_index::backend::MediaAnalysis, crate::media_index::backend::VisionError> {
-        use crate::ignore_poison::IgnorePoison;
+        use cmdr_fs::ignore_poison::IgnorePoison;
         use std::sync::atomic::Ordering;
         let cur = self.in_flight.fetch_add(1, Ordering::SeqCst) + 1;
         self.peak.fetch_max(cur, Ordering::SeqCst);

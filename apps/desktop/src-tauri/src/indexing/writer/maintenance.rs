@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 
 use crate::indexing::IndexFailureSignal;
 use crate::indexing::store::IndexStoreError;
-use crate::pluralize::pluralize;
+use cmdr_fs::pluralize::pluralize;
 
 // ── Busy-handler checkpoint suppression ──────────────────────────────
 

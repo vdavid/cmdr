@@ -16,8 +16,8 @@
 
 use super::classify::{is_denylisted, is_hidden_or_system, leaf_name, path_class, under_floored_paths};
 use super::scorer::{FolderSignals, extension_count};
-use crate::file_system::listing::FileEntry;
-use crate::file_system::volume::InMemoryVolume;
+use cmdr_fs::entry::FileEntry;
+use cmdr_fs::volume::InMemoryVolume;
 use std::collections::BTreeSet;
 
 /// A synthetic home tree plus the metadata needed to derive per-folder signals.

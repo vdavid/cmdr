@@ -40,10 +40,10 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{LazyLock, Mutex};
 
-use crate::ignore_poison::IgnorePoison;
 use crate::indexing::lifecycle::state;
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 /// A resolved MTP add/change: the object's storage-relative path plus the
 /// metadata needed to upsert it, and its object handle (stored in `inode`).

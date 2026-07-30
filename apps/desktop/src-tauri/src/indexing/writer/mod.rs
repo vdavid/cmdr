@@ -14,13 +14,13 @@ use std::time::{Duration, Instant};
 
 use tokio::sync::oneshot;
 
-#[cfg(test)]
-use crate::ignore_poison::IgnorePoison;
 use crate::indexing::IndexFailureSignal;
 use crate::indexing::events::EventSink;
 use crate::indexing::lifecycle::state::ROOT_VOLUME_ID;
 use crate::indexing::store::{EntryRow, IndexStore, IndexStoreError};
-use crate::pluralize::{pluralize, pluralize_with};
+#[cfg(test)]
+use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::pluralize::{pluralize, pluralize_with};
 
 mod aggregation;
 mod deferred_repair;
@@ -532,7 +532,7 @@ impl IndexWriter {
                 let events = Arc::clone(&events);
                 move || {
                     // Yield CPU to the UI: this thread writes the index DB in the background.
-                    crate::thread_qos::set_current_thread_qos(crate::thread_qos::QosClass::Utility);
+                    cmdr_fs::thread_qos::set_current_thread_qos(cmdr_fs::thread_qos::QosClass::Utility);
                     writer_loop(
                         conn,
                         receiver,

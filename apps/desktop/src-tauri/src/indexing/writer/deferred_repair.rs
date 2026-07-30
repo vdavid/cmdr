@@ -22,7 +22,7 @@
 use std::cell::{Cell, RefCell};
 use std::collections::BTreeMap;
 
-use crate::pluralize::pluralize;
+use cmdr_fs::pluralize::pluralize;
 
 use super::repair::repair_dir_stats_upward;
 

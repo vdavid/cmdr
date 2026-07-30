@@ -23,8 +23,8 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, LazyLock, Mutex};
 
 use super::{AnnError, AnnSpace, engine_err, expansion_search_for, index_path, read_meta, verify_index_checksum};
-use crate::ignore_poison::IgnorePoison;
 use crate::media_index::store;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 /// A warm, immutable mmap `view` of a volume's ANN index. `usearch::Index` is
 /// thread-safe for concurrent searches, so one handle serves every query until

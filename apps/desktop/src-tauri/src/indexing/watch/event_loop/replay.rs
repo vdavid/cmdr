@@ -29,7 +29,7 @@ use crate::indexing::events::{EventSink, IndexEvent, RescanReason, emit_rescan_n
 use crate::indexing::lifecycle::lifecycle_bus;
 use crate::indexing::reconcile::reconciler::{self, EventReconciler};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
-use crate::pluralize::pluralize;
+use cmdr_fs::pluralize::pluralize;
 
 /// Cap on the replay's ORIGIN dirs. When exceeded, individual path tracking
 /// stops and a single "full refresh" is emitted instead.

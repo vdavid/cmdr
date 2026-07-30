@@ -64,7 +64,7 @@ use super::backend::Tag;
 use super::coverage;
 use super::scheduler::enrich::parent_dir;
 use super::store::{EnrichmentState, MediaStatusRow, MediaStoreError, open_write_connection};
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 /// Bounded channel capacity. Enrichment sends one `Upsert` per image; a modest
 /// bound gives backpressure without holding many messages.

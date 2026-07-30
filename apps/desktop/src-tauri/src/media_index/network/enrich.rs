@@ -36,13 +36,13 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::time::Duration;
 
-use crate::ignore_poison::IgnorePoison;
 use crate::media_index::backend::{ImageInput, VisionBackend};
 use crate::media_index::progress::{EnrichProgress, EnrichProgressSink};
 use crate::media_index::scheduler::enrich::{ImageEntry, PassSummary, apply_media_upsert, gc_targets, status_row};
 use crate::media_index::scheduler::pool::{MakeBackend, WorkerCount};
 use crate::media_index::store::{EnrichmentState, MediaStatusRow, needs_clip, needs_enrichment};
 use crate::media_index::writer::MediaWriter;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 use super::budget::ByteBudget;
 use super::fetch::{ByteFetcher, FetchError, os_join};

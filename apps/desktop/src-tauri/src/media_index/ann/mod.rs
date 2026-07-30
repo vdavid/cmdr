@@ -59,7 +59,7 @@ use std::sync::{Arc, LazyLock, Mutex};
 use usearch::{IndexOptions, MetricKind, ScalarKind};
 
 use super::store::MediaStoreError;
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 /// Below this many stored vectors, semantic search keeps the EXACT resident-f16
 /// brute-force scan; at or above it, the ANN index takes over. Rationale (spike,

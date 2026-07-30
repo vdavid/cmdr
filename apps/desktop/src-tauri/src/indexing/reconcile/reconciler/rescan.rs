@@ -396,7 +396,7 @@ pub(super) fn start_next_rescan(
     let spawn_result = std::thread::Builder::new()
         .name("rescan-subtree".into())
         .spawn(move || {
-            crate::thread_qos::set_current_thread_qos(crate::thread_qos::QosClass::Utility);
+            cmdr_fs::thread_qos::set_current_thread_qos(cmdr_fs::thread_qos::QosClass::Utility);
             let cancelled = AtomicBool::new(false);
             // The reconciler holds a READ connection (invariant: reconciler/event
             // loops never open a write connection — a write conn contends with the

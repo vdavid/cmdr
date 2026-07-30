@@ -11,7 +11,6 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use crate::ignore_poison::IgnorePoison;
 use crate::indexing::IndexPathSpace;
 use crate::indexing::events::{
     ActivityPhase, DEBUG_STATS, EventSink, IndexEvent, RescanReason, emit_rescan_notification, set_phase_for,
@@ -22,7 +21,8 @@ use crate::indexing::store::{IndexStore, ScanCalibrationKind};
 use crate::indexing::watch::event_loop::run_live_event_loop;
 use crate::indexing::watch::watcher::FsChangeEvent;
 use crate::indexing::writer::{IndexWriter, WriteMessage};
-use crate::pluralize::pluralize;
+use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::pluralize::pluralize;
 
 /// Everything the post-scan completion task takes ownership of from
 /// `start_scan`. These are exactly the variables the former inline closure

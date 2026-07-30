@@ -6,7 +6,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use super::state::{INDEX_REGISTRY, IndexPhase, IndexVolumeKind};
-use crate::ignore_poison::IgnorePoison;
 use crate::indexing::events::progress_reporter::ScanProgressReporter;
 use crate::indexing::events::{
     ActivityPhase, DEBUG_STATS, EventSink, IndexDebugStatusResponse, IndexEvent, IndexStatusResponse, PhaseRecord,
@@ -19,7 +18,8 @@ use crate::indexing::store::IndexStore;
 use crate::indexing::watch::event_loop::{JOURNAL_GAP_THRESHOLD, ReplayConfig, run_replay_event_loop};
 use crate::indexing::watch::watcher::{self, DriveWatcher};
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
-use crate::pluralize::pluralize;
+use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::pluralize::pluralize;
 
 // ── IndexManager ─────────────────────────────────────────────────────
 

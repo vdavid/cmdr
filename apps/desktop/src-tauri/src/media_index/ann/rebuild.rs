@@ -19,8 +19,8 @@ use std::sync::{LazyLock, Mutex};
 use std::time::Instant;
 
 use super::{AnnError, AnnMeta, AnnSpace, engine_err};
-use crate::ignore_poison::IgnorePoison;
 use crate::media_index::store;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 /// The in-flight set: one rebuild per index file at a time. A query that finds the
 /// route unusable while a rebuild is already running just keeps brute-forcing.
@@ -74,7 +74,7 @@ pub(crate) fn kick(db_path: &Path, space: AnnSpace, model_id: &str) {
                     target: "media_index",
                     "ann rebuild for {} done: {} in {:.1?}",
                     db_path.display(),
-                    crate::pluralize::pluralize(rows, "vector"),
+                    cmdr_fs::pluralize::pluralize(rows, "vector"),
                     started.elapsed()
                 ),
                 Err(AnnError::Stopped) => log::info!(

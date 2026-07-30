@@ -24,7 +24,6 @@ use std::time::{Duration, Instant};
 
 use rusqlite::Connection;
 
-use crate::ignore_poison::IgnorePoison;
 use crate::indexing::metadata::{MetadataSnapshot, extract_metadata};
 use crate::indexing::paths::firmlinks;
 use crate::indexing::scanner;
@@ -32,11 +31,12 @@ use crate::indexing::store::{self, IndexStore, IndexStoreError};
 use crate::indexing::watch::watcher::FsChangeEvent;
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 use crate::indexing::{DEBUG_STATS, IndexPathSpace};
+use cmdr_fs::ignore_poison::IgnorePoison;
 // Only the test-only `new()` / `new_with_throttle_window` and the rescan tests
 // name the root volume id; production sites thread the real id through `new_for`.
 #[cfg(test)]
 use crate::indexing::ROOT_VOLUME_ID;
-use crate::pluralize::pluralize;
+use cmdr_fs::pluralize::pluralize;
 
 mod escalation;
 mod rescan;
@@ -120,7 +120,7 @@ mod skip_aggregator {
     use std::sync::Mutex;
     use std::time::Instant;
 
-    use crate::pluralize::pluralize;
+    use cmdr_fs::pluralize::pluralize;
 
     const FLUSH_INTERVAL_SECS: u64 = 5;
     const SAMPLE_LEN: usize = 80;
@@ -1132,7 +1132,7 @@ pub(crate) fn read_fs_children(dir_path: &Path, space: &IndexPathSpace) -> Optio
             Ok(read) if read.unusable > 0 => log::warn!(
                 "reconcile: bulk read of {} couldn't parse {}, re-reading it with read_dir",
                 dir_path.display(),
-                crate::pluralize::pluralize_with(read.unusable as u64, "entry", "entries"),
+                cmdr_fs::pluralize::pluralize_with(read.unusable as u64, "entry", "entries"),
             ),
             Ok(read) => return Some(bulk_children(dir_path, space, read)),
             Err(e) => {

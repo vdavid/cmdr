@@ -39,11 +39,11 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::thread;
 
-use crate::ignore_poison::IgnorePoison;
 use crate::media_index::backend::{ImageInput, VisionBackend, VisionError};
 use crate::media_index::progress::{EnrichProgress, EnrichProgressSink};
 use crate::media_index::store::{EnrichmentState, needs_clip, needs_enrichment};
 use crate::media_index::writer::MediaWriter;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 use super::enrich::{
     EnrichGates, GcScope, ImageEntry, PassSummary, apply_media_upsert, enrichable_totals, gc_targets, parent_dir,

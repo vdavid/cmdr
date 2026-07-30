@@ -31,9 +31,9 @@ use std::time::Duration;
 use rusqlite::Connection;
 
 use super::store::{ImportanceStoreError, RECOMPUTE_GENERATION_KEY, open_write_connection};
-use crate::ignore_poison::IgnorePoison;
 use crate::indexing::store::normalize_for_comparison;
-use crate::pluralize::pluralize;
+use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::pluralize::pluralize;
 
 /// Bounded channel capacity. A recompute pass sends one `WriteWeights` message
 /// carrying the whole volume, so the queue never holds many messages; a modest

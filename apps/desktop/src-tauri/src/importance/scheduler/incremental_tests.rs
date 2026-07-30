@@ -265,8 +265,8 @@ fn incremental_scope_follows_the_changed_dir_not_its_ancestors() {
     assert!(
         wide > narrow * 50,
         "the ancestor closure costs {} against the origin's {}",
-        crate::pluralize::pluralize(wide as u64, "row"),
-        crate::pluralize::pluralize(narrow as u64, "row")
+        cmdr_fs::pluralize::pluralize(wide as u64, "row"),
+        cmdr_fs::pluralize::pluralize(narrow as u64, "row")
     );
     writer.shutdown();
 }
@@ -345,7 +345,7 @@ fn a_floor_transition_propagates_from_the_parent_origin_without_widening() {
     assert!(
         count <= 4,
         "only the origin's chain and its (now floored) subtree were touched, not {}",
-        crate::pluralize::pluralize(count as u64, "folder")
+        cmdr_fs::pluralize::pluralize(count as u64, "folder")
     );
     assert_eq!(
         store

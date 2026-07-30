@@ -12,7 +12,7 @@ use crate::indexing::IndexFailureSignal;
 use crate::indexing::aggregator::AggregationPhase;
 use crate::indexing::events::{EventSink, IndexEvent};
 use crate::indexing::store::{DirStatsById, EntryRow, IndexStore, IndexStoreError};
-use crate::pluralize::pluralize_with;
+use cmdr_fs::pluralize::pluralize_with;
 
 use super::deferred_repair::DeferredRepairs;
 use super::delta::{propagate_delta_by_id, propagate_min_subtree_epoch, propagate_recursive_has_symlinks};

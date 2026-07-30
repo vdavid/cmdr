@@ -478,7 +478,7 @@ fn spawn_pass(scheduler: Arc<MediaScheduler>, volume_id: String, kind: PassKind)
                 Ok(Ok(PassOutcome::Done(count))) => log::debug!(
                     target: "media_index",
                     "enrichment of '{volume_id}' ({kind:?}) enriched {}",
-                    crate::pluralize::pluralize(count as u64, "image")
+                    cmdr_fs::pluralize::pluralize(count as u64, "image")
                 ),
                 Ok(Err(e)) => log::warn!(target: "media_index", "enrichment of '{volume_id}' failed: {e}"),
                 Err(e) => log::warn!(target: "media_index", "enrichment task for '{volume_id}' panicked: {e}"),

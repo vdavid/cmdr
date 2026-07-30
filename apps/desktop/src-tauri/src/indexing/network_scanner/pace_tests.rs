@@ -15,9 +15,9 @@ use std::time::Duration;
 
 use super::tests::{ConcurrencyTrackingVolume, progress, wide_tree};
 use super::{ScanPacer, scan_volume_via_trait};
-use crate::file_system::volume::Volume;
 use crate::indexing::network_scanner::scan_pace::FULL_LISTING_BUDGET;
 use crate::indexing::store::{IndexStore, ROOT_ID};
+use cmdr_fs::volume::Volume;
 
 /// THE navigation-responsiveness guard. While the user is browsing the share, the
 /// walk must drop to ONE listing in flight, so a navigation queues behind a single

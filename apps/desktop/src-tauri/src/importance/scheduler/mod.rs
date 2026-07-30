@@ -51,8 +51,8 @@ use tauri::{AppHandle, Manager};
 
 use super::scorer::{SignalSet, Weights};
 use super::writer::ImportanceWriter;
-use crate::ignore_poison::IgnorePoison;
 use crate::indexing::IndexVolumeKind;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 mod differential;
 mod recompute;
@@ -724,7 +724,7 @@ fn spawn_incremental(scheduler: Arc<ImportanceScheduler>, volume_id: String, ava
                     Ok(Ok(count)) => log::debug!(
                         target: "importance",
                         "incremental rescore of '{volume_id}' updated {}",
-                        crate::pluralize::pluralize(count as u64, "folder")
+                        cmdr_fs::pluralize::pluralize(count as u64, "folder")
                     ),
                     Ok(Err(e)) => log::warn!(target: "importance", "incremental rescore of '{volume_id}' failed: {e}"),
                     Err(e) => log::warn!(target: "importance", "incremental task for '{volume_id}' panicked: {e}"),
@@ -764,7 +764,7 @@ fn spawn_recompute(scheduler: Arc<ImportanceScheduler>, volume_id: String, avail
                 Ok(Ok(count)) => log::debug!(
                     target: "importance",
                     "recompute of '{volume_id}' scored {}",
-                    crate::pluralize::pluralize(count as u64, "folder")
+                    cmdr_fs::pluralize::pluralize(count as u64, "folder")
                 ),
                 Ok(Err(e)) => log::warn!(target: "importance", "recompute of '{volume_id}' failed: {e}"),
                 Err(e) => log::warn!(target: "importance", "recompute task for '{volume_id}' panicked: {e}"),

@@ -19,10 +19,10 @@ use std::path::PathBuf;
 use tauri::AppHandle;
 
 use crate::file_system::get_volume_manager;
-use crate::file_system::volume::SmbConnectionState;
 use crate::indexing::lifecycle::freshness;
 use crate::indexing::lifecycle::master;
 use crate::indexing::lifecycle::state;
+use cmdr_fs::volume::SmbConnectionState;
 
 /// Why an SMB volume couldn't be indexed. Typed (and serialized as a
 /// snake_case tag) so callers and the per-drive UX classify by variant on BOTH sides
@@ -80,11 +80,7 @@ pub(crate) fn smb_volume_id_for_path(path: &str) -> Option<String> {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     {
         let info = get_smb_mount_info(path)?;
-        Some(crate::file_system::volume::smb_volume_id(
-            &info.server,
-            info.port,
-            &info.share,
-        ))
+        Some(cmdr_fs::volume::smb_volume_id(&info.server, info.port, &info.share))
     }
     #[cfg(not(any(target_os = "macos", target_os = "linux")))]
     {

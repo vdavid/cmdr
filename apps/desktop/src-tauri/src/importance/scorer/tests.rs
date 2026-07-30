@@ -317,7 +317,7 @@ fn fixture_generator_builds_expected_tree() {
     // The volume is a usable InMemoryVolume with the entries in it.
     let rt = tokio::runtime::Builder::new_current_thread().build().unwrap();
     let downloads = rt.block_on(async {
-        crate::file_system::volume::Volume::list_directory(&volume, std::path::Path::new("/Users/test/Downloads"), None)
+        cmdr_fs::volume::Volume::list_directory(&volume, std::path::Path::new("/Users/test/Downloads"), None)
             .await
             .unwrap()
     });

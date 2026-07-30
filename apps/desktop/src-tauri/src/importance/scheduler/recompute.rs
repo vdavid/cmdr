@@ -183,7 +183,7 @@ pub fn recompute_index_to_db(
     now_secs: u64,
 ) -> Result<MeasureOutcome, String> {
     // Walk + score (the read/compute phase).
-    let footprint_before = crate::process_memory::current_phys_footprint();
+    let footprint_before = cmdr_fs::process_memory::current_phys_footprint();
     let walk_started = std::time::Instant::now();
     let conn = IndexStore::open_read_connection(index_db).map_err(|e| e.to_string())?;
     let mut folders = walk_index_folders(&conn, home)?;
@@ -229,7 +229,7 @@ pub fn recompute_index_to_db(
 /// How much the process's `phys_footprint` has grown since `before`, or `None` when
 /// either reading failed (or the platform has no Mach `task_info`).
 fn footprint_growth(before: Option<u64>) -> Option<u64> {
-    match (crate::process_memory::current_phys_footprint(), before) {
+    match (cmdr_fs::process_memory::current_phys_footprint(), before) {
         (Some(now), Some(before)) => Some(now.saturating_sub(before)),
         _ => None,
     }

@@ -12,7 +12,7 @@ use crate::indexing::IndexFailureSignal;
 use crate::indexing::aggregator::{self, AggregationProgress};
 use crate::indexing::events::{EventSink, IndexEvent};
 use crate::indexing::store::IndexStore;
-use crate::pluralize::{pluralize, pluralize_with};
+use cmdr_fs::pluralize::{pluralize, pluralize_with};
 
 use super::deferred_repair::DeferredRepairs;
 use super::repair::repair_dir_stats_upward;

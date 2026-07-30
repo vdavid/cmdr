@@ -6,12 +6,12 @@ use std::sync::Arc;
 
 use rusqlite::Connection;
 
-use crate::file_system::listing::FileEntry;
 use crate::indexing::lifecycle::state::{INDEX_REGISTRY, IndexInstance, IndexPhase, IndexVolumeKind};
 use crate::indexing::read::enrichment::ReadPool;
 use crate::indexing::read::pending_sizes::PendingSizes;
 use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
 use crate::indexing::writer::IndexWriter;
+use cmdr_fs::entry::FileEntry;
 
 /// A privately-registered per-volume `IndexInstance`, for tests that must NOT
 /// assert on the process-global root `PENDING_SIZES` / `READ_POOL`.

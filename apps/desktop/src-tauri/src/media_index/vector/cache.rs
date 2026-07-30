@@ -21,8 +21,8 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, LazyLock, Mutex};
 
-use crate::ignore_poison::IgnorePoison;
 use crate::media_index::store::{EmbeddingTable, open_read_connection, read_all_embeddings_from};
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 use super::BruteForceVectorStore;
 

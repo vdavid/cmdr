@@ -167,7 +167,7 @@ fn classify_io_error(e: &std::io::Error, path: &str, op: &str) -> FetchError {
 /// can't reenter the executor (the same bridge as the archive backend's
 /// `VolumeByteSource`).
 pub struct VolumeByteFetcher {
-    volume: std::sync::Arc<dyn crate::file_system::volume::Volume>,
+    volume: std::sync::Arc<dyn cmdr_fs::volume::Volume>,
     /// The tokio runtime the async volume read runs under; captured at
     /// construction (inside the runtime context) because the fetch itself runs on
     /// plain threads with no ambient runtime.
@@ -176,7 +176,7 @@ pub struct VolumeByteFetcher {
 
 impl VolumeByteFetcher {
     /// A fetcher reading through `volume` on the runtime behind `handle`.
-    pub fn new(volume: std::sync::Arc<dyn crate::file_system::volume::Volume>, handle: tokio::runtime::Handle) -> Self {
+    pub fn new(volume: std::sync::Arc<dyn cmdr_fs::volume::Volume>, handle: tokio::runtime::Handle) -> Self {
         Self { volume, handle }
     }
 }
@@ -213,7 +213,7 @@ impl ByteFetcher for VolumeByteFetcher {
 /// draining and skip, rather than buffering a pathological file), classifying
 /// failures by TYPED `VolumeError` variant.
 async fn read_via_volume(
-    volume: &dyn crate::file_system::volume::Volume,
+    volume: &dyn cmdr_fs::volume::Volume,
     path: &std::path::Path,
     size_hint: Option<u64>,
 ) -> Result<Vec<u8>, FetchError> {
@@ -244,8 +244,8 @@ async fn read_via_volume(
 /// - Everything else (`PermissionDenied`, `IsADirectory`, `IoError`, and MTP's
 ///   `DeviceSessionReset`, which its docs forbid mapping to a disconnect) ⇒ a
 ///   per-file [`FetchError::Unreadable`]: skip-and-count, never a pause.
-fn classify_volume_error(e: crate::file_system::volume::VolumeError) -> FetchError {
-    use crate::file_system::volume::VolumeError;
+fn classify_volume_error(e: cmdr_fs::volume::VolumeError) -> FetchError {
+    use cmdr_fs::volume::VolumeError;
     match e {
         VolumeError::NotFound(_) => FetchError::NotFound,
         VolumeError::DeviceDisconnected(msg) => FetchError::Disconnected(msg),
@@ -443,8 +443,8 @@ mod tests {
     /// exact shape of the enrichment pass's `spawn_blocking` / fetcher threads.
     #[test]
     fn volume_fetch_reads_bytes_through_the_volume_trait() {
-        use crate::file_system::volume::InMemoryVolume;
-        use crate::file_system::volume::Volume;
+        use cmdr_fs::volume::InMemoryVolume;
+        use cmdr_fs::volume::Volume;
         let rt = tokio::runtime::Runtime::new().expect("runtime");
         let volume = std::sync::Arc::new(InMemoryVolume::new("test"));
         rt.block_on(volume.create_file(std::path::Path::new("/DCIM/a.jpg"), b"direct bytes"))
@@ -465,7 +465,7 @@ mod tests {
     /// WITHOUT touching the wire.
     #[test]
     fn volume_fetch_classifies_not_found_and_oversize_hint() {
-        use crate::file_system::volume::InMemoryVolume;
+        use cmdr_fs::volume::InMemoryVolume;
         let rt = tokio::runtime::Runtime::new().expect("runtime");
         let volume = std::sync::Arc::new(InMemoryVolume::new("test"));
         let fetcher = VolumeByteFetcher::new(volume, rt.handle().clone());
@@ -486,7 +486,7 @@ mod tests {
     /// (permission, I/O, MTP's session reset) is a per-file skip.
     #[test]
     fn volume_errors_classify_disconnect_vs_unreadable_by_typed_variant() {
-        use crate::file_system::volume::VolumeError;
+        use cmdr_fs::volume::VolumeError;
         assert!(matches!(
             classify_volume_error(VolumeError::DeviceDisconnected("gone".into())),
             FetchError::Disconnected(_)
@@ -563,16 +563,15 @@ mod tests {
             fn list_directory<'a>(
                 &'a self,
                 _path: &'a std::path::Path,
-                _on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
-            ) -> Pin<Box<dyn Future<Output = Result<Vec<crate::file_system::FileEntry>, VolumeError>> + Send + 'a>>
+                _on_progress: Option<&'a (dyn Fn(cmdr_fs::volume::ListingProgress) + Sync)>,
+            ) -> Pin<Box<dyn Future<Output = Result<Vec<cmdr_fs::entry::FileEntry>, VolumeError>> + Send + 'a>>
             {
                 Box::pin(async { Ok(Vec::new()) })
             }
             fn get_metadata<'a>(
                 &'a self,
                 _path: &'a std::path::Path,
-            ) -> Pin<Box<dyn Future<Output = Result<crate::file_system::FileEntry, VolumeError>> + Send + 'a>>
-            {
+            ) -> Pin<Box<dyn Future<Output = Result<cmdr_fs::entry::FileEntry, VolumeError>> + Send + 'a>> {
                 Box::pin(async { Err(VolumeError::NotSupported) })
             }
             fn exists<'a>(&'a self, _path: &'a std::path::Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {

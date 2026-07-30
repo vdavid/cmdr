@@ -19,7 +19,7 @@ use std::sync::Mutex;
 
 use super::store::{ImportanceStoreError, importance_db_path};
 use super::writer::ImportanceWriter;
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 /// The long-lived per-volume writers. A `None` slot marks a volume whose writer
 /// is being built (reserved), so a concurrent caller waits rather than spawning a

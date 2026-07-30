@@ -13,7 +13,7 @@ use std::sync::Mutex;
 
 use super::store::{MediaStoreError, media_db_path};
 use super::writer::MediaWriter;
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 /// The long-lived per-volume writers, keyed by volume id.
 #[derive(Default)]

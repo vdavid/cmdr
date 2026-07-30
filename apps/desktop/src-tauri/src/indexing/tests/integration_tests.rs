@@ -8,9 +8,9 @@
 //! SQLite; those touching the per-volume `INDEX_REGISTRY` serialize on a
 //! dedicated mutex and clear it before returning.
 
-use crate::file_system::listing::FileEntry;
 use crate::indexing::*;
 use crate::settings::FullDiskAccessChoice;
+use cmdr_fs::entry::FileEntry;
 use lifecycle::state::{
     INDEX_REGISTRY, IndexInstance, IndexPhase, IndexVolumeKind, ROOT_VOLUME_ID, is_initializing_phase,
     try_reserve_initializing_phase,

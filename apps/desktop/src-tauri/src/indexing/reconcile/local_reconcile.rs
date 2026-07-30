@@ -129,7 +129,7 @@ impl GuardedReader {
             .stack_size(READER_STACK_SIZE)
             .spawn(move || {
                 // Yield CPU to the UI: this thread reads directories in the background.
-                crate::thread_qos::set_current_thread_qos(crate::thread_qos::QosClass::Utility);
+                cmdr_fs::thread_qos::set_current_thread_qos(cmdr_fs::thread_qos::QosClass::Utility);
                 while let Ok(path) = req_rx.recv() {
                     let result = read_fn(&path);
                     // If the caller abandoned us (timed out and dropped the receiver),
@@ -234,7 +234,7 @@ pub(crate) fn start_local_reconcile(
         .name("index-local-reconcile".into())
         .spawn(move || {
             // Yield CPU to the UI: reconcile walks the tree in the background.
-            crate::thread_qos::set_current_thread_qos(crate::thread_qos::QosClass::Utility);
+            cmdr_fs::thread_qos::set_current_thread_qos(cmdr_fs::thread_qos::QosClass::Utility);
             // Catch a panic INSIDE the walk and convert it to a typed
             // `ScanError::Panicked` so the `JoinHandle` resolves to
             // `Ok(Err(_))` (clean logged message + `ScanFailed` ⇒ Stale) rather
@@ -586,8 +586,8 @@ fn run_local_reconcile(
     let budget_note = if budget_subtrees > 0 {
         format!(
             ", {} over budget ({} left undescended)",
-            crate::pluralize::pluralize(budget_subtrees, "subtree"),
-            crate::pluralize::pluralize(budget_skipped, "dir"),
+            cmdr_fs::pluralize::pluralize(budget_subtrees, "subtree"),
+            cmdr_fs::pluralize::pluralize(budget_skipped, "dir"),
         )
     } else {
         String::new()
@@ -595,7 +595,7 @@ fn run_local_reconcile(
     log::info!(
         "local reconcile: complete for {}: +{added} -{removed} ~{updated} ({} re-listed) in {}ms{budget_note}",
         root.display(),
-        crate::pluralize::pluralize(total_dirs, "dir"),
+        cmdr_fs::pluralize::pluralize(total_dirs, "dir"),
         start.elapsed().as_millis()
     );
 

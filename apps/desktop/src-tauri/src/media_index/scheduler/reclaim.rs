@@ -265,8 +265,8 @@ impl MediaScheduler {
             log::info!(
                 target: "media_index",
                 "reclaim prune on '{volume_id}' at threshold {threshold}: {} removed (~{})",
-                crate::pluralize::pluralize(deleted as u64, "row"),
-                crate::pluralize::pluralize(freed_bytes, "byte")
+                cmdr_fs::pluralize::pluralize(deleted as u64, "row"),
+                cmdr_fs::pluralize::pluralize(freed_bytes, "byte")
             );
         }
         PruneOutcome {

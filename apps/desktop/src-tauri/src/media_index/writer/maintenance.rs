@@ -7,7 +7,7 @@ use rusqlite::Connection;
 
 use super::upsert::lookup_file_id;
 use crate::media_index::store::MediaStoreError;
-use crate::pluralize::pluralize;
+use cmdr_fs::pluralize::pluralize;
 
 /// Move a stored image's identity row from `old` to `new` in one transaction — the O(1)
 /// rename the integer-id keying buys (plan M4): a single `UPDATE media_file.path`, and every

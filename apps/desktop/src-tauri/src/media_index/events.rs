@@ -21,8 +21,8 @@ use std::time::Instant;
 
 use serde::{Deserialize, Serialize};
 
-use crate::ignore_poison::IgnorePoison;
 use crate::indexing::{EventSink, IndexEvent};
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 use super::progress::{EnrichProgress, EnrichProgressSink, should_emit_progress};
 

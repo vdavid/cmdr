@@ -15,12 +15,12 @@ use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use crate::ignore_poison::IgnorePoison;
 use crate::indexing::events::{Diagnostic, IndexErrorReport, IndexEvent};
 use crate::indexing::paths::firmlinks;
 use crate::indexing::store::{EntryRow, IndexStore, resolve_scan_root};
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
-use crate::pluralize::{pluralize, pluralize_with};
+use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::pluralize::{pluralize, pluralize_with};
 
 mod exclusions;
 pub(in crate::indexing) use exclusions::*;
@@ -265,7 +265,7 @@ pub fn scan_volume(
         .name("index-scanner".into())
         .spawn(move || {
             // Yield CPU to the UI: the whole scan runs on this thread and its walker pool.
-            crate::thread_qos::set_current_thread_qos(crate::thread_qos::QosClass::Utility);
+            cmdr_fs::thread_qos::set_current_thread_qos(cmdr_fs::thread_qos::QosClass::Utility);
             let reader: ReadDirFn = default_reader();
             let result = run_scan(
                 &config.root,

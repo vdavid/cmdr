@@ -144,7 +144,7 @@ impl ScanPacer {
         if self.last_logged.swap(budget, Ordering::Relaxed) == budget {
             return;
         }
-        let in_flight = crate::pluralize::pluralize(budget as u64, "listing");
+        let in_flight = cmdr_fs::pluralize::pluralize(budget as u64, "listing");
         if budget == FULL_LISTING_BUDGET {
             log::debug!("scan_pace: '{volume_id}' is quiet again, scan back to {in_flight} in flight");
         } else {

@@ -23,7 +23,7 @@ use rusqlite::Connection;
 use super::watcher;
 use crate::indexing::IndexPathSpace;
 use crate::indexing::store::{self, IndexStore};
-use crate::pluralize::{grouped, pluralize_grouped};
+use cmdr_fs::pluralize::{grouped, pluralize_grouped};
 
 mod live;
 mod replay;

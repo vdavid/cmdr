@@ -13,7 +13,7 @@ use std::collections::HashMap;
 use rusqlite::Connection;
 
 use crate::indexing::store::{DirStatsById, IndexStore, IndexStoreError, ROOT_ID, resolve_path, resolve_path_under};
-use crate::pluralize::pluralize_with;
+use cmdr_fs::pluralize::pluralize_with;
 
 mod readers;
 use readers::*;

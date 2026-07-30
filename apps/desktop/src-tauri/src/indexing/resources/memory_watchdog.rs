@@ -21,7 +21,7 @@
 //! **The snapshot reads BOTH allocators, and says which one holds the bytes.**
 //! mimalloc (our global allocator, so the whole Rust heap) is invisible to the
 //! macOS malloc-zone APIs, so a zone-only reading under-reports the heap the
-//! watchdog polices by orders of magnitude. `crate::process_memory` owns that
+//! watchdog polices by orders of magnitude. `cmdr_fs::process_memory` owns that
 //! gotcha and the readers; `MemoryAttribution` here turns the numbers into the
 //! log's verdict, so the claim can never contradict the figures beside it.
 //!
@@ -42,7 +42,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 #[cfg(target_os = "macos")]
 use crate::indexing::lifecycle::state;
 #[cfg(target_os = "macos")]
-use crate::pluralize::grouped;
+use cmdr_fs::pluralize::grouped;
 
 /// 8 GB in bytes.
 #[cfg(target_os = "macos")]
@@ -204,7 +204,7 @@ async fn run_watchdog(events: std::sync::Arc<dyn crate::indexing::EventSink>) {
 
         // Per-tick check is cheap: one `task_info` call for `phys_footprint`.
         // The full breakdown is gathered only when a threshold actually trips.
-        let phys_footprint = match crate::process_memory::current_phys_footprint() {
+        let phys_footprint = match cmdr_fs::process_memory::current_phys_footprint() {
             Some(b) => b,
             None => continue,
         };
@@ -335,7 +335,7 @@ enum MemoryAttribution {
 #[cfg(target_os = "macos")]
 impl MemoryAttribution {
     /// Classify a footprint by its two allocator readings. `rust_heap` and
-    /// `system_malloc` are disjoint (see `crate::process_memory`), so whatever
+    /// `system_malloc` are disjoint (see `cmdr_fs::process_memory`), so whatever
     /// they don't cover is unattributed.
     fn classify(phys_footprint: u64, rust_heap: u64, system_malloc: u64) -> MemoryAttribution {
         let untracked = untracked_bytes(phys_footprint, rust_heap, system_malloc);
@@ -422,10 +422,10 @@ impl MemorySnapshot {
     /// Gather the full breakdown. Returns `None` only if the load-bearing
     /// `phys_footprint` query fails; everything else degrades gracefully.
     fn capture() -> Option<MemorySnapshot> {
-        let vm = crate::process_memory::query_task_vm_info()?;
-        let basic = crate::process_memory::query_basic_info();
-        let rust_heap = crate::process_memory::query_mimalloc_heap();
-        let zones = crate::process_memory::query_system_malloc_zones();
+        let vm = cmdr_fs::process_memory::query_task_vm_info()?;
+        let basic = cmdr_fs::process_memory::query_basic_info();
+        let rust_heap = cmdr_fs::process_memory::query_mimalloc_heap();
+        let zones = cmdr_fs::process_memory::query_system_malloc_zones();
 
         Some(MemorySnapshot {
             phys_footprint: vm.phys_footprint,

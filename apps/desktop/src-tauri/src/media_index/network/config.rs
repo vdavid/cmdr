@@ -14,7 +14,7 @@ use std::collections::HashSet;
 use std::sync::LazyLock;
 use std::sync::RwLock;
 
-use crate::ignore_poison::RwLockIgnorePoison;
+use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 
 /// The user-set network-enrichment policy: which volumes are opted into background
 /// SMB enrichment, and which volumes/folders are "always index" overrides.

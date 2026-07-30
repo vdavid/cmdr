@@ -52,12 +52,12 @@ use std::path::Path;
 use std::sync::{LazyLock, Mutex};
 
 use crate::file_system::listing::caching::DirectoryChange;
-use crate::file_system::listing::metadata::FileEntry;
-use crate::ignore_poison::IgnorePoison;
 use crate::indexing::lifecycle::state;
 use crate::indexing::network_scanner::is_recursion_excluded_dir;
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
+use cmdr_fs::entry::FileEntry;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 /// Per-volume buffer of SMB changes that arrived DURING a full (re)scan.
 ///

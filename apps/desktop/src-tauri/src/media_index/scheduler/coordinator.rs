@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 struct PassSlot {

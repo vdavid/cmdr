@@ -59,9 +59,9 @@ mod system_dirs;
 
 pub(crate) use system_dirs::{exclusion_stamp_message, index_predates_exclusion_list, is_recursion_excluded_dir};
 
-use crate::file_system::volume::Volume;
 use crate::indexing::store::{EntryRow, IndexStore, ScanContext};
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
+use cmdr_fs::volume::Volume;
 use scan_pace::ScanPacer;
 
 use super::scanner::{ScanProgress, ScanSummary};
@@ -105,7 +105,7 @@ pub(crate) enum VolumeScanError {
     /// A `DeviceDisconnected`/`Disconnected` value here is a TERMINAL disconnect
     /// (see [`VolumeScanError::is_terminal_disconnect`]); other variants are the
     /// root-fatal case (failing to list the root itself).
-    Volume(crate::file_system::volume::VolumeError),
+    Volume(cmdr_fs::volume::VolumeError),
     /// The consecutive-failure backstop tripped: `count` listings in a row
     /// failed with a non-typed (disconnect-shaped) error, so the walk aborted
     /// rather than churning every queued dir into a silently-empty row. `last`
@@ -140,7 +140,7 @@ impl VolumeScanError {
     /// Classifies by the TYPED variant, never a message substring
     /// (`.claude/rules/no-string-matching.md`).
     pub(crate) fn is_terminal_disconnect(&self) -> bool {
-        use crate::file_system::volume::VolumeError;
+        use cmdr_fs::volume::VolumeError;
         matches!(
             self,
             Self::Volume(VolumeError::DeviceDisconnected(_)) | Self::ConsecutiveFailures { .. }
@@ -299,8 +299,8 @@ pub(crate) async fn scan_volume_via_trait(
                     "network_scanner: device disconnected listing {}: {e}; \
                      keeping honest partial ({} listed, {} queued/in-flight unscanned)",
                     dir_path.display(),
-                    crate::pluralize::pluralize(total_dirs, "dir"),
-                    crate::pluralize::pluralize((queue.len() + inflight.len()) as u64, "dir"),
+                    cmdr_fs::pluralize::pluralize(total_dirs, "dir"),
+                    cmdr_fs::pluralize::pluralize((queue.len() + inflight.len()) as u64, "dir"),
                 );
                 commit_scan_tx(&writer, &mut tx_open)?;
                 finish_partial_scan(&mut batch, &listed_ids, epoch, &writer)?;
@@ -334,8 +334,8 @@ pub(crate) async fn scan_volume_via_trait(
                         "network_scanner: {consecutive_failures} consecutive listing failures \
                          (looks like a disconnect); aborting walk and keeping honest partial \
                          ({} listed, {} queued/in-flight unscanned)",
-                        crate::pluralize::pluralize(total_dirs, "dir"),
-                        crate::pluralize::pluralize((queue.len() + inflight.len()) as u64, "dir"),
+                        cmdr_fs::pluralize::pluralize(total_dirs, "dir"),
+                        cmdr_fs::pluralize::pluralize((queue.len() + inflight.len()) as u64, "dir"),
                     );
                     commit_scan_tx(&writer, &mut tx_open)?;
                     finish_partial_scan(&mut batch, &listed_ids, epoch, &writer)?;
@@ -619,8 +619,8 @@ pub(crate) async fn reconcile_volume_via_trait(
                     "network_scanner: device disconnected reconciling {}: {e}; \
                      keeping prior index ({} re-listed, {} queued/in-flight unreached)",
                     dir_path.display(),
-                    crate::pluralize::pluralize(total_dirs, "dir"),
-                    crate::pluralize::pluralize((queue.len() + inflight.len() + new_dirs.len()) as u64, "dir"),
+                    cmdr_fs::pluralize::pluralize(total_dirs, "dir"),
+                    cmdr_fs::pluralize::pluralize((queue.len() + inflight.len() + new_dirs.len()) as u64, "dir"),
                 );
                 finish_reconcile(&listed_ids, epoch, &writer)?;
                 return Err(VolumeScanError::Volume(e));
@@ -641,8 +641,8 @@ pub(crate) async fn reconcile_volume_via_trait(
                         "network_scanner: {consecutive_failures} consecutive listing failures during reconcile \
                          (looks like a disconnect); aborting and keeping prior index \
                          ({} re-listed, {} queued/in-flight unreached)",
-                        crate::pluralize::pluralize(total_dirs, "dir"),
-                        crate::pluralize::pluralize((queue.len() + inflight.len() + new_dirs.len()) as u64, "dir"),
+                        cmdr_fs::pluralize::pluralize(total_dirs, "dir"),
+                        cmdr_fs::pluralize::pluralize((queue.len() + inflight.len() + new_dirs.len()) as u64, "dir"),
                     );
                     finish_reconcile(&listed_ids, epoch, &writer)?;
                     return Err(VolumeScanError::ConsecutiveFailures {
@@ -753,7 +753,7 @@ pub(crate) async fn reconcile_volume_via_trait(
         .send(WriteMessage::WalCheckpoint)
         .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
 
-    let dirs_listed = crate::pluralize::pluralize(total_dirs, "dir");
+    let dirs_listed = cmdr_fs::pluralize::pluralize(total_dirs, "dir");
     log::info!(
         "network_scanner: reconcile complete for {}: +{added} -{removed} ~{updated} ({dirs_listed} re-listed) in {}ms",
         root.display(),
@@ -795,7 +795,7 @@ async fn list_one_directory(
     volume: Arc<dyn Volume>,
     dir_path: PathBuf,
     cancelled: Arc<AtomicBool>,
-) -> Result<Vec<crate::file_system::listing::FileEntry>, VolumeScanError> {
+) -> Result<Vec<cmdr_fs::entry::FileEntry>, VolumeScanError> {
     let listing_path = dir_path.clone();
     let listing = tokio::spawn(async move {
         let result = volume.list_directory_for_scan(&listing_path, Some(&cancelled)).await;
@@ -808,12 +808,10 @@ async fn list_one_directory(
     match tokio::time::timeout(LIST_TIMEOUT, listing).await {
         Ok(Ok(Ok(entries))) => Ok(entries),
         Ok(Ok(Err(e))) => Err(VolumeScanError::Volume(e)),
-        Ok(Err(join_err)) => Err(VolumeScanError::Volume(
-            crate::file_system::volume::VolumeError::IoError {
-                message: format!("Directory listing task failed: {join_err}"),
-                raw_os_error: None,
-            },
-        )),
+        Ok(Err(join_err)) => Err(VolumeScanError::Volume(cmdr_fs::volume::VolumeError::IoError {
+            message: format!("Directory listing task failed: {join_err}"),
+            raw_os_error: None,
+        })),
         Err(_elapsed) => Err(VolumeScanError::Timeout(dir_path)),
     }
 }
@@ -838,8 +836,8 @@ fn drain_autorelease_pool() {
 /// `Disconnected` is a separate enum used by the FE-facing `smb_connection_state`
 /// probe, not returned from a listing call). A `ConnectionTimeout` is handled by
 /// the `Timeout`/consecutive-failure path, not here.
-fn is_typed_disconnect(e: &crate::file_system::volume::VolumeError) -> bool {
-    use crate::file_system::volume::VolumeError;
+fn is_typed_disconnect(e: &cmdr_fs::volume::VolumeError) -> bool {
+    use cmdr_fs::volume::VolumeError;
     matches!(e, VolumeError::DeviceDisconnected(_))
 }
 
@@ -928,8 +926,8 @@ fn log_scan_progress(last_log: &mut Instant, phase: &str, dir_path: &Path, total
     *last_log = Instant::now();
     log::debug!(
         "network_scanner: {phase}… {}, {}, current: {}",
-        crate::pluralize::pluralize(total_dirs, "dir"),
-        crate::pluralize::pluralize_with(total_entries, "entry", "entries"),
+        cmdr_fs::pluralize::pluralize(total_dirs, "dir"),
+        cmdr_fs::pluralize::pluralize_with(total_entries, "entry", "entries"),
         dir_path.display()
     );
 }

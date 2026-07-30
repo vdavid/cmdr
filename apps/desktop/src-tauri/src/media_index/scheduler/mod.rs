@@ -43,7 +43,7 @@ use super::network;
 use super::network::enrich::{NetworkEnrichCtx, NetworkPassOutcome, PauseReason, enrich_network_and_gc};
 use super::network::fetch::FsByteFetcher;
 use super::network::policy::ConservativeFetchPolicy;
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 pub(crate) mod enrich;
 use enrich::{EnrichGates, GcScope, load_statuses, walk_image_entries};
@@ -430,7 +430,7 @@ impl MediaScheduler {
                 log::info!(
                     target: "media_index",
                     "retro-delete under '{folder}' on '{volume_id}': {} removed",
-                    crate::pluralize::pluralize(deleted as u64, "row")
+                    cmdr_fs::pluralize::pluralize(deleted as u64, "row")
                 );
                 total += deleted;
             }
@@ -475,7 +475,7 @@ impl MediaScheduler {
             log::info!(
                 target: "media_index",
                 "delete CLIP model: removed {}",
-                crate::pluralize::pluralize(total as u64, "embedding")
+                cmdr_fs::pluralize::pluralize(total as u64, "embedding")
             );
         }
         total
@@ -695,12 +695,12 @@ impl MediaScheduler {
 /// which fires on EVERY pass exit, including error bubbles. The end is spawned
 /// (not blocked on) so a `Drop` on a blocking thread never waits on the runtime.
 struct ScanSessionBracket {
-    volume: Arc<dyn crate::file_system::volume::Volume>,
+    volume: Arc<dyn cmdr_fs::volume::Volume>,
     handle: tokio::runtime::Handle,
 }
 
 impl ScanSessionBracket {
-    fn open(volume: Arc<dyn crate::file_system::volume::Volume>, handle: tokio::runtime::Handle) -> Self {
+    fn open(volume: Arc<dyn cmdr_fs::volume::Volume>, handle: tokio::runtime::Handle) -> Self {
         let v = volume.clone();
         handle.block_on(async move { v.begin_scan_session().await });
         Self { volume, handle }
@@ -723,7 +723,7 @@ fn skipped_suffix(skipped_unreadable: usize) -> String {
     } else {
         format!(
             ", {} skipped: unreadable",
-            crate::pluralize::pluralize(skipped_unreadable as u64, "file")
+            cmdr_fs::pluralize::pluralize(skipped_unreadable as u64, "file")
         )
     }
 }

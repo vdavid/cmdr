@@ -735,7 +735,7 @@ fn real_corpus_recall_and_latency() {
     assert!(
         n >= 100,
         "need a real corpus (found {})",
-        crate::pluralize::pluralize(n as u64, "embedding")
+        cmdr_fs::pluralize::pluralize(n as u64, "embedding")
     );
     eprintln!("\n=== M6 ANN real-corpus verification ===");
     eprintln!("corpus: {n} CLIP embeddings from {}", db_path.display());
@@ -747,7 +747,7 @@ fn real_corpus_recall_and_latency() {
         .expect("rebuild");
     eprintln!(
         "rebuild: {} in {:.2?}",
-        crate::pluralize::pluralize(built, "vector"),
+        cmdr_fs::pluralize::pluralize(built, "vector"),
         t.elapsed()
     );
     vector_cache::invalidate(&db_path);

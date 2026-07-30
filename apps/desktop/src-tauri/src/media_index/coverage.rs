@@ -19,7 +19,7 @@ use std::sync::{Arc, LazyLock, Mutex};
 
 use rusqlite::Connection;
 
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 use super::gate::IndexScope;
 use super::scheduler::enrich::{ImageEntry, for_each_qualifying_image, parent_dir};

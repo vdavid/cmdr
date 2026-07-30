@@ -15,7 +15,7 @@
 
 use std::sync::Mutex;
 
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 type StopHook = Box<dyn Fn() + Send + Sync>;
 

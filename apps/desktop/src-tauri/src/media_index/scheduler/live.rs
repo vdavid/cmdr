@@ -43,7 +43,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 use super::enrich::{self, EnrichGates, GcScope, PassHooks, enrich_and_gc_scoped, walk_image_entries_in_dirs};
 use super::{
@@ -291,7 +291,7 @@ fn spawn_live_tick(scheduler: Arc<MediaScheduler>, volume_id: String, dirs: Vec<
                     Ok(Ok(count)) => log::debug!(
                         target: "media_index",
                         "live tick of '{volume_id}' enriched {}",
-                        crate::pluralize::pluralize(count as u64, "image")
+                        cmdr_fs::pluralize::pluralize(count as u64, "image")
                     ),
                     Ok(Err(e)) => log::warn!(target: "media_index", "live tick of '{volume_id}' failed: {e}"),
                     Err(e) => log::warn!(target: "media_index", "live tick task for '{volume_id}' panicked: {e}"),

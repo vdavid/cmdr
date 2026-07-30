@@ -530,7 +530,7 @@ impl RecordingSink {
 
     /// Everything recorded so far, in emit order.
     pub(crate) fn events(&self) -> Vec<IndexEvent> {
-        use crate::ignore_poison::IgnorePoison;
+        use cmdr_fs::ignore_poison::IgnorePoison;
         self.events.lock_ignore_poison().clone()
     }
 
@@ -548,7 +548,7 @@ impl RecordingSink {
 #[cfg(test)]
 impl EventSink for RecordingSink {
     fn emit(&self, event: IndexEvent) {
-        use crate::ignore_poison::IgnorePoison;
+        use cmdr_fs::ignore_poison::IgnorePoison;
         self.events.lock_ignore_poison().push(event);
     }
 }

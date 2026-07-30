@@ -19,7 +19,7 @@ use std::collections::HashMap;
 use std::sync::{LazyLock, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 /// Anchor-depth threshold: an anchor at or below this depth routes to the visible
 /// scanner; a deeper one keeps the throttled reconcile. `path_prefix::depth`

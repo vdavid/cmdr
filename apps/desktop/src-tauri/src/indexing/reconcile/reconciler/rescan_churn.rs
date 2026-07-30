@@ -13,8 +13,8 @@
 //! logger, a clock, or a filesystem. The impure part is the three thin fns at the
 //! bottom, which own the global, the clock, and the `log::info!`.
 
-use crate::ignore_poison::IgnorePoison;
-use crate::pluralize::pluralize_grouped;
+use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::pluralize::pluralize_grouped;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{LazyLock, Mutex};

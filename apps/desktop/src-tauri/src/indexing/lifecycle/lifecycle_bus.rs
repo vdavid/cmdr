@@ -35,7 +35,7 @@ use tokio::sync::broadcast;
 use tokio::sync::watch;
 
 use super::state::IndexVolumeKind;
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 /// A volume's coarse scan-lifecycle state, as seen on the bus.
 ///

@@ -8,14 +8,14 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
-use crate::ignore_poison::IgnorePoison;
 use crate::indexing::IndexPathSpace;
 use crate::indexing::read::enrichment::{self, ReadPool};
 use crate::indexing::reconcile::reconciler::{self, EventReconciler};
 use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
 use crate::indexing::watch::watcher::{FsChangeEvent, FsEventFlags};
 use crate::indexing::writer::{AggSource, WriteMessage};
-use crate::pluralize::pluralize;
+use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::pluralize::pluralize;
 
 use super::stress_test_helpers::{build_synthetic_tree, check_db_consistency, make_file_entry, setup_writer};
 use crate::indexing::lifecycle::state;
@@ -934,7 +934,7 @@ fn mixed_storm_reaches_consistent_fixed_point() {
 #[test]
 #[ignore = "Stall repro: slow, runs explicitly via `cargo nextest run -- --ignored` or by name"]
 fn test_listings_complete_under_reconciler_load_and_rapid_navigation() {
-    use crate::file_system::listing::FileEntry;
+    use cmdr_fs::entry::FileEntry;
     use std::sync::atomic::AtomicUsize;
     use std::time::{Duration, Instant};
 

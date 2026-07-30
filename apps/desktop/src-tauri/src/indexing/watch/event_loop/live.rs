@@ -32,7 +32,7 @@ use crate::indexing::read::pending_sizes;
 use crate::indexing::reconcile::reconciler::{self, EventReconciler};
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
-use crate::pluralize::pluralize;
+use cmdr_fs::pluralize::pluralize;
 
 /// A drained batch of live changes, split into the two facts the pending set used
 /// to conflate.
