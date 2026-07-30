@@ -508,6 +508,27 @@ of everything else.
 
 Not in a hurry: prefer sequential.
 
+## Status: shipped (2026-07-30)
+
+**M1, M2, M3 (+ a per-item skip-reason follow-up), M5, M6, M4, M7, M8, and M10 are all
+implemented and green** on `david/agent-harness`. M9 stayed cut. **M11, M12, and M13 are still
+open**, and M11 still needs David's decision before M12 is worth planning (decision 7).
+
+Two things this execution pass found that the plan had not:
+
+- **`files_per_batch` was sizing a batch from the prompt budget alone**, so a 60,000-token budget
+  advertised 145 files while one reply can only emit about 101 of them (12,000 output tokens,
+  shared with reasoning). Past the slot a plan is cut off mid-JSON and lost entirely, so the hint
+  is now the smaller of what the prompt holds and what one reply can emit. The measured numbers in
+  this document moved with it.
+- **Nothing carried the batch size to the model.** M6 computed it and M4 pointed at it, but no
+  milestone owned the wiring; the turn envelope now renders it.
+
+Still open, deliberately, and each stated where it belongs: changing "Chat memory size" records no
+thread-timeline event (needs its own event plumbing, noted in M7), and per-item rollback skip
+reasons only attribute a reason to a file from the rollback engine's own rows (documented in
+`operation_log/DETAILS.md`).
+
 ## Decisions (all questions closed; execution can proceed unblocked)
 
 1. **The undo verification defect** stays where it is: M3's prerequisite, fixed in M3, in the order above. Not a
