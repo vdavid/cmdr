@@ -19,7 +19,7 @@ func TestMemberCoverage_FailsWhenNoLaneCanSelectAMember(t *testing.T) {
 	}
 
 	problems := findMemberCoverageGaps(members, rustCheckClassification{
-		cargoLanes: map[string]bool{"desktop-rust-tests": true},
+		cargoLanes: map[string]string{"desktop-rust-tests": "the whole workspace"},
 		scanners:   map[string]ScannerJurisdiction{"desktop-rust-lock-poison": {Kinds: []MemberKind{KindApp}}},
 	})
 
@@ -38,7 +38,7 @@ func TestMemberCoverage_FailsWhenNoScannerGovernsAMemberKind(t *testing.T) {
 	}
 
 	problems := findMemberCoverageGaps(members, rustCheckClassification{
-		cargoLanes: map[string]bool{"desktop-rust-tests": true},
+		cargoLanes: map[string]string{"desktop-rust-tests": "the whole workspace"},
 		// Every scanner governs KindApp only, so the tool member is scanned by nothing.
 		scanners: map[string]ScannerJurisdiction{"desktop-rust-lock-poison": {Kinds: []MemberKind{KindApp}}},
 	})
@@ -56,7 +56,7 @@ func TestMemberCoverage_PassesWhenEveryMemberIsReached(t *testing.T) {
 	}
 
 	problems := findMemberCoverageGaps(members, rustCheckClassification{
-		cargoLanes: map[string]bool{"desktop-rust-tests": true},
+		cargoLanes: map[string]string{"desktop-rust-tests": "the whole workspace"},
 		scanners: map[string]ScannerJurisdiction{
 			"desktop-rust-lock-poison": {Kinds: []MemberKind{KindApp, KindTool}},
 			"desktop-rust-jscpd":       {Kinds: []MemberKind{KindApp, KindTool, KindVendored}},
@@ -78,7 +78,7 @@ func TestMemberCoverage_FailsOnAnUnclassifiedRustCheck(t *testing.T) {
 	}
 
 	problems := findUnclassifiedRustChecks(defs, rustCheckClassification{
-		cargoLanes: map[string]bool{"desktop-rust-tests": true},
+		cargoLanes: map[string]string{"desktop-rust-tests": "the whole workspace"},
 		scanners:   map[string]ScannerJurisdiction{},
 	})
 
@@ -95,7 +95,7 @@ func TestMemberCoverage_FailsOnAJurisdictionForANonexistentCheck(t *testing.T) {
 	defs := []CheckDefinition{{ID: "desktop-rust-tests", Tech: "🦀 Rust"}}
 
 	problems := findStaleJurisdictions(defs, rustCheckClassification{
-		cargoLanes: map[string]bool{"desktop-rust-tests": true},
+		cargoLanes: map[string]string{"desktop-rust-tests": "the whole workspace"},
 		scanners:   map[string]ScannerJurisdiction{"desktop-rust-renamed-away": {Kinds: []MemberKind{KindApp}}},
 	})
 

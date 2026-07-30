@@ -66,21 +66,23 @@ var rustScannerJurisdictions = map[string]ScannerJurisdiction{
 	},
 }
 
-// rustCargoLanes are the Rust checks that drive cargo over the workspace rather than
-// scanning source trees themselves. Their coverage comes from the package selection,
-// not from a jurisdiction.
-var rustCargoLanes = map[string]bool{
-	"desktop-rust-rustfmt":           true,
-	"desktop-rust-clippy":            true,
-	"desktop-rust-cargo-audit":       true,
-	"desktop-rust-cargo-deny":        true,
-	"desktop-rust-cargo-machete":     true,
-	"desktop-rust-cargo-udeps":       true,
-	"desktop-rust-tests":             true,
-	"desktop-rust-integration-tests": true,
-	"desktop-rust-tests-linux":       true,
-	"desktop-bindings-fresh":         true,
-	"desktop-rust-groq-smoke":        true,
+// rustCargoLanes are the Rust checks that drive cargo rather than scanning source
+// trees themselves. Each says how it reaches the workspace, so "covered by the
+// package selection" can't be assumed of a lane that never had one.
+var rustCargoLanes = map[string]string{
+	"desktop-rust-rustfmt":           "`cargo fmt --all`",
+	"desktop-rust-clippy":            "`--workspace` via CargoSelectionArgs",
+	"desktop-rust-cargo-deny":        "reads the whole `cargo metadata` graph from the workspace root",
+	"desktop-rust-cargo-audit":       "reads the workspace `Cargo.lock`",
+	"desktop-rust-cargo-machete":     "handed each member's directory (it walks dirs, not the cargo graph)",
+	"desktop-rust-cargo-udeps":       "`--workspace` via CargoSelectionArgs",
+	"desktop-rust-tests":             "`--workspace` via CargoSelectionArgs",
+	"desktop-rust-integration-tests": "`--workspace` via CargoSelectionArgs, narrowed by a filter expression",
+	"desktop-rust-tests-linux":       "`--workspace` computed for `linux`, since cargo runs in a container",
+	"desktop-bindings-fresh":         "hashes every member's sources and manifest to decide whether to regenerate",
+	// Not a coverage lane: one named test against a live endpoint, self-skipping
+	// without a key. It reaches the app crate on purpose and nothing else.
+	"desktop-rust-groq-smoke": "one `--lib` test in the app crate; a targeted smoke, not a sweep",
 }
 
 // memberCoverageRegistry is assigned in init() rather than read from AllChecks
@@ -102,7 +104,7 @@ var rustMetaChecks = map[string]string{
 // lane, a source scanner with a declared jurisdiction, or a meta-check. It's a
 // parameter so the tests can drive the logic with a fixture partition.
 type rustCheckClassification struct {
-	cargoLanes map[string]bool
+	cargoLanes map[string]string
 	scanners   map[string]ScannerJurisdiction
 	metaChecks map[string]string
 }
@@ -220,7 +222,7 @@ func findUnclassifiedRustChecks(defs []CheckDefinition, c rustCheckClassificatio
 		if !strings.Contains(def.Tech, "Rust") {
 			continue
 		}
-		if c.cargoLanes[def.ID] {
+		if _, ok := c.cargoLanes[def.ID]; ok {
 			continue
 		}
 		if _, ok := c.scanners[def.ID]; ok {

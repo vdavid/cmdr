@@ -479,10 +479,12 @@ It asserts three things:
 
 - **Every member is reachable.** A member no lane's target OS can build is a member whose tests never run. A member of a
   `kind` no scanner governs is a member whose sources nothing reads.
-- **Every Rust check is classified**, into exactly one of `rustCargoLanes` (drives cargo; coverage comes from the
-  package selection), `rustScannerJurisdictions` (walks source trees; coverage comes from the declared kinds), or
-  `rustMetaChecks` (reasons about the workspace rather than compiling or scanning it). Adding a Rust check without
-  classifying it fails, which is the shape of "someone added a scanner and hardcoded a path inside it".
+- **Every Rust check is classified**, into exactly one of `rustCargoLanes` (drives cargo), `rustScannerJurisdictions`
+  (walks source trees; coverage comes from the declared kinds), or `rustMetaChecks` (reasons about the workspace rather
+  than compiling or scanning it). Adding a Rust check without classifying it fails, which is the shape of "someone added
+  a scanner and hardcoded a path inside it". Each cargo lane records HOW it reaches the workspace, so a targeted
+  invocation can't pass for a sweep — `desktop-rust-groq-smoke` runs one `--lib` test against a live endpoint and says
+  so.
 - **No stale classification**: an entry naming a check that no longer exists fails, the same way `ci-coverage` refuses
   to let an excuse outlive its check.
 
