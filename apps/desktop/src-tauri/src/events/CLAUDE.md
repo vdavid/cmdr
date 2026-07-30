@@ -27,5 +27,9 @@ all live on this side of the boundary.
 
 - `index_mapping.rs` — the 15 payload structs, `route`, the error-report rendering, and `TauriEventSink`.
 
+There are TWO `TauriEventSink` types in the crate: this one (for `IndexEvent`) and
+`file_system::write_operations::TauriEventSink` (for `OperationEventSink`). Deliberate — each is its area's Tauri
+sink, and both are always constructed through their module path — but a bare grep for the name returns both.
+
 The typed side of the boundary (`IndexEvent`, `EventSink`, `IndexErrorReport`, `Diagnostic`) and the full variant
 catalog: `../indexing/events/DETAILS.md`. Rationale and the naming rules for this side: `DETAILS.md`.

@@ -37,7 +37,6 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
 
-use tauri::AppHandle;
 
 use super::backend::VisionBackend;
 use super::gate;

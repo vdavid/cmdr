@@ -9,7 +9,7 @@
 
 use std::time::Duration;
 
-use tauri::Manager;
+use tauri::{AppHandle, Manager};
 
 use crate::events::index_mapping::TauriEventSink;
 use crate::indexing::{EventSink, IndexVolumeKind};
