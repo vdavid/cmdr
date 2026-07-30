@@ -278,7 +278,11 @@ fn resolve_prompt_budget(app: &AppHandle, provider: ProviderTag, model: &str) ->
 /// Capture the context envelope from live app state (snapshot-at-send). Focused pane path
 /// resolves from the focused SIDE's directory; volumes come from `snapshot_volumes`;
 /// `attachments` are the references the user attached for this turn (path + kind only).
-async fn capture_envelope<R: tauri::Runtime>(app: &AppHandle<R>, attachments: &[AttachmentRef]) -> ContextEnvelope {
+async fn capture_envelope<R: tauri::Runtime>(
+    app: &AppHandle<R>,
+    attachments: &[AttachmentRef],
+    rename_batch_files: usize,
+) -> ContextEnvelope {
     let (focused_pane_path, cursor_item, selection_count) = match app.try_state::<PaneStateStore>() {
         Some(store) => {
             let side = store.get_focused_pane();
@@ -301,6 +305,7 @@ async fn capture_envelope<R: tauri::Runtime>(app: &AppHandle<R>, attachments: &[
         selection_count,
         volumes,
         attachments: attachments.iter().map(AttachmentRef::to_envelope).collect(),
+        rename_batch_files,
     }
 }
 
@@ -497,7 +502,7 @@ async fn drive_turn(
     }
     let _guard = CancelGuard(conversation_id);
 
-    let envelope = capture_envelope(&app, &attachments).await;
+    let envelope = capture_envelope(&app, &attachments, budget::files_per_batch(prompt_budget)).await;
     let offset = local_offset();
 
     let Some(runtime) = app.try_state::<ChatRuntime>() else {

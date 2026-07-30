@@ -161,6 +161,14 @@ pub struct ContextEnvelope {
     /// or "ask about selection"). Empty in the common case; rendered as a trailing
     /// `attached: …` segment. Paths + kinds only, never contents.
     pub attachments: Vec<EnvelopeAttachment>,
+    /// How many files one content-based rename batch fits this turn
+    /// ([`budget::files_per_batch`](super::budget::files_per_batch)).
+    ///
+    /// It rides the ENVELOPE rather than the system prompt because it moves with the model and
+    /// the user's "Chat memory size": a number in the prompt would either be wrong for most
+    /// models or break the byte-identical prefix that makes prompt caching work (invariants 3
+    /// and 7).
+    pub rename_batch_files: usize,
 }
 
 // ── Prefix + assembled output ─────────────────────────────────────────────────
@@ -332,8 +340,9 @@ pub fn render_envelope(envelope: &ContextEnvelope, offset: FixedOffset) -> Strin
         format!(" · attached: {refs}")
     };
     format!(
-        "[{timestamp} · focused: {focused} · cursor: {cursor} · {} selected · volumes: {volumes}{attachments}]",
-        envelope.selection_count
+        "[{timestamp} · focused: {focused} · cursor: {cursor} · {} selected · volumes: {volumes} · \
+         rename batch: up to {} files{attachments}]",
+        envelope.selection_count, envelope.rename_batch_files
     )
 }
 

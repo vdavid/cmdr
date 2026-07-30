@@ -85,9 +85,26 @@ fn envelope_renders_the_exact_field_set() {
 
     let expected_ts = dt.format("%a %Y-%m-%d %H:%M").to_string();
     let expected = format!(
-        "[{expected_ts} · focused: ~/Documents/taxes · cursor: 2024/ · 2 selected · volumes: Macintosh HD (fresh), NAS-home (stale, direct)]"
+        "[{expected_ts} · focused: ~/Documents/taxes · cursor: 2024/ · 2 selected · volumes: Macintosh HD (fresh), \
+         NAS-home (stale, direct) · rename batch: up to 101 files]"
     );
     assert_eq!(render_envelope(&env, off), expected);
+}
+
+/// The system prompt tells the model to propose "the batch size this turn's envelope names",
+/// so the envelope has to actually name it. A prompt pointing at an absent field is worse than
+/// a hardcoded number: the model fills the gap with a guess.
+#[test]
+fn envelope_names_the_batch_size_the_prompt_points_at() {
+    let mut env = envelope_at(1_780_000_000);
+    env.rename_batch_files = crate::agent::chat::budget::files_per_batch(16_000);
+
+    let rendered = render_envelope(&env, offset());
+
+    assert!(
+        rendered.contains("rename batch: up to 32 files"),
+        "the envelope must carry the turn's batch size, got: {rendered}"
+    );
 }
 
 #[test]
@@ -99,6 +116,7 @@ fn envelope_uses_em_dashes_and_none_when_fields_are_absent() {
         selection_count: 0,
         volumes: vec![],
         attachments: vec![],
+        rename_batch_files: 101,
     };
     let rendered = render_envelope(&env, offset());
     assert!(rendered.contains("focused: —"), "absent focus renders an em dash");
@@ -405,6 +423,7 @@ fn envelope_with_attachments(attachments: Vec<EnvelopeAttachment>) -> ContextEnv
         selection_count: 0,
         volumes: vec![],
         attachments,
+        rename_batch_files: 101,
     }
 }
 

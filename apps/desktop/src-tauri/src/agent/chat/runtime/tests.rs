@@ -54,6 +54,7 @@ fn envelope() -> ContextEnvelope {
         selection_count: 1,
         volumes: vec![],
         attachments: vec![],
+        rename_batch_files: 101,
     }
 }
 
@@ -1189,6 +1190,7 @@ async fn attachments_reach_the_llm_in_the_envelope_and_nothing_more() {
             path: "/Users/d/report.pdf".to_string(),
             kind: AttachmentKind::File,
         }],
+        rename_batch_files: 101,
     };
     let params = TurnParams {
         conversation_id: id,
