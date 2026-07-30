@@ -315,6 +315,15 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(downloads::global_shortcut::plugin_builder())
         .setup(move |app| {
+            // Hand the index subsystems the app's runtime, before anything can start
+            // background work on it. They spawn through their own `host::runtime`
+            // seam so they can be extracted into a Tauri-free crate; sharing OUR
+            // runtime rather than building their own is what keeps a single thread
+            // pool, and with it the QoS story that lets indexing run in-process.
+            if let Err(e) = indexing::host::runtime::set_runtime(tauri::async_runtime::handle().inner().clone()) {
+                log::warn!(target: "indexing", "index runtime was already set; keeping the first one ({e:?})");
+            }
+
             // Mount the typed `tauri-specta` events onto the app. Required before
             // any `Event::emit` / `Event::listen` call resolves the event name
             // from the registry. See `ipc.rs` for the event collection.

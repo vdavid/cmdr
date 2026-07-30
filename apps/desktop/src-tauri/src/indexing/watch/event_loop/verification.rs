@@ -62,7 +62,7 @@ pub(super) async fn run_background_verification(
     // be responsive).
     let verify_writer = writer.clone();
     let verify_affected_paths = affected_paths.clone();
-    let verify_result = match tauri::async_runtime::spawn_blocking(move || {
+    let verify_result = match crate::indexing::host::runtime::spawn_blocking(move || {
         verify_affected_dirs(&verify_affected_paths, &verify_writer)
     })
     .await
@@ -94,7 +94,7 @@ pub(super) async fn run_background_verification(
         // pool is essential.
         let scan_writer = writer.clone();
         let scan_dirs = verify_result.new_dir_paths.clone();
-        if let Err(e) = tauri::async_runtime::spawn_blocking(move || {
+        if let Err(e) = crate::indexing::host::runtime::spawn_blocking(move || {
             let cancelled = AtomicBool::new(false);
             for dir_path in &scan_dirs {
                 // Background verification is root-scoped (boot disk), so `BootDisk`.

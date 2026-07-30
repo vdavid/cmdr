@@ -26,7 +26,7 @@ the scan-progress tick loop (progress plus mid-scan partial aggregation) shared 
 - **`partial_agg` helpers stay pure and side-effect-free** so the timer loop is a dumb caller. `collect_hot_paths`
   keeps only listings on the scanned volume (else they resolve against the wrong per-volume DB). Constants and cadence:
   `DETAILS.md`.
-- **The reporter runs on `tauri::async_runtime::spawn`, not `tokio::spawn`** — a scan can start from the synchronous
+- **The reporter runs on `host::runtime::spawn`, not `tokio::spawn`** — a scan can start from the synchronous
   Tauri `setup()` hook where no Tokio runtime exists. Its loop dies with the scan, which structurally scopes partial
   passes to the full-scan window. It SLEEPS 500 ms before its first tick, so a small fixture scan can finish without
   ever reporting progress; don't write a test that assumes one fired.

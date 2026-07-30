@@ -240,7 +240,7 @@ impl MediaScheduler {
 /// most one re-run, never a tick per event — mirroring importance's `start_incremental`.
 pub(crate) fn start_live_follow(scheduler: Arc<MediaScheduler>, volume_id: String) {
     let mut rx = lifecycle_bus::subscribe_dirs_changed(&volume_id);
-    tauri::async_runtime::spawn(async move {
+    crate::indexing::host::runtime::spawn(async move {
         // The retained initial value is the empty batch; `borrow_and_update` marks it seen
         // so only a real later change triggers.
         rx.borrow_and_update();
@@ -265,7 +265,7 @@ fn spawn_live_tick(scheduler: Arc<MediaScheduler>, volume_id: String, dirs: Vec<
     if scheduler.coordinator.request(&key) == BeginOutcome::Coalesced {
         return; // a tick is running; it drains the accumulated dirs on re-run.
     }
-    tauri::async_runtime::spawn(async move {
+    crate::indexing::host::runtime::spawn(async move {
         let key = live_key(&volume_id);
         // Debounce across this run's ticks: the first runs immediately (leading edge), each
         // further one waits out the window so sustained churn drives at most one walk per
@@ -286,7 +286,8 @@ fn spawn_live_tick(scheduler: Arc<MediaScheduler>, volume_id: String, dirs: Vec<
                 let sched = Arc::clone(&scheduler);
                 let vid = volume_id.clone();
                 let result =
-                    tauri::async_runtime::spawn_blocking(move || sched.run_live_tick_blocking(&vid, &dirs)).await;
+                    crate::indexing::host::runtime::spawn_blocking(move || sched.run_live_tick_blocking(&vid, &dirs))
+                        .await;
                 match result {
                     Ok(Ok(count)) => log::debug!(
                         target: "media_index",

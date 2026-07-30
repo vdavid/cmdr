@@ -493,7 +493,7 @@ pub fn start(app: &AppHandle) {
     // subscriptions and scores it if it's already ready.
     let reg_scheduler = Arc::clone(&scheduler);
     let mut reg_rx = lifecycle_bus::subscribe_registrations();
-    tauri::async_runtime::spawn(async move {
+    crate::indexing::host::runtime::spawn(async move {
         loop {
             match reg_rx.recv().await {
                 Ok(reg) => wire_volume(Arc::clone(&reg_scheduler), reg.volume_id, reg.kind),
@@ -541,11 +541,13 @@ fn enqueue_initial_full_pass_if_unscored(
         // MTP: on-demand only, never background-scored.
         ScoringPolicy::Excluded => return,
     };
-    tauri::async_runtime::spawn(async move {
+    crate::indexing::host::runtime::spawn(async move {
         let data_dir = scheduler.data_dir().to_path_buf();
         let vid = volume_id.clone();
-        let needs =
-            tauri::async_runtime::spawn_blocking(move || should_enqueue_initial_full_pass(kind, &data_dir, &vid)).await;
+        let needs = crate::indexing::host::runtime::spawn_blocking(move || {
+            should_enqueue_initial_full_pass(kind, &data_dir, &vid)
+        })
+        .await;
         match needs {
             Ok(Ok(true)) => {
                 log::info!(
@@ -610,7 +612,7 @@ fn wire_volume(scheduler: Arc<ImportanceScheduler>, volume_id: String, kind: Ind
     let sub_scheduler = Arc::clone(&scheduler);
     let sub_volume = volume_id.clone();
     let mut rx = lifecycle_bus::subscribe(&volume_id);
-    tauri::async_runtime::spawn(async move {
+    crate::indexing::host::runtime::spawn(async move {
         // Observe the retained value first (covers a completion before subscribe,
         // and a sweep-ready volume that already loaded Completed).
         if matches!(*rx.borrow_and_update(), lifecycle_bus::ScanState::Completed { .. }) {
@@ -630,7 +632,7 @@ fn wire_volume(scheduler: Arc<ImportanceScheduler>, volume_id: String, kind: Ind
 /// to one pass plus at most one re-run, never a pass per event.
 fn start_incremental(scheduler: Arc<ImportanceScheduler>, volume_id: String, available: SignalSet) {
     let mut rx = lifecycle_bus::subscribe_dirs_changed(&volume_id);
-    tauri::async_runtime::spawn(async move {
+    crate::indexing::host::runtime::spawn(async move {
         // The retained initial value is the empty batch (nothing published yet);
         // `borrow_and_update` marks it seen so the first real change triggers.
         rx.borrow_and_update();
@@ -695,7 +697,7 @@ fn spawn_incremental(scheduler: Arc<ImportanceScheduler>, volume_id: String, ava
     if scheduler.coordinator.request(&key) == BeginOutcome::Coalesced {
         return; // a pass is running; it will drain the accumulated paths on re-run.
     }
-    tauri::async_runtime::spawn(async move {
+    crate::indexing::host::runtime::spawn(async move {
         let key = incremental_key(&volume_id);
         // Debounce across this run's passes: the first runs immediately (leading
         // edge), each further one waits out the window so sustained churn drives at
@@ -712,7 +714,7 @@ fn spawn_incremental(scheduler: Arc<ImportanceScheduler>, volume_id: String, ava
                 last_started = Some(Instant::now());
                 let sched = Arc::clone(&scheduler);
                 let vid = volume_id.clone();
-                let result = tauri::async_runtime::spawn_blocking(move || {
+                let result = crate::indexing::host::runtime::spawn_blocking(move || {
                     let now = std::time::SystemTime::now()
                         .duration_since(std::time::UNIX_EPOCH)
                         .map(|d| d.as_secs())
@@ -746,13 +748,13 @@ fn spawn_recompute(scheduler: Arc<ImportanceScheduler>, volume_id: String, avail
         // finishes (the coordinator set the flag). Nothing to spawn.
         return;
     }
-    tauri::async_runtime::spawn(async move {
+    crate::indexing::host::runtime::spawn(async move {
         loop {
             let sched = Arc::clone(&scheduler);
             let vid = volume_id.clone();
             // Recompute is blocking (SQLite + scoring); run it off the async
             // worker so it never parks the runtime, and never on the IPC thread.
-            let result = tauri::async_runtime::spawn_blocking(move || {
+            let result = crate::indexing::host::runtime::spawn_blocking(move || {
                 let now = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .map(|d| d.as_secs())

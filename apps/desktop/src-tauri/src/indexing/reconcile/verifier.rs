@@ -98,7 +98,7 @@ pub(crate) fn maybe_verify(
     state.in_flight.insert(dir_path.clone());
     drop(state);
 
-    tauri::async_runtime::spawn(async move {
+    crate::indexing::host::runtime::spawn(async move {
         // Free the `in_flight` slot (and record the debounce) on every exit
         // path, including a panic inside the body that the runtime catches.
         let _slot = InFlightGuard {
@@ -167,7 +167,7 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
     // Phase 2: read disk entries.
     // Offload the `read_dir` + per-entry `symlink_metadata` loop onto a blocking
     // thread. This task runs on a plain tokio worker (spawned via
-    // `tauri::async_runtime::spawn`, not `spawn_blocking`), so a slow/hung disk
+    // the host runtime seam's `spawn`, not `spawn_blocking`), so a slow/hung disk
     // here would otherwise stall an async executor thread. The diff that follows
     // is pure CPU and stays on the async path.
     let disk_map: HashMap<String, DiskEntry> = {

@@ -58,7 +58,7 @@ pub(super) struct ScanCompletion {
     pub freshness: Arc<std::sync::Mutex<Option<super::freshness::Freshness>>>,
     /// Slot the live event loop's `JoinHandle` is stored into so `shutdown()`
     /// can wait for it to drain.
-    pub live_event_task_slot: Arc<std::sync::Mutex<Option<tauri::async_runtime::JoinHandle<()>>>>,
+    pub live_event_task_slot: Arc<std::sync::Mutex<Option<tokio::task::JoinHandle<()>>>>,
     /// The watcher event id captured at scan start; the replay baseline.
     pub scan_start_event_id: u64,
     /// Which calibration bucket this run's totals and duration belong in. The
@@ -338,7 +338,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
             let volume_id_live = volume_id.clone();
             let overflow_live = watcher_overflow_flag.clone();
             let space_live = space.clone();
-            let handle = tauri::async_runtime::spawn(async move {
+            let handle = crate::indexing::host::runtime::spawn(async move {
                 run_live_event_loop(
                     event_rx,
                     reconciler,

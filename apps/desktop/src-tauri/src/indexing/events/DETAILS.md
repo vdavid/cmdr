@@ -118,7 +118,7 @@ The 500 ms progress + mid-scan partial-aggregation tick loop shared by EVERY sca
 completion → spawn live loop".
 
 - `new(progress, writer, events, volume_id, partial_agg_source)` builds it; `spawn(scan_done)` runs the loop on
-  `tauri::async_runtime::spawn` (a scan can start from the sync Tauri `setup()` hook) until the completion handler sets
+  `host::runtime::spawn` (a scan can start from the sync Tauri `setup()` hook) until the completion handler sets
   `scan_done`. Partial passes are therefore structurally scoped to the full-scan window.
 - `partial_agg_source` is chosen by the caller per scan kind: `Maps` for a fresh scan (accumulator maps populated by
   `InsertEntriesV2`), `Sql` for a reconcile rescan (maps empty). See the `source: Maps|Sql` contract in

@@ -414,7 +414,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     if !origins_overflow {
         let verify_writer = writer.clone();
         let verify_events = Arc::clone(&events);
-        tauri::async_runtime::spawn(async move {
+        crate::indexing::host::runtime::spawn(async move {
             run_background_verification(origin_dirs, verify_writer, verify_events).await;
         });
     }

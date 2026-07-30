@@ -100,7 +100,7 @@ impl EventReconciler {
                 // Fire-and-forget: `perform_registry_rescan` re-resolves the manager
                 // in the registry and runs a fresh single-flight `start_scan`. Spawn
                 // (not inline) because we hold a read `Connection` on the live loop.
-                tauri::async_runtime::spawn(async move {
+                crate::indexing::host::runtime::spawn(async move {
                     manager::perform_registry_rescan(&volume_id, &label).await;
                 });
             }

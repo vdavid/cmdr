@@ -19,7 +19,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
-use tauri::async_runtime::JoinHandle;
+use tokio::task::JoinHandle;
 
 use super::partial_agg;
 use super::{EventSink, IndexEvent};
@@ -128,10 +128,11 @@ impl ScanProgressReporter {
 
     /// Spawn the 500 ms reporter loop. It ticks until `scan_done` is set by the
     /// scan-completion handler (or the task is aborted at shutdown). Uses
-    /// `tauri::async_runtime::spawn` because a scan can start from the synchronous
+    /// the host runtime seam (which resolves a handle rather than
+    /// inheriting one) because a scan can start from the synchronous
     /// Tauri `setup()` hook where no Tokio runtime context exists.
     pub(crate) fn spawn(mut self, scan_done: Arc<AtomicBool>) -> JoinHandle<()> {
-        tauri::async_runtime::spawn(async move {
+        crate::indexing::host::runtime::spawn(async move {
             loop {
                 tokio::time::sleep(Duration::from_millis(500)).await;
                 if scan_done.load(Ordering::Relaxed) {

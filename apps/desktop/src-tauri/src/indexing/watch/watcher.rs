@@ -113,7 +113,7 @@ pub struct DriveWatcher {
     /// Handle to abort the FSEvents run loop thread.
     handler: Option<EventStreamHandler>,
     /// Task that reads the event stream and forwards events.
-    forward_task: Option<tauri::async_runtime::JoinHandle<()>>,
+    forward_task: Option<tokio::task::JoinHandle<()>>,
 }
 
 #[cfg(target_os = "macos")]
@@ -155,12 +155,13 @@ impl DriveWatcher {
         log::info!("Watcher: started on {} (since_when={since_when})", root.display());
 
         // Spawn a task to read the async event stream and forward events.
-        // Use tauri::async_runtime::spawn because the watcher can start from
-        // the synchronous Tauri setup() hook where no Tokio runtime context exists.
+        // Spawn through the host runtime seam, which resolves a handle instead of
+        // inheriting one: the watcher can start from the app's synchronous setup() hook,
+        // where there's no ambient Tokio runtime for `tokio::spawn` to find.
         let running_clone = Arc::clone(&running);
         let last_id_clone = Arc::clone(&last_event_id);
 
-        let forward_task = tauri::async_runtime::spawn(async move {
+        let forward_task = crate::indexing::host::runtime::spawn(async move {
             let mut stream = event_stream.into_flatten();
             while let Some(event) = stream.next().await {
                 if !running_clone.load(Ordering::Relaxed) {
@@ -254,7 +255,7 @@ pub struct DriveWatcher {
     /// The `notify` watcher handle. Dropped on stop.
     _watcher: notify::RecommendedWatcher,
     /// Task that reads notify events from the channel and forwards them.
-    forward_task: Option<tauri::async_runtime::JoinHandle<()>>,
+    forward_task: Option<tokio::task::JoinHandle<()>>,
 }
 
 #[cfg(target_os = "linux")]
@@ -287,7 +288,7 @@ impl DriveWatcher {
         let running_clone = Arc::clone(&running);
         let counter_clone = Arc::clone(&event_counter);
 
-        let forward_task = tauri::async_runtime::spawn(async move {
+        let forward_task = crate::indexing::host::runtime::spawn(async move {
             // Bridge the std channel to the tokio world via spawn_blocking
             let handle = tokio::task::spawn_blocking(move || {
                 while let Ok(result) = notify_rx.recv() {

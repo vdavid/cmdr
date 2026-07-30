@@ -13,6 +13,7 @@
 // the curated public item surface below, never a module alias that would hide where code lives.
 pub mod aggregator;
 mod events;
+pub(crate) mod host;
 pub(crate) mod lifecycle;
 mod metadata;
 pub(crate) mod network_scanner;

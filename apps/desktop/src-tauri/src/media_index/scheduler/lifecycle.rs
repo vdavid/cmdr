@@ -226,7 +226,7 @@ pub fn start(app: &AppHandle) {
     // the gap isn't dropped (late-registering volumes).
     let reg_scheduler = Arc::clone(&scheduler);
     let mut reg_rx = lifecycle_bus::subscribe_registrations();
-    tauri::async_runtime::spawn(async move {
+    crate::indexing::host::runtime::spawn(async move {
         loop {
             match reg_rx.recv().await {
                 Ok(reg) => wire_volume(Arc::clone(&reg_scheduler), reg.volume_id, reg.kind),
@@ -331,7 +331,7 @@ pub(super) fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kin
         {
             let re_scheduler = Arc::clone(&scheduler);
             let re_volume = volume_id.clone();
-            tauri::async_runtime::spawn_blocking(move || {
+            crate::indexing::host::runtime::spawn_blocking(move || {
                 let mounts = [(re_volume, mount_root)];
                 for folder in &excluded {
                     re_scheduler.retro_delete_excluded_folder(folder, &mounts);
@@ -354,7 +354,7 @@ pub(super) fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kin
     let bridge_scheduler = Arc::clone(&scheduler);
     let bridge_volume = volume_id.clone();
     let mut imp_rx = crate::importance::read::subscribe(&volume_id);
-    tauri::async_runtime::spawn(async move {
+    crate::indexing::host::runtime::spawn(async move {
         // Catch up to the current version so `changed()` fires only on a later bump.
         imp_rx.borrow_and_update();
         while imp_rx.changed().await.is_ok() {
@@ -368,7 +368,7 @@ pub(super) fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kin
     let sub_scheduler = Arc::clone(&scheduler);
     let sub_volume = volume_id.clone();
     let mut rx = lifecycle_bus::subscribe(&volume_id);
-    tauri::async_runtime::spawn(async move {
+    crate::indexing::host::runtime::spawn(async move {
         // Observe the retained value EDGE-triggered: `borrow_and_update` marks it
         // seen, so a later `changed()` fires only on a NEW completion, never on a
         // re-read of the retained `Completed`. This is the data-safety property —
@@ -453,11 +453,11 @@ fn spawn_pass(scheduler: Arc<MediaScheduler>, volume_id: String, kind: PassKind)
     if scheduler.coordinator.request(&volume_id) == BeginOutcome::Coalesced {
         return;
     }
-    tauri::async_runtime::spawn(async move {
+    crate::indexing::host::runtime::spawn(async move {
         loop {
             let sched = Arc::clone(&scheduler);
             let vid = volume_id.clone();
-            let result = tauri::async_runtime::spawn_blocking(move || match kind {
+            let result = crate::indexing::host::runtime::spawn_blocking(move || match kind {
                 PassKind::Local => sched.run_pass_blocking(&vid).map(PassOutcome::Done),
                 PassKind::Network => sched.run_network_pass_blocking(&vid),
             })

@@ -258,7 +258,7 @@ pub(crate) fn get_writer_and_scanning_for(volume_id: &str) -> Option<(crate::ind
 pub fn trigger_verification(volume_id: &str, dir_path: &str) {
     let volume_id = volume_id.to_string();
     let dir_path = dir_path.to_string();
-    tauri::async_runtime::spawn(async move {
+    crate::indexing::host::runtime::spawn(async move {
         let reg = match INDEX_REGISTRY.lock() {
             Ok(g) => g,
             Err(_) => return,
@@ -789,7 +789,7 @@ fn start_indexing_for(
             // deletes/rescans (`IncrementalVacuum`) AND truncate the WAL file
             // so its high-water mark doesn't sit on disk (`WalCheckpoint`).
             // Both stop automatically when the writer channel closes.
-            tauri::async_runtime::spawn(async move {
+            crate::indexing::host::runtime::spawn(async move {
                 loop {
                     tokio::time::sleep(Duration::from_secs(30)).await;
                     if writer_for_maintenance.send(WriteMessage::IncrementalVacuum).is_err() {
@@ -1265,7 +1265,7 @@ pub(crate) fn spawn_failure_supervisor(
     volume_id: String,
     signal: Arc<IndexFailureSignal>,
 ) {
-    tauri::async_runtime::spawn(async move {
+    crate::indexing::host::runtime::spawn(async move {
         signal.notified().await;
         // The writer records the reason before notifying; default only if a
         // poisoned lock lost it (the transition is still worth making).

@@ -240,7 +240,7 @@ pub(in crate::indexing) async fn run_live_event_loop(
                             ),
                         );
                         let vid = volume_id.clone();
-                        tauri::async_runtime::spawn(async move {
+                        crate::indexing::host::runtime::spawn(async move {
                             manager::perform_registry_rescan(&vid, "ingestion backlog").await;
                         });
                         // Drain and discard the backlog; the fresh scan supersedes it.

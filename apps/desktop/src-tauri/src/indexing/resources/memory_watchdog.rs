@@ -184,7 +184,7 @@ pub fn start(events: std::sync::Arc<dyn crate::indexing::EventSink>) {
     if WATCHDOG_RUNNING.swap(true, Ordering::SeqCst) {
         return;
     }
-    tauri::async_runtime::spawn(run_watchdog(events));
+    crate::indexing::host::runtime::spawn(run_watchdog(events));
 }
 
 #[cfg(not(target_os = "macos"))]

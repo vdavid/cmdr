@@ -15,7 +15,7 @@ per-volume), these cap the WHOLE indexing pool.
 - **ONE global process-wide memory watchdog stops ALL indexing.** Warn at 8 GB, stop at 16 GB via
   `state::stop_all_indexing` (snapshot ids, then stop each). Scans run in PARALLEL; this is a catastrophe-stop for
   machine protection, NOT a usage target. `start()` is idempotent (`WATCHDOG_RUNNING`), called from `start_indexing`;
-  macOS-only, no-op stub elsewhere. Scans spawn via `tauri::async_runtime::spawn` (`tokio::spawn` panics in `setup()`).
+  macOS-only, no-op stub elsewhere. Scans spawn via the `host::runtime` seam (`tokio::spawn` panics in `setup()`).
 - **The stop is NOT the end of the watch.** The loop runs for the process lifetime and escalates when
   `phys_footprint` keeps climbing after a stop (+2 GB, then 4, 8, 16), re-arming below the warn line. Don't reintroduce
   a `return` in the stop path: that one-shot shape let a 2026-07 incident climb 16→40 GB completely unobserved.

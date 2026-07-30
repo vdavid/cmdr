@@ -361,7 +361,7 @@ impl IndexManager {
         // scanner, which keeps calling `list_directory_for_scan`. Default no-op on
         // backends without such resources (MTP, local).
         let scan_session_volume = Arc::clone(&volume);
-        tauri::async_runtime::spawn(async move {
+        crate::indexing::host::runtime::spawn(async move {
             scan_session_volume.begin_scan_session().await;
             let result = if reconcile {
                 crate::indexing::network_scanner::reconcile_volume_via_trait(

@@ -286,7 +286,7 @@ pub(crate) fn resume_smb_index_if_enabled(volume_id: String) {
     if !smb_index_was_enabled(&app, &volume_id) {
         return;
     }
-    tauri::async_runtime::spawn(async move {
+    crate::indexing::host::runtime::spawn(async move {
         log::info!(target: "indexing::smb_index", "SMB '{volume_id}' online with a persisted index; resuming indexing");
         if let Err(reason) = start_indexing_for_smb(app, volume_id.clone()).await {
             log::warn!(target: "indexing::smb_index", "auto-resume indexing for '{volume_id}' refused: {reason}");

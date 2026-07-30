@@ -1,0 +1,26 @@
+# The host seams
+
+Everything the three index subsystems (`indexing/`, `media_index/`, `importance/`) need from the application around
+them, as named seams instead of `crate::`-qualified reaches upward. This is the complete list, which is the point: the
+index is being extracted into a Tauri-free crate, and this directory is what it will ask its host for.
+
+## Must-knows
+
+- **Add a seam here, never a new `crate::<app module>` import.** A back-edge from the three subsystems to any app module
+  is what blocks the extraction, and it's checked, not trusted. If you need something from the app, it arrives through a
+  trait or a config value declared here.
+- **Each seam is injected once at startup and read through an accessor.** The accessors resolve to process-wide statics
+  today; they become fields on the public `Index` handle later, without touching a single call site. So a call site
+  should read the seam, never cache a handle in its own static.
+- **❌ Nothing here lowers thread QoS, and the runtime you spawn onto has no bearing on it.** The heavy walking /
+  writing / reconciling work runs on **dedicated** `std::thread`s that call `cmdr_fs::thread_qos` in their own bodies. A
+  QoS class sticks to a thread for its whole life, so it can never be set on a pooled tokio worker. `DETAILS.md` §
+  "The runtime seam and thread QoS".
+- **`runtime::spawn` resolves a handle; `tokio::spawn` inherits one.** Indexing and the watcher can start from the app's
+  synchronous `setup()` hook, where there's no ambient runtime, so `tokio::spawn` panics there. Spawn through the seam.
+
+## Module map
+
+- `runtime.rs` — the tokio runtime background work spawns onto (`set_runtime`, `spawn`, `spawn_blocking`, `block_on`).
+
+Rationale, the fallback runtime, and the QoS argument in full: `DETAILS.md`.

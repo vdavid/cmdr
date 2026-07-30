@@ -52,7 +52,7 @@ pub(crate) struct IndexManager {
     drive_watcher: Option<DriveWatcher>,
     /// Live event processing task (runs after reconciliation completes).
     /// Shared with spawned async tasks so they can store the handle.
-    live_event_task: Arc<std::sync::Mutex<Option<tauri::async_runtime::JoinHandle<()>>>>,
+    live_event_task: Arc<std::sync::Mutex<Option<tokio::task::JoinHandle<()>>>>,
     /// Where this volume's scan and phase reports go.
     pub(super) events: Arc<dyn EventSink>,
     /// Whether a full scan is currently running. Shared with the completion handler.
@@ -556,10 +556,11 @@ impl IndexManager {
         // channel so the fallback logs the real cause instead of guessing "gap".
         let (fallback_tx, fallback_rx) = tokio::sync::oneshot::channel::<RescanReason>();
 
-        // Use tauri::async_runtime::spawn because indexing can start from the
-        // synchronous Tauri setup() hook where no Tokio runtime context exists.
+        // Spawn through the host runtime seam, which resolves a handle instead of
+        // inheriting one: indexing can start from the app's synchronous setup() hook,
+        // where there's no ambient Tokio runtime for `tokio::spawn` to find.
         // Store the handle so shutdown() can wait for it to drain.
-        let handle = tauri::async_runtime::spawn(async move {
+        let handle = crate::indexing::host::runtime::spawn(async move {
             let result = run_replay_event_loop(
                 event_rx,
                 writer.clone(),
@@ -594,7 +595,7 @@ impl IndexManager {
         }
 
         // Spawn a task that watches for the fallback signal and triggers a full scan if needed.
-        tauri::async_runtime::spawn(async move {
+        crate::indexing::host::runtime::spawn(async move {
             if let Ok(reason) = fallback_rx.await {
                 log::warn!("Replay signaled a full-scan fallback ({reason:?}); rescanning the volume");
                 perform_registry_rescan(&fallback_volume_id, &format!("replay fallback ({reason:?})")).await;
@@ -842,8 +843,9 @@ impl IndexManager {
         .spawn(Arc::clone(&scan_done));
 
         // Step 3: Spawn completion handler that also does reconciliation.
-        // Use tauri::async_runtime::spawn because indexing can start from the
-        // synchronous Tauri setup() hook where no Tokio runtime context exists.
+        // Spawn through the host runtime seam, which resolves a handle instead of
+        // inheriting one: indexing can start from the app's synchronous setup() hook,
+        // where there's no ambient Tokio runtime for `tokio::spawn` to find.
         let volume_id = self.volume_id.clone();
         let events = Arc::clone(&self.events);
         let writer = self.writer.clone();
@@ -853,7 +855,7 @@ impl IndexManager {
         let freshness = Arc::clone(&self.freshness);
         let live_event_task_slot = Arc::clone(&self.live_event_task);
         let watcher_overflow_flag = watcher_overflow;
-        tauri::async_runtime::spawn(super::scan_completion::run_scan_completion(
+        crate::indexing::host::runtime::spawn(super::scan_completion::run_scan_completion(
             super::scan_completion::ScanCompletion {
                 join_handle,
                 scan_done,
@@ -1029,7 +1031,7 @@ impl IndexManager {
         let task = self.live_event_task.lock_ignore_poison().take();
         if let Some(task) = task {
             tokio::task::block_in_place(|| {
-                tauri::async_runtime::block_on(async {
+                crate::indexing::host::runtime::block_on(async {
                     match tokio::time::timeout(Duration::from_secs(5), task).await {
                         Ok(Ok(())) => log::debug!("Live event loop drained successfully"),
                         Ok(Err(e)) => log::debug!("Live event loop task error: {e}"),
