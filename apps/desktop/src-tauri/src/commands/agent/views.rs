@@ -73,6 +73,22 @@ pub enum AskCmdrStreamEvent {
     },
 }
 
+/// What the chat-memory setting needs to warn honestly: the model the next turn would use,
+/// and the context window we believe it has.
+///
+/// The window knowledge stays in `agent::chat::budget` (one table, not two), and the COMPARISON
+/// stays in the settings UI: the user's pick has to warn the moment it's chosen, and the stored
+/// value the backend reads lands up to half a second later.
+#[derive(Clone, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ModelWindowView {
+    /// The model Ask Cmdr would send to right now. Empty when AI is off.
+    pub model: String,
+    /// That model's window in tokens: the local server's configured window, else the family
+    /// table. `None` when nothing here knows it, so the UI stays quiet instead of guessing.
+    pub known_window_tokens: Option<u32>,
+}
+
 /// The wire form of [`AgentErrorKind`] — the frontend renders each honestly.
 #[derive(Clone, Copy, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -83,6 +99,11 @@ pub enum AgentErrorKindView {
     /// before touching a provider (the privacy line, enforced structurally, not just in the
     /// rail UI). Distinct from `NotConfigured` so the copy can say so honestly.
     NoConsent,
+    /// The local server runs with a context window too small to hold one prompt, so the send
+    /// was refused before it could be assembled against
+    /// (`budget::BudgetRefusal::LocalWindowBelowFloor`). View-only: the runtime never produces
+    /// it, the command layer refuses ahead of the turn. The copy names the setting to change.
+    LocalWindowTooSmall,
     Unavailable,
     Timeout,
     AuthFailed,

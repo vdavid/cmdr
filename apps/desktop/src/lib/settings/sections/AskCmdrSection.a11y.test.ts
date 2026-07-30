@@ -2,7 +2,8 @@
  * Tier 3 a11y tests for `AskCmdrSection.svelte`.
  *
  * The section: the enable/consent toggle, the "what Ask Cmdr sends" disclosure, the
- * provider hint + the interactive-model row, and the spend rollup. The settings store and
+ * provider hint, the interactive-model and chat-memory-size rows (including the over-window
+ * warning), and the spend rollup. The settings store and
  * the consent + cost commands are mocked so it mounts without a backend; the consent state
  * is driven directly (off, then on) to cover both toggle labels.
  */
@@ -15,6 +16,7 @@ vi.mock('$lib/settings/settings-store', () => ({
   getSetting: vi.fn((key: string) => {
     if (key === 'ai.provider') return 'cloud'
     if (key === 'askCmdr.interactiveModel') return ''
+    if (key === 'askCmdr.chatMemorySize') return '200000'
     return undefined
   }),
   setSetting: vi.fn(() => Promise.resolve()),
@@ -36,6 +38,9 @@ vi.mock('$lib/ask-cmdr/ask-cmdr-consent.svelte', () => ({
 vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   askCmdrCostSummary: vi.fn(() => Promise.resolve({ days: [] })),
+  // A 200,000-token pick against a 128,000-token window, so the over-window warning is part
+  // of what axe sees.
+  askCmdrModelWindow: vi.fn(() => Promise.resolve({ model: 'gpt-4o', knownWindowTokens: 128_000 })),
 }))
 
 import AskCmdrSection from './AskCmdrSection.svelte'

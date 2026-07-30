@@ -21,6 +21,7 @@ import {
   type AskCmdrConsentStatus,
   type ConversationCost,
   type CostSummary,
+  type ModelWindowView,
   type RenameEvidence,
   type RenameProposalRowSnapshot,
 } from '$lib/ipc/bindings'
@@ -37,6 +38,7 @@ export type {
   AskCmdrConsentStatus,
   ConversationCost,
   CostSummary,
+  ModelWindowView,
   RenameEvidence,
 }
 
@@ -54,6 +56,7 @@ export type AskCmdrErrorKind =
   | 'noKey'
   | 'notConfigured'
   | 'noConsent'
+  | 'localWindowTooSmall'
   | 'unavailable'
   | 'timeout'
   | 'authFailed'
@@ -281,4 +284,13 @@ export async function askCmdrCostSummary(): Promise<CostSummary> {
   const res = await commands.askCmdrCostSummary()
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
+}
+
+/**
+ * The model Ask Cmdr would send to right now, and the context window Cmdr believes it has.
+ * `knownWindowTokens` is `null` when nothing knows the window, in which case no size can
+ * honestly be called too large.
+ */
+export async function askCmdrModelWindow(): Promise<ModelWindowView> {
+  return commands.askCmdrModelWindow()
 }

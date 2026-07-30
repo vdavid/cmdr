@@ -1514,6 +1514,22 @@
   "@settings.askCmdr.interactiveModel.placeholder": {
     "sourceHash": "2631f3d"
   },
+  "settings.askCmdr.chatMemorySize.label": "Tamanho da memória do chat",
+  "@settings.askCmdr.chatMemorySize.label": {
+    "sourceHash": "fad1ff1"
+  },
+  "settings.askCmdr.chatMemorySize.description": "Quanto da conversa o Cmdr envia ao modelo. Automático segue o limite conhecido do seu modelo.",
+  "@settings.askCmdr.chatMemorySize.description": {
+    "sourceHash": "d70d3b4"
+  },
+  "settings.askCmdr.chatMemorySize.opt.auto": "Automático (recomendado)",
+  "@settings.askCmdr.chatMemorySize.opt.auto": {
+    "sourceHash": "4331988"
+  },
+  "settings.askCmdr.chatMemorySize.overWindow": "Seu modelo pode recusar uma mensagem tão longa. O Cmdr mantém o valor que você definiu.",
+  "@settings.askCmdr.chatMemorySize.overWindow": {
+    "sourceHash": "0dc68ac"
+  },
   "settings.askCmdr.spend.title": "Gastos",
   "@settings.askCmdr.spend.title": {
     "sourceHash": "c2c7ae2"

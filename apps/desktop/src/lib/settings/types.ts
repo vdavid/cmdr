@@ -204,6 +204,13 @@ export type AiProvider = 'off' | 'cloud' | 'local'
 export type AiLocalContextSize = '16384' | '32768' | '65536' | '131072' | '262144'
 
 /**
+ * How much of an Ask Cmdr thread one message may carry. `'auto'` follows the model's known
+ * window; a preset overrides it and is honoured as given (the section warns when it is
+ * larger than the window Cmdr believes the model has).
+ */
+export type AskCmdrChatMemorySize = 'auto' | '16000' | '32000' | '60000' | '128000' | '200000'
+
+/**
  * UI language: `'system'` follows the OS locale (the default); any other value
  * is a BCP-47 locale tag with a loaded catalog (e.g. `'en'`, `'en-XA'`). The
  * valid non-`'system'` values are derived at runtime from the loaded catalogs
@@ -434,6 +441,9 @@ export interface SettingsValues {
   // Read fresh backend-side each send (`load_ask_cmdr_interactive_model`); a later bulk
   // slot slots in as its own additive key with no migration (agent-spec D43).
   'askCmdr.interactiveModel': string
+  // The prompt budget one message may claim; `'auto'` follows the model's window. Read fresh
+  // backend-side each send (`load_ask_cmdr_chat_memory_size`), like the model override above.
+  'askCmdr.chatMemorySize': AskCmdrChatMemorySize
 
   // Developer
   'developer.mcpEnabled': boolean

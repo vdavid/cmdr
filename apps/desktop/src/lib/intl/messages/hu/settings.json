@@ -1514,6 +1514,22 @@
   "@settings.askCmdr.interactiveModel.placeholder": {
     "sourceHash": "2631f3d"
   },
+  "settings.askCmdr.chatMemorySize.label": "A csevegés memóriájának mérete",
+  "@settings.askCmdr.chatMemorySize.label": {
+    "sourceHash": "fad1ff1"
+  },
+  "settings.askCmdr.chatMemorySize.description": "A beszélgetésből ennyit küld el a Cmdr a modellnek. Az automatikus a modell ismert korlátját követi.",
+  "@settings.askCmdr.chatMemorySize.description": {
+    "sourceHash": "d70d3b4"
+  },
+  "settings.askCmdr.chatMemorySize.opt.auto": "Automatikus (ajánlott)",
+  "@settings.askCmdr.chatMemorySize.opt.auto": {
+    "sourceHash": "4331988"
+  },
+  "settings.askCmdr.chatMemorySize.overWindow": "Lehet, hogy a modelled visszautasít egy ilyen hosszú üzenetet. A Cmdr megtartja a beállított értéket.",
+  "@settings.askCmdr.chatMemorySize.overWindow": {
+    "sourceHash": "0dc68ac"
+  },
   "settings.askCmdr.spend.title": "Kiadás",
   "@settings.askCmdr.spend.title": {
     "sourceHash": "c2c7ae2"

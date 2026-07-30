@@ -208,6 +208,22 @@ fn no_consent_is_a_wire_only_kind_distinct_from_not_configured() {
     );
 }
 
+/// `LocalWindowTooSmall` is the other wire-only kind: the command layer refuses a send whose
+/// local server runs with a window too small to hold one prompt, before a turn exists. It
+/// carries its own wire value so the copy can name the setting to change, rather than reading
+/// as a generic provider problem.
+#[test]
+fn a_too_small_local_window_is_its_own_wire_kind() {
+    assert_eq!(
+        serde_json::to_value(AgentErrorKindView::LocalWindowTooSmall).expect("serializes"),
+        "localWindowTooSmall"
+    );
+    assert_ne!(
+        serde_json::to_value(AgentErrorKindView::LocalWindowTooSmall).expect("serializes"),
+        serde_json::to_value(AgentErrorKindView::from(AgentErrorKind::NotConfigured)).expect("serializes")
+    );
+}
+
 /// The provider's raw `Other` wording is collapsed to a unit variant: it's untranslated
 /// vendor text, and nothing may branch on it.
 #[test]

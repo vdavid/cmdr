@@ -42,7 +42,7 @@ use tokio_util::sync::CancellationToken;
 use super::views::to_wire_event;
 use super::{
     AgentErrorKindView, AskCmdrStreamEvent, AttachmentRef, LOG_TARGET, MessageBlock, MessageRoleView, MessageView,
-    now_secs,
+    ModelWindowView, now_secs,
 };
 use crate::agent::AgentDb;
 use crate::agent::chat::budget;
@@ -159,6 +159,28 @@ fn effective_model_for_event(app: &AppHandle) -> Option<String> {
     Some(provider_and_model(model_override.as_deref()).1)
 }
 
+/// The model Ask Cmdr would send to right now, plus the window we believe it has, so the
+/// chat-memory setting can warn when a chosen size is larger than that window. `None` for the
+/// window means nothing here knows it (an unrecognized model id), and the UI then shows no
+/// warning rather than a guess dressed as one.
+#[tauri::command]
+#[specta::specta]
+pub fn ask_cmdr_model_window(app: AppHandle) -> ModelWindowView {
+    let Some(model) = effective_model_for_event(&app) else {
+        return ModelWindowView {
+            model: String::new(),
+            known_window_tokens: None,
+        };
+    };
+    let (provider, _) = provider_and_model(crate::settings::load_ask_cmdr_interactive_model(&app).as_deref());
+    let known_window_tokens = budget::known_window_tokens(provider, &model, crate::ai::state::get_local_context_size())
+        .map(|tokens| tokens as u32);
+    ModelWindowView {
+        model,
+        known_window_tokens,
+    }
+}
+
 /// A settings change may have switched the model for an open thread: record it as a
 /// conversation event once any in-flight turn finishes (the turn keeps its already-resolved
 /// model; the event marks the boundary). Returns the persisted event's display view, or
@@ -220,16 +242,37 @@ fn provider_and_model(model_override: Option<&str>) -> (ProviderTag, String) {
     (provider, model)
 }
 
-/// The assembled-prompt token budget for the resolved slot. A cloud model reads its family
-/// budget from the pure table; a local model's window is the user's `ai.localContextSize`
-/// setting, so only this layer (which may touch app state) can resolve it honestly.
-fn resolve_prompt_budget(provider: ProviderTag, model: &str) -> usize {
-    let budget = match provider {
-        ProviderTag::Local => budget::prompt_budget_for_local_context(crate::ai::state::get_local_context_size()),
-        _ => budget::prompt_budget(provider, model),
-    };
-    log::debug!(target: LOG_TARGET, "prompt budget for {model}: a {budget}-token ceiling");
-    budget
+/// The assembled-prompt token budget for the resolved slot, gathered here and decided in the
+/// pure [`budget`] module. This layer supplies the two values the core may not read itself:
+/// the user's `askCmdr.chatMemorySize` choice (read fresh per send, so a change applies to the
+/// NEXT message and never to a turn already in flight) and the local server's configured
+/// window.
+///
+/// The resolution's source is logged, so a budget that came from a stale family table is
+/// visible in the log rather than silently authoritative.
+fn resolve_prompt_budget(app: &AppHandle, provider: ProviderTag, model: &str) -> Result<usize, budget::BudgetRefusal> {
+    let resolved = budget::resolve_prompt_budget(budget::BudgetInputs {
+        provider,
+        model,
+        user_choice: crate::settings::load_ask_cmdr_chat_memory_size(app),
+        local_context_tokens: crate::ai::state::get_local_context_size(),
+    })?;
+    log::debug!(
+        target: LOG_TARGET,
+        "prompt budget for {model}: a {}-token ceiling, from {}",
+        resolved.prompt_tokens,
+        resolved.source.label()
+    );
+    if resolved.over_known_window {
+        log::info!(
+            target: LOG_TARGET,
+            "the chat memory size ({} tokens) is above the {}-token window we believe {model} has; \
+             using it anyway, the provider decides",
+            resolved.prompt_tokens,
+            resolved.known_window_tokens.unwrap_or(0)
+        );
+    }
+    Ok(resolved.prompt_tokens)
 }
 
 /// Capture the context envelope from live app state (snapshot-at-send). Focused pane path
@@ -349,6 +392,27 @@ pub async fn ask_cmdr_send_message(
         }
     };
 
+    // Resolve the budget before a thread exists, so a local server too small to hold one
+    // prompt is refused honestly instead of assembled against and rejected by the server.
+    let prompt_budget = match resolve_prompt_budget(&app, provider, &model) {
+        Ok(tokens) => tokens,
+        Err(budget::BudgetRefusal::LocalWindowBelowFloor {
+            window_tokens,
+            floor_tokens,
+        }) => {
+            log::warn!(
+                target: LOG_TARGET,
+                "refusing the send: the local server runs with a {window_tokens}-token window, \
+                 under the {floor_tokens}-token floor one turn needs"
+            );
+            let _ = on_event.send(AskCmdrStreamEvent::Failed {
+                kind: AgentErrorKindView::LocalWindowTooSmall,
+                detail: None,
+            });
+            return Ok(conversation_id.unwrap_or(0));
+        }
+    };
+
     // Resolve/create the conversation id up front so cancel + the frontend can key on it.
     let conversation_id = match conversation_id {
         Some(id) => id,
@@ -391,6 +455,7 @@ pub async fn ask_cmdr_send_message(
             llm,
             provider,
             model,
+            prompt_budget,
             conversation_id,
             text,
             attachments,
@@ -414,6 +479,9 @@ async fn drive_turn(
     llm: Box<dyn AgentLlm>,
     provider: ProviderTag,
     model: String,
+    // Resolved at send (see `resolve_prompt_budget`) and carried in as a value, so a settings
+    // change mid-turn can't move the ceiling this turn assembles against.
+    prompt_budget: usize,
     conversation_id: i64,
     text: String,
     attachments: Vec<AttachmentRef>,
@@ -450,7 +518,6 @@ async fn drive_turn(
             }
         }
     };
-    let prompt_budget = resolve_prompt_budget(provider, &model);
     let drive = runtime.send_message(
         &app,
         llm.as_ref(),

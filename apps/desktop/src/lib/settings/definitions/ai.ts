@@ -127,6 +127,35 @@ export const aiSettings: SettingDefinitionSource[] = [
     default: '',
     component: 'text-input',
   },
+  {
+    // How much of the thread one message may carry. `auto` follows the model's window (the
+    // family table in `agent::chat::budget`); a number overrides it and is used as given,
+    // even above the window we believe the model has — the section warns instead of
+    // clamping, because that table will be wrong sometimes and the user may be right.
+    // Presets rather than a free number field: the bounds are then unmisstateable, so
+    // there's no below-minimum case and no validation copy. Read fresh per send by
+    // `load_ask_cmdr_chat_memory_size`, so it applies to the next message with no
+    // `settings-applier` case and never moves a turn already in flight.
+    id: 'askCmdr.chatMemorySize',
+    section: ['AI', 'Ask Cmdr'],
+    labelKey: 'settings.askCmdr.chatMemorySize.label',
+    descriptionKey: 'settings.askCmdr.chatMemorySize.description',
+    keywords: ['ask cmdr', 'chat', 'memory', 'context', 'window', 'tokens', 'size', 'budget', 'history'],
+    type: 'enum',
+    default: 'auto',
+    component: 'select',
+    constraints: {
+      options: [
+        { value: 'auto', labelKey: 'settings.askCmdr.chatMemorySize.opt.auto' },
+        tokenOption(16000),
+        tokenOption(32000),
+        tokenOption(60000),
+        tokenOption(128000),
+        tokenOption(200000),
+      ],
+    },
+  },
+
   // ========================================================================
   // AI › MCP server
   //

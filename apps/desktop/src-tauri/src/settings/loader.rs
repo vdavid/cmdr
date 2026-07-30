@@ -432,6 +432,24 @@ pub fn load_ask_cmdr_interactive_model<R: tauri::Runtime>(app: &tauri::AppHandle
         .map(String::from)
 }
 
+/// The user's Ask Cmdr chat-memory size (`askCmdr.chatMemorySize`), read fresh from
+/// `settings.json` each send, so a change applies to the next message with no restart and no
+/// `settings-applier` case (the same read-fresh shape as
+/// [`load_ask_cmdr_interactive_model`]).
+///
+/// `None` means "Automatic (recommended)": the budget module follows the model's window
+/// instead. The stored value is one of a fixed preset list, so anything else (an absent key,
+/// `auto`, a hand-edited string) reads as Automatic rather than as a number to sanitize.
+pub fn load_ask_cmdr_chat_memory_size<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Option<usize> {
+    let data_dir = crate::config::resolved_app_data_dir(app).ok()?;
+    let contents = fs::read_to_string(data_dir.join("settings.json")).ok()?;
+    let json: serde_json::Value = serde_json::from_str(&contents).ok()?;
+    json.get("askCmdr.chatMemorySize")
+        .and_then(|v| v.as_str())
+        .and_then(|s| s.trim().parse::<usize>().ok())
+        .filter(|tokens| *tokens > 0)
+}
+
 /// Reads `developer.verboseLogging` from disk *before* the Tauri app handle exists.
 ///
 /// Mirrors [`early_load_max_log_storage_mb`]. Used by the logging dispatch builder so

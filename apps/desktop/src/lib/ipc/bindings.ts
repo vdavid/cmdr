@@ -2387,6 +2387,13 @@ export const commands = {
    */
   askCmdrCostSummary: () => typedError<CostSummary, string>(__TAURI_INVOKE('ask_cmdr_cost_summary')),
   /**
+   *  The model Ask Cmdr would send to right now, plus the window we believe it has, so the
+   *  chat-memory setting can warn when a chosen size is larger than that window. `None` for the
+   *  window means nothing here knows it (an unrecognized model id), and the UI then shows no
+   *  warning rather than a guess dressed as one.
+   */
+  askCmdrModelWindow: () => __TAURI_INVOKE<ModelWindowView>('ask_cmdr_model_window'),
+  /**
    *  Translates a natural-language selection request into a glob/regex plus optional
    *  size and date filters.
    *
@@ -5794,6 +5801,24 @@ export type MetricsSnapshotDto = {
   malformed_frames: number
   session_expired_events: number
   requests_returned_err: number
+}
+
+/**
+ *  What the chat-memory setting needs to warn honestly: the model the next turn would use,
+ *  and the context window we believe it has.
+ *
+ *  The window knowledge stays in `agent::chat::budget` (one table, not two), and the COMPARISON
+ *  stays in the settings UI: the user's pick has to warn the moment it's chosen, and the stored
+ *  value the backend reads lands up to half a second later.
+ */
+export type ModelWindowView = {
+  // The model Ask Cmdr would send to right now. Empty when AI is off.
+  model: string
+  /**
+   *  That model's window in tokens: the local server's configured window, else the family
+   *  table. `None` when nothing here knows it, so the UI stays quiet instead of guessing.
+   */
+  knownWindowTokens: number | null
 }
 
 // Errors that can occur during mount operations.

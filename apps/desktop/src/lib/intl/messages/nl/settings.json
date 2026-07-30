@@ -1519,6 +1519,22 @@
   "@settings.askCmdr.interactiveModel.placeholder": {
     "sourceHash": "2631f3d"
   },
+  "settings.askCmdr.chatMemorySize.label": "Grootte van het chatgeheugen",
+  "@settings.askCmdr.chatMemorySize.label": {
+    "sourceHash": "fad1ff1"
+  },
+  "settings.askCmdr.chatMemorySize.description": "Hoeveel van het gesprek Cmdr naar het model stuurt. Automatisch volgt de bekende limiet van je model.",
+  "@settings.askCmdr.chatMemorySize.description": {
+    "sourceHash": "d70d3b4"
+  },
+  "settings.askCmdr.chatMemorySize.opt.auto": "Automatisch (aanbevolen)",
+  "@settings.askCmdr.chatMemorySize.opt.auto": {
+    "sourceHash": "4331988"
+  },
+  "settings.askCmdr.chatMemorySize.overWindow": "Je model kan een bericht van deze lengte weigeren. Cmdr houdt de waarde die je instelt.",
+  "@settings.askCmdr.chatMemorySize.overWindow": {
+    "sourceHash": "0dc68ac"
+  },
   "settings.askCmdr.spend.title": "Uitgaven",
   "@settings.askCmdr.spend.title": {
     "sourceHash": "c2c7ae2"

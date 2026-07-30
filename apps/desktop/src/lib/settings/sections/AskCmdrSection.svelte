@@ -16,7 +16,8 @@
     import { tString } from '$lib/intl/messages.svelte'
     import { formatInteger } from '$lib/intl/number-format'
     import { getAppLogger } from '$lib/logging/logger'
-    import { askCmdrCostSummary, type CostSummary } from '$lib/tauri-commands'
+    import SettingSelect from '../components/SettingSelect.svelte'
+    import { askCmdrCostSummary, askCmdrModelWindow, type CostSummary } from '$lib/tauri-commands'
     import { consentState, refreshConsent, acceptConsent, revokeConsent } from '$lib/ask-cmdr/ask-cmdr-consent.svelte'
     import { formatUsdMicros } from '$lib/ask-cmdr/ask-cmdr-cost'
     import type { MessageKey } from '$lib/intl/keys.gen'
@@ -70,6 +71,28 @@
         model = value
         setSetting('askCmdr.interactiveModel', value)
     }
+
+    // Chat memory size: the presets live in the registry, the warning needs the model's window.
+    // The window comes from the backend (one family table, not two), and the COMPARISON happens
+    // here, against the value the user just picked: a stored setting reaches Rust up to half a
+    // second later, so asking the backend "is my pick too big" would warn a beat late.
+    const memoryDef = getSettingDefinition('askCmdr.chatMemorySize') ?? { label: '', description: '' }
+    let chatMemorySize = $state(getSetting('askCmdr.chatMemorySize'))
+    $effect(() => onSpecificSettingChange('askCmdr.chatMemorySize', (_id, v) => { chatMemorySize = v }))
+    let knownWindowTokens = $state<number | null>(null)
+    $effect(() => {
+        void provider // a provider or model change moves the window this compares against
+        void model
+        void askCmdrModelWindow().then(
+            (w) => { knownWindowTokens = w.knownWindowTokens },
+            (e: unknown) => { log.warn('reading the model window failed: {error}', { error: String(e) }) },
+        )
+    })
+    // Only an explicit size can exceed a window; "Automatic" follows it by construction. An
+    // unknown window (a model Cmdr has no row for) stays quiet rather than guessing.
+    const overKnownWindow = $derived(
+        chatMemorySize !== 'auto' && knownWindowTokens !== null && Number(chatMemorySize) > knownWindowTokens,
+    )
 
     // The per-day spend rollup (loaded on mount; refreshed when the section re-enables).
     let spend = $state<CostSummary | null>(null)
@@ -162,6 +185,21 @@
                 oninput={onModelInput}
             />
         </SettingRow>
+    {/if}
+
+    {#if shouldShow('askCmdr.chatMemorySize')}
+        <SettingRow
+            id="askCmdr.chatMemorySize"
+            label={memoryDef.label}
+            description={memoryDef.description}
+            split
+            {searchQuery}
+        >
+            <SettingSelect id="askCmdr.chatMemorySize" />
+        </SettingRow>
+        {#if overKnownWindow}
+            <p class="memory-warning" role="status">{tString('settings.askCmdr.chatMemorySize.overWindow')}</p>
+        {/if}
     {/if}
 
     <!-- Spend -->
@@ -262,6 +300,13 @@
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
         line-height: 1.5;
+    }
+
+    .memory-warning {
+        margin: var(--spacing-xs) 0 0;
+        font-size: var(--font-size-sm);
+        line-height: 1.4;
+        color: var(--color-warning-text);
     }
 
     .spend-list {

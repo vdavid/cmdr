@@ -1883,6 +1883,22 @@
   "@settings.askCmdr.interactiveModel.placeholder": {
     "description": "Placeholder text in the empty Ask Cmdr model field, signalling that blank means the shared AI model is used. The apostrophe is U+2019."
   },
+  "settings.askCmdr.chatMemorySize.label": "Chat memory size",
+  "@settings.askCmdr.chatMemorySize.label": {
+    "description": "Label for the picker that sets how much of an Ask Cmdr conversation is sent to the model with each message. Sentence case."
+  },
+  "settings.askCmdr.chatMemorySize.description": "How much of the conversation Cmdr sends to the model. Automatic follows your model’s known limit.",
+  "@settings.askCmdr.chatMemorySize.description": {
+    "description": "Help text under the chat memory size picker. Explains what the setting does and that the Automatic option follows the context window Cmdr knows the chosen model to have. \"Automatic\" here refers to the first option in the same picker, so use the same wording as that option. The apostrophe is U+2019."
+  },
+  "settings.askCmdr.chatMemorySize.opt.auto": "Automatic (recommended)",
+  "@settings.askCmdr.chatMemorySize.opt.auto": {
+    "description": "First option in the chat memory size picker: let Cmdr follow the context window it knows the chosen model to have, instead of a fixed number of tokens. The other options are plain token counts. Sentence case."
+  },
+  "settings.askCmdr.chatMemorySize.overWindow": "Your model may refuse a message this long. Cmdr keeps the value you set.",
+  "@settings.askCmdr.chatMemorySize.overWindow": {
+    "description": "Warning under the chat memory size picker, shown when the chosen size is larger than the context window Cmdr believes the model has. Cmdr does not overrule the choice: what Cmdr knows about a model can be out of date, and the user may be right. So name the consequence and confirm the value stands. Never says error or failed. Sentence case."
+  },
   "settings.askCmdr.spend.title": "Spending",
   "@settings.askCmdr.spend.title": {
     "description": "Heading of the spend/usage group in Ask Cmdr settings (per-day token use and estimated cost). Sentence case."

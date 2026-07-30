@@ -1520,6 +1520,22 @@
   "@settings.askCmdr.interactiveModel.placeholder": {
     "sourceHash": "2631f3d"
   },
+  "settings.askCmdr.chatMemorySize.label": "Chat-Speichergröße",
+  "@settings.askCmdr.chatMemorySize.label": {
+    "sourceHash": "fad1ff1"
+  },
+  "settings.askCmdr.chatMemorySize.description": "Wie viel der Unterhaltung Cmdr an das Modell sendet. Automatisch richtet sich nach dem bekannten Limit deines Modells.",
+  "@settings.askCmdr.chatMemorySize.description": {
+    "sourceHash": "d70d3b4"
+  },
+  "settings.askCmdr.chatMemorySize.opt.auto": "Automatisch (empfohlen)",
+  "@settings.askCmdr.chatMemorySize.opt.auto": {
+    "sourceHash": "4331988"
+  },
+  "settings.askCmdr.chatMemorySize.overWindow": "Dein Modell lehnt eine so lange Nachricht möglicherweise ab. Cmdr behält den Wert, den du gesetzt hast.",
+  "@settings.askCmdr.chatMemorySize.overWindow": {
+    "sourceHash": "0dc68ac"
+  },
   "settings.askCmdr.spend.title": "Ausgaben",
   "@settings.askCmdr.spend.title": {
     "sourceHash": "c2c7ae2"

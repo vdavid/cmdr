@@ -502,6 +502,41 @@ describe('fileOperations.pasteClipboardAsFile', () => {
   })
 })
 
+describe('askCmdr.chatMemorySize (how much of a chat one message carries)', () => {
+  it('registers an enum in AI > Ask Cmdr that defaults to Automatic', () => {
+    const def = getSettingDefinition('askCmdr.chatMemorySize')
+    expect(def?.type).toBe('enum')
+    expect(def?.component).toBe('select')
+    expect(def?.section).toEqual(['AI', 'Ask Cmdr'])
+    // Automatic follows the model's own window, which is right for almost everyone.
+    expect(getDefaultValue('askCmdr.chatMemorySize')).toBe('auto')
+  })
+
+  it('offers Automatic first, then the five presets, smallest to largest', () => {
+    const options = getSettingDefinition('askCmdr.chatMemorySize')?.constraints?.options ?? []
+    expect(options.map((o) => o.value)).toEqual(['auto', '16000', '32000', '60000', '128000', '200000'])
+  })
+
+  it('labels each preset with a grouped number, so nobody reads 200000 as 20,000', () => {
+    const options = getSettingDefinition('askCmdr.chatMemorySize')?.constraints?.options ?? []
+    const labels = options.slice(1).map((o) => o.label)
+    // Grouped for the reader's locale; en-US in tests.
+    expect(labels).toEqual(['16,000', '32,000', '60,000', '128,000', '200,000'])
+  })
+
+  it('validates the presets and rejects a size that is not one of them', () => {
+    for (const value of ['auto', '16000', '200000']) {
+      expect(() => {
+        validateSettingValue('askCmdr.chatMemorySize', value)
+      }).not.toThrow()
+    }
+    // Presets are the whole point: no free number field means no bounds to misstate.
+    expect(() => {
+      validateSettingValue('askCmdr.chatMemorySize', '8000')
+    }).toThrow()
+  })
+})
+
 describe('ai.localContextSize (the local model’s window)', () => {
   it('starts at the 16,384 floor and defaults to it', () => {
     // Below 16,384 an Ask Cmdr turn cannot fit its own prefix, so those sizes are gone from

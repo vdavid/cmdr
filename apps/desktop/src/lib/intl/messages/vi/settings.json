@@ -1511,6 +1511,22 @@
   "@settings.askCmdr.interactiveModel.placeholder": {
     "sourceHash": "2631f3d"
   },
+  "settings.askCmdr.chatMemorySize.label": "Kích thước bộ nhớ trò chuyện",
+  "@settings.askCmdr.chatMemorySize.label": {
+    "sourceHash": "fad1ff1"
+  },
+  "settings.askCmdr.chatMemorySize.description": "Cmdr gửi bao nhiêu phần của cuộc trò chuyện cho mô hình. Tự động sẽ theo giới hạn đã biết của mô hình.",
+  "@settings.askCmdr.chatMemorySize.description": {
+    "sourceHash": "d70d3b4"
+  },
+  "settings.askCmdr.chatMemorySize.opt.auto": "Tự động (khuyến nghị)",
+  "@settings.askCmdr.chatMemorySize.opt.auto": {
+    "sourceHash": "4331988"
+  },
+  "settings.askCmdr.chatMemorySize.overWindow": "Mô hình của bạn có thể từ chối một tin nhắn dài như vậy. Cmdr vẫn giữ giá trị bạn đặt.",
+  "@settings.askCmdr.chatMemorySize.overWindow": {
+    "sourceHash": "0dc68ac"
+  },
   "settings.askCmdr.spend.title": "Chi tiêu",
   "@settings.askCmdr.spend.title": {
     "sourceHash": "c2c7ae2"

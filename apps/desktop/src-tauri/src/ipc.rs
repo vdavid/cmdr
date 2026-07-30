@@ -672,6 +672,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::agent::ask_cmdr_revoke_consent,
         crate::commands::agent::ask_cmdr_conversation_cost,
         crate::commands::agent::ask_cmdr_cost_summary,
+        crate::commands::agent::ask_cmdr_model_window,
         crate::commands::selection::translate_selection_query,
         crate::commands::selection::get_recent_selections,
         crate::commands::selection::add_recent_selection,

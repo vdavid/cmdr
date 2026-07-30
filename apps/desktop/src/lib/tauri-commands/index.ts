@@ -339,6 +339,7 @@ export {
   revokeAskCmdrConsent,
   askCmdrConversationCost,
   askCmdrCostSummary,
+  askCmdrModelWindow,
 } from './ask-cmdr'
 export type {
   AskCmdrStreamEvent,
@@ -355,6 +356,7 @@ export type {
   AskCmdrConsentStatus,
   ConversationCost,
   CostSummary,
+  ModelWindowView,
   RenameEvidence,
   RenameEvidenceCoverage,
   RenameEvidenceSource,

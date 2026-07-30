@@ -43,6 +43,7 @@ const ERROR_KEYS: Record<AskCmdrErrorKind, MessageKey> = {
   noKey: 'askCmdr.error.noKey',
   notConfigured: 'askCmdr.error.notConfigured',
   noConsent: 'askCmdr.error.noConsent',
+  localWindowTooSmall: 'askCmdr.error.localWindowTooSmall',
   unavailable: 'askCmdr.error.unavailable',
   timeout: 'askCmdr.error.timeout',
   authFailed: 'askCmdr.error.authFailed',

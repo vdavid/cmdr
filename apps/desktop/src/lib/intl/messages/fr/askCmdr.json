@@ -160,6 +160,10 @@
   "@askCmdr.error.noConsent": {
     "sourceHash": "30d75d8"
   },
+  "askCmdr.error.localWindowTooSmall": "Ask Cmdr a besoin d’une fenêtre de contexte plus grande que celle de votre modèle local. Choisissez 16 384 jetons ou plus dans les réglages, sous IA.",
+  "@askCmdr.error.localWindowTooSmall": {
+    "sourceHash": "d546a0c"
+  },
   "askCmdr.error.unavailable": "Impossible de joindre le fournisseur d''IA. Vérifiez votre connexion et réessayez.",
   "@askCmdr.error.unavailable": {
     "sourceHash": "eb59e2b"
