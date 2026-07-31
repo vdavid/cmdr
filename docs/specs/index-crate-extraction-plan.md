@@ -1,10 +1,10 @@
 # Extract the index into a `cmdr-index` crate
 
-Status: in progress on `worktree-david-index-crate-extraction`, started 2026-07-30. M0 through M3 are landed. Written
-2026-07-25 after three review rounds against the code; every count below was measured then, and a handful drifted as the
-subsystems kept moving (`media_index/commands.rs` is now `media_index/commands/`, `get_volume_manager` is 23 sites not
-18, the subsystems are 93,256 of 332,264 lines). The structural claims all still hold; treat the counts as approximate
-and re-measure before relying on one.
+Status: in progress on `worktree-david-index-crate-extraction`, started 2026-07-30. M0 through M6 are landed; M7 is
+what's left. Written 2026-07-25 after three review rounds against the code; every count below was measured then, and a
+handful drifted as the subsystems kept moving (`media_index/commands.rs` is now `media_index/commands/`,
+`get_volume_manager` is 23 sites not 18, the subsystems are 93,256 of 332,264 lines). The structural claims all still
+hold; treat the counts as approximate and re-measure before relying on one.
 
 Move `indexing/`, `media_index/`, and `importance/` out of the app crate into a standalone, Tauri-free workspace crate
 with a designed public API: typed errors, no user-facing strings, real cancellation, structured progress, and a
@@ -872,6 +872,36 @@ and the app reaches the index only through `index_host::index()`. What the plan 
 **Tests:** the full suite including `--include-slow` and `desktop-e2e-playwright`. Confirm the workspace test count
 matches pre-move (M2 made this meaningful). **If a test needs an assertion changed here, something in M1–M5 was wrong**;
 fix it there. **Checks:** `pnpm check --include-slow`, `pnpm check desktop-e2e-playwright`.
+
+**Landed.** All eight items are done. The crate is `crates/cmdr-index`, the app reaches it as `cmdr_index::…`, and every
+lane is green on macOS and Linux (4,962 workspace tests run, matching the count `nextest list` reports; 266 Playwright
+and 276 Linux E2E specs pass). What the plan got wrong or didn't anticipate:
+
+- **The three trees stayed three trees.** `lib.rs` is a new façade holding the public API block that used to live in
+  `indexing/mod.rs`; `indexing` is a private module behind it, `media_index` and `importance` are public siblings.
+  Flattening `indexing/*` to the crate root would have cost ~1,000 path rewrites and turned every
+  `pub(in crate::indexing)` into `pub(crate)`, widening an encapsulation boundary the code actively uses.
+- **`#![deny(missing_docs)]` cost 64 doc comments**, not zero. The surface audit documented what it moved to the handle,
+  not the schema types under `store` and `events` that a host reads. They cross IPC, so the text lands in `bindings.ts`.
+- **Eleven `pub(crate)` items and five `#[cfg(test)]` items still had host-side consumers.** The compiler found each
+  one; each is now `pub` or on the `testing` surface. The `cfg(test)` batch is the trap firing for the fourth time
+  (`one_of_every_kind`, the disk-image fixture, `ScanPacer::unpaced`, `IndexStore::list_children`, `handle::test_lock`).
+- **Only eight dependencies actually moved**, not the plan's list: `usearch`, `half`, `instant-clip-tokenizer`,
+  `cmdr-fsevent-stream`, and the four macOS `objc2-*` CLIP/Vision crates. `rusqlite`, `image`, `rayon`, `walkdir`,
+  `notify`, and `notify-debouncer-full` all still have app-side callers, so the census in item 3 was stale. Two deps
+  narrowed instead: `notify` to Linux, `xattr` and `unicode-normalization` to macOS.
+- **The `.taurignore` shield moved to the REPO ROOT**, not into the watch config. The CLI builds one ignore matcher over
+  the common ancestor of all its watch folders, so a per-crate file doesn't work and a `src-tauri/`-local one covers
+  only `src-tauri/`. Verified by running `pnpm dev` and reading the CLI's own log; the file is read once at watcher
+  startup, so testing an edit without restarting measures the old matcher.
+- **The Linux lanes had been red since the media-index audit**, invisible because Docker was down when it landed. Off
+  macOS the fake Vision backend IS production, so `#[cfg(test)]` on it broke the build; four more items were dead code
+  on Linux for the same reason. And the acceptance scan hardcoded a `/Volumes/…` mount root, which routes to `root`'s
+  index on Linux. Fixed here; the plan's "if a test needs an assertion changed, something earlier was wrong" held, but
+  the wrongness was a fixture, not an assertion.
+- **Two files crossed 800 lines during M1–M5** and now warn without an allowlist entry (`reconcile/reconciler/rescan.rs`
+  804, `scanner/mod.rs` 812), alongside `network_scanner/mod.rs` at 972 against its 867 entry. The 18 entries were
+  re-keyed at their EXISTING values, so nothing was loosened under cover of the rename.
 
 ### M7 — Isolation check, measurement, and cleanup
 
