@@ -46,6 +46,13 @@ impl WriterRegistry {
     }
 
     /// Shut down and forget every writer (app teardown). Idempotent.
+    /// ❌ Nothing calls this today: no app teardown path drains the writer
+    /// registries, so the threads only stop when the process does (the handles
+    /// live for the process's life, and each writer stops when its last handle
+    /// drops). Not a data-loss gap — every write is flushed as it is applied —
+    /// but the teardown this documents does not happen. Wiring it belongs with a
+    /// deliberate shutdown-ordering change, not with a visibility audit.
+    #[allow(dead_code, reason = "documented teardown that no app path calls yet; see above")]
     pub fn shutdown_all(&self) {
         let writers: Vec<MediaWriter> = self.writers.lock_ignore_poison().drain().map(|(_, w)| w).collect();
         for w in writers {

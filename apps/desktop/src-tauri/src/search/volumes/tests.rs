@@ -45,8 +45,8 @@ fn make_index_db_scanned(data_dir: &Path, volume_id: &str, volume_path: &str, sc
 
 /// Write a populated `importance-{volume_id}.db` via the real writer.
 fn make_importance_db(data_dir: &Path, volume_id: &str, rows: &[(&str, f64)]) {
-    use crate::importance::store::importance_db_path;
-    use crate::importance::writer::{ImportanceWriter, WeightRow};
+    use crate::importance::testing::importance_db_path;
+    use crate::importance::testing::{ImportanceWriter, WeightRow};
     let db_path = importance_db_path(data_dir, volume_id);
     let writer = ImportanceWriter::spawn(&db_path).expect("spawn writer");
     let weight_rows: Vec<WeightRow> = rows
@@ -255,7 +255,7 @@ fn recompute_notification_lets_the_next_reload_see_new_weights() {
     let mut rx = crate::importance::read::subscribe(vid);
     rx.borrow_and_update();
     make_importance_db(dir.path(), vid, &[("/proj", 0.95)]);
-    crate::importance::read::notify_recompute_completed_for_test(vid, 2);
+    crate::importance::testing::notify_recompute_completed_for_test(vid, 2);
     assert!(rx.has_changed().expect("sender alive"), "the notification fired");
     rx.borrow_and_update();
     store_weights(vid, load_weights(dir.path(), vid));

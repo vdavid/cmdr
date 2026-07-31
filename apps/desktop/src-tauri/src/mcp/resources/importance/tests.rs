@@ -8,9 +8,8 @@
 use std::path::Path;
 
 use super::*;
-use crate::importance::scorer::{FolderSignals, PathClass, SignalSet, Weights};
-use crate::importance::store::importance_db_path;
-use crate::importance::writer::{ImportanceWriter, WeightRow};
+use crate::importance::testing::{ImportanceWriter, WeightRow, importance_db_path};
+use crate::importance::{FolderSignals, PathClass, SignalSet, Weights};
 
 /// A folder's signals for a scored row that carries a real, explainable breakdown.
 fn scored_signals(path_class: PathClass, now: u64) -> FolderSignals {

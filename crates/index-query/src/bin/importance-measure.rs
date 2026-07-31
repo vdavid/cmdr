@@ -12,7 +12,7 @@
 use std::path::PathBuf;
 
 use cmdr_lib::importance::SignalSet;
-use cmdr_lib::importance::scheduler::recompute_index_to_db;
+use cmdr_lib::importance::tooling::recompute_index_to_db;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();

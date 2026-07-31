@@ -43,7 +43,7 @@ use std::path::{Path, PathBuf};
 use rusqlite::Connection;
 
 use crate::indexing::store::normalize_for_comparison;
-pub use connection::open_read_connection;
+pub(crate) use connection::open_read_connection;
 pub(crate) use connection::open_write_connection;
 
 /// Bump to invalidate on-disk `importance.db` files. A mismatch deletes the DB
@@ -68,7 +68,7 @@ const SCHEMA_VERSION: &str = "3";
 /// counter bumped once per full-volume recompute pass. Every weight row is
 /// stamped with the value current at the pass that wrote it (its as-of marker).
 /// Absent ⇒ generation 0 (no pass has run).
-pub const RECOMPUTE_GENERATION_KEY: &str = "recompute_generation";
+pub(crate) const RECOMPUTE_GENERATION_KEY: &str = "recompute_generation";
 
 // `path_folded` is the BINARY primary key (the precomputed `normalize_for_comparison`
 // fold of the path), so equality and range lookups are index-served without the
@@ -111,7 +111,7 @@ const CREATE_TABLES_SQL: &str = "
 /// the recreate FIRST, so the generation we read reflects the CURRENT schema. This is
 /// the exact prod-upgrade ordering; a sweep-time read probe is the trap this
 /// avoids.
-pub fn needs_initial_full_pass(data_dir: &Path, volume_id: &str) -> Result<bool, ImportanceStoreError> {
+pub(crate) fn needs_initial_full_pass(data_dir: &Path, volume_id: &str) -> Result<bool, ImportanceStoreError> {
     let store = ImportanceStore::open(&importance_db_path(data_dir, volume_id))?;
     Ok(store.recompute_generation()? == 0)
 }
@@ -129,7 +129,7 @@ pub fn importance_db_path(data_dir: &Path, volume_id: &str) -> PathBuf {
 /// `ImportanceIndex`) hands these back; M2 uses them for round-trip tests and the
 /// scheduler's idempotency checks.
 #[derive(Debug, Clone, PartialEq)]
-pub struct StoredWeight {
+pub(crate) struct StoredWeight {
     pub path: String,
     pub score: f64,
     /// The serialized [`super::FolderSignals`] JSON (plan Decision 2: a consumer
@@ -188,7 +188,9 @@ impl From<std::io::Error> for ImportanceStoreError {
 /// delete-and-recreate). The writer thread ([`ImportanceWriter`](super::writer))
 /// opens its OWN write connection via [`open_write_connection`]; this handle is
 /// the read side and the schema-lifecycle owner.
-pub struct ImportanceStore {
+pub(crate) struct ImportanceStore {
+    /// Read only by the test-gated [`ImportanceStore::db_path`].
+    #[cfg_attr(not(test), allow(dead_code, reason = "read only by the test-gated accessor"))]
     db_path: PathBuf,
     read_conn: Connection,
 }
@@ -253,13 +255,15 @@ impl ImportanceStore {
     }
 
     /// The DB file path.
-    pub fn db_path(&self) -> &Path {
+    #[cfg(test)]
+    pub(crate) fn db_path(&self) -> &Path {
         &self.db_path
     }
 
     /// Borrow the read connection for direct queries (round-trip tests, the
     /// scheduler's idempotency reads). M3's read API adds a proper read pool.
-    pub fn read_conn(&self) -> &Connection {
+    #[cfg(test)]
+    pub(crate) fn read_conn(&self) -> &Connection {
         &self.read_conn
     }
 
@@ -272,12 +276,14 @@ impl ImportanceStore {
     /// Read one folder's stored weight, or `None` if unscored. Keyed by the folded
     /// path (`normalize_for_comparison`), so a case/normalization variant of a scored
     /// path resolves to the same row.
-    pub fn weight_for(&self, path: &str) -> Result<Option<StoredWeight>, ImportanceStoreError> {
+    #[cfg(test)]
+    pub(crate) fn weight_for(&self, path: &str) -> Result<Option<StoredWeight>, ImportanceStoreError> {
         read_weight(&self.read_conn, path)
     }
 
     /// Read one folder's visit record, or `None` if never visited.
-    pub fn visit_for(&self, path: &str) -> Result<Option<(u64, u64)>, ImportanceStoreError> {
+    #[cfg(test)]
+    pub(crate) fn visit_for(&self, path: &str) -> Result<Option<(u64, u64)>, ImportanceStoreError> {
         read_visit(&self.read_conn, path)
     }
 }
@@ -332,7 +338,9 @@ pub(super) fn read_weight(conn: &Connection, path: &str) -> Result<Option<Stored
     }
 }
 
-/// Read one visit row as `(count, last_visit_secs)`.
+/// Read one visit row as `(count, last_visit_secs)`. Reached only through the
+/// gated [`ImportanceStore::visit_for`].
+#[cfg(test)]
 pub(super) fn read_visit(conn: &Connection, path: &str) -> Result<Option<(u64, u64)>, ImportanceStoreError> {
     let mut stmt = conn.prepare_cached("SELECT visit_count, last_visit_secs FROM visits WHERE path_folded = ?1")?;
     let mut rows = stmt.query_map(rusqlite::params![normalize_for_comparison(path)], |row| {

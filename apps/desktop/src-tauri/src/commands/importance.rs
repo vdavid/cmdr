@@ -62,7 +62,7 @@ pub async fn record_visit(app: AppHandle, location: Location) -> Result<(), Stri
     let result = tauri::async_runtime::spawn_blocking(move || {
         let writer = scheduler.writer_for(&volume_id)?;
         writer.record_visit(&path, now)?;
-        Ok::<(), crate::importance::store::ImportanceStoreError>(())
+        Ok::<(), crate::importance::ImportanceStoreError>(())
     })
     .await;
 

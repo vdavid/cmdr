@@ -52,6 +52,9 @@ use super::writer::ImportanceWriter;
 use crate::indexing::IndexVolumeKind;
 use cmdr_fs::ignore_poison::IgnorePoison;
 
+/// Comparing two walks of the same index, for the measurement tools. Nothing in
+/// the app reaches it: the scheduler's own incremental path is `recompute`.
+#[cfg(any(test, feature = "tooling"))]
 mod differential;
 mod recompute;
 mod scoped_walk;
@@ -66,9 +69,11 @@ pub(crate) use walk::walk_index_folders;
 // The measurement/tuning entry point: walk a real index, score, write an
 // `importance.db` — the full-pass core without the registry or async driver.
 use crate::indexing::lifecycle::lifecycle_bus;
+#[cfg(any(test, feature = "tooling"))]
 pub use recompute::{MeasureOutcome, recompute_index_to_db};
 // The correctness harness: run the scoped walk and the full walk over the same real
 // index and difference the rows they'd write.
+#[cfg(any(test, feature = "tooling"))]
 pub use differential::{OriginComparison, compare_walks_for_incremental, sample_origins};
 
 // ── Volume kind → scoring policy (plan M4, typed, never string-matched) ────

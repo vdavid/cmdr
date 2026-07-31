@@ -80,6 +80,9 @@ pub fn self_floors(path: &str, name: &str, home: &str) -> bool {
 /// own ancestor path components rather than the sibling set, so a floored ancestor
 /// missing from `paths` (a `node_modules` the index pruned but whose children
 /// remain) still floors the descendants.
+/// Only the corpus scenarios and the test fixtures need this: the app applies the
+/// floor per folder as it scores, rather than pre-computing the set.
+#[cfg(any(test, feature = "tooling"))]
 pub fn under_floored_paths<'a>(
     paths: impl IntoIterator<Item = &'a str>,
     home: &str,

@@ -17,6 +17,7 @@ use crate::importance::scorer::{SignalSet, Weights, explain};
 use crate::importance::signals::{OptionalSignals, signals_for_dir};
 use crate::importance::store::importance_db_path;
 use crate::importance::writer::{ImportanceWriter, WeightRow};
+#[cfg(any(test, feature = "tooling"))]
 use crate::indexing::store::IndexStore;
 
 // ── Recompute (full-volume) ───────────────────────────────────────────────
@@ -145,6 +146,7 @@ pub(super) struct RecomputeOutcome {
 /// The result of a measurement recompute: rows written, the phase wall-clock
 /// split (walk-and-score vs write-and-flush), and the memory the pass cost, for
 /// the `importance-measure` dev bin.
+#[cfg(any(test, feature = "tooling"))]
 pub struct MeasureOutcome {
     /// Weight rows written (floored folders omitted).
     pub rows_written: usize,
@@ -175,6 +177,7 @@ pub struct MeasureOutcome {
 /// faithfully). Spotlight is never sampled here (the tool has no live volume;
 /// `last_used` redistributes per `available`), and visits come from the target
 /// `importance.db` if it already holds any.
+#[cfg(any(test, feature = "tooling"))]
 pub fn recompute_index_to_db(
     index_db: &std::path::Path,
     importance_db: &std::path::Path,
@@ -228,6 +231,7 @@ pub fn recompute_index_to_db(
 
 /// How much the process's `phys_footprint` has grown since `before`, or `None` when
 /// either reading failed (or the platform has no Mach `task_info`).
+#[cfg(any(test, feature = "tooling"))]
 fn footprint_growth(before: Option<u64>) -> Option<u64> {
     match (cmdr_fs::process_memory::current_phys_footprint(), before) {
         (Some(now), Some(before)) => Some(now.saturating_sub(before)),

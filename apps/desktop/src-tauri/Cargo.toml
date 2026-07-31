@@ -31,6 +31,13 @@ smb-e2e = ["smb2/testing"]
 # Enabled automatically for every dev target and only for those; see the self
 # dev-dependency under `[dev-dependencies]`. Never enable in production builds.
 testing = ["dep:tempfile", "cmdr-fs/testing"]
+# The importance subsystem's developer-tooling surface (`importance::tooling`):
+# the evaluation corpus and the measurement entry points the `index-query`
+# binaries drive. Separate from `testing` because they answer different questions
+# — a test needs fakes and guards, a tool needs the real scoring pipeline plus a
+# corpus — and because these are BINARIES in another crate, which `cfg(test)`
+# can never reach. Never enable in production builds.
+tooling = []
 
 [[bin]]
 name = "Cmdr"

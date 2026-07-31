@@ -28,8 +28,8 @@
 
 use std::path::PathBuf;
 
-use cmdr_lib::importance::evals::corpus::{labels_template_for, snapshot_index_to_scenario};
-use cmdr_lib::importance::evals::scenario::Availability;
+use cmdr_lib::importance::tooling::evals::corpus::{labels_template_for, snapshot_index_to_scenario};
+use cmdr_lib::importance::tooling::evals::scenario::Availability;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();

@@ -50,7 +50,7 @@ pub(crate) fn open_write_connection(db_path: &Path) -> Result<Connection, Import
 /// contends with the writer thread's write lock (WAL). The tables are assumed to
 /// exist (the writer/`open` path created them); a read-only connection can't
 /// create them.
-pub fn open_read_connection(db_path: &Path) -> Result<Connection, ImportanceStoreError> {
+pub(crate) fn open_read_connection(db_path: &Path) -> Result<Connection, ImportanceStoreError> {
     let conn = cmdr_fs::sqlite_util::open_read_only(db_path)?;
     register_collation(&conn)?;
     apply_pragmas(&conn, true)?;

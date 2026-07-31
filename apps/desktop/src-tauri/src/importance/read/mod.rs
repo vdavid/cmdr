@@ -523,8 +523,8 @@ pub(super) fn notify_recompute_completed(volume_id: &str, generation: u64) {
 /// Test-only crate-visible shim for [`notify_recompute_completed`], so a consumer's
 /// subscribe→reload wiring (the search importance weight subscriber) can be tested
 /// without widening the production notifier past the scheduler.
-#[cfg(test)]
-pub(crate) fn notify_recompute_completed_for_test(volume_id: &str, generation: u64) {
+#[cfg(any(test, feature = "testing"))]
+pub fn notify_recompute_completed_for_test(volume_id: &str, generation: u64) {
     notify_recompute_completed(volume_id, generation);
 }
 

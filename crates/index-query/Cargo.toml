@@ -6,7 +6,10 @@ license = "LicenseRef-BSL-1.1"
 publish = false
 
 [dependencies]
-cmdr = { path = "../../apps/desktop/src-tauri" }
+# `tooling` is what makes the importance corpus and measurement entry points
+# visible here; see `importance::tooling` for why it is a feature and not
+# `#[cfg(test)]`.
+cmdr = { path = "../../apps/desktop/src-tauri", features = ["tooling"] }
 rusqlite = { version = "0.40", features = ["bundled", "collation"] }
 
 [package.metadata.cmdr]
