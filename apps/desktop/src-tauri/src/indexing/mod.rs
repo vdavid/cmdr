@@ -39,7 +39,13 @@ pub(crate) use tests::stress_test_helpers;
 pub(crate) use events::DEBUG_STATS;
 #[cfg(test)]
 pub(crate) use events::one_of_every_kind;
-pub use events::*;
+// Named, never a glob: the public surface has to be readable from this file, and a
+// `pub use events::*` hid 14 items behind one line.
+pub use events::{
+    ActivityPhase, Diagnostic, EventSink, IndexDebugStatusResponse, IndexErrorReport, IndexEvent, IndexEventKind,
+    IndexStatusResponse, MemoryWatchdogAction, NoopEventSink, PhaseRecord, RescanReason, ScanRunKind,
+    VolumeIndexStatus,
+};
 pub(crate) use read::enrichment::{ReadPool, get_read_pool, get_read_pool_for};
 pub use read::enrichment::{enrich_entries_with_index, enrich_entries_with_index_on_volume};
 // `pub` under `testing` so `benches/index_benchmarks.rs` can install a synthetic
