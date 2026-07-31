@@ -75,16 +75,16 @@ bought this: without it, Cargo would inline only `#[inline]` and generic functio
 
 ## Scan throughput isn't in this set, on purpose
 
-The plan asked for a scan-throughput bench on the macOS disk-image fixture and offered to widen `external_drive_fixture`
-to reach it. It isn't here, and the substitute above (`compute_all_aggregates_reported`, the bottom-up roll-up) covers
-the same risk more cheaply. Four reasons, in weight order:
+A scan-throughput bench on the macOS disk-image fixture, widening `external_drive_fixture` to reach it, was the obvious
+candidate for this baseline. It isn't here, and the substitute above (`compute_all_aggregates_reported`, the bottom-up
+roll-up) covers the same risk more cheaply. Four reasons, in weight order:
 
 1. **Criterion is the wrong instrument.** It wants many cheap, idempotent iterations. A scan is seconds to minutes,
    filesystem-bound, and mutates the DB it writes into, so every iteration needs a torn-down fixture. The statistics
    would be shaped by the setup, not the scan.
 2. **Reaching the scanner would pre-commit public surface.** `scanner` is `pub(crate)`; a bench compiles as an external
-   crate. Making it conditionally `pub` for a benchmark is exactly the "`pub` as a compile fix" the plan's Decision 3
-   exists to prevent.
+   crate. Making it conditionally `pub` for a benchmark is exactly the "`pub` as a compile fix" the crate's
+   public-surface rule exists to prevent (`crates/cmdr-index/CLAUDE.md`, enforced by the `index-crate-isolation` check).
 3. **The disk-image route costs more than it returns.** It would promote `tempfile` from a dev-dependency to a shipped
    optional dependency, and it would run `hdiutil` attach/detach inside a benchmark loop, against the attach-once
    /detach-once FSKit discipline in `crates/cmdr-index/src/indexing/tests/CLAUDE.md`. That discipline exists because the
@@ -94,9 +94,9 @@ the same risk more cheaply. Four reasons, in weight order:
    reconcile numbers from the real app on a real 6-million-entry boot volume, with the method written down. That's what
    a scan-throughput re-measure should re-run.
 
-`compute_all_aggregates_reported` gives up the filesystem walk but keeps what the plan actually wants guarded: a
-per-entry loop over the index, in Criterion's shape, through a genuinely public entry point. If a trait call or an
-allocation lands on a per-entry path during the extraction, it shows up there.
+`compute_all_aggregates_reported` gives up the filesystem walk but keeps what actually needed guarding through the
+extraction: a per-entry loop over the index, in Criterion's shape, through a genuinely public entry point. If a trait
+call or an allocation lands on a per-entry path during the extraction, it shows up there.
 
 ## Build times
 
