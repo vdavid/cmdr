@@ -20,8 +20,8 @@ adopt ANN later by adding a variant.
   op's DB write commits and removed after a successful save, so a session that dies with unflushed ops leaves it and the
   next writer spawn wipes the index. A count-compare would misread normal mid-pass write lag as corruption and
   rebuild-storm during enrichment.
-- **Keys are `media_file` ids and hits resolve through the DB**, so a rename needs NO index touch and a ghost key
-  (row gone) silently yields nothing. A lagging index can only UNDER-return; it can never return a wrong path.
+- **Keys are `media_file` ids and hits resolve through the DB**, so a rename needs NO index touch and a ghost key (row
+  gone) silently yields nothing. A lagging index can only UNDER-return; it can never return a wrong path.
 - **Over-fetch `k × 4` and exactly re-rank** with the same `cosine_f16` the exact scan uses. HNSW recall dips as corpora
   grow, so ❌ don't return raw ANN order — the re-rank is what keeps the k the caller sees exact-quality.
 - **No index file exists below `ANN_MIN_VECTORS` (50,000).** A flush with no index drops its ops; crossing the threshold
@@ -29,5 +29,5 @@ adopt ANN later by adding a variant.
 - **A rebuild polls the memory watchdog's cancel, ❌ not `gate::should_stop`** — a query can't kick a rebuild while the
   master toggle is off, and the watchdog cancel is the "release resources now" signal that matters.
 
-The engine choice, the flush/rebuild decisions, versioning, and the measured numbers: `DETAILS.md`. Read it
-before any non-trivial work here: editing, planning, reorganizing, or advising.
+The engine choice, the flush/rebuild decisions, versioning, and the measured numbers: `DETAILS.md`. Read it before any
+non-trivial work here: editing, planning, reorganizing, or advising.

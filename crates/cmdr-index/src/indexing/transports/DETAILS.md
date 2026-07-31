@@ -1,7 +1,7 @@
 # Indexing transports details
 
-Read this before any non-trivial work in `indexing/transports/`: editing, planning, reorganizing, or advising.
-Must-know invariants are in `CLAUDE.md`.
+Read this before any non-trivial work in `indexing/transports/`: editing, planning, reorganizing, or advising. Must-know
+invariants are in `CLAUDE.md`.
 
 Each transport reuses the ENTIRE registry, writer, aggregator, `dir_stats`, and read-path machinery. Only how a volume
 is enabled and how live changes arrive differ. The scan itself (the `Volume`-trait BFS for SMB/MTP, the local guarded
@@ -60,10 +60,10 @@ the open pane. This layer is a SECOND consumer so the persisted index stays corr
 work** — ahead of the "no listing matches, bail" early-return — because the watcher runs for the whole volume's
 lifetime, not just while a pane shows the share, so the index must update even with zero open listings.
 
-- **Path space.** The SMB index's `ROOT_ID` is the volume's MOUNT ROOT; entries are stored by `name` under their
-  parent. The watcher delivers a MOUNT-ABSOLUTE parent path (`/Volumes/share/sub`), so `apply_smb_change` strips the
-  mount root to a MOUNT-RELATIVE path (`/sub`) via `index_relative_path` before `store::resolve_path` (which walks from
-  `ROOT_ID`). `index_relative_path` is defined here and reused by the read side (`paths::index_read_path`) and by
+- **Path space.** The SMB index's `ROOT_ID` is the volume's MOUNT ROOT; entries are stored by `name` under their parent.
+  The watcher delivers a MOUNT-ABSOLUTE parent path (`/Volumes/share/sub`), so `apply_smb_change` strips the mount root
+  to a MOUNT-RELATIVE path (`/sub`) via `index_relative_path` before `store::resolve_path` (which walks from `ROOT_ID`).
+  `index_relative_path` is defined here and reused by the read side (`paths::index_read_path`) and by
   `IndexPathSpace::resolve_abs` — the single mount-strip, never a second copy.
 - **Translation (`resolve_change`, pure over DB state, unit-tested).** `Added`/`Modified` → `UpsertEntryV2` under the
   resolved `parent_id`; `Renamed` → upsert the new entry (same-dir, so ancestor totals hold); `Removed` → resolve the
@@ -78,21 +78,21 @@ lifetime, not just while a pane shows the share, so the index must update even w
   index-relative PARENT path has a component matching `network_scanner::is_recursion_excluded_dir` (checked before the
   `resolve_path`, so it costs nothing on the hot path). **Decision/Why:** the excluded dir keeps its own row, so its
   path resolves fine, and without the gate a `CHANGE_NOTIFY` under `@eaDir` upserted children no scan would ever
-  produce, re-dirtying a freshly rebuilt index one event at a time. Gating in `resolve_change`
-  covers the live path, the mid-scan replay, and the Docker integration harness in one place, and it also suppresses the
-  `EmitDirUpdated` (nothing to refresh: the dir's size is honestly unknown). The check is on the PARENT, so a change to
-  the excluded dir ITSELF (which arrives under its parent) still upserts or deletes it — the "stays listed and
-  navigable" invariant is untouched. A `Removed` under an excluded dir is gated too: after a rebuild the row doesn't
-  exist, so letting the delete through would buy nothing for an asymmetric rule.
-  Pinned by `change_inside_a_recursion_excluded_dir_writes_nothing`,
+  produce, re-dirtying a freshly rebuilt index one event at a time. Gating in `resolve_change` covers the live path, the
+  mid-scan replay, and the Docker integration harness in one place, and it also suppresses the `EmitDirUpdated` (nothing
+  to refresh: the dir's size is honestly unknown). The check is on the PARENT, so a change to the excluded dir ITSELF
+  (which arrives under its parent) still upserts or deletes it — the "stays listed and navigable" invariant is
+  untouched. A `Removed` under an excluded dir is gated too: after a rebuild the row doesn't exist, so letting the
+  delete through would buy nothing for an asymmetric rule. Pinned by
+  `change_inside_a_recursion_excluded_dir_writes_nothing`,
   `the_gate_looks_at_every_ancestor_not_only_the_immediate_parent`, and
   `the_excluded_dir_s_own_row_and_ordinary_siblings_still_update`. MTP's watcher resolves by object handle, not by path,
   and has no equivalent gate.
 - **Emit-after-write ordering.** The inline pane-enrich reads sizes BEFORE the index write would land, so the write is
   sequenced FIRST and the writer emits `index-dir-updated` for the affected dir (`EmitDirUpdated`, which rides the same
-  writer channel so it fires only after the upsert/delete commits). The existing FE refresh path
-  (`index-dir-updated` → `refreshIndexSizes` → `getDirStatsBatch`) re-reads the just-written sizes. The coupling is
-  one-directional: the listing layer notifies the indexer, never the reverse.
+  writer channel so it fires only after the upsert/delete commits). The existing FE refresh path (`index-dir-updated` →
+  `refreshIndexSizes` → `getDirStatsBatch`) re-reads the just-written sizes. The coupling is one-directional: the
+  listing layer notifies the indexer, never the reverse.
 - **Single-writer + reads-off-the-lock.** `apply_smb_change` only ENQUEUES on the volume's existing writer thread; it
   never opens a write connection. Id resolution uses the volume's `ReadPool`, never the registry lock. It's synchronous
   (all local DB reads + channel enqueues, no network round trip), so it's safe inline from the sync
@@ -112,8 +112,7 @@ lifetime, not just while a pane shows the share, so the index must update even w
   root-scoped `FullRefresh`; the index path fires `OverflowUnrecoverable` ⇒ Stale (the watcher only ever signals
   overflow for the share ROOT, so a full rescan is the only honest repair). Overflow is a DIFFERENT code path from a
   disconnect (`WatcherDied`) — never conflated. `on_smb_watcher_died` / `on_smb_overflow` (in `smb/index.rs`) fire the
-  freshness events and bump `current_epoch`; the freshness state machine is owned by
-  `../lifecycle/DETAILS.md`.
+  freshness events and bump `current_epoch`; the freshness state machine is owned by `../lifecycle/DETAILS.md`.
 
 ## MTP (`mtp/`)
 
@@ -128,11 +127,11 @@ the device's stable `serial_number` (`mtp-{serial}` — re-matches on a replug t
 `location_id` (`mtp-{location_id}` — same-port-only fallback when no serial is reported). The volume id stays
 `{device_id}:{storage_id}`.
 
-**Parser audit (the riskiest part).** A serial CAN contain `:`, which a naive `split(':').nth(1)` mis-reads. The
-storage id is ALWAYS the trailing numeric component, so `split_volume_id` splits on the LAST `:` (`rsplit_once`) and
-parses the tail as a `u32`. Every former split routes through `identity`. The device id is OPAQUE — `connect()` resolves
-it to a `location_id` by matching the live enumeration, never by decoding it. (`identity` lives in the top-level `mtp`
-module, not here; the read-side `paths::routing` and this watch layer both consume it.)
+**Parser audit (the riskiest part).** A serial CAN contain `:`, which a naive `split(':').nth(1)` mis-reads. The storage
+id is ALWAYS the trailing numeric component, so `split_volume_id` splits on the LAST `:` (`rsplit_once`) and parses the
+tail as a `u32`. Every former split routes through `identity`. The device id is OPAQUE — `connect()` resolves it to a
+`location_id` by matching the live enumeration, never by decoding it. (`identity` lives in the top-level `mtp` module,
+not here; the read-side `paths::routing` and this watch layer both consume it.)
 
 ### Enable (`mtp/index.rs`)
 
@@ -167,8 +166,7 @@ by the stored handle. PTP events are device-wide but storages are separate names
   re-fires). A handle can be buffered for the wrong storage, but its replay resolve fails cleanly.
 - **Path space — no mount-strip.** The MTP resolver produces storage-relative paths (`/DCIM/Camera`) and the index
   `ROOT_ID` is the storage root, so `apply_mtp_*` resolves against the index directly. The read-side `index_read_path`
-  strips the `mtp://{device}/{storage}` scheme prefix off listing/dir-stats paths (owned by
-  `../paths/DETAILS.md`).
+  strips the `mtp://{device}/{storage}` scheme prefix off listing/dir-stats paths (owned by `../paths/DETAILS.md`).
 - The rest matches SMB verbatim: enqueue on the volume's writer, index write before the `index-dir-updated` emit, reads
   off the `ReadPool`, buffer-during-scan (`SCAN_CHANGE_BUFFER`, 50,000, overflow ⇒ Stale) replayed after aggregation,
   discard-on-interrupt.
@@ -193,15 +191,15 @@ substring: resolve the volume through `host::volumes`, read its mount root, and 
 fs-type from `detect_filesystem_for_path`). Either ⇒ fall through to the SMB gate (a network mount must never run the
 local guarded walker). Neither ⇒ `LocalExternal`, indexed via `start_indexing_for_local_external_inner` →
 `start_indexing_for(.., LocalExternal, inodes_trustworthy)`, then `enforce_external_index_cap` (retention, owned by
-`../resources/DETAILS.md`). The pure routing decision (`routes_to_local_external`) is split from the
-wiring so it's unit-testable against a `FakeVolumeProvider`. Disk images are INCLUDED: a mounted DMG is a real
-local filesystem; the first-connect prompt stays `isDriveRow`-gated so a DMG is only ever indexed by an explicit enable.
+`../resources/DETAILS.md`). The pure routing decision (`routes_to_local_external`) is split from the wiring so it's
+unit-testable against a `FakeVolumeProvider`. Disk images are INCLUDED: a mounted DMG is a real local filesystem; the
+first-connect prompt stays `isDriveRow`-gated so a DMG is only ever indexed by an explicit enable.
 
 **The fs-type probe is timeout-guarded** (2 s, on the blocking pool): a hung network mount's `statfs` must never stall
 the IPC thread, and a timed-out/errored probe is treated as network → fall through (safe). The same probe also yields
 the drive's inode-trust fact (`FilesystemKind::has_stable_inodes()`, false for FAT/exFAT), threaded to the scan as
-`inodes_trustworthy` so its entries store `inode: None` (see `../paths/DETAILS.md` `trust_inode`, and the
-FAT/exFAT rationale below).
+`inodes_trustworthy` so its entries store `inode: None` (see `../paths/DETAILS.md` `trust_inode`, and the FAT/exFAT
+rationale below).
 
 `LocalExternal` is the first volume that is BOTH local-scanned AND mount-rooted, non-journaled, and non-search-feeding.
 Journal replay is gated on `kind.has_event_journal()`, NOT `stored_event_id.is_some()`: the shared local event loop
@@ -216,20 +214,20 @@ content into an empty file changes it, and a delete+create ALIASES a fresh, unre
 The live rename pre-pass (`detect_renames_by_inode` → `MoveEntryV2`) keys off inode identity, so a derived inode would
 both MISS real renames and, worse, FALSE-MATCH an inode-reused delete+create as a move — silently re-homing the deleted
 entry's `dir_stats` onto the unrelated new file (index corruption). The fix keys off the volume's filesystem, not the
-per-rename outcome: `has_stable_inodes()` is resolved ONCE per scan and threaded via `IndexPathSpace::trust_inode`, which
-every local write path funnels a snapshot's inode through. With no stored inode `find_entry_by_inode` can never match, so
-the pre-pass is inert and every change falls back to the safe delete+create path (a renamed DIRECTORY loses its
-`dir_stats` and re-accrues them — rare, self-heals via verification). Rename-stable formats (APFS, HFS+, ext4/btrfs/XFS/
-ZFS, NTFS) keep the real inode.
+per-rename outcome: `has_stable_inodes()` is resolved ONCE per scan and threaded via `IndexPathSpace::trust_inode`,
+which every local write path funnels a snapshot's inode through. With no stored inode `find_entry_by_inode` can never
+match, so the pre-pass is inert and every change falls back to the safe delete+create path (a renamed DIRECTORY loses
+its `dir_stats` and re-accrues them — rare, self-heals via verification). Rename-stable formats (APFS, HFS+,
+ext4/btrfs/XFS/ ZFS, NTFS) keep the real inode.
 
 ### Unmount/eject lifecycle (the wedge-safe ordering)
 
 **The constraint this defends (the 2026-07-15 incident).** A `LocalExternal` index holds an FSEvents watcher and open
 SQLite handles rooted at the drive's mount (`/Volumes/X`). On 2026-07-15, `diskutil unmount` on a physical FAT32 card
-wedged macOS 26's userspace FSKit `msdos` service *mid-unmount*, held kernel vnode locks, and kernel-panicked the
+wedged macOS 26's userspace FSKit `msdos` service _mid-unmount_, held kernel vnode locks, and kernel-panicked the
 machine. An open FSEvents stream / SQLite handle on the volume at the moment of unmount is exactly the kind of open
 reference that can wedge the FSKit unmount. So the index MUST be stopped — watcher dropped, writer drained, handles
-closed — while the filesystem is still healthy, i.e. BEFORE the unmount. The wedge happens *during* unmount, so no
+closed — while the filesystem is still healthy, i.e. BEFORE the unmount. The wedge happens _during_ unmount, so no
 post-unmount hook can undo it.
 
 **Three hooks, only one reliable.** Each releases the watcher + handles and preserves the DB on disk (a later remount +
@@ -254,5 +252,5 @@ the picker, so a `Fresh→Stale` transition would pop the one-time stale dialog 
 **The drain is cooperative, so the ORDERING is what protects — not the drain.** `IndexManager::shutdown`'s cancel is
 cooperative and does NOT join the scan thread, so a scan worker already blocked inside a wedged FSKit `read_dir` won't
 block the drain (good) but also can't be interrupted and may still hold vnode locks. So the protection is the eject-stop
-*ordering* (release the watcher + handles while the FS is healthy), NOT the drain making a mid-wedge unmount safe. Test
+_ordering_ (release the watcher + handles while the FS is healthy), NOT the drain making a mid-wedge unmount safe. Test
 with synthetic disk images ONLY (never a real physical FAT card — that's what panicked the machine).

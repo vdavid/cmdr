@@ -1,7 +1,7 @@
 # Indexing read side
 
-Serve recursive sizes and index status back to the app. Everything here reads via the per-volume `ReadPool`
-(lock-free thread-local connections), NEVER the lifecycle registry lock.
+Serve recursive sizes and index status back to the app. Everything here reads via the per-volume `ReadPool` (lock-free
+thread-local connections), NEVER the lifecycle registry lock.
 
 ## Must-knows
 
@@ -30,8 +30,10 @@ Serve recursive sizes and index status back to the app. Everything here reads vi
 
 ## Module map
 
-- `enrichment.rs` — the `ReadPool` type + `enrich_entries_with_index[_on_volume]` (integer-keyed fast path, per-path fallback).
-- `queries.rs` — the IPC read surface (`get_status`, `get_volume_index_status*`, `get_dir_stats*`); no registry mutation.
+- `enrichment.rs` — the `ReadPool` type + `enrich_entries_with_index[_on_volume]` (integer-keyed fast path, per-path
+  fallback).
+- `queries.rs` — the IPC read surface (`get_status`, `get_volume_index_status*`, `get_dir_stats*`); no registry
+  mutation.
 - `expected_totals.rs` — index-derived copy/move/delete progress denominators.
 - `pending_sizes.rs` — the "size updating" hourglass `PendingSizes` marked-set + its held-roots tier.
 

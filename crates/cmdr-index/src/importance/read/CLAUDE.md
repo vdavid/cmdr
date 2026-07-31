@@ -1,9 +1,9 @@
 # Importance read API
 
-`ImportanceIndex` is the ONE way a consumer (the in-app agent, media-ML enrichment, `search/` ranking, the MCP
-resource) reaches folder importance. `mod.rs` holds the handle, the typed lookup, the ranked reads, `scored_volume_ids`,
-and the recompute subscription. ❌ Don't add a second reader, and ❌ don't take a raw `rusqlite` dep on `importance.db`
-anywhere else.
+`ImportanceIndex` is the ONE way a consumer (the in-app agent, media-ML enrichment, `search/` ranking, the MCP resource)
+reaches folder importance. `mod.rs` holds the handle, the typed lookup, the ranked reads, `scored_volume_ids`, and the
+recompute subscription. ❌ Don't add a second reader, and ❌ don't take a raw `rusqlite` dep on `importance.db` anywhere
+else.
 
 ## Must-knows
 
@@ -13,9 +13,9 @@ anywhere else.
 - **`lookup` returns typed `WeightLookup::{Scored, Floored(FloorReason), Unscored}`.** The store keeps NO row for a
   floored folder, so `Floored` is derived LIVE from the path; `Unscored` means genuinely not scored. ❌ Don't collapse
   the two — `weight_for` already flattens both to `None` for callers that only want the scalar.
-- **`explain` re-scores the STORED signals through the pure scorer**, so a breakdown can't drift from the stored
-  scalar. Open the index with the volume kind's `SignalSet` (`scheduler::signal_availability`) or an SMB folder's
-  breakdown won't sum to its stored score.
+- **`explain` re-scores the STORED signals through the pure scorer**, so a breakdown can't drift from the stored scalar.
+  Open the index with the volume kind's `SignalSet` (`scheduler::signal_availability`) or an SMB folder's breakdown
+  won't sum to its stored score.
 - **`for_each_nonzero_weight` STREAMS `(path, score)`; ❌ never materialize a `path → score` map here.** One measured
   368,043-folder NAS volume costs 58 MB as a map, and each streamed `path` borrows SQLite's row buffer, so a row
   allocates nothing. Floored folders are omitted, so a consumer must treat "absent" as `0.0`.

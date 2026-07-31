@@ -18,8 +18,8 @@ disposable-cache rule and the floor doctrine are in `../CLAUDE.md`.
   change to what rows or JSON the store persists, not only for a `CREATE TABLE` change.
 - **`needs_initial_full_pass` must force the WRITE-path open FIRST, then read the generation.** ❌ Never a read-path
   generation probe: the recreate is lazy and write-path only, so a read probe sees the OUTGOING schema's stamped
-  generation, skips the pass, and the recreate then wipes it — the volume sticks at "never scored" forever. The
-  ordering and why the sweep binds here: `../scheduler/DETAILS.md` § The initial full pass.
+  generation, skips the pass, and the recreate then wipes it — the volume sticks at "never scored" forever. The ordering
+  and why the sweep binds here: `../scheduler/DETAILS.md` § The initial full pass.
 - **A floored folder gets NO row**, and a kept row's `FolderSignals` JSON is trimmed to its non-default fields. A read
   that assumes one row per folder is the bug; the read side re-derives floored-ness (`../read/CLAUDE.md`).
 

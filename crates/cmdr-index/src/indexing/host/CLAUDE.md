@@ -27,8 +27,8 @@ index is being extracted into a Tauri-free crate, and this directory is what it 
   `set_config` applies it. The `CMDR_*` env knobs are the one exception (developer diagnostics).
 - **Every seam degrades, none panics.** No provider ⇒ nothing mounted, no policy ⇒ nothing competing, no sink ⇒ events
   dropped, no config ⇒ `data_dir()` errors. Each is a case callers already handle, so tests and tools install nothing.
-- **Vocabulary moves down; questions become seams.** `cmdr_fs::volume::{smb_volume_id, mtp_ids}` is pure string work,
-  so it sits with the volume types. If you can compute it from a `&str`, it isn't a seam.
+- **Vocabulary moves down; questions become seams.** `cmdr_fs::volume::{smb_volume_id, mtp_ids}` is pure string work, so
+  it sits with the volume types. If you can compute it from a `&str`, it isn't a seam.
 
 ## Module map
 

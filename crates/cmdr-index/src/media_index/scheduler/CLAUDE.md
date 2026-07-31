@@ -35,5 +35,4 @@ Subsystem-wide invariants (deletion doctrine, the scope model, `should_stop`) ar
   `patch_touched_dirs`); ❌ don't just invalidate, or the next slider preview re-pays a whole-index walk.
 
 Pass anatomy, the parallel-enrichment measurements, importance ordering, defer-until-scored, live-tick guardrails, and
-reclaim: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or
-advising.
+reclaim: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

@@ -32,10 +32,10 @@ instance, not the source.
 Two watchers run during `pnpm dev`, each with its own shield (don't delete either):
 
 - The **Tauri CLI** watches `src-tauri/` and every in-workspace path dependency (`crates/cmdr-index/`,
-  `crates/cmdr-fs/`, `crates/fsevent-stream/`), and rebuilds + restarts the whole app on any change in any of them.
-  The repo-root `.taurignore` (gitignore syntax) excludes `*.md`, because 150+ colocated `CLAUDE.md` / `DETAILS.md`
-  files live next to the code they describe and every docs edit used to restart the app. It sits at the ROOT rather
-  than in `src-tauri/`: the CLI builds one matcher over the common ancestor of all watch folders, so a shield inside
+  `crates/cmdr-fs/`, `crates/fsevent-stream/`), and rebuilds + restarts the whole app on any change in any of them. The
+  repo-root `.taurignore` (gitignore syntax) excludes `*.md`, because 150+ colocated `CLAUDE.md` / `DETAILS.md` files
+  live next to the code they describe and every docs edit used to restart the app. It sits at the ROOT rather than in
+  `src-tauri/`: the CLI builds one matcher over the common ancestor of all watch folders, so a shield inside
   `src-tauri/` leaves every crate uncovered. Verified empirically (2026-07-31, `@tauri-apps/cli` 2.11.4): with the
   shield in `src-tauri/` the watcher logged "File crates/cmdr-index/CLAUDE.md changed. Rebuilding application..."; with
   it at the root, markdown edits under both trees are silent while `.rs` edits still rebuild. The CLI reads it once at

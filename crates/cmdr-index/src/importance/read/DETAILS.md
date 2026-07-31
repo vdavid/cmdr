@@ -1,11 +1,11 @@
 # Importance read API — details
 
-The canonical consumer entry point for folder importance. Read this before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+The canonical consumer entry point for folder importance. Read this before any non-trivial work here: editing, planning,
+reorganizing, or advising.
 
 `ImportanceIndex` mirrors `search/`→`indexing/`: a read-only handle that owns a `platform_case`-registered read
-connection over `importance.db` (thread-local, opened lazily, keyed by DB path), so no consumer takes a raw
-`rusqlite` dep on the store. The agent and media-ML plans point here rather than restating (single-source,
+connection over `importance.db` (thread-local, opened lazily, keyed by DB path), so no consumer takes a raw `rusqlite`
+dep on the store. The agent and media-ML plans point here rather than restating (single-source,
 `.claude/rules/docs.md`).
 
 `READ_CONNS` is a small per-thread LRU (`sqlite_util::ThreadConnCache`, three slots), not one connection: a thread that
@@ -53,8 +53,8 @@ still good, and only a re-weighting consumer loses the raw vector for that one r
 
 - **Search ranking.** `search/` blends these weights into result ordering (a file takes its parent folder's weight),
   streaming one `for_each_nonzero_weight` snapshot per recompute via `subscribe`. Match quality dominates; importance is
-  a within-band boost. The blend design, weight-map lifecycle, and degradation contract live in `apps/desktop/src-tauri/src/search/DETAILS.md`
-  § "Importance ranking" (single-source).
+  a within-band boost. The blend design, weight-map lifecycle, and degradation contract live in
+  `apps/desktop/src-tauri/src/search/DETAILS.md` § "Importance ranking" (single-source).
 - **The MCP `cmdr://importance` resource.** It exposes `lookup` / `top_n` / `above_threshold` / `top_above_threshold` /
   `explain` / `scored_folder_count` to agents, enumerating scored volumes offline via `scored_volume_ids` (the
   `importance-{id}.db` files on disk) and opening each index with the kind's `signal_availability` mask so `explain`
@@ -63,9 +63,9 @@ still good, and only a re-weighting consumer loses the raw vector for that one r
 - **Media-ML enrichment.** It orders its passes by importance and asks "has importance scored this volume?" through the
   row count, not the generation (`../../media_index/coverage.rs`'s `importance_scored`).
 
-`scored_volume_ids(data_dir)` lists the volume ids with an `importance.db` on disk, root first then the rest sorted.
-The stores outlive their volume's mount by design, so this is the offline-capable roster: no live scheduler, index
-registry, or mount needed. MTP is never background-scored, so no `importance-mtp-*.db` exists to list.
+`scored_volume_ids(data_dir)` lists the volume ids with an `importance.db` on disk, root first then the rest sorted. The
+stores outlive their volume's mount by design, so this is the offline-capable roster: no live scheduler, index registry,
+or mount needed. MTP is never background-scored, so no `importance-mtp-*.db` exists to list.
 
 ## Offline-unmounted reads (plan Decision 2)
 

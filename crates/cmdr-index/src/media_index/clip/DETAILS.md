@@ -48,16 +48,17 @@ decode to 224 and hands the pixel buffer to the CLIP worker thread. Persistence 
 (`apply_media_upsert`): `upsert` writes the Vision row (identity + `engine_version` + OCR/tags/feature-print);
 `upsert_clip` stamps `clip_stamp` + replaces `media_clip_embedding`, touching NO Vision column. A CLIP encode that can't
 run yet (model still loading) yields `clip: None`, so the pass leaves `clip_stamp` unstamped and retries next pass — it
-never fails the whole analysis on a transient CLIP miss. The `clip_stamp` reaches the passes via `EnrichGates.clip_stamp`
-/ `NetworkEnrichCtx.clip_stamp`, read once per pass from `clip::current_stamp(data_dir)`. The whole-store
-`enrich_and_gc` wrapper is Vision-only (CLIP-agnostic, `clip_stamp: None`) and test-only now; production reaches the
-scoped core directly with the installed stamp.
+never fails the whole analysis on a transient CLIP miss. The `clip_stamp` reaches the passes via
+`EnrichGates.clip_stamp` / `NetworkEnrichCtx.clip_stamp`, read once per pass from `clip::current_stamp(data_dir)`. The
+whole-store `enrich_and_gc` wrapper is Vision-only (CLIP-agnostic, `clip_stamp: None`) and test-only now; production
+reaches the scoped core directly with the installed stamp.
 
 ## The semantic-search on/off gate + delete-model
 
-Semantic search is a real user toggle (`gate::semantic_search_enabled`, an atomic ON by default, seeded from the FE-owned
-`mediaIndex.semanticSearch.enabled` at startup and live-applied by `media_index_set_semantic_search_enabled` in
-`apps/desktop/src-tauri/src/commands/media_index/policy.rs`). Downloading the model is no longer the de-facto opt-in — the toggle is.
+Semantic search is a real user toggle (`gate::semantic_search_enabled`, an atomic ON by default, seeded from the
+FE-owned `mediaIndex.semanticSearch.enabled` at startup and live-applied by `media_index_set_semantic_search_enabled` in
+`apps/desktop/src-tauri/src/commands/media_index/policy.rs`). Downloading the model is no longer the de-facto opt-in —
+the toggle is.
 
 **One atomic, both sides.** The gate is enforced at exactly two seams so read and write can't disagree:
 
@@ -81,8 +82,8 @@ the shared on-disk `clip-model` dir (both towers), then, for EVERY volume with a
 `prune_all_clip` deletes every embedding AND resets every `media_status.clip_stamp` to `''` in one transaction —
 resetting the stamp is what makes a later re-download re-embed (the row goes CLIP-stale again against the reinstalled
 stamp). Vision data (status/OCR/tags/feature print) is untouched, and CLIP embeddings aren't part of the `accounted`
-aggregate (that counts `media_status` rows), so no aggregate delta. After the delete,
-`media_index_clip_model_status` reads `installed: false`, so the UI returns to the download affordance.
+aggregate (that counts `media_status` rows), so no aggregate delta. After the delete, `media_index_clip_model_status`
+reads `installed: false`, so the UI returns to the download affordance.
 
 ## The Core ML towers + worker thread (`macos.rs`)
 

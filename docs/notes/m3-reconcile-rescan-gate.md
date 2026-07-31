@@ -4,8 +4,8 @@ Status: gate complete. Recommendation: **GO**, full (reconcile for all volume ki
 constraint (single bottom-up coverage recompute, not per-dir propagation). Measured 2026-06-25 on the
 `index-reconcile-rescan` worktree.
 
-Throwaway gate artifacts (review, then delete or promote): `crates/cmdr-index/src/indexing/reconcile_bench.rs`
-(perf, `#[ignore]`d), `crates/cmdr-index/src/indexing/reconcile_correctness.rs` (correctness, runs in CI). Wired in
+Throwaway gate artifacts (review, then delete or promote): `crates/cmdr-index/src/indexing/reconcile_bench.rs` (perf,
+`#[ignore]`d), `crates/cmdr-index/src/indexing/reconcile_correctness.rs` (correctness, runs in CI). Wired in
 `indexing/mod.rs`.
 
 ## TL;DR

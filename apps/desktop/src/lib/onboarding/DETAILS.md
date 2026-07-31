@@ -283,7 +283,7 @@ After the user decides:
   true, the gate is open at boot, and both the indexer and icon fetches run normally with no popups.
 
 The Tauri command is idempotent. See `src-tauri/src/fda_gate.rs`, `src-tauri/src/volumes/CLAUDE.md` § "FDA gate", and
-`crates/cmdr-index/src/indexing/CLAUDE.md` § "Defer indexer auto-start".
+`crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § "FDA-deferred root auto-start".
 
 ## Mount + onboarding flag
 

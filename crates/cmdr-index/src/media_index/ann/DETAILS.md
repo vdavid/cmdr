@@ -69,21 +69,22 @@ millisecond at k = 10.
 (no whole-corpus `Vec`), single-threaded on purpose (spike: 71 s per 200k; usearch `add` is thread-safe, so a parallel
 build is a future lever), polls the memory watchdog's cancel every 1,024 adds (deliberately NOT `gate::should_stop`:
 queries can't kick a rebuild while the master toggle is off, and the watchdog cancel is the "release resources now"
-signal that matters). Triggered by the query-side route whenever the index is missing, corrupt, or
-sidecar-incompatible; search answers exactly via the fallback until it lands. `expansion_search` scales stepwise with
-corpus size (`expansion_search_for`: 128 ≤ 300k, 256 ≤ 700k, 512 beyond — the spike's recall-vs-ef curve).
+signal that matters). Triggered by the query-side route whenever the index is missing, corrupt, or sidecar-incompatible;
+search answers exactly via the fallback until it lands. `expansion_search` scales stepwise with corpus size
+(`expansion_search_for`: 128 ≤ 300k, 256 ≤ 700k, 512 beyond — the spike's recall-vs-ef curve).
 
 **Versioning + lifecycle:** the sidecar pins `ANN_FORMAT_VERSION` and the space's model id (`CLIP_MODEL_ID`, no OS
 component — OS-drift re-embeds flow through writer upserts row by row), so a model bump or index-format change reads as
 `MetaIncompatible` and rebuilds. The index is versioned independently of `SCHEMA_VERSION`, and the disposable-cache
 paths all take it along: `MediaStore::delete_and_recreate` (schema wipe), `PruneAllClip` (delete model), `PurgeVolume`,
-and the crashed-session wipe. `cache` holds the query-side route + warm view per volume, invalidated and dropped
-through `vector::cache`'s `invalidate` / `clear_all` rather than its own seams (`../vector/DETAILS.md`), so every
-existing invalidation site stays correct without naming this layer.
+and the crashed-session wipe. `cache` holds the query-side route + warm view per volume, invalidated and dropped through
+`vector::cache`'s `invalidate` / `clear_all` rather than its own seams (`../vector/DETAILS.md`), so every existing
+invalidation site stays correct without naming this layer.
 
 ## Testing
 
-`tests.rs` pins the flush/rebuild races real red→green: `a_flush_during_an_in_flight_rebuild_retains_ops_and_replays_them_after`,
+`tests.rs` pins the flush/rebuild races real red→green:
+`a_flush_during_an_in_flight_rebuild_retains_ops_and_replays_them_after`,
 `a_shutdown_during_an_in_flight_rebuild_keeps_the_marker_and_the_next_spawn_wipes`, and
 `a_rename_touches_neither_the_index_nor_the_dirty_marker_and_hits_follow`. **Measured on real embeddings** (M6
 verification, 2026-07-24, M3 Max): the harness `real_corpus_recall_and_latency` runs against copies of the real

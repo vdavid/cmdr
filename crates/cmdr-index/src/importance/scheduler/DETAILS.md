@@ -119,11 +119,11 @@ rescore** of only the touched folders, so a single file edit doesn't re-walk-and
 
 ### The event source (documented choice)
 
-There is no clean in-process per-directory hook in `indexing/`: the reconciler
-reports directory changes only via `IndexEvent::DirsUpdated` to the frontend, and the writer/aggregation `emit_dir_updated`
-sites aren't uniformly volume-aware. So, exactly as the full pass uses `publish_scan_completed` alongside the frontend
-`.emit`, there is a per-volume `dir-changed` channel on `indexing/lifecycle/lifecycle_bus.rs` (`publish_dirs_changed`),
-published from the **live-change sites where `volume_id` is in scope**: the live event loop (FSEvents batches, under
+There is no clean in-process per-directory hook in `indexing/`: the reconciler reports directory changes only via
+`IndexEvent::DirsUpdated` to the frontend, and the writer/aggregation `emit_dir_updated` sites aren't uniformly
+volume-aware. So, exactly as the full pass uses `publish_scan_completed` alongside the frontend `.emit`, there is a
+per-volume `dir-changed` channel on `indexing/lifecycle/lifecycle_bus.rs` (`publish_dirs_changed`), published from the
+**live-change sites where `volume_id` is in scope**: the live event loop (FSEvents batches, under
 `indexing/watch/event_loop/`) and the per-navigation verifier. The scan-completion `/`-refresh emits stay on the
 full-recompute path (already covered by `ScanCompleted`), so incremental captures exactly the "listing changed while
 running" signal. The scheduler subscribes via `subscribe_dirs_changed` and coalesces bursts per volume (accumulating
@@ -132,26 +132,27 @@ don't block each other).
 
 ### Rescoping and the ancestor cap
 
-For each changed path the touched set is the folder itself plus its ancestor chain
-(`touched_folder_set`, because a project marker or size/mtime change can raise parents) UNION each changed path's whole
-descendant subtree (`is_in_changed_subtree`, because a floor transition flips the whole subtree). The ancestor walk is
-capped at `ANCESTOR_WALK_CAP` (32) levels per changed path: a project marker appearing deep in a tree could otherwise
-raise every ancestor to the root and rescope half the volume (plan open-question); the downward side is bounded by the
-subtree that actually changed. The pass walks the index once, filters to the touched subset, clears each changed
-subtree, and re-inserts only its non-floored folders. Spotlight is sampled only for the touched subset (bounded work).
+For each changed path the touched set is the folder itself plus its ancestor chain (`touched_folder_set`, because a
+project marker or size/mtime change can raise parents) UNION each changed path's whole descendant subtree
+(`is_in_changed_subtree`, because a floor transition flips the whole subtree). The ancestor walk is capped at
+`ANCESTOR_WALK_CAP` (32) levels per changed path: a project marker appearing deep in a tree could otherwise raise every
+ancestor to the root and rescope half the volume (plan open-question); the downward side is bounded by the subtree that
+actually changed. The pass walks the index once, filters to the touched subset, clears each changed subtree, and
+re-inserts only its non-floored folders. Spotlight is sampled only for the touched subset (bounded work).
 
 **The downward expansion is only as bounded as the batch is.** The batch arrives on `dir-changed`, which carries the
 ORIGIN dirs — those whose OWN listings changed — and NOT their ancestor closure; that contract is canonical in
 `indexing/lifecycle/DETAILS.md` § The lifecycle bus, and it is what keeps `is_in_changed_subtree` proportional. Feed the
-same code an ancestor and it rescores that ancestor's entire subtree: `incremental_scope_follows_the_changed_dir_not_its_ancestors`
-pins both sides on one synthetic volume (5 rows from the origin, all 423 from the closure).
+same code an ancestor and it rescores that ancestor's entire subtree:
+`incremental_scope_follows_the_changed_dir_not_its_ancestors` pins both sides on one synthetic volume (5 rows from the
+origin, all 423 from the closure).
 
 **Clear and insert must agree, and they do because both read the SAME `changed_paths` slice** — the de-duplicated one,
-since `dedupe_nested_origins` runs before either. `write_weights_incremental` clears each entry's subtree; the row set is
-`in_changed_subtree` (plus, on the full-walk path, `touched`) over the same entries, so the cleared region is always a
-SUBSET of what gets re-inserted (the touched ancestors add rows outside the cleared region, which is harmless — the
-insert is an upsert on the folded PK). ❌ Never narrow `is_in_changed_subtree` (or widen the clear list) independently: a
-clear wider than the insert deletes rows nothing re-adds, and the weights vanish silently until the next full pass.
+since `dedupe_nested_origins` runs before either. `write_weights_incremental` clears each entry's subtree; the row set
+is `in_changed_subtree` (plus, on the full-walk path, `touched`) over the same entries, so the cleared region is always
+a SUBSET of what gets re-inserted (the touched ancestors add rows outside the cleared region, which is harmless — the
+insert is an upsert on the folded PK). ❌ Never narrow `is_in_changed_subtree` (or widen the clear list) independently:
+a clear wider than the insert deletes rows nothing re-adds, and the weights vanish silently until the next full pass.
 De-duplication is safe here precisely because it changes neither side: `subtree(P/x) ⊆ subtree(P)`.
 
 **A floor transition reaches the renamed folder through its PARENT.** The live pipeline reports the parent as the
@@ -170,21 +171,20 @@ cost: a bare prefix test matches `/a/bc` against changed `/a/b` and drags a sibl
 
 ### Transition semantics
 
-Clearing each changed subtree and then re-inserting handles every floor transition in one
-model: a folder RENAMED AWAY or DELETED has its old-path row cleared and is never re-inserted (it's not in the current
-walk); a folder that BECAME floored (renamed to `node_modules`, say) and its now-under-floored descendants are cleared
-then skipped on re-insert, so no stale positive-score row survives under a fresh `node_modules`; a folder that STOPPED
-being floored and its descendants are cleared (they had no row anyway) then inserted because they now score. Both floor
-directions are TDD'd (`incremental_deletes_rows_that_become_floored`,
-`incremental_scores_rows_that_stop_being_floored`) — the likeliest bug site. A full pass replaces the whole table
-instead, which purges any folder that floored or vanished since the last pass. The clear's range math is a property of
-the folded PK: `../store/DETAILS.md` § The folded-key primary key.
+Clearing each changed subtree and then re-inserting handles every floor transition in one model: a folder RENAMED AWAY
+or DELETED has its old-path row cleared and is never re-inserted (it's not in the current walk); a folder that BECAME
+floored (renamed to `node_modules`, say) and its now-under-floored descendants are cleared then skipped on re-insert, so
+no stale positive-score row survives under a fresh `node_modules`; a folder that STOPPED being floored and its
+descendants are cleared (they had no row anyway) then inserted because they now score. Both floor directions are TDD'd
+(`incremental_deletes_rows_that_become_floored`, `incremental_scores_rows_that_stop_being_floored`) — the likeliest bug
+site. A full pass replaces the whole table instead, which purges any folder that floored or vanished since the last
+pass. The clear's range math is a property of the folded PK: `../store/DETAILS.md` § The folded-key primary key.
 
 ### Generation semantics on the incremental path
 
-An incremental pass writes its rows at the CURRENT generation and does NOT bump it, so every
-untouched folder keeps its as-of marker and the volume doesn't turn wholesale-stale after a one-file change. Only a full
-pass advances the generation.
+An incremental pass writes its rows at the CURRENT generation and does NOT bump it, so every untouched folder keeps its
+as-of marker and the volume doesn't turn wholesale-stale after a one-file change. Only a full pass advances the
+generation.
 
 ### The batch gate (the idle floor)
 
@@ -206,8 +206,8 @@ can't disagree about what scores. **Decision/Why the accepted lossiness:** filte
 unfloored ancestors `touched_folder_set` would have pulled in from it, and the one signal that can move for such an
 ancestor is `has_marker_below` (a project marker appearing inside a floored subtree — `propagate_marker_to_ancestors`
 doesn't stop at a floor). We accept it: a marker buried in machine output is the weakest reason to raise a folder,
-importance is advisory, and the next full pass heals it. The rationale and the test (`a_batch_of_only_floored_churn_is_dropped_whole`)
-live with the function.
+importance is advisory, and the next full pass heals it. The rationale and the test
+(`a_batch_of_only_floored_churn_is_dropped_whole`) live with the function.
 
 ### The incremental never escalates on `/`
 
@@ -215,11 +215,11 @@ live with the function.
 is not a signal that the whole volume changed. `sanitize_incremental_batch` drops `/` (and empty strings) at the
 incremental boundary before `touched_folder_set` / `write_weights_incremental` see it; a batch that was only `/` is a
 no-op. Full recomputes are `ScanCompleted`-driven only — the incremental path never calls `run_pass_blocking`.
-**Gotcha/Why:** treating `/` as a full-refresh sentinel
-(escalate to a whole-volume rewrite) meant that because the root volume live-watches `/`, where macOS FSEvent churn is
-near-continuous, `/` arrived in almost every batch and full recomputes ran back-to-back forever — pegging a core and
-starving the index-DB WAL checkpoint (its `wal_checkpoint(TRUNCATE)` kept losing to importance's long read), which
-surfaced as `stall_probe::sqlite_busy` WARN bursts. ❌ Don't reintroduce a `/`→full-pass escalation.
+**Gotcha/Why:** treating `/` as a full-refresh sentinel (escalate to a whole-volume rewrite) meant that because the root
+volume live-watches `/`, where macOS FSEvent churn is near-continuous, `/` arrived in almost every batch and full
+recomputes ran back-to-back forever — pegging a core and starving the index-DB WAL checkpoint (its
+`wal_checkpoint(TRUNCATE)` kept losing to importance's long read), which surfaced as `stall_probe::sqlite_busy` WARN
+bursts. ❌ Don't reintroduce a `/`→full-pass escalation.
 
 ### The scoped walk (`scoped_walk.rs`)
 
@@ -233,8 +233,8 @@ against 6.4 s / 5.5 s for a full walk.
 
 - **`under_floored_ancestor` needs no walk.** A folder's ancestors are exactly the prefixes of its absolute path, and
   each one's name is that prefix's last component, so `classify::under_floored_ancestor` (pure path math, shared with
-  `floors_by_path`) sees a flooring ancestor far above the subtree root. It matches `propagate_floor_to_descendants`
-  by construction: same seeds, same root boundary, same names.
+  `floors_by_path`) sees a flooring ancestor far above the subtree root. It matches `propagate_floor_to_descendants` by
+  construction: same seeds, same root boundary, same names.
 - **`has_marker_below` is exact inside a subtree**, which is downward-closed, so `propagate_marker_to_ancestors` runs
   unchanged over the scoped tree. Ancestor-chain rows are in the tree (paths reconstruct through them) but are NOT
   folders, so the climb simply stops being recorded once it leaves the subtree.
@@ -286,9 +286,9 @@ an origin too and it has a stored row.
 **The differential.** `differential.rs` runs both walks over one real index and compares the rows each WOULD write for
 the same subtree — path, score, and signal blob — at a fixed `now_secs` (the recency signal moves scores with the wall
 clock). The `importance-diff` dev bin (`crates/index-query`) drives it and reports counts and timings only, never a
-folder name. Verified 2026-07-29: zero disagreements over 964 sampled origins (764 of the 611,699-folder root index,
-200 of the 391,563-folder NAS index; 9,384 rows compared). Every transition scenario in `incremental_transition_tests.rs` runs twice, once per
-walk, and asserts the two stores come out identical.
+folder name. Verified 2026-07-29: zero disagreements over 964 sampled origins (764 of the 611,699-folder root index, 200
+of the 391,563-folder NAS index; 9,384 rows compared). Every transition scenario in `incremental_transition_tests.rs`
+runs twice, once per walk, and asserts the two stores come out identical.
 
 **Known gap, pre-existing:** the subtree clear folds the path (`path_folded` is the PK) while `is_in_changed_subtree` /
 `touched_folder_set` compare bytes, so an origin spelled in a different case than the index holds it clears rows that
@@ -351,9 +351,9 @@ The scheduler tests run over synthetic indexes with no FFI and no registry, spli
   whole-tree oracle.
 - `incremental_tests.rs` — rescoping, the ancestor cap, and the `/` sanitization, over synthetic walks.
 - `incremental_transition_tests.rs` — the whole pass over a REAL mutable index DB, every scenario run under BOTH walks
-  and differenced: marker created / deleted, renamed to and away from `node_modules`, a change under a floored
-  ancestor, a change at the volume root, a batch spanning unrelated subtrees, an origin deleted between publish and
-  pass, a case-variant origin, and nested-origin de-duplication.
+  and differenced: marker created / deleted, renamed to and away from `node_modules`, a change under a floored ancestor,
+  a change at the volume root, a batch spanning unrelated subtrees, an origin deleted between publish and pass, a
+  case-variant origin, and nested-origin de-duplication.
 - `walk_memory_tests.rs` — the walk's per-folder byte and allocation ceilings.
 - `test_support.rs` — the shared synthetic-index builders.
 

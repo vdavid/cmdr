@@ -110,34 +110,58 @@ cmdr-fsevent-stream = { path = "../fsevent-stream" }
 core-foundation = "0.10.1"
 objc2 = { version = "0.6", features = ["std"] }
 objc2-foundation = { version = "0.3", features = [
-    "NSArray", "NSDictionary", "NSString", "NSURL", "NSValue", "NSProcessInfo",
+  "NSArray",
+  "NSDictionary",
+  "NSString",
+  "NSURL",
+  "NSValue",
+  "NSProcessInfo",
 ] }
 # Media-index OCR + image classification: real Vision text recognition and
 # feature prints (`media_index/backend/vision.rs`).
 objc2-vision = { version = "0.3.2", features = [
-    "VNRequest", "VNRequestHandler", "VNRecognizeTextRequest", "VNObservation",
-    "VNClassifyImageRequest", "VNGenerateImageFeaturePrintRequest", "VNTypes",
-    "objc2-core-graphics",
+  "VNRequest",
+  "VNRequestHandler",
+  "VNRecognizeTextRequest",
+  "VNObservation",
+  "VNClassifyImageRequest",
+  "VNGenerateImageFeaturePrintRequest",
+  "VNTypes",
+  "objc2-core-graphics",
 ] }
 # In-memory ImageIO decode + downscale, so OCR never whole-buffers a 48-megapixel
 # photo's bitmap.
 objc2-image-io = { version = "0.3.2", features = ["CGImageSource", "objc2-core-graphics"] }
 objc2-core-graphics = { version = "0.3.2", features = [
-    "CGImage",
-    # CLIP image preprocessing: render the decoded CGImage into a 224x224 RGB
-    # bitmap (resize + center-crop) to feed the image tower.
-    "CGColorSpace", "CGContext", "CGBitmapContext",
+  "CGImage",
+  # CLIP image preprocessing: render the decoded CGImage into a 224x224 RGB
+  # bitmap (resize + center-crop) to feed the image tower.
+  "CGColorSpace",
+  "CGContext",
+  "CGBitmapContext",
 ] }
 objc2-core-foundation = { version = "0.3.2", features = [
-    "CFData", "CFDictionary", "CFString", "CFNumber", "CFBase", "CFCGTypes",
+  "CFData",
+  "CFDictionary",
+  "CFString",
+  "CFNumber",
+  "CFBase",
+  "CFCGTypes",
 ] }
 # Media-index CLIP semantic search: on-device Core ML inference for the text +
 # image towers (`media_index/clip/`). The CLIP spike proved this exact version
 # round-trips bit-identically (`docs/notes/clip-coreml-rust-spike.md`).
 objc2-core-ml = { version = "0.3.2", features = [
-    "MLModel", "MLModel_MLModelCompilation", "MLModelConfiguration", "MLModelDescription",
-    "MLFeatureDescription", "MLMultiArray", "MLFeatureValue", "MLFeatureProvider",
-    "MLDictionaryFeatureProvider", "MLPredictionOptions",
+  "MLModel",
+  "MLModel_MLModelCompilation",
+  "MLModelConfiguration",
+  "MLModelDescription",
+  "MLFeatureDescription",
+  "MLMultiArray",
+  "MLFeatureValue",
+  "MLFeatureProvider",
+  "MLDictionaryFeatureProvider",
+  "MLPredictionOptions",
 ] }
 
 [dev-dependencies]

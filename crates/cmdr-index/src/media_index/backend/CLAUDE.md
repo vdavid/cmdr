@@ -1,8 +1,8 @@
 # Vision backend seam
 
-The inference boundary the scheduler, store, and GC sit behind, so all of that is testable with no GPU/ANE/FFI.
-`mod.rs` defines the `VisionBackend` trait, `fake.rs` the deterministic impl, `vision/` the real macOS one
-(OCR + tags + feature print), `vision/spike.rs` the throughput measurement harness.
+The inference boundary the scheduler, store, and GC sit behind, so all of that is testable with no GPU/ANE/FFI. `mod.rs`
+defines the `VisionBackend` trait, `fake.rs` the deterministic impl, `vision/` the real macOS one (OCR + tags + feature
+print), `vision/spike.rs` the throughput measurement harness.
 
 ## Must-knows
 
@@ -25,8 +25,8 @@ The inference boundary the scheduler, store, and GC sit behind, so all of that i
 - **Provenance is ONE folded stamp.** `analysis_stamp` combines the OCR, classify, and feature-print revisions plus the
   OS version; `needs_enrichment` keys on it, so any component bump re-runs the whole analysis. Adding an output means
   folding its revision in, or an OS change silently leaves stale derived data.
-- **Every test injects `FakeVisionBackend`** (deterministic, zero-FFI), which is ALSO the production fallback
-  off-macOS. New trait methods need a fake impl, or the whole suite loses its seam.
+- **Every test injects `FakeVisionBackend`** (deterministic, zero-FFI), which is ALSO the production fallback off-macOS.
+  New trait methods need a fake impl, or the whole suite loses its seam.
 
-The Vision request details, the analyze outputs, the taxonomy evidence, and the FFI notes: `DETAILS.md`.
-Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+The Vision request details, the analyze outputs, the taxonomy evidence, and the FFI notes: `DETAILS.md`. Read it before
+any non-trivial work here: editing, planning, reorganizing, or advising.

@@ -10,8 +10,8 @@ search-generation bump. Other areas point here.
   `AccumulatorMaps`, `WRITER_GENERATION` + `MutationTracker`, SQLite busy handler, `ProbeStats` heartbeat.
 - **entries.rs** (insert/upsert/move/delete/truncate), **delta.rs** (`propagate_delta_by_id` +
   `propagate_min_subtree_epoch` + `propagate_recursive_has_symlinks`), **aggregation.rs** (`Compute*`/`Backfill` →
-  `../aggregator/`), **repair.rs** (`repair_dir_stats_upward`), **deferred_repair.rs**, **maintenance.rs** (vacuum +
-  WAL checkpoint), **wait_probe.rs** (writer-queue wait accounting).
+  `../aggregator/`), **repair.rs** (`repair_dir_stats_upward`), **deferred_repair.rs**, **maintenance.rs** (vacuum + WAL
+  checkpoint), **wait_probe.rs** (writer-queue wait accounting).
 
 ## Must-knows (all hold PER volume id)
 

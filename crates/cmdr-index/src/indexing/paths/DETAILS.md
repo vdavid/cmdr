@@ -19,8 +19,8 @@ mount root. `firmlinks::normalize_path` on `event.path` is likewise boot-disk-on
 `IndexPathSpace` is the ONE seam that teaches the pipeline the mount-relative path space. It's built once per scan/loop
 from the volume's kind + root + inode-trust (`IndexPathSpace::for_volume`) and threaded through `scan_completion` → the
 reconciler + live loop, and through `manager::start_scan` → the scanner + local reconcile. It stores its space AS an
-`ExclusionScope` (owned by `../scanner/DETAILS.md`) and reads the mount root back through it, so the path space and
-the exclusion gate can't disagree about where the volume begins. Operations:
+`ExclusionScope` (owned by `../scanner/DETAILS.md`) and reads the mount root back through it, so the path space and the
+exclusion gate can't disagree about where the volume begins. Operations:
 
 - **`absolute(raw)`** — the canonical ABSOLUTE path in this volume's world: `firmlinks::normalize_path` for the boot
   disk, identity for a mount-rooted drive (no firmlink normalization). This is what every path SET holds.
@@ -32,8 +32,8 @@ the exclusion gate can't disagree about where the volume begins. Operations:
   scope carries the volume ROOT, so the root-position pseudo-filesystem skip works on every volume.
 - **`is_boot_disk()`** — read back from the scope's mount root. The shallow-`MustScanSubDirs` sweep window branches on
   this (the once-a-day window is boot-disk-only; policy owned by `../reconcile/DETAILS.md`).
-- **`volume_root_string()`** — `/Volumes/X` for a mount-rooted drive, `/` for the boot disk; stored as the
-  `volume_path` meta.
+- **`volume_root_string()`** — `/Volumes/X` for a mount-rooted drive, `/` for the boot disk; stored as the `volume_path`
+  meta.
 
 **The three-path-spaces discipline (the trap).** The SAME path string lives in three spaces in the live loop /
 reconciler: `store::resolve_path` wants the **index-relative** path; `read_dir` / `Path::exists` / `symlink_metadata`
@@ -41,11 +41,11 @@ want the **absolute FS** path; `emit_dir_updated` / the FE `index-dir-updated` p
 match pane paths). So the mount-relative strip is applied ONLY at each `resolve_abs` argument — `affected_paths` /
 `pending_paths` / `new_dir_paths` and every dedup key stay ABSOLUTE (via `absolute()`). Applying the strip at set
 insertion breaks the FS reads and the FE emit; omitting it breaks resolution. This is why the discipline is
-load-bearing, and why the mount-relative resolution tests pin both the miss (`root` space drops a `/Volumes/X` path)
-and the fix (`mount_rooted` space resolves it).
+load-bearing, and why the mount-relative resolution tests pin both the miss (`root` space drops a `/Volumes/X` path) and
+the fix (`mount_rooted` space resolves it).
 
-**Root-only sites left as `BootDisk` / `ROOT_VOLUME_ID` (deliberate).** Journal replay (gated on `has_event_journal()`
-= boot disk only), post-replay background verification, and the per-navigation verifier don't run for a `LocalExternal`
+**Root-only sites left as `BootDisk` / `ROOT_VOLUME_ID` (deliberate).** Journal replay (gated on `has_event_journal()` =
+boot disk only), post-replay background verification, and the per-navigation verifier don't run for a `LocalExternal`
 volume, so their `ROOT_VOLUME_ID` / boot-disk scope stays. Replay still threads the space (it's `root` today) so it
 resolves in the same space as the live loop that follows. Write-side storage is already mount-relative:
 `resolve_scan_root` maps a volume-root scan → `ROOT_ID` kind-agnostically, and the fresh scanner attributes children via
@@ -53,13 +53,13 @@ the carried `parent_id`, so a mount-rooted fresh scan naturally stores `EntryRow
 name (mirroring SMB/MTP).
 
 **The inode-trust axis.** `IndexPathSpace` also carries `inodes_trustworthy`, resolved once per scan from the volume's
-`FilesystemKind` (via `transports::local_external::classify`; see `../transports/DETAILS.md`). Only a
-FAT/exFAT local external drive is `false`. `trust_inode(raw)` is the single choke point every local write path funnels a
-snapshot's inode through before persisting it: the raw inode on a trustworthy filesystem, `None` on FAT/exFAT. With no
-stored inode the local rename pre-pass can never match, so an inode-reused delete+create can't become a false
-`MoveEntryV2` that re-homes a deleted entry's `dir_stats`. The boot disk (APFS) and every trait-scanned volume (SMB/MTP,
-which don't run the local pre-pass) are `true`. `for_volume` / `mount_rooted` default to trustworthy;
-`with_inodes_trustworthy` carries the FAT/exFAT fact.
+`FilesystemKind` (via `transports::local_external::classify`; see `../transports/DETAILS.md`). Only a FAT/exFAT local
+external drive is `false`. `trust_inode(raw)` is the single choke point every local write path funnels a snapshot's
+inode through before persisting it: the raw inode on a trustworthy filesystem, `None` on FAT/exFAT. With no stored inode
+the local rename pre-pass can never match, so an inode-reused delete+create can't become a false `MoveEntryV2` that
+re-homes a deleted entry's `dir_stats`. The boot disk (APFS) and every trait-scanned volume (SMB/MTP, which don't run
+the local pre-pass) are `true`. `for_volume` / `mount_rooted` default to trustworthy; `with_inodes_trustworthy` carries
+the FAT/exFAT fact.
 
 ## `index_read_path` — the read side (`routing.rs`)
 
@@ -88,9 +88,9 @@ into index-relative space before the partial-aggregate send, so the same transfo
 id its volume and index register under:
 
 1. **SMB** — `transports::smb::index::smb_volume_id_for_path` (probes the mount, keys by `(server, port, share)`).
-2. **MTP** — `mtp_volume_id_for_path`, the pure `mtp://` half: strip the scheme, take the first two `/`-segments, require
-   the storage segment to parse as a `u32` (so a malformed `mtp://` path doesn't resolve to a bogus volume), yield
-   `{device}:{storage}`.
+2. **MTP** — `mtp_volume_id_for_path`, the pure `mtp://` half: strip the scheme, take the first two `/`-segments,
+   require the storage segment to parse as a `u32` (so a malformed `mtp://` path doesn't resolve to a bogus volume),
+   yield `{device}:{storage}`.
 3. **Local external mount** — `external_mount_volume_id_for_path`: fast-reject with
    `scanner::is_on_mounted_external_volume` (a pure prefix check, no registry lock) so ONLY a path under an excluded
    mount prefix (`/Volumes`, `/mnt`, `/media`) can leave `root`, then route by the host's volume registry

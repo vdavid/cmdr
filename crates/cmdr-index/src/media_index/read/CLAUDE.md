@@ -22,5 +22,5 @@ answers OFFLINE after a volume unmounts. ❌ Don't add a second reader elsewhere
 - **The reads are query-side only; they must not write.** Cache warming and invalidation belong to the pass seams
   (`../vector/CLAUDE.md`).
 
-Each entry point's contract, the case-matching caveat, and the semantic-search route: `DETAILS.md`. Read it
-before any non-trivial work here: editing, planning, reorganizing, or advising.
+Each entry point's contract, the case-matching caveat, and the semantic-search route: `DETAILS.md`. Read it before any
+non-trivial work here: editing, planning, reorganizing, or advising.

@@ -1,8 +1,8 @@
 # Indexing transports
 
-Per-transport enable + live-watch wiring. Each transport builds on the shared machinery (the `network_scanner` trait
-BFS for SMB/MTP, the local `scanner` + `watch` pipeline for local-external) and differs only in HOW a volume is enabled
-and HOW live changes arrive.
+Per-transport enable + live-watch wiring. Each transport builds on the shared machinery (the `network_scanner` trait BFS
+for SMB/MTP, the local `scanner` + `watch` pipeline for local-external) and differs only in HOW a volume is enabled and
+HOW live changes arrive.
 
 ## Must-knows
 
@@ -25,8 +25,8 @@ and HOW live changes arrive.
   `user_disabled` marker is written ONLY at the explicit disable command, NEVER inside `stop_indexing` (which also runs
   on eject, unmount, an interrupted scan, the memory watchdog, and the master switch going off).
 - **FAT/exFAT `LocalExternal` drives store `inode: None`** (via `IndexPathSpace::trust_inode`): a reused derived inode
-  false-matches the local rename pre-pass and corrupts `dir_stats`. `classify` decides local-external vs SMB-fall-through
-  from TYPED facts (a live smb2 session, or a network fs-type), never a volume-id/path substring.
+  false-matches the local rename pre-pass and corrupts `dir_stats`. `classify` decides local-external vs
+  SMB-fall-through from TYPED facts (a live smb2 session, or a network fs-type), never a volume-id/path substring.
 - **FSKit stop-before-unmount (2026-07-15 incident): stop a `LocalExternal` index BEFORE its volume unmounts.** An open
   FSEvents stream / SQLite handle at unmount can wedge the userspace FSKit service and kernel-panic the machine. The
   eject-stop ORDERING is the only reliable defense; test with synthetic disk images ONLY.
@@ -40,10 +40,10 @@ Sub-subdirs do NOT get their own docs; they're covered here.
 - `mtp/` — `index.rs` (enable, no gate), `watch.rs` (PTP-event live watch, gate-before-resolve, handle→removal).
 - `local_external/` — `index.rs` (enable + `classify`; the LOCAL scanner drives a mount-rooted drive).
 
-Owned elsewhere: the `Volume`-trait BFS scanner, scan pacing, NAS system-dir skips, and no-completion-on-empty-root
-live in `../network_scanner/CLAUDE.md` and `../reconcile/CLAUDE.md`; the freshness state machine, phase, registry,
-and `force_rescan` typed-kind routing in `../lifecycle/CLAUDE.md`; the live-change apply INTO the index and the event
-loop in `../watch/CLAUDE.md`; the mount-relative path transforms in `../paths/CLAUDE.md`; retention/eviction in
+Owned elsewhere: the `Volume`-trait BFS scanner, scan pacing, NAS system-dir skips, and no-completion-on-empty-root live
+in `../network_scanner/CLAUDE.md` and `../reconcile/CLAUDE.md`; the freshness state machine, phase, registry, and
+`force_rescan` typed-kind routing in `../lifecycle/CLAUDE.md`; the live-change apply INTO the index and the event loop
+in `../watch/CLAUDE.md`; the mount-relative path transforms in `../paths/CLAUDE.md`; retention/eviction in
 `../resources/CLAUDE.md`.
 
 SMB, MTP, and local-external enable + live watch: `DETAILS.md`. Read it before any non-trivial work here: editing,

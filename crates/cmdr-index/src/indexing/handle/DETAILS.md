@@ -18,11 +18,11 @@ quietly abandons the encapsulation. So every item got one of four dispositions, 
 
 ## Where it landed
 
-**34 public items on `Index`**, against a target of about 25. Over, and worth saying plainly rather than redefining
-what counts. What justifies the nine:
+**34 public items on `Index`**, against a target of about 25. Over, and worth saying plainly rather than redefining what
+counts. What justifies the nine:
 
-- **Four are the direct-database read side** (`read_pool`, `read_path`, `volume_id_for_path`, `search_generation`).
-  They exist because `search/` and the operation log's coverage check run their OWN SQL over an index database. They're
+- **Four are the direct-database read side** (`read_pool`, `read_path`, `volume_id_for_path`, `search_generation`). They
+  exist because `search/` and the operation log's coverage check run their OWN SQL over an index database. They're
   co-designed consumers sharing the schema, not API users, and a query API for them would have to grow a case per
   question. Grouping them behind a sub-handle would hit the number without changing the surface, which is the kind of
   bookkeeping this audit exists to avoid.
@@ -50,11 +50,11 @@ is supposed to BE the surface.
 ### Folded (the interesting ones)
 
 - **`is_active` + `master_enabled` + `is_failed` + `clear_index` + `is_mtp_volume_id` + `start_indexing` +
-  `start_indexing_for_mtp` + `start_indexing_for_local_external` + `LocalExternalEnable` + `start_indexing_for_smb`
-  ⇒ `Index::start_volume`.** The app's `enable_drive_index` command was doing the index's routing: classify the volume
-  id, try the local-external probe, fall through to the share gate, and rebuild a failed index on the way. All of that
-  is decided from the volume's own facts, which the index has. What stayed app-side is the mDNS kick, which is the
-  app's network layer.
+  `start_indexing_for_mtp` + `start_indexing_for_local_external` + `LocalExternalEnable` + `start_indexing_for_smb` ⇒
+  `Index::start_volume`.** The app's `enable_drive_index` command was doing the index's routing: classify the volume id,
+  try the local-external probe, fall through to the share gate, and rebuild a failed index on the way. All of that is
+  decided from the volume's own facts, which the index has. What stayed app-side is the mDNS kick, which is the app's
+  network layer.
 - **`is_active` + `force_scan` ⇒ `Index::rescan_volume`.** "Rescan now" on a drive that isn't indexing yet means "start
   it", and the caller shouldn't have to know that.
 - **`registered_mtp_volume_ids_for_device` + `buffer_mtp_handle_if_scanning` + `apply_mtp_added_or_changed` +
@@ -73,11 +73,11 @@ is supposed to BE the surface.
 - **`should_auto_start` + `set_master_enabled` ⇒ `IndexBuilder::indexing_enabled`.** The stored setting is
   configuration, so it arrives at build time (Decision 9) rather than as a setter the host has to remember to call
   first.
-- **`should_auto_start_indexing` + `start_indexing` ⇒ `Index::start_root_at_launch(fda_pending)`.** The host answers
-  the permission question; the index composes it with the master switch and acts.
+- **`should_auto_start_indexing` + `start_indexing` ⇒ `Index::start_root_at_launch(fda_pending)`.** The host answers the
+  permission question; the index composes it with the master switch and acts.
 - **`init` ⇒ absorbed by `IndexBuilder::build`.** An API whose first rule is "call `init()` or else" isn't one.
-- **`stop_all_indexing` ⇒ absorbed by `Index::set_indexing_enabled(false)`.** Turning the master switch off and
-  stopping every volume were always one action; two exports let a caller do half of it.
+- **`stop_all_indexing` ⇒ absorbed by `Index::set_indexing_enabled(false)`.** Turning the master switch off and stopping
+  every volume were always one action; two exports let a caller do half of it.
 - **`WRITER_GENERATION` (a `pub` atomic) ⇒ `Index::search_generation()`.** A cache-validity counter, not a static.
 - **`get_read_pool` ⇒ `Index::read_pool(ROOT_VOLUME_ID)`.** The root-only variant of a per-volume call.
 - **`expected_totals_for_sources` ⇒ `Index::expected_totals`.** A read of the index, so it belongs on the handle.
@@ -106,25 +106,25 @@ is supposed to BE the surface.
 
 **1. `store` is wholesale public, and `IndexStore` keeps 28 methods.** `search/` is a product surface that stays
 app-side and runs its own SQL over an index database: it opens connections, walks `idx_parent`, and reads `meta`. That
-is a schema dependency, not an API one, and pretending otherwise would mean a query facade with a case per question
-that changes every time search's ranking does. Eleven of the 21 module-level items in `store/` were reachable for no
-reason and are now `pub(crate)`; what's left is the vocabulary an outside reader genuinely uses. **Follow-up**: when a
+is a schema dependency, not an API one, and pretending otherwise would mean a query facade with a case per question that
+changes every time search's ranking does. Eleven of the 21 module-level items in `store/` were reachable for no reason
+and are now `pub(crate)`; what's left is the vocabulary an outside reader genuinely uses. **Follow-up**: when a
 machine-checked public-item ceiling lands, count `store` separately and decide whether the schema surface wants its own
 crate-level module doc rather than being counted against the handle.
 
-**2. `IndexError::Internal(Diagnostic)`.** The internals below the facade still report a formatted diagnostic for
-causes no caller acts on (a poisoned registry lock, a database open failure). Every cause a caller CAN act on has its
-own variant — `NotIndexed`, `NotConfigured`, `UnsupportedVolume` — and nothing matches on the text. Converting the
-residue means typing the failures inside `lifecycle/state.rs` and `read/queries.rs`, which is a separate change with
-its own risk; this is the honest interim, not the end state.
+**2. `IndexError::Internal(Diagnostic)`.** The internals below the facade still report a formatted diagnostic for causes
+no caller acts on (a poisoned registry lock, a database open failure). Every cause a caller CAN act on has its own
+variant — `NotIndexed`, `NotConfigured`, `UnsupportedVolume` — and nothing matches on the text. Converting the residue
+means typing the failures inside `lifecycle/state.rs` and `read/queries.rs`, which is a separate change with its own
+risk; this is the honest interim, not the end state.
 
 ## The platform story: no `cfg` on the surface
 
-`Index`'s signature is identical on every platform. The `cfg`s that used to sit on
-14 root re-exports are gone: `SmbIndexGateReason` needed none in the first place (the SMB transport module was never
-platform-gated, only its re-export was), and the MTP and local-external routing that IS gated now lives inside method
-bodies, where a platform without those transports simply falls through. `start_volume` reaches the share gate directly
-there, and `on_device_object_changed` / `on_watch_gap(Device(..))` no-op.
+`Index`'s signature is identical on every platform. The `cfg`s that used to sit on 14 root re-exports are gone:
+`SmbIndexGateReason` needed none in the first place (the SMB transport module was never platform-gated, only its
+re-export was), and the MTP and local-external routing that IS gated now lives inside method bodies, where a platform
+without those transports simply falls through. `start_volume` reaches the share gate directly there, and
+`on_device_object_changed` / `on_watch_gap(Device(..))` no-op.
 
 **Why it matters beyond tidiness**: `#![deny(missing_docs)]` is a per-platform lint. A `cfg`-gated public item can be
 documented on macOS and undocumented on Linux, and nothing on a Mac would ever say so. That is not hypothetical here —
@@ -133,13 +133,13 @@ milestone is where it surfaced.
 
 ## The gated surface
 
-`indexing::testing` (`#[doc(hidden)] pub mod`, behind the `testing` feature) is the one door for test reach-through:
-the fake host seams, the recording sink, the scan and writer entry points a real-backend test drives, the registry-slot
+`indexing::testing` (`#[doc(hidden)] pub mod`, behind the `testing` feature) is the one door for test reach-through: the
+fake host seams, the recording sink, the scan and writer entry points a real-backend test drives, the registry-slot
 reservation, and the macOS disk-image fixture.
 
-**Why a feature and not `#[cfg(test)]`.** `cfg(test)` is set only while a crate compiles its OWN test target. The
-moment the index is a dependency, every `cfg(test)` item vanishes from its consumers' test builds — silently, at the
-worst possible milestone. This trap has fired three times in this effort. `tempfile` joins the gated surface because
+**Why a feature and not `#[cfg(test)]`.** `cfg(test)` is set only while a crate compiles its OWN test target. The moment
+the index is a dependency, every `cfg(test)` item vanishes from its consumers' test builds — silently, at the worst
+possible milestone. This trap has fired three times in this effort. `tempfile` joins the gated surface because
 `reserve_initializing_index_for_test` hands a `TempDir` back, so it's an optional normal dependency the feature turns
 on, not a dev-dependency.
 
@@ -156,10 +156,10 @@ manages — but every public item got a decision.
 
 ### Where they landed
 
-| | public modules | public items |
-| --- | --- | --- |
-| `media_index` | 14 → **11** | 142 → **51** |
-| `importance` | 8 → **3** | 65 → **23** |
+|               | public modules | public items |
+| ------------- | -------------- | ------------ |
+| `media_index` | 14 → **11**    | 142 → **51** |
+| `importance`  | 8 → **3**      | 65 → **23**  |
 
 ### `media_index`
 
@@ -191,9 +191,9 @@ manages — but every public item got a decision.
 ### The rule the gates follow
 
 **`#[cfg(test)]` when every consumer is inside the crate; a feature only when one lives outside.** Using a feature for
-an in-crate consumer is not harmless: the app enables `testing` for every dev target, so the item exists in the
-non-test lib build with nothing calling it, and `#[deny(unused)]` turns it into an error. That is how the four
-`ImportanceStore` accessors and the two `MediaStore` ones landed on plain `#[cfg(test)]`.
+an in-crate consumer is not harmless: the app enables `testing` for every dev target, so the item exists in the non-test
+lib build with nothing calling it, and `#[deny(unused)]` turns it into an error. That is how the four `ImportanceStore`
+accessors and the two `MediaStore` ones landed on plain `#[cfg(test)]`.
 
 ### What narrowing the modules exposed
 
@@ -207,10 +207,10 @@ invisible behind a `pub mod`:
 - **Tooling-only, and now saying so**: `MeasureOutcome`, `recompute_index_to_db`, the whole `differential` module,
   `classify::under_floored_paths`, `scorer::extension_count`.
 - **Kept with the reason written down**: `MediaWriter::{rename_path, purge_volume}` and their `WriteMessage` variants
-  have no production sender — `rename_path`'s own doc says the rename-following hook it exists for isn't wired yet, so
-  a rename still manifests as GC(old) + enrich(new). Same shape as `WriteMessage::PropagateDeltaById` on the drive
-  index: a supported capability, not an accident.
+  have no production sender — `rename_path`'s own doc says the rename-following hook it exists for isn't wired yet, so a
+  rename still manifests as GC(old) + enrich(new). Same shape as `WriteMessage::PropagateDeltaById` on the drive index:
+  a supported capability, not an accident.
 - **`WriterRegistry::shutdown_all` has no caller, in either subsystem.** Its doc says "called on app teardown so the
-  writer threads join", and no teardown path calls it. Not a data-loss gap (every write is flushed as it is applied,
-  and each writer stops when its last handle drops), but the documented teardown does not happen. Wiring it is a
+  writer threads join", and no teardown path calls it. Not a data-loss gap (every write is flushed as it is applied, and
+  each writer stops when its last handle drops), but the documented teardown does not happen. Wiring it is a
   shutdown-ordering decision, not a visibility one.

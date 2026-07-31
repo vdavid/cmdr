@@ -821,10 +821,10 @@ and the app reaches the index only through `index_host::index()`. What the plan 
 - **`media_index` and `importance` were audited on the same terms.** `media_index` went from 14 public modules / 142
   items to 11 / 51, `importance` from 8 / 65 to 3 / 23, and the plan's second gated bucket (`tooling`, for
   `index-query`'s three importance binaries) now exists alongside `testing`. A second reach that would have broken at
-  the move turned up there and is folded away: `commands/media_index/file_status.rs` reached `scheduler::enrich`
-  through a `pub(crate) mod`, and is now one `media_index::read::qualifying_images_for_paths` call. Narrowing the
-  modules also made the shipped build honest about nine items hidden behind a `pub mod` — see the audit for which were
-  deleted, which are tooling-only, and which are kept with a reason.
+  the move turned up there and is folded away: `commands/media_index/file_status.rs` reached `scheduler::enrich` through
+  a `pub(crate) mod`, and is now one `media_index::read::qualifying_images_for_paths` call. Narrowing the modules also
+  made the shipped build honest about nine items hidden behind a `pub mod` — see the audit for which were deleted, which
+  are tooling-only, and which are kept with a reason.
 - **The gating rule the audit settled**: `#[cfg(test)]` while every consumer is inside the crate, a feature only when
   one lives outside. The app enables `testing` for every dev target, so a feature-gated item with only in-crate callers
   exists in the non-test lib build with nothing calling it, and `#[deny(unused)]` makes that an error.

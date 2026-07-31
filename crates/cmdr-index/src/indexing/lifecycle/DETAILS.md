@@ -11,33 +11,35 @@ concurrently without corrupting each other. Every invariant below holds independ
 - **state.rs** (+ `state/tests.rs`) — the lifecycle/registry CORE: the `IndexPhase` enum, the per-volume
   `INDEX_REGISTRY` (`Mutex<HashMap<VolumeId, IndexInstance>>`), `IndexVolumeKind`, the phase transitions, the registry
   helpers, and the `IndexManager` + `ReadPool` bootstrap. Public lifecycle API (all take a `volume_id`):
-  `start_indexing()` → `start_indexing_for(app, "root", "/")`, `stop_indexing`, `clear_index`, `force_scan`, `stop_scan`,
-  `is_active`, `trigger_verification`, plus `init()`, `should_auto_start_indexing()`, and `stop_all_indexing` (the memory
-  watchdog's target). The path→volume routing and the read-only query surface moved OUT to `../paths` and `../read`.
+  `start_indexing()` → `start_indexing_for(app, "root", "/")`, `stop_indexing`, `clear_index`, `force_scan`,
+  `stop_scan`, `is_active`, `trigger_verification`, plus `init()`, `should_auto_start_indexing()`, and
+  `stop_all_indexing` (the memory watchdog's target). The path→volume routing and the read-only query surface moved OUT
+  to `../paths` and `../read`.
 - **manager.rs** — `IndexManager`, the central per-volume coordinator, plus the LOCAL scan path and the shared dispatch.
-  Owns the SQLite store (reads), the writer thread (writes), the scanner handle, and the FSEvents watcher. `resume_or_scan`
-  / `force_rescan` dispatch by TYPED `IndexVolumeKind`: a trait-scanned (SMB/MTP) volume routes to `network_scan.rs`,
-  `Local`/`LocalExternal` to `start_scan` here. `start_scan` dispatches the guarded-walker scanner (fresh) or the
-  reconcile-in-place path (populated), and spawns the shared `ScanProgressReporter` (owned by `../events`). Both
-  scan-start funnels (here and `network_scan.rs`) classify the run with `events::ScanRunKind::classify` right after
-  deciding reconcile-vs-truncate: the kind rides `index-scan-started` (what the FE states) and picks the calibration
-  bucket this run reads its ETA seed from and writes its timing back into (`../store/DETAILS.md` § "Scan calibration is
-  stored PER WALK KIND"). The stashed `ScanCalibration` also surfaces the kind on `get_status`, so a mid-scan window
-  reload recovers it.
+  Owns the SQLite store (reads), the writer thread (writes), the scanner handle, and the FSEvents watcher.
+  `resume_or_scan` / `force_rescan` dispatch by TYPED `IndexVolumeKind`: a trait-scanned (SMB/MTP) volume routes to
+  `network_scan.rs`, `Local`/`LocalExternal` to `start_scan` here. `start_scan` dispatches the guarded-walker scanner
+  (fresh) or the reconcile-in-place path (populated), and spawns the shared `ScanProgressReporter` (owned by
+  `../events`). Both scan-start funnels (here and `network_scan.rs`) classify the run with
+  `events::ScanRunKind::classify` right after deciding reconcile-vs-truncate: the kind rides `index-scan-started` (what
+  the FE states) and picks the calibration bucket this run reads its ETA seed from and writes its timing back into
+  (`../store/DETAILS.md` § "Scan calibration is stored PER WALK KIND"). The stashed `ScanCalibration` also surfaces the
+  kind on `get_status`, so a mid-scan window reload recovers it.
 - **network_scan.rs** — the SMB/MTP `Volume`-trait scan path, split out as a sibling `impl IndexManager` block. Holds
-  `resume_or_scan_network` (a completed prior scan loads Stale and does NOT auto-rescan; a never-completed one scans) and
-  `start_volume_scan` (the scan/rescan entry plus its bespoke completion handler). Mirrors `start_scan` but walks via the
-  `../network_scanner` trait BFS, starts NO `DriveWatcher` (the live-watch layer owns that), and fires freshness through
-  the manager's own `freshness` `Arc` (no registry re-lock). `start_volume_scan` takes a `NetworkScanMode`: `Auto` picks
-  reconcile-vs-truncate by what the DB holds, `Rebuild` forces the truncate. `resume_or_scan_network` carries the two
-  jobs an index that loads Stale would otherwise never get: the one-shot `dir_stats` ledger heal (below, gated on its
-  `meta` marker and needing a `ComputeAllAggregates` to follow), and the one-time `Rebuild` for an index built under an
-  older NAS system-dir exclusion list. The rebuild wins when both apply: its own aggregate consumes the heal latch. If
-  the rebuild can't start (share unmounted, scan already running) we log and keep serving the existing index; nothing
-  stamps the DB until a rebuild actually truncates, so the next load re-arms. Triggers, name list, and the stamp are
-  canonical in `../network_scanner/DETAILS.md` § "NAS snapshot/system dirs aren't recursed".
+  `resume_or_scan_network` (a completed prior scan loads Stale and does NOT auto-rescan; a never-completed one scans)
+  and `start_volume_scan` (the scan/rescan entry plus its bespoke completion handler). Mirrors `start_scan` but walks
+  via the `../network_scanner` trait BFS, starts NO `DriveWatcher` (the live-watch layer owns that), and fires freshness
+  through the manager's own `freshness` `Arc` (no registry re-lock). `start_volume_scan` takes a `NetworkScanMode`:
+  `Auto` picks reconcile-vs-truncate by what the DB holds, `Rebuild` forces the truncate. `resume_or_scan_network`
+  carries the two jobs an index that loads Stale would otherwise never get: the one-shot `dir_stats` ledger heal (below,
+  gated on its `meta` marker and needing a `ComputeAllAggregates` to follow), and the one-time `Rebuild` for an index
+  built under an older NAS system-dir exclusion list. The rebuild wins when both apply: its own aggregate consumes the
+  heal latch. If the rebuild can't start (share unmounted, scan already running) we log and keep serving the existing
+  index; nothing stamps the DB until a rebuild actually truncates, so the next load re-arms. Triggers, name list, and
+  the stamp are canonical in `../network_scanner/DETAILS.md` § "NAS snapshot/system dirs aren't recursed".
 - **scan_completion.rs** — the post-scan handler: the vanished-volume abort and the LOCAL failure→Stale arm (below).
-- **freshness.rs** — the `Fresh`/`Stale`/`Scanning`/`Failed` transition table (`Freshness::on`) + `initial_freshness_on_launch`.
+- **freshness.rs** — the `Fresh`/`Stale`/`Scanning`/`Failed` transition table (`Freshness::on`) +
+  `initial_freshness_on_launch`.
 - **failure.rs** — `IndexFailureSignal`, the one-shot per-volume fatal-storage-error signal.
 - **lifecycle_bus.rs** — the neutral scan-completed / registration / dirs-changed pub/sub.
 
@@ -51,7 +53,8 @@ INDEX_REGISTRY: Mutex<HashMap<VolumeId, IndexInstance { phase, kind, read_pool, 
 (lock-free enrichment/verification reads), its `PendingSizes` (the "size updating" hourglass), and its freshness `Arc`.
 The registry is the single authority for WHICH volumes are indexed and for each volume's lifecycle. Every invariant the
 single-volume design held now holds per volume id, keyed independently so two volumes can't corrupt each other:
-single-writer-per-DB, lock-first reservation, drop-guard-before-drain, reads-via-`ReadPool`-never-under-the-lifecycle-lock.
+single-writer-per-DB, lock-first reservation, drop-guard-before-drain,
+reads-via-`ReadPool`-never-under-the-lifecycle-lock.
 
 **Disabled is the absence of a key.** There is no `IndexPhase::Disabled`. An `IndexInstance` only ever exists in
 `Initializing` / `Running` / `ShuttingDown` / `Failed`; a stopped or never-started volume has no entry. `get_status`/
@@ -59,11 +62,11 @@ single-writer-per-DB, lock-first reservation, drop-guard-before-drain, reads-via
 This is why IPC `get_index_status` for a stopped volume returns the same "not initialized" response a never-started one
 does.
 
-**Why a registry of bundled instances** (vs. three parallel `HashMap`s or a `DashMap`): bundling `{phase, read_pool,
-pending_sizes, freshness}` in one struct keyed by volume id means a volume's lifecycle phase and its read handles are
-taken/dropped together — no window where the phase says "Running" but the pool is gone. One `Mutex<HashMap>` (not
-`DashMap`) keeps the lock-discipline reasoning identical to the old single-`Mutex` model: the lock guards lifecycle
-transitions only, never reads.
+**Why a registry of bundled instances** (vs. three parallel `HashMap`s or a `DashMap`): bundling
+`{phase, read_pool, pending_sizes, freshness}` in one struct keyed by volume id means a volume's lifecycle phase and its
+read handles are taken/dropped together — no window where the phase says "Running" but the pool is gone. One
+`Mutex<HashMap>` (not `DashMap`) keeps the lock-discipline reasoning identical to the old single-`Mutex` model: the lock
+guards lifecycle transitions only, never reads.
 
 **Root's read-path handles are special-cased to module globals.** Root's `ReadPool` lives in the `READ_POOL` global and
 its `PendingSizes` in `PENDING_SIZES`; the root `IndexInstance` holds the SAME `Arc`s (one allocation, no drift). Two
@@ -86,8 +89,8 @@ call so they can't drift); the lifecycle-phase transitions here are the `IndexPh
 
 ## Capability axes (`IndexVolumeKind`)
 
-`IndexVolumeKind` has four variants (`Local`, `LocalExternal`, `Smb`, `Mtp`) and four orthogonal capability methods — the
-canonical per-kind table lives on the enum's doc comment, so branch on the axis, not the variant:
+`IndexVolumeKind` has four variants (`Local`, `LocalExternal`, `Smb`, `Mtp`) and four orthogonal capability methods —
+the canonical per-kind table lives on the enum's doc comment, so branch on the axis, not the variant:
 
 - `uses_local_scanner()` — the guarded walker + FSEvents pipeline (`Local`, `LocalExternal`) vs the `Volume`-trait
   scanner. Exact complement of `is_trait_scanned()` (`Smb`, `Mtp`); a partition test in `state.rs` pins that they never
@@ -107,17 +110,17 @@ volume's `ReadPool`/`PendingSizes`, then atomically claims the `(absent) → Ini
 spawns the writer thread). The reservation rejects when the volume already has ANY instance, so a second start for the
 SAME volume no-ops; different volumes reserve independently. Without the lock-first claim, two near-simultaneous calls
 for one volume can both spawn writer threads — each with its own `Arc<AtomicI64>` ID counter and `AccumulatorMaps` —
-racing on the same DB (one of the mechanisms behind a historical ghost-size bug; the other, two writers racing, is closed
-by this guard, with `UNIQUE (parent_id, name_folded)` as the safety net). The reservation also installs the volume's
-read-path handles so enrichment works during `Initializing`.
+racing on the same DB (one of the mechanisms behind a historical ghost-size bug; the other, two writers racing, is
+closed by this guard, with `UNIQUE (parent_id, name_folded)` as the safety net). The reservation also installs the
+volume's read-path handles so enrichment works during `Initializing`.
 
 **Drop the registry guard before the shutdown drain.** `stop_indexing(vid)` and `clear_index(vid)` swap the volume's
 phase to `ShuttingDown` under the registry lock (taking the `IndexManager` out by value), then RELEASE the lock before
 `mgr.shutdown()`. `shutdown()` blocks up to 5 s draining the live-event task. Holding `INDEX_REGISTRY` across that drain
 would stall every concurrent `get_status`/`is_active`/`trigger_verification` caller — for ANY volume — for the whole
-window and park a tokio worker, violating "reads never contend on the lifecycle lock." Dropping the guard mid-shutdown is
-safe because the live loop reads via `ReadPool` and never reacquires the registry lock; concurrent callers observe the
-published `ShuttingDown` phase (reported as not-initialized). After the drain, both re-lock only to `remove()` the
+window and park a tokio worker, violating "reads never contend on the lifecycle lock." Dropping the guard mid-shutdown
+is safe because the live loop reads via `ReadPool` and never reacquires the registry lock; concurrent callers observe
+the published `ShuttingDown` phase (reported as not-initialized). After the drain, both re-lock only to `remove()` the
 instance. Don't fold the drain back under a single held guard.
 
 **Drop the registry guard before the blocking scan-start, too.** `force_scan(vid)` and the journal-gap fallback task
@@ -144,9 +147,9 @@ Classify by the typed `kind`, never a volume-id substring.
 
 Local disk gets freshness free from FSEvents' journal (replay from `last_event_id` → Fresh on launch). SMB/MTP/external
 have NO journal — events arrive only while connected and watching, and any gap loses them irrecoverably — so freshness
-is binary: continuously-watched-since-scan ⇒ Fresh, any break ⇒ Stale. UI colors: **gray** = no registered instance
-(the "disabled = no key" model, NOT a `Freshness` variant); **blue** = `Scanning`; **green** = `Fresh`; **yellow** =
-`Stale`; **red** = `Failed`.
+is binary: continuously-watched-since-scan ⇒ Fresh, any break ⇒ Stale. UI colors: **gray** = no registered instance (the
+"disabled = no key" model, NOT a `Freshness` variant); **blue** = `Scanning`; **green** = `Fresh`; **yellow** = `Stale`;
+**red** = `Failed`.
 
 `Freshness::on(event)` is the single, total transition table (pure, exhaustively tested in `freshness::tests`). It lives
 on the `IndexInstance` as `Arc<Mutex<Option<Freshness>>>` so scan-transition tasks and the watcher layer can flip it
@@ -167,18 +170,18 @@ Load-bearing rules:
   non-journaled index (SMB/MTP/external) loads **Stale**, a journaled one (local) loads **Fresh**, no-completed-scan
   loads `None` (gray → fresh scan). Seeded at reservation from the volume `kind`. This is correct and honest, not a bug:
   we weren't watching while off.
-- **Scan transitions.** `ScanStarted` ⇒ Scanning; a CLEAN `ScanCompleted` ⇒ Fresh (only the `Ok` arm reaches it); a FAILED
-  LOCAL scan/reconcile ⇒ `ScanFailed` ⇒ Stale.
+- **Scan transitions.** `ScanStarted` ⇒ Scanning; a CLEAN `ScanCompleted` ⇒ Fresh (only the `Ok` arm reaches it); a
+  FAILED LOCAL scan/reconcile ⇒ `ScanFailed` ⇒ Stale.
 - **Failed LOCAL scan ⇒ Stale, never a stuck spinner** (`scan_completion.rs`). `start_scan`'s completion handler fires
   `ScanFailed` (through the cloned freshness handle, no registry re-lock) from `report_unfinished_scan`, on both failure
   arms: `Ok(Err(_))` (a typed `ScanError` like `EmptyRoot`, or a `catch_unwind`-converted `Panicked`) and `Err(_)`
   (thread-join panic). A CANCELLED scan never reaches it — `ScanError::Cancelled` is split off before, and keeps the
-  volume's prior freshness rather than reporting a failure. `ScanStarted`
-  already moved the badge to Scanning, so without this a failed scan strands it on a perpetual blue spinner until
-  relaunch. The prior index is NOT blanked; it gets the honest Stale "rescan available" badge and heals on rescan.
+  volume's prior freshness rather than reporting a failure. `ScanStarted` already moved the badge to Scanning, so
+  without this a failed scan strands it on a perpetual blue spinner until relaunch. The prior index is NOT blanked; it
+  gets the honest Stale "rescan available" badge and heals on rescan.
 - **Interrupted SMB/MTP scan: disconnect ⇒ keep an honest partial + Stale; user-cancel ⇒ heal-to-rescan (gray).** The
-  completion handler in `start_volume_scan` splits on `match result` (NOT a freshness-enum change — one transition table,
-  the handler just chooses WHICH event to apply):
+  completion handler in `start_volume_scan` splits on `match result` (NOT a freshness-enum change — one transition
+  table, the handler just chooses WHICH event to apply):
   - **Disconnect** (the typed `DeviceDisconnected`, or the consecutive-failure backstop — both classified by
     `VolumeScanError::is_terminal_disconnect`, by TYPED variant, never a substring): KEEP the instance + DB, leave
     `scan_completed_at` UNwritten, `bump_current_epoch_for` (the continuity break that makes the kept rows stale), apply
@@ -190,9 +193,8 @@ Load-bearing rules:
     across relaunch because `resume_or_scan_network` sees no `scan_completed_at` and RECONCILES (not truncates) the
     existing rows.
   - **User cancel** (`Err(VolumeScanError::Cancelled)`, which `is_terminal_disconnect` deliberately excludes): the
-    partial is discardable — `discard_buffered_changes` +
-    `state::reset_to_not_indexed` ⇒ gray, healing to a clean fresh scan on the next enable. (Timeout / writer-send /
-    non-disconnect root-fatal also take this discard path.)
+    partial is discardable — `discard_buffered_changes` + `state::reset_to_not_indexed` ⇒ gray, healing to a clean fresh
+    scan on the next enable. (Timeout / writer-send / non-disconnect root-fatal also take this discard path.)
 - **The watcher-driven transitions** (`WatcherDied`, `OverflowUnrecoverable`) fire from the transport live-watch layer
   (`../transports/CLAUDE.md`); this area owns only the transition table they feed.
 
@@ -231,9 +233,9 @@ DISTINCT from "absent = disabled" so the badge is honest, yet its writer/watcher
 (the signal is one-shot and `notified()` resolves even if the trip already happened, so a failure in the
 Initializing→Running window is never missed). On the trip it runs `fail_index`: uninstall + invalidate the read-path
 handles, take the manager OUT of the registry under the lock (publishing a transient `ShuttingDown`), DROP the lock,
-`mgr.shutdown()`, re-lock and install `IndexPhase::Failed`, then fire `set_phase_for(Failed)` + `apply_freshness_event(
-StorageFailed)`. Same drop-the-guard-before-the-drain discipline as `stop_indexing`. A no-op if the volume isn't
-`Running`.
+`mgr.shutdown()`, re-lock and install `IndexPhase::Failed`, then fire `set_phase_for(Failed)` +
+`apply_freshness_event( StorageFailed)`. Same drop-the-guard-before-the-drain discipline as `stop_indexing`. A no-op if
+the volume isn't `Running`.
 
 **Recovery is rebuild-from-scratch** (the index is a disposable cache). A `Failed` volume can't resume in place — its
 manager/writer are gone and the instance still holds the key, so a plain `start_indexing` would no-op. The
@@ -265,16 +267,17 @@ A minimal in-process pub/sub so a backend subsystem (the importance scheduler; l
 learns when a volume finished scanning, WITHOUT `indexing/` depending on it (the one-way `consumer → indexing`
 direction). This is the single canonical home for the mechanism; consumer docs point here.
 
-- **Published from the neutral chokepoint.** `apply_freshness_event_on` calls `lifecycle_bus::publish_scan_completed(vid)`
-  on a `ScanCompleted`, alongside the FE `.emit`. Both the LOCAL and network completion paths funnel through this seam.
-  It publishes on the EVENT, not on a freshness CHANGE: a Fresh→Fresh rescan completion still means new data to rescore.
-- **`tokio::sync::watch`, NOT `broadcast`.** A `broadcast` doesn't replay a value sent before a receiver subscribes, so a
-  `ScanCompleted` fired during `setup()` before the scheduler subscribes would be lost. A `watch` retains the last value.
-  The publish uses `send_replace` (not `send`), which updates the retained value even with zero receivers.
+- **Published from the neutral chokepoint.** `apply_freshness_event_on` calls
+  `lifecycle_bus::publish_scan_completed(vid)` on a `ScanCompleted`, alongside the FE `.emit`. Both the LOCAL and
+  network completion paths funnel through this seam. It publishes on the EVENT, not on a freshness CHANGE: a Fresh→Fresh
+  rescan completion still means new data to rescore.
+- **`tokio::sync::watch`, NOT `broadcast`.** A `broadcast` doesn't replay a value sent before a receiver subscribes, so
+  a `ScanCompleted` fired during `setup()` before the scheduler subscribes would be lost. A `watch` retains the last
+  value. The publish uses `send_replace` (not `send`), which updates the retained value even with zero receivers.
 - **Senders live in a module map, not `IndexInstance`.** A `watch::Sender` per volume id in a process-global `BUS`,
-  created lazily. Keeping it OUT of the instance is deliberate: the sender must outlive the instance so a subscriber that
-  took its receiver keeps seeing the last state after the volume unmounts. `ScanState` carries a monotonic `generation`
-  so a consumer can coalesce a repeat.
+  created lazily. Keeping it OUT of the instance is deliberate: the sender must outlive the instance so a subscriber
+  that took its receiver keeps seeing the last state after the volume unmounts. `ScanState` carries a monotonic
+  `generation` so a consumer can coalesce a repeat.
 - **The startup sweep is the bus's companion, not part of it.** A volume already Fresh at launch never re-fires
   `ScanCompleted`, so `state::ready_volumes_with_kind()` snapshots the volumes that are `Fresh` right now (with each
   volume's typed `IndexVolumeKind`) for the scheduler to enqueue once at startup.
@@ -287,8 +290,8 @@ direction). This is the single canonical home for the mechanism; consumer docs p
   importance scheduler's incremental-recompute trigger and the media index's live-tick trigger. Being a `watch`, a burst
   can drop an intermediate batch; accepted, because the next full recompute heals it.
 - **The `dir-changed` payload is the ORIGIN dirs, never their ancestor closure.** A live change carries two different
-  facts: *these directories' listings changed* (a small set: the changed entry's parent, plus the entry itself when it's
-  a new directory) and *these directories' recursive sizes need refreshing* (the first set plus every ancestor up to
+  facts: _these directories' listings changed_ (a small set: the changed entry's parent, plus the entry itself when it's
+  a new directory) and _these directories' recursive sizes need refreshing_ (the first set plus every ancestor up to
   `/`). The bus carries only the first; the second is rebuilt where it's needed by `reconciler::with_ancestor_closure`
   (the `index-dir-updated` emit and the "size updating" hourglass, both at the drain point in
   `watch/event_loop/live.rs`). **Gotcha/Why:** publishing the closure conflated them, and every batch therefore carried
@@ -303,14 +306,14 @@ policy.
 ## The IPC surface (resolved here, commands elsewhere)
 
 The per-drive freshness UX drives any drive through three thin `commands/indexing.rs` commands: `enable_drive_index`,
-`disable_drive_index`, `rescan_drive_index`. For root they map to `start_indexing`/`stop_indexing`/`force_scan`; SMB/MTP/
-local-external routing lives in `../transports/CLAUDE.md`. `enable`/`rescan` return
-`EnableIndexingOutcome` (`{ status: "started" }` or, for SMB, `{ status: "refused", reason: SmbIndexGateReason }`). The
-per-volume status IPC (`get_volume_index_status(path)` for the active-drive badge, `get_volume_index_status_by_id` for
-the dropdown rows) builds `VolumeIndexStatus { volume_id, enabled, freshness, scan_completed_at, scan_duration_ms,
-coalesced_signals_since_sweep, next_sweep_due_at }`: freshness from the registry, the scan facts from the persisted
-`meta`. `enabled: false` + `freshness: None` is gray. The path→volume resolution feeding these lives in
-`../paths/CLAUDE.md`.
+`disable_drive_index`, `rescan_drive_index`. For root they map to `start_indexing`/`stop_indexing`/`force_scan`;
+SMB/MTP/ local-external routing lives in `../transports/CLAUDE.md`. `enable`/`rescan` return `EnableIndexingOutcome`
+(`{ status: "started" }` or, for SMB, `{ status: "refused", reason: SmbIndexGateReason }`). The per-volume status IPC
+(`get_volume_index_status(path)` for the active-drive badge, `get_volume_index_status_by_id` for the dropdown rows)
+builds
+`VolumeIndexStatus { volume_id, enabled, freshness, scan_completed_at, scan_duration_ms, coalesced_signals_since_sweep, next_sweep_due_at }`:
+freshness from the registry, the scan facts from the persisted `meta`. `enabled: false` + `freshness: None` is gray. The
+path→volume resolution feeding these lives in `../paths/CLAUDE.md`.
 
 ## The two indexing switches
 
@@ -326,8 +329,8 @@ Canonical model; everywhere else points here. Two switches decide whether a volu
   on record before anything resumes it uninvited.
 
 Enforcement is one choke point: `start_indexing_for`, which all four transports funnel through, refuses while the master
-is off. Callers that answer a user get a typed refusal of their own instead of a silent no-op:
-`enable_drive_index` → `EnableIndexingOutcome::IndexingDisabled` (transport-neutral, so the FE has one shape to match),
+is off. Callers that answer a user get a typed refusal of their own instead of a silent no-op: `enable_drive_index` →
+`EnableIndexingOutcome::IndexingDisabled` (transport-neutral, so the FE has one shape to match),
 `start_indexing_for_smb` → `SmbIndexGateReason::IndexingDisabled` (refused BEFORE the os_mount upgrade, so a refused
 start can't clear the drive's `user_disabled` marker as a side effect).
 
@@ -348,11 +351,11 @@ which makes macOS stack native permission popups on top of the in-app FDA modal 
 `should_auto_start_indexing(indexing_enabled, fda_choice, os_fda_granted)` gates the launch-time start via
 `crate::fda_gate::is_fda_pending`: skip when `fda_choice == NotAskedYet` AND `os_fda_granted == false`. Once the user
 picks Allow (restart) or Deny (same session, via `start_indexing_after_fda_decision`), the indexer starts.
-`os_fda_granted == true` overrides `NotAskedYet`. FDA gates ONLY `root` — SMB/MTP/external paths aren't TCC-protected, so
-`start_indexing_for_smb` and the MTP/local-external enables never route through this gate (unlike the master switch,
-which gates every transport). After Deny the indexer runs
-in degraded mode (one TCC prompt per protected folder, the contract the user opted into). Launch-time NSWorkspace icon
-fetches in `volumes::list_locations` share the same `is_fda_pending` predicate so the two gate sites can't drift.
+`os_fda_granted == true` overrides `NotAskedYet`. FDA gates ONLY `root` — SMB/MTP/external paths aren't TCC-protected,
+so `start_indexing_for_smb` and the MTP/local-external enables never route through this gate (unlike the master switch,
+which gates every transport). After Deny the indexer runs in degraded mode (one TCC prompt per protected folder, the
+contract the user opted into). Launch-time NSWorkspace icon fetches in `volumes::list_locations` share the same
+`is_fda_pending` predicate so the two gate sites can't drift.
 
 ## Testing
 

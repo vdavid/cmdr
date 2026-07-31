@@ -65,12 +65,12 @@ Subtractive tests against the SMB-index-on condition, all **no effect**:
 
 ## Root cause (CONFIRMED, FIXED): `coverage::get_or_build` materialized every image path in the volume
 
-> **Fixed.** Three changes, all in `media_index` (contract + rationale:
-> `crates/cmdr-index/src/media_index/DETAILS.md` § Covered-count preview): counting is now a sink over
-> `enrich::for_each_qualifying_image` (`coverage::count_qualifying_images`, `O(folders)`, no per-image path `String`);
-> polls and startup paths read `coverage::cached`, which never walks, so `volume_state` can't trigger a cold build and
-> image indexing being off means no walk at all; and `get_or_build` deduplicates concurrent cold callers behind a
-> per-volume build lock. The diagnosis below is preserved as-is.
+> **Fixed.** Three changes, all in `media_index` (contract + rationale: `crates/cmdr-index/src/media_index/DETAILS.md` §
+> Covered-count preview): counting is now a sink over `enrich::for_each_qualifying_image`
+> (`coverage::count_qualifying_images`, `O(folders)`, no per-image path `String`); polls and startup paths read
+> `coverage::cached`, which never walks, so `volume_state` can't trigger a cold build and image indexing being off means
+> no walk at all; and `get_or_build` deduplicates concurrent cold callers behind a per-volume build lock. The diagnosis
+> below is preserved as-is.
 
 **Single-lever proof.** With `coverage::get_or_build` short-circuited to `None` and _everything else at defaults_ (NAS
 index resumed, local drive indexing on, importance on, search weights on), a fresh launch stays **flat at 154.8 MB** —

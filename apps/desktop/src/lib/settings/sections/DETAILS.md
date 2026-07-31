@@ -48,11 +48,11 @@ sections compose).
   `anyVisible(shouldShow, ...memberIds)` (the card-group pattern), and the hidden `indexing.indexSize` anchor (its
   `section` equals this page's) makes "index size" a search hit, keeping the section visible (no blank pane) when
   searched. See `lib/settings/components/CLAUDE.md` § card groups. `indexing.enabled` is the MASTER switch, a hard gate
-  in the backend (`crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § The two indexing switches), so while it's off this
-  section renders the rows it overrides as overridden: both sub-toggles get `disabled` + the "Off with drive indexing"
-  badge, the hand-rendered re-enable row dims with them (`.reenable-row.overridden`, matching `SettingRow`'s own
-  disabled opacity), and one `.master-off-note` line says what stopped and that each drive keeps its own choice. Clear
-  index stays live on purpose: reclaiming the disk is exactly what someone who turned indexing off may want next.
+  in the backend (`crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § The two indexing switches), so while it's off
+  this section renders the rows it overrides as overridden: both sub-toggles get `disabled` + the "Off with drive
+  indexing" badge, the hand-rendered re-enable row dims with them (`.reenable-row.overridden`, matching `SettingRow`'s
+  own disabled opacity), and one `.master-off-note` line says what stopped and that each drive keeps its own choice.
+  Clear index stays live on purpose: reclaiming the disk is exactly what someone who turned indexing off may want next.
 - **`NotificationsSection.svelte`**: `Behavior > Notifications`: two `SectionCard` card groups — Downloads (BOTH
   Downloads-folder features in one card: the 4-option `downloadsNotifications` ToggleGroup, plus the on/off go-to-latest
   `Switch` whose description references the live global binding — the combo is edited under Keyboard shortcuts; anchor

@@ -9,7 +9,8 @@ policy) is `../DETAILS.md`.
   `SignalContribution` breakdown. `score` delegates here, so there is one formula, not two.
 
 No `rusqlite`, no `Volume`, no filesystem, no clock: "now" is passed in as a `u64` so recency is deterministic in tests
-(plan Decision 3, agent-spec §6.3 / §15 testability seams). Full design: `docs/specs/later/importance-subsystem-plan.md`.
+(plan Decision 3, agent-spec §6.3 / §15 testability seams). Full design:
+`docs/specs/later/importance-subsystem-plan.md`.
 
 ## Signal catalog (agent-spec §5.1)
 
@@ -32,7 +33,7 @@ No `rusqlite`, no `Volume`, no filesystem, no clock: "now" is passed in as a `u6
   descendant, raising the whole subtree (plan Decision 3).
 - **path-class prior** (`path_class`): a typed `PathClass` — `ProjectRoot` (1.0) > `UserContent` (0.8) > `Neutral` (0.4)
   > `SystemOrCache` (0.0). The caller classifies the path once; the scorer reads the variant (no path-substring branch
-  in the scorer).
+  > in the scorer).
 - **visit activity** (`visit_count`, optional): linear up to a saturation count (default 10), then flat.
 - **Spotlight last-used** (`last_used_secs`, optional): recency decay, default half-life 14 days. `None` on SMB/MTP (no
   Spotlight) and `None` before sampling has run.
@@ -45,10 +46,10 @@ each extension to lowercase and counts the distinct set, with no-extension files
 `SignalSet` marks which optional signals are AVAILABLE for a volume, independent of their value. When a signal is
 unavailable (SMB has no Spotlight), its coefficient is removed and the remaining coefficients are scaled up so they sum
 to the same total: the folder is never penalized for a signal its backend can't produce. Availability is distinct from a
-`None` value — a local folder whose `kMDItemLastUsedDate` sampling simply hasn't run yet is *available but unsampled*
-(contributes `0.0`, drags the reachable max down), whereas an SMB folder is *unavailable* (its weight redistributes).
-`redistribution_preserves_total_weight` pins the conservation;
-`missing_optional_signal_redistributes_not_penalizes` pins the SMB-vs-local direction.
+`None` value — a local folder whose `kMDItemLastUsedDate` sampling simply hasn't run yet is _available but unsampled_
+(contributes `0.0`, drags the reachable max down), whereas an SMB folder is _unavailable_ (its weight redistributes).
+`redistribution_preserves_total_weight` pins the conservation; `missing_optional_signal_redistributes_not_penalizes`
+pins the SMB-vs-local direction.
 
 The five listing signals are always available; only the two backend-dependent optional signals ever redistribute. The
 degenerate all-unavailable case can't occur (listing signals are always present), but `effective_weights` guards the
@@ -58,7 +59,7 @@ divide-by-zero anyway.
 
 For an unfloored folder, the `SignalContribution` list sums (then clamps) to exactly the `Score`, and each
 `contribution == weight * raw`. When a FLOOR override fires, `Explanation::floored` is `true` and the additive terms are
-reported at the values they *would* have contributed (so a tuner still sees the signal shape) while the score is `0.0`.
+reported at the values they _would_ have contributed (so a tuner still sees the signal shape) while the score is `0.0`.
 Pinned by `explain_contributions_sum_to_score_unfloored` and the proptest.
 
 ## Tunable weights (`weights.rs`)
@@ -67,8 +68,8 @@ The formula is unproven (agent-spec §18.3, plan open-question 1): the defaults 
 trees, not validated values. So the coefficients are data (`Weights`, serde-serializable, defaulted), not hardcoded
 constants — the dev tuning surface overrides them (`../read/DETAILS.md` § Dev tuning surface), and a future per-consumer
 profile can ship its own set. The seven additive weights sum to `1.0` at their defaults, so a folder that maxes every
-signal (and hits no floor) reaches `1.0`; the scorer does not require that at runtime, and the redistribution and explain
-invariants hold for any values.
+signal (and hits no floor) reaches `1.0`; the scorer does not require that at runtime, and the redistribution and
+explain invariants hold for any values.
 
 The largest default weights sit on the signals that most cleanly separate "matters" from "machine output": path class
 (0.25) and project markers (0.20). Half-lives and the visit-saturation count are shape parameters, not additive weights.

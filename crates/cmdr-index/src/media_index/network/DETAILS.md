@@ -35,9 +35,9 @@ same local-vs-remote predicate the archive backend uses for its byte source). Wh
 timeout on the mount path — `classify_io_error`). Everything else per-file (permission denied, `EIO`, `EISDIR`) is
 `FetchError::Unreadable`: skip it, count it (`PassSummary.skipped_unreadable`), log "N skipped: unreadable" at pass end,
 write NO row (`Failed` stays reserved for a good read with a bad decode). Bias documented in `classify_io_error`: a
-misread dead mount completes honestly and re-enriches next scan; a misread per-file fault would pause the pass against
-a condition that never clears — exactly the TCC-EPERM stall this fixes. Without this line, an all-EPERM mount would
-either stall forever or silently "complete"; the skip count keeps it loud.
+misread dead mount completes honestly and re-enriches next scan; a misread per-file fault would pause the pass against a
+condition that never clears — exactly the TCC-EPERM stall this fixes. Without this line, an all-EPERM mount would either
+stall forever or silently "complete"; the skip count keeps it loud.
 
 **Path mapping.** An SMB index's `ROOT_ID` is the mount root, so `walk_image_entries` reconstructs MOUNT-RELATIVE paths
 (`/DCIM/x.jpg`). `os_join(mount_root, rel)` prepends the mount root to reach the real file
@@ -58,10 +58,10 @@ direct fetcher also short-circuits on an over-cap size hint, without touching th
 Typed knobs (`ConservativeFetchPolicy`), each a real gate, not a comment:
 
 - **Priority-gated.** The pass proceeds only while the volume is CLEAR of higher-priority work
-  (`volume_clear_for_enrichment`, pure and tested — the host's order: interactive > transfers > indexing): the
-  app has been foreground-idle for `idle_threshold` (default 5 s) AND no user-initiated transfer is touching this
-  volume (`priority::transfers`). `priority::foreground` holds the process-global "last foreground activity"
-  timestamps, stamped by the hot foreground filesystem IPC (directory listing = every navigation); the pure
+  (`volume_clear_for_enrichment`, pure and tested — the host's order: interactive > transfers > indexing): the app has
+  been foreground-idle for `idle_threshold` (default 5 s) AND no user-initiated transfer is touching this volume
+  (`priority::transfers`). `priority::foreground` holds the process-global "last foreground activity" timestamps,
+  stamped by the hot foreground filesystem IPC (directory listing = every navigation); the pure
   `is_idle(now, last, threshold)` is unit-tested over a fake clock. Enrichment reads the **app-wide** foreground scope,
   not the per-volume one the index scan and SMB transfers use: this is heavy on-device ML with no deadline, so
   foreground work anywhere is reason enough to wait — while the transfer check is per-volume (a copy elsewhere is no
@@ -72,8 +72,8 @@ Typed knobs (`ConservativeFetchPolicy`), each a real gate, not a comment:
   over the SAME composed condition, ending on clear OR `gate::should_stop`). Without this resume the enrichment would
   stall permanently after the first pause — a NAS that the user keeps browsing near would freeze mid-sweep and never
   finish. The `should_retry_when_idle` gate is `NotIdle` ONLY: `Disconnected` resumes via the registration bus on
-  remount, `Cancelled` via the next scan or user kick, so looping on either would spin the idle-wait against a
-  condition this loop can't clear.
+  remount, `Cancelled` via the next scan or user kick, so looping on either would spin the idle-wait against a condition
+  this loop can't clear.
 - **Bandwidth-bounded.** After each image, `throttle_delay(bytes, max_bytes_per_sec)` sleeps so the sustained fetch rate
   stays under the cap (default 8 MB/s). Pure and tested; it deliberately over-throttles slightly (ignores OCR time) —
   the conservative direction. (The parallel pass paces at dispatch on the index's last-known size, since the actual
@@ -95,14 +95,14 @@ load-bearing input**: only override-covered volumes/folders enrich. The gate sea
 handful of volumes/folders), not per-image data, so they ride the sparse settings store (`mediaIndex.networkVolumes`,
 `mediaIndex.alwaysIndexVolumes`, `mediaIndex.alwaysIndexFolders` — FE-owned) rather than a new SQLite DB with its own
 writer thread (the standing-cost note already flags per-volume thread growth). The scheduler runs off the IPC thread and
-consults `network::config` (a process-global `RwLock`) each pass, seeded from `load_settings` at startup and live-applied
-through the `media_index_set_*` commands. Folder overrides store absolute OS-mount paths; `path_is_within` is a
-trailing-slash-safe prefix so `/Photos2` isn't "within" `/Photos`.
+consults `network::config` (a process-global `RwLock`) each pass, seeded from `load_settings` at startup and
+live-applied through the `media_index_set_*` commands. Folder overrides store absolute OS-mount paths; `path_is_within`
+is a trailing-slash-safe prefix so `/Photos2` isn't "within" `/Photos`.
 
 `config` also holds `excluded_folders`, the privacy veto — the ONE live-read part of the config (the retro-delete that
 rides it is in `../DETAILS.md` § Per-folder photo-search exclude).
 
-*Non-load-bearing candidate (NOT built):* a photo-density importance input (a folder that's mostly images is likely an
+_Non-load-bearing candidate (NOT built):_ a photo-density importance input (a folder that's mostly images is likely an
 archive regardless of visit count) could feed the importance oracle. Deliberately deferred; the manual override is the
 current mechanism.
 
@@ -155,15 +155,16 @@ worktree). Reasoned expectation from the M2 spike + the design: prefetch fan-out
 neighboring reads and behind compute, so the pass should approach the local ~1.25x-at-N=2 ANE ceiling instead of adding
 wire latency on top. To measure: opt the NAS in, set `mediaIndex.parallelism` to 2, run a bounded re-enrich over the
 existing corpus (bump a folder's mtimes or clear its rows), and read images/min off the `media-enrich-progress` log
-against the 2026-07-16 ~60–80 img/min baseline. The byte budget is what makes the overlap SAFE (bounded buffer), never
-a multiplier.
+against the 2026-07-16 ~60–80 img/min baseline. The byte budget is what makes the overlap SAFE (bounded buffer), never a
+multiplier.
 
 ## Backend commands + typed state for the network-enrichment UI
 
-The backend provides three setters + the extended state. They live in `apps/desktop/src-tauri/src/commands/media_index/policy.rs` with the other
-coverage-changing commands (the scope, the threshold, the privacy exclusion), split from the read/query modules beside
-them in `../commands/`: each mutates live `gate` / `network::config` state and has to decide whether the change BROADENS
-coverage and needs an immediate pass, and each of those decisions is a pure `*_should_kick` fn tested in
+The backend provides three setters + the extended state. They live in
+`apps/desktop/src-tauri/src/commands/media_index/policy.rs` with the other coverage-changing commands (the scope, the
+threshold, the privacy exclusion), split from the read/query modules beside them in `../commands/`: each mutates live
+`gate` / `network::config` state and has to decide whether the change BROADENS coverage and needs an immediate pass, and
+each of those decisions is a pure `*_should_kick` fn tested in
 `apps/desktop/src-tauri/src/commands/media_index/tests.rs`.
 
 - `media_index_set_network_volume_enabled(volume_id, enabled)` — the per-volume SMB opt-in (live-applied; enabling kicks

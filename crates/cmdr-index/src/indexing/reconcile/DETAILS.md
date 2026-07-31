@@ -3,12 +3,12 @@
 Read this before any non-trivial work in `reconcile/`: editing, planning, reorganizing, or advising. Must-know
 guardrails are in `CLAUDE.md`.
 
-This area owns the mechanisms below. Points outward: the honest-sizes data model (`listed_epoch` /
-`min_subtree_epoch` / `current_epoch`), the `dir_stats` ledger, the `BulkReconcileGuard` debt-recording contract, and
-writer-wait attribution are canonical in `../writer/DETAILS.md`; the guarded reader and the `should_exclude` policy in
-`../scanner/DETAILS.md`; the live event loop, removal-storm coalescing, and the `verify_affected_dirs` /
-`verify_guard.rs` code in `../watch/DETAILS.md`; `resolve_path_under` + mount-relative paths in
-`../paths/DETAILS.md`; the compute math in `../aggregator/DETAILS.md`.
+This area owns the mechanisms below. Points outward: the honest-sizes data model (`listed_epoch` / `min_subtree_epoch` /
+`current_epoch`), the `dir_stats` ledger, the `BulkReconcileGuard` debt-recording contract, and writer-wait attribution
+are canonical in `../writer/DETAILS.md`; the guarded reader and the `should_exclude` policy in `../scanner/DETAILS.md`;
+the live event loop, removal-storm coalescing, and the `verify_affected_dirs` / `verify_guard.rs` code in
+`../watch/DETAILS.md`; `resolve_path_under` + mount-relative paths in `../paths/DETAILS.md`; the compute math in
+`../aggregator/DETAILS.md`.
 
 ## Non-destructive rescan (reconcile, not truncate)
 
@@ -17,20 +17,20 @@ RECONCILES in place: it walks the tree and diffs each dir against the DB, writin
 index stays visible (stale) throughout and a mid-rescan disconnect leaves the prior data intact. Perf + correctness were
 gated before building this; the evidence is in `docs/notes/m3-reconcile-rescan-gate.md`.
 
-**The LOCAL reconcile's cost is the open question.** Measured on the boot volume: the serial reconcile walk took
-1,309 s where the parallel fresh scan of the same tree took 68.1 s, and 92.3% of that time sat inside the directory
-read (`docs/notes/reconcile-latency-spike.md`). The `lstat` share of that read is now gone — `read_fs_children` batches
-via `getattrlistbulk` on macOS (see "The shared local read" below), which on a boot disk was 69% of read time — but the
-walk is still serial against a parallel fresh scan. Replacing the local rescan with a fast parallel build that swaps in
+**The LOCAL reconcile's cost is the open question.** Measured on the boot volume: the serial reconcile walk took 1,309 s
+where the parallel fresh scan of the same tree took 68.1 s, and 92.3% of that time sat inside the directory read
+(`docs/notes/reconcile-latency-spike.md`). The `lstat` share of that read is now gone — `read_fs_children` batches via
+`getattrlistbulk` on macOS (see "The shared local read" below), which on a boot disk was 69% of read time — but the walk
+is still serial against a parallel fresh scan. Replacing the local rescan with a fast parallel build that swaps in
 atomically is under evaluation, including the traps that shape it (SQLite has no `ALTER INDEX ... RENAME`, `start_scan`
 clears `scan_completed_at` before the scan runs, and `MutationTracker::bump` can't tell which table changed):
 `docs/notes/swap-scan-feasibility.md`.
 
-**Before trusting that speed comparison, read `docs/notes/indexing-benchmarks-2026-07-21.md`.**
-Measured on an idle machine, the fresh parallel scan takes 52.7 s and the reconcile 476.9 s — but the parallel scan
-ABANDONS directories at `LOCAL_LIST_TIMEOUT` under rayon contention and left the index ~10% short (6,001,637 rows,
-versus 6,663,048 after the reconcile filled in the five subtrees it had skipped). The parallel walk buys part of its
-speed by giving up, and the directories it gives up on are the large ones whose sizes users most want.
+**Before trusting that speed comparison, read `docs/notes/indexing-benchmarks-2026-07-21.md`.** Measured on an idle
+machine, the fresh parallel scan takes 52.7 s and the reconcile 476.9 s — but the parallel scan ABANDONS directories at
+`LOCAL_LIST_TIMEOUT` under rayon contention and left the index ~10% short (6,001,637 rows, versus 6,663,048 after the
+reconcile filled in the five subtrees it had skipped). The parallel walk buys part of its speed by giving up, and the
+directories it gives up on are the large ones whose sizes users most want.
 
 **Mode predicate.** Both scan entry points pick reconcile vs truncate from the entry count read off the live read
 connection BEFORE any truncate, but the threshold differs by path:
@@ -63,19 +63,19 @@ for the never-completes-a-rescan user, deferred as a follow-up.
 
 **The diff is hardlink-dedup-aware, or it never converges.** The writer nulls `logical_size` / `physical_size` on every
 occurrence of a multi-link inode past the first, so each inode's bytes count exactly once (`handle_upsert_entry_v2` →
-`IndexStore::has_sized_entry_for_inode`, in `../writer/entries.rs`). The
-live snapshot still carries the REAL size, so a naive `snap.logical_size != db_row.logical_size` reads that intentional
-NULL as a mismatch on EVERY pass: the diff emits `UpsertEntryV2`, the writer re-nulls the row, the next reconcile
-re-sends it, forever. `diff_dir_against_db` therefore skips the size half when `db_row.logical_size.is_none() &&
-snap.nlink > 1`, comparing mtime alone; `verifier.rs` makes the same call in its per-navigation diff. Two properties
-hold this together: `nlink > 1` (not the NULL alone) gates the skip, so a file that drops back to ONE link is detected
-as changed and its real size comes back; and a first-occurrence row with a real DB size keeps comparing on size, since
-the NULL is what marks the deduped occurrence. Measured cost of getting it wrong (production index, 2026-07-23):
-393,162 file rows at `logical_size IS NULL` index-wide (6.7% of 5.88M files), and one WebKit cache directory holding
-63,690 of them was re-walked 49 times in a day for 3,345,355 of that day's 3,968,781 row deltas. Pinned by
-`reconciler::tests::reconcile_deduped_hardlink_writes_nothing_on_a_repeat_pass` (plus the mtime, drop-to-one-link, and
-sized-occurrence cases beside it). The FSEvents replay verifier (`../watch/event_loop/verification.rs`) is unaffected:
-it only adds missing children and deletes vanished ones, never compares sizes.
+`IndexStore::has_sized_entry_for_inode`, in `../writer/entries.rs`). The live snapshot still carries the REAL size, so a
+naive `snap.logical_size != db_row.logical_size` reads that intentional NULL as a mismatch on EVERY pass: the diff emits
+`UpsertEntryV2`, the writer re-nulls the row, the next reconcile re-sends it, forever. `diff_dir_against_db` therefore
+skips the size half when `db_row.logical_size.is_none() && snap.nlink > 1`, comparing mtime alone; `verifier.rs` makes
+the same call in its per-navigation diff. Two properties hold this together: `nlink > 1` (not the NULL alone) gates the
+skip, so a file that drops back to ONE link is detected as changed and its real size comes back; and a first-occurrence
+row with a real DB size keeps comparing on size, since the NULL is what marks the deduped occurrence. Measured cost of
+getting it wrong (production index, 2026-07-23): 393,162 file rows at `logical_size IS NULL` index-wide (6.7% of 5.88M
+files), and one WebKit cache directory holding 63,690 of them was re-walked 49 times in a day for 3,345,355 of that
+day's 3,968,781 row deltas. Pinned by `reconciler::tests::reconcile_deduped_hardlink_writes_nothing_on_a_repeat_pass`
+(plus the mtime, drop-to-one-link, and sized-occurrence cases beside it). The FSEvents replay verifier
+(`../watch/event_loop/verification.rs`) is unaffected: it only adds missing children and deletes vanished ones, never
+compares sizes.
 
 **The single-aggregate coverage constraint (load-bearing).** After the reconcile walk, the rescan path stamps every
 re-listed dir (`MarkDirsListed`) and runs ONE bottom-up `ComputeAllAggregates`. It must NOT fire
@@ -85,24 +85,24 @@ single bottom-up aggregate is faster than truncate. `finish_reconcile` sends `Co
 the aggregate recomputes coverage AND sizes for the whole tree from the committed rows in one O(dirs) bulk-SQL pass. A
 reconcile's own writes (`UpsertEntryV2`/`Delete*`, never `InsertEntriesV2`) leave the accumulator maps empty, but the
 finish does NOT rely on that: declaring `Sql` — not sniffing map-emptiness — is what keeps an interleaving verification
-subtree scan's map pollution from zeroing every out-of-subtree dir (see `../writer/DETAILS.md` §
-"The full-aggregate source contract"). Per-dir `PropagateMinSubtreeEpoch` stays ONLY for the small-scope LIVE reconciles
+subtree scan's map pollution from zeroing every out-of-subtree dir (see `../writer/DETAILS.md` § "The full-aggregate
+source contract"). Per-dir `PropagateMinSubtreeEpoch` stays ONLY for the small-scope LIVE reconciles
 (`reconcile_subtree`: per-navigation verifier, `MustScanSubDirs`, SMB-overflow `FullRefresh`), where the chain is short.
 
 **Decision: the full reconcile suppresses per-entry ancestor propagation (`SetDeltaPropagation`).** The single-aggregate
 rule governs the FINISH; this governs the WALK. Each `UpsertEntryV2`/`DeleteEntryById`/`DeleteSubtreeById` the diff
-emits would otherwise auto-walk the ancestor `dir_stats` chain — O(entries × depth) across an entire pass. On a large delta (a 270k→6M
-partial-completion) that wedged the writer for hours: the channel stays full, so the walk thread parks on `send` and the
-app can't drain. It's also pure waste, because the FINISH's one `ComputeAllAggregates` recomputes every dir's `dir_stats`
-from the entries table anyway. So both full-reconcile walkers (`local_reconcile::run_local_reconcile`,
-`volume_scanner::reconcile_volume_via_trait`) bracket their BFS with `reconciler::BulkReconcileGuard` — it sends
-`SetDeltaPropagation(false)` before the walk and restores `true` on EVERY exit (clean finish, cancel, empty-root,
-disconnect, error, panic) via `Drop`. The writer keeps everything else under suppression (entry insert/update/delete,
-hardlink dedup, the new-directory zero-valued `dir_stats` row init) — ONLY the ancestor PROPAGATION is skipped. **Why
-the LIVE path keeps propagating:** `reconcile_subtree` and the FSEvents handlers have NO final full aggregate, so their
-per-entry propagation IS the mechanism that keeps `dir_stats` correct. **Don't re-add per-entry propagation to the bulk
-path** (it reintroduces the hours-long wedge); `bulk_reconcile_suppresses_per_entry_propagation_until_final_aggregate`
-pins this.
+emits would otherwise auto-walk the ancestor `dir_stats` chain — O(entries × depth) across an entire pass. On a large
+delta (a 270k→6M partial-completion) that wedged the writer for hours: the channel stays full, so the walk thread parks
+on `send` and the app can't drain. It's also pure waste, because the FINISH's one `ComputeAllAggregates` recomputes
+every dir's `dir_stats` from the entries table anyway. So both full-reconcile walkers
+(`local_reconcile::run_local_reconcile`, `volume_scanner::reconcile_volume_via_trait`) bracket their BFS with
+`reconciler::BulkReconcileGuard` — it sends `SetDeltaPropagation(false)` before the walk and restores `true` on EVERY
+exit (clean finish, cancel, empty-root, disconnect, error, panic) via `Drop`. The writer keeps everything else under
+suppression (entry insert/update/delete, hardlink dedup, the new-directory zero-valued `dir_stats` row init) — ONLY the
+ancestor PROPAGATION is skipped. **Why the LIVE path keeps propagating:** `reconcile_subtree` and the FSEvents handlers
+have NO final full aggregate, so their per-entry propagation IS the mechanism that keeps `dir_stats` correct. **Don't
+re-add per-entry propagation to the bulk path** (it reintroduces the hours-long wedge);
+`bulk_reconcile_suppresses_per_entry_propagation_until_final_aggregate` pins this.
 
 **Suppression is a DEBT (`MarkLedgerUnpaid` / `PayLedgerIfUnpaid`).** A walk that doesn't reach its terminal
 `ComputeAllAggregates` (quit, cancel, error, process death) leaves every entry it diffed with no ancestor credit, and
@@ -114,8 +114,8 @@ production index 2026-07-21: **249 directories lying, `~/Library` among them at 
 latch), and `Drop` sends `PayLedgerIfUnpaid` after restoring propagation. The two halves cover different deaths — `Drop`
 covers in-process interruption, the durable marker covers process death (no `Drop` runs). Ordering is load-bearing both
 ways: the marker must commit before the first suppressed write, and the payment must be the LAST thing the window does.
-The heal-latch mechanism is canonical in `../writer/DETAILS.md` § the one-shot heal. Regression
-tests: `local_reconcile::tests::a_reconcile_cancelled_after_discovering_a_dir_leaves_no_exact_size_lies`, and in
+The heal-latch mechanism is canonical in `../writer/DETAILS.md` § the one-shot heal. Regression tests:
+`local_reconcile::tests::a_reconcile_cancelled_after_discovering_a_dir_leaves_no_exact_size_lies`, and in
 `reconciler::tests` `an_interrupted_bulk_window_pays_the_coverage_debt_when_it_closes`,
 `a_bulk_window_that_dies_mid_walk_leaves_the_ledger_unpaid_for_the_next_launch` (`mem::forget`s the guard to simulate
 process death), `a_bulk_window_that_finishes_cleanly_leaves_the_ledger_paid`.
@@ -132,18 +132,17 @@ means "couldn't list" (the walk skips the dir and keeps it honestly stale), `Som
 batched syscall — a `Metadata` can't be synthesized.
 
 On macOS the read is the fresh scan's `getattrlistbulk` batch (`scanner::bulk_read_dir_unwatched`), which returns each
-child's name, type, sizes, mtime, inode, and link count *with* the directory entry, so the walk never stats an entry
+child's name, type, sizes, mtime, inode, and link count _with_ the directory entry, so the walk never stats an entry
 individually. Batching matters because a per-entry `lstat` dominates this walk's cost: over 771k directories / 6.6M
-entries on a boot disk, `readdir` costs 106.3 s while the per-entry `lstat` costs 238.4 s — 69% of read time at
-~36 µs/entry, with the process at ~10% CPU, so the walk is syscall-latency bound, not compute bound (verified on
-macOS 15 with a standalone single-threaded walk mimicking `read_fs_children`, 2026-07-27). The batching buys nothing
-else: the walk is serial, `GuardedReader` caps each read at `LOCAL_LIST_TIMEOUT`, and the exclusion gates
-(`should_exclude` then `is_canonicalization_alias`, in `child_is_indexable`) run per child, all exactly as the
-`read_dir` path does. Non-macOS targets use `read_fs_children_via_read_dir` (`read_dir` + per-entry
-`symlink_metadata`).
+entries on a boot disk, `readdir` costs 106.3 s while the per-entry `lstat` costs 238.4 s — 69% of read time at ~36
+µs/entry, with the process at ~10% CPU, so the walk is syscall-latency bound, not compute bound (verified on macOS 15
+with a standalone single-threaded walk mimicking `read_fs_children`, 2026-07-27). The batching buys nothing else: the
+walk is serial, `GuardedReader` caps each read at `LOCAL_LIST_TIMEOUT`, and the exclusion gates (`should_exclude` then
+`is_canonicalization_alias`, in `child_is_indexable`) run per child, all exactly as the `read_dir` path does. Non-macOS
+targets use `read_fs_children_via_read_dir` (`read_dir` + per-entry `symlink_metadata`).
 
-**Decision/Why the fallbacks are preserved, at two levels.** A hand-parsed packed buffer can be wrong in ways an
-`lstat` can't, and this walk *writes what it reads*, so both failure modes are caught rather than trusted:
+**Decision/Why the fallbacks are preserved, at two levels.** A hand-parsed packed buffer can be wrong in ways an `lstat`
+can't, and this walk _writes what it reads_, so both failure modes are caught rather than trusted:
 
 - **A child with no inline attributes still gets stated.** `parse_entry` returns `stat: None` when an attribute wasn't
   returned for an entry, or when the type carries no inline sizes at all (fifo, socket, device node), and
@@ -157,19 +156,18 @@ else: the walk is serial, `GuardedReader` caps each read at `LOCAL_LIST_TIMEOUT`
 
 Both branches are unreachable on the filesystems we've measured (`FSOPT_PACK_INVAL_ATTRS` makes every requested
 attribute present), which is exactly why they're pinned by tests rather than by field evidence: `bulk_read.rs`'s
-synthetic-record tests build packed records with attributes withheld, and
-`reconciler/tests/directory_read.rs`'s `the_reconcile_read_matches_a_per_entry_stat` asserts the batched read equals `read_dir` +
-`symlink_metadata` field-for-field over a tree of files with known sizes, an empty dir, a symlink, a broken symlink, a
-hardlink pair, a unicode name, a fifo, and an excluded basename.
+synthetic-record tests build packed records with attributes withheld, and `reconciler/tests/directory_read.rs`'s
+`the_reconcile_read_matches_a_per_entry_stat` asserts the batched read equals `read_dir` + `symlink_metadata`
+field-for-field over a tree of files with known sizes, an empty dir, a symlink, a broken symlink, a hardlink pair, a
+unicode name, a fifo, and an excluded basename.
 
 **The shared per-dir diff.** `reconciler::diff_dir_against_db(dir_id, live_children, db_children, writer)` is the one
 place the add/remove/modify/type-change diff lives. THREE walk sources feed it source-agnostic `LiveChild`s: the local
-live small-scope reconcile (`reconcile_subtree`), the local full-tree rescan
-(`local_reconcile::run_local_reconcile`, a BFS), and the network full rescan
-(`volume_scanner::reconcile_volume_via_trait`, `Volume::list_directory` BFS). It keeps `next_id` from the shared
-`Arc<AtomicI64>` (never `MAX(id)`). The shared FINISH (stamp listed dirs → ONE `ComputeAllAggregates`) lives once in
-`reconciler::finish_reconcile`/`send_marks`, called by both full-rescan walkers so they can't drift on the
-marks-before-aggregate ordering.
+live small-scope reconcile (`reconcile_subtree`), the local full-tree rescan (`local_reconcile::run_local_reconcile`, a
+BFS), and the network full rescan (`volume_scanner::reconcile_volume_via_trait`, `Volume::list_directory` BFS). It keeps
+`next_id` from the shared `Arc<AtomicI64>` (never `MAX(id)`). The shared FINISH (stamp listed dirs → ONE
+`ComputeAllAggregates`) lives once in `reconciler::finish_reconcile`/`send_marks`, called by both full-rescan walkers so
+they can't drift on the marks-before-aggregate ordering.
 
 **Recursion set is decoupled from the write decision (load-bearing).** `diff_dir_against_db` returns
 `matched_child_dirs` for EVERY child dir present in both the live listing and the DB, regardless of whether that dir's
@@ -197,25 +195,24 @@ completion handler then bumps the epoch and keeps the instance + DB.
 
 **LOCAL full rescan reconciles in place (`local_reconcile.rs`).** A LOCAL rescan of an already-populated index runs the
 serial full-tree reconcile walker instead of truncate + fresh parallel rebuild (it skips ONLY the `TruncateData` step):
-a BFS from the volume root (each read guarded), `diff_dir_against_db` per dir, the shared
-`finish_reconcile`. It reuses `reconciler::read_fs_children` (which applies BOTH `should_exclude` AND
-`is_canonicalization_alias`, so `/tmp`,`/var`,`/etc` aren't re-added every pass) and a single READ connection in
-autocommit. It runs on a `std::thread` and returns the SAME `(ScanHandle, JoinHandle<Result<ScanSummary, ScanError>>)`
-shape as `scanner::scan_volume`, so `start_scan`'s completion handler is reused UNCHANGED. **Decision/Why serial:** full
-parallelization would restructure the delete-critical per-dir diff for a perf gain the rare rescan doesn't need.
-Hang-tolerance, not parallelism, was the requirement, handled without touching the diff: each `read_fs_children` goes
-through a `GuardedReader` that caps the read at `LOCAL_LIST_TIMEOUT` (15 s) on a persistent 8 MB-stack helper thread; an
-overrun is abandoned and reported as unlistable (`None`), mapping onto the EXISTING skip handling (root won't list →
-failed rescan keeping the prior index; subdir won't list → skip and keep it stale). See `../scanner/DETAILS.md`.
-**Panic safety:** `start_local_reconcile` wraps `run_local_reconcile`
-in `std::panic::catch_unwind` and converts a panic into a typed `ScanError::Panicked(msg)`, so a walk panic resolves the
-`JoinHandle` to `Ok(Err(_))` (routed through the completion handler's failure arm), not the opaque raw-thread-panic arm.
-**Gotcha (hardlinks):** `build_live_children` dedups a multi-link inode's bytes ONLY in the summary byte totals (one
-global `seen_inodes` for the whole walk) and deliberately leaves the per-entry `LiveChild` snapshot RAW, deferring
-per-entry dedup to the writer's `UpsertEntryV2` (`has_sized_entry_for_inode`). Don't "fix" this by zeroing the snapshot
-the way `run_scan` zeroes its per-entry size: the reconcile's first-seen-keeps choice is independent of which occurrence
-the DB already sized, so zeroing makes the writer null BOTH occurrences and the inode's bytes drop to zero
-(under-count).
+a BFS from the volume root (each read guarded), `diff_dir_against_db` per dir, the shared `finish_reconcile`. It reuses
+`reconciler::read_fs_children` (which applies BOTH `should_exclude` AND `is_canonicalization_alias`, so
+`/tmp`,`/var`,`/etc` aren't re-added every pass) and a single READ connection in autocommit. It runs on a `std::thread`
+and returns the SAME `(ScanHandle, JoinHandle<Result<ScanSummary, ScanError>>)` shape as `scanner::scan_volume`, so
+`start_scan`'s completion handler is reused UNCHANGED. **Decision/Why serial:** full parallelization would restructure
+the delete-critical per-dir diff for a perf gain the rare rescan doesn't need. Hang-tolerance, not parallelism, was the
+requirement, handled without touching the diff: each `read_fs_children` goes through a `GuardedReader` that caps the
+read at `LOCAL_LIST_TIMEOUT` (15 s) on a persistent 8 MB-stack helper thread; an overrun is abandoned and reported as
+unlistable (`None`), mapping onto the EXISTING skip handling (root won't list → failed rescan keeping the prior index;
+subdir won't list → skip and keep it stale). See `../scanner/DETAILS.md`. **Panic safety:** `start_local_reconcile`
+wraps `run_local_reconcile` in `std::panic::catch_unwind` and converts a panic into a typed `ScanError::Panicked(msg)`,
+so a walk panic resolves the `JoinHandle` to `Ok(Err(_))` (routed through the completion handler's failure arm), not the
+opaque raw-thread-panic arm. **Gotcha (hardlinks):** `build_live_children` dedups a multi-link inode's bytes ONLY in the
+summary byte totals (one global `seen_inodes` for the whole walk) and deliberately leaves the per-entry `LiveChild`
+snapshot RAW, deferring per-entry dedup to the writer's `UpsertEntryV2` (`has_sized_entry_for_inode`). Don't "fix" this
+by zeroing the snapshot the way `run_scan` zeroes its per-entry size: the reconcile's first-seen-keeps choice is
+independent of which occurrence the DB already sized, so zeroing makes the writer null BOTH occurrences and the inode's
+bytes drop to zero (under-count).
 
 ## No completion marker on an empty root
 
@@ -246,33 +243,33 @@ same empty root and re-"complete" again. The real-hardware symptom was an SMB in
 
 The serial rescan walk had no cost backstop: on the measured boot volume it spent 1,309 s, 92.3% of it inside the
 directory read, with 1.7% of directories accounting for 71% of the read time (`docs/notes/reconcile-latency-spike.md`).
-Batching the read cut its constant cost but not that distribution, so the backstop still matters. Cost,
-not failure, is the signal: that walk hit exactly ONE read timeout in 21 minutes while an Android phone's `/proc` tree
-cost ~454 s in reads that all SUCCEEDED. So the guarded walker's "give up after 32 consecutive FAILED reads" model would
-have fired zero times. (That specific tree is now excluded by name at volume roots; the budget is the general backstop
-for the trees nobody anticipated — `Library/Caches/go-build/*`, Slack's `Cache_Data`, `target/debug/incremental`, a
-MacDroid `.Trash`, Xcode SDK framework dirs.)
+Batching the read cut its constant cost but not that distribution, so the backstop still matters. Cost, not failure, is
+the signal: that walk hit exactly ONE read timeout in 21 minutes while an Android phone's `/proc` tree cost ~454 s in
+reads that all SUCCEEDED. So the guarded walker's "give up after 32 consecutive FAILED reads" model would have fired
+zero times. (That specific tree is now excluded by name at volume roots; the budget is the general backstop for the
+trees nobody anticipated — `Library/Caches/go-build/*`, Slack's `Cache_Data`, `target/debug/incremental`, a MacDroid
+`.Trash`, Xcode SDK framework dirs.)
 
 **The metric: read LATENCY, never cumulative read time.** Every read gets an allowance of `SLOW_READ_FIXED_ALLOWANCE`
 (20 ms) plus `SLOW_READ_PER_ENTRY_ALLOWANCE` (100 µs) per entry it returned. A read that costs more than its allowance
-is *slow*, and ONLY slow reads' time is charged to anything. Fast reads are free however many there are, so a subtree
+is _slow_, and ONLY slow reads' time is charged to anything. Fast reads are free however many there are, so a subtree
 can grow without limit and never be refused for its size.
 
 **The attribution: one accumulator per anchor subtree.** Every directory read is charged to ONE ancestor: the one at
-`ANCHOR_DEPTH` (5) below the volume root, its *anchor*. Directories above the anchor depth carry no anchor, so the top
+`ANCHOR_DEPTH` (5) below the volume root, its _anchor_. Directories above the anchor depth carry no anchor, so the top
 of the tree is always walked.
 
 **The verdict is a FRACTION, never a total.** An anchor is refused once more than `MAX_SLOW_READ_FRACTION` (5%) of the
 reads charged to it were slow — every read counts in the denominator — subject to two floors: at least `MIN_SLOW_READS`
 (10) slow reads, and more than `MIN_SLOW_TIME_WASTED` (5 s) lost to them. All three, or the walk carries on.
 
-**❌ Never score a subtree on a TOTAL (of read time, or of anything else).** Two shipped rules made this mistake and both
-were measured wrong, because *the opportunity to accumulate a total scales with subtree size while the total does not*.
-A 105,441-directory repo reaches any fixed total eventually however healthy it is; a 91-directory phone may never reach
-it however pathological it is. Cumulative read time was the first version (2026-07-21 run 1); charging only slow reads'
-time was the second, and under real working load ([run 2](../../../../../../docs/notes/indexing-benchmarks-2026-07-21.md),
-load 12-24) it fired FIVE times, three of them wrong. The slow-read fraction separates the same five subtrees by two
-orders of magnitude:
+**❌ Never score a subtree on a TOTAL (of read time, or of anything else).** Two shipped rules made this mistake and
+both were measured wrong, because _the opportunity to accumulate a total scales with subtree size while the total does
+not_. A 105,441-directory repo reaches any fixed total eventually however healthy it is; a 91-directory phone may never
+reach it however pathological it is. Cumulative read time was the first version (2026-07-21 run 1); charging only slow
+reads' time was the second, and under real working load
+([run 2](../../../../../../docs/notes/indexing-benchmarks-2026-07-21.md), load 12-24) it fired FIVE times, three of them
+wrong. The slow-read fraction separates the same five subtrees by two orders of magnitude:
 
 | subtree                                   |    dirs | slow reads | fraction | verdict wanted |
 | ----------------------------------------- | ------: | ---------: | -------- | -------------- |
@@ -352,11 +349,11 @@ largest legitimate directory measured on the same machine held ~119k children, s
 
 - **Tooth 1 — a DB-side probe BEFORE the snapshot.** `IndexStore::count_children_capped(parent_id, conn, threshold + 1)`
   runs ahead of `list_children_on`. Phase 1 materialises `HashMap<String, (i64, Vec<EntryRow>)>` for EVERY affected
-  path, so guarding only the upsert loop would leave 1.41M owned `EntryRow`s (~130–160 MB) in place. ❌ Not a `COUNT(*)`:
-  the answer must not itself cost O(children).
-- **Tooth 2 — an ITERATION cap, not an upsert cap.** Phase 2's `read_dir` loop `continue`s past DB-known children
-  before doing any work, so an already-indexed pathological directory produces near-zero upserts while iterating 1.41M
-  times. **An upsert cap would have been a no-op on the measured incident.** This tooth also covers the inverse shape: a
+  path, so guarding only the upsert loop would leave 1.41M owned `EntryRow`s (~130–160 MB) in place. ❌ Not a
+  `COUNT(*)`: the answer must not itself cost O(children).
+- **Tooth 2 — an ITERATION cap, not an upsert cap.** Phase 2's `read_dir` loop `continue`s past DB-known children before
+  doing any work, so an already-indexed pathological directory produces near-zero upserts while iterating 1.41M times.
+  **An upsert cap would have been a no-op on the measured incident.** This tooth also covers the inverse shape: a
   directory small in the index but huge on disk.
 
 **❌ A declined directory must NOT be marked `listed_epoch = 0`.** This reads like honesty and is the opposite. Affected
@@ -422,30 +419,30 @@ replay `affected_paths` rather than the verification-discovered paths). The FE h
 A `MustScanSubDirs` signal means "re-walk this subtree", and a hard-churning subtree (build output, caches, Cmdr's own
 data dir) raises it continuously. The drain caps each anchor to ≤1 reconcile per window, so a folder's size stays
 bounded-fresh (≤1 window stale) without re-walking continuously. Leading + trailing, not debounce (mirrors the per-file
-`throttle.rs`): a never-walked anchor reconciles immediately; a sustained one re-walks once per window forever (the
-~1 s `throttle_sweep_interval` tick re-kicks via `EventReconciler::sweep_rescan_throttle`, and it re-asks
-`is_eligible` each tick, so a longer window is never bypassed). `pick_and_collapse_rescan` picks the shallowest
-ELIGIBLE anchor; throttled anchors stay queued in `pending_rescans` until their window elapses. The drain runs on a
-dedicated `Utility`-QoS thread (not the tokio blocking pool, which `thread_qos` forbids lowering), so background subtree
-walks never outrank the webview for CPU. A single growing file is handled by the per-file live path (incremental
-`dir_stats` deltas), never a subtree re-walk, so the throttle needs no significant-change bypass. Tests zero both bounds
-via `disable_rescan_throttle_for_test`.
+`throttle.rs`): a never-walked anchor reconciles immediately; a sustained one re-walks once per window forever (the ~1 s
+`throttle_sweep_interval` tick re-kicks via `EventReconciler::sweep_rescan_throttle`, and it re-asks `is_eligible` each
+tick, so a longer window is never bypassed). `pick_and_collapse_rescan` picks the shallowest ELIGIBLE anchor; throttled
+anchors stay queued in `pending_rescans` until their window elapses. The drain runs on a dedicated `Utility`-QoS thread
+(not the tokio blocking pool, which `thread_qos` forbids lowering), so background subtree walks never outrank the
+webview for CPU. A single growing file is handled by the per-file live path (incremental `dir_stats` deltas), never a
+subtree re-walk, so the throttle needs no significant-change bypass. Tests zero both bounds via
+`disable_rescan_throttle_for_test`.
 
-**Each anchor's window is proportional to what its walk COST**: `clamp(WALK_COST_MULTIPLIER × walk_cost,
-RESCAN_THROTTLE_WINDOW, RESCAN_THROTTLE_MAX_WINDOW)`, currently `30 ×`, clamped to 60 s–30 min. So an anchor spends at
-most ~1/30th of the time re-walking itself, and no single subtree can dominate the reconcile budget however expensive
-it is to list. A flat window can't hold that line: a 10 s walk that becomes eligible again 60 s later is a permanent
-~17% duty cycle on one anchor. Measured on David's machine (2026-07-23, a day of reconciler logs): one anchor (a WebKit
-cache directory with 144,647 children) averaged 10.5 s per walk, was re-walked 49 times, and burned 516 s, 49% of the
-day's entire reconcile budget, while 4,559 other anchors finished in under a second each. Under the cost-scaled window
-that anchor earns ~5 min and drops to roughly 10 walks a day; every sub-2 s anchor stays pinned at the 60 s floor,
-unchanged. The ceiling exists because past half an hour a stale subtree costs the user more than the CPU the back-off
-saves.
+**Each anchor's window is proportional to what its walk COST**:
+`clamp(WALK_COST_MULTIPLIER × walk_cost, RESCAN_THROTTLE_WINDOW, RESCAN_THROTTLE_MAX_WINDOW)`, currently `30 ×`, clamped
+to 60 s–30 min. So an anchor spends at most ~1/30th of the time re-walking itself, and no single subtree can dominate
+the reconcile budget however expensive it is to list. A flat window can't hold that line: a 10 s walk that becomes
+eligible again 60 s later is a permanent ~17% duty cycle on one anchor. Measured on David's machine (2026-07-23, a day
+of reconciler logs): one anchor (a WebKit cache directory with 144,647 children) averaged 10.5 s per walk, was re-walked
+49 times, and burned 516 s, 49% of the day's entire reconcile budget, while 4,559 other anchors finished in under a
+second each. Under the cost-scaled window that anchor earns ~5 min and drops to roughly 10 walks a day; every sub-2 s
+anchor stays pinned at the 60 s floor, unchanged. The ceiling exists because past half an hour a stale subtree costs the
+user more than the CPU the back-off saves.
 
 **Cost is `ReconcileSummary::walk_cost()` (duration MINUS writer wait), never the raw duration.** Time parked on a
 saturated writer queue is the writer's, not the anchor's; charging it would let one transient global saturation (an
-initial scan, say) inflate every anchor's measured cost at the same moment and back a whole volume off for half an
-hour. This is the same attribution `reconcile_report` makes for its log level, from the same `writer_wait` probe.
+initial scan, say) inflate every anchor's measured cost at the same moment and back a whole volume off for half an hour.
+This is the same attribution `reconcile_report` makes for its log level, from the same `writer_wait` probe.
 
 `gc` measures each record against its OWN window, not a global one. Against a global 60 s an expensive anchor's record
 would be evicted the moment the floor elapsed, and the anchor would then be eligible on its leading edge, defeating the
@@ -468,16 +465,16 @@ separates an updater's staging dir from a folder someone made is how long it has
 directory, which is exactly the case the throttle already handles well and this must not touch.
 
 **The stat lives at the enqueue call site, never in the throttle.** `RescanThrottle` is pure and clock-injected (no
-filesystem, no logging, no clock of its own), which is why every one of its rules is deterministically unit-testable.
-So `rescan_settle::note_settle_deadline` does the `symlink_metadata` and passes the resulting DEADLINE into the throttle
-as data, the same way `now` and `walk_cost` are passed in. The throttle lock is taken once to read the policy and once
-to store the result, never held across the syscall. Cost is one stat on the anchor itself (never a walk), on the same
+filesystem, no logging, no clock of its own), which is why every one of its rules is deterministically unit-testable. So
+`rescan_settle::note_settle_deadline` does the `symlink_metadata` and passes the resulting DEADLINE into the throttle as
+data, the same way `now` and `walk_cost` are passed in. The throttle lock is taken once to read the policy and once to
+store the result, never held across the syscall. Cost is one stat on the anchor itself (never a walk), on the same
 event-loop thread that already stats once per live create/modify event.
 
 **A re-enqueue can't push the deadline out.** Every enqueue re-derives the deadline from the same immutable birthtime,
-so an anchor that keeps raising `MustScanSubDirs` settles on schedule. The deadline moves only when the directory
-itself is replaced (delete + recreate gives a new inode with a new birthtime), and that genuinely IS a new subtree, not
-the same one being starved.
+so an anchor that keeps raising `MustScanSubDirs` settles on schedule. The deadline moves only when the directory itself
+is replaced (delete + recreate gives a new inode with a new birthtime), and that genuinely IS a new subtree, not the
+same one being starved.
 
 **Fail open, never closed.** No readable birthtime (a filesystem or platform that doesn't record one, a directory that
 already vanished, a wall clock that moved backwards) means no deadline and the anchor walks exactly as before. A missing
@@ -548,17 +545,17 @@ the tick give each state its own writer, and the pick-time hold is the one that 
 
 **There is no window where a walk is writing while its anchor is unheld.** The active walk is popped out of
 `pending_rescans`, so the sweep never iterates it. A storm that re-queues the active path can only put it back while its
-throttle record still predates the walk, which reads ELIGIBLE and therefore holds. After the walk records its
-completion the anchor is ineligible, but `active_rescan_path` still names it, so the sweep skips it (it's passed in as
-`active`) until the task itself releases. The pick-time hold closes the last seam: even if a release and a re-queue
-interleave, the follow-up walk holds when it is picked.
+throttle record still predates the walk, which reads ELIGIBLE and therefore holds. After the walk records its completion
+the anchor is ineligible, but `active_rescan_path` still names it, so the sweep skips it (it's passed in as `active`)
+until the task itself releases. The pick-time hold closes the last seam: even if a release and a re-queue interleave,
+the follow-up walk holds when it is picked.
 
 **What this does NOT do: a throttled subtree's size is not marked stale.** `recursive_size_stale` is
 `complete && min_subtree_epoch < current_epoch` (`../read/enrichment.rs`), and `current_epoch` bumps only on a
 continuity BREAK (reconnect/rescan, watcher death, overflow, disconnect, launch-loading-Stale) — never per throttle
-window. A reconcile STAMPS `listed_epoch` with the current epoch, so a subtree walked this session reads
-`stale = false` and renders `'size'`, a confidently-exact value, for the whole back-off. Dropping the hold therefore
-leaves it looking fresh rather than muted. Whether that's worth a distinct signal is open.
+window. A reconcile STAMPS `listed_epoch` with the current epoch, so a subtree walked this session reads `stale = false`
+and renders `'size'`, a confidently-exact value, for the whole back-off. Dropping the hold therefore leaves it looking
+fresh rather than muted. Whether that's worth a distinct signal is open.
 
 **A reconcile's log line attributes its writer wait** (`reconciler/rescan.rs` `reconcile_report`,
 `../writer/wait_probe.rs`). The bounded writer channel means a producer parks once it's full, so `reconcile_subtree`'s
@@ -572,9 +569,9 @@ the churn signal below); past that the wait is named, and when it DOMINATES (ove
 ## The churn signal (`reconciler/rescan_churn.rs`)
 
 Both per-walk lines (`reconcile starting`, `reconcile complete`) are DEBUG, because a normal day produces thousands of
-them and most say `+0 -0 ~0`. Measured on David's machine (2026-07-23, a day of reconciler logs): 4,626 starts and
-4,596 completes, of which 2,486 changed nothing at all and cost 11.5 s between them. At `info` they buried the two
-lines that mattered.
+them and most say `+0 -0 ~0`. Measured on David's machine (2026-07-23, a day of reconciler logs): 4,626 starts and 4,596
+completes, of which 2,486 changed nothing at all and cost 11.5 s between them. At `info` they buried the two lines that
+mattered.
 
 Demoting them alone would be a regression in disguise: the problems this area's fixes address stayed invisible for
 months precisely because nobody could see the aggregate. So one INFO line replaces the thousands. `RescanChurnWindow`
@@ -601,21 +598,20 @@ throttle, and the top-anchor list already tells you which kind of churn you're l
 5,587 of them one-shot), so per-anchor tallies are capped at `MAX_TRACKED_ANCHORS` (64) and nothing survives a window.
 Past the cap, a new anchor gets in only by outspending the cheapest one tracked, which then gives way. Refusing every
 newcomer instead would be actively broken: one-shot anchors fill the map within minutes, and the expensive anchor that
-shows up later (the one the reader needs) would never be named. Totals stay exact whatever the cap drops, and a
-capped count prints as `64+ anchors` so it reads as the floor it is.
+shows up later (the one the reader needs) would never be named. Totals stay exact whatever the cap drops, and a capped
+count prints as `64+ anchors` so it reads as the floor it is.
 
 **Where it lives, and why not the neighbours.** The engine is pure and clock-injected like `rescan_throttle.rs` beside
 it, so every accumulate/threshold/format rule is unit-tested with no logger, clock, or filesystem; the impure part is
 three thin fns owning one process-wide `Mutex`. Process-wide, not per-reconciler, because reconcile churn is a MACHINE
-question: two volumes each walking 40 s is 80 s of this machine's CPU, and a per-volume window would report neither.
-Two nearby mechanisms were considered and are deliberately separate:
+question: two volumes each walking 40 s is 80 s of this machine's CPU, and a per-volume window would report neither. Two
+nearby mechanisms were considered and are deliberately separate:
 
 - `DEBUG_STATS` (`../events/mod.rs`) counts `MustScanSubDirs` signals and completed rescans app-wide since the last
-  reset, for the debug window. No window, no cost, no row deltas, and `reset()` on every scan start, so it cannot
-  answer "is this machine reconciling too much right now?". The churn window doesn't replace it; they feed different
-  surfaces.
-- The churn monitor (`../watch/churn_monitor.rs`, `docs/notes/churn-observability-spike.md`) measures FSEvents churn
-  per directory rolled up the ancestor chain, off unless `CMDR_CHURN_SPIKE` is set, at Debug, for offline analysis.
+  reset, for the debug window. No window, no cost, no row deltas, and `reset()` on every scan start, so it cannot answer
+  "is this machine reconciling too much right now?". The churn window doesn't replace it; they feed different surfaces.
+- The churn monitor (`../watch/churn_monitor.rs`, `docs/notes/churn-observability-spike.md`) measures FSEvents churn per
+  directory rolled up the ancestor chain, off unless `CMDR_CHURN_SPIKE` is set, at Debug, for offline analysis.
   Different input (raw events, not completed reconciles), different sink (a script, not a person reading the log), and
   it can't see walk cost or row deltas at all. This one borrows its discipline (measured window rather than assumed,
   hard cap with the drop counted, pure engine) and nothing else.
@@ -624,8 +620,8 @@ Two nearby mechanisms were considered and are deliberately separate:
 reconciles, 2026-07-19 to 2026-07-23), the budgets fire in 11 of the 49 windows that saw any reconciling, and every one
 of those 11 is a window this area's fixes target: 1,621 reconciles over 1,595 one-shot anchors (the settle delay),
 289,531 row changes across 13 walks of 8 anchors (the hardlink diff fix), and repeated ~10 s walks of one cache
-directory (the cost-proportional throttle). If it keeps firing on a normal day AFTER those fixes, they didn't finish
-the job, and that is exactly what the line is for.
+directory (the cost-proportional throttle). If it keeps firing on a normal day AFTER those fixes, they didn't finish the
+job, and that is exactly what the line is for.
 
 ## Depth-split `MustScanSubDirs` routing (`reconciler/rescan_route.rs`)
 
@@ -633,10 +629,10 @@ The per-subtree throttle is the right tool for a DEEP/narrow anchor (a single `t
 scale one. Under a high-churn boot disk, macOS drops fine-grained FSEvents and raises `MustScanSubDirs` on ever-higher
 paths, up to `/`. Reconciling `/` is a ~20-min walk, and the whole time it runs it legitimately holds the per-dir
 hourglass over everything below — an invisible reconcile that makes every local size look unsettled for twenty minutes,
-and a 60 s throttle after a 20-min walk is noise. A channel overflow (the SAME "we lost events"
-meaning) already takes the VISIBLE scanner path; this makes the two equivalent signals converge. `route_must_scan_sub_dirs`
-(the single entry point for the two feeders the fix targets — the live path `process_live_event` and the post-replay
-handoff `event_loop::replay`) classifies by anchor depth via `rescan_route::classify`:
+and a 60 s throttle after a 20-min walk is noise. A channel overflow (the SAME "we lost events" meaning) already takes
+the VISIBLE scanner path; this makes the two equivalent signals converge. `route_must_scan_sub_dirs` (the single entry
+point for the two feeders the fix targets — the live path `process_live_event` and the post-replay handoff
+`event_loop::replay`) classifies by anchor depth via `rescan_route::classify`:
 
 - **Shallow** (`depth <= SHALLOW_RESCAN_MAX_DEPTH = 2`, i.e. `/`, `/Users`, `/Users/<me>`): `route_shallow_to_scanner`
   requests a fresh `start_scan` via `ScanTrigger` and takes NO hourglass hold and NEVER enters `pending_rescans`
@@ -655,9 +651,9 @@ and starts holding the hourglass for the better part of a full scan.
 **The measurement** (David's machine, 2026-07-18..20): **14 of 28 scans were triggered by a shallow `MustScanSubDirs`
 anchor**, roughly one every 2.5 hours INCLUDING OVERNIGHT while idle (01:17, 03:44, 06:39, 08:46, 11:16). **Thirteen of
 those 14 anchors were `/` itself; the fourteenth was `/System`, a sealed read-only volume where nothing writes.** So the
-anchor path carries no diagnostic information: macOS isn't reporting where churn happened, it's reporting that it gave up
-and coalesced to the watch root. Each trigger runs the SERIAL reconcile walk, measured at 1,309 s on this volume. That's
-roughly ten multi-minute-to-multi-hour full walks a day for a signal that says nothing about what changed.
+anchor path carries no diagnostic information: macOS isn't reporting where churn happened, it's reporting that it gave
+up and coalesced to the watch root. Each trigger runs the SERIAL reconcile walk, measured at 1,309 s on this volume.
+That's roughly ten multi-minute-to-multi-hour full walks a day for a signal that says nothing about what changed.
 
 **The policy** (`SHALLOW_RESCAN_MIN_INTERVAL = 24 h`, `decide_shallow_anchor`): a shallow anchor means "this index is
 now SUSPECT", not "rescan right now". At most one real sweep per volume per day.

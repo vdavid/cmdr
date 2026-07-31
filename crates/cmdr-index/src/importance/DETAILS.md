@@ -72,11 +72,11 @@ synchronous macOS-framework round-trip can blow rayon's 2 MB worker stack (`src-
 the caller. A folder with no `kMDItemLastUsedDate` (never opened, or Spotlight has no record) is simply absent from the
 returned map.
 
-An un-sampled local folder is *available but unsampled*, which is NOT the same as an SMB folder where the signal is
-*unavailable* (`scorer/DETAILS.md` § Missing-signal redistribution); the `SignalSet` the scheduler passes encodes
-which. **Sampling runs ONLY when the volume's mask says `last_used_available`**: SMB has no Spotlight, and
-sampling would issue `MDItem` queries against the mount, which the scheduler must never do (it reads only the local
-index). Off macOS `is_available()` is `false`, the sample is empty, and the weight redistributes.
+An un-sampled local folder is _available but unsampled_, which is NOT the same as an SMB folder where the signal is
+_unavailable_ (`scorer/DETAILS.md` § Missing-signal redistribution); the `SignalSet` the scheduler passes encodes which.
+**Sampling runs ONLY when the volume's mask says `last_used_available`**: SMB has no Spotlight, and sampling would issue
+`MDItem` queries against the mount, which the scheduler must never do (it reads only the local index). Off macOS
+`is_available()` is `false`, the sample is empty, and the weight redistributes.
 
 `SAMPLE_CAP` is a guess until measured on a real home (plan open-question 2, agent-spec §18.4); the caller hands the
 sampler only the paths it can use, not the whole volume's, which is worth ~60 MB of transient on a local volume.
@@ -123,9 +123,9 @@ is idempotent and re-runs from the bus on the next scan completion.
 
 **Decision:** the writer runs `PRAGMA wal_checkpoint(TRUNCATE)` (`writer::run_wal_checkpoint`, driven by
 `ImportanceWriter::checkpoint_wal`) at every recompute completion — after both a full pass (`recompute_folders`) and an
-incremental rescore (`incremental_rescore`), once the write is flushed. It runs on the writer thread's own connection (the single-writer invariant; never a side
-connection), in autocommit: every message commits before the loop reads the next, so the TRUNCATE, which SQLite refuses
-inside a transaction, is always legal there.
+incremental rescore (`incremental_rescore`), once the write is flushed. It runs on the writer thread's own connection
+(the single-writer invariant; never a side connection), in autocommit: every message commits before the loop reads the
+next, so the TRUNCATE, which SQLite refuses inside a transaction, is always legal there.
 
 **Why:** no `wal_autocheckpoint` override is set, so SQLite's default PASSIVE autocheckpoint copies frames back into the
 main DB but reuses the WAL file in place and never shrinks it. A full pass REPLACES the whole `weights` table and the

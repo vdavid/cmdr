@@ -176,11 +176,11 @@ comma in a path can't shift columns.
 
 - `crates/cmdr-index/src/indexing/watch/churn_monitor.rs` — the aggregator, pure and clock-injected (same shape as
   `reconcile/reconciler/rescan_throttle.rs`), with its unit tests in `churn_monitor/tests.rs`.
-- `crates/cmdr-index/src/indexing/watch/event_loop/live.rs` — the single call site, inside `process_live_batch`,
-  before the batch drains. It lives there rather than at a loop's flush tick because **there are two live loops**:
-  `live.rs`'s `run_live_event_loop` (post-scan) and `replay.rs` Phase 3 (post-journal-replay, the cold-start route).
-  Both funnel through `process_live_batch`, which takes a `ChurnObserver` by `&mut`, so the hook is compiler-enforced at
-  every live batch. `churn_monitor/tests.rs::every_live_loop_owns_a_real_churn_observer` catches a third loop appearing.
+- `crates/cmdr-index/src/indexing/watch/event_loop/live.rs` — the single call site, inside `process_live_batch`, before
+  the batch drains. It lives there rather than at a loop's flush tick because **there are two live loops**: `live.rs`'s
+  `run_live_event_loop` (post-scan) and `replay.rs` Phase 3 (post-journal-replay, the cold-start route). Both funnel
+  through `process_live_batch`, which takes a `ChurnObserver` by `&mut`, so the hook is compiler-enforced at every live
+  batch. `churn_monitor/tests.rs::every_live_loop_owns_a_real_churn_observer` catches a third loop appearing.
 - `scripts/churn-analysis/` — the offline analyser.
 
 The aggregator is designed to be promoted into the sealed-subtrees churn accounting rather than deleted: only the sink

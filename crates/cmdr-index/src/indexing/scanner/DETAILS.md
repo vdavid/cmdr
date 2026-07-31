@@ -1,15 +1,15 @@
 # Local guarded scanner details
 
-Read this before any non-trivial work in `scanner/`: editing, planning, reorganizing, or advising. Must-know
-guardrails are in `CLAUDE.md`.
+Read this before any non-trivial work in `scanner/`: editing, planning, reorganizing, or advising. Must-know guardrails
+are in `CLAUDE.md`.
 
 This area owns the LOCAL fresh-scan walker and the shared exclusion policy. Points outward: the honest-sizes model
 (`listed_epoch` / `min_subtree_epoch`), the `dir_stats` ledger, and the shared `Arc<AtomicI64>` id counter are canonical
-in `../writer/DETAILS.md`; the serial LOCAL reconcile walk (which reuses the `GuardedReader` + `LOCAL_LIST_TIMEOUT`
-from here) and the cost budget in `../reconcile/DETAILS.md`; `IndexPathSpace` + mount-relative resolution in
-`../paths/DETAILS.md`; the registry, phase machine, and `IndexVolumeKind` capability axes in
-`../lifecycle/DETAILS.md`; the shared `extract_metadata` primitive at `../metadata.rs` (documented in the
-[hub](../DETAILS.md)). The network (SMB/MTP) walker is a different scanner entirely: `../network_scanner/DETAILS.md`.
+in `../writer/DETAILS.md`; the serial LOCAL reconcile walk (which reuses the `GuardedReader` + `LOCAL_LIST_TIMEOUT` from
+here) and the cost budget in `../reconcile/DETAILS.md`; `IndexPathSpace` + mount-relative resolution in
+`../paths/DETAILS.md`; the registry, phase machine, and `IndexVolumeKind` capability axes in `../lifecycle/DETAILS.md`;
+the shared `extract_metadata` primitive at `../metadata.rs` (documented in the [hub](../DETAILS.md)). The network
+(SMB/MTP) walker is a different scanner entirely: `../network_scanner/DETAILS.md`.
 
 ## Module structure
 
@@ -35,9 +35,9 @@ from here) and the cost budget in `../reconcile/DETAILS.md`; `IndexPathSpace` + 
   lacks, so it re-reads a directory with `read_dir` when `unusable > 0`. See `../reconcile/DETAILS.md`.
 - **Degrade, never drop.** `parse_entry` returns an entry with `stat: None` (the caller pays one `symlink_metadata`)
   when an attribute it needs wasn't returned, or when the type isn't file / dir / symlink and so carries no inline size
-  — a fifo, socket, or device node. It returns `None`, counted as `unusable`, only for a record with no recoverable
-  name or type. Both branches are unreachable on the filesystems we've measured; the synthetic-record tests in
-  `bulk_read.rs` are what keep them correct.
+  — a fifo, socket, or device node. It returns `None`, counted as `unusable`, only for a record with no recoverable name
+  or type. Both branches are unreachable on the filesystems we've measured; the synthetic-record tests in `bulk_read.rs`
+  are what keep them correct.
 - **exclusions.rs** — the self-contained two-tier path-exclusion policy: `EXCLUDED_PREFIXES`, the
   `FIRMLINKED_SYSTEM_PREFIXES` allowlist, `JUNK_BASENAMES`, `PSEUDO_FS_BASENAMES`, the `ExclusionScope` /
   `ExclusionTier` types, `should_exclude`, `e2e_allowlist_path`, `is_canonicalization_alias`, and `default_exclusions`
@@ -62,7 +62,7 @@ is offline, which froze the whole scan.
   `READING → ABANDONED`, won by the watchdog), and whoever wins the compare-and-swap owns the outcome exactly once. A
   read the watchdog condemns is **abandoned**: reported as a read error (subtree pruned, dir left unmarked), a
   replacement worker is spawned to restore pool capacity, and the stuck worker is left parked in the syscall (it exits
-  on its own when the File Provider layer finally errors). Only genuinely-hung *frontier* dirs reach this, each pruning
+  on its own when the File Provider layer finally errors). Only genuinely-hung _frontier_ dirs reach this, each pruning
   its subtree, so the parked-worker cost is bounded and self-clearing. Workers are NOT joined (an abandoned one would
   block forever); the walk returns when the outstanding-task count hits zero. The reader is an injected `ReadDirFn`
   (production `bulk_read_dir` on macOS, `std_read_dir` elsewhere, tests a mock that blocks or trickles), so hang /
@@ -107,17 +107,17 @@ what it has delivered through a `ReadProgress` handle (`scanner/walker/mod.rs`),
 - **Over allowance** — total time past `stall_timeout` plus `WalkConfig::per_entry_allowance`
   (`DEFAULT_PER_ENTRY_ALLOWANCE`, 1 ms) per entry delivered. The floor under the stall rule: without it a read trickling
   one entry every 14 s would never stall and never finish. It's ~500× the measured `getattrlistbulk` per-entry cost and
-  10× the reconcile cost budget's per-entry threshold for calling a read *pathological*, so a healthy read clears it by
+  10× the reconcile cost budget's per-entry threshold for calling a read _pathological_, so a healthy read clears it by
   orders of magnitude.
 
 **Why it changed.** A total-duration cap of 15 s made the 2026-07-21 fresh scan report "complete" with 6,001,637
-entries; the reconcile that followed added **661,411 rows** it had silently dropped. All five abandoned directories
-were flat and merely large (200,000 / 179,523 / 102,929 / 100,000 / 74,024 entries), and the serial reconcile read
-every one of them in 10.8 s or less. They only exceeded 15 s in the parallel scan, which runs one read per core, so
-the constant was being asked a question its own doc comment never claimed to answer ("an online cloud dir lists in
-well under a second"). Measurements: `docs/notes/indexing-benchmarks-2026-07-21.md`. Same class of mistake, same week,
-as the reconcile cost budget's cumulative-time metric (see `../reconcile/DETAILS.md`), and the same fix shape: score
-the work done, not the clock.
+entries; the reconcile that followed added **661,411 rows** it had silently dropped. All five abandoned directories were
+flat and merely large (200,000 / 179,523 / 102,929 / 100,000 / 74,024 entries), and the serial reconcile read every one
+of them in 10.8 s or less. They only exceeded 15 s in the parallel scan, which runs one read per core, so the constant
+was being asked a question its own doc comment never claimed to answer ("an online cloud dir lists in well under a
+second"). Measurements: `docs/notes/indexing-benchmarks-2026-07-21.md`. Same class of mistake, same week, as the
+reconcile cost budget's cumulative-time metric (see `../reconcile/DETAILS.md`), and the same fix shape: score the work
+done, not the clock.
 
 **A reader that can't report progress is still bounded.** With `entries` stuck at 0, both rules collapse to the plain
 total-duration cap the walker always had — which is the honest verdict, since a read we can't observe is
@@ -189,16 +189,16 @@ a network mount where any syscall blocks indefinitely, and providers register th
 there'd be nothing to find.
 
 **Recognizing a File Provider domain root** (`file_system::file_provider::domain_id_for_dir`): a domain root carries the
-`com.apple.file-provider-domain-id` xattr; its children, `~/Library/CloudStorage` itself, and ordinary folders don't.
-~5 µs, a plain APFS read with no XPC, works while the provider is offline, needs no entitlement. It resolves Dropbox,
+`com.apple.file-provider-domain-id` xattr; its children, `~/Library/CloudStorage` itself, and ordinary folders don't. ~5
+µs, a plain APFS read with no XPC, works while the provider is offline, needs no entitlement. It resolves Dropbox,
 Google Drive, MacDroid, and iCloud Drive — and iCloud's domain root is `~/Library/Mobile Documents`, which is NOT under
 `~/Library/CloudStorage`, which is exactly why a path-prefix heuristic was rejected. Full measurements, the
 authoritative-but-costly `NSFileProviderManager` alternative, and the dead ends:
 `docs/notes/fileprovider-domain-detection.md` (verified on macOS 26.5.2, build 25F84, 2026-07-20).
 
-**The xattr is a private Apple detail, so this is an OPTIMIZATION, never a safety guarantee.** It's undocumented
-and not contractual; if Apple drops it, unrecognized domain roots simply go back to being walked. Nothing may depend on
-it for correctness or for bounding cost. The actual contract against pathological trees is the cost-budget backstop
+**The xattr is a private Apple detail, so this is an OPTIMIZATION, never a safety guarantee.** It's undocumented and not
+contractual; if Apple drops it, unrecognized domain roots simply go back to being walked. Nothing may depend on it for
+correctness or for bounding cost. The actual contract against pathological trees is the cost-budget backstop
 (`../reconcile/DETAILS.md`) — the two are not redundant, and neither makes the other unnecessary.
 
 **Injectability:** `ExclusionScope` carries both filesystem questions as `fn(&str) -> bool` pointers (`RootProbes`:
@@ -219,8 +219,8 @@ mount-rooted scan is already bounded to its mount). Enrichment derives the scope
 a mount-rooted volume never excludes its own `/Volumes/X/...` paths, only junk it navigates into.
 
 `ExclusionScope` is a VALUE carrying the mount root (`None` = the `/`-rooted boot disk) plus the domain probe, not a
-bare enum: the root-position rule needs to know where the volume starts, and passing a scope is mandatory at every
-call site, so no path can be gated without saying which volume it's being gated for. `ExclusionTier` (the `BootDisk` /
+bare enum: the root-position rule needs to know where the volume starts, and passing a scope is mandatory at every call
+site, so no path can be gated without saying which volume it's being gated for. `ExclusionTier` (the `BootDisk` /
 `MountRooted` enum) is derived from it. `IndexPathSpace` STORES its space as an `ExclusionScope` and reads its mount
 root back through it, so the path space and the exclusion gate can't disagree about where the volume begins (see
 `../paths/DETAILS.md`). The scanner (`InsertVisitor` via `ScanConfig::scope`), the reconciler, and the local reconcile
@@ -234,7 +234,7 @@ design (see `../reconcile/DETAILS.md`).
 canonicalize onto the same `(parent_id, name_folded)` key as the real directory under `/private`. Storing the alias
 collides on `INSERT OR IGNORE` (the source of "skipped due to UNIQUE conflict" log lines on a normal Mac) and risks an
 order-dependent race where the symlink row wins and the real directory's row, hence its recursive size, is dropped.
-Skipping the alias is correct because the real directory owns the canonical slot, and the resulting index is
-identical to the pre-skip outcome minus the race. **Don't "fix" this by storing the raw `/tmp` path instead**: that
-would make the entry invisible to the ~15 lookup sites that all normalize to canonical form. The firmlink/`normalize_path`
-model itself is canonical in `../paths/DETAILS.md`.
+Skipping the alias is correct because the real directory owns the canonical slot, and the resulting index is identical
+to the pre-skip outcome minus the race. **Don't "fix" this by storing the raw `/tmp` path instead**: that would make the
+entry invisible to the ~15 lookup sites that all normalize to canonical form. The firmlink/`normalize_path` model itself
+is canonical in `../paths/DETAILS.md`.

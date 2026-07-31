@@ -5,8 +5,8 @@ vibe. Read this before any non-trivial work here: editing, planning, reorganizin
 (running the suite, reading the score, adding a scenario, the snapshot/label/tune loop, the privacy contract) is
 `docs/guides/importance-evals.md`; this doc is the design.
 
-The scorer ships deliberately-unvalidated default weights (`../scorer/DETAILS.md` § Tunable weights), which is the plan's
-open-question 1. This module is what closes it.
+The scorer ships deliberately-unvalidated default weights (`../scorer/DETAILS.md` § Tunable weights), which is the
+plan's open-question 1. This module is what closes it.
 
 ## The two tiers, and the floor
 
@@ -14,8 +14,8 @@ open-question 1. This module is what closes it.
   violation fails CI — a regression that lets `node_modules` climb out of the bottom decile breaks the build.
 - **Soft constraints** are a larger set of desirable orderings. `score_scenario` returns the satisfied fraction as a
   scalar quality score, and `aggregate_score` averages across scenarios. The aggregate is pinned to a FIXED floor
-  constant (`SOFT_SCORE_FLOOR` in `tests.rs`, currently `0.95`), consciously raised when tuning improves quality —
-  never a self-updating ratchet, because a ratchet would let a slow slide re-baseline itself.
+  constant (`SOFT_SCORE_FLOOR` in `tests.rs`, currently `0.95`), consciously raised when tuning improves quality — never
+  a self-updating ratchet, because a ratchet would let a slow slide re-baseline itself.
 
 Both tiers speak the same `Constraint` vocabulary; only the treatment of a violation differs.
 
@@ -32,10 +32,10 @@ Both tiers speak the same `Constraint` vocabulary; only the treatment of a viola
 naming a path that isn't in the scenario) counts as unsatisfied for scoring but is reported distinctly, so a mistyped
 scenario path is obvious rather than silently dragging the score.
 
-**The `Ranking` tie rule.** `Ranking::from_scores` sorts score DESC then path ASC — the SAME stable order the read
-API's `top_n` uses (`read::read_ordered`'s `ORDER BY`), so a scenario ranks folders exactly as a live consumer would.
-Ties therefore resolve deterministically by path, never by input order. Owning "rank", "top N", and "decile" here keeps
-those definitions single-sourced and unit-tested in one place.
+**The `Ranking` tie rule.** `Ranking::from_scores` sorts score DESC then path ASC — the SAME stable order the read API's
+`top_n` uses (`read::read_ordered`'s `ORDER BY`), so a scenario ranks folders exactly as a live consumer would. Ties
+therefore resolve deterministically by path, never by input order. Owning "rank", "top N", and "decile" here keeps those
+definitions single-sourced and unit-tested in one place.
 
 ## The fitness function (`mod.rs`)
 
@@ -50,8 +50,8 @@ number.
 A `Scenario` is a home root, a `now_secs`, an `Availability`, a list of `ScenarioFolder`s (path + derived
 `FolderSignals`), and the two constraint tiers. It is deliberately NOT a synthetic filesystem: the pure scorer only
 needs signals, and signals are exactly what a corpus tool can export from a real index. So one type serves both sources
-— hand-authored synthetic trees and anonymized real dumps load into the same `Scenario` and score through the same
-path — and the privacy contract stays simple, because a `FolderSignals` holds counts, flags, and timestamps, never file
+— hand-authored synthetic trees and anonymized real dumps load into the same `Scenario` and score through the same path
+— and the privacy contract stays simple, because a `FolderSignals` holds counts, flags, and timestamps, never file
 contents.
 
 `Availability` is a named enum (`Local` / `ListingOnly`) rather than the raw `SignalSet` bools, so a scenario file reads

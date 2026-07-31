@@ -11,8 +11,8 @@ front door.
   it), fold it into a call that already exists, delete it, or put it behind the `testing` feature. The surface is 34
   items and each one is justified in that table; a 35th needs the same.
 - **❌ The app never calls into `indexing::` internals.** It holds the handle (`crate::index_host::index()`) and calls
-  methods. A `crate::indexing::<area>::…` from app code is a back-edge that stops compiling at the extraction, so it's
-  a bug now, not later.
+  methods. A `crate::indexing::<area>::…` from app code is a back-edge that stops compiling at the extraction, so it's a
+  bug now, not later.
 - **Building twice is `IndexBuildError::AlreadyBuilt`, and that's honest.** The subsystems below the handle carry
   process-wide state, so there is one index per process. The variant disappears when that state moves inside; don't
   paper over it by handing back a second handle.
@@ -28,8 +28,8 @@ front door.
 
 ## Module map
 
-- `mod.rs` — `Index` and its methods, grouped: turning volumes on and off, what it knows about a volume, serving what
-  it indexed, reading the database directly, and corrections from the host.
+- `mod.rs` — `Index` and its methods, grouped: turning volumes on and off, what it knows about a volume, serving what it
+  indexed, reading the database directly, and corrections from the host.
 - `builder.rs` — `IndexBuilder`, the process claim, and the test install path.
 - `error.rs` — `IndexError`. `ingest.rs` — the designed-not-implemented write side plus its types.
 - `tests.rs` — the single-instance contract, and the acceptance scan that drives a real walk over an `InMemoryVolume`

@@ -15,8 +15,8 @@ it to an injected `EventSink`. Nothing here names a wire format, an event name, 
 `AggregationComplete`, `MemoryWarning`, `FreshnessChanged`, `PhaseChanged`, `MediaEnrichProgress`,
 `MediaEnrichTerminal`). Two reach the host's own machinery instead:
 
-- **`Error { report: IndexErrorReport }`** — a failure worth an error report, described by what broke rather than by
-  the sentence someone would write about it: `MemoryWatchdog` (action, footprint, limit, escalation, the breakdown),
+- **`Error { report: IndexErrorReport }`** — a failure worth an error report, described by what broke rather than by the
+  sentence someone would write about it: `MemoryWatchdog` (action, footprint, limit, escalation, the breakdown),
   `StorageFailed` (the typed `IndexFailure` plus context), `LiveEventLoopUnavailable`, `WalkWorkerSpawnFailed`. The app
   renders each and raises it through `log_error!`, which is what feeds `error_reporter::auto_dispatcher`. **This exists
   because a crate can't invoke a crate-root macro**; dropping it would silently cost the shipped-error feedback loop.
@@ -24,9 +24,10 @@ it to an injected `EventSink`. Nothing here names a wire format, an event name, 
 - **`PathAccessDenied { path }`** — the scanner hit an OS denial. The app decides whether it's TCC-restricted and worth
   the sidebar's "limited by macOS" styling.
 
-`IndexEventKind` is the payload-free twin, so a test can assert the SHAPE of a stream (`[ScanStarted, ScanProgress,
-ScanComplete]`) without spelling out fields. Its `ALL` array is fixed-length, so a new variant fails to compile until
-it's listed, and the app-side completeness test then fails until a sample joins `one_of_every_kind`.
+`IndexEventKind` is the payload-free twin, so a test can assert the SHAPE of a stream
+(`[ScanStarted, ScanProgress, ScanComplete]`) without spelling out fields. Its `ALL` array is fixed-length, so a new
+variant fails to compile until it's listed, and the app-side completeness test then fails until a sample joins
+`one_of_every_kind`.
 
 Three sinks ship: the app's `TauriEventSink`, `NoopEventSink` (paths and tests with nothing to say —
 `NoopEventSink::shared()` hands out one `Arc`), and the test `RecordingSink`.
@@ -47,8 +48,8 @@ derive on a value is fine here; a presentation decision isn't.
 ## Response types and the debug ring (`mod.rs`)
 
 `IndexStatusResponse`, `VolumeIndexStatus`, and `IndexDebugStatusResponse` are IPC RESPONSES, not events, so they stay
-here with their serde shapes. `DebugStats` is the app-wide phase ring the debug window reads; `PhaseRecord.trigger` is
-a free-text English line rendered only in that developer panel.
+here with their serde shapes. `DebugStats` is the app-wide phase ring the debug window reads; `PhaseRecord.trigger` is a
+free-text English line rendered only in that developer panel.
 
 `RescanReason` lives here too: `StaleIndex`, `JournalGap`, `ReplayOverflow`, `WatcherStartFailed`,
 `ReconcilerBufferOverflow`, `IncompletePreviousScan`, `WatcherChannelOverflow`, `IngestionBacklog`. Every path that
@@ -73,8 +74,8 @@ funnels (`lifecycle/manager.rs` for the local walker, `lifecycle/network_scan.rs
 decides reconcile-vs-truncate. The frontend previously guessed from `prior_total_entries` alone, which disagrees on a
 populated index whose last scan never completed: that one truncates, so it's a rebuild, not a change check.
 
-`calibration_kind()` maps the run onto its ETA-calibration bucket (`store::ScanCalibrationKind`): the first scan and
-the full rebuild run the SAME walker so they share `FullWalk`, and only `ChangeCheck` gets its own. The buckets and the
+`calibration_kind()` maps the run onto its ETA-calibration bucket (`store::ScanCalibrationKind`): the first scan and the
+full rebuild run the SAME walker so they share `FullWalk`, and only `ChangeCheck` gets its own. The buckets and the
 same-kind-then-any-kind fallback live in `../store/DETAILS.md`.
 
 ## `set_phase_for` — the two phase records (`mod.rs`)
@@ -85,31 +86,31 @@ There are TWO records of the top-level pipeline phase (`Scanning → Aggregating
 - **Global, app-wide**: `DEBUG_STATS.set_phase()` appends to one `PhaseRecord` ring (capped at 20) that the debug
   window's "Phase timeline" reads. It's a singleton: under two concurrent volumes it interleaves their transitions and
   can't say WHICH drive changed. Debug-only; keep it.
-- **Per-volume**: the `IndexEvent::PhaseChanged { volume_id, phase }` report tells the frontend which drive
-  moved to which phase, driving the per-volume step checklist. `ActivityPhase` (Replaying/Scanning/Aggregating/
+- **Per-volume**: the `IndexEvent::PhaseChanged { volume_id, phase }` report tells the frontend which drive moved to
+  which phase, driving the per-volume step checklist. `ActivityPhase` (Replaying/Scanning/Aggregating/
   Reconciling/Live/Idle) is a serde `snake_case` specta enum, so the FE branches on the typed variant, no
   string-matching on labels.
 
 `set_phase_for(events, volume_id, phase, trigger)` (a `pub(super)` fn) does BOTH in one call — the global ring plus a
-fire-and-forget per-volume report — so the two can't drift. Every `set_phase` site where a `volume_id` and a sink are
-in scope goes through it: `lifecycle/manager.rs` (local `Replaying`/`Scanning`, the completion task's `Aggregating →
-Reconciling → Live`, `Idle` in stop/shutdown), `lifecycle/network_scan.rs` (`Scanning` at start; `Live` on clean
-finish, `Idle` on disconnect), `lifecycle/scan_completion.rs`, and `watch/event_loop/replay.rs` (`Live` at the end of
-replay). Spawned tasks capture a cloned sink / `volume_id`, never re-resolving the manager in the registry (same
+fire-and-forget per-volume report — so the two can't drift. Every `set_phase` site where a `volume_id` and a sink are in
+scope goes through it: `lifecycle/manager.rs` (local `Replaying`/`Scanning`, the completion task's
+`Aggregating → Reconciling → Live`, `Idle` in stop/shutdown), `lifecycle/network_scan.rs` (`Scanning` at start; `Live`
+on clean finish, `Idle` on disconnect), `lifecycle/scan_completion.rs`, and `watch/event_loop/replay.rs` (`Live` at the
+end of replay). Spawned tasks capture a cloned sink / `volume_id`, never re-resolving the manager in the registry (same
 discipline as the freshness `Arc`).
 
 The event fires only on TRANSITIONS, so a frontend that joins mid-scan (window reload) can't learn the current phase
 from it. The FE backfills observable steps from the scan/aggregation activity it already receives; the reconcile step is
 the one transition with no other signal, so it's briefly unobservable after a reload that lands mid-reconcile (accepted,
 rare). `VolumeIndexStatus` deliberately does NOT carry a current phase: it isn't stored per-volume (only in the global
-`DEBUG_STATS`), so exposing it would mean threading a new per-instance phase handle through the spawned completion
-tasks — lifecycle complexity the brief reconcile gap doesn't justify.
+`DEBUG_STATS`), so exposing it would mean threading a new per-instance phase handle through the spawned completion tasks
+— lifecycle complexity the brief reconcile gap doesn't justify.
 
-**Network-scan honesty.** SMB/MTP emit only `Scanning → Live` (no distinct `Aggregating` / `Reconciling` phase), yet
-the writer still runs aggregation and emits its per-volume sub-phase events (`loading → sorting → computing → writing`).
-So the FE drives the "compute folder sizes" step off the aggregation events, not a top-level phase network never sends;
-and `saving_entries` never fires for network (entries insert inline during the walk), so that step simply doesn't
-appear. Don't fake either by calling local-only helpers on the network path.
+**Network-scan honesty.** SMB/MTP emit only `Scanning → Live` (no distinct `Aggregating` / `Reconciling` phase), yet the
+writer still runs aggregation and emits its per-volume sub-phase events (`loading → sorting → computing → writing`). So
+the FE drives the "compute folder sizes" step off the aggregation events, not a top-level phase network never sends; and
+`saving_entries` never fires for network (entries insert inline during the walk), so that step simply doesn't appear.
+Don't fake either by calling local-only helpers on the network path.
 
 ## `ScanProgressReporter` (`progress_reporter.rs`)
 
@@ -127,8 +128,9 @@ completion → spawn live loop".
   `partial_agg::should_send_partial_agg` — snapshots the listing cache (`caching::snapshot_listings()`), runs
   `partial_agg::collect_hot_paths`, maps each firmlink-normalized absolute hot path into the volume's index-relative
   space via `routing::index_read_path` (the SAME volume-root strip enrichment uses; a pass-through for `root`,
-  mount/scheme strip for SMB/MTP), and fires a non-blocking `writer.try_send(ComputePartialAggregates { hot_paths,
-  source })`. The whole partial-agg block sits behind the gate, so skipped ticks do zero extra work.
+  mount/scheme strip for SMB/MTP), and fires a non-blocking
+  `writer.try_send(ComputePartialAggregates { hot_paths, source })`. The whole partial-agg block sits behind the gate,
+  so skipped ticks do zero extra work.
 - Keeps its sink by value (cloned in by the caller), so the spawned loop owns everything it needs; the genuinely pure
   decision logic already lives (and is unit-tested) in `partial_agg`.
 
@@ -136,8 +138,8 @@ completion → spawn live loop".
 
 Side-effect-free so the timer loop stays a dumb caller and both helpers are exhaustively unit-tested.
 
-- `should_send_partial_agg(tick, queue_depth)` — the send gate: fires every `PARTIAL_AGG_TICK_INTERVAL`-th tick (10 =
-  5 s), never on tick 0, skips when `queue_depth > PARTIAL_AGG_MAX_QUEUE_DEPTH` (4,000; a depth of exactly the max still
+- `should_send_partial_agg(tick, queue_depth)` — the send gate: fires every `PARTIAL_AGG_TICK_INTERVAL`-th tick (10 = 5
+  s), never on tick 0, skips when `queue_depth > PARTIAL_AGG_MAX_QUEUE_DEPTH` (4,000; a depth of exactly the max still
   sends). So partial passes never compete with the real insert backlog.
 - `collect_hot_paths(listings, scanned_volume_id)` — turns a `snapshot_listings()` result into firmlink-normalized hot
   paths: keeps only listings whose `volume_id` equals the scanned volume's (dropping `network`/`search-results`/`mtp-*`/
@@ -146,8 +148,8 @@ Side-effect-free so the timer loop stays a dumb caller and both helpers are exha
 - Both constants live here with their rationale and the real-volume tuning numbers.
 
 Why this exists (the UX call): during a full scan, folder sizes otherwise don't exist until the single end-of-scan
-`ComputeAllAggregates` pass, so every listing shows placeholders for the whole scan (~2.5 min on a 5M-entry volume)
-and all sizes pop in at once — exactly when a new user is judging the headline feature. Partial passes refresh listings
+`ComputeAllAggregates` pass, so every listing shows placeholders for the whole scan (~2.5 min on a 5M-entry volume) and
+all sizes pop in at once — exactly when a new user is judging the headline feature. Partial passes refresh listings
 every few seconds with growing numbers next to the existing hourglass (a partial number beats a placeholder). The
 writer-side handler that consumes these messages (borrow-not-consume the maps, the depth-≤3 write cap, the empty-maps
 SQL-free no-op) is owned by `../writer/DETAILS.md`.

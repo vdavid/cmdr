@@ -64,9 +64,9 @@ the same risk more cheaply. Four reasons, in weight order:
    exists to prevent.
 3. **The disk-image route costs more than it returns.** It would promote `tempfile` from a dev-dependency to a shipped
    optional dependency, and it would run `hdiutil` attach/detach inside a benchmark loop, against the attach-once
-   /detach-once FSKit discipline in `crates/cmdr-index/src/indexing/tests/CLAUDE.md`. That discipline exists
-   because the alternative once kernel-panicked the machine. A 64 MB synthetic FAT32 image also says nothing about
-   throughput on a real tree.
+   /detach-once FSKit discipline in `crates/cmdr-index/src/indexing/tests/CLAUDE.md`. That discipline exists because the
+   alternative once kernel-panicked the machine. A 64 MB synthetic FAT32 image also says nothing about throughput on a
+   real tree.
 4. **A better scan measurement already exists.** `docs/notes/indexing-benchmarks-2026-07-21.md` records fresh-scan and
    reconcile numbers from the real app on a real 6-million-entry boot volume, with the method written down. That's what
    a scan-throughput re-measure should re-run.

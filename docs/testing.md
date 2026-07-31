@@ -359,8 +359,8 @@ These modules have invested test infrastructure. New code here must keep that ba
 - **`apps/desktop/src-tauri/src/file_system/write_operations/`**: state.rs has 30+ tests pinning every state-machine
   transition. Pattern: `cancel_write_operation` through the public interface, never via direct atomic mutation. See
   state.rs `mod tests`.
-- **`crates/cmdr-index/src/indexing/`**: `IndexPhase` lifecycle tests in indexing/mod.rs require a real
-  `IndexStore` (use `tempdir`-backed) and a dedicated test mutex (INDEXING is global).
+- **`crates/cmdr-index/src/indexing/`**: `IndexPhase` lifecycle tests in indexing/mod.rs require a real `IndexStore`
+  (use `tempdir`-backed) and a dedicated test mutex (INDEXING is global).
 - **`apps/desktop/src-tauri/src/file_viewer/`**: `SearchStatus` transitions through `search_cancel` are subtle (the
   thread writes `Cancelled`, the caller must not null `session.search` first). See `session.rs::tests`.
 - **`crates/cmdr-index/src/indexing/store/`**: `platform_case_compare` (in `store/mod.rs`) has proptests in

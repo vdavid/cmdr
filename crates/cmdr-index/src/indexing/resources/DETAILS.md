@@ -27,8 +27,8 @@ dispatches to `on_warn` / `on_stop` / `on_escalate`.
 16 GB and then `return`ed. Nothing watched afterwards, so the climb from 16 GB to 40 GB was unobserved and the app had
 to be stopped by hand. A stop is now one event in an endless loop. After a stop the watchdog holds a `PostStop` record
 and escalates when `phys_footprint` climbs another 2 GB, then 4, 8, 16: the step doubles so a runaway yields a handful
-of proportionate alerts instead of one per 5 s tick (a 16→40 GB climb produces three). Each escalation logs via
-an `IndexEvent::Error` (so it reaches shipped error reports), reports the warning with `StillGrowingAfterStop`, and re-runs
+of proportionate alerts instead of one per 5 s tick (a 16→40 GB climb produces three). Each escalation logs via an
+`IndexEvent::Error` (so it reaches shipped error reports), reports the warning with `StillGrowingAfterStop`, and re-runs
 `stop_all_indexing` in case a volume registered again. It says plainly that the stop didn't hold, so the growth is not
 (only) the index scan. Dropping back under the warn line logs a recovery and clears the record, re-arming the stop.
 
@@ -42,9 +42,8 @@ Monitor's "Memory" column shows. Keying the stop on RSS would let graphics trip 
 `main.rs`, and mimalloc registers no malloc zone, so `malloc_zone_statistics` and `malloc_get_all_zones` report WebKit,
 Objective-C, and C-library allocations only. The snapshot used to read exactly those zones and label the result "the
 real Rust/C heap; indexing lives here"; in the runaway that printed "malloc heap 1.6 GB" against a 16.5 GB
-`phys_footprint`. `crate::process_memory` is the canonical home for this and for all four readers
-(`query_task_vm_info`, `query_basic_info`, `query_mimalloc_heap`, `query_system_malloc_zones`); the watchdog holds
-policy only.
+`phys_footprint`. `crate::process_memory` is the canonical home for this and for all four readers (`query_task_vm_info`,
+`query_basic_info`, `query_mimalloc_heap`, `query_system_malloc_zones`); the watchdog holds policy only.
 
 `query_mimalloc_heap` calls `mi_process_info` through a direct `libmimalloc-sys` dependency (the `mimalloc` wrapper
 crate doesn't re-export its `ffi` module) for `current_commit` / `peak_commit`. Committed, not in-use: mimalloc exposes
@@ -55,22 +54,21 @@ stay meaningful there.
 **Gotcha: `vmmap`'s `IOAccelerator` rows are the Rust heap.** mimalloc `mmap`s its arenas with `os_tag` 100, and macOS
 defines `VM_MEMORY_IOACCELERATOR = 100`, so `vmmap` / `footprint` label every 128 MB mimalloc arena `IOAccelerator`
 (verified with `MallocStackLogging=1` + `vmmap -fullStacks`: each region backtraces to `mmap` ← `_mi_prim_alloc` ←
-`mi_arena_reserve`; commenting out the `#[global_allocator]` collapses those rows to 64 KB and the same memory
-reappears as `MALLOC_*`, macOS 15, 2026-07). Reading those rows as GPU memory is what sent three investigations into
-the frontend. Any older analysis that split "GPU vs heap" off a zone-only heap reading inherits this error.
+`mi_arena_reserve`; commenting out the `#[global_allocator]` collapses those rows to 64 KB and the same memory reappears
+as `MALLOC_*`, macOS 15, 2026-07). Reading those rows as GPU memory is what sent three investigations into the frontend.
+Any older analysis that split "GPU vs heap" off a zone-only heap reading inherits this error.
 
 When a threshold trips, the watchdog captures a `MemorySnapshot` — `phys_footprint` (+ ledger peak), RSS (+ max), the
 mimalloc heap (+ peak), the system malloc zones (in use + reserved, zone count, largest zone), the `untracked`
-remainder, and `live_event_count` — and logs it as a multi-line breakdown where every line states what its number
-MEANS.
+remainder, and `live_event_count` — and logs it as a multi-line breakdown where every line states what its number MEANS.
 
 **Decision (why the verdict is derived, not asserted).** The old report ended with "a large resident−phys_footprint
 delta usually means WebView/GPU memory, not the indexing heap", printed unconditionally. In the runaway that delta was
 0.00 GB and the memory was the Rust heap, so the log confidently said the opposite of the truth and cost two days. The
 `verdict` line now comes from `MemoryAttribution::classify(phys_footprint, rust_heap, system_malloc)`, a pure function
 over the same figures the report prints: whichever source holds a majority wins (`RustHeap` / `SystemMalloc` /
-`Unattributed`), otherwise `Mixed`. Graphics is only ever named when neither allocator claims the majority. If you add
-a hint here, derive it from the numbers or leave it out.
+`Unattributed`), otherwise `Mixed`. Graphics is only ever named when neither allocator claims the majority. If you add a
+hint here, derive it from the numbers or leave it out.
 
 The `index-memory-warning` event carries the five figures in bytes plus a typed `MemoryWatchdogAction`; see
 `../events/DETAILS.md`. TODO (tracked in the snapshot's `live_event_count` comment): surface writer-channel depth and
@@ -93,7 +91,8 @@ dir can accumulate one DB per drive the user ever connected. `retention.rs` boun
 A simple COUNT cap (`MAX_EXTERNAL_INDEX_DBS = 32`) on external (non-root) index DBs, with LRU eviction of the
 least-recently-used OFFLINE ones. `enforce_external_index_cap(app)` runs after a successful SMB/MTP enable (exactly when
 accumulation can grow): it enumerates `index-*.db` in the data dir, pairs each with its mtime (the LRU proxy — a DB is
-rewritten on every scan/live write), and calls the pure, filesystem-free `select_evictions(candidates, registered, cap)`.
+rewritten on every scan/live write), and calls the pure, filesystem-free
+`select_evictions(candidates, registered, cap)`.
 
 SAFETY, enforced by the selector and unit-tested: a candidate whose volume id is in the registry snapshot
 (`all_registered_volume_ids`) is dropped before any eviction decision, so a `Running`/`Initializing` volume's DB is
@@ -102,6 +101,5 @@ volume is offline, no writer to drain), mirroring `clear_index`'s file deletion,
 simple: not a byte budget, not an access-time LRU — `TODO(retention)` in `select_evictions` flags those if
 abandoned-drive accumulation ever proves to need more.
 
-The user-facing forget/disable/clear paths and the prune→Disabled model live in `../lifecycle/DETAILS.md`
-(`clear_index` / `forget_drive_index` / `disable_drive_index`); retention here is the automatic bounded-accumulation
-backstop.
+The user-facing forget/disable/clear paths and the prune→Disabled model live in `../lifecycle/DETAILS.md` (`clear_index`
+/ `forget_drive_index` / `disable_drive_index`); retention here is the automatic bounded-accumulation backstop.

@@ -20,5 +20,5 @@ Brute-force cosine in Rust over the stored embeddings, plus the per-volume resid
 - **Widen ONCE, not per pair.** `dedup_clusters` widens each vector to f32 a single time (O(n)) before comparing; a
   per-pair widen is O(n²) work for the same answer.
 
-The brute-force ranking, dedup clustering, the f16 rationale, and the cache lifecycle: `DETAILS.md`. Read it
-before any non-trivial work here: editing, planning, reorganizing, or advising.
+The brute-force ranking, dedup clustering, the f16 rationale, and the cache lifecycle: `DETAILS.md`. Read it before any
+non-trivial work here: editing, planning, reorganizing, or advising.

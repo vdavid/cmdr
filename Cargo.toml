@@ -1,10 +1,10 @@
 [workspace]
 members = [
-    "apps/desktop/src-tauri",
-    "crates/cmdr-fs",
-    "crates/cmdr-index",
-    "crates/fsevent-stream",
-    "crates/index-query",
+  "apps/desktop/src-tauri",
+  "crates/cmdr-fs",
+  "crates/cmdr-index",
+  "crates/fsevent-stream",
+  "crates/index-query",
 ]
 exclude = ["benchmarks/smb"]
 resolver = "2"

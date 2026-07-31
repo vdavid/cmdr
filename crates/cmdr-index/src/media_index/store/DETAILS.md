@@ -20,11 +20,11 @@ cache on next launch (Vision recompute only, no re-download — an accepted disp
   data-COVERAGE, not data-safety, since the derived data is disposable); `clip_stamp` (the CLIP-side staleness key).
 - `media_ocr` — a **standalone** FTS5 table (`file_id UNINDEXED, source UNINDEXED, text`, tokenizer
   `unicode61 remove_diacritics 2`). Not external-content: external content would sync via triggers off another table's
-  integer rowid; a standalone table keyed by an UNINDEXED `file_id` keeps enrichment and GC a simple
-  `WHERE file_id = ?` delete with no trigger machinery to desync. It holds up to two rows per file: the OCR text
-  (`source='ocr'`) and the space-joined tag labels (`source='tag'`), so a keyword search matches **tags alongside OCR**.
-  Created via `CREATE VIRTUAL TABLE … USING fts5`, which doubles as the FTS5 availability guard (a `bundled` build
-  without FTS5 fails there — Decision 2's build-flag worry is closed, `agent/store` proves it).
+  integer rowid; a standalone table keyed by an UNINDEXED `file_id` keeps enrichment and GC a simple `WHERE file_id = ?`
+  delete with no trigger machinery to desync. It holds up to two rows per file: the OCR text (`source='ocr'`) and the
+  space-joined tag labels (`source='tag'`), so a keyword search matches **tags alongside OCR**. Created via
+  `CREATE VIRTUAL TABLE … USING fts5`, which doubles as the FTS5 availability guard (a `bundled` build without FTS5
+  fails there — Decision 2's build-flag worry is closed, `agent/store` proves it).
 - `media_tags` — `(file_id, label, score)` with an index on `file_id` and on `label`: the STRUCTURED tags for tag-score
   filtering (`images_with_tag(label, min_score)`), distinct from the folded FTS keyword index above.
 - `media_embedding` — `WITHOUT ROWID`, `(file_id PRIMARY KEY, dims, vector BLOB)`: the image feature-print embedding as

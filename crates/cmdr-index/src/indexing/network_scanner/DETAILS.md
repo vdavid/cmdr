@@ -5,13 +5,11 @@ guardrails are in `CLAUDE.md`.
 
 This area owns the `Volume`-trait BFS scan/reconcile walk, its round-trip disciplines, the terminal-disconnect
 partial-preserving finish, the consecutive-failure backstop, scan pacing, and the NAS system-dir skips. Points outward:
-the registry / phase machine / freshness / gating / manual-rescan routing in
-`../lifecycle/DETAILS.md`; the honest-sizes model + `dir_stats` ledger + the shared
-`Arc<AtomicI64>` id counter in `../writer/DETAILS.md`; the reconcile mode predicate, the shared
-per-dir diff (`diff_dir_against_db`), the `BulkReconcileGuard`, and the completion-handler empty-root policy in
-`../reconcile/DETAILS.md`; mount-relative path spaces in
-`../paths/DETAILS.md`; SMB/MTP transport enable + live watch in
-`../transports/CLAUDE.md`. The local guarded walker is a different scanner:
+the registry / phase machine / freshness / gating / manual-rescan routing in `../lifecycle/DETAILS.md`; the honest-sizes
+model + `dir_stats` ledger + the shared `Arc<AtomicI64>` id counter in `../writer/DETAILS.md`; the reconcile mode
+predicate, the shared per-dir diff (`diff_dir_against_db`), the `BulkReconcileGuard`, and the completion-handler
+empty-root policy in `../reconcile/DETAILS.md`; mount-relative path spaces in `../paths/DETAILS.md`; SMB/MTP transport
+enable + live watch in `../transports/CLAUDE.md`. The local guarded walker is a different scanner:
 `../scanner/DETAILS.md`.
 
 ## The `Volume`-trait scan path
@@ -19,11 +17,11 @@ per-dir diff (`diff_dir_against_db`), the `BulkReconcileGuard`, and the completi
 `scan_volume_via_trait(volume, root, writer, progress, cancelled)` is a BFS over `Volume::list_directory`, the same API
 the live pane uses. BFS (not DFS) so a directory's id is registered in the `ScanContext` before its children are listed
 (their parent lookup must hit). It produces `EntryRow`s into the EXACT downstream pipeline the local scan uses — its own
-`ScanContext` for ids/parent-ids (scan root → `ROOT_ID`), the shared `Arc<AtomicI64>` counter, `InsertEntriesV2`
-batches to the single writer, and `ComputeAllAggregates` + `WalCheckpoint` on clean completion. (The `ScanContext`
-path→id map stays here on the serial network BFS; the parallel local walker dropped it in favor of the carried-`parent_id`
-model.) Sizes come from `FileEntry.size` (SMB stat); since SMB has no separate physical size or inode, physical mirrors
-logical and inode is `None`. Symlinks contribute no size (matching the local scanner's `du`-style omission).
+`ScanContext` for ids/parent-ids (scan root → `ROOT_ID`), the shared `Arc<AtomicI64>` counter, `InsertEntriesV2` batches
+to the single writer, and `ComputeAllAggregates` + `WalCheckpoint` on clean completion. (The `ScanContext` path→id map
+stays here on the serial network BFS; the parallel local walker dropped it in favor of the carried-`parent_id` model.)
+Sizes come from `FileEntry.size` (SMB stat); since SMB has no separate physical size or inode, physical mirrors logical
+and inode is `None`. Symlinks contribute no size (matching the local scanner's `du`-style omission).
 
 Three disciplines for network round trips (all in `list_one_directory`):
 
@@ -92,13 +90,13 @@ past ~64 there's little to gain because the bottleneck moves off the network and
 128 in-flight on a fresh scan the writer's queue spiked into the thousands during big-directory bursts (it processed
 ~24k messages in a 5 s window at ~98% busy, then drained to ~0), backpressuring the walk. The NAS itself was never the
 limit: the HDDs sat ~10–18% busy (ZFS ARC served most directory metadata from RAM, so the platters barely moved — a
-genuinely *cold* scan would lean harder on raidz1's ~150 random IOPS), CPU was ~idle, and SMB credits weren't observed
+genuinely _cold_ scan would lean harder on raidz1's ~150 random IOPS), CPU was ~idle, and SMB credits weren't observed
 saturating. So `FULL_LISTING_BUDGET` is set where the concurrency win is essentially captured without piling work onto
 the writer or a busy NAS.
 
 ### Two levers past 64 in-flight: connections, and the writer
 
-`FULL_LISTING_BUDGET` stays 64 — but a later NAS-side probe (2026-07-22) showed the *cold* single-session plateau is
+`FULL_LISTING_BUDGET` stays 64 — but a later NAS-side probe (2026-07-22) showed the _cold_ single-session plateau is
 per-connection serialization in the server's ksmbd, not the disks, and that spreading the SAME 64 in-flight listings
 over several TCP connections lifts cold throughput ~3.8×. That's a BACKEND concern, not a scanner one: the SMB backend
 opens a small pool of extra sessions per scan and `list_directory_for_scan` fans out across them, invisibly to this walk
@@ -122,21 +120,20 @@ bulk writes via `BulkReconcileGuard`. The remaining lever is fewer round trips p
 
 The walk's listing budget isn't a constant: at every top-up it asks `ScanPacer::listing_budget()`, which returns
 `FULL_LISTING_BUDGET` (64) while the share is quiet and `YIELDING_LISTING_BUDGET` (1) while a higher-priority claim
-holds it — the user browsing it, OR a user-initiated transfer touching it (the host's order: interactive >
-transfers > indexing; the transfer signal is `priority::transfers`' per-volume gauge). Both the fresh scan and the
-reconcile walk read it. **Why it exists:** a scan and the pane's own listings share ONE SMB
-session (every `SmbVolume` clone multiplexes frames over the same connection), so 64 in-flight listings bury a
-navigation behind the backlog — a 40-entry folder took **10.7 s** to open mid-scan on a real QNAP (`/Volumes/naspi`,
-~2M entries, 2026-07-19) and was instant the second the scan finished. That's also the first impression the app makes on
-someone who connects a NAS and enables indexing because it sounds good.
+holds it — the user browsing it, OR a user-initiated transfer touching it (the host's order: interactive > transfers >
+indexing; the transfer signal is `priority::transfers`' per-volume gauge). Both the fresh scan and the reconcile walk
+read it. **Why it exists:** a scan and the pane's own listings share ONE SMB session (every `SmbVolume` clone
+multiplexes frames over the same connection), so 64 in-flight listings bury a navigation behind the backlog — a 40-entry
+folder took **10.7 s** to open mid-scan on a real QNAP (`/Volumes/naspi`, ~2M entries, 2026-07-19) and was instant the
+second the scan finished. That's also the first impression the app makes on someone who connects a NAS and enables
+indexing because it sounds good.
 
 **The signals** are `priority::foreground`'s per-volume timestamp, stamped by the listing IPC
 (`note_foreground_activity_on`) on every navigation, and `priority::transfers`' per-volume gauge, raised for the whole
-life of a write operation touching the volume. A browsed share counts as in use for
-`SCAN_FOREGROUND_IDLE_THRESHOLD` (2 s) after the last navigation — long enough to span the gaps in real browsing so a
-session of clicking around is ONE throttled stretch, short enough to be back at full speed a couple of seconds after
-the user stops. There's no separate debounce: the window IS the debounce. The transfer signal needs no window at all
-(an op's start and finish are exact).
+life of a write operation touching the volume. A browsed share counts as in use for `SCAN_FOREGROUND_IDLE_THRESHOLD` (2
+s) after the last navigation — long enough to span the gaps in real browsing so a session of clicking around is ONE
+throttled stretch, short enough to be back at full speed a couple of seconds after the user stops. There's no separate
+debounce: the window IS the debounce. The transfer signal needs no window at all (an op's start and finish are exact).
 
 **Decision/Why throttle instead of park, and why no anti-starvation floor.** The obvious gate ("only scan while idle")
 converts "indexing is in the way" into "indexing never finishes", and then needs a quota, a minimum-progress floor, or a
@@ -154,10 +151,10 @@ real hardware, the lever is a lower `FULL_LISTING_BUDGET`, not cancelling in-fli
 **Decision/Why the scope is per volume, not app-wide.** The contention is one share's SMB session, so browsing a LOCAL
 folder is no reason to slow a NAS scan — the app-wide signal would throttle it for activity that isn't competing at all.
 Media enrichment keeps reading the app-wide signal, because it's heavy on-device ML where any foreground work is reason
-enough to wait; `priority/foreground.rs` documents the two scopes side by side. A volume nobody has browsed has no
-entry and reads as idle, so a first scan starts at full speed. ❌ Don't collapse a missing entry to a `0` timestamp: `0`
-is a real point on that clock, so "never browsed" would read as "browsed at startup" and throttle every scan for the
-app's first two seconds.
+enough to wait; `priority/foreground.rs` documents the two scopes side by side. A volume nobody has browsed has no entry
+and reads as idle, so a first scan starts at full speed. ❌ Don't collapse a missing entry to a `0` timestamp: `0` is a
+real point on that clock, so "never browsed" would read as "browsed at startup" and throttle every scan for the app's
+first two seconds.
 
 Pinned by `browsing_the_share_throttles_the_scan_to_one_listing_in_flight`,
 `a_continuously_browsed_share_still_finishes_its_scan` (the anti-starvation guarantee, end to end),
@@ -172,15 +169,14 @@ The BFS does NOT descend into NAS snapshot/system pseudo-directories (`@eaDir`, 
 case-insensitively by `system_dirs::is_recursion_excluded_dir`). Both the fresh scan and the reconcile walk apply it:
 the dir's own row is still indexed (so it stays listed and navigable — a user can walk into `@Recycle` to restore a
 file), but its subtree is never walked, so it rolls up as honestly-unknown (`—`/`≥`) rather than a misleading total.
-**Decision/Why:** these dirs are hardlinked, huge, and re-walking them costs a full filesystem traversal *per snapshot*
+**Decision/Why:** these dirs are hardlinked, huge, and re-walking them costs a full filesystem traversal _per snapshot_
 over serialized SMB — a real first-scan stalled near 50% grinding `@Recently-Snapshot`, which alone reported 44 TB on a
 10 TB volume. Summing them is both ruinous and wrong (the bytes are deduped, not real consumed space). **Guardrail:**
 don't remove the exclusion to "fill in" the missing sizes — that re-triggers the stall. Scope is the SMB/MTP side (the
 home of these dirs): both walks here, plus the SMB live watcher, which drops a `CHANGE_NOTIFY` landing under such a dir
 so a live event can't re-create what the walk won't write (`../transports/DETAILS.md` § "Live SMB watch → index"). The
-local walker has its own `should_exclude` (`../scanner/DETAILS.md`).
-`FileEntry` carries no DOS hidden/system attribute today; if one is plumbed through, "hidden + system" would generalize
-this without the hardcoded list.
+local walker has its own `should_exclude` (`../scanner/DETAILS.md`). `FileEntry` carries no DOS hidden/system attribute
+today; if one is plumbed through, "hidden + system" would generalize this without the hardcoded list.
 
 ### The bar for adding a name (it drops the folder from the index)
 
@@ -203,9 +199,9 @@ only by typing the path — so a `~snapshot` that actually appears in a listing 
 false-positive risk with zero benefit. Pinned by `does_not_exclude_the_smb_invisible_ontap_snapshot_name`. Windows
 "Previous Versions" uses the SMB shadow-copy FSCTL, not a pseudo-directory, so it needs no entry either.
 
-**Weaker entries, kept but worth knowing:** `@sharebin` has no vendor documentation behind it; `.snapshots` is
-snapper's default subvolume name, which a Btrfs user could plausibly have created themselves; `@tmp` and `@sharesnap`
-live at the Synology volume root and so normally aren't reachable through a share at all.
+**Weaker entries, kept but worth knowing:** `@sharebin` has no vendor documentation behind it; `.snapshots` is snapper's
+default subvolume name, which a Btrfs user could plausibly have created themselves; `@tmp` and `@sharesnap` live at the
+Synology volume root and so normally aren't reachable through a share at all.
 
 ### Rebuilding an index that predates the current list
 
@@ -228,9 +224,9 @@ The mechanism, all in `system_dirs.rs` plus two call sites:
   after a `TruncateData`. That's the one moment the DB provably holds nothing beneath an excluded dir. A reconcile never
   stamps: it can't clear what an older list let in.
 - `index_predates_exclusion_list()` compares the stamp to the current list. `resume_or_scan_network` asks at load and,
-  on a mismatch, runs `start_volume_scan(NetworkScanMode::Rebuild, …)` — a truncate + full walk, not a reconcile.
-  **Why at load:** a completed network index loads Stale and never rescans on its own, so an existing install would
-  otherwise keep its rows until the user asked for a rescan by hand.
+  on a mismatch, runs `start_volume_scan(NetworkScanMode::Rebuild, …)` — a truncate + full walk, not a reconcile. **Why
+  at load:** a completed network index loads Stale and never rescans on its own, so an existing install would otherwise
+  keep its rows until the user asked for a rescan by hand.
 - **Why a content fingerprint, not a schema bump or a version constant.** `SCHEMA_VERSION` deletes EVERY index on the
   machine, including a 6.9M-entry local one, to fix a network-only problem; a hand-maintained version constant is one
   someone forgets to bump when they add a name. The fingerprint is derived from the list's contents, so growing the list
@@ -249,8 +245,8 @@ The two network walkers (`scan_volume_via_trait`, `reconcile_volume_via_trait`) 
 and writes NO `scan_completed_at`. A false "complete" over a transiently-empty root permanently strands the index
 (startup loads Stale and never rescans; a manual rescan re-"completes" the same empty root). The full completion-handler
 policy — empty (`EmptyRoot`) vs failed (`Volume`/`Io`) root, why both reconcile paths bail BEFORE diffing the root, and
-the accepted genuinely-empty-volume false-negative — is canonical in
-`../reconcile/DETAILS.md` § No completion marker on an empty root.
+the accepted genuinely-empty-volume false-negative — is canonical in `../reconcile/DETAILS.md` § No completion marker on
+an empty root.
 
 ## Reconcile
 

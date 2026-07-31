@@ -7,8 +7,8 @@ correctness harness). The volume-kind policy and the floor doctrine are in `../C
 
 ## Must-knows
 
-- **Drive full recompute off the bus `ScanCompleted` plus the startup sweep, NEVER phase events** (network volumes
-  never emit them). A volume Fresh at launch never re-fires `ScanCompleted`, so the sweep ALSO runs
+- **Drive full recompute off the bus `ScanCompleted` plus the startup sweep, NEVER phase events** (network volumes never
+  emit them). A volume Fresh at launch never re-fires `ScanCompleted`, so the sweep ALSO runs
   `enqueue_initial_full_pass_if_unscored`, gated on `store::needs_initial_full_pass` (which forces the WRITE-path open
   first). Subscribe to registrations BEFORE the sweep, or a share mounted in the gap is never wired.
 - **Coalesce per volume through `PassCoordinator`**: one pass at a time plus at most one re-run. Incremental uses its

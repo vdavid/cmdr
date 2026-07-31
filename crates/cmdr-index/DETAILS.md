@@ -43,8 +43,8 @@ five in one function, at the top of `setup()`.
 - **`EventSink`** — where the index reports. The host maps `IndexEvent` to its own wire format; error reporting rides
   the same channel, because a crate can't invoke the app's `log_error!` macro across the boundary and dropping it
   silently would be a feedback-loop regression.
-- **`VolumeProvider`** — which volumes exist, volume identity, and mount classification ("is this a network fs?").
-  The index never touches a volume manager, a platform mount probe, or an MTP session layer directly.
+- **`VolumeProvider`** — which volumes exist, volume identity, and mount classification ("is this a network fs?"). The
+  index never touches a volume manager, a platform mount probe, or an MTP session layer directly.
 - **`HostPolicy`** — "may I do background work right now?", composed from the host's own priority signals. Consulted
   inside scan loops, so it returns a cheap `Copy` value and callers cache it per batch. ❌ No trait may be introduced on
   a per-entry path; wanting one is a signal to restructure the call.
@@ -93,8 +93,8 @@ dependency: `one_of_every_kind` (the host's event-mapping completeness test), th
 
 **The rule, in both directions:** `#[cfg(test)]` while every consumer is inside the crate; a feature the moment one
 isn't. And a feature for an item with only in-crate callers isn't a harmless over-approximation, because the app enables
-`testing` for every dev target, so the item exists in the non-test lib build with nothing calling it and `#[deny(unused)]`
-turns that into a hard error.
+`testing` for every dev target, so the item exists in the non-test lib build with nothing calling it and
+`#[deny(unused)]` turns that into a hard error.
 
 ## The counting allocator is duplicated, on purpose
 

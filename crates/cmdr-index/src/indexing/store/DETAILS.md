@@ -1,8 +1,8 @@
 # Index store (SQLite) details
 
-Depth for `crates/cmdr-index/src/indexing/store/`: the `IndexStore` handle and the concern-split CRUD. Must-know invariants
-live in `CLAUDE.md`. The SQLite schema itself is described below; the honest-sizes epoch model that shares its columns
-lives in `../writer/DETAILS.md` § "Honest sizes", and the broader indexing pipeline in `../DETAILS.md`.
+Depth for `crates/cmdr-index/src/indexing/store/`: the `IndexStore` handle and the concern-split CRUD. Must-know
+invariants live in `CLAUDE.md`. The SQLite schema itself is described below; the honest-sizes epoch model that shares
+its columns lives in `../writer/DETAILS.md` § "Honest sizes", and the broader indexing pipeline in `../DETAILS.md`.
 
 ## Module structure
 
@@ -28,14 +28,13 @@ pulling shared items via `use super::*`):
   transaction on a real index), and deletes POST-ORDER (see below). `for_each_child_directory_of` /
   `for_each_child_file_of` are the SCOPED counterparts: same columns, but for a batch of parent ids at a time, so a
   consumer reading one subtree expands a whole level per query instead of scanning the table. Both are served by
-  `idx_parent_name_folded`'s leading `parent_id`; the file one keeps `for_each_file_child_by_parent`'s `ORDER BY
-  parent_id` group contract (each parent id sits in exactly one chunk, so chunking never splits a group). The importance
-  incremental rescore is the consumer (`../../importance/scheduler/DETAILS.md` § The scoped walk).
-- `dir_tree.rs`: `DirTree`, the compact in-memory projection of the directory rows that `for_each_directory`
-  exists to feed — one name arena plus a 24-byte `(id, parent_id, name slice)` record per folder, id-ordered and
-  binary-searched. The shape every whole-index walk (`media_index`'s image walk, `importance`'s recompute walk)
-  reconstructs paths from; measurements and the alternatives weighed live in
-  `crates/cmdr-index/src/media_index/scheduler/DETAILS.md`.
+  `idx_parent_name_folded`'s leading `parent_id`; the file one keeps `for_each_file_child_by_parent`'s
+  `ORDER BY parent_id` group contract (each parent id sits in exactly one chunk, so chunking never splits a group). The
+  importance incremental rescore is the consumer (`../../importance/scheduler/DETAILS.md` § The scoped walk).
+- `dir_tree.rs`: `DirTree`, the compact in-memory projection of the directory rows that `for_each_directory` exists to
+  feed — one name arena plus a 24-byte `(id, parent_id, name slice)` record per folder, id-ordered and binary-searched.
+  The shape every whole-index walk (`media_index`'s image walk, `importance`'s recompute walk) reconstructs paths from;
+  measurements and the alternatives weighed live in `crates/cmdr-index/src/media_index/scheduler/DETAILS.md`.
 - `dir_stats.rs`: `dir_stats` reads and writes plus `recompute_min_subtree_epoch`.
 - `meta.rs`: meta-table + epoch helpers, `mark_dirs_listed`, `get_all_directory_paths`, `clear_all`, and the
   aggregates-are-known-good marker (`ledger_heal_done` / `mark_ledger_heal_done` / `clear_ledger_heal_done`, keyed on
@@ -45,8 +44,8 @@ pulling shared items via `use super::*`):
 
 `resolve_component` always queries by `(parent_id, name_folded)` using the `idx_parent_name_folded` composite **UNIQUE**
 index. On Linux/Windows `normalize_for_comparison()` is the identity function, so `name_folded = name` and the index
-behaves identically to a `(parent_id, name)` index. A schema-version mismatch triggers drop+rebuild.
-`IndexStoreError` carries the typed SQLite classifiers callers branch on (never the message string): `sqlite_code()`,
+behaves identically to a `(parent_id, name)` index. A schema-version mismatch triggers drop+rebuild. `IndexStoreError`
+carries the typed SQLite classifiers callers branch on (never the message string): `sqlite_code()`,
 `is_fatal_storage_error()`, `as_index_failure()`, `is_primary_key_conflict()`, `is_transient_lock_error()`, and
 `indicates_corruption()`. `is_primary_key_conflict()` separates an `entries.id` collision (extended 1555, the writer
 heals it by resyncing its counter) from a `(parent_id, name_folded)` conflict (2067, which must never be retried under a
@@ -83,8 +82,8 @@ existed, with no migration — the index is a disposable cache (`../CLAUDE.md` �
 per-kind key is just "no same-kind calibration yet".
 
 Which bucket a run reads and writes is decided ONCE, by `events::ScanRunKind::calibration_kind()` at the scan-start
-funnel, and threaded to the completion handler (`lifecycle/scan_completion.rs` for local,
-`lifecycle/network_scan.rs`'s completion arm for SMB/MTP). Pinned by `store::tests::meta_and_calibration::calibration_for_kind_*`.
+funnel, and threaded to the completion handler (`lifecycle/scan_completion.rs` for local, `lifecycle/network_scan.rs`'s
+completion arm for SMB/MTP). Pinned by `store::tests::meta_and_calibration::calibration_for_kind_*`.
 
 ## Decision: a subtree delete is post-order, so an interruption can never strand rows
 
@@ -98,13 +97,14 @@ got to. Top-down, that severs the tree at the cut and every row below loses its 
 later descent, so nothing can ever collect it. On a copy of the author's production QNAP index one interrupted run left
 12 442 990 rows of which 9 793 362 were unreachable (910 316 of them directly parentless), and a relaunch collected
 nothing (2026-07-25). Reading children by `parent_id` is what makes the order free to choose: a deleted parent row never
-hides its children. Pinned by `tests/subtree_deletes.rs::interrupting_a_subtree_delete_never_strands_a_row`, which asserts zero orphans
-after EVERY prefix of the deletion order (via the `#[cfg(test)]` `delete_descendants_by_id_stopping_after`, whose
-mid-batch stops are a superset of the points a real crash can reach, and the `#[cfg(test)]` `find_orphan_entries`).
+hides its children. Pinned by `tests/subtree_deletes.rs::interrupting_a_subtree_delete_never_strands_a_row`, which
+asserts zero orphans after EVERY prefix of the deletion order (via the `#[cfg(test)]`
+`delete_descendants_by_id_stopping_after`, whose mid-batch stops are a superset of the points a real crash can reach,
+and the `#[cfg(test)]` `find_orphan_entries`).
 
-**Cost of the ordering.** Post-order retains the directory ids of all levels instead of one frontier: 324 128 ids
-(2.6 MB) across seven levels on that index, versus a 5 951-id peak for the old single frontier. Both stay orders of
-magnitude under the ~87 MB the recursive-CTE form materializes, and files never accumulate at all.
+**Cost of the ordering.** Post-order retains the directory ids of all levels instead of one frontier: 324 128 ids (2.6
+MB) across seven levels on that index, versus a 5 951-id peak for the old single frontier. Both stay orders of magnitude
+under the ~87 MB the recursive-CTE form materializes, and files never accumulate at all.
 
 There is deliberately NO repair pass for rows already stranded that way, and there shouldn't be one: an index is a
 disposable cache, so a damaged one is invalidated and rebuilt (`../CLAUDE.md` § "Rebuild, don't migrate").
@@ -121,12 +121,13 @@ disposable cache, so a damaged one is invalidated and rebuilt (`../CLAUDE.md` §
 - **Return the error, file untouched**: everything else, including the storage-death classes `SQLITE_IOERR`,
   `SQLITE_FULL`, `SQLITE_READONLY`, and `SQLITE_CANTOPEN`, plus any code we don't recognize.
 
-**Why**: "the index is a disposable cache" justifies deleting on a schema bump or a corrupt file, but not on a
-transient or environmental one. A real index holds millions of entries (6.9M on the author's machine) and costs tens of
-minutes plus heavy disk churn to rebuild, so a checkpoint-length write lock, a momentarily full disk, or a read-only
-volume must never destroy it. Deleting is the destructive branch, so it carries the burden of proof: `is_fatal_storage_error()`
+**Why**: "the index is a disposable cache" justifies deleting on a schema bump or a corrupt file, but not on a transient
+or environmental one. A real index holds millions of entries (6.9M on the author's machine) and costs tens of minutes
+plus heavy disk churn to rebuild, so a checkpoint-length write lock, a momentarily full disk, or a read-only volume must
+never destroy it. Deleting is the destructive branch, so it carries the burden of proof: `is_fatal_storage_error()`
 (which stops the index) is deliberately WIDER than `indicates_corruption()` (which throws the file away), and an
-unrecognized code takes the conservative branch. Don't widen `indicates_corruption()` without the same standard of proof.
+unrecognized code takes the conservative branch. Don't widen `indicates_corruption()` without the same standard of
+proof.
 
 Both production callers (`IndexManager::new_for_kind`, `start_indexing_for` in `state.rs`) already map the error to a
 `String` and abort the start, so a hard failure surfaces as "indexing didn't start" rather than a panic or a silently
@@ -136,32 +137,32 @@ empty index; the on-disk DB is still there for the next attempt.
 and a busy handler that isn't installed yet can't back them off, so the ordering is what makes contention transient in
 the first place; the retry loop above is the second line of defense.
 
-**Test coverage** (`tests/open_and_recover.rs`): `busy_db_is_retried_not_deleted` induces a real `SQLITE_BUSY` (a second connection holds
-`BEGIN EXCLUSIVE` past the 5 s `busy_timeout`, hence the test's ~6 s runtime) and asserts the entries survive;
-`unwritable_db_is_not_deleted_on_open_failure` chmods the file to 0444; `corruption_recovery_deletes_and_recreates` and
-the two schema-mismatch tests keep the recreate paths intact.
+**Test coverage** (`tests/open_and_recover.rs`): `busy_db_is_retried_not_deleted` induces a real `SQLITE_BUSY` (a second
+connection holds `BEGIN EXCLUSIVE` past the 5 s `busy_timeout`, hence the test's ~6 s runtime) and asserts the entries
+survive; `unwritable_db_is_not_deleted_on_open_failure` chmods the file to 0444;
+`corruption_recovery_deletes_and_recreates` and the two schema-mismatch tests keep the recreate paths intact.
 
 `has_sized_entry_for_inode()` checks whether another entry with the same inode already has non-NULL sizes;
-`find_entry_by_inode()` returns the first row with a given inode (the live event loop's rename pre-pass). Both path-keyed
-(backward compat) and integer-keyed APIs exist.
+`find_entry_by_inode()` returns the first row with a given inode (the live event loop's rename pre-pass). Both
+path-keyed (backward compat) and integer-keyed APIs exist.
 
 ## Decision: SQLite page memory is one process-wide slab, not a per-connection budget
 
 The canonical home for the whole app's SQLite memory model; the code is `crate::sqlite_util`.
 
 **The problem.** Read connections are thread-local and live as long as their thread (`../read/enrichment.rs`'s
-`THREAD_CONNS`, `importance/read/mod.rs`'s `READ_CONNS`), so their count tracks tokio's blocking-thread pool rather
-than anything semantic. A profiled prod session (v0.36.2, ~10 h uptime, macOS 26.5.2, `lsof` + `footprint -s`,
-2026-07-28) had **156 open connections** across 69 blocking threads (57 × `importance-root.db`, 53 × `index-root.db`,
-30 + 10 on the NAS volume, 6 × `media-root.db`), holding ~1.15 GB of a 2.5 GB footprint. Any per-connection
-`cache_size` is a ceiling that multiplies by a number nothing controls.
+`THREAD_CONNS`, `importance/read/mod.rs`'s `READ_CONNS`), so their count tracks tokio's blocking-thread pool rather than
+anything semantic. A profiled prod session (v0.36.2, ~10 h uptime, macOS 26.5.2, `lsof` + `footprint -s`, 2026-07-28)
+had **156 open connections** across 69 blocking threads (57 × `importance-root.db`, 53 × `index-root.db`, 30 + 10 on the
+NAS volume, 6 × `media-root.db`), holding ~1.15 GB of a 2.5 GB footprint. Any per-connection `cache_size` is a ceiling
+that multiplies by a number nothing controls.
 
 **The fix.** `sqlite_util::install_shared_page_cache` hands SQLite one 64 MiB slab via
 `sqlite3_config(SQLITE_CONFIG_PAGECACHE, pBuf, sz, N)`. Total page-cache memory is then that one number no matter how
 many connections exist, and it's allocated on demand out of the slab: a connection running a real scan can take a large
-share while a hundred idle ones hold nothing. The bundled SQLite defines `SQLITE_ENABLE_MEMORY_MANAGEMENT`, so
-`pcache1` runs a UNIFIED page group (one LRU across every connection) rather than per-cache groups, which is what makes
-the sharing dynamic instead of first-come-first-served. Slot size is `4096 + sqlite3_config(SQLITE_CONFIG_PCACHE_HDRSZ)`
+share while a hundred idle ones hold nothing. The bundled SQLite defines `SQLITE_ENABLE_MEMORY_MANAGEMENT`, so `pcache1`
+runs a UNIFIED page group (one LRU across every connection) rather than per-cache groups, which is what makes the
+sharing dynamic instead of first-come-first-served. Slot size is `4096 + sqlite3_config(SQLITE_CONFIG_PCACHE_HDRSZ)`
 rounded to 8, queried rather than guessed: a slot one byte too small is never used and every allocation silently falls
 through to the heap (verified against the bundled amalgamation's `pcache1Alloc`, libsqlite3-sys 0.38.1, 2026-07-29).
 
@@ -173,10 +174,11 @@ trade because the failure the profile found was steady-state growth, not a peak,
 unpredictable 310 MB.
 
 **Ordering is the whole game.** `sqlite3_config` only works before SQLite initializes itself, and the first connection
-opened ANYWHERE in the process initializes it. So every connection opens through `sqlite_util::{open, open_read_only,
-open_in_memory}`, which force the slab first; a direct `rusqlite::Connection::open*` that won the race would
-permanently and silently restore the old profile. The `desktop-rust-sqlite-open-direct` check forbids one outside
-`sqlite_util.rs`, and `ensure_shared_page_cache()` reports `TooLate` (with a `warn!`) if it ever happens anyway.
+opened ANYWHERE in the process initializes it. So every connection opens through
+`sqlite_util::{open, open_read_only, open_in_memory}`, which force the slab first; a direct
+`rusqlite::Connection::open*` that won the race would permanently and silently restore the old profile. The
+`desktop-rust-sqlite-open-direct` check forbids one outside `sqlite_util.rs`, and `ensure_shared_page_cache()` reports
+`TooLate` (with a `warn!`) if it ever happens anyway.
 
 **Alternative weighed:** `sqlite3_soft_heap_limit64` also bounds the process dynamically and costs nothing at rest (the
 bundled `SQLITE_ENABLE_MEMORY_MANAGEMENT` build can reclaim page cache under it). We chose the slab because it's a hard
@@ -192,10 +194,10 @@ read-only one. With the slab installed these are UPPER BOUNDS per connection, no
 multiply into a process-wide number. One helper rather than five copies of a literal, because the failure mode is
 silent: a store that keeps its own number drifts and nothing complains.
 
-**Why the write budget is 16 MiB.** It's coupled to `wal_autocheckpoint = 4000` (~16 MiB of 4 KiB pages, set in the
-same function): the cache is sized to hold what a whole autocheckpoint window dirties, so a big write batch commits
-without evicting pages it's about to touch again. Change one and reconsider the other. There is at most ONE write
-connection per DB (the single writer thread).
+**Why the write budget is 16 MiB.** It's coupled to `wal_autocheckpoint = 4000` (~16 MiB of 4 KiB pages, set in the same
+function): the cache is sized to hold what a whole autocheckpoint window dirties, so a big write batch commits without
+evicting pages it's about to touch again. Change one and reconsider the other. There is at most ONE write connection per
+DB (the single writer thread).
 
 **Why reads get 8 MiB.** It comfortably holds the upper interior levels of the hot b-trees plus a directory's worth of
 leaves, which is what the enrichment path needs: point lookups on `(parent_id, name_folded)` and one range scan. A

@@ -1,8 +1,8 @@
 # Writer details
 
 Read this before any non-trivial work in `writer/`: editing, planning, reorganizing, or advising. Must-know guardrails
-are in `CLAUDE.md`. This area is the canonical home for the mechanisms below; other indexing areas link here rather
-than restating them.
+are in `CLAUDE.md`. This area is the canonical home for the mechanisms below; other indexing areas link here rather than
+restating them.
 
 Points outward: the registry / phase machine / freshness / the Failed representation live in `../lifecycle/DETAILS.md`;
 the SQLite schema + `name_folded` + `platform_case` collation in `../store/DETAILS.md`; the bottom-up compute math in
@@ -21,8 +21,8 @@ enrichment/verification never contend on the write connection or the lifecycle m
 `DeleteSubtreeById`, `PropagateDeltaById`, `ComputeAllAggregates`, `ComputeSubtreeAggregates`,
 `ComputePartialAggregates`, `BackfillMissingDirStats`, `TruncateData`, `MarkDirsListed`, `PropagateMinSubtreeEpoch`,
 `BumpCurrentEpoch`, `SetDeltaPropagation`, `MarkLedgerUnpaid`/`PayLedgerIfUnpaid`, `ArmLedgerHealLatch`,
-`IncrementalVacuum`/`WalCheckpoint`, `EmitDirUpdated`, `Flush`) plus path-keyed
-backward-compat variants. `Flush` + the async `flush()` let callers wait for all prior writes to commit.
+`IncrementalVacuum`/`WalCheckpoint`, `EmitDirUpdated`, `Flush`) plus path-keyed backward-compat variants. `Flush` + the
+async `flush()` let callers wait for all prior writes to commit.
 
 **Rationale — single writer, not connection pooling.** SQLite's write concurrency is limited by its single-writer
 design. Rather than fight it with `BUSY_TIMEOUT` + retries, one thread owns the write connection and eliminates
@@ -45,13 +45,12 @@ hourglass lingering one iteration longer is invisible (nothing outside `../read/
 ❌ Don't close the gap by moving the `Flush` reply to the end of the iteration. It is a shipping backpressure barrier
 for all of those callers, and moving the reply changes what a flush means to every one of them.
 
-`idle_epoch: Arc<AtomicU64>` makes the caught-up point observable instead. `writer_loop` ticks it (`SeqCst`, so a
-reader that sees a new value is guaranteed to see the hooks' effects; `queue_depth`'s `Relaxed` is fine for a heuristic
-depth but would buy a rarer race here than the fixed sleep it replaces) at the very end of any iteration that reached
-the caught-up point. Monotonic on purpose: a waiter reads it, sends work, and waits for it to move past what it read,
-so it can't miss the transition the way a boolean "idle" flag would. `IndexWriter::idle_epoch()` is the reader,
-`#[cfg(test)]` because no production caller waits on it yet; un-gate it (and the field's `dead_code` allow) if one
-does.
+`idle_epoch: Arc<AtomicU64>` makes the caught-up point observable instead. `writer_loop` ticks it (`SeqCst`, so a reader
+that sees a new value is guaranteed to see the hooks' effects; `queue_depth`'s `Relaxed` is fine for a heuristic depth
+but would buy a rarer race here than the fixed sleep it replaces) at the very end of any iteration that reached the
+caught-up point. Monotonic on purpose: a waiter reads it, sends work, and waits for it to move past what it read, so it
+can't miss the transition the way a boolean "idle" flag would. `IndexWriter::idle_epoch()` is the reader, `#[cfg(test)]`
+because no production caller waits on it yet; un-gate it (and the field's `dead_code` allow) if one does.
 
 **The wait protocol**, wrapped as `tests::wait_for_writer_to_settle`: read the epoch, send the flush, then wait for it
 to advance. Because the epoch only ticks on an empty queue, an advance past a value read BEFORE the flush means every
@@ -70,8 +69,8 @@ normally runs before the waiter parks.
 ## The shared ID counter and its self-heal
 
 All ID allocation goes through an `Arc<AtomicI64>` owned by `IndexWriter`, seeded from `IndexStore::get_next_id` at
-spawn. The local walker's `InsertVisitor` increments it via `fetch_add`, the network `ScanContext` via `alloc_id()`,
-and the writer's `UpsertEntryV2` insert path does the same (passing the id to `insert_entry_v2_with_id`). `TruncateData`
+spawn. The local walker's `InsertVisitor` increments it via `fetch_add`, the network `ScanContext` via `alloc_id()`, and
+the writer's `UpsertEntryV2` insert path does the same (passing the id to `insert_entry_v2_with_id`). `TruncateData`
 resets it to 2 (id 1 is the ROOT sentinel).
 
 **Never fall back to `MAX(id)` from a read connection.** The writer can hold uncommitted inserts in its channel, so a
@@ -79,21 +78,21 @@ read sees a stale value and the scanner double-assigns IDs. `IndexWriter` expose
 temporary connection only to seed/read the epoch and resolve the scan root, never for ID allocation.
 
 **`INSERT OR IGNORE`, not `OR REPLACE`.** `insert_entries_v2_batch` uses `INSERT OR IGNORE` and returns a `Vec<bool>`
-parallel to the input. `OR REPLACE` would delete the old row and insert a new id, orphaning all children; plain
-`INSERT` would roll back the whole ~2000-entry batch via the wrapping savepoint on any conflict (catastrophic if one
-filesystem oddity — a case-folding twin, an NFC/NFD cross-OS-sync duplicate — takes out 1999 unrelated rows). `OR
-IGNORE` skips just the conflicting row. `handle_insert_entries_v2` filters `entries` by the returned flags BEFORE
-calling `accumulator.accumulate`, so the in-memory aggregation state never claims bytes that lost the OR-IGNORE — the
-contract "in-memory state never claims more than the DB has". Conflicts log at WARN with sample names. The table has two
-unique constraints: PK on `id`, and `UNIQUE (parent_id, name_folded)` (v12); the savepoint still wraps the batch so
+parallel to the input. `OR REPLACE` would delete the old row and insert a new id, orphaning all children; plain `INSERT`
+would roll back the whole ~2000-entry batch via the wrapping savepoint on any conflict (catastrophic if one filesystem
+oddity — a case-folding twin, an NFC/NFD cross-OS-sync duplicate — takes out 1999 unrelated rows). `OR IGNORE` skips
+just the conflicting row. `handle_insert_entries_v2` filters `entries` by the returned flags BEFORE calling
+`accumulator.accumulate`, so the in-memory aggregation state never claims bytes that lost the OR-IGNORE — the contract
+"in-memory state never claims more than the DB has". Conflicts log at WARN with sample names. The table has two unique
+constraints: PK on `id`, and `UNIQUE (parent_id, name_folded)` (v12); the savepoint still wraps the batch so
 non-constraint errors (disk full) roll back cleanly.
 
 **Decision: a PRIMARY KEY conflict on an upsert insert resyncs the counter and retries once.** The counter can fall
-behind the table's real `MAX(id)` (a foreign writer on the same DB — what the lock-first `start_indexing` now prevents
-— or a crash between allocation and commit). Before healing, `upsert_insert_new` just `signal.note`d the
+behind the table's real `MAX(id)` (a foreign writer on the same DB — what the lock-first `start_indexing` now prevents —
+or a crash between allocation and commit). Before healing, `upsert_insert_new` just `signal.note`d the
 `SQLITE_CONSTRAINT_PRIMARYKEY` and moved on, so the file was dropped from the index forever (until a verifier scan
-noticed) and, because the counter stayed behind, every following live insert collided identically: one incident
-produced ~9,600 warnings in seconds. `insert_with_allocated_id` (`entries.rs`) now `fetch_max`es the counter from
+noticed) and, because the counter stayed behind, every following live insert collided identically: one incident produced
+~9,600 warnings in seconds. `insert_with_allocated_id` (`entries.rs`) now `fetch_max`es the counter from
 `IndexStore::get_next_id(conn)`, logs ONE warn naming the old and new counter values, allocates a fresh id, and retries;
 a second failure falls through to `signal.note`. The resync puts the counter past `MAX(id)`, so the "once per resync"
 log cadence is structural, not rate-limited.
@@ -125,8 +124,8 @@ warn and returns `false`; the FIRST fatal error CAS-trips the signal, records th
 wakes the supervisor (later fatal errors are suppressed — that's what stops the flood). `writer_loop` checks
 `signal.is_tripped()` after each message and returns, so the dead-DB writer thread exits instead of spinning. Pinned by
 `tests::a_fatal_storage_error_stops_the_writer_and_trips_the_signal` (a `query_only` connection makes writes fail
-`SQLITE_READONLY`; the loop must terminate on its own with the sender still alive). The supervisor, `IndexPhase::Failed`,
-`Freshness::Failed`, and recovery-by-rebuild live in `../lifecycle/DETAILS.md`.
+`SQLITE_READONLY`; the loop must terminate on its own with the sender still alive). The supervisor,
+`IndexPhase::Failed`, `Freshness::Failed`, and recovery-by-rebuild live in `../lifecycle/DETAILS.md`.
 
 ## Honest sizes (coverage + freshness)
 
@@ -134,12 +133,12 @@ The full design (the four write paths, the read-side derivation, the decisions) 
 lives in `src/lib/indexing/DETAILS.md` § "Honest size rendering". The data model splits the overloaded "0 bytes" into
 two orthogonal facts, one stored integer each (columns defined in `../store/DETAILS.md`):
 
-- **`entries.listed_epoch`** (per dir): the epoch at which this dir's direct contents were last successfully listed.
-  `0` = never listed. This distinguishes a genuinely empty `0 bytes` folder (`listed_epoch > 0`, no children) from an
+- **`entries.listed_epoch`** (per dir): the epoch at which this dir's direct contents were last successfully listed. `0`
+  = never listed. This distinguishes a genuinely empty `0 bytes` folder (`listed_epoch > 0`, no children) from an
   unknown `—` folder (`listed_epoch == 0`).
 - **`dir_stats.min_subtree_epoch`** (rolled up by the aggregator): `min` over the dir's own `listed_epoch` and every
-  child dir's `min_subtree_epoch`, with `0` absorbing. `> 0` ⇒ subtree fully covered (size exact); `0` ⇒ some
-  descendant unlisted (size a lower bound).
+  child dir's `min_subtree_epoch`, with `0` absorbing. `> 0` ⇒ subtree fully covered (size exact); `0` ⇒ some descendant
+  unlisted (size a lower bound).
 - **`meta.current_epoch`** (per volume): bumped only on a continuity break; a scan/reconcile STAMPS listed dirs with it
   but never bumps it. Read at scan start (seeded to `"1"` if absent), so a first scan stamps epoch 1.
 
@@ -154,35 +153,34 @@ does NOT bump the writer generation — meta-only) EXCEPT the launch one (no wri
   through one regardless of trigger, so bumping HERE covers them all without enumerating `RescanReason`. The bump rides
   the same flush as the existing `DeleteMeta`/`TruncateData`, so it's COMMITTED before the scan thread reads
   `current_epoch` on its own connection (else the walk stamps the stale epoch). The first-ever scan bumps 1→2 (benign).
-- **The non-rescanning continuity breaks** — `on_smb_watcher_died`, `on_smb_overflow`, `on_mtp_device_disconnected`
-  each call `state::bump_current_epoch_for(vid)` alongside the freshness event. The disconnect completion branch in
+- **The non-rescanning continuity breaks** — `on_smb_watcher_died`, `on_smb_overflow`, `on_mtp_device_disconnected` each
+  call `state::bump_current_epoch_for(vid)` alongside the freshness event. The disconnect completion branch in
   `start_volume_scan` bumps via its CAPTURED `writer` handle directly (a registry lookup would no-op while the volume is
   still `Initializing`).
-- **Launch-loading-Stale** — `start_indexing_for`. `initial_freshness_on_launch` is pure (no DB handle) and cannot
-  bump, so the call site bumps when it loads Stale (a non-journaled SMB/MTP index with a completed prior scan) on a
+- **Launch-loading-Stale** — `start_indexing_for`. `initial_freshness_on_launch` is pure (no DB handle) and cannot bump,
+  so the call site bumps when it loads Stale (a non-journaled SMB/MTP index with a completed prior scan) on a
   short-lived write connection. A journaled local index loads Fresh and does NOT bump (continuity self-heals via
   FSEvents replay).
 
-A failed bump is non-fatal: `read_current_epoch` degrades a missing/unparseable epoch to "all current" (1), so the
-worst case is reading Fresh-looking until the next break — never a crash or a falsely-stale lie.
+A failed bump is non-fatal: `read_current_epoch` degrades a missing/unparseable epoch to "all current" (1), so the worst
+case is reading Fresh-looking until the next break — never a crash or a falsely-stale lie.
 
 **The two freshness layers stay consistent.** The per-volume `Freshness` enum (badge summary) and the epoch model
-(per-dir truth) are kept consistent: `root.min_subtree_epoch == current_epoch ⇒ Fresh` (modulo `Scanning`), `<` ⇒
-Stale. This holds BY CONSTRUCTION because the same events drive both — a clean `ScanCompleted` leaves the root stamped
-at `current_epoch` AND sets `Freshness::Fresh`; every continuity break bumps `current_epoch` AND fires
+(per-dir truth) are kept consistent: `root.min_subtree_epoch == current_epoch ⇒ Fresh` (modulo `Scanning`), `<` ⇒ Stale.
+This holds BY CONSTRUCTION because the same events drive both — a clean `ScanCompleted` leaves the root stamped at
+`current_epoch` AND sets `Freshness::Fresh`; every continuity break bumps `current_epoch` AND fires
 `WatcherDied`/`OverflowUnrecoverable` ⇒ `Freshness::Stale`. Pinned by
 `tests::root_coverage_epoch_tracks_current_epoch_across_a_continuity_break` (data layer) and
 `state::tests::disconnect_keeps_instance_stale_user_cancel_resets_to_gray` (enum layer).
 
-**Scanner stamp mechanism (the mark-before-aggregate ordering invariant).** A dir's `entries` row is inserted as part
-of its PARENT's `InsertEntriesV2` batch, so a per-dir `MarkDirsListed` could run its `UPDATE` before that row flushed
-and match nothing. So both scanners ACCUMULATE the ids of every SUCCESSFULLY-listed dir and emit `MarkDirsListed`
-(chunked) ONCE after the final batch flush and BEFORE the final aggregate. On the single in-order writer this guarantees
-the marks land before aggregation reads `listed_epoch` (a mark queued behind the aggregate would leave a dir at epoch 0
-→ the whole subtree rolls to `min_subtree_epoch = 0` → a cleanly-scanned volume renders incomplete forever).
-`MarkDirsListed` does NOT bump the writer generation. The two scanners' accumulate rules are in
-`../scanner/DETAILS.md` (local walker) and the network scanner docs; the aggregator's rollup math is in
-`../aggregator/DETAILS.md`.
+**Scanner stamp mechanism (the mark-before-aggregate ordering invariant).** A dir's `entries` row is inserted as part of
+its PARENT's `InsertEntriesV2` batch, so a per-dir `MarkDirsListed` could run its `UPDATE` before that row flushed and
+match nothing. So both scanners ACCUMULATE the ids of every SUCCESSFULLY-listed dir and emit `MarkDirsListed` (chunked)
+ONCE after the final batch flush and BEFORE the final aggregate. On the single in-order writer this guarantees the marks
+land before aggregation reads `listed_epoch` (a mark queued behind the aggregate would leave a dir at epoch 0 → the
+whole subtree rolls to `min_subtree_epoch = 0` → a cleanly-scanned volume renders incomplete forever). `MarkDirsListed`
+does NOT bump the writer generation. The two scanners' accumulate rules are in `../scanner/DETAILS.md` (local walker)
+and the network scanner docs; the aggregator's rollup math is in `../aggregator/DETAILS.md`.
 
 **Live-path discipline (the path local lives on).** After a scan the local index spends ~all its life in live mode, so
 coverage must stay honest under every live mutation. Three rules, all in `writer/` + `../reconcile/`:
@@ -196,8 +194,8 @@ coverage must stay honest under every live mutation. Three rules, all in `writer
 - **Propagate coverage on a TREE-SHAPE change, never a size change.** `propagate_min_subtree_epoch(conn, start_id)`
   (`delta.rs`) mirrors `propagate_recursive_has_symlinks` (walk the parent chain, recompute per dir, short-circuit when
   the stored value stabilizes — valid for `min` on both loss AND gain), but the per-dir recompute
-  (`store::recompute_min_subtree_epoch`) is self-and-children: the 0-absorbing `min` of the dir's own `listed_epoch`
-  AND every child dir's stored `min_subtree_epoch` (the OR-precedent is children-only — the load-bearing difference). It
+  (`store::recompute_min_subtree_epoch`) is self-and-children: the 0-absorbing `min` of the dir's own `listed_epoch` AND
+  every child dir's stored `min_subtree_epoch` (the OR-precedent is children-only — the load-bearing difference). It
   fires from: a new live dir (from its `parent_id`, so ancestors drop to `0`); delete / delete-subtree (from the old
   `parent_id` — a removed incomplete child may RAISE coverage); and a cross-parent `MoveEntryV2` (BOTH old and new
   parent chains; the moved subtree's own `min` is unchanged — it moved intact). Off-writer callers fire it via the
@@ -211,8 +209,8 @@ coverage must stay honest under every live mutation. Three rules, all in `writer
   `../reconcile/DETAILS.md`.
 
 **Read side — derive booleans, never ship raw epochs.** The frontend renders from `{recursive_size, complete, stale}`
-only. The backend derives two booleans from `min_subtree_epoch` vs the volume's `current_epoch` (read ONCE per read
-pass via `read_current_epoch`, absent ⇒ 1) on both read surfaces — the `FileEntry` enrichment path and the path-keyed
+only. The backend derives two booleans from `min_subtree_epoch` vs the volume's `current_epoch` (read ONCE per read pass
+via `read_current_epoch`, absent ⇒ 1) on both read surfaces — the `FileEntry` enrichment path and the path-keyed
 `DirStats` IPC struct. These live in `../read/DETAILS.md`; a write-op denominator rejects lower bounds
 (`expected_totals::per_source_contribution` returns `None` for `min_subtree_epoch == 0`).
 
@@ -239,10 +237,10 @@ what.**
 
 **The repair primitive (`repair.rs::repair_dir_stats_upward`).** The universal escalation: from a start id, recompute
 each level from its committed children (one indexed SUM over direct file children + a SUM over direct child dirs' stored
-`dir_stats` — O(children) per level, never a recursive CTE), write it, walk to the parent, and STOP as soon as a
-level's recompute already equals its stored row (the short-circuit compares ALL fields, so an epoch-only or
-symlink-only difference keeps walking — coverage restoration depends on it). Idempotent and order-independent, so it's
-safe to fire from every escalation site with no coordination. **Missing-child-row semantics** (they diverge from
+`dir_stats` — O(children) per level, never a recursive CTE), write it, walk to the parent, and STOP as soon as a level's
+recompute already equals its stored row (the short-circuit compares ALL fields, so an epoch-only or symlink-only
+difference keeps walking — coverage restoration depends on it). Idempotent and order-independent, so it's safe to fire
+from every escalation site with no coordination. **Missing-child-row semantics** (they diverge from
 `ComputeAllAggregates`, which computes the child first): a child dir with NO `dir_stats` row contributes 0 to
 sizes/counts (LEFT JOIN + COALESCE 0), absorbs `min_subtree_epoch` to 0, reads false for symlinks — an honest
 under-count the backfill pass then heals and repairs upward (monotone convergence toward truth). A parentless /
@@ -250,8 +248,8 @@ under-count the backfill pass then heals and repairs upward (monotone convergenc
 
 **The escalation sites** (where repair replaces a drop or a clamp):
 
-- **`propagate_delta_by_id` (the un-clamped sink).** All eight `.max(0)` clamps are gone. In the `Some` branch, when
-  any field would go negative, the walk switches to `repair_dir_stats_upward(current_id)` and logs ONE `warn!`. In the
+- **`propagate_delta_by_id` (the un-clamped sink).** All eight `.max(0)` clamps are gone. In the `Some` branch, when any
+  field would go negative, the walk switches to `repair_dir_stats_upward(current_id)` and logs ONE `warn!`. In the
   `None` branch, a missing row with any negative delta component escalates to repair (a zeroed row would be a fresh
   lie); a pure-positive delta to a missing row still creates it (load-bearing for live-created dirs, epoch 0).
 - **`handle_compute_subtree_aggregates`.** After the scoped recompute writes the subtree's rows, it calls
@@ -270,11 +268,11 @@ everything above it, permanently and silently short by the delta. So each failin
 `DeferredRepairs` queue and STOPS; the writer drains it later with `repair_dir_stats_upward`. Two shared rules: a failed
 READ is never "no row" (below), and a failed `get_parent_id` queues the current id rather than silently ending the walk.
 
-**A failed READ must never write.** `let existing = get_dir_stats_by_id(..).ok().flatten()` collapsed `Err` into
-`None`, and the `None` branch with a positive delta `INSERT OR REPLACE`s a fresh row holding ONLY the delta — a
-transient busy read turned into a permanently wrong aggregate. `Err` now writes nothing and queues the chain; `Ok(None)`
-keeps its meaning. Same fix in `repair_dir_stats_upward`'s stored-row read, and `recompute_recursive_has_symlinks`
-returns `Result<bool>` instead of `unwrap_or(false)`.
+**A failed READ must never write.** `let existing = get_dir_stats_by_id(..).ok().flatten()` collapsed `Err` into `None`,
+and the `None` branch with a positive delta `INSERT OR REPLACE`s a fresh row holding ONLY the delta — a transient busy
+read turned into a permanently wrong aggregate. `Err` now writes nothing and queues the chain; `Ok(None)` keeps its
+meaning. Same fix in `repair_dir_stats_upward`'s stored-row read, and `recompute_recursive_has_symlinks` returns
+`Result<bool>` instead of `unwrap_or(false)`.
 
 **Decision: the drain point is the writer loop's caught-up tick, outside any explicit transaction.** `writer_loop`
 drains at the end of an iteration when `queue_depth == 0` and `conn.is_autocommit()` — the same "fully caught up" point
@@ -283,12 +281,12 @@ recompute-from-children sees the whole truth, and whatever contention failed the
 clear. Not mid-transaction (a bulk sender's batch is only half applied); not inline at the failure (the DB is locked
 right now). `TruncateData` clears the queue (its ids name rows that no longer exist).
 
-**Decision: bounded at 1,024 ids, keep the oldest, count the drops.** Ancestor chains overlap heavily, so a real
-episode queues a handful; the cap is a memory ceiling for a pathological run. When full, the queue keeps what it has
-(each entry is proof of drift we still owe a repair) and counts the newcomer. A drain that fails again re-queues the id
-and gives up after 5 passes rather than re-walking a doomed chain; dropped and given-up ids ride one `warn` line. The
-backstop for anything given up is the next full aggregate or backfill. Empty→non-empty logs at `warn` (normally
-silent), each drain at `debug`.
+**Decision: bounded at 1,024 ids, keep the oldest, count the drops.** Ancestor chains overlap heavily, so a real episode
+queues a handful; the cap is a memory ceiling for a pathological run. When full, the queue keeps what it has (each entry
+is proof of drift we still owe a repair) and counts the newcomer. A drain that fails again re-queues the id and gives up
+after 5 passes rather than re-walking a doomed chain; dropped and given-up ids ride one `warn` line. The backstop for
+anything given up is the next full aggregate or backfill. Empty→non-empty logs at `warn` (normally silent), each drain
+at `debug`.
 
 **The negative-delta warn is drift telemetry.** After the fixes it should be rare; a steadily-firing warn means a NEW
 leak to find, not a repair to tune.
@@ -298,20 +296,20 @@ carry an `AggSource`, declared by the SENDER — never sniffed from map-emptines
 writer's in-memory accumulator, populated only by `InsertEntriesV2`) comes ONLY from fresh full-scan completions; an
 empty-`Maps` full aggregate falls back to SQL (a consumed-maps sender must not treat "empty" as "all zero"). `Sql`
 (recompute from committed rows, ignores the accumulator) comes from the reconcile finish and the one-shot heal. This
-closes Leak D: a verification subtree scan's `InsertEntriesV2` batches can leave the maps holding SUBTREE-ONLY data,
-and a full aggregate that trusted the maps would roll every out-of-subtree dir up from zero. **The subtree handler must
-NOT clear the accumulator** — a clear there opens its own window: a `force_scan` over a never-completed partial takes
-the truncate + `Maps` path, and an uncancelled in-flight verification's `ComputeSubtreeAggregates` landing mid-scan
-would wipe maps that then partially repopulate. `TruncateData` already clears the maps at the start of every legitimate
-`Maps` flow. The interleaved-aggregate test pins this.
+closes Leak D: a verification subtree scan's `InsertEntriesV2` batches can leave the maps holding SUBTREE-ONLY data, and
+a full aggregate that trusted the maps would roll every out-of-subtree dir up from zero. **The subtree handler must NOT
+clear the accumulator** — a clear there opens its own window: a `force_scan` over a never-completed partial takes the
+truncate + `Maps` path, and an uncancelled in-flight verification's `ComputeSubtreeAggregates` landing mid-scan would
+wipe maps that then partially repopulate. `TruncateData` already clears the maps at the start of every legitimate `Maps`
+flow. The interleaved-aggregate test pins this.
 
-**The hourglass for coalesced rescans (the held-roots tier).** A detached `reconcile_subtree` runs for seconds while
-the writer queue oscillates empty, so the wholesale queue-drain clear of `PendingSizes` would wipe the "size updating"
-mark long before the reconcile finishes. `PendingSizes` (owned by `../read/`) gains a HELD-roots tier: `queue_must_scan_sub_dirs`
-holds the root, `is_pending(path)` is true for any transient mark OR any path related to a held root in EITHER
-direction, and the writer-drain `clear()` wipes only the TRANSIENT set. On completion: `release(root)` FIRST, then emit
-`index-dir-updated` via `WriteMessage::EmitDirUpdated` (release before emit, else the triggered refetch re-reads
-`pending = true`).
+**The hourglass for coalesced rescans (the held-roots tier).** A detached `reconcile_subtree` runs for seconds while the
+writer queue oscillates empty, so the wholesale queue-drain clear of `PendingSizes` would wipe the "size updating" mark
+long before the reconcile finishes. `PendingSizes` (owned by `../read/`) gains a HELD-roots tier:
+`queue_must_scan_sub_dirs` holds the root, `is_pending(path)` is true for any transient mark OR any path related to a
+held root in EITHER direction, and the writer-drain `clear()` wipes only the TRANSIENT set. On completion:
+`release(root)` FIRST, then emit `index-dir-updated` via `WriteMessage::EmitDirUpdated` (release before emit, else the
+triggered refetch re-reads `pending = true`).
 
 **The one-shot heal for existing installs (the writer-side latch).** The fixes prevent drift going forward but don't
 retro-correct rows nothing touches, so every existing DB heals once, keyed on the meta key
@@ -351,18 +349,18 @@ WARN), so normal scans log nothing and only the actionable double-write case war
 
 During a full scan folder sizes otherwise don't exist until the single end-of-scan aggregate, so every listing shows
 placeholders for the whole scan (~2.5 min on a 5M-entry volume) and all sizes pop in at once — exactly when a new user
-judges the headline feature. Instead, on `ComputePartialAggregates { hot_paths, source }` (sent mid-scan by the
-progress reporter), `handle_compute_partial_aggregates` **borrows** the accumulator maps READ-ONLY (no clear, no
-mutation, no generation bump), no-ops on empty maps with NO SQL fallback, delegates the math to
+judges the headline feature. Instead, on `ComputePartialAggregates { hot_paths, source }` (sent mid-scan by the progress
+reporter), `handle_compute_partial_aggregates` **borrows** the accumulator maps READ-ONLY (no clear, no mutation, no
+generation bump), no-ops on empty maps with NO SQL fallback, delegates the math to
 `aggregator::compute_partial_aggregates` (full bottom-up over every scanned dir — cheap, pure in-memory), writes a
 depth-capped (`PARTIAL_AGG_MAX_DEPTH = 3`) subset plus each resolvable hot-path dir + its direct children, and reports
-`IndexEvent::DirsUpdated { paths: ["/"] }`. Real-volume cost (release, 5.94M entries / 558K
-dirs): p95 377 ms/pass, 151–716 rows/pass, indistinguishable from the feature-off baseline.
+`IndexEvent::DirsUpdated { paths: ["/"] }`. Real-volume cost (release, 5.94M entries / 558K dirs): p95 377 ms/pass,
+151–716 rows/pass, indistinguishable from the feature-off baseline.
 
 The don'ts (all load-bearing):
 
-- **Don't consume or mutate the maps** — the final pass needs them for exact totals (`stress_tests_partial_aggregation.rs`
-  pins byte-identical final state with and without partial passes).
+- **Don't consume or mutate the maps** — the final pass needs them for exact totals
+  (`stress_tests_partial_aggregation.rs` pins byte-identical final state with and without partial passes).
 - **Don't add a SQL fallback to the empty-maps no-op** — the scanner sends `ComputeAllAggregates` before `scan_done` is
   set, so one last partial message can land AFTER the final aggregation; the only thing making that safe is that the
   final pass cleared the maps so the late partial sees empty maps and no-ops (a SQL fallback would overwrite the final
@@ -400,8 +398,7 @@ in `MutationTracker { counter, feeds_search }` (the single point of policy): it 
 (test observable) but bumps `WRITER_GENERATION` only when `feeds_search`. `IndexWriter::spawn_for(.., feeds_search)`
 sets it from `kind.feeds_search()` (`true` only for `IndexVolumeKind::Local`); `spawn` defaults to `true`. Meta-only
 messages (`MarkDirsListed`, `UpdateMeta`/`DeleteMeta`, `BumpCurrentEpoch`) never bump the generation. Pinned by
-`tests::{search_feeding_tracker_bumps_global_generation, non_search_feeding_tracker_does_not_bump_global_generation,
-spawned_non_feeding_writer_does_not_bump_global_generation}`.
+`tests::{search_feeding_tracker_bumps_global_generation, non_search_feeding_tracker_does_not_bump_global_generation, spawned_non_feeding_writer_does_not_bump_global_generation}`.
 
 ## Test isolation: never assert on process-global state across a before/after window
 
@@ -409,11 +406,11 @@ spawned_non_feeding_writer_does_not_bump_global_generation}`.
 any test that reads a process-global before an action and again after, then asserts they're equal/greater, is at the
 mercy of every OTHER test's writers. Two globals here bite:
 
-- **`WRITER_GENERATION`.** Every `IndexWriter::spawn()` in the binary is a ROOT (search-feeding) writer that bumps it, so
-  a `before`/`after` read around one meta-only op flakes (`WRITER_GENERATION` jumps under you). A local test lock can't
-  fix it: the colliding bumpers span the whole crate, not this module. The isolation-independent probe is the per-writer
-  `MutationTracker::global_generation_bumps` (`#[cfg(test)]`, ticked next to the real bump) — the search-generation tests
-  assert on THAT, never on `WRITER_GENERATION` directly.
+- **`WRITER_GENERATION`.** Every `IndexWriter::spawn()` in the binary is a ROOT (search-feeding) writer that bumps it,
+  so a `before`/`after` read around one meta-only op flakes (`WRITER_GENERATION` jumps under you). A local test lock
+  can't fix it: the colliding bumpers span the whole crate, not this module. The isolation-independent probe is the
+  per-writer `MutationTracker::global_generation_bumps` (`#[cfg(test)]`, ticked next to the real bump) — the
+  search-generation tests assert on THAT, never on `WRITER_GENERATION` directly.
 - **`PENDING_SIZES`** (root's global tracker). Every root writer's end-of-drain hook CLEARS it, so a test that installs
   it and asserts a mark survives flakes AND poisons `PENDING_SIZES_TEST_MUTEX`, cascading `.lock().unwrap()` panics into
   every other holder. The pending-sizes writer tests instead register a per-volume `IndexInstance` under a UNIQUE volume
@@ -429,25 +426,26 @@ The SAME per-volume-instance pattern fixes the `reconcile::reconciler` and `test
 (the hourglass-hold routing tests, the enrichment/`dir_stats` pending-flag tests): route through a private
 `TestInstanceGuard` volume, never the root `PENDING_SIZES` / `READ_POOL` globals. Two corollaries the private-instance
 approach depends on: (1) a test must NEVER `INDEX_REGISTRY.clear()` (it wipes every concurrent test's private instance —
-`lifecycle/state/tests.rs` removes only its own ids); (2) `stress_test_helpers::TestInstanceGuard::register_identity_paths`
-uses an `mtp-` id so `get_dir_stats_on_volume` / `enrich_*_on_volume` map plain `/paths` identically (identity read-side
-routing) while staying private.
+`lifecycle/state/tests.rs` removes only its own ids); (2)
+`stress_test_helpers::TestInstanceGuard::register_identity_paths` uses an `mtp-` id so `get_dir_stats_on_volume` /
+`enrich_*_on_volume` map plain `/paths` identically (identity read-side routing) while staying private.
 
 ## Maintenance: vacuum and WAL checkpoint (`maintenance.rs`)
 
 Free pages are reclaimed both inline after `TruncateData` and on a 30 s background timer that sends `IncrementalVacuum`
-+ `WalCheckpoint`. The vacuum handler uses a tiered cap (`pick_vacuum_cap`): skip when freelist < 1,000, a 2,000-page
-cap up to 20,000, a 20,000-page cap above — tiny steady-state lock holds while draining real backlog in tens of minutes.
-The WAL checkpoint handler runs `PRAGMA wal_checkpoint(TRUNCATE)`; the scanner fires an explicit `WalCheckpoint` after
-`ComputeAllAggregates` so the GB-scale post-scan WAL spike trims immediately. The schema/pragma side (WAL mode, page
-cache, `wal_autocheckpoint`, `journal_size_limit`) lives in `../store/DETAILS.md`.
+
+- `WalCheckpoint`. The vacuum handler uses a tiered cap (`pick_vacuum_cap`): skip when freelist < 1,000, a 2,000-page
+  cap up to 20,000, a 20,000-page cap above — tiny steady-state lock holds while draining real backlog in tens of
+  minutes. The WAL checkpoint handler runs `PRAGMA wal_checkpoint(TRUNCATE)`; the scanner fires an explicit
+  `WalCheckpoint` after `ComputeAllAggregates` so the GB-scale post-scan WAL spike trims immediately. The schema/pragma
+  side (WAL mode, page cache, `wal_autocheckpoint`, `journal_size_limit`) lives in `../store/DETAILS.md`.
 
 **Gotcha — row-yielding pragmas need per-row stepping, not `execute_batch`.** `PRAGMA incremental_vacuum(N)` compiles to
 a loop that frees ONE page per `sqlite3_step()`, yielding a row after each; `execute_batch` steps a statement exactly
 once, so it frees a single page regardless of `N`. Vacuum call sites route through
 `crate::sqlite_util::run_incremental_vacuum(conn, cap)` (prepares the pragma, steps to exhaustion);
-`wal_checkpoint(TRUNCATE)` also returns a row, so it goes through `query_row`. Never send either through
-`execute_batch` — the freelist then drains one page per 30 s tick and the file never shrinks.
+`wal_checkpoint(TRUNCATE)` also returns a row, so it goes through `query_row`. Never send either through `execute_batch`
+— the freelist then drains one page per 30 s tick and the file never shrinks.
 
 **Gotcha — a checkpoint can't run inside a transaction, so the tick defers it.** `PRAGMA wal_checkpoint(TRUNCATE)` fails
 with `SQLITE_LOCKED` whenever a transaction is open. A journal replay wraps its entire run in one `BeginTransaction`, so
@@ -462,8 +460,8 @@ handler's COMMIT and re-checks `is_autocommit` first. A real SQLite error from a
 "writer gave up… after 260 ms over 52 attempts" once it passes `BUSY_GIVE_UP_ATTEMPT` (50, ~255 ms at 5 ms a retry).
 Brief contention is routine (WAL checkpoints, long-lived readers), so a short episode stays at DEBUG; a sustained one
 (peak attempt ≥ 20, >100 ms of lock wait) goes to WARN via the pure `busy_handler_escalates(attempt, in_checkpoint)`
-policy. A per-attempt ladder is a log flood by construction (a measured run: 107 lines in three bursts, up to 52 in
-0.9 s). During `handle_wal_checkpoint`'s TRUNCATE the handler stays quiet: the TRUNCATE deliberately waits readers out to
+policy. A per-attempt ladder is a log flood by construction (a measured run: 107 lines in three bursts, up to 52 in 0.9
+s). During `handle_wal_checkpoint`'s TRUNCATE the handler stays quiet: the TRUNCATE deliberately waits readers out to
 ~attempt 51 before degrading to PASSIVE, so a `WalCheckpointGuard` (writer-thread-local flag) is stamped onto the
 episode and `busy_handler_escalates` keeps that expected wait at debug ("(WAL checkpoint reader wait)"). Every other
 contention still warns.
@@ -471,8 +469,8 @@ contention still warns.
 ## Writer-wait attribution (`wait_probe.rs`)
 
 The writer channel is a bounded `sync_channel(20_000)`, so a producer parks once it's full — the backpressure that keeps
-it from outrunning the single writer. The wait lands inside whatever the producer is timing with nothing to attribute
-it to, so `reconcile_subtree`'s own duration silently included it ("reconcile slow for … (21s)" meant "the writer was
+it from outrunning the single writer. The wait lands inside whatever the producer is timing with nothing to attribute it
+to, so `reconcile_subtree`'s own duration silently included it ("reconcile slow for … (21s)" meant "the writer was
 saturated for 19 of those seconds"). `IndexWriter::send` (via `send_blocking_with_depth`) and `flush_blocking` add every
 wait to a thread-local probe: `send` tries a non-blocking enqueue FIRST (only a genuinely parked send costs anything to
 measure) and the message comes back on `Full` so nothing is lost. The reconcile side arms the probe and reports the span

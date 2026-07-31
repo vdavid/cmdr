@@ -50,9 +50,9 @@ walk. The safety comes entirely from **when** a pass (and thus its GC) runs, not
   completed scan.
 
 Three deletion paths bypass this completed-scan edge, each for a reason the edge doesn't cover: the privacy retro-delete
-and the reclaim prune (both USER-EXPLICIT, settings-derived — § Per-folder photo-search exclude,
-`scheduler/DETAILS.md` § Reclaim space), and the live-tick scoped GC (INDEX-CONFIRMED, scoped to the touched dirs —
-`scheduler/DETAILS.md` § Live enrichment). None may run the whole-store `gc_targets` outside a completed pass.
+and the reclaim prune (both USER-EXPLICIT, settings-derived — § Per-folder photo-search exclude, `scheduler/DETAILS.md`
+§ Reclaim space), and the live-tick scoped GC (INDEX-CONFIRMED, scoped to the touched dirs — `scheduler/DETAILS.md` §
+Live enrichment). None may run the whole-store `gc_targets` outside a completed pass.
 
 ## The image-qualification predicate (`predicate.rs`)
 
@@ -72,11 +72,11 @@ yields to the SAME 16 GB resident-memory ceiling rather than a second independen
 
 `gate` also holds the scope (`AtomicU8`, § The indexing scope), the parallelism count, and the semantic-search toggle
 (`clip/DETAILS.md` § The semantic-search on/off gate). The importance threshold is an `f64`-bits atomic
-(`set_importance_threshold` / `importance_threshold`, clamped `0.0..=1.0`), seeded from
-`mediaIndex.importanceThreshold` and live-applied by `media_index_set_importance_threshold`. Default `0.0`
-(`DEFAULT_IMPORTANCE_THRESHOLD`): enrich every scored folder, and the slider raises it to defer low-importance folders.
-Only a DECREASE kicks an immediate pass (`threshold_decreased`): the newly-covered folders start enriching now, while a
-raise merely defers future work, so kicking on a raise would re-walk the index for nothing.
+(`set_importance_threshold` / `importance_threshold`, clamped `0.0..=1.0`), seeded from `mediaIndex.importanceThreshold`
+and live-applied by `media_index_set_importance_threshold`. Default `0.0` (`DEFAULT_IMPORTANCE_THRESHOLD`): enrich every
+scored folder, and the slider raises it to defer low-importance folders. Only a DECREASE kicks an immediate pass
+(`threshold_decreased`): the newly-covered folders start enriching now, while a raise merely defers future work, so
+kicking on a raise would re-walk the index for nothing.
 
 ### Disabling stops the running pass (not just future ones)
 
@@ -93,10 +93,10 @@ SEPARATE — disabling touches the token not at all, it's observed live off `is_
 `request_cancel` keep their exact watchdog-only meaning. This also means re-enable can never leave a stuck signal:
 `set_enabled(true)` installs a FRESH `CancellationToken` (a token is one-shot, so it's a swap, not an un-cancel — and
 that's also what stops a pass the user told to stop from quietly resuming) and makes `is_enabled()` true, so
-`should_stop()` is false again, and `kick_all_ready_passes` starts fresh passes. A distinct third atomic for disable would add state to reset for no gain. The between-images granularity
-is right for a NON-destructive stop: unlike the exclusion veto (privacy, which re-checks before each upsert to close the
-in-flight-analyze TOCTOU), one more image finishing after a disable just writes one more KEPT row, so the per-image loop
-check is enough.
+`should_stop()` is false again, and `kick_all_ready_passes` starts fresh passes. A distinct third atomic for disable
+would add state to reset for no gain. The between-images granularity is right for a NON-destructive stop: unlike the
+exclusion veto (privacy, which re-checks before each upsert to close the in-flight-analyze TOCTOU), one more image
+finishing after a disable just writes one more KEPT row, so the per-image loop check is enough.
 
 ### The indexing scope: chosen folders vs automatic (`gate::IndexScope`)
 
@@ -155,9 +155,9 @@ only guard.
 
 ## Covered-count preview + honest progress (`coverage.rs`, `apps/desktop/src-tauri/src/commands/media_index/state.rs`)
 
-`media_index_covered_count(threshold, volume_ids)` powers the slider's live preview: across the ENABLED volumes
-(master on AND (local, or SMB opted-in); MTP never), how many folders score `≥ threshold` and how many images they hold
-— exactly `(importance ≥ threshold) AND opted-in`, never a non-opted-in SMB/MTP volume. The qualifying-image count per
+`media_index_covered_count(threshold, volume_ids)` powers the slider's live preview: across the ENABLED volumes (master
+on AND (local, or SMB opted-in); MTP never), how many folders score `≥ threshold` and how many images they hold —
+exactly `(importance ≥ threshold) AND opted-in`, never a non-opted-in SMB/MTP volume. The qualifying-image count per
 folder is an O(entries) index walk, so it's cached per volume (`coverage::get_or_build`, a `folder → count` map) and the
 threshold is applied cheaply by intersecting with `above_threshold` — a debounced drag only re-runs the cheap importance
 read + `covered_in_scope` (pure, unit-tested; it dispatches on the scope, so the count follows the same rule the
@@ -208,6 +208,7 @@ runs once per session (`docs/notes/m7-ext-index-walk-bench-2026-07-24.md`, incl.
 reproduce). Revisit only off an in-app measurement showing tens of seconds, or a sparse-image 10M+-file corpus.
 
 ## The per-folder accounted aggregate + the index-status indicators (`coverage.rs`,
+
 `apps/desktop/src-tauri/src/commands/media_index/file_status.rs`)
 
 The covered-count cache above is the DENOMINATOR (`eligible`: images the drive index says qualify per folder). The quiet
@@ -285,7 +286,7 @@ threshold alone can't).
 Excluding a folder does more than veto the future: it **retro-deletes** the folder's already-indexed rows so extracted
 OCR text stops being searchable at once (privacy is a hard requirement, not "eventually on the next GC"). The pieces:
 
-- **Why it's a new deletion path (vs the GC-safety doctrine).** GC's safety comes from *when* it runs (only a
+- **Why it's a new deletion path (vs the GC-safety doctrine).** GC's safety comes from _when_ it runs (only a
   `Completed` edge, tree whole — § The GC safety argument). The retro-delete is USER-EXPLICIT and derives ONLY from
   settings state (the exclusion the user just set), never scan/bus/gate state, so it can't wipe live coverage by
   mistiming — it needs no edge. This is the same doctrine the reclaim prune rides. The slider stays forward-only; the
@@ -304,8 +305,8 @@ OCR text stops being searchable at once (privacy is a hard requirement, not "eve
   is vetoed. (2) The in-flight-analyze TOCTOU: a pass checks the veto, runs a SECONDS-long `analyze`, then upserts; an
   exclusion landing during the analyze would slip a row past the passed check, and a later pass won't collect it (the
   file is still in the GC `current` set). Closed by re-checking the live veto immediately before EACH upsert (both
-  cores). Belt-and-suspenders: the command sequences config-set (live veto first) → retro-delete → retro-delete again
-  (a double-tap; the blocking prune is its own barrier), so a straggler upsert that squeezed into the enqueue window is
+  cores). Belt-and-suspenders: the command sequences config-set (live veto first) → retro-delete → retro-delete again (a
+  double-tap; the blocking prune is its own barrier), so a straggler upsert that squeezed into the enqueue window is
   swept. Order matters — the config write MUST precede the first delete, or in-flight images re-check stale state.
 - **Un-excluding** only clears the veto: NO re-delete and NO auto re-enrich — the next natural pass picks the folder up
   again.
@@ -331,24 +332,24 @@ the "why", busy tolerance, and the 250 ms bracket are documented there.
 **Why here:** without a `wal_autocheckpoint` override, SQLite's default PASSIVE autocheckpoint never shrinks the WAL
 file, so a per-image-upsert enrichment pass lets it creep up in place. A pass completion is the natural quiet point to
 TRUNCATE it back down (target ≤ ~16 MB at rest). Best-effort: the callers `let _ =` the result, so a reader-blocked
-checkpoint never fails a pass. Distinct from `VACUUM` (the reclaim/retro-delete paths), which reclaims free *pages* in
-the main DB after deletes; the checkpoint reclaims the *WAL file* after writes.
+checkpoint never fails a pass. Distinct from `VACUUM` (the reclaim/retro-delete paths), which reclaims free _pages_ in
+the main DB after deletes; the checkpoint reclaims the _WAL file_ after writes.
 
 ## Progress events + vanished-file skip (`events.rs`, `progress.rs`)
 
 A pass joins the top-right indexing indicator as a second publisher (the FE side is `lib/indexing/DETAILS.md` §
 Image-enrichment publisher). `events.rs` defines two typed Tauri events + the emission machinery:
 
-- **`IndexEvent::MediaEnrichProgress`** (`media-enrich-progress` on the wire): throttled progress. `total` / `bytes_total` are the
-  ENRICHABLE-subset denominators (`enrichable_totals` / `network_enrichable_totals` = images passing `should_enrich` AND
-  not `is_excluded`), NEVER the full walked set — a raw `images.len()` denominator rebuilds the never-finishes bug
-  inside the indicator. `done` counts every subset image the pass finishes handling (enriched, already-current, or a
-  quiet skip), so it reaches `total` on completion. Bytes ride `ImageEntry.size` (`Option`, `None` counts 0 —
-  under-count, never lie). The pure `should_emit_progress` throttle (`progress.rs`) fires at pass start, then ≤ every
-  500 ms or 100 images. Emission is a cheap counter + time check per image; the `EnrichProgressSink` seam keeps the
-  registry-free cores testable (a recorder in tests, the throttled `EnrichProgressEmitter` in production).
-- **`IndexEvent::MediaEnrichTerminal`** (`media-enrich-terminal` on the wire): exactly one per pass on EVERY exit path. The
-  `EnrichTerminalGuard` (RAII) guarantees it: it defaults to `Failed` and emits on `Drop`, so a `?`-error bubble (a
+- **`IndexEvent::MediaEnrichProgress`** (`media-enrich-progress` on the wire): throttled progress. `total` /
+  `bytes_total` are the ENRICHABLE-subset denominators (`enrichable_totals` / `network_enrichable_totals` = images
+  passing `should_enrich` AND not `is_excluded`), NEVER the full walked set — a raw `images.len()` denominator rebuilds
+  the never-finishes bug inside the indicator. `done` counts every subset image the pass finishes handling (enriched,
+  already-current, or a quiet skip), so it reaches `total` on completion. Bytes ride `ImageEntry.size` (`Option`, `None`
+  counts 0 — under-count, never lie). The pure `should_emit_progress` throttle (`progress.rs`) fires at pass start, then
+  ≤ every 500 ms or 100 images. Emission is a cheap counter + time check per image; the `EnrichProgressSink` seam keeps
+  the registry-free cores testable (a recorder in tests, the throttled `EnrichProgressEmitter` in production).
+- **`IndexEvent::MediaEnrichTerminal`** (`media-enrich-terminal` on the wire): exactly one per pass on EVERY exit path.
+  The `EnrichTerminalGuard` (RAII) guarantees it: it defaults to `Failed` and emits on `Drop`, so a `?`-error bubble (a
   writer-send failure) still reports a terminal; `run_pass_blocking` / `run_network_pass_blocking` override the reason
   (`Completed { enriched, gc_count }` / `Cancelled` / the two `Paused*`) before a clean exit. Without a terminal on
   every path the FE row sticks at "enriching" (the `index-scan-aborted` stuck-row bug). The local pass distinguishes
@@ -374,18 +375,19 @@ One module per command family: `search.rs` (OCR, tag, semantic, find-similar, de
 the covered-count preview), `reclaim.rs` (the outside-the-setting preview and prune), `file_status.rs` (the per-file
 overlay + per-folder badge), `clip_model.rs` (install state, download, delete), `thumbnail.rs` (grid tokens), and
 `policy.rs` for the coverage-CHANGING setters, each of which decides whether the change BROADENS coverage and needs an
-immediate pass through a pure `*_should_kick` fn tested in `apps/desktop/src-tauri/src/commands/media_index/tests.rs`. `mod.rs` keeps only what several of them
-need (the hit-limit clamp, the ONE enabled-volume rule) and glob-re-exports every module, so each command keeps its
-`commands::media_index::<name>` path in `ipc.rs` — the glob is deliberate: `#[tauri::command]` also generates hidden
-`__cmd__*` / `__tauri_command_name_*` macros that `generate_handler!` resolves through the same path.
+immediate pass through a pure `*_should_kick` fn tested in `apps/desktop/src-tauri/src/commands/media_index/tests.rs`.
+`mod.rs` keeps only what several of them need (the hit-limit clamp, the ONE enabled-volume rule) and glob-re-exports
+every module, so each command keeps its `commands::media_index::<name>` path in `ipc.rs` — the glob is deliberate:
+`#[tauri::command]` also generates hidden `__cmd__*` / `__tauri_command_name_*` macros that `generate_handler!` resolves
+through the same path.
 
 Every command is `async` + `spawn_blocking` (a sync `#[tauri::command]` would block the IPC thread), offline-capable,
 and registered in BOTH `ipc.rs` and `ipc_collectors.rs` — regen the typed bindings with `pnpm bindings:regen` after any
 command change.
 
 - **`media_index_search_ocr(volume_id, query, limit?)`** — the IPC door onto `MediaIndex::search_ocr` (plan Decision 8):
-  it resolves the app data dir, opens `MediaIndex` for the volume, and searches. `limit` defaults to 200, clamped to
-  1000. An empty query, an un-enriched volume, or an offline/purged `media.db` returns an empty list, never an error.
+  it resolves the app data dir, opens `MediaIndex` for the volume, and searches. `limit` defaults to 200, clamped
+  to 1000. An empty query, an un-enriched volume, or an offline/purged `media.db` returns an empty list, never an error.
   When the master toggle is off it short-circuits to an empty list before opening `media.db` (defense in depth,
   mirroring `media_index_covered_count`; the frontend also hides the OCR section entirely when off).
 - **`media_index_volume_state`** → the honest per-volume coverage signal. `indexing` is a cheap in-memory snapshot off
@@ -411,9 +413,8 @@ command change.
 - **Shapes for the frontend:** `SimilarImage { path, score: f32 }`, `DedupCluster { paths: Vec<String> }`,
   `TagHit { path, score: f32 }`, `CoveredCount { folders: u64, images: u64, pending: bool }`, `Tag { label, score }`,
   `ReclaimPreview { total_stored, covered_stored, doomed_count, estimated_bytes, pending }`,
-  `ReclaimResult { deleted_rows, freed_bytes }`, and `MediaIndexVolumeState { enabled, indexing, enriched_count,
-  qualifying_count, covered_qualifying_count, kept_count, waiting_for_importance, network_opt_in, always_indexed,
-  paused }`.
+  `ReclaimResult { deleted_rows, freed_bytes }`, and
+  `MediaIndexVolumeState { enabled, indexing, enriched_count, qualifying_count, covered_qualifying_count, kept_count, waiting_for_importance, network_opt_in, always_indexed, paused }`.
 
 ### Threshold-aware volume state
 
@@ -436,11 +437,12 @@ network-volume UI is in `network/DETAILS.md`, the CLIP UI in `clip/DETAILS.md`.
   (no restart), the standard backend-affecting-setting pattern.
 - **The importance slider** — `src/lib/settings/sections/MediaIndexImportanceSlider.svelte`, rendered in the same card
   when `mediaIndex.enabled` is on. It exposes five NAMED BUCKETS ("Only my most-used folders" → "Everywhere, even
-  folders I rarely open") over the typed threshold; each bucket maps to a fixed threshold stop `[0.8, 0.6, 0.4, 0.2,
-  0.0]` (left → right, restrictive → broad). Dragging RIGHT indexes MORE (a LOWER threshold). The **default is the
-  rightmost bucket, threshold `0.0`** — deliberately equal to the backend `DEFAULT_IMPORTANCE_THRESHOLD`, so the UI and
-  an unpersisted (sparse) store agree without eagerly writing a default, and it's non-regressive (junk is floored out at
-  any level regardless). The persisted value is the raw threshold; the slider maps it to the nearest bucket on load.
+  folders I rarely open") over the typed threshold; each bucket maps to a fixed threshold stop
+  `[0.8, 0.6, 0.4, 0.2, 0.0]` (left → right, restrictive → broad). Dragging RIGHT indexes MORE (a LOWER threshold). The
+  **default is the rightmost bucket, threshold `0.0`** — deliberately equal to the backend
+  `DEFAULT_IMPORTANCE_THRESHOLD`, so the UI and an unpersisted (sparse) store agree without eagerly writing a default,
+  and it's non-regressive (junk is floored out at any level regardless). The persisted value is the raw threshold; the
+  slider maps it to the nearest bucket on load.
 - **Persist + live-apply** follows the `mediaIndex.enabled` precedent, NOT the per-item delta path: the slider calls
   `setSetting('mediaIndex.importanceThreshold', threshold)` and the `settings-applier.ts` passthrough pushes it to
   `media_index_set_importance_threshold`. (Threshold is a scalar, so it fits the applier's key→value table — unlike the
@@ -480,9 +482,9 @@ listener. Fine at a few-volumes scale, but it scales per mounted volume — note
 ## What's left for later
 
 - **Per-folder COUNTS now exist** (`coverage.rs`'s incremental `accounted` aggregate + subtree rollups): the honest
-  `eligible` / `accounted` per folder feed `media_index_file_status` / `media_index_folder_coverage`, which the file- and
-  folder-icon overlays consume (`file-explorer/selection/DETAILS.md` § Image-index overlay) and the drive dot rolls up
-  per volume. Accepted staleness caveat: § The per-folder accounted aggregate.
+  `eligible` / `accounted` per folder feed `media_index_file_status` / `media_index_folder_coverage`, which the file-
+  and folder-icon overlays consume (`file-explorer/selection/DETAILS.md` § Image-index overlay) and the drive dot rolls
+  up per volume. Accepted staleness caveat: § The per-folder accounted aggregate.
 - **CLIP model size:** ~267 MB combined — the image tower is 8-bit palettized (M5b, 2026-07-23; cosine 0.9995, ~83 MB),
   the text tower stays fp (~184 MB; its 8-bit inference NaNs). Down from ~392 MB non-palettized. Numbers:
   `clip/install.rs`.
@@ -495,8 +497,7 @@ level owns:
 
 - **Pure, top-level:** the qualification predicate (`predicate.rs`), the covered-count arithmetic over a synthetic
   counts+scores map (`coverage.rs`), the command limit clamp and the `*_should_kick` decisions
-  (`apps/desktop/src-tauri/src/commands/media_index/tests.rs`),
-  the progress throttle (`progress.rs`).
+  (`apps/desktop/src-tauri/src/commands/media_index/tests.rs`), the progress throttle (`progress.rs`).
 - **Privacy retro-delete (all real red→green — deletion is data-safety-critical):** the writer prune primitives
   (`writer/tests.rs`) — `prune_under_folder` deletes rows at or under a folder across ALL four tables and only those,
   trailing-slash-safe (`/Photos2` survives pruning `/Photos`); `prune_paths` deletes only the explicit set; prune +
@@ -514,5 +515,5 @@ Two rules it leaves behind:
 - **A new `pub` is a promise.** Take one of the four dispositions first — a facade method named for what the caller
   wants, a fold into a call that already exists, a delete, or a gated door.
 - **`#[cfg(test)]` while every consumer is inside the crate; a feature only when one lives outside.** The app turns
-  `testing` on for every dev target, so a feature-gated item with only in-crate callers exists in the non-test lib
-  build with nothing calling it, and `#[deny(unused)]` makes that an error.
+  `testing` on for every dev target, so a feature-gated item with only in-crate callers exists in the non-test lib build
+  with nothing calling it, and `#[deny(unused)]` makes that an error.

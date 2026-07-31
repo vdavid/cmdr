@@ -8,14 +8,14 @@ names current post-reorg paths under `crates/cmdr-index/src/indexing`.
 ## 1. Intention
 
 Rescanning a completed LOCAL index today runs a serial BFS reconcile in place
-(`crates/cmdr-index/src/indexing/reconcile/local_reconcile.rs`): it diffs each directory against disk and writes
-only the changes, so the last-good directory sizes stay visible and no large freelist is minted. It is correct and safe,
-but slow.
+(`crates/cmdr-index/src/indexing/reconcile/local_reconcile.rs`): it diffs each directory against disk and writes only
+the changes, so the last-good directory sizes stay visible and no large freelist is minted. It is correct and safe, but
+slow.
 
 Swap-scan replaces that rescan mechanism with the fast parallel guarded walker
-(`crates/cmdr-index/src/indexing/scanner`): build a complete fresh index off to the side, then swap it in
-atomically. Measured back to back on the same machine on 2026-07-22, the fresh parallel scan is **8.4x faster** than the
-reconcile (107.2 s vs 897.4 s), and the completeness objection that used to make the comparison unfair is closed: the
+(`crates/cmdr-index/src/indexing/scanner`): build a complete fresh index off to the side, then swap it in atomically.
+Measured back to back on the same machine on 2026-07-22, the fresh parallel scan is **8.4x faster** than the reconcile
+(107.2 s vs 897.4 s), and the completeness objection that used to make the comparison unfair is closed: the
 progress-based walker watchdog now reads every big directory to completion, so the fresh scan is honest AND complete
 (the reconcile right after it found only +1,848 entries, 0.03%, not the old +656,352 / ~10%). Even the load-contaminated
 fresh scan (138 s) beats the reconcile 6.5x, so the win is robust to contention.
@@ -29,8 +29,8 @@ Non-obvious whys worth stating up front:
   minutes on root; the swap build is a bounded parallel walk that finishes in ~2 minutes and then releases. The tradeoff
   swap-scan accepts is a transient second copy of the DB on disk (§ 3, § 5).
 - **This is a local-disk mechanism.** The 8x figure is measured on root (the boot volume). SMB and MTP rescans use the
-  trait-BFS scanner and a different predicate (`crates/cmdr-index/src/indexing/lifecycle/network_scan.rs`); they
-  are explicitly out of scope (§ 4).
+  trait-BFS scanner and a different predicate (`crates/cmdr-index/src/indexing/lifecycle/network_scan.rs`); they are
+  explicitly out of scope (§ 4).
 
 ## 2. The data-safety spine (Cmdr principle 4)
 
@@ -50,11 +50,11 @@ the note already lists (no 82-site table-name threading, no index-name collision
 
 **The separate-file variant preserves the single-writer-per-DB invariant by construction.** The whole subsystem rests on
 "every write to a volume's DB goes through one dedicated writer thread"
-(`crates/cmdr-index/src/indexing/writer/CLAUDE.md`). A separate file keeps exactly one writer per file: the OLD
-writer keeps serving the live `index-{vid}.db`, a NEW temporary writer builds `index-{vid}.building.db`, and neither
-shares the other's write connection, id counter, or `dir_stats` ledger. The shadow-table variant would force two id
-spaces onto one shared `Arc<AtomicI64>` counter and one write connection, or duplicate the whole write path. The file
-variant maps onto the architecture that already exists; the in-file variant fights it.
+(`crates/cmdr-index/src/indexing/writer/CLAUDE.md`). A separate file keeps exactly one writer per file: the OLD writer
+keeps serving the live `index-{vid}.db`, a NEW temporary writer builds `index-{vid}.building.db`, and neither shares the
+other's write connection, id counter, or `dir_stats` ledger. The shadow-table variant would force two id spaces onto one
+shared `Arc<AtomicI64>` counter and one write connection, or duplicate the whole write path. The file variant maps onto
+the architecture that already exists; the in-file variant fights it.
 
 Both variants pay a comparable disk peak (two full copies coexist during the build). The feasibility note budgets ~2.5–3
 GB for root, not just 2× the 1.12 GB main file: the build's own `-wal` grows during a 7.4M-row bulk insert and cannot
@@ -66,8 +66,8 @@ headroom.
 
 The key de-risker the feasibility note identified (§ 2): during a local scan, `start_scan` starts the `DriveWatcher` and
 BUFFERS FSEvents; the live event loop only starts in the completion handler AFTER the walk finishes
-(`crates/cmdr-index/src/indexing/lifecycle/scan_completion.rs`), and the per-navigation verifier is gated off while
-a scan runs. So during the build the OLD index takes no live writes; it is effectively read-only and fully queryable
+(`crates/cmdr-index/src/indexing/lifecycle/scan_completion.rs`), and the per-navigation verifier is gated off while a
+scan runs. So during the build the OLD index takes no live writes; it is effectively read-only and fully queryable
 throughout. The plan makes that an explicit asserted precondition of a swap, not an accident.
 
 Build phase (old index stays live and complete the entire time):
@@ -78,10 +78,10 @@ Build phase (old index stays live and complete the entire time):
 2. **Set the build file's `current_epoch` = old file's `current_epoch` + 1 and FLUSH it before the walk starts.** The
    walker reads `current_epoch` off its own connection to stamp every directory's `listed_epoch` DURING the walk (the
    same invariant as today's Step 0a'/0b, which bumps + flushes `current_epoch` before the walk reads it,
-   `crates/cmdr-index/src/indexing/lifecycle/manager.rs`). If the epoch were only written in the post-walk meta (§
-   2.3), the walker would stamp every dir at the fresh-file default (1) while meta later claimed old+1, and enrichment
-   would then mark every directory `recursive_size_stale = true` after the swap. So the epoch is a BEFORE-walk
-   build-setup step, not a post-walk meta write.
+   `crates/cmdr-index/src/indexing/lifecycle/manager.rs`). If the epoch were only written in the post-walk meta (§ 2.3),
+   the walker would stamp every dir at the fresh-file default (1) while meta later claimed old+1, and enrichment would
+   then mark every directory `recursive_size_stale = true` after the swap. So the epoch is a BEFORE-walk build-setup
+   step, not a post-walk meta write.
 3. Run the SAME `scanner::scan_volume` guarded parallel walker, feeding `build_writer` instead of `self.writer`. The
    walker's progress watchdog, the 32-consecutive-failure backstop, and exclusions behave identically (§ 4).
 4. **The build writer is spawned NOT search-feeding, so it never bumps `WRITER_GENERATION`.** This is the free fix for
@@ -124,8 +124,8 @@ When the walk completes cleanly and the build file is fully written:
    `run_scan_completion` task is DETACHED: it holds only clones (an `IndexWriter` handle, Arcs, `event_rx`), has no
    `&mut IndexManager`, and cannot mutate those fields. So the re-point cannot happen inside the completion task as
    spawned. It must run on an owned `&mut mgr` taken out of `INDEX_REGISTRY` with the existing extract-drop-reinsert
-   pattern that `perform_registry_rescan` (`crates/cmdr-index/src/indexing/lifecycle/manager.rs`) already uses:
-   lock, `std::mem::replace` the phase to `ShuttingDown`, take the `IndexManager` out, drop the lock, do the blocking
+   pattern that `perform_registry_rescan` (`crates/cmdr-index/src/indexing/lifecycle/manager.rs`) already uses: lock,
+   `std::mem::replace` the phase to `ShuttingDown`, take the `IndexManager` out, drop the lock, do the blocking
    quiesce/commit/re-point on the owned manager, re-lock, reinsert as `Running`. **The ENTIRE swap (quiesce → meta →
    durable marker → promote → re-point) runs inside this one owned-manager critical section.** Extracting the manager
    (phase → `ShuttingDown`) is the single mutual-exclusion point: while it is out, a concurrent `stop_indexing` /
@@ -183,9 +183,9 @@ bump) and only then unlink the old file's three files. An in-flight reader mid-q
 the now-unlinked inode and finishes correctly (POSIX keeps the inode alive until its last fd closes); new readers opened
 after `invalidate` open the new `.db`. This is the same "index stays readable throughout" property the feasibility note
 calls out, and `ReadPool::invalidate()` already exists and is already called on four lifecycle paths (`stop_indexing`,
-`remove_instance_and_handles`, `clear_index`, `fail_index` in `crates/cmdr-index/src/indexing/lifecycle/state.rs`).
-Read connections open `SQLITE_OPEN_READ_ONLY` but still touch `-shm` in WAL mode, so unlinking the old `-wal` / `-shm`
-under an in-flight WAL reader is precisely the property M0 spike (b) must PROVE on APFS, not assume.
+`remove_instance_and_handles`, `clear_index`, `fail_index` in `crates/cmdr-index/src/indexing/lifecycle/state.rs`). Read
+connections open `SQLITE_OPEN_READ_ONLY` but still touch `-shm` in WAL mode, so unlinking the old `-wal` / `-shm` under
+an in-flight WAL reader is precisely the property M0 spike (b) must PROVE on APFS, not assume.
 
 ### 2.6 The biggest data-safety risk, and how the plan defends it
 
@@ -209,9 +209,9 @@ outright by the variant choice.
 
 - **`scan_completed_at` cleared at scan start (the headline-voiding bug).** Today `start_scan` sends
   `DeleteMeta("scan_completed_at")` to `self.writer` before the walk
-  (`crates/cmdr-index/src/indexing/lifecycle/manager.rs` Step 0a). **Decision:** on the swap-scan path, DO NOT
-  clear `scan_completed_at` on the old writer. The old file's completion marker stays intact throughout; the new file
-  gets its own `scan_completed_at` written just before the commit marker (§ 2.3 step 2). Interrupt-safety follows by
+  (`crates/cmdr-index/src/indexing/lifecycle/manager.rs` Step 0a). **Decision:** on the swap-scan path, DO NOT clear
+  `scan_completed_at` on the old writer. The old file's completion marker stays intact throughout; the new file gets its
+  own `scan_completed_at` written just before the commit marker (§ 2.3 step 2). Interrupt-safety follows by
   construction.
 - **Index-name collision (`idx_parent_name_folded_new`).** Neutralized: a separate DB file has its own schema namespace,
   so index names never collide and `create_tables` never silently rebuilds a duplicate index. No change needed.
@@ -231,8 +231,8 @@ outright by the variant choice.
 - **Freshness / coverage-epoch continuity.** During the build, freshness is Scanning (blue badge), same as today; an
   interrupt reverts to the old index's freshness (Fresh, since it was complete), because nothing permanent flipped.
   **Decision: do NOT bump the old writer's `current_epoch` at swap-scan start.** Today `start_scan` Step 0a' sends
-  `BumpCurrentEpoch` to `self.writer` unconditionally (`crates/cmdr-index/src/indexing/lifecycle/manager.rs`). On
-  the swap path that must be SKIPPED on the old writer, because bumping the live file's `current_epoch` above its stored
+  `BumpCurrentEpoch` to `self.writer` unconditionally (`crates/cmdr-index/src/indexing/lifecycle/manager.rs`). On the
+  swap path that must be SKIPPED on the old writer, because bumping the live file's `current_epoch` above its stored
   `min_subtree_epoch` flips every visible directory to `recursive_size_stale = true` (via `apply_dir_stats` in
   enrichment) for the whole ~2-minute build, so the user would watch their sizes go stale-grey during a rescan that is
   supposed to keep them visible. Instead the epoch is stamped in the BUILD file. **Epoch continuity is SIMPLER for swap
@@ -244,10 +244,10 @@ outright by the variant choice.
 - **The `dir_stats` ledger + honest-sizes invariants (writer-owned, canonical).** The build is a fresh full scan, so it
   uses the normal fresh-scan aggregation path: `ComputeAllAggregates { source: Maps }` from the walker's in-memory
   accumulator (the same path a first scan uses today), NOT the reconcile's `source: Sql`. The ledger's four hard rules
-  (`crates/cmdr-index/src/indexing/writer/CLAUDE.md`) hold within the build writer exactly as they do for a first
-  scan. The `UNIQUE (parent_id, name_folded)` net is present the whole time (the build file is created with the full
-  schema and indexes from `create_tables`, unlike the in-file variant's option (a) which had to drop the net during the
-  bulk insert). Nothing carries across the swap except `meta`; the new ledger is computed fresh and complete.
+  (`crates/cmdr-index/src/indexing/writer/CLAUDE.md`) hold within the build writer exactly as they do for a first scan.
+  The `UNIQUE (parent_id, name_folded)` net is present the whole time (the build file is created with the full schema
+  and indexes from `create_tables`, unlike the in-file variant's option (a) which had to drop the net during the bulk
+  insert). Nothing carries across the swap except `meta`; the new ledger is computed fresh and complete.
 - **Lost swap under `synchronous = NORMAL`.** The commit marker write and the directory fsync make the commit point
   durable; recovery is idempotent (§ 2.4), so a power loss right after the marker replays the promotion and a power loss
   right before it discards the build file. Neither corrupts.
@@ -255,8 +255,8 @@ outright by the variant choice.
 ## 4. Interactions with the rest of indexing
 
 - **Reconcile-vs-truncate routing (`local_rescan_reconciles`).** Today
-  `crates/cmdr-index/src/indexing/lifecycle/manager.rs` `start_scan` decides fresh-truncate vs in-place-reconcile
-  via `local_rescan_reconciles(entry_count, prior_scan_completed)`. Swap-scan is a THIRD path INSIDE the "rescan of a
+  `crates/cmdr-index/src/indexing/lifecycle/manager.rs` `start_scan` decides fresh-truncate vs in-place-reconcile via
+  `local_rescan_reconciles(entry_count, prior_scan_completed)`. Swap-scan is a THIRD path INSIDE the "rescan of a
   complete index" branch. New decision, in order: (1) empty or never-completed index → fresh truncate scan (unchanged);
   (2) completed + populated + LOCAL + swap-scan enabled + enough free disk → SWAP-SCAN; (3) completed + populated +
   LOCAL + (flag off OR not enough disk) → in-place reconcile (today's path, kept as the safety net). The
@@ -265,8 +265,8 @@ outright by the variant choice.
 - **Walker progress watchdog + the 32-failure backstop.** Unchanged: swap-scan runs `scanner::scan_volume` verbatim,
   only the writer target differs. The stall watchdog and backstop bound the build exactly as they bound a fresh scan.
 - **The reconcile cost budget.** Not involved: swap-scan is a fresh walk, not a reconcile, so the fraction-based cost
-  budget (`crates/cmdr-index/src/indexing/reconcile/local_reconcile/cost_budget.rs`) does not apply to the swap
-  path. It stays exactly as-is for the fallback reconcile.
+  budget (`crates/cmdr-index/src/indexing/reconcile/local_reconcile/cost_budget.rs`) does not apply to the swap path. It
+  stays exactly as-is for the fallback reconcile.
 - **FSEvents buffering + completion handoff.** Unchanged shape: the `DriveWatcher` buffers during the build; the
   completion handler drains the buffer, replays into the (now new) live writer, and starts the live loop. The buffered
   events were captured relative to disk, not to index ids, so they replay correctly against the fresh index. The
@@ -278,13 +278,12 @@ outright by the variant choice.
   reinserted as `Running` after. Never hold the registry lock across the blocking build or the swap
   (`crates/cmdr-index/src/indexing/lifecycle/CLAUDE.md` lock discipline).
 - **Fatal storage error / memory watchdog mid-build.** `fail_index` and `stop_all_indexing`
-  (`crates/cmdr-index/src/indexing/resources`) stop indexing mid-scan through the registry, calling
-  `mgr.shutdown()`, which today only tears down `self.writer` / `self.drive_watcher` / `self.live_event_task` and knows
-  nothing about a build triple. So the open-time recovery (§ 2.4) is a FILE backstop only, not a thread/fd backstop: the
-  plan must ALSO wire build-triple teardown (drain + shut down `build_writer`, drop `build_store`, then delete
-  `.building.db`) into `shutdown()`, `fail_index`, and `stop_all_indexing`, or a mid-build fatal error leaves the build
-  writer thread and its fd alive. The old index stays untouched and authoritative regardless. Milestone M5 owns this
-  wiring.
+  (`crates/cmdr-index/src/indexing/resources`) stop indexing mid-scan through the registry, calling `mgr.shutdown()`,
+  which today only tears down `self.writer` / `self.drive_watcher` / `self.live_event_task` and knows nothing about a
+  build triple. So the open-time recovery (§ 2.4) is a FILE backstop only, not a thread/fd backstop: the plan must ALSO
+  wire build-triple teardown (drain + shut down `build_writer`, drop `build_store`, then delete `.building.db`) into
+  `shutdown()`, `fail_index`, and `stop_all_indexing`, or a mid-build fatal error leaves the build writer thread and its
+  fd alive. The old index stays untouched and authoritative regardless. Milestone M5 owns this wiring.
 - **Scope: LOCAL only.** Root (boot volume) is the primary target and where the 8x is measured. `LocalExternal` (USB/SD,
   mount-rooted, same local scanner + FSEvents path) is a natural extension guarded by the same free-space check; it is
   called out as a fast follow-on, not first-cut, to keep M1–M3 focused on root. **SMB and MTP are out of scope**: they
@@ -324,10 +323,9 @@ recovery (§ 2.4) as pure store-layer code with NO scan wired in yet. **Real TDD
 complete index" test for each injection point. Also test: pre-flight free-space check returns the right decision at
 boundary sizes.
 
-Docs: new "Index file swap protocol" section in `crates/cmdr-index/src/indexing/store/DETAILS.md`; a one-line
-guardrail in `crates/cmdr-index/src/indexing/store/CLAUDE.md` ("`.building.db` / `.swap` are swap-scan scaffolding;
-open-time recovery owns their cleanup, never leave one stranded"). Checks: `pnpm check rust`, `docs-reachable`,
-`docs-dead-links`.
+Docs: new "Index file swap protocol" section in `crates/cmdr-index/src/indexing/store/DETAILS.md`; a one-line guardrail
+in `crates/cmdr-index/src/indexing/store/CLAUDE.md` ("`.building.db` / `.swap` are swap-scan scaffolding; open-time
+recovery owns their cleanup, never leave one stranded"). Checks: `pnpm check rust`, `docs-reachable`, `docs-dead-links`.
 
 ### M2. Build-writer choreography (writer + lifecycle)
 
@@ -343,8 +341,8 @@ the search generation did NOT bump during the build (use the writer's per-writer
 a process-global read, per the writer test-isolation rule).
 
 Docs: `crates/cmdr-index/src/indexing/writer/DETAILS.md` (build-writer role, generation-bump suppression) and
-`crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` (the build triple the manager holds). Checks:
-`pnpm check rust`, doc-graph.
+`crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` (the build triple the manager holds). Checks: `pnpm check rust`,
+doc-graph.
 
 M1 and M2 touch different areas (store vs writer/lifecycle) and can proceed in parallel after M0, converging at M3.
 
@@ -364,8 +362,8 @@ correctly; (3) a cancelled swap-scan leaves the old index complete and queryable
 (4) after the swap, the manager's own `store.read_conn` serves the NEW file (guards the C1-class stale-handle bug in
 `get_status` / `get_debug_status`).
 
-Docs: `crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` (the swap sequence and the completion-handler wiring);
-a `Decision/Why` in `../../notes/swap-scan-feasibility.md` is not needed (that's a research note), but add the decision
+Docs: `crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` (the swap sequence and the completion-handler wiring); a
+`Decision/Why` in `../../notes/swap-scan-feasibility.md` is not needed (that's a research note), but add the decision
 record to `indexing/DETAILS.md` (§ new "Swap-scan"). Checks: `pnpm check rust`, `--include-slow` for the integration
 tests, doc-graph.
 
@@ -385,11 +383,11 @@ reconcile is the free-space / flag-off fallback) and the reconcile `DETAILS.md`.
 Wire the abort-path cleanup at BOTH levels: (a) the thread/fd level, so `mgr.shutdown()`, `fail_index`, and
 `stop_all_indexing` drain + shut down the `build_writer` and drop the `build_store` (not just `self.writer`), and (b)
 the file level, so those paths plus `stop_scan`, `clear_index`, `forget`, and retention eviction
-(`crates/cmdr-index/src/indexing/resources/retention.rs` `delete_index_db_files`, and `clear_index`'s sidecar
-deletion) remove any `.building.db` + `.swap`. Also wire the feature-flag default and kill-switch, and the
-field-measurement logging (swap wall time vs the stored reconcile baseline; a crash-recovery counter to confirm zero
-torn-index incidents). **Tests:** each abort path leaves no orphan file (assert via the recovery no-op); the kill-switch
-flips a live rescan back to reconcile.
+(`crates/cmdr-index/src/indexing/resources/retention.rs` `delete_index_db_files`, and `clear_index`'s sidecar deletion)
+remove any `.building.db` + `.swap`. Also wire the feature-flag default and kill-switch, and the field-measurement
+logging (swap wall time vs the stored reconcile baseline; a crash-recovery counter to confirm zero torn-index
+incidents). **Tests:** each abort path leaves no orphan file (assert via the recovery no-op); the kill-switch flips a
+live rescan back to reconcile.
 
 Docs: append a "Swap-scan, shipped" section to `../../notes/indexing-benchmarks-2026-07-21.md` with the field numbers
 once measured; confirm the `indexing/DETAILS.md` decision record is complete; update this spec's status. Checks: full

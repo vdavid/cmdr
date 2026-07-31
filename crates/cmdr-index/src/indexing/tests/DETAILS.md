@@ -20,8 +20,8 @@ Tests use temp dirs and real SQLite. What each file covers:
   scan + enrichment reads, live event storm + reads.
 - **stress_tests_lifecycle.rs** — lifecycle stress: start/stop/restart under load, clean lifecycle, double-start guard,
   early shutdown, rapid cycles, mixed queued work shutdown, and `disconnect_storm_writer_drain_holds_across_volumes`
-  (20× spawn/write-burst/shutdown across two volume DBs via the non-search-feeding `spawn_for(.., false)` path, asserting
-  no panic/lock/corruption under churn). The registry-level twin
+  (20× spawn/write-burst/shutdown across two volume DBs via the non-search-feeding `spawn_for(.., false)` path,
+  asserting no panic/lock/corruption under churn). The registry-level twin
   `disconnect_storm_two_volumes_never_wedges_the_registry` lives in `../lifecycle/state/tests.rs`.
 - **stress_tests_partial_aggregation.rs** — the partial-aggregation differential test: the same synthetic tree fed to
   two writers (final-only vs partial-passes-interleaved), both compared after the final aggregation. The primary oracle
@@ -69,19 +69,20 @@ mid-unmount; it held kernel vnode locks until the pile-up blocked WindowServer a
 rebooted the machine**. The wedge happens DURING unmount, so no post-unmount hook can undo it — the only defense is to
 never trigger it.
 
-So every external-drive test uses a **disposable synthetic disk image**, through `indexing::tests::external_drive_fixture`
-(macOS-only, `#[cfg(all(test, target_os = "macos"))]`):
+So every external-drive test uses a **disposable synthetic disk image**, through
+`indexing::tests::external_drive_fixture` (macOS-only, `#[cfg(all(test, target_os = "macos"))]`):
 
-- `DiskImageFixture::attach(DiskImageFilesystem::Fat32 | ExFat, volume_name)` runs `hdiutil create` + `hdiutil attach
-  -nobrowse` on a fresh temp image, parses the `/dev/diskN` node and `/Volumes/…` mount, and returns a guard.
+- `DiskImageFixture::attach(DiskImageFilesystem::Fat32 | ExFat, volume_name)` runs `hdiutil create` +
+  `hdiutil attach -nobrowse` on a fresh temp image, parses the `/dev/diskN` node and `/Volumes/…` mount, and returns a
+  guard.
 - `mount_point()` is the mount; `populate_known_tree()` writes a fixed tree (nested dirs, sized files, and an **empty**
   file — the empty file matters because FAT/exFAT give it a sentinel inode that changes once content is written) and
   returns the entries for assertions.
 - The guard's `Drop` detaches once — `hdiutil detach`, then a `hdiutil detach -force` fallback — so teardown runs even
   on panic or early return. **Attach once, detach once; never cycle mount/unmount, never `diskutil unmount` a path.**
 - **Every `hdiutil` call is hard-timeout-guarded** (`run_hdiutil_guarded`, `HDIUTIL_TIMEOUT = 30 s`): past the deadline
-  the child is SIGKILLed (`Child::kill` → `SIGKILL`), so a wedged FSKit service is killed, never awaited. ❌ Don't "clean
-  up" these timeouts or the single-detach discipline — they're the guardrail against the incident above.
+  the child is SIGKILLed (`Child::kill` → `SIGKILL`), so a wedged FSKit service is killed, never awaited. ❌ Don't
+  "clean up" these timeouts or the single-detach discipline — they're the guardrail against the incident above.
 
 The tests are `#[ignore]`d (each attaches a real disk image via hdiutil), so `pnpm check rust` compiles them but the
 default suite skips them; run them explicitly:
@@ -103,8 +104,8 @@ untrusted-inode flag, resolved from the real `detect_filesystem_for_path` as `lo
 asserts the drive's own index holds the tree under `ROOT_ID` by mount-relative name with recursive sizes, and the FAT
 inode nulled. Asserts are lower bounds (macOS adds AppleDouble `._*` sidecars on FAT). The full app-level lifecycle
 (enable → scan → sizes → eject-safe stop → detach) is not an automated CI test — driving `hdiutil` in CI is the
-deliberately-avoided panic-class op; it's validated live via
-MCP against the running dev app instead.
+deliberately-avoided panic-class op; it's validated live via MCP against the running dev app instead.
 
 For `platform_case_compare` in `store.rs`: proptests cover the comparator algebra (reflexive / antisymmetric /
-transitive) and NFC≡NFD equivalence on macOS. Don't regress those; see `store/tests/path_resolution.rs` for the property statements.
+transitive) and NFC≡NFD equivalence on macOS. Don't regress those; see `store/tests/path_resolution.rs` for the property
+statements.

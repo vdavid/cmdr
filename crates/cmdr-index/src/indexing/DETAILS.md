@@ -1,8 +1,8 @@
 # Drive indexing details (hub)
 
-Read this before any non-trivial work spanning the indexing subsystem: planning, reorganizing, or advising across
-areas. This is the map and the cross-cutting depth; each area's own mechanisms live in its `DETAILS.md` (linked below),
-and must-know invariants in its `CLAUDE.md`. Single-source: a mechanism is documented in ONE area doc; everywhere else
+Read this before any non-trivial work spanning the indexing subsystem: planning, reorganizing, or advising across areas.
+This is the map and the cross-cutting depth; each area's own mechanisms live in its `DETAILS.md` (linked below), and
+must-know invariants in its `CLAUDE.md`. Single-source: a mechanism is documented in ONE area doc; everywhere else
 points to it.
 
 The key UX win: showing directory sizes in listings. Design history is in git (former `docs/specs/drive-indexing/`).
@@ -15,21 +15,21 @@ public-API facade; the areas:
 - **`host/DETAILS.md`** — the host seams (runtime, policy, volumes, config, events): what the subsystems ask the
   application for, why each one is a seam rather than an import, why the runtime swap can't cost us thread QoS, and
   where cancellation stands.
-- **`lifecycle/DETAILS.md`** — the per-volume registry, `IndexPhase` machine, `IndexManager` coordinator
-  (+ its `network_scan` trait-scan dispatch), scan completion, the freshness state machine, the Failed state, the
-  lifecycle bus, and `IndexVolumeKind`'s two-axis capability model.
+- **`lifecycle/DETAILS.md`** — the per-volume registry, `IndexPhase` machine, `IndexManager` coordinator (+ its
+  `network_scan` trait-scan dispatch), scan completion, the freshness state machine, the Failed state, the lifecycle
+  bus, and `IndexVolumeKind`'s two-axis capability model.
 - **`resources/DETAILS.md`** — the global 16 GB memory watchdog, subsystem stop-hooks, retention cap.
 - **`scanner/DETAILS.md`** — the LOCAL guarded parallel walker + scope-aware exclusions.
   **`network_scanner/DETAILS.md`** — the SMB/MTP `Volume`-trait BFS + scan pacing + NAS skips.
 - **`watch/DETAILS.md`** — the FS watcher + the event loop (live / replay / verification / storm) + churn.
-- **`reconcile/DETAILS.md`** — non-destructive rescan, the cost budget, the two verification teeth, the
-  per-navigation verifier, the once-a-day shallow sweep, the per-subtree throttle, depth-split routing.
-- **`writer/DETAILS.md`** — the single writer thread. **Canonical home for honest sizes, the `dir_stats`
-  ledger, coverage epochs, the ID counter, and `WRITER_GENERATION`.** **`aggregator/DETAILS.md`** —
-  bottom-up dir-stats compute. **`store/DETAILS.md`** — the `IndexStore` handle + the SQLite schema.
-- **`read/DETAILS.md`** — enrichment, IPC queries, expected totals, the hourglass.
-  **`paths/DETAILS.md`** — **canonical home for `IndexPathSpace`, the three-path-spaces discipline, routing,
-  and firmlink normalization.** **`events/DETAILS.md`** — FE payloads, `set_phase_for`, the progress loop.
+- **`reconcile/DETAILS.md`** — non-destructive rescan, the cost budget, the two verification teeth, the per-navigation
+  verifier, the once-a-day shallow sweep, the per-subtree throttle, depth-split routing.
+- **`writer/DETAILS.md`** — the single writer thread. **Canonical home for honest sizes, the `dir_stats` ledger,
+  coverage epochs, the ID counter, and `WRITER_GENERATION`.** **`aggregator/DETAILS.md`** — bottom-up dir-stats compute.
+  **`store/DETAILS.md`** — the `IndexStore` handle + the SQLite schema.
+- **`read/DETAILS.md`** — enrichment, IPC queries, expected totals, the hourglass. **`paths/DETAILS.md`** — **canonical
+  home for `IndexPathSpace`, the three-path-spaces discipline, routing, and firmlink normalization.**
+  **`events/DETAILS.md`** — FE payloads, `set_phase_for`, the progress loop.
 - **`transports/DETAILS.md`** — per-transport enable + live watch (`smb/`, `mtp/`, `local_external/`).
 - **`tests/DETAILS.md`** — whole-pipeline integration + stress tests + the disk-image fixture.
 
@@ -74,11 +74,10 @@ Navigation verification (after enrichment):
   |-- trigger_verification(path) -> dedup/debounce -> ReadPool DB snapshot vs read_dir disk snapshot -> corrections
 ```
 
-Which area owns each stage: scan discovery → `scanner/DETAILS.md` (local) and
-`network_scanner/DETAILS.md` (SMB/MTP); live change ingestion → `watch/DETAILS.md`;
-resync → `reconcile/DETAILS.md`; persistence + size compute → `writer/DETAILS.md` +
-`aggregator/DETAILS.md`; serving sizes → `read/DETAILS.md`; path mapping →
-`paths/DETAILS.md`; lifecycle of it all → `lifecycle/DETAILS.md`.
+Which area owns each stage: scan discovery → `scanner/DETAILS.md` (local) and `network_scanner/DETAILS.md` (SMB/MTP);
+live change ingestion → `watch/DETAILS.md`; resync → `reconcile/DETAILS.md`; persistence + size compute →
+`writer/DETAILS.md` + `aggregator/DETAILS.md`; serving sizes → `read/DETAILS.md`; path mapping → `paths/DETAILS.md`;
+lifecycle of it all → `lifecycle/DETAILS.md`.
 
 ## Cross-cutting patterns
 
@@ -88,8 +87,7 @@ resync → `reconcile/DETAILS.md`; persistence + size compute → `writer/DETAIL
   estimates, each with an explicit "unknown" fallback. What counts as corruption (never widen it) and the schema:
   `store/DETAILS.md`.
 - **Per-volume everything.** Every invariant holds per `VolumeId`, keyed independently. The registry is the authority;
-  reads route through the per-volume `ReadPool`, never under the lifecycle lock. See
-  `lifecycle/DETAILS.md`.
+  reads route through the per-volume `ReadPool`, never under the lifecycle lock. See `lifecycle/DETAILS.md`.
 - **Two records of the pipeline phase.** A global app-wide `DEBUG_STATS` ring (debug window) and a per-volume
   `index-phase-changed` event; `set_phase_for` does both so they can't drift. The phase EVENT lives in
   `events/DETAILS.md`; the phase MACHINE (`IndexPhase`) in `lifecycle/DETAILS.md`.

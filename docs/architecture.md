@@ -211,24 +211,24 @@ All under `crates/`, alongside the four apps. They carry no `tauri` dependency.
     on launch and disconnect. See `crates/cmdr-index/src/indexing/CLAUDE.md`
   - `importance/`: Deterministic folder-importance scoring (pure `scorer/`: values-in/score-out `Weights` + explain
     breakdown) that expensive features (agent, media-ML enrichment) consume. A read-consumer of `indexing/`, sibling to
-    `search/`, with its own per-volume `importance.db` store, a multi-volume kind-aware scheduler (Local + SMB scored, MTP
-    excluded) that recomputes on scan completion (full) and on live listing changes (incremental) — both driven by a
+    `search/`, with its own per-volume `importance.db` store, a multi-volume kind-aware scheduler (Local + SMB scored,
+    MTP excluded) that recomputes on scan completion (full) and on live listing changes (incremental) — both driven by a
     neutral lifecycle bus in `indexing/` — and the consumable `ImportanceIndex` read API consumers reach it through
     (queryable even for an unmounted volume). See its `crates/cmdr-index/src/importance/CLAUDE.md` and
     `specs/later/importance-subsystem-plan.md`
   - `media_index/`: Image-ML enrichment — makes a volume's images searchable by their content (OCR text, Vision scene/
-    object tags, image-similarity "find similar" via feature-print embeddings, and natural-language semantic search via an
-    on-demand on-device CLIP model — `clip/`, macOS Core ML, a SEPARATE vector space with independent two-part staleness).
-    A read-consumer of `indexing/`, ported from `importance/`, with its own per-volume disposable `media.db` (path-keyed,
-    FTS5 OCR + tags, structured tags, and a brute-force cosine vector store over feature-print embeddings), a scheduler
-    that enriches on the lifecycle-bus scan-completion edge, importance-prioritized (high-importance folders first, below
-    the settings slider threshold deferred, with "always index" overrides + a per-folder privacy exclude), inference
-    behind a `VisionBackend` seam (real objc2-vision OCR + classify + feature print, a fake for tests), deletion-driven GC
-    gated on a completed scan, and the consumable `MediaIndex` read API (OCR/tag search + find-similar, offline after
-    unmount). Enriches local volumes plus opt-in network (SMB) volumes conservatively (priority-gated via `priority/`,
-    bandwidth-bounded byte-fetch through the app's own smb2 session for Direct volumes with an OS-mount fallback;
-    disconnect pauses without losing coverage; MTP never background-sweeps). Off by default. See its
-    `crates/cmdr-index/src/media_index/CLAUDE.md` and `specs/later/media-ml-index-plan.md`
+    object tags, image-similarity "find similar" via feature-print embeddings, and natural-language semantic search via
+    an on-demand on-device CLIP model — `clip/`, macOS Core ML, a SEPARATE vector space with independent two-part
+    staleness). A read-consumer of `indexing/`, ported from `importance/`, with its own per-volume disposable `media.db`
+    (path-keyed, FTS5 OCR + tags, structured tags, and a brute-force cosine vector store over feature-print embeddings),
+    a scheduler that enriches on the lifecycle-bus scan-completion edge, importance-prioritized (high-importance folders
+    first, below the settings slider threshold deferred, with "always index" overrides + a per-folder privacy exclude),
+    inference behind a `VisionBackend` seam (real objc2-vision OCR + classify + feature print, a fake for tests),
+    deletion-driven GC gated on a completed scan, and the consumable `MediaIndex` read API (OCR/tag search +
+    find-similar, offline after unmount). Enriches local volumes plus opt-in network (SMB) volumes conservatively
+    (priority-gated via `priority/`, bandwidth-bounded byte-fetch through the app's own smb2 session for Direct volumes
+    with an OS-mount fallback; disconnect pauses without losing coverage; MTP never background-sweeps). Off by default.
+    See its `crates/cmdr-index/src/media_index/CLAUDE.md` and `specs/later/media-ml-index-plan.md`
 - `crates/index-query/`: developer CLI that queries the index DB with the `platform_case` collation `sqlite3` can't
   supply. See `docs/tooling/index-query.md`
 - `crates/fsevent-stream/`: vendored fork of the FSEvents stream crate (published as `cmdr-fsevent-stream`), giving the

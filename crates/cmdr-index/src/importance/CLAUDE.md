@@ -17,14 +17,15 @@ read it before non-trivial work there.
 
 - **`scorer/CLAUDE.md`** — the pure formula: `score` / `explain`, `FolderSignals`, the tunable `Weights`.
   **`store/CLAUDE.md`** — per-volume `importance.db`: the schema, the folded PK, what earns a row.
-- **`scheduler/CLAUDE.md`** — bus-driven full and incremental recompute, the O(dirs) full walk and the O(touched)
-  scoped one, the kind policy.
-  **`read/CLAUDE.md`** — `ImportanceIndex`, the ONLY consumer entry, plus the recompute subscription.
+- **`scheduler/CLAUDE.md`** — bus-driven full and incremental recompute, the O(dirs) full walk and the O(touched) scoped
+  one, the kind policy. **`read/CLAUDE.md`** — `ImportanceIndex`, the ONLY consumer entry, plus the recompute
+  subscription.
 - **`evals/CLAUDE.md`** — the ranking-quality suite and the anonymized real-index corpus.
 
 Top-level leaves this file owns: `classify.rs` (the shared categorical classifiers), `signals.rs` (index rows ⇒
 `FolderSignals`), `last_used.rs` (sampled Spotlight `kMDItemLastUsedDate`), `writer.rs`
-+ `writer_registry.rs` (ONE writer thread per volume), and `fixtures.rs` (`cfg(test)`, `SyntheticHome`).
+
+- `writer_registry.rs` (ONE writer thread per volume), and `fixtures.rs` (`cfg(test)`, `SyntheticHome`).
 
 ## Subsystem-wide must-knows
 
@@ -42,9 +43,9 @@ Top-level leaves this file owns: `classify.rs` (the shared categorical classifie
   through it. ❌ Never a second writer thread on one DB.
 - **Volume kind ⇒ policy, TYPED** (`scheduler::ScoringPolicy::for_kind`): Local and SMB scored, **MTP excluded** at
   every entry point. ❌ NEVER a filesystem syscall against an SMB or MTP mount — read the local index DB only.
-- **Only a FULL pass stamps `recompute_generation`**, so generation `0` does NOT mean "no weights" (an
-  incremental-only store holds hundreds of thousands of rows at generation 0). A consumer asking "genuinely unscored?"
-  keys on the row count.
+- **Only a FULL pass stamps `recompute_generation`**, so generation `0` does NOT mean "no weights" (an incremental-only
+  store holds hundreds of thousands of rows at generation 0). A consumer asking "genuinely unscored?" keys on the row
+  count.
 
 Why it's a separate subsystem, the writer and its registry, the WAL checkpoint, `record_visit`, Spotlight sampling, the
 floor-propagation rule, and the fixtures: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,

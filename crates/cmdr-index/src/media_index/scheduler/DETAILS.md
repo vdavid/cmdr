@@ -29,8 +29,8 @@ runs the conservative network pass (`../network/DETAILS.md`); MTP is NEVER backg
 subscribe to the SAME bus the same way; only which pass method runs differs. The opt-in is checked INSIDE the network
 pass, so flipping it on takes effect on the next scan completion (and the opt-in command kicks an immediate pass).
 
-The edge-consumption discipline (`borrow_and_update`, never a poll) and why the startup sweep filters to `Fresh` are
-the GC safety argument: `../DETAILS.md` § The GC safety argument.
+The edge-consumption discipline (`borrow_and_update`, never a poll) and why the startup sweep filters to `Fresh` are the
+GC safety argument: `../DETAILS.md` § The GC safety argument.
 
 ## Parallel enrichment (plan M2)
 
@@ -125,12 +125,12 @@ threshold and scope atomics live in `gate` (`../DETAILS.md` § The indexing scop
 
 ## Defer-until-scored
 
-When `folder_scores` is `None` (importance unavailable), BOTH the local and network passes DEFER their
-importance-gated remainder while still honoring an explicit `config.covers` override — `local_should_enrich` and the
-network `should_enrich` share this shape. The local pass does NOT fall back to enrich-all: importance's recompute over a
-big volume takes seconds, and a pass that read `None` and enriched everything would over-index the whole volume
-permanently, because the slider is forward-only (a below-threshold row is never deleted by moving the slider; only an
-explicit reclaim or the privacy veto deletes). A visible, recoverable wait beats permanent over-indexing.
+When `folder_scores` is `None` (importance unavailable), BOTH the local and network passes DEFER their importance-gated
+remainder while still honoring an explicit `config.covers` override — `local_should_enrich` and the network
+`should_enrich` share this shape. The local pass does NOT fall back to enrich-all: importance's recompute over a big
+volume takes seconds, and a pass that read `None` and enriched everything would over-index the whole volume permanently,
+because the slider is forward-only (a below-threshold row is never deleted by moving the slider; only an explicit
+reclaim or the privacy veto deletes). A visible, recoverable wait beats permanent over-indexing.
 
 The **unscored → scored bridge** re-kicks the deferred remainder once importance lands:
 
@@ -144,8 +144,8 @@ The **unscored → scored bridge** re-kicks the deferred remainder once importan
   the lifecycle bus and incremental rescores bump the recompute watch, so scoping the re-kick to the flag keeps a normal
   (already-scored) volume from re-kicking and a later incremental bump from re-walking the index for nothing.
 
-The residual risk is made VISIBLE, never silent: the "has scored" detection guarantees the recompute *trigger*, not its
-*success* (a read-pool or write error leaves generation 0 with no notify). Under defer-until-scored that would mean
+The residual risk is made VISIBLE, never silent: the "has scored" detection guarantees the recompute _trigger_, not its
+_success_ (a read-pool or write error leaves generation 0 with no notify). Under defer-until-scored that would mean
 image indexing silently never starts. So `media_index_volume_state` exposes `waiting_for_importance` (enabled + index
 ready + not scored), and the settings slider voices it ("Working out which folders matter…") REPLACING the generic
 covered-count spinner — one honest line for one wait, never two spinners. There is deliberately NO silent fallback to
@@ -203,16 +203,17 @@ coverage after the user narrows the setting (the GC `current` set stays the full
 surfaces that leftover coverage and offers to delete it. Like the privacy retro-delete, the prune is USER-EXPLICIT and
 derives ONLY from settings state, so it needs no `Completed` edge.
 
-- **One arithmetic source, or the numbers don't add up.** `MediaScheduler::stored_coverage(volume_id, mount_root,
-  threshold)` computes THREE quantities from ONE pass so the reclaim preview, the prune, and the per-volume `keptCount`
-  can never disagree: `surviving_stored` (stored rows inside coverage), `doomed_stored` (outside it — the reclaim
-  "delete N" AND the `keptCount`, the SAME set), and `covered_qualifying` (drive-index qualifying images in covered
-  folders — the slider preview's number, a DIFFERENT thing: it counts what WOULD be indexed, not what IS). It guarantees
-  `total_stored = surviving_stored + doomed_stored`, and reuses the `coverage.rs` cache path for `covered_qualifying`
-  (never a second derivation). In the AUTOMATIC scope it returns `None` when importance hasn't scored the volume
-  (importance's scoring makes that transient) — the partition can't be computed safely, so the command reports `pending`
-  and the UI hides the reclaim line rather than proposing a destructive count off a lower bound. In the narrow scope
-  importance isn't an input, so it partitions against an empty score map and stays answerable.
+- **One arithmetic source, or the numbers don't add up.**
+  `MediaScheduler::stored_coverage(volume_id, mount_root, threshold)` computes THREE quantities from ONE pass so the
+  reclaim preview, the prune, and the per-volume `keptCount` can never disagree: `surviving_stored` (stored rows inside
+  coverage), `doomed_stored` (outside it — the reclaim "delete N" AND the `keptCount`, the SAME set), and
+  `covered_qualifying` (drive-index qualifying images in covered folders — the slider preview's number, a DIFFERENT
+  thing: it counts what WOULD be indexed, not what IS). It guarantees `total_stored = surviving_stored + doomed_stored`,
+  and reuses the `coverage.rs` cache path for `covered_qualifying` (never a second derivation). In the AUTOMATIC scope
+  it returns `None` when importance hasn't scored the volume (importance's scoring makes that transient) — the partition
+  can't be computed safely, so the command reports `pending` and the UI hides the reclaim line rather than proposing a
+  destructive count off a lower bound. In the narrow scope importance isn't an input, so it partitions against an empty
+  score map and stays answerable.
 - **The partition rule** (`coverage::partition_stored`, pure) reuses the SAME precedence enrichment does: a stored row
   survives when it's NOT under an excluded folder AND (covered by an "always index" override OR — in the automatic scope
   only — its parent folder scores at or above the threshold). Crucially it keys on score-MAP MEMBERSHIP, not a `>= 0.0`
@@ -223,10 +224,10 @@ derives ONLY from settings state, so it needs no `Completed` edge.
   resolve.
 - **The writer thread IS the race guarantee.** `prune_below_threshold` computes the doomed set up front and hands it to
   the volume's ONE writer thread (`prune_paths`) as a single serialized delete unit, then `VACUUM`s and drops the vector
-  + coverage caches. A concurrent enrichment pass can't interleave mid-batch (both flow through the one writer), and it
-  enriches only ABOVE-threshold or override-covered rows — a set disjoint from the doomed (below-threshold) set by
-  definition — so a pass running NEW rows during the prune is fine. No snapshot-vs-live dance is needed here (unlike the
-  exclusion veto): the doomed set is a concrete path list, not a live predicate.
+  - coverage caches. A concurrent enrichment pass can't interleave mid-batch (both flow through the one writer), and it
+    enriches only ABOVE-threshold or override-covered rows — a set disjoint from the doomed (below-threshold) set by
+    definition — so a pass running NEW rows during the prune is fine. No snapshot-vs-live dance is needed here (unlike
+    the exclusion veto): the doomed set is a concrete path list, not a live predicate.
 - **Byte estimate.** `store::sum_bytes_for_paths` streams `media_ocr` + `media_tags` + `media_embedding` once each and
   sums the content bytes of the doomed paths (a set membership test, so no giant `IN (…)` for a 200k doomed set). It's a
   content estimate (excludes FTS-index + page overhead), so it's an honest "about" and a `VACUUM` reclaims at least it.
@@ -246,12 +247,11 @@ the whole-store trap, the sibling re-qualify, the DEFER of a below-threshold fol
 (both keeping deferred rows for GC), and the mid-`analyze` exclusion veto. The master-toggle behavior is pinned by
 `a_pass_no_ops_while_disabled_and_enriches_once_enabled` (the disable → no-op → re-enable → enrich cycle) and
 `disabling_the_master_toggle_stops_a_running_pass_and_keeps_rows` (real red→green: the running pass stops early, rows
-preserved).
-`kick_tests.rs` runs the tick end to end over a registered read pool (re-enrich-on-modify, below-threshold defer,
-exclusion veto, index-confirmed GC, unmount deletes nothing) plus the scheduler retro-delete (prunes a local folder,
-skips a volume the folder isn't under, maps a network folder into the volume's index space). `reclaim_tests.rs` covers
-the partition + prune arithmetic; `pool/tests.rs` the live width changes; `enrich_memory_tests.rs` the walk's allocation
-guards.
+preserved). `kick_tests.rs` runs the tick end to end over a registered read pool (re-enrich-on-modify, below-threshold
+defer, exclusion veto, index-confirmed GC, unmount deletes nothing) plus the scheduler retro-delete (prunes a local
+folder, skips a volume the folder isn't under, maps a network folder into the volume's index space). `reclaim_tests.rs`
+covers the partition + prune arithmetic; `pool/tests.rs` the live width changes; `enrich_memory_tests.rs` the walk's
+allocation guards.
 
 The async wire-up (`ready_volumes_with_kind` sweep → `wire_volume` → `run_pass_blocking`) is covered indirectly by the
 reactive pieces (bus-edge consumption + coalescer + the enrich core); a full end-to-end async test needs the
