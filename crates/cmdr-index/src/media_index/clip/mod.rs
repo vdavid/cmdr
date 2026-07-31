@@ -5,7 +5,7 @@
 //! embeddings. Two on-device Core ML towers (downloaded on demand, checksum-verified):
 //!
 //! - the **image tower** embeds every enriched photo (on the same dedicated Vision
-//!   worker thread, from the same decode — see [`backend`]);
+//!   worker thread, from the same decode — see `backend`);
 //! - the **text tower** encodes a search query at query time (kept warm — a cold load is
 //!   1–2 s, a warm encode ~2 ms).
 //!
@@ -16,8 +16,8 @@
 //!
 //! ## Module map
 //!
-//! - [`tokenizer`] — the CLIP byte-pair tokenizer (ctx 77), query text → int32 token ids.
-//! - [`backend`] — the encoder seams: [`backend::ClipTextEncoder`] (query time) and the
+//! - `tokenizer` — the CLIP byte-pair tokenizer (ctx 77), query text → int32 token ids.
+//! - `backend` — the encoder seams: `backend::ClipTextEncoder` (query time) and the
 //!   image encoding folded into the Vision backend's combined `analyze_media`, each with a
 //!   deterministic fake so the pipeline is testable with no model/FFI.
 //! - [`install`] — on-demand model download + SHA-256 verify + zip unpack + the

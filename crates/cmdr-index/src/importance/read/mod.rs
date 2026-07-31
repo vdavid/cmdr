@@ -12,8 +12,9 @@
 //!   (`normalize_for_comparison`) against the `path_folded` key, so a
 //!   case/normalization variant of a path resolves to the same row, and reads never
 //!   contend with the single writer thread (WAL).
-//! - The read calls: [`weight_for`], [`top_n`], [`above_threshold`], [`explain`],
-//!   [`signals_for`] — each result carrying the **as-of recompute generation** it
+//! - The read calls: [`ImportanceIndex::weight_for`], [`ImportanceIndex::top_n`],
+//!   [`ImportanceIndex::above_threshold`], [`ImportanceIndex::explain`],
+//!   [`ImportanceIndex::signals_for`] — each result carrying the **as-of recompute generation** it
 //!   was computed at, so a consumer can caveat staleness (the offline-unmounted
 //!   read M4 makes a feature).
 //! - A **recompute subscription** ([`subscribe`]): a `watch` receiver that fires
@@ -50,7 +51,7 @@ use cmdr_fs::sqlite_util::{THREAD_CONN_SLOTS, ThreadConnCache};
 
 /// A stored weight for one folder, as the read API hands it back: the scalar, the
 /// deserialized raw signal vector it was computed from (plan Decision 2: a
-/// consumer can re-weight these under its own profile via [`signals_for`]), and
+/// consumer can re-weight these under its own profile via [`ImportanceIndex::signals_for`]), and
 /// the as-of recompute generation.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

@@ -224,7 +224,7 @@ impl IndexStore {
     /// non-root index is mount-relative). Older SMB indexes never wrote it (only the
     /// local scan-completion path did), so `start_indexing_for_smb` heals an existing
     /// DB with this on the next registration — no rescan. Same short-lived-write
-    /// safety as [`set_user_disabled`]: call it only when no writer thread is live.
+    /// safety as [`Self::set_user_disabled`]: call it only when no writer thread is live.
     pub fn set_volume_path(db_path: &Path, volume_path: &str) -> Result<(), IndexStoreError> {
         let conn = Self::open_write_connection(db_path)?;
         Self::update_meta(&conn, "volume_path", volume_path)?;

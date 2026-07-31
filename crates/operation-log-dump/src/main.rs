@@ -7,7 +7,7 @@
 //! what the app reads, never a re-implementation.
 //!
 //! Usage:
-//!   cargo run -p operation-log-dump -- <operation-log.db> [limit]
+//!   cargo run -p operation-log-dump -- <operation-log.db> <limit>
 //!
 //! Point it at the app's `operation-log.db` in the app data dir. It opens
 //! read-only; copy the file first if the app might be mid-write (a read-only
@@ -23,7 +23,7 @@ use rusqlite::Connection;
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 2 || args.len() > 3 {
-        eprintln!("Usage: {} <operation-log.db> [limit]", args[0]);
+        eprintln!("Usage: {} <operation-log.db> <limit>", args[0]);
         std::process::exit(1);
     }
     let db_path = PathBuf::from(&args[1]);

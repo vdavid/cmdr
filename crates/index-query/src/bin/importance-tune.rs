@@ -2,13 +2,13 @@
 //!
 //! Reads a volume's `importance.db` through the same [`ImportanceIndex`] read API
 //! consumers use, re-scores every stored folder's raw signals under a chosen
-//! [`Weights`], and prints the ranked folders WITH their per-signal `explain`
+//! [`Weights`](cmdr_index::importance::Weights), and prints the ranked folders WITH their per-signal `explain`
 //! breakdowns — so David can eyeball the ranking against his real home directory
 //! and tune the weights. No write path: it reads stored signals and re-scores;
 //! nothing is persisted.
 //!
 //! Usage:
-//!   cargo run -p index-query --bin importance-tune -- <importance.db> [top_n]
+//!   cargo run -p index-query --bin importance-tune -- <importance.db> <top_n>
 //!
 //! Find the DB under the app data dir as `importance-root.db` (beside
 //! `index-root.db`). `top_n` defaults to 30.

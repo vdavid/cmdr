@@ -24,7 +24,7 @@
 //! per-item inverse is an idempotent recheck-then-act, so re-issuing is safe.
 //!
 //! Reversal streams the original op's `rollback_unit` rows `seq DESC` through a
-//! paged cursor ([`store::read_rollback_units_page`]), so a 1M-item op never
+//! paged cursor (`store::read_rollback_units_page`), so a 1M-item op never
 //! materializes its list. The `seq DESC` order removes copied files before the
 //! `entry_type = dir` rows that held them. The inverse operation is itself
 //! journaled with `rolls_back_op_id` set (so it appears in history and drives the

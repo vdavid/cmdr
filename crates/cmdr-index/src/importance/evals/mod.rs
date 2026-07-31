@@ -3,35 +3,38 @@
 //!
 //! The scorer ships with deliberately-unvalidated default weights (see
 //! `weights.rs`). This module makes "did a weight change help?" a measurable
-//! question instead of a vibe: a [`Scenario`] (folders + their signals + ranking
+//! question instead of a vibe: a [`Scenario`](crate::importance::evals::Scenario) (folders + their signals + ranking
 //! expectations) scores through the pure scorer, and its expectations are checked
 //! against the resulting ranking.
 //!
 //! ## The two tiers
 //!
 //! - **Hard constraints** are ordering facts that must ALWAYS hold. The test
-//!   module ([`tests`]) asserts each as an ordinary `#[test]`, so a violation fails
+//!   module (`evals::tests`) asserts each as an ordinary `#[test]`, so a violation fails
 //!   CI — a regression that lets `node_modules` climb out of the bottom decile
 //!   breaks the build.
-//! - **Soft constraints** are a larger set of desirable orderings. [`score_scenario`]
+//! - **Soft constraints** are a larger set of desirable orderings.
+//!   [`score_scenario`](crate::importance::evals::score_scenario)
 //!   returns the satisfied fraction as a scalar quality score, and the aggregate
-//!   across scenarios is pinned to a floor constant ([`tests::SOFT_SCORE_FLOOR`]) —
+//!   across scenarios is pinned to a floor constant (`tests::SOFT_SCORE_FLOOR`) —
 //!   a fixed floor, NOT a self-updating ratchet. A change that drops quality below
 //!   the floor fails; when tuning improves quality, the floor is consciously raised.
 //!
 //! ## The fitness function
 //!
-//! [`score_scenario`] is pure and fast: `(scenario, weights) -> f64`. Nothing
+//! [`score_scenario`](crate::importance::evals::score_scenario) is pure and fast:
+//! `(scenario, weights) -> f64`. Nothing
 //! about it touches I/O, a clock (the scenario carries its own `now`), or global
 //! state, so a future tuner can grid-search or hill-climb over `Weights` by calling
-//! it in a loop. [`aggregate_score`] averages per-scenario scores into one number.
+//! it in a loop. [`aggregate_score`](crate::importance::evals::aggregate_score) averages
+//! per-scenario scores into one number.
 //!
 //! ## Scenarios
 //!
-//! Synthetic scenarios ([`scenarios`]) are committed and cover varied homes
+//! Synthetic scenarios ([`scenarios`](crate::importance::evals::scenarios)) are committed and cover varied homes
 //! (dev-home, media-home, downloads-heavy, an SMB/NAS). Real-derived corpus
 //! scenarios are loaded at test time from a gitignored dir (the corpus tool
-//! exports them, David labels them); [`tests`] auto-includes any it finds, so the
+//! exports them, David labels them); `evals::tests` auto-includes any it finds, so the
 //! committed suite is fully green with zero corpus files present.
 
 pub mod constraints;

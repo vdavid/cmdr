@@ -178,7 +178,7 @@ fn anonymize_path(path: &str, home: &str, synthetic_root: &str) -> String {
 ///
 /// Reads the index READ-ONLY through the same walk a recompute uses
 /// ([`walk_index_folders`](crate::importance::scheduler::walk_index_folders)) and
-/// derives each folder's [`FolderSignals`] through the SAME production assembly
+/// derives each folder's [`FolderSignals`](crate::importance::FolderSignals) through the SAME production assembly
 /// ([`signals_for_dir`](crate::importance::signals::signals_for_dir)), so the
 /// dumped signals match what the live scheduler would compute. Then it anonymizes
 /// every folder path (keeping only classification-relevant names) before returning,

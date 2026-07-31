@@ -629,7 +629,7 @@ impl IndexVolumeKind {
     ///
     /// Consumed by [`IndexPathSpace`](crate::indexing::IndexPathSpace) to decide
     /// whether the local scan/reconcile/live pipeline strips a mount root before
-    /// `store::resolve_path`, and to pick the [`ExclusionScope`].
+    /// `store::resolve_path`, and to pick the `scanner::exclusions::ExclusionScope`.
     pub fn mount_rooted(self) -> bool {
         matches!(
             self,

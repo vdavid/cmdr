@@ -35,7 +35,7 @@
 //! ## Recompute (plan Decision 5)
 //!
 //! Full-volume: read `dir_stats` + the entry tree through the index read pool,
-//! assemble a [`FolderSignals`] per folder (via [`signals`](super::signals)), run
+//! assemble a [`FolderSignals`](crate::importance::FolderSignals) per folder (via [`signals`](super::signals)), run
 //! the pure scorer, and write every folder's weight through the
 //! [`ImportanceWriter`] at a new generation. Cost-bounded by walking the index
 //! (already in SQLite), not the filesystem. Runs on a dedicated background task,

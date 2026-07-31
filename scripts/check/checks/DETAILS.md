@@ -532,7 +532,10 @@ nothing" and passes). Anything narrower than every first-party member carries a 
 
 Checks by app and tech:
 
-- **Desktop / Rust**: rustfmt, clippy, cargo-audit, cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd,
+- **Desktop / Rust**: rustfmt, clippy, rustdoc (`cargo doc --all-features` with `broken_intra_doc_links` denied over
+  every first-party member; the vendored fork is skipped because `--all-features` turns on two mutually exclusive arms
+  there, and `private_intra_doc_links` stays a warning since a public module doc naming the internal it delegates to is
+  good writing), cargo-audit, cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd,
   log-error-macro, sqlite-open-direct (every SQLite connection opens through `crate::sqlite_util`, so the process-wide
   shared page cache is always installed before SQLite initializes), error-string-match, lock-poison, test-sleep (flags a
   fixed `thread::sleep` / `tokio::time::sleep` in test code, where a condition-based `wait_until` belongs; opt out a

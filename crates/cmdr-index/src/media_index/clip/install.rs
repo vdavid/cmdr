@@ -1,5 +1,6 @@
-//! On-demand CLIP model install: download → SHA-256 verify → zip unpack → gate (plan
-//! Decision 9 — new code, reusing only the resumable HTTP GET in [`ai::download`]).
+//! On-demand CLIP model install: download → SHA-256 verify → zip unpack → gate. The
+//! host carries the bytes (it owns the HTTP stack and the progress reporting); which
+//! artifacts, what they must hash to, and where they unpack all live here.
 //!
 //! Distinct from the GGUF two-flag gate: Core ML models ship as `.mlpackage` DIRECTORY
 //! bundles (zipped), so this adds a generic zip extractor and — unlike `ai/`'s size-only
@@ -11,8 +12,7 @@
 //! `.mlpackage` to `.mlmodelc` on-device at first use (`.mlmodelc` is OS-version-specific
 //! — never bundle a prebuilt one). The towers are produced by the out-of-tree conversion
 //! script (`apps/desktop/scripts/convert-clip-model/`).
-//!
-//! [`ai::download`]: the app's model-download helper, reached through the command layer.
+
 
 use std::path::{Path, PathBuf};
 

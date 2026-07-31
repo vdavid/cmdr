@@ -181,7 +181,7 @@ pub(crate) fn current() -> Arc<dyn VolumeProvider> {
 /// Swap in `provider` for the duration of one test, restoring whatever was there
 /// when the returned guard drops.
 ///
-/// The slot is process-wide, so anything using this must hold [`test_lock`] first:
+/// The slot is process-wide, so anything using this must hold `handle::test_lock` first:
 /// nextest runs a process per test, but a plain `cargo test` doesn't, and two tests
 /// swapping the same slot concurrently would see each other's volumes.
 #[cfg(any(test, feature = "testing"))]

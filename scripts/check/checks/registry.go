@@ -44,6 +44,18 @@ var AllChecks = []CheckDefinition{
 		Run:               RunClippy,
 	},
 	{
+		ID:                "desktop-rust-rustdoc",
+		CpuWeight:         4,
+		Nickname:          "rustdoc",
+		DisplayName:       "rustdoc links",
+		App:               AppDesktop,
+		Tech:              "🦀 Rust",
+		FreestyleIncompat: true,
+		DependsOn:         []string{"desktop-rust-rustfmt"},
+		Inputs:            rustInputs,
+		Run:               RunRustdoc,
+	},
+	{
 		ID:                "desktop-rust-cargo-audit",
 		CpuWeight:         1,
 		Nickname:          "cargo-audit",

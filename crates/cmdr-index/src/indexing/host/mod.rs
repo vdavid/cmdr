@@ -11,11 +11,11 @@
 //! handle lands, the handle owns them and the statics disappear without touching a
 //! single call site.
 //!
-//! - [`runtime`]: the tokio runtime background work spawns onto.
-//! - [`policy`]: whether the user is busy, so background work can stand aside.
-//! - [`volumes`]: which volumes are mounted, where, and what kind of storage they are.
-//! - [`config`]: what the product tells the index to do, settings resolved by the app.
-//! - [`events`]: where the index's typed events go.
+//! - `runtime`: the tokio runtime background work spawns onto.
+//! - [`policy`](crate::host::policy): whether the user is busy, so background work can stand aside.
+//! - [`volumes`](crate::host::volumes): which volumes are mounted, where, and what kind of storage they are.
+//! - [`config`](crate::host::config): what the product tells the index to do, settings resolved by the app.
+//! - [`events`](crate::host::events): where the index's typed events go.
 //!
 //! Cmdr answers all five from one place, `apps/desktop/src-tauri/src/index_host.rs`.
 //!

@@ -6,7 +6,8 @@
 //! the sink's altitude, NOT by decorating `OperationEventSink` (D4). The write
 //! pipeline bundles this trait with the sink into an `OperationObservers` context
 //! (defined in `write_operations`, which holds the sink) and threads it down the
-//! same seam. This module owns the journal half: it feeds the [`writer`] and,
+//! same seam. This module owns the journal half: it feeds the
+//! [`writer`](crate::operation_log::writer) and,
 //! crucially, computes the two data-safety decisions the writer deliberately does
 //! NOT (`writer.rs` stores terminal state, never judges it):
 //!
@@ -40,7 +41,7 @@ use super::writer::{FinalizeOperation, FinalizeOutcome, JournalItem, OpenOperati
 /// `update_operation_status` status cache written at the same record points — a
 /// recorded deviation from D4's threaded `OperationObservers` (whose hard
 /// constraint, never extending `OperationEventSink`, is kept). Production installs
-/// a [`WriterJournal`]; a test installs a [`CapturingJournal`]; when no journal is
+/// a [`WriterJournal`]; a test installs a `CapturingJournal`; when no journal is
 /// installed (the DB failed to open), the free functions no-op.
 ///
 /// The journal NEVER fails the operation: every method swallows its own errors

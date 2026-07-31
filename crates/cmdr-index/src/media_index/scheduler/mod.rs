@@ -17,11 +17,12 @@
 //!   poll could GC live rows mid-truncate. The edge is the data-safety line (Decision 3).
 //! - **The startup sweep** ([`crate::indexing::lifecycle::state::ready_volumes_with_kind`]) only WIRES
 //!   subscriptions — a volume Fresh at launch keeps a `Pending` bus and never re-fires,
-//!   so [`kick_all_ready_passes_with`] at the end of [`start`] (master toggle on) is what
+//!   so [`MediaScheduler::kick_all_ready_passes`] at the end of [`MediaScheduler::start`] (master toggle on) is what
 //!   actually enriches on a persisted-on restart.
-//! - **User actions** ([`kick_all_ready_passes_with`] / [`kick_network_pass`]): toggle-on, a
+//! - **User actions** ([`MediaScheduler::kick_all_ready_passes`] /
+//!   [`MediaScheduler::kick_network_pass`]): toggle-on, a
 //!   threshold DECREASE, or a network opt-in kicks an immediate pass.
-//! - **The importance bridge** ([`wire_volume`]'s subscriber): a pass that DEFERRED its
+//! - **The importance bridge** (`lifecycle::wire_volume`'s subscriber): a pass that DEFERRED its
 //!   gated remainder (importance unscored) is re-kicked when importance first scores
 //!   (defer-until-scored). **The registration bus** wires a late-registered volume.
 //!
@@ -418,7 +419,7 @@ impl MediaScheduler {
     ///
     /// **Offline network volumes** aren't in `mounts` (no mount root while unmounted),
     /// so they're skipped here and the retro-delete re-fires on reconnect via
-    /// [`wire_volume`]. Runs off the IPC thread (the caller uses `spawn_blocking`), so
+    /// `lifecycle::wire_volume`. Runs off the IPC thread (the caller uses `spawn_blocking`), so
     /// the blocking prunes are deadlock-safe.
     ///
     /// [`os_folder_to_index_prefix`]: super::network::fetch::os_folder_to_index_prefix

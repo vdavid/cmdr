@@ -21,7 +21,7 @@ use crate::indexing::lifecycle::lifecycle_bus;
 /// Whether a LOCAL image at index path `path` is COVERED this pass — the pure
 /// coverage gate (override + importance threshold), unit-testable without a DB or an
 /// app. The privacy exclusion is a SEPARATE, live hard veto applied in
-/// [`enrich::enrich_and_gc`] (never here), so coverage stays snapshot-pure while the
+/// `enrich::enrich_and_gc` (never here), so coverage stays snapshot-pure while the
 /// veto reads live config.
 ///
 /// - When importance HASN'T scored the volume yet (`scores` is `None`), DEFER the

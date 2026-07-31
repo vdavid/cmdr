@@ -123,7 +123,7 @@ impl std::fmt::Display for DataDirUnset {
 /// Point the index at `dir` for the duration of one test, restoring the previous
 /// config when the guard drops.
 ///
-/// The slot is process-wide, so hold [`test_lock`] first.
+/// The slot is process-wide, so hold `handle::test_lock` first.
 #[cfg(any(test, feature = "testing"))]
 #[must_use = "the config is restored when the guard drops"]
 pub fn install_data_dir_for_test(dir: impl AsRef<std::path::Path>) -> TestConfigGuard {

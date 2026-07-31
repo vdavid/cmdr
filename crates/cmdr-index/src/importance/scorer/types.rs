@@ -105,7 +105,7 @@ pub struct FolderSignals {
     pub under_floored_ancestor: bool,
     /// Distinct file extensions directly under this folder. A folder with many
     /// kinds of files reads as a working area; a monoculture (one extension) reads
-    /// as machine output (a logs folder, a frame dump). See [`extension_count`].
+    /// as machine output (a logs folder, a frame dump). See `classify::extension_count`.
     #[serde(default, skip_serializing_if = "is_zero_u32")]
     pub distinct_extension_count: u32,
     /// Total files directly under this folder. Pairs with
