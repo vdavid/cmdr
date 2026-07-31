@@ -37,8 +37,10 @@ manager in `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`.
   with a `log.warn`. A missing grant must surface as a log line, not a dead window. Smoke-test with `pnpm dev` after any
   perm change.
 - **Each child window is its own webview** with its own i18n / theme / reduce-transparency runtime, so the page inits
-  them itself (`initializeSettings`, language sync, `initAccentColor` / `initReduceTransparency` / `initTextSize`) and
-  cleans them up on destroy. Mirrors Settings / Shortcuts.
+  them itself (`initWindowSettings`, language sync, `initAccentColor` / `initReduceTransparency` / `initTextSize`) and
+  cleans them up on destroy. Mirrors Settings / Shortcuts. `initWindowSettings()` (not `initializeSettings`) is what
+  also seeds the reactive layer `<Size>` reads, so sizes here follow the user's binary/SI choice; see
+  `lib/settings/CLAUDE.md`.
 - **The opener is the shared reuse point.** The progress dialog's Queue button and the auto-queue surfacing (starting an
   op on a busy lane) both call `openQueueWindow` and read the same store; don't fork a second opener or a second store.
 

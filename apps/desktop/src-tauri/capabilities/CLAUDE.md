@@ -17,11 +17,10 @@ window-creation perms are checked against the *calling* window.
 
 ## Must-knows (invariants and guardrails)
 
-- **Missing permissions fail silently at runtime.** Tauri doesn't crash or warn visibly; the call rejects with a generic
-  `... not allowed. Permissions associated with this command: ...` and the feature just looks broken. When you add any
-  new Tauri API call from a window (`setFocus`, `setTitle`, `setMinSize`, `setMaxSize`, plugin commands), add the
-  matching permission to that window's capability file, and always `await` the call inside `try/catch` with a `log.warn`
-  (never `void` it) so the failure surfaces during development.
+- **Missing permissions fail silently at runtime.** The call rejects with a generic `... not allowed. Permissions
+  associated with this command: ...` and the feature just looks broken. When you add any new Tauri API call from a window
+  (`setFocus`, `setTitle`, `setMinSize`, `setMaxSize`, plugin commands), add the matching permission to that window's
+  capability file, and `await` it in `try/catch` with a `log.warn` (never `void` it) so failures surface in development.
 - **The viewer window must never get store access (`store:default` OR granular `store:allow-*`).** The viewer is the
   highest-risk webview: it renders arbitrary, possibly-hostile file content. The `tauri-plugin-store` permissions gate
   *commands* (`load`, `get`, `set`, `save`), not *filenames*, so any of them lets the webview `load('license.json')` or
@@ -30,6 +29,9 @@ window-creation perms are checked against the *calling* window.
   `persist_restricted_window_setting`, whose enum allowlist is the boundary). Extend the enum + the
   `restricted-settings-bridge.ts` allowlist for new persistable viewer settings; never re-add store access and never
   widen to a free-form id string.
+- **A `store:default` change means updating `WINDOW_SETTINGS_ACCESS`**
+  (`apps/desktop/src/lib/settings/window-settings.ts`), the frontend's store-backed vs restricted-snapshot map;
+  `window-settings.test.ts` fails on drift.
 - **A new debug-panel API goes in `debug.json`, never `default.json`.** `default.json` is the app's most privileged
   capability; the debug window draws solely from `debug.json` so a future gate slip can't expose the full surface.
   Perms fail silently, so smoke-test the panel with `pnpm dev` + ⌘D after.

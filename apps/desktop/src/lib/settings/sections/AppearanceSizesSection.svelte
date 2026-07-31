@@ -5,10 +5,10 @@
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
-    import { getSetting, getSettingDefinition, onSpecificSettingChange } from '$lib/settings'
+    import { getSettingDefinition } from '$lib/settings'
+    import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
+    import { unitLabel } from '$lib/settings/format-utils'
     import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
-    import { onMount } from 'svelte'
-    import type { FileSizeFormat } from '$lib/settings/types'
 
     interface Props {
         searchQuery: string
@@ -31,19 +31,8 @@
     // The kilobyte tile reflects the active binary/SI base live: `KB` for
     // binary (1024-based), `kB` for SI (1000-based). MB/GB look the same in
     // both bases so they don't need overrides.
-    //
-    // Read the format directly from the settings store rather than via
-    // `reactive-settings.svelte`'s `getFileSizeFormat()` because the settings
-    // window doesn't initialize the reactive layer; only the main window does
-    // (`(main)/+layout.svelte`). Subscribing to `onSpecificSettingChange`
-    // covers cross-window updates from the settings:changed event the store
-    // emits on every write.
-    let fileSizeFormat = $state<FileSizeFormat>(getSetting('appearance.fileSizeFormat'))
-    onMount(() => onSpecificSettingChange('appearance.fileSizeFormat', (_id, v) => {
-        fileSizeFormat = v
-    }))
     const sizeUnitLabelOverrides = $derived({
-        kB: fileSizeFormat === 'binary' ? 'KB' : 'kB',
+        kB: unitLabel('kB', getFileSizeFormat()),
     })
 </script>
 

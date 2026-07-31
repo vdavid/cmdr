@@ -19,7 +19,8 @@
     } from '$lib/tauri-commands'
     import { getCurrentWindow } from '@tauri-apps/api/window'
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-    import { initializeSettings, getSetting, setSetting } from '$lib/settings'
+    import { getSetting, setSetting } from '$lib/settings'
+    import { initWindowSettings } from '$lib/settings/window-settings'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { initReduceTransparency, cleanupReduceTransparency } from '$lib/reduce-transparency'
     import { initTextSize, cleanupTextSize } from '$lib/text-size.svelte'
@@ -792,10 +793,12 @@
 
         await initReduceTransparency()
 
-        // The viewer has no store capability (see `src-tauri/capabilities/CLAUDE.md`
-        // § viewer), so settings come from the restricted-window snapshot + the
-        // cross-window change events. Non-throwing: falls back to registry defaults.
-        await initializeSettings({ restrictedWindow: true })
+        // Seeds the store AND the reactive layer that `<Size>` and friends read.
+        // `window-settings.ts` knows the viewer has no store capability (see
+        // `src-tauri/capabilities/CLAUDE.md` § viewer), so it takes the restricted
+        // path: the backend snapshot plus cross-window change events. Non-throwing;
+        // falls back to registry defaults.
+        await initWindowSettings()
         scroll.wordWrap = getSetting('viewer.wordWrap')
         warningSuppressed = getSetting('fileViewer.suppressBinaryWarning')
 

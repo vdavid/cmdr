@@ -49,17 +49,34 @@ let mediaIndexShowFileStatusIcons = $state<boolean>(true)
 
 let initialized = false
 let unsubscribe: (() => void) | undefined
+/** In-flight (or settled) run, so concurrent callers share ONE initialization.
+ *  The root layout and a page's own `onMount` both call in, and a child's
+ *  `onMount` fires before its parent's — without this they'd race and load the
+ *  store twice. Cleared by `cleanupReactiveSettings`. */
+let initPromise: Promise<void> | null = null
 
 /**
- * Initialize reactive settings. Call once on app startup.
+ * Initialize reactive settings for this window.
+ *
+ * Prefer `initWindowSettings()` (`window-settings.ts`), which picks
+ * `restrictedWindow` from the route. Call this directly only when you already
+ * know the window's store access.
+ *
+ * @param options `restrictedWindow` for windows whose capability file has no
+ *   `store:default` grant; see `settings-store.ts § initializeSettings`.
  */
-export async function initReactiveSettings(): Promise<void> {
+export async function initReactiveSettings(options?: { restrictedWindow?: boolean }): Promise<void> {
+  initPromise ??= runInit(options)
+  return initPromise
+}
+
+async function runInit(options?: { restrictedWindow?: boolean }): Promise<void> {
   if (initialized) return
 
   log.debug('Initializing reactive settings')
 
   try {
-    await initializeSettings()
+    await initializeSettings(options)
 
     // Load initial values
     uiDensity = getSetting('appearance.uiDensity')
@@ -183,6 +200,7 @@ export function cleanupReactiveSettings(): void {
   unsubscribe?.()
   unsubscribe = undefined
   initialized = false
+  initPromise = null
 }
 
 // ============================================================================

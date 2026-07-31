@@ -3,7 +3,7 @@
     import ToastContainer from '$lib/ui/toast/ToastContainer.svelte'
     import { trackOwnRect } from '$lib/window-positioning'
     import { deferWindowClose } from '$lib/window-close-defer'
-    import { initializeSettings } from '$lib/settings'
+    import { initWindowSettings } from '$lib/settings/window-settings'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { initReduceTransparency, cleanupReduceTransparency } from '$lib/reduce-transparency'
     import { getAppLogger } from '$lib/logging/logger'
@@ -179,7 +179,7 @@
             // window follows the app-wide accent (system color or Cmdr gold) and tracks
             // it live, instead of resting on the Cmdr-gold CSS fallback. Light/dark/system
             // mode already applies app-wide via Tauri's `setTheme`, so it needs no work here.
-            await initializeSettings()
+            await initWindowSettings()
             await initAccentColor()
             await initReduceTransparency()
         } catch (error) {

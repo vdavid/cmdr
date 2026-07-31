@@ -3,7 +3,8 @@
     import { SvelteSet } from 'svelte/reactivity'
     import { getCurrentWindow } from '@tauri-apps/api/window'
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-    import { initializeSettings, getSetting, onSpecificSettingChange } from '$lib/settings'
+    import { getSetting, onSpecificSettingChange } from '$lib/settings'
+    import { initWindowSettings } from '$lib/settings/window-settings'
     import { setLocale } from '$lib/intl/messages.svelte'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { initReduceTransparency, cleanupReduceTransparency } from '$lib/reduce-transparency'
@@ -138,12 +139,13 @@
         if (loadingScreen) loadingScreen.style.display = 'none'
 
         try {
-            // The queue window has no store capability (see `src-tauri/capabilities/CLAUDE.md`
-            // § queue — no persistence in v1), so settings come from the restricted-window
-            // snapshot + cross-window change events, mirroring the viewer. Non-throwing: a
-            // plain `initializeSettings()` would reject on the store load and leave the body
-            // unrendered (the silent-perm-failure the queue's CLAUDE.md warns about).
-            await initializeSettings({ restrictedWindow: true })
+            // Seeds the store AND the reactive layer that `<Size>` and friends read.
+            // `window-settings.ts` knows this window has no store capability (see
+            // `src-tauri/capabilities/CLAUDE.md` § queue — no persistence in v1), so it
+            // takes the restricted path: the backend snapshot plus cross-window change
+            // events, mirroring the viewer, and non-throwing so a perm failure can't
+            // leave the body unrendered.
+            await initWindowSettings()
             initLanguageSync()
             await initAccentColor()
             await initReduceTransparency()

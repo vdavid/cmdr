@@ -210,6 +210,28 @@ via `data-size-colors` / `data-date-colors` attributes on `<html>`. Settings app
 `lib/settings/age-tier-utils.ts`. The setting value `app` (renamed from the older `accent`) refers to the user-facing
 "app color" (internally the underlying CSS token is still `--color-accent`).
 
+### Per-window initialization (`window-settings.ts`)
+
+Every Cmdr window is its own webview with its own module graph, so both the store cache and the reactive `$state` start
+empty in each one. `initWindowSettings()` seeds both and is called from the ROOT layout (`routes/+layout.svelte`), which
+wraps every route — so a new window gets settings for free and can't forget.
+
+- `WINDOW_SETTINGS_ACCESS` maps route path → `'full'` | `'restricted'`, mirroring which `src-tauri/capabilities/*.json`
+  grants `store:default`. `/queue` and `/viewer` are the restricted pair. An unmapped path resolves to `'full'`: a
+  capability grants the store unless someone deliberately dropped it, and guessing `'restricted'` would silently strand
+  a real window on registry defaults.
+- `initReactiveSettings()` is promise-memoized. A page that gates its body on settings being ready awaits the same call
+  in its own `onMount` (the queue, settings, shortcuts, and viewer windows do); a child's `onMount` fires before its
+  parent's, so without memoization the page and the root layout would race and load the store twice.
+- Two guards: `apps/desktop/src/routes/reactive-settings-coverage.test.ts` walks each route's import graph and fails if a window that
+  reaches `reactive-settings.svelte` isn't initialized; `window-settings.test.ts` pins the access map against the
+  capability files and fails if a new route has no entry.
+
+Before this, only `(main)/+layout.svelte` initialized the reactive layer, so every OTHER window rendered every reactive
+setting at its registry default: sizes in binary when the user had picked SI, dates in ISO when they had picked a custom
+format. `AppearanceSizesSection.svelte` carried a hand-rolled `getSetting` + `onSpecificSettingChange` workaround for
+exactly that; the root-layout init is what let it go back to `getFileSizeFormat()`.
+
 ### Reactive state (`reactive-settings.svelte.ts`)
 
 - Svelte 5 `$state` for settings that affect UI rendering (density, date format, file size format, directory sort mode)

@@ -2,7 +2,7 @@
     import { onMount, onDestroy } from 'svelte'
     import { getCurrentWindow } from '@tauri-apps/api/window'
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-    import { initializeSettings } from '$lib/settings'
+    import { initWindowSettings } from '$lib/settings/window-settings'
     import { initializeShortcuts } from '$lib/shortcuts'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { initReduceTransparency, cleanupReduceTransparency } from '$lib/reduce-transparency'
@@ -47,7 +47,7 @@
 
         try {
             // Settings must load before text-size/theme reads; shortcuts before the list.
-            await Promise.all([initializeSettings(), initializeShortcuts()])
+            await Promise.all([initWindowSettings(), initializeShortcuts()])
             await initAccentColor()
             await initReduceTransparency()
             await initTextSize()

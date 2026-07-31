@@ -5,7 +5,8 @@
     import { onMcpSettingsClose, activateWindowMenu, isE2eMode } from '$lib/tauri-commands'
     import SettingsSidebar from '$lib/settings/components/SettingsSidebar.svelte'
     import SettingsContent from '$lib/settings/components/SettingsContent.svelte'
-    import { initializeSettings, forceSave as forceSettingsSave, getSetting, onSpecificSettingChange } from '$lib/settings'
+    import { forceSave as forceSettingsSave, getSetting, onSpecificSettingChange } from '$lib/settings'
+    import { initWindowSettings } from '$lib/settings/window-settings'
     import { setLocale } from '$lib/intl/messages.svelte'
     import { initializeShortcuts, flushPendingSave as flushShortcutsSave } from '$lib/shortcuts'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
@@ -304,9 +305,9 @@
         }
 
         try {
-            // Initialize settings and shortcuts stores
-            log.debug('Calling initializeSettings() and initializeShortcuts()')
-            await Promise.all([initializeSettings(), initializeShortcuts()])
+            // Initialize settings (store + reactive layer) and the shortcuts store
+            log.debug('Calling initWindowSettings() and initializeShortcuts()')
+            await Promise.all([initWindowSettings(), initializeShortcuts()])
             log.debug('Settings and shortcuts initialization complete')
 
             await installE2eFlushHook()
