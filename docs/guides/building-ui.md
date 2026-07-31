@@ -67,6 +67,19 @@ entry plus row) is its own procedure: `adding-a-new-setting.md`.
 A new top-level window (like Settings or the File viewer) is a route, an opener, a capability file, and shell wiring.
 Follow `adding-a-window.md`; missing capabilities fail silently, so read the capabilities section.
 
+Settings reach a new window automatically: the ROOT `routes/+layout.svelte` calls `initWindowSettings()`, which seeds
+the store and the reactive layer for every route. Classify the new route in `WINDOW_SETTINGS_ACCESS`
+(`apps/desktop/src/lib/settings/window-settings.ts`) to match whether its capability file grants `store:default`; a
+test fails if you don't.
+
+## Showing a size, a speed, or a duration
+
+`apps/desktop/src/lib/units/CLAUDE.md` is the one place a byte count, a transfer rate, or a duration becomes text.
+`formatByteSize` / `formatByteRate` follow the user's binary-vs-SI setting; `<Size bytes>` (`lib/ui/Size.svelte`) is the
+component form with size-tier colors, and `<DateLabel>` is the date equivalent. ❌ Don't hand-roll a `formatBytes` or a
+`formatEta`: `cmdr/no-private-unit-format` rejects them, because four private copies once drifted apart and two windows
+showed different numbers for the same transfer.
+
 ## Adding a new primitive
 
 A new `lib/ui/` primitive is a four-part contract, enforced so it can't half-land:

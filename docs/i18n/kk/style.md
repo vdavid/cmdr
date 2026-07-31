@@ -95,7 +95,7 @@ CLDR categories for `kk`: `one`, `other` (verified with `new Intl.PluralRules('k
 - **Quotation marks: `«…»`** (guillemets), the Cyrillic/Russian-influenced standard for Kazakh. Avoid straight ASCII `"`
   and English `"…"`.
 - **Numbers and dates come from the formatter layer.** Kazakh uses a comma decimal and space thousands separator;
-  `formatNumber()`/`formatBytes()` produce these from the locale. Never hardcode separators in a string.
+  `formatNumber()`/`formatByteSize()` produce these from the locale. Never hardcode separators in a string.
 - **Length.** Kazakh runs longer than English (agglutinative suffixes); overflow-check the layout against the
   pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every

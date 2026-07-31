@@ -136,7 +136,7 @@ collapses few+other differently, use the four CLDR categories, not GNOME's three
 - **Quotation marks: `„…"`** (low-9 opening U+201E, high-6 closing U+201D), the standard Polish form. Nested: guillemets
   `»…«` (inward) or French `«…»` depending on house style; prefer `»…«`. Avoid straight ASCII `"` and English `"…"`.
 - **Numbers and dates come from the formatter layer.** Polish uses a comma decimal and space (non-breaking) thousands
-  separator (1 000); `formatNumber()`/`formatBytes()` produce these from the locale. Never hardcode separators.
+  separator (1 000); `formatNumber()`/`formatByteSize()` produce these from the locale. Never hardcode separators.
 - **Length.** Polish runs longer than English (case endings, compounds, ~20-30% expansion), so overflow-check the layout
   against the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every

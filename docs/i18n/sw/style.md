@@ -139,7 +139,7 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sw')`, 202
 - **Sentence case is native.** Swahili capitalizes only the first word and proper nouns; days and months are lowercase.
   The app's sentence-case rule applies cleanly. Don't title-case.
 - **Numbers and dates come from the formatter layer.** Swahili uses a period decimal separator and a non-breaking space
-  for thousands groups; `formatNumber()` / `formatBytes()` produce these from the locale. Never hardcode separators.
+  for thousands groups; `formatNumber()` / `formatByteSize()` produce these from the locale. Never hardcode separators.
 - **Time-of-day phrasing is an EAT trap, not a formatter one.** Traditional Swahili clock time counts from dawn (saa
   moja = 7 a.m.), six hours offset from the Western clock. Software universally uses the Western am/pm reckoning anyway,
   so if any string ever phrases a time in words ("at 3 o'clock"), keep it on the Western clock the formatter produces;

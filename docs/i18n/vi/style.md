@@ -130,7 +130,7 @@ Vietnamese has no grammatical number, so one form covers all counts.
 - **Quotation marks: `"…"`** (curly double quotes, U+201C/U+201D) are standard; guillemets `«…»` also appear in some
   formal text. Prefer the curly doubles to match macOS. Avoid straight ASCII `"`.
 - **Numbers and dates come from the formatter layer.** Vietnamese uses a comma decimal and a period (or space) thousands
-  separator (1.000 or 1 000); `formatNumber()`/`formatBytes()` produce these from the locale. Never hardcode separators.
+  separator (1.000 or 1 000); `formatNumber()`/`formatByteSize()` produce these from the locale. Never hardcode separators.
 - **Spacing: words are space-separated like English**, but a Vietnamese "word" is often two syllables ("thư mục"); don't
   break inside a compound when wrapping. The renderer handles this; just don't manually insert breaks.
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every

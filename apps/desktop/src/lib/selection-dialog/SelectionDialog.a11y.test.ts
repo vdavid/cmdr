@@ -33,7 +33,6 @@ vi.mock('$lib/tauri-commands', () => ({
   removeRecentSelection: vi.fn(() => Promise.resolve()),
   getRecentSelections: vi.fn(() => Promise.resolve([])),
   showFileContextMenu: vi.fn(() => Promise.resolve()),
-  formatBytes: vi.fn((n: number) => `${String(n)} B`),
 }))
 
 let aiProvider: 'off' | 'local' | 'cloud' = 'off'

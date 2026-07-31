@@ -90,7 +90,7 @@ for the check; a native reviewer confirms which counts truly share a form. Write
 
 - **Quotation marks:** Kabyle UI commonly follows French guillemets `«…»` or English `"…"`; a native reviewer settles
   house style.
-- **Numbers and dates come from the formatter layer.** `formatNumber()`/`formatBytes()` follow the locale; never
+- **Numbers and dates come from the formatter layer.** `formatNumber()`/`formatByteSize()` follow the locale; never
   hardcode separators in a string.
 - **Length.** Kabyle runs roughly English-length; overflow-check against the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every

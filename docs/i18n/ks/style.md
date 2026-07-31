@@ -98,7 +98,7 @@ return `one, other`, 2026-06-20). Write both.
 - **Quotation marks:** Perso-Arabic Kashmiri uses the Arabic-script conventions (often guillemets `«…»` or the script's
   quotation forms); Devanagari follows Devanagari conventions. A native reviewer settles each.
 - **Numbers and dates come from the formatter layer.** Perso-Arabic Kashmiri may use Eastern Arabic-Indic digits;
-  `formatNumber()`/`formatBytes()` follow the locale. Never hardcode separators or digit forms in a string.
+  `formatNumber()`/`formatByteSize()` follow the locale. Never hardcode separators or digit forms in a string.
 - **Length and height.** Nastaʿliq (Perso-Arabic) renders with steep diagonal baselines and needs vertical room and a
   Nastaʿliq-capable font; overflow-check both axes against the pseudolocale (`en-XA`) and a real Kashmiri font.
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every

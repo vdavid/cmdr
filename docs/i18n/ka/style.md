@@ -97,7 +97,7 @@ CLDR categories for `ka`: `one`, `other` (verified with `new Intl.PluralRules('k
 
 - **Quotation marks: `„…“`** (low-9 opening U+201E, high-6 closing U+201C) is the standard Georgian form, matching the
   German shape. Avoid straight ASCII `"` and English `"…"`.
-- **Numbers and dates come from the formatter layer.** `formatNumber()`/`formatBytes()` produce locale-correct
+- **Numbers and dates come from the formatter layer.** `formatNumber()`/`formatByteSize()` produce locale-correct
   separators; never hardcode them in a string.
 - **Length.** Georgian can run longer than English; overflow-check the layout against the pseudolocale (`en-XA`).
   Mkhedruli also renders taller than Latin in some fonts, so check vertical fit too.

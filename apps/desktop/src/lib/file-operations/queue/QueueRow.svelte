@@ -6,10 +6,11 @@
     import ProgressBar from '$lib/ui/ProgressBar.svelte'
     import Size from '$lib/ui/Size.svelte'
     import { tString } from '$lib/intl/messages.svelte'
-    import { formatDuration } from '$lib/tauri-commands'
     import { tooltip } from '$lib/tooltip/tooltip'
     import type { OperationRow } from './operations-store.svelte'
     import { operationTypeIcon } from './operation-icon'
+    import { transferReadout } from '../progress-readout'
+    import { formatDuration, formatByteRate } from '$lib/units'
 
     interface Props {
         row: OperationRow
@@ -47,9 +48,20 @@
         return null
     })
 
+    /** The SMOOTHED ETA from the store, never `progress.etaSeconds`: the copy
+     *  dialog renders the same smoothed value, so the two windows agree. */
     const etaText = $derived.by(() => {
-        if (!isRunning || progress?.etaSeconds == null) return null
-        return tString('queue.row.etaRemaining', { duration: formatDuration(progress.etaSeconds) })
+        if (!isRunning || row.etaSecondsDisplay === null) return null
+        return tString('queue.row.etaRemaining', { duration: formatDuration(row.etaSecondsDisplay) })
+    })
+
+    /** Transfer speed, from the same backend field and the same formatter the
+     *  copy dialog uses. Hidden until the backend's estimator warms up. */
+    const speedText = $derived.by(() => {
+        if (!isRunning || !progress) return null
+        const rate = transferReadout(progress).bytesPerSecond
+        if (rate === null || rate <= 0) return null
+        return formatByteRate(rate)
     })
 
     const pauseResumeLabel = $derived(
@@ -108,6 +120,9 @@
                 <span class="queued-hint">
                     <Icon name="hourglass" size={12} />
                 </span>
+            {/if}
+            {#if speedText}
+                <span class="speed">{speedText}</span>
             {/if}
             {#if etaText}
                 <span class="eta">{etaText}</span>
@@ -215,6 +230,7 @@
     }
 
     .bytes,
+    .speed,
     .eta {
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);

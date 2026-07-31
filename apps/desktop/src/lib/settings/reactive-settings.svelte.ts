@@ -17,7 +17,7 @@ import {
   type AppColor,
   densityMappings,
 } from '$lib/settings'
-import { formatDateForDisplay, formatFileSizeWithFormat, type FormattedDate } from './format-utils'
+import { formatDateForDisplay, type FormattedDate } from './format-utils'
 import { getAppLogger } from '$lib/logging/logger'
 import { clearExtensionIconCache } from '$lib/icon-cache'
 import { getEffectiveScale } from '$lib/text-size.svelte'
@@ -386,12 +386,4 @@ export function formattedDate(timestamp: number | null | undefined): FormattedDa
  */
 export function formatDateTime(timestamp: number | null | undefined): string {
   return formattedDate(timestamp).text
-}
-
-/**
- * Format bytes as human-readable string according to current settings.
- * @param bytes Number of bytes
- */
-export function formatFileSize(bytes: number): string {
-  return formatFileSizeWithFormat(bytes, fileSizeFormat)
 }

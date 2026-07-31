@@ -1,4 +1,4 @@
-import { formatBytes, refreshListing, type Initiator } from '$lib/tauri-commands'
+import { refreshListing, type Initiator } from '$lib/tauri-commands'
 import { onDirectoryDiff, findFileIndex } from '$lib/tauri-commands'
 import { setArchivePassword, clearArchivePassword } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast'
@@ -11,6 +11,7 @@ import type { TransferDialogPropsData } from './transfer-operations'
 import type { DeleteSourceItem } from '$lib/file-operations/delete/delete-dialog-utils'
 import type { TransferOperationType, SortColumn, SortOrder, ConflictResolution, WriteOperationError } from '../types'
 import type { FilePaneAPI } from './types'
+import { formatByteSize } from '$lib/units'
 
 const log = getAppLogger('fileExplorer')
 
@@ -464,7 +465,7 @@ export function createDialogState(deps: DialogStateDeps) {
         }
       }
       log.info(
-        `${opLabel} complete: ${String(filesProcessed)} files (${String(filesSkipped)} skipped, ${formatBytes(bytesProcessed)})`,
+        `${opLabel} complete: ${String(filesProcessed)} files (${String(filesSkipped)} skipped, ${formatByteSize(bytesProcessed)})`,
       )
       // Top-level counts for the per-type split ("Moved 1 file and 3 folders").
       // F5/F6, drag-and-drop, and clipboard paste all supply these now; absent

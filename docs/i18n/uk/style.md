@@ -82,7 +82,7 @@ failure, and politically charged. Guard specifically:
 
 - **Numbers come from the formatter layer, never hardcode separators.** Ukrainian uses a space (non-breaking) thousands
   separator and a comma decimal: `1 234 567,89`, `1,5` (verified with `Intl.NumberFormat('uk')`, 2026-06-20). Let
-  `formatNumber()`/`formatBytes()` produce these from the locale.
+  `formatNumber()`/`formatByteSize()` produce these from the locale.
 - **Dates:** `dd.MM.yyyy` (e.g. `20.06.2026`), verified with `Intl.DateTimeFormat('uk')` 2026-06-20. From the formatter
   layer, not strings.
 - **Quotation marks: «…» (guillemets)** as the primary pair, the way macOS Finder writes them ("папки «Робочий стіл»").

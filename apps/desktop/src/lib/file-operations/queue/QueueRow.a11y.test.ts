@@ -4,6 +4,7 @@ import QueueRow from './QueueRow.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import type { OperationRow } from './operations-store.svelte'
 import type { OperationSnapshot, WriteProgressEvent } from '$lib/ipc/bindings'
+import { seconds } from '$lib/units'
 
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   getFileSizeFormat: () => 'decimal',
@@ -23,6 +24,7 @@ function row(
       destination: opType === 'delete' || opType === 'trash' ? null : '/Volumes/Backup/report.pdf',
     },
     progress,
+    etaSecondsDisplay: progress?.etaSeconds == null ? null : seconds(progress.etaSeconds),
   }
 }
 

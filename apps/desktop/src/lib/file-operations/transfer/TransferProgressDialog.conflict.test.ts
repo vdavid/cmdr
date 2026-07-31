@@ -55,9 +55,6 @@ vi.mock('$lib/tauri-commands', () => ({
   resumeOperation: vi.fn(() => Promise.resolve()),
   onOperationsChanged: vi.fn(() => Promise.resolve(() => {})),
   listOperations: vi.fn(() => Promise.resolve([])),
-  formatBytes: vi.fn((n: number) => `${String(n)} B`),
-  formatDuration: vi.fn((s: number) => `${String(s)}s`),
-  formatFilesPerSecond: vi.fn((r: number) => `${String(r)} files/s`),
   DEFAULT_VOLUME_ID: 'root',
 }))
 
@@ -321,7 +318,7 @@ describe('TransferProgressDialog conflict — file → folder, destinationSize k
   it('renders the destination size in the Existing slot (not "(unknown)")', async () => {
     const target = await mountDialogWithConflict(event)
     const existingSize = target.querySelector('.conflict-file .conflict-file-size')
-    expect(existingSize?.textContent.trim()).toBe('4096 B')
+    expect(existingSize?.textContent.trim()).toBe('4.00 KB')
     expect(existingSize?.classList.contains('unknown')).toBe(false)
   })
 
@@ -404,7 +401,7 @@ describe('TransferProgressDialog conflict — folder → file, sourceSize null',
   it('still renders the known destination size in the Existing slot', async () => {
     const target = await mountDialogWithConflict(event)
     const existingSize = target.querySelector('.conflict-file .conflict-file-size')
-    expect(existingSize?.textContent.trim()).toBe('1024 B')
+    expect(existingSize?.textContent.trim()).toBe('1.00 KB')
     expect(existingSize?.classList.contains('unknown')).toBe(false)
   })
 

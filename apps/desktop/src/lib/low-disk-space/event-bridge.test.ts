@@ -55,8 +55,9 @@ vi.mock('$lib/ui/toast', () => ({
   dismissToast: dismissToastMock,
 }))
 
-vi.mock('$lib/settings/format-utils', () => ({
-  formatFileSizeWithFormat: (bytes: number) => `${String(bytes)} B`,
+vi.mock('$lib/units', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('$lib/units')>()),
+  formatByteSize: (bytes: number) => `${String(bytes)} B`,
 }))
 
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({

@@ -134,7 +134,7 @@ tokens. The curated list is enforced by `desktop-i18n-dont-translate`; see `apps
 CLDR categories for `sq`: `one`, `other` (the Albanian Nautilus catalog declares `nplurals=2; plural=(n != 1)`, verified
 against the reference pile, 2026-06-20; confirm with `new Intl.PluralRules('sq').resolvedOptions()`). Write both
 branches. Keep noun and adjective gender agreement correct inside each branch. Numbers and dates come from the formatter
-layer (`formatNumber()` / `formatBytes()`); never hardcode separators.
+layer (`formatNumber()` / `formatByteSize()`); never hardcode separators.
 
 ## Notes and decisions
 

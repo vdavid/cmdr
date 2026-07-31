@@ -95,7 +95,7 @@ both.
   apostrophe doubled (`'` → `''`); make sure orthographic apostrophes are doubled too, or ICU swallows text. See ICU
   mechanics below.
 - **Quotation marks:** Hausa UI commonly uses English-style `"…"`; a native reviewer settles house style.
-- **Numbers and dates come from the formatter layer.** `formatNumber()`/`formatBytes()` follow the locale; never
+- **Numbers and dates come from the formatter layer.** `formatNumber()`/`formatByteSize()` follow the locale; never
   hardcode separators in a string.
 - **Length.** Hausa runs roughly English-length or a bit longer; overflow-check against the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every

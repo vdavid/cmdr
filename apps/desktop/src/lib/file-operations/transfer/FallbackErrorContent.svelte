@@ -1,9 +1,9 @@
 <script lang="ts">
     import type { WriteOperationError, TransferOperationType } from '$lib/file-explorer/types'
     import { getUserFriendlyMessage } from './transfer-error-messages'
-    import { formatBytes } from '$lib/tauri-commands'
     import { tString } from '$lib/intl/messages.svelte'
     import { formatInteger } from '$lib/intl/number-format'
+    import { formatByteSize } from '$lib/units'
 
     interface Props {
         error: WriteOperationError
@@ -27,7 +27,7 @@
     {#if oversizedFiles.length > 0}
         <ul class="oversized-files selectable">
             {#each oversizedFiles as file (file.name)}
-                <li><span class="file-name">{file.name}</span><span class="file-size">{formatBytes(file.size)}</span></li>
+                <li><span class="file-name">{file.name}</span><span class="file-size">{formatByteSize(file.size)}</span></li>
             {/each}
         </ul>
         {#if oversizedRemaining > 0}

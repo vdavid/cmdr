@@ -104,7 +104,7 @@ counted noun in Finnish takes the **partitive singular** after a number >1 ("3 t
 - **Quotation marks: `"…"`** (both U+201D, the right double quote, used as both opening and closing - the standard
   Finnish form). Avoid straight ASCII `"` and the German-style `„…"`.
 - **Numbers and dates come from the formatter layer.** Finnish uses a comma decimal and a space (non-breaking) thousands
-  separator (1 000,5); `formatNumber()`/`formatBytes()` produce these. Never hardcode separators in a string.
+  separator (1 000,5); `formatNumber()`/`formatByteSize()` produce these. Never hardcode separators in a string.
 - **Length.** Long compounds + case-suffix agglutination make Finnish one of the longer-running languages; overflow-
   check carefully.
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every

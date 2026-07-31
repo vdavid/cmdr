@@ -3,6 +3,7 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import Spinner from '$lib/ui/Spinner.svelte'
     import { formatInteger } from '$lib/intl/number-format'
+    import { formatByteSize, formatMilliseconds } from '$lib/units'
 
     interface IndexStatusMeta {
         schemaVersion: string | null
@@ -116,17 +117,14 @@
 
     function formatDbSize(bytes: number | null): string {
         if (bytes === null) return 'N/A'
-        if (bytes < 1024) return `${String(bytes)} B`
-        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+        return formatByteSize(bytes)
     }
 
-    function formatDuration(ms: string | null): string {
+    function formatScanDuration(ms: string | null): string {
         if (ms === null) return 'N/A'
         const millis = parseInt(ms, 10)
         if (isNaN(millis)) return ms
-        if (millis < 1000) return `${String(millis)} ms`
-        return `${(millis / 1000).toFixed(1)} s`
+        return formatMilliseconds(millis)
     }
 
     function formatCount(n: number | null | undefined): string {
@@ -398,7 +396,7 @@
                             ></span
                         >
                         <span class="index-meta-value"
-                            >{formatDuration(debugStatus.indexStatus.scanDurationMs)}</span
+                            >{formatScanDuration(debugStatus.indexStatus.scanDurationMs)}</span
                         >
                     </div>
                 {/if}

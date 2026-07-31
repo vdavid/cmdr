@@ -3,10 +3,9 @@ import { mount, tick, unmount } from 'svelte'
 
 import ViewerCopyDialogs from './ViewerCopyDialogs.svelte'
 
-// Provide a working `formatBytes` (used by the dialog titles) while stubbing the
+// Let the real `$lib/units` formatter run (the dialog titles use it) while stubbing the
 // IPC side-effects ModalDialog fires on mount/destroy.
 vi.mock('$lib/tauri-commands', () => ({
-  formatBytes: (bytes: number) => `${String(bytes)} bytes`,
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
 }))
@@ -57,7 +56,7 @@ describe('ViewerCopyDialogs', () => {
     await tick()
 
     const title = document.getElementById('viewer-copy-confirm-title')
-    expect(title?.textContent).toContain('5000 bytes')
+    expect(title?.textContent).toContain('4.88 KB')
 
     void unmount(instance)
   })
@@ -109,7 +108,7 @@ describe('ViewerCopyDialogs', () => {
 
     const title = document.getElementById('viewer-copy-refuse-title')
     expect(title).not.toBeNull()
-    expect(title?.textContent).toContain('200000000 bytes')
+    expect(title?.textContent).toContain('190.73 MB')
 
     void unmount(instance)
   })

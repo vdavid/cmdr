@@ -16,7 +16,7 @@
      */
     import { tString } from '$lib/intl/messages.svelte'
     import { formatInteger } from '$lib/intl/number-format'
-    import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
+    import { formatByteSize } from '$lib/units'
     import { confirmDialog } from '$lib/utils/confirm-dialog'
     import { addToast } from '$lib/ui/toast'
     import { getAppLogger } from '$lib/logging/logger'
@@ -76,7 +76,7 @@
             tString('settings.mediaIndex.reclaim.confirmBody', {
                 doomed: preview.doomedCount,
                 doomedText: formatInteger(preview.doomedCount),
-                size: formatFileSize(preview.estimatedBytes),
+                size: formatByteSize(preview.estimatedBytes),
             }),
             tString('settings.mediaIndex.reclaim.confirmTitle'),
         )
@@ -85,7 +85,7 @@
         try {
             const result = await mediaIndexPruneBelowThreshold(threshold, getEnabledMediaIndexVolumeIds())
             if (result.deletedRows > 0) {
-                addToast(tString('settings.mediaIndex.reclaim.freed', { size: formatFileSize(result.freedBytes) }), {
+                addToast(tString('settings.mediaIndex.reclaim.freed', { size: formatByteSize(result.freedBytes) }), {
                     level: 'success',
                 })
             } else {
@@ -114,7 +114,7 @@
         <Button size="mini" onclick={handleReclaim} disabled={pruning}>
             {tString('settings.mediaIndex.reclaim.button', {
                 doomed: preview.doomedCount,
-                size: formatFileSize(preview.estimatedBytes),
+                size: formatByteSize(preview.estimatedBytes),
             })}
         </Button>
     </div>

@@ -17,6 +17,7 @@ vi.mock('$lib/tauri-commands', () => ({
 }))
 
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
+  getFileSizeFormat: () => 'binary',
   formatDateTime: vi.fn((d: number | undefined) => (d ? '2025-03-14 10:30' : '')),
   formatFileSize: vi.fn((n: number) => `${String(n)} B`),
   formattedDate: vi.fn((d: number | undefined) =>

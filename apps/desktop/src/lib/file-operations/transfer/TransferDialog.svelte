@@ -27,8 +27,7 @@
     import { getVolumes } from '$lib/stores/volume-store.svelte'
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import Size from '$lib/ui/Size.svelte'
-    import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
-    import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
+    import { formatByteSize } from '$lib/units'
     import { getAppLogger } from '$lib/logging/logger'
     import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
@@ -312,7 +311,7 @@
 
     // Free-space text is intentionally uncolored: red GB would falsely signal "low space".
     const spaceInfoText = $derived(
-        formatSpaceInfo(volumeSpace, (bytes) => formatFileSizeWithFormat(bytes, getFileSizeFormat())),
+        formatSpaceInfo(volumeSpace, formatByteSize),
     )
 
     // Load volume space when volume changes

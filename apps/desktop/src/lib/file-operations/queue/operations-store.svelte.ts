@@ -27,6 +27,8 @@ import {
 } from '$lib/tauri-commands'
 import { onWriteProgress } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
+import type { Seconds } from '$lib/units'
+import { createEtaSmoother, transferReadout, type EtaSmoother } from '../progress-readout'
 
 const log = getAppLogger('queue')
 
@@ -35,6 +37,11 @@ const log = getAppLogger('queue')
 export interface OperationRow {
   snapshot: OperationSnapshot
   progress: WriteProgressEvent | null
+  /** The ETA to DISPLAY: the backend's `etaSeconds` through the shared smoother
+   *  in `file-operations/progress-readout.ts`, so this window and the copy
+   *  dialog show the same number for the same operation. Render this, never
+   *  `progress.etaSeconds`. */
+  etaSecondsDisplay: Seconds | null
 }
 
 /** Lifecycle statuses that mean the op is finished and stops being actionable.
@@ -59,6 +66,14 @@ export function createOperationsStore() {
   // progress can't leak.
   let progressById = $state<Record<string, WriteProgressEvent>>({})
 
+  /** One smoother per operation, keyed by id. The smoother is stateful, so a
+   *  row needs its own; pruned alongside `progressById`. */
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- plain lookup of non-reactive smoothers; the reactive mirror is `etaById`
+  let etaSmoothers = new Map<string, EtaSmoother>()
+  /** The smoothed ETA per operation, mirrored into reactive state (the smoother
+   *  itself is a plain object, so writes to it wouldn't re-render). */
+  let etaById = $state<Record<string, Seconds | null>>({})
+
   let unlistenSnapshots: UnlistenFn | null = null
   let unlistenProgress: UnlistenFn | null = null
   let disposed = false
@@ -68,6 +83,7 @@ export function createOperationsStore() {
     snapshots.map((snapshot) => ({
       snapshot,
       progress: progressById[snapshot.operationId] ?? null,
+      etaSecondsDisplay: etaById[snapshot.operationId] ?? null,
     })),
   )
 
@@ -83,6 +99,19 @@ export function createOperationsStore() {
       if (liveIds.has(id)) pruned[id] = event
     }
     progressById = pruned
+
+    // Same pruning for the ETA smoothers, so a finished op can't leave a stale
+    // number behind (or leak its smoother) if its id is ever reused.
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- plain lookup map of non-reactive smoothers
+    const prunedSmoothers = new Map<string, EtaSmoother>()
+    const prunedEtas: Record<string, Seconds | null> = {}
+    for (const id of liveIds) {
+      const smoother = etaSmoothers.get(id)
+      if (smoother) prunedSmoothers.set(id, smoother)
+      if (id in etaById) prunedEtas[id] = etaById[id]
+    }
+    etaSmoothers = prunedSmoothers
+    etaById = prunedEtas
   }
 
   function applyProgress(event: WriteProgressEvent) {
@@ -91,6 +120,13 @@ export function createOperationsStore() {
     // arrives and a later progress tick lands.
     if (!snapshots.some((op) => op.operationId === event.operationId)) return
     progressById = { ...progressById, [event.operationId]: event }
+
+    let smoother = etaSmoothers.get(event.operationId)
+    if (!smoother) {
+      smoother = createEtaSmoother()
+      etaSmoothers.set(event.operationId, smoother)
+    }
+    etaById = { ...etaById, [event.operationId]: smoother.push(transferReadout(event).etaSeconds) }
   }
 
   async function init(): Promise<void> {
@@ -123,6 +159,7 @@ export function createOperationsStore() {
 
   function dispose(): void {
     disposed = true
+    etaSmoothers.clear()
     unlistenSnapshots?.()
     unlistenProgress?.()
     unlistenSnapshots = null

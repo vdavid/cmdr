@@ -138,7 +138,7 @@ fraction digits, `i` = integer part):
   most traditional and most distinctively Slovenian; `„besedilo"` (U+201E … U+201C) is also standard. Nested: `›…‹` or
   `‚…'`. Avoid straight ASCII `"` and English `"…"`. See the Decisions flag above.
 - **Numbers and dates come from the formatter layer.** Slovenian uses a comma decimal and dot/space thousands separator;
-  `formatNumber()`/`formatBytes()` produce these from the locale. Never hardcode separators in a string.
+  `formatNumber()`/`formatByteSize()` produce these from the locale. Never hardcode separators in a string.
 - **Length.** Slovenian runs somewhat longer than English (case endings, the dual), so overflow-check the layout against
   the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every

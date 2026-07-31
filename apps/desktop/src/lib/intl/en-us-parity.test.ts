@@ -15,7 +15,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { _setLocaleForTests } from './locale'
-import { formatDateForDisplay, formatFileSizeWithFormat } from '$lib/settings/format-utils'
+import { formatDateForDisplay } from '$lib/settings/format-utils'
+import { formatFileSizeWithFormat } from '$lib/units'
 import { formatNumber, formatSizeTriads } from '$lib/file-explorer/selection/selection-info-utils'
 
 describe('en-US parity: counts (formatNumber)', () => {

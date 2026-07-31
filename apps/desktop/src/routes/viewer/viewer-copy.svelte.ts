@@ -11,22 +11,17 @@
  * right band and returns a `CopyOutcome`. Toast/dialog presentation lives in the page
  * to keep this module independent of UI primitives.
  */
-
-import {
-  formatBytes,
-  viewerCancelRead,
-  viewerReadRange,
-  viewerWriteRangeToFile,
-  type RangeEnd,
-  type ViewerError,
-} from '$lib/tauri-commands'
+import { viewerCancelRead,
+    viewerReadRange,
+    viewerWriteRangeToFile,
+    type RangeEnd,
+    type ViewerError } from '$lib/tauri-commands'
 import { save as showSavePanel } from '@tauri-apps/plugin-dialog'
-
 import { addToast } from '$lib/ui/toast/toast-store.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { tString } from '$lib/intl/messages.svelte'
-
 import { selectCopyAction, type CopyAction } from './viewer-copy'
+import { formatByteSize } from '$lib/units'
 
 export type CopyOutcome =
   | { kind: 'silent'; text: string; bytes: number }
@@ -222,7 +217,7 @@ export function createViewerCopyOrchestrator(deps: CopyOrchestratorDeps) {
       addToast(tString('viewer.copy.clipboardUnreachable'), { level: 'warn' })
       return
     }
-    addToast(tString('viewer.copy.onClipboard', { size: formatBytes(bytes) }), { level: 'info' })
+    addToast(tString('viewer.copy.onClipboard', { size: formatByteSize(bytes) }), { level: 'info' })
   }
 
   async function handleCopy(): Promise<void> {

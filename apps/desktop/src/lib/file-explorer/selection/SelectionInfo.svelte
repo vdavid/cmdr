@@ -12,7 +12,6 @@
     import { tString } from '$lib/intl/messages.svelte'
     import { measureDateColumnWidth } from '../views/full-list-utils'
     import {
-        formatFileSize,
         formatDateTime,
         formattedDate,
         getSizeDisplayMode,
@@ -34,7 +33,7 @@
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import type { VolumeSpaceInfo } from '$lib/tauri-commands'
     import { formatDiskSpaceStatus } from '../disk-space-utils'
-    import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
+    import { formatFileSizeWithFormat, formatByteSize } from '$lib/units'
 
     // Free-space text is intentionally uncolored: red GB would falsely signal "low space".
     function diskSpaceStatusText(space: VolumeSpaceInfo): string {
@@ -141,12 +140,12 @@
                       entry.recursiveFileCount ?? 0,
                       entry.recursiveDirCount ?? 0,
                       dirActive,
-                      formatFileSize,
+                      formatByteSize,
                       formatNumber,
                       entry.recursiveSizeComplete,
                       entry.recursiveSizeStale,
                   ) || undefined
-                : buildFileSizeTooltip(entry.size, entry.physicalSize, formatFileSize)
+                : buildFileSizeTooltip(entry.size, entry.physicalSize, formatByteSize)
             : undefined,
     )
     /**
@@ -236,7 +235,7 @@
             selectedPhysicalSize,
             totalLogicalSize,
             totalPhysicalSize,
-            formatFileSize,
+            formatByteSize,
         ),
     )
 </script>

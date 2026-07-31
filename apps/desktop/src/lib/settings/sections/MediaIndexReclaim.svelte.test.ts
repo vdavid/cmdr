@@ -25,8 +25,12 @@ vi.mock('$lib/utils/confirm-dialog', () => ({ confirmDialog: confirmMock }))
 vi.mock('$lib/ui/toast', () => ({ addToast: addToastMock }))
 vi.mock('$lib/logging/logger', () => ({ getAppLogger: () => ({ warn: vi.fn(), info: vi.fn() }) }))
 vi.mock('$lib/intl/messages.svelte', () => ({ tString: (key: string) => key }))
-vi.mock('$lib/intl/number-format', () => ({ formatInteger: (n: number) => String(n) }))
-vi.mock('$lib/settings/reactive-settings.svelte', () => ({ formatFileSize: (b: number) => `${String(b)}B` }))
+vi.mock('$lib/intl/number-format', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('$lib/intl/number-format')>()),
+  formatInteger: (n: number) => String(n),
+}))
+vi.mock('$lib/settings/reactive-settings.svelte', () => ({
+  getFileSizeFormat: () => 'binary', formatFileSize: (b: number) => `${String(b)}B` }))
 
 import MediaIndexReclaim from './MediaIndexReclaim.svelte'
 

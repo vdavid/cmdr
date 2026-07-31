@@ -83,8 +83,10 @@ import { pluralize } from '$lib/utils/pluralize'
 import { getSetting } from '$lib/settings'
 import { getAppLogger } from '$lib/logging/logger'
 import { ScanThroughput } from '../scan-throughput'
+import { createEtaSmoother, transferReadout } from '../progress-readout'
 import { tString } from '$lib/intl/messages.svelte'
 import { pathInsideArchive } from '$lib/file-explorer/pane/volume-capabilities'
+import type { BytesPerSecond, Seconds } from '$lib/units'
 
 export interface TransferProgressStateConfig {
   operationType: TransferOperationType
@@ -302,30 +304,13 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
   // Rates + ETA come from the backend (`EtaEstimator` in
   // `write_operations/eta.rs`). The FE just renders them. Null until the
   // backend's warm-up window is over (≈800 ms after a phase change).
-  let bytesPerSecond = $state<number | null>(null)
+  let bytesPerSecond = $state<BytesPerSecond | null>(null)
   let filesPerSecond = $state<number | null>(null)
-  /** Raw ETA from the backend (`max(ETA_bytes, ETA_files)`). */
-  let etaSecondsRaw = $state<number | null>(null)
-  /** Display-smoothed ETA: slow EWMA over the raw value to kill flicker on
-   *  the "Ns remaining" readout. The estimator itself stays responsive. */
-  let etaSecondsDisplay = $state<number | null>(null)
-
-  /** Smooth the displayed ETA toward the latest backend value. Display-only;
-   *  the underlying estimator is unsmoothed and reacts to real changes. */
-  function updateDisplayEta(raw: number | null) {
-    if (raw === null) {
-      etaSecondsDisplay = null
-      return
-    }
-    if (etaSecondsDisplay === null) {
-      etaSecondsDisplay = raw
-      return
-    }
-    // Cap the change per tick at 25% of the gap. Real changes still
-    // propagate quickly (4 ticks ≈ 80 ms × 4 = under a second), while
-    // single-tick jitter is dampened.
-    etaSecondsDisplay = etaSecondsDisplay + 0.25 * (raw - etaSecondsDisplay)
-  }
+  /** Display ETA: the backend value through the SHARED smoother, so this
+   *  dialog and the Transfers window can't show two different numbers for the
+   *  same operation. See `file-operations/progress-readout.ts`. */
+  let etaSecondsDisplay = $state<Seconds | null>(null)
+  const etaSmoother = createEtaSmoother()
 
   function handleProgress(event: WriteProgressEvent) {
     if (!filterEvent({ type: 'progress', event })) return
@@ -343,6 +328,7 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     // Drop the smoothed ETA on phase transitions; the backend estimator
     // resets, so the FE display number should re-warm with it.
     if (event.phase !== phase) {
+      etaSmoother.reset()
       etaSecondsDisplay = null
       // Drop the scan throughput history when leaving the scanning phase
       // so a stale sample can't leak into the active phase readout.
@@ -364,10 +350,10 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     filesTotal = event.filesTotal
     bytesDone = event.bytesDone
     bytesTotal = event.bytesTotal
-    bytesPerSecond = event.bytesPerSecond ?? null
+    const readout = transferReadout(event)
+    bytesPerSecond = readout.bytesPerSecond
     filesPerSecond = event.filesPerSecond ?? null
-    etaSecondsRaw = event.etaSeconds ?? null
-    updateDisplayEta(etaSecondsRaw)
+    etaSecondsDisplay = etaSmoother.push(readout.etaSeconds)
 
     // Scanning-phase metadata (current dir, dirs tally, index-derived
     // expected totals, FE-computed throughput). Mirrors the waitingForScan

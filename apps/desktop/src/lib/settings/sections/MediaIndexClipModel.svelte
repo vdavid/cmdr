@@ -26,7 +26,7 @@
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { formatInteger } from '$lib/intl/number-format'
-    import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
+    import { formatByteSize } from '$lib/units'
     import { getSetting, getSettingDefinition, onSpecificSettingChange } from '$lib/settings'
     import { confirmDialog } from '$lib/utils/confirm-dialog'
     import {
@@ -101,7 +101,7 @@
     // message, so the number stays locale-formatted).
     const sizeText = $derived(status ? formatInteger(Math.round(status.downloadBytes / 1_000_000)) : '')
     // The reclaimable figure for the delete button + confirm, via the house size formatter.
-    const reclaimText = $derived(status ? formatFileSize(status.downloadBytes) : '')
+    const reclaimText = $derived(status ? formatByteSize(status.downloadBytes) : '')
 
     const unsupported = $derived(status !== null && !status.supported)
     const installed = $derived(status?.installed ?? false)

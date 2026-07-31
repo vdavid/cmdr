@@ -90,7 +90,7 @@ CLDR categories for `kn`: `one`, `other` (verified with `new Intl.PluralRules('k
 
 - **Quotation marks:** Kannada UI commonly uses English-style `"…"` (or `'…'`); a native reviewer settles house style.
 - **Numbers and dates come from the formatter layer.** Kannada has its own digit glyphs but Arabic digits are standard
-  in modern UI; `formatNumber()`/`formatBytes()` follow the locale. Never hardcode separators in a string.
+  in modern UI; `formatNumber()`/`formatByteSize()` follow the locale. Never hardcode separators in a string.
 - **Length and height.** Kannada renders with stacked vowel/consonant signs and can be taller; overflow-check both width
   and line-height against the pseudolocale (`en-XA`) and a Kannada font.
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every

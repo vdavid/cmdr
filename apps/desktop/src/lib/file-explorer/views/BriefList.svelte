@@ -36,7 +36,6 @@
     import { buildDirSizeTooltip, hasSizeMismatch } from './full-list-utils'
     import {
         getRowHeight,
-        formatFileSize,
         getSizeMismatchWarning,
         getStripedRows,
         getBriefColumnWidthMode,
@@ -55,6 +54,7 @@
     import { iconCacheCleared } from '$lib/icon-cache'
     import { escapeHtml, tooltip } from '$lib/tooltip/tooltip'
     import type { RenameState } from '../rename/rename-state.svelte'
+    import { formatByteSize } from '$lib/units'
 
     interface Props {
         listingId: string
@@ -808,7 +808,7 @@
             file.recursiveFileCount ?? 0,
             file.recursiveDirCount ?? 0,
             indexing,
-            formatFileSize,
+            formatByteSize,
             formatNumber,
             file.recursiveSizeComplete,
             file.recursiveSizeStale,

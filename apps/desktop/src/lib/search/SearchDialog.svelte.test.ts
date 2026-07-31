@@ -84,7 +84,6 @@ vi.mock('$lib/tauri-commands', () => ({
   parseSearchScope: vi.fn(() => Promise.resolve({ includePaths: [], excludePatterns: [] })),
   getSystemDirExcludes: vi.fn(() => Promise.resolve([])),
   onSearchIndexReady: vi.fn(() => Promise.resolve(() => {})),
-  formatBytes: vi.fn((n: number) => `${String(n)} B`),
   getRecentSearches: vi.fn(() => Promise.resolve([])),
   addRecentSearch: addRecentSearchMock,
   removeRecentSearch: vi.fn(() => Promise.resolve()),

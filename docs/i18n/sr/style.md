@@ -195,7 +195,7 @@ branches. There is **no `many`** category for Serbian, don't add one.
 - **Quotation marks: `„…“`** (low-opening, high-closing) is the standard Serbian form, in both scripts. The reference
   pile uses exactly this (`„%s“`) (verified against the reference pile, 2026-06-20). Avoid English `"…"`.
 - **Numbers and dates come from the formatter layer.** Serbian uses a comma decimal and a dot/space thousands separator;
-  `formatNumber()`/`formatBytes()` produce these from the locale. Never hardcode separators in a string.
+  `formatNumber()`/`formatByteSize()` produce these from the locale. Never hardcode separators in a string.
 - **Transliteration is mechanical but not blind.** When flipping a value between scripts, the Latin digraphs lj, nj, dž
   map to single Cyrillic letters (љ, њ, џ); a naive letter-by-letter swap breaks on those. If both scripts ship,
   generate one from the other with a real Serbian transliterator and spot-check the digraphs, don't hand-swap letters.

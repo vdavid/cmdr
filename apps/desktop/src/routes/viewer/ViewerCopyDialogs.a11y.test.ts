@@ -5,7 +5,6 @@ import ViewerCopyDialogs from './ViewerCopyDialogs.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
 vi.mock('$lib/tauri-commands', () => ({
-  formatBytes: (bytes: number) => `${String(bytes)} bytes`,
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
 }))

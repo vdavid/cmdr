@@ -7,7 +7,7 @@
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import { getSettingDefinition } from '$lib/settings'
     import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
-    import { unitLabel } from '$lib/settings/format-utils'
+    import { unitLabel } from '$lib/units'
     import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
 
     interface Props {

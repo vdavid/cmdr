@@ -17,8 +17,6 @@ import { expectNoA11yViolations } from '$lib/test-a11y'
 
 vi.mock('$lib/tauri-commands', () => ({
   cancelAiDownload: vi.fn(() => Promise.resolve()),
-  formatBytes: vi.fn((n: number) => `${String(n)} B`),
-  formatDuration: vi.fn((s: number) => `${String(s)}s`),
   getAiModelInfo: vi.fn(() => Promise.resolve({ sizeFormatted: '~2 GB' })),
   getAiStatus: vi.fn(() => Promise.resolve('available')),
   startAiDownload: vi.fn(() => Promise.resolve()),

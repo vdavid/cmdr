@@ -96,7 +96,7 @@ Write both branches.
   mix ZWJ and non-ZWJ forms of the same cluster) so string compares stay stable. Build this check when `si` is actually
   translated.
 - **Capitalization is moot** (no case in the script); see Decision points.
-- **Numbers and dates come from the formatter layer.** `formatNumber()`/`formatBytes()` produce locale-correct output;
+- **Numbers and dates come from the formatter layer.** `formatNumber()`/`formatByteSize()` produce locale-correct output;
   never hardcode separators. Sinhala uses Western (Arabic) digits in modern UI.
 - **Length / overflow.** Sinhala runs comparable to or modestly longer than English horizontally, but notably **taller
   per line** (stacked conjuncts, above/below matras). The real risk is vertical clipping and mid-cluster truncation, not

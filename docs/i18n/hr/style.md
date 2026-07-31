@@ -112,7 +112,7 @@ three. This is the Slavic one/few/other pattern (same as bs, sr).
 - **Quotation marks: `„…”`** (low-9 opening U+201E, high-9 closing U+201D) is the standard Croatian form; the guillemet
   form `»…«` also appears in print. Avoid straight ASCII `"` and English `"…"`.
 - **Numbers and dates come from the formatter layer.** Croatian uses a comma decimal and a dot/space thousands
-  separator; `formatNumber()`/`formatBytes()` produce these from the locale. Never hardcode separators in a string.
+  separator; `formatNumber()`/`formatByteSize()` produce these from the locale. Never hardcode separators in a string.
 - **Length.** Croatian runs somewhat longer than English (case endings), so overflow-check the layout against the
   pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every

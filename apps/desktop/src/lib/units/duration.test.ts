@@ -1,5 +1,27 @@
+/**
+ * Duration and file-rate formatting. Byte sizes and rates are in `byte-size.test.ts`.
+ */
 import { describe, it, expect } from 'vitest'
-import { formatFilesPerSecond } from './write-operations'
+import { formatDuration, formatFilesPerSecond, seconds } from './duration'
+
+describe('formatDuration', () => {
+  it('renders sub-minute durations in whole seconds', () => {
+    expect(formatDuration(seconds(0))).toBe('0s')
+    expect(formatDuration(seconds(45.4))).toBe('45s')
+    expect(formatDuration(seconds(59))).toBe('59s')
+  })
+
+  it('renders minutes with a seconds tail, dropping a zero tail', () => {
+    expect(formatDuration(seconds(60))).toBe('1m')
+    expect(formatDuration(seconds(492))).toBe('8m 12s')
+    expect(formatDuration(seconds(346))).toBe('5m 46s')
+  })
+
+  it('renders hours with a minutes tail, dropping a zero tail', () => {
+    expect(formatDuration(seconds(3600))).toBe('1h')
+    expect(formatDuration(seconds(3900))).toBe('1h 5m')
+  })
+})
 
 describe('formatFilesPerSecond', () => {
   describe('rates below 3 (1 decimal)', () => {

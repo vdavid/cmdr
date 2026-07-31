@@ -8,7 +8,7 @@
         onSettingChange,
         type SettingId,
         type SettingsValues,
-        formatDuration,
+        formatDurationSetting,
     } from '$lib/settings'
     import SettingsSection from '../components/SettingsSection.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
@@ -187,7 +187,7 @@ Timestamp: ${info.timestamp}
                     <div class="setting-default">
                         {tString('settings.advanced.defaultPrefix')}
                         {setting.type === 'duration'
-                            ? formatDuration(Number(setting.default))
+                            ? formatDurationSetting(Number(setting.default))
                             : String(setting.default)}
                         {#if modified}
                             <button

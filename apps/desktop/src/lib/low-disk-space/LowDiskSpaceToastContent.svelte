@@ -18,8 +18,7 @@
     import { onMount } from 'svelte'
     import { dismissToast } from '$lib/ui/toast'
     import Button from '$lib/ui/Button.svelte'
-    import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
-    import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
+    import { formatByteSize } from '$lib/units'
     import { onVolumeSpaceChanged } from '$lib/tauri-commands'
     import { setLowDiskSpaceNotificationsMode, openSettingsToLowDiskSpace } from './notifications-mode'
     import { getAppLogger } from '$lib/logging/logger'
@@ -43,7 +42,7 @@
     // Mirror the backend's `free_percent`: an unknown total reads as 100 (not low)
     // so a bogus fetch can't render a nonsense percentage.
     const freePercent = $derived(total === 0 ? 100 : (available / total) * 100)
-    const freeText = $derived(formatFileSizeWithFormat(available, getFileSizeFormat()))
+    const freeText = $derived(formatByteSize(available))
     const percentText = $derived(freePercent.toFixed(1))
 
     onMount(() => {

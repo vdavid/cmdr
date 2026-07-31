@@ -1,12 +1,14 @@
 /**
- * Formatting utilities for settings-based display.
- * These functions are pure and don't need reactive state.
+ * Date formatting for display, driven by the user's date/time settings.
+ * Pure: the reactive wrappers live in `reactive-settings.svelte.ts`.
+ *
+ * Sizes, transfer rates, and durations are NOT here — they live in
+ * `$lib/units`, the one place a byte count becomes text.
  */
 
-import type { DateTimeFormat, FileSizeFormat, FileSizeUnit } from './types'
+import type { DateTimeFormat } from './types'
 import { tierForYear, tierForMonth, tierForDay, tierForTime, type AgeTierClass } from './age-tier-utils'
 import { getLocale } from '$lib/intl/locale'
-import { getNumberFormatter } from '$lib/intl/number-format'
 
 /**
  * One rendered fragment of a formatted date. Components carry the age-tier
@@ -256,120 +258,4 @@ function systemLocaleSegments(date: Date, tiers: ComponentTiers): DateSegment[] 
     segments.push({ text: p.value, ageClass: ageClassForIntlPart(p.type, tiers) })
   }
   return segments
-}
-
-// ============================================================================
-// File Size Formatting
-// ============================================================================
-
-// Binary units (base 1024) - traditional computing units
-const binaryUnits = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB']
-
-// SI units (base 1000) - International System of Units
-const siUnits = ['bytes', 'kB', 'MB', 'GB', 'TB', 'PB']
-
-/**
- * The user-facing label for `kB`/`MB`/`GB` under the current
- * binary/SI base. Binary mode shows `KB` (uppercase), SI shows `kB`. `MB` and
- * `GB` are the same in both, but we route them through one helper so callers
- * never hand-pick the casing.
- */
-export function unitLabel(unit: 'kB' | 'MB' | 'GB', format: FileSizeFormat): string {
-  if (unit === 'kB') return format === 'binary' ? 'KB' : 'kB'
-  return unit
-}
-
-/**
- * Format bytes as a human-readable string.
- *
- * Without `forceUnit`, picks the friendliest unit per value (the "dynamic"
- * behavior). With `forceUnit` (`'kB'`/`'MB'`/`'GB'`), always renders in that
- * unit so sizes are apples-to-apples across a directory. The base (1024 vs
- * 1000) and the kilobyte label casing both come from `format`.
- *
- * `bytes` mode is not handled here — callers route raw-byte rendering through
- * `formatSizeTriads` for the colored triad treatment.
- *
- * @param bytes Number of bytes
- * @param format 'binary' uses 1024-based (KB/MB/GB), 'si' uses 1000-based (kB/MB/GB)
- * @param forceUnit Optional fixed unit to render in
- */
-export function formatFileSizeWithFormat(
-  bytes: number,
-  format: FileSizeFormat,
-  forceUnit?: 'kB' | 'MB' | 'GB',
-): string {
-  const base = format === 'binary' ? 1024 : 1000
-  const units = format === 'binary' ? binaryUnits : siUnits
-
-  if (forceUnit) {
-    const power = forceUnit === 'kB' ? 1 : forceUnit === 'MB' ? 2 : 3
-    const value = bytes / base ** power
-    return `${formatSizeDecimal(value)} ${unitLabel(forceUnit, format)}`
-  }
-
-  let value = bytes
-  let unitIndex = 0
-  while (value >= base && unitIndex < units.length - 1) {
-    value /= base
-    unitIndex++
-  }
-
-  // Sub-base values render as a bare integer (matching the old `String(value)`);
-  // anything scaled into kB+ shows two fraction digits.
-  const valueStr = unitIndex === 0 ? formatSizeInteger(value) : formatSizeDecimal(value)
-  return `${valueStr} ${units[unitIndex]}`
-}
-
-/**
- * Format the NUMERIC part of a human-friendly size with the active locale's
- * decimal separator (en-US `1.02`, de-DE `1,02`), two fraction digits, and NO
- * grouping. Grouping is suppressed so en-US stays byte-identical to the old
- * `toFixed(2)` (which never grouped); a forced-unit value like `10000.00 MB`
- * must not become `10,000.00 MB`. The value↔unit ASCII space is added by the
- * caller, never by Intl, so `colorizeSizeString`'s last-space parse survives.
- */
-function formatSizeDecimal(value: number): string {
-  return getNumberFormatter({
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-    useGrouping: false,
-  }).format(value)
-}
-
-/** Format an integer size value (bytes mode) with no grouping, matching the old `String(value)`. */
-function formatSizeInteger(value: number): string {
-  return getNumberFormatter({ maximumFractionDigits: 0, useGrouping: false }).format(value)
-}
-
-/**
- * Resolve a `FileSizeUnit` to the fixed unit token (or `null` for the dynamic
- * mode). Bytes mode also returns `null` here because the raw-byte path is not
- * a "human-friendly with forced unit" case; it goes through `formatSizeTriads`
- * upstream.
- */
-export function fixedUnitFor(unit: FileSizeUnit): 'kB' | 'MB' | 'GB' | null {
-  if (unit === 'kB' || unit === 'MB' || unit === 'GB') return unit
-  return null
-}
-
-/**
- * Magnitude tier of `bytes` under the chosen base — the tier dynamic mode
- * would settle on for this value. Returns an index into the canonical tier
- * order: 0=bytes, 1=kB/KB, 2=MB, 3=GB, 4=TB+ (TB and PB share the top tier).
- *
- * Forced-unit display modes use this so the tier color still tracks the
- * file's real size, even though the rendered label is fixed (a 349-byte file
- * shown as `"0.00 MB"` still gets the bytes-tier color, the same green a user
- * would expect from dynamic mode).
- */
-export function dynamicTierIndex(bytes: number, format: FileSizeFormat): number {
-  const base = format === 'binary' ? 1024 : 1000
-  let value = bytes
-  let tier = 0
-  while (value >= base && tier < 4) {
-    value /= base
-    tier++
-  }
-  return tier
 }

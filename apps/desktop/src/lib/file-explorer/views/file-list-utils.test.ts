@@ -35,6 +35,7 @@ vi.mock('$lib/ipc/bindings', () => ({
   commands: { enrichTags: vi.fn().mockResolvedValue({ status: 'ok', data: null }) },
 }))
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
+  getFileSizeFormat: () => 'binary',
   getUseAppIconsForDocuments: vi.fn().mockReturnValue(true),
 }))
 vi.mock('$lib/settings/settings-store', () => ({

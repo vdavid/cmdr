@@ -143,7 +143,7 @@ describe('query-ui recent-items parity (en)', () => {
     }
     expect(chipTooltip(entry, now)).toBe(
       'Filename · 1d ago\n' +
-        'size > 1.0 MB, after 2026-01-01, scope: /Users/me/Docs, case-sensitive, system dirs included\n' +
+        'size > 1.00 MB, after 2026-01-01, scope: /Users/me/Docs, case-sensitive, system dirs included\n' +
         '42 results last time',
     )
   })

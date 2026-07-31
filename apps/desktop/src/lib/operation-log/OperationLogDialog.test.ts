@@ -23,6 +23,7 @@ vi.mock('$lib/tauri-commands', () => ({
 
 // Avoid pulling the reactive-settings chain; a stable stamp is all the row needs.
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
+  getFileSizeFormat: () => 'binary',
   formatDateTime: () => '2026-07-09 12:00',
 }))
 

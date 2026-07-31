@@ -44,7 +44,7 @@ against the reference pile (`_ignored/i18n/sv/`) on 2026-06-20.
     but vendors localize the UI once for `sv` and let the number/date/currency formatter handle the regional split.
     Google, Spotify, and Netflix do the same: one Swedish UI, regional formatting from the locale.
   - Recommendation: ship one Swedish catalog targeting Sweden-Swedish. Finland-Swedish differences that matter to Cmdr
-    (currency, date, thousands separators) already come from `formatNumber()`/`formatBytes()`, not from catalog strings,
+    (currency, date, thousands separators) already come from `formatNumber()`/`formatByteSize()`, not from catalog strings,
     so a separate `sv-FI` catalog would duplicate near-identical text for no real gain. Tag the catalog `sv` (base) so
     it serves every Swedish region as the fallback.
   - Flag for David only if Cmdr ever wants a deliberately Finland-Swedish presence; otherwise this is settled.
@@ -165,7 +165,7 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
   ("(överskrivning!)"), never the imperative that would double as a command to the user ("(skriv över!)"). The
   underlying action verb (`skriv över`) is unchanged on buttons and menu items.
 - **Numbers and dates come from the formatter layer.** Swedish uses a comma decimal and space thousands separator (1
-  000), but `formatNumber()`/`formatBytes()` produce these from the locale: never hardcode separators in a string.
+  000), but `formatNumber()`/`formatByteSize()` produce these from the locale: never hardcode separators in a string.
 - **Length.** Swedish runs close to English in width, so overflow risk is lower than German, but still overflow-check
   the layout against the pseudolocale (`en-XA`).
 - Record any case-by-case rulings here so they aren't relitigated.

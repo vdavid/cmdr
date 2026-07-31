@@ -24,6 +24,7 @@ vi.mock('$lib/icon-cache', async () => {
 
 // Force the "Cmdr gold" app color on, so the recolor gate depends solely on iconId.
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
+  getFileSizeFormat: () => 'binary',
   getIsCmdrGold: () => true,
 }))
 

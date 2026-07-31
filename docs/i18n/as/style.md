@@ -91,7 +91,7 @@ requires both categories.
 
 - **Punctuation.** Assamese traditionally uses the danda `।` (U+0964) as a full stop for sentences, though modern UI
   often uses the Western period. Defer the exact convention to a native reviewer.
-- **Numbers and dates come from the formatter layer.** `formatNumber()`/`formatBytes()` produce locale-correct output
+- **Numbers and dates come from the formatter layer.** `formatNumber()`/`formatByteSize()` produce locale-correct output
   (Western digits for `as`). The Indian digit-grouping (lakh/crore, 1,00,000) is an `Intl` concern, not a string
   concern; never hardcode grouping. Verify the grouping with a reviewer.
 - **Length.** Indic conjuncts are compact per glyph but tall; length is a moderate risk - overflow-check against the

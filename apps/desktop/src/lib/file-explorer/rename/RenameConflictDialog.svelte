@@ -1,7 +1,7 @@
 <script lang="ts">
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
-    import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
+    import { formatByteSize } from '$lib/units'
     import DateLabel from '$lib/ui/DateLabel.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import type { ConflictFileInfo, RenameConflictResolution } from './rename-operations'
@@ -55,7 +55,7 @@
             <div class="file-card-body">
                 <div class="file-meta">
                     <span class="meta-label">{tString('fileExplorer.renameConflict.size')}</span>
-                    <span class="meta-value" class:newer={renamedIsLarger}>{formatFileSize(renamedFile.size)}</span>
+                    <span class="meta-value" class:newer={renamedIsLarger}>{formatByteSize(renamedFile.size)}</span>
                 </div>
                 <div class="file-meta">
                     <span class="meta-label">{tString('fileExplorer.renameConflict.modified')}</span>
@@ -71,7 +71,7 @@
                 <div class="file-meta">
                     <span class="meta-label">{tString('fileExplorer.renameConflict.size')}</span>
                     <span class="meta-value" class:newer={!renamedIsLarger && renamedFile.size !== existingFile.size}
-                        >{formatFileSize(existingFile.size)}</span
+                        >{formatByteSize(existingFile.size)}</span
                     >
                 </div>
                 <div class="file-meta">

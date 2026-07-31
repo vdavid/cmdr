@@ -35,7 +35,7 @@ export {
   densityMappings,
   durationUnitFactor,
   durationValueToMs,
-  formatDuration,
+  formatDurationSetting,
   msToDurationValue,
   SettingValidationError,
   VOLUME_TINT_COLORS,

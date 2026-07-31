@@ -6,6 +6,7 @@
 import type { HistoryEntry, HistoryMode } from '$lib/tauri-commands'
 import { tString } from '$lib/intl/messages.svelte'
 import { formatInteger } from '$lib/intl/number-format'
+import { formatByteSize } from '$lib/units'
 
 /** Short badge shown on each chip to signal the search mode. */
 export function modeBadge(mode: HistoryMode): string {
@@ -56,12 +57,12 @@ function sizeSummary(filters: HistoryEntry['filters']): string | null {
   if (!filters) return null
   if (filters.sizeMin != null && filters.sizeMax != null) {
     return tString('queryUi.recent.sizeRange', {
-      minText: formatBytes(filters.sizeMin),
-      maxText: formatBytes(filters.sizeMax),
+      minText: formatByteSize(filters.sizeMin),
+      maxText: formatByteSize(filters.sizeMax),
     })
   }
-  if (filters.sizeMin != null) return tString('queryUi.recent.sizeMin', { minText: formatBytes(filters.sizeMin) })
-  if (filters.sizeMax != null) return tString('queryUi.recent.sizeMax', { maxText: formatBytes(filters.sizeMax) })
+  if (filters.sizeMin != null) return tString('queryUi.recent.sizeMin', { minText: formatByteSize(filters.sizeMin) })
+  if (filters.sizeMax != null) return tString('queryUi.recent.sizeMax', { maxText: formatByteSize(filters.sizeMax) })
   return null
 }
 
@@ -90,13 +91,6 @@ export function filterSummary(entry: HistoryEntry): string {
   if (entry.caseSensitive) parts.push(tString('queryUi.recent.caseSensitive'))
   if (!entry.excludeSystemDirs) parts.push(tString('queryUi.recent.systemDirsIncluded'))
   return parts.join(', ')
-}
-
-function formatBytes(b: number): string {
-  if (b >= 1024 * 1024 * 1024) return `${(b / (1024 * 1024 * 1024)).toFixed(1)} GB`
-  if (b >= 1024 * 1024) return `${(b / (1024 * 1024)).toFixed(1)} MB`
-  if (b >= 1024) return `${(b / 1024).toFixed(1)} KB`
-  return `${String(b)} B`
 }
 
 /**

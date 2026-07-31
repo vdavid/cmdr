@@ -127,7 +127,7 @@ CLDR categories: `one`, `few`, `many`, `other` (verified with `new Intl.PluralRu
   German/Czech. Nested/secondary: **`»…«`** (guillemets pointing inward, not the French `«…»`). Avoid straight ASCII `"`
   and English `"…"`.
 - **Numbers and dates come from the formatter layer.** Slovak uses a comma decimal and space thousands separator (1
-  000); `formatNumber()`/`formatBytes()` produce these from the locale. Never hardcode separators in a string.
+  000); `formatNumber()`/`formatByteSize()` produce these from the locale. Never hardcode separators in a string.
 - **Length.** Slovak runs somewhat longer than English (case endings, longer compounds), so overflow-check the layout
   against the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every

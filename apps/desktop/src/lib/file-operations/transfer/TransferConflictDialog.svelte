@@ -4,7 +4,9 @@
     import Button from '$lib/ui/Button.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { tString } from '$lib/intl/messages.svelte'
-    import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
+    import { formatByteSize, dynamicTierIndex } from '$lib/units'
+    import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
+    import { sizeTierClasses } from '$lib/file-explorer/selection/selection-info-utils'
     import { formatDate } from '$lib/file-explorer/selection/selection-info-utils'
     import type { WriteConflictEvent } from '$lib/tauri-commands'
     import type { ConflictResolution } from '$lib/file-explorer/types'
@@ -31,13 +33,11 @@
     const { conflictEvent, isCopy, isMove, isSameVolumeMove, isCancelling, isResolvingConflict, onResolve, onCancel }: Props =
         $props()
 
-    /** Returns CSS class for size coloring based on bytes (kb/mb/gb/tb) */
+    /** Size-tier class for the "Existing" / "New" size cells. Tiers off the SAME
+     *  magnitude ladder the size column uses, so a size and its color agree and
+     *  both follow the user's binary/SI base. */
     function getSizeColorClass(bytes: number): string {
-        if (bytes < 1024) return 'size-bytes'
-        if (bytes < 1024 * 1024) return 'size-kb'
-        if (bytes < 1024 * 1024 * 1024) return 'size-mb'
-        if (bytes < 1024 * 1024 * 1024 * 1024) return 'size-gb'
-        return 'size-tb'
+        return sizeTierClasses[dynamicTierIndex(bytes, getFileSizeFormat())]
     }
 
     const ROLLBACK_UNAVAILABLE_TOOLTIP = $derived(
@@ -89,11 +89,11 @@
     const destSize = $derived(conflictEvent.destinationSize)
     const destSizeUnknown = $derived(destSize === null)
     const destSizeClass = $derived(destSize === null ? '' : getSizeColorClass(destSize))
-    const destSizeText = $derived(destSize === null ? '' : formatFileSize(destSize))
+    const destSizeText = $derived(destSize === null ? '' : formatByteSize(destSize))
     const srcSize = $derived(conflictEvent.sourceSize)
     const srcSizeUnknown = $derived(srcSize === null)
     const srcSizeClass = $derived(srcSize === null ? '' : getSizeColorClass(srcSize))
-    const srcSizeText = $derived(srcSize === null ? '' : formatFileSize(srcSize))
+    const srcSizeText = $derived(srcSize === null ? '' : formatByteSize(srcSize))
     const smallerDisabledTooltip = $derived(
         destSizeUnknown ? tString('fileOperations.transferProgress.smallerDisabledTooltip') : undefined,
     )

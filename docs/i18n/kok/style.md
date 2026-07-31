@@ -88,7 +88,7 @@ CLDR categories for `kok`: `one`, `other` (verified with `new Intl.PluralRules('
 
 - **Quotation marks:** Devanagari-Konkani UI commonly uses English-style `"…"`; a native reviewer settles house style.
 - **Numbers and dates come from the formatter layer.** Devanagari has its own digit glyphs but Arabic digits are
-  standard in modern UI; `formatNumber()`/`formatBytes()` follow the locale. Never hardcode separators in a string.
+  standard in modern UI; `formatNumber()`/`formatByteSize()` follow the locale. Never hardcode separators in a string.
 - **Length and height.** Devanagari can render taller (matras above/below the baseline); overflow-check both width and
   line-height against the pseudolocale (`en-XA`) and a Devanagari font.
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every

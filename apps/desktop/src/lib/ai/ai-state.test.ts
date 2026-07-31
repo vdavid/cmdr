@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { listen } from '@tauri-apps/api/event'
 
 vi.mock('$lib/tauri-commands', async () => {
-  const { formatBytes, formatDuration } = await import('$lib/tauri-commands/write-operations')
   const { listen: listenMock } = await import('@tauri-apps/api/event')
   // The typed `onAi*` wrappers route through `@tauri-apps/api/event`'s `listen`
   // under each event's wire name; mirror that here so the test's `listen`
@@ -16,8 +15,6 @@ vi.mock('$lib/tauri-commands', async () => {
         }) as unknown as () => void,
       )
   return {
-    formatBytes,
-    formatDuration,
     getAiStatus: vi.fn(),
     getAiModelInfo: vi.fn(),
     startAiDownload: vi.fn(),

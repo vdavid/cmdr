@@ -20,7 +20,6 @@ const { setArchivePassword, clearArchivePassword } = vi.hoisted(() => ({
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
-  formatBytes: (n: number) => `${String(n)} B`,
   refreshListing: vi.fn(() => Promise.resolve()),
   onDirectoryDiff: vi.fn(() => Promise.resolve(() => {})),
   findFileIndex: vi.fn(() => Promise.resolve(null)),

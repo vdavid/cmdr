@@ -752,12 +752,11 @@ decimal) and follows palette swaps via the `data-size-colors` attribute on `<htm
 Use this in Svelte templates: `<Size bytes={entry.size} />`. For HTML string contexts (tooltips, error messages, prose
 that goes through `{@html}`), use `colorizeSizeString(text)` from
 `$lib/file-explorer/selection/selection-info-utils.ts`: pass an already-formatted size string (for example, from
-`formatFileSizeWithFormat` or the legacy `formatBytes` in `$lib/tauri-commands`) and it wraps the value in the right
-tier span.
+`formatByteSize` in `$lib/units`) and it wraps the value in the right tier span.
 
 Free-space displays (volume picker, status bar, usage-bar tooltip, transfer-dialog destination info) intentionally DON'T
 tier-color the numbers — for "free space" big-is-good, and red GB would falsely signal "low space". They use the plain
-formatters from `disk-space-utils.ts` with `formatFileSizeWithFormat` for the inner formatter. The usage-bar itself
+formatters from `disk-space-utils.ts` with `$lib/units`'s `formatByteSize` for the inner formatter. The usage-bar itself
 stays color-coded (driven by `getDiskUsageLevel`, which is the right signal for free space).
 
 The `<Size>` component always renders the friendly dynamic form regardless of the user's `listing.sizeUnit` choice

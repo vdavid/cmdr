@@ -27,7 +27,6 @@ vi.mock('$lib/tauri-commands', () => ({
   parseSearchScope: vi.fn(() => Promise.resolve({ includePaths: [], excludePatterns: [] })),
   getSystemDirExcludes: vi.fn(() => Promise.resolve(['node_modules', 'target', '.git'])),
   onSearchIndexReady: vi.fn(() => Promise.resolve(() => {})),
-  formatBytes: vi.fn((n: number) => `${String(n)} B`),
 }))
 
 let aiProvider: 'off' | 'local' | 'cloud' = 'off'

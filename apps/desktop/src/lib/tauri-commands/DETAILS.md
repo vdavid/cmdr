@@ -22,7 +22,7 @@ commands, and notable non-obvious placements.
 - **`icons.ts`**: icon fetching (`getIcons`, `getCustomFolderIconIds`, `refreshDirectoryIcons`) and cache invalidation.
 - **`app-state.ts`**: MCP pane state, dialog open/close tracking, menu context, view settings, `showMainWindow`,
   child-window rect persistence (`get/setChildWindowRect`), `updateMenuAccelerator`.
-- **`write-operations.ts`**: copy/move/delete, conflict resolution, scan preview, `formatBytes` / `formatDuration`.
+- **`write-operations.ts`**: copy/move/delete, conflict resolution, scan preview. (Size/duration formatting moved to `$lib/units`.)
 - **`rename.ts`**: `checkRenamePermission`, `checkRenameValidity`, `renameFile`, `moveToTrash`.
 - **`storage.ts`**: `listVolumes`, `getVolumeSpace`, `watchVolumeSpace` / `unwatchVolumeSpace`, `ejectVolume`,
   `getBusyVolumeIds` (bootstrap for the eject-busy gate), `onVolumeContextAction`, `checkFullDiskAccess`,
@@ -103,7 +103,7 @@ destinations, or fingerprints. Each row also carries `RenameEvidence` (`RenameEv
 backend-verified reason for the name, mirroring Rust `RenameEvidence`. `detail` is model-authored, so render it as plain
 text only (`../ask-cmdr/DETAILS.md` § The "Why this name" column).
 
-- `formatBytes` and `formatDuration` are co-located in `write-operations.ts` with no IPC calls.
+- Size, rate, and duration formatting lives in `$lib/units`, not here: this module is IPC wrappers only.
 - `listen` and `UnlistenFn` from `@tauri-apps/api/event` are re-exported through `write-operations.ts`.
 - `getSyncStatus` and font metrics (`storeFontMetrics`, `hasFontMetrics`) live in `file-listing.ts` because they
   directly support file list rendering.

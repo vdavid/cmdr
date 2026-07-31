@@ -15,7 +15,6 @@ import { expectNoA11yViolations } from '$lib/test-a11y'
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
-  formatBytes: vi.fn((n: number) => `${String(n)} B`),
 }))
 
 describe('TransferErrorDialog a11y', () => {

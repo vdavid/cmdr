@@ -48,7 +48,6 @@ vi.mock('$lib/tauri-commands', () => ({
   removeRecentSelection: vi.fn(() => Promise.resolve()),
   getRecentSelections: getRecentMock,
   showFileContextMenu: vi.fn(() => Promise.resolve()),
-  formatBytes: vi.fn((n: number) => `${String(n)} B`),
   trackEvent: vi.fn(() => Promise.resolve()),
 }))
 

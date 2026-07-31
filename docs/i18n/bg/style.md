@@ -104,7 +104,7 @@ requires both categories.
 - **Quotation marks: `„…"`** (low-9 opening U+201E, high-6 closing U+201C), the standard Bulgarian form (same shape as
   German/Czech). Avoid straight ASCII `"` and English `"…"`.
 - **Numbers and dates come from the formatter layer.** Bulgarian uses a comma decimal and a space thousands separator (1
-  000,5); `formatNumber()`/`formatBytes()` produce these. Never hardcode separators in a string.
+  000,5); `formatNumber()`/`formatByteSize()` produce these. Never hardcode separators in a string.
 - **Length.** Bulgarian runs somewhat longer than English; overflow-check against the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
   `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in `docs/guides/i18n-translation.md` and

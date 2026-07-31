@@ -22,7 +22,6 @@ vi.mock('$lib/icon-cache', async () => {
 })
 
 vi.mock('$lib/tauri-commands', () => ({
-  formatBytes: (n: number) => `${String(n)} B`,
 }))
 
 const CHAR_PX = 10

@@ -39,6 +39,7 @@ vi.mock('$lib/indexing', () => ({
 // own controls are overridden. Mock it so both sides of the gate are testable.
 let masterIndexingEnabled = true
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
+  getFileSizeFormat: () => 'binary',
   getDriveIndexingEnabled: () => masterIndexingEnabled,
 }))
 

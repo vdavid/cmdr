@@ -17,7 +17,6 @@ import type { WriteOperationError } from '$lib/file-explorer/types'
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
-  formatBytes: vi.fn((n: number) => `${String(n)} B`),
   openExternalUrl: vi.fn(() => Promise.resolve()),
   openSystemSettingsUrl: vi.fn(() => Promise.resolve()),
 }))

@@ -547,7 +547,13 @@ export function durationValueToMs(value: number, unit: DurationUnit | undefined)
   return value * durationUnitFactor(unit)
 }
 
-export function formatDuration(ms: number): string {
+/**
+ * Render a duration SETTING's stored milliseconds for the settings UI
+ * ("500ms", "20s", "5min"). Not the display formatter for ETAs and elapsed
+ * time — that's `formatDuration(seconds)` in `$lib/units`.
+ */
+// eslint-disable-next-line cmdr/no-private-unit-format -- renders a duration SETTING's stored ms in the settings UI ("500ms"/"5min"); the display formatter is `formatDuration` in `$lib/units`
+export function formatDurationSetting(ms: number): string {
   if (ms < 1000) return ms.toString() + 'ms'
   if (ms < 60000) return (ms / 1000).toString() + 's'
   if (ms < 3600000) return (ms / 60000).toString() + 'min'

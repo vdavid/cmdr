@@ -14,6 +14,7 @@ import type { VolumeEnrichActivity } from '$lib/indexing/media-enrich-state.svel
 let masterEnabled = true
 let activity: VolumeEnrichActivity | undefined
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
+  getFileSizeFormat: () => 'binary',
   getMediaIndexEnabled: () => masterEnabled,
 }))
 vi.mock('$lib/indexing/media-enrich-state.svelte', () => ({

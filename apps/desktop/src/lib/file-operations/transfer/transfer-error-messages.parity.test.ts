@@ -20,22 +20,22 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getUserFriendlyMessage } from './transfer-error-messages'
 import type { FriendlyErrorMessage } from './transfer-error-messages'
 import type { WriteOperationError, TransferOperationType } from '$lib/file-explorer/types'
-import { formatBytes } from '$lib/tauri-commands'
 import { colorizeSizeString } from '$lib/file-explorer/selection/selection-info-utils'
+import { formatByteSize } from '$lib/units'
 
 // The insufficient_space message interpolates colorized, formatted sizes. Those
 // helpers are NOT part of the migrated copy (only the template moved), so derive
 // the expected interpolations from them rather than hardcoding their HTML.
 const REQUIRED = 1073741824
 const AVAILABLE = 536870912
-const requiredSize = colorizeSizeString(formatBytes(REQUIRED))
-const availableSize = colorizeSizeString(formatBytes(AVAILABLE))
+const requiredSize = colorizeSizeString(formatByteSize(REQUIRED))
+const availableSize = colorizeSizeString(formatByteSize(AVAILABLE))
 
 // files_too_large_for_filesystem also interpolates colorized, formatted sizes.
 const FAT_MAX = 4294967295
 const BIG_FILE = 5368709120
-const fatMaxSize = colorizeSizeString(formatBytes(FAT_MAX))
-const bigFileSize = colorizeSizeString(formatBytes(BIG_FILE))
+const fatMaxSize = colorizeSizeString(formatByteSize(FAT_MAX))
+const bigFileSize = colorizeSizeString(formatByteSize(BIG_FILE))
 
 // `trash_not_supported` interpolates the live `file.deletePermanently` binding.
 // Pin it so the suggestion is deterministic across platforms.
@@ -253,7 +253,7 @@ const cases: Case[] = [
     error: { type: 'insufficient_space', required: REQUIRED, available: AVAILABLE, volumeName: null },
     expected: {
       title: 'Not enough space',
-      // The size HTML comes from colorizeSizeString(formatBytes(...)); the
+      // The size HTML comes from colorizeSizeString(formatByteSize(...)); the
       // template text around it is the migrated copy this pins.
       message: `The destination needs ${requiredSize} but only has ${availableSize} available.`,
       suggestion:

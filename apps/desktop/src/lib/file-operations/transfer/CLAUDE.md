@@ -21,11 +21,11 @@ contract).
 ## Must-knows
 
 - **One transfer entry seam.** F5/F6, drag-and-drop, and paste all prepare through `pane/transfer-entry.ts`
-  (`checkTransferDestinationGuard` + `resolveSourceVolumeId`). The destination-guard copy is the E2E-asserted contract:
-  don't reword it. `resolveSourceVolumeId` NEVER returns a knowingly-wrong id (falls back to `root`). The paste path's
+  (`checkTransferDestinationGuard` + `resolveSourceVolumeId`). The destination-guard copy is an E2E-asserted contract;
+  don't reword it. `resolveSourceVolumeId` never returns a knowingly-wrong id (falls back to `root`). The paste path's
   MTP refusal stays SEPARATE and BEFORE the shared guard.
-- **Always use batch IPC for selection lookups** (`get_paths_at_indices` / `get_files_at_indices`, one call). Never loop
-  `getFileAt` per-index: with 50k files that's 5-10 s vs ~1 ms.
+- **Always use batch IPC for selection lookups** (`get_paths_at_indices` / `get_files_at_indices`, one call), never a
+  per-index `getFileAt` loop: with 50k files that's 5-10 s vs ~1 ms.
 - **Rollback is DISABLED for same-volume moves** (`isSameVolumeMove`: source and dest the SAME non-default volume; the
   backend rename-merges server-side with no rollback). Both Rollback affordances disable (tooltip "Rollback is not
   available for same-volume moves"); plain Cancel stays reachable. `DEFAULT_VOLUME_ID` is excluded (local→local keeps a
@@ -33,6 +33,9 @@ contract).
 - **Same-volume move skips the deep scan preview** (zero-byte server-side rename). The `DEFAULT_VOLUME_ID` exclusion is
   load-bearing (local→local keeps a live scan). The cheap conflict check stays running so merge info + policy radios
   still appear. DETAILS § "Same-volume move skips the deep scan preview".
+- **Speed and ETA are backend-owned, SHARED with the Transfers window**, via
+  `apps/desktop/src/lib/file-operations/progress-readout.ts` + `$lib/units`. ❌ No second instantaneous rate here;
+  `ScanThroughput` is the SCAN phase only.
 - **Rollback / Cancel buttons disable during the settle window.** `TransferProgressDialog` holds open for
   `MIN_DISPLAY_MS = 400 ms` after `write-complete`; a click then hits an already-removed op and falsely flashes "Rolling
   back...". Gate on `disabled={isCancelling || operationSettled}`.
@@ -42,18 +45,18 @@ contract).
   (`pane/dialog-state.svelte.ts`) shows `ArchivePasswordDialog` and re-dispatches on unlock. Don't route it into the
   generic dialog. DETAILS § "Archive-password prompt".
 - **Source pane refresh.** Move refreshes BOTH panes (source files gone); copy only the destination.
-- **Flushing phase** (`phase: 'flushing'`): title shows "Writing the last piece..." (exact copy) — the backend's closing
-  `fdatasync`, a real multi-second pause on slow media. Don't let the bar sit frozen at 100%.
-- **`data-scan-state` on `.scan-stats`** (`counting` | `done` | `skipped`) is the race-free "counting done" signal E2E
-  polls, and the only one: there's no completion checkmark. `DeleteDialog` mirrors it. Don't remove it.
-- **Compress is the third mode** (`operationType: 'compress'`, packs sources into a NEW zip): swaps the conflict-policy
-  UI for a dest-exists overwrite check, and its auto-confirm (MCP) path must NEVER silently overwrite an existing target
-  — `handleConfirm` keeps the dialog open. DETAILS § "Compress mode".
-- **MTP move is interleaved copy + delete per file** (not copy-all-then-delete-all): on partial failure only the current
-  file is in both places; Rollback hidden during the delete phase.
+- **Flushing phase** (`phase: 'flushing'`): title shows "Writing the last piece..." (exact copy), the backend's
+  closing `fdatasync` — a real multi-second pause on slow media. Don't let the bar sit frozen at 100%.
+- **`data-scan-state` on `.scan-stats`** (`counting` | `done` | `skipped`) is the only race-free "counting done"
+  signal E2E has. `DeleteDialog` mirrors it. Don't remove it.
+- **Compress is the third mode** (`operationType: 'compress'`, packs sources into a NEW zip): swaps the
+  conflict-policy UI for a dest-exists overwrite check, and its auto-confirm (MCP) path must NEVER silently overwrite
+  an existing target. DETAILS § "Compress mode".
+- **MTP move interleaves copy + delete per file**, so on partial failure only the current file is in both places;
+  Rollback hides during the delete phase.
 - **Progress-dialog Pause/Queue** (full flow in DETAILS). Pause/Resume + the "Paused" title follow the
-  `operations-changed` snapshot status, never `is_running`. Queue + the dialog-scoped F2 are FRONTEND-ONLY: set
-  `backgrounded`, open the queue window, unmount via `onQueue` without cancelling. `backgrounded` also makes `onDestroy`
-  skip its safety-net cancel — don't break that gate.
+  `operations-changed` snapshot status, never `is_running`. Queue and the dialog-scoped F2 are FRONTEND-ONLY: set
+  `backgrounded`, open the queue window, unmount via `onQueue` without cancelling. `backgrounded` also makes
+  `onDestroy` skip its safety-net cancel; don't break that gate.
 
 Architecture, flows, and decisions: `DETAILS.md`. Read before non-trivial work here.

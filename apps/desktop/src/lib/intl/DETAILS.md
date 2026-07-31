@@ -138,7 +138,7 @@ would have preserved the en-US look but left counts (comma) and byte sizes (thin
 same incoherence German users would get. The commit is isolated and revertible on its own if the always-thin-space look
 is preferred (in which case `formatNumber` arguably should match it).
 
-Human-friendly sizes (`formatFileSizeWithFormat`) use `useGrouping: false`, so en-US stays byte-identical there: the old
+Human-friendly sizes (`formatFileSizeWithFormat`, in `$lib/units`) use `useGrouping: false`, so en-US stays byte-identical there: the old
 `toFixed(2)`/`String(value)` never grouped, and a forced-unit `10000.00 MB` must not become `10,000.00 MB`. Only the
 decimal separator localizes (`1.02 MB` → `1,02 MB`).
 

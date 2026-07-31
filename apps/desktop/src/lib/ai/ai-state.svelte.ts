@@ -1,22 +1,19 @@
-import {
-  cancelAiDownload,
-  formatBytes,
-  formatDuration,
-  getAiModelInfo,
-  getAiStatus,
-  isE2eMode,
-  onAiDownloadProgress,
-  onAiInstallComplete,
-  onAiInstalling,
-  onAiServerReady,
-  onAiStarting,
-  type AiDownloadProgress,
-  type AiModelInfo,
-  type AiStatus,
-} from '$lib/tauri-commands'
+import { cancelAiDownload,
+    getAiModelInfo,
+    getAiStatus,
+    isE2eMode,
+    onAiDownloadProgress,
+    onAiInstallComplete,
+    onAiInstalling,
+    onAiServerReady,
+    onAiStarting,
+    type AiDownloadProgress,
+    type AiModelInfo,
+    type AiStatus } from '$lib/tauri-commands'
 import { getSetting } from '$lib/settings'
 import { colorizeSizeString } from '$lib/file-explorer/selection/selection-info-utils'
 import { tString } from '$lib/intl/messages.svelte'
+import { formatByteSize, formatDuration, seconds } from '$lib/units'
 
 /**
  * The AI toast's lifecycle now only tracks the runtime install pipeline: download → install →
@@ -145,10 +142,10 @@ function updateNotificationFromStatus(status: AiStatus): void {
 function formatProgressText(progress: AiDownloadProgress): string {
   if (progress.totalBytes === 0) return tString('ai.toast.startingDownload')
   const percent = Math.round((progress.bytesDownloaded / progress.totalBytes) * 100)
-  const downloaded = colorizeSizeString(formatBytes(progress.bytesDownloaded))
-  const total = colorizeSizeString(formatBytes(progress.totalBytes))
-  const speed = colorizeSizeString(formatBytes(progress.speed))
-  const eta = progress.etaSeconds > 0 ? formatDuration(progress.etaSeconds) : ''
+  const downloaded = colorizeSizeString(formatByteSize(progress.bytesDownloaded))
+  const total = colorizeSizeString(formatByteSize(progress.totalBytes))
+  const speed = colorizeSizeString(formatByteSize(progress.speed))
+  const eta = progress.etaSeconds > 0 ? formatDuration(seconds(progress.etaSeconds)) : ''
   return tString('ai.toast.progress', {
     percentText: `${String(percent)}%`,
     downloaded,

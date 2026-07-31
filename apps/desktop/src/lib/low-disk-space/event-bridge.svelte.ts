@@ -27,8 +27,7 @@ import { sendNotification } from '@tauri-apps/plugin-notification'
 import { addToast, dismissToast } from '$lib/ui/toast'
 import { getAppLogger } from '$lib/logging/logger'
 import { ensureMacosNotificationPermission } from '$lib/notifications/macos-notification-permission'
-import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
-import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
+import { formatByteSize } from '$lib/units'
 import { onLowDiskSpace } from '$lib/tauri-commands'
 import { tString } from '$lib/intl/messages.svelte'
 import type { LowDiskSpacePayload } from '$lib/ipc/bindings'
@@ -98,7 +97,7 @@ async function dispatchMacosNotification(payload: LowDiskSpacePayload): Promise<
   const ok = await ensureMacosNotificationPermission()
   if (!ok) return
 
-  const freeText = formatFileSizeWithFormat(payload.availableBytes, getFileSizeFormat())
+  const freeText = formatByteSize(payload.availableBytes)
   const percentText = payload.freePercent.toFixed(1)
   try {
     sendNotification({

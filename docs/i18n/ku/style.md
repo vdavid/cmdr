@@ -91,7 +91,7 @@ catalog declares `nplurals=2; plural=(n != 1)` (verified 2026-06-20), which agre
 - **Dotless/dotted i.** Kurmanji (like Turkish) distinguishes `i`/`î` and casing them is locale-sensitive; rely on
   locale-aware casing, never a blind `toUpperCase()`.
 - **Quotation marks:** Kurmanji UI commonly uses `«…»` or English `"…"`; a native reviewer settles house style.
-- **Numbers and dates come from the formatter layer.** `formatNumber()`/`formatBytes()` follow the locale; never
+- **Numbers and dates come from the formatter layer.** `formatNumber()`/`formatByteSize()` follow the locale; never
   hardcode separators in a string.
 - **Length.** Kurmanji runs roughly English-length or a bit longer; overflow-check against the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every

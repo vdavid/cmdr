@@ -9,8 +9,8 @@
 <script lang="ts">
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
-    import { formatBytes } from '$lib/tauri-commands'
     import { tString } from '$lib/intl/messages.svelte'
+    import { formatByteSize } from '$lib/units'
 
     interface Props {
         /**
@@ -46,7 +46,7 @@
             {#if bytes === -1}
                 {tString('viewer.copyDialog.confirmTitleUnknown')}
             {:else}
-                {tString('viewer.copyDialog.confirmTitleKnown', { size: formatBytes(bytes) })}
+                {tString('viewer.copyDialog.confirmTitleKnown', { size: formatByteSize(bytes) })}
             {/if}
         {/snippet}
         <p class="copy-dialog-body">{tString('viewer.copyDialog.confirmBody')}</p>
@@ -67,7 +67,7 @@
         containerStyle="max-width: 480px"
     >
         {#snippet title()}
-            {tString('viewer.copyDialog.confirmTitleKnown', { size: formatBytes(bytes) })}
+            {tString('viewer.copyDialog.confirmTitleKnown', { size: formatByteSize(bytes) })}
         {/snippet}
         <p class="copy-dialog-body">
             {tString('viewer.copyDialog.refuseBody')}

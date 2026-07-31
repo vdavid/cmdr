@@ -20,6 +20,8 @@
  */
 
 import type { SearchResultEntry, PatternType, SearchQuery, HistoryFilters } from '$lib/tauri-commands'
+import { baseFor } from '$lib/units'
+import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
 export type { PatternType }
 
 /**
@@ -90,7 +92,9 @@ import { deriveEnterAction, type LastDialogEvent, type EnterAction } from './ent
 export { deriveEnterAction, type LastDialogEvent, type EnterAction }
 
 /**
- * Converts size input + unit to bytes. Returns `undefined` if empty or invalid. A value of
+ * Converts size input + unit to bytes, using the user's binary/SI base so the
+ * math agrees with the `KB` / `kB` label the popover shows. Returns `undefined`
+ * if empty or invalid. A value of
  * exactly `0` is honored (the user explicitly picked 0 bytes from the D10 grid preset and
  * the engine should pin the lower / upper bound to zero rather than silently skip the
  * filter).
@@ -98,13 +102,9 @@ export { deriveEnterAction, type LastDialogEvent, type EnterAction }
 export function parseSizeToBytes(value: string, unit: SizeUnit): number | undefined {
   const num = parseFloat(value)
   if (isNaN(num) || num < 0) return undefined
-  const multipliers: Record<SizeUnit, number> = {
-    B: 1,
-    KB: 1024,
-    MB: 1024 * 1024,
-    GB: 1024 * 1024 * 1024,
-  }
-  return Math.round(num * multipliers[unit])
+  const base = baseFor(getFileSizeFormat())
+  const power: Record<SizeUnit, number> = { B: 0, KB: 1, MB: 2, GB: 3 }
+  return Math.round(num * base ** power[unit])
 }
 
 /** Converts ISO date string to unix timestamp (seconds). Returns undefined if empty/invalid. */
@@ -117,21 +117,18 @@ export function parseDateToTimestamp(value: string): number | undefined {
 }
 
 /**
- * Picks the friendliest size unit + value pair for a given byte count. Used by history
- * appliers to restore size filters in a human-readable form.
+ * Picks the friendliest size unit + value pair for a given byte count, under the
+ * user's binary/SI base. Used by history appliers to restore size filters in a
+ * human-readable form.
  */
 export function bytesToSize(bytes: number): { value: string; unit: SizeUnit } {
-  if (bytes >= 1024 * 1024 * 1024) {
-    return { value: String(Math.round((bytes / (1024 * 1024 * 1024)) * 100) / 100), unit: 'GB' }
-  }
-  if (bytes >= 1024 * 1024) {
-    return { value: String(Math.round((bytes / (1024 * 1024)) * 100) / 100), unit: 'MB' }
-  }
+  const base = baseFor(getFileSizeFormat())
+  const round2 = (n: number) => String(Math.round(n * 100) / 100)
+  if (bytes >= base ** 3) return { value: round2(bytes / base ** 3), unit: 'GB' }
+  if (bytes >= base ** 2) return { value: round2(bytes / base ** 2), unit: 'MB' }
   // Sub-kilobyte bounds read as raw bytes ("= 0 B", "512 B") rather than a fractional "0.5 KB".
-  if (bytes < 1024) {
-    return { value: String(bytes), unit: 'B' }
-  }
-  return { value: String(Math.round((bytes / 1024) * 100) / 100), unit: 'KB' }
+  if (bytes < base) return { value: String(bytes), unit: 'B' }
+  return { value: round2(bytes / base), unit: 'KB' }
 }
 
 /**

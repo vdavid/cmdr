@@ -3,7 +3,7 @@
  *
  * Column headers + results list with multiple states. We pass plain
  * props for each state (unavailable, index-loading, searching, empty,
- * populated) and stub icon-cache + Tauri `formatBytes` which the
+ * populated) and stub icon-cache + Tauri command wrappers which the
  * component uses directly.
  */
 
@@ -22,7 +22,6 @@ vi.mock('$lib/icon-cache', async () => {
 })
 
 vi.mock('$lib/tauri-commands', () => ({
-  formatBytes: (n: number) => `${String(n)} B`,
 }))
 
 const defaultProps = {

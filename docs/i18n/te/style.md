@@ -138,7 +138,7 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('te')`, 202
 - **No title case; Telugu has no letter case.** The script is unicameral, so the app's sentence-case rule is moot for
   Telugu text; just keep Latin brand words (Cmdr, macOS) as-is.
 - **Numbers and dates come from the formatter layer.** Telugu (te-IN) uses the Indian digit-grouping system (1,00,000,
-  the lakh/crore grouping) and a period decimal; `formatNumber()` / `formatBytes()` produce these from the locale. Never
+  the lakh/crore grouping) and a period decimal; `formatNumber()` / `formatByteSize()` produce these from the locale. Never
   hardcode separators or assume thousands-grouping.
 - **Quotation marks:** standard double quotes "…"; no special pair needed.
 - Record any case-by-case rulings here so they aren't relitigated.

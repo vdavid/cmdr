@@ -37,6 +37,7 @@ import noRawKeyMatch from './eslint-plugins/no-raw-key-match.js'
 import noRawLucideImport from './eslint-plugins/no-raw-lucide-import.js'
 import noRawArkImport from './eslint-plugins/no-raw-ark-import.js'
 import noRawLocaleFormat from './eslint-plugins/no-raw-locale-format.js'
+import noPrivateUnitFormat from './eslint-plugins/no-private-unit-format.js'
 import noRawUserFacingString from './eslint-plugins/no-raw-user-facing-string.js'
 import dialogNeedsFocusTrap from './eslint-plugins/dialog-needs-focus-trap.js'
 import preferUiPrimitive from './eslint-plugins/prefer-ui-primitive.js'
@@ -270,6 +271,7 @@ export default tseslint.config(
           'no-raw-lucide-import': noRawLucideImport,
           'no-raw-ark-import': noRawArkImport,
           'no-raw-locale-format': noRawLocaleFormat,
+          'no-private-unit-format': noPrivateUnitFormat,
           'no-raw-user-facing-string': noRawUserFacingString,
           'dialog-needs-focus-trap': dialogNeedsFocusTrap,
           'prefer-ui-primitive': preferUiPrimitive,
@@ -302,6 +304,13 @@ export default tseslint.config(
       // formatter. Turned OFF for `*.test.ts` below (tests legitimately
       // construct `Intl.NumberFormat`/`DateTimeFormat` to compute expecteds).
       'cmdr/no-raw-locale-format': 'error',
+      // One place turns a byte count, a transfer rate, or a duration into text:
+      // `$lib/units` (plus `<Size>` for the colored inline form). Four private
+      // byte formatters once drifted apart, each hardcoding base 1024 while
+      // labelling the result "KB"/"MB"/"GB", which is how two windows came to
+      // show different numbers for the same transfer. Turned OFF for `*.test.ts`
+      // below (fixtures legitimately spell out `1024 * 1024`).
+      'cmdr/no-private-unit-format': 'error',
       // No hardcoded user-facing strings in migrated areas: route copy through
       // the i18n catalog (`t()`/`<Trans>`). Scoped to a closed sink set AND an
       // area allowlist inside the rule (each migrated area widens it). Turned
@@ -363,6 +372,8 @@ export default tseslint.config(
       'cmdr/no-raw-locale-format': 'off',
       // Tests use literal copy for fixtures and assertions, on purpose.
       'cmdr/no-raw-user-facing-string': 'off',
+      // Fixtures legitimately spell out `1024 * 1024` to build expected values.
+      'cmdr/no-private-unit-format': 'off',
     },
   },
 )

@@ -89,7 +89,7 @@ phrase what happened and the next step (Hindi has neutral framings around `рдирд
   2026-06-20); Microsoft, Google, and the rest follow. `high`.
 - **Recommendation:** use Arabic numerals everywhere in Cmdr. `Intl.NumberFormat('hi')` produces Arabic digits by
   default. Hindi (hi-IN) uses the Indian digit-grouping system (1,00,000, the lakh/crore grouping) with a period
-  decimal; `formatNumber()` / `formatBytes()` produce these from the locale. Never hardcode separators or assume
+  decimal; `formatNumber()` / `formatByteSize()` produce these from the locale. Never hardcode separators or assume
   thousands-grouping.
 
 ## Terminology and glossary

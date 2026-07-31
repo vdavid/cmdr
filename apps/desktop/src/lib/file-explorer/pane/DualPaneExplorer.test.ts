@@ -89,7 +89,6 @@ vi.mock('$lib/tauri-commands', () => ({
   refreshListing: vi.fn().mockResolvedValue({ data: null, timedOut: false }),
   DEFAULT_VOLUME_ID: 'root',
   getE2eStartPath: vi.fn().mockResolvedValue(null),
-  formatBytes: vi.fn().mockReturnValue('0 B'),
   getFileAt: vi.fn().mockResolvedValue(null),
   updateFocusedPane: vi.fn().mockResolvedValue(undefined),
   findFileIndex: vi.fn().mockResolvedValue(null),

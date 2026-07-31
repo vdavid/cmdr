@@ -5,7 +5,7 @@
  * `WriteOperationError`, and for the `files_too_large_for_filesystem` (FAT32
  * 4 GiB cap) variant it additionally lists the offending files and an "and N
  * more" line when the backend capped the list. These tests render the real
- * component (real i18n catalog + `formatBytes`) across those branches.
+ * component (real i18n catalog + `$lib/units`) across those branches.
  */
 
 import { describe, expect, it } from 'vitest'
@@ -45,7 +45,7 @@ describe('FallbackErrorContent', () => {
     const items = target.querySelectorAll('.oversized-files li')
     expect(items).toHaveLength(1)
     expect(items[0].querySelector('.file-name')?.textContent).toBe('movie.mkv')
-    expect(items[0].querySelector('.file-size')?.textContent).toContain('5.0 GB')
+    expect(items[0].querySelector('.file-size')?.textContent).toContain('5.00 GB')
     // One file exactly: nothing is hidden, so no "and N more" line.
     expect(target.querySelector('.oversized-more')).toBeNull()
   })

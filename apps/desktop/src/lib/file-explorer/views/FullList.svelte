@@ -45,7 +45,6 @@
         getIconSize,
         getIsCompactDensity,
         formattedDate,
-        formatFileSize,
         getSizeDisplayMode,
         getSizeMismatchWarning,
         getStripedRows,
@@ -60,6 +59,7 @@
     import { tString } from '$lib/intl/messages.svelte'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import type { RenameState } from '../rename/rename-state.svelte'
+    import { formatByteSize } from '$lib/units'
 
     interface Props {
         listingId: string
@@ -718,12 +718,12 @@
                                         file.recursiveFileCount ?? 0,
                                         file.recursiveDirCount ?? 0,
                                         isDirSizeUpdating(indexing, file.recursiveSizePending),
-                                        formatFileSize,
+                                        formatByteSize,
                                         formatNumber,
                                         file.recursiveSizeComplete,
                                         file.recursiveSizeStale,
                                     )
-                                  : buildFileSizeTooltip(file.size, file.physicalSize, formatFileSize)}
+                                  : buildFileSizeTooltip(file.size, file.physicalSize, formatByteSize)}
                         >
                             {#if sizeOverride.override !== undefined}
                                 <span class="size-text">{sizeOverride.override}</span>
@@ -769,7 +769,7 @@
                                             file.recursiveFileCount ?? 0,
                                             file.recursiveDirCount ?? 0,
                                             dirUpdating,
-                                            formatFileSize,
+                                            formatByteSize,
                                             formatNumber,
                                             file.recursiveSizeComplete,
                                             file.recursiveSizeStale,

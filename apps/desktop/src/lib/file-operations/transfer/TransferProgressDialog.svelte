@@ -1,11 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte'
-    import {
-        formatDuration,
-        formatFilesPerSecond,
-        DEFAULT_VOLUME_ID,
-        type Initiator,
-    } from '$lib/tauri-commands'
+    import { DEFAULT_VOLUME_ID,
+    type Initiator } from '$lib/tauri-commands'
     import type {
         TransferOperationType,
         WriteOperationPhase,
@@ -32,6 +28,7 @@
     import Trans from '$lib/intl/Trans.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import type { MessageKey } from '$lib/intl/keys.gen'
+    import { formatDuration, formatFilesPerSecond } from '$lib/units'
 
     interface Props {
         operationType: TransferOperationType

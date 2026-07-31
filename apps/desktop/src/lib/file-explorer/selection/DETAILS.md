@@ -13,7 +13,7 @@ Depth for the status-bar / header components. `CLAUDE.md` holds the must-knows.
   tier-tagged span (or one per digit triad in bytes mode). Tier color tracks the underlying byte magnitude in every mode
   via `dynamicTierIndex(bytes, format)` from `format-utils.ts`. The kilobyte label casing (`kB` vs `KB`) follows
   `format`.
-- `tierClassForUnit(unit)`: maps the unit suffix from `formatFileSizeWithFormat` (`bytes`, `KB`/`kB`, `MB`, `GB`, `TB`,
+- `tierClassForUnit(unit)`: maps the unit suffix from `$lib/units`'s `formatFileSizeWithFormat` (`bytes`, `KB`/`kB`, `MB`, `GB`, `TB`,
   `PB`) to one of `sizeTierClasses`. TB and PB cap at `size-tb`.
 - `formatDate(timestamp)`: Unix seconds → `"YYYY-MM-DD HH:MM:SS"` local time.
 - `buildDateTooltip(entry, formatter)`: returns `{ html }`. Each timestamp is rendered via the `formatter` callback (the
@@ -159,7 +159,8 @@ same caret — so `measure-column-widths.ts`'s `HEADER_CHROME_*` constants still
 - `../types`: `FileEntry`, `SortColumn`, `SortOrder`.
 - `../views/full-list-utils`: `measureDateColumnWidth`.
 - `$lib/icon-cache`: `getCachedIcon`, `iconCacheVersion`.
-- `$lib/settings/reactive-settings.svelte`: `formatFileSize`, `formatDateTime`.
+- `$lib/units`: `formatByteSize`, `formatFileSizeWithFormat`, `fixedUnitFor`, `dynamicTierIndex`.
+- `$lib/settings/reactive-settings.svelte`: `formatDateTime`.
 - `$lib/indexing/index-state.svelte`: `isVolumeScanning`, `isVolumeAggregating` (keyed on the pane's `volumeId`).
 
 ## Image-index overlay (`FileIcon.svelte`, top-right)

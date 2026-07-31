@@ -31,7 +31,8 @@ vi.mock('$lib/tauri-commands', () => ({
   mediaIndexDeleteClipModel: vi.fn(),
 }))
 
-vi.mock('$lib/settings/reactive-settings.svelte', () => ({ formatFileSize: (b: number) => `${String(b)}B` }))
+vi.mock('$lib/settings/reactive-settings.svelte', () => ({
+  getFileSizeFormat: () => 'binary', formatFileSize: (b: number) => `${String(b)}B` }))
 
 const { default: MediaIndexClipModel } = await import('./MediaIndexClipModel.svelte')
 

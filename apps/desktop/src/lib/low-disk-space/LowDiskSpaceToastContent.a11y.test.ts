@@ -15,8 +15,9 @@ vi.mock('$lib/tauri-commands', () => ({
   onVolumeSpaceChanged: vi.fn(() => Promise.resolve(() => {})),
 }))
 
-vi.mock('$lib/settings/format-utils', () => ({
-  formatFileSizeWithFormat: (bytes: number) => `${String(bytes)} B`,
+vi.mock('$lib/units', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('$lib/units')>()),
+  formatByteSize: (bytes: number) => `${String(bytes)} B`,
 }))
 
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({

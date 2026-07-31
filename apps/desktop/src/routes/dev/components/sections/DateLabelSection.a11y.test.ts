@@ -11,6 +11,7 @@ import DateLabelSection from './DateLabelSection.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
+  getFileSizeFormat: () => 'binary',
   formattedDate: (t: number | null | undefined) =>
     t
       ? {

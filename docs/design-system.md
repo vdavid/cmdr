@@ -795,7 +795,7 @@ widths (`width: 500px`, not `min-width/max-width`) to prevent layout jitter.
 
 **Number formatting**: Use `formatNumber()` from `selection-info-utils` for all user-facing counts (file counts, dir
 counts, item counts). Raw numbers like `194667` are hard to read; always display as `194,667`. Byte values use
-`formatBytes()` / `formatFileSize()` which already handle this. Use `font-variant-numeric: tabular-nums` on numeric
+`$lib/units`'s `formatByteSize()`, which already handles this. Use `font-variant-numeric: tabular-nums` on numeric
 displays so digits don't shift as values update.
 
 ### Notifications/toasts (app)

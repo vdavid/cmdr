@@ -109,7 +109,7 @@ labels keep the acronym alone.
 
 CLDR categories for `so`: `one`, `other` (run `new Intl.PluralRules('so').resolvedOptions().pluralCategories` to confirm
 against the shipped ICU). Write both branches. Numbers and dates come from the formatter layer (`formatNumber()` /
-`formatBytes()`); never hardcode separators in a string.
+`formatByteSize()`); never hardcode separators in a string.
 
 ## Notes and decisions
 

@@ -92,7 +92,7 @@ both categories.
 - **Quotation marks: `«…»`** (guillemets are the common Azerbaijani form), with `„…"` also seen. Confirm with a native
   reviewer; avoid straight ASCII `"`.
 - **Numbers and dates come from the formatter layer.** Azerbaijani uses a comma decimal and a period/space thousands
-  separator; `formatNumber()`/`formatBytes()` produce locale-correct output. Never hardcode separators.
+  separator; `formatNumber()`/`formatByteSize()` produce locale-correct output. Never hardcode separators.
 - **Casing trap.** The dotted/dotless i (i/ı, İ/I) makes naive uppercase/lowercase wrong; never transform case in a
   string by hand, and verify any code-level casing uses Azerbaijani locale rules.
 - **Length.** Agglutinative suffixing makes some strings longer; overflow-check against the pseudolocale (`en-XA`).

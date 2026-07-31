@@ -73,9 +73,9 @@ export function getPathValidationError(
  * The byte formatter is injected so this stays pure and testable; the dialog
  * passes the user's configured size format via `formatFileSizeWithFormat`.
  */
-export function formatSpaceInfo(space: VolumeSpaceInfo | null, formatBytes: (bytes: number) => string): string {
+export function formatSpaceInfo(space: VolumeSpaceInfo | null, formatSize: (bytes: number) => string): string {
   if (!space) return ''
-  const free = formatBytes(space.availableBytes)
-  const total = formatBytes(space.totalBytes)
+  const free = formatSize(space.availableBytes)
+  const total = formatSize(space.totalBytes)
   return tString('fileOperations.transferDialog.spaceInfo', { free, total })
 }

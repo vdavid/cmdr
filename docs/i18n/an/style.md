@@ -82,7 +82,7 @@ Romance singular/plural. The `desktop-i18n-plural` check requires both categorie
 
 - **Quotation marks: `«…»`** (guillemets, the Spanish/Romance convention). Avoid straight ASCII `"`.
 - **Numbers and dates come from the formatter layer.** Aragonese (Spain) uses a comma decimal and period/space thousands
-  separator; `formatNumber()`/`formatBytes()` produce locale-correct output. Never hardcode separators.
+  separator; `formatNumber()`/`formatByteSize()` produce locale-correct output. Never hardcode separators.
 - **Length.** Romance text runs longer than English; overflow-check against the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
   `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in `docs/guides/i18n-translation.md` and

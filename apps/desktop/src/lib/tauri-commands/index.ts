@@ -241,9 +241,6 @@ export {
   onWriteSettled,
   onWriteConflict,
   onWriteSourceItemDone,
-  formatBytes,
-  formatDuration,
-  formatFilesPerSecond,
 } from './write-operations'
 export type { Event, UnlistenFn } from './write-operations'
 

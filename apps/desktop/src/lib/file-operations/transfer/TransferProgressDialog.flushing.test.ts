@@ -49,9 +49,6 @@ vi.mock('$lib/tauri-commands', () => ({
   resumeOperation: vi.fn(() => Promise.resolve()),
   onOperationsChanged: vi.fn(() => Promise.resolve(() => {})),
   listOperations: vi.fn(() => Promise.resolve([])),
-  formatBytes: vi.fn((n: number) => `${String(n)} B`),
-  formatDuration: vi.fn((s: number) => `${String(s)}s`),
-  formatFilesPerSecond: vi.fn((r: number) => `${String(r)} files/s`),
   DEFAULT_VOLUME_ID: 'root',
 }))
 

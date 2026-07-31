@@ -14,7 +14,6 @@ import type { WriteOperationError } from '$lib/file-explorer/types'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
 vi.mock('$lib/tauri-commands', () => ({
-  formatBytes: vi.fn((n: number) => `${String(n)} B`),
 }))
 
 function mountFallback(error: WriteOperationError, operationType: 'copy' | 'move' | 'delete' | 'trash' = 'copy') {

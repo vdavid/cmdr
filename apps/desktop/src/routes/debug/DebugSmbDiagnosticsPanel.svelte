@@ -5,6 +5,7 @@
     import Checkbox from '$lib/ui/Checkbox.svelte'
     import Select, { type SelectItem } from '$lib/ui/Select.svelte'
     import { formatInteger } from '$lib/intl/number-format'
+    import { formatByteSize } from '$lib/units'
 
     type Loadable = 'idle' | 'loading' | 'ready' | 'error'
 
@@ -115,16 +116,9 @@
         await poll()
     }
 
+    /** Wire counters and negotiated limits, in the user's chosen base. */
     function fmtBytes(n: number): string {
-        if (n < 1024) return `${String(n)} B`
-        const units = ['KiB', 'MiB', 'GiB', 'TiB']
-        let v = n / 1024
-        let i = 0
-        while (v >= 1024 && i < units.length - 1) {
-            v /= 1024
-            i++
-        }
-        return `${v.toFixed(1)} ${units[i] ?? 'TiB'}`
+        return formatByteSize(n)
     }
 
     function fmtNum(n: number): string {

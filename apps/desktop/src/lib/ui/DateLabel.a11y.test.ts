@@ -4,6 +4,7 @@ import DateLabel from './DateLabel.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
+  getFileSizeFormat: () => 'binary',
   formattedDate: (t: number | undefined) =>
     t
       ? {

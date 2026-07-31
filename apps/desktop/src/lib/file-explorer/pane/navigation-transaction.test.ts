@@ -116,7 +116,6 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => {
     refreshListing: vi.fn().mockResolvedValue({ data: null, timedOut: false }),
     DEFAULT_VOLUME_ID: 'root',
     getE2eStartPath: vi.fn().mockResolvedValue(null),
-    formatBytes: vi.fn().mockReturnValue('0 B'),
     updateFocusedPane: vi.fn().mockResolvedValue(undefined),
     resortListing: vi.fn().mockResolvedValue({}),
     listNetworkHosts: vi.fn().mockResolvedValue([]),

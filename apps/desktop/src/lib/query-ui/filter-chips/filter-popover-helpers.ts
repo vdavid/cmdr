@@ -13,6 +13,7 @@
 import type { FileSizeFormat } from '$lib/settings/types'
 import { getLocale } from '$lib/intl/locale'
 import { tString } from '$lib/intl/messages.svelte'
+import { unitLabel } from '$lib/units'
 
 // ── Size column 2: numeric presets ────────────────────────────────────────────────────────
 //
@@ -36,8 +37,10 @@ export function byteUnitLabel(value: string): string {
   return value === '1' ? tString('queryUi.size.unit.byte') : tString('queryUi.size.unit.bytes')
 }
 
+/** The kilobyte label for the size popover. Delegates to `$lib/units` so the
+ *  popover, the chips, and the file list can't disagree on the casing. */
 export function kiloByteLabel(format: FileSizeFormat): 'KB' | 'kB' {
-  return format === 'si' ? 'kB' : 'KB'
+  return unitLabel('kB', format) as 'KB' | 'kB'
 }
 
 /**

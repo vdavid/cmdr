@@ -55,8 +55,8 @@ describe('getUserFriendlyMessage', () => {
       const result = getUserFriendlyMessage(error)
 
       expect(result.title).toBe('Not enough space')
-      expect(result.message).toContain('1.0 GB')
-      expect(result.message).toContain('512.0 MB')
+      expect(result.message).toContain('1.00 GB')
+      expect(result.message).toContain('512.00 MB')
     })
 
     it('returns user-friendly message for same_location error', () => {
@@ -306,8 +306,8 @@ describe('getTechnicalDetails', () => {
     }
     const result = getTechnicalDetails(error)
 
-    expect(result).toContain('Required: 1.0 GB')
-    expect(result).toContain('Available: 512.0 MB')
+    expect(result).toContain('Required: 1.00 GB')
+    expect(result).toContain('Available: 512.00 MB')
     expect(result).toContain('Volume: Test Volume')
   })
 

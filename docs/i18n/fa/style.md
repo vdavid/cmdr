@@ -173,7 +173,7 @@ forms.
 - **Quotation marks: `«…»`** (guillemets, U+00AB/U+00BB), the standard Persian form, and they keep their visual
   direction under RTL (the "opening" guillemet still faces into the quoted text). Avoid straight ASCII `"` and English
   `"…"`.
-- **Numbers and dates come from the formatter layer.** `formatNumber()`/`formatBytes()` with the `fa` locale produce
+- **Numbers and dates come from the formatter layer.** `formatNumber()`/`formatByteSize()` with the `fa` locale produce
   Persian digits and the locale's separators; never hardcode. (See the numerals decision point for the
   Persian-vs-Western audience call.) Calendar: Iran uses the Solar Hijri (Jalali) calendar, if Cmdr ever shows
   human-facing dates, that's a separate decision to flag, not just a format swap.

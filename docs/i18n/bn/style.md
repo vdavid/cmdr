@@ -103,7 +103,7 @@ phrase what happened and the next step (Bengali has neutral framings around `ক
   (web-evidenced; users have even requested native-numeral support, confirming the default is Arabic). `high`.
 - **Recommendation:** use Arabic numerals everywhere in Cmdr; `Intl.NumberFormat('bn')` produces Western digits by
   default. Bengali uses the Indian digit-grouping system (10,00,000, the lakh/crore grouping) with a period decimal;
-  `formatNumber()` / `formatBytes()` produce these from the locale. Never hardcode separators or assume thousands-
+  `formatNumber()` / `formatByteSize()` produce these from the locale. Never hardcode separators or assume thousands-
   grouping.
 
 ## Terminology and glossary

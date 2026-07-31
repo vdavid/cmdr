@@ -5,13 +5,8 @@
 
 import type { FileEntry } from '../types'
 import type { FileSizeFormat, FileSizeUnit } from '$lib/settings/types'
-import {
-  formatFileSizeWithFormat,
-  fixedUnitFor,
-  dynamicTierIndex,
-  type DateSegment,
-  type FormattedDate,
-} from '$lib/settings/format-utils'
+import { formatFileSizeWithFormat, fixedUnitFor, dynamicTierIndex } from '$lib/units/byte-size'
+import type { DateSegment, FormattedDate } from '$lib/settings/format-utils'
 import { formatInteger, getGroupSeparator } from '$lib/intl/number-format'
 import { tString } from '$lib/intl/messages.svelte'
 
@@ -99,8 +94,8 @@ export function formatSizeForDisplay(
 
 /**
  * Wraps an already-formatted size string (e.g. `"1.02 MB"`, `"512 bytes"`) in a colored span
- * based on its unit suffix. Use when the value comes from a foreign formatter (like the legacy
- * `formatBytes` in `tauri-commands`) and you just need tier coloring on top, without re-formatting.
+ * based on its unit suffix. Use when the value comes from `$lib/units`
+ * (`formatByteSize` / `formatByteRate`) and you just need tier coloring on top, without re-formatting.
  */
 export function colorizeSizeString(text: string): string {
   const spaceIndex = text.lastIndexOf(' ')

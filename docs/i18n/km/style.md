@@ -99,7 +99,7 @@ string needs one.
 - **Quotation marks:** Khmer commonly uses the French-style guillemets `«…»` or English `"…"` depending on house style;
   a native reviewer settles which. Avoid mixing.
 - **Numbers and dates come from the formatter layer.** Khmer has its own digit glyphs (០-៩) but Arabic digits are also
-  widely used in UI; `formatNumber()`/`formatBytes()` follow the locale. A visible space or ":" separates date/time
+  widely used in UI; `formatNumber()`/`formatByteSize()` follow the locale. A visible space or ":" separates date/time
   parts. Never hardcode separators in a string.
 - **Length and height.** Khmer can run longer and renders taller (stacked signs); overflow-check both width and
   line-height against the pseudolocale (`en-XA`) and a Khmer font.

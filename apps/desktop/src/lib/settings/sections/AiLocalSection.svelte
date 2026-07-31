@@ -7,30 +7,28 @@
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
-    import {
-        getAiRuntimeStatus,
-        stopAiServer,
-        startAiServer,
-        startAiDownload,
-        cancelAiDownload,
-        uninstallAi,
-        formatBytes,
-        getSystemMemoryInfo,
-        onAiServerReady,
-        onAiExtracting,
-        onAiDownloadProgress,
-        onAiVerifying,
-        onAiInstalling,
-        onAiInstallComplete,
-        onAiStarting,
-        type AiRuntimeStatus,
-        type AiDownloadProgress,
-        type SystemMemoryInfo,
-    } from '$lib/tauri-commands'
+    import { getAiRuntimeStatus,
+    stopAiServer,
+    startAiServer,
+    startAiDownload,
+    cancelAiDownload,
+    uninstallAi,
+    getSystemMemoryInfo,
+    onAiServerReady,
+    onAiExtracting,
+    onAiDownloadProgress,
+    onAiVerifying,
+    onAiInstalling,
+    onAiInstallComplete,
+    onAiStarting,
+    type AiRuntimeStatus,
+    type AiDownloadProgress,
+    type SystemMemoryInfo } from '$lib/tauri-commands'
     import { computeGaugeSegments } from './ram-gauge-utils'
     import { getAppLogger } from '$lib/logging/logger'
     import { colorizeSizeString } from '$lib/file-explorer/selection/selection-info-utils'
     import { t, tString } from '$lib/intl/messages.svelte'
+    import { formatByteSize } from '$lib/units'
 
     interface Props {
         searchQuery: string
@@ -299,9 +297,9 @@
     const downloadProgressText = $derived.by(() => {
         if (!downloadProgress) return ''
         if (downloadProgress.totalBytes === 0) return tString('ai.local.startingDownload')
-        const downloaded = colorizeSizeString(formatBytes(downloadProgress.bytesDownloaded))
-        const total = colorizeSizeString(formatBytes(downloadProgress.totalBytes))
-        const speed = colorizeSizeString(formatBytes(downloadProgress.speed))
+        const downloaded = colorizeSizeString(formatByteSize(downloadProgress.bytesDownloaded))
+        const total = colorizeSizeString(formatByteSize(downloadProgress.totalBytes))
+        const speed = colorizeSizeString(formatByteSize(downloadProgress.speed))
         const eta = formatEta(downloadProgress.etaSeconds)
         const parts = [`${String(downloadPercent)}%`, `${downloaded} / ${total}`, `${speed}/s`]
         if (eta) parts.push(eta)
@@ -334,14 +332,15 @@
         return tString('ai.local.etaHours', { value: String(Math.round(seconds / 3600)) })
     }
 
-    function formatMemoryEstimate(bytes: number): string {
-        const gb = bytes / (1024 * 1024 * 1024)
-        return `~${gb.toFixed(1)} GB`
+    /** RAM readouts pin the unit to GB so the gauge's segments stay comparable;
+     *  the base still follows the user's binary/SI setting. */
+    function formatMemoryGb(bytes: number): string {
+        return formatByteSize(bytes, 'GB')
     }
 
-    function formatMemoryGb(bytes: number): string {
-        const gb = bytes / (1024 * 1024 * 1024)
-        return `${gb.toFixed(1)} GB`
+    /** The projected-usage line reads as an estimate, hence the tilde. */
+    function formatMemoryEstimate(bytes: number): string {
+        return `~${formatMemoryGb(bytes)}`
     }
 </script>
 
@@ -353,7 +352,7 @@
             <div class="progress-bar-container">
                 <div class="progress-bar-fill" style="width: {String(downloadPercent)}%"></div>
             </div>
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -- Markup built from formatBytes + tier classes; no user input. -->
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -- Markup built from formatByteSize + tier classes; no user input. -->
             <span class="progress-text">{@html downloadProgressText}</span>
         {/if}
     {:else if modelInstalled}

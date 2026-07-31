@@ -15,15 +15,14 @@
  * (`<field>.${operationType}`), so each language phrases each operation
  * naturally. See `$lib/intl`'s docs.
  */
-
 import type { WriteOperationError, TransferOperationType, FriendlyError } from '$lib/file-explorer/types'
-import { formatBytes } from '$lib/tauri-commands'
 import { isMacOS } from '$lib/shortcuts/key-capture'
 import { getEffectiveShortcuts, toDisplayShortcut } from '$lib/shortcuts'
 import { colorizeSizeString } from '$lib/file-explorer/selection/selection-info-utils'
 import { escapeHtml } from '$lib/tooltip/tooltip'
 import { getMessage } from '$lib/intl/messages.svelte'
 import type { MessageKey } from '$lib/intl/keys.gen'
+import { formatByteSize } from '$lib/units'
 
 /** Substitutes `{token}` placeholders in a catalog value with runtime strings. */
 function interpolate(template: string, params: Record<string, string> = {}): string {
@@ -195,14 +194,14 @@ export function getErrorDisplayMeta(error: WriteOperationError): ErrorDisplayMet
 function tooLargeForFilesystemMessage(
   error: Extract<WriteOperationError, { type: 'files_too_large_for_filesystem' }>,
 ): FriendlyErrorMessage {
-  const maxSize = colorizeSizeString(formatBytes(error.maxSize))
+  const maxSize = colorizeSizeString(formatByteSize(error.maxSize))
   if (error.totalCount === 1) {
     const file = error.files[0]
     return {
       title: w('filesTooLargeForFilesystem.title.one'),
       message: w('filesTooLargeForFilesystem.message.one', {
         name: escapeHtml(file.name),
-        size: colorizeSizeString(formatBytes(file.size)),
+        size: colorizeSizeString(formatByteSize(file.size)),
         maxSize,
       }),
       suggestion: w('filesTooLargeForFilesystem.suggestion'),
@@ -246,8 +245,8 @@ export function getUserFriendlyMessage(
       return {
         title: w('insufficientSpace.title'),
         message: w('insufficientSpace.message', {
-          required: colorizeSizeString(formatBytes(error.required)),
-          available: colorizeSizeString(formatBytes(error.available)),
+          required: colorizeSizeString(formatByteSize(error.required)),
+          available: colorizeSizeString(formatByteSize(error.available)),
         }),
         suggestion: w('insufficientSpace.suggestion'),
       }
@@ -325,18 +324,18 @@ export function getTechnicalDetails(error: WriteOperationError): string {
     lines.push(`Path: ${error.path}`)
     if (error.message) lines.push(`Details: ${error.message}`)
   } else if (error.type === 'insufficient_space') {
-    lines.push(`Required: ${formatBytes(error.required)}`)
-    lines.push(`Available: ${formatBytes(error.available)}`)
+    lines.push(`Required: ${formatByteSize(error.required)}`)
+    lines.push(`Available: ${formatByteSize(error.available)}`)
     if (error.volumeName) lines.push(`Volume: ${error.volumeName}`)
   } else if (error.type === 'destination_inside_source') {
     lines.push(`Source: ${error.source}`)
     lines.push(`Destination: ${error.destination}`)
   } else if (error.type === 'files_too_large_for_filesystem') {
     lines.push(`Filesystem: ${error.filesystem}`)
-    lines.push(`Max file size: ${formatBytes(error.maxSize)}`)
+    lines.push(`Max file size: ${formatByteSize(error.maxSize)}`)
     lines.push(`Files over the limit: ${String(error.totalCount)}`)
     for (const file of error.files) {
-      lines.push(`  ${file.name} (${formatBytes(file.size)})`)
+      lines.push(`  ${file.name} (${formatByteSize(file.size)})`)
     }
   } else if (error.type === 'cancelled') {
     if (error.message) lines.push(`Details: ${error.message}`)

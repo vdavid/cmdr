@@ -143,7 +143,7 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
 - **Quotation marks: `„…”`** (low opening, high closing) is the standard Hungarian form. macOS Finder uses it too (e.g.
   „^0”). Avoid English `"…"`.
 - **Numbers and dates come from the formatter layer.** Hungarian uses a comma decimal and space thousands separator, and
-  a native `YYYY. MM. DD.` date order; `formatNumber()`/`formatBytes()`/the date formatters produce these from the
+  a native `YYYY. MM. DD.` date order; `formatNumber()`/`formatByteSize()`/the date formatters produce these from the
   locale. Never hardcode separators or date order in a string.
 - **Length** runs near English; still overflow-check against the pseudolocale (`en-XA`).
 - Record case-by-case rulings here so they aren't relitigated.

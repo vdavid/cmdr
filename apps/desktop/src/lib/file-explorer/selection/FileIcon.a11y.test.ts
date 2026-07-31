@@ -21,6 +21,7 @@ vi.mock('$lib/icon-cache', async () => {
 })
 
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
+  getFileSizeFormat: () => 'binary',
   getIsCmdrGold: () => false,
 }))
 

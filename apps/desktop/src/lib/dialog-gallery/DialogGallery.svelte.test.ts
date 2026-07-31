@@ -53,7 +53,6 @@ vi.mock('$lib/tauri-commands', () => ({
   resolveGoToPath: vi.fn(() => Promise.resolve({ status: 'ok', data: { kind: 'directory' } })),
   readClipboardText: vi.fn(() => Promise.resolve(null)),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
-  formatBytes: vi.fn((n: number) => `${String(n)} B`),
   openExternalUrl: vi.fn(() => Promise.resolve()),
   markCommercialReminderDismissed: vi.fn(() => Promise.resolve()),
   markExpirationModalShown: vi.fn(() => Promise.resolve()),

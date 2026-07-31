@@ -96,7 +96,7 @@ falls into `other`. The `desktop-i18n-plural` check requires both categories.
   uses spaces), the full stop `።` (arat netib), and comma `፣`. Modern software commonly mixes Ethiopic and Western
   punctuation; defer the exact convention to a native reviewer, but the sentence-ending `።` is expected for full
   sentences.
-- **Numbers and dates come from the formatter layer.** `formatNumber()`/`formatBytes()` produce locale-correct output
+- **Numbers and dates come from the formatter layer.** `formatNumber()`/`formatByteSize()` produce locale-correct output
   (Western digits for `am`). Note Ethiopia uses its own calendar; date display from `Intl` may need a reviewer's eye,
   but Cmdr's formatter layer owns this, not the strings.
 - **Length.** Ethiopic is fairly compact per character; length is a low risk, but still overflow-check against the

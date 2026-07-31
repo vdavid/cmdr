@@ -103,7 +103,7 @@ The East-Slavic pattern (same shape as Russian/Ukrainian):
 - **Quotation marks: `«…»`** (guillemets, the standard East-Slavic form, same as Russian). Nested: `„…"`. Avoid straight
   ASCII `"`.
 - **Numbers and dates come from the formatter layer.** Belarusian uses a comma decimal and space thousands separator (1
-  000,5); `formatNumber()`/`formatBytes()` produce these. Never hardcode separators in a string.
+  000,5); `formatNumber()`/`formatByteSize()` produce these. Never hardcode separators in a string.
 - **Length.** Belarusian runs somewhat longer than English; overflow-check against the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
   `{placeholder}` and `<tag>` verbatim. Belarusian uses an apostrophe-like character (the separating sign, often typed
