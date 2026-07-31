@@ -222,8 +222,9 @@ impl OperationProbe {
     }
 
     /// The whole in-flight table as log lines. This is the record the incident
-    /// needed and did not have.
-    fn render_dump(&self, reason: &str) -> String {
+    /// needed and did not have. The watchdog prints it on a stall; the driver
+    /// prints it when it abandons tasks that wouldn't wind down after a cancel.
+    pub(super) fn render_dump(&self, reason: &str) -> String {
         let tasks = self.tasks.lock_ignore_poison();
         let driver = DriverPhase::from_u8(self.driver_phase.load(Ordering::Relaxed));
         let intent = match load_intent(&self.state.intent) {

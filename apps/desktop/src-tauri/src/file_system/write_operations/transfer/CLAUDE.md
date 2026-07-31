@@ -65,6 +65,12 @@ Shared `WriteOperationState`, `OperationIntent`, cancel/rollback, ETA, and settl
   (`supports_foreground_yield_as_destination()`, SMB uploads) is **HARD-CAPPED**: it holds an open SMB write handle, so
   it must resume before the server reaps it. ❌ MTP never opts in here. DETAILS § "Foreground auto-yield".
 
+- **The concurrent driver observes cancel/rollback ON ITS AWAIT, not only in the spawn loop.** A driver parked on
+  `in_flight.next()` never returns to the spawn loop's `is_cancelled` check, which is why Rollback did nothing in the
+  2026-07-31 wedge. It now races that await against `state.backend_cancel` (fires on every transition out of
+  `Running`), then drains the window under a bounded `CANCEL_DRAIN_DEADLINE` and ABANDONS whatever hasn't wound down,
+  logging the probe dump. ❌ Don't turn that back into an unbounded wait: one wedged task must never be able to hold the
+  user's dialog open. Abandoned handles are left for the backend to reap.
 - **A parked transfer is invisible to a stack sample, so every phase must announce itself** (`transfer_probe.rs`). The
   driver and its tasks park on `.await`, so no thread carries a transfer frame; a 20-minute production wedge left only
   a task's spawn and stream-open in the log. Every phase transition (`OpeningSource`, `Streaming`, the three park

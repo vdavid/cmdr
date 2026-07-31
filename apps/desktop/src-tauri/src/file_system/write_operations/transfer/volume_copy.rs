@@ -58,6 +58,30 @@ pub(crate) use super::volume_transfer_error::WriteFailure;
 pub(in crate::file_system::write_operations) use super::volume_transfer_error::map_volume_error;
 use super::volume_transfer_error::write_error_event_from;
 
+/// How long a cancelled or rolled-back operation waits for its in-flight copy
+/// tasks to wind down before abandoning them.
+///
+/// A healthy task observes the cancel within one chunk, so this only ever elapses
+/// for one wedged in a backend call that is never going to return. When it does,
+/// getting the user unstuck wins: the alternative is the 2026-07-31 outcome,
+/// where the only way out of a stalled transfer was force-quitting the app. An
+/// abandoned task's open handle is left to the server to reap (SMB does, on its
+/// own idle timeout), and its staged partial is swept — or, if the wedged handle
+/// blocks even that, left under a recognizable `.cmdr-tmp-*` name.
+///
+/// Deliberately generous: nothing healthy should ever reach it, so hitting it is
+/// news, and it is logged as such.
+const CANCEL_DRAIN_DEADLINE: Duration = Duration::from_secs(15);
+
+/// The drain deadline in force, honoring a test override.
+fn cancel_drain_deadline() -> Duration {
+    #[cfg(test)]
+    if let Some(d) = wedge_test_support::cancel_drain_override() {
+        return d;
+    }
+    CANCEL_DRAIN_DEADLINE
+}
+
 /// Per-call future shape for the driver's `dest_meta_fetcher` closure.
 type FetchFut<'a> = Pin<Box<dyn Future<Output = Option<u64>> + Send + 'a>>;
 
@@ -841,6 +865,10 @@ pub(crate) async fn copy_volumes_with_progress(
         // just a local lambda in shape, but we inline below for borrow clarity.
 
         let mut iter = source_paths.iter().enumerate();
+        // Set once the driver has SEEN the user's cancel / rollback: from then on
+        // it stops waiting indefinitely for its tasks and gives them a bounded
+        // window to wind down. See `CANCEL_DRAIN_DEADLINE`.
+        let mut drain_deadline: Option<tokio::time::Instant> = None;
         loop {
             // Keep pushing new tasks until either sources run out or the window is full.
             while in_flight.len() < concurrency {
@@ -1184,7 +1212,57 @@ pub(crate) async fn copy_volumes_with_progress(
             if let Some(probe) = op_probe.as_ref() {
                 probe.set_driver_phase(super::transfer_probe::DriverPhase::AwaitingTasks, "");
             }
-            match in_flight.next().await {
+
+            // Observing the user's intent HERE is what makes Cancel and Rollback
+            // work at all. The spawn loop above checks `is_cancelled` too, but a
+            // driver whose window is full — or whose sources have run out — never
+            // gets back to it while its tasks are parked, which is why Rollback
+            // did nothing in the incident. `backend_cancel` fires on every
+            // transition out of `Running`, so both Cancel and Rollback land here.
+            let next = match drain_deadline {
+                // Already winding down: bounded, so one task that never returns
+                // can't hold the operation (and the user's dialog) open.
+                Some(deadline) => match tokio::time::timeout_at(deadline, in_flight.next()).await {
+                    Ok(next) => next,
+                    Err(_) => {
+                        crate::log_error!(
+                            target: "copy",
+                            "copy_volumes_with_progress: op={} abandoning {} task(s) that did not wind down within {:?} of the cancel. \
+                             Their handles are left for the backend to reap; their staged partials are cleaned up below.{}",
+                            operation_id,
+                            in_flight.len(),
+                            cancel_drain_deadline(),
+                            op_probe
+                                .as_ref()
+                                .map(|p| format!("\n{}", p.render_dump("abandoning wedged tasks")))
+                                .unwrap_or_default(),
+                        );
+                        break;
+                    }
+                },
+                None => {
+                    tokio::select! {
+                        // Cancel wins the race: a task result that was also ready
+                        // is re-polled on the next pass, so nothing is dropped.
+                        biased;
+                        () = state.backend_cancel.cancelled() => {
+                            log::info!(
+                                target: "copy",
+                                "copy_volumes_with_progress: op={} observed {:?} while awaiting {} in-flight task(s); \
+                                 winding them down (up to {:?})",
+                                operation_id,
+                                load_intent(&state.intent),
+                                in_flight.len(),
+                                cancel_drain_deadline(),
+                            );
+                            drain_deadline = Some(tokio::time::Instant::now() + cancel_drain_deadline());
+                            continue;
+                        }
+                        next = in_flight.next() => next,
+                    }
+                }
+            };
+            match next {
                 Some(Ok(CopyTaskSuccess {
                     partial_path,
                     recorded_path,
@@ -1947,6 +2025,9 @@ pub(crate) async fn copy_volumes_with_progress(
 #[path = "volume_copy_bench.rs"]
 mod bench;
 #[cfg(test)]
+#[path = "volume_copy_cancel_tests.rs"]
+mod cancel_tests;
+#[cfg(test)]
 #[path = "volume_copy_concurrent_tests.rs"]
 mod concurrent_tests;
 #[cfg(test)]
@@ -1967,3 +2048,6 @@ mod staged_write_tests;
 #[cfg(test)]
 #[path = "volume_copy_tests.rs"]
 mod tests;
+#[cfg(test)]
+#[path = "volume_copy_wedge_test_support.rs"]
+mod wedge_test_support;

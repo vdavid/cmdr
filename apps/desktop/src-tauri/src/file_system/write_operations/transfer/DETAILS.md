@@ -239,6 +239,44 @@ The same park-in-place behavior is also driven by a SECOND trigger: foreground d
 
 **Scoped out: the local-FS sync chunk loop.** `chunked_copy.rs::copy_data_chunked` (and the macOS `copyfile` / Linux `copy_file_range` strategies) receive only the cancel `intent` atom, not the `PauseGate` (which lives on `WriteOperationState`). So a local→local copy of one huge file pauses only at the next file boundary, not mid-file. Threading the gate through `copy_strategy.rs` + the native paths is the v2 follow-up; the user-reported case is MTP→local (the volume streaming path), which is fully covered.
 
+## Cancel and rollback reach a parked driver
+
+**Decision**: the concurrent copy driver observes `OperationIntent` on the await it actually sits on, and bounds how
+long a cancelled operation waits for its tasks.
+
+**Why**: `is_cancelled(&state.intent)` was consulted only in the spawn loop (`while in_flight.len() < concurrency`). A
+driver whose window is full — or whose sources have run out — parks on `in_flight.next().await` and never returns to
+that line while its tasks are parked. On 2026-07-31 that made Rollback a no-op: the intent was set, `write-cancelled`
+never came, the dialog would not close, and the app had to be force-quit. An escape hatch that only works while the
+thing it is escaping is healthy is not an escape hatch.
+
+**How.** The `in_flight.next()` await is a `biased` `select!` against `state.backend_cancel.cancelled()`.
+`backend_cancel` is the right signal because `cancel_write_operation` fires it on EVERY transition out of `Running`, so
+one arm covers both Cancel and Rollback; `biased` makes the cancel win deterministically, and a task result that was
+also ready is simply re-polled on the next pass. Observing the cancel arms `drain_deadline`; from then on the same await
+is a `timeout_at`, so healthy tasks still get to finish (their results keep flowing through the normal handler, which is
+what keeps the rollback ledger complete), while `CANCEL_DRAIN_DEADLINE` (15 s) caps the wait.
+
+**When the deadline fires** the driver logs at error level with the full `transfer_probe` dump — naming every task and
+what it is awaiting — and breaks. Dropping `in_flight` aborts the parked futures, which is what makes an in-flight task
+abortable at all: these are futures in a `FuturesUnordered`, not spawned tasks, so a drop is an abort. Their staged
+partials are removed by `clean_abandoned_staged_writes` in the post-loop.
+
+**Decision/Why abandon rather than hold**: an abandoned task can leave an open SMB write handle behind. Servers reap
+idle handles on their own, and the alternative is the incident's outcome — the user's only way out being a force-quit,
+which is what cost them two files. Getting the user unstuck outweighs some server-side handle churn. Nothing healthy
+reaches the deadline (a task observes the cancel within one chunk), so hitting it is genuinely news and is logged that
+way.
+
+**Not covered**: the SERIAL path has no equivalent gap — it awaits each per-file transfer directly, so there is no
+"driver parked while tasks run" state — but a serial transfer wedged inside a backend call still has no escape. Bounding
+that would mean racing every per-file transfer against a timeout, which risks killing a healthy slow transfer, so it is
+deliberately not done here.
+
+Pinned by `volume_copy_cancel_tests.rs`: cancel and rollback each reach a driver parked on genuinely wedged tasks and
+return, rollback undoes the file that already landed, and a task that never winds down is abandoned at the deadline
+with nothing left at a real name.
+
 ## Pause and the concurrent copy path
 
 The serial drivers (`drive_transfer_serial_{sync,async}`) call `wait_while_paused_{sync,async}` at each per-source loop top, right after the `is_cancelled` check, so local copy/move, the cross-volume *serial* path, and delete all honor pause between files; the cross-volume serial path additionally parks between chunks (see above).
