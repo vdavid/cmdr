@@ -539,8 +539,11 @@ Checks by app and tech:
   genuine sleep-is-the-subject site with `// allowed-test-sleep: <reason>`), mtp-dropping-timeout,
   mtp-no-transport-reset, bindings-fresh, ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow)
 - **Crates / Rust**: workspace-member-coverage (every workspace member is reachable by the cargo lanes and the source
-  scanners, and every Rust check has declared which of the two it is). The crates' code is also covered by the desktop
-  Rust lanes above, which all run workspace-wide; this scope is for checks about the crate boundary itself.
+  scanners, and every Rust check has declared which of the two it is), index-crate-isolation (neither `cmdr-index` nor
+  `cmdr-fs` reaches `tauri`, `tauri-specta`, or `cmdr` anywhere in its `cargo metadata` tree, plus a four-bucket ceiling
+  on `cmdr-index`'s public surface — see `crates/cmdr-index/src/indexing/handle/DETAILS.md` for what each number means
+  and why raising one needs David's say-so). The crates' code is also covered by the desktop Rust lanes above, which all
+  run workspace-wide; this scope is for checks about the crate boundary itself.
 - **Desktop / Svelte**: prettier, eslint, svelte-kit-sync, eslint-typecheck-svelte, eslint-typecheck-typescript,
   stylelint, css-unused, a11y-contrast, a11y-coverage (every primitive has a tier-3 a11y test), ui-primitive-coverage
   (every top-level `lib/ui/*.svelte` primitive has a Debug > Components catalog section), dialog-gallery-coverage (every

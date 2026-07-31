@@ -102,15 +102,36 @@ is supposed to BE the surface.
   `MountFacts`, …), which a host has to be able to implement.
 - **`pub mod handle`, `pub mod testing`** are the API and the gated surface.
 
+## The ceiling that keeps this honest
+
+`index-crate-isolation` (error-level) counts the surface on every run and fails when a bucket grows. Four buckets,
+measured 2026-07-31:
+
+- **44 root promises** — the names `lib.rs` exports, `pub mod` included.
+- **35 methods on `Index`** — the 34 above plus `Index::builder`, which the headline number treats as the constructor
+  rather than a call.
+- **17 public modules** and **159 public items inside them** — the surface the root re-exports don't capture, which is
+  where `media_index` and `importance` live.
+- **10 gated items**, counted apart: the `testing` / `tooling` doors aren't the API.
+
+It counts source, not rustdoc JSON, because that output is nightly-only and a check needing a second toolchain is a
+check CI skips. So the count is coarse by design: it has to be stable and it has to MOVE when the surface does, which is
+all a ceiling needs.
+
+**Raising a ceiling is a design decision, not a build fix.** It needs David's explicit say-so, like a `file-length`
+allowlist entry. Shrinking never fails. The same check asserts the other half of the boundary: neither `cmdr-index` nor
+`cmdr-fs` may reach `tauri`, `tauri-specta`, or `cmdr`, verified against the `cargo metadata` graph so the check catches
+a dependency that arrives through a helper crate rather than through the manifest.
+
 ## The two exceptions, named
 
 **1. `store` is wholesale public, and `IndexStore` keeps 28 methods.** `search/` is a product surface that stays
 app-side and runs its own SQL over an index database: it opens connections, walks `idx_parent`, and reads `meta`. That
 is a schema dependency, not an API one, and pretending otherwise would mean a query facade with a case per question that
 changes every time search's ranking does. Eleven of the 21 module-level items in `store/` were reachable for no reason
-and are now `pub(crate)`; what's left is the vocabulary an outside reader genuinely uses. **Follow-up**: when a
-machine-checked public-item ceiling lands, count `store` separately and decide whether the schema surface wants its own
-crate-level module doc rather than being counted against the handle.
+and are now `pub(crate)`; what's left is the vocabulary an outside reader genuinely uses. `store`'s items land in the
+public-item bucket above rather than against the handle, which is what keeps the schema surface from making the handle's
+number look worse than it is.
 
 **2. `IndexError::Internal(Diagnostic)`.** The internals below the facade still report a formatted diagnostic for causes
 no caller acts on (a poisoned registry lock, a database open failure). Every cause a caller CAN act on has its own

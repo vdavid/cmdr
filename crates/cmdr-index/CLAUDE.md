@@ -21,9 +21,11 @@ with no host at all.
 
 - **`#![deny(missing_docs)]` holds.** A new `pub` item, field, or enum variant needs a doc comment, on both platforms.
   Several of these types cross IPC through `specta::Type`, so the comment lands in `bindings.ts` too.
-- **A `pub` in `lib.rs` is a promise, not a compile fix.** Reach for a facade method on `Index`, a fold into an existing
-  call, or the `testing` / `tooling` gate before widening the surface. The item-by-item audit behind today's shape is
-  `src/indexing/handle/DETAILS.md` § "The public surface".
+- **A `pub` in `lib.rs` is a promise, not a compile fix**, and `index-crate-isolation` (error-level) makes that
+  enforceable: it caps root promises, `Index` methods, public modules, and the items inside them, and asserts no
+  `tauri` / `tauri-specta` / `cmdr` in either index crate's `cargo metadata` tree. Adding a `pub` fails it. Take one of
+  the four dispositions instead (facade, fold, delete, gate) — ❌ raising a ceiling needs David's explicit say-so, like a
+  `file-length` allowlist entry. The item-by-item audit is `src/indexing/handle/DETAILS.md`.
 - **❌ Never gate a test reach-through on `cfg(test)` when the consumer is a HOST.** `cfg(test)` is set only while this
   crate compiles its own test target, so a consumer's test build sees the item vanish. Rule: `#[cfg(test)]` while every
   consumer is inside the crate, `#[cfg(any(test, feature = "testing"))] pub` the moment one isn't. This has bitten four

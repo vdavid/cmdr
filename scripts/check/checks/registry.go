@@ -1139,6 +1139,20 @@ var AllChecks = []CheckDefinition{
 		Run: RunWorkspaceMemberCoverage,
 	},
 	{
+		ID:          "index-crate-isolation",
+		Nickname:    "index-isolation",
+		DisplayName: "the index crates stay app-free",
+		App:         AppCrates,
+		Tech:        "🦀 Rust",
+		IsFast:      true,
+		// `cargo metadata` over the workspace plus a source walk of `cmdr-index`;
+		// no compile, so it's cheap enough for the fast lane.
+		Inputs: inputs(
+			[]string{"Cargo.toml", "Cargo.lock", "apps/desktop/src-tauri/Cargo.toml", "crates/**"},
+		),
+		Run: RunIndexCrateIsolation,
+	},
+	{
 		ID:          "ci-coverage",
 		DisplayName: "CI coverage",
 		App:         AppOther,

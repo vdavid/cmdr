@@ -169,6 +169,12 @@ jobs:
       - name: Check workspace member coverage
         run: ./scripts/check/check --check workspace-member-coverage --ci
 
+      # The index crates' boundary: no tauri in their trees, and the public surface
+      # stays where the audit put it. Cheap (cargo metadata + a source walk), and a
+      # breach here makes every later green misleading about what's encapsulated.
+      - name: Check index-crate isolation
+        run: ./scripts/check/check --check index-crate-isolation --ci
+
       - name: Check cfg-gate
         run: ./scripts/check/check --check desktop-rust-cfg-gate --ci
 
