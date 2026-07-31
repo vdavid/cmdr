@@ -1,0 +1,29 @@
+# Files the Tauri CLI's dev watcher should NOT rebuild/restart the app for.
+# Gitignore syntax, rooted here.
+#
+# At the REPO ROOT, not in `src-tauri/`, because the dev watcher watches every
+# in-workspace path dependency too — `crates/cmdr-index/`, `crates/cmdr-fs/`, and
+# anything we add next — and the CLI builds one matcher over the common ancestor
+# of all of them. A shield inside `src-tauri/` covers only `src-tauri/`, so a
+# colocated doc edit anywhere under `crates/` would restart the app (verified
+# 2026-07-31 against `@tauri-apps/cli` 2.11.4: the CLI logged "File
+# crates/cmdr-index/CLAUDE.md changed. Rebuilding application..."). Here, every
+# watched folder is covered, including the ones that don't exist yet.
+#
+# The CLI reads this ONCE at watcher startup, so editing it needs a `pnpm dev`
+# restart to take effect.
+
+# Colocated agent docs. 150+ CLAUDE.md / DETAILS.md files live next to the code
+# they describe, and agents update them constantly alongside it. Without this,
+# every one of those edits rebuilds the whole app.
+# Verified 2026-06: the watcher logs "File src-tauri/src/mcp/CLAUDE.md changed.
+# Rebuilding application..." without this line, and stays quiet with it.
+# Vite has its own equivalent shield (`server.watch.ignored` in vite.config.js).
+*.md
+
+# Atomic-write temp files (`CLAUDE.md.tmp.<pid>.<hash>`, etc.). Editors and agents
+# save via temp+rename, and the `.tmp.<pid>.<hash>` intermediate doesn't end in
+# `.md`, so it leaks past the `*.md` shield above and rebuilds the whole app on
+# every doc edit. The real file's rename (e.g. → `CLAUDE.md`) still triggers a
+# rebuild when it should; only the transient temp is ignored.
+*.tmp.*

@@ -31,16 +31,21 @@ instance, not the source.
 
 Two watchers run during `pnpm dev`, each with its own shield (don't delete either):
 
-- The **Tauri CLI** watches `src-tauri/` and the workspace crates and rebuilds + restarts the whole app on any change
-  there. `src-tauri/.taurignore` (gitignore syntax) excludes `*.md`, because 20+ colocated `CLAUDE.md` files live under
-  `src-tauri/src/` and every docs edit used to restart the app. Verified empirically: without the file the watcher
-  rebuilds on a `CLAUDE.md` change; with it, markdown edits are silent while `.rs` edits still rebuild.
+- The **Tauri CLI** watches `src-tauri/` and every in-workspace path dependency (`crates/cmdr-index/`,
+  `crates/cmdr-fs/`, `crates/fsevent-stream/`), and rebuilds + restarts the whole app on any change in any of them.
+  The repo-root `.taurignore` (gitignore syntax) excludes `*.md`, because 150+ colocated `CLAUDE.md` / `DETAILS.md`
+  files live next to the code they describe and every docs edit used to restart the app. It sits at the ROOT rather
+  than in `src-tauri/`: the CLI builds one matcher over the common ancestor of all watch folders, so a shield inside
+  `src-tauri/` leaves every crate uncovered. Verified empirically (2026-07-31, `@tauri-apps/cli` 2.11.4): with the
+  shield in `src-tauri/` the watcher logged "File crates/cmdr-index/CLAUDE.md changed. Rebuilding application..."; with
+  it at the root, markdown edits under both trees are silent while `.rs` edits still rebuild. The CLI reads it once at
+  watcher startup, so editing it needs a `pnpm dev` restart.
 - **Vite** watches the rest of `apps/desktop/`; `server.watch.ignored` in `vite.config.js` excludes `src-tauri/` so Rust
   builds don't churn the frontend watcher. Markdown elsewhere is harmless to Vite (`.md` isn't in the module graph;
   SvelteKit only full-reloads on route files, `app.html`, hooks, and `svelte.config.js`).
 
-If a new always-edited non-build file type shows up under `src-tauri/`, add it to `.taurignore` rather than teaching
-people to avoid saving.
+If a new always-edited non-build file type shows up under `src-tauri/` or any watched crate, add it to the root
+`.taurignore` rather than teaching people to avoid saving.
 
 Hot reload is reliable: max ~15 s for Rust, ~3 s for the frontend.
 

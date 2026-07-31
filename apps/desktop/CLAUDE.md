@@ -12,9 +12,11 @@ in `DETAILS.md`. Feature must-knows in the colocated `CLAUDE.md`s.
   of truth for dev/prod data-dir and port separation; never `cargo tauri dev` / `cargo build` directly (wrong data dir,
   or a binary with no embedded frontend). Side-by-side worktree sessions: `pnpm dev --worktree <slug>`. See `DETAILS.md`
   § Running.
-- **Don't delete either `pnpm dev` watcher shield.** `src-tauri/.taurignore` excludes `*.md` (else every colocated-doc
-  edit rebuilds the whole app), and `vite.config.js` excludes `src-tauri/` from Vite. A new always-edited non-build file
-  type under `src-tauri/` goes in `.taurignore`, not into a "don't save" habit. See `DETAILS.md` § Dev watcher.
+- **Don't delete either `pnpm dev` watcher shield.** The REPO-ROOT `.taurignore` excludes `*.md` (else every
+  colocated-doc edit rebuilds the whole app), and `vite.config.js` excludes `src-tauri/` from Vite. Root, not
+  `src-tauri/`: the Tauri watcher also watches the workspace crates, and one matcher covers them all. A new
+  always-edited non-build file type goes in `.taurignore`, not into a "don't save" habit. See `DETAILS.md` § Dev
+  watcher.
 - **Data dirs are separate** for prod, plain dev, and each `--worktree` slug, and an FF-merge leaves the worktree's dev
   data dir behind (~1 GB) to clean up by hand. Debugging, logging (`RUST_LOG=cmdr_lib::…`), crash/error reports, and dev
   mock flags: `DETAILS.md` § Debugging.

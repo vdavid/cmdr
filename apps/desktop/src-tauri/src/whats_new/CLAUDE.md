@@ -25,7 +25,7 @@ most the five newest in-range releases; older notes live on the website.
 
 - **`include_str!` runs up five levels** (`../../../../../CHANGELOG.md`). Moving files breaks it at compile time, which
   is the good failure mode.
-- **Dev-mode staleness.** Editing `CHANGELOG.md` does NOT trigger a `pnpm dev` rebuild (`.taurignore` excludes `*.md`,
+- **Dev-mode staleness.** Editing `CHANGELOG.md` does NOT trigger a `pnpm dev` rebuild (the root `.taurignore` excludes `*.md`,
   and the changelog is embedded, not read at runtime). Cargo tracks the `include_str!` input, so the next real
   `cargo build` picks it up. Don't add the file to the watcher: it would restart the app on every changelog edit.
 - **No runtime I/O.** The changelog is embedded, so the commands can't hang and intentionally skip `blocking_with_timeout`.
