@@ -19,7 +19,8 @@
 //! embeddings and face detect/embed become sibling methods as those
 //! milestones land.
 
-pub mod fake;
+#[cfg(test)]
+pub(crate) mod fake;
 
 /// The real macOS Vision OCR backend. Only compiled on macOS (Vision/ImageIO are
 /// Apple frameworks); other platforms fall back to [`fake::FakeVisionBackend`] in the

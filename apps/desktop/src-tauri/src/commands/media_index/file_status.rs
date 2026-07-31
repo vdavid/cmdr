@@ -137,20 +137,12 @@ fn classify_file_statuses(
     stamp: Option<&str>,
     is_enriching: bool,
 ) -> Vec<FileIndexStatus> {
-    use crate::media_index::scheduler::enrich::{ImageEntry, parent_dir, walk_image_entries_in_dirs};
     use crate::media_index::store::{MediaStatusRow, media_db_path, open_read_connection, read_status};
-    use std::collections::{HashMap, HashSet};
+    use std::collections::HashMap;
 
     // The qualifying images (sibling-aware, with live `(mtime, size)`) for exactly the
     // dirs the requested paths live in — a bounded, scoped index walk.
-    let dirs: HashSet<String> = paths.iter().map(|p| parent_dir(p).to_string()).collect();
-    let qualifying: HashMap<String, ImageEntry> = match crate::index_host::index().read_pool(volume_id) {
-        Some(pool) => match pool.with_conn(|conn| walk_image_entries_in_dirs(conn, &dirs)) {
-            Ok(Ok(entries)) => entries.into_iter().map(|e| (e.path.clone(), e)).collect(),
-            _ => HashMap::new(),
-        },
-        None => HashMap::new(),
-    };
+    let qualifying = crate::media_index::read::qualifying_images_for_paths(volume_id, &paths);
 
     // Stored rows for exactly the requested paths (bounded; a per-path point lookup).
     let db_path = media_db_path(data_dir, volume_id);

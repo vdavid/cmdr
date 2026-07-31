@@ -57,7 +57,6 @@ use super::progress::{EnrichProgressSink, NoopProgressSink};
 use crate::indexing::EventSink;
 
 mod reclaim;
-pub use reclaim::{PruneOutcome, StoredCoverage, StoredCoverageCounts};
 
 mod coordinator;
 use coordinator::{BeginOutcome, FinishOutcome, PassCoordinator};
@@ -67,7 +66,7 @@ use lifecycle::{PassOutcome, should_retry_when_idle};
 // `local_should_enrich` is the enrichment coverage gate; the file-status command reuses
 // it (via this re-export) to tell `pending` from `excluded` for an un-enriched image.
 pub(crate) use lifecycle::local_should_enrich;
-pub use lifecycle::{kick_all_ready_passes_with, kick_network_pass, start};
+pub(crate) use lifecycle::{kick_all_ready_passes_with, kick_network_pass, start};
 // Re-exported into the scheduler namespace so the sibling `kick_tests` module reaches
 // them through its `use super::*` (they're otherwise only called within `lifecycle`).
 #[cfg(test)]

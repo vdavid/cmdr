@@ -135,18 +135,18 @@ pub fn is_enabled() -> bool {
 
 /// The emergency stop, for a caller that wants to await it or hang a
 /// `child_token()` off it rather than poll [`is_cancelled`].
-pub fn stop_token() -> CancellationToken {
+pub(crate) fn stop_token() -> CancellationToken {
     STOP.read_ignore_poison().clone()
 }
 
 /// Request that in-flight enrichment yield (the memory watchdog's stop hook calls
 /// this). Idempotent; superseded by [`set_enabled(true)`](set_enabled).
-pub fn request_cancel() {
+pub(crate) fn request_cancel() {
     stop_token().cancel();
 }
 
 /// Whether an emergency stop is in effect. The pass checks this between images.
-pub fn is_cancelled() -> bool {
+pub(crate) fn is_cancelled() -> bool {
     stop_token().is_cancelled()
 }
 
@@ -181,7 +181,7 @@ pub fn semantic_search_enabled() -> bool {
 /// fresh passes, and the disable input is simply `is_enabled() == true` again. Stopping
 /// reuses the existing cancel exit (rows kept, GC skipped): disabling is "stop
 /// processing", never "erase".
-pub fn should_stop() -> bool {
+pub(crate) fn should_stop() -> bool {
     is_cancelled() || !is_enabled()
 }
 
@@ -282,7 +282,7 @@ pub fn set_parallelism(n: usize) {
 /// The current enrichment parallelism (`1..=`[`max_parallelism`]). The scheduler reads
 /// this to size its worker pool, then caps it further by live thermal pressure
 /// ([`super::thermal`]).
-pub fn parallelism() -> usize {
+pub(crate) fn parallelism() -> usize {
     PARALLELISM.load(Ordering::SeqCst).clamp(1, max_parallelism())
 }
 

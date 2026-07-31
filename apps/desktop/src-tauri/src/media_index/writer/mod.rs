@@ -115,6 +115,12 @@ enum WriteMessage {
     /// child (`media_status`, OCR, tags, embeddings) keys on the unchanged `file_id`, so
     /// they follow for free. Replies whether a row actually moved (a barrier). One
     /// transaction.
+    /// ❌ No production sender yet: the rename-following hook this exists for
+    /// isn't wired, so a rename still manifests as GC(old) + enrich(new). The
+    /// writer handles it and `writer/tests.rs` pins what it does. Keep it until
+    /// the capability is deliberately retired, not as a side effect of a
+    /// visibility change.
+    #[allow(dead_code, reason = "a supported writer message with no production sender yet; see above")]
     Rename {
         old: String,
         new: String,
@@ -125,6 +131,12 @@ enum WriteMessage {
     /// removes the deleted text from disk. Replies when done (a barrier).
     Vacuum { done: mpsc::Sender<()> },
     /// Drop every status and OCR row for this volume (disable + delete contents).
+    /// ❌ No production sender yet: the rename-following hook this exists for
+    /// isn't wired, so a rename still manifests as GC(old) + enrich(new). The
+    /// writer handles it and `writer/tests.rs` pins what it does. Keep it until
+    /// the capability is deliberately retired, not as a side effect of a
+    /// visibility change.
+    #[allow(dead_code, reason = "a supported writer message with no production sender yet; see above")]
     PurgeVolume,
     /// Apply the buffered ANN ops to the on-disk index (plan M6) and reply once
     /// saved — a barrier. Called at the same seams that invalidate the resident
@@ -157,6 +169,7 @@ pub struct UpsertAnalysis {
 impl UpsertAnalysis {
     /// An analysis carrying only OCR text (no tags, no embedding) — the shape the
     /// store/writer round-trip tests use to assert the OCR path in isolation.
+    #[cfg(test)]
     pub fn ocr_only(text: impl Into<String>) -> Self {
         Self {
             ocr_text: text.into(),
@@ -170,6 +183,8 @@ impl UpsertAnalysis {
 pub struct MediaWriter {
     sender: mpsc::SyncSender<WriteMessage>,
     thread_handle: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
+    /// Read only by the test-gated [`MediaWriter::db_path`].
+    #[cfg_attr(not(test), allow(dead_code, reason = "read only by the test-gated accessor"))]
     db_path: PathBuf,
 }
 
@@ -197,6 +212,7 @@ impl MediaWriter {
     }
 
     /// The DB file this writer serves.
+    #[cfg(test)]
     pub fn db_path(&self) -> &Path {
         &self.db_path
     }
@@ -266,6 +282,9 @@ impl MediaWriter {
     /// row actually moved (`false` when `old` had no row, or `new` was already taken). This
     /// is the seam a rename-following hook calls; until one is wired, a rename still
     /// manifests as GC(old) + enrich(new), which this replaces with an O(1) update.
+    /// ❌ No production caller yet: the rename-following hook this exists for
+    /// isn't wired, so a rename still manifests as GC(old) + enrich(new).
+    #[allow(dead_code, reason = "a supported writer call with no production caller yet; see above")]
     pub fn rename_path(&self, old: &str, new: &str) -> Result<bool, MediaStoreError> {
         let (tx, rx) = mpsc::channel();
         self.send(WriteMessage::Rename {
@@ -296,6 +315,9 @@ impl MediaWriter {
     }
 
     /// Drop every status and OCR row for this volume. Schema stays.
+    /// ❌ No production caller yet: the rename-following hook this exists for
+    /// isn't wired, so a rename still manifests as GC(old) + enrich(new).
+    #[allow(dead_code, reason = "a supported writer call with no production caller yet; see above")]
     pub fn purge_volume(&self) -> Result<(), MediaStoreError> {
         self.send(WriteMessage::PurgeVolume)
     }

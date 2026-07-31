@@ -503,3 +503,16 @@ level owns:
   VACUUM round-trips; `prune_all_clip` drops embeddings, resets stamps, and keeps Vision data. The live veto and the
   mid-`analyze` TOCTOU are pinned on both cores (`scheduler/DETAILS.md`, `network/DETAILS.md`), and the scheduler
   retro-delete is covered in `scheduler/kick_tests.rs`.
+
+## The public surface
+
+11 public modules and 51 public items, down from 14 and 142, each one decided rather than inherited. The item-by-item
+audit, the folds, and what narrowing the modules exposed: `../indexing/handle/DETAILS.md` § "The other two subsystems".
+
+Two rules it leaves behind:
+
+- **A new `pub` is a promise.** Take one of the four dispositions first — a facade method named for what the caller
+  wants, a fold into a call that already exists, a delete, or a gated door.
+- **`#[cfg(test)]` while every consumer is inside the crate; a feature only when one lives outside.** The app turns
+  `testing` on for every dev target, so a feature-gated item with only in-crate callers exists in the non-test lib
+  build with nothing calling it, and `#[deny(unused)]` makes that an error.

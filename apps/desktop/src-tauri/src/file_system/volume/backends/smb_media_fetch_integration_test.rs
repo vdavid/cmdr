@@ -12,7 +12,8 @@
 use super::smb_test_support::*;
 use super::*;
 
-use crate::media_index::network::fetch::{ByteFetcher, FetchError, VolumeByteFetcher, os_join};
+use crate::media_index::network::fetch::os_join;
+use crate::media_index::testing::{ByteFetcher, FetchError, VolumeByteFetcher};
 
 /// End-to-end proof of the M1 read path: bytes written to a real SMB share come
 /// back byte-for-byte through `VolumeByteFetcher`, called exactly the way the

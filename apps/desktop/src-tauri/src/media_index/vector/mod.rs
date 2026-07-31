@@ -21,7 +21,7 @@
 //! fires, so the resident vectors are counted against the ONE shared ceiling, never a
 //! second independent budget.
 
-pub mod cache;
+pub(crate) mod cache;
 
 #[cfg(test)]
 mod tests;
@@ -53,7 +53,8 @@ pub struct DedupCluster {
 /// `0.0` when the lengths differ or either vector has zero magnitude (no meaningful angle),
 /// rather than a `NaN` — a degenerate vector simply never ranks. Used for the query↔query
 /// case; the resident store scores an `f32` query against `f16` entries via [`cosine_f16`].
-pub fn cosine(a: &[f32], b: &[f32]) -> f32 {
+#[cfg(test)]
+pub(crate) fn cosine(a: &[f32], b: &[f32]) -> f32 {
     if a.len() != b.len() || a.is_empty() {
         return 0.0;
     }
@@ -97,7 +98,7 @@ pub(crate) fn cosine_f16(query: &[f32], stored: &[f16]) -> f32 {
 
 /// The vector-store seam. A brute-force impl ships now; a future `sqlite-vec`-backed
 /// impl would satisfy the same trait so callers don't change.
-pub trait VectorStore {
+pub(crate) trait VectorStore {
     /// The `k` images most similar to `query` by cosine, highest first, excluding the
     /// path in `exclude` (the source image of a "find similar" query, so it never
     /// returns itself). Ties broken by path for determinism.
@@ -114,7 +115,7 @@ pub trait VectorStore {
 /// are stored as-loaded; cosine normalizes per comparison, so no pre-normalization
 /// step is needed (the store is small and loaded once).
 #[derive(Debug, Clone, Default)]
-pub struct BruteForceVectorStore {
+pub(crate) struct BruteForceVectorStore {
     entries: Vec<(String, Vec<f16>)>,
 }
 
@@ -124,21 +125,6 @@ impl BruteForceVectorStore {
         Self { entries }
     }
 
-    /// The number of stored vectors.
-    pub fn len(&self) -> usize {
-        self.entries.len()
-    }
-
-    /// Whether the store holds no vectors.
-    pub fn is_empty(&self) -> bool {
-        self.entries.is_empty()
-    }
-
-    /// The stored `f16` vector for `path`, if present (the source vector of a find-similar
-    /// query, so a caller needn't re-read the DB).
-    pub fn vector_for(&self, path: &str) -> Option<&[f16]> {
-        self.entries.iter().find(|(p, _)| p == path).map(|(_, v)| v.as_slice())
-    }
 }
 
 impl VectorStore for BruteForceVectorStore {

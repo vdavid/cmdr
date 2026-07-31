@@ -12,7 +12,7 @@
 //! `docs/specs/later/media-ml-index-plan.md`.
 
 pub(crate) mod ann;
-pub mod backend;
+pub(crate) mod backend;
 pub mod clip;
 pub mod coverage;
 pub mod events;
@@ -23,9 +23,16 @@ pub(crate) mod progress;
 pub mod read;
 pub mod scheduler;
 pub mod store;
-pub mod thermal;
+pub(crate) mod thermal;
 pub mod vector;
-pub mod writer;
-pub mod writer_registry;
+pub(crate) mod writer;
+pub(crate) mod writer_registry;
 
+/// The subsystem's test-only surface. ❌ Not part of the API.
+#[cfg(any(test, feature = "testing"))]
+#[doc(hidden)]
+pub mod testing;
+
+pub use clip::ClipError;
 pub use read::{MediaIndex, OcrHit};
+pub use store::MediaStoreError;

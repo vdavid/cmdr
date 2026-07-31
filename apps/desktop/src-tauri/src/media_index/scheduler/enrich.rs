@@ -18,11 +18,15 @@ use crate::media_index::writer::{MediaWriter, UpsertAnalysis};
 /// One qualifying image discovered while walking the index: its absolute path, the
 /// `(mtime, size)` staleness key, and the typed kind the predicate assigned.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct ImageEntry {
-    pub(crate) path: String,
-    pub(crate) mtime: Option<u64>,
-    pub(crate) size: Option<u64>,
-    pub(crate) kind: MediaKind,
+pub struct ImageEntry {
+    /// Absolute path, as the drive index stores it.
+    pub path: String,
+    /// Modified time as the index last saw it; `None` when it has none.
+    pub mtime: Option<u64>,
+    /// Size in bytes as the index last saw it.
+    pub size: Option<u64>,
+    /// What kind of media the name says it is.
+    pub kind: MediaKind,
 }
 
 /// What one pass did: how many images it enriched, how many rows it GC'd, and whether

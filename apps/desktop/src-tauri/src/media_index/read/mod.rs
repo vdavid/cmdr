@@ -18,6 +18,7 @@
 use std::path::PathBuf;
 
 use super::ann;
+pub use super::scheduler::enrich::ImageEntry;
 use super::store::{
     EmbeddingTable, MediaStoreError, media_db_path, open_read_connection, read_embedding_for, read_embeddings_for_ids,
     read_tag_matches,
@@ -427,3 +428,27 @@ pub fn build_ocr_match_query(input: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests;
+
+/// The images that qualify for enrichment in the directories these paths live
+/// in, keyed by path, each with the live `(mtime, size)` the drive index holds.
+///
+/// A bounded, scoped read: it walks only the parent directories of the paths
+/// asked about, never the whole volume. Empty when the volume has no drive
+/// index, which is the honest answer rather than a guess — qualification is
+/// sibling-aware (a RAW beside its JPEG changes the verdict), so it can't be
+/// decided from one path on its own.
+pub fn qualifying_images_for_paths(
+    volume_id: &str,
+    paths: &[String],
+) -> std::collections::HashMap<String, ImageEntry> {
+    use crate::media_index::scheduler::enrich::{parent_dir, walk_image_entries_in_dirs};
+
+    let dirs: std::collections::HashSet<String> = paths.iter().map(|p| parent_dir(p).to_string()).collect();
+    let Some(pool) = crate::indexing::read::enrichment::get_read_pool_for(volume_id) else {
+        return std::collections::HashMap::new();
+    };
+    match pool.with_conn(|conn| walk_image_entries_in_dirs(conn, &dirs)) {
+        Ok(Ok(entries)) => entries.into_iter().map(|e| (e.path.clone(), e)).collect(),
+        _ => std::collections::HashMap::new(),
+    }
+}

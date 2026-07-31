@@ -111,7 +111,7 @@ mod file_status {
     use super::*;
     use crate::media_index::network::config::NetworkEnrichConfig;
     use crate::media_index::predicate::MediaKind;
-    use crate::media_index::scheduler::enrich::ImageEntry;
+    use crate::media_index::read::ImageEntry;
     use crate::media_index::store::{EnrichmentState, MediaStatusRow};
     use std::collections::HashMap;
 

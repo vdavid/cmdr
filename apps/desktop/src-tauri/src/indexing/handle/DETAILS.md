@@ -148,10 +148,69 @@ module installs a `#[global_allocator]`, which is per binary and so can't be fea
 linking the index a second one). Today the two live in the same test binary. At the move they won't, and the app needs
 its own copy of the small counting harness. That's Decision 18's argument one level further out, not a new problem.
 
-## What the media and importance subsystems got
+## The other two subsystems
 
-Neither was re-facaded, deliberately. Both already expose handle-shaped read APIs the app holds (`MediaIndex`,
-`ImportanceIndex`) plus the two schedulers the app manages (`MediaScheduler`, `ImportanceScheduler`), and their other
-app-side consumers are IPC commands that are legitimately policy surfaces (the media gate, the network-enrichment
-folder config). Their module lists stayed as they were. **This is the part of the audit that is least finished**, and
-the honest reason is scope: the drive index is where the 65 exports and the encapsulation risk were.
+The same four dispositions, applied to `media_index` and `importance`. Neither was re-facaded behind a handle — both
+already expose handle-shaped read APIs the app holds (`MediaIndex`, `ImportanceIndex`) plus the two schedulers it
+manages — but every public item got a decision.
+
+### Where they landed
+
+| | public modules | public items |
+| --- | --- | --- |
+| `media_index` | 14 → **11** | 142 → **51** |
+| `importance` | 8 → **3** | 65 → **23** |
+
+### `media_index`
+
+- **Five modules stop being public**: `backend`, `thermal`, `writer`, `writer_registry`, and `network::policy`, plus
+  `clip::{backend, macos, tokenizer}`, `vector::cache`, and `network::enrich`. None had a consumer outside the
+  subsystem. `clip::install` went from 18 public items to one (`is_installed`); the other 17 are how a model gets
+  unzipped and checksummed, which is nobody's business but the installer's.
+- **One fold, and it was hiding an M6 break.** `commands/media_index/file_status.rs` reached
+  `scheduler::enrich::{ImageEntry, parent_dir, walk_image_entries_in_dirs}` — through `pub(crate) mod enrich`, so it
+  compiles today only because the app and the index are one crate. It is now
+  `media_index::read::qualifying_images_for_paths(volume_id, &paths)`: the caller asks the question it actually has
+  ("which images here qualify, with their live mtime and size?"), the pool plumbing and the parent-dir derivation move
+  inside, and `ImageEntry` becomes the read API's own type.
+- **`media_index::testing`** carries the three items one app-side integration test needs to fetch image bytes off a real
+  share through the enrichment path's own fetcher.
+- **The errors public methods return are public**: `ClipError` and `MediaStoreError` are root re-exports, like
+  `ImportanceStoreError`.
+
+### `importance`
+
+- **`importance::tooling`** (new `tooling` feature) is the one door for the three `index-query` binaries: the evaluation
+  corpus, the synthetic scenarios, the constraint harness, and the measurement entry points. A feature rather than
+  `#[cfg(test)]` because those are BINARIES in another crate — `cfg(test)` can never reach them. This is the second
+  gated bucket the plan named, and it now exists.
+- **`importance::testing`** carries the four items two app-side tests need to stage a scored folder.
+- **Five modules stop being public**: `store`, `writer`, `writer_registry`, `signals`, and `scorer`. The scoring
+  vocabulary was already re-exported at the root, so only `ImportanceStoreError` needed a new home there.
+
+### The rule the gates follow
+
+**`#[cfg(test)]` when every consumer is inside the crate; a feature only when one lives outside.** Using a feature for
+an in-crate consumer is not harmless: the app enables `testing` for every dev target, so the item exists in the
+non-test lib build with nothing calling it, and `#[deny(unused)]` turns it into an error. That is how the four
+`ImportanceStore` accessors and the two `MediaStore` ones landed on plain `#[cfg(test)]`.
+
+### What narrowing the modules exposed
+
+Making a module `pub(crate)` makes the compiler honest about what the shipped build actually uses. Nine items had been
+invisible behind a `pub mod`:
+
+- **Deleted, no caller anywhere**: `network::policy::{FetchGate, gate_on_idle}` (superseded by the `HostPolicy` seam —
+  its neighbours already ask `volume_clear_for_enrichment`), `network::config::covers_override`,
+  `BruteForceVectorStore::{len, is_empty, vector_for}`, `MediaStore::db_path`, `ClipError::Decode`, and the unused
+  `scheduler` re-export of three `reclaim` types.
+- **Tooling-only, and now saying so**: `MeasureOutcome`, `recompute_index_to_db`, the whole `differential` module,
+  `classify::under_floored_paths`, `scorer::extension_count`.
+- **Kept with the reason written down**: `MediaWriter::{rename_path, purge_volume}` and their `WriteMessage` variants
+  have no production sender — `rename_path`'s own doc says the rename-following hook it exists for isn't wired yet, so
+  a rename still manifests as GC(old) + enrich(new). Same shape as `WriteMessage::PropagateDeltaById` on the drive
+  index: a supported capability, not an accident.
+- **`WriterRegistry::shutdown_all` has no caller, in either subsystem.** Its doc says "called on app teardown so the
+  writer threads join", and no teardown path calls it. Not a data-loss gap (every write is flushed as it is applied,
+  and each writer stops when its last handle drops), but the documented teardown does not happen. Wiring it is a
+  shutdown-ordering decision, not a visibility one.

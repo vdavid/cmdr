@@ -54,7 +54,7 @@ impl MediaKind {
 /// Why a file is NOT enriched. Typed so a caller (or a test) branches on the reason
 /// without inspecting a string.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SkipReason {
+pub(crate) enum SkipReason {
     /// Not a media file at all (a document, an archive, an extension-less file).
     NotMedia,
     /// A video (out of scope, images only; also a Live Photo's motion component).
@@ -68,7 +68,7 @@ pub enum SkipReason {
 /// The per-file decision: enrich it (as a typed kind) or skip it (for a typed
 /// reason).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Qualification {
+pub(crate) enum Qualification {
     /// Enrich this file as the given kind.
     Enrich(MediaKind),
     /// Skip this file for the given reason.
@@ -113,7 +113,7 @@ fn stem_of(name: &str) -> String {
 /// The sibling logic keys on the lowercased stem: for each stem we note whether it
 /// has a JPEG member (so a RAW peer skips) and whether it has a video member (so an
 /// image peer is a Live Photo still). Pure string math — no I/O, no index.
-pub fn qualify_dir(names: &[&str]) -> Vec<Qualification> {
+pub(crate) fn qualify_dir(names: &[&str]) -> Vec<Qualification> {
     // Per-stem sibling summary, built in one pass.
     #[derive(Default)]
     struct StemInfo {

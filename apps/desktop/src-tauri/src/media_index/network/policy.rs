@@ -52,24 +52,6 @@ impl Default for ConservativeFetchPolicy {
     }
 }
 
-/// The idle gate's outcome.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum FetchGate {
-    /// The app is idle enough; proceed with the fetch.
-    Proceed,
-    /// The user is active; defer (the pass pauses and retries later).
-    DeferNotIdle,
-}
-
-/// The pure idle gate: proceed only when idle. (The idle decision itself is the
-/// host's, reported through `indexing::host::policy`.)
-pub fn gate_on_idle(is_idle: bool) -> FetchGate {
-    if is_idle {
-        FetchGate::Proceed
-    } else {
-        FetchGate::DeferNotIdle
-    }
-}
 
 /// The pure proceed-gate for one network-enrichment step, composing the two
 /// higher-priority claims the host reports (interactive > transfers > indexing):
@@ -120,12 +102,6 @@ mod tests {
             volume_idle: app_idle,
             transfer_active,
         }
-    }
-
-    #[test]
-    fn gate_defers_when_not_idle_proceeds_when_idle() {
-        assert_eq!(gate_on_idle(false), FetchGate::DeferNotIdle);
-        assert_eq!(gate_on_idle(true), FetchGate::Proceed);
     }
 
     /// Transfers trump indexing: an active transfer on the volume pauses enrichment

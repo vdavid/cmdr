@@ -26,18 +26,19 @@
 //! The conversion that produces the shipped `.mlpackage` towers is an out-of-tree dev
 //! script (`apps/desktop/scripts/convert-clip-model/`), never run by CI/pnpm.
 
-pub mod backend;
+#[cfg(test)]
+pub(crate) mod backend;
 pub mod install;
 #[cfg(target_os = "macos")]
-pub mod macos;
-pub mod tokenizer;
+pub(crate) mod macos;
+pub(crate) mod tokenizer;
 
 use std::path::Path;
 
 /// Record where the CLIP towers install (the app data dir), so the query-time text tower
 /// and the enrichment image tower can load them. Called once at scheduler start; a no-op
 /// off macOS (CLIP runs only on macOS).
-pub fn set_data_dir(data_dir: &Path) {
+pub(crate) fn set_data_dir(data_dir: &Path) {
     #[cfg(target_os = "macos")]
     macos::set_data_dir(data_dir);
     #[cfg(not(target_os = "macos"))]
@@ -50,7 +51,7 @@ pub fn set_data_dir(data_dir: &Path) {
 /// (plan M3 two-part staleness); `None` makes `needs_clip` always false, so this is the
 /// ONE seam that stops every pass type (full / network / live) from embedding CLIP when
 /// the user turns semantic search off.
-pub fn current_stamp(data_dir: &Path) -> Option<String> {
+pub(crate) fn current_stamp(data_dir: &Path) -> Option<String> {
     if !super::gate::semantic_search_enabled() {
         return None;
     }
@@ -75,7 +76,7 @@ pub fn encode_text_query(query: &str) -> Result<Vec<f32>, ClipError> {
 
 /// Encode a CHW `[0,1]` `[1,3,224,224]` pixel buffer to a CLIP image embedding via the
 /// enrichment image tower (called from the Vision worker's `analyze_media`).
-pub fn encode_image_pixels(pixels: Vec<f32>) -> Result<Vec<f32>, ClipError> {
+pub(crate) fn encode_image_pixels(pixels: Vec<f32>) -> Result<Vec<f32>, ClipError> {
     #[cfg(target_os = "macos")]
     {
         macos::encode_image(pixels)
@@ -97,8 +98,6 @@ pub enum ClipError {
     Load(String),
     /// A prediction (text or image encode) failed.
     Predict(String),
-    /// The image couldn't be decoded for image encoding (a broken/unsupported file).
-    Decode(String),
 }
 
 impl std::fmt::Display for ClipError {
@@ -107,7 +106,6 @@ impl std::fmt::Display for ClipError {
             ClipError::NotAvailable => write!(f, "CLIP model is not available"),
             ClipError::Load(m) => write!(f, "CLIP model load failed: {m}"),
             ClipError::Predict(m) => write!(f, "CLIP prediction failed: {m}"),
-            ClipError::Decode(m) => write!(f, "CLIP image decode failed: {m}"),
         }
     }
 }

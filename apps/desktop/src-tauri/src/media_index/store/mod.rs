@@ -64,7 +64,7 @@ use std::path::{Path, PathBuf};
 use half::f16;
 use rusqlite::Connection;
 
-pub use connection::open_read_connection;
+pub(crate) use connection::open_read_connection;
 pub(crate) use connection::open_write_connection;
 
 use super::predicate::MediaKind;
@@ -233,7 +233,7 @@ pub fn needs_enrichment(
 ///   OS change re-embeds). This is deliberately decoupled from the Vision
 ///   `engine_version`: installing/upgrading CLIP must NOT re-run OCR/tags for everyone,
 ///   and a Vision engine bump must NOT re-embed CLIP.
-pub fn needs_clip(stored: Option<&MediaStatusRow>, clip_stamp: Option<&str>) -> bool {
+pub(crate) fn needs_clip(stored: Option<&MediaStatusRow>, clip_stamp: Option<&str>) -> bool {
     let Some(current) = clip_stamp else {
         return false;
     };
@@ -286,8 +286,9 @@ impl From<std::io::Error> for MediaStoreError {
 
 /// A handle to a volume's `media.db`, owning a read connection and the
 /// schema-lifecycle. The writer thread opens its OWN write connection.
-pub struct MediaStore {
-    db_path: PathBuf,
+pub(crate) struct MediaStore {
+    /// Read only by the test-gated accessor of the same name.
+    #[cfg_attr(not(test), allow(dead_code, reason = "read only by the test-gated accessor"))]
     read_conn: Connection,
 }
 
@@ -326,7 +327,6 @@ impl MediaStore {
             None => stamp_schema_version(&conn)?,
         }
         Ok(Self {
-            db_path: db_path.to_path_buf(),
             read_conn: conn,
         })
     }
@@ -347,22 +347,18 @@ impl MediaStore {
         let conn = open_write_connection(db_path)?;
         stamp_schema_version(&conn)?;
         Ok(Self {
-            db_path: db_path.to_path_buf(),
             read_conn: conn,
         })
     }
 
-    /// The DB file path.
-    pub fn db_path(&self) -> &Path {
-        &self.db_path
-    }
-
     /// Borrow the read connection for direct queries (round-trip tests).
+    #[cfg(test)]
     pub fn read_conn(&self) -> &Connection {
         &self.read_conn
     }
 
     /// Read one folder's status row, or `None` if the image was never enriched.
+    #[cfg(test)]
     pub fn status_for(&self, path: &str) -> Result<Option<MediaStatusRow>, MediaStoreError> {
         read_status(&self.read_conn, path)
     }

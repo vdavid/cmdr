@@ -20,7 +20,7 @@ use sha2::{Digest, Sha256};
 
 /// The CLIP model identifier baked into the provenance stamp. A change here (a new model)
 /// bumps every row's `clip_stamp` and re-embeds (the two-part staleness contract).
-pub const CLIP_MODEL_ID: &str = "openai-clip-vit-b32-img8p";
+pub(crate) const CLIP_MODEL_ID: &str = "openai-clip-vit-b32-img8p";
 
 /// One downloadable tower: the artifact name, its pinned download URL, the byte size, and
 /// the SHA-256 of the zip the [conversion script](../../../../scripts/convert-clip-model)
@@ -30,7 +30,7 @@ pub const CLIP_MODEL_ID: &str = "openai-clip-vit-b32-img8p";
 /// The artifacts must be uploaded to `url` (David-only — agents never upload). Until an
 /// artifact is live at its URL, a download fails and the feature stays gated off; the
 /// pinned hash still guarantees that whatever downloads is exactly the converted bytes.
-pub struct ClipTowerSpec {
+pub(crate) struct ClipTowerSpec {
     /// The artifact/zip filename (also the `.mlpackage` dir name once unpacked).
     pub artifact: &'static str,
     /// The pinned download URL.
@@ -46,7 +46,7 @@ pub struct ClipTowerSpec {
 /// The unfilled-hash sentinel: while a tower's `sha256` is this, install refuses (there is
 /// no real artifact to verify against yet). Retained as the "not configured" guard even
 /// though the real hashes are pinned below.
-pub const PLACEHOLDER_SHA: &str = "0000000000000000000000000000000000000000000000000000000000000000";
+pub(crate) const PLACEHOLDER_SHA: &str = "0000000000000000000000000000000000000000000000000000000000000000";
 
 /// The two towers the semantic-search feature needs: the image tower (enrichment embeds
 /// every photo) and the text tower (query encoding). Hash + size are the conversion script's
@@ -66,7 +66,7 @@ pub const PLACEHOLDER_SHA: &str = "000000000000000000000000000000000000000000000
 /// download's 206 resume — byte-exact against the pinned hashes, unauthenticated; the text
 /// tower verified 2026-07-16, the palettized image tower 2026-07-23). The hash guarantees
 /// whatever downloads is exactly the converted, verified model.
-pub const CLIP_TOWERS: &[ClipTowerSpec] = &[
+pub(crate) const CLIP_TOWERS: &[ClipTowerSpec] = &[
     ClipTowerSpec {
         artifact: "clip-image.mlpackage.zip",
         url: "https://huggingface.co/veszelovszki/cmdr-clip-vit-b32-coreml/resolve/main/clip-image-p8.mlpackage.zip",
@@ -84,13 +84,13 @@ pub const CLIP_TOWERS: &[ClipTowerSpec] = &[
 ];
 
 /// The combined download size of all towers, for the honest "~X MB" settings copy.
-pub fn total_download_bytes() -> u64 {
+pub(crate) fn total_download_bytes() -> u64 {
     CLIP_TOWERS.iter().map(|t| t.size_bytes).sum()
 }
 
 /// A typed install failure. Never string-matched (`no-string-matching`).
 #[derive(Debug)]
-pub enum InstallError {
+pub(crate) enum InstallError {
     /// The downloaded bytes' SHA-256 didn't match the pinned hash — refuse to install
     /// (a truncated or tampered download). Carries the expected + actual for logging.
     ChecksumMismatch { expected: String, actual: String },
@@ -125,19 +125,20 @@ impl From<std::io::Error> for InstallError {
 
 /// The directory a volume-agnostic CLIP model install lives in, beside the app's other
 /// model data. Both towers unpack here.
-pub fn clip_model_dir(data_dir: &Path) -> PathBuf {
+pub(crate) fn clip_model_dir(data_dir: &Path) -> PathBuf {
     data_dir.join("clip-model")
 }
 
 /// The lowercase hex SHA-256 of `bytes`.
-pub fn sha256_hex(bytes: &[u8]) -> String {
+#[cfg(test)]
+pub(crate) fn sha256_hex(bytes: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(bytes);
     hex_lower(&hasher.finalize())
 }
 
 /// The lowercase hex SHA-256 of a file, streamed (never loads the whole archive into RAM).
-pub fn sha256_file(path: &Path) -> Result<String, InstallError> {
+pub(crate) fn sha256_file(path: &Path) -> Result<String, InstallError> {
     use std::io::Read;
     let mut file = std::fs::File::open(path)?;
     let mut hasher = Sha256::new();
@@ -164,7 +165,7 @@ fn hex_lower(bytes: &[u8]) -> String {
 /// Verify `zip_path` against `expected` (lowercase hex SHA-256). `Ok(())` only on an exact
 /// match — the gate that stops a truncated/tampered download from being unpacked. A
 /// placeholder `expected` (no real artifact yet) is [`InstallError::NotConfigured`].
-pub fn verify_checksum(zip_path: &Path, expected: &str) -> Result<(), InstallError> {
+pub(crate) fn verify_checksum(zip_path: &Path, expected: &str) -> Result<(), InstallError> {
     if expected == PLACEHOLDER_SHA {
         return Err(InstallError::NotConfigured);
     }
@@ -183,7 +184,7 @@ pub fn verify_checksum(zip_path: &Path, expected: &str) -> Result<(), InstallErr
 /// into `model_dir`. The verify-before-unpack order is the data-safety guarantee — a
 /// truncated download's bytes never reach the extractor, so a half-model can't be
 /// assembled and loaded.
-pub fn install_tower(zip_path: &Path, expected_sha: &str, model_dir: &Path) -> Result<(), InstallError> {
+pub(crate) fn install_tower(zip_path: &Path, expected_sha: &str, model_dir: &Path) -> Result<(), InstallError> {
     verify_checksum(zip_path, expected_sha)?;
     std::fs::create_dir_all(model_dir)?;
     unzip_into(zip_path, model_dir)
@@ -192,7 +193,7 @@ pub fn install_tower(zip_path: &Path, expected_sha: &str, model_dir: &Path) -> R
 /// Extract every entry of `zip_path` under `dest_dir`, rejecting any entry whose path would
 /// escape `dest_dir` (a zip-slip guard). Directory bundles (`.mlpackage`) are recreated
 /// verbatim.
-pub fn unzip_into(zip_path: &Path, dest_dir: &Path) -> Result<(), InstallError> {
+pub(crate) fn unzip_into(zip_path: &Path, dest_dir: &Path) -> Result<(), InstallError> {
     let file = std::fs::File::open(zip_path)?;
     let mut archive = zip::ZipArchive::new(file).map_err(|e| InstallError::Zip(e.to_string()))?;
     for i in 0..archive.len() {
@@ -216,13 +217,13 @@ pub fn unzip_into(zip_path: &Path, dest_dir: &Path) -> Result<(), InstallError> 
 }
 
 /// A tower's downloaded `.mlpackage` source directory inside the model dir.
-pub fn package_path(model_dir: &Path, tower: &ClipTowerSpec) -> PathBuf {
+pub(crate) fn package_path(model_dir: &Path, tower: &ClipTowerSpec) -> PathBuf {
     model_dir.join(tower.package_dir)
 }
 
 /// A tower's compiled `.mlmodelc` directory (sibling of the `.mlpackage`). This is what the
 /// worker actually loads; it's kept after the `.mlpackage` source is reclaimed (plan M5a).
-pub fn compiled_path(model_dir: &Path, tower: &ClipTowerSpec) -> PathBuf {
+pub(crate) fn compiled_path(model_dir: &Path, tower: &ClipTowerSpec) -> PathBuf {
     model_dir.join(tower.package_dir).with_extension("mlmodelc")
 }
 
@@ -248,7 +249,7 @@ pub fn is_installed(data_dir: &Path) -> bool {
 /// `Ok(true)` when it removed the source, `Ok(false)` when there was nothing to remove or no
 /// compiled model yet (the source is NEVER removed before a verified compile). Best-effort —
 /// an error is surfaced for logging, never fatal (keeping the package only costs disk).
-pub fn reclaim_source_package(model_dir: &Path, tower: &ClipTowerSpec) -> std::io::Result<bool> {
+pub(crate) fn reclaim_source_package(model_dir: &Path, tower: &ClipTowerSpec) -> std::io::Result<bool> {
     let package = package_path(model_dir, tower);
     if !compiled_path(model_dir, tower).is_dir() || !package.is_dir() {
         return Ok(false);
@@ -260,7 +261,7 @@ pub fn reclaim_source_package(model_dir: &Path, tower: &ClipTowerSpec) -> std::i
 /// Delete a tower's compiled `.mlmodelc` (plan M5a fallback): called when it failed to load
 /// and no `.mlpackage` remains to recompile from, so [`is_installed`] flips back to `false`
 /// and the standard download flow refetches the pinned zip. Best-effort.
-pub fn drop_compiled(model_dir: &Path, tower: &ClipTowerSpec) -> std::io::Result<()> {
+pub(crate) fn drop_compiled(model_dir: &Path, tower: &ClipTowerSpec) -> std::io::Result<()> {
     let compiled = compiled_path(model_dir, tower);
     if compiled.is_dir() {
         std::fs::remove_dir_all(&compiled)?;
@@ -271,7 +272,7 @@ pub fn drop_compiled(model_dir: &Path, tower: &ClipTowerSpec) -> std::io::Result
 /// The CLIP provenance stamp for staleness (`media_status.clip_stamp`): the model id +
 /// the OS version, so a model change OR an OS upgrade (which recompiles `.mlmodelc` and can
 /// drift ANE output) re-embeds. `None` when no model is installed.
-pub fn installed_stamp(data_dir: &Path) -> Option<String> {
+pub(crate) fn installed_stamp(data_dir: &Path) -> Option<String> {
     is_installed(data_dir).then(|| clip_stamp_for(&os_version()))
 }
 

@@ -76,7 +76,7 @@ impl NetworkEnrichConfig {
 
 /// Whether `path` is `ancestor` itself or lives under it. Pure path-prefix arithmetic
 /// (a trailing-slash-safe prefix, so `/Photos2` isn't "within" `/Photos`).
-pub fn path_is_within(path: &str, ancestor: &str) -> bool {
+pub(crate) fn path_is_within(path: &str, ancestor: &str) -> bool {
     let ancestor = ancestor.trim_end_matches('/');
     if ancestor.is_empty() {
         return true; // "/" (or empty) is an ancestor of everything
@@ -149,11 +149,6 @@ pub fn set_excluded_folder(folder: &str, excluded: bool) {
     }
 }
 
-/// Whether an image at OS path `os_path` on `volume_id` is override-covered.
-pub fn covers_override(volume_id: &str, os_path: &str) -> bool {
-    CONFIG.read_ignore_poison().covers(volume_id, os_path)
-}
-
 /// Whether an image at OS path `os_path` is under a user-excluded folder (a hard
 /// privacy veto, beats any override).
 pub fn is_excluded(os_path: &str) -> bool {
@@ -172,12 +167,12 @@ pub fn is_covered_by_parent_folder(os_path: &str) -> bool {
 }
 
 /// Mark a volume paused (its enrichment stopped on a disconnect; resumes on reconnect).
-pub fn mark_paused(volume_id: &str) {
+pub(crate) fn mark_paused(volume_id: &str) {
     PAUSED.write_ignore_poison().insert(volume_id.to_string());
 }
 
 /// Clear a volume's paused marker (it reconnected / completed a pass).
-pub fn clear_paused(volume_id: &str) {
+pub(crate) fn clear_paused(volume_id: &str) {
     PAUSED.write_ignore_poison().remove(volume_id);
 }
 

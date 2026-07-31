@@ -36,7 +36,7 @@ use std::time::Duration;
 /// A hard cap on a single image's compressed bytes. Comfortably above any real photo
 /// or RAW; a file past it is skipped (not read into memory) rather than risking an
 /// OOM on a pathological input.
-pub const MAX_FETCH_BYTES: u64 = 256 * 1024 * 1024;
+pub(crate) const MAX_FETCH_BYTES: u64 = 256 * 1024 * 1024;
 
 /// Why a byte fetch didn't yield bytes. Typed (never string-matched — `no-string-
 /// matching`): the caller branches on the variant to decide pause-vs-skip-vs-fail.
@@ -73,7 +73,7 @@ pub trait ByteFetcher: Send + Sync {
 
 /// The production fetcher: `std::fs::read` on the OS mount path, on a throwaway thread
 /// bounded by a timeout so a hung mount can't block the pass.
-pub struct FsByteFetcher;
+pub(crate) struct FsByteFetcher;
 
 impl ByteFetcher for FsByteFetcher {
     fn fetch(&self, os_path: &str, _size_hint: Option<u64>, timeout: Duration) -> Result<Vec<u8>, FetchError> {
@@ -274,7 +274,7 @@ pub fn os_join(mount_root: &str, index_relative: &str) -> String {
 /// itself (the whole volume); the OS folder passes through unchanged on a `root`/local
 /// volume (mount root `/`). `None` when the folder isn't under this volume's mount at
 /// all (a different volume) — the caller skips it.
-pub fn os_folder_to_index_prefix(folder: &str, mount_root: &str) -> Option<String> {
+pub(crate) fn os_folder_to_index_prefix(folder: &str, mount_root: &str) -> Option<String> {
     if mount_root == "/" || mount_root.is_empty() {
         return Some(folder.to_string());
     }
@@ -291,7 +291,7 @@ pub fn os_folder_to_index_prefix(folder: &str, mount_root: &str) -> Option<Strin
 /// A scripted fetcher for tests: maps an OS path to bytes, or to a disconnect, so the
 /// enrich core's pause/resume paths run with no real mount.
 #[cfg(test)]
-pub struct FakeByteFetcher {
+pub(crate) struct FakeByteFetcher {
     bytes: std::collections::HashMap<String, Vec<u8>>,
     disconnected: std::collections::HashSet<String>,
     unreadable: std::collections::HashSet<String>,

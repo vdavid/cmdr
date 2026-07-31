@@ -3,6 +3,13 @@
 Deterministic, cheap folder-importance scoring for expensive features (the in-app agent, media-ML enrichment, future
 cleanup/prefetch). A pure read-consumer of `indexing/`, sibling to `search/`.
 
+## The public surface
+
+3 public modules, 23 public items, plus two gated doors. `importance::tooling` (the `tooling` feature) is the ONLY way
+the `index-query` binaries reach the evaluation corpus and the measurement entry points; `importance::testing` is the
+only way an app-side test stages a scored folder. ❌ Don't widen a module to let a caller in — take one of the four
+dispositions in `../indexing/handle/DETAILS.md` § "The other two subsystems".
+
 ## Areas (routing map)
 
 Each area subdir has its own `CLAUDE.md` (must-knows) + `DETAILS.md` (depth). Touch a dir and its `CLAUDE.md` autoloads;

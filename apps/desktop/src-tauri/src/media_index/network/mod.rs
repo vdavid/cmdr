@@ -17,9 +17,9 @@
 
 pub(crate) mod budget;
 pub mod config;
-pub mod enrich;
+pub(crate) mod enrich;
 pub mod fetch;
-pub mod policy;
+pub(crate) mod policy;
 
 #[cfg(test)]
 mod tests;
