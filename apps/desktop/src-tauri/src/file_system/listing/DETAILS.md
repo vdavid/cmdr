@@ -267,10 +267,11 @@ what's on disk).
 
 ## Cancelling a listing detaches, never aborts
 
-`StreamingListingState.cancelled` is an `Arc<AtomicBool>` for one reason: it's handed to
-`Volume::list_directory_with_cancel` as the backend's cooperative cancel token. `cancel_listing()` sets it BEFORE
-`cancel_notify.notify_waiters()`, so by the time `read_directory_with_progress`'s `select!` cancel arm runs, the
-backend has already been told to stop.
+`StreamingListingState.cancel` is ONE `CancellationToken` serving three roles: the sync cancellation checks, the
+`select!` arm that races the read, and the backend's cooperative cancel token via `Volume::list_directory_with_cancel`.
+It used to be a flag plus a `Notify`; one token means the "is it cancelled?" checks and the "wake up" signal can't
+disagree, and `cancel_listing()` is one call. By the time `read_directory_with_progress`'s `select!` cancel arm runs,
+the backend has necessarily already been told to stop — the same cancellation woke it.
 
 That arm then emits `listing-cancelled` and RETURNS, dropping the listing task's `JoinHandle`. Dropping a `JoinHandle`
 detaches the task; it does not cancel it. So the backend keeps running for exactly as long as it needs to reach its own

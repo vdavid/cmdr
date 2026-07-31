@@ -54,8 +54,8 @@ picker, reactive volume state). The frontend is a passive consumer: it subscribe
   `lastIndexOf(':')`. The device id is OPAQUE — `connect()` resolves it to a `location_id` by matching the live
   enumeration (`resolve_device_location_id`), never by decoding it.
 - **Cancel propagation bails at the next per-USB-roundtrip boundary** (per-handle in `ObjectListing::next`), driven by
-  an `Arc<AtomicBool>` (`WriteOperationState.backend_cancel`, `StreamingListingState.cancelled`) wrapped as an
-  `mtp_rs::CancelToken`. It's the ONLY safe way to stop an MTP op early: ❌ never a `tokio::time::timeout` or a task
+  a `CancellationToken` (`WriteOperationState.backend_cancel`, `StreamingListingState.cancel`) bridged to an
+  `mtp_rs::CancelToken` by `MtpCancelBridge`. It's the ONLY safe way to stop an MTP op early: ❌ never a `tokio::time::timeout` or a task
   abort, which drop the future mid-transaction and wedge the phone (`connection/CLAUDE.md`, enforced by
   `pnpm check mtp-dropping-timeout`). Don't switch list/delete to PTP `CancelTransaction` (rationale in DETAILS.md).
 

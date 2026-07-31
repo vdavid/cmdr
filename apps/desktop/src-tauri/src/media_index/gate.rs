@@ -21,11 +21,22 @@
 //! stays unit-testable without touching these globals; only the live scheduler
 //! reads them.
 
-use std::sync::OnceLock;
+use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 use std::sync::atomic::{AtomicBool, AtomicU8, AtomicU64, AtomicUsize, Ordering};
+use std::sync::{LazyLock, OnceLock, RwLock};
+use tokio_util::sync::CancellationToken;
 
 static ENABLED: AtomicBool = AtomicBool::new(false);
-static CANCELLED: AtomicBool = AtomicBool::new(false);
+
+/// The emergency stop, as the same `CancellationToken` every other long-running
+/// operation in the index speaks — so a caller can take a `child_token()` off it
+/// or await `cancelled()` instead of polling a flag of its own.
+///
+/// It sits behind an `RwLock` because a token is one-shot by design: re-enabling
+/// the feature installs a FRESH token rather than un-cancelling this one, which
+/// is also what stops a pass that captured the old token from quietly resuming
+/// after the user said stop.
+static STOP: LazyLock<RwLock<CancellationToken>> = LazyLock::new(|| RwLock::new(CancellationToken::new()));
 
 /// The CLIP semantic-search on/off. ON by default: with no model installed it's inert
 /// anyway (nothing to embed, no embeddings to search), so defaulting on keeps the
@@ -112,7 +123,8 @@ pub const DEFAULT_IMPORTANCE_THRESHOLD: f64 = 0.0;
 pub fn set_enabled(enabled: bool) {
     ENABLED.store(enabled, Ordering::SeqCst);
     if enabled {
-        CANCELLED.store(false, Ordering::SeqCst);
+        // A fresh token, not an un-cancel: see [`STOP`].
+        *STOP.write_ignore_poison() = CancellationToken::new();
     }
 }
 
@@ -121,15 +133,21 @@ pub fn is_enabled() -> bool {
     ENABLED.load(Ordering::SeqCst)
 }
 
+/// The emergency stop, for a caller that wants to await it or hang a
+/// `child_token()` off it rather than poll [`is_cancelled`].
+pub fn stop_token() -> CancellationToken {
+    STOP.read_ignore_poison().clone()
+}
+
 /// Request that in-flight enrichment yield (the memory watchdog's stop hook calls
-/// this). Idempotent; cleared by [`set_enabled(true)`](set_enabled).
+/// this). Idempotent; superseded by [`set_enabled(true)`](set_enabled).
 pub fn request_cancel() {
-    CANCELLED.store(true, Ordering::SeqCst);
+    stop_token().cancel();
 }
 
 /// Whether an emergency stop is in effect. The pass checks this between images.
 pub fn is_cancelled() -> bool {
-    CANCELLED.load(Ordering::SeqCst)
+    stop_token().is_cancelled()
 }
 
 /// Set the CLIP semantic-search toggle (live-applied by the settings control, and seeded
@@ -156,10 +174,10 @@ pub fn semantic_search_enabled() -> bool {
 ///   false), so a pass already running (e.g. a NAS pass at image 74 of 31,890) yields
 ///   within a few images instead of grinding to completion after the user said stop.
 ///
-/// The two reasons stay SEPARATE at the atomic level: disabling touches no atomic here,
-/// it's observed live off [`is_enabled`], so [`is_cancelled`] / [`request_cancel`] keep
-/// their exact watchdog meaning and re-enabling can never leave a stuck flag —
-/// [`set_enabled(true)`](set_enabled) clears the emergency stop and the scheduler kicks
+/// The two reasons stay SEPARATE: disabling touches the stop token not at all, it's
+/// observed live off [`is_enabled`], so [`is_cancelled`] / [`request_cancel`] keep
+/// their exact watchdog meaning and re-enabling can never leave a stuck signal —
+/// [`set_enabled(true)`](set_enabled) installs a fresh token and the scheduler kicks
 /// fresh passes, and the disable input is simply `is_enabled() == true` again. Stopping
 /// reuses the existing cancel exit (rows kept, GC skipped): disabling is "stop
 /// processing", never "erase".
@@ -332,4 +350,27 @@ mod tests {
         // No change ⇒ no kick.
         assert!(!threshold_decreased(0.4, 0.4));
     }
+
+    /// The emergency stop is one-shot per generation: re-enabling installs a
+    /// FRESH token rather than un-cancelling the old one, so a pass that captured
+    /// the old token stays stopped while new passes start clear. Un-cancelling in
+    /// place is impossible with a token and would be wrong anyway — the user said
+    /// stop to the pass that was running.
+    #[test]
+    fn re_enabling_clears_the_stop_for_new_work_but_not_for_the_stopped_pass() {
+        set_enabled(true);
+        let in_flight = stop_token();
+
+        request_cancel();
+        assert!(is_cancelled(), "the watchdog stop is in effect");
+        assert!(in_flight.is_cancelled(), "the running pass sees it");
+
+        set_enabled(true);
+        assert!(!is_cancelled(), "a new pass starts clear");
+        assert!(
+            in_flight.is_cancelled(),
+            "the pass that was told to stop must not quietly resume"
+        );
+    }
+
 }

@@ -134,15 +134,53 @@ two places START a subsystem — a drive index and the media scheduler — and b
 `Arc<dyn EventSink>` through constructors, which is the shape to keep: read the seam where a subsystem starts, then
 pass it down.
 
-## Cancellation is still `Arc<AtomicBool>`
+## Cancellation
 
-The plan wants one cancellation primitive, `tokio_util::sync::CancellationToken`, replacing the `Arc<AtomicBool>` flags.
-That isn't done, and it isn't index-internal: `Volume::list_directory_for_scan` and `list_directory_with_cancel` carry
-`Option<&Arc<AtomicBool>>` in **`cmdr-fs`**, implemented by every real backend (SMB in two files, MTP in two). So the
-swap is a `cmdr-fs` trait change plus every implementor plus ~100 call sites, and a partial swap would leave two
-primitives, which is worse than one.
+One primitive, `tokio_util::sync::CancellationToken`, from the `Volume` trait in `cmdr-fs` up through every long walk
+the three subsystems run. It replaced five kinds of `Arc<AtomicBool>` plus a `Notify`, none of which could compose.
 
-Also unresolved with it: whether a cancelled scan should return a distinct error variant instead of
-`ScanSummary { was_cancelled: true }`. Cancellation IS observable today — it's a returned value, not a silent early
-return — but the variant would fork the completion handler's arms, and that handler decides whether `scan_completed_at`
-gets written. A false "complete" permanently strands an index, so this is not a change to make in passing.
+**The topology is a tree, rooted per volume.** `VolumeSignals.cancel` (`lifecycle/state.rs`) is held by BOTH the
+registry `IndexInstance` and its `IndexManager`, so the two can't disagree; read it from elsewhere through
+`state::volume_cancel_token`. Everything below it runs on a `child_token()`:
+
+- the full scan and the network trait scan (`manager::start_scan`, `network_scan::start_volume_scan`)
+- the local reconcile walk
+- the subtree-rescan drain, the per-navigation verifier, and background verification — the three that used to carry a
+  flag hardcoded to `false`, i.e. couldn't be stopped at all
+- inside a scan, the walker's own token, which the insert visitor cancels on a writer-send failure
+
+That last one is why the child relationship matters beyond tidiness: cancelling the CHILD stops the walk without the
+scan reading as user-cancelled, which is what `run_scan` asks the PARENT for. It also deleted a dedicated bridge thread
+that existed only to mirror one flag into another.
+
+`stop_scan` cancels one scan's child, so the volume can start another; `shutdown` cancels the volume token, so
+everything under it stops at once.
+
+**A caller with no volume behind it degrades, it doesn't panic**: `volume_cancel_token(...).map(child).unwrap_or_default()`
+gives a token that never fires, the same shape every other seam here uses.
+
+**`media_index` shares the primitive but not the tree.** Its emergency stop (`gate::stop_token`) is process-wide, and
+re-enabling installs a FRESH token rather than un-cancelling — a token is one-shot by design, and a pass the user
+stopped must not quietly resume. Per-volume media cancellation would be a new feature, not a rewiring: nothing today
+scopes an enrichment pass to a volume's token.
+
+## Cancellation is observable, as a typed error
+
+`Ok` from a scan means the walk FINISHED. A stopped walk returns `ScanError::Cancelled(ScanSummary)` /
+`VolumeScanError::Cancelled(ScanSummary)`, carrying its partial totals.
+
+**Why a variant and not a `was_cancelled` flag on the summary:** `scan_completed_at` is written off that distinction,
+and writing it for a partial strands the index permanently — the next launch skips the healing rescan forever. A flag on
+a success value lets a caller reach the marker-writing code by simply not checking; an error variant means there is no
+`Ok`-shaped partial to hold. ❌ Don't "simplify" it back.
+
+**Cancelled is a third outcome, not a second failure.** `run_scan_completion` splits once, into
+`(summary, was_completed)`: a cancelled walk takes the same post-scan handoff as a clean one (its rows are real and want
+reconciling) but writes no meta and touches no freshness, while genuine failures route to `report_unfinished_scan` and
+get `ScanFailed` ⇒ Stale. On the network side `Cancelled` is deliberately NOT a terminal disconnect, so the partial is
+discarded rather than kept as Stale. Collapsing cancelled into either neighbour is the bug to hunt for.
+
+**The split is public, not internal.** `run_scan` keeps a `ScanOutcome` because the write sequences that follow a walk
+need its ids and epoch on the cancel path too: `scan_subtree` already sent the destructive `DeleteDescendantsById`, so
+it stamps and aggregates FIRST and only then unwraps to a `Result`. `a_cancelled_subtree_scan_still_repairs_its_ancestors`
+pins that ordering.

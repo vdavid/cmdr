@@ -167,11 +167,13 @@ Load-bearing rules:
   non-journaled index (SMB/MTP/external) loads **Stale**, a journaled one (local) loads **Fresh**, no-completed-scan
   loads `None` (gray → fresh scan). Seeded at reservation from the volume `kind`. This is correct and honest, not a bug:
   we weren't watching while off.
-- **Scan transitions.** `ScanStarted` ⇒ Scanning; a CLEAN `ScanCompleted` ⇒ Fresh (gated on `!was_cancelled`); a FAILED
+- **Scan transitions.** `ScanStarted` ⇒ Scanning; a CLEAN `ScanCompleted` ⇒ Fresh (only the `Ok` arm reaches it); a FAILED
   LOCAL scan/reconcile ⇒ `ScanFailed` ⇒ Stale.
 - **Failed LOCAL scan ⇒ Stale, never a stuck spinner** (`scan_completion.rs`). `start_scan`'s completion handler fires
-  `ScanFailed` (through the cloned freshness handle, no registry re-lock) on both failure arms: `Ok(Err(_))` (a typed
-  `ScanError` like `EmptyRoot`, or a `catch_unwind`-converted `Panicked`) and `Err(_)` (thread-join panic). `ScanStarted`
+  `ScanFailed` (through the cloned freshness handle, no registry re-lock) from `report_unfinished_scan`, on both failure
+  arms: `Ok(Err(_))` (a typed `ScanError` like `EmptyRoot`, or a `catch_unwind`-converted `Panicked`) and `Err(_)`
+  (thread-join panic). A CANCELLED scan never reaches it — `ScanError::Cancelled` is split off before, and keeps the
+  volume's prior freshness rather than reporting a failure. `ScanStarted`
   already moved the badge to Scanning, so without this a failed scan strands it on a perpetual blue spinner until
   relaunch. The prior index is NOT blanked; it gets the honest Stale "rescan available" badge and heals on rescan.
 - **Interrupted SMB/MTP scan: disconnect ⇒ keep an honest partial + Stale; user-cancel ⇒ heal-to-rescan (gray).** The
@@ -187,7 +189,8 @@ Load-bearing rules:
     queued dir into a silently-empty row, then wrote `scan_completed_at` and rendered "complete + Fresh"). It persists
     across relaunch because `resume_or_scan_network` sees no `scan_completed_at` and RECONCILES (not truncates) the
     existing rows.
-  - **User cancel** (`Ok(summary)` with `was_cancelled`): the partial is discardable — `discard_buffered_changes` +
+  - **User cancel** (`Err(VolumeScanError::Cancelled)`, which `is_terminal_disconnect` deliberately excludes): the
+    partial is discardable — `discard_buffered_changes` +
     `state::reset_to_not_indexed` ⇒ gray, healing to a clean fresh scan on the next enable. (Timeout / writer-send /
     non-disconnect root-fatal also take this discard path.)
 - **The watcher-driven transitions** (`WatcherDied`, `OverflowUnrecoverable`) fire from the transport live-watch layer

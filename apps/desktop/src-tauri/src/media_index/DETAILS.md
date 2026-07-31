@@ -88,11 +88,12 @@ NAS pass at image 74 of 31,890) within a few images, reusing the SAME safe cance
 breaks with `cancelled: true`, which SKIPS GC and keeps every already-enriched row. Disabling is "stop processing",
 never "erase": no GC, no prune (the privacy retro-delete is the separate, explicit erase path).
 
-**Decision: fold the disable into the cancel predicate, don't overload `CANCELLED`.** The two stop reasons stay SEPARATE
-at the atomic level — disabling sets no flag, it's observed live off `is_enabled()`, so `is_cancelled` / `request_cancel`
-keep their exact watchdog-only meaning. This also means re-enable can never leave a stuck flag: `set_enabled(true)`
-clears `CANCELLED` and makes `is_enabled()` true, so `should_stop()` is false again, and `kick_all_ready_passes` starts
-fresh passes. A distinct third atomic for disable would add state to reset for no gain. The between-images granularity
+**Decision: fold the disable into the cancel predicate, don't overload the stop token.** The two stop reasons stay
+SEPARATE — disabling touches the token not at all, it's observed live off `is_enabled()`, so `is_cancelled` /
+`request_cancel` keep their exact watchdog-only meaning. This also means re-enable can never leave a stuck signal:
+`set_enabled(true)` installs a FRESH `CancellationToken` (a token is one-shot, so it's a swap, not an un-cancel — and
+that's also what stops a pass the user told to stop from quietly resuming) and makes `is_enabled()` true, so
+`should_stop()` is false again, and `kick_all_ready_passes` starts fresh passes. A distinct third atomic for disable would add state to reset for no gain. The between-images granularity
 is right for a NON-destructive stop: unlike the exclusion veto (privacy, which re-checks before each upsert to close the
 in-flight-analyze TOCTOU), one more image finishing after a disable just writes one more KEPT row, so the per-image loop
 check is enough.

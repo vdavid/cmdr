@@ -36,7 +36,8 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use tokio_util::sync::CancellationToken;
 use std::thread;
 
 use crate::media_index::backend::{ImageInput, VisionBackend, VisionError};
@@ -78,9 +79,11 @@ struct PassState<'a> {
     done: AtomicU64,
     bytes_done: AtomicU64,
     enriched: AtomicUsize,
-    /// Set when any worker should stop: a genuine cancel (watchdog / toggle off) OR a
-    /// writer error. Disambiguated after the pass by `first_error`.
-    stop: AtomicBool,
+    /// Cancelled when any worker should stop: a genuine cancel (watchdog / toggle
+    /// off) OR a writer error. Disambiguated after the pass by `first_error`. A
+    /// `CancellationToken` like every other stop signal in the index, so a
+    /// future per-volume stop can parent this pass with `child_token()`.
+    stop: CancellationToken,
     /// The first per-image writer error, if any — the pass returns it as `Err` (a data
     /// write failing is fatal to the pass, exactly as the serial `?` made it).
     first_error: Mutex<Option<String>>,
@@ -125,7 +128,7 @@ pub(crate) fn run_enrich_pool(
         done: AtomicU64::new(0),
         bytes_done: AtomicU64::new(0),
         enriched: AtomicUsize::new(0),
-        stop: AtomicBool::new(false),
+        stop: CancellationToken::new(),
         first_error: Mutex::new(None),
     };
     // The pass-start tick, so the indicator row appears immediately at 0 / total.
@@ -143,7 +146,7 @@ pub(crate) fn run_enrich_pool(
     // live count exceeds `n` (GROW → re-spawn wider). The cursor persists across batches,
     // so no image is reprocessed or skipped.
     loop {
-        if state.stop.load(Ordering::Acquire) || cursor.load(Ordering::Acquire) >= images.len() {
+        if state.stop.is_cancelled() || cursor.load(Ordering::Acquire) >= images.len() {
             break;
         }
         // No `cancel()` check here: the workers below check it once per image (exactly as
@@ -175,7 +178,7 @@ pub(crate) fn run_enrich_pool(
     if let Some(err) = state.first_error.lock_ignore_poison().take() {
         return Err(err);
     }
-    let cancelled = state.stop.load(Ordering::Acquire);
+    let cancelled = state.stop.is_cancelled();
 
     // Deletion-driven GC — only on a clean completion (never when cancelled: an emergency
     // stop yields fully; vanished rows collect on the next completed scan). Single-
@@ -226,13 +229,13 @@ fn worker_loop(
     images: &[ImageEntry],
 ) {
     loop {
-        if state.stop.load(Ordering::Acquire) {
+        if state.stop.is_cancelled() {
             break;
         }
         // The between-images cancel hook (memory watchdog OR master toggle off): the
         // first worker to see it stops the whole pass promptly (everything cancelable).
         if cancel() {
-            state.stop.store(true, Ordering::Release);
+            state.stop.cancel();
             break;
         }
         // Live-apply: re-read the effective width. A SHRINK retires this slot; a GROW ends
@@ -247,7 +250,7 @@ fn worker_loop(
         };
         if let Err(err) = process_image(image, backend, state) {
             *state.first_error.lock_ignore_poison() = Some(err);
-            state.stop.store(true, Ordering::Release);
+            state.stop.cancel();
             break;
         }
     }

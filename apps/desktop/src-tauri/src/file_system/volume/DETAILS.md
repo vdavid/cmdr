@@ -87,24 +87,28 @@ Folders always merge (see `write_operations/transfer/CLAUDE.md` § "Dir-vs-dir i
 
 `list_directory_with_cancel(path, on_progress, cancel)` and
 `delete_with_cancel(path, cancel)` accept an
-`Option<&Arc<AtomicBool>>` that backends interpret as a cooperative cancel
-flag. Default impls delegate to the non-cancel `list_directory` / `delete`,
-dropping the flag — so adding a new backend doesn't have to implement them
-unless its operations are interruptible at a meaningful boundary.
+`Option<&CancellationToken>` — the one cancellation primitive every layer of
+Cmdr speaks — that backends interpret as a cooperative stop signal. Default
+impls delegate to the non-cancel `list_directory` / `delete`, dropping the token
+— so adding a new backend doesn't have to implement them unless its operations
+are interruptible at a meaningful boundary. `list_directory_for_scan` is the
+third: the index scanner's entry point, whose default is
+`list_directory_with_cancel`.
 
-- `MtpVolume` overrides both. The flag wraps a fresh `mtp_rs::CancelToken` via
-  `CancelToken::from_arc(Arc::clone(...))` (shared atomic, no polling task) and
-  threads through to mtp-rs's `list_objects_with_cancel` /
-  `delete_with_cancel`. That bails the per-handle `GetObjectInfo` loop within
-  one USB roundtrip's latency.
-- `LocalPosixVolume`, `SmbVolume`, and `InMemoryVolume` inherit the default
-  (ignore the flag). Local listings are effectively atomic; SMB cancel
-  propagation is a follow-up.
+- `MtpVolume` overrides all three. mtp-rs polls its own `Arc<AtomicBool>`-backed
+  `CancelToken`, so `MtpCancelBridge` mirrors the token into one for the
+  duration of a call, through a task parked on `cancelled()` that retires when
+  the bridge drops. That bails the per-handle `GetObjectInfo` loop within one
+  USB roundtrip's latency.
+- `LocalPosixVolume` and `InMemoryVolume` inherit the default (ignore the
+  token); local listings are effectively atomic. `SmbVolume` overrides
+  `list_directory_for_scan` only, to draw from its per-scan connection pool, and
+  ignores the token there — SMB cancel propagation is a follow-up.
 
-The write-op layer hands `Some(&state.backend_cancel)` (a clone of the same
-`Arc<AtomicBool>` that `cancel_write_operation` flips when intent leaves
-`Running`). Volumes that ignore the flag are unaffected; volumes that consume
-it stop their wire activity, not just the loop above.
+The write-op layer hands `Some(&state.backend_cancel)` (the same token
+`cancel_write_operation` cancels when intent leaves `Running`). Volumes that
+ignore it are unaffected; volumes that consume it stop their wire activity, not
+just the loop above.
 
 See `apps/desktop/src-tauri/src/mtp/CLAUDE.md` § "Cancel propagation" for the
 MTP-specific wiring and the rationale for "between-roundtrip" cancel vs PTP

@@ -130,11 +130,12 @@ auto-connect, which re-suppresses ptpcamerad if devices are found.
 Long MTP operations bail at the next per-USB-roundtrip boundary when the caller's write-op intent flips to
 `Stopped` / `RollingBack`.
 
-- `WriteOperationState.backend_cancel` (`Arc<AtomicBool>`) is created per write op alongside `intent`.
+- `WriteOperationState.backend_cancel` (a `CancellationToken`) is created per write op alongside `intent`.
   `cancel_write_operation` and `cancel_all_write_operations` flip both together so any cancel path stops the wire
   activity.
-- `MtpVolume::list_directory_with_cancel` and `MtpVolume::delete_with_cancel` wrap the flag as a fresh
-  `mtp_rs::CancelToken` via `CancelToken::from_arc(Arc::clone(...))`, sharing the inner atomic (no second polling task).
+- `MtpVolume`'s three cancel-aware methods open an `MtpCancelBridge` for the call: mtp-rs polls its own
+  `Arc<AtomicBool>`-backed `CancelToken`, so a task parked on `cancelled()` mirrors ours into it and retires when the
+  bridge drops (its guard cancels a child token, so the mirror ends on every exit — clean, cancelled, or errored).
 - `MtpConnectionManager::list_directory_with_cancel`, `list_directory_with_progress_and_cancel`, and
   `delete_object_with_cancel` thread the token to `storage.list_objects_with_cancel` / `storage.delete_with_cancel` in
   `mtp-rs`. The token is also checked between iterations of the recursive child-delete loop.

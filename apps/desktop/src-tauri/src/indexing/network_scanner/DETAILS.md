@@ -27,8 +27,9 @@ logical and inode is `None`. Symlinks contribute no size (matching the local sca
 
 Three disciplines for network round trips (all in `list_one_directory`):
 
-- **Cancelable at every round trip**: the cancel flag is checked before each directory listing; a set flag flushes the
-  current batch and returns `was_cancelled`.
+- **Cancelable at every round trip**: the walk's `CancellationToken` is checked before each directory listing and
+  threaded into `list_directory_for_scan`, so an in-flight MTP listing bails within one round trip. A cancel flushes the
+  current batch and returns `Err(VolumeScanError::Cancelled)` carrying the partial totals.
 - **Timeout-wrapped, but DETACHING**: each listing runs in its OWN task and `LIST_TIMEOUT` (120 s) races that task's
   JOIN HANDLE, so a wedged mount yields `VolumeScanError::Timeout` instead of parking forever. ❌ Never wrap the listing
   future directly: dropping the handle detaches the task, dropping the future cancels it mid-round-trip, and on MTP that
@@ -52,8 +53,8 @@ self-describing — scanned subtrees roll up to `min_subtree_epoch > 0` (exact, 
 ones stay `0` (`—`/`≥`). The completion handler (`lifecycle/manager.rs`) then keeps the instance + DB and marks the
 volume Stale.
 
-A **user cancel** still discards: `cancelled` returns `was_cancelled` with no marks/aggregate, and the completion
-handler resets the volume to gray.
+A **user cancel** still discards: it returns `VolumeScanError::Cancelled` with no marks/aggregate, and the completion
+handler resets the volume to gray. `is_terminal_disconnect` returns false for it, which is what keeps the two apart.
 
 This scanner NEVER writes the `scan_completed_at` meta marker (on any path); the caller's completion handler does, only
 on a clean finish — the same `scan_completed_at`-absent ⇒ no-Fresh / heal-to-rescan mechanism the local scanner relies
