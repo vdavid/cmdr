@@ -141,6 +141,12 @@ pub struct ScanProgressSnapshot {
     pub bytes_scanned: u64,
 }
 
+impl Default for ScanProgress {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ScanProgress {
     /// A fresh set of counters for one scan.
     pub fn new() -> Self {

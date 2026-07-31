@@ -1680,10 +1680,18 @@ export const commands = {
   getDirStats: (path: string) =>
     typedError<
       {
+        // The directory these totals describe, absolute.
         path: string
+        // Logical bytes over the whole subtree (what the files claim to be).
         recursiveSize: number
+        /**
+         *  Physical bytes over the whole subtree (what they occupy on disk),
+         *  post-dedup for hard links and clones.
+         */
         recursivePhysicalSize: number
+        // Files anywhere under the directory.
         recursiveFileCount: number
+        // Directories anywhere under it, itself excluded.
         recursiveDirCount: number
         /**
          *  `true` if any descendant entry (or direct child) is a symlink.
@@ -4050,10 +4058,18 @@ export type DiffChange = {
  *  the IPC boundary (frontend expects path-keyed dir stats).
  */
 export type DirStats = {
+  // The directory these totals describe, absolute.
   path: string
+  // Logical bytes over the whole subtree (what the files claim to be).
   recursiveSize: number
+  /**
+   *  Physical bytes over the whole subtree (what they occupy on disk),
+   *  post-dedup for hard links and clones.
+   */
   recursivePhysicalSize: number
+  // Files anywhere under the directory.
   recursiveFileCount: number
+  // Directories anywhere under it, itself excluded.
   recursiveDirCount: number
   /**
    *  `true` if any descendant entry (or direct child) is a symlink.
@@ -4934,7 +4950,9 @@ export type IndexDirUpdatedEvent = {
  *  preserved because [`IndexStoreError`]'s `Display` flattens it away.
  */
 export type IndexFailure = {
+  // The primary SQLite result code, for example `SQLITE_IOERR` = 10.
   code: number
+  // The extended result code, for example `SQLITE_IOERR_WRITE`.
   extendedCode: number
 }
 
@@ -5132,10 +5150,21 @@ export type IndexScanStartedEvent = {
  *  right now.
  */
 export type IndexStatus = {
+  /**
+   *  The schema the database was written with. A mismatch rebuilds rather than
+   *  migrates; the index is a disposable cache.
+   */
   schemaVersion: string | null
+  // Where the volume was mounted when it was last walked.
   volumePath: string | null
+  /**
+   *  When the last walk finished. Every value here is TEXT, because `meta` is
+   *  a string key-value table.
+   */
   scanCompletedAt: string | null
+  // How long that walk took.
   scanDurationMs: string | null
+  // How many entries it recorded, the tier-1 progress denominator.
   totalEntries: string | null
   /**
    *  The previous completed scan's summed post-dedup physical bytes (TEXT, like
@@ -5143,6 +5172,10 @@ export type IndexStatus = {
    *  debugging; not on the tier-1 critical path.
    */
   totalPhysicalBytes: string | null
+  /**
+   *  The last filesystem event the watcher had applied when the walk finished.
+   *  Replay resumes from here, which is how a restart doesn't lose history.
+   */
   lastEventId: string | null
 }
 
@@ -5151,9 +5184,13 @@ export type IndexStatus = {
  *  far, plus the persisted facts about the last one that finished.
  */
 export type IndexStatusResponse = {
+  // Whether this volume has an index instance at all.
   initialized: boolean
+  // Whether a walk is running right now.
   scanning: boolean
+  // Files and directories the current walk has recorded so far.
   entriesScanned: number
+  // Directories among them, the tier-1 progress numerator.
   dirsFound: number
   /**
    *  Resolved post-dedup physical bytes scanned so far (live), the tier-2
@@ -5161,7 +5198,15 @@ export type IndexStatusResponse = {
    *  `scan_handle` snapshot as `entries_scanned`/`dirs_found`.
    */
   bytesScanned: number
+  /**
+   *  The persisted facts about the last walk that finished, or `None` before
+   *  this volume's first one.
+   */
   indexStatus: IndexStatus | null
+  /**
+   *  The index database's size on disk, for the retention cap and the debug
+   *  window. `None` when the file can't be stat'd.
+   */
   dbFileSize: number | null
   /**
    *  The scanned volume's used bytes at the current scan's start, the tier-2
@@ -5187,6 +5232,7 @@ export type IndexStatusResponse = {
    *  `scanning` rule as the two fields above.
    */
   priorTotalEntries: number | null
+  // How long that previous walk took, the tier-1 ETA's rate.
   priorScanDurationMs: number | null
 }
 
@@ -5862,7 +5908,13 @@ export type MediaEnrichTerminalEvent = {
  */
 export type MediaEnrichTerminalReason =
   // The pass enriched every eligible image and GC'd vanished rows.
-  | { kind: 'completed'; enriched: number; gcCount: number }
+  | {
+      kind: 'completed'
+      // Images the pass enriched.
+      enriched: number
+      // Rows it removed for images that no longer exist.
+      gcCount: number
+    }
   // A network pass paused because the app is in use (resumes when idle again).
   | { kind: 'pausedWaitingForIdle' }
   // A network pass paused because the volume disconnected (resumes on reconnect).
@@ -6685,6 +6737,7 @@ export type PersistRestrictedSetting = {
 
 // A completed or in-progress phase in the indexing timeline.
 export type PhaseRecord = {
+  // Which phase this record is about.
   phase: ActivityPhase
   // HH:MM:SS.mmm format
   startedAt: string

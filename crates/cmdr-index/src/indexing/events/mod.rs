@@ -209,8 +209,6 @@ pub struct IndexStatusResponse {
     /// carries. A reload that fell back to those would seed a full walk's ETA off
     /// the ~5x slower change check that happened to run last. Same read-only-while-
     /// `scanning` rule as the two fields above.
-    /// Entries the previous walk of this kind recorded, the tier-1 ETA's
-    /// denominator.
     pub prior_total_entries: Option<u64>,
     /// How long that previous walk took, the tier-1 ETA's rate.
     pub prior_scan_duration_ms: Option<u64>,
