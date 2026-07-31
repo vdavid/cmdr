@@ -5,8 +5,6 @@
 import { afterEach, describe, it, expect } from 'vitest'
 import {
   formatFileSizeWithFormat,
-  formatByteRateWithFormat,
-  bytesPerSecond,
   fixedUnitFor,
   dynamicTierIndex,
   unitLabel,
@@ -230,22 +228,5 @@ describe('fixedUnitFor', () => {
     expect(fixedUnitFor('kB')).toBe('kB')
     expect(fixedUnitFor('MB')).toBe('MB')
     expect(fixedUnitFor('GB')).toBe('GB')
-  })
-})
-
-describe('formatByteRateWithFormat', () => {
-  it('appends /s to the size of the same magnitude', () => {
-    expect(formatByteRateWithFormat(bytesPerSecond(1024 * 1024), 'binary')).toBe('1.00 MB/s')
-    expect(formatByteRateWithFormat(bytesPerSecond(1_000_000), 'si')).toBe('1.00 MB/s')
-  })
-
-  it('follows the binary/SI base, so one rate reads one way everywhere', () => {
-    // 87_654_321 B/s: 83.59 MB/s under binary, 87.65 MB/s under SI.
-    expect(formatByteRateWithFormat(bytesPerSecond(87_654_321), 'binary')).toBe('83.59 MB/s')
-    expect(formatByteRateWithFormat(bytesPerSecond(87_654_321), 'si')).toBe('87.65 MB/s')
-  })
-
-  it('renders sub-kilobyte rates as bare bytes', () => {
-    expect(formatByteRateWithFormat(bytesPerSecond(512), 'binary')).toBe('512 bytes/s')
   })
 })

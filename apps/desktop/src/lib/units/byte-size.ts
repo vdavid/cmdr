@@ -33,9 +33,10 @@ export function bytes(count: number): ByteCount {
 
 /**
  * A transfer rate in bytes per second. Separate from {@link ByteCount} because
- * a rate and a size are not interchangeable even though both count bytes:
- * `formatByteRate` must never be handed a file size, and `<Size>` must never be
- * handed a rate.
+ * a rate and a size are not interchangeable even though both count bytes: a
+ * speed readout must never be handed a file size, and a size column must never
+ * be handed a rate. The per-second marker itself is user-facing copy and lives
+ * in the i18n catalog (`fileOperations.shared.byteRate`), not here.
  */
 declare const byteRateBrand: unique symbol
 export type BytesPerSecond = number & { readonly [byteRateBrand]: 'bytes/s' }
@@ -107,18 +108,6 @@ export function formatFileSizeWithFormat(
   // anything scaled into kB+ shows two fraction digits.
   const valueStr = unitIndex === 0 ? formatSizeInteger(value) : formatSizeDecimal(value)
   return `${valueStr} ${units[unitIndex]}`
-}
-
-/**
- * Format a transfer rate as `"<size>/s"`, using the same unit choice and base
- * as a size of the same magnitude. One definition, so a rate rendered in the
- * copy dialog and in the Transfers window can't disagree.
- *
- * @param rate Bytes per second
- * @param format Binary or SI base, as for {@link formatFileSizeWithFormat}
- */
-export function formatByteRateWithFormat(rate: BytesPerSecond, format: FileSizeFormat): string {
-  return `${formatFileSizeWithFormat(rate, format)}/s`
 }
 
 /**

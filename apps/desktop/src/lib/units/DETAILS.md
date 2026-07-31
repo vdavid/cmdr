@@ -22,7 +22,9 @@ So: one implementation per quantity, and a lint that keeps it that way.
   (`'kB'`/`'MB'`/`'GB'`) keeps a directory's sizes comparable; the file list's own unit mode routes through
   `formatSizeForDisplay`.
 - **A speed** is the backend's `write-progress.bytesPerSecond` (`EtaEstimator` in
-  `src-tauri/src/file_system/write_operations/eta.rs`), rendered by `formatByteRate`. The frontend does not compute a
+  `src-tauri/src/file_system/write_operations/eta.rs`), rendered as a `<Size>` inside the
+  `fileOperations.shared.byteRate` catalog phrasing (`<size></size>/s`). The per-second marker is user-facing copy, so
+  it belongs to the catalog, not to a code-side formatter; this module owns the number. The frontend does not compute a
   second, instantaneous rate for the active phase. The one frontend-computed rate is `ScanThroughput`, which covers the
   SCAN phase only, where the backend emits no rate at all.
 - **An ETA** is the backend's `write-progress.etaSeconds` through `createEtaSmoother()`
@@ -32,8 +34,8 @@ So: one implementation per quantity, and a lint that keeps it that way.
 
 ## Type safety: how far, and why not further
 
-`ByteCount`, `BytesPerSecond`, and `Seconds` are zero-cost branded numbers. They're **required** by `formatByteRate`
-and `formatDuration`, and carried by `TransferReadout` (`apps/desktop/src/lib/file-operations/progress-readout.ts`), which brands one
+`ByteCount`, `BytesPerSecond`, and `Seconds` are zero-cost branded numbers. `Seconds` is **required** by
+`formatDuration`, and all three are carried by `TransferReadout` (`apps/desktop/src/lib/file-operations/progress-readout.ts`), which brands one
 `write-progress` payload at the IPC edge. That's where the mistakes live: `bytesDone`, `filesDone`, `bytesPerSecond`,
 and `etaSeconds` sit next to each other as bare numbers, and swapping two of them renders a plausible-looking wrong
 value rather than failing.

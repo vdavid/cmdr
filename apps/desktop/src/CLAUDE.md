@@ -33,9 +33,9 @@ code under here.
   place lucide is imported, enforced by `cmdr/no-raw-lucide-import`); custom glyphs live as components in
   `lib/ui/icons/` and register there too. `Icon` has no `color` prop (set it on the wrapping span). Every glyph and
   spinner appears in the Debug "Graphics" catalog (`routes/dev/graphics/`). See `docs/guides/icons.md`.
-- ❌ A size, rate, or duration becomes text in ONE place: `$lib/units` (`formatByteSize` / `formatByteRate` /
-  `formatDuration`), `<Size bytes>` in markup. Never a private `formatBytes` or a hardcoded `1024` ladder:
-  four copies once drifted and two windows disagreed. `cmdr/no-private-unit-format`.
+- ❌ A size or duration becomes text in ONE place: `$lib/units` (`formatByteSize` / `formatDuration`), `<Size bytes>`
+  in markup. Never a private `formatBytes` or a hardcoded `1024` ladder: four copies once drifted and two windows
+  disagreed. `cmdr/no-private-unit-format`.
 - Stay aligned to Ark UI's naming. When wrapping an `@ark-ui/svelte` primitive in `lib/ui/`, name the wrapper after
   Ark's component (`Select`, `Combobox`, `Popover`, `Menu`, …) so it maps 1:1 to Ark. Flag any divergence (raise it,
   don't silently rename). Feature/section code imports the house wrapper, never `@ark-ui/svelte` directly (enforced by

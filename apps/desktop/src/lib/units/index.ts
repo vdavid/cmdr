@@ -2,19 +2,25 @@
  * Units: the one place a byte count, a transfer rate, or a duration turns into
  * text a person reads.
  *
- * Start here. `formatByteSize` and `formatByteRate` honor the user's
- * `appearance.fileSizeFormat` (binary KB / SI kB) automatically; the
- * `*WithFormat` variants take the base explicitly for pure code and tests. The
- * component form of a size is `<Size bytes>` (`$lib/ui/Size.svelte`), which
- * also carries the size-tier colors.
+ * Start here. `formatByteSize` honors the user's `appearance.fileSizeFormat`
+ * (binary KB / SI kB) automatically; `formatFileSizeWithFormat` takes the base
+ * explicitly for pure code and tests. The component form of a size is
+ * `<Size bytes>` (`$lib/ui/Size.svelte`), which also carries the size-tier
+ * colors.
  *
  * ```ts
- * import { formatByteSize, formatByteRate, formatDuration } from '$lib/units'
+ * import { formatByteSize, formatDuration, seconds } from '$lib/units'
  *
  * formatByteSize(87_654_321)   // "83.59 MB" (binary) or "87.65 MB" (SI)
- * formatByteRate(1_234_567)    // "1.18 MB/s" or "1.23 MB/s"
- * formatDuration(492)          // "8m 12s"
+ * formatDuration(seconds(492)) // "8m 12s"
  * ```
+ *
+ * A transfer RATE is a size plus a per-second marker, and that marker is
+ * user-facing copy, so it lives in the i18n catalog, not here: render
+ * `<Trans key="fileOperations.shared.byteRate" snippets={{ size }} />` with a
+ * `<Size bytes={rate}>` snippet, as the copy dialog and the Transfers window
+ * both do. Brand the rate with `bytesPerSecond(...)` so it can't be mistaken
+ * for a file size on the way there.
  *
  * ❌ Don't write a private `formatBytes` / `formatSpeed` / `formatEta`. Four of
  * them once drifted apart and hardcoded base 1024 while labelling the result
@@ -29,7 +35,7 @@
  */
 
 import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
-import { formatFileSizeWithFormat, formatByteRateWithFormat, type BytesPerSecond } from './byte-size'
+import { formatFileSizeWithFormat } from './byte-size'
 
 export {
   type ByteCount,
@@ -41,7 +47,6 @@ export {
   fixedUnitFor,
   dynamicTierIndex,
   formatFileSizeWithFormat,
-  formatByteRateWithFormat,
 } from './byte-size'
 
 export { type Seconds, seconds, formatDuration, formatMilliseconds, formatFilesPerSecond } from './duration'
@@ -57,11 +62,3 @@ export function formatByteSize(byteCount: number, forceUnit?: 'kB' | 'MB' | 'GB'
   return formatFileSizeWithFormat(byteCount, getFileSizeFormat(), forceUnit)
 }
 
-/**
- * Format a transfer rate as `"<size>/s"`, honoring the user's binary/SI
- * setting. The one definition of how a speed reads, so no two surfaces can
- * phrase the same rate differently.
- */
-export function formatByteRate(rate: BytesPerSecond): string {
-  return formatByteRateWithFormat(rate, getFileSizeFormat())
-}

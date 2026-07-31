@@ -10,7 +10,8 @@
     import type { OperationRow } from './operations-store.svelte'
     import { operationTypeIcon } from './operation-icon'
     import { transferReadout } from '../progress-readout'
-    import { formatDuration, formatByteRate } from '$lib/units'
+    import { formatDuration } from '$lib/units'
+    import Trans from '$lib/intl/Trans.svelte'
 
     interface Props {
         row: OperationRow
@@ -55,13 +56,13 @@
         return tString('queue.row.etaRemaining', { duration: formatDuration(row.etaSecondsDisplay) })
     })
 
-    /** Transfer speed, from the same backend field and the same formatter the
-     *  copy dialog uses. Hidden until the backend's estimator warms up. */
-    const speedText = $derived.by(() => {
+    /** Transfer speed: the backend's `bytesPerSecond`, rendered with the same
+     *  `<Size>` + `<size></size>/s` catalog phrasing the copy dialog uses.
+     *  Null until the backend's estimator warms up. */
+    const speedRate = $derived.by(() => {
         if (!isRunning || !progress) return null
         const rate = transferReadout(progress).bytesPerSecond
-        if (rate === null || rate <= 0) return null
-        return formatByteRate(rate)
+        return rate === null || rate <= 0 ? null : rate
     })
 
     const pauseResumeLabel = $derived(
@@ -121,8 +122,10 @@
                     <Icon name="hourglass" size={12} />
                 </span>
             {/if}
-            {#if speedText}
-                <span class="speed">{speedText}</span>
+            {#if speedRate !== null}
+                <span class="speed"
+                    ><Trans key="fileOperations.shared.byteRate" snippets={{ size: byteRateSize }} /></span
+                >
             {/if}
             {#if etaText}
                 <span class="eta">{etaText}</span>
@@ -156,6 +159,8 @@
         {/if}
     </div>
 </li>
+
+{#snippet byteRateSize(children: import('svelte').Snippet)}<Size bytes={speedRate ?? 0} />{@render children()}{/snippet}
 
 <style>
     .queue-row {
