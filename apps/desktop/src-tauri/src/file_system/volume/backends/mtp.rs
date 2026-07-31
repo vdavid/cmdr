@@ -14,6 +14,48 @@ use log::debug;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
+use tokio_util::sync::CancellationToken;
+
+/// Bridges Cmdr's `CancellationToken` to mtp-rs's poll-based `CancelToken` for
+/// the duration of one call.
+///
+/// mtp-rs checks an `Arc<AtomicBool>` between PTP roundtrips, so something has
+/// to mirror the token into it. A task parked on `cancelled()` costs nothing
+/// while it waits (no polling), and the guard cancels its own child token when
+/// the bridge drops, which retires that task at the end of every call — clean
+/// exit, cancel, and error alike.
+///
+/// Live only for calls the caller actually made cancelable: [`Self::open`]
+/// returns `None` for `None`, and the backend then passes no token to mtp-rs,
+/// exactly as before.
+struct MtpCancelBridge {
+    token: mtp_rs::CancelToken,
+    _retire: tokio_util::sync::DropGuard,
+}
+
+impl MtpCancelBridge {
+    fn open(cancel: Option<&CancellationToken>) -> Option<Self> {
+        let cancel = cancel?;
+        let token = mtp_rs::CancelToken::new();
+        // A CHILD token, so dropping the bridge retires the mirror task without
+        // touching the caller's token (which outlives this one call).
+        let scoped = cancel.child_token();
+        let watch = scoped.clone();
+        let mirror = token.clone();
+        tokio::spawn(async move {
+            watch.cancelled().await;
+            mirror.cancel();
+        });
+        Some(Self {
+            token,
+            _retire: scoped.drop_guard(),
+        })
+    }
+
+    fn token(&self) -> &mtp_rs::CancelToken {
+        &self.token
+    }
+}
 
 /// A volume backed by an MTP device storage.
 ///
@@ -153,7 +195,7 @@ impl Volume for MtpVolume {
         &'a self,
         path: &'a Path,
         on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
-        cancel: Option<&'a std::sync::Arc<std::sync::atomic::AtomicBool>>,
+        cancel: Option<&'a CancellationToken>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             #[cfg(test)]
@@ -161,10 +203,8 @@ impl Volume for MtpVolume {
 
             let mtp_path = self.to_mtp_path(path);
 
-            // Build a mtp_rs CancelToken that shares the caller's Arc<AtomicBool>.
-            // No second polling task: flipping the original atomic flips the token.
-            let cancel_token = cancel.map(|c| mtp_rs::CancelToken::from_arc(std::sync::Arc::clone(c)));
-            let cancel_ref = cancel_token.as_ref();
+            let bridge = MtpCancelBridge::open(cancel);
+            let cancel_ref = bridge.as_ref().map(MtpCancelBridge::token);
 
             debug!(
                 "MtpVolume::list_directory: device={}, storage={}, input_path={}, mtp_path={}, cancel={}",
@@ -212,17 +252,22 @@ impl Volume for MtpVolume {
     fn list_directory_for_scan<'a>(
         &'a self,
         path: &'a Path,
-        cancel: Option<&'a std::sync::Arc<std::sync::atomic::AtomicBool>>,
+        cancel: Option<&'a CancellationToken>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             let mtp_path = self.to_mtp_path(path);
-            let cancel_token = cancel.map(|c| mtp_rs::CancelToken::from_arc(std::sync::Arc::clone(c)));
+            let bridge = MtpCancelBridge::open(cancel);
 
             // The per-unit, foreground-yielding scan listing: never holds the USB
             // pipe across the whole folder, so a background scan can't starve
             // foreground nav/copy/delete. See `mtp/connection/directory_ops.rs`.
             connection_manager()
-                .list_directory_for_scan(&self.device_id, self.storage_id, &mtp_path, cancel_token.as_ref())
+                .list_directory_for_scan(
+                    &self.device_id,
+                    self.storage_id,
+                    &mtp_path,
+                    bridge.as_ref().map(MtpCancelBridge::token),
+                )
                 .await
                 .map_err(map_mtp_error)
         })
@@ -420,13 +465,13 @@ impl Volume for MtpVolume {
     fn delete_with_cancel<'a>(
         &'a self,
         path: &'a Path,
-        cancel: Option<&'a std::sync::Arc<std::sync::atomic::AtomicBool>>,
+        cancel: Option<&'a CancellationToken>,
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             let mtp_path = self.to_mtp_path(path);
 
-            let cancel_token = cancel.map(|c| mtp_rs::CancelToken::from_arc(std::sync::Arc::clone(c)));
-            let cancel_ref = cancel_token.as_ref();
+            let bridge = MtpCancelBridge::open(cancel);
+            let cancel_ref = bridge.as_ref().map(MtpCancelBridge::token);
 
             connection_manager()
                 .delete_object_with_cancel(&self.device_id, self.storage_id, &mtp_path, cancel_ref)

@@ -37,7 +37,7 @@
 //! ones stay `0` (`—`/`≥`). The completion handler (`lifecycle/manager.rs`) then keeps the
 //! instance + DB and marks the volume Stale.
 //!
-//! A **user cancel** still discards: `cancelled` returns `was_cancelled` with no
+//! A **user cancel** still discards: cancelling the token returns `was_cancelled` with no
 //! marks/aggregate, and the completion handler resets the volume to gray.
 //!
 //! This scanner NEVER writes the `scan_completed_at` meta marker (on any path);
@@ -48,8 +48,9 @@
 use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
+use tokio_util::sync::CancellationToken;
 
 use futures_util::StreamExt;
 use futures_util::stream::FuturesUnordered;
@@ -170,7 +171,7 @@ impl std::error::Error for VolumeScanError {}
 /// task. On clean completion, fires `ComputeAllAggregates` so the existing
 /// aggregator computes `dir_stats` exactly as for a local scan.
 ///
-/// Cancelable via `cancelled`; cancellation flushes the current batch and
+/// Cancelable via `cancel`; cancellation flushes the current batch and
 /// returns `was_cancelled: true`. A timeout / backend error returns `Err`; the
 /// caller discards the partial (D-interrupted).
 ///
@@ -181,7 +182,7 @@ pub(crate) async fn scan_volume_via_trait(
     root: PathBuf,
     writer: IndexWriter,
     progress: Arc<ScanProgress>,
-    cancelled: Arc<AtomicBool>,
+    cancel: CancellationToken,
     pacer: ScanPacer,
 ) -> Result<ScanSummary, VolumeScanError> {
     let start = Instant::now();
@@ -237,7 +238,7 @@ pub(crate) async fn scan_volume_via_trait(
     let mut last_commit = Instant::now();
 
     loop {
-        if cancelled.load(Ordering::Relaxed) {
+        if cancel.is_cancelled() {
             // In-flight listings are dropped here; the smb2/MTP backends tolerate a
             // dropped request waiter. Flush what we batched and report the cancel.
             flush_batch(&mut batch, &writer)?;
@@ -269,7 +270,7 @@ pub(crate) async fn scan_volume_via_trait(
         while inflight.len() < pacer.listing_budget() {
             let Some(dir) = queue.pop_front() else { break };
             let vol = Arc::clone(&volume);
-            let cancel = Arc::clone(&cancelled);
+            let cancel = cancel.clone();
             inflight.push(async move {
                 let r = list_one_directory(vol, dir.clone(), cancel).await;
                 (dir, r)
@@ -494,7 +495,7 @@ pub(crate) async fn reconcile_volume_via_trait(
     root: PathBuf,
     writer: IndexWriter,
     progress: Arc<ScanProgress>,
-    cancelled: Arc<AtomicBool>,
+    cancel: CancellationToken,
     pacer: ScanPacer,
 ) -> Result<ScanSummary, VolumeScanError> {
     use crate::indexing::reconcile::reconciler::{self, LiveChild};
@@ -547,7 +548,7 @@ pub(crate) async fn reconcile_volume_via_trait(
     let _bulk_guard = reconciler::BulkReconcileGuard::begin(&writer);
 
     loop {
-        if cancelled.load(Ordering::Relaxed) {
+        if cancel.is_cancelled() {
             // User cancel: stop, but leave the prior index intact (no truncate ran).
             // Mirror the fresh-scan cancel contract (no marks/aggregate on cancel).
             // In-flight listings are dropped (backends tolerate a dropped waiter).
@@ -561,7 +562,7 @@ pub(crate) async fn reconcile_volume_via_trait(
         while inflight.len() < pacer.listing_budget() {
             let Some((dir, id)) = queue.pop_front() else { break };
             let vol = Arc::clone(&volume);
-            let cancel = Arc::clone(&cancelled);
+            let cancel = cancel.clone();
             inflight.push(async move {
                 let r = list_one_directory(vol, dir.clone(), cancel).await;
                 ((dir, id), r)
@@ -778,7 +779,7 @@ fn finish_reconcile(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) -> Res
 /// accumulate across a long walk.
 ///
 /// Uses `list_directory_for_scan` so a foreground-priority backend (MTP) walks
-/// the folder in yielding units; `cancelled` threads in so an in-flight listing
+/// the folder in yielding units; `cancel` threads in so an in-flight listing
 /// bails within one round trip (the MTP path checks it at each unit and per
 /// `GetObjectInfo`), not just between directories.
 ///
@@ -794,11 +795,11 @@ fn finish_reconcile(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) -> Res
 async fn list_one_directory(
     volume: Arc<dyn Volume>,
     dir_path: PathBuf,
-    cancelled: Arc<AtomicBool>,
+    cancel: CancellationToken,
 ) -> Result<Vec<cmdr_fs::entry::FileEntry>, VolumeScanError> {
     let listing_path = dir_path.clone();
     let listing = tokio::spawn(async move {
-        let result = volume.list_directory_for_scan(&listing_path, Some(&cancelled)).await;
+        let result = volume.list_directory_for_scan(&listing_path, Some(&cancel)).await;
         // Drain the autoreleased ObjC objects this listing created before the
         // future resolves. Cheap no-op on non-macOS.
         drain_autorelease_pool();

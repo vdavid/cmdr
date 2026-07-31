@@ -577,7 +577,9 @@ mod tests {
             "a failed scan is honest about being stale"
         );
         assert!(
-            fx.events.kinds_for("done-failed").contains(&IndexEventKind::ScanAborted),
+            fx.events
+                .kinds_for("done-failed")
+                .contains(&IndexEventKind::ScanAborted),
             "a vanished root clears the stuck scanning row"
         );
     }

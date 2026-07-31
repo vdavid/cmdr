@@ -11,9 +11,10 @@
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
+use tokio_util::sync::CancellationToken;
 
 use crate::indexing::events::{Diagnostic, IndexErrorReport, IndexEvent};
 use crate::indexing::paths::firmlinks;
@@ -160,20 +161,20 @@ impl ScanProgress {
 /// Handle returned by `scan_volume` for progress tracking and cancellation.
 pub struct ScanHandle {
     pub progress: Arc<ScanProgress>,
-    cancelled: Arc<AtomicBool>,
+    cancel: CancellationToken,
 }
 
 impl ScanHandle {
     /// Build a handle around an existing progress + cancel pair. Used by the
     /// `Volume`-trait scanner (`network_scanner`), which owns the walk itself and
     /// just needs the manager-facing progress/cancel surface.
-    pub(crate) fn new(progress: Arc<ScanProgress>, cancelled: Arc<AtomicBool>) -> Self {
-        Self { progress, cancelled }
+    pub(crate) fn new(progress: Arc<ScanProgress>, cancel: CancellationToken) -> Self {
+        Self { progress, cancel }
     }
 
     /// Signal the scan to stop. Already-written data remains in the DB.
     pub fn cancel(&self) {
-        self.cancelled.store(true, Ordering::Relaxed);
+        self.cancel.cancel();
     }
 }
 
@@ -256,13 +257,13 @@ impl From<std::io::Error> for ScanError {
 pub fn scan_volume(
     config: ScanConfig,
     writer: &IndexWriter,
+    cancel: CancellationToken,
 ) -> Result<(ScanHandle, std::thread::JoinHandle<Result<ScanSummary, ScanError>>), ScanError> {
     let progress = Arc::new(ScanProgress::new());
-    let cancelled = Arc::new(AtomicBool::new(false));
 
     let handle = ScanHandle {
         progress: Arc::clone(&progress),
-        cancelled: Arc::clone(&cancelled),
+        cancel: cancel.clone(),
     };
 
     let writer = writer.clone();
@@ -274,7 +275,7 @@ pub fn scan_volume(
             let reader: ReadDirFn = default_reader();
             let result = run_scan(
                 &config.root,
-                &cancelled,
+                &cancel,
                 &progress,
                 &writer,
                 config.batch_size,
@@ -316,12 +317,12 @@ pub fn scan_volume(
 ///
 /// Used by post-replay background verification. After scanning, sends
 /// `ComputeSubtreeAggregates` to the writer.
-pub fn scan_subtree(root: &Path, writer: &IndexWriter, cancelled: &AtomicBool) -> Result<ScanSummary, ScanError> {
+pub fn scan_subtree(root: &Path, writer: &IndexWriter, cancel: &CancellationToken) -> Result<ScanSummary, ScanError> {
     let progress = Arc::new(ScanProgress::new());
     let reader: ReadDirFn = default_reader();
     let (summary, listed_ids, epoch, root_id) = run_scan(
         root,
-        cancelled,
+        cancel,
         &progress,
         writer,
         2000,
@@ -368,7 +369,7 @@ pub fn scan_subtree(root: &Path, writer: &IndexWriter, cancelled: &AtomicBool) -
 )]
 fn run_scan(
     root: &Path,
-    cancelled: &AtomicBool,
+    cancel: &CancellationToken,
     progress: &ScanProgress,
     writer: &IndexWriter,
     batch_size: usize,
@@ -412,7 +413,10 @@ fn run_scan(
             .map_err(|e| ScanError::WriterSend(e.to_string()))?;
     }
 
-    let walk_cancel = Arc::new(AtomicBool::new(cancelled.load(Ordering::Relaxed)));
+    // A CHILD of the scan's token: cancelling the parent stops the walk, and the
+    // visitor can stop the walk on a writer-send failure WITHOUT that reading as
+    // a user cancel (`was_cancelled` below asks the parent).
+    let walk_cancel = cancel.child_token();
     let visitor = Arc::new(InsertVisitor::new(
         writer.clone(),
         is_volume_root,
@@ -420,7 +424,7 @@ fn run_scan(
         inodes_trustworthy,
         batch_size,
         progress,
-        Arc::clone(&walk_cancel),
+        walk_cancel.clone(),
     ));
 
     // Watchdog ticks faster than the timeout (production 15s → 1s; a short test
@@ -438,33 +442,7 @@ fn run_scan(
         id: root_id,
     };
 
-    // The walker's workers are `'static`, so they need an `Arc` cancel flag, but
-    // `run_scan` only borrows `cancelled`. A scoped bridge thread borrows it and
-    // mirrors it into `walk_cancel`; it stops the moment the walk returns
-    // (unparked) or the caller cancels.
-    let walk_stats = std::thread::scope(|s| {
-        let bridge_stop = Arc::new(AtomicBool::new(false));
-        let bridge = {
-            let bridge_stop = Arc::clone(&bridge_stop);
-            let walk_cancel = Arc::clone(&walk_cancel);
-            s.spawn(move || {
-                loop {
-                    if bridge_stop.load(Ordering::Relaxed) {
-                        break;
-                    }
-                    if cancelled.load(Ordering::Relaxed) {
-                        walk_cancel.store(true, Ordering::Relaxed);
-                        break;
-                    }
-                    std::thread::park_timeout(Duration::from_millis(100));
-                }
-            })
-        };
-        let stats = walk(root_task, cfg, reader, Arc::clone(&visitor), Arc::clone(&walk_cancel));
-        bridge_stop.store(true, Ordering::Relaxed);
-        bridge.thread().unpark();
-        stats
-    });
+    let walk_stats = walk(root_task, cfg, reader, Arc::clone(&visitor), walk_cancel);
 
     // Flush the final batch and surface any writer-send failure.
     visitor.finish()?;
@@ -484,7 +462,7 @@ fn run_scan(
         );
     }
 
-    let was_cancelled = cancelled.load(Ordering::Relaxed);
+    let was_cancelled = cancel.is_cancelled();
 
     // A volume-root scan whose ROOT never listed (`dirs_read == 0`) means the mount
     // itself couldn't be read — it vanished or went unreadable mid-scan (a yanked
@@ -552,8 +530,9 @@ struct InsertVisitor {
     entries_scanned: Arc<AtomicU64>,
     dirs_found: Arc<AtomicU64>,
     bytes_scanned: Arc<AtomicU64>,
-    /// Set when a writer send fails, to abort the walk promptly.
-    walk_cancel: Arc<AtomicBool>,
+    /// A child of the scan's token, cancelled when a writer send fails so the
+    /// walk stops promptly. Cancelling it does NOT mark the scan user-cancelled.
+    walk_cancel: CancellationToken,
     /// Accumulating insert batch, flushed at `batch_size`.
     batch: Mutex<Vec<EntryRow>>,
     /// Inodes seen with nlink > 1, so each hardlink's size counts once.
@@ -572,7 +551,7 @@ impl InsertVisitor {
         inodes_trustworthy: bool,
         batch_size: usize,
         progress: &ScanProgress,
-        walk_cancel: Arc<AtomicBool>,
+        walk_cancel: CancellationToken,
     ) -> Self {
         let next_id = Arc::clone(writer.next_id());
         Self {
@@ -600,7 +579,7 @@ impl InsertVisitor {
         if let Err(e) = self.writer.send(WriteMessage::InsertEntriesV2(entries)) {
             // A send failure means the writer is gone — abort the walk and keep the
             // first error to return from the scan.
-            self.walk_cancel.store(true, Ordering::Relaxed);
+            self.walk_cancel.cancel();
             let mut slot = self.send_error.lock_ignore_poison();
             if slot.is_none() {
                 *slot = Some(e.to_string());

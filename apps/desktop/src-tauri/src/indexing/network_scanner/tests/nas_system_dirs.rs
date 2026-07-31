@@ -38,7 +38,7 @@ async fn skips_recursion_into_nas_system_dirs() {
     );
     let vol: Arc<dyn Volume> = Arc::new(vol);
 
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = CancellationToken::new();
     scan_volume_via_trait(
         vol,
         PathBuf::from("/"),
@@ -183,7 +183,7 @@ async fn reconcile_cannot_shed_rows_left_under_a_now_excluded_dir() {
         IndexStore::bump_current_epoch(&wconn).expect("bump epoch");
     }
 
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = CancellationToken::new();
     reconcile_volume_via_trait(
         Arc::clone(&vol),
         PathBuf::from("/"),
@@ -258,7 +258,7 @@ async fn reconcile_keeps_walking_lookalike_user_folders() {
         entry_count(&conn)
     };
 
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = CancellationToken::new();
     reconcile_volume_via_trait(
         Arc::clone(&vol),
         PathBuf::from("/"),

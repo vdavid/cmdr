@@ -236,7 +236,7 @@ fn reconcile_subtree_missing_chain_escalates() {
     let base_abs = space.absolute(&base.path().to_string_lossy());
     ensure_path_in_db(&db_path, &base_abs, &writer);
 
-    let cancelled = AtomicBool::new(false);
+    let cancelled = CancellationToken::new();
     let leaf_abs = space.absolute(&deep.to_string_lossy());
     let summary = reconcile_subtree(Path::new(&leaf_abs), &space, &conn, &writer, &cancelled).expect("reconcile ok");
     assert_eq!(

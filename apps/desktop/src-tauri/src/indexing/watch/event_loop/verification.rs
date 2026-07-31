@@ -6,13 +6,13 @@
 
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::Ordering;
 use std::time::Instant;
 
 use super::verify_guard::{self, VerifyVerdict};
 use crate::indexing::DEBUG_STATS;
 use crate::indexing::ROOT_VOLUME_ID;
-use crate::indexing::lifecycle::lifecycle_bus;
+use crate::indexing::lifecycle::{lifecycle_bus, state};
 use crate::indexing::metadata;
 use crate::indexing::paths::firmlinks;
 use crate::indexing::read::enrichment::get_read_pool;
@@ -94,14 +94,18 @@ pub(super) async fn run_background_verification(
         // pool is essential.
         let scan_writer = writer.clone();
         let scan_dirs = verify_result.new_dir_paths.clone();
+        // A child of the ROOT volume's stop signal (background verification is
+        // root-scoped), so tearing that index down stops this walk too.
+        let cancel = state::volume_cancel_token(ROOT_VOLUME_ID)
+            .map(|t| t.child_token())
+            .unwrap_or_default();
         if let Err(e) = crate::indexing::host::runtime::spawn_blocking(move || {
-            let cancelled = AtomicBool::new(false);
             for dir_path in &scan_dirs {
                 // Background verification is root-scoped (boot disk), so `BootDisk`.
                 if scanner::should_exclude(dir_path, &scanner::ExclusionScope::boot_disk()) {
                     continue;
                 }
-                match scanner::scan_subtree(Path::new(dir_path), &scan_writer, &cancelled) {
+                match scanner::scan_subtree(Path::new(dir_path), &scan_writer, &cancel) {
                     Ok(summary) => {
                         log::debug!(
                             "Background verification: scanned new dir {dir_path} ({} entries, {}ms)",

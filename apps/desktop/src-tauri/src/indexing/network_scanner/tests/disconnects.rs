@@ -32,7 +32,7 @@ async fn disconnect_mid_walk_stops_promptly_and_returns_typed_error() {
         untyped_failure: false,
     });
 
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = CancellationToken::new();
     let result = scan_volume_via_trait(
         vol,
         PathBuf::from("/"),
@@ -93,7 +93,7 @@ async fn consecutive_untyped_failures_trip_the_backstop() {
         untyped_failure: true,
     });
 
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = CancellationToken::new();
     let result = scan_volume_via_trait(
         vol,
         PathBuf::from("/"),
@@ -156,7 +156,7 @@ async fn isolated_transient_failure_does_not_trip_backstop() {
         fail_path: PathBuf::from("/bad"),
     });
 
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = CancellationToken::new();
     let summary = scan_volume_via_trait(
         vol,
         PathBuf::from("/"),

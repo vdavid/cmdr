@@ -1,5 +1,5 @@
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, Ordering};
+use tokio_util::sync::CancellationToken;
 
 use rusqlite::Connection;
 
@@ -182,7 +182,10 @@ fn run_reconcile_in(
     cancel: bool,
 ) -> Result<ScanSummary, ScanError> {
     let progress = ScanProgress::new();
-    let flag = AtomicBool::new(cancel);
+    let flag = CancellationToken::new();
+    if cancel {
+        flag.cancel();
+    }
     let result = run_local_reconcile(root, &space, &h.writer, &progress, &flag, tools);
     h.writer.flush_blocking().unwrap();
     result
@@ -413,7 +416,7 @@ fn reconcile_after_real_fresh_scan_of_unchanged_tree_is_a_no_op() {
     std::fs::write(rp.join("top.txt"), b"topfil").unwrap(); // 6
 
     // Build the index with the REAL fresh scanner (epoch 1).
-    let cancelled = AtomicBool::new(false);
+    let cancelled = CancellationToken::new();
     let scan_summary = scan_subtree(rp, &h.writer, &cancelled).expect("fresh scan");
     h.writer.flush_blocking().unwrap();
     // 4 dirs (a, a/deep, b — the subtree root itself isn't counted by run_scan's
@@ -541,7 +544,7 @@ fn reconcile_after_fresh_scan_does_not_double_count_hardlinks() {
     }
 
     // Build the index with the REAL fresh scanner (which dedups hardlinks).
-    let cancelled = AtomicBool::new(false);
+    let cancelled = CancellationToken::new();
     let fresh_summary = scan_subtree(rp, &h.writer, &cancelled).expect("fresh scan");
     h.writer.flush_blocking().unwrap();
 
@@ -765,15 +768,15 @@ fn a_reconcile_cancelled_after_discovering_a_dir_leaves_no_exact_size_lies() {
     // and be cancelled before the queue reaches it.
     std::fs::create_dir(rp.join("sub/fresh")).unwrap();
 
-    let cancel = Arc::new(AtomicBool::new(false));
-    let trip = Arc::clone(&cancel);
+    let cancel = CancellationToken::new();
+    let trip = cancel.clone();
     let space = IndexPathSpace::root();
     let reader = GuardedReader::with_read_fn(
         Duration::from_secs(5),
         Arc::new(move |p: &Path| {
             let children = reconciler::read_fs_children(p, &space);
             if p.ends_with("sub") {
-                trip.store(true, Ordering::Relaxed);
+                trip.cancel();
             }
             children
         }),

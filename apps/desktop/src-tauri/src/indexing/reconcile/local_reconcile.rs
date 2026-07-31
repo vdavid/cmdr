@@ -48,9 +48,10 @@
 use std::collections::{HashSet, VecDeque};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::Ordering;
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, channel};
 use std::time::{Duration, Instant};
+use tokio_util::sync::CancellationToken;
 
 mod cost_budget;
 mod latency_probe;
@@ -224,10 +225,10 @@ pub(crate) fn start_local_reconcile(
     root: PathBuf,
     space: IndexPathSpace,
     writer: &IndexWriter,
+    cancel: CancellationToken,
 ) -> Result<(ScanHandle, std::thread::JoinHandle<Result<ScanSummary, ScanError>>), ScanError> {
     let progress = Arc::new(ScanProgress::new());
-    let cancelled = Arc::new(AtomicBool::new(false));
-    let handle = ScanHandle::new(Arc::clone(&progress), Arc::clone(&cancelled));
+    let handle = ScanHandle::new(Arc::clone(&progress), cancel.clone());
 
     let writer = writer.clone();
     let thread_handle = std::thread::Builder::new()
@@ -247,7 +248,7 @@ pub(crate) fn start_local_reconcile(
                 reader: GuardedReader::for_fs(LOCAL_LIST_TIMEOUT, space.clone()),
                 budget: CostBudget::production(),
             };
-            run_catching_panics(|| run_local_reconcile(&root, &space, &writer, &progress, &cancelled, tools))
+            run_catching_panics(|| run_local_reconcile(&root, &space, &writer, &progress, &cancel, tools))
         })
         .map_err(ScanError::Io)?;
 
@@ -370,7 +371,7 @@ fn run_local_reconcile(
     space: &IndexPathSpace,
     writer: &IndexWriter,
     progress: &ScanProgress,
-    cancelled: &AtomicBool,
+    cancel: &CancellationToken,
     tools: WalkTools,
 ) -> Result<ScanSummary, ScanError> {
     let WalkTools {
@@ -436,7 +437,7 @@ fn run_local_reconcile(
     let _bulk_guard = reconciler::BulkReconcileGuard::begin(writer);
 
     while let Some((dir_path, dir_id, anchorage)) = queue.pop_front() {
-        if cancelled.load(Ordering::Relaxed) {
+        if cancel.is_cancelled() {
             // Cancel: leave the prior index intact (no truncate ran) and send NO
             // marks/aggregate. Entries already diffed this pass got no ancestor
             // `dir_stats` propagation (the walk runs under `BulkReconcileGuard`,

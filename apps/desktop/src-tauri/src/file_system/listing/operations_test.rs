@@ -183,13 +183,11 @@ fn test_cancel_listing_sets_flag() {
     use super::cancel_listing;
     use super::streaming::{STREAMING_STATE, StreamingListingState};
     use std::sync::Arc;
-    use std::sync::atomic::{AtomicBool, Ordering};
 
     // Create a test listing ID and state
     let listing_id = "test-cancel-listing-12345";
     let state = Arc::new(StreamingListingState {
-        cancelled: Arc::new(AtomicBool::new(false)),
-        cancel_notify: tokio::sync::Notify::new(),
+        cancel: tokio_util::sync::CancellationToken::new(),
     });
 
     // Store it in the streaming state cache
@@ -198,14 +196,14 @@ fn test_cancel_listing_sets_flag() {
         cache.insert(listing_id.to_string(), Arc::clone(&state));
     }
 
-    // Verify flag is initially false
-    assert!(!state.cancelled.load(Ordering::Relaxed));
+    // Verify the token starts un-cancelled
+    assert!(!state.cancel.is_cancelled());
 
     // Call cancel_listing
     cancel_listing(listing_id);
 
-    // Verify flag is now true
-    assert!(state.cancelled.load(Ordering::Relaxed));
+    // Verify the token is now cancelled
+    assert!(state.cancel.is_cancelled());
 
     // Cleanup
     {

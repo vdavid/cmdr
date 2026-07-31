@@ -11,7 +11,7 @@
 use crate::indexing::*;
 use cmdr_fs::entry::FileEntry;
 use lifecycle::state::{
-    INDEX_REGISTRY, IndexInstance, IndexPhase, IndexVolumeKind, ROOT_VOLUME_ID, is_initializing_phase,
+    INDEX_REGISTRY, IndexInstance, IndexPhase, IndexVolumeKind, ROOT_VOLUME_ID, VolumeSignals, is_initializing_phase,
     try_reserve_initializing_phase,
 };
 use read::enrichment::{READ_POOL_TEST_MUTEX, THREAD_CONNS, enrich_via_individual_paths_on, enrich_via_parent_id_on};
@@ -962,8 +962,7 @@ fn reserve_initializing_for(volume_id: &str) -> tempfile::TempDir {
         store,
         pool,
         pending,
-        Arc::new(std::sync::Mutex::new(None)),
-        NoopEventSink::shared(),
+        VolumeSignals::new(Arc::new(std::sync::Mutex::new(None)), NoopEventSink::shared()),
     )
     .unwrap_or_else(|_| panic!("reserve {volume_id} must succeed from absent"));
     dir
@@ -1009,8 +1008,7 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
         store2,
         pool2,
         pending2,
-        Arc::new(std::sync::Mutex::new(None)),
-        NoopEventSink::shared(),
+        VolumeSignals::new(Arc::new(std::sync::Mutex::new(None)), NoopEventSink::shared()),
     );
     assert!(
         res.is_err(),
@@ -1038,8 +1036,7 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
                 kind: IndexVolumeKind::Local,
                 read_pool: pool_sd,
                 pending_sizes: pending_sd,
-                freshness: Arc::new(std::sync::Mutex::new(None)),
-                events: NoopEventSink::shared(),
+                signals: VolumeSignals::new(Arc::new(std::sync::Mutex::new(None)), NoopEventSink::shared()),
             },
         );
         // store_sd is unused after insert; the ShuttingDown phase carries no store.
@@ -1056,8 +1053,7 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
         store4,
         pool4,
         pending4,
-        Arc::new(std::sync::Mutex::new(None)),
-        NoopEventSink::shared(),
+        VolumeSignals::new(Arc::new(std::sync::Mutex::new(None)), NoopEventSink::shared()),
     );
     assert!(res.is_err(), "reservation from ShuttingDown must fail");
     assert!(
@@ -1171,8 +1167,7 @@ fn shutdown_drain_does_not_hold_indexing_lock() {
                 kind: IndexVolumeKind::Local,
                 read_pool: pool,
                 pending_sizes: pending,
-                freshness: Arc::new(std::sync::Mutex::new(None)),
-                events: NoopEventSink::shared(),
+                signals: VolumeSignals::new(Arc::new(std::sync::Mutex::new(None)), NoopEventSink::shared()),
             },
         );
     }

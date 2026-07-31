@@ -21,6 +21,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
+use tokio_util::sync::CancellationToken;
 
 use rusqlite::Connection;
 
@@ -834,7 +835,7 @@ pub(crate) fn reconcile_subtree(
     space: &IndexPathSpace,
     conn: &Connection,
     writer: &IndexWriter,
-    cancelled: &AtomicBool,
+    cancel: &CancellationToken,
 ) -> Result<ReconcileSummary, String> {
     let start = Instant::now();
     // Arm the writer-wait probe, discarding whatever ran on this thread before.
@@ -981,7 +982,7 @@ pub(crate) fn reconcile_subtree(
     let mut new_dir_paths: Vec<PathBuf> = Vec::new();
 
     while let Some((dir_path, dir_id)) = queue.pop_front() {
-        if cancelled.load(Ordering::Relaxed) {
+        if cancel.is_cancelled() {
             break;
         }
 

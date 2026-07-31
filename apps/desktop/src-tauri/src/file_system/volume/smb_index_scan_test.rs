@@ -21,7 +21,6 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::AtomicBool;
 
 use super::smb::{SmbConnectionParams, connect_smb_volume};
 use crate::indexing::network_scanner::scan_volume_via_trait;
@@ -115,7 +114,7 @@ async fn smb_integration_volume_scan_indexes_share() {
     let _store = IndexStore::open(&db_path).expect("open store");
     let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
 
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = tokio_util::sync::CancellationToken::new();
     let summary = scan_volume_via_trait(
         Arc::clone(&vol),
         PathBuf::from(&base),
@@ -187,7 +186,7 @@ async fn smb_integration_volume_scan_via_connection_pool() {
     // Bracket the walk exactly as the lifecycle does, so listings fan out across
     // the pool instead of the single browsing session.
     vol.begin_scan_session().await;
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = tokio_util::sync::CancellationToken::new();
     let summary = scan_volume_via_trait(
         Arc::clone(&vol),
         PathBuf::from(&base),
@@ -249,7 +248,7 @@ async fn smb_integration_watch_event_updates_index() {
     let _store = IndexStore::open(&db_path).expect("open store");
     let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
 
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = tokio_util::sync::CancellationToken::new();
     scan_volume_via_trait(
         Arc::clone(&vol),
         PathBuf::from(&base),
@@ -374,7 +373,7 @@ async fn smb_integration_enrich_listing_shows_sizes() {
     let db_path = dir.path().join("smb-enrich.db");
     let _store = IndexStore::open(&db_path).expect("open store");
     let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = tokio_util::sync::CancellationToken::new();
     scan_volume_via_trait(
         Arc::clone(&vol),
         PathBuf::from(&base),

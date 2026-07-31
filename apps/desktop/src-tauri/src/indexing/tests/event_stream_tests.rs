@@ -13,7 +13,7 @@ use std::time::Duration;
 use crate::indexing::events::progress_reporter::ScanProgressReporter;
 use crate::indexing::events::{IndexEventKind, RecordingSink};
 use crate::indexing::lifecycle::manager::IndexManager;
-use crate::indexing::lifecycle::state::IndexVolumeKind;
+use crate::indexing::lifecycle::state::{IndexVolumeKind, VolumeSignals};
 use crate::indexing::scanner::ScanProgress;
 use crate::indexing::writer::{AggSource, IndexWriter};
 use cmdr_fs::testing::wait_until_async;
@@ -42,12 +42,11 @@ fn manager_for(
         volume_id.to_string(),
         root.to_path_buf(),
         data_dir.join(format!("index-{volume_id}.db")),
-        events,
         // A mount-rooted local drive: the guarded walker, scoped to the fixture
         // root rather than to `/`.
         IndexVolumeKind::LocalExternal,
         true,
-        Arc::new(std::sync::Mutex::new(None)),
+        VolumeSignals::new(Arc::new(std::sync::Mutex::new(None)), events),
     )
     .expect("build the index manager")
 }

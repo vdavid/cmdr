@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use rusqlite::Connection;
 
-use crate::indexing::lifecycle::state::{INDEX_REGISTRY, IndexInstance, IndexPhase, IndexVolumeKind};
+use crate::indexing::lifecycle::state::{INDEX_REGISTRY, IndexInstance, IndexPhase, IndexVolumeKind, VolumeSignals};
 use crate::indexing::read::enrichment::ReadPool;
 use crate::indexing::read::pending_sizes::PendingSizes;
 use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
@@ -58,8 +58,10 @@ impl TestInstanceGuard {
                 kind,
                 read_pool,
                 pending_sizes: Arc::clone(&tracker),
-                freshness: Arc::new(std::sync::Mutex::new(None)),
-                events: crate::indexing::NoopEventSink::shared(),
+                signals: VolumeSignals::new(
+                    Arc::new(std::sync::Mutex::new(None)),
+                    crate::indexing::NoopEventSink::shared(),
+                ),
             },
         );
         Self { volume_id, tracker }

@@ -207,13 +207,11 @@ fn test_streaming_state_lifecycle() {
     use crate::file_system::listing::cancel_listing;
     use crate::file_system::listing::streaming::{STREAMING_STATE, StreamingListingState};
     use std::sync::Arc;
-    use std::sync::atomic::{AtomicBool, Ordering};
 
     // Create and register a streaming state
     let listing_id = "integration-test-lifecycle";
     let state = Arc::new(StreamingListingState {
-        cancelled: Arc::new(AtomicBool::new(false)),
-        cancel_notify: tokio::sync::Notify::new(),
+        cancel: tokio_util::sync::CancellationToken::new(),
     });
 
     // Insert into cache
@@ -230,7 +228,7 @@ fn test_streaming_state_lifecycle() {
 
     // Cancel it
     cancel_listing(listing_id);
-    assert!(state.cancelled.load(Ordering::Relaxed));
+    assert!(state.cancel.is_cancelled());
 
     // Cleanup (simulate what the streaming task does)
     {
@@ -250,7 +248,6 @@ fn test_multiple_concurrent_streaming_states() {
     use crate::file_system::listing::cancel_listing;
     use crate::file_system::listing::streaming::{STREAMING_STATE, StreamingListingState};
     use std::sync::Arc;
-    use std::sync::atomic::{AtomicBool, Ordering};
 
     // Create multiple streaming states
     let ids = ["stream-1", "stream-2", "stream-3"];
@@ -258,8 +255,7 @@ fn test_multiple_concurrent_streaming_states() {
         .iter()
         .map(|_| {
             Arc::new(StreamingListingState {
-                cancelled: Arc::new(AtomicBool::new(false)),
-                cancel_notify: tokio::sync::Notify::new(),
+                cancel: tokio_util::sync::CancellationToken::new(),
             })
         })
         .collect();
@@ -282,9 +278,9 @@ fn test_multiple_concurrent_streaming_states() {
     cancel_listing("stream-2");
 
     // Verify only second is cancelled
-    assert!(!states[0].cancelled.load(Ordering::Relaxed));
-    assert!(states[1].cancelled.load(Ordering::Relaxed));
-    assert!(!states[2].cancelled.load(Ordering::Relaxed));
+    assert!(!states[0].cancel.is_cancelled());
+    assert!(states[1].cancel.is_cancelled());
+    assert!(!states[2].cancel.is_cancelled());
 
     // Cleanup
     {

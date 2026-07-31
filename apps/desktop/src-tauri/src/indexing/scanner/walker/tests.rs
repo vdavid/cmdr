@@ -244,7 +244,7 @@ fn walk_plan(plan: BatchPlan, cfg: WalkConfig) -> (WalkStats, bool) {
         cfg,
         batched_reader(plan),
         visitor.clone(),
-        Arc::new(AtomicBool::new(false)),
+        CancellationToken::new(),
     );
     let rec = visitor.rec.lock().unwrap_or_else(|e| e.into_inner());
     let read = rec.read_ok.contains(Path::new("/r/big"));
@@ -313,7 +313,7 @@ fn a_read_that_stops_delivering_is_abandoned_promptly() {
         fast_cfg(2),
         reader,
         visitor.clone(),
-        Arc::new(AtomicBool::new(false)),
+        CancellationToken::new(),
     );
     let elapsed = start.elapsed();
 
@@ -400,7 +400,7 @@ fn walks_full_tree_and_attributes_parents() {
         fast_cfg(4),
         fs.clone().reader(),
         visitor.clone(),
-        Arc::new(AtomicBool::new(false)),
+        CancellationToken::new(),
     );
 
     let (ref_ok, ref_edges) = reference_walk(&fs, Path::new("/r"));
@@ -436,7 +436,7 @@ fn abandons_a_hung_dir_and_finishes_the_rest() {
         fast_cfg(4),
         fs.clone().reader(),
         visitor.clone(),
-        Arc::new(AtomicBool::new(false)),
+        CancellationToken::new(),
     );
     let elapsed = start.elapsed();
 
@@ -488,7 +488,7 @@ fn multiple_hung_dirs_do_not_starve_the_pool() {
         fast_cfg(2), // fewer threads than hung dirs
         fs.clone().reader(),
         visitor.clone(),
-        Arc::new(AtomicBool::new(false)),
+        CancellationToken::new(),
     );
     let elapsed = start.elapsed();
 
@@ -518,7 +518,7 @@ fn io_error_dir_is_reported_and_pruned() {
         fast_cfg(4),
         fs.clone().reader(),
         visitor.clone(),
-        Arc::new(AtomicBool::new(false)),
+        CancellationToken::new(),
     );
 
     assert_eq!(stats.io_errors, 1, "the missing dir surfaces as an io error");
@@ -567,7 +567,7 @@ fn parallel_result_matches_serial_reference() {
         fast_cfg(6),
         fs.clone().reader(),
         visitor.clone(),
-        Arc::new(AtomicBool::new(false)),
+        CancellationToken::new(),
     );
 
     let (ref_ok, ref_edges) = reference_walk(&fs, Path::new("/r"));
@@ -597,7 +597,7 @@ fn cancellation_returns_promptly() {
     let hang: HashSet<PathBuf> = [PathBuf::from("/r/slow")].into_iter().collect();
     let fs = b.build(hang, Duration::from_secs(5));
 
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = CancellationToken::new();
     let visitor = Arc::new(RecordingVisitor::new());
     {
         let cancelled = cancelled.clone();
@@ -605,7 +605,7 @@ fn cancellation_returns_promptly() {
             // allowed-test-sleep: the canceller's head start IS the scenario. It has to fire while
             // the walk is parked in the hung subtree, and the walk exposes no "I am hung" signal
             std::thread::sleep(Duration::from_millis(20));
-            cancelled.store(true, Ordering::SeqCst);
+            cancelled.cancel();
         });
     }
 
@@ -675,7 +675,7 @@ fn gives_up_on_a_dead_subtree_and_keeps_walking_a_healthy_sibling() {
         cfg,
         fs.clone().reader(),
         visitor.clone(),
-        Arc::new(AtomicBool::new(false)),
+        CancellationToken::new(),
     );
 
     let rec = visitor.rec.lock().unwrap_or_else(|e| e.into_inner());

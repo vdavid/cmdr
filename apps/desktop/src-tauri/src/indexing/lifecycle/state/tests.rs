@@ -80,8 +80,7 @@ fn read_pool_routing_tracks_registration() {
                 store,
                 pool,
                 pending,
-                fresh(None),
-                NoopEventSink::shared()
+                VolumeSignals::new(fresh(None), NoopEventSink::shared()),
             )
             .is_ok(),
             "reserve {name} must succeed"
@@ -136,8 +135,7 @@ fn reservations_are_independent_across_volumes() {
             s1,
             p1,
             pe1,
-            fresh(None),
-            NoopEventSink::shared()
+            VolumeSignals::new(fresh(None), NoopEventSink::shared()),
         )
         .is_ok()
     );
@@ -148,8 +146,7 @@ fn reservations_are_independent_across_volumes() {
             s2,
             p2,
             pe2,
-            fresh(None),
-            NoopEventSink::shared()
+            VolumeSignals::new(fresh(None), NoopEventSink::shared()),
         )
         .is_ok()
     );
@@ -168,8 +165,7 @@ fn reservations_are_independent_across_volumes() {
             s1b,
             p1b,
             pe1b,
-            fresh(None),
-            NoopEventSink::shared()
+            VolumeSignals::new(fresh(None), NoopEventSink::shared()),
         )
         .is_err(),
         "double-start of the same volume must be rejected"
@@ -226,8 +222,7 @@ fn scan_start_freshness_firing_does_not_relock_the_registry() {
             store,
             pool,
             pending,
-            Arc::clone(&freshness),
-            NoopEventSink::shared(),
+            VolumeSignals::new(Arc::clone(&freshness), NoopEventSink::shared()),
         )
         .is_ok(),
         "reserve must succeed"
@@ -297,8 +292,7 @@ fn freshness_transitions_through_the_registry() {
             store,
             pool,
             pending,
-            fresh(Some(Freshness::Stale)),
-            NoopEventSink::shared(),
+            VolumeSignals::new(fresh(Some(Freshness::Stale)), NoopEventSink::shared()),
         )
         .is_ok(),
         "reserve must succeed"
@@ -359,8 +353,7 @@ fn disconnect_keeps_instance_stale_user_cancel_resets_to_gray() {
             store,
             pool,
             pending,
-            fresh(Some(Freshness::Stale)),
-            NoopEventSink::shared(),
+            VolumeSignals::new(fresh(Some(Freshness::Stale)), NoopEventSink::shared()),
         )
         .is_ok()
     );
@@ -431,8 +424,7 @@ fn forget_stale_index_transitions_to_gray_and_deletes_db() {
             store,
             pool,
             pending,
-            fresh(Some(Freshness::Stale)),
-            NoopEventSink::shared(),
+            VolumeSignals::new(fresh(Some(Freshness::Stale)), NoopEventSink::shared()),
         )
         .is_ok(),
         "reserve must succeed"
@@ -490,8 +482,7 @@ fn disconnect_storm_two_volumes_never_wedges_the_registry() {
                 store,
                 pool,
                 pending,
-                fresh(Some(Freshness::Stale)),
-                NoopEventSink::shared(),
+                VolumeSignals::new(fresh(Some(Freshness::Stale)), NoopEventSink::shared()),
             )
             .is_ok(),
             "reserve {vid} must succeed (registry not wedged)"
@@ -585,8 +576,7 @@ fn ready_volumes_with_kind_surfaces_a_fresh_at_launch_volume() {
                 store,
                 pool,
                 pending,
-                fresh(Some(initial)),
-                NoopEventSink::shared(),
+                VolumeSignals::new(fresh(Some(initial)), NoopEventSink::shared()),
             )
             .is_ok()
         );

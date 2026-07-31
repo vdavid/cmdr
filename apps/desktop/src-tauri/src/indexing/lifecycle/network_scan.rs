@@ -308,8 +308,10 @@ impl IndexManager {
         );
 
         let progress = Arc::new(ScanProgress::new());
-        let cancelled = Arc::new(AtomicBool::new(false));
-        self.scan_handle = Some(ScanHandle::new(Arc::clone(&progress), Arc::clone(&cancelled)));
+        // A CHILD of the volume's stop signal: stopping this scan leaves the
+        // volume able to start another, while tearing the volume down stops it.
+        let cancel = self.volume_cancel.child_token();
+        self.scan_handle = Some(ScanHandle::new(Arc::clone(&progress), cancel.clone()));
         // `scanning` was already set true above (pre-arm before truncate).
 
         // Progress + mid-scan partial-aggregation reporter (500 ms), stops when the
@@ -366,7 +368,7 @@ impl IndexManager {
                     root,
                     writer.clone(),
                     progress,
-                    cancelled,
+                    cancel,
                     pacer,
                 )
                 .await
@@ -376,7 +378,7 @@ impl IndexManager {
                     root,
                     writer.clone(),
                     progress,
-                    cancelled,
+                    cancel,
                     pacer,
                 )
                 .await

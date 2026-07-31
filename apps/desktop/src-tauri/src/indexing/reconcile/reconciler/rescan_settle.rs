@@ -151,7 +151,7 @@ mod tests {
         // ...and the updater deletes it while the anchor is still settling.
         std::fs::remove_dir_all(&anchor).expect("the updater cleans up");
 
-        let cancelled = AtomicBool::new(false);
+        let cancelled = CancellationToken::new();
         let summary = reconcile_subtree(&anchor, &IndexPathSpace::root(), &conn, &writer, &cancelled).expect("walks");
 
         assert_eq!(

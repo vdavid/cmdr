@@ -31,7 +31,7 @@ async fn scans_in_memory_tree_into_index() {
     );
     let vol: Arc<dyn Volume> = Arc::new(vol);
 
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = CancellationToken::new();
     let summary = scan_volume_via_trait(
         vol,
         PathBuf::from("/"),
@@ -96,7 +96,7 @@ async fn errored_listing_is_not_marked() {
         fail_path: PathBuf::from("/bad"),
     });
 
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = CancellationToken::new();
     let summary = scan_volume_via_trait(
         vol,
         PathBuf::from("/"),
@@ -165,7 +165,7 @@ async fn walk_lists_directories_concurrently() {
         max_in_flight: Arc::clone(&max_in_flight),
     });
 
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = CancellationToken::new();
     scan_volume_via_trait(
         vol,
         PathBuf::from("/"),
@@ -207,7 +207,7 @@ async fn empty_root_fresh_scan_does_not_complete() {
     // Root lists fine but has no children at all.
     let vol: Arc<dyn Volume> = Arc::new(InMemoryVolume::with_entries("Test", vec![]));
 
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = CancellationToken::new();
     let result = scan_volume_via_trait(
         vol,
         PathBuf::from("/"),
@@ -248,7 +248,7 @@ async fn failed_root_listing_does_not_complete() {
         inner: InMemoryVolume::with_entries("Test", vec![entry("a.txt", "/a.txt", false, Some(1))]),
     });
 
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = CancellationToken::new();
     let result = scan_volume_via_trait(
         vol,
         PathBuf::from("/"),
@@ -282,7 +282,8 @@ async fn honors_cancellation_before_first_listing() {
     let vol = InMemoryVolume::with_entries("Test", vec![entry("a.txt", "/a.txt", false, Some(1))]);
     let vol: Arc<dyn Volume> = Arc::new(vol);
 
-    let cancelled = Arc::new(AtomicBool::new(true));
+    let cancelled = CancellationToken::new();
+    cancelled.cancel();
     let summary = scan_volume_via_trait(
         vol,
         PathBuf::from("/"),

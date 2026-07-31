@@ -134,9 +134,9 @@ impl Volume for SmbVolume {
     fn list_directory_for_scan<'a>(
         &'a self,
         path: &'a Path,
-        _cancel: Option<&'a Arc<AtomicBool>>,
+        _cancel: Option<&'a tokio_util::sync::CancellationToken>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
-        // SMB ignores the cancel flag (there's no mid-listing SMB cancel today; the
+        // SMB ignores the token (there's no mid-listing SMB cancel today; the
         // scanner's `LIST_TIMEOUT` on a detached task handles a wedged listing) —
         // same as the default `list_directory_with_cancel` this used to fall through
         // to. The override exists to draw from the per-scan connection pool when one

@@ -246,12 +246,12 @@ async fn list_directory_reports_one_cumulative_progress_tick() {
 #[tokio::test]
 async fn cancelable_listing_returns_the_full_listing() {
     // The archive listing is atomic (parse once from the cached index), so the
-    // volume inherits the trait default: the cancel flag is accepted and the
+    // volume inherits the trait default: the cancel token is accepted and the
     // full listing is returned, exactly like the local and in-memory backends.
     let archive = TestArchive::from_entries(&[stored("a.txt", "x"), deflated("dir/b.txt", "y")]);
     let volume = archive.volume();
 
-    let cancel = Arc::new(AtomicBool::new(false));
+    let cancel = tokio_util::sync::CancellationToken::new();
     let entries = volume
         .list_directory_with_cancel(Path::new(""), None, Some(&cancel))
         .await

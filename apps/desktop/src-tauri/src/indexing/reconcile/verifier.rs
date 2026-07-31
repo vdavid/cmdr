@@ -8,6 +8,8 @@ use std::path::Path;
 use std::sync::{LazyLock, Mutex};
 use std::time::Instant;
 
+use tokio_util::sync::CancellationToken;
+
 use crate::indexing::lifecycle::lifecycle_bus;
 use crate::indexing::metadata::extract_metadata;
 use crate::indexing::paths::firmlinks;
@@ -105,7 +107,14 @@ pub(crate) fn maybe_verify(
             dir_path: dir_path.clone(),
         };
 
-        let affected_paths = verify_and_correct(&dir_path, &writer).await;
+        // A child of the ROOT volume's stop signal (the verifier is root-scoped),
+        // so tearing that index down also stops a subtree scan this kicked off.
+        // No registered root volume ⇒ a token that never fires, which is the
+        // honest answer for work with no volume behind it.
+        let cancel = crate::indexing::lifecycle::state::volume_cancel_token(crate::indexing::ROOT_VOLUME_ID)
+            .map(|t| t.child_token())
+            .unwrap_or_default();
+        let affected_paths = verify_and_correct(&dir_path, &writer, &cancel).await;
 
         if !affected_paths.is_empty() {
             // The per-navigation verifier is root-scoped, so its live corrections
@@ -141,7 +150,7 @@ struct DiskEntry {
 /// Compare disk contents of `dir_path` against the index DB, sending corrections
 /// to the writer. New directories are scanned via `scan_subtree`.
 /// Returns the list of affected paths (for UI refresh), empty if no changes.
-async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String> {
+async fn verify_and_correct(dir_path: &str, writer: &IndexWriter, cancel: &CancellationToken) -> Vec<String> {
     let normalized = firmlinks::normalize_path(dir_path);
 
     // Phase 1: read DB state via ReadPool
@@ -380,12 +389,11 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
             log::warn!("Verifier: pre-scan flush failed: {e}");
         }
 
-        let cancelled = std::sync::atomic::AtomicBool::new(false);
         for new_dir in &new_dir_paths {
             if scanner::should_exclude(new_dir, &scanner::ExclusionScope::boot_disk()) {
                 continue;
             }
-            match scanner::scan_subtree(Path::new(new_dir), writer, &cancelled) {
+            match scanner::scan_subtree(Path::new(new_dir), writer, cancel) {
                 Ok(summary) => {
                     log::debug!(
                         "Verifier: scanned new dir {} ({} entries, {}ms)",
@@ -526,7 +534,11 @@ mod tests {
         let children_before = list_db_children_on(&db_path, parent_id);
 
         let rt = tokio::runtime::Runtime::new().unwrap();
-        let paths = rt.block_on(verify_and_correct(&fs_root.path().to_string_lossy(), &writer));
+        let paths = rt.block_on(verify_and_correct(
+            &fs_root.path().to_string_lossy(),
+            &writer,
+            &CancellationToken::new(),
+        ));
 
         writer.flush_blocking().unwrap();
         let children_after = list_db_children_on(&db_path, parent_id);
@@ -553,7 +565,11 @@ mod tests {
         fs::write(fs_root.path().join("new_file.txt"), "new content").unwrap();
 
         let rt = tokio::runtime::Runtime::new().unwrap();
-        let paths = rt.block_on(verify_and_correct(&fs_root.path().to_string_lossy(), &writer));
+        let paths = rt.block_on(verify_and_correct(
+            &fs_root.path().to_string_lossy(),
+            &writer,
+            &CancellationToken::new(),
+        ));
 
         writer.flush_blocking().unwrap();
         let children_after = list_db_children_on(&db_path, parent_id);
@@ -581,7 +597,11 @@ mod tests {
         fs::remove_file(fs_root.path().join("file1.txt")).unwrap();
 
         let rt = tokio::runtime::Runtime::new().unwrap();
-        let paths = rt.block_on(verify_and_correct(&fs_root.path().to_string_lossy(), &writer));
+        let paths = rt.block_on(verify_and_correct(
+            &fs_root.path().to_string_lossy(),
+            &writer,
+            &CancellationToken::new(),
+        ));
 
         writer.flush_blocking().unwrap();
         let children_after = list_db_children_on(&db_path, parent_id);
@@ -614,7 +634,11 @@ mod tests {
         fs::write(fs_root.path().join("file1.txt"), &large_content).unwrap();
 
         let rt = tokio::runtime::Runtime::new().unwrap();
-        let paths = rt.block_on(verify_and_correct(&fs_root.path().to_string_lossy(), &writer));
+        let paths = rt.block_on(verify_and_correct(
+            &fs_root.path().to_string_lossy(),
+            &writer,
+            &CancellationToken::new(),
+        ));
 
         writer.flush_blocking().unwrap();
         let children_after = list_db_children_on(&db_path, parent_id);
@@ -645,7 +669,11 @@ mod tests {
         fs::write(fs_root.path().join("new_dir").join("inside.txt"), "inside").unwrap();
 
         let rt = tokio::runtime::Runtime::new().unwrap();
-        let paths = rt.block_on(verify_and_correct(&fs_root.path().to_string_lossy(), &writer));
+        let paths = rt.block_on(verify_and_correct(
+            &fs_root.path().to_string_lossy(),
+            &writer,
+            &CancellationToken::new(),
+        ));
 
         writer.flush_blocking().unwrap();
         let children_after = list_db_children_on(&db_path, parent_id);
@@ -688,7 +716,11 @@ mod tests {
         fs::write(new_dir.join("b.txt"), "BB").unwrap(); // 2 bytes
 
         let rt = tokio::runtime::Runtime::new().unwrap();
-        let _paths = rt.block_on(verify_and_correct(&fs_root.path().to_string_lossy(), &writer));
+        let _paths = rt.block_on(verify_and_correct(
+            &fs_root.path().to_string_lossy(),
+            &writer,
+            &CancellationToken::new(),
+        ));
         writer.flush_blocking().unwrap();
 
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
@@ -731,7 +763,11 @@ mod tests {
         fs::remove_dir_all(&subdir).unwrap();
 
         let rt = tokio::runtime::Runtime::new().unwrap();
-        let paths = rt.block_on(verify_and_correct(&fs_root.path().to_string_lossy(), &writer));
+        let paths = rt.block_on(verify_and_correct(
+            &fs_root.path().to_string_lossy(),
+            &writer,
+            &CancellationToken::new(),
+        ));
 
         writer.flush_blocking().unwrap();
         let children_after = list_db_children_on(&db_path, parent_id);
@@ -761,7 +797,11 @@ mod tests {
         fs::write(fs_root.path().join("subdir"), "now a file").unwrap();
 
         let rt = tokio::runtime::Runtime::new().unwrap();
-        let paths = rt.block_on(verify_and_correct(&fs_root.path().to_string_lossy(), &writer));
+        let paths = rt.block_on(verify_and_correct(
+            &fs_root.path().to_string_lossy(),
+            &writer,
+            &CancellationToken::new(),
+        ));
 
         writer.flush_blocking().unwrap();
         let children_after = list_db_children_on(&db_path, parent_id);
@@ -878,7 +918,11 @@ mod tests {
         install_read_pool(&db_path);
 
         let rt = tokio::runtime::Runtime::new().unwrap();
-        let paths = rt.block_on(verify_and_correct(&fs_root.path().to_string_lossy(), &writer));
+        let paths = rt.block_on(verify_and_correct(
+            &fs_root.path().to_string_lossy(),
+            &writer,
+            &CancellationToken::new(),
+        ));
 
         writer.flush_blocking().unwrap();
         let children_after = list_db_children_on(&db_path, parent_id);

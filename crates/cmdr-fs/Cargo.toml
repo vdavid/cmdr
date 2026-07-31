@@ -52,6 +52,12 @@ uzers = "0.12.2"
 # `testing` only: `wait_until_async` polls on tokio's clock, so a `start_paused`
 # runtime auto-advances through the wait instead of burning wall-clock.
 tokio = { version = "1", features = ["time"], optional = true }
+# `CancellationToken`, the ONE cancellation primitive every layer speaks. The
+# `Volume` trait's cancel-aware methods take it, so it has to live here rather
+# than in either consumer. `default-features = false`: `tokio_util::sync` is
+# unconditional, and the `rt` feature would drag a tokio runtime into a crate
+# that doesn't need one.
+tokio-util = { version = "0.7.18", default-features = false }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # Mach `task_info`, the malloc-zone walk, and `pthread_set_qos_class_self_np`.

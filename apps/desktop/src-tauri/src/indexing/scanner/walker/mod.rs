@@ -69,6 +69,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU8, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
+use tokio_util::sync::CancellationToken;
 
 use cmdr_fs::ignore_poison::IgnorePoison;
 
@@ -327,14 +328,14 @@ pub fn default_reader() -> ReadDirFn {
 }
 
 /// Walk `root` and everything under it, calling `visitor` per directory. Blocks
-/// until the walk completes (outstanding tasks reach zero) or `cancelled` is set.
+/// until the walk completes (outstanding tasks reach zero) or `cancel` fires.
 /// Never blocks on a hung directory: see the module docs.
 pub fn walk<V: DirVisitor + 'static>(
     root: DirTask,
     cfg: WalkConfig,
     reader: ReadDirFn,
     visitor: Arc<V>,
-    cancelled: Arc<AtomicBool>,
+    cancel: CancellationToken,
 ) -> WalkStats {
     let num_threads = if cfg.num_threads == 0 {
         std::thread::available_parallelism().map_or(4, |n| n.get())
@@ -347,7 +348,7 @@ pub fn walk<V: DirVisitor + 'static>(
         cv: Condvar::new(),
         outstanding: AtomicUsize::new(0),
         done: AtomicBool::new(false),
-        cancelled,
+        cancel,
         reader,
         visitor,
         stall_timeout: cfg.stall_timeout,
@@ -518,7 +519,9 @@ struct Engine<V: DirVisitor> {
     outstanding: AtomicUsize,
     /// Set (under the `queue` lock) when the walk is finished or cancelled.
     done: AtomicBool,
-    cancelled: Arc<AtomicBool>,
+    /// The walk's stop signal. Workers check it between tasks and between
+    /// entries, so a cancel lands within one directory read.
+    cancel: CancellationToken,
     reader: ReadDirFn,
     visitor: Arc<V>,
     stall_timeout: Duration,
@@ -601,7 +604,7 @@ impl<V: DirVisitor + 'static> Engine<V> {
             let scheduled = {
                 let mut q = self.queue.lock_ignore_poison();
                 loop {
-                    if self.done.load(Ordering::SeqCst) || self.cancelled.load(Ordering::SeqCst) {
+                    if self.done.load(Ordering::SeqCst) || self.cancel.is_cancelled() {
                         return;
                     }
                     if let Some(task) = q.pop_front() {
@@ -645,7 +648,7 @@ impl<V: DirVisitor + 'static> Engine<V> {
             }
             *slot.lock_ignore_poison() = None;
 
-            if self.cancelled.load(Ordering::SeqCst) {
+            if self.cancel.is_cancelled() {
                 self.complete_one();
                 continue;
             }
@@ -707,7 +710,7 @@ impl<V: DirVisitor + 'static> Engine<V> {
             if self.done.load(Ordering::SeqCst) {
                 return;
             }
-            if self.cancelled.load(Ordering::SeqCst) {
+            if self.cancel.is_cancelled() {
                 self.signal_done();
                 return;
             }

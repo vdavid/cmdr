@@ -248,7 +248,7 @@ fn scan_temp_directory_tree() {
         ..ScanConfig::default()
     };
 
-    let (handle, join_handle) = scan_volume(config, &writer).unwrap();
+    let (handle, join_handle) = scan_volume(config, &writer, CancellationToken::new()).unwrap();
     let summary = join_handle.join().expect("scan thread panicked").unwrap();
 
     assert!(!summary.was_cancelled);
@@ -305,7 +305,7 @@ fn clean_scan_stamps_every_listed_dir_with_current_epoch() {
         ..ScanConfig::default()
     };
 
-    let (_handle, join_handle) = scan_volume(config, &writer).unwrap();
+    let (_handle, join_handle) = scan_volume(config, &writer, CancellationToken::new()).unwrap();
     let summary = join_handle.join().expect("scan thread panicked").unwrap();
     assert!(!summary.was_cancelled);
 
@@ -341,7 +341,7 @@ fn scan_subtree_only() {
     create_test_tree(scan_root.path());
 
     let (writer, db_path, _db_dir) = setup_writer();
-    let cancelled = AtomicBool::new(false);
+    let cancelled = CancellationToken::new();
 
     let subtree_root = scan_root.path().join("subdir");
 
@@ -384,7 +384,7 @@ fn scan_cancellation() {
         ..ScanConfig::default()
     };
 
-    let (handle, join_handle) = scan_volume(config, &writer).unwrap();
+    let (handle, join_handle) = scan_volume(config, &writer, CancellationToken::new()).unwrap();
     // Cancel immediately
     handle.cancel();
 
@@ -406,7 +406,7 @@ fn scan_empty_directory() {
         ..ScanConfig::default()
     };
 
-    let (_handle, join_handle) = scan_volume(config, &writer).unwrap();
+    let (_handle, join_handle) = scan_volume(config, &writer, CancellationToken::new()).unwrap();
     let summary = join_handle.join().expect("scan thread panicked").unwrap();
 
     assert!(!summary.was_cancelled);
@@ -433,7 +433,7 @@ fn physical_size_is_captured() {
         ..ScanConfig::default()
     };
 
-    let (_handle, join_handle) = scan_volume(config, &writer).unwrap();
+    let (_handle, join_handle) = scan_volume(config, &writer, CancellationToken::new()).unwrap();
     let _summary = join_handle.join().expect("scan thread panicked").unwrap();
 
     writer.flush_blocking().unwrap();
@@ -476,7 +476,7 @@ fn scan_nulls_inode_on_inode_untrusted_volume() {
             inodes_trustworthy,
             ..ScanConfig::default()
         };
-        let (_handle, join_handle) = scan_volume(config, &writer).unwrap();
+        let (_handle, join_handle) = scan_volume(config, &writer, CancellationToken::new()).unwrap();
         join_handle.join().expect("scan thread panicked").unwrap();
         writer.flush_blocking().unwrap();
         writer.shutdown();
@@ -518,7 +518,7 @@ fn scan_handles_symlinks() {
         ..ScanConfig::default()
     };
 
-    let (_handle, join_handle) = scan_volume(config, &writer).unwrap();
+    let (_handle, join_handle) = scan_volume(config, &writer, CancellationToken::new()).unwrap();
     let _summary = join_handle.join().expect("scan thread panicked").unwrap();
 
     writer.flush_blocking().unwrap();
@@ -560,7 +560,7 @@ fn scan_sets_recursive_has_symlinks_for_symlink_only_dir() {
         num_threads: 1,
         ..ScanConfig::default()
     };
-    let (_handle, join_handle) = scan_volume(config, &writer).unwrap();
+    let (_handle, join_handle) = scan_volume(config, &writer, CancellationToken::new()).unwrap();
     let _summary = join_handle.join().expect("scan thread panicked").unwrap();
 
     // Trigger aggregation, then flush
@@ -624,7 +624,7 @@ fn scan_assigns_integer_ids() {
         ..ScanConfig::default()
     };
 
-    let (_handle, join_handle) = scan_volume(config, &writer).unwrap();
+    let (_handle, join_handle) = scan_volume(config, &writer, CancellationToken::new()).unwrap();
     let _summary = join_handle.join().expect("scan thread panicked").unwrap();
 
     writer.flush_blocking().unwrap();
@@ -769,7 +769,7 @@ fn bytes_scanned_matches_stored_physical_sum_with_hardlinks() {
         ..ScanConfig::default()
     };
 
-    let (handle, join_handle) = scan_volume(config, &writer).unwrap();
+    let (handle, join_handle) = scan_volume(config, &writer, CancellationToken::new()).unwrap();
     let summary = join_handle.join().expect("scan thread panicked").unwrap();
     assert!(!summary.was_cancelled);
 
@@ -806,7 +806,7 @@ fn scan_summary_total_physical_bytes_equals_final_counter() {
         ..ScanConfig::default()
     };
 
-    let (handle, join_handle) = scan_volume(config, &writer).unwrap();
+    let (handle, join_handle) = scan_volume(config, &writer, CancellationToken::new()).unwrap();
     let summary = join_handle.join().expect("scan thread panicked").unwrap();
     writer.shutdown();
 
@@ -859,7 +859,7 @@ fn timed_out_dir_is_not_marked_listed() {
 
     let (writer, db_path, _db_dir) = setup_writer();
     let progress = Arc::new(ScanProgress::new());
-    let cancelled = AtomicBool::new(false);
+    let cancelled = CancellationToken::new();
 
     let start = Instant::now();
     let (summary, listed_ids, epoch, _root_id) = run_scan(
@@ -942,7 +942,7 @@ fn volume_root_that_never_lists_surfaces_root_unlistable() {
 
     let (writer, _db_path, _db_dir) = setup_writer();
     let progress = Arc::new(ScanProgress::new());
-    let cancelled = AtomicBool::new(false);
+    let cancelled = CancellationToken::new();
 
     let result = run_scan(
         &root,

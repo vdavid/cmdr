@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
+use tokio_util::sync::CancellationToken;
 
 use super::state::{INDEX_REGISTRY, IndexPhase, IndexVolumeKind};
 use crate::indexing::events::progress_reporter::ScanProgressReporter;
@@ -48,6 +49,12 @@ pub(crate) struct IndexManager {
     pub(super) writer: IndexWriter,
     /// Handle to the active full scan (if running)
     pub(super) scan_handle: Option<scanner::ScanHandle>,
+    /// This VOLUME's stop signal, the root of every cancellation under it — the
+    /// SAME token the registry `IndexInstance` holds, so the two can't disagree.
+    /// Each scan, reconcile, and subtree walk runs on a `child_token()`, so
+    /// stopping one scan (`stop_scan`) leaves the volume able to start another,
+    /// while `shutdown` cancels this and everything below it at once.
+    pub(super) volume_cancel: CancellationToken,
     /// FSEvents watcher (started alongside scan, persists after scan completes)
     drive_watcher: Option<DriveWatcher>,
     /// Live event processing task (runs after reconciliation completes).
@@ -295,10 +302,9 @@ impl IndexManager {
         volume_id: String,
         volume_root: PathBuf,
         db_path: PathBuf,
-        events: Arc<dyn EventSink>,
         kind: IndexVolumeKind,
         inodes_trustworthy: bool,
-        freshness: Arc<std::sync::Mutex<Option<super::freshness::Freshness>>>,
+        signals: super::state::VolumeSignals,
     ) -> Result<Self, String> {
         let store = IndexStore::open(&db_path).map_err(|e| format!("Failed to open index store: {e}"))?;
 
@@ -308,6 +314,12 @@ impl IndexManager {
         // SMB/MTP writer must not invalidate the root search index it doesn't
         // feed, or every NAS/phone change-notify event would thrash a full root
         // search reload. See `writer::WRITER_GENERATION` and `indexing/DETAILS.md`.
+        let super::state::VolumeSignals {
+            freshness,
+            events,
+            cancel: volume_cancel,
+        } = signals;
+
         let feeds_search = kind.feeds_search();
         let writer = IndexWriter::spawn_for(&db_path, Arc::clone(&events), feeds_search, volume_id.clone())
             .map_err(|e| format!("Failed to spawn index writer: {e}"))?;
@@ -325,6 +337,7 @@ impl IndexManager {
             store,
             writer,
             scan_handle: None,
+            volume_cancel,
             drive_watcher: None,
             live_event_task: Arc::new(std::sync::Mutex::new(None)),
             events,
@@ -796,8 +809,13 @@ impl IndexManager {
         // fresh scan runs the fast parallel guarded-walker `scan_volume`.
         let (scan_handle, join_handle) = if reconcile {
             log::info!("local scan: reconcile rescan for '{}' ({scan_trigger})", self.volume_id);
-            local_reconcile::start_local_reconcile(self.volume_root.clone(), space.clone(), &self.writer)
-                .map_err(|e| format!("Failed to start reconcile rescan: {e}"))?
+            local_reconcile::start_local_reconcile(
+                self.volume_root.clone(),
+                space.clone(),
+                &self.writer,
+                self.volume_cancel.child_token(),
+            )
+            .map_err(|e| format!("Failed to start reconcile rescan: {e}"))?
         } else {
             log::info!(
                 "local scan: fresh scan (truncate) for '{}' ({scan_trigger})",
@@ -813,7 +831,8 @@ impl IndexManager {
                 inodes_trustworthy: space.inodes_trustworthy(),
                 ..ScanConfig::default()
             };
-            scanner::scan_volume(config, &self.writer).map_err(|e| format!("Failed to start scan: {e}"))?
+            scanner::scan_volume(config, &self.writer, self.volume_cancel.child_token())
+                .map_err(|e| format!("Failed to start scan: {e}"))?
         };
 
         self.scanning.store(true, Ordering::Relaxed);
@@ -1008,10 +1027,10 @@ impl IndexManager {
     pub fn shutdown(&mut self) {
         set_phase_for(self.events.as_ref(), &self.volume_id, ActivityPhase::Idle, "shutdown");
 
-        // 1. Cancel active scan (but don't abort event loop)
-        if let Some(ref handle) = self.scan_handle {
-            handle.cancel();
-        }
+        // 1. Cancel everything running for this volume — the active scan and every
+        //    child operation under it (subtree verifications, a reconcile walk).
+        //    Unlike `stop_scan`, this is terminal: no later scan starts here.
+        self.volume_cancel.cancel();
         self.scan_handle = None;
         self.scanning.store(false, Ordering::Relaxed);
 

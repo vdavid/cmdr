@@ -26,6 +26,7 @@ use super::walker::delete_volume_files_with_progress_inner;
 use crate::file_system::get_volume_manager;
 use crate::file_system::volume::{InMemoryVolume, Volume, VolumeError};
 use crate::test_support::wait_until_async;
+use tokio_util::sync::CancellationToken;
 
 // ----------------------------------------------------------------------------
 // Volume that honors `list_directory_with_cancel` / `delete_with_cancel`
@@ -33,8 +34,8 @@ use crate::test_support::wait_until_async;
 
 /// Wraps an `InMemoryVolume` and:
 /// - increments per-entry "stat" simulating an MTP `GetObjectInfo` USB loop.
-/// - between each simulated stat, checks the cancel flag and bails with
-///   `VolumeError::Cancelled` if set.
+/// - between each simulated stat, checks the cancel token and bails with
+///   `VolumeError::Cancelled` once it fires.
 /// - records how far it got before the bail so tests can assert "promptly".
 ///
 /// This mirrors what mtp-rs does internally: the per-handle iteration inside
@@ -44,7 +45,7 @@ struct CancellingVolume {
     /// Entries handed back per listing, simulating a real device's response.
     children: Vec<crate::file_system::listing::FileEntry>,
     /// Number of entries the per-handle loop fetched before bailing on a
-    /// flipped cancel. Reset per listing call.
+    /// cancelled token. Reset per listing call.
     fetched_before_cancel: AtomicUsize,
     /// Live count of entries handed out so far, bumped every iteration. Lets a
     /// canceller wait until the listing is genuinely in-flight instead of
@@ -97,7 +98,7 @@ impl Volume for CancellingVolume {
         &'a self,
         path: &'a Path,
         on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
-        cancel: Option<&'a Arc<AtomicBool>>,
+        cancel: Option<&'a CancellationToken>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<crate::file_system::listing::FileEntry>, VolumeError>> + Send + 'a>>
     {
         let _ = path;
@@ -106,9 +107,7 @@ impl Volume for CancellingVolume {
             // simulated USB roundtrip, then "fetch" the entry.
             let mut yielded = Vec::with_capacity(self.children.len());
             for (i, entry) in self.children.iter().enumerate() {
-                if let Some(flag) = cancel
-                    && flag.load(Ordering::Acquire)
-                {
+                if cancel.is_some_and(CancellationToken::is_cancelled) {
                     self.fetched_before_cancel.store(i, Ordering::Release);
                     self.listing_observed_cancel.store(true, Ordering::Release);
                     return Err(VolumeError::Cancelled("listing cancelled".to_string()));
@@ -177,12 +176,10 @@ impl Volume for CancellingVolume {
     fn delete_with_cancel<'a>(
         &'a self,
         _path: &'a Path,
-        cancel: Option<&'a Arc<AtomicBool>>,
+        cancel: Option<&'a CancellationToken>,
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            if let Some(flag) = cancel
-                && flag.load(Ordering::Acquire)
-            {
+            if cancel.is_some_and(CancellationToken::is_cancelled) {
                 self.delete_observed_cancel.store(true, Ordering::Release);
                 return Err(VolumeError::Cancelled("delete cancelled".to_string()));
             }
@@ -292,7 +289,7 @@ async fn mtp_listing_cancels_promptly_when_intent_flips() {
     // Intent and backend_cancel must both be flipped.
     assert_eq!(load_intent(&state.intent), OperationIntent::Stopped);
     assert!(
-        state.backend_cancel.load(Ordering::Acquire),
+        state.backend_cancel.is_cancelled(),
         "backend_cancel must be flipped so an MTP-style backend bails the in-flight USB loop"
     );
 
@@ -560,7 +557,7 @@ async fn volume_error_emits_write_settled_event() {
             &'a self,
             _path: &'a Path,
             _on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
-            _cancel: Option<&'a Arc<AtomicBool>>,
+            _cancel: Option<&'a CancellationToken>,
         ) -> Pin<Box<dyn Future<Output = Result<Vec<crate::file_system::listing::FileEntry>, VolumeError>> + Send + 'a>>
         {
             Box::pin(async move {
@@ -656,15 +653,12 @@ fn cancel_flag_adapter_links_intent_to_backend_cancel() {
     );
     let state = Arc::clone(op.state());
 
-    assert!(
-        !state.backend_cancel.load(Ordering::Acquire),
-        "backend_cancel must start unset"
-    );
+    assert!(!state.backend_cancel.is_cancelled(), "backend_cancel must start unset");
 
     cancel_write_operation(&op_id, false);
 
     assert!(
-        state.backend_cancel.load(Ordering::Acquire),
+        state.backend_cancel.is_cancelled(),
         "cancel_write_operation must flip backend_cancel as a side effect of intent → Stopped"
     );
 }

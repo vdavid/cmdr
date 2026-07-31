@@ -26,7 +26,7 @@ async fn reconcile_noop_writes_zero_entry_rows() {
     };
 
     // Reconcile the SAME tree (nothing changed on disk).
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = CancellationToken::new();
     reconcile_volume_via_trait(
         Arc::clone(&vol),
         PathBuf::from("/"),
@@ -87,7 +87,7 @@ async fn reconcile_with_changes_matches_fresh_from_scratch() {
         let wconn = IndexStore::open_write_connection(&db_path).unwrap();
         IndexStore::bump_current_epoch(&wconn).unwrap();
     }
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = CancellationToken::new();
     reconcile_volume_via_trait(
         Arc::clone(&vol_after),
         PathBuf::from("/"),
@@ -174,7 +174,7 @@ async fn mid_reconcile_disconnect_keeps_prior_index() {
         let wconn = IndexStore::open_write_connection(&db_path).unwrap();
         IndexStore::bump_current_epoch(&wconn).unwrap();
     }
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = CancellationToken::new();
     let result = reconcile_volume_via_trait(
         vol_disc,
         PathBuf::from("/"),
@@ -227,7 +227,7 @@ async fn first_scan_builds_then_reconcile_is_a_no_op() {
         let wconn = IndexStore::open_write_connection(&db_path).unwrap();
         IndexStore::bump_current_epoch(&wconn).unwrap();
     }
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = CancellationToken::new();
     reconcile_volume_via_trait(
         vol,
         PathBuf::from("/"),
@@ -306,7 +306,7 @@ async fn reconcile_descends_into_existing_unchanged_child_dirs() {
         IndexStore::bump_current_epoch(&wconn).unwrap()
     };
 
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = CancellationToken::new();
     reconcile_volume_via_trait(
         vol_full,
         PathBuf::from("/"),
@@ -379,7 +379,7 @@ async fn reconcile_empty_root_does_not_complete() {
 
     // Now reconcile against a volume whose root lists EMPTY (the glitch).
     let empty: Arc<dyn Volume> = Arc::new(InMemoryVolume::with_entries("Test", vec![]));
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = CancellationToken::new();
     let result = reconcile_volume_via_trait(
         empty,
         PathBuf::from("/"),
@@ -448,7 +448,7 @@ async fn reconcile_from_empty_db_with_non_root_mount_indexes_full_tree() {
         IndexStore::bump_current_epoch(&wconn).unwrap()
     };
 
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = CancellationToken::new();
     let summary = reconcile_volume_via_trait(vol, root, writer.clone(), progress(), cancelled, ScanPacer::unpaced())
         .await
         .expect("reconcile from empty DB on a non-`/` mount");

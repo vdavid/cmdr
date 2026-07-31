@@ -6,9 +6,9 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, LazyLock, RwLock};
 use tauri_specta::Event;
+use tokio_util::sync::CancellationToken;
 
 use crate::benchmark;
 use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
@@ -106,13 +106,12 @@ pub struct ListingOpeningEvent {
 
 /// State for an in-progress streaming listing
 pub struct StreamingListingState {
-    /// Checked at sync cancellation points (before read, after read, at cache
-    /// insert), AND handed to the backend as its cooperative cancel token, so a
-    /// listing made of many round trips (MTP) stops on the wire, not just in the
-    /// loop above it. `Arc` because the backend takes `&Arc<AtomicBool>`.
-    pub cancelled: Arc<AtomicBool>,
-    /// Async signal for `select!`-based cancellation during the listing I/O.
-    pub cancel_notify: tokio::sync::Notify,
+    /// The listing's stop signal. Read at the sync cancellation points (before
+    /// read, after read, at cache insert), awaited by the `select!` that races
+    /// the read, AND handed to the backend, so a listing made of many round
+    /// trips (MTP) stops on the wire and not just in the loop above it. One
+    /// token rather than a flag plus a `Notify`: they could never disagree.
+    pub cancel: CancellationToken,
 }
 
 /// Cache for streaming state (separate from completed listings cache)
@@ -292,8 +291,7 @@ pub async fn list_directory_start_streaming(
 
     // Create streaming state with cancellation flag
     let state = Arc::new(StreamingListingState {
-        cancelled: Arc::new(AtomicBool::new(false)),
-        cancel_notify: tokio::sync::Notify::new(),
+        cancel: CancellationToken::new(),
     });
 
     // Store state for cancellation
@@ -420,7 +418,7 @@ pub(crate) async fn read_directory_with_progress(
     events.emit_opening(listing_id);
 
     // Check cancellation before starting
-    if state.cancelled.load(Ordering::Relaxed) {
+    if state.cancel.is_cancelled() {
         benchmark::log_event("read_directory_with_progress CANCELLED (before read)");
         events.emit_cancelled(listing_id);
         return Ok(());
@@ -447,7 +445,7 @@ pub(crate) async fn read_directory_with_progress(
     let path_for_task = path.to_path_buf();
     let events_for_progress = Arc::clone(events);
     let listing_id_for_progress = listing_id.to_string();
-    let cancel_for_task = Arc::clone(&state.cancelled);
+    let cancel_for_task = state.cancel.clone();
 
     let mut listing_task = tokio::spawn(async move {
         // Stall-probe: marker logged as the FIRST executable line inside the spawned task.
@@ -468,7 +466,7 @@ pub(crate) async fn read_directory_with_progress(
             // the caller already emitted `listing-cancelled` and the pane moved
             // on. Stay quiet so a superseded listing can't post progress against
             // an id the frontend has retired.
-            if cancel_for_task.load(Ordering::Relaxed) {
+            if cancel_for_task.is_cancelled() {
                 return;
             }
             // Streaming listing UI shows "Loaded N entries…", so it wants total
@@ -484,10 +482,10 @@ pub(crate) async fn read_directory_with_progress(
     // Wait for either listing completion or cancellation (no polling).
     let entries_result = tokio::select! {
         biased;  // check cancellation first if both are ready
-        _ = state.cancel_notify.notified() => {
+        () = state.cancel.cancelled() => {
             benchmark::log_event("read_directory_with_progress CANCELLED (during read_dir)");
-            // ❌ Never `listing_task.abort()` here. `state.cancelled` is already
-            // set (`cancel_listing` sets it before notifying), so the backend
+            // ❌ Never `listing_task.abort()` here. `state.cancel` is already
+            // cancelled (that IS what woke this arm), so the backend
             // sees the token and unwinds at its own safe boundary; aborting
             // would instead DROP its future wherever it happens to be, which on
             // MTP abandons an in-flight PTP transaction and wedges the phone
@@ -513,7 +511,7 @@ pub(crate) async fn read_directory_with_progress(
     events.emit_read_complete(listing_id, entries.len());
 
     // Check cancellation one more time before finalizing
-    if state.cancelled.load(Ordering::Relaxed) {
+    if state.cancel.is_cancelled() {
         benchmark::log_event("read_directory_with_progress CANCELLED (after read)");
         events.emit_cancelled(listing_id);
         return Ok(());
@@ -552,7 +550,7 @@ pub(crate) async fn read_directory_with_progress(
     let entries_count_for_log = entries.len();
     if let Ok(mut cache) = LISTING_CACHE.write() {
         // Check cancellation while holding the lock - makes check+insert atomic
-        if state.cancelled.load(Ordering::Relaxed) {
+        if state.cancel.is_cancelled() {
             benchmark::log_event("read_directory_with_progress CANCELLED (at cache insert)");
             events.emit_cancelled(listing_id);
             return Ok(());
@@ -648,13 +646,13 @@ pub(crate) async fn read_directory_with_progress(
 
 /// Cancels an in-progress streaming listing.
 ///
-/// Sets the cancellation flag, which will be checked by the background task.
+/// Cancels its token, which both the background task's checks and the `select!`
+/// racing the read observe.
 pub fn cancel_listing(listing_id: &str) {
     if let Ok(cache) = STREAMING_STATE.read()
         && let Some(state) = cache.get(listing_id)
     {
-        state.cancelled.store(true, Ordering::Relaxed);
-        state.cancel_notify.notify_waiters();
+        state.cancel.cancel();
         benchmark::log_event_value("cancel_listing", listing_id);
     }
 }

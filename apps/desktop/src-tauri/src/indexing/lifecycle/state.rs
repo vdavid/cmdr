@@ -32,6 +32,7 @@ use std::sync::Arc;
 use std::sync::LazyLock;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
+use tokio_util::sync::CancellationToken;
 
 use super::failure::IndexFailureSignal;
 use super::freshness::{Freshness, FreshnessEvent};
@@ -93,6 +94,48 @@ pub(crate) enum IndexPhase {
 /// For the root volume, `read_pool` and `pending_sizes` are the same `Arc`s
 /// installed into the `READ_POOL` / `PENDING_SIZES` module globals, so the
 /// read-path fast handles and the registry never disagree.
+/// The three handles a volume's registry instance and its `IndexManager` both
+/// hold: its freshness signal, where its reports go, and its stop signal. Passed
+/// as ONE value so the two can never be built with different halves — a manager
+/// firing freshness through a different `Arc`, or cancelling a token nothing
+/// else watches, is exactly the class of bug this shape rules out.
+#[derive(Clone)]
+pub(crate) struct VolumeSignals {
+    /// This volume's freshness signal (gray = absent instance; blue/green/yellow
+    /// = the `Freshness` variants). `Arc<Mutex<…>>` so scan-transition tasks and
+    /// the live-watch layer can flip it without holding the registry lock.
+    /// `None` means "not yet determined" (e.g. mid-initialization before the
+    /// first scan transition); a `Running` volume always carries `Some`. The
+    /// state machine itself lives in `lifecycle/freshness.rs`. See DETAILS §
+    /// "The freshness model".
+    pub(crate) freshness: Arc<std::sync::Mutex<Option<Freshness>>>,
+    /// Where this volume's reports go. Held per volume rather than in a
+    /// process-wide slot so the handle-free seams (the freshness transition, the
+    /// failure supervisor) stay per-volume, like every other invariant here.
+    pub(crate) events: Arc<dyn crate::indexing::EventSink>,
+    /// This volume's stop signal — the ROOT of every cancellation under it.
+    /// Every long walk it starts (a full scan, a reconcile, a subtree rescan, a
+    /// verification) runs on a `child_token()`, so tearing the volume down stops
+    /// all of them at once. Read it through [`volume_cancel_token`] from anywhere
+    /// that starts work for a volume without holding its manager.
+    pub(crate) cancel: CancellationToken,
+}
+
+impl VolumeSignals {
+    /// Build a volume's shared handles: a fresh stop signal plus the caller's
+    /// freshness and sink.
+    pub(crate) fn new(
+        freshness: Arc<std::sync::Mutex<Option<Freshness>>>,
+        events: Arc<dyn crate::indexing::EventSink>,
+    ) -> Self {
+        Self {
+            freshness,
+            events,
+            cancel: CancellationToken::new(),
+        }
+    }
+}
+
 pub(crate) struct IndexInstance {
     pub(crate) phase: IndexPhase,
     /// This volume's scan kind (Local / SMB / MTP). Retained so a consumer of the
@@ -102,18 +145,8 @@ pub(crate) struct IndexInstance {
     pub(crate) kind: IndexVolumeKind,
     pub(crate) read_pool: Arc<ReadPool>,
     pub(crate) pending_sizes: Arc<PendingSizes>,
-    /// This volume's freshness signal (gray = absent instance; blue/green/yellow
-    /// = the `Freshness` variants). `Arc<Mutex<…>>` so scan-transition tasks and
-    /// the live-watch layer can flip it without holding the registry
-    /// lock. `None` means "not yet determined" (e.g. mid-initialization before
-    /// the first scan transition); a `Running` volume always carries `Some`. The
-    /// freshness state machine itself lives in `lifecycle/freshness.rs`. See DETAILS §
-    /// "The freshness model".
-    pub(crate) freshness: Arc<std::sync::Mutex<Option<Freshness>>>,
-    /// Where this volume's reports go. Held per instance rather than in a
-    /// process-wide slot so the handle-free seams (the freshness transition, the
-    /// failure supervisor) stay per-volume, like every other invariant here.
-    pub(crate) events: Arc<dyn crate::indexing::EventSink>,
+    /// The handles this volume shares with its `IndexManager`.
+    pub(crate) signals: VolumeSignals,
 }
 
 /// The per-volume index registry: the authority for which volumes are indexed
@@ -371,8 +404,7 @@ pub(crate) fn try_reserve_initializing_phase(
     store: IndexStore,
     read_pool: Arc<ReadPool>,
     pending_sizes: Arc<PendingSizes>,
-    freshness: Arc<std::sync::Mutex<Option<Freshness>>>,
-    events: Arc<dyn crate::indexing::EventSink>,
+    signals: VolumeSignals,
 ) -> Result<(), Box<IndexStore>> {
     let mut reg = INDEX_REGISTRY.lock().expect("INDEX_REGISTRY lock poisoned");
     if reg.contains_key(volume_id) {
@@ -387,11 +419,23 @@ pub(crate) fn try_reserve_initializing_phase(
             kind,
             read_pool,
             pending_sizes,
-            freshness,
-            events,
+            signals,
         },
     );
     Ok(())
+}
+
+/// This volume's stop signal, for code that starts long work for a volume
+/// without holding its `IndexManager` (the subtree-rescan drain, the
+/// verification walks). Take a `child_token()` off it so the work stops when the
+/// volume is torn down, and `unwrap_or_default()` when the volume isn't
+/// registered — a fresh token that never fires, which is the honest answer for
+/// work with no volume behind it (a test fixture, a tool).
+pub(crate) fn volume_cancel_token(volume_id: &str) -> Option<CancellationToken> {
+    INDEX_REGISTRY
+        .lock()
+        .ok()
+        .and_then(|reg| reg.get(volume_id).map(|i| i.signals.cancel.clone()))
 }
 
 /// Apply a freshness transition for a volume via the pure state machine
@@ -416,8 +460,12 @@ pub(crate) fn apply_freshness_event(volume_id: &str, event: FreshnessEvent) {
     // unnecessary and a re-entrancy hazard for any caller already under the lock.
     let Some((freshness, events)) = ({
         let Ok(reg) = INDEX_REGISTRY.lock() else { return };
-        reg.get(volume_id)
-            .map(|instance| (Arc::clone(&instance.freshness), Arc::clone(&instance.events)))
+        reg.get(volume_id).map(|instance| {
+            (
+                Arc::clone(&instance.signals.freshness),
+                Arc::clone(&instance.signals.events),
+            )
+        })
     }) else {
         return;
     };
@@ -498,7 +546,7 @@ pub(crate) fn get_freshness(volume_id: &str) -> Option<Freshness> {
         .lock()
         .ok()?
         .get(volume_id)
-        .and_then(|i| i.freshness.lock().ok().and_then(|f| *f))
+        .and_then(|i| i.signals.freshness.lock().ok().and_then(|f| *f))
 }
 
 /// How a volume's index is scanned, watched, rooted, and searched.
@@ -683,11 +731,12 @@ fn start_indexing_for(
         }
     }
 
-    // One freshness `Arc` per volume, shared by the registry instance and the
-    // `IndexManager`. The manager fires its scan transitions through this handle
-    // directly (no registry re-lock), so a held-registry caller (`force_scan`,
-    // the journal-gap fallback) can drive a scan without self-deadlocking.
-    let freshness = Arc::new(std::sync::Mutex::new(initial_freshness));
+    // One set of shared handles per volume, held by BOTH the registry instance
+    // and the `IndexManager`: freshness, the sink, and the cancellation root. The
+    // manager fires its scan transitions through the freshness handle directly
+    // (no registry re-lock), so a held-registry caller (`force_scan`, the
+    // journal-gap fallback) can drive a scan without self-deadlocking.
+    let signals = VolumeSignals::new(Arc::new(std::sync::Mutex::new(initial_freshness)), Arc::clone(&events));
 
     if try_reserve_initializing_phase(
         volume_id,
@@ -695,8 +744,7 @@ fn start_indexing_for(
         init_store,
         Arc::clone(&pool),
         Arc::clone(&pending),
-        Arc::clone(&freshness),
-        Arc::clone(&events),
+        signals.clone(),
     )
     .is_err()
     {
@@ -717,10 +765,9 @@ fn start_indexing_for(
         volume_id.to_string(),
         volume_root,
         db_path.clone(),
-        Arc::clone(&events),
         kind,
         inodes_trustworthy,
-        Arc::clone(&freshness),
+        signals,
     ) {
         Ok(m) => m,
         Err(e) => {
@@ -1112,6 +1159,7 @@ pub(crate) fn ready_volumes_with_kind() -> Vec<(VolumeId, IndexVolumeKind)> {
     reg.iter()
         .filter(|(_, instance)| {
             instance
+                .signals
                 .freshness
                 .lock()
                 .ok()
@@ -1178,8 +1226,10 @@ pub(crate) fn reserve_initializing_index_for_test(volume_id: &str, kind: IndexVo
         store,
         pool,
         pending,
-        Arc::new(std::sync::Mutex::new(Some(Freshness::Fresh))),
-        crate::indexing::NoopEventSink::shared(),
+        VolumeSignals::new(
+            Arc::new(std::sync::Mutex::new(Some(Freshness::Fresh))),
+            crate::indexing::NoopEventSink::shared(),
+        ),
     )
     .unwrap_or_else(|_| panic!("reserve {volume_id} must succeed from absent"));
     dir

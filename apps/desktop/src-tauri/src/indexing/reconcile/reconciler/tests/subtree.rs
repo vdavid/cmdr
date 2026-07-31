@@ -61,7 +61,7 @@ fn must_scan_sub_dirs_preserves_existing_children() {
     }
 
     // Run reconcile_subtree (what MustScanSubDirs triggers)
-    let cancelled = AtomicBool::new(false);
+    let cancelled = CancellationToken::new();
     let result = reconcile_subtree(&sub_dir, &IndexPathSpace::root(), &conn, &writer, &cancelled);
     assert!(result.is_ok());
     let summary = result.unwrap();
@@ -96,7 +96,7 @@ fn reconcile_new_file() {
 
     ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
 
-    let cancelled = AtomicBool::new(false);
+    let cancelled = CancellationToken::new();
     let result = reconcile_subtree(test_dir.path(), &IndexPathSpace::root(), &conn, &writer, &cancelled);
     assert!(result.is_ok());
     let summary = result.unwrap();
@@ -142,7 +142,7 @@ fn reconcile_deleted_file() {
         .unwrap();
     }
 
-    let cancelled = AtomicBool::new(false);
+    let cancelled = CancellationToken::new();
     let result = reconcile_subtree(test_dir.path(), &IndexPathSpace::root(), &conn, &writer, &cancelled);
     assert!(result.is_ok());
     let summary = result.unwrap();
@@ -192,7 +192,7 @@ fn reconcile_unchanged() {
         .unwrap();
     }
 
-    let cancelled = AtomicBool::new(false);
+    let cancelled = CancellationToken::new();
     let result = reconcile_subtree(test_dir.path(), &IndexPathSpace::root(), &conn, &writer, &cancelled);
     assert!(result.is_ok());
     let summary = result.unwrap();
@@ -233,7 +233,7 @@ fn reconcile_modified_file() {
         .unwrap();
     }
 
-    let cancelled = AtomicBool::new(false);
+    let cancelled = CancellationToken::new();
     let result = reconcile_subtree(test_dir.path(), &IndexPathSpace::root(), &conn, &writer, &cancelled);
     assert!(result.is_ok());
     let summary = result.unwrap();
@@ -274,7 +274,7 @@ fn reconcile_subtree_new_nested_dir_with_child() {
     // DB only knows about /parent/; new_dir and child.txt are unknown
     ensure_path_in_db(&db_path, &parent.to_string_lossy(), &writer);
 
-    let cancelled = AtomicBool::new(false);
+    let cancelled = CancellationToken::new();
     let result = reconcile_subtree(&parent, &IndexPathSpace::root(), &conn, &writer, &cancelled);
     assert!(result.is_ok());
     let summary = result.unwrap();
@@ -343,7 +343,7 @@ fn reconcile_subtree_dir_replaced_by_file() {
         .unwrap();
     }
 
-    let cancelled = AtomicBool::new(false);
+    let cancelled = CancellationToken::new();
     let result = reconcile_subtree(&parent, &IndexPathSpace::root(), &conn, &writer, &cancelled);
     assert!(result.is_ok());
     let summary = result.unwrap();
@@ -396,7 +396,7 @@ fn reconcile_subtree_deep_nested_dirs() {
     // DB only knows about /root_dir/; everything inside is new
     ensure_path_in_db(&db_path, &root_dir.to_string_lossy(), &writer);
 
-    let cancelled = AtomicBool::new(false);
+    let cancelled = CancellationToken::new();
     let result = reconcile_subtree(&root_dir, &IndexPathSpace::root(), &conn, &writer, &cancelled);
     assert!(result.is_ok());
     let summary = result.unwrap();
@@ -465,7 +465,7 @@ fn reconcile_subtree_indexes_new_directory_not_in_db() {
     // for a newly copied/created directory.
     ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
 
-    let cancelled = AtomicBool::new(false);
+    let cancelled = CancellationToken::new();
     let result = reconcile_subtree(&new_dir, &IndexPathSpace::root(), &conn, &writer, &cancelled);
     assert!(result.is_ok());
     let summary = result.unwrap();
@@ -516,7 +516,7 @@ fn reconcile_subtree_marks_listed_dirs_at_current_epoch() {
     // Only the parent of `tree` is in the DB (mimics must_scan_sub_dirs).
     ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
 
-    let cancelled = AtomicBool::new(false);
+    let cancelled = CancellationToken::new();
     reconcile_subtree(&new_dir, &IndexPathSpace::root(), &conn, &writer, &cancelled).unwrap();
     writer.flush_blocking().unwrap();
     writer.shutdown();

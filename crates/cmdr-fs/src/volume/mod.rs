@@ -15,7 +15,7 @@ use crate::entry::FileEntry;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
-use std::sync::atomic::AtomicBool;
+use tokio_util::sync::CancellationToken;
 
 /// Default volume ID for the root filesystem.
 pub const DEFAULT_VOLUME_ID: &str = "root";
@@ -147,20 +147,20 @@ pub trait Volume: Send + Sync {
     ///
     /// `cancel`, when `Some`, is consulted by backends that issue many small
     /// USB or network roundtrips inside one listing (currently MTP — a 950-entry
-    /// folder is 950 `GetObjectInfo` calls). When the flag flips to `true`,
+    /// folder is 950 `GetObjectInfo` calls). Once the token is cancelled,
     /// the backend bails between roundtrips with `VolumeError::Cancelled`
     /// instead of running to completion.
     ///
-    /// Local and in-memory backends ignore the flag (their listings are
+    /// Local and in-memory backends ignore the token (their listings are
     /// effectively atomic from the caller's perspective). SMB ignores it
     /// today — adding SMB cancel propagation is a follow-up.
     ///
-    /// Default impl delegates to `list_directory`, dropping the flag.
+    /// Default impl delegates to `list_directory`, dropping the token.
     fn list_directory_with_cancel<'a>(
         &'a self,
         path: &'a Path,
         on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
-        cancel: Option<&'a std::sync::Arc<AtomicBool>>,
+        cancel: Option<&'a CancellationToken>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         let _ = cancel;
         self.list_directory(path, on_progress)
@@ -180,7 +180,7 @@ pub trait Volume: Send + Sync {
     fn list_directory_for_scan<'a>(
         &'a self,
         path: &'a Path,
-        cancel: Option<&'a std::sync::Arc<AtomicBool>>,
+        cancel: Option<&'a CancellationToken>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         self.list_directory_with_cancel(path, None, cancel)
     }
@@ -341,16 +341,16 @@ pub trait Volume: Send + Sync {
 
     /// Cancel-aware version of [`delete`](Self::delete).
     ///
-    /// MTP overrides this to thread the cancel flag through to mtp-rs's
+    /// MTP overrides this to thread the token through to mtp-rs's
     /// `delete_with_cancel`, which bails before issuing the `DeleteObject` PTP
-    /// request when the flag is set. For non-empty directories the MTP
-    /// implementation also checks the flag between recursive child deletes.
+    /// request once the token is cancelled. For non-empty directories the MTP
+    /// implementation also checks it between recursive child deletes.
     ///
-    /// Default impl delegates to `delete`, dropping the flag.
+    /// Default impl delegates to `delete`, dropping the token.
     fn delete_with_cancel<'a>(
         &'a self,
         path: &'a Path,
-        cancel: Option<&'a std::sync::Arc<AtomicBool>>,
+        cancel: Option<&'a CancellationToken>,
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         let _ = cancel;
         self.delete(path)

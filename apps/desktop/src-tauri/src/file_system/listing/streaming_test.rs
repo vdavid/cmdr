@@ -8,6 +8,7 @@ use std::path::Path;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use tokio_util::sync::CancellationToken;
 
 use crate::file_system::listing::caching::LISTING_CACHE;
 use crate::file_system::listing::metadata::FileEntry;
@@ -49,8 +50,7 @@ fn cleanup(volume_id: &str, listing_id: &str) {
 
 fn new_state() -> Arc<StreamingListingState> {
     Arc::new(StreamingListingState {
-        cancelled: Arc::new(AtomicBool::new(false)),
-        cancel_notify: tokio::sync::Notify::new(),
+        cancel: CancellationToken::new(),
     })
 }
 
@@ -166,7 +166,7 @@ async fn test_streaming_list_cancellation() {
     let state = new_state();
 
     // Set cancelled BEFORE calling
-    state.cancelled.store(true, Ordering::Relaxed);
+    state.cancel.cancel();
 
     let result = read_directory_with_progress(
         &events,
@@ -314,7 +314,7 @@ impl CooperativeCancelVolume {
     /// token fails the test instead of hanging the suite.
     fn listing_body(
         &self,
-        cancel: Option<Arc<AtomicBool>>,
+        cancel: Option<CancellationToken>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'static>> {
         let started = Arc::clone(&self.started);
         let finished = Arc::clone(&self.finished);
@@ -323,7 +323,7 @@ impl CooperativeCancelVolume {
             let mut witness = AbortWitness { aborted, armed: true };
             started.store(true, Ordering::SeqCst);
             for _ in 0..2_000 {
-                if cancel.as_ref().is_some_and(|c| c.load(Ordering::Relaxed)) {
+                if cancel.as_ref().is_some_and(CancellationToken::is_cancelled) {
                     break;
                 }
                 // allowed-test-sleep: this fake backend simulates a long, cancellable listing; the
@@ -364,9 +364,9 @@ impl Volume for CooperativeCancelVolume {
         &'a self,
         _path: &'a Path,
         _on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
-        cancel: Option<&'a Arc<AtomicBool>>,
+        cancel: Option<&'a CancellationToken>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
-        self.listing_body(cancel.map(Arc::clone))
+        self.listing_body(cancel.cloned())
     }
 
     fn get_metadata<'a>(
@@ -436,9 +436,8 @@ async fn test_cancel_unwinds_the_listing_instead_of_aborting_it() {
     })
     .await;
 
-    // Same two steps as `cancel_listing`.
-    state.cancelled.store(true, Ordering::Relaxed);
-    state.cancel_notify.notify_waiters();
+    // The same one step as `cancel_listing`.
+    state.cancel.cancel();
 
     let result = read.await.expect("listing task must not panic");
     assert!(result.is_ok());

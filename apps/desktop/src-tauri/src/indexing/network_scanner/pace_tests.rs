@@ -13,8 +13,9 @@
 
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
+use tokio_util::sync::CancellationToken;
 
 use super::tests::{ConcurrencyTrackingVolume, entry, progress, wide_tree};
 use super::{ScanPacer, scan_volume_via_trait};
@@ -47,7 +48,7 @@ fn tracking_wide_tree(n_subdirs: usize, max_in_flight: &Arc<AtomicU64>) -> Arc<d
 
 /// Run a full trait scan of `vol` under `pacer`, flushing the writer.
 async fn scan(vol: Arc<dyn Volume>, writer: &IndexWriter, pacer: ScanPacer) -> ScanSummary {
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = CancellationToken::new();
     let summary = scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled, pacer)
         .await
         .expect("scan completes");

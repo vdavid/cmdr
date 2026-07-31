@@ -264,7 +264,7 @@ async fn fresh_scan(vol: Arc<dyn Volume>) -> (IndexWriter, PathBuf, tempfile::Te
     let db_path = dir.path().join("reconcile.db");
     let _store = IndexStore::open(&db_path).expect("open store");
     let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let cancelled = CancellationToken::new();
     scan_volume_via_trait(
         vol,
         PathBuf::from("/"),

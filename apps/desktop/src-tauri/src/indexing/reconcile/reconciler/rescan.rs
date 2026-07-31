@@ -397,7 +397,13 @@ pub(super) fn start_next_rescan(
         .name("rescan-subtree".into())
         .spawn(move || {
             cmdr_fs::thread_qos::set_current_thread_qos(cmdr_fs::thread_qos::QosClass::Utility);
-            let cancelled = AtomicBool::new(false);
+            // A child of THIS volume's stop signal, so tearing the index down
+            // stops a long subtree walk instead of letting it write into a
+            // writer that's shutting down. An unregistered volume yields a token
+            // that never fires (the honest answer with no volume behind it).
+            let cancel = crate::indexing::lifecycle::state::volume_cancel_token(&volume_id_for_task)
+                .map(|t| t.child_token())
+                .unwrap_or_default();
             // The reconciler holds a READ connection (invariant: reconciler/event
             // loops never open a write connection — a write conn contends with the
             // writer thread and `SQLITE_BUSY` silently kills live indexing). Every
@@ -435,7 +441,7 @@ pub(super) fn start_next_rescan(
                 }
             };
 
-            let (escalation, walk_cost) = match reconcile_subtree(&path, &space_for_task, &conn, &writer, &cancelled) {
+            let (escalation, walk_cost) = match reconcile_subtree(&path, &space_for_task, &conn, &writer, &cancel) {
                 Ok(summary) => {
                     let (level, message) = reconcile_report(&path, &summary);
                     log::log!(level, "{message}");

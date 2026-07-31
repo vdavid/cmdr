@@ -595,7 +595,8 @@ mod tests {
         // Run the scan to completion: the scanner thread walks the mount, then sends
         // the mark + ComputeAllAggregates messages before returning, so joining it
         // and flushing the writer yields a fully aggregated index.
-        let (_handle, join) = scan_volume(config, &writer).expect("start scan");
+        let (_handle, join) =
+            scan_volume(config, &writer, tokio_util::sync::CancellationToken::new()).expect("start scan");
         let summary = join.join().expect("scan thread panicked").expect("scan ok");
         assert!(!summary.was_cancelled, "scan ran to completion, not cancelled");
         writer.flush_blocking().expect("flush aggregates");
