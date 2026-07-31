@@ -38,8 +38,25 @@
 //! assemble a [`FolderSignals`](crate::importance::FolderSignals) per folder (via [`signals`](super::signals)), run
 //! the pure scorer, and write every folder's weight through the
 //! [`ImportanceWriter`] at a new generation. Cost-bounded by walking the index
-//! (already in SQLite), not the filesystem. Runs on a dedicated background task,
-//! cancelable, never on the IPC thread. Local volumes only in M2 (SMB is M4).
+//! (already in SQLite), not the filesystem. Runs on a blocking background task
+//! through the host runtime seam, never on the IPC thread. Local and SMB
+//! volumes; MTP is excluded at every entry point (`ScoringPolicy::for_kind`).
+//!
+//! ## A pass can't be stopped
+//!
+//! Unlike every other long walk in this crate, an importance pass holds no
+//! `CancellationToken` and registers no stop hook with
+//! `indexing::resources::subsystem_stop::register_subsystem_stop_hook`. So
+//! `stop_all_indexing` (the memory watchdog's emergency stop, and the shutdown
+//! path) doesn't reach it: a full recompute walks the whole index to the end
+//! regardless. That walk is O(dirs) in a small constant, 5.5–6.4 s over real
+//! 391k / 611k-folder indexes (measured 2026-07-29, `DETAILS.md` § "The scoped
+//! walk"), which is why this has been tolerable rather than urgent.
+//!
+//! TODO(importance): hand a pass the volume's cancellation token
+//! (`indexing::lifecycle::state::volume_cancel_token`, the crate's one
+//! cancellation primitive) and register a stop hook, so both the watchdog and
+//! teardown reach a running recompute.
 
 use std::collections::HashMap;
 use std::path::PathBuf;

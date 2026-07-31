@@ -43,6 +43,9 @@ Top-level leaves this file owns: `classify.rs` (the shared categorical classifie
   through it. ❌ Never a second writer thread on one DB.
 - **Volume kind ⇒ policy, TYPED** (`scheduler::ScoringPolicy::for_kind`): Local and SMB scored, **MTP excluded** at
   every entry point. ❌ NEVER a filesystem syscall against an SMB or MTP mount — read the local index DB only.
+- **Nothing here is cancelable, so don't assume a pass stops.** No `CancellationToken`, no stop hook, so
+  `stop_all_indexing` (memory watchdog, shutdown) doesn't reach a running recompute — it walks the whole index to the
+  end. Known gap with a `TODO(importance)` in `scheduler/mod.rs`; ❌ don't add a second primitive to fix it.
 - **Only a FULL pass stamps `recompute_generation`**, so generation `0` does NOT mean "no weights" (an incremental-only
   store holds hundreds of thousands of rows at generation 0). A consumer asking "genuinely unscored?" keys on the row
   count.

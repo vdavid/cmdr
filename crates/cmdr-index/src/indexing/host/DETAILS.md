@@ -137,7 +137,8 @@ it down.
 ## Cancellation
 
 One primitive, `tokio_util::sync::CancellationToken`, from the `Volume` trait in `cmdr-fs` up through every long walk
-the three subsystems run. It replaced five kinds of `Arc<AtomicBool>` plus a `Notify`, none of which could compose.
+`indexing/` and `media_index/` run. It replaced five kinds of `Arc<AtomicBool>` plus a `Notify`, none of which could
+compose. `importance/` is the gap, not a third topology (below).
 
 **The topology is a tree, rooted per volume.** `VolumeSignals.cancel` (`lifecycle/state.rs`) is held by BOTH the
 registry `IndexInstance` and its `IndexManager`, so the two can't disagree; read it from elsewhere through
@@ -164,6 +165,13 @@ seam here uses.
 re-enabling installs a FRESH token rather than un-cancelling — a token is one-shot by design, and a pass the user
 stopped must not quietly resume. Per-volume media cancellation would be a new feature, not a rewiring: nothing today
 scopes an enrichment pass to a volume's token.
+
+**`importance` has no cancellation at all** — the honest exception, and a gap rather than a decision. Nothing under
+`importance/` holds a token, and its scheduler registers no `register_subsystem_stop_hook`, so `stop_all_indexing`
+(watchdog stop, shutdown) doesn't reach a running recompute: it walks the whole index to the end. Tolerable because
+that walk is 5.5–6.4 s over real 391k / 611k-folder indexes (measured 2026-07-29), not because anything stops it. The
+`TODO(importance)` in `importance/scheduler/mod.rs` is the entry point for closing it; the fix is the volume token via
+`state::volume_cancel_token` plus a stop hook, not a new primitive.
 
 ## Cancellation is observable, as a typed error
 
