@@ -78,6 +78,21 @@ event, including throughout a big copy. A flat path map would make each of those
 it's one hash lookup whether it hits or misses. Eviction gets the same benefit: dropping a whole directory the user
 navigated away from is one removal, and it's exactly the right granularity.
 
+### Known limit: two slow providers at once
+
+The single in-flight batch is global, not per pane. Two panes showing *different* cloud folders alternate their 3 s
+polls, so each supersedes the other and only the paths a worker already picked up get cached per round. It converges
+(the cache fills monotonically, and a pane stops creating batches once its visible range is cached) but slowly.
+
+In practice it barely bites, because it needs **both** folders to be slow: a pane on an ordinary or network folder
+resolves its whole visible range in milliseconds (~22 µs per path, see the bench note), so it supersedes the cloud pane
+for an instant rather than starving it. The incident's own shape — Dropbox on one side, an SMB share on the other — is
+the benign case.
+
+If it ever does bite, the fix is one line rather than a redesign: hold a small queue of in-flight batches instead of
+one, cancelling the oldest beyond the cap. Capping at one was about wasted provider calls; the thread count it also used
+to protect is now the pool's job, so the cap can rise without giving anything back.
+
 ## Decision: the deadline lives in the module, not in `blocking_with_timeout_flag`
 
 **Why:** the same reasoning as `commands/util.rs::timeout_detached`. An IPC deadline is a promise about the reply, not
