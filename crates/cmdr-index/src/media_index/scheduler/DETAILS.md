@@ -12,9 +12,9 @@ pass bodies (`run_pass_blocking`, `run_network_pass_blocking`, `folder_scores`, 
 `coalescing_tests`); `lifecycle.rs` holds the scheduling/wiring layer (`start`, `kick_all_ready_passes_with`,
 `kick_network_pass`, `wire_volume`, `spawn_pass`, `local_should_enrich`, `pass_coverage`, `PassKind`); `enrich.rs` holds
 the walk + the shared enrich/GC core; `pool.rs` the parallel workers; `live.rs` the live-follow tick; `reclaim.rs` the
-user-explicit prune. The starting and kicking entry points are `MediaScheduler::{start, kick_all_ready_passes,
-kick_network_pass}` in `mod.rs`, one-liners over `lifecycle.rs`'s private halves, so a host holding the scheduler calls
-methods on it rather than passing it back into a module.
+user-explicit prune. The starting and kicking entry points are
+`MediaScheduler::{start, kick_all_ready_passes, kick_network_pass}` in `mod.rs`, one-liners over `lifecycle.rs`'s
+private halves, so a host holding the scheduler calls methods on it rather than passing it back into a module.
 
 ## The lifecycle bus
 

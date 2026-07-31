@@ -35,12 +35,14 @@ use walker::{
     DEFAULT_GIVE_UP_AFTER, DEFAULT_PER_ENTRY_ALLOWANCE, DirTask, ReadDirFn, WalkConfig, default_reader, walk,
 };
 
-// The child's file-type vocabulary, and (on macOS) the batched `getattrlistbulk`
-// read itself, re-exported for the serial reconcile walk
+// The batched `getattrlistbulk` read and the child file-type vocabulary that goes
+// with it, re-exported for the serial reconcile walk
 // (`reconcile::reconciler::read_fs_children`), which reads directories exactly the
-// way the fresh scan does but on its own guarded worker thread. The walker engine
-// stays private to the scanner, and `RawDirEntry` with it: only the visitor sees
-// one.
+// way the fresh scan does but on its own guarded worker thread. macOS-only, because
+// that reader is: no other platform has `getattrlistbulk`, and nothing else outside
+// the scanner names either type. The walker engine stays private, and `RawDirEntry`
+// with it: only the visitor ever sees one.
+#[cfg(target_os = "macos")]
 pub(in crate::indexing) use walker::RawFileType;
 #[cfg(target_os = "macos")]
 pub(in crate::indexing) use walker::bulk_read::{BulkDirRead, bulk_read_dir_unwatched};

@@ -211,15 +211,15 @@ manages — but every public item got a decision.
 
 ### The sixteen the compiler widened
 
-Making the index a crate turned every host-side reach into a compile error, and sixteen items that had been
-`pub(crate)` or `#[cfg(test)]` still had one. Widening them was the mechanical answer; it is also exactly the failure
-this audit exists to prevent, so each got the same four dispositions afterwards. Recorded here because a machine-checked
-ceiling frozen around a mechanically-widened surface locks in the thing the audit was for.
+Making the index a crate turned every host-side reach into a compile error, and sixteen items that had been `pub(crate)`
+or `#[cfg(test)]` still had one. Widening them was the mechanical answer; it is also exactly the failure this audit
+exists to prevent, so each got the same four dispositions afterwards. Recorded here because a machine-checked ceiling
+frozen around a mechanically-widened surface locks in the thing the audit was for.
 
 **Folded onto the type the host already holds** (a method wearing a module path):
 
-- **`media_index::scheduler::{start, kick_all_ready_passes_with, kick_network_pass}` ⇒ `MediaScheduler::{start,
-  kick_all_ready_passes, kick_network_pass}`**, and **`importance::scheduler::start` ⇒
+- **`media_index::scheduler::{start, kick_all_ready_passes_with, kick_network_pass}` ⇒
+  `MediaScheduler::{start, kick_all_ready_passes, kick_network_pass}`**, and **`importance::scheduler::start` ⇒
   `ImportanceScheduler::start`.** The host already holds both schedulers; passing one back into a free function in the
   module it came from is the module path standing in for a receiver. `kick_all_ready_passes_with`'s `_with` suffix
   existed only to distinguish it from a global-lookup variant that no longer exists.
@@ -244,8 +244,8 @@ ceiling frozen around a mechanically-widened surface locks in the thing the audi
   covers. `with_conn` is how you use a `ReadPool` at all, and `new` is `search/` opening an OFFLINE volume's database
   that the lifecycle registry isn't holding. A pool you can hold but not read from would be worse than no pool.
 - **`coverage::cached`.** The "never build" counterpart to the already-public `get_or_build`, and the distinction is
-  load-bearing: a cold build is a whole-index walk, and running one from a poll is what once ballooned a launch to
-  50 GB. Every poll and startup reader must have a call that can't do that.
+  load-bearing: a cold build is a whole-index walk, and running one from a poll is what once ballooned a launch to 50
+  GB. Every poll and startup reader must have a call that can't do that.
 - **`host::{config, events, policy, volumes}`.** The plugin interface. A host has to be able to install a sink, apply a
   config, and answer for volumes; that's what these modules are for.
 - **`importance::{signal_availability, is_background_scored}`.** Pure policy over a volume kind, with no handle they'd

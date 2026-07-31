@@ -227,8 +227,9 @@ together by the folder-coverage command but live apart.
 
 - **Seed** once from a `SELECT path, state FROM media_status` scan bucketed by parent dir. This happens on the ONE
   writer thread as its FIRST action (`writer_loop` calls `coverage::seed_accounted_from_conn` before processing any
-  message), OR lazily via `ensure_accounted_seeded`, which `coverage::folder_coverage` runs itself when the writer hasn't spawned this
-  session (feature just enabled / volume never enriched). Both go through `seed_accounted_if_absent` (insert-if-absent).
+  message), OR lazily via `ensure_accounted_seeded`, which `coverage::folder_coverage` runs itself when the writer
+  hasn't spawned this session (feature just enabled / volume never enriched). Both go through `seed_accounted_if_absent`
+  (insert-if-absent).
 - **Increment** on a genuinely-new completion: `apply_upsert` does a cheap PK existence check (`SELECT EXISTS(…)`)
   inside its transaction and returns whether it INSERTED vs updated; the writer bumps `accounted[parent_dir] += 1` only
   on a new `done`/`failed` row. A `done`↔`failed` transition or a re-enrich of an existing path does NOT move it (the

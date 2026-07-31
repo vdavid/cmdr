@@ -12,7 +12,8 @@ File Provider mount, plus the scope-aware exclusion policy every local code path
   behind mutexes and atomics.
 - **walker/** — the hang-tolerant engine (`walk`, the watchdog, the progress-timeout verdict, the subtree give-up
   budget) + `bulk_read` (`getattrlistbulk` batch reads on macOS), whose `bulk_read_dir_unwatched` + `RawFileType` are
-  re-exported at `scanner` level for the serial reconcile walk. The engine stays private, and `RawDirEntry` with it.
+  re-exported at `scanner` level for the serial reconcile walk, macOS-only like the reader itself. The engine stays
+  private, and `RawDirEntry` with it.
 - **exclusions.rs** — the two-tier `should_exclude(path, &ExclusionScope)` policy (the single exclusion gate for
   scanner, reconcile, watch verification, and the verifier).
 
