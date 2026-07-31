@@ -7,11 +7,24 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use super::super::state::{OperationIntent, WriteOperationState, load_intent, update_operation_status};
 use super::super::types::{OperationEventSink, WriteOperationPhase, WriteOperationType, WriteProgressEvent};
 use crate::file_system::volume::{Volume, VolumeError};
+use crate::ignore_poison::IgnorePoison;
+
+/// The marker every Cmdr temp carries. Files whose name contains it are ours.
+const TEMP_INFIX: &str = ".cmdr-tmp-";
+
+/// How old a `.cmdr-tmp-*` leftover must be before a starting transfer reaps it.
+///
+/// Deliberately generous: the age gate is what keeps this from deleting a temp
+/// another Cmdr instance (or another operation on the same share) is actively
+/// writing. A live staged write touches its temp on every chunk, so its mtime
+/// never gets near an hour old — even one parked on a destination-side
+/// foreground yield, which is hard-capped at a second.
+const STALE_TEMP_MIN_AGE: Duration = Duration::from_secs(60 * 60);
 
 /// Rolls back copied files on a volume with progress events, matching the local copy's
 /// `rollback_with_progress` pattern. Deletes paths in reverse order so that files inside
@@ -153,6 +166,94 @@ pub(super) async fn volume_rollback_with_progress(
     }
 
     true
+}
+
+/// Removes the staged `.cmdr-tmp-*` partials this operation was still writing
+/// when its tasks were abandoned.
+///
+/// The driver drops in-flight copy tasks on cancel and on the first failure, so
+/// their futures never reach their own cleanup. What they left behind is exactly
+/// what `state.in_flight_temps` still lists: a write that SUCCEEDED removes its
+/// entry before landing, so a temp holding committed data (a landing that failed
+/// after the bytes were complete) is never in this set and is never touched here.
+///
+/// Best-effort: a temp whose task is wedged with an open handle may refuse to
+/// delete, which is why it wears a recognizable name.
+pub(super) async fn clean_abandoned_staged_writes(volume: &Arc<dyn Volume>, state: &Arc<WriteOperationState>) {
+    let temps: Vec<PathBuf> = std::mem::take(&mut *state.in_flight_temps.lock_ignore_poison());
+    if temps.is_empty() {
+        return;
+    }
+    log::info!(
+        target: "copy",
+        "clean_abandoned_staged_writes: removing {} staged partial(s) left by abandoned tasks",
+        temps.len()
+    );
+    for temp in temps {
+        if let Err(e) = volume.delete(&temp).await {
+            log::warn!(
+                target: "copy",
+                "clean_abandoned_staged_writes: couldn't remove {}: {e}",
+                temp.display()
+            );
+        }
+    }
+}
+
+/// Reaps `.cmdr-tmp-*` leftovers a crash or force-quit left in the destination
+/// directory, at the start of the next transfer into it.
+///
+/// This is the crash-recovery half of the staged-write invariant: staging means
+/// an interrupted transfer leaves a recognizable temp instead of a truncated file
+/// at a real name, and this is what eventually clears those temps. It only sees
+/// the operation's own destination directory — a leftover deeper inside a copied
+/// subtree waits for a transfer into THAT directory — which is where the
+/// 2026-07-31 incident's partials were.
+///
+/// Guards, mirroring `archive_remote_edit::reap_remote_temps`:
+/// - **One round trip.** A single `list_directory`, then a `delete` per match.
+/// - **Age-gated.** Only leftovers older than [`STALE_TEMP_MIN_AGE`] go, so a
+///   temp another instance is streaming into right now is never removed. An entry
+///   with no reported mtime is treated as fresh and spared.
+/// - **Files only**, and only names carrying the `.cmdr-tmp-` marker.
+///
+/// Best-effort throughout: a listing or delete failure is logged at debug and
+/// never fails or delays the user's transfer.
+pub(super) async fn reap_stale_transfer_temps(volume: &Arc<dyn Volume>, dir: &Path) {
+    let entries = match volume.list_directory(dir, None).await {
+        Ok(entries) => entries,
+        Err(e) => {
+            log::debug!(target: "copy", "skipping stale-temp reap of {}: {e}", dir.display());
+            return;
+        }
+    };
+
+    let now_secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let min_age_secs = STALE_TEMP_MIN_AGE.as_secs();
+
+    for entry in entries {
+        if entry.is_directory || !entry.name.contains(TEMP_INFIX) {
+            continue;
+        }
+        let old_enough = entry
+            .modified_at
+            .is_some_and(|modified| now_secs.saturating_sub(modified) >= min_age_secs);
+        if !old_enough {
+            continue;
+        }
+        let temp_path = dir.join(&entry.name);
+        log::info!(
+            target: "copy",
+            "reap_stale_transfer_temps: removing a transfer partial left by an earlier run: {}",
+            temp_path.display()
+        );
+        if let Err(e) = volume.delete(&temp_path).await {
+            log::debug!(target: "copy", "couldn't reap stale temp {}: {e}", temp_path.display());
+        }
+    }
 }
 
 /// Recursively deletes a file or directory on a volume.

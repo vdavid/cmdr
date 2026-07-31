@@ -469,14 +469,17 @@ async fn apply_volume_conflict_resolution(
     }
 }
 
-/// Builds a temp sibling path next to `dest_path` for the safe-replace write.
+/// Builds a temp sibling path next to `dest_path` for a staged write.
 ///
 /// Uses the recognizable `.cmdr-tmp-<uuid>` marker (matches the project's temp
 /// convention, so a leftover after a crash is identifiable and cleanup helpers
 /// recognize it). The temp lives in the same parent directory as the original
 /// so the finalize step's `rename` stays within one directory (no cross-dir
 /// rename, which some backends refuse).
-fn temp_sibling_path(dest_path: &Path) -> PathBuf {
+///
+/// Shared with `staged_write.rs`, which stages EVERY cross-volume file write on
+/// one of these, not only the conflict-driven safe-replace.
+pub(super) fn temp_sibling_path(dest_path: &Path) -> PathBuf {
     let parent = dest_path.parent().unwrap_or(Path::new(""));
     let filename = dest_path
         .file_name()
@@ -485,9 +488,13 @@ fn temp_sibling_path(dest_path: &Path) -> PathBuf {
     parent.join(format!("{filename}.cmdr-tmp-{}", uuid::Uuid::new_v4()))
 }
 
-/// Finalizes a file→file safe-replace: deletes the original `orig` (which
-/// survived the entire streaming write) and renames the fully-written temp into
-/// its place.
+/// Lands a fully-written temp at its final name: deletes whatever is at `orig`
+/// (which survived the entire streaming write) and renames the temp into its
+/// place.
+///
+/// Two callers, one shape: the conflict layer's file→file safe-replace, and
+/// `staged_write.rs`'s landing of an ordinary staged write (where `orig` usually
+/// doesn't exist yet and the delete is a tolerated `NotFound`).
 ///
 /// Order matters and is the whole point of safe-replace: the temp holds the
 /// COMPLETE new data the moment this is called, and `orig` still holds the

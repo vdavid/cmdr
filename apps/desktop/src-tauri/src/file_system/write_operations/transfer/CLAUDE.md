@@ -12,7 +12,8 @@ Shared `WriteOperationState`, `OperationIntent`, cancel/rollback, ETA, and settl
   rename / cross-fs staging), `copy_strategy.rs` + `{macos,linux,chunked}_copy.rs` (per-file strategy + backends).
 - Shared driver: `transfer_driver/` (`drive_transfer_serial_sync` + `_async`, per-file progress builders).
 - Volume: `volume_{copy,move,preflight,rename_merge,conflict,strategy}.rs`, plus `checkpoint_stream.rs`
-  (`CheckpointStream`, described below) and `transfer_probe.rs` (the in-flight table + stall watchdog).
+  (`CheckpointStream`, described below), `staged_write.rs` (every file write's `.cmdr-tmp-*` staging), and
+  `transfer_probe.rs` (the in-flight table + stall watchdog).
 
 ## Must-knows (data-safety invariants)
 
@@ -23,6 +24,12 @@ Shared `WriteOperationState`, `OperationIntent`, cancel/rollback, ETA, and settl
 - **Overwrite means merge for dirs, replace for files**: enforced at the `apply_volume_conflict_resolution` call site
   (skips the delete for dirs), NOT by `Volume::delete`'s contract — else a recursive-delete backend flips merge →
   wholesale replace. Pinned by `dir_overwrite_must_merge_not_replace_even_with_recursive_delete`.
+- **EVERY cross-volume file write stages on a `.cmdr-tmp-<uuid>` and takes its final name only after its last byte**
+  (`staged_write.rs`). A force-quit must never leave a truncated file at a real name. `WriteStaging::AlreadyStaged`
+  passes a conflict-minted temp through unstaged; every other write is `Stage`, derived at each call site as
+  `staging_for(&replace_after_write)`. A staged temp sits in `state.in_flight_temps` ONLY while it's a partial: the
+  write's success removes it BEFORE landing, so a temp holding committed data is never swept. ❌ Don't add a write path
+  that calls `write_from_stream` with a final name.
 - **Cross-volume file→file Overwrite is a safe-replace, NOT delete-then-write**: stream into a `.cmdr-tmp-<uuid>`
   sibling, then `finalize_safe_replace`. That post-write temp is committed data, NOT a cleanable partial; cleanup must
   not touch it after `copy_single_path` returns `Ok`. Cross-type stays delete-first.

@@ -155,6 +155,7 @@ async fn sequential_extract_materializes_a_nested_subtree() {
         &|_, _| ControlFlow::Continue(()),
         &|_| {},
         None,
+        WriteStaging::Stage,
     )
     .await
     .expect("sequential extract");
@@ -220,6 +221,7 @@ async fn sequential_extract_lands_empty_dirs_and_symlinks() {
         &|_, _| ControlFlow::Continue(()),
         &|_| {},
         None,
+        WriteStaging::Stage,
     )
     .await
     .expect("extract");
@@ -273,6 +275,7 @@ async fn sequential_extract_cancels_between_members() {
         &|_, _| ControlFlow::Continue(()),
         &on_complete,
         None,
+        WriteStaging::Stage,
     )
     .await;
 

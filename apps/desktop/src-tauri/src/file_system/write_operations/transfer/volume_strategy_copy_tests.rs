@@ -43,6 +43,7 @@ async fn test_copy_single_path_local_to_local() {
         &|_, _| ControlFlow::Continue(()),
         &|_| {},
         None,
+        WriteStaging::Stage,
     )
     .await
     .unwrap();
@@ -85,6 +86,7 @@ async fn test_copy_single_path_cancelled() {
         &|_, _| ControlFlow::Continue(()),
         &|_| {},
         None,
+        WriteStaging::Stage,
     )
     .await;
 
@@ -121,6 +123,7 @@ async fn test_streaming_copy_single_file() {
         &|_, _| ControlFlow::Continue(()),
         &|_| {},
         None,
+        WriteStaging::Stage,
     )
     .await
     .unwrap();
@@ -163,6 +166,7 @@ async fn test_streaming_copy_large_file_with_progress() {
             file_complete_calls.fetch_add(1, Ordering::Relaxed);
         },
         None,
+        WriteStaging::Stage,
     )
     .await
     .unwrap();
@@ -213,6 +217,7 @@ async fn test_streaming_copy_cancel_mid_file() {
         },
         &|_| {},
         None,
+        WriteStaging::Stage,
     )
     .await;
 
@@ -240,6 +245,7 @@ async fn test_streaming_copy_empty_file() {
         &|_, _| ControlFlow::Continue(()),
         &|_| {},
         None,
+        WriteStaging::Stage,
     )
     .await
     .unwrap();
@@ -266,6 +272,7 @@ async fn test_streaming_copy_nonexistent_source_fails() {
         &|_, _| ControlFlow::Continue(()),
         &|_| {},
         None,
+        WriteStaging::Stage,
     )
     .await;
 
@@ -305,6 +312,7 @@ async fn test_streaming_copy_uses_streaming_for_non_local_volumes() {
             file_complete.fetch_add(1, Ordering::Relaxed);
         },
         None,
+        WriteStaging::Stage,
     )
     .await
     .unwrap();
@@ -348,6 +356,7 @@ async fn test_streaming_copy_directory_recursive() {
             file_complete.fetch_add(1, Ordering::Relaxed);
         },
         None,
+        WriteStaging::Stage,
     )
     .await
     .unwrap();

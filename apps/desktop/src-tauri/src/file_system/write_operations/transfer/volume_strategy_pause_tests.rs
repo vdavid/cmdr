@@ -75,6 +75,7 @@ async fn streaming_copy_parks_mid_file_while_paused_then_resumes() {
             },
             &|_| {},
             None,
+            WriteStaging::Stage,
         )
         .await
     });
@@ -170,6 +171,7 @@ async fn streaming_copy_cancel_while_paused_mid_file_unblocks() {
             },
             &|_| {},
             None,
+            WriteStaging::Stage,
         )
         .await
     });
@@ -255,6 +257,7 @@ async fn paused_mtp_copy_parks_in_place_then_resumes_byte_exact() {
             },
             &|_| {},
             None,
+            WriteStaging::Stage,
         )
         .await
     });
@@ -370,6 +373,7 @@ async fn paused_mtp_copy_cancel_while_paused_keeps_no_partial() {
             },
             &|_| {},
             None,
+            WriteStaging::Stage,
         )
         .await
     });
@@ -443,6 +447,7 @@ async fn unpaused_mtp_copy_streams_straight_through() {
         &|_, _| ControlFlow::Continue(()),
         &|_| {},
         None,
+        WriteStaging::Stage,
     )
     .await
     .expect("unpaused copy must succeed");

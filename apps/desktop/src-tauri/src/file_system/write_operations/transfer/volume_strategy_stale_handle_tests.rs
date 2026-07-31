@@ -44,6 +44,7 @@ async fn stream_pipe_file_retries_once_on_stale_destination_handle() {
         &|_, _| ControlFlow::Continue(()),
         &|_| {},
         None,
+        WriteStaging::Stage,
     )
     .await
     .expect("a stale destination handle must be retried, not surfaced as a copy failure");

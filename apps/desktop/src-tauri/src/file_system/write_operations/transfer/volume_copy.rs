@@ -585,6 +585,12 @@ pub(crate) async fn copy_volumes_with_progress(
         .await
         .map_err(|e| WriteFailure::from_volume(dest_path, e))?;
 
+    // Phase 0.6: clear `.cmdr-tmp-*` partials an earlier run's crash or force-quit
+    // left here. Staging means an interrupted transfer leaves a recognizable temp
+    // rather than a truncated file at a real name; this is what eventually takes
+    // them away. One listing, age-gated so a live transfer's temp is never touched.
+    super::volume_cleanup::reap_stale_transfer_temps(&dest_volume, dest_path).await;
+
     // Phase 1: Preflight scan (reuses the dialog's cached preview when one is
     // available). Populates `total_files`, `total_bytes`, and per-source
     // `is_directory` / `size` hints so the copy loop doesn't have to re-probe
@@ -1064,6 +1070,7 @@ pub(crate) async fn copy_volumes_with_progress(
                         &on_file_progress,
                         &on_file_complete,
                         Some(&merge_ctx),
+                        super::volume_strategy::staging_for(&replace_after_write_owned),
                     );
                     // Bind this task's probe as a task-local for the whole copy, so
                     // `stream_pipe_file` and `CheckpointStream` can record their
@@ -1606,6 +1613,7 @@ pub(crate) async fn copy_volumes_with_progress(
                             &on_file_progress,
                             &on_file_complete,
                             Some(&merge_ctx),
+                            super::volume_strategy::staging_for(&replace_after_write),
                         )
                         .await
                         {
@@ -1828,7 +1836,13 @@ pub(crate) async fn copy_volumes_with_progress(
         return Ok(());
     }
 
-    // Cancelled or errored: decide between rollback and cancel
+    // Cancelled or errored. Before either branch, remove the staged partials of
+    // tasks the driver abandoned mid-write: their futures were dropped, so
+    // nothing else will. A temp whose write finished is already off this list, so
+    // committed data is never in scope here.
+    super::volume_cleanup::clean_abandoned_staged_writes(&dest_volume, state).await;
+
+    // Decide between rollback and cancel.
     if intent == OperationIntent::RollingBack {
         // Include the last in-progress item in rollback (it was partially created)
         if let Some(partial_path) = last_dest_path.take() {
@@ -1947,6 +1961,9 @@ mod merge_tests;
 #[cfg(test)]
 #[path = "volume_copy_rollback_tests.rs"]
 mod rollback_tests;
+#[cfg(test)]
+#[path = "volume_copy_staged_write_tests.rs"]
+mod staged_write_tests;
 #[cfg(test)]
 #[path = "volume_copy_tests.rs"]
 mod tests;

@@ -15,7 +15,10 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use super::super::state::WriteOperationState;
-use super::volume_strategy::{CreatedPaths, MergeCtx, copy_directory_streaming, note_pending_for_local_dest};
+use super::staged_write::StagedWrite;
+use super::volume_strategy::{
+    CreatedPaths, MergeCtx, copy_directory_streaming, note_pending_for_local_dest, staging_for,
+};
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 
@@ -116,13 +119,28 @@ pub(super) async fn extract_sequential_subtree(
             continue;
         };
 
+        // Stage the write on a `.cmdr-tmp-*` sibling unless the conflict pass
+        // already did (`replace_after_write`), so a killed extract leaves nothing
+        // at a final name. Same contract as `stream_pipe_file`; unlike it, a
+        // sequential source can't be re-read, so a destination that can't land a
+        // staged write fails the extract instead of falling back.
+        let staged = StagedWrite::begin(state, &planned.dest_path, staging_for(&planned.replace_after_write));
         // Register the destination before the write, exactly as `stream_pipe_file`
         // does (covers a Downloads-landing local dest; a no-op for MTP/SMB).
         note_pending_for_local_dest(dest_volume, &planned.dest_path);
+        note_pending_for_local_dest(dest_volume, staged.target());
         let stream = extractor.current_stream();
-        let bytes = dest_volume
-            .write_from_stream(&planned.dest_path, file.size, stream, on_file_progress)
-            .await?;
+        let bytes = match dest_volume
+            .write_from_stream(staged.target(), file.size, stream, on_file_progress)
+            .await
+        {
+            Ok(bytes) => bytes,
+            Err(e) => {
+                staged.abandon(dest_volume).await;
+                return Err(e);
+            }
+        };
+        staged.commit(dest_volume).await?;
 
         // Safe-replace finalize for a file→file Overwrite (same as the per-entry
         // path): the temp holds the complete new bytes; swap it over the original.

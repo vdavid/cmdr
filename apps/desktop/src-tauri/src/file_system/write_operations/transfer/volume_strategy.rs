@@ -19,6 +19,10 @@ use super::super::conflict::ApplyToAll;
 use super::super::state::WriteOperationState;
 use super::super::types::{OperationEventSink, VolumeCopyConfig, WriteOperationError};
 use super::checkpoint_stream::CheckpointStream;
+use super::staged_write::StagedWrite;
+// Re-exported so the sibling test modules (and any future caller reached through
+// this module's API) name the staging choice without a second import path.
+pub(super) use super::staged_write::WriteStaging;
 use super::transfer_probe::{TaskPhase, set_task_bytes, set_task_phase};
 use super::volume_conflict::{ResolvedConflict, resolve_volume_conflict};
 use super::volume_preflight::SourceHint;
@@ -227,6 +231,14 @@ pub(super) async fn copy_single_path(
     // no per-child conflict resolution (the cross-volume move's copy phase,
     // where the dest is a fresh staging area, and tests that don't merge).
     merge: Option<&MergeCtx<'_>>,
+    // Whether `dest_path` is the file's final name (`Stage`) or a `.cmdr-tmp-*`
+    // the caller already minted for a safe-replace and will land itself
+    // (`AlreadyStaged`). Every call site derives it the same way:
+    // `replace_after_write.is_some()`. Only the FILE branch reads it — a
+    // directory source's children each get their own staging decision inside the
+    // merge walker — and a directory conflict never yields a caller temp, so
+    // passing the same expression everywhere stays correct.
+    staging: WriteStaging,
 ) -> Result<u64, VolumeError> {
     // Check cancellation up front.
     if super::super::state::is_cancelled(&state.intent) {
@@ -283,10 +295,22 @@ pub(super) async fn copy_single_path(
             dest_path,
             state,
             on_file_progress,
+            staging,
         )
         .await?;
         on_file_complete(bytes);
         Ok(bytes)
+    }
+}
+
+/// The staging every call site derives the same way: a conflict resolution that
+/// handed back a temp to swap over an original (`Some(orig)`) already staged the
+/// write, anything else is ours to stage.
+pub(super) fn staging_for(replace_after_write: &Option<PathBuf>) -> WriteStaging {
+    if replace_after_write.is_some() {
+        WriteStaging::AlreadyStaged
+    } else {
+        WriteStaging::Stage
     }
 }
 
@@ -331,6 +355,8 @@ pub(in crate::file_system::write_operations) async fn pull_path_to_local(
         &on_progress,
         &on_complete,
         None,
+        // Fresh scratch destination, no conflicts: nothing is pre-staged.
+        WriteStaging::Stage,
     )
     .await
 }
@@ -346,6 +372,14 @@ pub(in crate::file_system::write_operations) async fn pull_path_to_local(
 /// chunk: that's what makes a paused op stop advancing MID-FILE (the sync
 /// `on_progress` callback can't `.await` to park), and what keeps a long
 /// single-file transfer from starving foreground tasks.
+///
+/// The bytes never touch `dest_path` until the last one has landed: unless the
+/// caller already staged the write, they go to a `.cmdr-tmp-*` sibling that is
+/// renamed into place at the end (`staged_write.rs`).
+#[allow(
+    clippy::too_many_arguments,
+    reason = "One file's whole streaming context: both volumes, both paths, the size hint, shared state, the progress callback, and who staged the write."
+)]
 async fn stream_pipe_file(
     source_volume: &Arc<dyn Volume>,
     source_path: &Path,
@@ -354,15 +388,21 @@ async fn stream_pipe_file(
     dest_path: &Path,
     state: &Arc<WriteOperationState>,
     on_file_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
+    staging: WriteStaging,
 ) -> Result<u64, VolumeError> {
     log::debug!("stream_pipe_file: {} -> {}", source_path.display(), dest_path.display());
 
-    // Register the destination with the downloads watcher's ignore set
-    // when the destination is local-FS-backed (the only case where the
-    // watcher could otherwise fire). Covers MTP→Local and SMB→Local
-    // imports that land in ~/Downloads.
+    // Register BOTH halves of the eventual rename with the downloads watcher's
+    // ignore set when the destination is local-FS-backed (the only case where
+    // the watcher could otherwise fire). Covers MTP→Local and SMB→Local imports
+    // that land in ~/Downloads.
     note_pending_for_local_dest(dest_volume, dest_path);
 
+    // A destination that can't rename can't stage. No production backend is in
+    // that position (Local, SMB, and MTP all rename), but a minimal `Volume`
+    // impl must stay usable as a copy destination, so a `NotSupported` landing
+    // re-runs the file unstaged — the pre-staging behavior — instead of failing.
+    let mut staging = staging;
     // One-shot retry on a stale destination handle. A destination backend (MTP)
     // can reject the write because the cached handle for the destination folder
     // went stale — the device re-keyed its object handles since the folder was
@@ -374,12 +414,21 @@ async fn stream_pipe_file(
     // and no partial lingers.
     let mut retried = false;
     loop {
+        let staged = StagedWrite::begin(state, dest_path, staging);
+        note_pending_for_local_dest(dest_volume, staged.target());
         // Opening the source is a device round-trip on MTP / SMB and can hang on
         // its own; it needs to be distinguishable from streaming in a dump.
         set_task_phase(TaskPhase::OpeningSource);
-        let stream = source_volume
+        let stream = match source_volume
             .open_read_stream_with_hint(source_path, source_size_hint)
-            .await?;
+            .await
+        {
+            Ok(stream) => stream,
+            Err(e) => {
+                staged.abandon(dest_volume).await;
+                return Err(e);
+            }
+        };
         let size = stream.total_size();
         // Wrap so a paused op parks (and a long copy yields to foreground)
         // between bounded windows. `size` is read off the raw stream first — the
@@ -400,19 +449,44 @@ async fn stream_pipe_file(
         ));
         set_task_phase(TaskPhase::Streaming);
         set_task_bytes(0, size);
-        match dest_volume
-            .write_from_stream(dest_path, size, stream, on_file_progress)
-            .await
-        {
+        let write_result = dest_volume
+            .write_from_stream(staged.target(), size, stream, on_file_progress)
+            .await;
+        let bytes = match write_result {
+            Ok(bytes) => bytes,
             Err(VolumeError::StaleDestinationHandle(_)) if !retried => {
                 retried = true;
+                staged.abandon(dest_volume).await;
                 log::warn!(
                     "stream_pipe_file: destination handle for {} was stale; retrying once with the refreshed handle",
                     dest_path.display()
                 );
                 continue;
             }
-            result => return result,
+            Err(e) => {
+                // The staged bytes are a partial (a mid-stream failure, or the
+                // cancel the backend turned into `Cancelled`); drop them.
+                staged.abandon(dest_volume).await;
+                return Err(e);
+            }
+        };
+
+        // Past the last byte: give the file its final name.
+        match staged.commit(dest_volume).await {
+            Ok(()) => return Ok(bytes),
+            Err(VolumeError::NotSupported) if staging == WriteStaging::Stage => {
+                log::warn!(
+                    target: "copy",
+                    "stream_pipe_file: destination can't land a staged write for {}; falling back to writing at the final name",
+                    dest_path.display()
+                );
+                staging = WriteStaging::AlreadyStaged;
+                continue;
+            }
+            // The write SUCCEEDED and the landing didn't: the temp holds the only
+            // complete copy of the new bytes, and `commit` already dropped it from
+            // the in-flight set so nothing sweeps it. Surface the failure.
+            Err(e) => return Err(e),
         }
     }
 }
@@ -654,6 +728,7 @@ pub(super) async fn copy_directory_streaming(
             &write_dest,
             state,
             on_file_progress,
+            staging_for(&replace_after_write),
         )
         .await?;
         // Safe-replace finalize for a file→file Overwrite: the temp now holds

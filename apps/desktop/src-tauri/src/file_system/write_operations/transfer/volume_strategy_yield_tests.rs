@@ -81,6 +81,7 @@ async fn auto_yield_parks_before_next_window_then_resumes_byte_exact() {
                     },
                     &|_| {},
                     None,
+                    WriteStaging::Stage,
                 )
                 .await
             });
@@ -196,6 +197,7 @@ async fn auto_yield_debounces_a_burst_into_one_park() {
                     },
                     &|_| {},
                     None,
+                                    WriteStaging::Stage,
                 )
                 .await
             });
@@ -304,6 +306,7 @@ async fn auto_yield_min_progress_floor_prevents_starvation() {
                     },
                     &|_| {},
                     None,
+                                    WriteStaging::Stage,
                 )
                 .await
             });
@@ -406,6 +409,7 @@ async fn auto_yield_cancel_while_yielding_keeps_no_partial() {
                     },
                     &|_| {},
                     None,
+                                    WriteStaging::Stage,
                 )
                 .await
             });
@@ -491,6 +495,7 @@ async fn non_mtp_source_never_auto_yields_for_foreground() {
         &|_, _| ControlFlow::Continue(()),
         &|_| {},
         None,
+        WriteStaging::Stage,
     )
     .await
     .expect("copy must succeed");
@@ -547,6 +552,7 @@ async fn yield_capable_source_with_no_foreground_pending_never_self_yields() {
                     &|_, _| ControlFlow::Continue(()),
                     &|_| {},
                     None,
+                    WriteStaging::Stage,
                 )
                 .await
             });

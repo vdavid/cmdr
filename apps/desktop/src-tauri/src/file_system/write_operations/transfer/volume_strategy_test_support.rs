@@ -185,6 +185,18 @@ impl Volume for FailOnceStaleDest {
     fn supports_streaming(&self) -> bool {
         true
     }
+    /// Landing a staged write. This double keeps no path-keyed storage, so the
+    /// rename is a no-op — but it must report SUCCESS: a `NotSupported` here
+    /// would send `stream_pipe_file` down its can't-stage fallback and write the
+    /// file twice, which is not what any of these suites are measuring.
+    fn rename<'a>(
+        &'a self,
+        _from: &'a Path,
+        _to: &'a Path,
+        _force: bool,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async { Ok(()) })
+    }
     fn write_from_stream<'a>(
         &'a self,
         _dest: &'a Path,
@@ -637,6 +649,18 @@ impl Volume for ForegroundBusyDest {
     fn supports_streaming(&self) -> bool {
         true
     }
+    /// Landing a staged write. This double keeps no path-keyed storage, so the
+    /// rename is a no-op — but it must report SUCCESS: a `NotSupported` here
+    /// would send `stream_pipe_file` down its can't-stage fallback and write the
+    /// file twice, which is not what any of these suites are measuring.
+    fn rename<'a>(
+        &'a self,
+        _from: &'a Path,
+        _to: &'a Path,
+        _force: bool,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async { Ok(()) })
+    }
     fn supports_foreground_yield_as_destination(&self) -> bool {
         true
     }
@@ -714,6 +738,18 @@ impl Volume for PanicIfProbedDest {
     }
     fn supports_streaming(&self) -> bool {
         true
+    }
+    /// Landing a staged write. This double keeps no path-keyed storage, so the
+    /// rename is a no-op — but it must report SUCCESS: a `NotSupported` here
+    /// would send `stream_pipe_file` down its can't-stage fallback and write the
+    /// file twice, which is not what any of these suites are measuring.
+    fn rename<'a>(
+        &'a self,
+        _from: &'a Path,
+        _to: &'a Path,
+        _force: bool,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async { Ok(()) })
     }
     // supports_foreground_yield_as_destination() stays at the trait default (false).
     fn foreground_pending<'a>(&'a self) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {

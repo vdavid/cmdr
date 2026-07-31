@@ -93,6 +93,20 @@ pub struct WriteOperationState {
     /// own the per-leaf record points don't take the volume ids as params (they're
     /// called from ~80 test sites), mirroring how `op_id` reaches them.
     pub journal_volumes: Option<(String, String)>,
+    /// Destination `.cmdr-tmp-*` paths this operation is CURRENTLY streaming
+    /// bytes into, so an abandoned transfer's litter can be found and removed.
+    ///
+    /// Every cross-volume file write stages on a temp sibling and lands it only
+    /// after its last byte (`transfer/staged_write.rs`). An entry is added before
+    /// the first byte and removed the instant the write SUCCEEDS — after that the
+    /// temp holds committed data, and a failed landing must leave it on disk, so
+    /// a temp that is no longer listed here must never be swept. What remains
+    /// after the driver's loop is exactly the set of half-written partials whose
+    /// tasks were dropped mid-flight (a cancel that abandoned a wedged task);
+    /// `transfer::volume_cleanup::clean_abandoned_staged_writes` removes them.
+    ///
+    /// Empty for local-FS operations, which stage through `overwrite.rs` instead.
+    pub in_flight_temps: std::sync::Mutex<Vec<PathBuf>>,
 }
 
 impl WriteOperationState {
@@ -109,6 +123,7 @@ impl WriteOperationState {
             backend_cancel: CancellationToken::new(),
             pause_gate: PauseGate::new(),
             journal_volumes: None,
+            in_flight_temps: std::sync::Mutex::new(Vec::new()),
         }
     }
 

@@ -541,6 +541,7 @@ pub(crate) async fn move_volumes_with_progress(
                         &on_file_progress,
                         &on_file_complete,
                         Some(&merge_ctx),
+                        super::volume_strategy::staging_for(&replace_after_write),
                     )
                     .await
                     {
@@ -651,6 +652,12 @@ pub(crate) async fn move_volumes_with_progress(
     let files_done = outcome.files_done;
     let bytes_done = outcome.bytes_done;
     let files_skipped = outcome.files_skipped;
+
+    // Remove any staged `.cmdr-tmp-*` partial whose write didn't finish. The
+    // serial driver's own error path usually cleans up as it goes; this covers
+    // whatever it couldn't reach. A temp whose write COMPLETED is already off the
+    // list, so committed data is never in scope.
+    super::volume_cleanup::clean_abandoned_staged_writes(&dest_volume, state).await;
 
     match outcome.intent {
         PostLoopIntent::Completed => {

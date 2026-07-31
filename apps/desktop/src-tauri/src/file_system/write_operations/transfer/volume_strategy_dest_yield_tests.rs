@@ -96,6 +96,7 @@ async fn dest_yield_parks_before_next_write_then_resumes_byte_exact() {
                     },
                     &|_| {},
                     None,
+                    WriteStaging::Stage,
                 )
                 .await
             });
@@ -196,6 +197,7 @@ async fn dest_yield_hard_cap_bounds_the_park_under_continuous_browsing() {
                     &|_, _| ControlFlow::Continue(()),
                     &|_| {},
                     None,
+                                    WriteStaging::Stage,
                 )
                 .await
             });
@@ -279,6 +281,7 @@ async fn dest_yield_cancel_while_parked_returns_cancelled_promptly() {
                     },
                     &|_| {},
                     None,
+                    WriteStaging::Stage,
                 )
                 .await
             });
@@ -356,6 +359,7 @@ async fn non_opting_dest_never_dest_yields() {
         &|_, _| ControlFlow::Continue(()),
         &|_| {},
         None,
+        WriteStaging::Stage,
     )
     .await
     .expect("copy must succeed");

@@ -289,12 +289,19 @@ async fn cross_volume_overwrite_concurrent_replaces_and_cleans_temp() {
     assert_eq!(entries.iter().filter(|e| e.name == "b.txt").count(), 1);
 }
 
-/// Wraps an `InMemoryVolume` destination whose `rename` ALWAYS fails. Models a
-/// disconnect at the exact instant `finalize_safe_replace` tries to swap the
-/// fully-written temp over the original: `delete(orig)` succeeds, then
-/// `rename(temp, orig)` fails. Everything else delegates to the inner volume.
+/// Wraps an `InMemoryVolume` destination whose `rename` fails when it would land
+/// something at `fails_onto`. Models a disconnect at the exact instant
+/// `finalize_safe_replace` tries to swap the fully-written temp over the
+/// original: `delete(orig)` succeeds, then `rename(temp, orig)` fails.
+/// Everything else delegates to the inner volume.
+///
+/// Scoped to ONE path rather than failing every rename because every streaming
+/// write now lands through a rename (`staged_write.rs`): a blanket failure would
+/// break the copy of every unrelated file in the batch and the test would stop
+/// measuring the finalize failure it is about.
 struct RenameFailsDestVolume {
     inner: Arc<InMemoryVolume>,
+    fails_onto: PathBuf,
 }
 
 impl Volume for RenameFailsDestVolume {
@@ -373,13 +380,18 @@ impl Volume for RenameFailsDestVolume {
     ) -> StdPin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
         self.inner.write_from_stream(dest, size, stream, on_progress)
     }
-    /// The whole point of this double: the finalize rename always fails.
+    /// The whole point of this double: the finalize rename onto `fails_onto`
+    /// fails. Every other rename (the staged landing of the batch's other files)
+    /// goes through, so the test isolates the finalize failure.
     fn rename<'a>(
         &'a self,
-        _from: &'a Path,
-        _to: &'a Path,
-        _force: bool,
+        from: &'a Path,
+        to: &'a Path,
+        force: bool,
     ) -> StdPin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        if to != self.fails_onto {
+            return self.inner.rename(from, to, force);
+        }
         Box::pin(async {
             Err(VolumeError::IoError {
                 message: "simulated disconnect during finalize rename".to_string(),
@@ -434,6 +446,7 @@ async fn cross_volume_overwrite_serial_preserves_new_data_on_finalize_failure() 
     dest_inner.create_file(Path::new("/notes.txt"), b"OLD").await.unwrap();
     let dest: Arc<dyn Volume> = Arc::new(RenameFailsDestVolume {
         inner: Arc::clone(&dest_inner),
+        fails_onto: PathBuf::from("/notes.txt"),
     });
 
     let events = Arc::new(CollectorEventSink::new());
@@ -477,6 +490,7 @@ async fn cross_volume_overwrite_concurrent_preserves_new_data_on_finalize_failur
     dest_inner.create_file(Path::new("/b.txt"), b"BBB-old").await.unwrap();
     let dest: Arc<dyn Volume> = Arc::new(RenameFailsDestVolume {
         inner: Arc::clone(&dest_inner),
+        fails_onto: PathBuf::from("/b.txt"),
     });
 
     let events = Arc::new(CollectorEventSink::new());

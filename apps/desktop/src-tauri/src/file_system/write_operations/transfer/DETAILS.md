@@ -153,6 +153,53 @@ report `max_concurrent_ops() == 1`, so this always runs on the serial copy path.
 `volume_strategy_sequential_tests.rs` (nested-subtree correctness, the random-vs-sequential routing gate, empty
 dirs + symlinks + out-of-order entries, and cancel-between-members).
 
+## Every file write is staged (no byte-incomplete file at its final name)
+
+**Decision**: every cross-volume file write streams into a `.cmdr-tmp-<uuid>` sibling and is renamed onto its final name
+only after its last byte, whether or not a conflict made it a safe-replace. `staged_write.rs` owns it; `stream_pipe_file`
+and the sequential extractor are the two write sites.
+
+**Why**: the conflict layer only staged a file→file Overwrite. A NEW file has no conflict, so it streamed straight to the
+destination path — and a transfer killed mid-stream left a truncated file wearing the user's real filename, which is
+exactly what the 2026-07-31 wedge did to two phone backups (one at 0 bytes, one truncated at 4 MiB;
+`docs/notes/incidents/2026-07-31-transfer-wedge/README.md`). Backends do delete their own partial on an error return,
+but a force-quit, a panic, or a dropped future runs no error path at all. Staging makes the guarantee structural rather
+than dependent on cleanup running.
+
+**Who stages.** `WriteStaging::AlreadyStaged` means the caller already minted the temp (the conflict layer's
+safe-replace, which additionally keeps the ORIGINAL in place until the temp is complete) and lands it itself; staging it
+again would just yield a `foo.cmdr-tmp-A.cmdr-tmp-B`. Every other write is `WriteStaging::Stage`. Each call site derives
+it identically via `volume_strategy::staging_for(&replace_after_write)`, so there is one rule, not four.
+
+**Landing** (`staged_write::land`) renames FIRST and only clears the final name if that fails. `finalize_safe_replace` is
+the other way round because there the original is known to be in the way; here it usually isn't, and a speculative
+delete would burn one extra round trip per file. The name can still be taken (a `Rename` resolution's `O_EXCL`
+placeholder, a cross-type Overwrite whose dest delete failed, a racing writer), which the second attempt covers.
+
+**Finding the litter.** A staged temp is listed in `state.in_flight_temps` for exactly as long as it is a PARTIAL:
+`commit` removes it before landing, so a temp that holds committed data after a failed landing is never in the set and
+can never be swept (the contract `finalize_safe_replace`'s caller comment describes, now enforced by construction
+rather than by a `cleanup_temp` flag). Whatever is still listed when the driver's loop ends belongs to a task that was
+DROPPED mid-write — the concurrent driver drops the rest of its window on cancel and on the first failure — so
+`volume_cleanup::clean_abandoned_staged_writes` removes those, and the deep-merge children that were never tracked at
+all are now covered too.
+
+**Crash recovery.** `volume_cleanup::reap_stale_transfer_temps` runs once at the start of each cross-volume copy, over
+the destination directory only: one `list_directory`, then a `delete` for each `.cmdr-tmp-*` FILE whose mtime is at
+least `STALE_TEMP_MIN_AGE` (1 hour) old. The age gate is what makes it safe against a concurrent instance — a live
+staged write touches its temp every chunk, and even a destination-side foreground park is capped at a second — and an
+entry with no reported mtime is spared. It mirrors `archive_remote_edit::reap_remote_temps`. A leftover deeper inside a
+copied subtree waits for a transfer into that directory; there is no global filesystem sweep and there shouldn't be.
+
+**Cost, accepted deliberately**: one extra rename per file. On SMB that is one round trip, which roughly doubles the
+wire cost of a small file that would otherwise take the compound CREATE+WRITE+CLOSE fast path. A destination that can't
+rename can't stage; `stream_pipe_file` then re-runs the file unstaged (a `NotSupported` landing), which no production
+backend triggers — Local, SMB, and MTP all rename.
+
+Pinned by `volume_copy_staged_write_tests.rs` (abandon the copy future mid-stream — the in-process equivalent of the
+force-quit — and assert nothing sits at a final name, for a fresh copy, an overwrite, and a merge child) and
+`staged_write::tests`.
+
 ## Pause reaches between chunks (cross-volume streaming path)
 
 **A paused cross-volume copy stops MID-FILE, between chunks — not only between files.** The per-source loop top in the serial drivers parks between files (after the `is_cancelled` check). But a single large file (e.g. an MTP→local import) is one source: gating only at the loop top would let it stream to completion while the UI shows "Paused" (the confirmed bug). The fix is `transfer/checkpoint_stream.rs`'s `CheckpointStream`, a `VolumeReadStream` decorator `volume_strategy`'s `stream_pipe_file` wraps the source stream in. Its `next_chunk()` runs a between-chunk checkpoint once per chunk before delegating: (1) `pause_gate.wait_while_paused_async(&intent)` parks while paused (returns the instant cancel is observed — cancellation wins), then (2) `tokio::task::yield_now()` so a long transfer doesn't starve foreground tasks (listings, navigation, progress) on the runtime.
