@@ -21,8 +21,8 @@ body, and `#[cfg(test)]` items are all invisible to a header grep.
   `Volume::list_directory_for_scan`, so it needs the trait and every type the trait mentions.
 - **`friendly_error/` + `git.rs`'s `FriendlyGitError`.** `VolumeError::FriendlyGit` carries the git error, and the git
   error maps onto `friendly_error::ErrorCategory`. A genuine two-way pair; neither can move without the other. The git
-  type's only other non-`std` dependency is `serde`, so no git internals came along — the plan's boxed-trait fallback
-  wasn't needed.
+  type's only other non-`std` dependency is `serde`, so no git internals came along, and the boxed-trait fallback
+  (keep the payload app-side behind a `cmdr-fs`-owned trait) wasn't needed.
 - **`tcc_paths`.** `friendly_error/volume_error.rs` asks it whether a permission denial is really macOS TCC. Its parent
   `restricted_paths/mod.rs` imports `tauri::AppHandle`, so the child was split out and moved alone.
 - **`FileEntry`.** 11 of the ~70 `crate::file_system` references from the index are this type; it isn't skippable. Its

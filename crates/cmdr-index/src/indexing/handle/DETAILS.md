@@ -188,7 +188,7 @@ manages — but every public item got a decision.
   `clip::{backend, macos, tokenizer}`, `vector::cache`, and `network::enrich`. None had a consumer outside the
   subsystem. `clip::install` went from 18 public items to four (§ "The sixteen the compiler widened" below); the rest
   are how a model gets unzipped and checksummed, which is nobody's business but the installer's.
-- **One fold, and it was hiding an M6 break.** `commands/media_index/file_status.rs` reached
+- **One fold, and it was hiding a break the move would have caused.** `commands/media_index/file_status.rs` reached
   `scheduler::enrich::{ImageEntry, parent_dir, walk_image_entries_in_dirs}` — through `pub(crate) mod enrich`, so it
   compiles today only because the app and the index are one crate. It is now
   `media_index::read::qualifying_images_for_paths(volume_id, &paths)`: the caller asks the question it actually has
@@ -204,7 +204,7 @@ manages — but every public item got a decision.
 - **`importance::tooling`** (new `tooling` feature) is the one door for the three `index-query` binaries: the evaluation
   corpus, the synthetic scenarios, the constraint harness, and the measurement entry points. A feature rather than
   `#[cfg(test)]` because those are BINARIES in another crate — `cfg(test)` can never reach them. This is the second
-  gated bucket the plan named, and it now exists.
+  gated bucket, alongside `testing`.
 - **`importance::testing`** carries the four items two app-side tests need to stage a scored folder.
 - **Five modules stop being public**: `store`, `writer`, `writer_registry`, `signals`, and `scorer`. The scoring
   vocabulary was already re-exported at the root, so only `ImportanceStoreError` needed a new home there.
