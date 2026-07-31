@@ -1,12 +1,28 @@
-# Index-extraction baseline
+# Index-extraction: before and after
 
-The measured "before" for `docs/specs/index-crate-extraction-plan.md`, which moves `indexing/`, `media_index/`, and
-`importance/` (93,256 of 332,264 `src-tauri/src` lines, 28.1%) into a standalone `cmdr-index` crate. Every number here
-gets re-measured at the end of that plan, and the comparison is only meaningful if the method matches, so each section
-carries the exact command.
+The measured before and after for extracting `indexing/`, `media_index/`, and `importance/` (93,256 of 332,264
+`src-tauri/src` lines, 28.1%) into the standalone `cmdr-index` crate. The comparison is only meaningful if the method
+matches, so each section carries the exact command.
 
-Measured 2026-07-30 on an Apple M3 Max (16 cores, 64 GB), macOS 26.5.2, rustc 1.97.1 (`8bab26f4f`, 2026-07-14), machine
-otherwise idle. Tree: the `david-index-crate-extraction` worktree with thin LTO landed, parent commit `905935df5`.
+**Before**, measured 2026-07-30 on an Apple M3 Max (16 cores, 64 GB), macOS 26.5.2, rustc 1.97.1 (`8bab26f4f`,
+2026-07-14), machine otherwise idle. Tree: the `david-index-crate-extraction` worktree with thin LTO landed at commit
+`3f565a88d`, before any code moved.
+
+**After**, measured 2026-07-31 on the same machine and toolchain, at commit `4092256c0`. The machine was NOT idle this
+time (an IDE indexing pass held load around 8), so every build number was taken twice: once on the extracted tree and
+once with `3f565a88d` checked out in the same worktree, minutes apart. The old tree reproduced its own "before" numbers
+to within 4%, which is what makes the paired comparison trustworthy under load. Both figures are given.
+
+## The short version
+
+- **The enrichment hot path did not move**, and neither did anything else Criterion measures: every case is within ±2%
+  of before, and seven of eight are marginally faster.
+- **The inner loop got 6–9× faster.** Type-checking the index after an index edit went 4.35 s → 0.75 s, and building its
+  unit tests went 23–30 s → 3.6 s, because neither touches the app any more.
+- **A full app build barely moved**, and that's expected: an index edit still relinks the app (+11%), and an app edit
+  was never dominated by line count (−13%).
+- **Release builds got 12% faster** (214 s → 188 s) for +0.6% binary size, because more crates means more parallelism at
+  codegen.
 
 ## Read this before comparing
 
@@ -23,32 +39,39 @@ otherwise idle. Tree: the `david-index-crate-extraction` worktree with thin LTO 
 
 ## Criterion benches
 
-`apps/desktop/src-tauri/benches/index_benchmarks.rs`, built for this baseline; there was no index benchmark before it.
-The fixture is a synthetic index DB built through the public `store` API (no files on disk, no scan, no lifecycle), so
-it's deterministic and machine-independent in shape. The harness asserts every fixture directory actually resolves
-before it times anything, because all three paths have cheap early returns that would otherwise produce a green run
-measuring nothing.
+The harness is `crates/cmdr-index/benches/index_benchmarks.rs` (it was `apps/desktop/src-tauri/benches/` before the
+move, and there was no index benchmark before this effort). The fixture is a synthetic index DB built through the public
+`store` API (no files on disk, no scan, no lifecycle), so it's deterministic and machine-independent in shape. The
+harness asserts every fixture directory actually resolves before it times anything, because all three paths have cheap
+early returns that would otherwise produce a green run measuring nothing.
 
 ```
-cd apps/desktop/src-tauri
-cargo bench --bench index_benchmarks -- --save-baseline m0-run1   # then compare with: -- --baseline m0-run1
+cargo bench -p cmdr-index --bench index_benchmarks -- --save-baseline run1   # compare with: -- --baseline run1
 ```
 
-Medians, two consecutive runs:
+Medians, two consecutive runs each side:
 
-- `enrich_entries_with_index/50` — 66.36 µs, 66.04 µs
-- `enrich_entries_with_index/500` — 570.13 µs, 568.64 µs
-- `enrich_entries_with_index/2000` — 2.3395 ms, 2.3513 ms
-- `get_dir_stats_batch/50` — 342.73 µs, 342.31 µs
-- `get_dir_stats_batch/500` — 3.4059 ms, 3.4452 ms
-- `get_dir_stats_batch/2000` — 13.672 ms, 13.756 ms
-- `compute_all_aggregates_reported/500` — 2.3682 ms, 2.3665 ms
-- `compute_all_aggregates_reported/5000` — 26.844 ms, 27.006 ms
+| case                                   | before            | after             | delta |
+| -------------------------------------- | ----------------- | ----------------- | ----- |
+| `enrich_entries_with_index/50`         | 66.36, 66.04 µs   | 65.89, 65.37 µs   | −1.0% |
+| `enrich_entries_with_index/500`        | 570.13, 568.64 µs | 563.17, 563.08 µs | −1.1% |
+| `enrich_entries_with_index/2000`       | 2.3395, 2.3513 ms | 2.2999, 2.3020 ms | −1.9% |
+| `get_dir_stats_batch/50`               | 342.73, 342.31 µs | 333.85, 338.44 µs | −1.5% |
+| `get_dir_stats_batch/500`              | 3.4059, 3.4452 ms | 3.3947, 3.4459 ms | −0.2% |
+| `get_dir_stats_batch/2000`             | 13.672, 13.756 ms | 13.495, 13.705 ms | −1.0% |
+| `compute_all_aggregates_reported/500`  | 2.3682, 2.3665 ms | 2.3437, 2.3219 ms | −1.5% |
+| `compute_all_aggregates_reported/5000` | 26.844, 27.006 ms | 26.871, 27.089 ms | +0.1% |
 
-**Reproducibility: every case landed within ±1.1% across the two runs**, and Criterion classified all eight as "no
-change" or "within noise threshold". So a post-extraction move outside roughly ±2% is signal, and anything smaller
-isn't. `enrich_entries_with_index` is the one that matters: it's the sub-millisecond path every directory listing pays
-for its recursive sizes, and it holds ~850 K directories/s at every listing size, so the per-directory cost is flat.
+**Reproducibility: before, every case landed within ±1.1% across two runs; after, within ±1.8%** on a busier machine.
+Criterion classified all eight before-runs as "no change" or "within noise threshold", so a move outside roughly ±2% is
+signal and anything smaller isn't.
+
+**Every case is inside that band, and seven of eight came out marginally faster.** `enrich_entries_with_index` is the
+one that matters: it's the sub-millisecond path every directory listing pays for its recursive sizes, and it still holds
+~850 K directories/s at every listing size, so the per-directory cost is still flat. Nothing needed chasing — no
+`#[inline]` was missing on a cross-boundary function, and no trait landed on a per-entry path (the dispatch rule that
+forbids one is in `crates/cmdr-index/src/indexing/host/DETAILS.md`). Thin LTO landing before any code moved is what
+bought this: without it, Cargo would inline only `#[inline]` and generic functions across the new boundary.
 
 ## Scan throughput isn't in this set, on purpose
 
@@ -79,16 +102,21 @@ allocation lands on a per-entry path during the extraction, it shows up there.
 
 ### Release, and what thin LTO costs
 
-Full clean workspace build (`cargo clean --release && cargo build --release` from the repo root, so all three members
-build), measured both ways by toggling the profile line:
+Full clean workspace build (`cargo clean --release && cargo build --release` from the repo root, so every member
+builds). Before, measured both ways by toggling the profile line:
 
 - **Default profile** (`lto = false`, `codegen-units = 16`): **159.2 s**, `target/release/Cmdr` **76,272,096 bytes**
 - **Thin LTO**: **214.3 s** (+34.6%), `Cmdr` **78,574,560 bytes** (+2.2 MB, +3.0%)
 
-So thin LTO costs about 55 s per clean release build, and the same tax lands on every CI build in the sign-and-notarize
+So thin LTO cost about 55 s per clean release build, and the same tax lands on every CI build in the sign-and-notarize
 pipeline. The binary got slightly _bigger_, which is the expected direction: more cross-crate inlining means more
-duplicated code. Both are worth it here, because after the split the index's hot paths sit on the far side of a crate
-boundary, where Cargo's default inlines only `#[inline]` and generic functions.
+duplicated code. Worth it, because the index's hot paths now sit on the far side of a crate boundary, where Cargo's
+default inlines only `#[inline]` and generic functions.
+
+**After the extraction: 188.4 s** (−12% against thin-LTO-before, on a busier machine), `Cmdr` **79,055,312 bytes**
+(+480,752, +0.6%). The release build got FASTER, which reads backwards until you notice what changed: three crates give
+cargo three independent codegen units to schedule where there was one, so the long pole shortened. The extra half
+megabyte is more cross-crate inlining, the same direction thin LTO already moved it.
 
 **Startup time is not in this set.** Measuring it honestly needs a full `pnpm build` bundle plus an isolated data dir
 (running `target/release/Cmdr` directly attaches to the real prod data dir, which `apps/desktop/CLAUDE.md` forbids), and
@@ -97,24 +125,33 @@ startup; if that assumption ever needs checking, the work is to add the instrume
 
 ### Debug, and the build-time separation goal
 
-Goal 2 of the plan is that editing indexing shouldn't rebuild the app and vice versa. Today the app crate is one
-compilation unit, so both edits rebuild all 332k lines. Run from `apps/desktop/src-tauri`:
+The goal was that editing the index shouldn't rebuild the app and vice versa. Before, the app crate was one compilation
+unit, so either edit rebuilt all 332k lines.
 
-- **Clean app-crate build** (`cargo clean -p cmdr && cargo build`, dependencies warm): **49.2 s**
-- **One-line change in `indexing/read/enrichment.rs`, then `cargo build`**: **9.7 s**, **9.5 s**
-- **One-line change in `commands/indexing.rs`, then `cargo build`**: **15.7 s**, **16.0 s**
+Every edit is real (a changed log-message string), not a `touch`, so incremental compilation has to redo codegen for the
+touched unit. Medians of five consecutive runs, taken minutes apart on the same machine with the old tree checked out in
+the same worktree:
 
-The edits are real (a changed log-message string), not `touch`es, so incremental compilation has to redo codegen for the
-touched unit. `commands/` is consistently the slower of the two: it's a `#[tauri::command]` module, so changing it
-re-expands the macro surface the IPC builder is generated from.
+| scenario                                                    | before  | after      | delta |
+| ----------------------------------------------------------- | ------- | ---------- | ----- |
+| Clean crate build, deps warm (`cargo clean -p …`)           | 49.2 s  | 48.3 s     | −2%   |
+| Index edit, then `cargo build` from `src-tauri`             | 10.06 s | 11.20 s    | +11%  |
+| `commands/indexing.rs` edit, then `cargo build`             | 15.65 s | 13.57 s    | −13%  |
+| Index edit, then `cargo check --lib` on what you're editing | 4.35 s  | **0.75 s** | −83%  |
+| Index edit, then `cargo test --lib --no-run` on it          | 23–30 s | **3.55 s** | −85%  |
 
-Post-extraction the comparable numbers are:
+**The last two rows are the answer.** The first three measure "build the whole app", where a crate boundary can't help
+much: an index edit still has to relink the app, so it costs slightly MORE than before, and an app edit was never
+dominated by line count anyway (`commands/` is a `#[tauri::command]` module, so changing it re-expands the macro surface
+the IPC builder is generated from — that cost didn't move when the app lost 28% of its lines).
 
-- clean app-crate build after `cargo clean -p cmdr -p cmdr-index -p cmdr-fs`
-- the `indexing/` edit at its new path under `crates/cmdr-index/`, which should rebuild `cmdr-index` plus a relink of
-  the app rather than the app's own 239k lines
-- the `commands/` edit, which is where the clearer win should land: the app crate loses 28% of its lines, and an app
-  edit stops touching the index at all
+What did move is the loop David is actually in while working on the index: type-check it, run its tests, repeat. That
+went from 4.35 s and 23–30 s over 332k lines to 0.75 s and 3.55 s over 93k, because neither command touches the app at
+all now. Before the split there was no way to ask for less than the whole thing.
+
+The "before" figures reproduced within 4% of their 2026-07-30 values when re-measured on a loaded machine, which is what
+makes the paired comparison sound. `cargo test --lib --no-run` on the old tree varied most (30.4 s then 23.1 s), so it's
+given as a range.
 
 ## Thread QoS after the runtime swap
 
