@@ -297,6 +297,13 @@ impl OperationProbe {
     /// without waiting on wall-clock seconds. `still_for` is how long the byte
     /// counter has been unchanged.
     fn watchdog_step(&self, watchdog: &mut WatchdogState, now: Duration) {
+        // A transfer waiting on a person is not stalled, and must not accrue
+        // stall time or heartbeat at the UI while the conflict dialog is open.
+        if self.awaiting_human() {
+            watchdog.still_since = now;
+            self.still_for_seconds.store(0, Ordering::Relaxed);
+            return;
+        }
         if self.state.pause_gate.is_paused() {
             watchdog.still_since = now;
             self.still_for_seconds.store(0, Ordering::Relaxed);
@@ -360,7 +367,7 @@ impl OperationProbe {
         // watchdog only resets on its next tick, so without this a transfer
         // paused a moment ago would report the stall time it had accumulated
         // before the user paused it.
-        let still_for_seconds = if self.state.pause_gate.is_paused() {
+        let still_for_seconds = if self.state.pause_gate.is_paused() || self.awaiting_human() {
             0
         } else {
             self.still_for_seconds.load(Ordering::Relaxed)
@@ -373,12 +380,29 @@ impl OperationProbe {
         }
     }
 
+    /// Is a conflict prompt outstanding, i.e. is the app waiting on a person?
+    ///
+    /// `conflict_resolution_tx` holds the responder while a `write-conflict` is
+    /// unanswered (stored BEFORE the emit, taken when the answer lands), so it
+    /// is exactly "a human is being asked" for both the top-level dispatch and
+    /// deep-merge children.
+    fn awaiting_human(&self) -> bool {
+        self.state.conflict_resolution_tx.lock_ignore_poison().is_some()
+    }
+
     /// Classify the wait. Order matters: a pause and a conflict prompt are
     /// deliberate and outrank any device wait, and while bytes move nothing is
     /// waiting on anything (some task is always between chunks).
     fn wait_reason(&self, still_for_seconds: u64) -> TransferWaitReason {
         if self.state.pause_gate.is_paused() {
             return TransferWaitReason::Paused;
+        }
+        // A TOP-LEVEL conflict prompt is resolved on the DRIVER, not inside a
+        // task, so no task carries `ResolvingConflict` for it and the task scan
+        // below would miss it entirely. The outstanding oneshot sender is the
+        // authoritative signal, and it covers deep-merge prompts too.
+        if self.awaiting_human() {
+            return TransferWaitReason::You;
         }
         let tasks = self.tasks.lock_ignore_poison();
         let reasons: Vec<TransferWaitReason> = tasks
@@ -810,6 +834,55 @@ mod tests {
         let activity = probe.activity();
         assert_eq!(activity.waiting_on, TransferWaitReason::Paused);
         assert_eq!(activity.still_for_seconds, 0, "a pause is not time spent stalled");
+    }
+
+    /// A TOP-LEVEL conflict prompt is resolved on the DRIVER, so no task carries
+    /// `ResolvingConflict` for it. Reading only task phases meant the dialog told
+    /// the user their transfer had stopped moving while it was asking them which
+    /// file to overwrite — and heartbeat re-emits piled up behind the prompt.
+    #[test]
+    fn a_transfer_waiting_on_a_conflict_answer_is_not_stalled() {
+        let guard = TestOperationGuard::register("probe-conflict");
+        let state = guard.state();
+        let probe = probe_for(guard.id(), state);
+        // A task streaming normally: nothing here says "asking the human".
+        let a = probe.begin_task(0, "/src/a", "/dst/a");
+        a.probe().set_phase(TaskPhase::Streaming);
+        probe.still_for_seconds.store(30, Ordering::Relaxed);
+
+        // The driver stores the responder before emitting `write-conflict`.
+        let (tx, _rx) = tokio::sync::oneshot::channel();
+        *state.conflict_resolution_tx.lock_ignore_poison() = Some(tx);
+
+        let activity = probe.activity();
+        assert_eq!(activity.waiting_on, TransferWaitReason::You);
+        assert_eq!(
+            activity.still_for_seconds, 0,
+            "time spent waiting for a person is not time spent stalled"
+        );
+
+        // Answering it hands the transfer back to the device wait.
+        let _ = state.conflict_resolution_tx.lock_ignore_poison().take();
+        assert_ne!(probe.activity().waiting_on, TransferWaitReason::You);
+    }
+
+    /// The watchdog must not accrue stall time (or heartbeat) behind a prompt.
+    #[test]
+    fn the_watchdog_does_not_accrue_stall_time_behind_a_conflict_prompt() {
+        let guard = TestOperationGuard::register("probe-conflict-watchdog");
+        let state = guard.state();
+        let probe = probe_for(guard.id(), state);
+        let (tx, _rx) = tokio::sync::oneshot::channel();
+        *state.conflict_resolution_tx.lock_ignore_poison() = Some(tx);
+
+        let mut watchdog = WatchdogState::new();
+        // First step syncs the byte counter; a second one with the SAME bytes is
+        // what would accrue stall time if the prompt weren't recognized.
+        probe.watchdog_step(&mut watchdog, Duration::from_secs(1));
+        probe.watchdog_step(&mut watchdog, Duration::from_secs(60));
+
+        assert_eq!(probe.still_for_seconds.load(Ordering::Relaxed), 0);
+        assert_eq!(watchdog.still_since, Duration::from_secs(60), "the clock restarts");
     }
 
     /// While bytes flow the UI must get `Moving`, whatever the tasks are doing

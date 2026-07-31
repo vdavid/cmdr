@@ -234,6 +234,16 @@ everything because a person is being asked a question; a pause is authoritative 
 only claimed when EVERY in-flight task agrees, since one task still streaming means something else is holding things
 up; otherwise `Unknown`, which is the shape the 2026-07-31 wedge took.
 
+**A conflict prompt is read from the responder slot, NOT from task phases.** `wait_reason` and `watchdog_step` both
+check `state.conflict_resolution_tx.is_some()` first. `TaskPhase::ResolvingConflict` only ever covers a deep-merge
+child, because TOP-LEVEL conflict resolution runs on the DRIVER, between tasks — so a scan of task phases misses the
+common case entirely. Without that check, a transfer sitting on an unanswered overwrite prompt accrues stall time,
+starts heartbeating after 3 s, and after `STALL_NOTICE_SECONDS` tells the user their transfer has stopped moving while
+it is asking them a question (it reports `Unknown`, so the frontend's `you` suppression can't save it either). Pinned
+by `a_transfer_waiting_on_a_conflict_answer_is_not_stalled` and
+`the_watchdog_does_not_accrue_stall_time_behind_a_conflict_prompt`. The slot is authoritative: it is stored before the
+`write-conflict` emit and taken when the answer lands, and it covers deep-merge prompts too.
+
 **Why the watchdog emits.** Progress events are driven by chunk callbacks, so a wedged transfer emits nothing at all —
 the UI keeps rendering the last event it received, confident ETA and all, for as long as the wedge lasts. That is
 exactly what the incident's dialog did. Once the byte counter has been still for `HEARTBEAT_AFTER_SECS` (3 s), the
