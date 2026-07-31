@@ -25,18 +25,16 @@ Shared `WriteOperationState`, `OperationIntent`, cancel/rollback, ETA, and settl
   (skips the delete for dirs), NOT by `Volume::delete`'s contract — else a recursive-delete backend flips merge →
   wholesale replace. Pinned by `dir_overwrite_must_merge_not_replace_even_with_recursive_delete`.
 - **EVERY cross-volume file write stages on a `.cmdr-tmp-<uuid>` and takes its final name only after its last byte**
-  (`staged_write.rs`). A force-quit must never leave a truncated file at a real name. `WriteStaging::AlreadyStaged`
-  passes a conflict-minted temp through unstaged; every other write is `Stage`, derived at each call site as
-  `staging_for(&replace_after_write)`. A staged temp sits in `state.in_flight_temps` ONLY while it's a partial: the
-  write's success removes it BEFORE landing, so a temp holding committed data is never swept. ❌ Don't add a write path
-  that calls `write_from_stream` with a final name.
+  (`staged_write.rs`): a force-quit must never leave a truncated file at a real name. `AlreadyStaged` passes a
+  conflict-minted temp through; every other write is `Stage`, via `staging_for(&replace_after_write)`. A staged temp
+  sits in `state.in_flight_temps` ONLY while it's a partial, so a temp holding committed data is never swept. ❌ Don't
+  call `write_from_stream` with a final name.
 - **Cross-volume file→file Overwrite is a safe-replace, NOT delete-then-write**: stream into a `.cmdr-tmp-<uuid>`
-  sibling, then `finalize_safe_replace`. That post-write temp is committed data, NOT a cleanable partial; cleanup must
-  not touch it after `copy_single_path` returns `Ok`. Cross-type stays delete-first.
+  sibling, then `finalize_safe_replace`. That post-write temp is committed data, not a cleanable partial. Cross-type
+  stays delete-first.
 - **Cross-volume cleanup/rollback for a DIRECTORY source is per-FILE, never the dir root** (a merge holds pre-existing
-  dest files; recursive root delete is silent data loss). The `CreatedPaths` ledger flows out of the `Err` arms,
-  `last_dest_path` is CLEARED for a dir source, and a dir root never enters `in_flight_partials`. Pinned
-  (`rollback_tests`).
+  dest files; a recursive root delete is silent data loss). The `CreatedPaths` ledger flows out of the `Err` arms,
+  `last_dest_path` is CLEARED for a dir source, and a dir root never enters `in_flight_partials`.
 - **Cross-FS move source-delete preserves Skipped sources** and runs AFTER `flush_created_destinations` (never delete
   the source before the dest is durable).
 - **Empty directories land via `copy.rs::create_scanned_dirs_at_destination`** (the per-file loop only creates dirs as
@@ -49,34 +47,33 @@ Shared `WriteOperationState`, `OperationIntent`, cancel/rollback, ETA, and settl
   `exists()`, gated by `Volume::create_directory_errors_on_existing_dir()`.
 - **The conflict-dispatch mutex serializes the human across concurrent/nested merges**; released on every exit, never
   held across the write (`../CLAUDE.md`).
-- **Volume copy/move must skip `write-error` on `Cancelled`** (inner already emitted `write-cancelled`); cancellation
-  propagates as typed `VolumeError::Cancelled`, not `IoError` (a Cancelled-shaped `copy_error` reclassifies to `None`).
+- **Volume copy/move must skip `write-error` on `Cancelled`** (the inner path already emitted `write-cancelled`);
+  cancellation propagates as typed `VolumeError::Cancelled`, never `IoError`.
 - **Overwrite is NOT reversible**: rollback un-creates new files but can't restore an Overwrite-replaced original (no
   unbounded backup — don't reintroduce that footgun).
-- **`stream_pipe_file` retries once on `VolumeError::StaleDestinationHandle`** (re-opens source, re-runs
-  `write_from_stream`): the only layer that can retry an MTP stale-handle rejection (the backend stream is single-use),
-  so don't drop the loop. Why: `apps/desktop/src-tauri/src/mtp/connection/DETAILS.md`.
-- **Cross-volume copy parks/yields between chunks** via `checkpoint_stream.rs`'s `CheckpointStream` (sync `on_progress`
+- **`stream_pipe_file` retries once on `VolumeError::StaleDestinationHandle`**: the only layer that can retry an MTP
+  stale-handle rejection (the backend stream is single-use), so don't drop the loop. Why:
+  `apps/desktop/src-tauri/src/mtp/connection/DETAILS.md`.
+- **Cross-volume copy parks/yields between chunks** via `CheckpointStream` (`checkpoint_stream.rs`; sync `on_progress`
   can't `.await`). Reads hold no session between windows, so pause and yield both mean **don't start the next window**
-  (park in place, NO release/reopen). Triggers: **user pause** parks everyone; **auto-yield on `foreground_pending`**, op
-  stays **Running** (don't flip `OperationIntent`); a cancel-aware debounce + floor prevent thrash/starvation. SMB's
-  probe is per-share, ❌ never app-wide. TWO opt-ins, ❌ don't merge: SOURCE read-yield
-  (`supports_foreground_yield()`, MTP + SMB) parks UNBOUNDED; DESTINATION write-yield
-  (`supports_foreground_yield_as_destination()`, SMB uploads) is **HARD-CAPPED**: it holds an open SMB write handle, so
-  it must resume before the server reaps it. ❌ MTP never opts in here. DETAILS § "Foreground auto-yield".
+  (park in place, NO release/reopen). Auto-yield keeps the op **Running** — don't flip `OperationIntent`. SMB's probe is
+  per-share, ❌ never app-wide. TWO opt-ins, ❌ don't merge: SOURCE read-yield (MTP + SMB) parks UNBOUNDED; DESTINATION
+  write-yield (SMB uploads) is **HARD-CAPPED** because it holds an open write handle the server will reap. ❌ MTP never
+  opts in here. DETAILS § "Foreground auto-yield".
 
 - **The concurrent driver observes cancel/rollback ON ITS AWAIT, not only in the spawn loop.** A driver parked on
-  `in_flight.next()` never returns to the spawn loop's `is_cancelled` check, which is why Rollback did nothing in the
-  2026-07-31 wedge. It now races that await against `state.backend_cancel` (fires on every transition out of
-  `Running`), then drains the window under a bounded `CANCEL_DRAIN_DEADLINE` and ABANDONS whatever hasn't wound down,
-  logging the probe dump. ❌ Don't turn that back into an unbounded wait: one wedged task must never be able to hold the
-  user's dialog open. Abandoned handles are left for the backend to reap.
-- **A parked transfer is invisible to a stack sample, so every phase must announce itself** (`transfer_probe.rs`). The
-  driver and its tasks park on `.await`, so no thread carries a transfer frame; a 20-minute production wedge left only
-  a task's spawn and stream-open in the log. Every phase transition (`OpeningSource`, `Streaming`, the three park
-  reasons, `Finalizing`) records itself, and a watchdog dumps the whole in-flight table after 20 s with no byte
-  movement. ❌ Don't add an `.await` on a transfer path without a phase around it: the next wedge is only as
-  diagnosable as the last phase someone remembered to record. Tasks reach their probe through the
-  `CURRENT_TASK_PROBE` task-local (no signature threading); outside a copy task every helper is a no-op.
+  `in_flight.next()` never reaches the spawn loop's `is_cancelled` check, which is why Rollback did nothing in the
+  2026-07-31 wedge. It races that await against `state.backend_cancel`, drains under `CANCEL_DRAIN_DEADLINE`, then
+  ABANDONS what hasn't wound down (logging the probe dump). ❌ Never an unbounded wait: one wedged task must not hold
+  the user's dialog open.
+- **A parked transfer is invisible to a stack sample, so every phase must announce itself** (`transfer_probe.rs`): a
+  20-minute production wedge left only a spawn and a stream-open in the log. ❌ Don't add an `.await` on a transfer path
+  without a phase around it — the next wedge is only as diagnosable as the last phase someone recorded. A watchdog dumps
+  the in-flight table after 20 s without byte movement. Tasks reach their probe via the `CURRENT_TASK_PROBE` task-local
+  (no signature threading); outside a copy task every helper is a no-op.
+- **The probe is ALSO the UI's stall signal**: every progress event carries a `TransferActivity`, attached in
+  `state.rs::enrich_progress`. ❌ Don't derive a stall from event timing on the FE — a wedged transfer emits NOTHING, so
+  the watchdog re-sends the last event once the counter has been still for `HEARTBEAT_AFTER_SECS`. Registered on BOTH
+  paths, or a directory copy gets no signal. DETAILS § "The stall signal".
 
 Architecture, flows, and decisions: `DETAILS.md`. Read before non-trivial work here.

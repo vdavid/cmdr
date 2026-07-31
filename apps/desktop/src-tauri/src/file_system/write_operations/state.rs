@@ -135,12 +135,22 @@ impl WriteOperationState {
         self
     }
 
-    /// Populate `bytes_per_second`, `files_per_second`, and `eta_seconds` on a
-    /// `WriteProgressEvent` before it's emitted. Call this from every
-    /// `write-progress` emit site (local copy, local delete, trash, volume
-    /// copy, volume move, MTP, SMB) so the FE sees uniform rates and ETA
-    /// regardless of which backend produced the event.
+    /// Populate `bytes_per_second`, `files_per_second`, `eta_seconds`, and
+    /// `activity` on a `WriteProgressEvent` before it's emitted. Call this from
+    /// every `write-progress` emit site (local copy, local delete, trash, volume
+    /// copy, volume move, MTP, SMB) so the FE sees uniform rates, ETA, and stall
+    /// classification regardless of which backend produced the event.
     pub fn enrich_progress(&self, event: &mut WriteProgressEvent) {
+        // Looked up by operation id rather than threaded through every emit
+        // site's signature. Operations that keep no in-flight table (local copy,
+        // delete, trash) miss the lookup and keep whatever the caller set, which
+        // is `None` everywhere except the probe's own stall heartbeat.
+        if let Some(activity) =
+            crate::file_system::write_operations::transfer::transfer_probe::activity_for(&event.operation_id)
+        {
+            event.activity = Some(activity);
+        }
+
         let stats = match self.estimator.lock() {
             Ok(mut est) => est.update(
                 Instant::now(),
@@ -157,6 +167,12 @@ impl WriteOperationState {
         event.bytes_per_second = Some(stats.bytes_per_second);
         event.files_per_second = Some(stats.files_per_second);
         event.eta_seconds = stats.eta_seconds;
+
+        // Stash the finished event so the probe's watchdog can re-send it while
+        // nothing moves. A wedged transfer fires no chunk callbacks, so without
+        // this the UI's newest event is from before the wedge and keeps a
+        // confident ETA on screen for as long as the wedge lasts.
+        crate::file_system::write_operations::transfer::transfer_probe::record_progress(event);
     }
 
     /// Enrich and emit a `WriteProgressEvent` via an `OperationEventSink`. The

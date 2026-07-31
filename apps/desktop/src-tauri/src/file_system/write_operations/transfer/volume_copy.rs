@@ -817,19 +817,21 @@ pub(crate) async fn copy_volumes_with_progress(
     let deep_skipped_bytes = Arc::new(AtomicU64::new(0));
     let mut copy_error: Option<WriteFailure> = None;
 
-    // Live in-flight table + stall watchdog. Registered for the concurrent path
-    // only: the sequential path has one task and its progress log already says
-    // where it is. Dropping the guard at the end of this function deregisters the
-    // operation and stops the watchdog.
-    let probe_guard = use_concurrent_path.then(|| {
-        super::transfer_probe::register_operation(
-            operation_id,
-            concurrency,
-            total_files,
-            Arc::clone(&atomic_bytes_done),
-            Arc::clone(state),
-        )
-    });
+    // Live in-flight table + stall watchdog, for BOTH paths. The concurrent
+    // path needs it to explain a wedge across N tasks; the serial path needs it
+    // because a user staring at a frozen bar during a one-directory copy is owed
+    // the same answer, and `TransferActivity` (which the UI reads to stop showing
+    // a confident ETA) is derived from this table. Dropping the guard at the end
+    // of this function deregisters the operation and stops the watchdog.
+    let probe_guard = Some(super::transfer_probe::register_operation(
+        operation_id,
+        // The serial path runs exactly one source at a time.
+        if use_concurrent_path { concurrency } else { 1 },
+        total_files,
+        Arc::clone(&atomic_bytes_done),
+        Arc::clone(state),
+        Arc::clone(&events),
+    ));
     let op_probe = probe_guard
         .as_ref()
         .map(super::transfer_probe::OperationProbeGuard::probe);
@@ -1594,7 +1596,15 @@ pub(crate) async fn copy_volumes_with_progress(
                 let deep_skipped_files = Arc::clone(&deep_skipped_files);
                 let deep_skipped_bytes = Arc::clone(&deep_skipped_bytes);
                 let journal_volumes = journal_volumes.clone();
+                // The serial path registers its one in-flight source too, so a
+                // frozen bar during a directory copy gets the same "waiting on
+                // the destination" answer a batch copy does. The counter only
+                // labels rows in a dump; sources run one at a time here.
+                let op_probe_serial = op_probe.clone();
+                let serial_source_index = Arc::new(AtomicUsize::new(0));
                 move |ctx: TransferContext<'_>| -> TransferFut<'_> {
+                    let op_probe_serial = op_probe_serial.clone();
+                    let serial_source_index = Arc::clone(&serial_source_index);
                     let source_volume = Arc::clone(&source_volume);
                     let dest_volume = Arc::clone(&dest_volume);
                     let state = Arc::clone(&state);
@@ -1679,7 +1689,18 @@ pub(crate) async fn copy_volumes_with_progress(
 
                         *last_dest_cell.lock_ignore_poison() = Some(dest_item_path.clone());
 
-                        match copy_single_path(
+                        // Held for this source's whole transfer; dropping it
+                        // clears the row. Mirrors the concurrent path.
+                        let task_probe = op_probe_serial.as_ref().map(|probe| {
+                            probe.begin_task(
+                                serial_source_index.fetch_add(1, Ordering::Relaxed),
+                                &source_path.display().to_string(),
+                                &dest_item_path.display().to_string(),
+                            )
+                        });
+                        let probe_handle = task_probe.as_ref().map(super::transfer_probe::TaskProbeHandle::probe);
+
+                        let copy_fut = copy_single_path(
                             &source_volume,
                             &source_path,
                             source_is_dir_hint,
@@ -1692,9 +1713,15 @@ pub(crate) async fn copy_volumes_with_progress(
                             &on_file_complete,
                             Some(&merge_ctx),
                             super::volume_strategy::staging_for(&replace_after_write),
-                        )
-                        .await
-                        {
+                        );
+                        // Bind this source's probe as a task-local for the whole
+                        // copy, so `stream_pipe_file` and `CheckpointStream`
+                        // record their phases with no signature threading.
+                        let copy_result = match probe_handle {
+                            Some(probe) => super::transfer_probe::CURRENT_TASK_PROBE.scope(probe, copy_fut).await,
+                            None => copy_fut.await,
+                        };
+                        match copy_result {
                             Ok(bytes_copied) => {
                                 // The write SUCCEEDED: the temp is now committed
                                 // data, not a partial. Clear it from the

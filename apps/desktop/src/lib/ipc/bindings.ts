@@ -8019,6 +8019,56 @@ export type TimedOut<T> = {
   timedOut: boolean
 }
 
+/**
+ *  The live shape of a running transfer, attached to every progress event so
+ *  both windows can render the same answer to "why isn't this moving?" and
+ *  "why does the counter say fewer files than I can see at the destination?".
+ */
+export type TransferActivity = {
+  /**
+   *  Files open in the concurrency window right now. These have bytes on the
+   *  destination but aren't counted in `files_done` yet, which is why the
+   *  counter can honestly read lower than what a user sees on the share.
+   */
+  inFlight: number
+  /**
+   *  Whole seconds since the operation's aggregate byte counter last moved.
+   *  `0` while bytes flow and while paused (a pause isn't time spent stalled).
+   */
+  stillForSeconds: number
+  // What it's waiting on. See [`TransferWaitReason`].
+  waitingOn: TransferWaitReason
+}
+
+/**
+ *  What a transfer is waiting on right now, derived from the live in-flight
+ *  table in `transfer::transfer_probe`.
+ *
+ *  The distinction that matters: parked ON PURPOSE (a user pause, a foreground
+ *  yield so the app stays responsive) is not the same as stuck, and calling a
+ *  deliberate yield a stall would train people to ignore the warning. The
+ *  backend classifies; the UI decides how long to wait before speaking.
+ */
+export type TransferWaitReason =
+  // Bytes are moving.
+  | 'moving'
+  // Paused by the user.
+  | 'paused'
+  /**
+   *  Every in-flight task is parked waiting for the DESTINATION to accept
+   *  writes (a busy share, a device doing foreground work).
+   */
+  | 'destination'
+  // Every in-flight task is parked waiting for the SOURCE to produce bytes.
+  | 'source'
+  // A conflict prompt is open: the transfer is waiting for a person.
+  | 'you'
+  /**
+   *  Nothing is moving and no task explains why. This is the shape the
+   *  2026-07-31 wedge took.
+   */
+  | 'unknown'
+
 // Human-readable values so the frontend can populate filter UI.
 export type TranslateDisplay = {
   namePattern: string | null
@@ -8760,6 +8810,12 @@ export type WriteProgressEvent = {
   expectedFilesTotal?: number | null
   // Pairs with `expected_files_total`. See its doc.
   expectedBytesTotal?: number | null
+  /**
+   *  Live in-flight count + stall classification, from the transfer probe.
+   *  `None` for operations that keep no in-flight table (local copy, delete,
+   *  trash), where the UI simply shows nothing extra.
+   */
+  activity?: TransferActivity | null
 }
 
 /**

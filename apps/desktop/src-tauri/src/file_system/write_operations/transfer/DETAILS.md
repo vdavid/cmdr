@@ -220,6 +220,36 @@ The same park-in-place behavior is also driven by a SECOND trigger: foreground d
 
 **The arm** (`CheckpointStream::auto_yield_to_foreground`, after the pause handling in `checkpoint`). It fires when ALL hold: the source opts in (`Volume::supports_foreground_yield()`, MTP and SMB — this is the enable-switch, NOT a release/reopen proxy), not cancelled, `bytes_yielded < total_size`, the min-progress floor is satisfied, and `Volume::foreground_pending().await` is true (an atomic load behind the device gate). Then it parks (debounces, below) and returns; the next `next_chunk` reads the next window from the current offset. The op stays **`Running`** the whole time — this is a transient DEVICE yield, not a user pause, so it must NOT touch `OperationIntent` or the manager's `LifecycleStatus` (the queue window's Pause/Resume button keys on those; flipping to Paused would misreport user intent). Byte exactness and the cancel-wins contract are the same park-in-place contract as pause; the arm only adds WHEN to park.
 
+## The stall signal
+
+`TransferActivity` (`types.rs`) rides on every `write-progress` event: `in_flight`, `still_for_seconds`, and
+`waiting_on`. It is attached in `state.rs::enrich_progress`, the one place every emit site already routes through, so
+no signature grows and no caller has to remember.
+
+**Why the backend classifies rather than the frontend.** The probe knows the distinction that matters — parked ON
+PURPOSE (a user pause, a foreground yield that keeps the app responsive) versus genuinely stuck — because it holds each
+task's phase. A frontend timer can only see "no events lately", which would call every deliberate yield a stall and
+train people to ignore the warning. `OperationProbe::wait_reason` ranks them: a conflict prompt (`You`) outranks
+everything because a person is being asked a question; a pause is authoritative from the pause gate; a device wait is
+only claimed when EVERY in-flight task agrees, since one task still streaming means something else is holding things
+up; otherwise `Unknown`, which is the shape the 2026-07-31 wedge took.
+
+**Why the watchdog emits.** Progress events are driven by chunk callbacks, so a wedged transfer emits nothing at all —
+the UI keeps rendering the last event it received, confident ETA and all, for as long as the wedge lasts. That is
+exactly what the incident's dialog did. Once the byte counter has been still for `HEARTBEAT_AFTER_SECS` (3 s), the
+watchdog re-sends the last recorded event each tick with a fresh activity snapshot. The counters are deliberately
+unchanged (nothing moved); only the activity is new. It goes through `emit_progress_via_sink`, so the ETA estimator
+also sees the stillness and decays its own estimate to `None` rather than the FE having to special-case it.
+
+**Thresholds, and why they differ.** `STALL_TICK` is 1 s (it sets the granularity of `still_for_seconds`, which the UI
+reads). `STALL_AFTER` is 20 s for the LOG: a log line wants to stay rare. The UI speaks sooner
+(`STALL_NOTICE_SECONDS` in the frontend), because a frozen bar with a confident ETA is a lie the moment it stops being
+true. Both read the same `still_for_seconds`, so the dialog and the log can't disagree.
+
+**Registered on both paths.** `volume_copy.rs` registers a probe for the serial path as well as the concurrent one, and
+the serial closure binds its own `CURRENT_TASK_PROBE`. Without that a single-directory copy — the likely shape of the
+incident — would have a stall timer but no reason to report.
+
 **The probe surface.** Two backends opt in; `LocalPosixVolume`, `InMemoryVolume`, and `ArchiveVolume` use the trait defaults (`false` / no-op) and never auto-yield.
 
 - **`MtpVolume`** (which holds `device_id` and reaches the global `connection_manager()`): `supports_foreground_yield() → true`, `foreground_pending()` → `MtpConnectionManager::foreground_pending(device_id)` (the per-device gate's `foreground_pending()`, `false` if the device is absent), and `wait_until_foreground_idle()` → `MtpConnectionManager::background_yield_point(device_id)` (parks until the gate's pending count hits zero).

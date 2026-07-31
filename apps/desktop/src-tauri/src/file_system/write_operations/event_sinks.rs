@@ -22,7 +22,7 @@ use cmdr_index::ExpectedTotals;
 impl WriteProgressEvent {
     /// Construct an event with the 8 core counter fields. Rate/ETA fields are
     /// filled in by `WriteOperationState::enrich_progress` right before the
-    /// event is emitted. The scanning-only metadata (`current_dir`,
+    /// event is emitted, as is `activity`. The scanning-only metadata (`current_dir`,
     /// `expected_files_total`, `expected_bytes_total`) defaults to `None` and
     /// is populated by the scan emit sites via `with_scan_meta`. Always go
     /// through this constructor at emit sites so the extra fields stay out of
@@ -57,6 +57,7 @@ impl WriteProgressEvent {
             eta_seconds: None,
             expected_files_total: None,
             expected_bytes_total: None,
+            activity: None,
         }
     }
 

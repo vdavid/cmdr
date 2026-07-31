@@ -27,15 +27,38 @@ use std::time::{Duration, Instant};
 
 use crate::ignore_poison::IgnorePoison;
 
+use super::super::event_sinks::OperationEventSink;
 use super::super::state::{OperationIntent, WriteOperationState, load_intent};
+use super::super::types::{TransferActivity, TransferWaitReason, WriteOperationPhase, WriteProgressEvent};
 
-/// How often the watchdog looks at an operation, and how long a transfer may
-/// show zero byte movement before it is called out.
+/// How often the watchdog samples an operation, and how long a transfer may
+/// show zero byte movement before it is called out IN THE LOG.
 ///
-/// 20 s is chosen to sit well clear of a slow-but-alive SMB write window while
-/// still landing inside the window a user spends wondering whether to force-quit.
-pub(super) const STALL_TICK: Duration = Duration::from_secs(5);
+/// The tick also sets the granularity of `TransferActivity::still_for_seconds`,
+/// which the UI reads to decide when to stop showing a confident ETA — hence
+/// 1 s rather than something coarser. It's one wakeup per second per running
+/// transfer, comparing one atomic.
+///
+/// 20 s for the log sits well clear of a slow-but-alive SMB write window. The
+/// UI speaks sooner (see `STALL_NOTICE_SECONDS` in
+/// `transfer/transfer-stall.ts`); a log line wants to stay rare, while a frozen
+/// bar with a confident ETA is a lie the moment it stops being true.
+pub(super) const STALL_TICK: Duration = Duration::from_secs(1);
 pub(super) const STALL_AFTER: Duration = Duration::from_secs(20);
+
+/// How long the byte counter must be still before the watchdog starts
+/// re-emitting the last progress event on the operation's behalf.
+///
+/// This is what makes a stall visible AT ALL. Progress events are driven by
+/// chunk callbacks, so a wedged transfer emits nothing: without a heartbeat the
+/// UI keeps rendering the last event it received, complete with a confident ETA,
+/// for as long as the wedge lasts. That is precisely what the dialog did through
+/// the 2026-07-31 incident.
+///
+/// 3 s is comfortably longer than any gap between chunk callbacks on a live
+/// transfer (the progress throttle itself is sub-second) and comfortably shorter
+/// than the point where a person starts wondering whether the app has died.
+pub(super) const HEARTBEAT_AFTER_SECS: u64 = 3;
 
 /// What a single copy task is doing. Ordinals are stable only within a build;
 /// nothing persists them.
@@ -74,6 +97,21 @@ impl TaskPhase {
             Self::ParkedDestYield => "parked(dest-yield)",
             Self::Finalizing => "finalizing",
             Self::ResolvingConflict => "resolving-conflict",
+        }
+    }
+
+    /// What a task in this phase is waiting on, or `None` when the phase means
+    /// "working" and so explains nothing about a stall.
+    ///
+    /// `ParkedPause` maps to `None` on purpose: the pause is reported from the
+    /// operation's pause gate, which is authoritative, and a task can still be
+    /// mid-chunk when the gate flips.
+    const fn wait_reason(self) -> Option<TransferWaitReason> {
+        match self {
+            Self::ParkedDestYield => Some(TransferWaitReason::Destination),
+            Self::ParkedSourceYield => Some(TransferWaitReason::Source),
+            Self::ResolvingConflict => Some(TransferWaitReason::You),
+            Self::Spawned | Self::OpeningSource | Self::Streaming | Self::ParkedPause | Self::Finalizing => None,
         }
     }
 
@@ -191,6 +229,18 @@ pub(super) struct OperationProbe {
     /// The operation's aggregate byte counter, shared with the driver, so the
     /// watchdog measures the same number the user sees.
     bytes_done: Arc<AtomicU64>,
+    /// Where to send a heartbeat. Set once at registration; `None` in the unit
+    /// tests that don't exercise emission.
+    sink: Mutex<Option<Arc<dyn OperationEventSink>>>,
+    /// The last progress event this operation emitted, kept so the watchdog can
+    /// re-send it with fresh activity when nothing is moving. Cloning one event
+    /// per emit is cheap next to the IPC hop it's already making.
+    last_event: Mutex<Option<WriteProgressEvent>>,
+    /// Whole seconds the aggregate byte counter has been still, maintained by
+    /// the watchdog at `STALL_TICK` granularity and reset on every movement and
+    /// on pause. Read by [`OperationProbe::activity`] on the progress path, so
+    /// the UI and the log agree by construction rather than by review.
+    still_for_seconds: AtomicU64,
     state: Arc<WriteOperationState>,
     started: Instant,
 }
@@ -219,6 +269,142 @@ impl OperationProbe {
             operation: Arc::clone(self),
             probe,
         }
+    }
+
+    /// Point the heartbeat at a different sink. Production wires the sink at
+    /// registration; this exists so tests can capture the heartbeat.
+    #[cfg(test)]
+    fn set_sink(&self, sink: Arc<dyn OperationEventSink>) {
+        *self.sink.lock_ignore_poison() = Some(sink);
+    }
+
+    /// Remember the last progress event, so the watchdog can re-send it with
+    /// fresh activity while nothing moves. Called from `enrich_progress`, which
+    /// every emit site already routes through.
+    pub(super) fn record_progress(&self, event: &WriteProgressEvent) {
+        // Only the phases where a stall is meaningful. A scan emits its own
+        // steady stream and finishing phases are brief.
+        if matches!(
+            event.phase,
+            WriteOperationPhase::Copying | WriteOperationPhase::Flushing
+        ) {
+            *self.last_event.lock_ignore_poison() = Some(event.clone());
+        }
+    }
+
+    /// One watchdog tick, split out from the timer loop so it can be tested
+    /// without waiting on wall-clock seconds. `still_for` is how long the byte
+    /// counter has been unchanged.
+    fn watchdog_step(&self, watchdog: &mut WatchdogState, now: Duration) {
+        if self.state.pause_gate.is_paused() {
+            watchdog.still_since = now;
+            self.still_for_seconds.store(0, Ordering::Relaxed);
+            return;
+        }
+        let bytes = self.bytes_done.load(Ordering::Relaxed);
+        if bytes != watchdog.last_bytes {
+            watchdog.last_bytes = bytes;
+            watchdog.still_since = now;
+            self.still_for_seconds.store(0, Ordering::Relaxed);
+            return;
+        }
+        // Publish the stillness on every tick, not just at the log threshold:
+        // the UI reads this to decide when to stop showing a confident ETA, and
+        // it speaks sooner than the log does.
+        let still_for = now.saturating_sub(watchdog.still_since);
+        self.still_for_seconds.store(still_for.as_secs(), Ordering::Relaxed);
+
+        // Speak for the operation while it can't speak for itself.
+        if still_for.as_secs() >= HEARTBEAT_AFTER_SECS {
+            self.emit_heartbeat();
+        }
+
+        if still_for < STALL_AFTER || now.saturating_sub(watchdog.last_reported) < STALL_AFTER {
+            return;
+        }
+        watchdog.last_reported = now;
+        log::warn!(
+            "{}",
+            self.render_dump(&format!("no byte movement for {}s", still_for.as_secs()))
+        );
+    }
+
+    /// Re-emit the last progress event with a fresh activity snapshot. The
+    /// counters are unchanged (nothing moved, and saying otherwise would be a
+    /// lie); only `activity` and the decaying rate/ETA are new.
+    fn emit_heartbeat(&self) {
+        let Some(sink) = self.sink.lock_ignore_poison().clone() else {
+            return;
+        };
+        let Some(mut event) = self.last_event.lock_ignore_poison().clone() else {
+            return;
+        };
+        // Set from the probe we're already holding rather than leaving it to the
+        // registry round-trip in `enrich_progress`: this is the one caller that
+        // already knows the answer.
+        event.activity = Some(self.activity());
+        // Goes through the normal enrich-and-emit path, so the ETA estimator
+        // also sees that nothing has moved and lets its own estimate decay to
+        // `None` rather than the FE having to special-case a stalled ETA.
+        self.state.emit_progress_via_sink(&*sink, event);
+    }
+
+    /// The live snapshot the UI renders: how many files are open, how long
+    /// nothing has moved, and what the transfer is waiting on.
+    ///
+    /// This is deliberately the SAME state the watchdog logs from. A dialog
+    /// that says "stalled" while the log says otherwise is worse than neither.
+    pub(super) fn activity(&self) -> TransferActivity {
+        // A pause reads as zero stillness here as well as in the watchdog: the
+        // watchdog only resets on its next tick, so without this a transfer
+        // paused a moment ago would report the stall time it had accumulated
+        // before the user paused it.
+        let still_for_seconds = if self.state.pause_gate.is_paused() {
+            0
+        } else {
+            self.still_for_seconds.load(Ordering::Relaxed)
+        };
+        let in_flight = u32::try_from(self.tasks.lock_ignore_poison().len()).unwrap_or(u32::MAX);
+        TransferActivity {
+            in_flight,
+            still_for_seconds: u32::try_from(still_for_seconds).unwrap_or(u32::MAX),
+            waiting_on: self.wait_reason(still_for_seconds),
+        }
+    }
+
+    /// Classify the wait. Order matters: a pause and a conflict prompt are
+    /// deliberate and outrank any device wait, and while bytes move nothing is
+    /// waiting on anything (some task is always between chunks).
+    fn wait_reason(&self, still_for_seconds: u64) -> TransferWaitReason {
+        if self.state.pause_gate.is_paused() {
+            return TransferWaitReason::Paused;
+        }
+        let tasks = self.tasks.lock_ignore_poison();
+        let reasons: Vec<TransferWaitReason> = tasks
+            .iter()
+            .filter_map(|t| TaskPhase::from_u8(t.phase.load(Ordering::Relaxed)).wait_reason())
+            .collect();
+        // A person being asked a question beats any device wait: the transfer
+        // isn't stuck, it's waiting for an answer, and the UI says so even
+        // while other tasks keep streaming.
+        if reasons.contains(&TransferWaitReason::You) {
+            return TransferWaitReason::You;
+        }
+        if still_for_seconds == 0 {
+            return TransferWaitReason::Moving;
+        }
+        // Only claim a device wait when EVERY in-flight task agrees. One task
+        // still streaming means something else is holding the operation up.
+        let all_waiting_on = |reason: TransferWaitReason| {
+            !tasks.is_empty() && reasons.len() == tasks.len() && reasons.iter().all(|r| *r == reason)
+        };
+        if all_waiting_on(TransferWaitReason::Destination) {
+            return TransferWaitReason::Destination;
+        }
+        if all_waiting_on(TransferWaitReason::Source) {
+            return TransferWaitReason::Source;
+        }
+        TransferWaitReason::Unknown
     }
 
     /// The whole in-flight table as log lines. This is the record the incident
@@ -311,6 +497,7 @@ pub(super) fn register_operation(
     total_files: usize,
     bytes_done: Arc<AtomicU64>,
     state: Arc<WriteOperationState>,
+    sink: Arc<dyn OperationEventSink>,
 ) -> OperationProbeGuard {
     let probe = Arc::new(OperationProbe {
         operation_id: operation_id.to_owned(),
@@ -320,6 +507,9 @@ pub(super) fn register_operation(
         driver_detail: Mutex::new(String::new()),
         tasks: Mutex::new(Vec::new()),
         bytes_done,
+        sink: Mutex::new(Some(sink)),
+        last_event: Mutex::new(None),
+        still_for_seconds: AtomicU64::new(0),
         state,
         started: Instant::now(),
     });
@@ -330,6 +520,28 @@ pub(super) fn register_operation(
     OperationProbeGuard {
         operation_id: operation_id.to_owned(),
         probe,
+    }
+}
+
+/// The live activity for an operation, if it keeps an in-flight table.
+///
+/// `None` for operations with no probe (local copy, delete, trash, and the
+/// pre-registration window), where the UI simply shows nothing extra. Called
+/// from `WriteOperationState::enrich_progress`, so every progress event from
+/// every emit site carries it without a single caller having to remember.
+pub(in crate::file_system::write_operations) fn activity_for(operation_id: &str) -> Option<TransferActivity> {
+    REGISTRY
+        .lock_ignore_poison()
+        .get(operation_id)
+        .map(|probe| probe.activity())
+}
+
+/// Stash a progress event so the watchdog can re-send it while nothing moves.
+/// Paired with [`activity_for`] on the `enrich_progress` path; a no-op for
+/// operations with no probe.
+pub(in crate::file_system::write_operations) fn record_progress(event: &WriteProgressEvent) {
+    if let Some(probe) = REGISTRY.lock_ignore_poison().get(&event.operation_id) {
+        probe.record_progress(event);
     }
 }
 
@@ -358,34 +570,35 @@ impl Drop for OperationProbeGuard {
 /// The dump repeats every `STALL_AFTER` for as long as the stall lasts, because
 /// a user who force-quits after 20 minutes should leave behind more than one
 /// record of it.
+/// The watchdog's own carry-over between ticks. Split from `OperationProbe` so
+/// the step is a pure function of (probe, this, now) and can be tested without
+/// sleeping.
+struct WatchdogState {
+    last_bytes: u64,
+    still_since: Duration,
+    last_reported: Duration,
+}
+
+impl WatchdogState {
+    fn new() -> Self {
+        Self {
+            last_bytes: u64::MAX,
+            still_since: Duration::ZERO,
+            last_reported: Duration::ZERO,
+        }
+    }
+}
+
 fn spawn_watchdog(operation_id: String) {
     tauri::async_runtime::spawn(async move {
-        let mut last_bytes = u64::MAX;
-        let mut still_since = Instant::now();
-        let mut last_reported = Instant::now();
+        let mut watchdog = WatchdogState::new();
+        let started = Instant::now();
         loop {
             tokio::time::sleep(STALL_TICK).await;
             let Some(probe) = REGISTRY.lock_ignore_poison().get(&operation_id).cloned() else {
                 return; // operation finished; guard removed it
             };
-            if probe.state.pause_gate.is_paused() {
-                still_since = Instant::now();
-                continue;
-            }
-            let bytes = probe.bytes_done.load(Ordering::Relaxed);
-            if bytes != last_bytes {
-                last_bytes = bytes;
-                still_since = Instant::now();
-                continue;
-            }
-            if still_since.elapsed() < STALL_AFTER || last_reported.elapsed() < STALL_AFTER {
-                continue;
-            }
-            last_reported = Instant::now();
-            log::warn!(
-                "{}",
-                probe.render_dump(&format!("no byte movement for {}s", still_since.elapsed().as_secs()))
-            );
+            probe.watchdog_step(&mut watchdog, started.elapsed());
         }
     });
 }
@@ -393,7 +606,9 @@ fn spawn_watchdog(operation_id: String) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::file_system::write_operations::event_sinks::CollectorEventSink;
     use crate::file_system::write_operations::test_support::TestOperationGuard;
+    use crate::file_system::write_operations::types::WriteOperationType;
 
     fn probe_for(id: &str, state: &Arc<WriteOperationState>) -> Arc<OperationProbe> {
         Arc::new(OperationProbe {
@@ -404,6 +619,9 @@ mod tests {
             driver_detail: Mutex::new("sms-20260724020237.xml".to_owned()),
             tasks: Mutex::new(Vec::new()),
             bytes_done: Arc::new(AtomicU64::new(83_650_000)),
+            sink: Mutex::new(None),
+            last_event: Mutex::new(None),
+            still_for_seconds: AtomicU64::new(0),
             state: Arc::clone(state),
             started: Instant::now(),
         })
@@ -461,5 +679,148 @@ mod tests {
     fn phase_helpers_are_noops_outside_a_copy_task() {
         set_task_phase(TaskPhase::Streaming);
         set_task_bytes(1, 2);
+    }
+
+    /// The distinction the UI hangs on: parked ON PURPOSE reads differently
+    /// from genuinely stuck. Calling a deliberate yield a stall would train
+    /// users to ignore the warning.
+    #[test]
+    fn activity_names_what_the_transfer_is_waiting_on() {
+        let guard = TestOperationGuard::register("probe-activity");
+        let state = guard.state();
+        let probe = probe_for(guard.id(), state);
+        // Stand in for the watchdog having seen 12 s with no byte movement.
+        probe.still_for_seconds.store(12, Ordering::Relaxed);
+
+        // Every task parked on the destination ⇒ that's what we're waiting on.
+        let a = probe.begin_task(0, "/src/a", "/dst/a");
+        a.probe().set_phase(TaskPhase::ParkedDestYield);
+        let b = probe.begin_task(1, "/src/b", "/dst/b");
+        b.probe().set_phase(TaskPhase::ParkedDestYield);
+        let activity = probe.activity();
+        assert_eq!(activity.in_flight, 2);
+        assert_eq!(activity.waiting_on, TransferWaitReason::Destination);
+
+        // One task still streaming ⇒ not a destination wait; nothing explains it.
+        b.probe().set_phase(TaskPhase::Streaming);
+        assert_eq!(probe.activity().waiting_on, TransferWaitReason::Unknown);
+
+        // A conflict prompt outranks everything: the transfer waits on a person.
+        a.probe().set_phase(TaskPhase::ResolvingConflict);
+        assert_eq!(probe.activity().waiting_on, TransferWaitReason::You);
+    }
+
+    /// The hole this closes: a wedged transfer emits NO progress events, because
+    /// progress events are driven by chunk callbacks and no chunk ever lands. So
+    /// the last event the UI holds says "moving" forever, and the dialog keeps a
+    /// confident ETA on screen through a total stall — exactly what happened on
+    /// 2026-07-31. The watchdog has to speak up on the operation's behalf.
+    #[test]
+    fn a_wedged_transfer_keeps_telling_the_ui_it_is_wedged() {
+        let guard = TestOperationGuard::register("probe-heartbeat");
+        let state = guard.state();
+        let sink = Arc::new(CollectorEventSink::new());
+        let probe = probe_for(guard.id(), state);
+        probe.set_sink(Arc::clone(&sink) as Arc<dyn OperationEventSink>);
+
+        // The operation emitted one progress event while it was still moving.
+        let mut event = WriteProgressEvent::new(
+            guard.id().to_owned(),
+            WriteOperationType::Copy,
+            WriteOperationPhase::Copying,
+            Some("sms-0726.xml".to_owned()),
+            5,
+            764,
+            83_650_000,
+            900_000_000,
+        );
+        state.enrich_progress(&mut event);
+        probe.record_progress(&event);
+        let a = probe.begin_task(9, "/src/a", "/dst/a");
+        a.probe().set_phase(TaskPhase::ParkedDestYield);
+
+        // Nothing emits for a while: every task is parked on the destination.
+        // The first tick only establishes the byte baseline, so run past the
+        // threshold rather than exactly to it.
+        let mut watchdog = WatchdogState::new();
+        for tick in 1..=(HEARTBEAT_AFTER_SECS + 2) {
+            probe.watchdog_step(&mut watchdog, Duration::from_secs(tick));
+        }
+
+        let emitted = sink.progress.lock_ignore_poison();
+        let last = emitted.last().expect("the watchdog must speak for a wedged transfer");
+        let activity = last.activity.expect("a re-emitted event carries fresh activity");
+        assert_eq!(activity.waiting_on, TransferWaitReason::Destination);
+        assert!(activity.still_for_seconds >= 1, "{activity:?}");
+        assert_eq!(activity.in_flight, 1);
+        // The counters are unchanged, because nothing moved. That's the point:
+        // only the activity is new.
+        assert_eq!(last.files_done, 5);
+        assert_eq!(last.bytes_done, 83_650_000);
+    }
+
+    /// The heartbeat must stay quiet while bytes flow: a moving transfer already
+    /// emits plenty, and duplicating those would double the FE's event rate.
+    #[test]
+    fn a_moving_transfer_gets_no_heartbeat() {
+        let guard = TestOperationGuard::register("probe-no-heartbeat");
+        let state = guard.state();
+        let sink = Arc::new(CollectorEventSink::new());
+        let probe = probe_for(guard.id(), state);
+        probe.set_sink(Arc::clone(&sink) as Arc<dyn OperationEventSink>);
+        let mut event = WriteProgressEvent::new(
+            guard.id().to_owned(),
+            WriteOperationType::Copy,
+            WriteOperationPhase::Copying,
+            None,
+            5,
+            764,
+            83_650_000,
+            900_000_000,
+        );
+        state.enrich_progress(&mut event);
+        probe.record_progress(&event);
+
+        let mut watchdog = WatchdogState::new();
+        // Bytes keep moving on every tick.
+        for tick in 1..=(HEARTBEAT_AFTER_SECS + 5) {
+            probe.bytes_done.fetch_add(1_000, Ordering::Relaxed);
+            probe.watchdog_step(&mut watchdog, Duration::from_secs(tick));
+        }
+
+        assert!(
+            sink.progress.lock_ignore_poison().is_empty(),
+            "a moving transfer needs no help from the watchdog"
+        );
+    }
+
+    /// A paused transfer moves no bytes on purpose, and must never be reported
+    /// as waiting on a device or as stuck.
+    #[test]
+    fn a_paused_transfer_reports_paused_not_stuck() {
+        let guard = TestOperationGuard::register("probe-paused");
+        let state = guard.state();
+        let probe = probe_for(guard.id(), state);
+        let a = probe.begin_task(0, "/src/a", "/dst/a");
+        a.probe().set_phase(TaskPhase::ParkedPause);
+        probe.still_for_seconds.store(30, Ordering::Relaxed);
+        state.pause_gate.pause();
+
+        let activity = probe.activity();
+        assert_eq!(activity.waiting_on, TransferWaitReason::Paused);
+        assert_eq!(activity.still_for_seconds, 0, "a pause is not time spent stalled");
+    }
+
+    /// While bytes flow the UI must get `Moving`, whatever the tasks are doing
+    /// at the instant we sample: some are always between chunks.
+    #[test]
+    fn a_moving_transfer_reports_moving() {
+        let guard = TestOperationGuard::register("probe-moving");
+        let state = guard.state();
+        let probe = probe_for(guard.id(), state);
+        let a = probe.begin_task(0, "/src/a", "/dst/a");
+        a.probe().set_phase(TaskPhase::ParkedDestYield);
+        // The watchdog hasn't observed a still period, so bytes are moving.
+        assert_eq!(probe.activity().waiting_on, TransferWaitReason::Moving);
     }
 }

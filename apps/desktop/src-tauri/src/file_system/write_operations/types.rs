@@ -100,6 +100,49 @@ pub enum ConflictResolution {
 // Progress events
 // ============================================================================
 
+/// What a transfer is waiting on right now, derived from the live in-flight
+/// table in `transfer::transfer_probe`.
+///
+/// The distinction that matters: parked ON PURPOSE (a user pause, a foreground
+/// yield so the app stays responsive) is not the same as stuck, and calling a
+/// deliberate yield a stall would train people to ignore the warning. The
+/// backend classifies; the UI decides how long to wait before speaking.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum TransferWaitReason {
+    /// Bytes are moving.
+    Moving,
+    /// Paused by the user.
+    Paused,
+    /// Every in-flight task is parked waiting for the DESTINATION to accept
+    /// writes (a busy share, a device doing foreground work).
+    Destination,
+    /// Every in-flight task is parked waiting for the SOURCE to produce bytes.
+    Source,
+    /// A conflict prompt is open: the transfer is waiting for a person.
+    You,
+    /// Nothing is moving and no task explains why. This is the shape the
+    /// 2026-07-31 wedge took.
+    Unknown,
+}
+
+/// The live shape of a running transfer, attached to every progress event so
+/// both windows can render the same answer to "why isn't this moving?" and
+/// "why does the counter say fewer files than I can see at the destination?".
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct TransferActivity {
+    /// Files open in the concurrency window right now. These have bytes on the
+    /// destination but aren't counted in `files_done` yet, which is why the
+    /// counter can honestly read lower than what a user sees on the share.
+    pub in_flight: u32,
+    /// Whole seconds since the operation's aggregate byte counter last moved.
+    /// `0` while bytes flow and while paused (a pause isn't time spent stalled).
+    pub still_for_seconds: u32,
+    /// What it's waiting on. See [`TransferWaitReason`].
+    pub waiting_on: TransferWaitReason,
+}
+
 /// Progress event payload for write operations.
 ///
 /// `bytes_per_second`, `files_per_second`, and `eta_seconds` are populated by
@@ -148,6 +191,11 @@ pub struct WriteProgressEvent {
     /// Pairs with `expected_files_total`. See its doc.
     #[serde(default)]
     pub expected_bytes_total: Option<u64>,
+    /// Live in-flight count + stall classification, from the transfer probe.
+    /// `None` for operations that keep no in-flight table (local copy, delete,
+    /// trash), where the UI simply shows nothing extra.
+    #[serde(default)]
+    pub activity: Option<TransferActivity>,
 }
 
 /// Completion event payload.
