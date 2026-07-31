@@ -37,8 +37,8 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-use tokio_util::sync::CancellationToken;
 use std::thread;
+use tokio_util::sync::CancellationToken;
 
 use crate::media_index::backend::{ImageInput, VisionBackend, VisionError};
 use crate::media_index::progress::{EnrichProgress, EnrichProgressSink};

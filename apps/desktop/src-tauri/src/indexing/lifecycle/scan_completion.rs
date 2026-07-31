@@ -377,9 +377,12 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
 }
 
 /// Report a scan that neither finished nor was cancelled: a typed failure, or a
-/// walker thread that panicked outright. Split out so the completion path above
-/// reads as one flow, and so the failure handling can't accidentally acquire a
-/// cancelled walk (which is `Ok`-shaped work with `Err`-shaped bookkeeping).
+/// walker thread that panicked outright. Both reset freshness to Stale, and a
+/// vanished root also clears the frontend's stuck "scanning" row.
+///
+/// Split out so the completion path above reads as one flow, and so a cancelled
+/// walk can't slip in here: it arrives as an `Err` but must NOT be reported as a
+/// failure, and the caller peels it off before this is ever reached.
 fn report_unfinished_scan(
     result: &std::thread::Result<Result<ScanSummary, ScanError>>,
     events: &dyn EventSink,

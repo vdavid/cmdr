@@ -372,5 +372,4 @@ mod tests {
             "the pass that was told to stop must not quietly resume"
         );
     }
-
 }
