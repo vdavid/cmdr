@@ -19,6 +19,10 @@
   "@commands.appAbout.label": {
     "sourceHash": "efe010f"
   },
+  "commands.appAcknowledgements.label": "Dankbetuigingen…",
+  "@commands.appAcknowledgements.label": {
+    "sourceHash": "7d0e506"
+  },
   "commands.appLicenseKey.seeDetails.label": "Toon licentiegegevens",
   "@commands.appLicenseKey.seeDetails.label": {
     "sourceHash": "0e660e8"
@@ -686,9 +690,5 @@
   "commands.handler.zoomDecreased": "Zoom verlaagd naar {size}%. {hint}",
   "@commands.handler.zoomDecreased": {
     "sourceHash": "71404cb"
-  },
-  "commands.appAcknowledgements.label": "Dankbetuigingen…",
-  "@commands.appAcknowledgements.label": {
-    "sourceHash": "7d0e506"
   }
 }

@@ -19,6 +19,10 @@
   "@commands.appAbout.label": {
     "sourceHash": "efe010f"
   },
+  "commands.appAcknowledgements.label": "致谢…",
+  "@commands.appAcknowledgements.label": {
+    "sourceHash": "7d0e506"
+  },
   "commands.appLicenseKey.seeDetails.label": "查看许可证详情",
   "@commands.appLicenseKey.seeDetails.label": {
     "sourceHash": "0e660e8"
@@ -683,9 +687,5 @@
   "commands.handler.zoomDecreased": "缩放已减小到 {size}%。{hint}",
   "@commands.handler.zoomDecreased": {
     "sourceHash": "71404cb"
-  },
-  "commands.appAcknowledgements.label": "致谢…",
-  "@commands.appAcknowledgements.label": {
-    "sourceHash": "7d0e506"
   }
 }
