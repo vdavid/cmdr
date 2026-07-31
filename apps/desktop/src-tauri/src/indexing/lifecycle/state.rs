@@ -589,7 +589,7 @@ pub(crate) fn get_freshness(volume_id: &str) -> Option<Freshness> {
 ///   variant only so the scan path and any future MTP-specific tuning have a
 ///   name to branch on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum IndexVolumeKind {
+pub enum IndexVolumeKind {
     Local,
     LocalExternal,
     Smb,
@@ -601,14 +601,14 @@ impl IndexVolumeKind {
     /// pipeline rather than the `Volume` trait scanner. True for the boot disk
     /// and local external drives. Exact complement of
     /// [`is_trait_scanned`](Self::is_trait_scanned).
-    pub(crate) fn uses_local_scanner(self) -> bool {
+    pub fn uses_local_scanner(self) -> bool {
         matches!(self, IndexVolumeKind::Local | IndexVolumeKind::LocalExternal)
     }
 
     /// Whether this volume scans over the `Volume` trait (network/USB) rather
     /// than the local guarded walker. SMB and MTP both do. Exact complement of
     /// [`uses_local_scanner`](Self::uses_local_scanner).
-    pub(crate) fn is_trait_scanned(self) -> bool {
+    pub fn is_trait_scanned(self) -> bool {
         matches!(self, IndexVolumeKind::Smb | IndexVolumeKind::Mtp)
     }
 
@@ -616,7 +616,7 @@ impl IndexVolumeKind {
     /// launch. Only the local boot disk does (FSEvents replay). Feeds
     /// `freshness::initial_freshness_on_launch`. Local external drives carry no
     /// `.fseventsd`, and SMB and MTP have no journal.
-    pub(crate) fn has_event_journal(self) -> bool {
+    pub fn has_event_journal(self) -> bool {
         matches!(self, IndexVolumeKind::Local)
     }
 
@@ -628,7 +628,7 @@ impl IndexVolumeKind {
     /// Consumed by [`IndexPathSpace`](crate::indexing::IndexPathSpace) to decide
     /// whether the local scan/reconcile/live pipeline strips a mount root before
     /// `store::resolve_path`, and to pick the [`ExclusionScope`].
-    pub(crate) fn mount_rooted(self) -> bool {
+    pub fn mount_rooted(self) -> bool {
         matches!(
             self,
             IndexVolumeKind::LocalExternal | IndexVolumeKind::Smb | IndexVolumeKind::Mtp
@@ -638,7 +638,7 @@ impl IndexVolumeKind {
     /// Whether this volume's writes back the single in-memory search index.
     /// Search is single-volume by construction (D7): only the boot disk
     /// (`Local`) feeds it. See `writer::WRITER_GENERATION`.
-    pub(crate) fn feeds_search(self) -> bool {
+    pub fn feeds_search(self) -> bool {
         matches!(self, IndexVolumeKind::Local)
     }
 }
@@ -1213,8 +1213,8 @@ pub(crate) fn volume_kind(volume_id: &str) -> Option<IndexVolumeKind> {
 /// `AppHandle`), so `stop_indexing` on it takes the fast `Initializing`-removal arm.
 /// Lets cross-module tests (the eject-stop ordering, the unmount cleanup) exercise
 /// the REAL registry + `stop_indexing` without a Tauri runtime.
-#[cfg(test)]
-pub(crate) fn reserve_initializing_index_for_test(volume_id: &str, kind: IndexVolumeKind) -> tempfile::TempDir {
+#[cfg(any(test, feature = "testing"))]
+pub fn reserve_initializing_index_for_test(volume_id: &str, kind: IndexVolumeKind) -> tempfile::TempDir {
     let dir = tempfile::tempdir().expect("temp dir for test index");
     let db_path = dir.path().join("test-index.db");
     let store = IndexStore::open(&db_path).expect("open test store");

@@ -539,7 +539,7 @@ mod tests {
             .register(ext_id, Arc::new(InMemoryVolume::new("Ext").with_root(ext_root)))
             .register(cloud_id, Arc::new(InMemoryVolume::new("Cloud").with_root(cloud_root)));
 
-        let _serialized = volumes::test_lock();
+        let _serialized = crate::indexing::handle::test_lock();
         let _installed = volumes::install_for_test(provider);
 
         // A path under the external mount → the mount's registered id.

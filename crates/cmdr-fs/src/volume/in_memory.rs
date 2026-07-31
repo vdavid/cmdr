@@ -4,7 +4,10 @@
 //! including create, delete, and list. Useful for unit and integration tests
 //! without touching the real file system.
 
-use super::{CopyScanResult, LaneKey, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream};
+use super::{
+    CopyScanResult, LaneKey, ScanConflict, SmbConnectionState, SourceItemInfo, SpaceInfo, Volume, VolumeError,
+    VolumeReadStream,
+};
 use crate::entry::FileEntry;
 use crate::ignore_poison::IgnorePoison;
 use crate::ignore_poison::RwLockIgnorePoison;
@@ -68,6 +71,10 @@ pub struct InMemoryVolume {
     /// failure never fails the surrounding edit (the edit commits via a
     /// rename-overwrite swap, which doesn't call `delete`). Default `false`.
     delete_fails: bool,
+    /// What [`Volume::smb_connection_state`] reports. `None` (the default) is a
+    /// volume that isn't a share at all; `Some` lets a test drive a code path
+    /// gated on a live smb2 session without a server.
+    smb_connection_state: Option<SmbConnectionState>,
     /// Raw errno to inject on the next `list_directory` call. Cleared after use.
     #[cfg(feature = "playwright-e2e")]
     injected_error: std::sync::Mutex<Option<i32>>,
@@ -87,9 +94,18 @@ impl InMemoryVolume {
             read_range_unsupported: false,
             sibling_duplicates_allowed: false,
             delete_fails: false,
+            smb_connection_state: None,
             #[cfg(feature = "playwright-e2e")]
             injected_error: std::sync::Mutex::new(None),
         }
+    }
+
+    /// Makes [`Volume::smb_connection_state`] report `state`, so this volume passes
+    /// (or fails) a gate that requires a live smb2 session. Everything else stays
+    /// in memory: nothing here talks to a server.
+    pub fn with_smb_connection_state(mut self, state: SmbConnectionState) -> Self {
+        self.smb_connection_state = Some(state);
+        self
     }
 
     /// Roots this volume at `root` instead of `/`, so it can stand in for a drive
@@ -300,6 +316,10 @@ impl VolumeReadStream for InMemoryReadStream {
 impl Volume for InMemoryVolume {
     fn name(&self) -> &str {
         &self.name
+    }
+
+    fn smb_connection_state(&self) -> Option<SmbConnectionState> {
+        self.smb_connection_state
     }
 
     fn root(&self) -> &Path {

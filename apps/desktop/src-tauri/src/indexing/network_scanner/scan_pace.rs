@@ -76,7 +76,7 @@ pub(crate) fn listing_budget(clearance: WorkClearance) -> usize {
 
 /// The walk's handle on the pace decision: which volume to watch, how long it must
 /// be quiet, and enough state to log a budget CHANGE once instead of per top-up.
-pub(crate) struct ScanPacer {
+pub struct ScanPacer {
     /// The volume whose foreground activity throttles this walk. `None` disables
     /// pacing entirely (tests that aren't about pacing, so they can't be perturbed
     /// by unrelated activity).

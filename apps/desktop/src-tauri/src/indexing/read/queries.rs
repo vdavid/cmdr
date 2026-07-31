@@ -400,7 +400,7 @@ mod tests {
         let provider = FakeVolumeProvider::shared();
         provider.register(ext_id, Arc::new(InMemoryVolume::new("Ext").with_root(ext_root)));
 
-        let _serialized = volumes::test_lock();
+        let _serialized = crate::indexing::handle::test_lock();
         let _installed = volumes::install_for_test(provider);
 
         let status = get_volume_index_status_for_path(&format!("{ext_root}/photos"));

@@ -23,7 +23,7 @@ use cmdr_fs::sqlite_util::{THREAD_CONN_SLOTS, ThreadConnCache};
 
 // ── Read pool (lock-free enrichment reads) ──────────────────────────
 
-pub(crate) struct ReadPool {
+pub struct ReadPool {
     db_path: PathBuf,
     /// Incremented on shutdown/clear. Thread-local connections check this to detect staleness.
     generation: AtomicU64,
@@ -91,7 +91,7 @@ pub(crate) static READ_POOL: LazyLock<std::sync::Mutex<Option<Arc<ReadPool>>>> =
 
 /// Tests that touch `READ_POOL` must hold this lock to avoid races with parallel test threads.
 #[cfg(any(test, feature = "testing"))]
-pub(crate) static READ_POOL_TEST_MUTEX: LazyLock<std::sync::Mutex<()>> = LazyLock::new(|| std::sync::Mutex::new(()));
+pub static READ_POOL_TEST_MUTEX: LazyLock<std::sync::Mutex<()>> = LazyLock::new(|| std::sync::Mutex::new(()));
 
 /// Clone the root volume's pool Arc. Lock held for nanoseconds (just an Arc
 /// clone). Kept for the search module (local-disk-only by D7) and the root
@@ -372,7 +372,7 @@ fn apply_dir_stats(entry: &mut FileEntry, stats: &DirStatsById, current_epoch: u
 }
 
 /// Fast path: resolve parent dir → id, get child dir IDs, batch-fetch stats.
-pub(crate) fn enrich_via_parent_id_on(
+pub fn enrich_via_parent_id_on(
     entries: &mut [FileEntry],
     conn: &Connection,
     parent_path: &str,

@@ -99,7 +99,7 @@ const CONSECUTIVE_FAILURE_ABORT: usize = 32;
 
 /// Why a `Volume`-trait scan ended other than cleanly.
 #[derive(Debug)]
-pub(crate) enum VolumeScanError {
+pub enum VolumeScanError {
     /// A directory listing exceeded `LIST_TIMEOUT` (wedged/hung mount).
     Timeout(PathBuf),
     /// The backend returned an error (disconnect mid-walk, permission, etc.).
@@ -191,7 +191,7 @@ impl std::error::Error for VolumeScanError {}
 ///
 /// `pacer` decides how many listings may be in flight at each top-up, so the walk
 /// gets out of the way while the user browses this share ([`ScanPacer`]).
-pub(crate) async fn scan_volume_via_trait(
+pub async fn scan_volume_via_trait(
     volume: Arc<dyn Volume>,
     root: PathBuf,
     writer: IndexWriter,

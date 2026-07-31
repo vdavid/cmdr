@@ -96,7 +96,7 @@ struct BufferedVolume {
 /// what the watcher built via `to_nfd_display_path(mount_path, …)`. Returns
 /// `/` for the mount root itself, `/sub/dir` for `/Volumes/share/sub/dir`. Pure
 /// and platform-independent so it's unit-testable on every target.
-pub(crate) fn index_relative_path(mount_root: &str, abs_path: &str) -> Option<String> {
+pub fn index_relative_path(mount_root: &str, abs_path: &str) -> Option<String> {
     // Trim a single trailing slash off the root for a clean prefix match
     // (`/Volumes/share/` vs `/Volumes/share`), then require the abs path to sit
     // under it. A path that doesn't start with the mount root isn't on this
@@ -349,8 +349,8 @@ fn apply_one_change(volume_id: &str, writer: &IndexWriter, parent_path: &Path, c
 /// translation. Returns whether a write was enqueued. Exists so the Docker SMB
 /// integration test can drive the real translation against a real, freshly
 /// SMB-scanned index without an `AppHandle`-bound `Running` registry instance.
-#[cfg(test)]
-pub(crate) fn resolve_and_send_for_test(
+#[cfg(any(test, feature = "testing"))]
+pub fn resolve_and_send_for_test(
     conn: &rusqlite::Connection,
     writer: &IndexWriter,
     mount_root: &str,

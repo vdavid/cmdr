@@ -376,6 +376,80 @@ pub(crate) fn replay_buffered_mtp_changes(volume_id: &str) -> bool {
     true
 }
 
+/// A device reported that one object appeared or changed: fold it into whichever
+/// of the device's storages has it indexed.
+///
+/// **Gate before resolve.** During a walk the device is contended, so a live
+/// resolve just to feed the index would cost a USB round trip the walk is about
+/// to make anyway — the original livelock. So each indexed storage is asked
+/// first, without touching the device: a scanning one buffers the RAW handle for
+/// post-scan replay, and only the rest resolve live.
+///
+/// PTP handles are device-wide while storages are separate namespaces, so a live
+/// resolve is attempted against each indexed storage and the first one it
+/// resolves on owns the object; a non-matching storage fails cleanly. Runs
+/// detached, because resolving does device I/O.
+pub(crate) fn on_device_object_changed(device_id: &str, handle: u32) {
+    let indexed = state::registered_mtp_volume_ids_for_device(device_id);
+    if indexed.is_empty() {
+        return;
+    }
+
+    let mut to_resolve_live: Vec<(String, u32)> = Vec::new();
+    for volume_id in indexed {
+        let Some(storage_id) = cmdr_fs::volume::mtp_ids::storage_id_of_volume(&volume_id) else {
+            continue;
+        };
+        if buffer_mtp_handle_if_scanning(&volume_id, storage_id, handle) {
+            continue;
+        }
+        to_resolve_live.push((volume_id, storage_id));
+    }
+    if to_resolve_live.is_empty() {
+        return;
+    }
+
+    let device_id = device_id.to_string();
+    let volumes = crate::indexing::host::volumes::current();
+    crate::indexing::host::runtime::spawn(async move {
+        for (volume_id, storage_id) in to_resolve_live {
+            match volumes.resolve_mtp_object(&device_id, storage_id, handle).await {
+                Ok(obj) => {
+                    apply_mtp_added_or_changed(
+                        &volume_id,
+                        MtpUpsert {
+                            path: obj.path,
+                            handle,
+                            is_directory: obj.is_directory,
+                            size: obj.size,
+                            modified_at: obj.modified_at,
+                        },
+                    );
+                    // It resolved on this storage, so it can't also live on
+                    // another.
+                    return;
+                }
+                Err(e) => log::debug!(
+                    target: "indexing::transports::mtp::watch",
+                    "live change: handle {handle} on {device_id}:{storage_id} unresolved ({e:?}); trying the next storage",
+                ),
+            }
+        }
+    });
+}
+
+/// A device reported that one object is gone: drop it from whichever of the
+/// device's storages had it.
+///
+/// Costs no device round trip — the object is gone, so there's no path to
+/// resolve and each storage matches on the handle it stored. Only the storage
+/// that indexed the object has a row; the rest are no-ops. Synchronous.
+pub(crate) fn on_device_object_removed(device_id: &str, handle: u32) {
+    for volume_id in state::registered_mtp_volume_ids_for_device(device_id) {
+        apply_mtp_removed(&volume_id, handle);
+    }
+}
+
 /// Resolve raw add/change handles buffered during a scan and apply them once the
 /// device is idle (post-scan). Spawns a task because resolution does USB I/O.
 /// Each resolve goes through the connection manager at FOREGROUND-equivalent

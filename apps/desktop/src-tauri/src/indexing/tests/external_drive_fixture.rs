@@ -576,7 +576,7 @@ mod tests {
         // `file_system::index_provider::tests::a_real_fat32_mount_detects_as_inode_untrusted`.
         let provider = crate::indexing::host::volumes::FakeVolumeProvider::shared();
         provider.mark_inodes_untrusted(&mount);
-        let _serialized = crate::indexing::host::volumes::test_lock();
+        let _serialized = crate::indexing::handle::test_lock();
         let _installed = crate::indexing::host::volumes::install_for_test(provider);
 
         let inodes_trustworthy = crate::indexing::host::volumes::current()

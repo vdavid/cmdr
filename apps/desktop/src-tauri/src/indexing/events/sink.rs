@@ -515,28 +515,28 @@ pub(crate) fn one_of_every_kind() -> Vec<IndexEvent> {
 }
 
 /// A sink that keeps every event for a test to assert on.
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 #[derive(Default)]
-pub(crate) struct RecordingSink {
+pub struct RecordingSink {
     events: std::sync::Mutex<Vec<IndexEvent>>,
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 impl RecordingSink {
     /// An empty recorder.
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self::default()
     }
 
     /// Everything recorded so far, in emit order.
-    pub(crate) fn events(&self) -> Vec<IndexEvent> {
+    pub fn events(&self) -> Vec<IndexEvent> {
         use cmdr_fs::ignore_poison::IgnorePoison;
         self.events.lock_ignore_poison().clone()
     }
 
     /// The kinds recorded for `volume_id`, in emit order. The shape assertion
     /// most tests actually want.
-    pub(crate) fn kinds_for(&self, volume_id: &str) -> Vec<IndexEventKind> {
+    pub fn kinds_for(&self, volume_id: &str) -> Vec<IndexEventKind> {
         self.events()
             .iter()
             .filter(|e| e.volume_id() == Some(volume_id))
@@ -545,7 +545,7 @@ impl RecordingSink {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 impl EventSink for RecordingSink {
     fn emit(&self, event: IndexEvent) {
         use cmdr_fs::ignore_poison::IgnorePoison;

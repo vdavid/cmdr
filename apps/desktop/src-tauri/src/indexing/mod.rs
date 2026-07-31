@@ -13,6 +13,7 @@
 // the curated public item surface below, never a module alias that would hide where code lives.
 pub mod aggregator;
 mod events;
+pub mod handle;
 pub(crate) mod host;
 pub(crate) mod lifecycle;
 mod metadata;
@@ -27,6 +28,11 @@ pub(crate) mod transports;
 pub(crate) mod watch;
 pub mod writer;
 
+/// The index's test-only surface. ❌ Not part of the API; see the module docs.
+#[cfg(any(test, feature = "testing"))]
+#[doc(hidden)]
+pub mod testing;
+
 /// The allocation-counting harness behind the memory-shape guards. `cfg(test)` because it
 /// installs a `#[global_allocator]`, which is per binary.
 #[cfg(test)]
@@ -35,6 +41,12 @@ pub(crate) mod test_support;
 pub(crate) mod tests;
 #[cfg(test)]
 pub(crate) use tests::stress_test_helpers;
+
+pub use handle::{
+    Index, IndexBuildError, IndexBuilder, IndexError, IngestError, ListingAgreement, ListingObservation,
+    ObservedEntry, SizeError, SizeFreshness, SizeProgress, SizeRequest, SizeStream, SizeVerdict, StartOutcome,
+    WatchGap, WatchScope,
+};
 
 pub(crate) use events::DEBUG_STATS;
 #[cfg(test)]

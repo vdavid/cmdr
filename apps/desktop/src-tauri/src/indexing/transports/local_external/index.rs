@@ -181,7 +181,7 @@ mod tests {
         let provider = FakeVolumeProvider::shared();
         provider.register(vid, Arc::new(InMemoryVolume::new("Test drive").with_root(mount)));
 
-        let _serialized = volumes::test_lock();
+        let _serialized = crate::indexing::handle::test_lock();
         let _installed = volumes::install_for_test(provider);
 
         match classify(vid).await {
@@ -213,7 +213,7 @@ mod tests {
             .register(vid, Arc::new(InMemoryVolume::new("Share").with_root(mount)))
             .mark_network(mount);
 
-        let _serialized = volumes::test_lock();
+        let _serialized = crate::indexing::handle::test_lock();
         let _installed = volumes::install_for_test(provider);
 
         assert!(

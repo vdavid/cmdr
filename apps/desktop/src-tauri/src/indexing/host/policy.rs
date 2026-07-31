@@ -38,28 +38,28 @@ use std::time::Duration;
 /// decision, never a raw timestamp: the elapsed-versus-threshold rule belongs to the
 /// host, which is where the clock and the signals live.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct WorkClearance {
+pub struct WorkClearance {
     /// No foreground activity **anywhere** in the app for the requested idle window.
     /// The right scope for work with no deadline that competes for the whole
     /// machine, like on-device image enrichment.
-    pub(crate) app_idle: bool,
+    pub app_idle: bool,
     /// No foreground activity **on the volume asked about** for the requested idle
     /// window. The right scope for work that contends for one share's connection,
     /// like a network index scan: browsing a local folder is no reason to slow a NAS.
     ///
     /// A volume nobody has browsed reads as idle, so a first scan starts at full
     /// speed rather than standing aside for a navigation that never happened.
-    pub(crate) volume_idle: bool,
+    pub volume_idle: bool,
     /// A user-initiated write operation (copy, move, delete, drag-out) is touching
     /// the volume right now. The user asked for it and is watching a progress bar,
     /// so background work on the same volume stands aside until it ends.
-    pub(crate) transfer_active: bool,
+    pub transfer_active: bool,
 }
 
 impl WorkClearance {
     /// Nothing is competing: full speed. The answer a host with no signals gives,
     /// and the shape every "is anything in the way?" check compares against.
-    pub(crate) const CLEAR: Self = Self {
+    pub const CLEAR: Self = Self {
         app_idle: true,
         volume_idle: true,
         transfer_active: false,
@@ -72,16 +72,16 @@ impl WorkClearance {
 /// cache knows more (listing id, entry count, age); none of it changes an
 /// aggregation decision, so none of it crosses.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct OpenListing {
+pub struct OpenListing {
     /// The volume the listing is on. The only reliable way to tell a path on the
     /// scanned volume from a same-looking path on another one.
-    pub(crate) volume_id: String,
+    pub volume_id: String,
     /// The directory being shown, as the host knows it (not yet firmlink-normalized).
-    pub(crate) path: PathBuf,
+    pub path: PathBuf,
 }
 
 /// The host's background-work priority signals.
-pub(crate) trait HostPolicy: Send + Sync {
+pub trait HostPolicy: Send + Sync {
     /// Whether background work may run at full speed against `volume_id` right now,
     /// treating the volume (and the app) as busy for `idle_threshold` after the last
     /// foreground activity.
@@ -104,7 +104,7 @@ pub(crate) trait HostPolicy: Send + Sync {
 /// The host that never asks for anything: used until one is installed, and by every
 /// test that isn't about pacing. Matches the behavior of the real signals with no
 /// activity recorded, which is what test binaries saw before this seam existed.
-pub(crate) struct AlwaysClear;
+pub struct AlwaysClear;
 
 impl HostPolicy for AlwaysClear {
     fn clearance(&self, _volume_id: &str, _idle_threshold: Duration) -> WorkClearance {
@@ -120,7 +120,7 @@ static INSTALLED: OnceLock<Arc<dyn HostPolicy>> = OnceLock::new();
 
 /// A [`set_host_policy`] call that arrived after one was already installed.
 #[derive(Debug)]
-pub(crate) struct HostPolicyAlreadySet;
+pub struct HostPolicyAlreadySet;
 
 /// Tells the index which host to ask about background-work priority. Call once at
 /// startup. A second call keeps the first policy, so a late caller can't change the
@@ -146,9 +146,9 @@ pub(crate) fn current() -> Arc<dyn HostPolicy> {
 /// This is the seam's write half. The real signals live in process-global maps that
 /// tests can only nudge and never reset, so anything that needs a volume to *become*
 /// busy and then quiet drives one of these instead.
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 #[derive(Debug, Default)]
-pub(crate) struct FakeHostPolicy {
+pub struct FakeHostPolicy {
     app_busy: std::sync::atomic::AtomicBool,
     volume_busy: std::sync::atomic::AtomicBool,
     transfer_running: std::sync::atomic::AtomicBool,
@@ -159,37 +159,37 @@ pub(crate) struct FakeHostPolicy {
     open_listings: std::sync::RwLock<Vec<OpenListing>>,
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 impl FakeHostPolicy {
     /// A host with nothing competing, wrapped for injection.
-    pub(crate) fn shared() -> Arc<Self> {
+    pub fn shared() -> Arc<Self> {
         Arc::new(Self::default())
     }
 
     /// The user is browsing (this volume, and therefore the app too).
-    pub(crate) fn note_foreground_activity(&self) {
+    pub fn note_foreground_activity(&self) {
         self.app_busy.store(true, std::sync::atomic::Ordering::SeqCst);
         self.volume_busy.store(true, std::sync::atomic::Ordering::SeqCst);
     }
 
     /// The user stopped browsing and the idle window has elapsed.
-    pub(crate) fn note_foreground_quiet(&self) {
+    pub fn note_foreground_quiet(&self) {
         self.app_busy.store(false, std::sync::atomic::Ordering::SeqCst);
         self.volume_busy.store(false, std::sync::atomic::Ordering::SeqCst);
     }
 
     /// A user-initiated transfer started on this volume.
-    pub(crate) fn note_transfer_started(&self) {
+    pub fn note_transfer_started(&self) {
         self.transfer_running.store(true, std::sync::atomic::Ordering::SeqCst);
     }
 
     /// The transfer finished (any exit path).
-    pub(crate) fn note_transfer_finished(&self) {
+    pub fn note_transfer_finished(&self) {
         self.transfer_running.store(false, std::sync::atomic::Ordering::SeqCst);
     }
 
     /// The user has a pane open on `path` on `volume_id`.
-    pub(crate) fn note_open_listing(&self, volume_id: impl Into<String>, path: impl Into<PathBuf>) -> &Self {
+    pub fn note_open_listing(&self, volume_id: impl Into<String>, path: impl Into<PathBuf>) -> &Self {
         use cmdr_fs::ignore_poison::RwLockIgnorePoison;
         self.open_listings.write_ignore_poison().push(OpenListing {
             volume_id: volume_id.into(),
@@ -199,12 +199,12 @@ impl FakeHostPolicy {
     }
 
     /// How many clearance questions this host has been asked.
-    pub(crate) fn call_count(&self) -> usize {
+    pub fn call_count(&self) -> usize {
         self.calls.load(std::sync::atomic::Ordering::SeqCst)
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 impl HostPolicy for FakeHostPolicy {
     fn open_listings(&self) -> Vec<OpenListing> {
         use cmdr_fs::ignore_poison::RwLockIgnorePoison;

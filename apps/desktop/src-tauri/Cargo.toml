@@ -21,12 +21,16 @@ playwright-e2e = ["dep:tauri-plugin-playwright", "cmdr-fs/playwright-e2e"]
 virtual-mtp = ["mtp-rs/virtual-device"]
 # Virtual SMB hosts for E2E testing (injects synthetic network hosts). Never enable in production builds.
 smb-e2e = ["smb2/testing"]
-# Widens test-only scaffolding from `#[cfg(test)]` to `pub`, so the benches (which
-# compile against this crate as an EXTERNAL crate and therefore see neither
-# `#[cfg(test)]` items nor `pub(crate)` ones) can build an index fixture.
-# It's enabled automatically for every dev target and only for those; see the
-# self dev-dependency under `[dev-dependencies]`. Never enable in production builds.
-testing = []
+# The index's test-only surface (`indexing::testing`) plus the bench fixtures:
+# widens test-only scaffolding from `#[cfg(test)]` to `pub`, so a consumer that
+# compiles against this crate as an EXTERNAL one (a bench, or the app once the
+# index is its own crate) can still install a fake host, record events, and reserve
+# a registry slot. `cfg(test)` cannot do that: it is set only while a crate
+# compiles its OWN test target. `tempfile` rides along because
+# `reserve_initializing_index_for_test` returns one.
+# Enabled automatically for every dev target and only for those; see the self
+# dev-dependency under `[dev-dependencies]`. Never enable in production builds.
+testing = ["dep:tempfile", "cmdr-fs/testing"]
 
 [[bin]]
 name = "Cmdr"
@@ -45,6 +49,10 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+# Optional, and switched on ONLY by the `testing` feature: the index's
+# `reserve_initializing_index_for_test` hands a `TempDir` back to its caller, so
+# the type is part of that gated surface and can't live in dev-dependencies.
+tempfile = { version = "3", optional = true }
 # Filesystem vocabulary and host primitives shared across the workspace: the
 # `Volume` trait and its data types, `FileEntry`, the typed error classification,
 # thread QoS, process memory, poison-free locking. No Tauri, no index.
@@ -364,7 +372,6 @@ criterion = { version = "0.8.1", features = ["html_reports"] }
 env_logger = "0.11.10"
 # For test-only cryptographic key generation (compatible with ed25519-dalek's rand_core 0.6)
 rand_core = { version = "0.6", features = ["getrandom"] }
-tempfile = "3"
 # Archive-browsing test fixtures build compressed tars and 7z archives in-memory
 # (no checked-in blobs), so tests need the ENCODERS the shipped decode-only path
 # omits. `zstd` (C, dev-only — already in the graph via rc-zip) encodes `.tar.zst`

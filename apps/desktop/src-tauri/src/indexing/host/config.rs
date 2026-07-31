@@ -33,35 +33,35 @@ use crate::media_index::network::config::NetworkEnrichConfig;
 
 /// Everything the index needs from the product.
 #[derive(Clone, Debug, Default)]
-pub(crate) struct IndexConfig {
+pub struct IndexConfig {
     /// Where every index database lives. One directory for the drive index, the
     /// media index, and the importance index, resolved once by the app so dev,
     /// production, and each worktree stay separated.
-    pub(crate) data_dir: PathBuf,
+    pub data_dir: PathBuf,
     /// The media index's user-controlled policy.
-    pub(crate) media: MediaConfig,
+    pub media: MediaConfig,
 }
 
 /// The media index's share of [`IndexConfig`]: what the user turned on, how wide,
 /// how hard, and which folders they opted in or out.
 #[derive(Clone, Debug)]
-pub(crate) struct MediaConfig {
+pub struct MediaConfig {
     /// The master toggle. Off by default; everything below is inert while it's off.
-    pub(crate) enabled: bool,
+    pub enabled: bool,
     /// How much of a volume is eligible for enrichment.
-    pub(crate) scope: IndexScope,
+    pub scope: IndexScope,
     /// The importance score a folder must reach for its images to enrich under the
     /// by-importance scope.
-    pub(crate) importance_threshold: f64,
+    pub importance_threshold: f64,
     /// Concurrent enrichment workers. Clamped to `1..=CPU count` on the way in, so a
     /// hand-edited settings file can't over-provision.
-    pub(crate) parallelism: usize,
+    pub parallelism: usize,
     /// Whether the CLIP write path and semantic search are on. On unless explicitly
     /// turned off; inert anyway with no model installed.
-    pub(crate) semantic_search_enabled: bool,
+    pub semantic_search_enabled: bool,
     /// Per-volume and per-folder opt-ins, overrides, and exclusions for network
     /// enrichment.
-    pub(crate) network: NetworkEnrichConfig,
+    pub network: NetworkEnrichConfig,
 }
 
 impl Default for MediaConfig {
@@ -112,7 +112,7 @@ pub(crate) fn data_dir() -> Result<PathBuf, DataDirUnset> {
 
 /// No data directory has been configured, so nothing can be opened on disk.
 #[derive(Debug)]
-pub(crate) struct DataDirUnset;
+pub struct DataDirUnset;
 
 impl std::fmt::Display for DataDirUnset {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -124,31 +124,24 @@ impl std::fmt::Display for DataDirUnset {
 /// config when the guard drops.
 ///
 /// The slot is process-wide, so hold [`test_lock`] first.
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 #[must_use = "the config is restored when the guard drops"]
-pub(crate) fn install_data_dir_for_test(dir: impl AsRef<std::path::Path>) -> TestConfigGuard {
+pub fn install_data_dir_for_test(dir: impl AsRef<std::path::Path>) -> TestConfigGuard {
     let previous = DATA_DIR.write_ignore_poison().replace(dir.as_ref().to_path_buf());
     TestConfigGuard { previous }
 }
 
 /// Restores the previous config on drop, including on a panic.
-#[cfg(test)]
-pub(crate) struct TestConfigGuard {
+#[cfg(any(test, feature = "testing"))]
+pub struct TestConfigGuard {
     previous: Option<PathBuf>,
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 impl Drop for TestConfigGuard {
     fn drop(&mut self) {
         *DATA_DIR.write_ignore_poison() = self.previous.take();
     }
-}
-
-/// Serializes tests that swap the config. Take it BEFORE [`install_data_dir_for_test`].
-#[cfg(test)]
-pub(crate) fn test_lock() -> std::sync::MutexGuard<'static, ()> {
-    static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
-    LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
 #[cfg(test)]
@@ -159,7 +152,7 @@ mod tests {
     /// handing back `""` and scattering index DBs through the working directory.
     #[test]
     fn an_unset_data_dir_is_an_error_not_an_empty_path() {
-        let _serialized = test_lock();
+        let _serialized = crate::indexing::handle::test_lock();
         assert!(data_dir().is_err());
     }
 
@@ -167,7 +160,7 @@ mod tests {
     /// the value the index reads back, with nothing consulting a settings file.
     #[test]
     fn a_configured_value_is_what_the_index_reads() {
-        let _serialized = test_lock();
+        let _serialized = crate::indexing::handle::test_lock();
         let _installed = install_data_dir_for_test("/tmp/cmdr-config-round-trip");
         assert_eq!(
             data_dir().expect("configured"),

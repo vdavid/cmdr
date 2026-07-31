@@ -40,21 +40,21 @@ use crate::indexing::events::Diagnostic;
 /// kind → network mapping is platform-specific and the probe itself can block on a
 /// wedged mount.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct MountFacts {
+pub struct MountFacts {
     /// The mount is a network filesystem type. The local scanner must never walk
     /// one: it would traverse a share over syscalls that block for minutes.
-    pub(crate) is_network: bool,
+    pub is_network: bool,
     /// Inode identity on this mount is stable enough to match a file across a
     /// rename. False on FAT/exFAT, whose inodes are derived rather than stored, so
     /// the rename pre-pass must not trust them.
-    pub(crate) inodes_trustworthy: bool,
+    pub inodes_trustworthy: bool,
 }
 
 impl MountFacts {
     /// What to assume when the probe won't answer. A mount that can't be probed in
     /// time is a hung one, and treating it as network keeps the local scanner off
     /// it; inode trust is moot on a path we then refuse to walk.
-    pub(crate) const UNPROBEABLE: Self = Self {
+    pub const UNPROBEABLE: Self = Self {
         is_network: true,
         inodes_trustworthy: true,
     };
@@ -62,16 +62,16 @@ impl MountFacts {
 
 /// One MTP object, resolved from the bare PTP handle a device change event carries.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct ResolvedMtpObject {
+pub struct ResolvedMtpObject {
     /// Storage-relative path with a leading `/`, already in the index path space
     /// (an MTP index is rooted at the storage root).
-    pub(crate) path: PathBuf,
+    pub path: PathBuf,
     /// Whether the object is a directory.
-    pub(crate) is_directory: bool,
+    pub is_directory: bool,
     /// Logical size in bytes; `None` for directories.
-    pub(crate) size: Option<u64>,
+    pub size: Option<u64>,
     /// Modified time as a Unix timestamp, when the device reports one.
-    pub(crate) modified_at: Option<u64>,
+    pub modified_at: Option<u64>,
 }
 
 /// Why the host couldn't hand the index a direct smb2 session.
@@ -79,7 +79,7 @@ pub(crate) struct ResolvedMtpObject {
 /// Typed rather than a message, so the gate's own refusal reason maps across
 /// without anyone string-matching an upgrade failure.
 #[derive(Debug)]
-pub(crate) enum SmbUpgradeRefusal {
+pub enum SmbUpgradeRefusal {
     /// The share needs credentials the user hasn't supplied. The frontend's
     /// "Sign in" flow owns collecting them; indexing stays off until it does.
     CredentialsNeeded,
@@ -89,14 +89,14 @@ pub(crate) enum SmbUpgradeRefusal {
 }
 
 /// The future [`VolumeProvider::ensure_direct_smb`] returns.
-pub(crate) type EnsureDirectSmbFut<'a> = Pin<Box<dyn Future<Output = Result<(), SmbUpgradeRefusal>> + Send + 'a>>;
+pub type EnsureDirectSmbFut<'a> = Pin<Box<dyn Future<Output = Result<(), SmbUpgradeRefusal>> + Send + 'a>>;
 
 /// The future [`VolumeProvider::resolve_mtp_object`] returns. Boxed because the
 /// provider is used as `dyn`.
-pub(crate) type ResolveMtpFut<'a> = Pin<Box<dyn Future<Output = Result<ResolvedMtpObject, Diagnostic>> + Send + 'a>>;
+pub type ResolveMtpFut<'a> = Pin<Box<dyn Future<Output = Result<ResolvedMtpObject, Diagnostic>> + Send + 'a>>;
 
 /// What the index asks the host about mounted storage.
-pub(crate) trait VolumeProvider: Send + Sync {
+pub trait VolumeProvider: Send + Sync {
     /// The volume registered under `volume_id`, or `None` when nothing is mounted
     /// under that id right now (never mounted, ejected, or a share that dropped).
     ///
@@ -155,7 +155,7 @@ static INSTALLED: RwLock<Option<Arc<dyn VolumeProvider>>> = RwLock::new(None);
 
 /// A [`set_volume_provider`] call that arrived after one was already installed.
 #[derive(Debug)]
-pub(crate) struct VolumeProviderAlreadySet;
+pub struct VolumeProviderAlreadySet;
 
 /// Tells the index which host to ask about mounted volumes. Call once at startup.
 /// A second call keeps the first provider rather than swapping the registry under
@@ -184,32 +184,25 @@ pub(crate) fn current() -> Arc<dyn VolumeProvider> {
 /// The slot is process-wide, so anything using this must hold [`test_lock`] first:
 /// nextest runs a process per test, but a plain `cargo test` doesn't, and two tests
 /// swapping the same slot concurrently would see each other's volumes.
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 #[must_use = "the provider is restored when the guard drops"]
-pub(crate) fn install_for_test(provider: Arc<dyn VolumeProvider>) -> TestProviderGuard {
+pub fn install_for_test(provider: Arc<dyn VolumeProvider>) -> TestProviderGuard {
     let previous = INSTALLED.write_ignore_poison().replace(provider);
     TestProviderGuard { previous }
 }
 
 /// Restores the previously-installed provider on drop, including on a panic, so
 /// one failing test can't leave every later one looking at its fake volumes.
-#[cfg(test)]
-pub(crate) struct TestProviderGuard {
+#[cfg(any(test, feature = "testing"))]
+pub struct TestProviderGuard {
     previous: Option<Arc<dyn VolumeProvider>>,
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 impl Drop for TestProviderGuard {
     fn drop(&mut self) {
         *INSTALLED.write_ignore_poison() = self.previous.take();
     }
-}
-
-/// Serializes tests that swap the provider. Take it BEFORE [`install_for_test`].
-#[cfg(test)]
-pub(crate) fn test_lock() -> std::sync::MutexGuard<'static, ()> {
-    static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
-    LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
 /// A host with nothing mounted.
@@ -218,7 +211,7 @@ pub(crate) fn test_lock() -> std::sync::MutexGuard<'static, ()> {
 /// handles, so an uninstalled provider degrades to the same behavior as an ejected
 /// drive instead of panicking. Tests that need volumes install a
 /// [`FakeVolumeProvider`].
-pub(crate) struct NoVolumes;
+pub struct NoVolumes;
 
 impl VolumeProvider for NoVolumes {
     fn get(&self, _volume_id: &str) -> Option<Arc<dyn Volume>> {
@@ -258,42 +251,42 @@ impl VolumeProvider for NoVolumes {
 /// Registrations are per instance, so nothing leaks between tests the way the
 /// process-wide registry does. `mount_facts` reports a plain local disk unless a
 /// test says otherwise.
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 #[derive(Default)]
-pub(crate) struct FakeVolumeProvider {
+pub struct FakeVolumeProvider {
     volumes: RwLock<std::collections::HashMap<String, Arc<dyn Volume>>>,
     network_mounts: RwLock<std::collections::HashSet<PathBuf>>,
     untrusted_inode_mounts: RwLock<std::collections::HashSet<PathBuf>>,
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 impl FakeVolumeProvider {
     /// An empty host, wrapped for injection.
-    pub(crate) fn shared() -> Arc<Self> {
+    pub fn shared() -> Arc<Self> {
         Arc::new(Self::default())
     }
 
     /// Mount `volume` under `volume_id`.
-    pub(crate) fn register(&self, volume_id: impl Into<String>, volume: Arc<dyn Volume>) -> &Self {
+    pub fn register(&self, volume_id: impl Into<String>, volume: Arc<dyn Volume>) -> &Self {
         self.volumes.write_ignore_poison().insert(volume_id.into(), volume);
         self
     }
 
     /// Make `mount_facts` report a network filesystem for paths under `root`.
-    pub(crate) fn mark_network(&self, root: impl Into<PathBuf>) -> &Self {
+    pub fn mark_network(&self, root: impl Into<PathBuf>) -> &Self {
         self.network_mounts.write_ignore_poison().insert(root.into());
         self
     }
 
     /// Make `mount_facts` report untrustworthy inodes for paths under `root`, the
     /// way a real FAT/exFAT mount does.
-    pub(crate) fn mark_inodes_untrusted(&self, root: impl Into<PathBuf>) -> &Self {
+    pub fn mark_inodes_untrusted(&self, root: impl Into<PathBuf>) -> &Self {
         self.untrusted_inode_mounts.write_ignore_poison().insert(root.into());
         self
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 impl VolumeProvider for FakeVolumeProvider {
     fn get(&self, volume_id: &str) -> Option<Arc<dyn Volume>> {
         self.volumes.read_ignore_poison().get(volume_id).map(Arc::clone)
