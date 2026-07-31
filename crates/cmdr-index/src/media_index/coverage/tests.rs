@@ -464,7 +464,7 @@ fn folder_coverage_rolls_up_eligible_and_accounted_over_subtrees() {
     seed_accounted_if_absent(vid, [("/a/b".to_string(), 1u64)].into_iter().collect());
 
     let folders = vec!["/a".to_string(), "/a/b".to_string(), "/a/c".to_string()];
-    let cov = folder_coverage(vid, &folders);
+    let cov = folder_coverage(Path::new("/nonexistent"), vid, &folders);
     assert_eq!(
         cov[0],
         FolderCoverageCounts {
@@ -499,10 +499,8 @@ fn folder_coverage_is_zero_for_an_unseeded_unbuilt_volume() {
     let vid = "coverage-test-folder-coverage-empty";
     invalidate(vid);
     invalidate_accounted(vid);
-    // Accounted must be seeded (as the command does) before reading; eligible has no
-    // index, so it stays zero.
-    ensure_accounted_seeded(vid, Path::new("/nonexistent/media.db"));
-    let cov = folder_coverage(vid, &["/anything".to_string()]);
+    // The read seeds the accounted side itself; eligible has no index, so it stays zero.
+    let cov = folder_coverage(Path::new("/nonexistent"), vid, &["/anything".to_string()]);
     assert_eq!(
         cov,
         vec![FolderCoverageCounts {

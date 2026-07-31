@@ -32,7 +32,7 @@ same transaction as the table replace). The incremental path (`write_weights_inc
 stamps it. So "generation 0" does NOT mean "no weights": a store maintained only by incremental rescores holds hundreds
 of thousands of usable weight rows at generation 0, and a schema-recreated store sits at generation 0 until its first
 full pass. Consumers that must tell "genuinely unscored" from "scored but no generation" key on the weight-row count,
-not the generation (media's `coverage::importance_scored`).
+not the generation (`ImportanceIndex::is_scored`).
 
 ## The initial full pass (the fresh/recreated-store trigger)
 

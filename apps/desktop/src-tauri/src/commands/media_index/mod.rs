@@ -50,13 +50,13 @@ pub use thumbnail::*;
 /// Kick a coalesced enrichment pass for every ready volume, resolving the managed
 /// scheduler first.
 ///
-/// The app-side half of `media_index::scheduler::kick_all_ready_passes_with`: the
-/// scheduler lives in Tauri state, which the subsystem can't reach. A no-op before
-/// the scheduler is managed (an early call at startup).
+/// The app-side half of `MediaScheduler::kick_all_ready_passes`: the scheduler lives in
+/// Tauri state, which the subsystem can't reach. A no-op before the scheduler is managed
+/// (an early call at startup).
 pub(crate) fn kick_all_ready_passes_for(app: &tauri::AppHandle) {
     use tauri::Manager;
     if let Some(scheduler) = app.try_state::<std::sync::Arc<cmdr_index::media_index::scheduler::MediaScheduler>>() {
-        cmdr_index::media_index::scheduler::kick_all_ready_passes_with(scheduler.inner());
+        scheduler.inner().kick_all_ready_passes();
     }
 }
 

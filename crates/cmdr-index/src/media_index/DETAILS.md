@@ -143,7 +143,7 @@ disagree.
 
 ### The importance "has scored" detection
 
-`media_index` decides "has importance scored this volume?" via `coverage::importance_scored` — used by BOTH
+`media_index` decides "has importance scored this volume?" via `ImportanceIndex::is_scored` — used by BOTH
 `MediaScheduler::folder_scores` and `coverage::importance_scores`. It returns `true` when a full pass stamped a
 `recompute_generation` OR any weight row exists (`ImportanceIndex::scored_folder_count() > 0`, a cheap `COUNT(*)`). The
 generation-only check that predated this reported "never scored" for two real stores that carry perfectly usable
@@ -227,7 +227,7 @@ together by the folder-coverage command but live apart.
 
 - **Seed** once from a `SELECT path, state FROM media_status` scan bucketed by parent dir. This happens on the ONE
   writer thread as its FIRST action (`writer_loop` calls `coverage::seed_accounted_from_conn` before processing any
-  message), OR lazily via `ensure_accounted_seeded` when the folder-coverage command runs before the writer spawned this
+  message), OR lazily via `ensure_accounted_seeded`, which `coverage::folder_coverage` runs itself when the writer hasn't spawned this
   session (feature just enabled / volume never enriched). Both go through `seed_accounted_if_absent` (insert-if-absent).
 - **Increment** on a genuinely-new completion: `apply_upsert` does a cheap PK existence check (`SELECT EXISTS(…)`)
   inside its transaction and returns whether it INSERTED vs updated; the writer bumps `accounted[parent_dir] += 1` only
@@ -271,8 +271,9 @@ volume; a network volume's mount-root mapping is a later slice, so the file over
   staleness).
 - `media_index_folder_coverage(volume_id, folder_paths) -> Vec<FolderCoverage>`, one per input folder in order.
   `FolderCoverage { path, eligible, accounted }` (subtree totals). The frontend derives the two-state folder badge
-  (`accounted == eligible` vs `<`, no badge when `eligible == 0`) and the `accounted/eligible` tooltip. It calls
-  `ensure_accounted_seeded` first (in case the writer hasn't spawned), then reads the cached rollups.
+  (`accounted == eligible` vs `<`, no badge when `eligible == 0`) and the `accounted/eligible` tooltip. It is one
+  `coverage::folder_coverage(data_dir, volume_id, folders)` call, which seeds the accounted aggregate itself if the
+  writer hasn't spawned, then reads the cached rollups.
 
 Both feature-off-short-circuit (`notApplicable` for every file, zeros for every folder), matching the other commands.
 

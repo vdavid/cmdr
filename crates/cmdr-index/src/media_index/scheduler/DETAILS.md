@@ -9,11 +9,12 @@ Subsystem-wide context (the port rationale, the GC safety argument, the scope mo
 `scheduler/` splits the coalesced-pass machinery by responsibility: `mod.rs` holds the `MediaScheduler` struct + its
 pass bodies (`run_pass_blocking`, `run_network_pass_blocking`, `folder_scores`, `retro_delete_excluded_folder`);
 `coordinator.rs` holds the pure, testable `PassCoordinator` (one pass per volume, coalesced re-run — covered by
-`coalescing_tests`); `lifecycle.rs` holds the free-function scheduling/wiring layer (`start`, `kick_all_ready_passes`,
+`coalescing_tests`); `lifecycle.rs` holds the scheduling/wiring layer (`start`, `kick_all_ready_passes_with`,
 `kick_network_pass`, `wire_volume`, `spawn_pass`, `local_should_enrich`, `pass_coverage`, `PassKind`); `enrich.rs` holds
 the walk + the shared enrich/GC core; `pool.rs` the parallel workers; `live.rs` the live-follow tick; `reclaim.rs` the
-user-explicit prune. The `kick_*`/`start` entry points re-export through `mod.rs` so their public paths stay
-`scheduler::start` etc.
+user-explicit prune. The starting and kicking entry points are `MediaScheduler::{start, kick_all_ready_passes,
+kick_network_pass}` in `mod.rs`, one-liners over `lifecycle.rs`'s private halves, so a host holding the scheduler calls
+methods on it rather than passing it back into a module.
 
 ## The lifecycle bus
 
@@ -116,7 +117,7 @@ scheduler:
   image stays in the GC `current` set, so a below-threshold folder's rows are never wiped — only vanished files are
   GC'd.
 - **`folder_scores` returns `Option`** — `None` when importance genuinely has no data for the volume (fresh, offline,
-  importance disabled). "Has data" is `coverage::importance_scored` (`../DETAILS.md` § The importance "has scored"
+  importance disabled). "Has data" is `ImportanceIndex::is_scored` (`../DETAILS.md` § The importance "has scored"
   detection). Floored junk (`node_modules`, caches, hidden/system) has no importance row at all, so it's excluded at any
   threshold.
 

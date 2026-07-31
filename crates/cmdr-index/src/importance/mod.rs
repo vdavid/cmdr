@@ -38,7 +38,7 @@ pub mod tooling;
 mod fixtures;
 
 pub use read::{FloorReason, ImportanceIndex, ScoredWeight, WeightLookup};
-pub use scheduler::signal_availability;
+pub use scheduler::{is_background_scored, signal_availability};
 pub use scorer::{
     Explanation, FolderSignals, PathClass, Score, SignalContribution, SignalKind, SignalSet, Weights, explain, score,
 };

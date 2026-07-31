@@ -227,6 +227,23 @@ impl ImportanceIndex {
         self.with_conn(read_folder_count)
     }
 
+    /// Whether importance genuinely has data for this volume — the "has it scored?"
+    /// check every consumer gates on before treating a missing weight as meaningful.
+    ///
+    /// Keys on live weight rows, NOT solely the `recompute_generation` stamp: a store
+    /// maintained only by INCREMENTAL rescores carries hundreds of thousands of weight
+    /// rows but no generation (the incremental path deliberately never bumps it), and a
+    /// schema-recreated store starts at generation 0 until its first FULL pass stamps
+    /// one. Gating on the generation alone reads such a volume as "never scored" forever
+    /// and reports "0 covered" at every threshold, even though the weights are perfectly
+    /// usable (`DETAILS.md` § Generation-stamp semantics). So: scored when a full pass
+    /// stamped a generation OR any weight row exists. Reuses the cheap
+    /// [`scored_folder_count`](ImportanceIndex::scored_folder_count) probe (a
+    /// `COUNT(*)`, short-circuits to 0 for a missing DB) — don't add a second probe.
+    pub fn is_scored(&self) -> bool {
+        self.recompute_generation().unwrap_or(0) > 0 || self.scored_folder_count().unwrap_or(0) > 0
+    }
+
     /// The typed [`WeightLookup`] for one folder — the documented lookup surface.
     ///
     /// Resolves a stored row to [`WeightLookup::Scored`]; for a path with NO row, it

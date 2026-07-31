@@ -15,7 +15,7 @@ use tauri::{AppHandle, Manager};
 use super::kick_all_ready_passes_for;
 use cmdr_index::media_index::gate;
 use cmdr_index::media_index::network::config as network_config;
-use cmdr_index::media_index::scheduler::{self, MediaScheduler};
+use cmdr_index::media_index::scheduler::MediaScheduler;
 
 /// Set (or clear) a volume's opt-in for background network (SMB) image enrichment
 /// (network enrichment). Off by default: turning on the master toggle does NOT auto-enrich
@@ -30,7 +30,7 @@ pub fn media_index_set_network_volume_enabled(app: AppHandle, volume_id: String,
         && gate::is_enabled()
         && let Some(scheduler) = app.try_state::<Arc<MediaScheduler>>()
     {
-        scheduler::kick_network_pass(Arc::clone(scheduler.inner()), volume_id);
+        scheduler.inner().kick_network_pass(volume_id);
     }
 }
 
@@ -47,7 +47,7 @@ pub fn media_index_set_always_index_volume(app: AppHandle, volume_id: String, al
         && network_config::is_opted_in(&volume_id)
         && let Some(scheduler) = app.try_state::<Arc<MediaScheduler>>()
     {
-        scheduler::kick_network_pass(Arc::clone(scheduler.inner()), volume_id);
+        scheduler.inner().kick_network_pass(volume_id);
     }
 }
 
@@ -178,7 +178,7 @@ pub fn media_index_set_semantic_search_enabled(app: AppHandle, enabled: bool) {
     // Only worth a pass if a model is actually installed (else `current_stamp` is `None`
     // and the pass would walk the index to embed nothing).
     let model_installed = crate::config::resolved_app_data_dir(&app)
-        .map(|dir| cmdr_index::media_index::clip::install::is_installed(&dir))
+        .map(|dir| cmdr_index::media_index::clip::install::state(&dir).installed)
         .unwrap_or(false);
     if model_installed {
         kick_all_ready_passes_for(&app);

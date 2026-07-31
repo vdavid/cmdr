@@ -346,7 +346,7 @@ pub(crate) fn seed_accounted_from_conn(volume_id: &str, conn: &Connection) {
 /// rollups, in case the volume's writer hasn't spawned this session (feature just
 /// enabled, or the volume never enriched). A missing `media.db` seeds an empty map (no
 /// enriched rows), never creates the file.
-pub fn ensure_accounted_seeded(volume_id: &str, db_path: &Path) {
+pub(crate) fn ensure_accounted_seeded(volume_id: &str, db_path: &Path) {
     if ACCOUNTED.lock_ignore_poison().contains_key(volume_id) {
         return;
     }
@@ -469,11 +469,16 @@ pub struct FolderCoverageCounts {
 }
 
 /// The eligible + accounted subtree totals for `folders` on `volume_id`, one per input
-/// folder in order — the folder-coverage command's core. The caller must have seeded the
-/// accounted aggregate first ([`ensure_accounted_seeded`]); the eligible side builds
-/// itself from the drive index on demand. Both come from cached rollups, never a
-/// `media_status` scan per query.
-pub fn folder_coverage(volume_id: &str, folders: &[String]) -> Vec<FolderCoverageCounts> {
+/// folder in order — everything the folder-coverage badges need, in one call.
+///
+/// Both sides come from cached rollups, never a `media_status` scan per query: the
+/// eligible side builds itself from the drive index on demand, and the accounted side is
+/// seeded here from `data_dir`'s `media.db` if this volume's writer hasn't spawned yet
+/// this session (the feature was just enabled, or the volume never enriched). Folder
+/// paths are in the volume's INDEX-path space (== the OS path for a local volume),
+/// matching the stored rows and the eligible cache.
+pub fn folder_coverage(data_dir: &Path, volume_id: &str, folders: &[String]) -> Vec<FolderCoverageCounts> {
+    ensure_accounted_seeded(volume_id, &super::store::media_db_path(data_dir, volume_id));
     let eligible = eligible_subtrees(volume_id, folders);
     let accounted = accounted_subtrees(volume_id, folders);
     eligible
@@ -642,30 +647,13 @@ pub fn covered_in_scope(
 pub fn importance_scores(data_dir: &Path, volume_id: &str) -> Option<HashMap<String, f64>> {
     use crate::importance::{ImportanceIndex, SignalSet};
     let index = ImportanceIndex::open(data_dir, volume_id, SignalSet::all());
-    if !importance_scored(&index) {
+    if !index.is_scored() {
         return None;
     }
     match index.above_threshold(0.0) {
         Ok(weights) => Some(weights.into_iter().map(|w| (w.path, w.score.value())).collect()),
         Err(_) => None,
     }
-}
-
-/// Whether importance genuinely has data for this volume — the "has it scored?"
-/// check both the scheduler's `folder_scores` and [`importance_scores`] gate on.
-///
-/// Keys on live weight rows, NOT solely the `recompute_generation` stamp: a store
-/// maintained only by INCREMENTAL rescores carries hundreds of thousands of weight
-/// rows but no generation (the incremental path deliberately never bumps it), and a
-/// schema-recreated store starts at generation 0 until its first FULL pass stamps
-/// one. Gating on the generation alone reads such a volume as "never scored" forever
-/// and reports "0 covered" at every threshold, even though the weights are perfectly
-/// usable (`importance/DETAILS.md` § Generation-stamp semantics). So: scored when a
-/// full pass stamped a generation OR any weight row exists. Reuses the cheap
-/// `scored_folder_count` probe (a `COUNT(*)`, short-circuits to 0 for a missing DB) —
-/// don't add a second method.
-pub fn importance_scored(index: &crate::importance::ImportanceIndex) -> bool {
-    index.recompute_generation().unwrap_or(0) > 0 || index.scored_folder_count().unwrap_or(0) > 0
 }
 
 #[cfg(test)]

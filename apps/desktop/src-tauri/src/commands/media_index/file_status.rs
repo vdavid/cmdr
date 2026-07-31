@@ -138,26 +138,12 @@ fn classify_file_statuses(
     stamp: Option<&str>,
     is_enriching: bool,
 ) -> Vec<FileIndexStatus> {
-    use cmdr_index::media_index::store::{MediaStatusRow, media_db_path, open_read_connection, read_status};
-    use std::collections::HashMap;
-
     // The qualifying images (sibling-aware, with live `(mtime, size)`) for exactly the
     // dirs the requested paths live in — a bounded, scoped index walk.
     let qualifying = read::qualifying_images_for_paths(volume_id, &paths);
 
     // Stored rows for exactly the requested paths (bounded; a per-path point lookup).
-    let db_path = media_db_path(data_dir, volume_id);
-    let stored: HashMap<String, MediaStatusRow> = if db_path.exists() {
-        match open_read_connection(&db_path) {
-            Ok(conn) => paths
-                .iter()
-                .filter_map(|p| read_status(&conn, p).ok().flatten().map(|row| (p.clone(), row)))
-                .collect(),
-            Err(_) => HashMap::new(),
-        }
-    } else {
-        HashMap::new()
-    };
+    let stored = read::MediaIndex::open(data_dir, volume_id).status_for_paths(&paths);
 
     // Coverage inputs for the pending/excluded split (only consulted for un-enriched
     // images), threshold-filtered exactly as the enrichment gate sees them.
@@ -309,10 +295,7 @@ pub async fn media_index_folder_coverage(
     let vid = volume_id.clone();
 
     tauri::async_runtime::spawn_blocking(move || {
-        let db_path = store::media_db_path(&data_dir, &vid);
-        // Seed the accounted aggregate in case the writer hasn't spawned this session.
-        coverage::ensure_accounted_seeded(&vid, &db_path);
-        let counts = coverage::folder_coverage(&vid, &folder_paths);
+        let counts = coverage::folder_coverage(&data_dir, &vid, &folder_paths);
         folder_paths
             .into_iter()
             .zip(counts)

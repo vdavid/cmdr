@@ -66,7 +66,6 @@ use lifecycle::{PassOutcome, should_retry_when_idle};
 // `local_should_enrich` is the enrichment coverage gate; the file-status command reuses
 // it (via this re-export) to tell `pending` from `excluded` for an un-enriched image.
 pub use lifecycle::local_should_enrich;
-pub use lifecycle::{kick_all_ready_passes_with, kick_network_pass, start};
 // Re-exported into the scheduler namespace so the sibling `kick_tests` module reaches
 // them through its `use super::*` (they're otherwise only called within `lifecycle`).
 #[cfg(test)]
@@ -199,9 +198,39 @@ impl MediaScheduler {
         self.deferred_for_importance.lock_ignore_poison().remove(volume_id)
     }
 
+    /// Start the enrichment scheduler and hand the host the value to hold: seeds the
+    /// master toggle + network opt-in/override state from the applied config, registers
+    /// the memory-watchdog stop hook, subscribes to volume registrations, sweeps the
+    /// index registry for already-ready volumes, and wires each volume's
+    /// scan-completion subscription by kind (local + opted-in SMB enrich; MTP never).
+    ///
+    /// `None` when there's no data dir to run under, which is a host that hasn't
+    /// applied its config yet. Never `manage`s or registers itself anywhere: the host
+    /// owns the returned value.
+    pub fn start() -> Option<Arc<Self>> {
+        lifecycle::start()
+    }
+
     /// The app data dir this scheduler resolves `media.db` paths under.
     pub fn data_dir(&self) -> &std::path::Path {
         &self.data_dir
+    }
+
+    /// Kick a coalesced enrichment pass for every ready volume: the entry point behind
+    /// the master toggle, a persisted-on restart, a threshold decrease, and a fresh CLIP
+    /// model install. Maps each ready volume's kind to its pass (local, SMB network which
+    /// self-checks opt-in; MTP and external drives are never swept) and folds a kick that
+    /// races a running pass into one re-run. Each pass self-gates on the master toggle,
+    /// so an errant kick while disabled is a cheap no-op.
+    pub fn kick_all_ready_passes(self: &Arc<Self>) {
+        lifecycle::kick_all_ready_passes_with(self);
+    }
+
+    /// Kick an immediate network pass for one volume, for when the user opts a volume in
+    /// and enrichment shouldn't wait for the next scan completion. Coalesces with any
+    /// running pass.
+    pub fn kick_network_pass(self: &Arc<Self>, volume_id: String) {
+        lifecycle::kick_network_pass(Arc::clone(self), volume_id);
     }
 
     /// Whether an enrichment pass is currently running for `volume_id`. The honest
@@ -360,8 +389,8 @@ impl MediaScheduler {
         // "Importance unavailable" (missing DB / offline / genuinely unscored) ⇒
         // `None`. Keys on live weight rows, not solely the generation stamp — an
         // incrementally-maintained or schema-recreated store has usable weights at
-        // generation 0 (`super::coverage::importance_scored`).
-        if !super::coverage::importance_scored(&index) {
+        // generation 0 (`ImportanceIndex::is_scored`).
+        if !index.is_scored() {
             return None;
         }
         match index.above_threshold(threshold) {

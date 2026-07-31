@@ -347,7 +347,7 @@ pub async fn execute_search_photos<R: Runtime>(app: &AppHandle<R>, params: &Valu
     }
 
     let data_dir = crate::config::resolved_app_data_dir(app).map_err(ToolError::internal)?;
-    let model_installed = cmdr_index::media_index::clip::install::is_installed(&data_dir);
+    let model_installed = cmdr_index::media_index::clip::install::state(&data_dir).installed;
 
     let (mode, degraded_to_ocr) = match resolve_effective_mode(requested, model_installed) {
         ModeResolution::SemanticModelMissing => {

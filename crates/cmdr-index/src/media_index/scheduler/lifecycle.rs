@@ -89,10 +89,9 @@ pub(super) fn pass_coverage(
     }
 }
 
-/// Kick a coalesced pass for every ready volume: the user-action entry point behind
-/// the master toggle, a persisted-on restart, and a threshold decrease. The caller
-/// holds the scheduler (the app keeps it in Tauri state), so nothing here needs an
-/// app handle. Iterates
+/// Kick a coalesced pass for every ready volume, behind
+/// [`MediaScheduler::kick_all_ready_passes`]. The caller holds the scheduler, so
+/// nothing here needs a host handle. Iterates
 /// [`crate::indexing::lifecycle::state::ready_volumes_with_kind`] and spawns the kind-mapped pass
 /// (Local → local, SMB → network which self-checks opt-in, MTP → never). The
 /// [`PassCoordinator`] folds a kick that races a running pass into one re-run, and
@@ -100,7 +99,7 @@ pub(super) fn pass_coverage(
 /// cheap no-op. Unconditional by design: staleness makes a redundant pass a fast
 /// no-op, so there's no need to gate per volume (contrast importance, which gates on
 /// "store has no generation").
-pub fn kick_all_ready_passes_with(scheduler: &Arc<MediaScheduler>) {
+pub(super) fn kick_all_ready_passes_with(scheduler: &Arc<MediaScheduler>) {
     kick_ready_passes_from(scheduler, crate::indexing::lifecycle::state::ready_volumes_with_kind());
 }
 
@@ -126,12 +125,9 @@ pub(super) fn kick_ready_passes_from(scheduler: &Arc<MediaScheduler>, ready: Vec
     }
 }
 
-/// Wire the scheduler to the app: seed the master toggle + network opt-in/override
-/// state from settings, register the memory-watchdog stop hook, subscribe to
-/// registrations, sweep the registry for already-ready volumes, and wire each
-/// volume's scan-completion subscription by kind (local + opted-in SMB enrich; MTP
-/// never background-sweeps).
-pub fn start() -> Option<Arc<MediaScheduler>> {
+/// Build and wire the scheduler, behind [`MediaScheduler::start`], which carries the
+/// contract this fulfils.
+pub(super) fn start() -> Option<Arc<MediaScheduler>> {
     // Every policy value the scheduler runs on was applied when the app called
     // `host::config::set_config`; nothing here reads a settings file.
     let data_dir = match crate::indexing::host::config::data_dir() {
@@ -344,10 +340,9 @@ pub(super) fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kin
     });
 }
 
-/// Kick an immediate network pass for a volume (used when the user opts a volume in,
-/// so enrichment starts without waiting for the next scan completion). Coalesces with
-/// any running pass.
-pub fn kick_network_pass(scheduler: Arc<MediaScheduler>, volume_id: String) {
+/// Kick an immediate network pass for a volume, behind
+/// [`MediaScheduler::kick_network_pass`].
+pub(super) fn kick_network_pass(scheduler: Arc<MediaScheduler>, volume_id: String) {
     spawn_pass(scheduler, volume_id, PassKind::Network);
 }
 

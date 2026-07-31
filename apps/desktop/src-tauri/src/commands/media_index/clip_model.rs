@@ -35,13 +35,12 @@ pub async fn media_index_clip_model_status(app: AppHandle) -> Result<ClipModelSt
     let data_dir = crate::config::resolved_app_data_dir(&app)?;
     let supported = crate::ai::is_local_ai_supported();
     tauri::async_runtime::spawn_blocking(move || {
+        let state = clip::install::state(&data_dir);
         Ok(ClipModelStatus {
             supported,
-            installed: clip::install::is_installed(&data_dir),
-            configured: clip::install::CLIP_TOWERS
-                .iter()
-                .all(|t| t.sha256 != clip::install::PLACEHOLDER_SHA),
-            download_bytes: clip::install::total_download_bytes(),
+            installed: state.installed,
+            configured: state.configured,
+            download_bytes: state.download_bytes,
         })
     })
     .await
@@ -60,24 +59,17 @@ pub async fn media_index_download_clip_model(app: AppHandle) -> Result<(), Strin
         return Err("CLIP semantic search needs Apple Silicon".to_string());
     }
     let data_dir = crate::config::resolved_app_data_dir(&app)?;
-    let model_dir = clip::install::clip_model_dir(&data_dir);
-    std::fs::create_dir_all(&model_dir).map_err(|e| format!("create model dir: {e}"))?;
+    // The index decides which artifacts exist and where they land; the app only carries
+    // the bytes. An unpublished model comes back as `NotConfigured`, never a download.
+    let downloads = clip::install::downloads(&data_dir).map_err(|e| e.to_string())?;
 
-    for tower in clip::install::CLIP_TOWERS {
-        if tower.sha256 == clip::install::PLACEHOLDER_SHA {
-            return Err("The CLIP model isn't published yet".to_string());
-        }
-        let zip_path = model_dir.join(tower.artifact);
+    for download in downloads {
         // Fetch (resumable); the shared GET emits generic download-progress events.
-        crate::ai::download::download_file(&app, tower.url, &zip_path, || false).await?;
+        crate::ai::download::download_file(&app, download.url, &download.destination, || false).await?;
         // Verify + unzip OFF the IPC thread (a blocking hash + extract).
-        let (zip, sha, mdir) = (zip_path.clone(), tower.sha256, model_dir.clone());
-        tauri::async_runtime::spawn_blocking(move || {
-            clip::install::install_tower(&zip, sha, &mdir).map_err(|e| e.to_string())
-        })
-        .await
-        .map_err(|e| format!("clip install task panicked: {e}"))??;
-        let _ = std::fs::remove_file(&zip_path);
+        tauri::async_runtime::spawn_blocking(move || download.install().map_err(|e| e.to_string()))
+            .await
+            .map_err(|e| format!("clip install task panicked: {e}"))??;
     }
 
     // Newly installed ⇒ every already-enriched image is CLIP-stale: kick the ready passes so
@@ -102,10 +94,7 @@ pub async fn media_index_delete_clip_model(app: AppHandle) -> Result<(), String>
     // No scheduler yet (nothing enriched) ⇒ just remove any on-disk artifacts.
     let Some(scheduler) = app.try_state::<Arc<MediaScheduler>>() else {
         let data_dir = crate::config::resolved_app_data_dir(&app)?;
-        let model_dir = clip::install::clip_model_dir(&data_dir);
-        if model_dir.exists() {
-            std::fs::remove_dir_all(&model_dir).map_err(|e| format!("delete clip model: {e}"))?;
-        }
+        clip::install::remove(&data_dir).map_err(|e| format!("delete clip model: {e}"))?;
         return Ok(());
     };
     let scheduler = Arc::clone(scheduler.inner());

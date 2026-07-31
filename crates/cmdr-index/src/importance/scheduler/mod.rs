@@ -260,6 +260,20 @@ impl ImportanceScheduler {
     pub fn data_dir(&self) -> &std::path::Path {
         &self.data_dir
     }
+
+    /// Start the folder-importance scheduler and hand the host the value to hold:
+    /// subscribes to volume registrations, sweeps the index registry for already-ready
+    /// volumes, and wires each scored volume's scan-completion + dir-changed
+    /// subscriptions. Local and SMB volumes are background-scored (SMB without
+    /// Spotlight, so its weight redistributes); MTP is an explicit typed exclusion,
+    /// on-demand only.
+    ///
+    /// `None` when there's no data dir to run under, which is a host that hasn't
+    /// applied its config yet. Never registers itself anywhere: the host owns the
+    /// returned value, and `record_visit` resolves it from there.
+    pub fn start() -> Option<Arc<Self>> {
+        build_and_wire()
+    }
 }
 
 #[cfg(test)]
@@ -464,18 +478,12 @@ impl ImportanceScheduler {
     }
 }
 
-/// Wire the scheduler to the app: subscribe to volume registrations, sweep the
-/// registry for already-ready volumes, and wire each scored volume's
-/// scan-completion + dir-changed subscriptions. Called from `setup()` after
-/// `indexing::init`.
-///
-/// Multi-volume + kind-aware (plan M4): Local and SMB volumes are background-scored
-/// (SMB with Spotlight unavailable, so its weight redistributes); MTP is an
-/// explicit typed exclusion (on-demand only). The registration bus catches a share
-/// mounted MID-SESSION; the startup sweep catches volumes already ready at launch —
+/// Build and wire the scheduler, behind [`ImportanceScheduler::start`], which carries
+/// the contract this fulfils. The registration bus catches a share mounted
+/// MID-SESSION; the startup sweep catches volumes already ready at launch —
 /// subscribing to the bus BEFORE the sweep closes the gap so no registration is
 /// missed.
-pub fn start() -> Option<Arc<ImportanceScheduler>> {
+fn build_and_wire() -> Option<Arc<ImportanceScheduler>> {
     let data_dir = match crate::indexing::host::config::data_dir() {
         Ok(d) => d,
         Err(e) => {

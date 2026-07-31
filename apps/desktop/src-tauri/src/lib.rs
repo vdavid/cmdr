@@ -835,7 +835,7 @@ pub fn run() {
             // is Fresh at launch). Independent of whether indexing auto-starts here —
             // the bus fires whenever any scan completes. See
             // `importance/scheduler.rs` and the plan (Decision 4 / 5).
-            if let Some(scheduler) = cmdr_index::importance::scheduler::start() {
+            if let Some(scheduler) = cmdr_index::importance::scheduler::ImportanceScheduler::start() {
                 // Reachable from the IPC layer: `record_visit` resolves it here.
                 app.manage(scheduler);
             }
@@ -846,7 +846,7 @@ pub fn run() {
             // to the same scan-completion bus so images enrich when a local volume's
             // index finishes scanning. Off by default, so no work runs until the
             // toggle is enabled. See `media_index/CLAUDE.md`.
-            if let Some(scheduler) = cmdr_index::media_index::scheduler::start() {
+            if let Some(scheduler) = cmdr_index::media_index::scheduler::MediaScheduler::start() {
                 app.manage(scheduler);
             }
 

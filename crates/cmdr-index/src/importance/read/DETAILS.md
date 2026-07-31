@@ -61,7 +61,7 @@ still good, and only a re-weighting consumer loses the raw vector for that one r
   sums to the stored score. It's the offline-unmounted read made a user-facing feature. Builder and modes:
   `apps/desktop/src-tauri/src/mcp/DETAILS.md` § "Resources" (the `cmdr://importance` builder).
 - **Media-ML enrichment.** It orders its passes by importance and asks "has importance scored this volume?" through the
-  row count, not the generation (`../../media_index/coverage.rs`'s `importance_scored`).
+  row count, not the generation (`ImportanceIndex::is_scored`).
 
 `scored_volume_ids(data_dir)` lists the volume ids with an `importance.db` on disk, root first then the rest sorted. The
 stores outlive their volume's mount by design, so this is the offline-capable roster: no live scheduler, index registry,

@@ -48,7 +48,7 @@ pub(crate) fn open_write_connection(db_path: &Path) -> Result<Connection, MediaS
 
 /// Open a read-only connection with the collation and read pragmas. Never contends
 /// with the writer thread's write lock (WAL). The tables are assumed to exist.
-pub fn open_read_connection(db_path: &Path) -> Result<Connection, MediaStoreError> {
+pub(crate) fn open_read_connection(db_path: &Path) -> Result<Connection, MediaStoreError> {
     let conn = cmdr_fs::sqlite_util::open_read_only(db_path)?;
     register_collation(&conn)?;
     apply_pragmas(&conn, true)?;

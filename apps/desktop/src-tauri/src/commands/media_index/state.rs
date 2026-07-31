@@ -99,7 +99,7 @@ pub(crate) async fn volume_state<R: tauri::Runtime>(
     volume_id: &str,
 ) -> Result<MediaIndexVolumeState, String> {
     let enabled = gate::is_enabled();
-    // The scheduler is `app.manage`d only once `media_index::scheduler::start` ran; a
+    // The scheduler is `app.manage`d only once `MediaScheduler::start` ran; a
     // missing state (e.g. an early call) honestly reads as "not enriching".
     let scheduler = app.try_state::<Arc<MediaScheduler>>().map(|s| Arc::clone(s.inner()));
     let indexing = scheduler.as_ref().is_some_and(|s| s.is_enriching(volume_id));
@@ -134,8 +134,7 @@ pub(crate) async fn volume_state<R: tauri::Runtime>(
             // generation), so the deferred state can't disagree with the scheduler.
             let importance_scored = {
                 use cmdr_index::importance::{ImportanceIndex, SignalSet};
-                let index = ImportanceIndex::open(&data_dir, &vid, SignalSet::all());
-                coverage::importance_scored(&index)
+                ImportanceIndex::open(&data_dir, &vid, SignalSet::all()).is_scored()
             };
             // The scope- and threshold-aware split (`None` unless the volume is
             // reclaim-eligible AND the partition is safe — the SAME single source as the

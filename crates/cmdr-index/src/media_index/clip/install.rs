@@ -30,23 +30,23 @@ pub(crate) const CLIP_MODEL_ID: &str = "openai-clip-vit-b32-img8p";
 /// The artifacts must be uploaded to `url` (David-only — agents never upload). Until an
 /// artifact is live at its URL, a download fails and the feature stays gated off; the
 /// pinned hash still guarantees that whatever downloads is exactly the converted bytes.
-pub struct ClipTowerSpec {
+pub(crate) struct ClipTowerSpec {
     /// The artifact/zip filename (also the `.mlpackage` dir name once unpacked).
-    pub artifact: &'static str,
+    pub(crate) artifact: &'static str,
     /// The pinned download URL.
-    pub url: &'static str,
+    pub(crate) url: &'static str,
     /// The lowercase hex SHA-256 of the zip (from the conversion script's output).
-    pub sha256: &'static str,
+    pub(crate) sha256: &'static str,
     /// The zip's byte size (for the honest download-size UI copy).
-    pub size_bytes: u64,
+    pub(crate) size_bytes: u64,
     /// The `.mlpackage` directory name once unpacked (inside the model dir).
-    pub package_dir: &'static str,
+    pub(crate) package_dir: &'static str,
 }
 
 /// The unfilled-hash sentinel: while a tower's `sha256` is this, install refuses (there is
 /// no real artifact to verify against yet). Retained as the "not configured" guard even
 /// though the real hashes are pinned below.
-pub const PLACEHOLDER_SHA: &str = "0000000000000000000000000000000000000000000000000000000000000000";
+pub(crate) const PLACEHOLDER_SHA: &str = "0000000000000000000000000000000000000000000000000000000000000000";
 
 /// The two towers the semantic-search feature needs: the image tower (enrichment embeds
 /// every photo) and the text tower (query encoding). Hash + size are the conversion script's
@@ -66,7 +66,7 @@ pub const PLACEHOLDER_SHA: &str = "000000000000000000000000000000000000000000000
 /// download's 206 resume — byte-exact against the pinned hashes, unauthenticated; the text
 /// tower verified 2026-07-16, the palettized image tower 2026-07-23). The hash guarantees
 /// whatever downloads is exactly the converted, verified model.
-pub const CLIP_TOWERS: &[ClipTowerSpec] = &[
+pub(crate) const CLIP_TOWERS: &[ClipTowerSpec] = &[
     ClipTowerSpec {
         artifact: "clip-image.mlpackage.zip",
         url: "https://huggingface.co/veszelovszki/cmdr-clip-vit-b32-coreml/resolve/main/clip-image-p8.mlpackage.zip",
@@ -83,9 +83,91 @@ pub const CLIP_TOWERS: &[ClipTowerSpec] = &[
     },
 ];
 
-/// The combined download size of all towers, for the honest "~X MB" settings copy.
-pub fn total_download_bytes() -> u64 {
-    CLIP_TOWERS.iter().map(|t| t.size_bytes).sum()
+/// What a host needs to know to offer (or withhold) the model download. Every field is
+/// derived from disk plus the pinned tower table; nothing here is user-facing prose.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ClipInstallState {
+    /// Whether every tower is present on disk, so semantic search can run.
+    pub installed: bool,
+    /// Whether a real artifact is pinned at all. `false` means the model isn't published
+    /// yet, so there is nothing to offer to download.
+    pub configured: bool,
+    /// The combined download size in bytes, for the honest "~X MB" copy.
+    pub download_bytes: u64,
+}
+
+/// The CLIP model's install state under `data_dir`. Cheap: a few `is_dir` checks plus a
+/// sum over the pinned table.
+pub fn state(data_dir: &Path) -> ClipInstallState {
+    ClipInstallState {
+        installed: is_installed(data_dir),
+        configured: CLIP_TOWERS.iter().all(|t| t.sha256 != PLACEHOLDER_SHA),
+        download_bytes: CLIP_TOWERS.iter().map(|t| t.size_bytes).sum(),
+    }
+}
+
+/// One artifact a host must fetch to install the model. The host owns the transfer (it
+/// has the HTTP stack and the progress reporting); everything else — which artifacts,
+/// what they must hash to, where they unpack — stays here.
+///
+/// Fetch [`url`](Self::url) into [`destination`](Self::destination), then call
+/// [`install`](Self::install).
+pub struct ClipDownload {
+    /// The pinned URL to fetch.
+    pub url: &'static str,
+    /// Where the fetched bytes must land. Its parent directory already exists.
+    pub destination: PathBuf,
+    /// The tower this fetch installs.
+    tower: &'static ClipTowerSpec,
+    /// The model directory the tower unpacks into.
+    model_dir: PathBuf,
+}
+
+impl ClipDownload {
+    /// Install the fetched artifact: verify its checksum, unpack it into the model
+    /// directory, and remove the intermediate archive. Blocking (a hash plus an
+    /// extract), so run it off any latency-sensitive thread.
+    ///
+    /// Verify-before-unpack is the data-safety guarantee: a truncated or tampered
+    /// download's bytes never reach the extractor, so a half-model can't be assembled
+    /// and loaded. A failure leaves the archive in place for a retry.
+    pub fn install(&self) -> Result<(), InstallError> {
+        install_tower(&self.destination, self.tower.sha256, &self.model_dir)?;
+        let _ = std::fs::remove_file(&self.destination);
+        Ok(())
+    }
+}
+
+/// The artifacts a host must fetch to install the model under `data_dir`, in order, with
+/// the model directory created. [`InstallError::NotConfigured`] when no real artifact is
+/// pinned yet, so a host can't start a download that could never verify.
+pub fn downloads(data_dir: &Path) -> Result<Vec<ClipDownload>, InstallError> {
+    if CLIP_TOWERS.iter().any(|t| t.sha256 == PLACEHOLDER_SHA) {
+        return Err(InstallError::NotConfigured);
+    }
+    let model_dir = clip_model_dir(data_dir);
+    std::fs::create_dir_all(&model_dir)?;
+    Ok(CLIP_TOWERS
+        .iter()
+        .map(|tower| ClipDownload {
+            url: tower.url,
+            destination: model_dir.join(tower.artifact),
+            tower,
+            model_dir: model_dir.clone(),
+        })
+        .collect())
+}
+
+/// Delete every on-disk CLIP model artifact under `data_dir`, so [`state`] reads as not
+/// installed and the standard download flow refetches. Idempotent: nothing installed is
+/// `Ok(())`. Does NOT touch the stored embeddings; pruning those is the scheduler's
+/// `delete_clip_model`.
+pub fn remove(data_dir: &Path) -> std::io::Result<()> {
+    let model_dir = clip_model_dir(data_dir);
+    if model_dir.exists() {
+        std::fs::remove_dir_all(&model_dir)?;
+    }
+    Ok(())
 }
 
 /// A typed install failure. Never string-matched (`no-string-matching`).
@@ -130,7 +212,7 @@ impl From<std::io::Error> for InstallError {
 
 /// The directory a volume-agnostic CLIP model install lives in, beside the app's other
 /// model data. Both towers unpack here.
-pub fn clip_model_dir(data_dir: &Path) -> PathBuf {
+pub(crate) fn clip_model_dir(data_dir: &Path) -> PathBuf {
     data_dir.join("clip-model")
 }
 
@@ -189,7 +271,7 @@ pub(crate) fn verify_checksum(zip_path: &Path, expected: &str) -> Result<(), Ins
 /// into `model_dir`. The verify-before-unpack order is the data-safety guarantee — a
 /// truncated download's bytes never reach the extractor, so a half-model can't be
 /// assembled and loaded.
-pub fn install_tower(zip_path: &Path, expected_sha: &str, model_dir: &Path) -> Result<(), InstallError> {
+pub(crate) fn install_tower(zip_path: &Path, expected_sha: &str, model_dir: &Path) -> Result<(), InstallError> {
     verify_checksum(zip_path, expected_sha)?;
     std::fs::create_dir_all(model_dir)?;
     unzip_into(zip_path, model_dir)
@@ -242,7 +324,7 @@ pub(crate) fn compiled_path(model_dir: &Path, tower: &ClipTowerSpec) -> PathBuf 
 /// invalidate it) and no `.mlpackage` remains to recompile from, the load path deletes the
 /// stale `.mlmodelc` (see [`drop_compiled`]), flipping this back to `false` so the standard
 /// download flow refetches the pinned zip.
-pub fn is_installed(data_dir: &Path) -> bool {
+pub(crate) fn is_installed(data_dir: &Path) -> bool {
     let dir = clip_model_dir(data_dir);
     CLIP_TOWERS
         .iter()

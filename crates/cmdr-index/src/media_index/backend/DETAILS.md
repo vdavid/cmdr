@@ -11,7 +11,7 @@ tags + feature print from ONE decode), and the provenance stamps `engine_version
 - `fake::FakeVisionBackend` — deterministic, zero-FFI (scripted/derived OCR text, tags, and a stem-derived unit
   embedding). Every test injects it via `MediaScheduler::new`; it's also the production fallback off-macOS. It exposes
   `with_engine_version` / `with_taxonomy_version` to simulate a stamp bump, and `missing_for` to script a vanished file.
-- `vision::VisionOcrBackend` (macOS only) — the real OCR + classify + feature print. `scheduler::start` selects it on
+- `vision::VisionOcrBackend` (macOS only) — the real OCR + classify + feature print. `MediaScheduler::start` selects it on
   macOS.
 
 Faces become sibling methods on this trait as later work lands, each returning its own typed result, each fakeable the

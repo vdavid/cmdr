@@ -20,7 +20,8 @@ use tauri::{AppHandle, Manager};
 
 use crate::location::Location;
 
-use cmdr_index::importance::scheduler::{ImportanceScheduler, is_background_scored};
+use cmdr_index::importance::is_background_scored;
+use cmdr_index::importance::scheduler::ImportanceScheduler;
 
 /// Record that the user navigated into `location`. Fire-and-forget and
 /// failure-silent: never blocks or breaks navigation.

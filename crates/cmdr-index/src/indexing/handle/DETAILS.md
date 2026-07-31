@@ -165,8 +165,8 @@ manages — but every public item got a decision.
 
 - **Five modules stop being public**: `backend`, `thermal`, `writer`, `writer_registry`, and `network::policy`, plus
   `clip::{backend, macos, tokenizer}`, `vector::cache`, and `network::enrich`. None had a consumer outside the
-  subsystem. `clip::install` went from 18 public items to one (`is_installed`); the other 17 are how a model gets
-  unzipped and checksummed, which is nobody's business but the installer's.
+  subsystem. `clip::install` went from 18 public items to four (§ "The sixteen the compiler widened" below); the rest
+  are how a model gets unzipped and checksummed, which is nobody's business but the installer's.
 - **One fold, and it was hiding an M6 break.** `commands/media_index/file_status.rs` reached
   `scheduler::enrich::{ImageEntry, parent_dir, walk_image_entries_in_dirs}` — through `pub(crate) mod enrich`, so it
   compiles today only because the app and the index are one crate. It is now
@@ -187,6 +187,52 @@ manages — but every public item got a decision.
 - **`importance::testing`** carries the four items two app-side tests need to stage a scored folder.
 - **Five modules stop being public**: `store`, `writer`, `writer_registry`, `signals`, and `scorer`. The scoring
   vocabulary was already re-exported at the root, so only `ImportanceStoreError` needed a new home there.
+
+### The sixteen the compiler widened
+
+Making the index a crate turned every host-side reach into a compile error, and sixteen items that had been
+`pub(crate)` or `#[cfg(test)]` still had one. Widening them was the mechanical answer; it is also exactly the failure
+this audit exists to prevent, so each got the same four dispositions afterwards. Recorded here because a machine-checked
+ceiling frozen around a mechanically-widened surface locks in the thing the audit was for.
+
+**Folded onto the type the host already holds** (a method wearing a module path):
+
+- **`media_index::scheduler::{start, kick_all_ready_passes_with, kick_network_pass}` ⇒ `MediaScheduler::{start,
+  kick_all_ready_passes, kick_network_pass}`**, and **`importance::scheduler::start` ⇒
+  `ImportanceScheduler::start`.** The host already holds both schedulers; passing one back into a free function in the
+  module it came from is the module path standing in for a receiver. `kick_all_ready_passes_with`'s `_with` suffix
+  existed only to distinguish it from a global-lookup variant that no longer exists.
+- **`media_index::store::{open_read_connection, read_status}` ⇒ `MediaIndex::status_for_paths`.** The host was opening
+  the database, deriving its path, checking the file exists, and looping point lookups — four steps to ask "what does
+  the index have stored for these paths?". `MediaIndex` is the subsystem's read handle and already knew all four.
+- **`coverage::ensure_accounted_seeded` + `coverage::folder_coverage` ⇒ `coverage::folder_coverage(data_dir, …)`.**
+  `folder_coverage`'s own doc used to say "the caller must have seeded the accounted aggregate first", which is a rule
+  the index knows and the host has to remember. The seed is now inside, keyed off the `data_dir` the call already needs.
+- **`coverage::importance_scored` ⇒ `ImportanceIndex::is_scored`.** A fact about the importance index that lived in
+  media's coverage module because that's where the first caller was. Both callers now ask the index itself, and the
+  "generation 0 does not mean unscored" rule sits next to the two probes it composes.
+- **`clip::install`'s six ⇒ `state`, `downloads`, `ClipDownload::install`, `remove`.** The host was implementing the
+  install policy: iterate the tower table, compare each pinned hash against a placeholder sentinel, build the zip path,
+  verify, unpack, delete the archive. All of that is the index's. What genuinely belongs to a host is the HTTP transfer,
+  so `downloads()` hands back exactly what to fetch and where to put it, and `ClipDownload::install()` takes it from
+  there. The tower table, the checksums, the sentinel, and the model directory are `pub(crate)` again.
+
+**Kept, and why:**
+
+- **`ReadPool::{new, with_conn}`.** The direct-database read side, the exception § "The two exceptions, named" already
+  covers. `with_conn` is how you use a `ReadPool` at all, and `new` is `search/` opening an OFFLINE volume's database
+  that the lifecycle registry isn't holding. A pool you can hold but not read from would be worse than no pool.
+- **`coverage::cached`.** The "never build" counterpart to the already-public `get_or_build`, and the distinction is
+  load-bearing: a cold build is a whole-index walk, and running one from a poll is what once ballooned a launch to
+  50 GB. Every poll and startup reader must have a call that can't do that.
+- **`host::{config, events, policy, volumes}`.** The plugin interface. A host has to be able to install a sink, apply a
+  config, and answer for volumes; that's what these modules are for.
+- **`importance::{signal_availability, is_background_scored}`.** Pure policy over a volume kind, with no handle they'd
+  belong to — putting importance policy on `IndexVolumeKind` would invert the dependency. Both now re-export at the
+  `importance` root, so a host reads one place instead of two.
+- **The five `#[cfg(test)]` reaches** (`one_of_every_kind`, the disk-image fixture, `ScanPacer::unpaced`,
+  `IndexStore::list_children`, `handle::test_lock`) are on the `testing` surface. A gated test surface is a legitimate
+  bucket, and the rule below is exactly why they can't stay `cfg(test)`.
 
 ### The rule the gates follow
 

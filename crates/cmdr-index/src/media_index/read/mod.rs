@@ -15,13 +15,14 @@
 //! gotcha as `agent/store`'s `sanitize_fts_query`; [`build_ocr_match_query`] is our
 //! sanitizer — it quotes each whitespace token so every term is a literal.
 
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 use super::ann;
 pub use super::scheduler::enrich::ImageEntry;
 use super::store::{
-    EmbeddingTable, MediaStoreError, media_db_path, open_read_connection, read_embedding_for, read_embeddings_for_ids,
-    read_tag_matches,
+    EmbeddingTable, MediaStatusRow, MediaStoreError, media_db_path, open_read_connection, read_embedding_for,
+    read_embeddings_for_ids, read_status, read_tag_matches,
 };
 use super::vector::{DedupCluster, SimilarImage, VectorStore, cache, cosine_f16};
 
@@ -275,6 +276,28 @@ impl MediaIndex {
         Ok(hits)
     }
 
+    /// The raw stored enrichment rows for `paths`, keyed by path, for a caller running
+    /// the same staleness rules a pass does (the per-file index-status badges).
+    /// Bounded: one point lookup per requested path, never a scan. A path with no row
+    /// is simply absent from the map, and a missing DB (never enriched, offline and
+    /// purged) answers an empty map rather than erroring.
+    ///
+    /// Prefer [`facts_for_paths`](Self::facts_for_paths) for "what does the index know
+    /// about this image?" — this one hands back the storage row, provenance stamps
+    /// included, and exists for the caller that re-derives freshness itself.
+    pub fn status_for_paths(&self, paths: &[String]) -> HashMap<String, MediaStatusRow> {
+        if paths.is_empty() || !self.db_path.exists() {
+            return HashMap::new();
+        }
+        let Ok(conn) = open_read_connection(&self.db_path) else {
+            return HashMap::new();
+        };
+        paths
+            .iter()
+            .filter_map(|p| read_status(&conn, p).ok().flatten().map(|row| (p.clone(), row)))
+            .collect()
+    }
+
     /// The stored image facts for paths the caller ALREADY has — the lookup direction,
     /// the mirror of the query-direction searches above. Returns exactly one
     /// [`ImageFacts`] per requested path, in request order, so a never-enriched file is
@@ -298,7 +321,7 @@ impl MediaIndex {
         if facts.is_empty() || !self.db_path.exists() {
             return Ok(facts);
         }
-        let mut by_path: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
+        let mut by_path: HashMap<&str, usize> = HashMap::new();
         for (i, p) in paths.iter().enumerate() {
             by_path.entry(p).or_insert(i);
         }
@@ -437,15 +460,15 @@ mod tests;
 /// index, which is the honest answer rather than a guess — qualification is
 /// sibling-aware (a RAW beside its JPEG changes the verdict), so it can't be
 /// decided from one path on its own.
-pub fn qualifying_images_for_paths(volume_id: &str, paths: &[String]) -> std::collections::HashMap<String, ImageEntry> {
+pub fn qualifying_images_for_paths(volume_id: &str, paths: &[String]) -> HashMap<String, ImageEntry> {
     use crate::media_index::scheduler::enrich::{parent_dir, walk_image_entries_in_dirs};
 
     let dirs: std::collections::HashSet<String> = paths.iter().map(|p| parent_dir(p).to_string()).collect();
     let Some(pool) = crate::indexing::read::enrichment::get_read_pool_for(volume_id) else {
-        return std::collections::HashMap::new();
+        return HashMap::new();
     };
     match pool.with_conn(|conn| walk_image_entries_in_dirs(conn, &dirs)) {
         Ok(Ok(entries)) => entries.into_iter().map(|e| (e.path.clone(), e)).collect(),
-        _ => std::collections::HashMap::new(),
+        _ => HashMap::new(),
     }
 }
