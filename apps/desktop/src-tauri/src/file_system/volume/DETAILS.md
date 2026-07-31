@@ -366,7 +366,7 @@ knows nothing about `LISTING_CACHE`. Every backend that can be mutated overrides
 - `ArchiveVolume` never calls it, because it implements no mutation: `create_file`, `delete`, `rename`, and
   `write_from_stream` inherit the trait's `NotSupported` default, and `create_directory_all` overrides it only to
   return the same (pinned by `volume_test.rs::every_mutation_is_unsupported`). Zip edits are real, but they go around
-  this backend — `write_operations::archive_edit` drives `ArchiveMutator` against the containing filesystem, so the
+  this backend: `write_operations::archive_edit` drives `ArchiveMutator` against the containing filesystem, so the
   `.zip` file's OWN volume is what notifies. `write_operations/rename.rs` takes a plain `get` rather than `resolve`
   for exactly that reason: a rename must never route to the `ArchiveVolume`.
 

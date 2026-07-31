@@ -1029,7 +1029,7 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
     // From ShuttingDown: reservation must fail and leave the instance intact.
     // Pinning ShuttingDown is the analogous case at the other end of the
     // lifecycle (a Running instance holds a real `IndexManager`, so staging one
-    // means driving a real scan — `event_stream_tests.rs` covers that tier).
+    // means driving a real scan, which `event_stream_tests.rs` covers).
     {
         let dir3 = tempfile::tempdir().expect("temp dir");
         let db3 = dir3.path().join("from-shutdown.db");

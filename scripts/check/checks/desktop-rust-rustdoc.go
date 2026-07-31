@@ -82,7 +82,7 @@ var diagnosticHeader = regexp.MustCompile(`^(error|warning)(\[[^\]]*\])?:`)
 // first diagnostic with no blank line between them, and rustdoc glues
 // `error: could not document …` to the warning count above it. Splitting on blank
 // lines therefore hands a diagnostic whatever preceded it, which drops the error
-// whenever it opens or closes the stream — the exact case this check reports.
+// whenever it opens or closes the stream: the exact case this check reports.
 func rustdocErrorDiagnostics(output string) string {
 	var kept []string
 	var current []string
