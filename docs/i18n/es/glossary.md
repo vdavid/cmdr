@@ -831,3 +831,45 @@ sessions, attachments, consent screen, cost footer, settings section; macOS AppK
 - **"the check running right now" → `el análisis que se está ejecutando ahora mismo`** · reuses `análisis` as this
   catalog's settled word for a full check (`tooltipCoalesced`: "el próximo análisis completo de Cmdr") and that string's
   closing `lo dejará al día` · high.
+
+## Transferencia atascada: el aviso de "sin progreso" (2026-07-31)
+
+Settled while translating the seven `fileOperations.transferProgress.stall*` strings plus `queue.row.stalled` (the
+notice that replaces the ETA countdown when a copy/move stops moving). Mined from macOS Finder/AppKit, MS terminology,
+Nautilus, and Total/Double Commander.
+
+- **"No progress for {duration}" → `Sin progreso desde hace {duration}`** · `progress`→`progreso` is MS terminology
+  (id 2371066/2375015) and matches the catalog's own `Progreso del tamaño` / `Progreso de archivos`. The "for X (up to
+  now)" sense REQUIRES `desde hace`, never `durante` (which names a finished span) nor a bare `hace` · high. Runner-up
+  `Sin avances desde hace…` reads equally natural; `progreso` won on catalog consistency. Rejected `Detenida desde
+  hace…` (shorter, but collides with the queue's own paused state `En pausa`).
+- **"Waiting for X to respond" → `Esperando a que X responda`** · macOS Finder's own waiting sentences take exactly this
+  shape: `Esperando a que “^0” acepte…`, `Esperando a que se complete la transferencia con “^0”…` (`es/macOS/Finder/`,
+  2026-07-31); `respond`→`responder` is MS terminology. `esperando a que` + subjunctive, NOT `esperando por` (a
+  calque) · high. Double Commander's `Esperando la respuesta del usuario` is the nominal variant; the verbal one keeps
+  Cmdr's sentences short.
+- **source / destination (the two ends of a transfer) → `el origen` / `el destino`** · reaffirms the settled pair;
+  MS terminology (`source`→`origen`, `destination`→`destino`) plus Total Commander (`¡Origen y destino diferentes!`)
+  and Nautilus (`la carpeta de destino` / `la carpeta origen`). Both take the definite article here because the dialog
+  has exactly one of each · high.
+- **"has stopped moving" (a stalled transfer) → `ha dejado de avanzar`** · says the transfer stopped ADVANCING without
+  claiming it stopped or that anything went wrong, so it stays inside Cmdr's no-"error"/no-"fallo" rule. Rejected `se ha
+  detenido` / `se ha quedado parada`: both read as "paused", which the queue already labels `En pausa` · high.
+- **"leave it running in the background" → `déjala en ejecución en segundo plano`** · quotes the catalog's own
+  `queueTooltip` ("Mantenla en ejecución en segundo plano…") and `backgroundedToast` ("Sigue ejecutándose en segundo
+  plano."); `background`→`segundo plano` is MS/macOS/TC standard · high. The clitic `-la` agrees with fem.
+  `transferencia`.
+- **"partly written" (a file with data already on disk) → `parcialmente escrito`** · Nautilus's parallel `¿Quieres
+  eliminar el archivo parcialmente copiado?` is the model; the adverb goes before the participle · high.
+- **"# file is still open" → `# archivo sigue abierto`** · `seguir` + adjective is the natural "still be X"; avoids the
+  heavier `Todavía hay # archivo abierto` · high.
+- **"The log has the details." → `El registro tiene los detalles.`** · quotes the catalog's existing
+  `askCmdr.renameUndo.refusedBatches` ("El registro de operaciones tiene los detalles."); `log`→`registro` is MS
+  terminology · high.
+- **`Close` (the button that closes the progress dialog while the transfer finishes) → `Cerrar`** · reaffirms
+  close→cerrar (macOS AppKit); sits next to `Cancelar`, and the two are unmistakable in Spanish · high.
+- **Bake the whole sentence into the ICU plural branches when the tail agrees with the count.** `stallInFlight`'s
+  English keeps "and may already be partly written" OUTSIDE the plural; Spanish can't, because `esté`/`estén` and
+  `escrito`/`escritos` agree with the counted noun. The es value is one plural block whose branches each carry the full
+  sentence. Same rule as the transfer-toast verb-agreement entry above · high.
+- No `sameAsSourceJustification` needed: all eight values differ from English.

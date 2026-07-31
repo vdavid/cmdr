@@ -837,3 +837,44 @@ settled head terms (index/indexing → `chỉ mục`/`lập chỉ mục`, indexe
 - **"the check running right now" → `lần kiểm tra đang chạy ngay bây giờ`** · reuses `lần kiểm tra` as this catalog's
   settled phrase for a full check (`tooltipCoalesced`: "lần kiểm tra toàn bộ tiếp theo của Cmdr") and that string's
   closing `sẽ chỉnh lại cho đúng` · high.
+
+## Lần truyền bị đứng yên: thông báo trên hộp thoại + hàng đợi (2026-07-31)
+
+The eight stalled-transfer strings (`fileOperations.transferProgress.stall*` + `close`, `queue.row.stalled`). Mined
+2026-07-31 against `_ignored/i18n/vi/` (macOS Finder/AppKit Tier 1, MS terminology Tier 2, GNOME Nautilus + Total
+Commander Tier 3). Reuses settled terms (close → `đóng`, cancel → `hủy`, destination/source → `đích`/`nguồn`, log →
+`nhật ký`, transfer (countable) → `lần truyền`, background → `chạy ở chế độ nền`, file → `tệp`).
+
+- **progress (advancement, in "no progress"): `tiến triển`** · shared-root pick (mining gotcha 4): macOS renders the
+  progress noun as `tiến trình` (Finder SD24 "Hiển thị tiến trình sao chép", PW60 "Hiển thị cửa sổ tiến trình") and MS
+  terminology as `Tiến độ` (12×). Neither fits a negated "no progress": `tiến trình` is this glossary's word for an OS
+  **process**, so `không có tiến trình` misreads, and `không có tiến độ` is unidiomatic (a rate, not a countable). Same
+  `tiến` root, most natural negated form. Progress-the-bar/status stays `tiến trình` (catalog:
+  `Tiến trình theo kích thước`). `tentative`.
+- **respond: `phản hồi`** · macOS AppKit `AppKitErrors` ("…vì ứng dụng không phản hồi yêu cầu dịch vụ"). NOT MS's
+  `hồi đáp` (macOS wins ties). "Waiting for X to respond" → `Đang chờ X phản hồi`. `high`.
+- **"Waiting for…": `Đang chờ…`** · macOS Finder (ME23/MR13 `Đang chờ…`, NE88.4 `Đang chờ tải lên`, NE88.5
+  `Đang chờ tải về`). Finder also has `Đang đợi` (BU54, AppKit SavePanel "Đang đợi ổ đĩa…"), and Total Commander uses it
+  too (`1216` = "Đang đợi máy chủ…"), but `Đang chờ` is the dominant Finder form and already the catalog's queued status
+  (`queue.row.status` → `Đang chờ`). `high`.
+- **destination / source as BARE nouns: `đích` / `nguồn`** · the standalone (non-attributive) use is attested in the
+  orthodox pair: Total Commander vi `1224` = "Nguồn và đích khác nhau!", `5328` = "Nguồn+Đích trên cùng ổ đĩa:". GNOME
+  covers the attributive forms (`thư mục đích`, `thư mục nguồn`). So `Đang chờ đích phản hồi.` needs no added classifier
+  noun. `high`.
+- **"has stopped moving" (a transfer that is still running but not advancing): `đang đứng yên`** · no source names this
+  state; `đứng yên` (motionless) is plain everyday Vietnamese and keeps the honest distinction the English draws: the
+  transfer has NOT stopped (`đã dừng`) and has NOT hung (`treo`, which reads as a crash and would break the no-"lỗi"
+  voice), it just isn't advancing. `tentative`.
+- **"still open" (a file whose handle is open): `vẫn đang mở`** · `mở` is the settled open verb (macOS AppKit "Mở").
+  macOS's nearest state phrase is `đang được sử dụng` ("in use", Finder PE7/NE66), which names a different concept
+  (something else holds the file) — mining gotcha 2, so it isn't adopted. `high` (on `mở`); `tentative` (on the phrase).
+- **"partly written": `đã được ghi một phần`** · `ghi` is the settled write verb (`ghi đè` = overwrite, macOS Finder).
+  The `được` passive is natural here and keeps the file (not Cmdr) as the subject. `high`.
+- **"The log has the details.": `Chi tiết có trong nhật ký.`** · `nhật ký` (log, settled) + GNOME Nautilus's
+  `Chi tiết: ` / macOS `Hiện chi tiết`. Fronting `Chi tiết` keeps it short and puts the useful noun first. `high`.
+- No `sameAsSourceJustification` needed: all eight values differ from English.
+
+Phrasings settled (keep consistent): "No progress for {duration}" → `Không có tiến triển trong {duration}` (with the
+period on the dialog line, without it on the queue row, matching English); "Cancel it, or leave it running in the
+background." → `Hãy hủy, hoặc để nó tiếp tục chạy ở chế độ nền.` (`tiếp tục chạy ở chế độ nền` composed from the
+catalog's `Giữ chạy ở chế độ nền` + `Vẫn đang chạy ở chế độ nền`).

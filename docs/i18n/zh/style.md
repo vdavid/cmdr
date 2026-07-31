@@ -113,6 +113,10 @@ auto-convert, the vocabulary differs). Recorded in `../script-decisions.md`. The
 - **No spaces between Chinese characters**, but insert a thin/normal space between Chinese text and adjacent Latin brand
   words or numbers where it aids readability (common house style; follow what reads cleanly against the
   `{placeholder}`).
+- **Pre-formatted placeholders are often Latin, so space them on both sides.** Several placeholders arrive already
+  formatted and unlocalized (`{duration}` = `45s` / `2m 30s` / `1h 5m`, sizes, speeds), so they land as Latin text mid
+  sentence: write `已有 {duration} 没有进度`, not `已有{duration}没有进度`. The whole catalog does this
+  (`剩余约 {duration}`, `{countText} 个文件`).
 
 ## Terminology and glossary
 

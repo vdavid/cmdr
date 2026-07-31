@@ -113,6 +113,15 @@ Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. E
 CLDR categories for `pt`: `one`, `many`, `other` (same for pt-BR and pt-PT). Note `many` is a real, distinct category in
 modern CLDR Portuguese (compact/large numbers), so plural messages must write a `many` branch, not just one/other.
 
+Two mechanics that bite in Portuguese specifically:
+
+- **Anything that agrees with the counted noun goes INSIDE the branches**, never in the text after the plural. Number
+  and gender agreement reaches across the whole clause (aberto/abertos, pode/podem, gravado/gravados, Todas as…), so an
+  English tail like "… and may already be partly written" has to be duplicated into each branch, leaving only
+  punctuation outside. See `transferProgress.stallInFlight` and the image-indexing plurals in `glossary.md`.
+- **`one` covers zero in Portuguese** (CLDR `i = 0..1`), so a `one` branch renders "0 arquivo". That's the correct CLDR
+  form; write the branch so it reads sanely at 0, or make sure the string only renders for counts ≥ 1.
+
 ## Notes and decisions
 
 - Roster: Cmdr ships pt-BR for wave 1; pt-PT is a separate wave-2 variant (vocabulary, você/tu, spelling). See
@@ -130,5 +139,6 @@ modern CLDR Portuguese (compact/large numbers), so plural messages must write a 
 ## Glossary
 
 The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
-terms, each sourced from the reference pile (`_ignored/i18n/pt/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
-Never guess a term.
+terms, each sourced from the reference pile (`_ignored/i18n/pt-BR/`, the Brazilian set: the bare `_ignored/i18n/pt/` is
+European and is the variant trap that already leaked pt-PT into a shipped string; recipes in
+`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

@@ -142,6 +142,10 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   suffixes are the right ones. Same for the multiword product name: `Ask Cmdrt`.
 - **Quotation marks: `„…”`** (low opening, high closing) is the standard Hungarian form. macOS Finder uses it too (e.g.
   „^0”). Avoid English `"…"`.
+- **`{duration}` is NOT locale-formatted**, unlike numbers, sizes, and dates: `formatDuration()` in
+  `apps/desktop/src/lib/units/duration.ts` always emits digits plus Latin unit letters (`45s`, `2m 30s`, `1h 5m`). So a
+  duration placeholder can never take a Hungarian suffix (there's no reliable harmony for it, and the abbreviation isn't
+  a Hungarian word). Put it in front of a postposition (`{duration} óta`, `{duration} van hátra`), never `{duration}-e`.
 - **Numbers and dates come from the formatter layer.** Hungarian uses a comma decimal and space thousands separator, and
   a native `YYYY. MM. DD.` date order; `formatNumber()`/`formatByteSize()`/the date formatters produce these from the
   locale. Never hardcode separators or date order in a string.

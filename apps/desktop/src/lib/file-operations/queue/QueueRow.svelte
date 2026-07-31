@@ -10,7 +10,8 @@
     import type { OperationRow } from './operations-store.svelte'
     import { operationTypeIcon } from './operation-icon'
     import { transferReadout } from '../progress-readout'
-    import { formatDuration } from '$lib/units'
+    import { formatDuration, seconds } from '$lib/units'
+    import { stallNoticeFor } from '../transfer/transfer-stall'
     import Trans from '$lib/intl/Trans.svelte'
 
     interface Props {
@@ -49,10 +50,20 @@
         return null
     })
 
+    /** Non-null once the BACKEND reports this transfer has stopped moving for a
+     *  reason that isn't deliberate. Same classifier the copy dialog uses, so
+     *  the two windows can't disagree about whether something is stuck. */
+    const stall = $derived(stallNoticeFor(progress?.activity))
+
     /** The SMOOTHED ETA from the store, never `progress.etaSeconds`: the copy
-     *  dialog renders the same smoothed value, so the two windows agree. */
+     *  dialog renders the same smoothed value, so the two windows agree. A
+     *  stalled row shows how long it's been still instead of a countdown. */
     const etaText = $derived.by(() => {
-        if (!isRunning || row.etaSecondsDisplay === null) return null
+        if (!isRunning) return null
+        if (stall) {
+            return tString('queue.row.stalled', { duration: formatDuration(seconds(stall.stillForSeconds)) })
+        }
+        if (row.etaSecondsDisplay === null) return null
         return tString('queue.row.etaRemaining', { duration: formatDuration(row.etaSecondsDisplay) })
     })
 
@@ -128,7 +139,7 @@
                 >
             {/if}
             {#if etaText}
-                <span class="eta">{etaText}</span>
+                <span class="eta" class:stalled={stall !== null}>{etaText}</span>
             {/if}
         </div>
     </div>
@@ -241,6 +252,11 @@
         color: var(--color-text-tertiary);
         flex-shrink: 0;
         font-variant-numeric: tabular-nums;
+    }
+
+    /* A stalled row's readout is the one thing on it worth noticing. */
+    .eta.stalled {
+        color: var(--color-text-secondary);
     }
 
     .queued-hint {

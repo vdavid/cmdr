@@ -14,6 +14,12 @@ support desk. Match the English register: warm and direct, never stiff. Error an
 factual; avoid dramatizing words. As in English, steer clear of "erreur" / "échec" framing in user-facing copy where a
 calmer phrasing works, and prefer active voice ("Nous avons envoyé…" over "… a été envoyé").
 
+The English ban on "error" / "failed" covers their French equivalents: **never "erreur", "échec", "a échoué", and not
+"bloqué" either** (it reads as a verdict, and often a wrong one). State the observation and the way out instead:
+"Aucune progression depuis 45s", "En attente d'une réponse de la destination", "Le transfert n'avance plus. Annulez-le
+ou laissez-le continuer en arrière-plan." The settled non-alarmist fallbacks are "problème" for a generic error status
+and "N'a pas pu se terminer" for a failed operation.
+
 French UI copy drifts long and noun-heavy; resist it. Prefer a verb where the English uses one ("Rechercher", not
 "Effectuer une recherche"). The Microsoft French style guide pushes the same way (warm, relaxed, short everyday words
 over formal register), and it's the right tonal fit for Cmdr's voice (verified against the reference pile,
@@ -175,6 +181,13 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
   sélectionné" / "{count} fichiers sélectionnés"; "1 image copiée" / "{count} images copiées"). Get the agreement right
   inside each branch.
 - French nouns have gender (le/la); the article and any adjective must agree with the counted noun.
+- **Pull a trailing clause INSIDE the branches when it has to agree.** English often leaves text after the closing `}}`
+  ("… {count, plural, …} and may already be partly written."); French can't when that text carries an agreeing
+  participle. Move the whole sentence into each branch. The parity check compares only the placeholder SET
+  (`apps/desktop/scripts/i18n-check-parity.ts`), so this is safe, not a structure break. See
+  `fileOperations.transferProgress.stallInFlight`.
+- Write `many` identical to `other` unless the message really formats compact/large values: plain integers never select
+  `many`, but parity and the plural check both want the branch. This is what the whole `fr` set does.
 
 ## Notes and decisions
 

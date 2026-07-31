@@ -77,6 +77,12 @@ should match a Dutch macOS.
 CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('nl')`). Write both branches: "1 bestand" /
 "{count} bestanden". Dutch is close to English here (singular vs everything-else), so plural handling is low-risk.
 
+The one real trap: Dutch inflects the VERB with the count ("1 bestand **is**" / "3 bestanden **zijn**"), so an English
+sentence whose verb sits outside the plural needs the verb pulled INTO the branches. Keep the branches as small as
+possible: put only the noun plus its copula inside, and let the rest of the sentence share that one copula
+(`{count, plural, one {# bestand is} other {# bestanden zijn}} nog open en misschien al gedeeltelijk geschreven.`).
+Duplicating the whole sentence per branch works too but rots twice as fast.
+
 ## Notes and decisions
 
 - **Sentence case, not title case.** Dutch capitalizes only the first word and proper nouns, which fits the app's
@@ -109,6 +115,11 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
   "hernoemen" (see the glossary's review flags); confirm a locale-wide sweep.
 - **"Review file renames" → "Naamwijzigingen beoordelen"**: "beoordelen" (decide) over macOS's look-over "bekijken",
   because the modal is a per-row allow/deny gate. Confirm the register.
+- **"No progress for {duration}" → "Al {duration} geen voortgang"**: `voortgang` is settled, but nothing in the pile
+  phrases an elapsed stall, so the "al X geen Y" shape is a judgment call. Confirm it reads natural in the progress
+  dialog and on a queue row.
+- **"The transfer has stopped moving" → "De overdracht komt niet meer vooruit"**: picked over the more idiomatic
+  standstill phrase "ligt stil", which sits too close to the neighbouring "Gepauzeerd" state. Confirm the tradeoff.
 
 ## Glossary
 

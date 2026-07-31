@@ -87,6 +87,7 @@ import { createEtaSmoother, transferReadout } from '../progress-readout'
 import { tString } from '$lib/intl/messages.svelte'
 import { pathInsideArchive } from '$lib/file-explorer/pane/volume-capabilities'
 import type { BytesPerSecond, Seconds } from '$lib/units'
+import type { TransferActivity } from '$lib/tauri-commands'
 
 export interface TransferProgressStateConfig {
   operationType: TransferOperationType
@@ -170,11 +171,15 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
    *  + `write-settled` quickly, but if the BE op state was already gone when
    *  we issued the cancel (e.g. it was cleaned up by `cancel_all_write_operations`
    *  during a hot-reload or by a previous teardown), no events ever fire and
-   *  the dialog would otherwise stay at "Cancelling…" forever. Ten seconds is
-   *  well above the legitimate settle window (USB tear-down is typically < 2 s
-   *  even on bad devices) and well below "the user thinks the app is wedged."
-   *  See the comment on `handleCancel` for the cases this catches. */
-  const CANCEL_SETTLE_FALLBACK_MS = 10_000
+   *  the dialog would otherwise stay at "Cancelling…" forever.
+   *
+   *  Sits deliberately ABOVE the backend's `CANCEL_DRAIN_DEADLINE` (15 s, in
+   *  `transfer/volume_copy.rs`), which is the point by which a cancelled
+   *  transfer is guaranteed to emit its terminal event. Firing first would
+   *  make the dialog report `0 files processed` moments before the backend
+   *  reported the real number. The user never has to sit through this window:
+   *  `dismiss()` closes the dialog on their say-so at any moment. */
+  const CANCEL_SETTLE_FALLBACK_MS = 20_000
 
   // Scan waiting state (when scan preview is still running from TransferDialog)
   let waitingForScan = $state(false)
@@ -217,6 +222,10 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
    *  nor `write-settled` arrives after the user clicks Cancel. See the
    *  doc comment on `CANCEL_SETTLE_FALLBACK_MS`. */
   let cancelSettleFallbackTimer: ReturnType<typeof setTimeout> | null = null
+  /** True once the user has explicitly closed the dialog while the backend was
+   *  still winding down. The op keeps tearing down in the background; we just
+   *  stop making the user watch. See `dismiss()`. */
+  let dismissed = false
   /** Set when the operation reaches a terminal state (complete, error, cancel, rollback).
    *  Prevents destroy()'s safety-net cancel from interfering with an already-handled outcome.
    *  Reactive ($state) so the Cancel/Rollback buttons can disable themselves during the
@@ -311,6 +320,9 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
    *  same operation. See `file-operations/progress-readout.ts`. */
   let etaSecondsDisplay = $state<Seconds | null>(null)
   const etaSmoother = createEtaSmoother()
+  /** The backend's live stall classification, straight through to the UI. The
+   *  frontend never infers a stall from event timing; see `transfer-stall.ts`. */
+  let activity = $state<TransferActivity | null>(null)
 
   function handleProgress(event: WriteProgressEvent) {
     if (!filterEvent({ type: 'progress', event })) return
@@ -351,6 +363,7 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     bytesDone = event.bytesDone
     bytesTotal = event.bytesTotal
     const readout = transferReadout(event)
+    activity = event.activity ?? null
     bytesPerSecond = readout.bytesPerSecond
     filesPerSecond = event.filesPerSecond ?? null
     etaSecondsDisplay = etaSmoother.push(readout.etaSeconds)
@@ -516,10 +529,35 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     }
   }
 
+  /**
+   * Close the dialog now, on the user's say-so, without waiting for the
+   * backend.
+   *
+   * The settle gate is the right DEFAULT (it buys honest file counts and keeps
+   * a new op off a volume that's still tearing down), but it must never be the
+   * only way out: in the 2026-07-31 incident the window wouldn't close and
+   * force-quit was the only option left, which is what turned a recoverable
+   * stall into data loss. The operation keeps winding down in the background
+   * exactly as it would have; we stop making the user watch it.
+   */
+  function dismiss() {
+    if (dismissed) return
+    dismissed = true
+    log.info('User dismissed the dialog while the backend was still settling: op={operationId}', {
+      operationId,
+    })
+    // Report what the backend has told us so far, rather than pretending zero.
+    const filesProcessed = cancelEventPayload?.filesProcessed ?? filesDone
+    cancelEventPayload = null
+    cleanup()
+    config.onCancelled(filesProcessed)
+  }
+
   /** Closes the dialog if both `write-cancelled` and `write-settled` have
    *  arrived. Applies the existing `MIN_DISPLAY_MS` floor so a sub-frame
    *  cancel doesn't flash. Idempotent: safe to call from both handlers. */
   function maybeFinishCancelClose() {
+    if (dismissed) return
     if (!cancelEventReceived || !settleEventReceived) return
     if (cancelEventPayload === null) return
 
@@ -1130,6 +1168,7 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
   return {
     start,
     destroy,
+    dismiss,
     handleCancel,
     handleConflictResolution,
     handlePauseResume,
@@ -1211,6 +1250,9 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     },
     get etaSecondsDisplay() {
       return etaSecondsDisplay
+    },
+    get activity() {
+      return activity
     },
   }
 }

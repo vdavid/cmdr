@@ -3,6 +3,26 @@
 Pull-tier docs for `lib/file-operations/transfer/`: architecture, flows, and decision rationale. Must-know invariants
 and gotchas live in `CLAUDE.md`.
 
+## The stalled-transfer notice
+
+`transfer-stall.ts` holds one decision: how long to wait before speaking (`STALL_NOTICE_SECONDS`, 10 s). Everything
+else comes from the backend's `TransferActivity`, derived from the live in-flight probe (see
+`apps/desktop/src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "The stall signal").
+
+**Why the threshold differs from the log's.** The log watchdog waits 20 s because a log line wants to stay rare across
+a long transfer. Ten seconds of a frozen bar is already long enough that a person wonders whether the app has died, and
+a countdown is a lie the moment it stops being true. Both read the same `stillForSeconds`, so the two can't contradict
+each other.
+
+**What stays silent.** `paused` and `you` (a conflict prompt is open) are the transfer behaving correctly, and the
+dialog already says so in its title. An operation with no activity at all — local copy, delete, trash, which keep no
+in-flight table — also stays silent rather than guessing.
+
+**The in-flight line is conditional, not permanent.** It renders only inside the stall notice, and only when
+`inFlight > 0`. During a healthy transfer the file counter plus a speed and an ETA is enough, and "5 files in flight"
+would be noise on every copy. It earns its place exactly when it explains something: a stalled counter reading lower
+than what the person can see at the destination, which is the confusion the 2026-07-31 incident produced.
+
 ## File map
 
 Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` § Module

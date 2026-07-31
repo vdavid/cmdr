@@ -368,6 +368,34 @@
   "@fileOperations.transferProgress.titleCancellingSlow": {
     "sourceHash": "f849d68"
   },
+  "fileOperations.transferProgress.close": "Đóng",
+  "@fileOperations.transferProgress.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "fileOperations.transferProgress.stallNotice": "Không có tiến triển trong {duration}.",
+  "@fileOperations.transferProgress.stallNotice": {
+    "sourceHash": "c88a3f3"
+  },
+  "fileOperations.transferProgress.stallWaitingDestination": "Đang chờ đích phản hồi.",
+  "@fileOperations.transferProgress.stallWaitingDestination": {
+    "sourceHash": "1cb8f39"
+  },
+  "fileOperations.transferProgress.stallWaitingSource": "Đang chờ nguồn phản hồi.",
+  "@fileOperations.transferProgress.stallWaitingSource": {
+    "sourceHash": "efb8d93"
+  },
+  "fileOperations.transferProgress.stallUnknown": "Lần truyền đang đứng yên. Hãy hủy, hoặc để nó tiếp tục chạy ở chế độ nền.",
+  "@fileOperations.transferProgress.stallUnknown": {
+    "sourceHash": "37e23a5"
+  },
+  "fileOperations.transferProgress.stallInFlight": "{count, plural, other {# tệp vẫn đang mở}} và có thể đã được ghi một phần.",
+  "@fileOperations.transferProgress.stallInFlight": {
+    "sourceHash": "c4bf553"
+  },
+  "fileOperations.transferProgress.stallLogHint": "Chi tiết có trong nhật ký.",
+  "@fileOperations.transferProgress.stallLogHint": {
+    "sourceHash": "a766f0d"
+  },
   "fileOperations.transferProgress.titleConflict": "Tệp đã tồn tại",
   "@fileOperations.transferProgress.titleConflict": {
     "sourceHash": "ae71a9a"

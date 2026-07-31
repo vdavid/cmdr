@@ -988,3 +988,61 @@ REVIEW FLAGS (drive-indexing master-switch review):
 - **"the check running right now" → `de controle die nu bezig is`** · reuses `controle` as this catalog's settled word
   for a full check (`tooltipCoalesced`: "de volgende volledige controle van Cmdr") and that string's closing
   `zet dat weer recht` · high.
+
+## Vastgelopen overdracht: het stall-bericht (2026-07-31)
+
+Eight keys for the stalled-transfer notice (`fileOperations.transferProgress.close`/`.stallNotice`/
+`.stallWaitingDestination`/`.stallWaitingSource`/`.stallUnknown`/`.stallInFlight`/`.stallLogHint`, `queue.row.stalled`);
+mined `_ignored/i18n/nl/`, 2026-07-31.
+
+- progress (of a transfer) → `voortgang` · macOS AppKit/Finder ("Progress"→"Voortgang", "Toon kopieervoortgang"),
+  Microsoft terminology ("Progress"→"Voortgang", NLD/BEL), Thunar ("File Operation Progress"→"Voortgang van
+  bestandbewerking"), Double Commander ("Show operations progress"→"Toon voortgang van bewerkingen); already in-catalog
+  as `Voortgang grootte` / `Voortgang bestanden` · high
+- "No progress for {duration}" → `Al {duration} geen voortgang` · the "al X geen Y" construction is the natural Dutch
+  for an elapsed-since-anything-happened line; the literal `Geen voortgang gedurende …` reads bureaucratic. Used for
+  BOTH the dialog line (with a period) and the queue row (without), matching the EN pair · high on the term,
+  `tentative` on the construction
+- respond (a device/share answering) → `reageren` · macOS AppKit ("… did not respond to the request for
+  services"→"… reageert niet op het verzoek om voorzieningen"). Microsoft's `beantwoorden` is the reply-to-a-message
+  sense, not this one; macOS is Tier 1 · high
+- "Waiting for X to respond." → `Wachten tot X reageert.` · macOS Finder's own two waiting shapes are `Wachten op
+  <noun>` ("Waiting for disc drive…"→"Wachten op schijfeenheid…") and `Wachten tot <clause>` ("Waiting for transfer with
+  '^0' to complete…"→"Wachten tot overdracht met '^0' is voltooid…"); the clause form fits a verb like `reageert` · high
+- source (the side being read FROM) → `bron` · Double Commander ("Source"→"Bron", "Waiting for access to file
+  source"→"Wachtend op toegang tot bestandsbron"), Microsoft terminology ("source"→"bron", NLD/BEL) · high
+- destination (the side being written TO) → `bestemming` · glossary above (macOS "at Destination"→"op bestemming");
+  Microsoft's `doel` is the Windows term, macOS wins per term-choice principle 2 · high
+- "has stopped moving" (a stalled transfer) → `komt niet meer vooruit` · no pile source names a stall; chose the
+  unambiguous "makes no more headway" over `ligt stil` / `staat stil`, which sit too close to the neighbouring
+  `Gepauzeerd` state in the same dialog · tentative
+- "partly written" (bytes already on disk) → `gedeeltelijk geschreven` · macOS Finder models the plain verb for data
+  landing on a device ("Er zijn gegevens naar deze schijf geschreven, maar de bewerking is niet voltooid."); the
+  in-catalog `gedeeltelijke doelbestanden` (`rollbackTooltip`) confirms `gedeeltelijk` · high
+- the log (Cmdr's on-disk log file, `stallLogHint`) → `het logbestand` · deliberately NOT the generic `logboek`: this
+  catalog already owns `Bewerkingenlogboek` as a FEATURE name, and `Het logboek heeft de details` would point at the
+  wrong thing. `logbestand` is what Settings shows the user (`settings.logging.openLogFile` = "Open logbestand"). The
+  sentence shape mirrors the in-catalog `Het bewerkingenlogboek heeft de details.` · high
+- close (dialog button that leaves the work running) → `Sluit` · glossary above; the catalog-wide rendering of "Close"
+  (10 keys incl. the sibling `fileOperations.errorDialog.close`), and clearly distinct from `Annuleer` next to it · high
+
+Notes:
+
+- `stallInFlight` splits only the noun + copula across the plural branches (`{count, plural, one {# bestand is} other
+  {# bestanden zijn}} nog open en misschien al gedeeltelijk geschreven.`), so the shared tail carries both predicates on
+  one copula. Same technique as `askCmdr.renameUndo.*`'s `{count, plural, one {het is} other {ze zijn}}`. Dutch CLDR
+  categories are `one` / `other`.
+- `stallUnknown` refers to the transfer as `hem` (de-word `overdracht`), matching `queuedToast` / `backgroundedToast`
+  ("Vind hem in de overdrachtswachtrij"), and reuses `laat … op de achtergrond doorlopen` verbatim from `queueTooltip`.
+  The comma before `of` follows both the EN source and the in-catalog habit ("Probeer opnieuw, of verbreek de
+  verbinding").
+- Voice rule held: no `fout` / `mislukt` anywhere in the eight values.
+- No `sameAsSourceJustification` needed: all eight values differ from English.
+
+REVIEW FLAGS (stalled-transfer pass):
+
+- `Al {duration} geen voortgang` — grammatical and idiomatic, but no pile string phrases an elapsed-stall this way
+  (nothing in the pile has the concept). Alternatives, if a native reviewer prefers them: `Geen voortgang in
+  {duration}`, `{duration} geen voortgang`.
+- `De overdracht komt niet meer vooruit.` — see the term row; `ligt stil` is the more idiomatic standstill phrase but
+  risks reading as "paused" in a dialog that has a real paused state.

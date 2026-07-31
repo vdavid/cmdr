@@ -369,6 +369,34 @@
   "@fileOperations.transferProgress.titleCancellingSlow": {
     "sourceHash": "f849d68"
   },
+  "fileOperations.transferProgress.close": "Sluit",
+  "@fileOperations.transferProgress.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "fileOperations.transferProgress.stallNotice": "Al {duration} geen voortgang.",
+  "@fileOperations.transferProgress.stallNotice": {
+    "sourceHash": "c88a3f3"
+  },
+  "fileOperations.transferProgress.stallWaitingDestination": "Wachten tot de bestemming reageert.",
+  "@fileOperations.transferProgress.stallWaitingDestination": {
+    "sourceHash": "1cb8f39"
+  },
+  "fileOperations.transferProgress.stallWaitingSource": "Wachten tot de bron reageert.",
+  "@fileOperations.transferProgress.stallWaitingSource": {
+    "sourceHash": "efb8d93"
+  },
+  "fileOperations.transferProgress.stallUnknown": "De overdracht komt niet meer vooruit. Annuleer hem, of laat hem op de achtergrond doorlopen.",
+  "@fileOperations.transferProgress.stallUnknown": {
+    "sourceHash": "37e23a5"
+  },
+  "fileOperations.transferProgress.stallInFlight": "{count, plural, one {# bestand is} other {# bestanden zijn}} nog open en misschien al gedeeltelijk geschreven.",
+  "@fileOperations.transferProgress.stallInFlight": {
+    "sourceHash": "c4bf553"
+  },
+  "fileOperations.transferProgress.stallLogHint": "Het logbestand heeft de details.",
+  "@fileOperations.transferProgress.stallLogHint": {
+    "sourceHash": "a766f0d"
+  },
   "fileOperations.transferProgress.titleConflict": "Bestand bestaat al",
   "@fileOperations.transferProgress.titleConflict": {
     "sourceHash": "ae71a9a"

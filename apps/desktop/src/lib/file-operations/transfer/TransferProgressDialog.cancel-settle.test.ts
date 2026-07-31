@@ -250,3 +250,47 @@ describe('TransferProgressDialog cancel-settle gate', () => {
     }
   })
 })
+
+/**
+ * M3.4: the dialog must ALWAYS be dismissable, whatever the backend is doing.
+ *
+ * The settle gate above is the right default — it buys honest numbers — but it
+ * must never be the only way out. In the 2026-07-31 incident the window
+ * wouldn't close and force-quit was the only option left, which is what turned
+ * a recoverable stall into data loss.
+ */
+describe('TransferProgressDialog is always dismissable', () => {
+  it('offers a way out while waiting for the backend to settle, and takes it immediately', async () => {
+    const { component, onCancelled, target } = await mountDialog()
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    try {
+      if (!cancelledCb) throw new Error('subscribers never registered')
+
+      // Cancel, then have the backend go quiet: `write-settled` never arrives.
+      cancelledCb({
+        operationId: 'op-1',
+        operationType: 'delete',
+        filesProcessed: 7,
+        rolledBack: false,
+      })
+      await tick()
+      expect(onCancelled, 'still waiting on settle').not.toHaveBeenCalled()
+
+      const closeButton = [...target.querySelectorAll('button')].find((b) => b.textContent.includes('Close'))
+      if (!closeButton) throw new Error('a Close affordance must exist while the backend is silent')
+
+      closeButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await tick()
+      vi.advanceTimersByTime(450)
+      await tick()
+
+      // Closes on the user's say-so, reporting what the backend did tell us.
+      expect(onCancelled, 'the user must not have to wait for the backend').toHaveBeenCalledTimes(1)
+      expect(onCancelled).toHaveBeenCalledWith(7)
+
+      void unmount(component)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})

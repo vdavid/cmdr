@@ -369,6 +369,34 @@
   "@fileOperations.transferProgress.titleCancellingSlow": {
     "sourceHash": "f849d68"
   },
+  "fileOperations.transferProgress.close": "Bezárás",
+  "@fileOperations.transferProgress.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "fileOperations.transferProgress.stallNotice": "{duration} óta nincs előrehaladás.",
+  "@fileOperations.transferProgress.stallNotice": {
+    "sourceHash": "c88a3f3"
+  },
+  "fileOperations.transferProgress.stallWaitingDestination": "Várakozás a cél válaszára.",
+  "@fileOperations.transferProgress.stallWaitingDestination": {
+    "sourceHash": "1cb8f39"
+  },
+  "fileOperations.transferProgress.stallWaitingSource": "Várakozás a forrás válaszára.",
+  "@fileOperations.transferProgress.stallWaitingSource": {
+    "sourceHash": "efb8d93"
+  },
+  "fileOperations.transferProgress.stallUnknown": "Az átvitel megállt. Szakítsd meg, vagy hagyd futni a háttérben.",
+  "@fileOperations.transferProgress.stallUnknown": {
+    "sourceHash": "37e23a5"
+  },
+  "fileOperations.transferProgress.stallInFlight": "{count, plural, one {# fájl van még nyitva} other {# fájl van még nyitva}}, és lehet, hogy már részben ki van írva.",
+  "@fileOperations.transferProgress.stallInFlight": {
+    "sourceHash": "c4bf553"
+  },
+  "fileOperations.transferProgress.stallLogHint": "A részleteket megtalálod a naplóban.",
+  "@fileOperations.transferProgress.stallLogHint": {
+    "sourceHash": "a766f0d"
+  },
   "fileOperations.transferProgress.titleConflict": "A fájl már létezik",
   "@fileOperations.transferProgress.titleConflict": {
     "sourceHash": "ae71a9a"

@@ -979,3 +979,64 @@ Phrasing notes for this pass:
 - **"the check running right now" → `l''analyse en cours`** · reuses `analyse` as this catalog's settled word for a full
   check (`tooltipCoalesced`: "la prochaine analyse complète de Cmdr") and that string's closing
   `remettre tout d''aplomb` · high.
+
+## Transferts à l'arrêt : les 8 clés du bandeau de blocage (2026-07-31)
+
+Settled during the stalled-transfer pass (`fileOperations.transferProgress.stall*` + `close`, `queue.row.stalled`). ICU
+values, so single apostrophes doubled below to match this doc's convention:
+
+- close (button that closes the progress dialog while the transfer keeps running) → **Fermer** · macOS AppKit
+  (`Document.json`, `WindowTabs.json`: "Close" → "Fermer"), MS terminology FRA ("Close" → "Fermer") · high — distinct
+  from "Annuler" (Cancel) sitting next to it, and from the crash-reporter dismiss "Ignorer" (that one is a
+  dismiss-without-acting, this one really closes a window).
+- stalled / no progress (a transfer that has stopped moving) → **Aucune progression depuis {duration}** · "progression"
+  is macOS's word for transfer progress (`NSProgressPanel` "Progression", Finder `AirDropProgressView`) and is already
+  the catalog's (`Progression de la taille`, `Progression des fichiers`); "depuis + durée" is the standard FR "for the
+  past X" shape · high — deliberately NOT "bloqué"/"échec"/"erreur": it states the observation, not a verdict.
+- "the transfer has stopped moving" → **Le transfert n''avance plus.** · descriptive calm FR; no pile source names this
+  state (no "stall" entry in MS terminology FRA, no hit in the four file-manager catalogs), so this is composed from the
+  settled `transfert` + the plain negative "n''avance plus" · high for the term, tentative for the sentence shape.
+- waiting for X to respond → **En attente d''une réponse de {la destination / la source}** · Double Commander
+  ("Waiting for user response" → "En attente de la réponse utilisateur", "Waiting for access to file source" → "En
+  attente de l''accès au fichier source"), macOS ("En attente de la mise à jour", "En attente du chargement",
+  `SavePanel` "Waiting for disc drive…" → "Attente du lecteur de disque…"), MS terminology FRA ("stop responding" →
+  "ne plus répondre") · high — "En attente de…" is the pile's dominant shape; the indefinite "d''une réponse" avoids
+  implying a specific expected reply.
+- source (the device/share being read FROM) → **la source** (feminine) · Double Commander ("Source" → "Source"), Total
+  Commander ("répertoire de source", "disque de source") · high — pairs with the settled `destination → destination`
+  (also feminine), so both take "de la".
+- still open (a file the transfer hasn''t closed yet) → **encore ouvert / encore ouverts** · KDE Dolphin ("…are open
+  within an application" → "…sont ouverts dans une application"), Double Commander ("the file is open in another
+  program" → "le fichier est ouvert dans un autre programme") · high.
+- partly written → **partiellement écrit / partiellement écrits** · the catalog''s own settled shape
+  (`errors.git.missingObject.message`: "Le dépôt est peut-être partiellement récupéré"), macOS ("partiellement
+  disponible") · high.
+- "the log has the details" → **Le fichier journal donne les détails.** · reuses the catalog''s existing near-twin
+  `askCmdr.renameUndo.refusedBatches` ("The operation log has the details." → "Le journal des opérations donne les
+  détails.") and the settled `log file → fichier journal` (`settings.logging.openLogFile`: "Ouvrir le fichier journal",
+  MS terminology FRA) · high — "fichier journal" (not bare "journal") because this string points at Cmdr''s log FILE,
+  while "journal des opérations" is the separate in-app operation history.
+
+Phrasing notes for this pass:
+
+- **`stallInFlight` moves the trailing clause INSIDE the plural branches.** English keeps "and may already be partly
+  written." outside the `{count, plural, …}`; French can''t, because the participle has to agree with the counted noun
+  ("ouvert et … écrit" vs "ouverts et … écrits"). Parity only compares the placeholder SET
+  (`apps/desktop/scripts/i18n-check-parity.ts`), so pulling literal text into the branches is safe and is the right move
+  whenever a trailing clause has to agree. The ellipsis of the second verb ("est encore ouvert et peut-être déjà
+  partiellement écrit", not "et est peut-être…") is what keeps it readable.
+- FR CLDR `one`/`many`/`other` on `stallInFlight`; `many` written identical to `other` (plain integers never select
+  `many`, but the parity/plural checks want the branch), matching every other plural in the `fr` set. French counts 0 as
+  `one`, and "0 fichier est encore ouvert" is correct French, so the singular branch is safe there too.
+- Non-alarmist throughout, as the whole point of these strings: no "erreur", no "échec", no "a échoué", no "bloqué". The
+  copy states what is observed ("Aucune progression depuis…", "En attente d''une réponse…", "n''avance plus") and offers
+  the two ways out.
+- `stallUnknown` drops the English comma before "ou" (French doesn''t take one in a two-item choice) and uses the `vous`
+  imperative pair "Annulez-le ou laissez-le continuer en arrière-plan", reusing the settled `background → en
+  arrière-plan`.
+- No `:` `;` `!` `?` `%` in any of the eight values, so the catalog''s ASCII-space-before-punctuation rule doesn''t come
+  up. All apostrophes are ASCII and doubled (`d''une`, `n''avance`); rendering was verified with `intl-messageformat`
+  under locale `fr` for counts 0/1/2/5/1 000 000.
+- No `sameAsSourceJustification` needed: all eight values differ from English.
+- `{duration}` arrives pre-formatted ("45s", "2m 30s") from `$lib/units`, so it is NOT localized by this catalog; the
+  sentence is built so any length or shape reads correctly after "depuis".

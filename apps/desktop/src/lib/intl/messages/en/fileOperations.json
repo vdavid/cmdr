@@ -604,6 +604,47 @@
     "description": "Progress-dialog title shown when cancellation takes a moment because an in-flight USB transfer must finish first. Keep the trailing ellipsis on the first part. 'USB' is the connection type."
   },
 
+  "fileOperations.transferProgress.close": "Close",
+  "@fileOperations.transferProgress.close": {
+    "description": "Button on the copy/move progress dialog that closes the window while the transfer is still finishing in the background. Shown once cancelling is under way, so the person never has to wait for a slow device to respond. Keep it short; it sits next to Cancel."
+  },
+
+  "fileOperations.transferProgress.stallNotice": "No progress for {duration}.",
+  "@fileOperations.transferProgress.stallNotice": {
+    "description": "Replaces the time-remaining line on the copy/move progress dialog when a transfer has stopped moving, so we stop showing a countdown we no longer believe. {duration} is a formatted length of time such as '45s' or '2m 30s'.",
+    "placeholders": {
+      "duration": { "content": "$1", "example": "45s" }
+    }
+  },
+
+  "fileOperations.transferProgress.stallWaitingDestination": "Waiting for the destination to respond.",
+  "@fileOperations.transferProgress.stallWaitingDestination": {
+    "description": "Explains a stalled copy/move: the drive, share, or phone being written TO has stopped accepting data. Sits under the 'No progress for X' line."
+  },
+
+  "fileOperations.transferProgress.stallWaitingSource": "Waiting for the source to respond.",
+  "@fileOperations.transferProgress.stallWaitingSource": {
+    "description": "Explains a stalled copy/move: the drive, share, or phone being read FROM has stopped producing data. Sits under the 'No progress for X' line."
+  },
+
+  "fileOperations.transferProgress.stallUnknown": "The transfer has stopped moving. Cancel it, or leave it running in the background.",
+  "@fileOperations.transferProgress.stallUnknown": {
+    "description": "Explains a stalled copy/move when nothing identifies the cause, and points at the two ways out. Conversational; never use the words 'error' or 'failed'."
+  },
+
+  "fileOperations.transferProgress.stallInFlight": "{count, plural, one {# file is still open} other {# files are still open}} and may already be partly written.",
+  "@fileOperations.transferProgress.stallInFlight": {
+    "description": "Shown on a stalled copy/move. Explains why the finished-files counter can read lower than what the person sees at the destination: files still open have data written but aren't counted as done yet. {count} is how many are open.",
+    "placeholders": {
+      "count": { "content": "$1", "example": "5" }
+    }
+  },
+
+  "fileOperations.transferProgress.stallLogHint": "The log has the details.",
+  "@fileOperations.transferProgress.stallLogHint": {
+    "description": "Closing line of the stalled-transfer notice, pointing the person at Cmdr's log file for specifics."
+  },
+
   "fileOperations.transferProgress.titleConflict": "File already exists",
   "@fileOperations.transferProgress.titleConflict": {
     "description": "Progress-dialog title when a name clash needs the user to decide what to do. Deliberately plain; the destructive detail is spelled out in the body.",

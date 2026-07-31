@@ -112,6 +112,12 @@ CLDR categories: `one`, `many`, `other` (verified with `new Intl.PluralRules('es
 grammatical gender; article and adjective must agree with the counted noun in every branch. None of the crash-reporter
 strings are counted, so no plural branches are needed there.
 
+- Write all three branches even though `many` (compact forms like `1.000.000`) usually repeats `other` verbatim; the
+  catalog already does this (`queue.toolbar.selectedCount`, `transferProgress.queuedToastCount`).
+- **When the sentence continues past the counted noun, pull the WHOLE sentence into the branches.** English often
+  leaves the tail outside the plural ("{n} files are still open} and may already be partly written."); Spanish can't,
+  because the tail's verb and participle agree with the count. `transferProgress.stallInFlight` is the worked example.
+
 ## Notes and decisions
 
 - Roster: Cmdr ships one pan-regional Spanish (archivo not fichero, avoid ordenador, ustedes-safe); a Spain variant
@@ -124,13 +130,21 @@ strings are counted, so no plural branches are needed there.
   with three dots"), so the Spanish value uses three ASCII dots too: "Enviando...". macOS's own string is "Enviando…"
   (one Unicode char); we follow Cmdr's catalog convention, not macOS's, to keep the source/translation shapes aligned.
 - **Numbers and dates come from the formatter layer.** Never hardcode separators.
+- **"for {duration}" (a stretch of time still running) → `desde hace {duration}`.** `durante` names a finished span and
+  `hace` alone names a point in the past; only `desde hace` says "for the last X, and still". Applies to every
+  elapsed-time line ("No progress for 45s" → "Sin progreso desde hace 45 s").
+- **Never say something went wrong, say what is happening.** The ban on "error"/"failed" covers Spanish "error", "ha
+  fallado", and "fallo" in these status lines. For a transfer that stalls, `ha dejado de avanzar` carries the fact
+  without the verdict; `se ha detenido` / `se ha quedado parada` are also off-limits for a different reason (they read
+  as "paused", which the queue labels `En pausa`).
 - **Watch the quiet gendered words in emphatic English.** "yourself", "busy", "sure", "ready" all reach for a `-o`/`-a`
   adjective in Spanish and silently gender the reader. Restructure with the pronoun instead of the adjective: "Pick the
   folders yourself" → "Elige tú las carpetas" (not "Elige las carpetas tú mismo"); "while you're not busy" → "mientras
   no estás usando el Mac". Same rule as the gendered-grammar decision above, but the trap hides in ordinary emphasis
   rather than in role nouns.
 - **Length: Spanish runs ~15–25% longer than English.** Overflow-check tight buttons ("Copiar", "Descartar", "Enviar
-  informe") against the pseudolocale (`en-XA`).
+  informe") against the pseudolocale (`en-XA`). Watch `queue.row.stalled` in particular: "Sin progreso desde hace 45 s"
+  is ~40% longer than the English it replaces, in the narrow ETA slot of an operation row.
 
 ## Decisions to confirm with David
 

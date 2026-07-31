@@ -27,6 +27,8 @@ import type {
   ScanPreviewErrorEvent,
   ScanPreviewProgressEvent,
   ScanProgressEvent,
+  TransferActivity,
+  TransferWaitReason,
   WriteCancelledEvent,
   WriteCompleteEvent,
   WriteConflictEvent,
@@ -41,6 +43,8 @@ export { listen }
 
 // Re-export types for backward compatibility
 export type {
+  TransferActivity,
+  TransferWaitReason,
   WriteCancelledEvent,
   WriteCompleteEvent,
   WriteConflictEvent,

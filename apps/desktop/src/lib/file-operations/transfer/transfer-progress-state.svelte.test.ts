@@ -562,8 +562,11 @@ describe('createTransferProgressState: cancel + settle close-out', () => {
     const { state, config } = await startedState()
     void state.handleCancel(false)
     await flushMicro()
-    // Last-resort fallback fires at CANCEL_SETTLE_FALLBACK_MS (10 s).
-    vi.advanceTimersByTime(10_000)
+    // Last-resort fallback fires at CANCEL_SETTLE_FALLBACK_MS, which sits ABOVE
+    // the backend's 15 s `CANCEL_DRAIN_DEADLINE` so it can't report `0 files`
+    // moments before the backend reports the real number. The user never waits
+    // this out in practice: the dialog's Close button dismisses immediately.
+    vi.advanceTimersByTime(20_000)
     expect(config.onCancelled).toHaveBeenCalledWith(0)
     void state // keep reference
   })

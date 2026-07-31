@@ -153,12 +153,21 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
   pattern-match off English.
 - `en`/`ett` gender affects agreement ("en markerad fil" vs "ett markerat objekt"). Keep article and adjective agreeing
   with the counted noun inside each branch.
+- **Pull a shared tail INSIDE the branches when it agrees with the counted noun.** English often leaves a trailing
+  clause outside the plural ("{count, plural, …} and may already be partly written"); Swedish predicative adjectives and
+  participles inflect for number ("öppen … skriven" vs "öppna … skrivna"), so a shared tail is wrong in one branch.
+  Duplicate the tail into `one` and `other` instead. The placeholder set stays identical, so parity still passes
+  (`fileOperations.transferProgress.stallInFlight` is the worked example).
 
 ## Notes and decisions
 
 - **Sentence case is native.** Swedish doesn't capitalize common nouns, days, or months, so the app's sentence-case rule
   applies without friction. Don't title-case.
 - **Quotation marks: `”…”`** (right double quote both sides) is the standard Swedish form. Avoid English `"…"`.
+- **No comma before `och`/`eller` joining two short main clauses.** English keeps it ("Cancel it, or leave it running in
+  the background"); Swedish drops it when both clauses are short ("Avbryt den eller låt den fortsätta i bakgrunden").
+  Cmdr's English Oxford-comma rule is an English rule; Swedish punctuation wins here. Keep the comma only when the
+  clauses are long enough that the reader needs the break.
 - **Percent sign: always a space before `%`** ("100 %", "{percent} %"). Swedish typography, and what the rest of the sv
   catalog does. Don't carry English's tight `50%` across, even inside a placeholder-heavy string.
 - **Warning badges are noun-shaped, not imperative.** A compact badge beside a row names a STATE, so it takes a noun

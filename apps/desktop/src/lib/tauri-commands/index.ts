@@ -266,6 +266,8 @@ export type { StreamingListingStartResult } from '../file-explorer/types'
 // Write + scan-preview event payload types now flow from the typed-events
 // bindings via the `write-operations.ts` re-export.
 export type {
+  TransferActivity,
+  TransferWaitReason,
   WriteCancelledEvent,
   WriteCompleteEvent,
   WriteConflictEvent,

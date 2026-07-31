@@ -744,3 +744,51 @@ Terms settled while reviewing the five strings the master-toggle feature added
 - **"the check running right now" → `der gerade laufende Durchlauf`** · reuses `Durchlauf` as this catalog's settled
   word for a full check (`tooltipCoalesced`: "der nächste vollständige Durchlauf von Cmdr"), plus that string's own
   closing `bringt das wieder in Ordnung` · high.
+
+## Stalled transfer: the honest-stall notice (2026-07-31)
+
+Terms and phrasings settled for the eight stall strings (`fileOperations.transferProgress.close` / `.stallNotice` /
+`.stallWaitingDestination` / `.stallWaitingSource` / `.stallUnknown` / `.stallInFlight` / `.stallLogHint`, plus
+`queue.row.stalled`). These replace a confident countdown on a transfer that has stopped moving.
+
+- **stalled / "no progress" (a transfer) → `Kein Fortschritt seit {duration}`** · `Fortschritt` is the settled progress
+  noun across the tiers: macOS DE ("Kopierfortschritt anzeigen", "Fortschrittsfenster einblenden"), Double Commander
+  ("Operationsfortschritt", "Gesamtfortschritt") · high for the noun, `tentative` for the frame. No source names the
+  stall CONCEPT: Microsoft terminology has no `stall` / `stalled` entry and none of the file-manager catalogs has a
+  stalled-transfer string, so the "Kein Fortschritt seit …" frame is a construction, not a lifted term. It leads with
+  the negation like the English (it replaces the ETA line `noch ~{duration}`, so the state word has to come first).
+- **"The transfer has stopped moving." → `Die Übertragung kommt nicht mehr voran.`** · `Übertragung` is the settled
+  transfer noun; `kommt nicht mehr voran` is general German, not a term (unattested in the pile, which has no
+  stalled-transfer string at all) · tentative on the phrasing. ❌ Not `Die Übertragung ist fehlgeschlagen` or anything
+  with `Fehler`: nothing went wrong yet, and the voice rule forbids both words. `steht still` was the runner-up; it
+  reads more final than the situation is (the transfer may still recover on its own).
+- **"Waiting for the destination/source to respond." → `Cmdr wartet auf eine Antwort vom Ziel.` /
+  `… von der Quelle.`** · destination → `Ziel`, source → `Quelle` (glossary, MS terminology), and the catalog's own
+  transfer-domain pair uses exactly these bare nouns (`errors.write.readError.message` "Aus der Quelle ließ sich nicht
+  lesen.", `errors.write.writeError.message` "Ins Ziel ließ sich nicht schreiben."); GNOME Nautilus confirms the bare
+  noun ("The destination is not a folder." → "Das Ziel ist kein Ordner."); respond → `antworten` (MS terminology,
+  AUT/DEU/CHE/LUX; macOS AppKit "did not respond to the request" → "hat auf die Dienstanfrage nicht geantwortet") ·
+  high. **Named subject on purpose**: macOS's own waiting lines are verbless progress fragments that take an ellipsis
+  ("Warten auf das Laufwerk …", "Auf Upload warten"), but these two sit in body prose next to a full sentence and end
+  in a period, so a bare `Warten auf …` fragment would clash. `Cmdr wartet …` keeps the active voice, matches the
+  catalog's Cmdr-as-subject sentences ("Cmdr erstellt ihn beim Kopieren."), and makes the period grammatical.
+- **"still open" (a file whose handle is open mid-write) → `noch geöffnet`** · macOS DE uses the participle for the
+  open-file state ("Möchtest du „^0“ wirklich im geöffneten Zustand umbenennen?", "Das Umbenennen eines geöffneten
+  Programms …") · high. The ICU tail after the plural block shares the branch's `ist` / `sind`, so both branches read
+  as one clause: "1 Datei ist noch geöffnet und möglicherweise schon teilweise geschrieben." /
+  "5 Dateien sind noch geöffnet und …". Both `geöffnet` and `geschrieben` are state passives, so the shared auxiliary
+  is grammatical in both branches.
+- **"may already be partly written" → `möglicherweise schon teilweise geschrieben`** · plain DE; ❌ not MS
+  terminology's `partiell`, which is technical register the English deliberately avoids · high.
+- **"The log has the details." → `Details stehen in der Protokolldatei.`** · reuses the catalog's own
+  details-live-in-the-log frame (`askCmdr.renameUndo.refusedBatches` "Details stehen im Aktionsprotokoll.") with the
+  settled `log file → Protokolldatei`; naming the FILE disambiguates it from the operation log (`Vorgangsprotokoll`),
+  which is a different surface · high.
+- **`close` (the button that closes the progress dialog while the transfer finishes) → `Schließen`** · macOS DE
+  ("Close" → "Schließen" in Finder + AppKit, key `FR26` and `NSTouchBarCloseTemplate`), and the glossary's settled
+  dismiss-button term · high. It sits next to `Abbrechen`, and the two share no stem, so the pair stays distinct.
+- **"leave it running in the background" → `im Hintergrund weiterlaufen lassen`** · the settled background phrasing,
+  verbatim from `transferProgress.queueTooltip` · high. The two ways out are offered with `Du kannst …` (macOS DE's
+  option-offering frame, "Du kannst auch auf „Sichern unter“ klicken") rather than a bare imperative: the line points
+  at two choices, it doesn't order one.
+- No `sameAsSourceJustification` needed: every value differs from English.

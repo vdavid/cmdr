@@ -369,6 +369,34 @@
   "@fileOperations.transferProgress.titleCancellingSlow": {
     "sourceHash": "f849d68"
   },
+  "fileOperations.transferProgress.close": "Fechar",
+  "@fileOperations.transferProgress.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "fileOperations.transferProgress.stallNotice": "Sem progresso há {duration}.",
+  "@fileOperations.transferProgress.stallNotice": {
+    "sourceHash": "c88a3f3"
+  },
+  "fileOperations.transferProgress.stallWaitingDestination": "Aguardando resposta do destino.",
+  "@fileOperations.transferProgress.stallWaitingDestination": {
+    "sourceHash": "1cb8f39"
+  },
+  "fileOperations.transferProgress.stallWaitingSource": "Aguardando resposta da origem.",
+  "@fileOperations.transferProgress.stallWaitingSource": {
+    "sourceHash": "efb8d93"
+  },
+  "fileOperations.transferProgress.stallUnknown": "A transferência parou de avançar. Cancele-a ou deixe-a rodando em segundo plano.",
+  "@fileOperations.transferProgress.stallUnknown": {
+    "sourceHash": "37e23a5"
+  },
+  "fileOperations.transferProgress.stallInFlight": "{count, plural, one {# arquivo ainda está aberto e já pode estar parcialmente gravado} many {# arquivos ainda estão abertos e já podem estar parcialmente gravados} other {# arquivos ainda estão abertos e já podem estar parcialmente gravados}}.",
+  "@fileOperations.transferProgress.stallInFlight": {
+    "sourceHash": "c4bf553"
+  },
+  "fileOperations.transferProgress.stallLogHint": "O arquivo de registro tem os detalhes.",
+  "@fileOperations.transferProgress.stallLogHint": {
+    "sourceHash": "a766f0d"
+  },
   "fileOperations.transferProgress.titleConflict": "O arquivo já existe",
   "@fileOperations.transferProgress.titleConflict": {
     "sourceHash": "ae71a9a"

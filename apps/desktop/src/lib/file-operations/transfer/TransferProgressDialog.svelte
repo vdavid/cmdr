@@ -28,7 +28,8 @@
     import Trans from '$lib/intl/Trans.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import type { MessageKey } from '$lib/intl/keys.gen'
-    import { formatDuration, formatFilesPerSecond } from '$lib/units'
+    import { formatDuration, formatFilesPerSecond, seconds } from '$lib/units'
+    import { stallNoticeFor } from './transfer-stall'
 
     interface Props {
         operationType: TransferOperationType
@@ -200,6 +201,9 @@
     const bytesPerSecond = $derived(progress.bytesPerSecond)
     const filesPerSecond = $derived(progress.filesPerSecond)
     const etaSecondsDisplay = $derived(progress.etaSecondsDisplay)
+    /** Non-null only once the BACKEND says the transfer has stopped moving for
+     *  a reason that isn't deliberate. Drives the ETA line off the screen. */
+    const stall = $derived(stallNoticeFor(progress.activity))
 
     // Progress stages for visualization; the active phase label adapts to operation type.
     const activePhaseId = $derived<WriteOperationPhase>(
@@ -442,7 +446,16 @@
                             {/if}
                         {/if}
                     </span>
-                    {#if etaSecondsDisplay !== null}
+                    {#if stall}
+                        <!-- A countdown we no longer believe is worse than no
+                             countdown: the dialog showed "~8m 12s remaining"
+                             through a 20-minute stall. -->
+                        <span class="progress-stall"
+                            >{tString('fileOperations.transferProgress.stallNotice', {
+                                duration: formatDuration(seconds(stall.stillForSeconds)),
+                            })}</span
+                        >
+                    {:else if etaSecondsDisplay !== null}
                         <span class="progress-eta"
                             >{tString('fileOperations.transferProgress.etaRemaining', {
                                 duration: formatDuration(etaSecondsDisplay),
@@ -451,6 +464,31 @@
                     {/if}
                 </div>
             </div>
+
+            {#if stall}
+                <div class="stall-notice" role="status">
+                    <span class="stall-icon" aria-hidden="true"><Icon name="hourglass" size={14} /></span>
+                    <div class="stall-text">
+                        <p class="stall-reason">
+                            {#if stall.reason === 'destination'}
+                                {tString('fileOperations.transferProgress.stallWaitingDestination')}
+                            {:else if stall.reason === 'source'}
+                                {tString('fileOperations.transferProgress.stallWaitingSource')}
+                            {:else}
+                                {tString('fileOperations.transferProgress.stallUnknown')}
+                            {/if}
+                        </p>
+                        {#if stall.inFlight > 0}
+                            <!-- Why the finished count can read lower than what
+                                 the user can see at the destination. -->
+                            <p class="stall-detail">
+                                {tString('fileOperations.transferProgress.stallInFlight', { count: stall.inFlight })}
+                            </p>
+                        {/if}
+                        <p class="stall-detail">{tString('fileOperations.transferProgress.stallLogHint')}</p>
+                    </div>
+                </div>
+            {/if}
 
             <!-- Current file (active phase only; scanning shows it inside scanPhaseBody) -->
             {#if currentFile}
@@ -509,6 +547,15 @@
                 onclick={() => progress.handleCancel(false)}
                 disabled={isCancelling || operationSettled}>{tString('fileOperations.button.cancel')}</Button
             >
+            <!-- The escape hatch. Once cancelling is under way the backend can
+                 take its bounded wind-down time, and the person must never be
+                 stuck watching it: force-quit was the only way out of the
+                 2026-07-31 wedge, and that's what cost two files. -->
+            {#if isCancelling || cancelEventReceived}
+                <Button variant="secondary" onclick={progress.dismiss}
+                    >{tString('fileOperations.transferProgress.close')}</Button
+                >
+            {/if}
             {#if isCopy || isMove}
                 {#if isRollingBack}
                     <Button variant="danger" disabled>{tString('fileOperations.transferProgress.titleRollingBack')}</Button
@@ -646,6 +693,51 @@
 
     .progress-eta {
         color: var(--color-text-tertiary);
+    }
+
+    /* Replaces the ETA once the backend reports the transfer has stopped
+       moving. Warmer than the tertiary ETA it displaces, because it's the line
+       that has to be noticed. */
+    .progress-stall {
+        color: var(--color-text-secondary);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .stall-notice {
+        display: flex;
+        gap: var(--spacing-sm);
+        align-items: flex-start;
+        margin: 0 var(--spacing-xl);
+        padding: var(--spacing-sm) var(--spacing-md);
+        border: 1px solid var(--color-border-subtle);
+        border-radius: var(--radius-md);
+        background: var(--color-bg-secondary);
+    }
+
+    .stall-icon {
+        color: var(--color-text-secondary);
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .stall-text {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xxs);
+        min-width: 0;
+    }
+
+    .stall-reason {
+        margin: 0;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+    }
+
+    .stall-detail {
+        margin: 0;
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
     }
 
     /* Current file */

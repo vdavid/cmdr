@@ -136,6 +136,11 @@ Dateien".
 - Case agreement interacts with counts and with surrounding prepositions. A counted noun often sits in a case the
   English doesn't mark ("in 3 Ordnern", dative plural `-n`). Get the case right inside each branch.
 - German has grammatical gender (der/die/das); article and adjective must agree with the counted noun in every branch.
+- **Text AFTER a plural block has to work with both branches' verbs.** English often puts the verb inside the branches
+  ("# file is still open" / "# files are still open") and shares the rest outside. German keeps that split, so check
+  the sentence reads with `ist` AND with `sind`: "1 Datei ist noch geöffnet und möglicherweise schon teilweise
+  geschrieben." / "5 Dateien sind noch geöffnet und …" (`transferProgress.stallInFlight`). If a shared tail can't
+  agree with both, move it inside the branches rather than bending the grammar.
 
 ## Notes and decisions
 
@@ -151,6 +156,11 @@ Dateien".
   "Verbindung wird hergestellt …"); menu-item and button labels that open a dialog attach it with NO space, the macOS
   menu convention ("Einführung…", "Befehle suchen…", "Fehlerbericht senden…"). The English source mixes `...` and `…`
   freely; normalize to `…` either way.
+- **A waiting line in BODY PROSE is a sentence, not a progress label.** macOS's own waiting strings are verbless
+  fragments with an ellipsis ("Warten auf das Laufwerk …", "Auf Upload warten"), which is right for a title or a status
+  chip. When the English is a full sentence ending in a period and sits next to other sentences, give it a subject
+  instead of shipping a fragment plus a period, as `stallWaitingDestination` does: "Cmdr wartet auf eine Antwort vom
+  Ziel." Active voice and a grammatical period beat a literal fragment.
 - **Don't decline the brand `Cmdr` to a genitive `Cmdrs`.** Use the analytic genitive "… von Cmdr" ("die
   Protokolldateien von Cmdr", "die Vorschau von Cmdr"), matching how Apple leaves product names undeclined. A declined
   "Cmdrs" also trips `desktop-i18n-dont-translate` (it scans for the verbatim token "Cmdr").
@@ -170,6 +180,11 @@ The formality and move calls are now settled from the sources (see above); the o
 
 - **listing → Dateiliste** (tentative): no canonical source. Confirm whether "Dateiliste" or plain "Liste" reads best in
   Cmdr's context.
+- **The stall wording** (tentative): no source names a stalled transfer at all (no Microsoft `stall` entry, no
+  file-manager string), so "Kein Fortschritt seit {duration}" and "Die Übertragung kommt nicht mehr voran." are
+  constructions. Details and the runners-up: `glossary.md` § Stalled transfer. Also worth an eye during the overflow
+  check: the queue row's German is noticeably wider than the ETA text it replaces ("Kein Fortschritt seit 2 Min. 30 s"
+  vs "noch 2 Min. 30 s").
 
 ## Glossary
 

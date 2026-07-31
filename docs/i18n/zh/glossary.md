@@ -836,3 +836,48 @@ term used instead), Microsoft zh-Hans TBX cross-check. Three settings-card title
 - **"Update the file list"** · `更新文件列表` · composed from the settled siblings `保存文件列表` + `更新索引` · `high`.
 - **"the check running right now"** · `正在进行的这次检查` · reuses `检查` as this catalog's settled word for a full
   check (`tooltipCoalesced`: `下一次完整检查`) and that string's closing `恢复准确` · `high`.
+
+## 传输停滞提示 / stalled-transfer notice (`fileOperations.transferProgress.stall*`, `close`, `queue.row.stalled`, 2026-07-31)
+
+The copy/move progress dialog and the queue row when a transfer has stopped moving (a parked network share or phone),
+replacing the countdown we no longer believe. macOS zh-CN Tier 1, Total Commander zh-CN for the wait-on-a-remote-endpoint
+phrasing (the exact same surface), Microsoft zh-Hans TBX cross-check.
+
+- **no progress / stalled (nothing has moved for a while)** · `没有进度` (`已有 {duration} 没有进度`) · Microsoft TBX
+  `Progress` → `进度`, and Cmdr's own `大小进度`/`文件进度`. `进展` is also attested in TBX compounds (`朗读进展`,
+  `写作进展`) but was rejected to keep ONE progress word across the catalog; `已有 X 没有进度` is the colloquial
+  "nothing has happened for X" frame · `high`
+- **respond / "waiting for X to respond"** · `响应`, as `正在等待…响应` · macOS AppKit (`did not respond to the request
+  for services` → `没有响应服务请求`) plus Total Commander zh-CN, which has this exact surface (`等待服务器响应...`,
+  `正在发送数据，等待响应...`, `没有响应(超时)!`). TC uses a bare `等待…`; Cmdr adds the locale-wide `正在…` in-progress
+  prefix (`正在扫描…`, `正在检查冲突…`) · `high`
+- **destination (the drive/share/phone being written TO, inside a sentence)** · `目标位置` · the settled transfer
+  `目标位置`, consistent with `目标宗卷`/`目标路径`/`transferDialog.targetGroupTitle` = `目标`. macOS Finder's own word is
+  `目的位置`/`目的宗卷`, but the catalog is uniformly `目标`; bare `目标` was rejected mid-sentence because it reads as
+  "goal" without the heading around it · `high`
+- **source (the drive/share/phone being read FROM, inside a sentence)** · `来源` · reused from
+  `transferDialog.sourceGroupTitle` and TC's copy/move `来源:` / `目标:` pair. Deliberately asymmetric with the
+  `目标位置` above: the two strings are alternatives and never render together, so each is optimized for reading alone ·
+  `high`
+- **"has stopped moving" (stalled, and NOT paused)** · `停住不动了` · descriptive. Must stay clearly distinct from the
+  settled `已暂停` (paused) so a stall never reads as a pause the person caused, and it avoids both `卡住` (stuck, more
+  alarming than the en) and the banned `失败`/`错误` · `tentative`
+- **"leave it running in the background"** · `让它在后台继续运行` · lifted verbatim from the settled
+  `transferProgress.queueTooltip`; `后台` from the queue pass (TC `后台`, NOT `背景`). The two-way-out sentence renders
+  `可以取消它，也可以让它在后台继续运行。` — Chinese's standard way to offer a choice, where a bare imperative pair would
+  read as an instruction · `high`
+- **"N files are still open"** · `# 个文件仍处于打开状态` · macOS Finder PE (`… can't be moved to the Trash because they
+  are open` → `因为它们已打开`) gives the `打开` root; `仍处于…状态` is the standard status construction on it. Measure
+  word `个` per the `{count} 个项目` pattern · `high`
+- **"partly written" (an open file that already has bytes at the destination)** · `可能已经写入了一部分内容` · `写入`
+  reused from `transferProgress.titleFlushing` (`正在写入最后一部分…`) · `high`
+- **"The log has the details."** · `日志里有详细信息。` · `日志` (settings pass) + Microsoft TBX `Details` → `详细信息`.
+  Kept as a STATEMENT, matching the en; the catalog's other framing `详情请看操作日志` (askCmdr) is directive and points
+  at the operation log, a different surface · `high`
+- **Close (dialog button that dismisses while the work keeps running)** · `关闭` · macOS AppKit `Close` → `关闭`
+  (`Document`, `WindowTabs`), reusing the settled term. Sits next to `取消` (Cancel) and is unmistakable against it at
+  two characters each · `confirmed`
+- **Pre-formatted Latin tokens inside Chinese prose.** `{duration}` arrives already formatted and unlocalized (`45s`,
+  `2m 30s`, `1h 5m` from `units/duration.ts`), so it lands as Latin text in a Chinese sentence: keep a space on BOTH
+  sides (`已有 {duration} 没有进度`), the same way `剩余约 {duration}` already does · `high`
+- No `sameAsSourceJustification` needed: all eight values differ from English.

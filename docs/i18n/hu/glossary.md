@@ -985,3 +985,57 @@ Settled in the REVIEW pass over the five drive-indexing-override keys
 - **"the check running right now" → `az éppen futó átvizsgálás`** · reuses `átvizsgálás` as this catalog's settled word
   for a full check (`tooltipCoalesced`: "a Cmdr következő teljes átvizsgálása") and that string's closing
   `ezt rendbe hozza` · high.
+
+Settled while translating the stalled-transfer notice (7 `fileOperations.transferProgress.stall*`/`close` keys +
+`queue.row.stalled`, 2026-07-31):
+
+- **"No progress for {duration}" → `{duration} óta nincs előrehaladás`** · `előrehaladás` is the pile's progress noun
+  (macOS Finder `1.title` = `Előrehaladás paraméterei`, Xfce Thunar "File operation progress" =
+  `Fájlművelet előrehaladása`) and is already what this catalog calls it (`sizeProgressAria` = `Méret-előrehaladás`,
+  `fileProgressAria` = `Fájl-előrehaladás`) · high. The `{placeholder} óta` shape is pile-attested (Nautilus "Since %s"
+  = `%s óta`) and keeps the placeholder UNSUFFIXED, which the style guide requires: `{duration}` renders as the
+  un-localized `45s` / `2m 30s` / `1h 5m` (`$lib/units/duration.ts` formats digits + Latin unit letters, no locale
+  branch), so no `-e`/`-ja` adverbial suffix could vowel-harmonize with it. Duration-first word order also mirrors the
+  line it replaces (`etaRemaining` = `~{duration} van hátra`). Residual `tentative` point: `óta` most often takes a
+  point in time; with a measured span it's idiomatic in the plural (`hetek óta`) and reads fine with an abbreviated
+  value, but a native reviewer may prefer `{duration} alatt nem történt előrehaladás` (unambiguously a span, longer,
+  and slightly past-tense). Both keys use the identical sentence, only the dialog one takes the period, as in English.
+- **"Waiting for X to respond" → `Várakozás a X válaszára`** (destination = `Várakozás a cél válaszára.`, source =
+  `Várakozás a forrás válaszára.`) · Total Commander `1384="Adatküldés, várakozás a válaszra..."` is the exact
+  waiting-for-a-response phrase, and the `Várakozás a …-ra/-re` frame is macOS Tier 1 (AppKit "Waiting for disc drive…"
+  = `Várakozás a lemezmeghajtóra…`; Finder `Várakozás a feltöltésre`, `Várakozás a letöltésre`,
+  `Várakozás „^0” általi fogadásra…`), plus Double Commander (`Várakozás a fájlforrás elérésére`,
+  `Várakozás felhasználói válaszra`) · high. The two sides are named with the dialog's OWN group headings `Cél` /
+  `Forrás` (settled 2026-07-23 from TC `662/663` and DC), so the notice and the boxes it explains use one word each;
+  don't fork to `célhely`/`céleszköz` here. `nem reagál` (macOS AppKit's "did not respond") is the negative,
+  fault-flavored form and is deliberately NOT used: the notice states what Cmdr is doing (waiting), not that something
+  is broken.
+- **"The transfer has stopped moving" → `Az átvitel megállt`** · no source names a stalled-but-alive transfer (mining
+  gotcha 3's shape: the concept is absent from every corpus; macOS HU has zero `megállt`/`leállt` hits, Microsoft
+  terminology has no `stall`/`stalled`/`unresponsive` entry), so this is composed from settled `transfer → átvitel` plus
+  the plain intransitive `megáll` · tentative. NOT `leállt` (reads as "shut down / ended", and the transfer is still
+  alive), NOT MS's `leállítás` (that's the deliberate "stop" command), and NOT a second `nincs előrehaladás`, which
+  would just repeat the line above it.
+- **"Cancel it, or leave it running in the background." → `Szakítsd meg, vagy hagyd futni a háttérben.`** · reuses the
+  settled running-op `cancel → megszakítás` (imperative `szakítsd meg`, informal `te` per Formality, as in the settled
+  `próbáld újra`) and the settled `Hagyd futni a háttérben` (from `queueTooltip`) verbatim · high. Comma before the
+  clause-joining `vagy` is correct and pile-attested (Nautilus/Dolphin: `Nevezze át a szimbolikus hivatkozást, vagy
+  nyomja meg a Kihagyás gombot.`).
+- **"{N} file(s) is/are still open" → `{count, plural, one {# fájl van még nyitva} other {# fájl van még nyitva}}`** ·
+  Total Commander `616="Túl sok fájl van nyitva."` gives both the term and the `… fájl van nyitva` word order; `még`
+  carries the English "still" · high. Both branches identical (Hungarian no-pluralize-after-a-numeral rule, as in
+  `queuedToastCount`/`selectedCount`), and the counted noun keeps the singular verb, so the trailing clause stays
+  singular too.
+- **"and may already be partly written" → `és lehet, hogy már részben ki van írva`** · `kiír` is this catalog's verb
+  for writing bytes out (`transferProgress.titleFlushing` = `Az utolsó darab kiírása…`), and the stative
+  `ki van írva` avoids both the bureaucratic `kiírásra került` and a `-tuk/-tük` first-person that would put words in
+  Cmdr's mouth · high. Kept OUTSIDE the plural braces, as in English.
+- **"The log has the details." → `A részleteket megtalálod a naplóban.`** · reuses settled `log → napló` (`naplófájl`,
+  `Naplózás`; TC `5390="Napló fájl"`, DC `Naplófájl megtekintése`) and the catalog's own "you'll find it there" shape
+  (`backgroundedToast` = `Megtalálod az átviteli sorban.`), which reads warmer than the literal
+  `A napló tartalmazza a részleteket.` · high.
+- **`transferProgress.close` (dismiss the dialog while the transfer finishes) → `Bezárás`** · the catalog-wide,
+  macOS-sourced Close (`ui.modalDialog.close`, `fileOperations.errorDialog.close`, and 8 more) · high. It sits next to
+  `fileOperations.button.cancel` = `Mégsem`, so the pair is unambiguous: `Bezárás` closes the window, `Mégsem` stops the
+  operation.
+- No `sameAsSourceJustification` needed in this batch: all 8 values differ from English.
