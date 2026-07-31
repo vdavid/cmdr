@@ -248,7 +248,10 @@ pub enum WriteMessage {
     /// repair and delta tests send it to pin what it does with a negative delta
     /// against a missing `dir_stats` row. Keep it until that capability is
     /// deliberately retired, not as a side effect of a visibility change.
-    #[allow(dead_code, reason = "a supported writer message; only tests send it today, see above")]
+    #[allow(
+        dead_code,
+        reason = "a supported writer message; only tests send it today, see above"
+    )]
     PropagateDeltaById {
         entry_id: i64,
         logical_size_delta: i64,
@@ -487,12 +490,7 @@ impl IndexWriter {
     /// volume and whether it feeds search, through `spawn_for`.
     #[cfg(any(test, feature = "testing"))]
     pub fn spawn(db_path: &Path, events: Arc<dyn EventSink>) -> Result<Self, IndexStoreError> {
-        Self::spawn_for(
-            db_path,
-            events,
-            true,
-            crate::indexing::ROOT_VOLUME_ID.to_string(),
-        )
+        Self::spawn_for(db_path, events, true, crate::indexing::ROOT_VOLUME_ID.to_string())
     }
 
     /// Spawn a writer, explicitly choosing whether it feeds the search index.

@@ -229,6 +229,9 @@ impl ScanContext {
     }
 }
 
+/// What a volume's persisted `meta` says about its last completed walk. Read off
+/// disk, so it survives a restart and answers for a volume that isn't indexing
+/// right now.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct IndexStatus {
@@ -319,6 +322,7 @@ impl ScanCalibrationSet {
 
 // ── Errors ───────────────────────────────────────────────────────────
 
+/// Why an index database operation didn't work.
 #[derive(Debug)]
 pub enum IndexStoreError {
     Sqlite(rusqlite::Error),
@@ -515,6 +519,11 @@ pub fn normalize_for_comparison(s: &str) -> String {
     s.nfd().collect::<String>().to_lowercase()
 }
 
+/// Normalize a string for case-insensitive comparison.
+///
+/// Case- and form-sensitive off macOS, where the filesystem is: two names that
+/// differ in case are two different files, so folding them would merge rows that
+/// are genuinely distinct.
 #[cfg(not(target_os = "macos"))]
 pub fn normalize_for_comparison(s: &str) -> String {
     s.to_string()

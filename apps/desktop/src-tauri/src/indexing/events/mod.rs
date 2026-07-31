@@ -168,6 +168,8 @@ pub struct PhaseRecord {
 
 // ── Response types ───────────────────────────────────────────────────
 
+/// One volume's index, as a status surface: what the current walk has covered so
+/// far, plus the persisted facts about the last one that finished.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct IndexStatusResponse {

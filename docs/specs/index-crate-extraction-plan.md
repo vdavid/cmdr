@@ -792,9 +792,8 @@ the whole extraction, written before the handle exists, and it's what smokes out
 accident. **Tests, after:** the whole suite. **Docs:** the public API doc page; the audit mapping in the crate's
 `DETAILS.md`. **Checks:** `pnpm check --include-slow`.
 
-**Landed.** All six items are done. The handle is `indexing/handle/`, the audit mapping is
-`indexing/handle/DETAILS.md`, and the app reaches the index only through `index_host::index()`. What the plan got
-wrong or didn't anticipate:
+**Landed.** All six items are done. The handle is `indexing/handle/`, the audit mapping is `indexing/handle/DETAILS.md`,
+and the app reaches the index only through `index_host::index()`. What the plan got wrong or didn't anticipate:
 
 - **The surface is 34 items on `Index`, not ~25**, and the overage is justified item by item in the mapping rather than
   redefined away. Four are the direct-database read side `search/` and the operation log need, two are the
@@ -803,21 +802,21 @@ wrong or didn't anticipate:
 - **The audit's real scope was bigger than the 65 + glob + three `pub mod`s.** App code also reached into six
   `pub(crate)` module trees (`host`, `lifecycle::freshness`, `paths::firmlinks`, `read::expected_totals`,
   `test_support`, `tests::external_drive_fixture`), none of which would have compiled after the move. Each got a
-  disposition: `host` became `pub` (it's the plugin interface), `Freshness` and `ExpectedTotals` became root
-  re-exports, `firmlinks` moved down to `cmdr-fs` as pure path vocabulary, and the two test reaches went to the gated
-  surface. `test_support` is the one that can't be gated (§ M6 below).
+  disposition: `host` became `pub` (it's the plugin interface), `Freshness` and `ExpectedTotals` became root re-exports,
+  `firmlinks` moved down to `cmdr-fs` as pure path vocabulary, and the two test reaches went to the gated surface.
+  `test_support` is the one that can't be gated (§ M6 below).
 - **The folds retired more than the audit's four buckets predicted**, because several exports existed only so the APP
   could implement index policy: `enable_drive_index` carried the transport routing, `mtp/connection/event_loop.rs`
   carried the gate-before-resolve rule, and `eject.rs` / `volumes/watcher.rs` each carried the "only a local external
   index must stop" rule. Those moved inside, which is why `start_volume`, `on_device_object_changed`, and
   `stop_removable_volume` each replace four to ten exports.
 - **`Decision 4`'s "thin token" needed one real change to be testable**: the event seam had to become swappable
-  (`RwLock` + restore-on-drop guard, like volumes and config) or the acceptance test could not point a handle at its
-  own recorder. The three per-seam test locks collapsed into one, `handle::test_lock`.
+  (`RwLock` + restore-on-drop guard, like volumes and config) or the acceptance test could not point a handle at its own
+  recorder. The three per-seam test locks collapsed into one, `handle::test_lock`.
 - **`store` stays wholesale public**, the one named exception, because `search/` runs its own SQL over the index
   database. Eleven of its 21 module-level items were reachable for no reason and are now `pub(crate)`.
-- **`Result<_, String>` is not fully typed away.** `IndexError` fronts the boundary with the variants callers act on
-  and one log-only `Internal(Diagnostic)` for the residue; typing the causes inside `lifecycle/state.rs` and
+- **`Result<_, String>` is not fully typed away.** `IndexError` fronts the boundary with the variants callers act on and
+  one log-only `Internal(Diagnostic)` for the residue; typing the causes inside `lifecycle/state.rs` and
   `read/queries.rs` is a separate change.
 
 ### M6 — The move

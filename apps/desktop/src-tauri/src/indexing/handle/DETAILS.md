@@ -118,6 +118,19 @@ own variant — `NotIndexed`, `NotConfigured`, `UnsupportedVolume` — and nothi
 residue means typing the failures inside `lifecycle/state.rs` and `read/queries.rs`, which is a separate change with
 its own risk; this is the honest interim, not the end state.
 
+## The platform story: no `cfg` on the surface
+
+`Index`'s signature is identical on every platform. The `cfg`s that used to sit on
+14 root re-exports are gone: `SmbIndexGateReason` needed none in the first place (the SMB transport module was never
+platform-gated, only its re-export was), and the MTP and local-external routing that IS gated now lives inside method
+bodies, where a platform without those transports simply falls through. `start_volume` reaches the share gate directly
+there, and `on_device_object_changed` / `on_watch_gap(Device(..))` no-op.
+
+**Why it matters beyond tidiness**: `#![deny(missing_docs)]` is a per-platform lint. A `cfg`-gated public item can be
+documented on macOS and undocumented on Linux, and nothing on a Mac would ever say so. That is not hypothetical here —
+`store::normalize_for_comparison` had exactly that shape, documented on its macOS arm and bare on the other, and this
+milestone is where it surfaced.
+
 ## The gated surface
 
 `indexing::testing` (`#[doc(hidden)] pub mod`, behind the `testing` feature) is the one door for test reach-through:

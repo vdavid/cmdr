@@ -18,7 +18,9 @@
 // the curated public item surface below, never a module alias that would hide where code lives.
 pub(crate) mod aggregator;
 mod events;
+/// The public API: the [`Index`] handle and everything you can ask it.
 pub mod handle;
+/// What the index asks its host for, as traits and values a host implements.
 pub mod host;
 pub(crate) mod lifecycle;
 mod metadata;
@@ -28,6 +30,8 @@ pub(crate) mod read;
 pub(crate) mod reconcile;
 pub(crate) mod resources;
 pub(crate) mod scanner;
+/// The index database: its schema vocabulary, for the query layers that read one
+/// directly. See `handle/DETAILS.md` § "The two exceptions" for why this is wide.
 pub mod store;
 pub(crate) mod transports;
 pub(crate) mod watch;

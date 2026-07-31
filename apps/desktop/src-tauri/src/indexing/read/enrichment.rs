@@ -23,6 +23,11 @@ use cmdr_fs::sqlite_util::{THREAD_CONN_SLOTS, ThreadConnCache};
 
 // ── Read pool (lock-free enrichment reads) ──────────────────────────
 
+/// A volume's pooled read connections to its index database.
+///
+/// Lock-free by design: enrichment runs on every listing and must never wait on
+/// the lifecycle mutex, so readers take a per-thread connection rather than
+/// sharing one. `with_conn` is how you borrow one.
 pub struct ReadPool {
     db_path: PathBuf,
     /// Incremented on shutdown/clear. Thread-local connections check this to detect staleness.
