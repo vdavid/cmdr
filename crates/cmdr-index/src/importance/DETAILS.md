@@ -81,7 +81,7 @@ index). Off macOS `is_available()` is `false`, the sample is empty, and the weig
 `SAMPLE_CAP` is a guess until measured on a real home (plan open-question 2, agent-spec §18.4); the caller hands the
 sampler only the paths it can use, not the whole volume's, which is worth ~60 MB of transient on a local volume.
 
-## The visit signal (`../commands/importance.rs` + the store's `visits` table, plan Decision 3)
+## The visit signal (`apps/desktop/src-tauri/src/commands/importance.rs` + the store's `visits` table, plan Decision 3)
 
 A typed `record_visit(Location)` IPC command the frontend's navigation-commit point calls fire-and-forget (the
 `persistLastUsedPath` hook in `apps/desktop/src/lib/file-explorer/pane/persistence-subscriber.svelte.ts`, alongside the

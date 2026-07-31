@@ -35,14 +35,14 @@ type sqliteOpenSite struct {
 // RunSqliteOpenDirect greps the desktop Rust crate for direct
 // `rusqlite::Connection::open*` calls outside the `sqlite_util` factories. The
 // convention and why it's load-bearing are documented in
-// `apps/desktop/src-tauri/src/indexing/store/DETAILS.md` § "SQLite page memory is one
+// `crates/cmdr-index/src/indexing/store/DETAILS.md` § "SQLite page memory is one
 // process-wide slab".
 func RunSqliteOpenDirect(ctx *CheckContext) (CheckResult, error) {
 	// KindApp only. The slab is process-wide, so only code linked into the Cmdr
 	// process can lose the race; a standalone developer CLI opens the first
 	// connection in its OWN process and has nothing to protect. The index store is
-	// the biggest consumer of all this and is headed for a crate, so scanning the
-	// app tree alone would leave the check watching the wrong half.
+	// the biggest consumer of all this and lives in its own crate, so the roots have
+	// to cover every app-kind crate, not just the app tree.
 	roots, err := ScannerRoots(ctx.RootDir, "desktop-rust-sqlite-open-direct")
 	if err != nil {
 		return CheckResult{}, err

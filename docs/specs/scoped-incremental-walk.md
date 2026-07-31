@@ -2,10 +2,10 @@
 
 **SHIPPED 2026-07-29.** Make an importance incremental rescore cost O(touched) instead of O(dirs), by reading only the
 changed subtrees out of the index instead of walking the whole thing. The durable version of everything below now lives
-in `apps/desktop/src-tauri/src/importance/scheduler/DETAILS.md` § The scoped walk; this stays until the next specs wipe
+in `crates/cmdr-index/src/importance/scheduler/DETAILS.md` § The scoped walk; this stays until the next specs wipe
 as the reasoning trail.
 
-Area docs: `apps/desktop/src-tauri/src/importance/scheduler/DETAILS.md` (the canonical home for the mechanism once this
+Area docs: `crates/cmdr-index/src/importance/scheduler/DETAILS.md` (the canonical home for the mechanism once this
 ships). Evidence: `docs/notes/idle-memory-profile-2026-07-28.md`.
 
 ## The problem

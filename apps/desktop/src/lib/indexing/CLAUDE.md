@@ -1,7 +1,7 @@
 # Indexing (frontend)
 
 Frontend bridge to the Rust drive indexer: reactive scan state, Tauri event listeners, and the drive-indexing status
-indicator. Rust counterpart: `apps/desktop/src-tauri/src/indexing/`.
+indicator. Rust counterpart: `crates/cmdr-index/src/indexing/`.
 
 ## Module map
 

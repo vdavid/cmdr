@@ -135,32 +135,9 @@ All under `apps/desktop/src-tauri/src/`.
 - `platform.rs`: Shared platform-identity helpers (`os_version()`), used by crash + error reports and the heartbeat
 - `licensing/`: Ed25519 license verification, server validation
 - `settings/`: Settings persistence (tauri-plugin-store)
-- `indexing/`: Background drive indexing (SQLite, jwalk, FSEvents), recursive directory sizes. Per-volume registry (one
-  index DB per drive, not just local) with a per-volume freshness model (Fresh/Stale/gray); SMB and MTP drives index too
-  and stay live via smb2 `CHANGE_NOTIFY` / PTP events, with an "admittedly stale" model on launch and disconnect
 - `priority/`: The per-volume priority signals background work yields to (interactive > transfers > indexing):
   `foreground` activity timestamps + the `transfers` gauge, composed by drive indexing's scan pacing and media
   enrichment's pass gate. See its `apps/desktop/src-tauri/src/priority/CLAUDE.md`
-- `importance/`: Deterministic folder-importance scoring (pure `scorer/`: values-in/score-out `Weights` + explain
-  breakdown) that expensive features (agent, media-ML enrichment) consume. A read-consumer of `indexing/`, sibling to
-  `search/`, with its own per-volume `importance.db` store, a multi-volume kind-aware scheduler (Local + SMB scored, MTP
-  excluded) that recomputes on scan completion (full) and on live listing changes (incremental) — both driven by a
-  neutral lifecycle bus in `indexing/` — and the consumable `ImportanceIndex` read API consumers reach it through
-  (queryable even for an unmounted volume). See its `apps/desktop/src-tauri/src/importance/CLAUDE.md` and
-  `specs/later/importance-subsystem-plan.md`
-- `media_index/`: Image-ML enrichment — makes a volume's images searchable by their content (OCR text, Vision scene/
-  object tags, image-similarity "find similar" via feature-print embeddings, and natural-language semantic search via an
-  on-demand on-device CLIP model — `clip/`, macOS Core ML, a SEPARATE vector space with independent two-part staleness).
-  A read-consumer of `indexing/`, ported from `importance/`, with its own per-volume disposable `media.db` (path-keyed,
-  FTS5 OCR + tags, structured tags, and a brute-force cosine vector store over feature-print embeddings), a scheduler
-  that enriches on the lifecycle-bus scan-completion edge, importance-prioritized (high-importance folders first, below
-  the settings slider threshold deferred, with "always index" overrides + a per-folder privacy exclude), inference
-  behind a `VisionBackend` seam (real objc2-vision OCR + classify + feature print, a fake for tests), deletion-driven GC
-  gated on a completed scan, and the consumable `MediaIndex` read API (OCR/tag search + find-similar, offline after
-  unmount). Enriches local volumes plus opt-in network (SMB) volumes conservatively (priority-gated via `priority/`,
-  bandwidth-bounded byte-fetch through the app's own smb2 session for Direct volumes with an OS-mount fallback;
-  disconnect pauses without losing coverage; MTP never background-sweeps). Off by default. See its
-  `apps/desktop/src-tauri/src/media_index/CLAUDE.md` and `specs/later/media-ml-index-plan.md`
 - `operation_log/`: The durable, cross-volume journal of file mutations — the app's first durable DB
   (`operation-log.db`), the foundation for rollback, indexed name search, and a future undo. Single writer thread, a
   forward-migration ladder (not delete-and-recreate) and retention discipline, interned dir prefixes + per-item rows,
@@ -224,6 +201,34 @@ All under `crates/`, alongside the four apps. They carry no `tauri` dependency.
   data types, `FileEntry`, typed error classification (`ListingError` / `ListingErrorReason` / `ErrorCategory`, errno →
   reason mapping, provider detection over 18 providers), `InMemoryVolume`, thread QoS, process-memory readers,
   poison-free locking. The app re-exports all of it from the original paths. See `crates/cmdr-fs/CLAUDE.md`
+- `crates/cmdr-index/`: the index — everything Cmdr knows about what's on a volume, what's inside its images, and which
+  of its folders matter — behind one `Index` handle the host builds and holds. Tauri-free: everything it needs from an
+  application arrives through the traits in `host/`, and everything it reports leaves through an `EventSink`. Three
+  subsystems inside, each with its own docs. Crate-level rules and the public surface: `crates/cmdr-index/CLAUDE.md`
+  - `indexing/`: background drive indexing (SQLite, a guarded parallel walker, FSEvents), recursive directory sizes.
+    Per-volume registry (one index DB per drive, not just local) with a per-volume freshness model (Fresh/Stale/gray);
+    SMB and MTP drives index too and stay live via smb2 `CHANGE_NOTIFY` / PTP events, with an "admittedly stale" model
+    on launch and disconnect. See `crates/cmdr-index/src/indexing/CLAUDE.md`
+  - `importance/`: Deterministic folder-importance scoring (pure `scorer/`: values-in/score-out `Weights` + explain
+    breakdown) that expensive features (agent, media-ML enrichment) consume. A read-consumer of `indexing/`, sibling to
+    `search/`, with its own per-volume `importance.db` store, a multi-volume kind-aware scheduler (Local + SMB scored, MTP
+    excluded) that recomputes on scan completion (full) and on live listing changes (incremental) — both driven by a
+    neutral lifecycle bus in `indexing/` — and the consumable `ImportanceIndex` read API consumers reach it through
+    (queryable even for an unmounted volume). See its `crates/cmdr-index/src/importance/CLAUDE.md` and
+    `specs/later/importance-subsystem-plan.md`
+  - `media_index/`: Image-ML enrichment — makes a volume's images searchable by their content (OCR text, Vision scene/
+    object tags, image-similarity "find similar" via feature-print embeddings, and natural-language semantic search via an
+    on-demand on-device CLIP model — `clip/`, macOS Core ML, a SEPARATE vector space with independent two-part staleness).
+    A read-consumer of `indexing/`, ported from `importance/`, with its own per-volume disposable `media.db` (path-keyed,
+    FTS5 OCR + tags, structured tags, and a brute-force cosine vector store over feature-print embeddings), a scheduler
+    that enriches on the lifecycle-bus scan-completion edge, importance-prioritized (high-importance folders first, below
+    the settings slider threshold deferred, with "always index" overrides + a per-folder privacy exclude), inference
+    behind a `VisionBackend` seam (real objc2-vision OCR + classify + feature print, a fake for tests), deletion-driven GC
+    gated on a completed scan, and the consumable `MediaIndex` read API (OCR/tag search + find-similar, offline after
+    unmount). Enriches local volumes plus opt-in network (SMB) volumes conservatively (priority-gated via `priority/`,
+    bandwidth-bounded byte-fetch through the app's own smb2 session for Direct volumes with an OS-mount fallback;
+    disconnect pauses without losing coverage; MTP never background-sweeps). Off by default. See its
+    `crates/cmdr-index/src/media_index/CLAUDE.md` and `specs/later/media-ml-index-plan.md`
 - `crates/index-query/`: developer CLI that queries the index DB with the `platform_case` collation `sqlite3` can't
   supply. See `docs/tooling/index-query.md`
 - `crates/fsevent-stream/`: vendored fork of the FSEvents stream crate (published as `cmdr-fsevent-stream`), giving the

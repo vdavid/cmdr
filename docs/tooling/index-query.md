@@ -45,5 +45,5 @@ cargo run --release -p index-query --bin importance-diff -- <index.db> <home-or-
 ```
 
 `importance-diff` exits non-zero when the two walks disagree. Copy the DB to scratch first if the app is running; never
-write to the live one. What it proves and why: `apps/desktop/src-tauri/src/importance/scheduler/DETAILS.md` § The scoped
+write to the live one. What it proves and why: `crates/cmdr-index/src/importance/scheduler/DETAILS.md` § The scoped
 walk.

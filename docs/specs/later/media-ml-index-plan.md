@@ -56,7 +56,7 @@ Four existing subsystems this plugs into. Read their colocated `CLAUDE.md` + `DE
 below were verified against the code on 2026-06-29, and the `importance/` + lifecycle-bus claims re-verified 2026-07-13
 (file refs may drift — confirm with `codegraph_search`).
 
-- **`src-tauri/src/indexing/`** — per-volume SQLite index DBs (one writer thread per DB; local + SMB + MTP each get
+- **`crates/cmdr-index/src/indexing/`** — per-volume SQLite index DBs (one writer thread per DB; local + SMB + MTP each get
   their own DB), recursive size aggregates, `ReadPool` for reads, per-volume registry (`INDEX_REGISTRY`), freshness
   model, phase events. **Hard invariants we must respect:** the index is a **disposable cache** (schema mismatch /
   corruption ⇒ delete + recreate, no migrations); **one writer thread per DB**; `platform_case` collation on every
@@ -86,7 +86,7 @@ below were verified against the code on 2026-06-29, and the `importance/` + life
   (`search/ai/`). Image search is a **new query path** (vectors + FTS), and it must reach `media.db` **through a
   `media_index` read API — never a raw `rusqlite` dependency** (Decision 8). It surfaces through the same `query-ui`
   primitives.
-- **`src-tauri/src/importance/`** — the shipped sibling that already solved most of this plan's hardest plumbing
+- **`crates/cmdr-index/src/importance/`** — the shipped sibling that already solved most of this plan's hardest plumbing
   (verified 2026-07-13). A pure read-consumer of `indexing/`, sibling to `search/`, whose own docs name **media-ML
   enrichment** as an intended consumer. `media_index` COPIES its patterns rather than re-deriving them; read
   `importance/CLAUDE.md` + `DETAILS.md` before M1. It ships:

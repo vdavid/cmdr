@@ -42,7 +42,7 @@ in a local per-volume file that outlives the mount.
 Claims below were verified against the code on 2026-07-08 (file refs may drift — confirm with `codegraph_search`). Read
 the colocated `CLAUDE.md` + `DETAILS.md` of each subsystem before building on it.
 
-- **`src-tauri/src/indexing/`** — per-volume SQLite index DBs (one writer thread per DB; local + SMB + MTP each get
+- **`crates/cmdr-index/src/indexing/`** — per-volume SQLite index DBs (one writer thread per DB; local + SMB + MTP each get
   their own), recursive size aggregates, `ReadPool` for reads, per-volume registry (`INDEX_REGISTRY`), a freshness
   model, phase events. **Hard invariants we must respect** (from `indexing/CLAUDE.md`, verified): the index is a
   **disposable cache** (schema mismatch / corruption ⇒ delete + recreate via `delete_and_recreate`, no migrations, bump
@@ -67,7 +67,7 @@ the colocated `CLAUDE.md` + `DETAILS.md` of each subsystem before building on it
     media-ML Decision 7 designed its lifecycle bus around, and this plan builds the minimal version of it (Decision 4).
   - Network volumes (SMB/MTP) emit only `Scanning → Live` at the phase layer, but **both kinds fire
     `FreshnessEvent::ScanCompleted`** — drive "ready to score" off that, not off a phase the network path never sends.
-- **`src-tauri/src/indexing/enrichment.rs`** — `ReadPool` + `get_read_pool_for(volume_id) -> Option<Arc<ReadPool>>` is
+- **`crates/cmdr-index/src/indexing/enrichment.rs`** — `ReadPool` + `get_read_pool_for(volume_id) -> Option<Arc<ReadPool>>` is
   the sanctioned read boundary: reads route through the per-volume pool, never under the registry mutex; a `None` pool
   means "no index registered, skip." `IndexStore` (`store/`) owns the connection factories and the `platform_case`
   registration. Our read API mirrors this (Decision 5).
@@ -93,7 +93,7 @@ the colocated `CLAUDE.md` + `DETAILS.md` of each subsystem before building on it
 
 ## Key decisions (with intent — adapt if reality differs, but know the why)
 
-**D1 — A neutral `src-tauri/src/importance/` subsystem, NOT an aggregator column and NOT under `agent/`.** Importance is
+**D1 — A neutral `crates/cmdr-index/src/importance/` subsystem, NOT an aggregator column and NOT under `agent/`.** Importance is
 a scoring _policy_ (tunable weights, a formula that iterates, an explain breakdown) consumed by three unrelated
 features; the aggregator is load-bearing size-math with four easy-to-break partial-aggregation rules. Folding importance
 into `compute_all_aggregates` would (a) couple a churny tunable formula to the one place a bug ships wrong directory
@@ -242,7 +242,7 @@ consumers stay **out of scope** (they wire in via their own plans); this plan st
 The formula and its tests, with zero I/O and zero coupling — so the risky, iterate-heavy logic is proven and tunable
 before any storage or scheduler lands.
 
-- New `src-tauri/src/importance/scorer/`: the **pure** `score(inputs: &FolderSignals, weights: &Weights) -> Score` and
+- New `crates/cmdr-index/src/importance/scorer/`: the **pure** `score(inputs: &FolderSignals, weights: &Weights) -> Score` and
   `explain(inputs, weights) -> Explanation` (per-signal `Vec<SignalContribution>`), plus the input types
   (`FolderSignals` carrying the §5.1 signals, `SignalSet` marking which are available, `Weights` with defaulted tunable
   coefficients). Everything is values-in/values-out; no `rusqlite`, no `Volume`, no filesystem.
@@ -269,7 +269,7 @@ before any storage or scheduler lands.
 
 Give the scorer a home and make it fire on scan completion.
 
-- New `src-tauri/src/importance/store/`: per-volume `importance.db` with the index's disposable-cache discipline
+- New `crates/cmdr-index/src/importance/store/`: per-volume `importance.db` with the index's disposable-cache discipline
   (`platform_case` on every connection, delete-and-recreate on schema mismatch, `SCHEMA_VERSION`, one writer thread);
   **path-keyed** weight rows tagged with the **as-of scan generation**, each carrying the scalar plus the serialized raw
   signal vector (Decision 2); the `ImportanceWriter` command surface (write a volume's weights, purge a volume).

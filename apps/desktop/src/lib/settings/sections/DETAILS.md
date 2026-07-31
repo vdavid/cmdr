@@ -48,7 +48,7 @@ sections compose).
   `anyVisible(shouldShow, ...memberIds)` (the card-group pattern), and the hidden `indexing.indexSize` anchor (its
   `section` equals this page's) makes "index size" a search hit, keeping the section visible (no blank pane) when
   searched. See `lib/settings/components/CLAUDE.md` § card groups. `indexing.enabled` is the MASTER switch, a hard gate
-  in the backend (`src-tauri/src/indexing/lifecycle/DETAILS.md` § The two indexing switches), so while it's off this
+  in the backend (`crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § The two indexing switches), so while it's off this
   section renders the rows it overrides as overridden: both sub-toggles get `disabled` + the "Off with drive indexing"
   badge, the hand-rendered re-enable row dims with them (`.reenable-row.overridden`, matching `SettingRow`'s own
   disabled opacity), and one `.master-off-note` line says what stopped and that each drive keeps its own choice. Clear
@@ -109,7 +109,7 @@ sections compose).
   that does nothing. It also hosts `MediaIndexReclaim` in the NARROW scope: the offer normally rides inside the slider,
   and narrowing is precisely when leftover rows appear, so losing it with the slider would strand the disk space with no
   way to free it. Exactly one `MediaIndexReclaim` renders in either scope. Backend contract (what each scope covers, why
-  narrowing deletes nothing): `src-tauri/src/media_index/DETAILS.md` § The indexing scope.
+  narrowing deletes nothing): `crates/cmdr-index/src/media_index/DETAILS.md` § The indexing scope.
 - **`MediaIndexChosenFolders.svelte`**: the add/remove list bound to `mediaIndex.alwaysIndexFolders`, via
   `$lib/media-index/always-index-folders.ts` (persist + IPC together, like the other media-index prefs). Adding uses the
   native folder picker (`@tauri-apps/plugin-dialog`'s `open({ directory: true })`, which needs `dialog:allow-open` in

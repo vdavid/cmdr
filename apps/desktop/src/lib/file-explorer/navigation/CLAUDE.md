@@ -37,7 +37,7 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   variant, never text. Coalesced sweep signals ride in the TOOLTIP, never the dot's color. **While the MASTER switch is
   off (`getDriveIndexingEnabled()`), `driveIndexMenuActions` returns NOTHING** and the menu shows one note: the backend
   refuses every start then, so per-drive actions would promise work that can't happen (model:
-  `src-tauri/src/indexing/lifecycle/DETAILS.md`). DETAILS § Drive index freshness badge.
+  `crates/cmdr-index/src/indexing/lifecycle/DETAILS.md`). DETAILS § Drive index freshness badge.
 - **Favorites: mutate ONLY via the `commands.*` wrappers, always stripping the `fav-` prefix** (`stripFavoritePrefix`;
   the switcher id is `fav-<favoriteId>`, the commands take the bare id). The `volume-grouping.ts` favorites group always
   renders even when empty (the placeholder row) — don't tidy it into a hide-when-empty branch. "Add to favorites" is in

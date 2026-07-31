@@ -18,7 +18,7 @@ root → `READ_POOL`, non-root → `state::get_instance_read_pool`. (The globals
 
 `test_install_root_read_pool` / `test_uninstall_root_read_pool` / `test_read_pool_lock` are gated on
 `any(test, feature = "testing")` rather than plain `cfg(test)`, and are `pub` under it, because
-`apps/desktop/src-tauri/benches/index_benchmarks.rs` compiles as an external crate: without them the enrichment bench
+`crates/cmdr-index/benches/index_benchmarks.rs` compiles as an external crate: without them the enrichment bench
 would measure the no-index-registered early return
 instead of a read. Callers still have to hold the lock — the root pool is a process global. How the feature gets turned
 on for dev targets and only those: `docs/tooling/testing.md` § criterion.

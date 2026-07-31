@@ -160,11 +160,11 @@ a multiplier.
 
 ## Backend commands + typed state for the network-enrichment UI
 
-The backend provides three setters + the extended state. They live in `../../commands/media_index/policy.rs` with the other
+The backend provides three setters + the extended state. They live in `apps/desktop/src-tauri/src/commands/media_index/policy.rs` with the other
 coverage-changing commands (the scope, the threshold, the privacy exclusion), split from the read/query modules beside
 them in `../commands/`: each mutates live `gate` / `network::config` state and has to decide whether the change BROADENS
 coverage and needs an immediate pass, and each of those decisions is a pure `*_should_kick` fn tested in
-`../../commands/media_index/tests.rs`.
+`apps/desktop/src-tauri/src/commands/media_index/tests.rs`.
 
 - `media_index_set_network_volume_enabled(volume_id, enabled)` — the per-volume SMB opt-in (live-applied; enabling kicks
   a pass).

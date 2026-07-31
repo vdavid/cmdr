@@ -47,7 +47,7 @@ Latency histogram: 552,911 reads under 1 ms, 12 in the 1-5 s band, 2 in 5-15 s, 
 10,177 directories were left undescended across the two.
 
 **Acted on.** The budget now scores read LATENCY against the entry count a read returned, never cumulative time, and
-charges only the slow reads; see `apps/desktop/src-tauri/src/indexing/DETAILS.md` § "The reconcile cost budget". The
+charges only the slow reads; see `crates/cmdr-index/src/indexing/DETAILS.md` § "The reconcile cost budget". The
 analysis that led there:
 
 **The budget's metric is wrong.** Cumulative read time cannot distinguish "expensive per read" from "lots of cheap
@@ -79,7 +79,7 @@ machine are far cheaper than parallel ones under rayon contention. Index rows we
 **Acted on.** The walker's guard now measures STALLED PROGRESS instead of elapsed time: a read publishes each batch it
 delivers, and it is abandoned only when it delivers nothing for 15 s (or trickles past a per-entry allowance). These
 five directories are read to completion; a disconnected mount is still abandoned in 15 s. See
-`apps/desktop/src-tauri/src/indexing/DETAILS.md` § "The walker's progress timeout".
+`crates/cmdr-index/src/indexing/DETAILS.md` § "The walker's progress timeout".
 
 **This matters for the swap-scan plan** (`docs/notes/swap-scan-feasibility.md`): replacing the reconcile with a parallel
 build would have made every rescan ~10% incomplete on this machine, and the missing 10% was exactly the big directories
@@ -198,7 +198,7 @@ were pathological, over at least 10 slow reads, having wasted more than 5 s. Tha
 phone trips at 19.8% at any size; the repo at 0.10% never does), and it gets all five of the subtrees above right with
 ~4× of margin on each side. The floors are measured too: the SDK's four slow reads are what proved a floor of three too
 low. Full rationale, arithmetic per subtree, and the residual prefix/latch risk:
-`apps/desktop/src-tauri/src/indexing/DETAILS.md` § "The reconcile cost budget".
+`crates/cmdr-index/src/indexing/DETAILS.md` § "The reconcile cost budget".
 
 ## Separate finding: eight reads take exactly 5.000 s
 

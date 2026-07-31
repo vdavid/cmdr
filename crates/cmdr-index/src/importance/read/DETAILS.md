@@ -53,13 +53,13 @@ still good, and only a re-weighting consumer loses the raw vector for that one r
 
 - **Search ranking.** `search/` blends these weights into result ordering (a file takes its parent folder's weight),
   streaming one `for_each_nonzero_weight` snapshot per recompute via `subscribe`. Match quality dominates; importance is
-  a within-band boost. The blend design, weight-map lifecycle, and degradation contract live in `../../search/DETAILS.md`
+  a within-band boost. The blend design, weight-map lifecycle, and degradation contract live in `apps/desktop/src-tauri/src/search/DETAILS.md`
   § "Importance ranking" (single-source).
 - **The MCP `cmdr://importance` resource.** It exposes `lookup` / `top_n` / `above_threshold` / `top_above_threshold` /
   `explain` / `scored_folder_count` to agents, enumerating scored volumes offline via `scored_volume_ids` (the
   `importance-{id}.db` files on disk) and opening each index with the kind's `signal_availability` mask so `explain`
   sums to the stored score. It's the offline-unmounted read made a user-facing feature. Builder and modes:
-  `../../mcp/DETAILS.md` § "Resources" (the `cmdr://importance` builder).
+  `apps/desktop/src-tauri/src/mcp/DETAILS.md` § "Resources" (the `cmdr://importance` builder).
 - **Media-ML enrichment.** It orders its passes by importance and asks "has importance scored this volume?" through the
   row count, not the generation (`../../media_index/coverage.rs`'s `importance_scored`).
 

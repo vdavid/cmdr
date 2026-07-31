@@ -1,6 +1,6 @@
 # Index store (SQLite) details
 
-Depth for `src-tauri/src/indexing/store/`: the `IndexStore` handle and the concern-split CRUD. Must-know invariants
+Depth for `crates/cmdr-index/src/indexing/store/`: the `IndexStore` handle and the concern-split CRUD. Must-know invariants
 live in `CLAUDE.md`. The SQLite schema itself is described below; the honest-sizes epoch model that shares its columns
 lives in `../writer/DETAILS.md` § "Honest sizes", and the broader indexing pipeline in `../DETAILS.md`.
 
@@ -35,7 +35,7 @@ pulling shared items via `use super::*`):
   exists to feed — one name arena plus a 24-byte `(id, parent_id, name slice)` record per folder, id-ordered and
   binary-searched. The shape every whole-index walk (`media_index`'s image walk, `importance`'s recompute walk)
   reconstructs paths from; measurements and the alternatives weighed live in
-  `apps/desktop/src-tauri/src/media_index/scheduler/DETAILS.md`.
+  `crates/cmdr-index/src/media_index/scheduler/DETAILS.md`.
 - `dir_stats.rs`: `dir_stats` reads and writes plus `recompute_min_subtree_epoch`.
 - `meta.rs`: meta-table + epoch helpers, `mark_dirs_listed`, `get_all_directory_paths`, `clear_all`, and the
   aggregates-are-known-good marker (`ledger_heal_done` / `mark_ledger_heal_done` / `clear_ledger_heal_done`, keyed on

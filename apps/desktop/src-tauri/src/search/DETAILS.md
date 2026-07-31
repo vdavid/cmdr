@@ -59,7 +59,7 @@ orchestration; `engine.rs` stays per-index and pure.
 ### Routing
 
 - **Scoped** (`include_paths` non-empty): each path routes to its owning volume via
-  [`volume_id_for_local_path`](../indexing/paths/routing.rs) (SMB mount → `smb_volume_id`, `mtp://` → `{device}:{storage}`,
+  [`volume_id_for_local_path`](crates/cmdr-index/src/indexing/paths/routing.rs) (SMB mount → `smb_volume_id`, `mtp://` → `{device}:{storage}`,
   registered external mount → its id, everything else → `root`). Paths group by volume; each target is `from_scope`.
 - **Unscoped**: `volumes::all_indexed_volume_ids` enumerates every `index-*.db` in the data dir (root first), collapsed
   to one index per mounted location (below). Whole-volume each.
@@ -127,7 +127,7 @@ investigated and rejected, not overlooked:
   aren't populated for smbfs mounts.
 - **A server GUID identifies the BOX, not the share**, so it would still need pairing with the share name.
 - **Re-keying orphans every existing SMB index**, and there is no rename/merge machinery for index DBs (a schema
-  mismatch deletes and rebuilds — see `../indexing/CLAUDE.md` § Rebuild, don't migrate). On a real NAS that's a multi-
+  mismatch deletes and rebuilds — see `crates/cmdr-index/src/indexing/CLAUDE.md` § Rebuild, don't migrate). On a real NAS that's a multi-
   hour rescan for a problem the read-time dedupe already removes the symptoms of.
 
 If it's ever worth doing: reconcile AFTER the fact (on a direct SMB session, record the server GUID in the index's
@@ -212,7 +212,7 @@ Partial coverage works: covered volumes still return results alongside the note(
 ## Image-OCR search boundary (`media_index`)
 
 "Text in images" search is a SEPARATE query path from filename search, and it reaches a volume's `media.db` ONLY through
-the [`MediaIndex`](../media_index/read/mod.rs) read API — never a raw `rusqlite` dep on `media.db` (plan Decision 8), so
+the [`MediaIndex`](crates/cmdr-index/src/media_index/read/mod.rs) read API — never a raw `rusqlite` dep on `media.db` (plan Decision 8), so
 that store's `platform_case`/one-writer invariants don't leak into a second subsystem. The door is the
 `media_index_search_ocr` command (`commands/media_index/search.rs`), which returns `OcrHit { path, snippet }` (the
 snippet is the highlighted "why matched" reason). The frontend query-ui that blends OCR hits into the results surface is a later
@@ -221,7 +221,7 @@ slice; `search/` itself takes no dependency on `media_index` today.
 ## Importance ranking (`ranking.rs`)
 
 Search ranks interesting files toward the top by blending a result's match quality with its parent folder's importance
-weight (the first consumer of the `../importance/DETAILS.md` subsystem). The ranker is a pure module; `engine.rs` stays
+weight (the first consumer of the `crates/cmdr-index/src/importance/DETAILS.md` subsystem). The ranker is a pure module; `engine.rs` stays
 pure by receiving importance as DATA (a prebuilt weight map), never querying a DB.
 
 ### The blend: quality bands, importance within a band
@@ -287,7 +287,7 @@ Measurements and the before/after table: `docs/notes/search-latency-2026-07-28.m
 ### The weight-map lifecycle (`volumes.rs`)
 
 Per-volume weight maps live in the `WEIGHTS` map (`volume_id → Arc<ImportanceWeights>`) in `volumes.rs`, built ONCE by
-streaming [`ImportanceIndex::for_each_nonzero_weight`](../importance/read/mod.rs) and never queried per result (a search
+streaming [`ImportanceIndex::for_each_nonzero_weight`](crates/cmdr-index/src/importance/read/mod.rs) and never queried per result (a search
 ranks tens of thousands of candidates):
 
 - **Loaded with the arena, cloned per search.** `ensure_volume` loads a volume's weights alongside its arena;
@@ -295,12 +295,12 @@ ranks tens of thousands of candidates):
   mid-search. Kept SEPARATE from `LoadedVolume` so the root recompute subscriber can swap root's map without rebuilding
   the arena.
 - **Subscribe (root), snapshot (non-root).** `start_importance_weight_subscriber` (wired from `lib.rs` setup, which
-  also records the app data dir) subscribes to root's [`read::subscribe`](../importance/read/mod.rs) recompute `watch`
+  also records the app data dir) subscribes to root's [`read::subscribe`](crates/cmdr-index/src/importance/read/mod.rs) recompute `watch`
   and reloads root's weights on each pass, plus once up front. A non-root volume takes a load-time snapshot instead: it
   drops on idle and reloads next session, and its importance rarely recomputes mid-session. A volume with no
   `importance-{id}.db` degrades to match-quality + recency (empty map).
 - **Only non-zero weights enter the map.** Floored folders have NO row in `importance.db` (the store's compaction — see
-  `../importance/DETAILS.md` storage model), and `for_each_nonzero_weight` also filters `score > 0`, so the ~312k
+  `crates/cmdr-index/src/importance/DETAILS.md` storage model), and `for_each_nonzero_weight` also filters `score > 0`, so the ~312k
   folders under `node_modules` on a 646k-folder home never enter the map (their lookup defaults to `0.0` anyway).
 - **The map stores a hash of the path, not the path.** Nothing enumerates it and `weight_for` only does exact lookups,
   so `ImportanceWeights` keys on `hash_path(folder_path)` and each folder costs one 17-byte table slot: measured
@@ -315,4 +315,4 @@ ranks tens of thousands of candidates):
   absent (a read-only open would fail `CannotOpen`), so an unscored volume degrades cleanly.
 
 The blend coefficient is an unvalidated starting point (the importance weights themselves are too — see
-`../importance/scorer/weights.rs`).
+`crates/cmdr-index/src/importance/scorer/weights.rs`).

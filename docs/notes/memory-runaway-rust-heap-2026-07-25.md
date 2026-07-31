@@ -66,7 +66,7 @@ Subtractive tests against the SMB-index-on condition, all **no effect**:
 ## Root cause (CONFIRMED, FIXED): `coverage::get_or_build` materialized every image path in the volume
 
 > **Fixed.** Three changes, all in `media_index` (contract + rationale:
-> `apps/desktop/src-tauri/src/media_index/DETAILS.md` § Covered-count preview): counting is now a sink over
+> `crates/cmdr-index/src/media_index/DETAILS.md` § Covered-count preview): counting is now a sink over
 > `enrich::for_each_qualifying_image` (`coverage::count_qualifying_images`, `O(folders)`, no per-image path `String`);
 > polls and startup paths read `coverage::cached`, which never walks, so `volume_state` can't trigger a cold build and
 > image indexing being off means no walk at all; and `get_or_build` deduplicates concurrent cold callers behind a
@@ -177,7 +177,7 @@ will recognize; the pointer says where the answer now lives.
 `coverage::get_or_build` no longer materializes every image path. Counting is a sink over
 `enrich::for_each_qualifying_image` (`coverage::count_qualifying_images`, O(folders), no per-image path `String`); polls
 and startup paths read `coverage::cached`, so `volume_state` can't trigger a cold build; and concurrent cold callers
-dedupe behind a per-volume build lock. Contract and rationale: `apps/desktop/src-tauri/src/media_index/DETAILS.md` §
+dedupe behind a per-volume build lock. Contract and rationale: `crates/cmdr-index/src/media_index/DETAILS.md` §
 Covered-count preview.
 
 ## Still open

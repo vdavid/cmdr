@@ -16,7 +16,7 @@ The instrumentation writes no index state, sends no writer messages, and changes
 **Not the same thing as the reconcile churn line.** `reconcile/reconciler/rescan_churn.rs` is always on and emits one
 INFO line per 15 minutes when the RECONCILER is doing too much work. It measures completed subtree reconciles (walk
 cost, row deltas), not FSEvents, and it can't answer any of the three questions below. This spike stays as it is; the
-two coexist. See `apps/desktop/src-tauri/src/indexing/reconcile/DETAILS.md`.
+two coexist. See `crates/cmdr-index/src/indexing/reconcile/DETAILS.md`.
 
 ## Collect
 
@@ -174,9 +174,9 @@ comma in a path can't shift columns.
 
 ## Where the code lives
 
-- `apps/desktop/src-tauri/src/indexing/watch/churn_monitor.rs` — the aggregator, pure and clock-injected (same shape as
+- `crates/cmdr-index/src/indexing/watch/churn_monitor.rs` — the aggregator, pure and clock-injected (same shape as
   `reconcile/reconciler/rescan_throttle.rs`), with its unit tests in `churn_monitor/tests.rs`.
-- `apps/desktop/src-tauri/src/indexing/watch/event_loop/live.rs` — the single call site, inside `process_live_batch`,
+- `crates/cmdr-index/src/indexing/watch/event_loop/live.rs` — the single call site, inside `process_live_batch`,
   before the batch drains. It lives there rather than at a loop's flush tick because **there are two live loops**:
   `live.rs`'s `run_live_event_loop` (post-scan) and `replay.rs` Phase 3 (post-journal-replay, the cold-start route).
   Both funnel through `process_live_batch`, which takes a `ChurnObserver` by `&mut`, so the hook is compiler-enforced at

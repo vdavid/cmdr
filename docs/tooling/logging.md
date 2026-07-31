@@ -213,7 +213,7 @@ new-subtree settle delay absorbed; a window that churns hard while that reads ze
 itself, not a fault in the logging.
 
 For the per-walk detail behind it, turn the reconciler up: `RUST_LOG=cmdr_lib::indexing::reconcile=debug,info pnpm dev`.
-Mechanism, budgets, and the memory bound: `apps/desktop/src-tauri/src/indexing/reconcile/DETAILS.md`.
+Mechanism, budgets, and the memory bound: `crates/cmdr-index/src/indexing/reconcile/DETAILS.md`.
 
 ## Verbose logging
 

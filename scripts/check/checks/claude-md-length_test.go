@@ -179,7 +179,7 @@ func TestRunClaudeMdLength_AllowlistExceeded(t *testing.T) {
 func TestRunClaudeMdLength_PerFileBudgetOverride(t *testing.T) {
 	tmp := t.TempDir()
 	// The indexing submodule has a 1000-word override (claudeMdBudgetOverrides).
-	rel := filepath.Join("apps", "desktop", "src-tauri", "src", "indexing", "CLAUDE.md")
+	rel := filepath.Join("crates", "cmdr-index", "src", "indexing", "CLAUDE.md")
 
 	// 800 words: over the default 600, but under this submodule's 1000 budget.
 	writeClaudeMd(t, tmp, rel, 800)

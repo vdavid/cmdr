@@ -229,7 +229,7 @@ func TestIsRepoPathToken(t *testing.T) {
 		want bool
 	}{
 		{"docs/architecture.md", true},
-		{"apps/desktop/src-tauri/src/indexing/DETAILS.md", true},
+		{"crates/cmdr-index/src/indexing/DETAILS.md", true},
 		{".claude/rules/docs.md", true},
 		{"DETAILS.md", false},                           // single segment: too close to prose like `C.md`
 		{"C.md", false},                                 // an abbreviation, not a path

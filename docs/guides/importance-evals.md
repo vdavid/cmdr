@@ -1,11 +1,11 @@
 # Tuning the folder-importance scorer with evals
 
-The importance scorer (`apps/desktop/src-tauri/src/importance/`) decides which folders matter, so expensive features
+The importance scorer (`crates/cmdr-index/src/importance/`) decides which folders matter, so expensive features
 (the agent, media-ML enrichment, future cleanup and prefetch) can spend their effort on the right places. It ships with
 default weights that are a starting point, not validated numbers. This guide is the measurement instrument for tuning
 them: a suite of deterministic evals that turn "did that weight change help?" into a number you can watch move.
 
-Everything here lives in `apps/desktop/src-tauri/src/importance/evals/`. You don't need to touch the scorer to use it.
+Everything here lives in `crates/cmdr-index/src/importance/evals/`. You don't need to touch the scorer to use it.
 
 ## What the suite measures
 

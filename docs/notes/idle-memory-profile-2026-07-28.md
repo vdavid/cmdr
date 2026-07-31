@@ -41,7 +41,7 @@ blocking-thread pool (69 threads at sample time), not anything semantic.
    bound out of the slab rather than a reservation).
 
 Rationale, the sizing, the ordering guarantee, and the alternative weighed:
-`apps/desktop/src-tauri/src/indexing/store/DETAILS.md` § "SQLite page memory is one process-wide slab".
+`crates/cmdr-index/src/indexing/store/DETAILS.md` § "SQLite page memory is one process-wide slab".
 
 The connection count itself was a separate, real cost: both read paths held a SINGLE thread-local connection, so a
 thread alternating between two volumes reopened on every alternation and threw away its `prepare_cached` statements.
@@ -75,8 +75,8 @@ the home directory.
    idle gate. Machine churn (`target/`, `Library/Caches`, dot-directories) can no longer cost a pass at all.
 3. An allocation-free `is_in_changed_subtree` (it built a `format!` needle per folder per changed path).
 
-Contracts, the accepted lossiness, and the guardrails: `apps/desktop/src-tauri/src/importance/scheduler/DETAILS.md` and
-`apps/desktop/src-tauri/src/indexing/lifecycle/DETAILS.md`.
+Contracts, the accepted lossiness, and the guardrails: `crates/cmdr-index/src/importance/scheduler/DETAILS.md` and
+`crates/cmdr-index/src/indexing/lifecycle/DETAILS.md`.
 
 ## A latent bug this surfaced
 

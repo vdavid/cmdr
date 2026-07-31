@@ -32,7 +32,7 @@ var claudeMdBudgetOverrides = map[string]int{
 	// The indexing subsystem is exceptionally large (scanner, writer, aggregator,
 	// reconciler, event loop, SMB/MTP, freshness, rescan throttle); its invariants
 	// don't compress under 600 words without losing must-know guardrails.
-	"apps/desktop/src-tauri/src/indexing/CLAUDE.md": 1000,
+	"crates/cmdr-index/src/indexing/CLAUDE.md": 1000,
 }
 
 // claudeMdBudgetFor returns the word budget for relPath: a per-file override if

@@ -1,7 +1,7 @@
 # Rows under recursion-excluded dirs, and why we rebuild instead of pruning (2026-07-25)
 
 Measurements behind the one-time exclusion-list rebuild. Mechanism and decisions:
-`apps/desktop/src-tauri/src/indexing/network_scanner/DETAILS.md` § "Rebuilding an index that predates the current list".
+`crates/cmdr-index/src/indexing/network_scanner/DETAILS.md` § "Rebuilding an index that predates the current list".
 
 All figures come from a **copy** of the author's live production index,
 `~/Library/Application Support/com.veszelovszki.cmdr/index-smb-192-168-1-111-445-naspi.db` (QNAP TS-464 over SMB, schema
@@ -51,7 +51,7 @@ It was still the wrong trade. The drive index is a disposable cache, no index ho
 pre-launch, and a NAS rescan is ~10 minutes), and preserving one didn't justify a permanent piece of migration machinery
 that fixes only the one thing it targets. So the prune is gone: a network index now stamps the exclusion list it was
 BUILT against, and a mismatch makes the next load truncate and rescan. Standing rule:
-`apps/desktop/src-tauri/src/indexing/CLAUDE.md` § "Rebuild, don't migrate".
+`crates/cmdr-index/src/indexing/CLAUDE.md` § "Rebuild, don't migrate".
 
 Verified against a copy of this DB (2026-07-25): it carries no exclusion stamp, so the rebuild arms rather than silently
 no-opping; the truncate the rebuild sends first takes it from 13 541 603 rows and 52 matched excluded dirs to the 1-row

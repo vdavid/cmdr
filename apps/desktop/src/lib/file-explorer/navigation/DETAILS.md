@@ -372,7 +372,7 @@ formatter are the pure `drive-index-status.ts` (unit-tested). Blue pulses (gated
   `getDriveIndexingEnabled()`), `driveIndexMenuActions(state, false)` returns `[]` and the menu renders one note saying
   indexing is off in Settings and that this drive picks up where it left off. The tooltip swaps to the same headline, so
   a gray dot doesn't read as "off for THIS drive". The backend refuses every start while the master is off (the model is
-  `src-tauri/src/indexing/lifecycle/DETAILS.md` § The two indexing switches), so an actionable menu would be a lie; the
+  `crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § The two indexing switches), so an actionable menu would be a lie; the
   drive's own choice is untouched and returns with the switch.
 - **Refused enable/rescan is classified by TYPED variant** (`SmbIndexGateReason`), never message text:
   `credentials_needed` routes into the existing direct-connect/login flow (`handleSubmenuAction`); the others show a
