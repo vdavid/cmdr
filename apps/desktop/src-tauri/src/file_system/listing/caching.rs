@@ -528,6 +528,11 @@ pub fn notify_directory_changed(volume_id: &str, parent_path: &Path, change: Dir
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     crate::index_host::index().apply_directory_change(volume_id, parent_path, &change);
 
+    // The cloud badge caches per directory, so this is how it learns that a file it
+    // has an answer for moved on. Cheap: one hash lookup, hit or miss.
+    #[cfg(target_os = "macos")]
+    crate::file_system::sync_status::invalidate_dir(parent_path);
+
     let listings = find_listings_for_path_on_volume(Some(volume_id), parent_path);
 
     // For non-FullRefresh changes, bail early if no listing matches this path.

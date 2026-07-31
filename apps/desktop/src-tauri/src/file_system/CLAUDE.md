@@ -4,7 +4,8 @@ Core filesystem operations: directory listing, file writing, sync status, volume
 
 Submodule docs: `listing/CLAUDE.md`, `write_operations/CLAUDE.md`,
 `volume/CLAUDE.md`. Top-level files of note: `cloud_actions.rs` (iCloud make-available-offline / remove-download),
-`open_with.rs` (candidate apps + launch), `watcher.rs` (FSEvents incremental listing updates), `sync_status.rs`,
+`open_with.rs` (candidate apps + launch), `watcher.rs` (FSEvents incremental listing updates), `sync_status/`
+(cloud badges: bounded thread pool, cache, cancellable batches — see its `CLAUDE.md`),
 `index_provider.rs` (the app's `VolumeProvider`: everything the index asks about mounted volumes, so it never imports
 `VolumeManager` or a platform probe), `tags.rs` (macOS Finder tags: `_kMDItemUserTags` getxattr + bplist read/write; read deferred via `enrich_tags`, write
 via `set_tags` / `toggle_color` behind the `toggle_tags` command).
@@ -20,8 +21,10 @@ via `set_tags` / `toggle_color` behind the `toggle_tags` command).
   FileProvider queries, and similar Objective-C APIs make synchronous XPC round-trips to system daemons that can descend
   through FileProvider override chains (iCloud, Dropbox) and blow rayon's default 2 MB worker stack. Use dedicated OS
   threads with an explicit 8 MB stack instead. This also keeps I/O-bound XPC off rayon's pool, which is for CPU-bound
-  work. `sync_status.rs` is the reference pattern. (The `src/icons/` module, a separate top-level module, follows the
-  same rule for `fetch_path_icons`; see its `CLAUDE.md`.)
+  work. `sync_status/pool.rs` is the reference pattern, and a per-call `std::thread::scope` is NOT good enough on its
+  own: those calls can block forever, so the threads have to be pooled and hard-capped or they accumulate (21-23 of
+  them in the 2026-07-31 wedge). (The `src/icons/` module, a separate top-level module, follows the same rule for
+  `fetch_path_icons`; see its `CLAUDE.md`.)
 - **Never `tokio::spawn` from the notify-rs debouncer callback.** It runs on the notify-rs internal thread with no Tokio
   runtime, so `tokio::spawn` panics with "there is no reactor running". Use `tauri::async_runtime::spawn` (same as
   `indexing::watch::watcher`). This bit the watcher's full-reread fallback path (`watcher.rs`, `>500` events or ambiguous event

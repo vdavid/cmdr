@@ -10,8 +10,8 @@ inspection could not name the await that never resolved.
 Evidence, timeline, and the four open questions: `docs/notes/incidents/2026-07-31-transfer-wedge/README.md`. Read it
 before starting M1; it is the acceptance target.
 
-Read before starting: `apps/desktop/src-tauri/src/file_system/write_operations/transfer/CLAUDE.md` and its
-`DETAILS.md` (the driver, `CheckpointStream`, the foreground auto-yield contract), plus
+Read before starting: `apps/desktop/src-tauri/src/file_system/write_operations/transfer/CLAUDE.md` and its `DETAILS.md`
+(the driver, `CheckpointStream`, the foreground auto-yield contract), plus
 `apps/desktop/src-tauri/src/file_system/CLAUDE.md` (the "never rayon for macOS frameworks" rule that shapes M4).
 
 ## Settled decisions
@@ -78,8 +78,8 @@ recognizable name.
 David clicked Rollback, nothing happened, the window would not close, and the app had to be force-quit. The stall was
 recoverable in principle; this is what turned it into data loss.
 
-- **M3.1** Make the driver observe `OperationIntent` on the await path, not only in the spawn loop. Today
-  `is_cancelled` is checked while pushing new tasks, which a parked driver never reaches.
+- **M3.1** Make the driver observe `OperationIntent` on the await path, not only in the spawn loop. Today `is_cancelled`
+  is checked while pushing new tasks, which a parked driver never reaches.
 - **M3.2** Make in-flight copy tasks abortable while parked or awaiting a backend, so cancel does not depend on them
   completing first.
 - **M3.3** Bound the wait: if tasks do not wind down within a deadline, abandon them, mark the operation failed, and
@@ -89,15 +89,14 @@ recoverable in principle; this is what turned it into data loss.
 
 ## M4: the sync-status thread leak
 
-Confirmed independently in both samples: 21 to 23 OS threads permanently blocked in
-`sync_status::get_ubiquitous_bool` -> `NSURL getResourceValue` -> synchronous XPC to `fileproviderd`, still blocked
-four minutes later. `commands/sync_status.rs` wraps the call in a 2 s timeout, but `spawn_blocking` work cannot be
-cancelled: the timeout returns an empty map while the `std::thread::scope` holds a Tokio blocking thread plus ~11
-spawned 8 MB-stack OS threads until the provider answers, and the frontend retries into another batch. Two rounds were
-in flight when sampled.
+Confirmed independently in both samples: 21 to 23 OS threads permanently blocked in `sync_status::get_ubiquitous_bool`
+-> `NSURL getResourceValue` -> synchronous XPC to `fileproviderd`, still blocked four minutes later.
+`commands/sync_status.rs` wraps the call in a 2 s timeout, but `spawn_blocking` work cannot be cancelled: the timeout
+returns an empty map while the `std::thread::scope` holds a Tokio blocking thread plus ~11 spawned 8 MB-stack OS threads
+until the provider answers, and the frontend retries into another batch. Two rounds were in flight when sampled.
 
-Unknown whether this contributed to the transfer wedge. It is worth fixing on its own: this is the
-resource-efficiency win.
+Unknown whether this contributed to the transfer wedge. It is worth fixing on its own: this is the resource-efficiency
+win.
 
 - **M4.1 Make the work cancellable.** A cancellation token the chunk loop checks between paths, so an abandoned batch
   stops instead of running to completion for a caller that timed out 2 s ago.
@@ -106,15 +105,14 @@ resource-efficiency win.
 - **M4.3 A long-lived, bounded worker pool instead of per-call `std::thread::scope`.** Same 8 MB stacks (the rayon
   prohibition in `file_system/CLAUDE.md` stands), but spawned once. Per-call thread creation at 8 MB a piece, several
   times a second during scrolling, is the resource cost David wants back.
-- **M4.4 Cache per path with invalidation.** Sync status changes rarely; the current code re-queries every path on
-  every listing render.
-- **M4.5 Cheaper negative path.** This folder is a worst case: with no dataless files, all 764 paths miss the `stat`
-  shortcut and take the XPC path. Skip the NSURL query where the answer cannot be interesting, for example outside a
-  known File Provider domain root. **Needs a design decision first**: `file_system/file_provider.rs` (which held the
-  `domain_id_for_dir` hint) has moved to `indexing/scanner/file_provider.rs` under
-  `index-crate-extraction-plan.md`, so the hint now sits inside the tree becoming the `cmdr-index` crate and is not
-  ours to reach into. Either the probe gets duplicated app-side or it belongs in `cmdr-fs` as shared vocabulary; that
-  is the extraction effort's call, so ask before designing around it.
+- **M4.4 Cache per path with invalidation.** Sync status changes rarely; the current code re-queries every path on every
+  listing render.
+- **M4.5 Cheaper negative path. Dropped, on evidence.** The idea was to skip the NSURL query outside a known File
+  Provider domain root. Measured, the premise doesn't hold: a whole non-cloud directory costs ~22 µs per path, because
+  `getResourceValue` short-circuits when no provider manages the URL and there is no XPC round-trip to skip. Inside a
+  domain, where the hint would say "yes, probe" anyway, it's ~4.5 ms per path. So the check saves microseconds on the
+  cheap paths, nothing on the expensive ones, and M4.4's cache absorbs it either way. The cross-crate question turned
+  out not to need answering. Numbers: `docs/notes/sync-status-pool-bench-2026-07-31.md`.
 - **M4.6** Measure before and after: thread count, wall time, and CPU for a 764-file Dropbox folder.
 
 ## M5: stall detection in the UI
@@ -158,10 +156,10 @@ hardcoded to base 1024 while labelling the result "KB" / "MB" / "GB":
   same duplicated tier logic).
 
 - **M6.4** Delete each and route through the canonical formatter, keeping `<Size>` as the component form.
-- **M6.5 Speed and ETA get the same treatment.** The dialog showed 58.41 MB/s (instantaneous) while the backend
-  reported a decaying cumulative average (928 KB/s falling to 749 KB/s as the stall dragged on), and the two windows
-  showed ETAs of 8m 12s and 5m 46s for the same operation. Decide one speed definition and one ETA definition, compute
-  them in one place, and have both windows render that.
+- **M6.5 Speed and ETA get the same treatment.** The dialog showed 58.41 MB/s (instantaneous) while the backend reported
+  a decaying cumulative average (928 KB/s falling to 749 KB/s as the stall dragged on), and the two windows showed ETAs
+  of 8m 12s and 5m 46s for the same operation. Decide one speed definition and one ETA definition, compute them in one
+  place, and have both windows render that.
 - **M6.6 Fix the file counter.** It read 5 of 764 while 10 files were fully written to the NAS. Establish where the
   count is incremented relative to the write completing, and make it honest.
 
@@ -169,9 +167,9 @@ hardcoded to base 1024 while labelling the result "KB" / "MB" / "GB":
 
 David's ask: make a future divergence impossible rather than merely reviewed.
 
-- **M6.7** A byte-count type that cannot be rendered without going through the formatter, so a bare `number` can't
-  reach the DOM as a size. Rust side: a `ByteSize` newtype crossing IPC. TypeScript side: a branded type whose only
-  consumer is the formatter.
+- **M6.7** A byte-count type that cannot be rendered without going through the formatter, so a bare `number` can't reach
+  the DOM as a size. Rust side: a `ByteSize` newtype crossing IPC. TypeScript side: a branded type whose only consumer
+  is the formatter.
 - **M6.8** A lint (the repo already has custom `cmdr/*` ESLint rules and Rust checks) that rejects new private byte,
   speed, or duration formatting, on the model of `cmdr/no-error-string-match`.
 - **M6.9** Document the primitives where they will be found: the units contract in the colocated `CLAUDE.md`, and a
@@ -188,17 +186,17 @@ careful pass.
 ### Running alongside the index crate extraction
 
 `index-crate-extraction-plan.md` is in flight on `worktree-david-index-crate-extraction`. The code surfaces do not
-overlap: of its 334 changed files, exactly one (`volume/backends/smb_watcher/archive_refresh_test.rs`) is in this
-spec's working set, and none are in M6's frontend set. `VolumeError`, `ignore_poison`, `pluralize`, and `thread_qos`
-have already moved to `cmdr-fs` without needing changes in any transfer file, so the app-side re-exports hold.
+overlap: of its 334 changed files, exactly one (`volume/backends/smb_watcher/archive_refresh_test.rs`) is in this spec's
+working set, and none are in M6's frontend set. `VolumeError`, `ignore_poison`, `pluralize`, and `thread_qos` have
+already moved to `cmdr-fs` without needing changes in any transfer file, so the app-side re-exports hold.
 
-- **M4.5 is blocked on their decision**, as noted above.
+- **M4.5 needed nothing from them after all**: it was dropped on measurement, so no probe was duplicated or moved.
 - **Hold M6.7 and M6.8 until the extraction lands.** `FileEntry` in `cmdr-fs` already carries `display_size` and
-  `display_size_tooltip`, so a byte-count newtype would be redesigning a type that effort owns while it owns it.
-  M6.8's lint registers in `scripts/check/checks/registry.go`, which they are reworking.
+  `display_size_tooltip`, so a byte-count newtype would be redesigning a type that effort owns while it owns it. M6.8's
+  lint registers in `scripts/check/checks/registry.go`, which they are reworking.
 - **Expect mechanical conflicts only in shared infrastructure**: `registry.go` and its neighbours, the generated
-  `apps/desktop/src/lib/ipc/bindings.ts` (regenerate, never hand-merge), `docs/specs/index.md`, and `Cargo.toml` if
-  M1.3 bumps `smb2`.
+  `apps/desktop/src/lib/ipc/bindings.ts` (regenerate, never hand-merge), `docs/specs/index.md`, and `Cargo.toml` if M1.3
+  bumps `smb2`.
 - **If both are ready together, let the extraction land first.** Rebasing localized additions onto a 334-file move is
   much cheaper than the reverse.
 

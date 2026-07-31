@@ -79,7 +79,13 @@ mod imp {
         let fm = NSFileManager::defaultManager();
         let result = fm.evictUbiquitousItemAtURL_error(&url);
         match result {
-            Ok(()) => Ok(()),
+            Ok(()) => {
+                // Eviction only flips `SF_DATALESS`, which doesn't reliably reach
+                // FSEvents, so the badge would otherwise show the old answer until
+                // its TTL ran out.
+                crate::file_system::sync_status::invalidate_path(path);
+                Ok(())
+            }
             Err(err) => {
                 let detail = describe_ns_error(&err);
                 warn!(target: "cloud_actions", "evictUbiquitousItem failed: {detail}");
@@ -100,7 +106,12 @@ mod imp {
         let fm = NSFileManager::defaultManager();
         let result = fm.startDownloadingUbiquitousItemAtURL_error(&url);
         match result {
-            Ok(()) => Ok(()),
+            Ok(()) => {
+                // The download starts behind this call, so the cached `OnlineOnly`
+                // has to go now for the badge to pick up `Downloading`.
+                crate::file_system::sync_status::invalidate_path(path);
+                Ok(())
+            }
             Err(err) => {
                 let detail = describe_ns_error(&err);
                 warn!(target: "cloud_actions", "startDownloadingUbiquitousItem failed: {detail}");

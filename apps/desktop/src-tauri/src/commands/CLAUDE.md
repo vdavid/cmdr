@@ -1,8 +1,7 @@
 # Commands module
 
-Thin Tauri IPC layer. Each file groups one domain's `#[tauri::command]` functions and delegates immediately to
-business-logic modules. **No business logic here**: branching or data transformation belongs in the relevant subsystem
-module.
+Thin Tauri IPC layer. Each file groups one domain's `#[tauri::command]` functions and delegates immediately.
+**No business logic here**: branching or data transformation belongs in the relevant subsystem module.
 
 ## Module map
 
@@ -23,22 +22,24 @@ subsystems are the reverse, since they can't carry `tauri::`. Inventory and rati
   - `timeout_detached` → **required when the future can reach a device backend** (rename, conflict/copy scans): it
     times out the JOIN HANDLE, never the work. ❌ A bare `tokio::time::timeout` drops the future and wedges an MTP
     phone. `DETAILS.md` § "IPC deadlines detach, never drop".
+  - ❌ Don't wrap `sync_status`: it applies its own deadline, keeping partial results and the still-running batch.
+    `../file_system/sync_status/DETAILS.md`.
   - Matching TS types live in `$lib/tauri-commands/ipc-types.ts`. `path_exists` is SMB-aware: a disconnected SMB volume
-    returns immediate `false`, so it re-checks `smb_connection_state()` and reports `timedOut: true` instead, so a
-    transient blip won't evict the user from a network folder.
+    returns immediate `false`, so it re-checks `smb_connection_state()` and reports `timedOut: true` — a transient blip
+    won't evict the user from a network folder.
 - **`expand_tilde` is conditional.** For listing it's gated on `volume_id == "root"`; for write operations (copy, move,
   delete, scan preview) it's always applied. NEVER tilde-expand MTP or network volume paths.
 - **`create_directory` / `create_file` / `rename_file` are thin: the logic + the managed instant op live in
-  `file_system::write_operations::{create,rename}`.** These commands only expand tilde (root), resolve `volume_id`, wrap
-  the module entry in the write timeout, and map to `IpcError`. The mutation runs via `manager::run_instant` (busy-marks
-  the volume, appears briefly in the queue, still inline + result-returning). `check_rename_validity` /
+  `file_system::write_operations::{create,rename}`.** These commands only expand tilde (root), resolve `volume_id`, apply
+  the write timeout, and map to `IpcError`. The mutation runs via `manager::run_instant` (busy-marks the volume,
+  appears briefly in the queue, still inline and result-returning). `check_rename_validity` /
   `check_rename_permission` stay UNMANAGED — the snappy read-only path.
-- **The create core errors on an unregistered volume; NO `std::fs` fallback.** Every mount is registered in
-  `VolumeManager` at startup, so an unregistered `volume_id` means a race (unmount mid-op). A bare `std::fs` fallback
+- **The create core errors on an unregistered volume; NO `std::fs` fallback.** Every mount is registered in `VolumeManager`
+  at startup, so an unregistered `volume_id` means a race (unmount mid-op). A bare `std::fs` fallback
   has no timeout and breaks the "every FS-touching command is timed" contract; don't re-add it. Unit tests register a
   real local "root" via `ensure_root_volume()` (never `init_volume_manager`).
-- **Platform gates at the module level in `mod.rs`, not per-function**, so the compiler excludes the whole surface and an
-  unsupported command isn't even registered. `volumes` is macOS-only; `mtp`/`network`/`eject` are macOS+Linux;
+- **Platform gates at the module level in `mod.rs`, not per-function**, so an unsupported command isn't even
+  registered. `volumes` is macOS-only; `mtp`/`network`/`eject` are macOS+Linux;
   `volumes_linux` is Linux-only. Use per-function `#[cfg]` only where behavior differs (for example `sync_status`).
 - **`delete_files` and `rename_file` accept `volume_id`.** Non-root → `delete_files` uses the volume-aware delete and
   skips local `validate_sources` (MTP virtual paths fail `symlink_metadata`); `rename_file` passes `volume_id` through
@@ -51,5 +52,5 @@ subsystems are the reverse, since they can't carry `tauri::`. Inventory and rati
 - **⌘W: `CLOSE_TAB_ID` is the one menu item NOT disabled when the main window loses focus.** On macOS ⌘W must keep
   closing the front window (Settings, viewer, debug); disabling it stops its accelerator firing there. See
   `menu/DETAILS.md`.
-- **`list_shares_with_credentials` carries `#[allow(clippy::too_many_arguments)]`**: Tauri command params must be
-  top-level args.
+- **`list_shares_with_credentials` carries `#[allow(clippy::too_many_arguments)]`**: Tauri params must be top-level
+  args.

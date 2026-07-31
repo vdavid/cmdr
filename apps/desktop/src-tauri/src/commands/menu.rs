@@ -108,20 +108,26 @@ pub fn show_file_context_menu<R: Runtime>(
     Ok(())
 }
 
+/// A context menu has to appear now. Half a second is already more than the user
+/// should wait for one label.
+#[cfg(target_os = "macos")]
+const MENU_SYNC_STATUS_TIMEOUT: std::time::Duration = std::time::Duration::from_millis(500);
+
 #[cfg(target_os = "macos")]
 fn build_file_context_info(primary_path: &str, all_paths: &[String]) -> FileContextInfo {
     use crate::file_system::cloud_actions::is_in_icloud_drive;
     use crate::file_system::open_with::compute_open_with_choices;
-    use crate::file_system::sync_status::get_sync_statuses;
+    use crate::file_system::sync_status::status_within_blocking;
     use std::path::PathBuf;
 
     let path_buf = PathBuf::from(primary_path);
     let is_icloud_drive = is_in_icloud_drive(&path_buf);
 
-    // Sync status of the primary path only (drives the cloud-action label).
+    // Sync status of the primary path only (drives the cloud-action label). Bounded,
+    // because this runs before a context menu pops: a provider that stops answering
+    // must cost the menu a plain label, not a delay the user can feel.
     let sync_status = if is_icloud_drive {
-        let mut statuses = get_sync_statuses(vec![primary_path.to_string()]);
-        statuses.remove(primary_path).unwrap_or_default()
+        status_within_blocking(primary_path, MENU_SYNC_STATUS_TIMEOUT)
     } else {
         Default::default()
     };
