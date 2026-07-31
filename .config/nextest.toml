@@ -176,6 +176,23 @@ test-group = 'real-notify'
 slow-timeout = { period = "20s", terminate-after = 1 }
 
 [[profile.default.overrides]]
+# The vendored `cmdr-fsevent-stream` fork's own delivery test. One `#[test]` runs FIVE
+# real-FSEvents scenarios back to back (one per create-flag combination), and each pays a
+# hard 200 ms create/delete separation (macOS Sequoia coalesces a faster pair into one
+# event) plus a 1 s abort tolerance before its stream can be collected. So the floor is
+# structural, not slowness: 8.6 s idle, measured 3/3 on an M3 Max, 2026-07-31. 30 s covers
+# the saturated case while keeping the hang backstop; `real-notify` stops its five live
+# streams from multiplying the other watcher tests' starvation.
+#
+# Splitting it into five `#[test]`s would fit the global cap and is the cleaner test, but
+# `crates/fsevent-stream/` is a vendored fork of a third-party crate where diff-vs-upstream
+# is load-bearing (it's how a rebase onto upstream stays reviewable), so the structural
+# divergence costs more than the override does.
+filter = 'package(cmdr-fsevent-stream) & test(tests::must_receive_fs_events)'
+test-group = 'real-notify'
+slow-timeout = { period = "30s", terminate-after = 1 }
+
+[[profile.default.overrides]]
 # File-viewer session watchers — same real-FSEvents class, but these still block
 # on a SINGLE delivery (subscribe/start a watch, then rewrite/append/rename once
 # and wait). They haven't been restructured to redo the mutation, so a starved or
