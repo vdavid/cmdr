@@ -254,6 +254,9 @@ pub fn is_installed(data_dir: &Path) -> bool {
 /// `Ok(true)` when it removed the source, `Ok(false)` when there was nothing to remove or no
 /// compiled model yet (the source is NEVER removed before a verified compile). Best-effort —
 /// an error is surfaced for logging, never fatal (keeping the package only costs disk).
+///
+/// macOS-only: its caller is the Core ML loader, and no other platform compiles a tower.
+#[cfg(any(test, target_os = "macos"))]
 pub(crate) fn reclaim_source_package(model_dir: &Path, tower: &ClipTowerSpec) -> std::io::Result<bool> {
     let package = package_path(model_dir, tower);
     if !compiled_path(model_dir, tower).is_dir() || !package.is_dir() {
@@ -266,6 +269,9 @@ pub(crate) fn reclaim_source_package(model_dir: &Path, tower: &ClipTowerSpec) ->
 /// Delete a tower's compiled `.mlmodelc` (plan M5a fallback): called when it failed to load
 /// and no `.mlpackage` remains to recompile from, so [`is_installed`] flips back to `false`
 /// and the standard download flow refetches the pinned zip. Best-effort.
+///
+/// macOS-only, for the same reason as [`reclaim_source_package`].
+#[cfg(any(test, target_os = "macos"))]
 pub(crate) fn drop_compiled(model_dir: &Path, tower: &ClipTowerSpec) -> std::io::Result<()> {
     let compiled = compiled_path(model_dir, tower);
     if compiled.is_dir() {

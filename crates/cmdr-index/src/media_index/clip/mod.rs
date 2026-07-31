@@ -26,7 +26,9 @@
 //! The conversion that produces the shipped `.mlpackage` towers is an out-of-tree dev
 //! script (`apps/desktop/scripts/convert-clip-model/`), never run by CI/pnpm.
 
-#[cfg(test)]
+// Not `cfg(test)`: the fake text encoder here is what `backend::fake` uses, and
+// off macOS that fake IS the production backend.
+#[cfg(any(test, not(target_os = "macos")))]
 pub(crate) mod backend;
 pub mod install;
 #[cfg(target_os = "macos")]
@@ -75,17 +77,14 @@ pub fn encode_text_query(query: &str) -> Result<Vec<f32>, ClipError> {
 }
 
 /// Encode a CHW `[0,1]` `[1,3,224,224]` pixel buffer to a CLIP image embedding via the
-/// enrichment image tower (called from the Vision worker's `analyze_media`).
+/// enrichment image tower.
+///
+/// macOS-only, unlike [`encode_text_query`]: its one caller is the Vision worker's
+/// `analyze_media`, which is itself macOS-only, so off macOS there is neither a tower
+/// to reach nor anything to reach it.
+#[cfg(target_os = "macos")]
 pub(crate) fn encode_image_pixels(pixels: Vec<f32>) -> Result<Vec<f32>, ClipError> {
-    #[cfg(target_os = "macos")]
-    {
-        macos::encode_image(pixels)
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        let _ = pixels;
-        Err(ClipError::NotAvailable)
-    }
+    macos::encode_image(pixels)
 }
 
 /// A typed CLIP failure. Never string-matched for classification (`no-string-matching`):

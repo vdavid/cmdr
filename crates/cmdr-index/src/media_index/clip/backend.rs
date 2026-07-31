@@ -11,11 +11,16 @@
 //! get a high cosine) — that's what makes the query pipeline testable end-to-end without
 //! a model or the ANE. The real macOS towers live in the `vision`-gated modules.
 
+// Only the test-gated encoder seam below names it.
+#[cfg(test)]
 use super::ClipError;
 
 /// Encode a text query into a CLIP text embedding (query time). The real impl keeps the
 /// text tower warm (a cold Core ML load is 1–2 s; a warm encode ~2 ms); the fake returns
 /// a deterministic vector in the shared fake space.
+// Test-only: production text encoding goes straight to the warm macOS tower
+// (`macos::encode_text`), so nothing off the test path holds one of these.
+#[cfg(test)]
 pub trait ClipTextEncoder: Send + Sync {
     /// Encode `query` to a CLIP text embedding, or a typed error when the model isn't
     /// available / a prediction fails.
@@ -59,9 +64,11 @@ pub fn fake_clip_embedding(text: &str) -> Vec<f32> {
 }
 
 /// A deterministic fake text encoder over the shared [`fake_clip_embedding`] space.
+#[cfg(test)]
 #[derive(Debug, Clone, Default)]
 pub struct FakeClipTextEncoder;
 
+#[cfg(test)]
 impl ClipTextEncoder for FakeClipTextEncoder {
     fn encode_text(&self, query: &str) -> Result<Vec<f32>, ClipError> {
         Ok(fake_clip_embedding(query))

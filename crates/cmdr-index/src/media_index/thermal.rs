@@ -18,6 +18,13 @@
 ///
 /// [`Nominal`]: ThermalPressure::Nominal
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(
+    not(any(test, target_os = "macos")),
+    allow(
+        dead_code,
+        reason = "only the macOS `NSProcessInfo` probe reports anything above Nominal; the levels stay in the enum so the capping rule reads the same on every platform"
+    )
+)]
 pub enum ThermalPressure {
     /// No thermal pressure: run the full chosen worker count.
     Nominal,

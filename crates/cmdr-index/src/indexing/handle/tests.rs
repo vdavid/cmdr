@@ -72,7 +72,14 @@ fn in_memory_share(root: &str) -> Arc<dyn Volume> {
 async fn a_handle_scans_an_in_memory_volume_and_reports_to_its_own_sink() {
     let _serialized = crate::indexing::handle::test_lock();
     let data = tempfile::tempdir().expect("index data dir");
+    // A platform-appropriate mount root. Read routing sends a path to a per-mount
+    // index only when it sits under an external-mount prefix, and those differ per
+    // OS (`/Volumes/` on macOS, `/mnt/` and `/media/` on Linux). A hardcoded
+    // `/Volumes/…` routes back to `root`'s index on Linux, where nothing scanned it.
+    #[cfg(target_os = "macos")]
     let root = "/Volumes/acceptance";
+    #[cfg(not(target_os = "macos"))]
+    let root = "/media/acceptance";
     let volume_id = "smb-acceptance-test";
 
     let volumes = FakeVolumeProvider::shared();

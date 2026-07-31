@@ -43,7 +43,14 @@ impl FakeVisionBackend {
     pub fn new() -> Self {
         Self::default()
     }
+}
 
+/// The scripting surface: what a test tells the fake to return. `cfg(test)`, not
+/// the module's wider gate, because off macOS this fake is PRODUCTION's backend and
+/// nothing there scripts it — under `#[deny(unused)]` an ungated builder is a hard
+/// error on the Linux build.
+#[cfg(test)]
+impl FakeVisionBackend {
     /// Script the exact OCR text for a path.
     pub fn with_text(mut self, path: impl Into<String>, text: impl Into<String>) -> Self {
         self.scripted.insert(path.into(), text.into());
@@ -108,7 +115,9 @@ impl FakeVisionBackend {
         self.taxonomy_version = Some(version.into());
         self
     }
+}
 
+impl FakeVisionBackend {
     /// The stem-derived default OCR text for an unscripted path.
     fn default_text(path: &str) -> String {
         format!("ocr text for {}", stem(path))

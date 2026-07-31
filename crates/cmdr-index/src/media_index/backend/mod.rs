@@ -19,7 +19,9 @@
 //! embeddings and face detect/embed become sibling methods as those
 //! milestones land.
 
-#[cfg(test)]
+// Not `cfg(test)`: off macOS this IS the production backend (there's no Vision
+// framework to fall back from), and `scheduler/lifecycle.rs` selects it there.
+#[cfg(any(test, not(target_os = "macos")))]
 pub(crate) mod fake;
 
 /// The real macOS Vision OCR backend. Only compiled on macOS (Vision/ImageIO are
