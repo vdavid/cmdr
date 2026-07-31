@@ -25,7 +25,7 @@ Three reasons, in priority order. When a decision here is ambiguous, resolve it 
 3. **Typed errors everywhere.** No `Box<dyn Error>`, no stringly-typed failure, so a host never string-matches
    (`.claude/rules/no-string-matching.md`). `IndexError` fronts the boundary with the variants callers act on plus one
    log-only `Internal(Diagnostic)` for the residue; typing the causes inside `lifecycle/state.rs` and `read/queries.rs`
-   is still open work.
+   is still open work. The house error style is in `apps/desktop/src-tauri/CLAUDE.md`.
 4. **Everything long-running is cancelable** through one primitive (`tokio_util::sync::CancellationToken`), with
    cancellation observable from outside: a cancelled operation returns a distinct error variant, never a silent early
    return.
@@ -54,6 +54,18 @@ five in one function, at the top of `setup()`.
   debug knobs are the deliberate exception, and stay `std::env::var` reads.
 
 Their rationale, and what each one replaced, is in `src/indexing/host/DETAILS.md`.
+
+## Why `specta` is an unconditional dependency
+
+58 data types derive `specta::Type`, plus `FileEntry` and `TagRef` down in `cmdr-fs`, and `FolderSignals`'s serde shape
+is load-bearing. Making that an optional feature reads like the tidier choice and is the worse one: the app is the only
+consumer and always enables it, and nothing in the check runner builds `--no-default-features`, so the specta-off
+configuration would be compiled zero times and rot on the first edit. Unconditional costs nothing now that
+`tauri-specta` is out of the tree, and it means the crate has one shape rather than two, one of which is never tested.
+
+Bindings collection is unaffected: the app's `ipc.rs` collects types transitively through command signatures, and a
+cross-crate `specta::Type` impl collects normally. What DOES break is two `specta` versions in one graph, which is why
+the pin is exact and identical to the app's.
 
 ## Why `indexing` is private and the other two aren't
 

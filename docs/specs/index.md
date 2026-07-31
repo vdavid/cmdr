@@ -41,14 +41,17 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       conflicts discarded, extension changes committed without a dialog. Carries the data-safety invariants (session
       ids, superseded-session effects, `pendingCursorName` suppression) that keep a save in flight for file N from
       corrupting the editor already on N+1. SPECCED, not started.
-- [ ] 2026-07-25 `index-crate-extraction-plan.md` - Extract `indexing/` + `media_index/` + `importance/` (89.5k lines,
-      28% of `src-tauri/src`) into a Tauri-free `cmdr-index` workspace crate over a `cmdr-fs` foundation, with a
-      designed public API: an owned `Index` handle, typed errors, no user-facing strings, one cancellation primitive,
-      structured progress, and a first-class ingest side (so listing-enrichment and space-to-size fit later without
-      reshaping). Buys encapsulation, independent incremental builds, and the substrate for exposing the index to
-      external agents. IN PROGRESS on `worktree-david-index-crate-extraction`: M0-M4 landed, so the three subsystems
-      reference no app module and no `tauri::`. M4's cancellation item is deferred (it's a `cmdr-fs` trait change); M5
-      designs the `Index` handle, M6 moves the code, M7 measures.
+- [x] 2026-07-25 `index-crate-extraction-plan.md` - SHIPPED, and wiped. Extracted `indexing/` + `media_index/` +
+      `importance/` (93k lines, 28% of `src-tauri/src`) into a Tauri-free `cmdr-index` crate over a `cmdr-fs`
+      foundation, with a designed public API: an owned `Index` handle, five named host seams, typed errors, no
+      user-facing strings, one cancellation primitive, structured progress, and a designed-not-implemented ingest side.
+      The durable intent lives in `crates/cmdr-index/DETAILS.md` (why the crate exists, the eight-point contract it's
+      held to, the gated surfaces, what stayed host-side), `crates/cmdr-index/src/indexing/handle/DETAILS.md` (the
+      public-surface audit, item by item), `crates/cmdr-index/src/indexing/host/DETAILS.md` (the seams), and
+      `crates/cmdr-fs/DETAILS.md` (the compiler-derived closure and the four cuts that made it finite). Two properties
+      are machine-checked rather than remembered: `index-crate-isolation` (no `tauri` in either crate's tree, plus a
+      ceiling on the public surface) and `desktop-rust-rustdoc` (no broken intra-doc links). Measurements, before and
+      after: `docs/notes/index-extraction-baseline.md`.
 
 ## Later
 

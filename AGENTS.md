@@ -89,11 +89,9 @@ may speak as David where deliberately personal (onboarding, About).
 
 - `apps/desktop/`: `src/` (Svelte frontend), `src-tauri/` (Rust backend), `test/` (Vitest, Playwright, Linux Docker E2E,
   SMB fixtures), `scripts/`. The other three apps are listed above.
-- `crates/`: the workspace crates. `cmdr-fs` (filesystem vocabulary + host primitives, `crates/cmdr-fs/CLAUDE.md`) and
-  `cmdr-index` (the file index, media index, and folder importance behind one handle, `crates/cmdr-index/CLAUDE.md`)
-  carry no `tauri` in their trees, enforced by `index-crate-isolation`. Plus two dev CLIs, `index-query` (reads an index
-  DB) and `operation-log-dump` (reads the app's operation log, so it does depend on the app), and the vendored
-  `fsevent-stream` fork.
+- `crates/`: `cmdr-fs` (filesystem vocabulary + host primitives) and `cmdr-index` (file index, media index, folder
+  importance, behind one handle) carry no `tauri`, enforced by `index-crate-isolation`; plus two dev CLIs and a vendored
+  `fsevent-stream` fork. Details: `docs/architecture.md`.
 - `brand/`: tracked brand and press-kit assets.
 - `docs/`: `docs/architecture.md` (the map), `docs/guides/` (how-tos), `tooling/` (service and workflow references),
   `docs/specs/index.md` (per-development plans, periodically wiped), `docs/notes/README.md` (benchmarks and analysis),

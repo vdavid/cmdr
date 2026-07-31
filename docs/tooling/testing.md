@@ -52,14 +52,14 @@ chases equivalent mutants and isn't worth it.
 
 ### `criterion` (benchmarks)
 
-Two bench targets in `apps/desktop/src-tauri/benches/`: `icon_benchmarks.rs` (icon fetching) and `index_benchmarks.rs`
-(index enrichment, the IPC dir-stats read, and the dir-stats roll-up, over a synthetic index DB built through the public
-`store` API). Run one with `cargo bench --bench <name>`; add `-- --save-baseline <name>` to record a run and
-`-- --baseline <name>` to diff the next one against it. Reports land in `target/criterion/`. No check runs them: they're
-for answering "did this get slower", not for gating. Recorded index numbers and their method:
-`docs/notes/index-extraction-baseline.md`.
+Two bench targets: `apps/desktop/src-tauri/benches/icon_benchmarks.rs` (icon fetching) and
+`crates/cmdr-index/benches/index_benchmarks.rs` (index enrichment, the IPC dir-stats read, and the dir-stats roll-up,
+over a synthetic index DB built through the public `store` API). Run one with `cargo bench -p <package> --bench <name>`;
+add `-- --save-baseline <name>` to record a run and `-- --baseline <name>` to diff the next one against it. Reports land
+in `target/criterion/`. No check runs them: they're for answering "did this get slower", not for gating. Recorded index
+numbers, before and after the crate extraction, plus the method: `docs/notes/index-extraction-baseline.md`.
 
-A bench compiles against the app as an EXTERNAL crate, so it sees neither `#[cfg(test)]` items nor `pub(crate)` ones.
+A bench compiles against its crate as an EXTERNAL one, so it sees neither `#[cfg(test)]` items nor `pub(crate)` ones.
 The `testing` Cargo feature widens the few scaffolding items a bench needs (today: the root-read-pool installers in
 `indexing/read/enrichment.rs`, and `FileEntry` at the crate root). ❌ Don't reach for `required-features` to enable it:
 `cargo clippy --all-targets` silently SKIPS targets whose required features are off, and an unlinted, never-compiled

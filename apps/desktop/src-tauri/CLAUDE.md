@@ -11,24 +11,24 @@ The Tauri 2 + Rust backend. Subsystem must-knows live in each module's colocated
 - ❌ No bare `.lock()` / `.read()` / `.write().unwrap()` on a std `Mutex` / `RwLock`: a poisoned lock aborts the whole
   app. Use `*_ignore_poison()` (recover) or `.expect("…poison…<why aborting is correct>")` (abort). Enforced by
   `lock-poison`; see `crates/cmdr-fs/src/ignore_poison.rs`, re-exported as `crate::ignore_poison`.
-- ❌ No bare `.unwrap()` in production: it's a silent panic. Handle the error (`?` / `ok_or` / `match`) where the value
-  can genuinely be absent, or `.expect("<concrete why it can't fail>")` for a true invariant. Enforced by
-  `clippy::unwrap_used`; `#[test]` fns are exempt (`clippy.toml` `allow-unwrap-in-tests`), but test *helper* fns outside
-  `#[test]` aren't, so they use `.expect("…")` too.
+- ❌ No bare `.unwrap()` in production: it's a silent panic. Handle the error (`?` / `ok_or` / `match`), or
+  `.expect("<concrete why it can't fail>")` for a true invariant. Enforced by `clippy::unwrap_used`; `#[test]` fns are
+  exempt (`clippy.toml` `allow-unwrap-in-tests`), but test *helper* fns outside one aren't.
+- ❌ No `thiserror` / `anyhow` as a direct dependency, anywhere in the workspace: errors are hand-rolled enums with a
+  manual `From`, each variant carrying the data a caller acts on rather than a sentence. Transitive copies are fine.
 - ❌ No hand-rolled poll loop or fixed sleep in a test: both pass silently or flake. Wait on a condition with
   `crate::test_support::wait_until` / `wait_until_async` (re-exported from `cmdr_fs::testing`), which panic on
   timeout. Rules: `docs/testing.md`.
 - ❌ Never build with raw `cargo build` (white screen, no embedded frontend). Use `pnpm tauri build` or the
-  `tauri-wrapper.ts build` wrapper, which runs `beforeBuildCommand`. See `../scripts/CLAUDE.md`.
-- ❌ Every `unsafe {}` block (and `unsafe impl`) needs a `// SAFETY:` comment on the immediately-preceding line, stating
-  the concrete invariant that makes THAT site sound (receiver/pointer validity, selector ABI match, thread, Create-vs-Get
-  ownership, success-gate) — specific, never boilerplate. Enforced by `clippy::undocumented_unsafe_blocks`. Rote FFI is
-  documented per-site; ❌ never blanket-exempt a file with `#[allow(clippy::undocumented_unsafe_blocks)]`.
+  `tauri-wrapper.ts build` wrapper. See `../scripts/CLAUDE.md`.
+- ❌ Every `unsafe {}` block (and `unsafe impl`) needs a `// SAFETY:` comment on the line above naming the concrete
+  invariant that makes THAT site sound (pointer validity, selector ABI match, thread, Create-vs-Get ownership,
+  success-gate) — specific, never boilerplate. Enforced by `clippy::undocumented_unsafe_blocks`. Rote FFI is documented
+  per-site; ❌ never blanket-exempt a file.
 - ❌ AppKit/Cocoa main-thread-only calls (NSWindow, NSColor, NSPasteboard, NSApplication, drag) must take or assert an
-  `objc2::MainThreadMarker` (proof you're on-main). A sync `#[tauri::command]` must NOT touch AppKit: hop via
-  `app.run_on_main_thread()` and return through an `mpsc` channel (pattern: `accent_color.rs`, `commands/clipboard.rs`).
-  Thread-safe Apple APIs (NSURL resource values, NSFileManager, NSUserDefaults, LaunchServices, Keychain, IOKit, Mach)
-  are exempt.
+  `objc2::MainThreadMarker`. A sync `#[tauri::command]` must NOT touch AppKit: hop via `app.run_on_main_thread()` and
+  return through an `mpsc` channel (pattern: `accent_color.rs`, `commands/clipboard.rs`). Thread-safe Apple APIs (NSURL
+  resource values, NSFileManager, NSUserDefaults, LaunchServices, Keychain, IOKit, Mach) are exempt.
 
 ## Tauri commands and capabilities
 

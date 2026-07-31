@@ -31,24 +31,47 @@ instead of retrying forever (`indexing/CLAUDE.md` § "A fatal storage error STOP
 levers closed, the remaining risk doesn't justify the cost below. Revisit only if a new starvation path appears that
 neither QoS nor coalescing can contain (see "When to revisit").
 
+## What the crate extraction already built
+
+The index now lives in `crates/cmdr-index/`, a Tauri-free crate with no reach into the app, behind an `Index` handle the
+host builds and owns. That was not done for this escalation, but it moves most of the control-plane work below from
+"design it" to "route it", and it is the prerequisite any process split would have needed first:
+
+- **Every app dependency is already a named seam.** `indexing/host/` declares five (`EventSink`, `VolumeProvider`,
+  `HostPolicy`, the injected tokio runtime, `IndexConfig`) and nothing else crosses the boundary. In a process split
+  those are the RPC surface, already enumerated and already implemented once, in
+  `apps/desktop/src-tauri/src/index_host.rs`.
+- **Events are a plain Rust enum, and the host owns the wire format.** The `AppHandle`-bound emit sites below are gone:
+  the index reports `IndexEvent` values through an `EventSink`, and Cmdr's sink maps them to the 15 Tauri payload
+  structs it now owns app-side. Emitting onto a pipe instead means writing a second sink, not touching the index.
+- **Status reads already go through one handle**, not through the registry. `Index` has 35 methods and app code reaches
+  nothing else, so "these calls become RPC" is a bounded, enumerable list rather than three dozen scattered call sites.
+- **Cancellation is one primitive** (`tokio_util::sync::CancellationToken`), observable from outside, which is what a
+  cross-process stop would have to be built on.
+- **The `INDEX_REGISTRY` and the other ~50 statics are unchanged**, and they are still the bulk of the work below. The
+  extraction deliberately hid them behind the handle rather than removing them, so call sites won't churn when they do
+  move.
+
 ## What it would take in this codebase
 
-Indexing is deeply woven into the app process. A process split is a large refactor, not a lift-and-shift. The main
-seams:
+Indexing is still woven into the app process at the lifecycle level. A process split is a large refactor, not a
+lift-and-shift. The main seams, with the ones the extraction closed marked:
 
 - **`INDEX_REGISTRY` is the in-process authority.** `Mutex<HashMap<VolumeId, IndexInstance>>` guards every volume's
   lifecycle, and it's reached from around three dozen distinct call sites (roughly 100 line references across the
   module: lifecycle commands, the reconciler, freshness, MCP and IPC reads). In a split, the registry lives in the
   indexer process and every one of those reads or mutations that currently happens in the app process becomes an RPC or
   a cache. This is the bulk of the work.
-- **`AppHandle`-bound event emits.** The indexer emits progress, phase, and completion events to the frontend via
-  Tauri's `Event::emit` (about 25 emit sites in `indexing/`), and `IndexManager` itself carries an `AppHandle`
-  (`manager.rs`, `pub(super) app: AppHandle`). Tauri events only exist in the app process. Across a boundary the indexer
-  would emit onto an IPC channel (a pipe or local socket) that the app process forwards to the webview. The `APP_HANDLE`
-  `OnceLock` in `commands/indexing.rs` and the manager's `app` field both need replacing with that channel.
-- **Status reads become RPC.** The MCP `cmdr://state` resource and the IPC index-status commands read registry and
-  per-volume state synchronously today. They'd become request/response calls to the indexer, with the app-side timeout
-  discipline (`blocking_with_timeout`) extended to cover a possibly-busy or crashed indexer process.
+- **`AppHandle`-bound event emits: CLOSED.** The index used to emit to the frontend through Tauri's `Event::emit` at
+  about 25 sites, with `IndexManager` carrying an `AppHandle` and a process-wide `APP_HANDLE` `OnceLock` behind it. (The
+  in-scope one was `indexing/lifecycle/state.rs`, deleted in the extraction; the `commands/indexing.rs` one is the app's
+  own and is unrelated.) Both are gone: the index emits `IndexEvent` values into an `EventSink`, and a pipe-backed sink
+  is a new implementation of a trait that already exists, not a change to the index.
+- **Status reads become RPC**, but the list is now bounded. The MCP `cmdr://state` resource and the IPC index-status
+  commands read per-volume state synchronously today, all of it through `Index`'s methods. They'd become
+  request/response calls to the indexer, with the app-side timeout discipline (`blocking_with_timeout`) extended to
+  cover a possibly-busy or crashed indexer process. The surface to convert is the handle, enumerated in
+  `crates/cmdr-index/src/indexing/handle/DETAILS.md`.
 - **Shared `Arc`s don't cross a process boundary.** `ReadPool` (per-volume read connections), `PendingSizes` (the global
   `LazyLock<Mutex<Option<Arc<PendingSizes>>>>`), and the per-volume `Freshness` arcs are shared in-memory state that the
   app and indexer both touch. Each has to be reassigned an owner: either it moves wholly into the indexer and the app
