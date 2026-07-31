@@ -60,8 +60,7 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description:
-        'Format byte sizes, transfer rates, and durations through `$lib/units`, not a private unit ladder.',
+      description: 'Format byte sizes, transfer rates, and durations through `$lib/units`, not a private unit ladder.',
       recommended: true,
     },
     messages: {

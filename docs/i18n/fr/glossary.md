@@ -996,12 +996,12 @@ values, so single apostrophes doubled below to match this doc's convention:
 - "the transfer has stopped moving" → **Le transfert n''avance plus.** · descriptive calm FR; no pile source names this
   state (no "stall" entry in MS terminology FRA, no hit in the four file-manager catalogs), so this is composed from the
   settled `transfert` + the plain negative "n''avance plus" · high for the term, tentative for the sentence shape.
-- waiting for X to respond → **En attente d''une réponse de {la destination / la source}** · Double Commander
-  ("Waiting for user response" → "En attente de la réponse utilisateur", "Waiting for access to file source" → "En
-  attente de l''accès au fichier source"), macOS ("En attente de la mise à jour", "En attente du chargement",
-  `SavePanel` "Waiting for disc drive…" → "Attente du lecteur de disque…"), MS terminology FRA ("stop responding" →
-  "ne plus répondre") · high — "En attente de…" is the pile's dominant shape; the indefinite "d''une réponse" avoids
-  implying a specific expected reply.
+- waiting for X to respond → **En attente d''une réponse de {la destination / la source}** · Double Commander ("Waiting
+  for user response" → "En attente de la réponse utilisateur", "Waiting for access to file source" → "En attente de
+  l''accès au fichier source"), macOS ("En attente de la mise à jour", "En attente du chargement", `SavePanel` "Waiting
+  for disc drive…" → "Attente du lecteur de disque…"), MS terminology FRA ("stop responding" → "ne plus répondre") ·
+  high — "En attente de…" is the pile's dominant shape; the indefinite "d''une réponse" avoids implying a specific
+  expected reply.
 - source (the device/share being read FROM) → **la source** (feminine) · Double Commander ("Source" → "Source"), Total
   Commander ("répertoire de source", "disque de source") · high — pairs with the settled `destination → destination`
   (also feminine), so both take "de la".
@@ -1032,8 +1032,8 @@ Phrasing notes for this pass:
   copy states what is observed ("Aucune progression depuis…", "En attente d''une réponse…", "n''avance plus") and offers
   the two ways out.
 - `stallUnknown` drops the English comma before "ou" (French doesn''t take one in a two-item choice) and uses the `vous`
-  imperative pair "Annulez-le ou laissez-le continuer en arrière-plan", reusing the settled `background → en
-  arrière-plan`.
+  imperative pair "Annulez-le ou laissez-le continuer en arrière-plan", reusing the settled
+  `background → en arrière-plan`.
 - No `:` `;` `!` `?` `%` in any of the eight values, so the catalog''s ASCII-space-before-punctuation rule doesn''t come
   up. All apostrophes are ASCII and doubled (`d''une`, `n''avance`); rendering was verified with `intl-messageformat`
   under locale `fr` for counts 0/1/2/5/1 000 000.

@@ -25,20 +25,20 @@ Environment: macOS 26.5.2, Apple silicon, release build, 2026-07-31. Source fold
 `~/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore`, 766 files, Dropbox File Provider domain, none dataless (so every
 path misses the `stat` shortcut and takes the XPC path: the worst case, and the incident's case).
 
-Both shapes run in the same process, **before first**. That biases the comparison *towards* the old shape, since the
-new one meets a provider the old one just warmed up. The wins below are therefore conservative.
+Both shapes run in the same process, **before first**. That biases the comparison _towards_ the old shape, since the new
+one meets a provider the old one just warmed up. The wins below are therefore conservative.
 
 ## Steady pane: 100 visible rows, 20 rounds
 
 The real-world case. It's what a pane does over a minute of a user looking at one cloud folder: every listing render
 plus the 3 s idle poll re-asks for the visible range.
 
-| | before | after |
-| --- | --- | --- |
-| threads spawned | 300 | 0 |
-| wall time | 3 s | 455 µs |
+|                  | before | after  |
+| ---------------- | ------ | ------ |
+| threads spawned  | 300    | 0      |
+| wall time        | 3 s    | 455 µs |
 | CPU (user + sys) | 996 ms | 454 µs |
-| paths answered | 100 | 100 |
+| paths answered   | 100    | 100    |
 
 Round 1 fills the cache; rounds 2-20 never reach the provider. Zero threads spawned because the pool's four workers
 already existed. This is the "resource efficiency" line: a minute of sitting still on a Dropbox folder went from a
@@ -49,17 +49,17 @@ second of CPU and 300 thread creations to under half a millisecond and none.
 A stress case rather than a real one (the pane asks about its visible range, not a whole folder), included because it's
 where the bounded pool costs something instead of saving something.
 
-| | before | after |
-| --- | --- | --- |
-| threads spawned | 16 | 1 |
-| wall time | 957 ms | 2 s (hit the deadline) |
-| CPU (user + sys) | 377 ms | 238 ms |
-| paths answered | 766 | 443 |
+|                  | before | after                  |
+| ---------------- | ------ | ---------------------- |
+| threads spawned  | 16     | 1                      |
+| wall time        | 957 ms | 2 s (hit the deadline) |
+| CPU (user + sys) | 377 ms | 238 ms                 |
+| paths answered   | 766    | 443                    |
 
 Sixteen threads answer 766 paths faster than four do. That's the deliberate trade: the four are permanent and capped,
-the sixteen were per call. The 323 unanswered paths are **not lost** — the batch keeps running past the deadline and
-its answers land in the cache, so the pane's next poll has them without touching the provider. The frontend already
-retries a timed-out fetch.
+the sixteen were per call. The 323 unanswered paths are **not lost** — the batch keeps running past the deadline and its
+answers land in the cache, so the pane's next poll has them without touching the provider. The frontend already retries
+a timed-out fetch.
 
 Derived: **~18 ms per path per worker** inside this domain. That is the number to size the pool with. At four workers a
 200-row visible range costs ~900 ms cold and nothing warm, which is why `target_workers` is 4 and not 16.
@@ -69,12 +69,12 @@ Derived: **~18 ms per path per worker** inside this domain. That is the number t
 M4.5 proposed skipping the NSURL query outside a known File Provider domain root. The premise doesn't survive
 measurement. Same bench, same build, pointed at `/usr/bin` (884 files, no provider anywhere):
 
-| | before | after |
-| --- | --- | --- |
-| threads spawned | 16 | 3 |
-| wall time | 20 ms | 19 ms |
+|                  | before | after |
+| ---------------- | ------ | ----- |
+| threads spawned  | 16     | 3     |
+| wall time        | 20 ms  | 19 ms |
 | CPU (user + sys) | 127 ms | 56 ms |
-| paths answered | 884 | 884 |
+| paths answered   | 884    | 884   |
 
 **~22 µs per path outside a domain, versus ~4.5 ms inside one** (wall, whole-folder, per path). `getResourceValue`
 short-circuits when no File Provider manages the URL; there is no XPC round-trip to skip. So a domain-root pre-check

@@ -11,11 +11,13 @@
  * right band and returns a `CopyOutcome`. Toast/dialog presentation lives in the page
  * to keep this module independent of UI primitives.
  */
-import { viewerCancelRead,
-    viewerReadRange,
-    viewerWriteRangeToFile,
-    type RangeEnd,
-    type ViewerError } from '$lib/tauri-commands'
+import {
+  viewerCancelRead,
+  viewerReadRange,
+  viewerWriteRangeToFile,
+  type RangeEnd,
+  type ViewerError,
+} from '$lib/tauri-commands'
 import { save as showSavePanel } from '@tauri-apps/plugin-dialog'
 import { addToast } from '$lib/ui/toast/toast-store.svelte'
 import { getAppLogger } from '$lib/logging/logger'

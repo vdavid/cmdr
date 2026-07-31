@@ -13,8 +13,7 @@ import FallbackErrorContent from './FallbackErrorContent.svelte'
 import type { WriteOperationError } from '$lib/file-explorer/types'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
-vi.mock('$lib/tauri-commands', () => ({
-}))
+vi.mock('$lib/tauri-commands', () => ({}))
 
 function mountFallback(error: WriteOperationError, operationType: 'copy' | 'move' | 'delete' | 'trash' = 'copy') {
   const target = document.createElement('div')

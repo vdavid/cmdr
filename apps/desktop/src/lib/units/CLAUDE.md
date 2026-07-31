@@ -36,9 +36,9 @@ dialog and the Transfers window both do) rather than adding a code-side rate for
   numbers, so brand at the edge — for `write-progress` that's `transferReadout(event)` in
   `apps/desktop/src/lib/file-operations/progress-readout.ts`. `formatByteSize` takes a plain `number` on purpose: ~40
   call sites, and the lint rather than the type is what guards it.
-- **Size-tier COLORING is a separate layer**: `formatSizeForDisplay` / `colorizeSizeString` /
-  `sizeTierClasses` in `file-explorer/selection/selection-info-utils.ts`, because the classes belong to the list views'
-  stylesheet. It consumes this module's ladder; don't re-derive tiers from a threshold cascade.
+- **Size-tier COLORING is a separate layer**: `formatSizeForDisplay` / `colorizeSizeString` / `sizeTierClasses` in
+  `file-explorer/selection/selection-info-utils.ts`, because the classes belong to the list views' stylesheet. It
+  consumes this module's ladder; don't re-derive tiers from a threshold cascade.
 - **Dates are NOT here.** `settings/format-utils.ts` (pure) → `formattedDate()` (reactive) → `<DateLabel>`.
 - **Decimals and separators follow the active locale** via `$lib/intl`'s `getNumberFormatter`; the value↔unit ASCII
   space is added by us, never by Intl (`colorizeSizeString` parses the unit by the last space).

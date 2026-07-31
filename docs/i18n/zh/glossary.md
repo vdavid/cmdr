@@ -840,21 +840,21 @@ term used instead), Microsoft zh-Hans TBX cross-check. Three settings-card title
 ## 传输停滞提示 / stalled-transfer notice (`fileOperations.transferProgress.stall*`, `close`, `queue.row.stalled`, 2026-07-31)
 
 The copy/move progress dialog and the queue row when a transfer has stopped moving (a parked network share or phone),
-replacing the countdown we no longer believe. macOS zh-CN Tier 1, Total Commander zh-CN for the wait-on-a-remote-endpoint
-phrasing (the exact same surface), Microsoft zh-Hans TBX cross-check.
+replacing the countdown we no longer believe. macOS zh-CN Tier 1, Total Commander zh-CN for the
+wait-on-a-remote-endpoint phrasing (the exact same surface), Microsoft zh-Hans TBX cross-check.
 
 - **no progress / stalled (nothing has moved for a while)** · `没有进度` (`已有 {duration} 没有进度`) · Microsoft TBX
   `Progress` → `进度`, and Cmdr's own `大小进度`/`文件进度`. `进展` is also attested in TBX compounds (`朗读进展`,
   `写作进展`) but was rejected to keep ONE progress word across the catalog; `已有 X 没有进度` is the colloquial
   "nothing has happened for X" frame · `high`
-- **respond / "waiting for X to respond"** · `响应`, as `正在等待…响应` · macOS AppKit (`did not respond to the request
-  for services` → `没有响应服务请求`) plus Total Commander zh-CN, which has this exact surface (`等待服务器响应...`,
-  `正在发送数据，等待响应...`, `没有响应(超时)!`). TC uses a bare `等待…`; Cmdr adds the locale-wide `正在…` in-progress
-  prefix (`正在扫描…`, `正在检查冲突…`) · `high`
+- **respond / "waiting for X to respond"** · `响应`, as `正在等待…响应` · macOS AppKit
+  (`did not respond to the request for services` → `没有响应服务请求`) plus Total Commander zh-CN, which has this exact
+  surface (`等待服务器响应...`, `正在发送数据，等待响应...`, `没有响应(超时)!`). TC uses a bare `等待…`; Cmdr adds the
+  locale-wide `正在…` in-progress prefix (`正在扫描…`, `正在检查冲突…`) · `high`
 - **destination (the drive/share/phone being written TO, inside a sentence)** · `目标位置` · the settled transfer
-  `目标位置`, consistent with `目标宗卷`/`目标路径`/`transferDialog.targetGroupTitle` = `目标`. macOS Finder's own word is
-  `目的位置`/`目的宗卷`, but the catalog is uniformly `目标`; bare `目标` was rejected mid-sentence because it reads as
-  "goal" without the heading around it · `high`
+  `目标位置`, consistent with `目标宗卷`/`目标路径`/`transferDialog.targetGroupTitle` = `目标`. macOS Finder's own word
+  is `目的位置`/`目的宗卷`, but the catalog is uniformly `目标`; bare `目标` was rejected mid-sentence because it reads
+  as "goal" without the heading around it · `high`
 - **source (the drive/share/phone being read FROM, inside a sentence)** · `来源` · reused from
   `transferDialog.sourceGroupTitle` and TC's copy/move `来源:` / `目标:` pair. Deliberately asymmetric with the
   `目标位置` above: the two strings are alternatives and never render together, so each is optimized for reading alone ·
@@ -864,11 +864,11 @@ phrasing (the exact same surface), Microsoft zh-Hans TBX cross-check.
   alarming than the en) and the banned `失败`/`错误` · `tentative`
 - **"leave it running in the background"** · `让它在后台继续运行` · lifted verbatim from the settled
   `transferProgress.queueTooltip`; `后台` from the queue pass (TC `后台`, NOT `背景`). The two-way-out sentence renders
-  `可以取消它，也可以让它在后台继续运行。` — Chinese's standard way to offer a choice, where a bare imperative pair would
-  read as an instruction · `high`
-- **"N files are still open"** · `# 个文件仍处于打开状态` · macOS Finder PE (`… can't be moved to the Trash because they
-  are open` → `因为它们已打开`) gives the `打开` root; `仍处于…状态` is the standard status construction on it. Measure
-  word `个` per the `{count} 个项目` pattern · `high`
+  `可以取消它，也可以让它在后台继续运行。` — Chinese's standard way to offer a choice, where a bare imperative pair
+  would read as an instruction · `high`
+- **"N files are still open"** · `# 个文件仍处于打开状态` · macOS Finder PE
+  (`… can't be moved to the Trash because they are open` → `因为它们已打开`) gives the `打开` root; `仍处于…状态` is the
+  standard status construction on it. Measure word `个` per the `{count} 个项目` pattern · `high`
 - **"partly written" (an open file that already has bytes at the destination)** · `可能已经写入了一部分内容` · `写入`
   reused from `transferProgress.titleFlushing` (`正在写入最后一部分…`) · `high`
 - **"The log has the details."** · `日志里有详细信息。` · `日志` (settings pass) + Microsoft TBX `Details` → `详细信息`.

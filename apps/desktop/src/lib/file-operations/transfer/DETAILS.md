@@ -5,13 +5,13 @@ and gotchas live in `CLAUDE.md`.
 
 ## The stalled-transfer notice
 
-`transfer-stall.ts` holds one decision: how long to wait before speaking (`STALL_NOTICE_SECONDS`, 10 s). Everything
-else comes from the backend's `TransferActivity`, derived from the live in-flight probe (see
+`transfer-stall.ts` holds one decision: how long to wait before speaking (`STALL_NOTICE_SECONDS`, 10 s). Everything else
+comes from the backend's `TransferActivity`, derived from the live in-flight probe (see
 `apps/desktop/src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "The stall signal").
 
-**Why the threshold differs from the log's.** The log watchdog waits 20 s because a log line wants to stay rare across
-a long transfer. Ten seconds of a frozen bar is already long enough that a person wonders whether the app has died, and
-a countdown is a lie the moment it stops being true. Both read the same `stillForSeconds`, so the two can't contradict
+**Why the threshold differs from the log's.** The log watchdog waits 20 s because a log line wants to stay rare across a
+long transfer. Ten seconds of a frozen bar is already long enough that a person wonders whether the app has died, and a
+countdown is a lie the moment it stops being true. Both read the same `stillForSeconds`, so the two can't contradict
 each other.
 
 **What stays silent.** `paused` and `you` (a conflict prompt is open) are the transfer behaving correctly, and the

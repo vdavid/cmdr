@@ -3,12 +3,7 @@
  * `lib/settings/format-utils.test.ts`.
  */
 import { afterEach, describe, it, expect } from 'vitest'
-import {
-  formatFileSizeWithFormat,
-  fixedUnitFor,
-  dynamicTierIndex,
-  unitLabel,
-} from './byte-size'
+import { formatFileSizeWithFormat, fixedUnitFor, dynamicTierIndex, unitLabel } from './byte-size'
 import { _setLocaleForTests } from '$lib/intl/locale'
 
 describe('formatFileSizeWithFormat', () => {

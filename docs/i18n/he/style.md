@@ -134,8 +134,8 @@ plural message to cover all three.
 - **Punctuation and bidi.** Hebrew uses the same `.,?!` marks, but inside RTL text their visual position flips; rely on
   the bidi algorithm rather than reordering characters by hand. Hebrew quotation marks are typically the gershayim-style
   `"…"` or standard double quotes; avoid mixing.
-- **Numbers and dates come from the formatter layer.** `formatNumber()`/`formatByteSize()` produce locale-correct output;
-  never hardcode separators or digit shapes in a string.
+- **Numbers and dates come from the formatter layer.** `formatNumber()`/`formatByteSize()` produce locale-correct
+  output; never hardcode separators or digit shapes in a string.
 - **Length.** Hebrew is usually compact (no case endings, no articles split out), so overflow is less of a risk than RTL
   mirroring, but still overflow-check against the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every

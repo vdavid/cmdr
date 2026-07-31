@@ -682,30 +682,28 @@ The copy/move dialog stops showing an ETA it no longer believes and explains the
   usuário", "Waiting for access to file source" → "Aguardando acesso à origem do arquivo") and Total Commander pt-BR's
   (`1384="Enviando dados. Aguardando resposta..."`); destination → **destino** and source → **origem** are macOS Finder
   pt-BR ("copiado para o destino", "Talvez o destino não seja compatível", "volume de destino") + MS terminology · high.
-  Reuses the settled status word **Aguardando**. macOS Finder also offers the verbal pattern "Waiting for ^0 to
-  accept…" → "Aguardando que ^0 aceite…"; the noun phrase was chosen because it's shorter for a status line and matches
-  the file-manager lineage.
+  Reuses the settled status word **Aguardando**. macOS Finder also offers the verbal pattern "Waiting for ^0 to accept…"
+  → "Aguardando que ^0 aceite…"; the noun phrase was chosen because it's shorter for a status line and matches the
+  file-manager lineage.
 - "The transfer has stopped moving" · **A transferência parou de avançar** · `transferência` is catalog-settled
   (`queue.windowTitle` "Fila de transferências", `pauseAria` "Pausar esta transferência"); "parou de avançar" says the
-  motion stopped without implying the transfer ended or broke · high. ❌ Not "travou" (reads as a crash) and not
-  "parou" alone (reads as terminated).
+  motion stopped without implying the transfer ended or broke · high. ❌ Not "travou" (reads as a crash) and not "parou"
+  alone (reads as terminated).
 - "Cancel it, or leave it running in the background" · **Cancele-a ou deixe-a rodando em segundo plano** · enclitic
   object pronouns agreeing with the feminine "a transferência", matching the catalog's enclitic habit ("Ative-a em…",
   "Encontre-a na fila de transferências"); **rodando em segundo plano** is verbatim catalog
   (`transferProgress.backgroundedToast` "Ainda rodando em segundo plano", `queueTooltip` "Mantenha isto rodando em
   segundo plano") · confirmed. No comma before `ou` (pt-BR doesn't take one in a two-item alternative), so the English
   comma is dropped.
-- "N file(s) still open and may already be partly written" · plural branches carry the WHOLE predicate · **`{count,
-  plural, one {# arquivo ainda está aberto e já pode estar parcialmente gravado} many {…abertos e já podem estar
-  parcialmente gravados} other {…}}.`** · "arquivos abertos" for open handles is Total Commander pt-BR
-  (`616="Muitos arquivos abertos!"` = "Too many open files!"); "written" → **gravado** matches the sibling
-  `transferProgress.titleFlushing` "Gravando a última parte..." · high. The trailing clause has to agree in number
-  (aberto/abertos, pode/podem, gravado/gravados), so it goes INSIDE each branch and only the final period stays outside
-   — the same restructuring the image-indexing plurals needed.
+- "N file(s) still open and may already be partly written" · plural branches carry the WHOLE predicate ·
+  **`{count, plural, one {# arquivo ainda está aberto e já pode estar parcialmente gravado} many {…abertos e já podem estar parcialmente gravados} other {…}}.`**
+  · "arquivos abertos" for open handles is Total Commander pt-BR (`616="Muitos arquivos abertos!"` = "Too many open
+  files!"); "written" → **gravado** matches the sibling `transferProgress.titleFlushing` "Gravando a última parte..." ·
+  high. The trailing clause has to agree in number (aberto/abertos, pode/podem, gravado/gravados), so it goes INSIDE
+  each branch and only the final period stays outside — the same restructuring the image-indexing plurals needed.
 - "The log has the details" (Cmdr's log FILE, not the operation log) · **O arquivo de registro tem os detalhes.** ·
   sentence shape lifted verbatim from the shipped `askCmdr` sibling ("The operation log has the details." → "O registro
   de operações tem os detalhes."); **arquivo de registro** is catalog-settled (`settings.json` "Abrir arquivo de
   registro", `errorReporter` "arquivos de registro") · confirmed. Keeping the head noun `arquivo de` is what separates
-  the log file from the `registro de operações` feature; MS terminology's "arquivo de log" loses to catalog
-  consistency.
+  the log file from the `registro de operações` feature; MS terminology's "arquivo de log" loses to catalog consistency.
 - No `sameAsSourceJustification` needed: all eight values differ from English.

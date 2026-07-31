@@ -22,7 +22,8 @@ commands, and notable non-obvious placements.
 - **`icons.ts`**: icon fetching (`getIcons`, `getCustomFolderIconIds`, `refreshDirectoryIcons`) and cache invalidation.
 - **`app-state.ts`**: MCP pane state, dialog open/close tracking, menu context, view settings, `showMainWindow`,
   child-window rect persistence (`get/setChildWindowRect`), `updateMenuAccelerator`.
-- **`write-operations.ts`**: copy/move/delete, conflict resolution, scan preview. (Size/duration formatting moved to `$lib/units`.)
+- **`write-operations.ts`**: copy/move/delete, conflict resolution, scan preview. (Size/duration formatting moved to
+  `$lib/units`.)
 - **`rename.ts`**: `checkRenamePermission`, `checkRenameValidity`, `renameFile`, `moveToTrash`.
 - **`storage.ts`**: `listVolumes`, `getVolumeSpace`, `watchVolumeSpace` / `unwatchVolumeSpace`, `ejectVolume`,
   `getBusyVolumeIds` (bootstrap for the eject-busy gate), `onVolumeContextAction`, `checkFullDiskAccess`,

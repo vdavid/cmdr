@@ -142,6 +142,7 @@ impl Service {
         }
 
         if misses.is_empty() {
+            // allowed-pluralize-noun: diagnostic log line; a one-path batch reading "1 paths" costs a reader nothing.
             log::debug!(target: "sync_status", "{requested} paths, all cached");
             return (resolved, false);
         }
@@ -162,6 +163,7 @@ impl Service {
             // the incident's 45 MB log did not have.
             log::warn!(
                 target: "sync_status",
+                // allowed-pluralize-noun: diagnostic log line; the counts are what matter, not their grammar.
                 "{requested} paths: gave up waiting after {deadline:?} with {missing} unanswered; \
                  the batch keeps running on {} pool threads and its results will be cached",
                 self.pool.worker_count()
@@ -169,6 +171,7 @@ impl Service {
         } else {
             log::debug!(
                 target: "sync_status",
+                // allowed-pluralize-noun: diagnostic log line; the counts are what matter, not their grammar.
                 "{requested} paths resolved in {:?} ({missing} unknown to the provider)",
                 batch.started.elapsed()
             );

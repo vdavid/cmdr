@@ -8,8 +8,8 @@ code under here.
 
 - Always use the CSS variables in `app.css` (stylelint rejects undefined ones). Don't hardcode a `px` value that has a
   matching `--spacing-*` / `--font-size-*` / `--radius-*` token (or `z-index` ≥ 10, or a non-token `font-family`):
-  stylelint's `declaration-property-value-disallowed-list` flags exactly those. Token-less values (1px borders,
-  negative nudges, display font sizes) may stay raw, with a `stylelint-disable` + `-- reason`.
+  stylelint's `declaration-property-value-disallowed-list` flags exactly those. Token-less values (1px borders, negative
+  nudges, display font sizes) may stay raw, with a `stylelint-disable` + `-- reason`.
 - Global CSS is `app.css` (tokens, base) plus `app-field` / `app-utilities` / `app-tooltip` / `app-file-list`, which
   `routes/+layout.svelte` loads AFTER it. Never `@import` those four: that hoists and inverts the cascade.
 - A translucent / frosted-glass surface MUST degrade when "reduce transparency" is on. Key the opaque fallback off the
@@ -24,17 +24,17 @@ code under here.
 - A new user-facing action needs its id in `COMMAND_IDS`, a `command-registry.ts` entry, and a handler in
   `routes/(main)/command-handlers/` (a missing one is a compile error). `cmdr/no-raw-command-dispatch`. See
   `lib/commands/CLAUDE.md`.
-- ❌ A keydown handler matches the WHOLE combo — `eventMatchesCommand(e, 'some.command')` from `$lib/shortcuts` —
-  never a hand-rolled `e.key === 'a' && e.metaKey`: that's a modifier SUPERSET, so `⌥⌘A` fires it too.
-  `cmdr/no-raw-key-match` flags a required modifier paired with a literal key test leaving another unconstrained; opt
-  out with a reasoned `eslint-disable-next-line`. See `lib/shortcuts/CLAUDE.md`.
+- ❌ A keydown handler matches the WHOLE combo — `eventMatchesCommand(e, 'some.command')` from `$lib/shortcuts` — never
+  a hand-rolled `e.key === 'a' && e.metaKey`: that's a modifier SUPERSET, so `⌥⌘A` fires it too. `cmdr/no-raw-key-match`
+  flags a required modifier paired with a literal key test leaving another unconstrained; opt out with a reasoned
+  `eslint-disable-next-line`. See `lib/shortcuts/CLAUDE.md`.
 - ❌ Render inline glyphs via `<Icon name size>` and spinners via `<Spinner size>` (`$lib/ui/`). Don't import
   `~icons/lucide/*` in feature code or hand-roll a spinner ring. Add a glyph to `lib/ui/icons/icon-map.ts` (the one
   place lucide is imported, enforced by `cmdr/no-raw-lucide-import`); custom glyphs live as components in
   `lib/ui/icons/` and register there too. `Icon` has no `color` prop (set it on the wrapping span). Every glyph and
   spinner appears in the Debug "Graphics" catalog (`routes/dev/graphics/`). See `docs/guides/icons.md`.
-- ❌ A size or duration becomes text in ONE place: `$lib/units` (`formatByteSize` / `formatDuration`), `<Size bytes>`
-  in markup. Never a private `formatBytes` or a hardcoded `1024` ladder: four copies once drifted and two windows
+- ❌ A size or duration becomes text in ONE place: `$lib/units` (`formatByteSize` / `formatDuration`), `<Size bytes>` in
+  markup. Never a private `formatBytes` or a hardcoded `1024` ladder: four copies once drifted and two windows
   disagreed. `cmdr/no-private-unit-format`.
 - Stay aligned to Ark UI's naming. When wrapping an `@ark-ui/svelte` primitive in `lib/ui/`, name the wrapper after
   Ark's component (`Select`, `Combobox`, `Popover`, `Menu`, …) so it maps 1:1 to Ark. Flag any divergence (raise it,

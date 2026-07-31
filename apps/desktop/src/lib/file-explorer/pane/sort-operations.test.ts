@@ -9,7 +9,9 @@ const { resortListingSpy, getDirectorySortModeSpy } = vi.hoisted(() => ({
 
 vi.mock('$lib/tauri-commands', () => ({ resortListing: resortListingSpy }))
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
-  getFileSizeFormat: () => 'binary', getDirectorySortMode: getDirectorySortModeSpy }))
+  getFileSizeFormat: () => 'binary',
+  getDirectorySortMode: getDirectorySortModeSpy,
+}))
 
 import { createSortOperations, type SortOperationsDeps } from './sort-operations'
 

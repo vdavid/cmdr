@@ -61,4 +61,3 @@ export { type Seconds, seconds, formatDuration, formatMilliseconds, formatFilesP
 export function formatByteSize(byteCount: number, forceUnit?: 'kB' | 'MB' | 'GB'): string {
   return formatFileSizeWithFormat(byteCount, getFileSizeFormat(), forceUnit)
 }
-

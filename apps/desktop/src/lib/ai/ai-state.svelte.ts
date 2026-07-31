@@ -1,15 +1,17 @@
-import { cancelAiDownload,
-    getAiModelInfo,
-    getAiStatus,
-    isE2eMode,
-    onAiDownloadProgress,
-    onAiInstallComplete,
-    onAiInstalling,
-    onAiServerReady,
-    onAiStarting,
-    type AiDownloadProgress,
-    type AiModelInfo,
-    type AiStatus } from '$lib/tauri-commands'
+import {
+  cancelAiDownload,
+  getAiModelInfo,
+  getAiStatus,
+  isE2eMode,
+  onAiDownloadProgress,
+  onAiInstallComplete,
+  onAiInstalling,
+  onAiServerReady,
+  onAiStarting,
+  type AiDownloadProgress,
+  type AiModelInfo,
+  type AiStatus,
+} from '$lib/tauri-commands'
 import { getSetting } from '$lib/settings'
 import { colorizeSizeString } from '$lib/file-explorer/selection/selection-info-utils'
 import { tString } from '$lib/intl/messages.svelte'

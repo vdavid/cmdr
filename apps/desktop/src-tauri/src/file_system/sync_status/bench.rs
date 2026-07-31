@@ -193,6 +193,7 @@ fn report(scenario: &str, calls: usize, legacy: &Sample, current: &Sample) {
             "0".to_string()
         }
     };
+    // allowed-pluralize-noun: benchmark output; every scenario runs many calls, never one.
     eprintln!("\n  {scenario} ({calls} calls)");
     eprintln!(
         "    threads spawned   before {:>7}   after {:>7}   ({})",

@@ -30,7 +30,9 @@ vi.mock('$lib/intl/number-format', async (importOriginal) => ({
   formatInteger: (n: number) => String(n),
 }))
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
-  getFileSizeFormat: () => 'binary', formatFileSize: (b: number) => `${String(b)}B` }))
+  getFileSizeFormat: () => 'binary',
+  formatFileSize: (b: number) => `${String(b)}B`,
+}))
 
 import MediaIndexReclaim from './MediaIndexReclaim.svelte'
 

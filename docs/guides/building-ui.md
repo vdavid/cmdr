@@ -69,8 +69,8 @@ Follow `adding-a-window.md`; missing capabilities fail silently, so read the cap
 
 Settings reach a new window automatically: the ROOT `routes/+layout.svelte` calls `initWindowSettings()`, which seeds
 the store and the reactive layer for every route. Classify the new route in `WINDOW_SETTINGS_ACCESS`
-(`apps/desktop/src/lib/settings/window-settings.ts`) to match whether its capability file grants `store:default`; a
-test fails if you don't.
+(`apps/desktop/src/lib/settings/window-settings.ts`) to match whether its capability file grants `store:default`; a test
+fails if you don't.
 
 ## Showing a size, a speed, or a duration
 

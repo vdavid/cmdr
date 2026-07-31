@@ -856,27 +856,27 @@ replaces the ETA line, so it must stay calm and never reach for `fel`/`misslycka
   sense). So the honest render is the plain-Swedish negated-time clause `Inget har hänt på <tid>` (standard Swedish
   `på` + timespan under negation), which also reads right in the tight queue row where it replaces `{duration} kvar`.
   Matches the catalog's own conversational register (`Vad hände nyss?`). `tentative` (composed, no source term).
-- **"Waiting for X to respond" → `Väntar på att {X} ska svara`** · macOS Finder ships this exact construction:
-  `MR3` "Waiting for “^0” to accept…" → **"Väntar på att ”^0” ska svara…"** (`sv/macOS/Finder/LocalizableMerged.json`).
-  MS terminology confirms respond → `svara`. Prefer it over the shorter `Väntar på svar från …`, which no source has.
+- **"Waiting for X to respond" → `Väntar på att {X} ska svara`** · macOS Finder ships this exact construction: `MR3`
+  "Waiting for “^0” to accept…" → **"Väntar på att ”^0” ska svara…"** (`sv/macOS/Finder/LocalizableMerged.json`). MS
+  terminology confirms respond → `svara`. Prefer it over the shorter `Väntar på svar från …`, which no source has.
   `high`.
 - **destination (the thing written TO): `målet`; source (the thing read FROM): `källan`** · MS terminology gives
   destination → `mål` and source → `källa`; Total Commander sv uses both in its copy dialog ("Källa och destination är
-  olika!", "målenheten", "målpanelen", `1224`/`2070`/`5328`). Consistent with the settled `mål` target noun
-  (`Målvolym`, `Målsökväg`) and the `Från`/`Till` heading pair. `high`.
+  olika!", "målenheten", "målpanelen", `1224`/`2070`/`5328`). Consistent with the settled `mål` target noun (`Målvolym`,
+  `Målsökväg`) and the `Från`/`Till` heading pair. `high`.
 - **"has stopped moving" → `står stilla`** · no pile source (macOS has no stall wording). Chose the present-state
   `Överföringen står stilla` over `har stannat`, which reads as "has come to a halt / is over" and would overclaim: the
   transfer is still alive, just not advancing. `tentative` (composed).
-- **"leave it running in the background" → `låt den fortsätta i bakgrunden`** · reuses the settled `i bakgrunden`
-  (Total Commander) and matches the sibling `queueTooltip` ("Håll igång den här i bakgrunden") and `backgroundedToast`
-  ("Körs fortfarande i bakgrunden"). `high`.
+- **"leave it running in the background" → `låt den fortsätta i bakgrunden`** · reuses the settled `i bakgrunden` (Total
+  Commander) and matches the sibling `queueTooltip` ("Håll igång den här i bakgrunden") and `backgroundedToast` ("Körs
+  fortfarande i bakgrunden"). `high`.
 - **"partly written" → `delvis skriven` / `delvis skrivna`** · macOS Finder `NE111.1`/`NE111.2` "keep a partial copy" →
   **"behålla en delvis kopia"** gives `delvis` in exactly this interrupted-copy context; `skriva` is macOS's write verb
   (`PW18` "Writing track" → "Skriver spår"). The alternative `delvis överförd` (partly transferred) is available if a
   native reviewer prefers the transfer framing over the write framing. `high`.
-- **Close (the button that leaves the transfer running): `Stäng`** · macOS AppKit `Close` → "Stäng"
-  (`WindowTabs.json`, `Document.json`), verbatim. Distinct from the neighbouring `Avbryt` (Cancel), and it matches the
-  glossary's dismiss entry, which reserved `Stäng` for closing a dialog and `avfärda` for dismissing a toast. `high`.
+- **Close (the button that leaves the transfer running): `Stäng`** · macOS AppKit `Close` → "Stäng" (`WindowTabs.json`,
+  `Document.json`), verbatim. Distinct from the neighbouring `Avbryt` (Cancel), and it matches the glossary's dismiss
+  entry, which reserved `Stäng` for closing a dialog and `avfärda` for dismissing a toast. `high`.
 - **"The log has the details." → `Detaljerna finns i loggfilen.`** · same sentence shape the catalog already ships in
   `askCmdr.renameUndo.refusedBatches` ("Detaljerna finns i åtgärdsloggen."). Chose `loggfilen` over a bare `loggen`
   because Cmdr has TWO logs and `åtgärdsloggen` (the undo history) is the wrong one here; `loggfil` is the catalog's

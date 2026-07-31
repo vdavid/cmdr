@@ -137,10 +137,10 @@ Dateien".
   English doesn't mark ("in 3 Ordnern", dative plural `-n`). Get the case right inside each branch.
 - German has grammatical gender (der/die/das); article and adjective must agree with the counted noun in every branch.
 - **Text AFTER a plural block has to work with both branches' verbs.** English often puts the verb inside the branches
-  ("# file is still open" / "# files are still open") and shares the rest outside. German keeps that split, so check
-  the sentence reads with `ist` AND with `sind`: "1 Datei ist noch geöffnet und möglicherweise schon teilweise
-  geschrieben." / "5 Dateien sind noch geöffnet und …" (`transferProgress.stallInFlight`). If a shared tail can't
-  agree with both, move it inside the branches rather than bending the grammar.
+  ("# file is still open" / "# files are still open") and shares the rest outside. German keeps that split, so check the
+  sentence reads with `ist` AND with `sind`: "1 Datei ist noch geöffnet und möglicherweise schon teilweise geschrieben."
+  / "5 Dateien sind noch geöffnet und …" (`transferProgress.stallInFlight`). If a shared tail can't agree with both,
+  move it inside the branches rather than bending the grammar.
 
 ## Notes and decisions
 

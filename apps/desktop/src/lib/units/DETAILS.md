@@ -17,8 +17,8 @@ So: one implementation per quantity, and a lint that keeps it that way.
 
 ## The contract
 
-- **A size** is `formatByteSize(bytes)` — friendliest unit, two fraction digits above the base, base and kilobyte
-  casing from `appearance.fileSizeFormat`. `<Size bytes>` is the same output plus tier colors. A forced unit
+- **A size** is `formatByteSize(bytes)` — friendliest unit, two fraction digits above the base, base and kilobyte casing
+  from `appearance.fileSizeFormat`. `<Size bytes>` is the same output plus tier colors. A forced unit
   (`'kB'`/`'MB'`/`'GB'`) keeps a directory's sizes comparable; the file list's own unit mode routes through
   `formatSizeForDisplay`.
 - **A speed** is the backend's `write-progress.bytesPerSecond` (`EtaEstimator` in
@@ -28,17 +28,17 @@ So: one implementation per quantity, and a lint that keeps it that way.
   second, instantaneous rate for the active phase. The one frontend-computed rate is `ScanThroughput`, which covers the
   SCAN phase only, where the backend emits no rate at all.
 - **An ETA** is the backend's `write-progress.etaSeconds` through `createEtaSmoother()`
-  (`apps/desktop/src/lib/file-operations/progress-readout.ts`), then `formatDuration`. The smoother closes 25% of the gap per tick, so a
-  real slowdown shows within about a second while single-tick jitter is damped. It's stateful, which is exactly why it
-  is shared rather than reimplemented per window.
+  (`apps/desktop/src/lib/file-operations/progress-readout.ts`), then `formatDuration`. The smoother closes 25% of the
+  gap per tick, so a real slowdown shows within about a second while single-tick jitter is damped. It's stateful, which
+  is exactly why it is shared rather than reimplemented per window.
 
 ## Type safety: how far, and why not further
 
 `ByteCount`, `BytesPerSecond`, and `Seconds` are zero-cost branded numbers. `Seconds` is **required** by
-`formatDuration`, and all three are carried by `TransferReadout` (`apps/desktop/src/lib/file-operations/progress-readout.ts`), which brands one
-`write-progress` payload at the IPC edge. That's where the mistakes live: `bytesDone`, `filesDone`, `bytesPerSecond`,
-and `etaSeconds` sit next to each other as bare numbers, and swapping two of them renders a plausible-looking wrong
-value rather than failing.
+`formatDuration`, and all three are carried by `TransferReadout`
+(`apps/desktop/src/lib/file-operations/progress-readout.ts`), which brands one `write-progress` payload at the IPC edge.
+That's where the mistakes live: `bytesDone`, `filesDone`, `bytesPerSecond`, and `etaSeconds` sit next to each other as
+bare numbers, and swapping two of them renders a plausible-looking wrong value rather than failing.
 
 `formatByteSize` and `<Size bytes>` deliberately take a plain `number`:
 
@@ -63,8 +63,8 @@ If the Rust newtype is ever wanted, do it after the extraction lands, and start 
 
 Base-1000 arithmetic is deliberately NOT flagged: `1000` is milliseconds-per-second far more often than it is a
 kilobyte, and the AST can't tell. The name-plus-body detector covers SI formatters instead. Exempt by path:
-`lib/units/`, `selection-info-utils.ts`, `intl/number-format.ts`, and test files. Off for `*.test.ts` in the config
-too, since fixtures legitimately spell out `1024 * 1024`.
+`lib/units/`, `selection-info-utils.ts`, `intl/number-format.ts`, and test files. Off for `*.test.ts` in the config too,
+since fixtures legitimately spell out `1024 * 1024`.
 
 Rule tests: `eslint-plugins/no-private-unit-format.test.js`.
 

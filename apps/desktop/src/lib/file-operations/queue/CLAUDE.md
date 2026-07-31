@@ -17,11 +17,11 @@ manager in `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`.
 
 - **It's a HARD window, not a modal.** The whole point is to keep working in the main window while transfers run; a
   modal would block that. So it's a real `WebviewWindow` on the `/queue` route, sibling to Settings / Shortcuts.
-- **Speed and ETA have ONE definition each, shared with the copy dialog.** Both come from the backend's
-  `write-progress` (`bytesPerSecond`, `etaSeconds`); the ETA goes through the shared `createEtaSmoother()` in
-  `apps/desktop/src/lib/file-operations/progress-readout.ts` and rows render `row.etaSecondsDisplay`, NEVER `progress.etaSeconds`. Rendering
-  the raw value here while the dialog smoothed it is why one operation showed "8m 12s" in one window and "5m 46s" in
-  the other. Text comes from `$lib/units`.
+- **Speed and ETA have ONE definition each, shared with the copy dialog.** Both come from the backend's `write-progress`
+  (`bytesPerSecond`, `etaSeconds`); the ETA goes through the shared `createEtaSmoother()` in
+  `apps/desktop/src/lib/file-operations/progress-readout.ts` and rows render `row.etaSecondsDisplay`, NEVER
+  `progress.etaSeconds`. Rendering the raw value here while the dialog smoothed it is why one operation showed "8m 12s"
+  in one window and "5m 46s" in the other. Text comes from `$lib/units`.
 - **Two streams, never poll** (`subscribe, don't poll`). `operations-changed` is the THIN membership + lifecycle-status
   snapshot (the row set + each row's status); the existing per-file `write-progress` stream drives the live bars/ETA.
   The store keys progress by `operationId` and prunes it to current snapshot membership, so a finished op's bar can't

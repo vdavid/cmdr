@@ -21,8 +21,7 @@ vi.mock('$lib/icon-cache', async () => {
   }
 })
 
-vi.mock('$lib/tauri-commands', () => ({
-}))
+vi.mock('$lib/tauri-commands', () => ({}))
 
 const defaultProps = {
   results: [] as SearchResultEntry[],

@@ -37,7 +37,9 @@ vi.mock('$lib/tauri-commands', () => ({
 }))
 vi.mock('$lib/utils/confirm-dialog', () => ({ confirmDialog: confirmMock }))
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
-  getFileSizeFormat: () => 'binary', formatFileSize: (b: number) => `${String(b)}B` }))
+  getFileSizeFormat: () => 'binary',
+  formatFileSize: (b: number) => `${String(b)}B`,
+}))
 
 function status(overrides: Partial<ClipModelStatus> = {}): ClipModelStatus {
   return { supported: true, installed: false, configured: true, downloadBytes: 392_000_000, ...overrides }

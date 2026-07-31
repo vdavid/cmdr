@@ -998,8 +998,8 @@ Settled while translating the stalled-transfer notice (7 `fileOperations.transfe
   branch), so no `-e`/`-ja` adverbial suffix could vowel-harmonize with it. Duration-first word order also mirrors the
   line it replaces (`etaRemaining` = `~{duration} van hátra`). Residual `tentative` point: `óta` most often takes a
   point in time; with a measured span it's idiomatic in the plural (`hetek óta`) and reads fine with an abbreviated
-  value, but a native reviewer may prefer `{duration} alatt nem történt előrehaladás` (unambiguously a span, longer,
-  and slightly past-tense). Both keys use the identical sentence, only the dialog one takes the period, as in English.
+  value, but a native reviewer may prefer `{duration} alatt nem történt előrehaladás` (unambiguously a span, longer, and
+  slightly past-tense). Both keys use the identical sentence, only the dialog one takes the period, as in English.
 - **"Waiting for X to respond" → `Várakozás a X válaszára`** (destination = `Várakozás a cél válaszára.`, source =
   `Várakozás a forrás válaszára.`) · Total Commander `1384="Adatküldés, várakozás a válaszra..."` is the exact
   waiting-for-a-response phrase, and the `Várakozás a …-ra/-re` frame is macOS Tier 1 (AppKit "Waiting for disc drive…"
@@ -1019,17 +1019,17 @@ Settled while translating the stalled-transfer notice (7 `fileOperations.transfe
 - **"Cancel it, or leave it running in the background." → `Szakítsd meg, vagy hagyd futni a háttérben.`** · reuses the
   settled running-op `cancel → megszakítás` (imperative `szakítsd meg`, informal `te` per Formality, as in the settled
   `próbáld újra`) and the settled `Hagyd futni a háttérben` (from `queueTooltip`) verbatim · high. Comma before the
-  clause-joining `vagy` is correct and pile-attested (Nautilus/Dolphin: `Nevezze át a szimbolikus hivatkozást, vagy
-  nyomja meg a Kihagyás gombot.`).
+  clause-joining `vagy` is correct and pile-attested (Nautilus/Dolphin:
+  `Nevezze át a szimbolikus hivatkozást, vagy nyomja meg a Kihagyás gombot.`).
 - **"{N} file(s) is/are still open" → `{count, plural, one {# fájl van még nyitva} other {# fájl van még nyitva}}`** ·
   Total Commander `616="Túl sok fájl van nyitva."` gives both the term and the `… fájl van nyitva` word order; `még`
   carries the English "still" · high. Both branches identical (Hungarian no-pluralize-after-a-numeral rule, as in
   `queuedToastCount`/`selectedCount`), and the counted noun keeps the singular verb, so the trailing clause stays
   singular too.
-- **"and may already be partly written" → `és lehet, hogy már részben ki van írva`** · `kiír` is this catalog's verb
-  for writing bytes out (`transferProgress.titleFlushing` = `Az utolsó darab kiírása…`), and the stative
-  `ki van írva` avoids both the bureaucratic `kiírásra került` and a `-tuk/-tük` first-person that would put words in
-  Cmdr's mouth · high. Kept OUTSIDE the plural braces, as in English.
+- **"and may already be partly written" → `és lehet, hogy már részben ki van írva`** · `kiír` is this catalog's verb for
+  writing bytes out (`transferProgress.titleFlushing` = `Az utolsó darab kiírása…`), and the stative `ki van írva`
+  avoids both the bureaucratic `kiírásra került` and a `-tuk/-tük` first-person that would put words in Cmdr's mouth ·
+  high. Kept OUTSIDE the plural braces, as in English.
 - **"The log has the details." → `A részleteket megtalálod a naplóban.`** · reuses settled `log → napló` (`naplófájl`,
   `Naplózás`; TC `5390="Napló fájl"`, DC `Naplófájl megtekintése`) and the catalog's own "you'll find it there" shape
   (`backgroundedToast` = `Megtalálod az átviteli sorban.`), which reads warmer than the literal

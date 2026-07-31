@@ -44,9 +44,9 @@ against the reference pile (`_ignored/i18n/sv/`) on 2026-06-20.
     but vendors localize the UI once for `sv` and let the number/date/currency formatter handle the regional split.
     Google, Spotify, and Netflix do the same: one Swedish UI, regional formatting from the locale.
   - Recommendation: ship one Swedish catalog targeting Sweden-Swedish. Finland-Swedish differences that matter to Cmdr
-    (currency, date, thousands separators) already come from `formatNumber()`/`formatByteSize()`, not from catalog strings,
-    so a separate `sv-FI` catalog would duplicate near-identical text for no real gain. Tag the catalog `sv` (base) so
-    it serves every Swedish region as the fallback.
+    (currency, date, thousands separators) already come from `formatNumber()`/`formatByteSize()`, not from catalog
+    strings, so a separate `sv-FI` catalog would duplicate near-identical text for no real gain. Tag the catalog `sv`
+    (base) so it serves every Swedish region as the fallback.
   - Flag for David only if Cmdr ever wants a deliberately Finland-Swedish presence; otherwise this is settled.
 - **Formality: `du`, informal, throughout (high, settled).** Both authorities agree: Microsoft's Swedish style guide
   says "Rewrite to use the second person (du)" and macOS Finder addresses the user as `du`. No `ni`. See Formality

@@ -15,10 +15,10 @@ factual; avoid dramatizing words. As in English, steer clear of "erreur" / "éch
 calmer phrasing works, and prefer active voice ("Nous avons envoyé…" over "… a été envoyé").
 
 The English ban on "error" / "failed" covers their French equivalents: **never "erreur", "échec", "a échoué", and not
-"bloqué" either** (it reads as a verdict, and often a wrong one). State the observation and the way out instead:
-"Aucune progression depuis 45s", "En attente d'une réponse de la destination", "Le transfert n'avance plus. Annulez-le
-ou laissez-le continuer en arrière-plan." The settled non-alarmist fallbacks are "problème" for a generic error status
-and "N'a pas pu se terminer" for a failed operation.
+"bloqué" either** (it reads as a verdict, and often a wrong one). State the observation and the way out instead: "Aucune
+progression depuis 45s", "En attente d'une réponse de la destination", "Le transfert n'avance plus. Annulez-le ou
+laissez-le continuer en arrière-plan." The settled non-alarmist fallbacks are "problème" for a generic error status and
+"N'a pas pu se terminer" for a failed operation.
 
 French UI copy drifts long and noun-heavy; resist it. Prefer a verb where the English uses one ("Rechercher", not
 "Effectuer une recherche"). The Microsoft French style guide pushes the same way (warm, relaxed, short everyday words

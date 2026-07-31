@@ -203,6 +203,7 @@ impl TaskProbe {
         let now_ms = u64::try_from(self.started.elapsed().as_millis()).unwrap_or(u64::MAX);
         let total = self.total_bytes.load(Ordering::Relaxed);
         format!(
+            // allowed-pluralize-noun: a byte count in a diagnostic dump; the compact form is the point.
             "#{idx} {phase} for {held}ms, {done}/{total} bytes, {source} -> {dest}",
             idx = self.index,
             phase = phase.label(),

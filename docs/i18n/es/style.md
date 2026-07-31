@@ -114,9 +114,9 @@ strings are counted, so no plural branches are needed there.
 
 - Write all three branches even though `many` (compact forms like `1.000.000`) usually repeats `other` verbatim; the
   catalog already does this (`queue.toolbar.selectedCount`, `transferProgress.queuedToastCount`).
-- **When the sentence continues past the counted noun, pull the WHOLE sentence into the branches.** English often
-  leaves the tail outside the plural ("{n} files are still open} and may already be partly written."); Spanish can't,
-  because the tail's verb and participle agree with the count. `transferProgress.stallInFlight` is the worked example.
+- **When the sentence continues past the counted noun, pull the WHOLE sentence into the branches.** English often leaves
+  the tail outside the plural ("{n} files are still open} and may already be partly written."); Spanish can't, because
+  the tail's verb and participle agree with the count. `transferProgress.stallInFlight` is the worked example.
 
 ## Notes and decisions
 

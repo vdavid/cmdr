@@ -1001,14 +1001,15 @@ mined `_ignored/i18n/nl/`, 2026-07-31.
   as `Voortgang grootte` / `Voortgang bestanden` · high
 - "No progress for {duration}" → `Al {duration} geen voortgang` · the "al X geen Y" construction is the natural Dutch
   for an elapsed-since-anything-happened line; the literal `Geen voortgang gedurende …` reads bureaucratic. Used for
-  BOTH the dialog line (with a period) and the queue row (without), matching the EN pair · high on the term,
-  `tentative` on the construction
-- respond (a device/share answering) → `reageren` · macOS AppKit ("… did not respond to the request for
-  services"→"… reageert niet op het verzoek om voorzieningen"). Microsoft's `beantwoorden` is the reply-to-a-message
-  sense, not this one; macOS is Tier 1 · high
-- "Waiting for X to respond." → `Wachten tot X reageert.` · macOS Finder's own two waiting shapes are `Wachten op
-  <noun>` ("Waiting for disc drive…"→"Wachten op schijfeenheid…") and `Wachten tot <clause>` ("Waiting for transfer with
-  '^0' to complete…"→"Wachten tot overdracht met '^0' is voltooid…"); the clause form fits a verb like `reageert` · high
+  BOTH the dialog line (with a period) and the queue row (without), matching the EN pair · high on the term, `tentative`
+  on the construction
+- respond (a device/share answering) → `reageren` · macOS AppKit ("… did not respond to the request for services"→"…
+  reageert niet op het verzoek om voorzieningen"). Microsoft's `beantwoorden` is the reply-to-a-message sense, not this
+  one; macOS is Tier 1 · high
+- "Waiting for X to respond." → `Wachten tot X reageert.` · macOS Finder's own two waiting shapes are
+  `Wachten op <noun>` ("Waiting for disc drive…"→"Wachten op schijfeenheid…") and `Wachten tot <clause>` ("Waiting for
+  transfer with '^0' to complete…"→"Wachten tot overdracht met '^0' is voltooid…"); the clause form fits a verb like
+  `reageert` · high
 - source (the side being read FROM) → `bron` · Double Commander ("Source"→"Bron", "Waiting for access to file
   source"→"Wachtend op toegang tot bestandsbron"), Microsoft terminology ("source"→"bron", NLD/BEL) · high
 - destination (the side being written TO) → `bestemming` · glossary above (macOS "at Destination"→"op bestemming");
@@ -1028,10 +1029,10 @@ mined `_ignored/i18n/nl/`, 2026-07-31.
 
 Notes:
 
-- `stallInFlight` splits only the noun + copula across the plural branches (`{count, plural, one {# bestand is} other
-  {# bestanden zijn}} nog open en misschien al gedeeltelijk geschreven.`), so the shared tail carries both predicates on
-  one copula. Same technique as `askCmdr.renameUndo.*`'s `{count, plural, one {het is} other {ze zijn}}`. Dutch CLDR
-  categories are `one` / `other`.
+- `stallInFlight` splits only the noun + copula across the plural branches
+  (`{count, plural, one {# bestand is} other {# bestanden zijn}} nog open en misschien al gedeeltelijk geschreven.`), so
+  the shared tail carries both predicates on one copula. Same technique as `askCmdr.renameUndo.*`'s
+  `{count, plural, one {het is} other {ze zijn}}`. Dutch CLDR categories are `one` / `other`.
 - `stallUnknown` refers to the transfer as `hem` (de-word `overdracht`), matching `queuedToast` / `backgroundedToast`
   ("Vind hem in de overdrachtswachtrij"), and reuses `laat … op de achtergrond doorlopen` verbatim from `queueTooltip`.
   The comma before `of` follows both the EN source and the in-catalog habit ("Probeer opnieuw, of verbreek de
@@ -1042,7 +1043,7 @@ Notes:
 REVIEW FLAGS (stalled-transfer pass):
 
 - `Al {duration} geen voortgang` — grammatical and idiomatic, but no pile string phrases an elapsed-stall this way
-  (nothing in the pile has the concept). Alternatives, if a native reviewer prefers them: `Geen voortgang in
-  {duration}`, `{duration} geen voortgang`.
+  (nothing in the pile has the concept). Alternatives, if a native reviewer prefers them:
+  `Geen voortgang in {duration}`, `{duration} geen voortgang`.
 - `De overdracht komt niet meer vooruit.` — see the term row; `ligt stil` is the more idiomatic standstill phrase but
   risks reading as "paused" in a dialog that has a real paused state.

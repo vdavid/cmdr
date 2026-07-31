@@ -36,7 +36,9 @@ describe('stallNoticeFor', () => {
   })
 
   it('speaks once the transfer has been still long enough', () => {
-    const notice = stallNoticeFor(activity({ stillForSeconds: STALL_NOTICE_SECONDS, waitingOn: 'unknown', inFlight: 5 }))
+    const notice = stallNoticeFor(
+      activity({ stillForSeconds: STALL_NOTICE_SECONDS, waitingOn: 'unknown', inFlight: 5 }),
+    )
     expect(notice).not.toBeNull()
     expect(notice?.stillForSeconds).toBe(STALL_NOTICE_SECONDS)
     expect(notice?.inFlight).toBe(5)

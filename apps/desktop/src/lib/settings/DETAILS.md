@@ -147,9 +147,9 @@ which never touches the store plugin:
 
 - **Reads**: the cache seeds from the typed `get_restricted_window_settings` backend command (allowlist:
   `viewer.wordWrap`, `fileViewer.suppressBinaryWarning`, `appearance.textSize`, `appearance.appColor`,
-  `appearance.fileSizeFormat`; the command reads
-  `settings.json` fresh, so the snapshot lags the main window's cache by at most the 500 ms save debounce). Live updates
-  after open arrive through the regular cross-window `settings:changed` event.
+  `appearance.fileSizeFormat`; the command reads `settings.json` fresh, so the snapshot lags the main window's cache by
+  at most the 500 ms save debounce). Live updates after open arrive through the regular cross-window `settings:changed`
+  event.
 - **Writes**: `setSetting` skips the store save and forwards allowlisted ids through the typed
   `persist_restricted_window_setting` command (enum-validated on the Rust side), which emits to the main window;
   `restricted-settings-bridge.ts` (mounted in the main layout) re-checks the allowlist and persists via
@@ -223,17 +223,17 @@ wraps every route — so a new window gets settings for free and can't forget.
   a real window on registry defaults.
 - `initReactiveSettings()` is promise-memoized. A page that gates its body on settings being ready awaits the same call
   in its own `onMount` (the queue, settings, shortcuts, and viewer windows do); a child's `onMount` fires before its
-  parent's, so without memoization the page and the root layout would race and load the store twice.
-**The snapshot allowlist is the second half of the fix.** Initializing the reactive layer in a restricted window only
-helps for settings the snapshot actually carries: it's a fixed typed struct, not the whole registry. The Transfers
-window renders `<Size>`, so `appearance.fileSizeFormat` had to join it (`settings/loader.rs::RestrictedWindowSettings`
-→ `bindings.ts` → the `mapped` table in `initializeSettingsRestricted`). When a restricted window starts rendering
-something new that depends on a setting, extend all three; a value missing from the snapshot silently reads as its
-registry default.
+  parent's, so without memoization the page and the root layout would race and load the store twice. **The snapshot
+  allowlist is the second half of the fix.** Initializing the reactive layer in a restricted window only helps for
+  settings the snapshot actually carries: it's a fixed typed struct, not the whole registry. The Transfers window
+  renders `<Size>`, so `appearance.fileSizeFormat` had to join it (`settings/loader.rs::RestrictedWindowSettings` →
+  `bindings.ts` → the `mapped` table in `initializeSettingsRestricted`). When a restricted window starts rendering
+  something new that depends on a setting, extend all three; a value missing from the snapshot silently reads as its
+  registry default.
 
-- Two guards: `apps/desktop/src/routes/reactive-settings-coverage.test.ts` walks each route's import graph and fails if a window that
-  reaches `reactive-settings.svelte` isn't initialized; `window-settings.test.ts` pins the access map against the
-  capability files and fails if a new route has no entry.
+- Two guards: `apps/desktop/src/routes/reactive-settings-coverage.test.ts` walks each route's import graph and fails if
+  a window that reaches `reactive-settings.svelte` isn't initialized; `window-settings.test.ts` pins the access map
+  against the capability files and fails if a new route has no entry.
 
 Before this, only `(main)/+layout.svelte` initialized the reactive layer, so every OTHER window rendered every reactive
 setting at its registry default: sizes in binary when the user had picked SI, dates in ISO when they had picked a custom

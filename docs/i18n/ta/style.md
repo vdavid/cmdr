@@ -134,8 +134,8 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('ta')`, 202
 - **No title case; Tamil has no letter case at all.** The script is unicameral, so the app's sentence-case rule is moot
   for Tamil text itself; just keep Latin brand words (Cmdr, macOS) as-is.
 - **Numbers and dates come from the formatter layer.** Tamil (ta-IN) uses the Indian digit-grouping system (1,00,000,
-  the lakh/crore grouping) and a period decimal; `formatNumber()` / `formatByteSize()` produce these from the locale. Never
-  hardcode separators or assume thousands-grouping.
+  the lakh/crore grouping) and a period decimal; `formatNumber()` / `formatByteSize()` produce these from the locale.
+  Never hardcode separators or assume thousands-grouping.
 - **Quotation marks:** Tamil uses standard double quotes "…"; no special pair needed.
 - Record any case-by-case rulings here so they aren't relitigated.
 
