@@ -16,7 +16,6 @@ use tokio::sync::oneshot;
 
 use crate::indexing::IndexFailureSignal;
 use crate::indexing::events::EventSink;
-use crate::indexing::lifecycle::state::ROOT_VOLUME_ID;
 use crate::indexing::store::{EntryRow, IndexStore, IndexStoreError};
 #[cfg(test)]
 use cmdr_fs::ignore_poison::IgnorePoison;
@@ -242,6 +241,14 @@ pub enum WriteMessage {
     /// Prevents orphaned entries when re-scanning an already-indexed subtree.
     DeleteDescendantsById(i64),
     /// Watcher: incremental delta propagation walking the parent_id chain.
+    ///
+    /// Nothing in production sends this today: the scoped-recompute path repairs
+    /// the ancestor chain in the same message instead, which is race-free by
+    /// construction (`aggregation.rs`). The writer still HANDLES it, and the
+    /// repair and delta tests send it to pin what it does with a negative delta
+    /// against a missing `dir_stats` row. Keep it until that capability is
+    /// deliberately retired, not as a side effect of a visibility change.
+    #[allow(dead_code, reason = "a supported writer message; only tests send it today, see above")]
     PropagateDeltaById {
         entry_id: i64,
         logical_size_delta: i64,
@@ -475,8 +482,17 @@ impl IndexWriter {
     /// never invalidate the root search index it doesn't feed. Tests that don't
     /// care about search isolation use [`spawn`](Self::spawn) (defaults to
     /// search-feeding, preserving prior behavior).
+    ///
+    /// Test-only, and gated so it says so: every production writer names its
+    /// volume and whether it feeds search, through `spawn_for`.
+    #[cfg(any(test, feature = "testing"))]
     pub fn spawn(db_path: &Path, events: Arc<dyn EventSink>) -> Result<Self, IndexStoreError> {
-        Self::spawn_for(db_path, events, true, ROOT_VOLUME_ID.to_string())
+        Self::spawn_for(
+            db_path,
+            events,
+            true,
+            crate::indexing::ROOT_VOLUME_ID.to_string(),
+        )
     }
 
     /// Spawn a writer, explicitly choosing whether it feeds the search index.
