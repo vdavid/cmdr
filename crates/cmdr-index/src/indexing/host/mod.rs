@@ -17,7 +17,7 @@
 //! - [`config`]: what the product tells the index to do, settings resolved by the app.
 //! - [`events`]: where the index's typed events go.
 //!
-//! The app answers all five from one place, `crate::index_host::install`.
+//! Cmdr answers all five from one place, `apps/desktop/src-tauri/src/index_host.rs`.
 //!
 //! Rationale, including why the runtime is injected rather than crate-owned:
 //! `DETAILS.md`.
