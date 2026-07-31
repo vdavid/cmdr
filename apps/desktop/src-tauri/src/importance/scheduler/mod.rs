@@ -8,7 +8,7 @@
 //! 1. **The lifecycle bus** ([`crate::indexing::lifecycle::lifecycle_bus`]): a
 //!    `ScanCompleted` publish for a volume ⇒ recompute it. This catches every
 //!    scan that finishes while the app runs.
-//! 2. **The startup registry sweep** ([`crate::indexing::ready_volumes_with_kind`]):
+//! 2. **The startup registry sweep** ([`crate::indexing::lifecycle::state::ready_volumes_with_kind`]):
 //!    a volume already `Fresh` at launch (loaded from its persisted
 //!    `scan_completed_at`) never re-fires a `ScanCompleted`, so the bus subscription
 //!    the sweep WIRES would never score it — the common restart case (its retained
@@ -504,7 +504,7 @@ pub fn start() -> Option<Arc<ImportanceScheduler>> {
     // typed kind so MTP is excluded and SMB degrades correctly. Wiring alone only
     // sets up subscriptions (the retained bus value stays `Pending`); the
     // initial-pass trigger is what actually scores a fresh / recreated store.
-    for (volume_id, kind) in crate::indexing::ready_volumes_with_kind() {
+    for (volume_id, kind) in crate::indexing::lifecycle::state::ready_volumes_with_kind() {
         wire_volume(Arc::clone(&scheduler), volume_id.clone(), kind);
         enqueue_initial_full_pass_if_unscored(Arc::clone(&scheduler), volume_id, kind);
     }

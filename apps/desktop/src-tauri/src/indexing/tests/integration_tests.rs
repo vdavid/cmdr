@@ -8,6 +8,9 @@
 //! SQLite; those touching the per-volume `INDEX_REGISTRY` serialize on a
 //! dedicated mutex and clear it before returning.
 
+use crate::indexing::lifecycle::state::{clear_index, should_auto_start_indexing, stop_indexing};
+use crate::indexing::read::enrichment::enrich_entries_with_index_on_volume;
+use crate::indexing::read::queries::get_status;
 use crate::indexing::*;
 use cmdr_fs::entry::FileEntry;
 use lifecycle::state::{
@@ -549,7 +552,7 @@ fn enrichment_under_contention() {
 
     // Enrich on this thread; must succeed despite INDEX_REGISTRY being locked
     let mut entries = vec![make_file_entry("projects", "/projects", true)];
-    enrich_entries_with_index(&mut entries);
+    enrich_entries_with_index_on_volume(ROOT_VOLUME_ID, &mut entries);
 
     release_tx.send(()).unwrap();
 

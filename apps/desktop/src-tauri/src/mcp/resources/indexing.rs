@@ -16,6 +16,7 @@
 //! live index. `snapshot_indexing` / `snapshot_volume_indexing` do the global
 //! reads.
 
+use crate::index_host::index;
 use crate::indexing::lifecycle::freshness::Freshness;
 use crate::indexing::{ActivityPhase, PhaseRecord};
 use crate::search::format_size;
@@ -392,9 +393,9 @@ fn kind_token(kind: crate::indexing::IndexVolumeKind) -> &'static str {
 /// `get_volume_index_status`; phase, counts, and DB internals from
 /// `get_debug_status`.
 fn collect_volume_snapshot(volume_id: &str, with_debug: bool) -> VolumeIndexingSnapshot {
-    let status = crate::indexing::get_volume_index_status(volume_id);
-    let debug_status = crate::indexing::get_debug_status(volume_id).ok();
-    let kind = crate::indexing::volume_kind(volume_id).map(kind_token);
+    let status = index().volume_status(volume_id);
+    let debug_status = index().debug_status(volume_id).ok();
+    let kind = index().volume_kind(volume_id).map(kind_token);
 
     let (
         activity_phase,
@@ -468,7 +469,7 @@ fn collect_volume_snapshot(volume_id: &str, with_debug: bool) -> VolumeIndexingS
 /// The set of known (registered) volume ids, root first then the rest sorted, so
 /// the resource order is stable.
 fn known_volume_ids() -> Vec<String> {
-    let mut ids = crate::indexing::all_registered_volume_ids();
+    let mut ids = index().volume_ids();
     ids.sort();
     ids.sort_by_key(|id| id != crate::indexing::ROOT_VOLUME_ID);
     ids
@@ -486,10 +487,7 @@ pub(crate) fn snapshot_indexing() -> Vec<VolumeIndexingSnapshot> {
 /// volume isn't a known (registered) index — an honest "no index" beats showing
 /// another volume's global phase timeline.
 pub(crate) fn snapshot_volume_indexing(volume_id: &str) -> Option<VolumeIndexingSnapshot> {
-    if !crate::indexing::all_registered_volume_ids()
-        .iter()
-        .any(|id| id == volume_id)
-    {
+    if !index().volume_ids().iter().any(|id| id == volume_id) {
         return None;
     }
     Some(collect_volume_snapshot(volume_id, true))

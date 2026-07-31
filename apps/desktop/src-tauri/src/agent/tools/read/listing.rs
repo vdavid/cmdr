@@ -17,9 +17,9 @@ use serde_json::Value;
 use tauri::{AppHandle, Runtime};
 
 use super::{expand_tilde, join_child_path};
+use crate::index_host::index;
 use crate::indexing::lifecycle::freshness::Freshness;
 use crate::indexing::store::DirStats;
-use crate::indexing::{get_dir_stats, get_dir_stats_batch, get_volume_index_status_for_path, list_dir_children};
 use crate::mcp::resources::indexing::status_token;
 use crate::mcp::{ToolError, ToolResult};
 
@@ -178,11 +178,14 @@ pub fn list_dir_schema() -> Value {
 
 pub async fn execute_list_dir<R: Runtime>(_app: &AppHandle<R>, params: &Value) -> ToolResult {
     let path = required_path(params)?;
-    let children = list_dir_children(&path)
-        .map_err(ToolError::internal)?
+    let children = index()
+        .list_children(&path)
+        .map_err(|e| ToolError::internal(e.to_string()))?
         .map(|rows| rows.iter().map(child_from_row).collect());
-    let stats = get_dir_stats(&path).map_err(ToolError::internal)?;
-    let status = get_volume_index_status_for_path(&path);
+    let stats = index()
+        .dir_stats(&path)
+        .map_err(|e| ToolError::internal(e.to_string()))?;
+    let status = index().volume_status_for_path(&path);
     let result = build_list_dir(&path, children, stats.as_ref(), status.enabled, status.freshness);
     serde_json::to_value(&result).map_err(|e| ToolError::internal(e.to_string()))
 }
@@ -275,9 +278,11 @@ pub async fn execute_largest_dirs<R: Runtime>(_app: &AppHandle<R>, params: &Valu
         .and_then(|v| v.as_u64())
         .map(|n| (n as usize).clamp(1, MAX_LARGEST_N))
         .unwrap_or(DEFAULT_LARGEST_N);
-    let status = get_volume_index_status_for_path(&path);
+    let status = index().volume_status_for_path(&path);
 
-    let children = list_dir_children(&path).map_err(ToolError::internal)?;
+    let children = index()
+        .list_children(&path)
+        .map_err(|e| ToolError::internal(e.to_string()))?;
     let result = match children {
         None => build_largest_dirs(&path, Vec::new(), n, status.enabled, status.freshness, false),
         Some(rows) => {
@@ -288,7 +293,9 @@ pub async fn execute_largest_dirs<R: Runtime>(_app: &AppHandle<R>, params: &Valu
                 .map(|r| (join_child_path(&path, &r.name), r.name.clone()))
                 .collect();
             let paths: Vec<String> = subdirs.iter().map(|(p, _)| p.clone()).collect();
-            let stats = get_dir_stats_batch(&paths).map_err(ToolError::internal)?;
+            let stats = index()
+                .dir_stats_batch(&paths)
+                .map_err(|e| ToolError::internal(e.to_string()))?;
             let candidates = subdirs
                 .into_iter()
                 .zip(stats)

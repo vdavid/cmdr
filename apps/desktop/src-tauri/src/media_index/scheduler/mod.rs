@@ -15,7 +15,7 @@
 //!   enrich. Consumed **edge-triggered** (`borrow_and_update`), NEVER a `borrow()` poll:
 //!   the `watch` retains the last `Completed` across a new scan's truncate window, so a
 //!   poll could GC live rows mid-truncate. The edge is the data-safety line (Decision 3).
-//! - **The startup sweep** ([`crate::indexing::ready_volumes_with_kind`]) only WIRES
+//! - **The startup sweep** ([`crate::indexing::lifecycle::state::ready_volumes_with_kind`]) only WIRES
 //!   subscriptions — a volume Fresh at launch keeps a `Pending` bus and never re-fires,
 //!   so [`kick_all_ready_passes_with`] at the end of [`start`] (master toggle on) is what
 //!   actually enriches on a persisted-on restart.

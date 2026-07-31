@@ -75,7 +75,8 @@ pub(crate) struct VolumeOverview {
 /// volumes (kind unregistered) fall back to the local mask — the breakdown is a
 /// nicety, and a path lookup is almost always the local volume anyway.
 fn available_for(volume_id: &str) -> SignalSet {
-    crate::indexing::volume_kind(volume_id)
+    crate::index_host::index()
+        .volume_kind(volume_id)
         .and_then(crate::importance::signal_availability)
         .unwrap_or_else(SignalSet::all)
 }
@@ -84,7 +85,7 @@ fn available_for(volume_id: &str) -> SignalSet {
 /// (offline). Never string-matches the id — routes through the typed `volume_kind`.
 fn kind_token(volume_id: &str) -> Option<&'static str> {
     use crate::indexing::IndexVolumeKind;
-    crate::indexing::volume_kind(volume_id).map(|k| match k {
+    crate::index_host::index().volume_kind(volume_id).map(|k| match k {
         IndexVolumeKind::Local => "local",
         IndexVolumeKind::LocalExternal => "external",
         IndexVolumeKind::Smb => "smb",

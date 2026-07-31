@@ -252,7 +252,7 @@ impl IndexStore {
     /// Missing or unparseable keys map to `None`. Takes a connection (rather
     /// than `&self`) so `start_scan` can read it off a fresh connection before
     /// truncating; the keys survive `TruncateData` (it preserves `meta`).
-    pub fn read_scan_calibration_set(conn: &Connection) -> Result<ScanCalibrationSet, IndexStoreError> {
+    pub(crate) fn read_scan_calibration_set(conn: &Connection) -> Result<ScanCalibrationSet, IndexStoreError> {
         Ok(ScanCalibrationSet {
             full_walk: Self::read_scan_calibration_for(conn, Some(ScanCalibrationKind::FullWalk))?,
             change_check: Self::read_scan_calibration_for(conn, Some(ScanCalibrationKind::ChangeCheck))?,

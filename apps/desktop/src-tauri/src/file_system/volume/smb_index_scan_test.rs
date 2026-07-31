@@ -26,7 +26,7 @@ use super::smb::{SmbConnectionParams, connect_smb_volume};
 use crate::indexing::network_scanner::scan_volume_via_trait;
 use crate::indexing::scanner::ScanProgress;
 use crate::indexing::store::{IndexStore, ROOT_ID};
-use crate::indexing::writer::IndexWriter;
+use crate::indexing::testing::scan::IndexWriter;
 use cmdr_fs::volume::{Volume, smb_volume_id};
 
 fn guest_port() -> u16 {

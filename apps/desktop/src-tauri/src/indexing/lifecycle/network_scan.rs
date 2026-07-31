@@ -44,8 +44,8 @@ pub(super) enum NetworkScanMode {
 fn replay_buffered_changes_for_kind(kind: IndexVolumeKind, volume_id: &str) -> bool {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     match kind {
-        IndexVolumeKind::Smb => return crate::indexing::replay_buffered_changes(volume_id),
-        IndexVolumeKind::Mtp => return crate::indexing::replay_buffered_mtp_changes(volume_id),
+        IndexVolumeKind::Smb => return crate::indexing::transports::smb::watch::replay_buffered_changes(volume_id),
+        IndexVolumeKind::Mtp => return crate::indexing::transports::mtp::watch::replay_buffered_mtp_changes(volume_id),
         // Local-scanner kinds take the guarded-walker path and never buffer network changes.
         IndexVolumeKind::Local | IndexVolumeKind::LocalExternal => {}
     }
@@ -59,8 +59,8 @@ fn replay_buffered_changes_for_kind(kind: IndexVolumeKind, volume_id: &str) -> b
 fn discard_buffered_changes_for_kind(kind: IndexVolumeKind, volume_id: &str) {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     match kind {
-        IndexVolumeKind::Smb => crate::indexing::discard_buffered_changes(volume_id),
-        IndexVolumeKind::Mtp => crate::indexing::discard_buffered_mtp_changes(volume_id),
+        IndexVolumeKind::Smb => crate::indexing::transports::smb::watch::discard_buffered_changes(volume_id),
+        IndexVolumeKind::Mtp => crate::indexing::transports::mtp::watch::discard_buffered_mtp_changes(volume_id),
         // Local-scanner kinds take the guarded-walker path and never buffer network changes.
         IndexVolumeKind::Local | IndexVolumeKind::LocalExternal => {}
     }

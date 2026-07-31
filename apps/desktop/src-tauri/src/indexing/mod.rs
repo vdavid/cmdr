@@ -11,7 +11,7 @@
 // Area modules. Cross-area references use each module's real path
 // (`indexing::lifecycle::state::…`, `indexing::paths::routing::…`); `mod.rs` re-exports only
 // the curated public item surface below, never a module alias that would hide where code lives.
-pub mod aggregator;
+pub(crate) mod aggregator;
 mod events;
 pub mod handle;
 pub(crate) mod host;
@@ -26,7 +26,7 @@ pub(crate) mod scanner;
 pub mod store;
 pub(crate) mod transports;
 pub(crate) mod watch;
-pub mod writer;
+pub(crate) mod writer;
 
 /// The index's test-only surface. ❌ Not part of the API; see the module docs.
 #[cfg(any(test, feature = "testing"))]
@@ -42,68 +42,48 @@ pub(crate) mod tests;
 #[cfg(test)]
 pub(crate) use tests::stress_test_helpers;
 
+// ── The public API ───────────────────────────────────────────────
+//
+// Everything below is a promise. A `pub` here says "the host may rely on this
+// forever"; anything the index merely happens to have is `pub(crate)`, in the
+// second block. The audit that decided each one, item by item, is in
+// `DETAILS.md` § "The public surface".
+
+/// The handle, what you can ask it, and what it fails with.
 pub use handle::{
-    Index, IndexBuildError, IndexBuilder, IndexError, IngestError, ListingAgreement, ListingObservation,
-    ObservedEntry, SizeError, SizeFreshness, SizeProgress, SizeRequest, SizeStream, SizeVerdict, StartOutcome,
-    WatchGap, WatchScope,
+    Index, IndexBuildError, IndexBuilder, IndexError, IngestError, ListingAgreement, ListingObservation, ObservedEntry,
+    SizeError, SizeFreshness, SizeProgress, SizeRequest, SizeStream, SizeVerdict, StartOutcome, WatchGap, WatchScope,
 };
 
-pub(crate) use events::DEBUG_STATS;
-#[cfg(test)]
-pub(crate) use events::one_of_every_kind;
-// Named, never a glob: the public surface has to be readable from this file, and a
-// `pub use events::*` hid 14 items behind one line.
+/// What the index reports while it works, and the sink it reports through. The
+/// host maps these to its own wire format; the index produces no user-facing
+/// words. Named rather than globbed, so the surface is readable from this file.
 pub use events::{
     ActivityPhase, Diagnostic, EventSink, IndexDebugStatusResponse, IndexErrorReport, IndexEvent, IndexEventKind,
     IndexStatusResponse, MemoryWatchdogAction, NoopEventSink, PhaseRecord, RescanReason, ScanRunKind,
     VolumeIndexStatus,
 };
-pub(crate) use read::enrichment::{ReadPool, get_read_pool, get_read_pool_for};
-pub use read::enrichment::{enrich_entries_with_index, enrich_entries_with_index_on_volume};
+
+/// The vocabulary the handle's own signatures are written in.
+pub use aggregator::AggregationPhase;
+pub use lifecycle::state::{IndexVolumeKind, ROOT_VOLUME_ID};
+pub use read::enrichment::ReadPool;
+pub use scanner::SYSTEM_DIR_EXCLUDES;
+pub use store::IndexFailure;
+pub use transports::smb::index::SmbIndexGateReason;
+
+// ── Internal convenience ─────────────────────────────────────────
+//
+// Short paths for the index's own areas. Not API: none of this survives the
+// crate boundary, and a new one here is a maintenance choice, not a promise.
+
+pub(crate) use events::DEBUG_STATS;
+#[cfg(test)]
+pub(crate) use events::one_of_every_kind;
+pub(crate) use lifecycle::failure::IndexFailureSignal;
+pub(crate) use paths::routing::IndexPathSpace;
+pub(crate) use read::enrichment::get_read_pool_for;
 // `pub` under `testing` so `benches/index_benchmarks.rs` can install a synthetic
 // index DB; see the items' docs in `read/enrichment.rs`.
 #[cfg(any(test, feature = "testing"))]
 pub use read::enrichment::{test_install_root_read_pool, test_read_pool_lock, test_uninstall_root_read_pool};
-
-pub(crate) use lifecycle::failure::IndexFailureSignal;
-pub(crate) use lifecycle::master::drives_to_resume;
-pub use lifecycle::master::{master_enabled, set_master_enabled};
-pub(crate) use lifecycle::state::ROOT_VOLUME_ID;
-pub(crate) use lifecycle::state::get_freshness;
-#[cfg(test)]
-pub(crate) use lifecycle::state::reserve_initializing_index_for_test;
-pub(crate) use lifecycle::state::stop_all_indexing;
-pub(crate) use lifecycle::state::{IndexVolumeKind, all_registered_volume_ids, ready_volumes_with_kind, volume_kind};
-pub use lifecycle::state::{
-    clear_index, disable_drive_index_persist_intent, force_scan, init, is_active, is_failed, should_auto_start,
-    should_auto_start_indexing, start_indexing, stop_indexing, stop_scan, trigger_verification,
-};
-pub(crate) use paths::routing::{IndexPathSpace, index_read_path, volume_id_for_local_path};
-pub use read::queries::{
-    get_debug_status, get_dir_stats, get_dir_stats_batch, get_status, get_volume_index_status,
-    get_volume_index_status_for_path, list_dir_children,
-};
-pub use resources::subsystem_stop::register_subsystem_stop_hook;
-pub use scanner::SYSTEM_DIR_EXCLUDES;
-pub use store::IndexFailure;
-
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-pub use transports::smb::index::SmbIndexGateReason;
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) use transports::smb::index::{
-    on_smb_overflow, on_smb_watcher_died, resume_smb_index_if_enabled, start_indexing_for_smb,
-};
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) use transports::smb::watch::{apply_smb_change, discard_buffered_changes, replay_buffered_changes};
-
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) use lifecycle::state::registered_mtp_volume_ids_for_device;
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) use transports::local_external::index::{LocalExternalEnable, start_indexing_for_local_external};
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) use transports::mtp::index::{on_mtp_watch_continuity_lost, start_indexing_for_mtp};
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) use transports::mtp::watch::{
-    MtpUpsert, apply_mtp_added_or_changed, apply_mtp_removed, buffer_mtp_handle_if_scanning,
-    discard_buffered_mtp_changes, replay_buffered_mtp_changes,
-};

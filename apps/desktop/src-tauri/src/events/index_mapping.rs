@@ -22,7 +22,7 @@ use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tauri_specta::Event;
 
-use crate::indexing::aggregator::AggregationPhase;
+use crate::indexing::AggregationPhase;
 use crate::indexing::lifecycle::freshness::Freshness;
 use crate::indexing::{
     ActivityPhase, Diagnostic, EventSink, IndexErrorReport, IndexEvent, MemoryWatchdogAction, RescanReason, ScanRunKind,

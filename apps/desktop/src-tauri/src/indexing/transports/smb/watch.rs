@@ -273,7 +273,7 @@ pub(crate) fn replay_buffered_changes(volume_id: &str) -> bool {
 
     if buffered.overflowed {
         // Too many mid-scan changes to track reliably: don't claim Fresh.
-        crate::indexing::on_smb_overflow(volume_id);
+        crate::indexing::transports::smb::index::on_smb_overflow(volume_id);
         return false;
     }
 

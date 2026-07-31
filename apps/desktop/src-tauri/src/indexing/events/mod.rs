@@ -17,11 +17,11 @@ pub(crate) mod partial_agg;
 pub(crate) mod progress_reporter;
 pub(crate) mod sink;
 
-pub use sink::{Diagnostic, EventSink, IndexErrorReport, IndexEvent, IndexEventKind, NoopEventSink};
 #[cfg(any(test, feature = "testing"))]
 pub use sink::RecordingSink;
 #[cfg(test)]
 pub(crate) use sink::one_of_every_kind;
+pub use sink::{Diagnostic, EventSink, IndexErrorReport, IndexEvent, IndexEventKind, NoopEventSink};
 
 // ── Event payloads (Rust -> Frontend) ────────────────────────────────
 

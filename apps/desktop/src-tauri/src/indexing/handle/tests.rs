@@ -65,6 +65,10 @@ fn in_memory_share(root: &str) -> Arc<dyn Volume> {
 /// If a hidden global ever starts carrying something the handle should, this is
 /// what fails: the scan would either not start or report into the wrong sink.
 #[tokio::test(flavor = "multi_thread")]
+#[allow(
+    clippy::await_holding_lock,
+    reason = "the lock serializes the process-wide seams for the whole scan; holding it across the awaits IS the point"
+)]
 async fn a_handle_scans_an_in_memory_volume_and_reports_to_its_own_sink() {
     let _serialized = crate::indexing::handle::test_lock();
     let data = tempfile::tempdir().expect("index data dir");
@@ -86,9 +90,11 @@ async fn a_handle_scans_an_in_memory_volume_and_reports_to_its_own_sink() {
         StartOutcome::Started
     );
 
-    wait_until_async(Duration::from_secs(20), "the in-memory share's scan to complete", || {
-        events.kinds_for(volume_id).contains(&IndexEventKind::ScanComplete)
-    })
+    wait_until_async(
+        Duration::from_secs(20),
+        "the in-memory share's scan to complete",
+        || events.kinds_for(volume_id).contains(&IndexEventKind::ScanComplete),
+    )
     .await;
 
     let kinds = events.kinds_for(volume_id);

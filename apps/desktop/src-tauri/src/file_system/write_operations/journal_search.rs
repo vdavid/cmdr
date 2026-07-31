@@ -29,9 +29,8 @@ use std::path::{Path, PathBuf};
 
 use rusqlite::Connection;
 
-use crate::indexing::lifecycle::freshness::Freshness;
+use crate::index_host::index;
 use crate::indexing::store::{IndexStore, resolve_path};
-use crate::indexing::{get_freshness, get_read_pool_for, index_read_path, is_active};
 use crate::operation_log::types::{EntryType, SearchCoverage, SearchCoverageReason};
 
 /// The per-operation cap on `search_only` leaves enumerated for one top-level
@@ -100,13 +99,13 @@ pub(super) fn enumerate_subtree_for_search(volume_id: &str, abs_source: &Path, c
 
     // Live gate: never trust index enumeration for a scanning / stale / unindexed
     // volume — a downgrade is the honest verdict.
-    if !is_active(volume_id) || get_freshness(volume_id) != Some(Freshness::Fresh) {
+    if !index().is_fresh(volume_id) {
         return BufferedLeaves::downgraded(SearchCoverageReason::VolumeNotLive);
     }
-    let Some(pool) = get_read_pool_for(volume_id) else {
+    let Some(pool) = index().read_pool(volume_id) else {
         return BufferedLeaves::downgraded(SearchCoverageReason::IndexAbsent);
     };
-    let Some(index_path) = index_read_path(volume_id, &abs_source.to_string_lossy()) else {
+    let Some(index_path) = index().read_path(volume_id, &abs_source.to_string_lossy()) else {
         return BufferedLeaves::downgraded(SearchCoverageReason::IndexAbsent);
     };
     pool.with_conn(|conn| match resolve_path(conn, &index_path) {

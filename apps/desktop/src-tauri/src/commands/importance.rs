@@ -39,7 +39,7 @@ use crate::importance::scheduler::{ImportanceScheduler, is_background_scored};
 pub async fn record_visit(app: AppHandle, location: Location) -> Result<(), String> {
     // Gate on the registered volume's typed kind: record for a background-scored
     // volume (Local/SMB), skip an unregistered or on-demand-only (MTP) one.
-    match crate::indexing::volume_kind(&location.volume_id) {
+    match crate::index_host::index().volume_kind(&location.volume_id) {
         Some(kind) if is_background_scored(kind) => {}
         _ => return Ok(()),
     }

@@ -41,7 +41,7 @@ pub async fn execute_indexing(params: &Value) -> ToolResult {
         "enable" | "rescan" => {
             // Capture the pre-scan freshness BEFORE the backend call, so the
             // ordering-contract wait can detect the departure.
-            let pre = crate::indexing::get_volume_index_status(volume_id).freshness;
+            let pre = crate::index_host::index().volume_status(volume_id).freshness;
             let outcome = if action == "rescan" {
                 rescan_drive_index_via_handle(volume_id.to_string()).await
             } else {
@@ -61,7 +61,7 @@ pub async fn execute_indexing(params: &Value) -> ToolResult {
                     let _ = started; // `Started` is the only variant off macOS/Linux
 
                     wait_for_scan_departure(volume_id, pre).await;
-                    let status = freshness_token(crate::indexing::get_volume_index_status(volume_id).freshness);
+                    let status = freshness_token(crate::index_host::index().volume_status(volume_id).freshness);
                     Ok(json!(format!(
                         "OK: {action} indexing for {volume_id}; status now {status}"
                     )))
@@ -101,7 +101,7 @@ async fn wait_for_scan_departure(volume_id: &str, pre: Option<Freshness>) {
     }
     let deadline = tokio::time::Instant::now() + SCAN_DEPARTURE_TIMEOUT;
     loop {
-        if crate::indexing::get_volume_index_status(volume_id).freshness != pre {
+        if crate::index_host::index().volume_status(volume_id).freshness != pre {
             return;
         }
         if tokio::time::Instant::now() >= deadline {

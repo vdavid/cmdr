@@ -137,10 +137,7 @@ impl Index {
     /// they've chosen would stack one permission prompt per folder on top of
     /// onboarding. Reports whether indexing actually started.
     pub fn start_root_at_launch(&self, fda_pending: bool) -> Result<bool, IndexError> {
-        if !state::should_auto_start_indexing(
-            Some(crate::indexing::lifecycle::master::master_enabled()),
-            fda_pending,
-        ) {
+        if !state::should_auto_start_indexing(Some(crate::indexing::lifecycle::master::master_enabled()), fda_pending) {
             return Ok(false);
         }
         state::start_indexing()?;

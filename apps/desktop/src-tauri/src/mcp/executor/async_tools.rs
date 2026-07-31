@@ -194,7 +194,8 @@ async fn await_index_status(params: &Value, timeout_s: u64) -> ToolResult {
     // After `indexing enable`, the volume IS registered (the enable tool's ordering
     // contract returns only once freshness has left its pre-scan state), so a
     // legitimate enable → await chain still passes this gate.
-    if !crate::indexing::all_registered_volume_ids()
+    if !crate::index_host::index()
+        .volume_ids()
         .iter()
         .any(|id| id == &volume_id)
     {
@@ -207,7 +208,7 @@ async fn await_index_status(params: &Value, timeout_s: u64) -> ToolResult {
     let poll_interval = std::time::Duration::from_millis(250);
 
     loop {
-        let freshness = crate::indexing::get_volume_index_status(&volume_id).freshness;
+        let freshness = crate::index_host::index().volume_status(&volume_id).freshness;
         if index_status_matches(freshness, &target) {
             return Ok(json!(format!(
                 "OK: Condition met — volume '{volume_id}' index_status is {}",

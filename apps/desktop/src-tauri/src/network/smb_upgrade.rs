@@ -145,7 +145,7 @@ pub(crate) async fn register_smb_volume(
             // scan), resume it — the backend-autonomous recovery that keeps a NAS
             // index from silently going dark after a disconnect/restart. No-op for
             // a never-enabled share.
-            crate::indexing::resume_smb_index_if_enabled(volume_id.clone());
+            crate::index_host::index().resume_after_reconnect(volume_id.clone());
         }
         Err(e) => {
             log::warn!(
@@ -213,7 +213,7 @@ pub(crate) async fn try_smb_upgrade(
             // Manual "Connect directly" also installs a Direct session; resume the
             // drive index the same way the auto-upgrade path does (no-op unless the
             // user had it enabled), so the two install paths stay consistent.
-            crate::indexing::resume_smb_index_if_enabled(volume_id.to_string());
+            crate::index_host::index().resume_after_reconnect(volume_id.to_string());
             Ok(())
         }
         Err(e) => {

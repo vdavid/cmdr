@@ -20,9 +20,9 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, LazyLock, Mutex, OnceLock};
 
 use crate::ignore_poison::IgnorePoison;
+use crate::index_host::index;
 use crate::indexing::store::IndexStore;
-use crate::indexing::writer::WRITER_GENERATION;
-use crate::indexing::{ROOT_VOLUME_ID, ReadPool, get_read_pool};
+use crate::indexing::{ROOT_VOLUME_ID, ReadPool};
 
 use super::index::{SearchIndex, load_search_index, now_secs};
 use super::ranking::ImportanceWeights;
@@ -355,7 +355,7 @@ fn get_loaded_raw(volume_id: &str) -> Option<Arc<LoadedVolume>> {
 /// writer generation moves on every root mutation, while a non-root volume stamps
 /// `0` and simply reloads next dialog session.
 fn is_stale(volume_id: &str, v: &LoadedVolume) -> bool {
-    volume_id == ROOT_VOLUME_ID && v.generation != WRITER_GENERATION.load(Ordering::Relaxed)
+    volume_id == ROOT_VOLUME_ID && v.generation != index().search_generation()
 }
 
 /// A cheap handle to a volume's warm arena, refreshing it in the BACKGROUND when it
@@ -474,8 +474,8 @@ fn load_volume_blocking(volume_id: &str, data_dir: &Path, cancel: &AtomicBool) -
     let (pool, mount_root, generation) = if volume_id == ROOT_VOLUME_ID {
         // Root's pool is the live registry's; absent means the root scan hasn't
         // produced a searchable index yet (indexing off / first scan running).
-        match get_read_pool() {
-            Some(pool) => (pool, None, WRITER_GENERATION.load(Ordering::Relaxed)),
+        match index().read_pool(ROOT_VOLUME_ID) {
+            Some(pool) => (pool, None, index().search_generation()),
             None => return VolumeLoad::NotIndexed,
         }
     } else {

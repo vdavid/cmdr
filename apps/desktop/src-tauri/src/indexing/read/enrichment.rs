@@ -227,17 +227,6 @@ fn listing_parent_path(entries: &[FileEntry]) -> Option<String> {
     }
 }
 
-/// Enrich directory entries with recursive size data from the local (`root`)
-/// index. Convenience wrapper for call sites without a `volume_id` in scope
-/// (most local-listing paths) and for the read-path tests.
-///
-/// When only `root` is registered, routing every caller through root is
-/// byte-identical to single-volume behaviour. Call sites that know the
-/// listing's volume call `enrich_entries_with_index_on_volume` directly.
-pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
-    enrich_entries_with_index_on_volume(ROOT_VOLUME_ID, entries);
-}
-
 /// Enrich directory entries with recursive size data from a volume's index.
 ///
 /// Called when entries land in the listing cache. Uses a per-volume `ReadPool`

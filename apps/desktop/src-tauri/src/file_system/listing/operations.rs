@@ -13,6 +13,7 @@ use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
 use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, sort_entries};
 use crate::file_system::watcher::{start_watching, stop_watching};
+use crate::index_host::index;
 
 /// Returns true if the entry is not a hidden dotfile.
 fn is_visible(entry: &FileEntry) -> bool {
@@ -83,8 +84,8 @@ pub async fn list_directory_start_with_volume(
     // index (inner paths aren't real FS paths), so enrich/verify are skipped.
     let mut all_entries = all_entries;
     if !is_archive {
-        crate::indexing::enrich_entries_with_index_on_volume(volume_id, &mut all_entries);
-        crate::indexing::trigger_verification(volume_id, &path.to_string_lossy());
+        index().enrich(volume_id, &mut all_entries);
+        index().verify_directory(volume_id, &path.to_string_lossy());
     }
 
     // Sort the entries
@@ -377,7 +378,7 @@ pub fn resort_listing(
 
     // Refresh index data before re-sorting (cache entries may not have fresh sizes)
     let volume_id = listing.volume_id.clone();
-    crate::indexing::enrich_entries_with_index_on_volume(&volume_id, &mut listing.entries);
+    index().enrich(&volume_id, &mut listing.entries);
 
     // Re-sort the entries
     sort_entries(&mut listing.entries, sort_by, sort_order, dir_sort_mode);
@@ -429,7 +430,7 @@ pub(crate) fn update_listing_entries(listing_id: &str, entries: Vec<FileEntry>) 
     {
         listing.touch();
         let mut entries = entries;
-        crate::indexing::enrich_entries_with_index_on_volume(&listing.volume_id, &mut entries);
+        index().enrich(&listing.volume_id, &mut entries);
         sort_entries(
             &mut entries,
             listing.sort_by,
@@ -594,7 +595,7 @@ pub fn refresh_listing_index_sizes(listing_id: &str) -> Result<(), String> {
     let mut cache = LISTING_CACHE.write().map_err(|_| "Failed to acquire cache lock")?;
     if let Some(listing) = cache.get_mut(listing_id) {
         let volume_id = listing.volume_id.clone();
-        crate::indexing::enrich_entries_with_index_on_volume(&volume_id, &mut listing.entries);
+        index().enrich(&volume_id, &mut listing.entries);
     }
     Ok(())
 }

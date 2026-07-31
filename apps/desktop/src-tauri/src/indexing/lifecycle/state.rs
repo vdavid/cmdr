@@ -48,7 +48,7 @@ pub(crate) type VolumeId = String;
 
 /// The local-disk volume id. The only volume registered when no network drive
 /// is indexed.
-pub(crate) const ROOT_VOLUME_ID: &str = "root";
+pub const ROOT_VOLUME_ID: &str = "root";
 
 // ── Indexing state machine ────────────────────────────────────────────
 

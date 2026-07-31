@@ -232,16 +232,11 @@ where
 /// across an eject, so this must not remove them. No-op for a non-`LocalExternal` or
 /// unindexed volume.
 async fn stop_index_blocking(volume_id: &str) {
-    if crate::indexing::volume_kind(volume_id) != Some(crate::indexing::IndexVolumeKind::LocalExternal) {
-        return;
-    }
     let vid = volume_id.to_string();
-    match tokio::task::spawn_blocking(move || crate::indexing::stop_indexing(&vid)).await {
-        Ok(Ok(())) => {}
-        Ok(Err(e)) => log::warn!(target: "eject", "stopping index for '{volume_id}' before unmount failed: {e}"),
-        Err(join_err) => {
-            log::warn!(target: "eject", "index-stop task for '{volume_id}' failed to join: {join_err}")
-        }
+    if let Err(join_err) =
+        tokio::task::spawn_blocking(move || crate::index_host::index().stop_removable_volume(&vid)).await
+    {
+        log::warn!(target: "eject", "index-stop task for '{volume_id}' failed to join: {join_err}");
     }
 }
 
@@ -519,8 +514,12 @@ mod tests {
         // `stop_indexing` through the ordering seam with a fake unmount that records
         // whether the index was still active when it ran.
         let vid = "volumes-cmdr-test-eject-stop-order";
-        let _tmp = indexing::reserve_initializing_index_for_test(vid, indexing::IndexVolumeKind::LocalExternal);
-        assert!(indexing::is_active(vid), "precondition: the index is active");
+        let _tmp =
+            indexing::testing::reserve_initializing_index_for_test(vid, indexing::IndexVolumeKind::LocalExternal);
+        assert!(
+            indexing::lifecycle::state::is_active(vid),
+            "precondition: the index is active"
+        );
 
         let active_when_unmount_ran = Arc::new(AtomicBool::new(true));
         let observed = Arc::clone(&active_when_unmount_ran);
@@ -528,7 +527,10 @@ mod tests {
 
         let result = stop_index_then_unmount(vid, || async move {
             // Record the index state at the exact moment the unmount would run.
-            observed.store(indexing::is_active(&vid_for_unmount), Ordering::SeqCst);
+            observed.store(
+                indexing::lifecycle::state::is_active(&vid_for_unmount),
+                Ordering::SeqCst,
+            );
             Ok(())
         })
         .await;
@@ -538,7 +540,10 @@ mod tests {
             !active_when_unmount_ran.load(Ordering::SeqCst),
             "the index must be stopped BEFORE the unmount runs"
         );
-        assert!(!indexing::is_active(vid), "the index instance is gone after eject");
+        assert!(
+            !indexing::lifecycle::state::is_active(vid),
+            "the index instance is gone after eject"
+        );
     }
 
     #[test]

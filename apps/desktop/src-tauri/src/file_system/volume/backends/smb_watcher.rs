@@ -16,6 +16,7 @@
 
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed, refresh_archive_listings};
+use crate::indexing::{WatchGap, WatchScope};
 use log::{debug, info, warn};
 use smb2::{ClientConfig, FileNotifyAction, SmbClient};
 use std::collections::HashMap;
@@ -220,7 +221,9 @@ pub(super) async fn run_smb_watcher(
     // Fresh, so each setup-failure return flips a Fresh index Stale. Cheap
     // no-op when the volume isn't indexed or is already Stale.
     #[cfg(any(target_os = "macos", target_os = "linux"))]
-    let mark_stale = || crate::indexing::on_smb_watcher_died(&volume_id);
+    let mark_stale = || {
+        crate::index_host::index().on_watch_gap(WatchScope::Volume(&volume_id), WatchGap::WatcherStopped);
+    };
     #[cfg(not(any(target_os = "macos", target_os = "linux")))]
     let mark_stale = || {};
 
@@ -363,7 +366,7 @@ pub(super) async fn run_smb_watcher(
                     // Mark it Stale (the index's overflow policy; the watcher
                     // itself keeps running — a different path from a disconnect).
                     #[cfg(any(target_os = "macos", target_os = "linux"))]
-                    crate::indexing::on_smb_overflow(&volume_id);
+                    crate::index_host::index().on_watch_gap(WatchScope::Volume(&volume_id), WatchGap::EventsOverflowed);
                     // The pipelined-next CHANGE_NOTIFY is already outstanding,
                     // so events arriving during the consumer's re-scan land in
                     // it. Keep watching.
@@ -382,7 +385,7 @@ pub(super) async fn run_smb_watcher(
                 // seam). A later reconnect respawns the watcher but does NOT restore Fresh
                 // — only a rescan does (the "admittedly stale" model).
                 #[cfg(any(target_os = "macos", target_os = "linux"))]
-                crate::indexing::on_smb_watcher_died(&volume_id);
+                crate::index_host::index().on_watch_gap(WatchScope::Volume(&volume_id), WatchGap::WatcherStopped);
                 let _ = watcher.close().await;
                 // Backend-autonomous recovery: the watcher's dedicated session
                 // dying proves the server connection broke. Drive a bounded-backoff

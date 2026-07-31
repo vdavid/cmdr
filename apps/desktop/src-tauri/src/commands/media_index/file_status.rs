@@ -144,7 +144,7 @@ fn classify_file_statuses(
     // The qualifying images (sibling-aware, with live `(mtime, size)`) for exactly the
     // dirs the requested paths live in — a bounded, scoped index walk.
     let dirs: HashSet<String> = paths.iter().map(|p| parent_dir(p).to_string()).collect();
-    let qualifying: HashMap<String, ImageEntry> = match crate::indexing::get_read_pool_for(volume_id) {
+    let qualifying: HashMap<String, ImageEntry> = match crate::index_host::index().read_pool(volume_id) {
         Some(pool) => match pool.with_conn(|conn| walk_image_entries_in_dirs(conn, &dirs)) {
             Ok(Ok(entries)) => entries.into_iter().map(|e| (e.path.clone(), e)).collect(),
             _ => HashMap::new(),

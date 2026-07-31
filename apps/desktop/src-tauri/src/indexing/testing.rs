@@ -37,6 +37,7 @@ pub mod events {
 /// exercises a real backend against the index's scanner (the live SMB coverage)
 /// or installs a synthetic index database (the benchmarks).
 pub mod scan {
+    pub use crate::indexing::aggregator::compute_all_aggregates_reported;
     pub use crate::indexing::network_scanner::scan_pace::ScanPacer;
     pub use crate::indexing::network_scanner::scan_volume_via_trait;
     pub use crate::indexing::read::enrichment::{
@@ -45,6 +46,7 @@ pub mod scan {
     pub use crate::indexing::scanner::ScanProgress;
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     pub use crate::indexing::transports::smb::watch::{index_relative_path, resolve_and_send_for_test};
+    pub use crate::indexing::writer::IndexWriter;
 }
 
 /// Claiming a registry slot without running a scan, so a test can assert on what

@@ -342,7 +342,7 @@ pub(crate) fn replay_buffered_mtp_changes(volume_id: &str) -> bool {
         return true; // nothing buffered: clean Fresh
     };
     if buffered.overflowed {
-        crate::indexing::on_smb_overflow(volume_id); // shared OverflowUnrecoverable ⇒ Stale
+        crate::indexing::transports::smb::index::on_smb_overflow(volume_id); // shared OverflowUnrecoverable ⇒ Stale
         return false;
     }
     let Some((writer, _)) = state::get_writer_and_scanning_for(volume_id) else {

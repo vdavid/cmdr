@@ -200,10 +200,7 @@ impl IndexBuilder {
         use crate::indexing::host;
 
         let guard = TestInstallGuard {
-            volumes: self
-                .volumes
-                .clone()
-                .map(|provider| host::volumes::install_for_test(provider)),
+            volumes: self.volumes.clone().map(host::volumes::install_for_test),
             config: self
                 .data_dir
                 .clone()

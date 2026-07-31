@@ -522,8 +522,8 @@ pub(crate) async fn read_directory_with_progress(
     // index (their inner paths aren't real FS paths), so enrich/verify are skipped.
     let enrich_start = std::time::Instant::now();
     if !is_archive {
-        crate::indexing::enrich_entries_with_index_on_volume(volume_id, &mut entries);
-        crate::indexing::trigger_verification(volume_id, &path.to_string_lossy());
+        crate::index_host::index().enrich(volume_id, &mut entries);
+        crate::index_host::index().verify_directory(volume_id, &path.to_string_lossy());
     }
     let enrich_ms = enrich_start.elapsed().as_millis();
 

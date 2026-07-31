@@ -93,7 +93,7 @@ pub(super) fn pass_coverage(
 /// the master toggle, a persisted-on restart, and a threshold decrease. The caller
 /// holds the scheduler (the app keeps it in Tauri state), so nothing here needs an
 /// app handle. Iterates
-/// [`crate::indexing::ready_volumes_with_kind`] and spawns the kind-mapped pass
+/// [`crate::indexing::lifecycle::state::ready_volumes_with_kind`] and spawns the kind-mapped pass
 /// (Local → local, SMB → network which self-checks opt-in, MTP → never). The
 /// [`PassCoordinator`] folds a kick that races a running pass into one re-run, and
 /// each pass self-gates on the master toggle, so an errant kick while disabled is a
@@ -101,7 +101,7 @@ pub(super) fn pass_coverage(
 /// no-op, so there's no need to gate per volume (contrast importance, which gates on
 /// "store has no generation").
 pub fn kick_all_ready_passes_with(scheduler: &Arc<MediaScheduler>) {
-    kick_ready_passes_from(scheduler, crate::indexing::ready_volumes_with_kind());
+    kick_ready_passes_from(scheduler, crate::indexing::lifecycle::state::ready_volumes_with_kind());
 }
 
 /// Kick a coalesced pass for each `(volume_id, kind)` in `ready`, mapping the kind to a
@@ -149,7 +149,7 @@ pub fn start() -> Option<Arc<MediaScheduler>> {
     // Share the ONE resident-memory ceiling: the indexing memory watchdog's stop
     // action runs this hook, telling in-flight enrichment to yield — rather than a
     // second independent 16 GB ceiling over the same pool (plan Resources).
-    crate::indexing::register_subsystem_stop_hook(Box::new(|| {
+    crate::indexing::resources::subsystem_stop::register_subsystem_stop_hook(Box::new(|| {
         gate::request_cancel();
         // Release the resident vector caches too, so they're counted against the ONE
         // shared ceiling (plan § Query-time vector residency): they reload lazily.
@@ -195,7 +195,7 @@ pub fn start() -> Option<Arc<MediaScheduler>> {
     // Startup sweep: wire each ready volume's subscriptions. A volume Fresh at launch
     // keeps a `Pending` bus and never re-fires `ScanCompleted`, so wiring alone never
     // enriches it — the kick below is what starts work.
-    for (volume_id, kind) in crate::indexing::ready_volumes_with_kind() {
+    for (volume_id, kind) in crate::indexing::lifecycle::state::ready_volumes_with_kind() {
         wire_volume(Arc::clone(&scheduler), volume_id, kind);
     }
 

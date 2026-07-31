@@ -6,8 +6,8 @@
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use crate::index_host::index;
 use crate::indexing::ReadPool;
-use crate::indexing::writer::WRITER_GENERATION;
 use crate::pluralize::pluralize_with;
 
 // ── Search entry (in-memory representation) ──────────────────────────
@@ -69,7 +69,7 @@ pub(crate) fn now_secs() -> u64 {
 pub(crate) fn load_search_index(pool: &ReadPool, cancel: &AtomicBool) -> Result<SearchIndex, String> {
     pool.with_conn(|conn: &rusqlite::Connection| {
         let t = std::time::Instant::now();
-        let generation = WRITER_GENERATION.load(Ordering::Relaxed);
+        let generation = index().search_generation();
 
         let sql = "SELECT id, parent_id, name, is_directory, logical_size, modified_at FROM entries";
 

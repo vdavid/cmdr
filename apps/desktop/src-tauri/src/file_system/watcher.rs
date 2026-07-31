@@ -22,6 +22,7 @@ use crate::file_system::listing::{
     FileEntry, ModifyResult, get_listing_entries, get_listing_volume_id_and_path, get_single_entry, has_entry,
     insert_entry_sorted, list_directory_core, remove_entry_by_path, update_entry_sorted, update_listing_entries,
 };
+use crate::index_host::index;
 use crate::indexing::paths::firmlinks;
 
 /// Default debounce duration in milliseconds (used if not configured)
@@ -285,10 +286,10 @@ fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEv
 
     // Enrich new/modified entries with index data
     for entry in &mut adds {
-        crate::indexing::enrich_entries_with_index_on_volume(&volume_id, std::slice::from_mut(entry));
+        index().enrich(&volume_id, std::slice::from_mut(entry));
     }
     for entry in &mut modifies {
-        crate::indexing::enrich_entries_with_index_on_volume(&volume_id, std::slice::from_mut(entry));
+        index().enrich(&volume_id, std::slice::from_mut(entry));
     }
 
     // Apply changes: removes first (indices refer to OLD listing), then adds, then modifies.
@@ -483,7 +484,7 @@ pub async fn handle_directory_change(listing_id: &str) {
         if let Ok(cache) = LISTING_CACHE.read()
             && let Some(listing) = cache.get(listing_id)
         {
-            crate::indexing::enrich_entries_with_index_on_volume(&listing.volume_id, &mut new_entries);
+            index().enrich(&listing.volume_id, &mut new_entries);
             sort_entries(
                 &mut new_entries,
                 listing.sort_by,

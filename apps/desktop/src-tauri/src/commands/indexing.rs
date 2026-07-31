@@ -7,10 +7,10 @@ use std::sync::OnceLock;
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-use crate::indexing::SmbIndexGateReason;
+use crate::index_host::index;
 use crate::indexing::{
-    self, IndexDebugStatusResponse, IndexStatusResponse, ROOT_VOLUME_ID, VolumeIndexStatus, store::DirStats,
+    IndexDebugStatusResponse, IndexStatusResponse, ROOT_VOLUME_ID, SmbIndexGateReason, StartOutcome, VolumeIndexStatus,
+    store::DirStats,
 };
 
 /// The outcome of a per-drive "Turn on indexing" request.
@@ -32,8 +32,19 @@ pub enum EnableIndexingOutcome {
     /// An SMB volume couldn't be indexed yet; `reason` says why (upgrade failed,
     /// credentials needed, disconnected). The FE shows an honest status and, for
     /// `credentials_needed`, can route into the reconnect/login flow.
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
     Refused { reason: SmbIndexGateReason },
+}
+
+impl From<StartOutcome> for EnableIndexingOutcome {
+    /// The index's typed outcome becomes the frontend's, which is the only place
+    /// the two shapes meet.
+    fn from(outcome: StartOutcome) -> Self {
+        match outcome {
+            StartOutcome::Started => Self::Started,
+            StartOutcome::IndexingDisabled => Self::IndexingDisabled,
+            StartOutcome::Refused(reason) => Self::Refused { reason },
+        }
+    }
 }
 
 // These path-based IPC commands act on the local-disk `root` index: the
@@ -44,49 +55,50 @@ pub enum EnableIndexingOutcome {
 #[tauri::command]
 #[specta::specta]
 pub async fn start_drive_index() -> Result<(), String> {
-    if indexing::is_active(ROOT_VOLUME_ID) {
-        // Already running: force a fresh full scan (for example, from the debug "Start scan" button)
-        indexing::force_scan(ROOT_VOLUME_ID)
-    } else {
-        indexing::start_indexing()
-    }
+    // Already running: force a fresh full scan (for example, from the debug
+    // "Start scan" button). Not running: the first scan IS the rescan.
+    index()
+        .rescan_volume(ROOT_VOLUME_ID)
+        .await
+        .map(|_| ())
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn stop_drive_index() -> Result<(), String> {
-    indexing::stop_scan(ROOT_VOLUME_ID)
+    index().stop_scan(ROOT_VOLUME_ID).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn get_index_status() -> Result<IndexStatusResponse, String> {
-    indexing::get_status(ROOT_VOLUME_ID)
+    index().status(ROOT_VOLUME_ID).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn get_dir_stats(path: String) -> Result<Option<DirStats>, String> {
-    indexing::get_dir_stats(&path)
+    index().dir_stats(&path).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn get_dir_stats_batch(paths: Vec<String>) -> Result<Vec<Option<DirStats>>, String> {
-    indexing::get_dir_stats_batch(&paths)
+    index().dir_stats_batch(&paths).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn clear_drive_index() -> Result<(), String> {
-    indexing::clear_index(ROOT_VOLUME_ID)
+    index().forget_volume(ROOT_VOLUME_ID).map_err(|e| e.to_string())
 }
 
 /// Extended debug status for the debug window (dev only).
 #[tauri::command]
 #[specta::specta]
 pub async fn get_index_debug_status() -> Result<IndexDebugStatusResponse, String> {
-    indexing::get_debug_status(ROOT_VOLUME_ID)
+    index().debug_status(ROOT_VOLUME_ID).map_err(|e| e.to_string())
 }
 
 /// Per-volume index status for the freshness badge (the per-drive freshness UX).
@@ -99,7 +111,7 @@ pub async fn get_index_debug_status() -> Result<IndexDebugStatusResponse, String
 #[tauri::command]
 #[specta::specta]
 pub async fn get_volume_index_status(path: String) -> Result<VolumeIndexStatus, String> {
-    Ok(indexing::get_volume_index_status_for_path(&path))
+    Ok(index().volume_status_for_path(&path))
 }
 
 /// Per-volume index status keyed by volume id (the per-drive badge surface).
@@ -112,7 +124,7 @@ pub async fn get_volume_index_status(path: String) -> Result<VolumeIndexStatus, 
 #[tauri::command]
 #[specta::specta]
 pub async fn get_volume_index_status_by_id(volume_id: String) -> Result<VolumeIndexStatus, String> {
-    Ok(indexing::get_volume_index_status(&volume_id))
+    Ok(index().volume_status(&volume_id))
 }
 
 /// Apply the master drive-indexing switch (`indexing.enabled`), live.
@@ -128,9 +140,9 @@ pub async fn get_volume_index_status_by_id(volume_id: String) -> Result<VolumeIn
 pub async fn set_indexing_enabled(app: AppHandle, enabled: bool) -> Result<(), String> {
     // Move the gate FIRST in both directions: on, so the starts below pass it; off,
     // so a concurrent reconnect resume can't slip in behind the stop sweep.
-    indexing::set_master_enabled(enabled);
+    index().set_indexing_enabled(enabled);
     if enabled {
-        for volume_id in indexing::drives_to_resume() {
+        for volume_id in index().drives_to_resume() {
             // Each drive routes through the normal per-drive enable, so its own gate
             // (the direct-smb2 upgrade, MTP device presence) still applies. A refusal
             // is expected here (a share that's offline right now) and only logged;
@@ -141,8 +153,6 @@ pub async fn set_indexing_enabled(app: AppHandle, enabled: bool) -> Result<(), S
                 Err(e) => log::warn!("set_indexing_enabled: resuming '{volume_id}' failed: {e}"),
             }
         }
-    } else {
-        indexing::stop_all_indexing();
     }
     Ok(())
 }
@@ -184,10 +194,11 @@ pub async fn start_indexing_after_fda_decision(app: AppHandle) -> Result<(), Str
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     crate::mtp::start_mtp_watcher(&app);
 
-    if indexing::is_active(ROOT_VOLUME_ID) {
-        return Ok(());
-    }
-    indexing::start_indexing()
+    index()
+        .start_volume(ROOT_VOLUME_ID)
+        .await
+        .map(|_| ())
+        .map_err(|e| e.to_string())
 }
 
 // ── Per-drive enable / disable / rescan (the per-drive badge menu) ───
@@ -212,71 +223,21 @@ pub async fn start_indexing_after_fda_decision(app: AppHandle) -> Result<(), Str
 #[tauri::command]
 #[specta::specta]
 pub async fn enable_drive_index(app: AppHandle, volume_id: String) -> Result<EnableIndexingOutcome, String> {
-    if indexing::is_active(&volume_id) {
-        return Ok(EnableIndexingOutcome::Started);
-    }
-
-    // The master switch outranks every per-drive choice, so refuse here, once, with
-    // one transport-neutral reason rather than letting each transport's own gate
-    // report it differently. The UI keeps the per-drive controls visible but inert
-    // while this holds.
-    if !indexing::master_enabled() {
-        log::info!("enable_drive_index: refusing '{volume_id}', drive indexing is off in settings");
-        return Ok(EnableIndexingOutcome::IndexingDisabled);
-    }
-
-    // A failed index (its DB died) can't resume in place: the writer/manager are
-    // torn down and the instance is still registered, so a plain `start_indexing`
-    // would no-op on the existing key. The index is a disposable cache, so the
-    // recovery is a rebuild-from-scratch: clear the dead instance + DB, then fall
-    // through to a fresh start below. This is the retry the Failed badge offers.
-    if indexing::is_failed(&volume_id) {
-        indexing::clear_index(&volume_id)?;
-    }
-
-    if volume_id == ROOT_VOLUME_ID {
-        indexing::start_indexing()?;
-        return Ok(EnableIndexingOutcome::Started);
-    }
-
+    // Kick mDNS first so a freshly-typed server name resolves during a share's
+    // direct-session upgrade. Idempotent, and cheap enough not to branch on the
+    // volume's kind (which is the index's business, not this command's).
     #[cfg(any(target_os = "macos", target_os = "linux"))]
-    {
-        // MTP: no connection-upgrade gate (one USB session, FDA-independent), so
-        // it can't return a typed `SmbIndexGateReason`. Route it to the MTP enable
-        // path; a plain string error (device not connected / internal start
-        // failure) surfaces as a command error.
-        if cmdr_fs::volume::mtp_ids::is_mtp_volume_id(&volume_id) {
-            indexing::start_indexing_for_mtp(volume_id)?;
-            return Ok(EnableIndexingOutcome::Started);
-        }
-
-        // Local external drive (USB stick, SD card, extra disk, mounted disk
-        // image): the LOCAL guarded-walker + FSEvents pipeline, mount-rooted, with NO
-        // connection gate (a local mount is already directly readable). Classify
-        // by typed volume facts; a network mount (SMB os-mount, NFS, ...) is NOT
-        // this branch and falls through to the SMB gate below. This is the branch
-        // whose absence refused a healthy local drive as `NotAnSmbVolume`.
-        match indexing::start_indexing_for_local_external(volume_id.clone()).await? {
-            indexing::LocalExternalEnable::Started => return Ok(EnableIndexingOutcome::Started),
-            indexing::LocalExternalEnable::NotLocalExternal => {}
-        }
-
-        // SMB: gate on the direct-smb2 connection. Kick mDNS first so a
-        // freshly-typed server name resolves during the upgrade, then start. The
-        // typed gate reason is the refusal surface for the UI.
+    if volume_id != ROOT_VOLUME_ID {
         crate::network::ensure_mdns_started(app.clone());
-        match indexing::start_indexing_for_smb(volume_id).await {
-            Ok(()) => Ok(EnableIndexingOutcome::Started),
-            Err(reason) => Ok(EnableIndexingOutcome::Refused { reason }),
-        }
     }
     #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    {
-        let _ = app;
-        Err(format!(
-            "Indexing for volume '{volume_id}' is not supported on this platform"
-        ))
-    }
+    let _ = &app;
+
+    index()
+        .start_volume(&volume_id)
+        .await
+        .map(EnableIndexingOutcome::from)
+        .map_err(|e| e.to_string())
 }
 
 /// Turn off indexing for a specific drive.
@@ -291,7 +252,7 @@ pub async fn enable_drive_index(app: AppHandle, volume_id: String) -> Result<Ena
 #[tauri::command]
 #[specta::specta]
 pub async fn disable_drive_index(volume_id: String) -> Result<(), String> {
-    indexing::disable_drive_index_persist_intent(&volume_id)
+    index().disable_volume(&volume_id).map_err(|e| e.to_string())
 }
 
 /// Forget a drive's index entirely: stop it, DELETE its index DB (plus WAL/SHM
@@ -307,7 +268,7 @@ pub async fn disable_drive_index(volume_id: String) -> Result<(), String> {
 #[tauri::command]
 #[specta::specta]
 pub async fn forget_drive_index(volume_id: String) -> Result<(), String> {
-    indexing::clear_index(&volume_id)
+    index().forget_volume(&volume_id).map_err(|e| e.to_string())
 }
 
 /// Force a fresh full rescan of a drive (the menu's "Rescan now").
@@ -321,12 +282,20 @@ pub async fn forget_drive_index(volume_id: String) -> Result<(), String> {
 #[tauri::command]
 #[specta::specta]
 pub async fn rescan_drive_index(app: AppHandle, volume_id: String) -> Result<EnableIndexingOutcome, String> {
-    if indexing::is_active(&volume_id) {
-        indexing::force_scan(&volume_id)?;
-        return Ok(EnableIndexingOutcome::Started);
+    // Not active: enabling is what triggers the (first) scan, so this is the same
+    // call either way.
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    if volume_id != ROOT_VOLUME_ID {
+        crate::network::ensure_mdns_started(app.clone());
     }
-    // Not active: enabling is what triggers the (first) scan.
-    enable_drive_index(app, volume_id).await
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    let _ = &app;
+
+    index()
+        .rescan_volume(&volume_id)
+        .await
+        .map(EnableIndexingOutcome::from)
+        .map_err(|e| e.to_string())
 }
 
 // ── App handle for handle-free callers (the MCP `indexing` tool) ─────

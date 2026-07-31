@@ -191,7 +191,7 @@ impl SmbVolume {
         // index. This is the in-place-reconnect half of index recovery; the
         // launch/upgrade half lives in `smb_upgrade::register_smb_volume`.
         #[cfg(any(target_os = "macos", target_os = "linux"))]
-        crate::indexing::resume_smb_index_if_enabled(self.volume_id.clone());
+        crate::index_host::index().resume_after_reconnect(self.volume_id.clone());
 
         info!("SmbVolume::attempt_reconnect(share={}): success", self.share_name);
         Ok(())

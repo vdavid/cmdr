@@ -135,7 +135,8 @@ fn fsync_dir(dir: &Path) -> std::io::Result<()> {
 /// the tree to compute this — `(unknown)` on the FE is the legitimate
 /// fallback when the cached value isn't available.
 pub(super) fn lookup_indexed_size(path: &Path) -> Option<u64> {
-    crate::indexing::get_dir_stats(&path.to_string_lossy())
+    crate::index_host::index()
+        .dir_stats(&path.to_string_lossy())
         .ok()
         .flatten()
         .map(|s| s.recursive_size)

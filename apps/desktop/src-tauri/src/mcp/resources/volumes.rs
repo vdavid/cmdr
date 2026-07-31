@@ -14,6 +14,7 @@
 //! and `stale` in the other.
 
 use super::indexing::status_token;
+use crate::index_host::index;
 
 /// A volume's transport kind, the coarse routing hint an agent reads first.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -158,7 +159,7 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
             // `indexing::routing::volume_id_for_local_path`): a mounted-but-unindexed
             // external drive (`/Volumes/X`) reports `off`, not `root`'s freshness, so
             // this can't disagree with `cmdr://indexing`.
-            let status = crate::indexing::get_volume_index_status_for_path(&loc.path);
+            let status = index().volume_status_for_path(&loc.path);
             out.push(VolumeSummary {
                 name: loc.name.clone(),
                 id: loc.id.clone(),
@@ -185,7 +186,7 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
     }
     #[cfg(not(target_os = "macos"))]
     {
-        let status = crate::indexing::get_volume_index_status(crate::indexing::ROOT_VOLUME_ID);
+        let status = index().volume_status(crate::indexing::ROOT_VOLUME_ID);
         out.push(VolumeSummary {
             name: "root".to_string(),
             id: crate::indexing::ROOT_VOLUME_ID.to_string(),
@@ -220,7 +221,7 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
                 // MTP volume id is `{device_id}:{storage_id}`, the same id the
                 // index and the `eject` tool take (identity.rs::mtp_volume_id).
                 let volume_id = format!("{}:{}", device_info.device.id, storage.id);
-                let status = crate::indexing::get_volume_index_status(&volume_id);
+                let status = index().volume_status(&volume_id);
                 out.push(VolumeSummary {
                     name,
                     id: volume_id,

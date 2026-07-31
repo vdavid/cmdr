@@ -26,12 +26,20 @@ use std::path::{Path, PathBuf};
 
 use cmdr_lib::FileEntry;
 use cmdr_lib::indexing::store::{EntryRow, IndexStore, ROOT_ID, resolve_scan_root};
+use cmdr_lib::indexing::testing::scan::compute_all_aggregates_reported;
 use cmdr_lib::indexing::{
-    aggregator, enrich_entries_with_index, get_dir_stats_batch, test_install_root_read_pool, test_read_pool_lock,
-    test_uninstall_root_read_pool,
+    Index, ROOT_VOLUME_ID, test_install_root_read_pool, test_read_pool_lock, test_uninstall_root_read_pool,
 };
 use criterion::{BatchSize, BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use rusqlite::Connection;
+
+/// The handle every benchmark measures through. Built once for the binary, with
+/// no host wired: these benchmarks read a synthetic index database, so nothing
+/// needs mounting or reporting.
+fn index() -> &'static Index {
+    static INDEX: std::sync::OnceLock<Index> = std::sync::OnceLock::new();
+    INDEX.get_or_init(|| Index::builder().build().expect("one index per bench binary"))
+}
 
 /// Where the synthetic listing sits in the index's path space.
 ///
@@ -147,7 +155,7 @@ fn build_fixture(dirs: usize) -> Fixture {
 
     IndexStore::insert_entries_v2_batch(&conn, &rows).expect("insert the fixture entries");
     IndexStore::mark_dirs_listed(&conn, &dir_ids, 1).expect("stamp listed_epoch");
-    aggregator::compute_all_aggregates_reported(&conn, &mut |_| {}).expect("aggregate the fixture");
+    compute_all_aggregates_reported(&conn, &mut |_| {}).expect("aggregate the fixture");
 
     // Fold the WAL back into the main DB file: the read paths open read-only
     // connections, and leaving the fixture's writes in the WAL would make the
@@ -215,7 +223,7 @@ const LISTING_SIZES: [usize; 3] = [50, 500, 2000];
 /// on a silent skip.
 fn assert_fixture_is_read(fixture: &Fixture) {
     let mut entries: Vec<FileEntry> = fixture.child_dirs.iter().map(|p| listing_entry(p)).collect();
-    enrich_entries_with_index(&mut entries);
+    index().enrich(ROOT_VOLUME_ID, &mut entries);
     let enriched = entries.iter().filter(|e| e.recursive_size.is_some()).count();
     assert_eq!(
         enriched,
@@ -225,7 +233,9 @@ fn assert_fixture_is_read(fixture: &Fixture) {
         entries.len()
     );
 
-    let stats = get_dir_stats_batch(&fixture.child_dirs).expect("dir-stats batch over the fixture");
+    let stats = index()
+        .dir_stats_batch(&fixture.child_dirs)
+        .expect("dir-stats batch over the fixture");
     let found = stats.iter().filter(|s| s.is_some()).count();
     assert_eq!(
         found,
@@ -256,7 +266,7 @@ fn bench_enrich_entries_with_index(c: &mut Criterion) {
             // `iter_batched` keeps the clone out of the measurement.
             b.iter_batched_ref(
                 || listing.clone(),
-                |entries| enrich_entries_with_index(entries),
+                |entries| index().enrich(ROOT_VOLUME_ID, entries),
                 BatchSize::SmallInput,
             );
         });
@@ -280,7 +290,7 @@ fn bench_get_dir_stats_batch(c: &mut Criterion) {
 
         group.throughput(Throughput::Elements(dirs as u64));
         group.bench_with_input(BenchmarkId::from_parameter(dirs), &fixture.child_dirs, |b, paths| {
-            b.iter(|| get_dir_stats_batch(paths))
+            b.iter(|| index().dir_stats_batch(paths))
         });
 
         test_uninstall_root_read_pool();
@@ -304,7 +314,7 @@ fn bench_compute_all_aggregates(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::from_parameter(dirs), &conn, |b, conn: &Connection| {
             // Idempotent: it recomputes the same totals and upserts them, so
             // repeated iterations measure identical work.
-            b.iter(|| aggregator::compute_all_aggregates_reported(conn, &mut |_| {}));
+            b.iter(|| compute_all_aggregates_reported(conn, &mut |_| {}));
         });
     }
 

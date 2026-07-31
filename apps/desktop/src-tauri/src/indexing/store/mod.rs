@@ -31,7 +31,7 @@ const SCHEMA_VERSION: &str = "14";
 /// the current epoch but does not bump it. Absent ⇒ treat as epoch 1 (a volume
 /// with no recorded epoch behaves as "all current", not "all stale"). See the
 /// "Honest sizes" model in `indexing/DETAILS.md`.
-pub const CURRENT_EPOCH_KEY: &str = "current_epoch";
+pub(crate) const CURRENT_EPOCH_KEY: &str = "current_epoch";
 
 /// Meta key marking that this DB's `dir_stats` are known to agree with `entries`:
 /// a full aggregate rebuilt them and nothing has knowingly drifted them since.
@@ -40,7 +40,7 @@ pub const CURRENT_EPOCH_KEY: &str = "current_epoch";
 /// its terminal aggregate) and the next launch heals them via the writer-side
 /// latch. Only presence matters (the value is a marker). See
 /// `indexing/DETAILS.md` § "The dir_stats ledger".
-pub const LEDGER_HEAL_KEY: &str = "aggregates_rebuilt_for_ledger";
+pub(crate) const LEDGER_HEAL_KEY: &str = "aggregates_rebuilt_for_ledger";
 
 /// Meta key recording WHICH NAS system-dir exclusion list this DB was BUILT
 /// against (the value is the list's fingerprint), written when a network scan
@@ -49,7 +49,7 @@ pub const LEDGER_HEAL_KEY: &str = "aggregates_rebuilt_for_ledger";
 /// Storing the fingerprint rather than a bare "done" flag is what makes GROWING
 /// the list re-arm every existing index. See
 /// `indexing/network_scanner/DETAILS.md` § "NAS snapshot/system dirs aren't recursed".
-pub const SYSTEM_DIR_EXCLUSIONS_KEY: &str = "system_dir_exclusions_built_for";
+pub(crate) const SYSTEM_DIR_EXCLUSIONS_KEY: &str = "system_dir_exclusions_built_for";
 
 /// Root entry sentinel ID. All top-level entries have `parent_id = ROOT_ID`.
 pub const ROOT_ID: i64 = 1;
@@ -186,7 +186,7 @@ pub fn resolve_scan_root(conn: &Connection, root: &Path, is_volume_root: bool) -
 /// from `next_id`, and (if the entry is a directory) inserts its own mapping. The
 /// LOCAL scanner does NOT use this — it carries `parent_id` through its parallel
 /// walk, so it never builds a whole-volume path map.
-pub struct ScanContext {
+pub(crate) struct ScanContext {
     /// Map from directory absolute path to its assigned entry ID.
     pub dir_ids: std::collections::HashMap<PathBuf, i64>,
     /// Shared ID counter. Atomically incremented to allocate unique IDs.
@@ -251,7 +251,7 @@ pub struct IndexStatus {
 /// live counters are compared against `total_entries` (tier-1 denominator) and
 /// `total_physical_bytes` (tier-2 cap tuning); `scan_duration_ms` seeds the ETA.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct ScanCalibration {
+pub(crate) struct ScanCalibration {
     pub total_entries: Option<u64>,
     pub total_physical_bytes: Option<u64>,
     pub scan_duration_ms: Option<u64>,
@@ -297,7 +297,7 @@ impl ScanCalibrationKind {
 /// a stale-but-present timing from the other walk beats showing no estimate at
 /// all (and a DB predating the per-kind keys only has this one).
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct ScanCalibrationSet {
+pub(crate) struct ScanCalibrationSet {
     pub full_walk: ScanCalibration,
     pub change_check: ScanCalibration,
     pub any: ScanCalibration,
@@ -708,7 +708,7 @@ pub fn resolve_path(conn: &Connection, path: &str) -> Result<Option<i64>, IndexS
 /// index is rooted at the VOLUME root rather than `/`: once a mount-absolute hot
 /// path has had its volume-root prefix stripped to a relative remainder, this
 /// walks that remainder from the index's `ROOT_ID`.
-pub fn resolve_path_under(
+pub(crate) fn resolve_path_under(
     conn: &Connection,
     root_id: i64,
     relative_path: &str,

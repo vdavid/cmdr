@@ -9,8 +9,9 @@
 
 use rayon::prelude::*;
 
+use crate::index_host::index;
 use crate::indexing::store::IndexStore;
-use crate::indexing::{ROOT_VOLUME_ID, ReadPool, volume_id_for_local_path};
+use crate::indexing::{ROOT_VOLUME_ID, ReadPool};
 
 use super::engine::{self, RankedEntry};
 use super::query;
@@ -88,7 +89,7 @@ fn resolve_targets(query: &SearchQuery) -> Vec<Target> {
         Some(paths) => {
             let mut targets: Vec<Target> = Vec::new();
             for path in paths {
-                let volume_id = volume_id_for_local_path(path);
+                let volume_id = index().volume_id_for_path(path);
                 if let Some(t) = targets.iter_mut().find(|t| t.volume_id == volume_id) {
                     t.include_paths.push(path.clone());
                 } else {

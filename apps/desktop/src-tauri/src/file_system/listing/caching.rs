@@ -526,7 +526,7 @@ pub fn notify_directory_changed(volume_id: &str, parent_path: &Path, change: Dir
     // the writer emits) reflect the just-written sizes, not the pre-event ones.
     // The coupling is one-directional: listing → indexer, never the reverse.
     #[cfg(any(target_os = "macos", target_os = "linux"))]
-    crate::indexing::apply_smb_change(volume_id, parent_path, &change);
+    crate::index_host::index().apply_directory_change(volume_id, parent_path, &change);
 
     let listings = find_listings_for_path_on_volume(Some(volume_id), parent_path);
 
@@ -548,7 +548,7 @@ pub fn notify_directory_changed(volume_id: &str, parent_path: &Path, change: Dir
     match change {
         DirectoryChange::Added(entry) => {
             let mut entry = entry;
-            crate::indexing::enrich_entries_with_index_on_volume(volume_id, std::slice::from_mut(&mut entry));
+            crate::index_host::index().enrich(volume_id, std::slice::from_mut(&mut entry));
             for (listing_id, ..) in &listings {
                 notify_added(listing_id, entry.clone());
             }
@@ -561,14 +561,14 @@ pub fn notify_directory_changed(volume_id: &str, parent_path: &Path, change: Dir
         }
         DirectoryChange::Modified(entry) => {
             let mut entry = entry;
-            crate::indexing::enrich_entries_with_index_on_volume(volume_id, std::slice::from_mut(&mut entry));
+            crate::index_host::index().enrich(volume_id, std::slice::from_mut(&mut entry));
             for (listing_id, ..) in &listings {
                 notify_modified(listing_id, entry.clone());
             }
         }
         DirectoryChange::Renamed { old_name, new_entry } => {
             let mut new_entry = new_entry;
-            crate::indexing::enrich_entries_with_index_on_volume(volume_id, std::slice::from_mut(&mut new_entry));
+            crate::index_host::index().enrich(volume_id, std::slice::from_mut(&mut new_entry));
             let old_path = parent_path.join(&old_name);
             for (listing_id, ..) in &listings {
                 notify_removed(listing_id, &old_path);
@@ -753,7 +753,7 @@ async fn notify_full_refresh(
 
     // Archives have no drive index, so enrich is a no-op — skip it.
     if !is_archive {
-        crate::indexing::enrich_entries_with_index_on_volume(&volume_id, &mut new_entries);
+        crate::index_host::index().enrich(&volume_id, &mut new_entries);
     }
 
     for (listing_id, sort_by, sort_order, dir_sort_mode) in &listings {

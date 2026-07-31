@@ -817,16 +817,6 @@ pub fn run() {
             // Initialize AI manager (starts llama-server if model is installed)
             ai::manager::init(app.handle());
 
-            // Seed the master drive-indexing switch BEFORE anything can start an
-            // index (so before `init`, which is what unblocks the handle-free SMB
-            // reconnect resume). Seed it late and a NAS re-indexes itself despite the
-            // setting being off. The FDA gate below is a separate, narrower deferral
-            // (root only), so it must not feed this.
-            indexing::set_master_enabled(indexing::should_auto_start(saved_settings.indexing_enabled));
-
-            // Initialize indexing state (does not start scanning until explicitly started)
-            indexing::init();
-
             // Reuse the OS FDA result already captured for the gate above; this
             // call is on `/Library/Mail` which is cheap, but a fresh probe here
             // would race the user's decision in System Settings between the two
@@ -837,24 +827,19 @@ pub fn run() {
             // The FDA rule is the app's, so it's resolved here and handed to the
             // index as a plain answer.
             let fda_pending = fda_gate::is_fda_pending(saved_settings.full_disk_access_choice, os_fda_granted);
-            if indexing::should_auto_start_indexing(saved_settings.indexing_enabled, fda_pending) {
-
-                // Use tauri's runtime spawn instead of tokio::spawn since setup()
-                // runs synchronously before the Tokio runtime is fully available
-                tauri::async_runtime::spawn(async move {
-                    if let Err(e) = indexing::start_indexing() {
-                        log::warn!("Failed to auto-start indexing: {e}");
-                    }
-                });
-            } else if saved_settings.indexing_enabled == Some(false) {
-                log::info!("Drive indexing auto-start skipped (disabled in settings)");
-            } else {
-                log::info!(
-                    "Drive indexing auto-start deferred until Full Disk Access decision (FDA choice: {:?}, OS-granted: {})",
-                    saved_settings.full_disk_access_choice,
-                    os_fda_granted,
-                );
-            }
+            // Use tauri's runtime spawn instead of tokio::spawn since setup() runs
+            // synchronously before the Tokio runtime is fully available.
+            let full_disk_access_choice = saved_settings.full_disk_access_choice;
+            tauri::async_runtime::spawn(async move {
+                match index_host::index().start_root_at_launch(fda_pending) {
+                    Ok(true) => {}
+                    Ok(false) => log::info!(
+                        "Drive indexing auto-start skipped (indexing enabled: {:?}, FDA choice: {full_disk_access_choice:?}, OS-granted: {os_fda_granted})",
+                        saved_settings.indexing_enabled,
+                    ),
+                    Err(e) => log::warn!("Failed to auto-start indexing: {e}"),
+                }
+            });
 
             // Start the importance scheduler: it sweeps the index registry for
             // already-ready volumes and subscribes to the scan-completion bus, so a
