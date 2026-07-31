@@ -363,7 +363,12 @@ knows nothing about `LISTING_CACHE`. Every backend that can be mutated overrides
   invalidations come through the `.git`-watcher pipeline instead.
 - `SmbVolume` and `MtpVolume` build the entry from their own protocol's `get_metadata` (faster than `std::fs` would be,
   and on MTP `std::fs` isn't an option at all) and call `notify_directory_changed` directly.
-- `ArchiveVolume` is read-only and never calls it.
+- `ArchiveVolume` never calls it, because it implements no mutation: `create_file`, `delete`, `rename`, and
+  `write_from_stream` inherit the trait's `NotSupported` default, and `create_directory_all` overrides it only to
+  return the same (pinned by `volume_test.rs::every_mutation_is_unsupported`). Zip edits are real, but they go around
+  this backend — `write_operations::archive_edit` drives `ArchiveMutator` against the containing filesystem, so the
+  `.zip` file's OWN volume is what notifies. `write_operations/rename.rs` takes a plain `get` rather than `resolve`
+  for exactly that reason: a rename must never route to the `ArchiveVolume`.
 
 **Why it's a no-op rather than a required method**: making it required would force ~45 `impl Volume for` sites — mostly
 test doubles — to each write `Box::pin(async {})` for no gain. The no-op is also more correct than the local-FS default

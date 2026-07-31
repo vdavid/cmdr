@@ -19,8 +19,9 @@ use super::{ErrorActionKind, ErrorCategory, ListingError, ListingErrorReason};
 /// Returns `None` when no hint is warranted (any non-recognized volume, or any
 /// non-root path).
 pub fn listing_error_for_restricted_empty_root(volume_id: &str, path: &Path) -> Option<ListingError> {
-    // Match the literal volume ID (`crate::volumes` is macOS-only, so we can't import
-    // the constant from there). Kept in sync with `volumes::ICLOUD_VOLUME_ID` (macOS).
+    // Match the literal volume ID: the constant lives in the app
+    // (`apps/desktop/src-tauri/src/volumes/mod.rs`), which this crate sits below and
+    // can't import from. Kept in sync with `volumes::ICLOUD_VOLUME_ID`.
     if volume_id == "cloud-icloud" {
         Some(ListingError {
             category: ErrorCategory::NeedsAction,

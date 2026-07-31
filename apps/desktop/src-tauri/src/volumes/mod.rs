@@ -90,7 +90,7 @@ pub struct LocationInfo {
 pub const DEFAULT_VOLUME_ID: &str = "root";
 
 /// Volume ID for the iCloud Drive cloud drive entry. Hardcoded here so callers
-/// outside this module (e.g. `friendly_error::friendly_error_for_restricted_empty_root`)
+/// outside this module (e.g. `friendly_error::listing_error_for_restricted_empty_root`)
 /// can match against it without a stringly-typed coupling. Renames break the build.
 pub const ICLOUD_VOLUME_ID: &str = "cloud-icloud";
 
