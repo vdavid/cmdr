@@ -800,6 +800,18 @@ phrases). `trimRustTestProgress` in `desktop-rust-tests-linux.go` runs after `tr
 (`running N tests` header, FAIL/FAILED/LEAK/TIMEOUT verdicts, the `failures:` block, the `test result:` / `Summary`
 tally, `error:` lines, bench results) passes through unchanged.
 
+**Decision**: rustdoc output is filtered per LINE-anchored diagnostic header, never per blank-line-separated paragraph.
+**Why**: `private_intra_doc_links` stays a warning on purpose (a public doc naming the internal it delegates to is good
+writing), so ~70 of them plus ~30 KB of chatter surround the one broken link a failure is about. Paragraphs look like
+the right unit and aren't: cargo runs its `Documenting <crate>` progress line straight into the first diagnostic with no
+blank line, and rustdoc glues `error: could not document <crate>` to the warning count above it. A paragraph split
+therefore hands a diagnostic whatever preceded it, so an error that opens or closes the stream reads as a warning block
+and gets dropped — and with nothing kept, the "never swallow it" fallback dumps the whole 30 KB. `rustdocErrorDiagnostics`
+in `desktop-rust-rustdoc.go` instead starts a new diagnostic at every column-zero `error…:` / `warning…:` and keeps every
+following line (the `-->` locator, source excerpt, `= note`, `= help`, and any trailing `help:` suggestion) with it. The
+fixture in `desktop-rust-rustdoc_test.go` is shaped like real cargo output for exactly this reason; a tidy
+blank-line-separated one passes while the real thing fails.
+
 **Decision**: nextest binary is arch-aware. **Why**: `https://get.nexte.st/latest/linux` serves the x86_64-musl build by
 default; on an arm64 container (e.g. Apple Silicon under OrbStack) cargo's rustup-shim happily syncs the aarch64
 toolchain, then execs the x86 nextest binary and OrbStack crashes with

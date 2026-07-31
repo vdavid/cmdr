@@ -312,7 +312,7 @@ pub enum IndexEventKind {
 impl IndexEventKind {
     /// Every kind, in declaration order.
     ///
-    /// [`slot_of`](Self::slot_of) is what keeps this list complete: its match is
+    /// The private `slot_of` below is what keeps this list complete: its match is
     /// exhaustive, so a new variant doesn't compile until it has a slot, and the
     /// slot doesn't compile until this array has room for it. That's what makes
     /// the host's completeness test meaningful.

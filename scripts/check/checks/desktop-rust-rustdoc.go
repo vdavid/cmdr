@@ -3,6 +3,7 @@ package checks
 import (
 	"fmt"
 	"os/exec"
+	"regexp"
 	"runtime"
 	"strings"
 )
@@ -62,26 +63,46 @@ func RunRustdoc(ctx *CheckContext) (CheckResult, error) {
 		documented, Pluralize(documented, "crate", "crates"))), nil
 }
 
+// diagnosticHeader matches the opening line of a rustc / rustdoc diagnostic: a
+// column-zero `error` or `warning`, an optional `[E0124]` code, then a colon.
+// Every continuation line (the `-->` locator, the source excerpt, `= note`,
+// `= help`, and a trailing `help:` suggestion block) is what follows until the
+// next header.
+var diagnosticHeader = regexp.MustCompile(`^(error|warning)(\[[^\]]*\])?:`)
+
 // rustdocErrorDiagnostics keeps the `error:` diagnostics and drops the `warning:`
-// ones, whole blocks at a time.
+// ones, whole diagnostics at a time.
 //
-// Structural, never length-based: rustdoc prints one blank-line-separated block per
-// diagnostic, so this keeps every line of every error and none of any warning. It
-// matters because the warnings are the LOUD half — a public module doc naming the
-// internal it delegates to is `private_intra_doc_links`, which is good writing, and
-// ~70 of them would bury the one broken link the check exists to show.
+// It matters because the warnings are the LOUD half: a public module doc naming
+// the internal it delegates to is `private_intra_doc_links`, which is good
+// writing, and ~70 of them bury the one broken link the check exists to show.
+//
+// Structural, never length-based, and the structure is the LINE rather than the
+// paragraph. Cargo runs its own `Documenting` progress line straight into the
+// first diagnostic with no blank line between them, and rustdoc glues
+// `error: could not document …` to the warning count above it. Splitting on blank
+// lines therefore hands a diagnostic whatever preceded it, which drops the error
+// whenever it opens or closes the stream — the exact case this check reports.
 func rustdocErrorDiagnostics(output string) string {
-	blocks := strings.Split(output, "\n\n")
 	var kept []string
-	for _, block := range blocks {
-		trimmed := strings.TrimSpace(block)
-		if trimmed == "" {
-			continue
+	var current []string
+	keeping := false
+	flush := func() {
+		if keeping && len(current) > 0 {
+			kept = append(kept, strings.TrimRight(strings.Join(current, "\n"), "\n"))
 		}
-		if strings.HasPrefix(trimmed, "error") {
-			kept = append(kept, strings.TrimRight(block, "\n"))
+		current = nil
+	}
+	for _, line := range strings.Split(output, "\n") {
+		if match := diagnosticHeader.FindStringSubmatch(line); match != nil {
+			flush()
+			keeping = match[1] == "error"
+		}
+		if keeping {
+			current = append(current, line)
 		}
 	}
+	flush()
 	if len(kept) == 0 {
 		// Something failed that isn't a diagnostic we recognize (a compile error, a
 		// missing toolchain). Never swallow it.
