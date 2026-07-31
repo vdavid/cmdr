@@ -25,9 +25,16 @@ it to an injected `EventSink`. Nothing here names a wire format, an event name, 
   the sidebar's "limited by macOS" styling.
 
 `IndexEventKind` is the payload-free twin, so a test can assert the SHAPE of a stream
-(`[ScanStarted, ScanProgress, ScanComplete]`) without spelling out fields. Its `ALL` array is fixed-length, so a new
-variant fails to compile until it's listed, and the app-side completeness test then fails until a sample joins
-`one_of_every_kind`.
+(`[ScanStarted, ScanProgress, ScanComplete]`) without spelling out fields. Its `ALL` array is complete by construction,
+and the app-side completeness test then fails until a sample joins `one_of_every_kind`.
+
+**How `ALL` stays complete** (three compile errors, in the order you hit them): the private `slot_of` matches
+exhaustively over the enum, so a new variant has no arm and the match doesn't compile. Each arm wraps its index in a
+`const` block, which the compiler evaluates whether or not the arm ever runs, so the new arm's `Self::slot(n)` panics
+at compile time until `ALL` has an `n`th entry. Adding that entry then trips `ALL`'s declared length. ❌ Don't "simplify"
+any of the three away: an array literal's length says nothing about a variant count, so without them the app-side test
+passes vacuously for exactly the variant somebody forgot. A `const _: () = { … }` block below `slot_of` closes the last
+gap, asserting `ALL[i].slot_of() == i` so the array can't hold a duplicate, a stray, or a gap either.
 
 Three sinks ship: the app's `TauriEventSink`, `NoopEventSink` (paths and tests with nothing to say —
 `NoopEventSink::shared()` hands out one `Arc`), and the test `RecordingSink`.

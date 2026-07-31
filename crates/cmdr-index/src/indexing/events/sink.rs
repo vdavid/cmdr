@@ -310,9 +310,12 @@ pub enum IndexEventKind {
 }
 
 impl IndexEventKind {
-    /// Every kind. The array length is fixed, so adding a variant without adding
-    /// it here doesn't compile, which is what makes the host's completeness test
-    /// meaningful.
+    /// Every kind, in declaration order.
+    ///
+    /// [`slot_of`](Self::slot_of) is what keeps this list complete: its match is
+    /// exhaustive, so a new variant doesn't compile until it has a slot, and the
+    /// slot doesn't compile until this array has room for it. That's what makes
+    /// the host's completeness test meaningful.
     pub const ALL: [Self; 17] = [
         Self::ScanStarted,
         Self::ScanProgress,
@@ -332,7 +335,61 @@ impl IndexEventKind {
         Self::Error,
         Self::PathAccessDenied,
     ];
+
+    /// Where this kind sits in [`ALL`](Self::ALL).
+    ///
+    /// Every arm wraps its index in a `const` block, which the compiler
+    /// evaluates whether or not the arm ever runs. A kind whose slot is past the
+    /// end of `ALL` is therefore a compile error, and a new variant with no arm
+    /// at all fails the exhaustiveness check above it. Adding a kind means
+    /// touching both lists or the crate doesn't build.
+    const fn slot_of(self) -> usize {
+        match self {
+            Self::ScanStarted => const { Self::slot(0) },
+            Self::ScanProgress => const { Self::slot(1) },
+            Self::ScanComplete => const { Self::slot(2) },
+            Self::ScanAborted => const { Self::slot(3) },
+            Self::DirsUpdated => const { Self::slot(4) },
+            Self::ReplayProgress => const { Self::slot(5) },
+            Self::ReplayComplete => const { Self::slot(6) },
+            Self::RescanScheduled => const { Self::slot(7) },
+            Self::AggregationProgress => const { Self::slot(8) },
+            Self::AggregationComplete => const { Self::slot(9) },
+            Self::MemoryWarning => const { Self::slot(10) },
+            Self::FreshnessChanged => const { Self::slot(11) },
+            Self::PhaseChanged => const { Self::slot(12) },
+            Self::MediaEnrichProgress => const { Self::slot(13) },
+            Self::MediaEnrichTerminal => const { Self::slot(14) },
+            Self::Error => const { Self::slot(15) },
+            Self::PathAccessDenied => const { Self::slot(16) },
+        }
+    }
+
+    /// One slot index, bounds-checked against [`ALL`](Self::ALL) at compile time.
+    const fn slot(index: usize) -> usize {
+        assert!(
+            index < Self::ALL.len(),
+            "a new `IndexEventKind` needs its own entry in `IndexEventKind::ALL`"
+        );
+        index
+    }
 }
+
+/// `ALL` holds every kind exactly once, in declaration order.
+///
+/// `ALL[i].slot_of() == i` leaves no room for a duplicate, a stray, or a gap, so
+/// the array a host iterates is the enum itself, not a list somebody remembered
+/// to update.
+const _: () = {
+    let mut index = 0;
+    while index < IndexEventKind::ALL.len() {
+        assert!(
+            IndexEventKind::ALL[index].slot_of() == index,
+            "`IndexEventKind::ALL` must list every kind once, in declaration order"
+        );
+        index += 1;
+    }
+};
 
 impl IndexEvent {
     /// Which variant this is.
@@ -422,9 +479,10 @@ impl EventSink for NoopEventSink {
 
 /// One event of every kind, for a host to prove its mapping is complete.
 ///
-/// Paired with [`IndexEventKind::ALL`]: a new variant fails to compile until it's
-/// listed there, and the host's completeness test then fails until it's built
-/// here too. So neither list can quietly fall behind the enum.
+/// Paired with [`IndexEventKind::ALL`], which the compiler keeps complete (see
+/// its `slot_of`): a new variant fails to compile until it's listed there, and
+/// the host's completeness test then fails until it's built here too. So neither
+/// list can quietly fall behind the enum.
 #[cfg(any(test, feature = "testing"))]
 pub fn one_of_every_kind() -> Vec<IndexEvent> {
     vec![

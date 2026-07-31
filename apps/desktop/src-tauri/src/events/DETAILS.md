@@ -62,9 +62,10 @@ why `an_error_event_reaches_the_auto_dispatcher` pins it end to end through the 
 
 `tests.rs` holds three contracts plus one serde shape:
 
-1. **Every kind has a sample.** `one_of_every_kind()` must cover `IndexEventKind::ALL`. `ALL` is a fixed-length array,
-   so a new variant fails to compile until it's listed there; this test then fails until a sample exists. Together they
-   make the next check meaningful — without them it would silently check a shrinking subset.
+1. **Every kind has a sample.** `one_of_every_kind()` must cover `IndexEventKind::ALL`. The crate keeps `ALL` complete
+   at compile time (the mechanism is in `crates/cmdr-index/src/indexing/events/DETAILS.md`), so a new variant reaches
+   this test, which then fails until a sample exists. Together they make the next check meaningful; without them it
+   would silently check a shrinking subset.
 2. **Every event maps to a destination with a non-empty, unique wire name.** Duplicates are the failure that matters:
    two events on one name are indistinguishable to the frontend.
 3. **An `Error` event reaches the auto-dispatcher** with its extended SQLite code intact and a stable category. Holds
