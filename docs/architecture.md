@@ -230,7 +230,10 @@ All under `crates/`, alongside the four apps. They carry no `tauri` dependency.
     with an OS-mount fallback; disconnect pauses without losing coverage; MTP never background-sweeps). Off by default.
     See its `crates/cmdr-index/src/media_index/CLAUDE.md` and `specs/later/media-ml-index-plan.md`
 - `crates/index-query/`: developer CLI that queries the index DB with the `platform_case` collation `sqlite3` can't
-  supply. See `docs/tooling/index-query.md`
+  supply, plus the three importance measurement binaries. Depends on `cmdr-index` alone. See
+  `docs/tooling/index-query.md`
+- `crates/operation-log-dump/`: developer CLI that renders `operation-log.db` through the app's own read functions. Its
+  own crate because `operation_log` is an app module, so this is the one dev tool that depends on `cmdr`
 - `crates/fsevent-stream/`: vendored fork of the FSEvents stream crate (published as `cmdr-fsevent-stream`), giving the
   drive watcher event IDs and `sinceWhen` replay. macOS-only
 

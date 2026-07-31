@@ -10,9 +10,6 @@ publish = false
 # visible here; see `importance::tooling` for why it is a feature and not
 # `#[cfg(test)]`.
 cmdr-index = { path = "../cmdr-index", features = ["tooling"] }
-# Only `operation-log-dump` still needs the app: `operation_log` is an app module
-# and isn't moving.
-cmdr = { path = "../../apps/desktop/src-tauri" }
 rusqlite = { version = "0.40", features = ["bundled", "collation"] }
 
 [package.metadata.cmdr]
@@ -22,8 +19,3 @@ rusqlite = { version = "0.40", features = ["bundled", "collation"] }
 # the first in its own process (so the shared-page-cache factory has nothing to
 # protect here). The check runner reads this key.
 kind = "tool"
-
-[package.metadata.cargo-machete]
-# The package is `cmdr` but its library target is `cmdr_lib`, so the `use cmdr_lib::…`
-# lines here don't match the name machete greps for. It IS used, in every binary.
-ignored = ["cmdr"]

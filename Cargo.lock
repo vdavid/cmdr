@@ -4798,7 +4798,6 @@ checksum = "89194689a993ab15268672e99e7b0e19da2da3268ac682e8f02d29d4d1434cd7"
 name = "index-query"
 version = "0.0.0"
 dependencies = [
- "cmdr",
  "cmdr-index",
  "rusqlite",
 ]
@@ -6573,6 +6572,14 @@ name = "openssl-probe"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c87def4c32ab89d880effc9e097653c8da5d6ef28e6b539d313baaacfbafcbe"
+
+[[package]]
+name = "operation-log-dump"
+version = "0.0.0"
+dependencies = [
+ "cmdr",
+ "rusqlite",
+]
 
 [[package]]
 name = "option-ext"

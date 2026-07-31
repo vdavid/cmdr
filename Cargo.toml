@@ -5,6 +5,7 @@ members = [
   "crates/cmdr-index",
   "crates/fsevent-stream",
   "crates/index-query",
+  "crates/operation-log-dump",
 ]
 exclude = ["benchmarks/smb"]
 resolver = "2"
@@ -43,8 +44,8 @@ lto = "thin"
 # Who opts in: `cmdr` and any crate under `crates/` that we wrote.
 # `crates/fsevent-stream` does NOT: it's a vendored third-party fork, and the
 # `unused_crate_dependencies` / `unwrap_used` churn would bury the upstream diff.
-# `crates/index-query` does NOT: it's a CLI whose job is to print to stdout, which
-# `print_stdout` / `print_stderr` deny by design.
+# `crates/index-query` and `crates/operation-log-dump` do NOT: they're CLIs whose
+# job is to print to stdout, which `print_stdout` / `print_stderr` deny by design.
 [workspace.lints.rust]
 # Dead code caught early (the Rust counterpart of knip for TypeScript). It's a
 # lint GROUP containing the two below, so it takes a lower priority; Cargo ignores

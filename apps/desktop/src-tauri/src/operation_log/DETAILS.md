@@ -533,7 +533,7 @@ oldest whole ops until the DB fits the budget) → **dir GC** → **reclaim**.
 
 ## The dev bin
 
-`cargo run -p index-query --bin operation-log-dump -- <operation-log.db> [limit]` opens the DB read-only and prints
+`cargo run -p operation-log-dump -- <operation-log.db> [limit]` opens the DB read-only and prints
 recent operations + their items, decoding the typed tokens and reconstructing interned dir paths through the SAME library
 read functions the app uses (`recent_operations`, `read_operation_items`, `reconstruct_dir_path`) — never a
 re-implementation. Because there's no collation, a stock `sqlite3` also opens the file directly; the bin adds the typed

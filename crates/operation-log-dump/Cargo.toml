@@ -1,0 +1,25 @@
+[package]
+name = "operation-log-dump"
+version = "0.0.0"
+edition = "2024"
+license = "LicenseRef-BSL-1.1"
+publish = false
+
+[dependencies]
+# The app crate, on purpose: `operation_log` is an app module and stays one. This
+# tool exists as its own crate so `index-query` doesn't have to carry a dependency
+# on the whole app just to keep one binary compiling.
+cmdr = { path = "../../apps/desktop/src-tauri" }
+rusqlite = { version = "0.40", features = ["bundled"] }
+
+[package.metadata.cmdr]
+# A standalone developer CLI, not code linked into the Cmdr app process. Same
+# exemption as `index-query`: stdout IS its output, and its own SQLite connection
+# is the first in its own process, so the shared-page-cache factory has nothing to
+# protect here. The check runner reads this key.
+kind = "tool"
+
+[package.metadata.cargo-machete]
+# The package is `cmdr` but its library target is `cmdr_lib`, so the `use cmdr_lib::…`
+# lines here don't match the name machete greps for. It IS used.
+ignored = ["cmdr"]

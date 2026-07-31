@@ -7,7 +7,7 @@
 //! what the app reads, never a re-implementation.
 //!
 //! Usage:
-//!   cargo run -p index-query --bin operation-log-dump -- <operation-log.db> [limit]
+//!   cargo run -p operation-log-dump -- <operation-log.db> [limit]
 //!
 //! Point it at the app's `operation-log.db` in the app data dir. It opens
 //! read-only; copy the file first if the app might be mid-write (a read-only
