@@ -1,8 +1,8 @@
 # Drive indexing subsystem
 
 Background-indexes each volume (local disk, local external, SMB, MTP) into its own per-volume SQLite DB with recursive
-size aggregates. The headline UX win: showing directory sizes in listings. `mod.rs` is a thin public-API facade; the
-real code is in the area subdirs below.
+size aggregates. The headline UX win: showing directory sizes in listings. The crate root re-exports what a host may
+rely on (`crates/cmdr-index/CLAUDE.md`); `mod.rs` here just declares the areas below, where the real code is.
 
 ## The one cross-area invariant
 
@@ -54,7 +54,8 @@ read it before non-trivial work there.
 `MetadataSnapshot`) used by scanner, reconcile, watch, and verifier. Homing it in any one area would invert a
 dependency.
 
-IPC commands are in `commands/indexing.rs`; the FE is `src/lib/indexing/`; search is the top-level `search/` module.
+All three live host-side, in the app: IPC commands in `apps/desktop/src-tauri/src/commands/indexing.rs`, the frontend in
+`apps/desktop/src/lib/indexing/`, and search in `apps/desktop/src-tauri/src/search/`.
 
 ## Docs
 
