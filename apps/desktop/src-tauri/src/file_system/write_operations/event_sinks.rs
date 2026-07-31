@@ -17,7 +17,7 @@ use super::types::{
     WriteErrorEvent, WriteOperationError, WriteOperationType, WriteProgressEvent, WriteSettledEvent,
     WriteSourceItemDoneEvent,
 };
-use crate::indexing::read::expected_totals;
+use crate::indexing::ExpectedTotals;
 
 impl WriteProgressEvent {
     /// Construct an event with the 8 core counter fields. Rate/ETA fields are
@@ -69,7 +69,7 @@ impl WriteProgressEvent {
         mut self,
         current_dir: Option<String>,
         dirs_done: usize,
-        expected: Option<expected_totals::ExpectedTotals>,
+        expected: Option<ExpectedTotals>,
     ) -> Self {
         self.current_dir = current_dir;
         self.dirs_done = dirs_done;

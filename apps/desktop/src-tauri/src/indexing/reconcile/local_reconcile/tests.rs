@@ -4,10 +4,10 @@ use tokio_util::sync::CancellationToken;
 use rusqlite::Connection;
 
 use super::*;
-use crate::indexing::paths::firmlinks;
 use crate::indexing::store::{self, DirStatsById, IndexStore, ROOT_ID};
 use crate::indexing::stress_test_helpers::check_db_consistency;
 use crate::indexing::writer::{IndexWriter, WriteMessage};
+use cmdr_fs::firmlinks;
 
 struct Harness {
     writer: IndexWriter,

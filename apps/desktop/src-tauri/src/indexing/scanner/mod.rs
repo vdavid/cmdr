@@ -17,9 +17,9 @@ use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
 
 use crate::indexing::events::{Diagnostic, IndexErrorReport, IndexEvent};
-use crate::indexing::paths::firmlinks;
 use crate::indexing::store::{EntryRow, IndexStore, resolve_scan_root};
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
+use cmdr_fs::firmlinks;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::pluralize::{pluralize, pluralize_with};
 

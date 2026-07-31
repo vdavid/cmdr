@@ -4,9 +4,14 @@
 //! tracking every file and directory with recursive size aggregates.
 //! Design history is in git (former `docs/specs/drive-indexing/`).
 //!
-//! `mod.rs` is a thin public-API facade. The state machine (the global
-//! `INDEX_REGISTRY` mutex, `IndexPhase` enum, phase transitions, and the
-//! `IndexManager` + `ReadPool` bootstrap) lives in [`lifecycle::state`].
+//! [`Index`] is the public API: the app builds one, holds it, and calls methods on
+//! it. This file re-exports that handle plus the vocabulary its signatures are
+//! written in, and nothing else; `handle/DETAILS.md` records the item-by-item
+//! audit that decided what a `pub` here means.
+//!
+//! The state machine (the global `INDEX_REGISTRY` mutex, `IndexPhase` enum, phase
+//! transitions, and the `IndexManager` + `ReadPool` bootstrap) lives in
+//! [`lifecycle::state`].
 
 // Area modules. Cross-area references use each module's real path
 // (`indexing::lifecycle::state::…`, `indexing::paths::routing::…`); `mod.rs` re-exports only
@@ -14,7 +19,7 @@
 pub(crate) mod aggregator;
 mod events;
 pub mod handle;
-pub(crate) mod host;
+pub mod host;
 pub(crate) mod lifecycle;
 mod metadata;
 pub(crate) mod network_scanner;
@@ -66,8 +71,10 @@ pub use events::{
 
 /// The vocabulary the handle's own signatures are written in.
 pub use aggregator::AggregationPhase;
+pub use lifecycle::freshness::Freshness;
 pub use lifecycle::state::{IndexVolumeKind, ROOT_VOLUME_ID};
 pub use read::enrichment::ReadPool;
+pub use read::expected_totals::ExpectedTotals;
 pub use scanner::SYSTEM_DIR_EXCLUDES;
 pub use store::IndexFailure;
 pub use transports::smb::index::SmbIndexGateReason;

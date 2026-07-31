@@ -49,6 +49,7 @@ use crate::indexing::host::policy::HostPolicy;
 use crate::indexing::host::volumes::VolumeProvider;
 use crate::indexing::lifecycle::state::{self, IndexVolumeKind};
 use crate::indexing::read::enrichment::ReadPool;
+use crate::indexing::read::expected_totals::ExpectedTotals;
 use crate::indexing::store::{DirStats, EntryRow};
 use crate::indexing::{IndexDebugStatusResponse, IndexStatusResponse, VolumeIndexStatus};
 
@@ -359,6 +360,15 @@ impl Index {
     /// when the path isn't indexed.
     pub fn list_children(&self, path: &str) -> Result<Option<Vec<EntryRow>>, IndexError> {
         crate::indexing::read::queries::list_dir_children(path).map_err(Into::into)
+    }
+
+    /// What a copy or move of `sources` is about to cost, from what the index
+    /// already knows: the file count and total bytes, without walking the disk.
+    ///
+    /// `None` when the index can't cover the sources, which is the caller's cue to
+    /// show an honest "counting…" rather than a number it would have to correct.
+    pub fn expected_totals(&self, sources: &[PathBuf]) -> Option<ExpectedTotals> {
+        crate::indexing::read::expected_totals::expected_totals_for_sources(sources)
     }
 
     /// The user is looking at this directory; check that the index still matches

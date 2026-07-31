@@ -23,13 +23,13 @@ use std::path::Path;
 
 use rusqlite::Connection;
 
-use super::firmlinks;
 use crate::indexing::host;
 use crate::indexing::lifecycle::state::{IndexVolumeKind, ROOT_VOLUME_ID, VolumeId};
 use crate::indexing::scanner::ExclusionScope;
 #[cfg(test)]
 use crate::indexing::scanner::ExclusionTier;
 use crate::indexing::store::{self, IndexStoreError};
+use cmdr_fs::firmlinks;
 
 /// Resolve a filesystem path to its index volume id.
 ///

@@ -23,10 +23,10 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use super::smb::{SmbConnectionParams, connect_smb_volume};
-use crate::indexing::network_scanner::scan_volume_via_trait;
-use crate::indexing::scanner::ScanProgress;
 use crate::indexing::store::{IndexStore, ROOT_ID};
 use crate::indexing::testing::scan::IndexWriter;
+use crate::indexing::testing::scan::ScanProgress;
+use crate::indexing::testing::scan::scan_volume_via_trait;
 use cmdr_fs::volume::{Volume, smb_volume_id};
 
 fn guest_port() -> u16 {
@@ -121,7 +121,7 @@ async fn smb_integration_volume_scan_indexes_share() {
         writer.clone(),
         progress(),
         cancelled,
-        crate::indexing::network_scanner::scan_pace::ScanPacer::unpaced(),
+        crate::indexing::testing::scan::ScanPacer::unpaced(),
     )
     .await
     .expect("SMB volume scan should complete");
@@ -192,7 +192,7 @@ async fn smb_integration_volume_scan_via_connection_pool() {
         writer.clone(),
         progress(),
         cancelled,
-        crate::indexing::network_scanner::scan_pace::ScanPacer::unpaced(),
+        crate::indexing::testing::scan::ScanPacer::unpaced(),
     )
     .await
     .expect("pooled SMB volume scan should complete");
@@ -226,7 +226,7 @@ async fn smb_integration_volume_scan_via_connection_pool() {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_watch_event_updates_index() {
-    use crate::indexing::transports::smb::watch::resolve_and_send_for_test;
+    use crate::indexing::testing::scan::resolve_and_send_for_test;
     use cmdr_fs::volume::DirectoryChange;
 
     let vol = connect_public().await;
@@ -253,7 +253,7 @@ async fn smb_integration_watch_event_updates_index() {
         writer.clone(),
         progress(),
         cancelled,
-        crate::indexing::network_scanner::scan_pace::ScanPacer::unpaced(),
+        crate::indexing::testing::scan::ScanPacer::unpaced(),
     )
     .await
     .expect("scan should complete");
@@ -344,8 +344,8 @@ async fn smb_integration_watch_event_updates_index() {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_enrich_listing_shows_sizes() {
-    use crate::indexing::read::enrichment::enrich_via_parent_id_on;
-    use crate::indexing::transports::smb::watch::index_relative_path;
+    use crate::indexing::testing::scan::enrich_via_parent_id_on;
+    use crate::indexing::testing::scan::index_relative_path;
     use cmdr_fs::entry::FileEntry;
 
     let vol = connect_public().await;
@@ -378,7 +378,7 @@ async fn smb_integration_enrich_listing_shows_sizes() {
         writer.clone(),
         progress(),
         cancelled,
-        crate::indexing::network_scanner::scan_pace::ScanPacer::unpaced(),
+        crate::indexing::testing::scan::ScanPacer::unpaced(),
     )
     .await
     .expect("SMB volume scan should complete");

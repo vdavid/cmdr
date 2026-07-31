@@ -49,6 +49,12 @@ pub mod scan {
     pub use crate::indexing::writer::IndexWriter;
 }
 
+/// A synthetic external drive: a disk image the test attaches once and detaches
+/// once. macOS only, and its attach/detach discipline is load-bearing — read
+/// `tests/CLAUDE.md` before touching a test that uses it.
+#[cfg(all(test, target_os = "macos"))]
+pub use crate::indexing::tests::external_drive_fixture;
+
 /// Claiming a registry slot without running a scan, so a test can assert on what
 /// happens to a volume that is mid-initialization.
 pub use crate::indexing::lifecycle::state::reserve_initializing_index_for_test;

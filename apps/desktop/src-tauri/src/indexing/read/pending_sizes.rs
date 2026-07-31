@@ -63,8 +63,8 @@ use std::sync::{Arc, LazyLock, Mutex};
 
 use crate::indexing::lifecycle::state;
 use crate::indexing::lifecycle::state::ROOT_VOLUME_ID;
-use crate::indexing::paths::firmlinks;
 use crate::indexing::paths::path_prefix;
+use cmdr_fs::firmlinks;
 use cmdr_fs::ignore_poison::IgnorePoison;
 
 /// In-memory set of directory paths with unprocessed index writes in flight.

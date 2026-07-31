@@ -27,10 +27,10 @@ mod tests {
 
     use rusqlite::Connection;
 
-    use crate::indexing::paths::firmlinks;
     use crate::indexing::reconcile::reconciler::reconcile_subtree;
     use crate::indexing::store::{self, IndexStore, ROOT_ID};
     use crate::indexing::writer::{IndexWriter, WriteMessage};
+    use cmdr_fs::firmlinks;
 
     // ── Harness ──────────────────────────────────────────────────────
 

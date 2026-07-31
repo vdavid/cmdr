@@ -9,9 +9,9 @@ index is being extracted into a Tauri-free crate, and this directory is what it 
 - **Add a seam here, never a new `crate::<app module>` import.** A back-edge from the three subsystems to any app module
   is what blocks the extraction, and it's checked, not trusted. If you need something from the app, it arrives through a
   trait or a config value declared here.
-- **Each seam is injected once at startup and read through an accessor.** The accessors resolve to process-wide statics
-  today; they become fields on the public `Index` handle later, without touching a single call site. So a call site
-  should read the seam, never cache a handle in its own static.
+- **`Index::builder()` installs all five; an accessor reads one.** The accessors resolve process-wide slots today and
+  become fields on the handle later, with no call-site churn. So read the seam where you need it, never cache it in a
+  static of your own. The TYPES are `pub` (a host implements them); the slots and accessors are `pub(crate)`.
 - **❌ Nothing here lowers thread QoS, and the runtime has no bearing on it.** The heavy walking / writing / reconciling
   work runs on **dedicated** `std::thread`s that call `cmdr_fs::thread_qos` in their own bodies; a class sticks to a
   thread for life, so it can never be set on a pooled tokio worker. `DETAILS.md` § "The runtime seam and thread QoS".

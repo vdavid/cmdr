@@ -11,6 +11,5 @@
 //!   never a child of `/a/b`), shared by rescan ancestor-collapse and
 //!   removal-storm coalescing.
 
-pub mod firmlinks;
 pub(crate) mod path_prefix;
 pub(crate) mod routing;

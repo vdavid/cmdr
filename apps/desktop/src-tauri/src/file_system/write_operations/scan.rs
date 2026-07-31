@@ -19,7 +19,6 @@ use super::validation::is_symlink_loop;
 use crate::file_system::listing::caching::try_get_watched_listing;
 use crate::file_system::listing::{FileEntry, SortColumn, SortOrder};
 use crate::file_system::volume::{CopyScanResult, Volume, VolumeError};
-use crate::indexing::read::expected_totals;
 
 /// Per-regular-file hook fired by the walk, receiving the file path and size (the `WalkContext::on_file` field).
 type OnFileHook<'a> = &'a dyn Fn(&Path, u64);
@@ -623,7 +622,7 @@ fn scan_sources_internal(
     // Index-derived expected totals: the denominator the FE renders the
     // scan-phase progress bar against while the foolproof scan runs. `None`
     // when any source isn't in the index; the FE falls back to tallies only.
-    let expected = expected_totals::expected_totals_for_sources(sources);
+    let expected = crate::index_host::index().expected_totals(sources);
     log::debug!(
         "scan: op={} index expected={}",
         operation_id,
@@ -1244,7 +1243,7 @@ mod tests {
     #[test]
     fn with_scan_meta_populates_all_fields() {
         use super::super::types::{WriteOperationPhase, WriteOperationType, WriteProgressEvent};
-        use crate::indexing::read::expected_totals::ExpectedTotals;
+        use crate::indexing::ExpectedTotals;
         let event = WriteProgressEvent::new(
             "op-1".to_string(),
             WriteOperationType::Copy,

@@ -8,7 +8,7 @@
 //! caller.
 
 use crate::indexing::host::policy::OpenListing;
-use crate::indexing::paths::firmlinks;
+use cmdr_fs::firmlinks;
 
 /// How many 500 ms progress ticks between partial-aggregation passes.
 ///

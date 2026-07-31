@@ -26,12 +26,12 @@ use tokio_util::sync::CancellationToken;
 use rusqlite::Connection;
 
 use crate::indexing::metadata::{MetadataSnapshot, extract_metadata};
-use crate::indexing::paths::firmlinks;
 use crate::indexing::scanner;
 use crate::indexing::store::{self, IndexStore, IndexStoreError};
 use crate::indexing::watch::watcher::FsChangeEvent;
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 use crate::indexing::{DEBUG_STATS, IndexPathSpace};
+use cmdr_fs::firmlinks;
 use cmdr_fs::ignore_poison::IgnorePoison;
 // Only the test-only `new()` / `new_with_throttle_window` and the rescan tests
 // name the root volume id; production sites thread the real id through `new_for`.

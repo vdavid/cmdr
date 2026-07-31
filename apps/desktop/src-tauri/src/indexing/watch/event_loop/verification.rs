@@ -14,12 +14,12 @@ use crate::indexing::DEBUG_STATS;
 use crate::indexing::ROOT_VOLUME_ID;
 use crate::indexing::lifecycle::{lifecycle_bus, state};
 use crate::indexing::metadata;
-use crate::indexing::paths::firmlinks;
 use crate::indexing::read::enrichment::get_read_pool;
 use crate::indexing::reconcile::reconciler;
 use crate::indexing::scanner;
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
+use cmdr_fs::firmlinks;
 use cmdr_fs::pluralize::{pluralize, pluralize_with};
 
 /// Run post-replay verification in the background.

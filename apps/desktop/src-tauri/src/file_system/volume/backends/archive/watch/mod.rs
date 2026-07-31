@@ -34,7 +34,7 @@ use notify_debouncer_full::{
 };
 
 use super::ArchiveIndexCache;
-use crate::indexing::paths::firmlinks;
+use cmdr_fs::firmlinks;
 
 /// Debounce window for archive content events. Matches the listing watcher's
 /// default so a burst of writes during a rewrite collapses into one refresh.

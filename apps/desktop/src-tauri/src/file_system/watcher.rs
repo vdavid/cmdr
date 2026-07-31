@@ -23,7 +23,7 @@ use crate::file_system::listing::{
     insert_entry_sorted, list_directory_core, remove_entry_by_path, update_entry_sorted, update_listing_entries,
 };
 use crate::index_host::index;
-use crate::indexing::paths::firmlinks;
+use cmdr_fs::firmlinks;
 
 /// Default debounce duration in milliseconds (used if not configured)
 const DEFAULT_DEBOUNCE_MS: u64 = 200;

@@ -16,10 +16,10 @@ use crate::indexing::lifecycle::manager::IndexManager;
 use crate::indexing::lifecycle::state::{
     INDEX_REGISTRY, IndexPhase, IndexVolumeKind, ROOT_VOLUME_ID, get_freshness, index_failure, is_active, volume_kind,
 };
-use crate::indexing::paths::firmlinks;
 use crate::indexing::paths::routing::{index_read_path, volume_id_for_local_path};
 use crate::indexing::reconcile::reconciler;
 use crate::indexing::store::{self, DirStats, IndexStore};
+use cmdr_fs::firmlinks;
 
 /// Per-volume index status for the per-drive freshness badge.
 ///

@@ -792,6 +792,34 @@ the whole extraction, written before the handle exists, and it's what smokes out
 accident. **Tests, after:** the whole suite. **Docs:** the public API doc page; the audit mapping in the crate's
 `DETAILS.md`. **Checks:** `pnpm check --include-slow`.
 
+**Landed.** All six items are done. The handle is `indexing/handle/`, the audit mapping is
+`indexing/handle/DETAILS.md`, and the app reaches the index only through `index_host::index()`. What the plan got
+wrong or didn't anticipate:
+
+- **The surface is 34 items on `Index`, not ~25**, and the overage is justified item by item in the mapping rather than
+  redefined away. Four are the direct-database read side `search/` and the operation log need, two are the
+  designed-not-implemented ingest calls, and three are pairs the target didn't anticipate (`status`/`debug_status`,
+  `volume_status`/`volume_status_for_path`, `dir_stats`/`dir_stats_batch`).
+- **The audit's real scope was bigger than the 65 + glob + three `pub mod`s.** App code also reached into six
+  `pub(crate)` module trees (`host`, `lifecycle::freshness`, `paths::firmlinks`, `read::expected_totals`,
+  `test_support`, `tests::external_drive_fixture`), none of which would have compiled after the move. Each got a
+  disposition: `host` became `pub` (it's the plugin interface), `Freshness` and `ExpectedTotals` became root
+  re-exports, `firmlinks` moved down to `cmdr-fs` as pure path vocabulary, and the two test reaches went to the gated
+  surface. `test_support` is the one that can't be gated (§ M6 below).
+- **The folds retired more than the audit's four buckets predicted**, because several exports existed only so the APP
+  could implement index policy: `enable_drive_index` carried the transport routing, `mtp/connection/event_loop.rs`
+  carried the gate-before-resolve rule, and `eject.rs` / `volumes/watcher.rs` each carried the "only a local external
+  index must stop" rule. Those moved inside, which is why `start_volume`, `on_device_object_changed`, and
+  `stop_removable_volume` each replace four to ten exports.
+- **`Decision 4`'s "thin token" needed one real change to be testable**: the event seam had to become swappable
+  (`RwLock` + restore-on-drop guard, like volumes and config) or the acceptance test could not point a handle at its
+  own recorder. The three per-seam test locks collapsed into one, `handle::test_lock`.
+- **`store` stays wholesale public**, the one named exception, because `search/` runs its own SQL over the index
+  database. Eleven of its 21 module-level items were reachable for no reason and are now `pub(crate)`.
+- **`Result<_, String>` is not fully typed away.** `IndexError` fronts the boundary with the variants callers act on
+  and one log-only `Internal(Diagnostic)` for the residue; typing the causes inside `lifecycle/state.rs` and
+  `read/queries.rs` is a separate change.
+
 ### M6 — The move
 
 **Intent:** by now, mechanical.
@@ -822,7 +850,12 @@ accident. **Tests, after:** the whole suite. **Docs:** the public API doc page; 
    exactly why this needs consent rather than a quiet regeneration. Per `.claude/rules/file-length-allowlist.md` these
    can't be re-added without David's explicit consent — **get it before starting M6**, since the numbers are unchanged
    and only the paths move.
-7. Check the `.taurignore` dev-watcher shield. It lives at `apps/desktop/src-tauri/.taurignore` with gitignore-style
+7. **The app needs its own counting-allocator harness.** `search/ranking/memory_tests.rs` reads
+   `indexing::test_support::heap_bytes_held`, and that module installs a `#[global_allocator]`, which is per binary and
+   so can't ride the `testing` feature (every binary linking the crate would get a second one). Today the two live in
+   the same test binary; at the move they don't. Copy the small harness app-side. This is Decision 18's argument one
+   level further out.
+8. Check the `.taurignore` dev-watcher shield. It lives at `apps/desktop/src-tauri/.taurignore` with gitignore-style
    patterns rooted there, so it will **not** reach `crates/`, and Tauri's dev watcher also watches local path
    dependencies. Without a fix, every colocated-doc edit restarts `pnpm dev` — the exact regression
    `apps/desktop/CLAUDE.md` calls a must-not-delete shield. Fix in the watch config or `scripts/tauri-wrapper.ts`.

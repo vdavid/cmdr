@@ -17,6 +17,8 @@ editing app code; use `cmdr_fs::…` from another crate.
   `packages` (a suffix test). Nothing that touches the disk.
 - `archive_format.rs`: name → `ArchiveFormat`, the single source of truth for archive detection.
 - `filesystem_kind.rs`: `FilesystemKind` / `MaxFileSize` / `FilesystemInfo` (classification only).
+- `firmlinks.rs`: `normalize_path`, the macOS firmlink canonicalization (`/System/Volumes/Data/x` ⇒ `/x`). Pure path
+  work with no host or index behind it, and the index and the app's watchers have to agree on it.
 - `sqlite_util.rs`: the ONE process-wide SQLite page-cache slab, the connection factories that install it, the
   per-connection budgets, the per-thread read-connection cache, and freelist reclamation. Shared by all five stores
   (three index DBs, the agent's, the operation log's), which is why it can't live in either end.

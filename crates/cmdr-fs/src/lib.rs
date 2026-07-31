@@ -21,6 +21,7 @@
 pub mod archive_format;
 pub mod entry;
 pub mod filesystem_kind;
+pub mod firmlinks;
 pub mod icons;
 pub mod ignore_poison;
 pub mod pluralize;

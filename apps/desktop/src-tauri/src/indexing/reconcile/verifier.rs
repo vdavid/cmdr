@@ -12,12 +12,12 @@ use tokio_util::sync::CancellationToken;
 
 use crate::indexing::lifecycle::lifecycle_bus;
 use crate::indexing::metadata::extract_metadata;
-use crate::indexing::paths::firmlinks;
 use crate::indexing::read::enrichment::get_read_pool;
 use crate::indexing::reconcile::reconciler;
 use crate::indexing::scanner;
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
+use cmdr_fs::firmlinks;
 
 // ── Dedup/debounce state ─────────────────────────────────────────────
 
