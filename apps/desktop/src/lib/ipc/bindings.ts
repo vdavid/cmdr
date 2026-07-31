@@ -5126,6 +5126,11 @@ export type IndexScanStartedEvent = {
   volumeUsedBytes: number | null
 }
 
+/**
+ *  What a volume's persisted `meta` says about its last completed walk. Read off
+ *  disk, so it survives a restart and answers for a volume that isn't indexing
+ *  right now.
+ */
 export type IndexStatus = {
   schemaVersion: string | null
   volumePath: string | null
@@ -5141,6 +5146,10 @@ export type IndexStatus = {
   lastEventId: string | null
 }
 
+/**
+ *  One volume's index, as a status surface: what the current walk has covered so
+ *  far, plus the persisted facts about the last one that finished.
+ */
 export type IndexStatusResponse = {
   initialized: boolean
   scanning: boolean
