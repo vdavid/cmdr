@@ -787,6 +787,23 @@ pub(crate) async fn copy_volumes_with_progress(
     let deep_skipped_bytes = Arc::new(AtomicU64::new(0));
     let mut copy_error: Option<WriteFailure> = None;
 
+    // Live in-flight table + stall watchdog. Registered for the concurrent path
+    // only: the sequential path has one task and its progress log already says
+    // where it is. Dropping the guard at the end of this function deregisters the
+    // operation and stops the watchdog.
+    let probe_guard = use_concurrent_path.then(|| {
+        super::transfer_probe::register_operation(
+            operation_id,
+            concurrency,
+            total_files,
+            Arc::clone(&atomic_bytes_done),
+            Arc::clone(state),
+        )
+    });
+    let op_probe = probe_guard
+        .as_ref()
+        .map(super::transfer_probe::OperationProbeGuard::probe);
+
     if use_concurrent_path {
         // Concurrent path: FuturesUnordered-driven sliding window sized by
         // `concurrency`. Each task streams one top-level source item end-to-end.
@@ -817,14 +834,14 @@ pub(crate) async fn copy_volumes_with_progress(
         // `in_flight` is threaded through as a mutable borrow so the helper is
         // just a local lambda in shape, but we inline below for borrow clarity.
 
-        let mut iter = source_paths.iter();
+        let mut iter = source_paths.iter().enumerate();
         loop {
             // Keep pushing new tasks until either sources run out or the window is full.
             while in_flight.len() < concurrency {
                 if is_cancelled(&state.intent) {
                     break;
                 }
-                let Some(source_path) = iter.next() else {
+                let Some((source_index, source_path)) = iter.next() else {
                     break;
                 };
 
@@ -844,6 +861,16 @@ pub(crate) async fn copy_volumes_with_progress(
                 // after the write fully lands (safe-replace). `None` ⇒ write
                 // `dest_item_path` directly.
                 let mut replace_after_write: Option<PathBuf> = None;
+                // Record the pre-check BEFORE awaiting it. In the 2026-07-31
+                // incident this destination `get_metadata` was the driver's last
+                // log line and nothing said whether it returned, so a dump has to
+                // be able to name it as the step in progress.
+                if let Some(probe) = op_probe.as_ref() {
+                    probe.set_driver_phase(
+                        super::transfer_probe::DriverPhase::PreparingNext,
+                        &format!("#{source_index} {}", dest_item_path.display()),
+                    );
+                }
                 if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item_path).await {
                     // Reuse the per-source hint from the scan instead of re-statting.
                     let source_hint = source_hints.get(source_path).copied();
@@ -967,8 +994,21 @@ pub(crate) async fn copy_volumes_with_progress(
                 let merge_config = config.clone();
                 let merge_op_id = operation_id.to_string();
                 let merge_apply_to_all = Arc::clone(&apply_to_all_cell);
+                // Register before the task is pushed, so a task that never gets
+                // polled still shows up in a dump as `spawned`.
+                let task_probe = op_probe.as_ref().map(|probe| {
+                    probe.begin_task(
+                        source_index,
+                        &source_path.display().to_string(),
+                        &dest_item_path.display().to_string(),
+                    )
+                });
 
                 in_flight.push(Box::pin(async move {
+                    // Held for the task's whole life; dropping it (completion,
+                    // abort, panic) removes the row from the in-flight table.
+                    let task_probe = task_probe;
+                    let probe_handle = task_probe.as_ref().map(super::transfer_probe::TaskProbeHandle::probe);
                     // Per-task `last_file_bytes` tracks bytes reported for the
                     // file this task is copying; deltas roll up into the
                     // shared `bytes_done_a` so the throttle emits an aggregate.
@@ -1012,7 +1052,7 @@ pub(crate) async fn copy_volumes_with_progress(
                     let on_file_complete = |_leaf_bytes: u64| {
                         files_done_a.fetch_add(1, Ordering::Relaxed);
                     };
-                    let result = copy_single_path(
+                    let copy_fut = copy_single_path(
                         &src_vol,
                         &source_owned,
                         source_is_dir_hint,
@@ -1024,8 +1064,14 @@ pub(crate) async fn copy_volumes_with_progress(
                         &on_file_progress,
                         &on_file_complete,
                         Some(&merge_ctx),
-                    )
-                    .await;
+                    );
+                    // Bind this task's probe as a task-local for the whole copy, so
+                    // `stream_pipe_file` and `CheckpointStream` can record their
+                    // phases without threading a handle through every signature.
+                    let result = match probe_handle {
+                        Some(probe) => super::transfer_probe::CURRENT_TASK_PROBE.scope(probe, copy_fut).await,
+                        None => copy_fut.await,
+                    };
                     let created_files = std::mem::take(&mut *created.files.lock_ignore_poison());
                     let created_dirs = std::mem::take(&mut *created.dirs.lock_ignore_poison());
                     // Deep-merge skips in this source's subtree; `0` means the
@@ -1124,6 +1170,13 @@ pub(crate) async fn copy_volumes_with_progress(
                 break;
             }
 
+            // The await the driver parked on for 20 minutes in the 2026-07-31
+            // incident. Naming it means a dump distinguishes "the driver is
+            // waiting for tasks" from "the driver is stuck preparing the next
+            // source", which the log could not tell apart.
+            if let Some(probe) = op_probe.as_ref() {
+                probe.set_driver_phase(super::transfer_probe::DriverPhase::AwaitingTasks, "");
+            }
             match in_flight.next().await {
                 Some(Ok(CopyTaskSuccess {
                     partial_path,
@@ -1267,6 +1320,9 @@ pub(crate) async fn copy_volumes_with_progress(
 
         // Drain whatever's left on cancel/error. On success, `in_flight` is
         // already empty. On abort, drop cancels the remaining futures (F10).
+        if let Some(probe) = op_probe.as_ref() {
+            probe.set_driver_phase(super::transfer_probe::DriverPhase::PostLoop, "draining in-flight");
+        }
         drop(in_flight);
         // Sync counters for post-loop reporting.
         files_done = files_done_atomic.load(Ordering::Relaxed);

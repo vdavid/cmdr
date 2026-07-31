@@ -19,6 +19,7 @@ pub(super) mod linux_copy;
 pub(crate) mod macos_copy;
 pub(super) mod move_op;
 pub(super) mod transfer_driver;
+pub(super) mod transfer_probe;
 pub(super) mod volume_cleanup;
 pub(super) mod volume_conflict;
 pub(super) mod volume_copy;

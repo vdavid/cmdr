@@ -19,6 +19,7 @@ use super::super::conflict::ApplyToAll;
 use super::super::state::WriteOperationState;
 use super::super::types::{OperationEventSink, VolumeCopyConfig, WriteOperationError};
 use super::checkpoint_stream::CheckpointStream;
+use super::transfer_probe::{TaskPhase, set_task_bytes, set_task_phase};
 use super::volume_conflict::{ResolvedConflict, resolve_volume_conflict};
 use super::volume_preflight::SourceHint;
 use crate::file_system::listing::FileEntry;
@@ -373,6 +374,9 @@ async fn stream_pipe_file(
     // and no partial lingers.
     let mut retried = false;
     loop {
+        // Opening the source is a device round-trip on MTP / SMB and can hang on
+        // its own; it needs to be distinguishable from streaming in a dump.
+        set_task_phase(TaskPhase::OpeningSource);
         let stream = source_volume
             .open_read_stream_with_hint(source_path, source_size_hint)
             .await?;
@@ -394,6 +398,8 @@ async fn stream_pipe_file(
             min_progress_floor,
             dest_yield_hard_cap,
         ));
+        set_task_phase(TaskPhase::Streaming);
+        set_task_bytes(0, size);
         match dest_volume
             .write_from_stream(dest_path, size, stream, on_file_progress)
             .await

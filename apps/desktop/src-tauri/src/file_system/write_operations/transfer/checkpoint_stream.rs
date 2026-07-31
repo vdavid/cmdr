@@ -15,6 +15,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use super::super::state::WriteOperationState;
+use super::transfer_probe::{TaskPhase, set_task_bytes, set_task_phase};
 use crate::file_system::volume::{Volume, VolumeError, VolumeReadStream};
 
 /// How often the destination-side bounded park re-checks the share's foreground
@@ -121,6 +122,7 @@ impl VolumeReadStream for CheckpointStream {
             match self.inner.next_chunk().await {
                 Some(Ok(chunk)) => {
                     self.bytes_yielded += chunk.len() as u64;
+                    set_task_bytes(self.bytes_yielded, self.inner.total_size());
                     Some(Ok(chunk))
                 }
                 other => other,
@@ -171,6 +173,9 @@ impl CheckpointStream {
         // Park between windows while paused (returns immediately on cancel). Pause
         // is park-in-place for every backend: a bounded-window read holds nothing
         // between windows, so there's no scarce resource to release.
+        if self.state.pause_gate.is_paused() {
+            set_task_phase(TaskPhase::ParkedPause);
+        }
         self.state.pause_gate.wait_while_paused_async(&self.state.intent).await;
 
         // Foreground auto-yield: when a foreground op (listing / nav on the phone)
@@ -223,6 +228,11 @@ impl CheckpointStream {
             return;
         }
 
+        // Past every early return: this arm really is about to park. Record it so
+        // a dump tells an intentional (unbounded, by design) source yield apart
+        // from a hang.
+        set_task_phase(TaskPhase::ParkedSourceYield);
+
         // Clone the source handle so the park loop borrows it, not `self` (we
         // mutate `self.last_resume_offset` after the loop). Arc clone is cheap.
         let source_volume = Arc::clone(&self.source_volume);
@@ -259,6 +269,7 @@ impl CheckpointStream {
         }
         // We're resuming: restart the min-progress floor from here so the next
         // auto-yield can only fire after another `min_progress_floor` bytes.
+        set_task_phase(TaskPhase::Streaming);
         self.last_resume_offset = self.bytes_yielded;
     }
 
@@ -304,6 +315,12 @@ impl CheckpointStream {
             return;
         }
 
+        // Past every early return: this arm really is about to park. Record it so
+        // a dump tells an intentional (hard-capped) destination yield apart from a
+        // hang — a task holding an open SMB write handle across a park is exactly
+        // the state the 2026-07-31 incident left two uploads in.
+        set_task_phase(TaskPhase::ParkedDestYield);
+
         // Bounded park: stand aside in short slices while the share stays busy,
         // but never past the hard cap. Cancel-aware throughout, so a cancel while
         // parked unblocks promptly and the next chunk flows to the backend's
@@ -323,6 +340,7 @@ impl CheckpointStream {
         }
         // Resuming: restart the min-progress floor so the next yield can only fire
         // after another `min_progress_floor` bytes.
+        set_task_phase(TaskPhase::Streaming);
         self.last_resume_offset = self.bytes_yielded;
     }
 }

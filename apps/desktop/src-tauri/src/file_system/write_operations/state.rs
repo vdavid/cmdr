@@ -528,8 +528,19 @@ pub fn get_operation_status(operation_id: &str) -> Option<OperationStatus> {
 /// * `operation_id` - The operation ID to cancel
 /// * `rollback` - If true, roll back (delete created files). If false, stop and keep partial files.
 pub fn cancel_write_operation(operation_id: &str, rollback: bool) {
-    if let Ok(cache) = WRITE_OPERATION_STATE.read()
-        && let Some(state) = cache.get(operation_id)
+    // Every exit from here logs. When Rollback appeared to do nothing in the
+    // 2026-07-31 incident, the two silent no-op exits below (unknown operation,
+    // invalid transition) were indistinguishable from "the intent was set and the
+    // driver never observed it", which left the whole failure unexplained. See
+    // `docs/notes/incidents/2026-07-31-transfer-wedge/README.md`.
+    let Ok(cache) = WRITE_OPERATION_STATE.read() else {
+        log::warn!("cancel_write_operation: op={operation_id} rollback={rollback}: state cache unavailable");
+        return;
+    };
+    let Some(state) = cache.get(operation_id) else {
+        log::warn!("cancel_write_operation: op={operation_id} rollback={rollback}: no such operation, ignoring");
+        return;
+    };
     {
         let target = if rollback {
             OperationIntent::RollingBack
@@ -545,9 +556,13 @@ pub fn cancel_write_operation(operation_id: &str, rollback: bool) {
             (OperationIntent::Running, _) | (OperationIntent::RollingBack, OperationIntent::Stopped)
         );
         if !valid {
+            log::info!(
+                "cancel_write_operation: op={operation_id} {current:?} -> {target:?} is not a valid transition, ignoring"
+            );
             return;
         }
 
+        log::info!("cancel_write_operation: op={operation_id} {current:?} -> {target:?}, signalling backends");
         state.intent.store(target as u8, Ordering::Relaxed);
         // Any transition out of `Running` should also stop in-flight backend
         // I/O (per-handle MTP loops, etc.) — not just the loop above it.

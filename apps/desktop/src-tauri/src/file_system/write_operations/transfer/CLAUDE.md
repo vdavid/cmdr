@@ -12,7 +12,7 @@ Shared `WriteOperationState`, `OperationIntent`, cancel/rollback, ETA, and settl
   rename / cross-fs staging), `copy_strategy.rs` + `{macos,linux,chunked}_copy.rs` (per-file strategy + backends).
 - Shared driver: `transfer_driver/` (`drive_transfer_serial_sync` + `_async`, per-file progress builders).
 - Volume: `volume_{copy,move,preflight,rename_merge,conflict,strategy}.rs`, plus `checkpoint_stream.rs`
-  (`CheckpointStream`, described below).
+  (`CheckpointStream`, described below) and `transfer_probe.rs` (the in-flight table + stall watchdog).
 
 ## Must-knows (data-safety invariants)
 
@@ -57,5 +57,13 @@ Shared `WriteOperationState`, `OperationIntent`, cancel/rollback, ETA, and settl
   (`supports_foreground_yield()`, MTP + SMB) parks UNBOUNDED; DESTINATION write-yield
   (`supports_foreground_yield_as_destination()`, SMB uploads) is **HARD-CAPPED**: it holds an open SMB write handle, so
   it must resume before the server reaps it. ❌ MTP never opts in here. DETAILS § "Foreground auto-yield".
+
+- **A parked transfer is invisible to a stack sample, so every phase must announce itself** (`transfer_probe.rs`). The
+  driver and its tasks park on `.await`, so no thread carries a transfer frame; a 20-minute production wedge left only
+  a task's spawn and stream-open in the log. Every phase transition (`OpeningSource`, `Streaming`, the three park
+  reasons, `Finalizing`) records itself, and a watchdog dumps the whole in-flight table after 20 s with no byte
+  movement. ❌ Don't add an `.await` on a transfer path without a phase around it: the next wedge is only as
+  diagnosable as the last phase someone remembered to record. Tasks reach their probe through the
+  `CURRENT_TASK_PROBE` task-local (no signature threading); outside a copy task every helper is a no-op.
 
 Architecture, flows, and decisions: `DETAILS.md`. Read before non-trivial work here.

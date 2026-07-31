@@ -127,7 +127,16 @@ pub fn get_sync_statuses(paths: Vec<String>) -> HashMap<String, SyncStatus> {
         .len()
         .min(std::thread::available_parallelism().map_or(4, |n| n.get()));
 
-    std::thread::scope(|scope| {
+    // This module used to log nothing at all, which is why 23 threads wedged in
+    // synchronous File Provider XPC left no trace in a 45 MB debug log
+    // (`docs/notes/incidents/2026-07-31-transfer-wedge/README.md`). A batch that
+    // outlives its caller's 2 s IPC timeout is the signal worth having: the
+    // caller is gone, but these threads are not.
+    let started = std::time::Instant::now();
+    log::debug!("get_sync_statuses: {} paths across {num_threads} threads", paths.len());
+    let path_count = paths.len();
+
+    let result = std::thread::scope(|scope| {
         let chunk_size = paths.len().div_ceil(num_threads);
         let handles: Vec<_> = paths
             .chunks(chunk_size)
@@ -153,8 +162,24 @@ pub fn get_sync_statuses(paths: Vec<String>) -> HashMap<String, SyncStatus> {
             result.extend(handle.join().expect("sync-status thread panicked"));
         }
         result
-    })
+    });
+
+    let elapsed = started.elapsed();
+    if elapsed >= SYNC_STATUS_SLOW_BATCH {
+        log::warn!(
+            "get_sync_statuses: {path_count} paths took {elapsed:?}, outliving the caller's IPC timeout; \
+             its threads were blocked in File Provider XPC that whole time"
+        );
+    } else {
+        log::debug!("get_sync_statuses: {path_count} paths in {elapsed:?}");
+    }
+    result
 }
+
+/// A batch slower than this has outlived the 2 s IPC timeout in
+/// `commands::sync_status`, so its caller has already given up and returned an
+/// empty map while these threads keep running.
+const SYNC_STATUS_SLOW_BATCH: std::time::Duration = std::time::Duration::from_secs(2);
 
 #[cfg(test)]
 mod tests {
