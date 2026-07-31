@@ -906,7 +906,7 @@ pub(crate) fn start_indexing_for_local_external_inner(
 /// one of the device's indexes to Stale.
 ///
 /// Matches by the volume id's device-id half (robust `rsplit` via
-/// `mtp::identity`, so a `:` in a serial device id doesn't mis-key), NOT a raw
+/// `cmdr_fs::volume::mtp_ids`, so a `:` in a serial device id doesn't mis-key), NOT a raw
 /// prefix — `mtp-AA` must not match `mtp-AAB:1`.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) fn registered_mtp_volume_ids_for_device(device_id: &str) -> Vec<String> {

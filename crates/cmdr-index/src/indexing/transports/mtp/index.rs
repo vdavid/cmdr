@@ -76,7 +76,7 @@ pub(crate) fn on_mtp_watch_continuity_lost(device_id: &str) {
     // Every registered MTP volume on this device transitions to Stale. The
     // registry is keyed by volume id (`{device_id}:{storage_id}`), so we match by
     // the device-id prefix plus a numeric storage tail (robust to a `:` in a
-    // serial device id via `mtp::identity`).
+    // serial device id via `cmdr_fs::volume::mtp_ids`).
     for volume_id in state::registered_mtp_volume_ids_for_device(device_id) {
         // Continuity broke for this storage: bump the epoch (persisted dirs read
         // stale per the honest-sizes model), then flip the badge Stale.

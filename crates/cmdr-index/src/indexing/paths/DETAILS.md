@@ -71,7 +71,7 @@ stripping the mount root, an indexed SMB folder enriches to nothing — the bug 
 pure, unit-tested decision it wraps:
 
 - **`root`** — pass-through (its index is rooted at `/`; firmlink-normalized absolute paths are already index-rooted).
-- **MTP** (id recognized by `crate::mtp::identity::is_mtp_volume_id`) — `mtp_index_relative_path` strips the
+- **MTP** (id recognized by `cmdr_fs::volume::mtp_ids::is_mtp_volume_id`) — `mtp_index_relative_path` strips the
   `mtp://{device}/{storage}` scheme + segments to the inner `/path` the index stores under. The path's device+storage
   must match the volume id (a `:`-in-serial device id round-trips verbatim); a plain `/inner` path already
   storage-relative is accepted as-is; anything else ⇒ `None`.

@@ -26,7 +26,7 @@ export interface MtpDisconnectWatchDeps {
  *
  * Split on the LAST colon: the storage id is the trailing numeric segment, and a
  * serial-based device id can itself contain a colon. Mirrors the Rust
- * `mtp::identity::device_id_of_volume`.
+ * `cmdr_fs::volume::mtp_ids::device_id_of_volume`.
  */
 export function mtpDeviceIdOfVolume(volumeId: string): string | null {
   if (!isMtpVolumeId(volumeId) || !volumeId.includes(':')) return null

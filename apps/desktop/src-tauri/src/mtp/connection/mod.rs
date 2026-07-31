@@ -891,7 +891,7 @@ pub fn connection_manager() -> &'static MtpConnectionManager {
 /// USB `location_id` to open it with.
 ///
 /// The device id is now serial-based when the device reports a serial
-/// (`mtp::identity`), so it can no longer be NUMERICALLY parsed back into a
+/// (`cmdr_fs::volume::mtp_ids`), so it can no longer be NUMERICALLY parsed back into a
 /// location_id. Instead we re-enumerate and match the requested id against each
 /// live device's computed id — the same derivation discovery uses — and return
 /// its location_id. This keeps the id OPAQUE (no substring interpretation, per
@@ -1074,7 +1074,7 @@ mod tests {
         // With no device of this id connected, resolution yields None — the
         // connect path then returns `DeviceNotFound`. (A positive match needs a
         // live/virtual device; the derivation it matches against is unit-tested
-        // in `mtp::identity`.)
+        // in `cmdr_fs::volume::mtp_ids`.)
         assert_eq!(resolve_device_location_id("mtp-no-such-device-9999"), None);
     }
 

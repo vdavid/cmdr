@@ -74,7 +74,7 @@ mod tests {
     #[test]
     fn test_device_id_format() {
         // Without a serial the id is location-based; with one it's serial-based.
-        // The derivation itself is covered by `mtp::identity` tests; this pins
+        // The derivation itself is covered by `cmdr_fs::volume::mtp_ids` tests; this pins
         // that discovery routes through it (so the two never drift).
         assert_eq!(
             cmdr_fs::volume::mtp_ids::device_id_for(None, 336_592_896),

@@ -120,7 +120,7 @@ MTP storages index into their own per-volume DB exactly like SMB, reusing the wh
 `dir_stats` / read-path machinery and the `Volume`-trait scanner. `IndexVolumeKind::Mtp` joins `Smb` under
 `is_trait_scanned()`. MTP differs from SMB in three places.
 
-### Stable identity and `:`-safe parsing (`crate::mtp::identity`)
+### Stable identity and `:`-safe parsing (`cmdr_fs::volume::mtp_ids`)
 
 The MTP volume id keys the persisted index DB, so it must survive a replug. `device_id_for(serial, location_id)` prefers
 the device's stable `serial_number` (`mtp-{serial}` — re-matches on a replug to ANY port) over the USB-topology
