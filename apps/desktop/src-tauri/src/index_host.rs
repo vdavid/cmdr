@@ -58,13 +58,16 @@ pub fn install(app: &AppHandle) {
         Err(e) => log::warn!(target: "indexing", "index not configured (no data dir): {e}"),
     }
 
+    // A failure here means something read `index()` before this ran, so the app is
+    // holding an index with no volumes, no event sink, and no data directory —
+    // silent, and every drive would just never index. Worth reporting, not warning.
     match builder.build() {
         Ok(built) => {
             if INDEX.set(built).is_err() {
-                log::warn!(target: "indexing", "the index handle was already installed; keeping the first one");
+                crate::log_error!(target: "indexing", "the index handle was read before install(); it has no host wired");
             }
         }
-        Err(e) => log::warn!(target: "indexing", "the index was already built: {e}"),
+        Err(e) => crate::log_error!(target: "indexing", "the index was built before install(): {e}"),
     }
 }
 
@@ -74,6 +77,10 @@ pub fn install(app: &AppHandle) {
 /// tool never calls `install`, so the first read here builds a handle with no
 /// host wired: every seam degrades (nothing mounted, nothing competing, events
 /// dropped), which is exactly what those callers want.
+///
+/// ❌ In the app, nothing may read this before `install`. It would win the race,
+/// and the app would run against an index that can never see a volume. `install`
+/// reports it if it ever happens.
 pub fn index() -> &'static Index {
     INDEX.get_or_init(|| {
         Index::builder()
