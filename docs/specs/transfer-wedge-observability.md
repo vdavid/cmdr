@@ -1,6 +1,26 @@
 # Transfer wedge: observability, recovery, and size-formatting correctness
 
-**Status**: specced, not started. **Owner**: David. **Date**: 2026-07-31.
+**Status**: SHIPPED, M1-M6. **Owner**: David. **Date**: 2026-07-31.
+
+## Where this spec was wrong
+
+Three of its own claims did not survive contact with the code. Recorded here because the milestones below still read as
+originally written, and a future reader should not trust them over this.
+
+1. **M6's root cause was half of one.** Initializing reactive settings in every window is necessary but not sufficient:
+   restricted windows (`/queue`, `/viewer`) seed from `get_restricted_window_settings`, a fixed typed struct that did
+   not carry `appearance.fileSizeFormat`. The Transfers window would have kept rendering binary sizes however well it
+   initialized.
+2. **M6.6's premise was false: the file counter is honest.** "5 of 764 while 10 were on the NAS" is the concurrency
+   window, not a counting error — five tasks had completed and been counted, the rest had bytes on the share but their
+   tasks had not returned. There is no honest frontend-only fix, because the progress payload carries one `currentFile`
+   and no in-flight set. The answer was to SURFACE in-flight count (folded into M5), not to change the counter.
+3. **M4.5 was not worth doing**, and the `cmdr-index` boundary question it raised was moot. Measured: ~22 µs per path
+   outside a File Provider domain against ~4.5 ms inside one, so a pre-check saves nothing where it hurts.
+
+M5 also found the hole that would have made it decoration: a wedged transfer emits NO progress events (they ride chunk
+callbacks), so the UI would have kept rendering the last pre-wedge event exactly as it did on 2026-07-31. The watchdog
+now re-emits the last event once bytes stop moving.
 
 On 2026-07-31 a 764-file copy from a Dropbox File Provider folder to an SMB NAS share stopped dead after 12 files,
 ignored Rollback, could not be dismissed, and had to be force-quit, leaving two byte-incomplete files at their final

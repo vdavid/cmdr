@@ -6,17 +6,21 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
-- [ ] 2026-07-31 `transfer-wedge-observability.md` - A 764-file copy to an SMB share wedged after 12 files, ignored
-      Rollback, and had to be force-quit, leaving two byte-incomplete files at their FINAL names on the NAS. The root
-      cause is unknown and the evidence cannot find it, so M1 is observability (per-task transfer lifecycle, a stall
-      watchdog that dumps the in-flight table, outstanding-request accounting in `smb2`, any logging at all in
-      `sync_status`, and the intent path) measured against the incident's four open questions. Then the two fixes that
-      need no root cause: never leave a partial at its final name (M2), and cancel/rollback that survive a parked driver
-      (M3). M4 fixes a separately-confirmed leak of 21-23 OS threads wedged in synchronous File Provider XPC that a 2 s
-      IPC timeout abandons but cannot cancel. M6 traces the two windows' size disagreement to `initReactiveSettings()`
-      running only in `(main)`, so EVERY reactive setting silently falls back to its default in every secondary window,
-      and unifies size/speed/ETA behind one formatter with a type and a lint. Evidence:
-      `docs/notes/incidents/2026-07-31-transfer-wedge/README.md`. SPECCED, not started.
+- [x] 2026-07-31 `transfer-wedge-observability.md` - SHIPPED (M1-M6). A 764-file copy to an SMB share wedged after 12
+      files, ignored Rollback, and had to be force-quit, leaving two byte-incomplete files at their FINAL names on the
+      NAS. **The root cause is still unknown**, so M1 was observability first: a live in-flight table where every task
+      records its phase and the driver records its own, a watchdog that dumps the table when bytes stop moving, request
+      accounting in `smb2` (its own repo, reaches Cmdr on the next release), logging in `sync_status`, and every exit
+      from the cancel path. M2 stages every cross-volume write on a `.cmdr-tmp-*` so an interrupted transfer can't leave
+      a truncated file wearing a real name; M3 makes the driver observe intent on its `in_flight.next()` await and
+      abandon what won't wind down, so force-quit stops being the only way out; M4 replaces the per-call thread fan-out
+      that leaked 21-23 wedged threads with a bounded pool plus a cache (300 thread creations and 3 s of sitting on a
+      Dropbox folder became zero and 455 µs); M5 makes a stalled transfer say so instead of showing a confident ETA,
+      which needed the watchdog to re-emit the last event because a wedged transfer emits none; M6 unifies
+      size/speed/ETA behind one formatter each with a lint. Two of the spec's own premises were wrong and are corrected
+      in the doc: the size disagreement needed `get_restricted_window_settings` to carry the field, not just
+      `initReactiveSettings()` in every window, and the file counter was honest all along (the gap was in-flight tasks,
+      now surfaced rather than "fixed"). Evidence: `docs/notes/incidents/2026-07-31-transfer-wedge/README.md`.
 - [x] 2026-07-29 `scoped-incremental-walk.md` - SHIPPED. Make an importance incremental rescore cost O(touched) instead
       of O(dirs): read only the changed subtrees out of the index instead of walking the whole volume (~5.5 s over a
       611,699-folder root index, which is essentially the entire cost of every incremental pass). Rests on separating
