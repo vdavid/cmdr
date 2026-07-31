@@ -348,14 +348,16 @@ badge menu and the `Indexing > Drive indexing` sub-rows render as overridden whi
 
 At first launch on macOS, recursively scanning from `/` opens iCloud Drive, Photos, and other TCC-protected directories,
 which makes macOS stack native permission popups on top of the in-app FDA modal (we hit 5-10 once).
-`should_auto_start_indexing(indexing_enabled, fda_choice, os_fda_granted)` gates the launch-time start via
-`crate::fda_gate::is_fda_pending`: skip when `fda_choice == NotAskedYet` AND `os_fda_granted == false`. Once the user
-picks Allow (restart) or Deny (same session, via `start_indexing_after_fda_decision`), the indexer starts.
-`os_fda_granted == true` overrides `NotAskedYet`. FDA gates ONLY `root` — SMB/MTP/external paths aren't TCC-protected,
-so `start_indexing_for_smb` and the MTP/local-external enables never route through this gate (unlike the master switch,
-which gates every transport). After Deny the indexer runs in degraded mode (one TCC prompt per protected folder, the
-contract the user opted into). Launch-time NSWorkspace icon fetches in `volumes::list_locations` share the same
-`is_fda_pending` predicate so the two gate sites can't drift.
+`should_auto_start_indexing(indexing_enabled, fda_pending)` gates the launch-time start on a plain `bool`: the FDA rule
+is the HOST's, not the index's. The app resolves it (`fda_gate::is_fda_pending(fda_choice, os_fda_granted)`: pending
+when `fda_choice == NotAskedYet` AND `os_fda_granted == false`, so `os_fda_granted == true` overrides `NotAskedYet`) and
+hands the answer to `Index::start_root_at_launch(fda_pending)`. ❌ Don't reach for a TCC concept in this crate; it can't
+name `fda_gate` and shouldn't know what a TCC choice is. Once the user picks Allow (restart) or Deny (same session, via
+`start_indexing_after_fda_decision`), the indexer starts. FDA gates ONLY `root` — SMB/MTP/external paths aren't
+TCC-protected, so `start_indexing_for_smb` and the MTP/local-external enables never route through this gate (unlike the
+master switch, which gates every transport). After Deny the indexer runs in degraded mode (one TCC prompt per protected
+folder, the contract the user opted into). Launch-time NSWorkspace icon fetches in `volumes::list_locations` share the
+same `is_fda_pending` predicate so the two gate sites can't drift.
 
 ## Testing
 

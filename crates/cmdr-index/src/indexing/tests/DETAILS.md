@@ -52,12 +52,15 @@ during cancel) is the trickiest backend state machine to test cleanly. Four rule
 3. **`Initializing { store: IndexStore }` carries non-`Clone` owned state.** Building fixtures is verbose. Where you'd
    like to test a pure transition without the owned data, extract a pure classifier (e.g. `is_initializing_phase`) and
    test that in isolation. Don't pretend to mock `IndexStore`.
-4. **`start_indexing`'s `(absent) → Initializing → Running` happy path needs `tauri::AppHandle`**: `start_indexing_for`
-   still resolves the data dir from one, so the full entry point isn't unit-testable without the `tauri/test` feature
-   (meaningful compile cost). The classifier-extraction approach plus the hand-installed `Initializing` instance cover
-   the race-decision logic; the rest stays under integration / E2E coverage. **`IndexManager` itself is handle-free** —
-   it takes a resolved `db_path` and an `EventSink` — so a scan CAN be driven in-process; `event_stream_tests.rs` does
-   exactly that.
+4. **`start_indexing`'s `(absent) → Initializing → Running` happy path stays integration-tier, because reaching
+   `Running` means really scanning.** Nothing app-shaped blocks it any more (`start_indexing_for` takes
+   `(volume_id, volume_root, kind, inodes_trustworthy)` and resolves the data dir through the config seam), but the path
+   opens both stores, reserves the global registry slot, publishes on the lifecycle bus, builds an `IndexManager`, and
+   calls `resume_or_scan`, which spawns the writer thread and the scan. The only public local entry point,
+   `start_indexing`, also hardcodes `/` as the root; the funnel that takes a path is private to `state`. So the split
+   holds: the classifier-extraction approach plus the hand-installed `Initializing` instance cover the race-decision
+   logic, `event_stream_tests.rs` drives a real `IndexManager` over a temp-dir fixture, and the rest stays under
+   integration / E2E coverage.
 
 See `docs/testing.md` for the project-wide testing playbook.
 

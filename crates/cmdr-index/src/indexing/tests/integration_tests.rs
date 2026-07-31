@@ -911,11 +911,13 @@ fn should_auto_start_indexing_blocked_when_indexing_disabled() {
 // The `INDEX_REGISTRY` is shared with the running app (and with the
 // verifier::trigger_verification path), so these tests serialize via a
 // dedicated mutex and always clear the registry before returning. They
-// never call `start_indexing` (needs an AppHandle); instead they reserve
-// an `Initializing { store }` instance by hand for the `root` volume and
-// drive the transitions whose Rust-side state machine is reachable
-// without a Tauri runtime: stop_indexing's Initializing -> removed arm,
-// and clear_index's no-op arm when not Running.
+// never call `start_indexing`: it hardcodes `/` as the volume root, so it
+// would scan the whole boot disk, and its private funnel
+// (`state::start_indexing_for`) is what takes a root path. Instead they
+// reserve an `Initializing { store }` instance by hand for the `root`
+// volume and drive the transitions that need no running scan behind them:
+// stop_indexing's Initializing -> removed arm, and clear_index's no-op arm
+// when not Running.
 //
 // With the per-volume registry, "Disabled" is the ABSENCE of an instance
 // (there is no `IndexPhase::Disabled` variant). So assertions that used to
@@ -952,8 +954,8 @@ fn root_is_initializing() -> bool {
 }
 
 /// Reserve an `Initializing { store }` instance for a volume id (the harness
-/// stand-in for `start_indexing` up to the `IndexManager` build, which needs an
-/// `AppHandle`). Returns the temp dir backing the DB.
+/// stand-in for `start_indexing` up to the `IndexManager` build, which starts a
+/// real scan). Returns the temp dir backing the DB.
 fn reserve_initializing_for(volume_id: &str) -> tempfile::TempDir {
     let dir = tempfile::tempdir().expect("temp dir for init store");
     let db_path = dir.path().join("init-phase-test.db");
@@ -1026,7 +1028,8 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
 
     // From ShuttingDown: reservation must fail and leave the instance intact.
     // Pinning ShuttingDown is the analogous case at the other end of the
-    // lifecycle (the Running case needs an AppHandle).
+    // lifecycle (a Running instance holds a real `IndexManager`, so staging one
+    // means driving a real scan — `event_stream_tests.rs` covers that tier).
     {
         let dir3 = tempfile::tempdir().expect("temp dir");
         let db3 = dir3.path().join("from-shutdown.db");
@@ -1147,9 +1150,10 @@ fn clear_index_from_initializing_removes_instance_and_deletes_db() {
 /// This is a true concurrency assertion on the load-bearing property (the
 /// lock is free during the drain), but it drives the lock/phase contract
 /// directly rather than `stop_indexing`'s `Running` arm end-to-end: that arm
-/// needs a real `IndexManager`, which needs a `tauri::AppHandle` (not
-/// constructable in unit tests without the `tauri/test` feature — see this
-/// module's IndexPhase test note and `indexing/CLAUDE.md`).
+/// needs a registered `Running` instance, which means a real `IndexManager`
+/// that has scanned, plus its writer thread and live-event task. That's the
+/// integration tier (`event_stream_tests.rs`), and it would put the 5 s drain
+/// budget on this test's critical path.
 #[test]
 fn shutdown_drain_does_not_hold_indexing_lock() {
     let _guard = INDEXING_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
