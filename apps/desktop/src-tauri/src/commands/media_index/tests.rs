@@ -7,7 +7,7 @@
 use super::file_status::{classify_all, classify_one};
 use super::policy::{folder_override_should_kick, scope_change_should_kick, threshold_change_should_kick};
 use super::{DEFAULT_LIMIT, FileIndexState, MAX_LIMIT, resolve_limit};
-use crate::media_index::gate::IndexScope;
+use cmdr_index::media_index::gate::IndexScope;
 
 #[test]
 fn a_missing_limit_takes_the_default() {
@@ -109,10 +109,10 @@ fn broadening_the_scope_while_disabled_never_kicks() {
 
 mod file_status {
     use super::*;
-    use crate::media_index::network::config::NetworkEnrichConfig;
-    use crate::media_index::predicate::MediaKind;
-    use crate::media_index::read::ImageEntry;
-    use crate::media_index::store::{EnrichmentState, MediaStatusRow};
+    use cmdr_index::media_index::network::config::NetworkEnrichConfig;
+    use cmdr_index::media_index::predicate::MediaKind;
+    use cmdr_index::media_index::read::ImageEntry;
+    use cmdr_index::media_index::store::{EnrichmentState, MediaStatusRow};
     use std::collections::HashMap;
 
     /// A qualifying-image index entry with a given `(mtime, size)`.

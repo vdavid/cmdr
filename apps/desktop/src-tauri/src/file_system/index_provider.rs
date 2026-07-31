@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 use cmdr_fs::volume::Volume;
 
-use crate::indexing::host::volumes::{
+use cmdr_index::host::volumes::{
     EnsureDirectSmbFut, MountFacts, ResolveMtpFut, ResolvedMtpObject, SmbUpgradeRefusal, VolumeProvider,
 };
 
@@ -170,7 +170,7 @@ mod tests {
     #[test]
     #[ignore = "attaches a disk image; run with --run-ignored all"]
     fn a_real_fat32_mount_detects_as_inode_untrusted() {
-        use crate::indexing::testing::external_drive_fixture::{DiskImageFilesystem, DiskImageFixture};
+        use cmdr_index::testing::external_drive_fixture::{DiskImageFilesystem, DiskImageFixture};
 
         let fixture = DiskImageFixture::attach(DiskImageFilesystem::Fat32, "CMDRFACTS").expect("attach FAT32");
         let facts = AppVolumeProvider.mount_facts(fixture.mount_point());

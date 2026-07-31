@@ -16,7 +16,7 @@
 use std::collections::HashMap;
 
 use super::ImportanceWeights;
-use crate::indexing::test_support::heap_bytes_held;
+use crate::test_support::heap_bytes_held;
 
 /// Scored folders in the corpus. Sized just under a hashbrown table boundary (a
 /// 262,144-slot table at 76 % load), so the guard measures a realistic load factor
@@ -66,6 +66,13 @@ fn the_weight_map_holds_only_a_small_slot_per_scored_folder() {
     });
 
     assert!(!weights.is_empty(), "the corpus should produce a non-empty map");
+    // The counting allocator lives in `crate::test_support` and is per test BINARY, so an
+    // index-crate copy can't serve this one. If it ever stops being installed here, every
+    // measurement below reads 0 and the budget passes while checking nothing.
+    assert!(
+        bytes > 0,
+        "the counting allocator isn't installed in this test binary, so the budget below measures nothing"
+    );
     // Compared as a total, not a per-folder quotient: integer division rounds a
     // just-over-budget shape back down onto the ceiling and hides it.
     let budget = BYTES_PER_FOLDER_CEILING * FOLDERS as i64;

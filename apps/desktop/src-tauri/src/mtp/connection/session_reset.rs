@@ -15,7 +15,7 @@ use tauri::AppHandle;
 
 use super::{MtpConnectionError, MtpConnectionManager, connection_manager};
 use crate::ignore_poison::IgnorePoison;
-use crate::indexing::{WatchGap, WatchScope};
+use cmdr_index::{WatchGap, WatchScope};
 
 /// How many times we try to reopen the device after a session reset.
 ///

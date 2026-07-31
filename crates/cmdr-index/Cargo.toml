@@ -1,0 +1,166 @@
+[package]
+name = "cmdr-index"
+version = "0.0.0"
+edition = "2024"
+license = "LicenseRef-BSL-1.1"
+publish = false
+
+# The house lint set lives in the workspace root's `[workspace.lints]`, so this
+# crate can't quietly become a lint-free zone. `unused_crate_dependencies` is the
+# one lint that stays at the crate root instead (it's judged per compilation unit).
+[lints]
+workspace = true
+
+[features]
+# "This is a test build." Consumers turn it on through a dev-dependency, which
+# keeps it off in every shipped build. It widens the index's test-only
+# scaffolding (`cmdr_index::testing`, and the bench fixtures) from `#[cfg(test)]`
+# to `pub`, so another crate's tests can install a fake host, record events, and
+# reserve a registry slot. `cfg(test)` cannot do that: it is set only while a
+# crate compiles its OWN test target. `tempfile` rides along because
+# `reserve_initializing_index_for_test` hands a `TempDir` back to its caller,
+# which makes it a normal optional dependency rather than a dev-dependency.
+testing = ["dep:tempfile", "cmdr-fs/testing"]
+# The importance subsystem's developer-tooling surface (`importance::tooling`):
+# the evaluation corpus and the measurement entry points the `index-query`
+# binaries drive. Separate from `testing` because they answer different questions
+# — a test needs fakes and guards, a tool needs the real scoring pipeline plus a
+# corpus — and because those are BINARIES in another crate, which `cfg(test)` can
+# never reach. Never enable in a production build.
+tooling = []
+
+[dependencies]
+# The filesystem vocabulary this crate indexes: the `Volume` trait it walks,
+# `FileEntry`, the typed error classification, plus the host primitives (thread
+# QoS, process memory, poison-free locking, the shared SQLite page-cache slab).
+cmdr-fs = { path = "../cmdr-fs" }
+# The index's three databases. Feature set matches `cmdr-fs`'s, which owns the
+# connection factories: Cargo unifies features per package, so a subset here would
+# silently take whatever the other consumer asked for.
+rusqlite = { version = "0.40", features = ["bundled", "collation", "fallible_uint"] }
+serde = { version = "1", features = ["derive"] }
+# The importance evals corpus and the media index's ANN sidecar metadata are JSON
+# on disk.
+serde_json = "1"
+log = "0.4"
+# Type export for the Rust↔TS bindings. Pinned to the EXACT same version the app
+# uses: two `specta` crates in one graph would make these `Type` impls stop
+# satisfying `tauri-specta`, and the app's command signatures collect them
+# transitively.
+specta = { version = "=2.0.0-rc.24", features = ["derive"] }
+# The runtime the app injects (`Index::builder().runtime(…)`). We never build one:
+# a second thread pool would compete for the same cores and split the QoS story
+# that lets indexing run in-process at all.
+# `rt-multi-thread` for `block_in_place`: the lifecycle layer runs blocking
+# database and walk work from async contexts, and yielding the worker is what
+# keeps it from starving the host's other tasks.
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "time", "sync", "macros"] }
+# `CancellationToken`, the ONE cancellation primitive. Child tokens are what make
+# stopping a volume stop its scan, aggregation, and media enrichment together.
+tokio-util = { version = "0.7.18" }
+# `Stream` combinators for the watcher event loops and the network scanner.
+futures-util = "0.3"
+# NFD normalization for the store's `name_folded` comparison key: APFS hands back
+# decomposed names and SMB does not, so the two have to fold to the same bytes.
+unicode-normalization = "0.1"
+# Wall-clock stamps on phase records and churn windows.
+chrono = "0.4"
+# Standard-location resolution for the reconciler's probe and cache paths.
+dirs = "6"
+# `f16` for the media index's on-disk + resident image embeddings (half the bytes
+# of `f32` on disk and in the resident vector cache; widened to `f32` at score
+# time).
+half = "2"
+# ANN vector search for CLIP text→image at scale: HNSW with f16 storage + cosine
+# metric, mmap `view` reads (at-rest RSS stays small, pages evictable). Chosen by
+# the measured spike (`docs/notes/ann-vector-search-spike-2026-07-24.md`). Pinned
+# `=2.26.0`: it vendors SimSIMD, so a surprise bump is a surprise binary size.
+usearch = "=2.26.0"
+# CLIP byte-pair text tokenizer (ctx 77) for the semantic-search query path. Not
+# macOS-gated: the query path tokenizes everywhere, only inference is Core ML.
+instant-clip-tokenizer = "0.1.0"
+# The CLIP model package ships as a zip; `install.rs` unpacks it. Decode only.
+zip = { version = "8.6", default-features = false, features = ["deflate"] }
+# Checksum for the downloaded CLIP model package.
+sha2 = "0.11"
+# Optional, and switched on ONLY by the `testing` feature: the index's
+# `reserve_initializing_index_for_test` hands a `TempDir` back to its caller, so
+# the type is part of that gated surface and can't live in dev-dependencies.
+tempfile = { version = "3", optional = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# inotify-backed directory watching. macOS uses `cmdr-fsevent-stream` instead:
+# only FSEvents carries the event IDs that make watch-gap detection possible.
+notify = "8"
+
+[target.'cfg(unix)'.dependencies]
+# `getattrlistbulk` in the bulk directory reader (macOS), and raw errno matching
+# in the network fetch path (both). Every call site is behind a `cfg`, so this
+# stays at `unix` rather than being declared for all targets.
+libc = "0.2"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+# Reading the private File Provider domain-id extended attribute, the one
+# exclusion probe that isn't pure string work.
+xattr = "1"
+# The FSEvents watcher with event IDs and `sinceWhen` replay. Our vendored fork:
+# upstream has no event-ID surface, which is what makes gap detection possible.
+cmdr-fsevent-stream = { path = "../fsevent-stream" }
+# `LSSharedFileList`-adjacent recents reading for the importance signal.
+core-foundation = "0.10.1"
+objc2 = { version = "0.6", features = ["std"] }
+objc2-foundation = { version = "0.3", features = [
+    "NSArray", "NSDictionary", "NSString", "NSURL", "NSValue", "NSProcessInfo",
+] }
+# Media-index OCR + image classification: real Vision text recognition and
+# feature prints (`media_index/backend/vision.rs`).
+objc2-vision = { version = "0.3.2", features = [
+    "VNRequest", "VNRequestHandler", "VNRecognizeTextRequest", "VNObservation",
+    "VNClassifyImageRequest", "VNGenerateImageFeaturePrintRequest", "VNTypes",
+    "objc2-core-graphics",
+] }
+# In-memory ImageIO decode + downscale, so OCR never whole-buffers a 48-megapixel
+# photo's bitmap.
+objc2-image-io = { version = "0.3.2", features = ["CGImageSource", "objc2-core-graphics"] }
+objc2-core-graphics = { version = "0.3.2", features = [
+    "CGImage",
+    # CLIP image preprocessing: render the decoded CGImage into a 224x224 RGB
+    # bitmap (resize + center-crop) to feed the image tower.
+    "CGColorSpace", "CGContext", "CGBitmapContext",
+] }
+objc2-core-foundation = { version = "0.3.2", features = [
+    "CFData", "CFDictionary", "CFString", "CFNumber", "CFBase", "CFCGTypes",
+] }
+# Media-index CLIP semantic search: on-device Core ML inference for the text +
+# image towers (`media_index/clip/`). The CLIP spike proved this exact version
+# round-trips bit-identically (`docs/notes/clip-coreml-rust-spike.md`).
+objc2-core-ml = { version = "0.3.2", features = [
+    "MLModel", "MLModel_MLModelCompilation", "MLModelConfiguration", "MLModelDescription",
+    "MLFeatureDescription", "MLMultiArray", "MLFeatureValue", "MLFeatureProvider",
+    "MLDictionaryFeatureProvider", "MLPredictionOptions",
+] }
+
+[dev-dependencies]
+# Depending on ourselves turns the `testing` feature on for every DEV target
+# (tests, benches) and leaves it off for the lib, so a consumer that doesn't ask
+# for it never links the scaffolding. Same trick, and the same reason, as the
+# app's self dev-dependency.
+cmdr-index = { path = ".", features = ["testing", "tooling"] }
+# The test-wait helpers (`cmdr_fs::testing::wait_until`), switched on for dev
+# targets only.
+cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
+tempfile = "3"
+# Property-based testing for the algorithmic cores: path resolution, aggregate
+# roll-up, and the importance scorer, where the input space is too large for
+# example tests to cover meaningfully.
+proptest = "1.11.0"
+criterion = { version = "0.8.1", features = ["html_reports"] }
+# Dev-only env-driven logger, for the wire traces a concurrency stress test can
+# switch on with `RUST_LOG` when it's being debugged.
+env_logger = "0.11.10"
+# `#[tokio::test]` and the paused-clock runtime the scheduler tests drive.
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "test-util"] }
+
+[[bench]]
+name = "index_benchmarks"
+harness = false

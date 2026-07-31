@@ -17,9 +17,9 @@
 //! reads.
 
 use crate::index_host::index;
-use crate::indexing::lifecycle::freshness::Freshness;
-use crate::indexing::{ActivityPhase, PhaseRecord};
 use crate::search::format_size;
+use cmdr_index::Freshness;
+use cmdr_index::{ActivityPhase, PhaseRecord};
 
 /// One volume's indexing status, snapshotted from the indexing read APIs. Plain
 /// data so the text builders stay pure and testable.
@@ -378,8 +378,8 @@ pub(crate) fn build_volume_debug_text(snap: &VolumeIndexingSnapshot, now_unix_s:
 }
 
 /// Map an [`IndexVolumeKind`] to its resource token.
-fn kind_token(kind: crate::indexing::IndexVolumeKind) -> &'static str {
-    use crate::indexing::IndexVolumeKind;
+fn kind_token(kind: cmdr_index::IndexVolumeKind) -> &'static str {
+    use cmdr_index::IndexVolumeKind;
     match kind {
         IndexVolumeKind::Local => "local",
         IndexVolumeKind::LocalExternal => "external",
@@ -471,7 +471,7 @@ fn collect_volume_snapshot(volume_id: &str, with_debug: bool) -> VolumeIndexingS
 fn known_volume_ids() -> Vec<String> {
     let mut ids = index().volume_ids();
     ids.sort();
-    ids.sort_by_key(|id| id != crate::indexing::ROOT_VOLUME_ID);
+    ids.sort_by_key(|id| id != cmdr_index::ROOT_VOLUME_ID);
     ids
 }
 

@@ -13,7 +13,7 @@
 //! - no query — a usage summary plus a per-volume overview, so an agent's first
 //!   blind read teaches it the syntax.
 //!
-//! Every read goes through [`ImportanceIndex`](crate::importance::ImportanceIndex)
+//! Every read goes through [`ImportanceIndex`](cmdr_index::importance::ImportanceIndex)
 //! (never raw SQLite — the subsystem's consumer-entry-point invariant). The snapshot
 //! functions do the reads (the seam where the data dir and the clock enter); the
 //! `build_*` functions are pure over the snapshot + an injected `now_secs`, so the
@@ -22,8 +22,10 @@
 
 use std::path::Path;
 
-use crate::importance::read::scored_volume_ids;
-use crate::importance::{Explanation, FloorReason, ImportanceIndex, ScoredWeight, SignalKind, SignalSet, WeightLookup};
+use cmdr_index::importance::read::scored_volume_ids;
+use cmdr_index::importance::{
+    Explanation, FloorReason, ImportanceIndex, ScoredWeight, SignalKind, SignalSet, WeightLookup,
+};
 
 use super::indexing::format_number;
 
@@ -77,14 +79,14 @@ pub(crate) struct VolumeOverview {
 fn available_for(volume_id: &str) -> SignalSet {
     crate::index_host::index()
         .volume_kind(volume_id)
-        .and_then(crate::importance::signal_availability)
+        .and_then(cmdr_index::importance::signal_availability)
         .unwrap_or_else(SignalSet::all)
 }
 
 /// The kind token for a volume, or `None` when it isn't a registered index
 /// (offline). Never string-matches the id — routes through the typed `volume_kind`.
 fn kind_token(volume_id: &str) -> Option<&'static str> {
-    use crate::indexing::IndexVolumeKind;
+    use cmdr_index::IndexVolumeKind;
     crate::index_host::index().volume_kind(volume_id).map(|k| match k {
         IndexVolumeKind::Local => "local",
         IndexVolumeKind::LocalExternal => "external",
@@ -127,7 +129,7 @@ pub(crate) fn snapshot_path(data_dir: &Path, raw_path: &str, now_secs: u64) -> P
     }
 
     // No stored row on any volume: derive floored vs unscored from the path alone.
-    let index = ImportanceIndex::open(data_dir, crate::indexing::ROOT_VOLUME_ID, SignalSet::all());
+    let index = ImportanceIndex::open(data_dir, cmdr_index::ROOT_VOLUME_ID, SignalSet::all());
     match index.lookup(&path) {
         Ok(WeightLookup::Floored(reason)) => PathImportance::Floored { reason },
         _ => PathImportance::Unscored,

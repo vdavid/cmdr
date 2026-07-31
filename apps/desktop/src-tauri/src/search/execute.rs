@@ -10,8 +10,8 @@
 use rayon::prelude::*;
 
 use crate::index_host::index;
-use crate::indexing::store::IndexStore;
-use crate::indexing::{ROOT_VOLUME_ID, ReadPool};
+use cmdr_index::store::IndexStore;
+use cmdr_index::{ROOT_VOLUME_ID, ReadPool};
 
 use super::engine::{self, RankedEntry};
 use super::query;

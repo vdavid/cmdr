@@ -30,8 +30,8 @@ use std::path::{Path, PathBuf};
 use rusqlite::Connection;
 
 use crate::index_host::index;
-use crate::indexing::store::{IndexStore, resolve_path};
 use crate::operation_log::types::{EntryType, SearchCoverage, SearchCoverageReason};
+use cmdr_index::store::{IndexStore, resolve_path};
 
 /// The per-operation cap on `search_only` leaves enumerated for one top-level
 /// trash / same-FS-move item. Because the enumeration is synchronous BEFORE a
@@ -247,7 +247,7 @@ pub(super) mod test_hook {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::indexing::store::{IndexStore, ROOT_ID};
+    use cmdr_index::store::{IndexStore, ROOT_ID};
 
     /// Build a temp index DB, insert a subtree under root, and stamp epochs. Returns
     /// the read connection for the enumeration core. `stale` makes the subtree's
@@ -285,7 +285,7 @@ mod tests {
         let sub_epoch = if stale { current - 1 } else { current };
         IndexStore::upsert_dir_stats_by_id(
             &wconn,
-            &[crate::indexing::store::DirStatsById {
+            &[cmdr_index::store::DirStatsById {
                 entry_id: photos_id,
                 recursive_logical_size: 0,
                 recursive_physical_size: 0,
@@ -379,7 +379,7 @@ mod tests {
         let current = IndexStore::seed_current_epoch(&wconn).expect("seed");
         IndexStore::upsert_dir_stats_by_id(
             &wconn,
-            &[crate::indexing::store::DirStatsById {
+            &[cmdr_index::store::DirStatsById {
                 entry_id: photos_id,
                 recursive_logical_size: 0,
                 recursive_physical_size: 0,

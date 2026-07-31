@@ -1,12 +1,12 @@
 //! Tests for the `cmdr://indexing` builder: pure formatting helpers plus the
 //! per-volume text builders over injected snapshots (no live index needed).
 
-use crate::indexing::ActivityPhase;
-use crate::indexing::lifecycle::freshness::Freshness;
 use crate::mcp::resources::indexing::{
     VolumeIndexingDebug, VolumeIndexingSnapshot, build_indexing_text, build_volume_debug_text, format_duration_human,
     format_number, freshness_token,
 };
+use cmdr_index::ActivityPhase;
+use cmdr_index::Freshness;
 
 #[test]
 fn test_format_duration_human() {
@@ -183,7 +183,7 @@ fn test_deep_view_includes_debug_detail() {
         db_wal_size: Some(2_100_000),
         db_page_count: Some(12_000),
         db_freelist_count: Some(300),
-        phase_history: vec![crate::indexing::PhaseRecord {
+        phase_history: vec![cmdr_index::PhaseRecord {
             phase: ActivityPhase::Scanning,
             started_at: "10:00:00.000".to_string(),
             duration_ms: Some(252_000),

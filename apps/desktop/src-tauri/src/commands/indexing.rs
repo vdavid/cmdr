@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 
 use crate::index_host::index;
-use crate::indexing::{
+use cmdr_index::{
     IndexDebugStatusResponse, IndexStatusResponse, ROOT_VOLUME_ID, SmbIndexGateReason, StartOutcome, VolumeIndexStatus,
     store::DirStats,
 };

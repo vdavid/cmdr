@@ -25,7 +25,7 @@ use tauri::{AppHandle, Runtime};
 
 use super::photos::{VolumeCoverage, build_note, derive_coverage, resolve_search_volumes};
 use super::{ToolError, ToolResult};
-use crate::media_index::read::{ImageFacts, ImageTag, MediaIndex};
+use cmdr_index::media_index::read::{ImageFacts, ImageTag, MediaIndex};
 
 /// The most paths one call accepts. Over this is a hard `INVALID_PARAMS` rather than a
 /// silent truncation: a caller that asked about 500 files must not believe it got 200
@@ -222,7 +222,7 @@ pub async fn execute_image_facts<R: Runtime>(app: &AppHandle<R>, params: &Value)
 
     // Feature off ⇒ nothing is stored. Voice it honestly rather than a wall of
     // "not indexed" rows the model would read as "these images are empty".
-    if !crate::media_index::gate::is_enabled() {
+    if !cmdr_index::media_index::gate::is_enabled() {
         return shape(&ImageFactsResult::ImageIndexingOff {
             note: OFF_NOTE.to_string(),
         });

@@ -8,7 +8,7 @@
 
 use std::time::Duration;
 
-use crate::indexing::host::policy::{HostPolicy, OpenListing, WorkClearance};
+use cmdr_index::host::policy::{HostPolicy, OpenListing, WorkClearance};
 
 use super::{foreground, transfers};
 

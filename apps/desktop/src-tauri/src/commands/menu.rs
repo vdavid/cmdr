@@ -75,13 +75,13 @@ pub fn show_file_context_menu<R: Runtime>(
 
     // Media-index group: shown only while image indexing is enabled, keyed on this
     // folder's live membership (OS-path checks against the live config, no I/O).
-    let image_index_enabled = crate::media_index::gate::is_enabled();
+    let image_index_enabled = cmdr_index::media_index::gate::is_enabled();
     let image_index = crate::menu::ImageIndexMenuState {
         enabled: image_index_enabled,
-        excluded: image_index_enabled && crate::media_index::network::config::is_excluded(&path),
-        chosen: image_index_enabled && crate::media_index::network::config::is_chosen_folder(&path),
+        excluded: image_index_enabled && cmdr_index::media_index::network::config::is_excluded(&path),
+        chosen: image_index_enabled && cmdr_index::media_index::network::config::is_chosen_folder(&path),
         covered_by_parent: image_index_enabled
-            && crate::media_index::network::config::is_covered_by_parent_folder(&path),
+            && cmdr_index::media_index::network::config::is_covered_by_parent_folder(&path),
     };
 
     let result = build_context_menu(

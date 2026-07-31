@@ -44,7 +44,7 @@ pub struct SearchIndexReadyEvent {
 #[tauri::command]
 #[specta::specta]
 pub async fn prepare_search_index(app: tauri::AppHandle) -> Result<PrepareResult, String> {
-    use crate::indexing::ROOT_VOLUME_ID;
+    use cmdr_index::ROOT_VOLUME_ID;
 
     search::touch_activity();
     search::DIALOG_OPEN.store(true, Ordering::Relaxed);
@@ -108,7 +108,7 @@ pub async fn search_files(app: tauri::AppHandle, query: SearchQuery) -> Result<S
 /// Nudge the dialog that another volume's index is now searchable. Reports ROOT's
 /// entry count so the displayed number keeps meaning the same thing.
 fn emit_index_ready(app: &tauri::AppHandle) {
-    use crate::indexing::ROOT_VOLUME_ID;
+    use cmdr_index::ROOT_VOLUME_ID;
     use tauri_specta::Event;
 
     let entry_count = search::get_loaded(ROOT_VOLUME_ID).map_or(0, |v| v.index.entries.len() as u64);

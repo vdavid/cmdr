@@ -1243,7 +1243,7 @@ mod tests {
     #[test]
     fn with_scan_meta_populates_all_fields() {
         use super::super::types::{WriteOperationPhase, WriteOperationType, WriteProgressEvent};
-        use crate::indexing::ExpectedTotals;
+        use cmdr_index::ExpectedTotals;
         let event = WriteProgressEvent::new(
             "op-1".to_string(),
             WriteOperationType::Copy,

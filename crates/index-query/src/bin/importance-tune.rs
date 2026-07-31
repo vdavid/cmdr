@@ -13,7 +13,7 @@
 //! Find the DB under the app data dir as `importance-root.db` (beside
 //! `index-root.db`). `top_n` defaults to 30.
 
-use cmdr_lib::importance::{ImportanceIndex, SignalSet};
+use cmdr_index::importance::{ImportanceIndex, SignalSet};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();

@@ -21,8 +21,8 @@ use std::sync::{Arc, LazyLock, Mutex, OnceLock};
 
 use crate::ignore_poison::IgnorePoison;
 use crate::index_host::index;
-use crate::indexing::store::IndexStore;
-use crate::indexing::{ROOT_VOLUME_ID, ReadPool};
+use cmdr_index::store::IndexStore;
+use cmdr_index::{ROOT_VOLUME_ID, ReadPool};
 
 use super::index::{SearchIndex, load_search_index, now_secs};
 use super::ranking::ImportanceWeights;
@@ -141,7 +141,7 @@ fn store_weights(volume_id: &str, weights: ImportanceWeights) {
 /// whose map reloads on EVERY recompute (the subscriber below) while the old one is
 /// still live.
 fn load_weights(data_dir: &Path, volume_id: &str) -> ImportanceWeights {
-    use crate::importance::{ImportanceIndex, SignalSet};
+    use cmdr_index::importance::{ImportanceIndex, SignalSet};
     // `SignalSet::all()` matters only for `explain`, which the bulk weight read
     // ignores; it's the correct default regardless.
     let index = ImportanceIndex::open(data_dir, volume_id, SignalSet::all());
@@ -169,7 +169,7 @@ fn load_weights(data_dir: &Path, volume_id: &str) -> ImportanceWeights {
 /// rarely recomputes mid-session). Called once from app setup.
 pub(crate) fn start_importance_weight_subscriber(data_dir: PathBuf) {
     set_data_dir(data_dir.clone());
-    let mut rx = crate::importance::read::subscribe(ROOT_VOLUME_ID);
+    let mut rx = cmdr_index::importance::read::subscribe(ROOT_VOLUME_ID);
     tauri::async_runtime::spawn(async move {
         let reload = {
             let dir = data_dir.clone();

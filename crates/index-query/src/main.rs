@@ -18,7 +18,7 @@ fn main() {
     let sql = &args[2];
 
     let conn = Connection::open_with_flags(db_path, OpenFlags::SQLITE_OPEN_READ_ONLY).expect("Couldn't open database");
-    cmdr_lib::indexing::store::register_platform_case_collation(&conn).expect("Couldn't register collation");
+    cmdr_index::store::register_platform_case_collation(&conn).expect("Couldn't register collation");
 
     let mut stmt = conn.prepare(sql).expect("Couldn't prepare statement");
     let column_count = stmt.column_count();

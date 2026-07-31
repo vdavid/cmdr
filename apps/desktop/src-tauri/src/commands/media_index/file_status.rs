@@ -9,11 +9,12 @@ use std::sync::Arc;
 
 use tauri::{AppHandle, Manager};
 
-use crate::media_index::coverage;
-use crate::media_index::gate;
-use crate::media_index::network::config as network_config;
-use crate::media_index::scheduler::{self, MediaScheduler};
-use crate::media_index::store;
+use cmdr_index::media_index::coverage;
+use cmdr_index::media_index::gate;
+use cmdr_index::media_index::network::config as network_config;
+use cmdr_index::media_index::read;
+use cmdr_index::media_index::scheduler::{self, MediaScheduler};
+use cmdr_index::media_index::store;
 
 /// The index status of ONE file, as the file-icon overlay reads it. Serialized
 /// camelCase across the IPC boundary; classification is entirely backend-side (the
@@ -137,12 +138,12 @@ fn classify_file_statuses(
     stamp: Option<&str>,
     is_enriching: bool,
 ) -> Vec<FileIndexStatus> {
-    use crate::media_index::store::{MediaStatusRow, media_db_path, open_read_connection, read_status};
+    use cmdr_index::media_index::store::{MediaStatusRow, media_db_path, open_read_connection, read_status};
     use std::collections::HashMap;
 
     // The qualifying images (sibling-aware, with live `(mtime, size)`) for exactly the
     // dirs the requested paths live in — a bounded, scoped index walk.
-    let qualifying = crate::media_index::read::qualifying_images_for_paths(volume_id, &paths);
+    let qualifying = read::qualifying_images_for_paths(volume_id, &paths);
 
     // Stored rows for exactly the requested paths (bounded; a per-path point lookup).
     let db_path = media_db_path(data_dir, volume_id);
@@ -184,7 +185,7 @@ fn classify_file_statuses(
 )]
 pub(super) fn classify_all(
     paths: &[String],
-    qualifying: &std::collections::HashMap<String, scheduler::enrich::ImageEntry>,
+    qualifying: &std::collections::HashMap<String, read::ImageEntry>,
     stored: &std::collections::HashMap<String, store::MediaStatusRow>,
     stamp: Option<&str>,
     scores: Option<&std::collections::HashMap<String, f64>>,
@@ -221,7 +222,7 @@ pub(super) fn classify_all(
 )]
 pub(super) fn classify_one(
     path: &str,
-    entry: Option<&scheduler::enrich::ImageEntry>,
+    entry: Option<&read::ImageEntry>,
     stored: Option<&store::MediaStatusRow>,
     stamp: Option<&str>,
     scores: Option<&std::collections::HashMap<String, f64>>,
@@ -229,7 +230,7 @@ pub(super) fn classify_one(
     volume_id: &str,
     is_enriching: bool,
 ) -> FileIndexState {
-    use crate::media_index::store::{EnrichmentState, needs_enrichment};
+    use cmdr_index::media_index::store::{EnrichmentState, needs_enrichment};
 
     let Some(entry) = entry else {
         // Not a qualifying image (a video, document, folder, RAW+JPEG dup, or a path the

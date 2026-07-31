@@ -2,17 +2,17 @@
 //! find-similar, and near-duplicate clustering.
 //!
 //! Every one is thin (see [`super`]): resolve the data dir, open the
-//! [`MediaIndex`](crate::media_index::read::MediaIndex) read API for the volume, and hand
+//! [`MediaIndex`](cmdr_index::media_index::read::MediaIndex) read API for the volume, and hand
 //! off the query on a blocking worker. They answer from `media.db`, so an offline volume
 //! (a NAS unplugged) still returns results.
 
 use tauri::AppHandle;
 
 use super::resolve_limit;
-use crate::media_index::clip;
-use crate::media_index::gate;
-use crate::media_index::read::{MediaIndex, OcrHit, SemanticHit, TagHit};
-use crate::media_index::vector::{DedupCluster, SimilarImage};
+use cmdr_index::media_index::clip;
+use cmdr_index::media_index::gate;
+use cmdr_index::media_index::read::{MediaIndex, OcrHit, SemanticHit, TagHit};
+use cmdr_index::media_index::vector::{DedupCluster, SimilarImage};
 
 /// Search a volume's OCR text for `query`, returning up to `limit` hits (default
 /// [`DEFAULT_LIMIT`](super::DEFAULT_LIMIT), capped at [`MAX_LIMIT`](super::MAX_LIMIT)),

@@ -1283,7 +1283,7 @@ dependencies = [
  "chrono",
  "cmdr",
  "cmdr-fs",
- "cmdr-fsevent-stream",
+ "cmdr-index",
  "cocoon",
  "core-foundation 0.10.1",
  "core-services",
@@ -1302,10 +1302,8 @@ dependencies = [
  "futures-util",
  "genai",
  "gix",
- "half",
  "icns",
  "image",
- "instant-clip-tokenizer",
  "keyring-core",
  "libc",
  "log",
@@ -1322,12 +1320,8 @@ dependencies = [
  "objc2 0.6.4",
  "objc2-app-kit 0.3.2",
  "objc2-core-foundation",
- "objc2-core-graphics",
- "objc2-core-ml",
  "objc2-foundation 0.3.2",
- "objc2-image-io",
  "objc2-quick-look-ui",
- "objc2-vision",
  "plist",
  "positioned-io",
  "proptest",
@@ -1373,7 +1367,6 @@ dependencies = [
  "trash",
  "unicode-normalization",
  "urlencoding",
- "usearch",
  "uuid",
  "walkdir",
  "wiremock",
@@ -1418,6 +1411,46 @@ dependencies = [
  "tempfile",
  "tokio",
  "tokio-stream",
+]
+
+[[package]]
+name = "cmdr-index"
+version = "0.0.0"
+dependencies = [
+ "chrono",
+ "cmdr-fs",
+ "cmdr-fsevent-stream",
+ "cmdr-index",
+ "core-foundation 0.10.1",
+ "criterion",
+ "dirs 6.0.0",
+ "env_logger",
+ "futures-util",
+ "half",
+ "instant-clip-tokenizer",
+ "libc",
+ "log",
+ "notify",
+ "objc2 0.6.4",
+ "objc2-core-foundation",
+ "objc2-core-graphics",
+ "objc2-core-ml",
+ "objc2-foundation 0.3.2",
+ "objc2-image-io",
+ "objc2-vision",
+ "proptest",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "specta",
+ "tempfile",
+ "tokio",
+ "tokio-util",
+ "unicode-normalization",
+ "usearch",
+ "xattr",
+ "zip 8.6.0",
 ]
 
 [[package]]
@@ -4766,6 +4799,7 @@ name = "index-query"
 version = "0.0.0"
 dependencies = [
  "cmdr",
+ "cmdr-index",
  "rusqlite",
 ]
 

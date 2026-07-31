@@ -7,8 +7,8 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::index_host::index;
-use crate::indexing::ReadPool;
 use crate::pluralize::pluralize_with;
+use cmdr_index::ReadPool;
 
 // ── Search entry (in-memory representation) ──────────────────────────
 
@@ -148,8 +148,8 @@ pub(crate) fn load_search_index(pool: &ReadPool, cancel: &AtomicBool) -> Result<
 mod tests {
     use std::sync::atomic::AtomicBool;
 
-    use crate::indexing::ReadPool;
-    use crate::indexing::store::{IndexStore, ROOT_ID};
+    use cmdr_index::ReadPool;
+    use cmdr_index::store::{IndexStore, ROOT_ID};
 
     use super::*;
 

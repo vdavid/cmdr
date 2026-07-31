@@ -18,10 +18,10 @@ use tauri::{AppHandle, Runtime};
 
 use super::{expand_tilde, join_child_path};
 use crate::index_host::index;
-use crate::indexing::lifecycle::freshness::Freshness;
-use crate::indexing::store::DirStats;
 use crate::mcp::resources::indexing::status_token;
 use crate::mcp::{ToolError, ToolResult};
+use cmdr_index::Freshness;
+use cmdr_index::store::DirStats;
 
 const DEFAULT_LARGEST_N: usize = 20;
 const MAX_LARGEST_N: usize = 200;
@@ -321,7 +321,7 @@ fn required_path(params: &Value) -> Result<String, ToolError> {
 
 /// Map an index `EntryRow` into the model-facing child shape. Typed against the
 /// row's fields; `size` is the entry's own logical size where the index has it.
-fn child_from_row(row: &crate::indexing::store::EntryRow) -> ChildEntry {
+fn child_from_row(row: &cmdr_index::store::EntryRow) -> ChildEntry {
     ChildEntry {
         name: row.name.clone(),
         is_directory: row.is_directory,

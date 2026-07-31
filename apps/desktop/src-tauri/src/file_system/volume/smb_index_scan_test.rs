@@ -23,11 +23,11 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use super::smb::{SmbConnectionParams, connect_smb_volume};
-use crate::indexing::store::{IndexStore, ROOT_ID};
-use crate::indexing::testing::scan::IndexWriter;
-use crate::indexing::testing::scan::ScanProgress;
-use crate::indexing::testing::scan::scan_volume_via_trait;
 use cmdr_fs::volume::{Volume, smb_volume_id};
+use cmdr_index::store::{IndexStore, ROOT_ID};
+use cmdr_index::testing::scan::IndexWriter;
+use cmdr_index::testing::scan::ScanProgress;
+use cmdr_index::testing::scan::scan_volume_via_trait;
 
 fn guest_port() -> u16 {
     std::env::var("SMB_CONSUMER_GUEST_PORT")
@@ -112,7 +112,7 @@ async fn smb_integration_volume_scan_indexes_share() {
     let dir = tempfile::tempdir().expect("temp db dir");
     let db_path = dir.path().join("smb-scan.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, cmdr_index::NoopEventSink::shared()).expect("spawn writer");
 
     let cancelled = tokio_util::sync::CancellationToken::new();
     let summary = scan_volume_via_trait(
@@ -121,7 +121,7 @@ async fn smb_integration_volume_scan_indexes_share() {
         writer.clone(),
         progress(),
         cancelled,
-        crate::indexing::testing::scan::ScanPacer::unpaced(),
+        cmdr_index::testing::scan::ScanPacer::unpaced(),
     )
     .await
     .expect("SMB volume scan should complete");
@@ -180,7 +180,7 @@ async fn smb_integration_volume_scan_via_connection_pool() {
     let dir = tempfile::tempdir().expect("temp db dir");
     let db_path = dir.path().join("smb-scan-pool.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, cmdr_index::NoopEventSink::shared()).expect("spawn writer");
 
     // Bracket the walk exactly as the lifecycle does, so listings fan out across
     // the pool instead of the single browsing session.
@@ -192,7 +192,7 @@ async fn smb_integration_volume_scan_via_connection_pool() {
         writer.clone(),
         progress(),
         cancelled,
-        crate::indexing::testing::scan::ScanPacer::unpaced(),
+        cmdr_index::testing::scan::ScanPacer::unpaced(),
     )
     .await
     .expect("pooled SMB volume scan should complete");
@@ -226,8 +226,8 @@ async fn smb_integration_volume_scan_via_connection_pool() {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_watch_event_updates_index() {
-    use crate::indexing::testing::scan::resolve_and_send_for_test;
     use cmdr_fs::volume::DirectoryChange;
+    use cmdr_index::testing::scan::resolve_and_send_for_test;
 
     let vol = connect_public().await;
 
@@ -244,7 +244,7 @@ async fn smb_integration_watch_event_updates_index() {
     let dir = tempfile::tempdir().expect("temp db dir");
     let db_path = dir.path().join("smb-watch.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, cmdr_index::NoopEventSink::shared()).expect("spawn writer");
 
     let cancelled = tokio_util::sync::CancellationToken::new();
     scan_volume_via_trait(
@@ -253,7 +253,7 @@ async fn smb_integration_watch_event_updates_index() {
         writer.clone(),
         progress(),
         cancelled,
-        crate::indexing::testing::scan::ScanPacer::unpaced(),
+        cmdr_index::testing::scan::ScanPacer::unpaced(),
     )
     .await
     .expect("scan should complete");
@@ -344,9 +344,9 @@ async fn smb_integration_watch_event_updates_index() {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_enrich_listing_shows_sizes() {
-    use crate::indexing::testing::scan::enrich_via_parent_id_on;
-    use crate::indexing::testing::scan::index_relative_path;
     use cmdr_fs::entry::FileEntry;
+    use cmdr_index::testing::scan::enrich_via_parent_id_on;
+    use cmdr_index::testing::scan::index_relative_path;
 
     let vol = connect_public().await;
 
@@ -370,7 +370,7 @@ async fn smb_integration_enrich_listing_shows_sizes() {
     let dir = tempfile::tempdir().expect("temp db dir");
     let db_path = dir.path().join("smb-enrich.db");
     let _store = IndexStore::open(&db_path).expect("open store");
-    let writer = IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn writer");
+    let writer = IndexWriter::spawn(&db_path, cmdr_index::NoopEventSink::shared()).expect("spawn writer");
     let cancelled = tokio_util::sync::CancellationToken::new();
     scan_volume_via_trait(
         Arc::clone(&vol),
@@ -378,7 +378,7 @@ async fn smb_integration_enrich_listing_shows_sizes() {
         writer.clone(),
         progress(),
         cancelled,
-        crate::indexing::testing::scan::ScanPacer::unpaced(),
+        cmdr_index::testing::scan::ScanPacer::unpaced(),
     )
     .await
     .expect("SMB volume scan should complete");

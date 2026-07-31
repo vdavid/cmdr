@@ -502,7 +502,8 @@ mod tests {
 
     #[tokio::test]
     async fn eject_stops_the_index_before_the_unmount() {
-        use crate::indexing;
+        use cmdr_index::IndexVolumeKind;
+        use cmdr_index::testing::{is_index_active, reserve_initializing_index_for_test};
         use std::sync::Arc;
         use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -514,12 +515,8 @@ mod tests {
         // `stop_indexing` through the ordering seam with a fake unmount that records
         // whether the index was still active when it ran.
         let vid = "volumes-cmdr-test-eject-stop-order";
-        let _tmp =
-            indexing::testing::reserve_initializing_index_for_test(vid, indexing::IndexVolumeKind::LocalExternal);
-        assert!(
-            indexing::lifecycle::state::is_active(vid),
-            "precondition: the index is active"
-        );
+        let _tmp = reserve_initializing_index_for_test(vid, IndexVolumeKind::LocalExternal);
+        assert!(is_index_active(vid), "precondition: the index is active");
 
         let active_when_unmount_ran = Arc::new(AtomicBool::new(true));
         let observed = Arc::clone(&active_when_unmount_ran);
@@ -527,10 +524,7 @@ mod tests {
 
         let result = stop_index_then_unmount(vid, || async move {
             // Record the index state at the exact moment the unmount would run.
-            observed.store(
-                indexing::lifecycle::state::is_active(&vid_for_unmount),
-                Ordering::SeqCst,
-            );
+            observed.store(is_index_active(&vid_for_unmount), Ordering::SeqCst);
             Ok(())
         })
         .await;
@@ -540,10 +534,7 @@ mod tests {
             !active_when_unmount_ran.load(Ordering::SeqCst),
             "the index must be stopped BEFORE the unmount runs"
         );
-        assert!(
-            !indexing::lifecycle::state::is_active(vid),
-            "the index instance is gone after eject"
-        );
+        assert!(!is_index_active(vid), "the index instance is gone after eject");
     }
 
     #[test]

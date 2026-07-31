@@ -397,8 +397,8 @@ fn parse_scope_whitespace_trimming() {
 // (`/Volumes/naspi`) must search the WHOLE volume, and a path that isn't in the
 // index must be reported as unresolved rather than silently returning nothing.
 
-use crate::indexing::ReadPool;
-use crate::indexing::store::{IndexStore, ROOT_ID};
+use cmdr_index::ReadPool;
+use cmdr_index::store::{IndexStore, ROOT_ID};
 
 /// A mount-rooted index (SMB shape: `ROOT_ID` is the mount root) with a single
 /// `/photos` folder, returned as a `ReadPool`. Mount root is a path that can't

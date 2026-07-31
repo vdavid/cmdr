@@ -15,7 +15,7 @@ use super::{
     convert_mtp_datetime, get_mtp_icon_id, map_mtp_error, normalize_mtp_path,
 };
 use crate::file_system::FileEntry;
-use crate::indexing::{WatchGap, WatchScope};
+use cmdr_index::{WatchGap, WatchScope};
 
 /// Global counter for generating unique request IDs for debugging.
 static REQUEST_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);

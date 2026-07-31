@@ -13,11 +13,11 @@ use serde_json::Value;
 use tauri::{AppHandle, Runtime};
 
 use super::expand_tilde;
-use crate::importance::{Explanation, FloorReason, ImportanceIndex, SignalSet};
 use crate::mcp::resources::importance::{
     PathImportance, RankedFolder, VolumeOverview, snapshot_overview, snapshot_path, snapshot_threshold, snapshot_top,
 };
 use crate::mcp::{ToolError, ToolResult};
+use cmdr_index::importance::{Explanation, FloorReason, ImportanceIndex, SignalSet};
 
 const DEFAULT_TOP_N: usize = 20;
 

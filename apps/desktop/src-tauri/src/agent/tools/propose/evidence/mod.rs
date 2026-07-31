@@ -479,7 +479,7 @@ fn normalize_with_origins(text: &str) -> (String, Vec<usize>) {
 /// The ledger's key for a path: the same normalization the rest of the rename flow uses,
 /// so a case- or Unicode-different spelling of the same path still matches.
 fn path_key(path: &str) -> String {
-    crate::indexing::store::normalize_for_comparison(path)
+    cmdr_index::store::normalize_for_comparison(path)
 }
 
 #[cfg(test)]

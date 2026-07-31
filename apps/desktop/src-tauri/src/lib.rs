@@ -109,9 +109,7 @@ pub mod file_viewer;
 mod font_metrics;
 mod go_to_path;
 pub mod icons;
-pub mod importance;
 mod index_host;
-pub mod indexing;
 mod install_id;
 mod instance_lock;
 pub mod licensing;
@@ -123,7 +121,6 @@ mod location;
 #[cfg(target_os = "macos")]
 mod macos_icons;
 mod mcp;
-pub mod media_index;
 mod menu;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod mtp;
@@ -175,15 +172,6 @@ mod window_state;
 // other platforms use stubs for all platform-specific features)
 #[cfg(not(target_os = "macos"))]
 mod stubs;
-
-/// `FileEntry` for the index benches. It's `pub` inside a private module, so a
-/// bench (an external crate) can't name it and therefore can't call the `pub`
-/// `indexing::enrich_entries_with_index` that takes it. Re-exported under
-/// `testing` rather than widening `mod file_system`, so the shipped crate's
-/// surface is unchanged. `FileEntry` becomes properly public when it moves to
-/// `cmdr-fs`; this line goes away then.
-#[cfg(any(test, feature = "testing"))]
-pub use file_system::FileEntry;
 
 use menu::{MenuState, ViewMode};
 use tauri::Manager;
@@ -847,7 +835,7 @@ pub fn run() {
             // is Fresh at launch). Independent of whether indexing auto-starts here —
             // the bus fires whenever any scan completes. See
             // `importance/scheduler.rs` and the plan (Decision 4 / 5).
-            if let Some(scheduler) = importance::scheduler::start() {
+            if let Some(scheduler) = cmdr_index::importance::scheduler::start() {
                 // Reachable from the IPC layer: `record_visit` resolves it here.
                 app.manage(scheduler);
             }
@@ -858,7 +846,7 @@ pub fn run() {
             // to the same scan-completion bus so images enrich when a local volume's
             // index finishes scanning. Off by default, so no work runs until the
             // toggle is enabled. See `media_index/CLAUDE.md`.
-            if let Some(scheduler) = media_index::scheduler::start() {
+            if let Some(scheduler) = cmdr_index::media_index::scheduler::start() {
                 app.manage(scheduler);
             }
 

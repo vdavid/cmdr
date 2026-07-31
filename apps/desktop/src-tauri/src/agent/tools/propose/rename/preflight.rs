@@ -212,7 +212,7 @@ async fn preflight_remote(proposal: &RenameProposal, allowed_row_ids: &[String])
         }
         fingerprints.push(RenameSourceFingerprint::Remote {
             row_id: row.row_id.clone(),
-            normalized_path: crate::indexing::store::normalize_for_comparison(&row.source_path),
+            normalized_path: cmdr_index::store::normalize_for_comparison(&row.source_path),
             size: source_meta.size,
             modified: source_meta.modified_at.map(|modified| modified as i64),
         });
@@ -307,7 +307,7 @@ pub(super) fn mark_duplicate_destinations(
             .unwrap_or(Path::new(""))
             .join(&row.destination_name);
         grouped
-            .entry(crate::indexing::store::normalize_for_comparison(
+            .entry(cmdr_index::store::normalize_for_comparison(
                 &destination.to_string_lossy(),
             ))
             .or_default()
@@ -340,18 +340,18 @@ pub(super) fn mark_cycle_warnings(rows: &[&RenameProposalRow], statuses: &mut Ha
         let source_keys: HashSet<String> = rows
             .iter()
             .filter(|row| remaining.contains(row.row_id.as_str()))
-            .map(|row| crate::indexing::store::normalize_for_comparison(&row.source_path))
+            .map(|row| cmdr_index::store::normalize_for_comparison(&row.source_path))
             .collect();
         let free: Vec<&str> = rows
             .iter()
             .filter(|row| remaining.contains(row.row_id.as_str()))
             .filter(|row| {
-                let source = crate::indexing::store::normalize_for_comparison(&row.source_path);
+                let source = cmdr_index::store::normalize_for_comparison(&row.source_path);
                 let destination = Path::new(&row.source_path)
                     .parent()
                     .unwrap_or(Path::new(""))
                     .join(&row.destination_name);
-                let destination = crate::indexing::store::normalize_for_comparison(&destination.to_string_lossy());
+                let destination = cmdr_index::store::normalize_for_comparison(&destination.to_string_lossy());
                 source == destination || !source_keys.contains(&destination)
             })
             .map(|row| row.row_id.as_str())

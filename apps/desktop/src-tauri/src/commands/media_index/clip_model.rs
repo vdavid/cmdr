@@ -6,9 +6,9 @@ use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 
 use super::kick_all_ready_passes_for;
-use crate::media_index::clip;
-use crate::media_index::gate;
-use crate::media_index::scheduler::MediaScheduler;
+use cmdr_index::media_index::clip;
+use cmdr_index::media_index::gate;
+use cmdr_index::media_index::scheduler::MediaScheduler;
 
 /// The CLIP model's install state, for the settings download affordance. Crosses the IPC
 /// boundary, so it derives `Serialize` + `specta::Type` (camelCase).

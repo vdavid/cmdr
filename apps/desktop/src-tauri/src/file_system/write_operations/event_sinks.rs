@@ -17,7 +17,7 @@ use super::types::{
     WriteErrorEvent, WriteOperationError, WriteOperationType, WriteProgressEvent, WriteSettledEvent,
     WriteSourceItemDoneEvent,
 };
-use crate::indexing::ExpectedTotals;
+use cmdr_index::ExpectedTotals;
 
 impl WriteProgressEvent {
     /// Construct an event with the 8 core counter fields. Rate/ETA fields are

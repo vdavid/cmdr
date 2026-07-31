@@ -2,8 +2,9 @@
 //! the floor between the subsystems and the host.
 
 use crate::error_reporter::auto_dispatcher::{TEST_LOCK, reset_for_test, set_enabled, snapshot_for_test};
-use crate::indexing::ActivityPhase;
-use crate::indexing::{Diagnostic, IndexErrorReport, IndexEvent, IndexEventKind, one_of_every_kind};
+use cmdr_index::ActivityPhase;
+use cmdr_index::testing::events::one_of_every_kind;
+use cmdr_index::{Diagnostic, IndexErrorReport, IndexEvent, IndexEventKind};
 
 use super::{Destination, route};
 
@@ -66,7 +67,7 @@ fn an_error_event_reaches_the_auto_dispatcher() {
     route(
         IndexEvent::Error {
             report: IndexErrorReport::StorageFailed {
-                failure: crate::indexing::IndexFailure {
+                failure: cmdr_index::IndexFailure {
                     code: 11,
                     extended_code: 267,
                 },

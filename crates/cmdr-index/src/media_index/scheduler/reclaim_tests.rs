@@ -1,0 +1,374 @@
+//! Reclaim-space tests: the single-source stored-coverage
+//! partition over a seeded `media.db` + importance store, and the prune round-trip
+//! (doomed rows gone, surviving rows intact, honest counts returned). Deletion is
+//! data-safety-critical, so these are real red→green.
+
+use super::*;
+use crate::importance::store::{ImportanceStore, importance_db_path};
+use crate::importance::writer::{ImportanceWriter, WeightRow};
+use crate::media_index::backend::fake::FakeVisionBackend;
+// Share the kick tests' tiny-index builder + gate reset (same shape).
+use super::kick_tests::{build_index, reset_gate, use_automatic_scope};
+use crate::media_index::coverage;
+use crate::media_index::gate::IndexScope;
+use crate::media_index::network::config::NetworkEnrichConfig;
+use crate::media_index::predicate::MediaKind;
+use crate::media_index::store::{EnrichmentState, MediaStatusRow, MediaStore, media_db_path};
+use crate::media_index::writer::{MediaWriter, UpsertAnalysis};
+
+const ROOT: &str = "root";
+
+fn fake_backend() -> Arc<dyn VisionBackend> {
+    Arc::new(FakeVisionBackend::new())
+}
+
+/// Seed a FULL-pass importance store (generation stamped) so `importance_scores` reads
+/// it as scored.
+fn seed_importance(data_dir: &std::path::Path, volume_id: &str, rows: &[(&str, f64)]) {
+    let path = importance_db_path(data_dir, volume_id);
+    ImportanceStore::open(&path).expect("open importance store");
+    let writer = ImportanceWriter::spawn(&path).expect("importance writer");
+    let rows = rows
+        .iter()
+        .map(|(p, s)| WeightRow {
+            path: p.to_string(),
+            score: *s,
+            signals_json: "{}".to_string(),
+        })
+        .collect();
+    writer.write_weights(1, rows).expect("write weights");
+    writer.flush_blocking().expect("flush");
+    writer.shutdown();
+}
+
+/// Seed one fully-enriched `media.db` row (OCR text + a tag + an embedding, so a prune
+/// has real content bytes to free) for `volume_id` at `path`.
+fn seed_media_row(data_dir: &std::path::Path, volume_id: &str, path: &str) {
+    use crate::media_index::backend::Tag;
+    let db_path = media_db_path(data_dir, volume_id);
+    MediaStore::open(&db_path).expect("open media store");
+    let writer = MediaWriter::spawn(&db_path, volume_id).expect("media writer");
+    writer
+        .upsert(
+            MediaStatusRow {
+                path: path.to_string(),
+                mtime: Some(10),
+                size: Some(10),
+                media_kind: MediaKind::Image,
+                state: EnrichmentState::Done,
+                engine_version: "fake-vision-1".to_string(),
+                clip_stamp: String::new(),
+            },
+            Some(UpsertAnalysis {
+                ocr_text: "some text".to_string(),
+                tags: vec![Tag {
+                    label: "beach".to_string(),
+                    score: 0.9,
+                }],
+                embedding: Some(vec![0.1, 0.2, 0.3, 0.4]),
+            }),
+        )
+        .expect("seed row");
+    writer.flush_blocking().expect("flush");
+    writer.shutdown();
+}
+
+fn stored_exists(data_dir: &std::path::Path, volume_id: &str, path: &str) -> bool {
+    MediaStore::open(&media_db_path(data_dir, volume_id))
+        .expect("open")
+        .status_for(path)
+        .expect("read")
+        .is_some()
+}
+
+#[test]
+fn stored_coverage_partitions_rows_by_the_threshold_and_counts_qualifying() {
+    // /keep scores high, /drop scores low. At threshold 0.5 the /keep rows survive and
+    // the /drop rows are doomed; `covered_qualifying` counts the drive-index images in
+    // the covered folders (a DIFFERENT number from surviving stored rows).
+    let _guard = crate::test_read_pool_lock();
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    // The drive index: two images in /keep, one in /drop.
+    build_index(
+        &index_path,
+        &[("/keep", "a.jpg"), ("/keep", "b.jpg"), ("/drop", "c.jpg")],
+    );
+    crate::test_install_root_read_pool(index_path).expect("install pool");
+    // The covered-count cache is process-global and keyed by volume id ("root"); a prior
+    // test may have cached a different index's counts, so drop it for a fresh build.
+    coverage::invalidate(ROOT);
+    seed_importance(dir.path(), ROOT, &[("/keep", 0.9), ("/drop", 0.1)]);
+    // media.db carries one stored row in each folder (only a.jpg enriched in /keep).
+    seed_media_row(dir.path(), ROOT, "/keep/a.jpg");
+    seed_media_row(dir.path(), ROOT, "/drop/c.jpg");
+    network::config::set_config(NetworkEnrichConfig::default());
+
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+    let cov = sched
+        .stored_coverage(ROOT, "/", 0.5, IndexScope::ByImportance)
+        .expect("scored");
+    assert_eq!(cov.surviving_stored, 1, "the /keep row survives");
+    assert_eq!(cov.doomed_stored, 1, "the /drop row is doomed");
+    assert_eq!(cov.doomed_paths, vec!["/drop/c.jpg".to_string()]);
+    assert_eq!(
+        cov.surviving_stored + cov.doomed_stored,
+        2,
+        "the partition covers every stored row"
+    );
+    // Covered qualifying counts the DRIVE-INDEX images in /keep (2), not the 1 stored row.
+    assert_eq!(cov.covered_qualifying, 2, "qualifying images in covered folders");
+
+    crate::test_uninstall_root_read_pool();
+    network::config::set_config(NetworkEnrichConfig::default());
+}
+
+#[test]
+fn the_volume_state_poll_never_pays_a_cold_coverage_walk() {
+    // `stored_coverage_counts` backs the `media_index_volume_state` poll, which fires at
+    // launch and every few seconds while the settings panel is open. A cold coverage build
+    // there is a whole-index O(entries) walk — the launch-time memory runaway
+    // (`docs/notes/memory-runaway-rust-heap-2026-07-25.md`). So the poll reads the cache or
+    // reports "no number yet"; only a user-initiated read (the reclaim preview / the slider
+    // preview) may pay the walk.
+    let _guard = crate::test_read_pool_lock();
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(
+        &index_path,
+        &[("/keep", "a.jpg"), ("/keep", "b.jpg"), ("/drop", "c.jpg")],
+    );
+    crate::test_install_root_read_pool(index_path).expect("install pool");
+    coverage::invalidate(ROOT);
+    seed_importance(dir.path(), ROOT, &[("/keep", 0.9), ("/drop", 0.1)]);
+    seed_media_row(dir.path(), ROOT, "/keep/a.jpg");
+    network::config::set_config(NetworkEnrichConfig::default());
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+
+    // Cold: the poll answers the stored-row split (cheap, from `media.db`) but has no
+    // honest qualifying number, and it leaves the cache cold.
+    let cold = sched
+        .stored_coverage_counts(ROOT, "/", 0.5, IndexScope::ByImportance)
+        .expect("scored");
+    assert_eq!(cold.surviving_stored, 1, "the stored split still answers");
+    assert_eq!(
+        cold.covered_qualifying, None,
+        "no cached counts ⇒ no number, never a confident 0"
+    );
+    assert!(coverage::cached(ROOT).is_none(), "the poll must not have run the walk");
+
+    // The user-initiated reclaim preview MAY pay the walk, which warms the cache…
+    let preview = sched
+        .stored_coverage(ROOT, "/", 0.5, IndexScope::ByImportance)
+        .expect("scored");
+    assert_eq!(preview.covered_qualifying, 2, "the covered folder holds two images");
+
+    // …and from then on the poll serves that same number, free.
+    let warm = sched
+        .stored_coverage_counts(ROOT, "/", 0.5, IndexScope::ByImportance)
+        .expect("scored");
+    assert_eq!(
+        warm.covered_qualifying,
+        Some(2),
+        "the poll reports the warm count, matching the preview"
+    );
+
+    coverage::invalidate(ROOT);
+    crate::test_uninstall_root_read_pool();
+    network::config::set_config(NetworkEnrichConfig::default());
+}
+
+#[test]
+fn stored_coverage_is_none_when_importance_is_unscored() {
+    // No importance store ⇒ the AUTOMATIC scope can't partition safely ⇒ `None` (the
+    // command reports pending and the reclaim UI stays hidden rather than proposing a
+    // destructive number).
+    let dir = tempfile::tempdir().expect("temp");
+    seed_media_row(dir.path(), ROOT, "/keep/a.jpg");
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+    assert!(
+        sched
+            .stored_coverage(ROOT, "/", 0.0, IndexScope::ByImportance)
+            .is_none()
+    );
+}
+
+#[test]
+fn the_narrow_scope_partitions_without_importance_at_all() {
+    // "Only folders I choose" doesn't consult importance, so an unscored volume is
+    // perfectly answerable — and it's exactly the volume someone narrowing their scope
+    // is likely looking at. The row outside the chosen folders is DOOMED (reclaimable),
+    // never deleted here.
+    // The `network::config` this drives is process-global, so serialize like the other
+    // config-touching tests here.
+    let _guard = crate::test_read_pool_lock();
+    let dir = tempfile::tempdir().expect("temp");
+    seed_media_row(dir.path(), ROOT, "/chosen/a.jpg");
+    seed_media_row(dir.path(), ROOT, "/elsewhere/b.jpg");
+    network::config::set_config(NetworkEnrichConfig {
+        always_index_folders: ["/chosen".to_string()].into_iter().collect(),
+        ..Default::default()
+    });
+
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+    let cov = sched
+        .stored_coverage(ROOT, "/", 0.0, IndexScope::ChosenFolders)
+        .expect("answerable without importance");
+    assert_eq!(cov.surviving_stored, 1, "the chosen folder's row stays covered");
+    assert_eq!(cov.doomed_paths, vec!["/elsewhere/b.jpg".to_string()]);
+
+    network::config::set_config(NetworkEnrichConfig::default());
+}
+
+#[test]
+fn narrowing_the_scope_keeps_every_row_until_the_user_reclaims() {
+    // The data-safety line for the mode switch: flipping to "only folders I choose"
+    // re-partitions (the /important row becomes doomed) but deletes NOTHING on its own —
+    // both rows are still on disk. Only the explicit reclaim prune removes them, and it
+    // spares the chosen folder.
+    // The `network::config` this drives is process-global, so serialize like the other
+    // config-touching tests here.
+    let _guard = crate::test_read_pool_lock();
+    let dir = tempfile::tempdir().expect("temp");
+    seed_importance(dir.path(), ROOT, &[("/important", 0.9)]);
+    seed_media_row(dir.path(), ROOT, "/important/a.jpg");
+    seed_media_row(dir.path(), ROOT, "/chosen/b.jpg");
+    network::config::set_config(NetworkEnrichConfig {
+        always_index_folders: ["/chosen".to_string()].into_iter().collect(),
+        ..Default::default()
+    });
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+
+    // The switch itself: the partition changes, the disk doesn't.
+    let cov = sched
+        .stored_coverage(ROOT, "/", 0.0, IndexScope::ChosenFolders)
+        .expect("partitionable");
+    assert_eq!(cov.doomed_paths, vec!["/important/a.jpg".to_string()]);
+    assert!(
+        stored_exists(dir.path(), ROOT, "/important/a.jpg"),
+        "narrowing the scope must not delete a row by itself"
+    );
+    assert!(stored_exists(dir.path(), ROOT, "/chosen/b.jpg"));
+
+    // The user then explicitly reclaims: only the uncovered row goes.
+    let outcome = sched.prune_below_threshold(ROOT, "/", 0.0, IndexScope::ChosenFolders);
+    assert_eq!(outcome.deleted_rows, 1);
+    assert!(!stored_exists(dir.path(), ROOT, "/important/a.jpg"));
+    assert!(
+        stored_exists(dir.path(), ROOT, "/chosen/b.jpg"),
+        "the chosen folder's rows survive the reclaim"
+    );
+
+    network::config::set_config(NetworkEnrichConfig::default());
+}
+
+#[test]
+fn prune_below_threshold_deletes_the_doomed_set_and_keeps_the_rest() {
+    // The prune round-trip: the /drop row goes, the /keep row stays, and the outcome
+    // reports one deleted row and a positive freed-byte estimate.
+    let _guard = crate::test_read_pool_lock();
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(&index_path, &[("/keep", "a.jpg"), ("/drop", "c.jpg")]);
+    crate::test_install_root_read_pool(index_path).expect("install pool");
+    // The covered-count cache is process-global and keyed by volume id ("root"); a prior
+    // test may have cached a different index's counts, so drop it for a fresh build.
+    coverage::invalidate(ROOT);
+    seed_importance(dir.path(), ROOT, &[("/keep", 0.9), ("/drop", 0.1)]);
+    seed_media_row(dir.path(), ROOT, "/keep/a.jpg");
+    seed_media_row(dir.path(), ROOT, "/drop/c.jpg");
+    network::config::set_config(NetworkEnrichConfig::default());
+
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+    let outcome = sched.prune_below_threshold(ROOT, "/", 0.5, IndexScope::ByImportance);
+    assert_eq!(outcome.deleted_rows, 1, "one doomed row deleted");
+    assert!(outcome.freed_bytes > 0, "a positive freed-byte estimate");
+
+    assert!(stored_exists(dir.path(), ROOT, "/keep/a.jpg"), "covered row survives");
+    assert!(!stored_exists(dir.path(), ROOT, "/drop/c.jpg"), "doomed row gone");
+
+    crate::test_uninstall_root_read_pool();
+    network::config::set_config(NetworkEnrichConfig::default());
+}
+
+#[test]
+fn a_pass_enriching_covered_rows_and_a_prune_touch_disjoint_sets() {
+    // The concurrent-pass sanity: a pass only enriches AT-or-above-threshold rows and the
+    // prune only deletes BELOW-threshold rows, so the two sets are disjoint. Running a
+    // pass (which enriches the covered /keep image) and then the prune (which removes the
+    // doomed /drop row) leaves /keep enriched and /drop gone — neither steps on the other.
+    let _guard = crate::test_read_pool_lock();
+    reset_gate();
+    // Importance-driven coverage, so ask for the automatic scope (the default indexes
+    // only the user's chosen folders).
+    use_automatic_scope();
+    gate::set_enabled(true);
+    gate::set_importance_threshold(0.5);
+
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(&index_path, &[("/keep", "a.jpg"), ("/drop", "c.jpg")]);
+    crate::test_install_root_read_pool(index_path).expect("install pool");
+    // The covered-count cache is process-global and keyed by volume id ("root"); a prior
+    // test may have cached a different index's counts, so drop it for a fresh build.
+    coverage::invalidate(ROOT);
+    seed_importance(dir.path(), ROOT, &[("/keep", 0.9), ("/drop", 0.1)]);
+    // media.db starts with only the doomed /drop row (the covered /keep row is enriched by
+    // the pass below — the "new rows during prune").
+    seed_media_row(dir.path(), ROOT, "/drop/c.jpg");
+
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+    // The pass enriches the covered /keep image (it defers /drop, below threshold).
+    sched.run_pass_blocking(ROOT).expect("pass");
+    assert!(
+        stored_exists(dir.path(), ROOT, "/keep/a.jpg"),
+        "the pass enriched the covered row"
+    );
+
+    // The prune removes the doomed /drop row, leaving the just-enriched /keep row intact.
+    let outcome = sched.prune_below_threshold(ROOT, "/", 0.5, IndexScope::ByImportance);
+    assert_eq!(outcome.deleted_rows, 1, "only the doomed /drop row is pruned");
+    assert!(
+        stored_exists(dir.path(), ROOT, "/keep/a.jpg"),
+        "the covered row survives the prune"
+    );
+    assert!(
+        !stored_exists(dir.path(), ROOT, "/drop/c.jpg"),
+        "the doomed row is gone"
+    );
+
+    crate::test_uninstall_root_read_pool();
+    reset_gate();
+}
+
+#[test]
+fn prune_leaves_an_override_covered_row_below_threshold() {
+    // An "always index" override keeps a low-scoring folder's rows even at a high
+    // threshold — the prune honors the same precedence enrichment does.
+    let _guard = crate::test_read_pool_lock();
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(&index_path, &[("/archive", "a.jpg")]);
+    crate::test_install_root_read_pool(index_path).expect("install pool");
+    // The covered-count cache is process-global and keyed by volume id ("root"); a prior
+    // test may have cached a different index's counts, so drop it for a fresh build.
+    coverage::invalidate(ROOT);
+    seed_importance(dir.path(), ROOT, &[("/archive", 0.1)]);
+    seed_media_row(dir.path(), ROOT, "/archive/a.jpg");
+    // Override /archive so it's covered regardless of its low score.
+    network::config::set_config(NetworkEnrichConfig {
+        always_index_folders: ["/archive".to_string()].into_iter().collect(),
+        ..Default::default()
+    });
+
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+    let outcome = sched.prune_below_threshold(ROOT, "/", 0.8, IndexScope::ByImportance);
+    assert_eq!(outcome.deleted_rows, 0, "the override-covered row is not pruned");
+    assert!(
+        stored_exists(dir.path(), ROOT, "/archive/a.jpg"),
+        "override row survives"
+    );
+
+    crate::test_uninstall_root_read_pool();
+    network::config::set_config(NetworkEnrichConfig::default());
+}

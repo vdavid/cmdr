@@ -117,7 +117,7 @@ pub(crate) fn build_volumes_yaml(volumes: &[VolumeSummary]) -> String {
 /// Map a volume's live index status to the section's `indexStatus` token, reusing
 /// the one `cmdr://indexing` mapping.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-fn index_status_token(status: &crate::indexing::VolumeIndexStatus) -> &'static str {
+fn index_status_token(status: &cmdr_index::VolumeIndexStatus) -> &'static str {
     status_token(status.enabled, status.freshness)
 }
 
@@ -186,10 +186,10 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
     }
     #[cfg(not(target_os = "macos"))]
     {
-        let status = index().volume_status(crate::indexing::ROOT_VOLUME_ID);
+        let status = index().volume_status(cmdr_index::ROOT_VOLUME_ID);
         out.push(VolumeSummary {
             name: "root".to_string(),
-            id: crate::indexing::ROOT_VOLUME_ID.to_string(),
+            id: cmdr_index::ROOT_VOLUME_ID.to_string(),
             kind: VolumeKind::Local,
             filesystem: None,
             read_only: None,

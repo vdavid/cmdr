@@ -205,7 +205,7 @@ fn build_proposal<R: Runtime>(
             return Err(invalid_params("A source file can appear only once in a rename plan."));
         }
         validate_destination_name(&rename.destination_name)?;
-        let destination_key = crate::indexing::store::normalize_for_comparison(&rename.destination_name);
+        let destination_key = cmdr_index::store::normalize_for_comparison(&rename.destination_name);
         if !destination_names.insert(destination_key) {
             return Err(invalid_params("Destination names must be unique on this volume."));
         }

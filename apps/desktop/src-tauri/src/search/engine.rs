@@ -7,7 +7,7 @@ use std::collections::HashSet;
 use rayon::prelude::*;
 use regex::{Regex, RegexBuilder};
 
-use crate::indexing::store::{self, ROOT_ID};
+use cmdr_index::store::{self, ROOT_ID};
 
 use super::index::SearchIndex;
 use super::query::{SYSTEM_DIR_EXCLUDES, glob_to_regex, summarize_query};

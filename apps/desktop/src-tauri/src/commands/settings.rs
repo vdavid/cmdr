@@ -150,7 +150,7 @@ pub fn set_log_llm_calls(enabled: bool) {
 #[tauri::command]
 #[specta::specta]
 pub fn set_image_index_enabled(app: AppHandle, enabled: bool) {
-    crate::media_index::gate::set_enabled(enabled);
+    cmdr_index::media_index::gate::set_enabled(enabled);
     if enabled {
         crate::commands::media_index::kick_all_ready_passes_for(&app);
     }

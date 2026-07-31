@@ -21,23 +21,14 @@ playwright-e2e = ["dep:tauri-plugin-playwright", "cmdr-fs/playwright-e2e"]
 virtual-mtp = ["mtp-rs/virtual-device"]
 # Virtual SMB hosts for E2E testing (injects synthetic network hosts). Never enable in production builds.
 smb-e2e = ["smb2/testing"]
-# The index's test-only surface (`indexing::testing`) plus the bench fixtures:
-# widens test-only scaffolding from `#[cfg(test)]` to `pub`, so a consumer that
-# compiles against this crate as an EXTERNAL one (a bench, or the app once the
-# index is its own crate) can still install a fake host, record events, and reserve
-# a registry slot. `cfg(test)` cannot do that: it is set only while a crate
-# compiles its OWN test target. `tempfile` rides along because
-# `reserve_initializing_index_for_test` returns one.
+# "This is a test build.", forwarded to the two crates that act on it. They widen
+# their test-only scaffolding (`cmdr_index::testing`, `cmdr_fs::testing`) from
+# `#[cfg(test)]` to `pub`, which is the only way this crate's tests can reach it:
+# `cfg(test)` is set only while a crate compiles its OWN test target, never when a
+# consumer compiles it as a dependency.
 # Enabled automatically for every dev target and only for those; see the self
 # dev-dependency under `[dev-dependencies]`. Never enable in production builds.
-testing = ["dep:tempfile", "cmdr-fs/testing"]
-# The importance subsystem's developer-tooling surface (`importance::tooling`):
-# the evaluation corpus and the measurement entry points the `index-query`
-# binaries drive. Separate from `testing` because they answer different questions
-# — a test needs fakes and guards, a tool needs the real scoring pipeline plus a
-# corpus — and because these are BINARIES in another crate, which `cfg(test)`
-# can never reach. Never enable in production builds.
-tooling = []
+testing = ["cmdr-fs/testing", "cmdr-index/testing"]
 
 [[bin]]
 name = "Cmdr"
@@ -56,14 +47,14 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-# Optional, and switched on ONLY by the `testing` feature: the index's
-# `reserve_initializing_index_for_test` hands a `TempDir` back to its caller, so
-# the type is part of that gated surface and can't live in dev-dependencies.
-tempfile = { version = "3", optional = true }
 # Filesystem vocabulary and host primitives shared across the workspace: the
 # `Volume` trait and its data types, `FileEntry`, the typed error classification,
 # thread QoS, process memory, poison-free locking. No Tauri, no index.
 cmdr-fs = { path = "../../../crates/cmdr-fs" }
+# The index: the file index, the media index, and folder importance, behind one
+# `Index` handle. Tauri-free by design and enforced — the app is its host, which
+# is why every seam it needs is answered in `src/index_host.rs` and nowhere else.
+cmdr-index = { path = "../../../crates/cmdr-index" }
 tauri = { version = "2", features = ["macos-private-api"] }
 tauri-plugin-opener = "2"
 tauri-plugin-mcp-bridge = "0.12"
@@ -79,10 +70,6 @@ serde_json = "1"
 notify = "8"
 dirs = "6"
 image = "0.25.10"
-# CLIP byte-pair text tokenizer (ctx 77) for the semantic-search query path (cross-platform,
-# pure Rust — the query path isn't macOS-gated). Bundles the OpenAI CLIP BPE vocab; MIT,
-# v0.1.0 published 2023-11-30 (far outside the 14-day gate).
-instant-clip-tokenizer = "0.1.0"
 base64 = "0.22.1"
 rayon = "1.11.0"
 regex = "1"
@@ -138,15 +125,6 @@ rusqlite = { version = "0.40", features = ["bundled", "collation", "fallible_uin
 xattr = "1"
 filetime = "0.2"
 exacl = "0.13"
-# `f16` for the media index's on-disk + resident image embeddings (half the bytes of
-# `f32` on disk and in the resident vector cache; widened to `f32` at score time).
-half = "2"
-# ANN vector search for CLIP text→image at scale (plan M6): HNSW with f16 storage +
-# cosine metric, mmap `view` reads (at-rest RSS stays small, pages evictable). Chosen by
-# the measured spike (`docs/notes/ann-vector-search-spike-2026-07-24.md`): 0.30 ms p50 at
-# 0.994 recall@10 over 200k vectors. Apache-2.0 (incl. vendored SimSIMD); ~+1 MB binary
-# (accepted). Pinned =2.26.0 (published 2026-07-10, outside the 3-day window).
-usearch = "=2.26.0"
 sysinfo = { version = "0.39.0", default-features = false, features = ["system"] }
 time = { version = "0.3", features = ["parsing", "macros", "formatting"] }
 # Playwright E2E testing plugin: socket bridge for direct webview injection (optional, feature-gated, dev-only).
@@ -314,40 +292,12 @@ security-framework = "3.2"
 # Finder/macOS saved (internet-password items the high-level crate can't filter by
 # server/protocol). Already in the lockfile as a transitive dep of `security-framework`.
 security-framework-sys = "2.17"
-# Drive indexing: macOS FSEvents watcher with event IDs and sinceWhen replay
-cmdr-fsevent-stream = { path = "../../../crates/fsevent-stream" }
 # Custom updater: signature verification (tarball extraction uses `tar` + `flate2`
 # from the untargeted archive codec block above).
 minisign-verify = "0.2"
-# Media-index OCR: real Vision text recognition + in-memory ImageIO decode/downscale
-# (media_index/backend/vision.rs). All 0.3.2, published 2025-10-04 (far outside the
-# 14-day cool-off), tracking the same objc2 0.6 family as the bindings above.
-objc2-vision = { version = "0.3.2", features = [
-    "VNRequest", "VNRequestHandler", "VNRecognizeTextRequest", "VNObservation",
-    "VNClassifyImageRequest", "VNGenerateImageFeaturePrintRequest", "VNTypes",
-    "objc2-core-graphics",
-] }
-objc2-image-io = { version = "0.3.2", features = [
-    "CGImageSource", "objc2-core-graphics",
-] }
-objc2-core-graphics = { version = "0.3.2", features = [
-    "CGImage",
-    # CLIP image preprocessing: render the decoded CGImage into a 224x224 RGB bitmap
-    # (resize + center-crop) to feed the image tower (media_index/backend/vision).
-    "CGColorSpace", "CGContext", "CGBitmapContext",
-] }
 # `CFUserNotification` (+ its `CFDate` / `CFURL` prerequisites) powers the instance-lock refusal
 # alert: it's the one alert API that doesn't pump our run loop (see `instance_lock.rs`).
 objc2-core-foundation = { version = "0.3.2", features = ["CFData", "CFDictionary", "CFString", "CFNumber", "CFBase", "CFCGTypes", "CFUserNotification", "CFDate", "CFURL"] }
-# Media-index CLIP semantic search: on-device Core ML inference for the text + image towers
-# (media_index/clip/). 0.3.2, published 2025-10-04, same objc2 0.6 / 0.3.2 family as the
-# Vision bindings above; the CLIP spike proved this exact version round-trips bit-identically
-# (docs/notes/clip-coreml-rust-spike.md). Zlib OR Apache-2.0 OR MIT.
-objc2-core-ml = { version = "0.3.2", features = [
-    "MLModel", "MLModel_MLModelCompilation", "MLModelConfiguration", "MLModelDescription",
-    "MLFeatureDescription", "MLMultiArray", "MLFeatureValue", "MLFeatureProvider",
-    "MLDictionaryFeatureProvider", "MLPredictionOptions",
-] }
 
 
 [dev-dependencies]
@@ -379,6 +329,8 @@ criterion = { version = "0.8.1", features = ["html_reports"] }
 env_logger = "0.11.10"
 # For test-only cryptographic key generation (compatible with ed25519-dalek's rand_core 0.6)
 rand_core = { version = "0.6", features = ["getrandom"] }
+# Every app-side use is inside a `#[cfg(test)] mod tests`.
+tempfile = "3"
 # Archive-browsing test fixtures build compressed tars and 7z archives in-memory
 # (no checked-in blobs), so tests need the ENCODERS the shipped decode-only path
 # omits. `zstd` (C, dev-only — already in the graph via rc-zip) encodes `.tar.zst`
@@ -409,8 +361,4 @@ required-features = ["smb-e2e"]
 
 [[bench]]
 name = "icon_benchmarks"
-harness = false
-
-[[bench]]
-name = "index_benchmarks"
 harness = false

@@ -7,8 +7,8 @@ use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 
 use super::resolve_enabled_volumes;
-use crate::media_index::gate;
-use crate::media_index::scheduler::MediaScheduler;
+use cmdr_index::media_index::gate;
+use cmdr_index::media_index::scheduler::MediaScheduler;
 
 /// The reclaim-space preview behind the settings "delete the extra entries" line:
 /// across the ENABLED volumes in `volume_ids`, how many stored image rows fall

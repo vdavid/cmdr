@@ -25,7 +25,7 @@ use tauri::{AppHandle, Runtime};
 use super::{ToolError, ToolResult};
 use crate::commands::media_index::MediaIndexVolumeState;
 use crate::mcp::resources::volumes::{VolumeKind, snapshot_volumes};
-use crate::media_index::read::{MediaIndex, OcrHit, SemanticHit, TagHit};
+use cmdr_index::media_index::read::{MediaIndex, OcrHit, SemanticHit, TagHit};
 
 /// The default hit cap when the caller doesn't specify one, and the hard ceiling on any
 /// caller value (an agent never needs a huge grid, and it bounds the payload the LLM reads).
@@ -340,14 +340,14 @@ pub async fn execute_search_photos<R: Runtime>(app: &AppHandle<R>, params: &Valu
     let volume_filter = params.get("volumeId").and_then(|v| v.as_str()).map(str::to_string);
 
     // Feature off ⇒ nothing is enriched. Voice it honestly rather than an empty list.
-    if !crate::media_index::gate::is_enabled() {
+    if !cmdr_index::media_index::gate::is_enabled() {
         return shape(&SearchPhotosResult::ImageIndexingOff {
             note: OFF_NOTE.to_string(),
         });
     }
 
     let data_dir = crate::config::resolved_app_data_dir(app).map_err(ToolError::internal)?;
-    let model_installed = crate::media_index::clip::install::is_installed(&data_dir);
+    let model_installed = cmdr_index::media_index::clip::install::is_installed(&data_dir);
 
     let (mode, degraded_to_ocr) = match resolve_effective_mode(requested, model_installed) {
         ModeResolution::SemanticModelMissing => {
@@ -425,7 +425,7 @@ pub(super) async fn resolve_search_volumes(volume_filter: Option<String>) -> Vec
 /// OCR hits it already gathered. Pure DB work — no live `statfs`/`readdir`.
 fn run_search(data_dir: &Path, volumes: &[String], query: &str, mode: EffectiveMode, limit: usize) -> Vec<PhotoHit> {
     let query_vec = if mode.uses_semantic() {
-        crate::media_index::clip::encode_text_query(query).ok()
+        cmdr_index::media_index::clip::encode_text_query(query).ok()
     } else {
         None
     };

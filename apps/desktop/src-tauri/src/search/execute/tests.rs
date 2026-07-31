@@ -5,11 +5,11 @@
 use std::collections::HashMap;
 
 use super::*;
-use crate::indexing::ROOT_VOLUME_ID;
 use crate::search::engine::{self, RankedEntry};
 use crate::search::index::{SearchEntry, SearchIndex};
 use crate::search::ranking::ImportanceWeights;
 use crate::search::types::PatternType;
+use cmdr_index::ROOT_VOLUME_ID;
 
 // ── Synthetic index builder ──────────────────────────────────────────
 

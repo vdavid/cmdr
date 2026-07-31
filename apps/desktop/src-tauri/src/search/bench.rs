@@ -29,9 +29,9 @@ use std::collections::HashMap;
 use std::sync::atomic::AtomicBool;
 use std::time::Instant;
 
-use crate::indexing::ReadPool;
-use crate::indexing::store::ROOT_ID;
 use crate::pluralize::{pluralize, pluralize_with};
+use cmdr_index::ReadPool;
+use cmdr_index::store::ROOT_ID;
 
 use super::engine::search_ranked;
 use super::index::{SearchEntry, SearchIndex, load_search_index};

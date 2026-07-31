@@ -631,7 +631,7 @@ async fn settle_remote_conflicts(rows: &[BulkRenameRow], active: &mut [bool], vo
 }
 
 fn normalized_path(path: &Path) -> String {
-    crate::indexing::store::normalize_for_comparison(&path.to_string_lossy())
+    cmdr_index::store::normalize_for_comparison(&path.to_string_lossy())
 }
 
 fn unique_temporary_path(source: &Path, row_id: &str) -> Option<PathBuf> {
@@ -715,7 +715,7 @@ async fn remote_fingerprint_matches(volume: &dyn Volume, path: &Path, expected: 
     else {
         return false;
     };
-    if normalized_path != &crate::indexing::store::normalize_for_comparison(&path.to_string_lossy()) {
+    if normalized_path != &cmdr_index::store::normalize_for_comparison(&path.to_string_lossy()) {
         return false;
     }
     let Ok(metadata) = volume.get_metadata(path).await else {

@@ -7,11 +7,11 @@ use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 
 use super::resolve_enabled_volumes;
-use crate::media_index::coverage;
-use crate::media_index::gate;
-use crate::media_index::network::config as network_config;
-use crate::media_index::read::MediaIndex;
-use crate::media_index::scheduler::MediaScheduler;
+use cmdr_index::media_index::coverage;
+use cmdr_index::media_index::gate;
+use cmdr_index::media_index::network::config as network_config;
+use cmdr_index::media_index::read::MediaIndex;
+use cmdr_index::media_index::scheduler::MediaScheduler;
 
 /// The minimal, honest per-volume enrichment state the search UI reads to voice its
 /// own coverage (plan § Coverage honesty + per-volume state). Deliberately NOT a
@@ -133,7 +133,7 @@ pub(crate) async fn volume_state<R: tauri::Runtime>(
             // check the scheduler gates enrichment on (live weight rows OR a stamped
             // generation), so the deferred state can't disagree with the scheduler.
             let importance_scored = {
-                use crate::importance::{ImportanceIndex, SignalSet};
+                use cmdr_index::importance::{ImportanceIndex, SignalSet};
                 let index = ImportanceIndex::open(&data_dir, &vid, SignalSet::all());
                 coverage::importance_scored(&index)
             };
@@ -235,8 +235,12 @@ pub async fn media_index_covered_count(
             // Override coverage is OS-path keyed; map each folder into OS space, as the
             // enrichment gate and the reclaim partition both do.
             let config = network_config::snapshot();
-            let is_override =
-                |folder: &str| config.covers(vid, &crate::media_index::network::fetch::os_join(mount_root, folder));
+            let is_override = |folder: &str| {
+                config.covers(
+                    vid,
+                    &cmdr_index::media_index::network::fetch::os_join(mount_root, folder),
+                )
+            };
             let (f, i) = coverage::covered_in_scope(&counts, &scores, threshold, scope, &is_override);
             folders += f;
             images += i;

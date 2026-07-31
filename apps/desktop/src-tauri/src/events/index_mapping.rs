@@ -22,12 +22,12 @@ use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tauri_specta::Event;
 
-use crate::indexing::AggregationPhase;
-use crate::indexing::lifecycle::freshness::Freshness;
-use crate::indexing::{
+use cmdr_index::AggregationPhase;
+use cmdr_index::Freshness;
+use cmdr_index::media_index::events::MediaEnrichTerminalReason;
+use cmdr_index::{
     ActivityPhase, Diagnostic, EventSink, IndexErrorReport, IndexEvent, MemoryWatchdogAction, RescanReason, ScanRunKind,
 };
-use crate::media_index::events::MediaEnrichTerminalReason;
 
 #[cfg(test)]
 mod tests;

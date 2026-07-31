@@ -2,7 +2,7 @@
 //! coverage-CHANGING setters in [`policy`].
 //!
 //! Thin per the commands-layer rule: resolve the app data dir, open the
-//! [`MediaIndex`](crate::media_index::read::MediaIndex) read API for the volume, and hand off the
+//! [`MediaIndex`](cmdr_index::media_index::read::MediaIndex) read API for the volume, and hand off the
 //! query. `search/` reaches `media.db` ONLY through `MediaIndex` — this command layer is
 //! that door, so no consumer takes a raw `rusqlite` dep on `media.db`.
 //!
@@ -24,8 +24,8 @@
 //! This file keeps only what more than one of them needs: the hit-limit clamp and the
 //! ONE enabled-volume rule.
 
-use crate::indexing::host::config::{IndexConfig, MediaConfig};
-use crate::media_index::network::config::NetworkEnrichConfig;
+use cmdr_index::host::config::{IndexConfig, MediaConfig};
+use cmdr_index::media_index::network::config::NetworkEnrichConfig;
 
 mod clip_model;
 mod file_status;
@@ -55,8 +55,8 @@ pub use thumbnail::*;
 /// the scheduler is managed (an early call at startup).
 pub(crate) fn kick_all_ready_passes_for(app: &tauri::AppHandle) {
     use tauri::Manager;
-    if let Some(scheduler) = app.try_state::<std::sync::Arc<crate::media_index::scheduler::MediaScheduler>>() {
-        crate::media_index::scheduler::kick_all_ready_passes_with(scheduler.inner());
+    if let Some(scheduler) = app.try_state::<std::sync::Arc<cmdr_index::media_index::scheduler::MediaScheduler>>() {
+        cmdr_index::media_index::scheduler::kick_all_ready_passes_with(scheduler.inner());
     }
 }
 
@@ -70,7 +70,7 @@ pub(crate) fn index_config_from(
     data_dir: std::path::PathBuf,
     settings: &crate::settings::loader::Settings,
 ) -> IndexConfig {
-    use crate::media_index::gate;
+    use cmdr_index::media_index::gate;
     IndexConfig {
         data_dir,
         media: MediaConfig {
@@ -122,8 +122,8 @@ fn resolve_limit(limit: Option<u32>) -> usize {
 /// the prune, and the per-volume state — so none of them can disagree about which volumes
 /// count, or map a stored path into OS space differently.
 fn resolve_enabled_volumes(volume_ids: &[String]) -> (Vec<(String, String)>, bool) {
-    use crate::indexing::IndexVolumeKind;
-    use crate::media_index::network::config as network_config;
+    use cmdr_index::IndexVolumeKind;
+    use cmdr_index::media_index::network::config as network_config;
     let kinds: std::collections::HashMap<String, IndexVolumeKind> =
         crate::index_host::index().ready_volumes().into_iter().collect();
     let mounts: std::collections::HashMap<String, String> = crate::file_system::get_volume_manager()

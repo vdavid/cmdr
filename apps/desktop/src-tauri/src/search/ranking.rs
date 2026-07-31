@@ -141,7 +141,7 @@ fn band_of(exact: bool, prefix: bool) -> MatchQuality {
 /// A file takes its parent folder's weight; a folder takes its own. Absent
 /// importance data the map is empty and every lookup returns `0.0` — neutral,
 /// never a penalty (the degradation contract). Built per-volume in
-/// [`volumes`](super::volumes) from [`ImportanceIndex`](crate::importance::ImportanceIndex);
+/// [`volumes`](super::volumes) from [`ImportanceIndex`](cmdr_index::importance::ImportanceIndex);
 /// the engine only ever sees this read-only view, so it stays pure.
 ///
 /// ## Why the paths aren't stored

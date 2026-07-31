@@ -13,7 +13,7 @@ use std::sync::{Arc, OnceLock};
 
 use tauri::AppHandle;
 
-use crate::indexing::Index;
+use cmdr_index::Index;
 
 /// The handle [`install`] built. Everything app-side reaches the index through
 /// [`index`], never by calling into `indexing::` internals.

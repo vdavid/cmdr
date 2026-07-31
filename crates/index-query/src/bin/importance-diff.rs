@@ -15,7 +15,7 @@
 
 use std::path::PathBuf;
 
-use cmdr_lib::importance::tooling::{compare_walks_for_incremental, sample_origins};
+use cmdr_index::importance::tooling::{compare_walks_for_incremental, sample_origins};
 
 /// A fixed clock for both sides, so a score difference can only be a signal
 /// difference.

@@ -397,7 +397,7 @@ pub(super) fn emit_synthetic_entry_diff(volume_id: Option<&str>, entry_path: &Pa
 
     // 2. Enrich with index data. `None` means the local filesystem (`root`); this
     // path only runs for local-FS volumes (`should_emit_synthetic_diff`).
-    let volume_id = volume_id.unwrap_or(crate::indexing::ROOT_VOLUME_ID);
+    let volume_id = volume_id.unwrap_or(cmdr_index::ROOT_VOLUME_ID);
     crate::index_host::index().enrich(volume_id, std::slice::from_mut(&mut entry));
 
     // 3. Find affected listings

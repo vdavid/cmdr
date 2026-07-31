@@ -20,7 +20,7 @@ use tauri::{AppHandle, Manager};
 
 use crate::location::Location;
 
-use crate::importance::scheduler::{ImportanceScheduler, is_background_scored};
+use cmdr_index::importance::scheduler::{ImportanceScheduler, is_background_scored};
 
 /// Record that the user navigated into `location`. Fire-and-forget and
 /// failure-silent: never blocks or breaks navigation.
@@ -62,7 +62,7 @@ pub async fn record_visit(app: AppHandle, location: Location) -> Result<(), Stri
     let result = tauri::async_runtime::spawn_blocking(move || {
         let writer = scheduler.writer_for(&volume_id)?;
         writer.record_visit(&path, now)?;
-        Ok::<(), crate::importance::ImportanceStoreError>(())
+        Ok::<(), cmdr_index::importance::ImportanceStoreError>(())
     })
     .await;
 

@@ -8,8 +8,8 @@
 use std::path::Path;
 
 use super::*;
-use crate::importance::testing::{ImportanceWriter, WeightRow, importance_db_path};
-use crate::importance::{FolderSignals, PathClass, SignalSet, Weights};
+use cmdr_index::importance::testing::{ImportanceWriter, WeightRow, importance_db_path};
+use cmdr_index::importance::{FolderSignals, PathClass, SignalSet, Weights};
 
 /// A folder's signals for a scored row that carries a real, explainable breakdown.
 fn scored_signals(path_class: PathClass, now: u64) -> FolderSignals {
@@ -30,7 +30,7 @@ fn write_db(dir: &Path, volume_id: &str, rows: &[(&str, FolderSignals)], now: u6
     let weight_rows: Vec<WeightRow> = rows
         .iter()
         .map(|(path, signals)| {
-            let score = crate::importance::score(signals, &SignalSet::all(), &Weights::default(), now);
+            let score = cmdr_index::importance::score(signals, &SignalSet::all(), &Weights::default(), now);
             WeightRow {
                 path: path.to_string(),
                 score: score.value(),

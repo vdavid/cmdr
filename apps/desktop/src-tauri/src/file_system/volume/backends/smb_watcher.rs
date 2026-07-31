@@ -16,7 +16,7 @@
 
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed, refresh_archive_listings};
-use crate::indexing::{WatchGap, WatchScope};
+use cmdr_index::{WatchGap, WatchScope};
 use log::{debug, info, warn};
 use smb2::{ClientConfig, FileNotifyAction, SmbClient};
 use std::collections::HashMap;

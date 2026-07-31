@@ -251,7 +251,7 @@ fn stop_local_external_index(volume_id: &str) -> bool {
 fn stop_local_external_index_off_main(volume_id: String) {
     // Skip the thread spawn entirely for the common non-LocalExternal case (root,
     // SMB, MTP): the kind check is a cheap registry lock.
-    if crate::index_host::index().volume_kind(&volume_id) != Some(crate::indexing::IndexVolumeKind::LocalExternal) {
+    if crate::index_host::index().volume_kind(&volume_id) != Some(cmdr_index::IndexVolumeKind::LocalExternal) {
         return;
     }
     std::thread::spawn(move || {
@@ -538,53 +538,42 @@ mod tests {
 
     #[test]
     fn stopping_a_registered_local_external_index_removes_its_instance() {
-        use crate::indexing;
+        use cmdr_index::IndexVolumeKind;
+        use cmdr_index::testing::{is_index_active, reserve_initializing_index_for_test};
 
         // A LocalExternal drive whose volume unmounts: the cleanup must stop the
         // index so its dangling FSEvents watcher + SQLite handles are released.
         // Pre-fix this would have passed wrongly: the unmount path never touched
         // indexing, so the instance survived (a leaked watcher/handles on a gone volume).
         let vid = "volumes-cmdr-test-unmount-cleanup";
-        let _tmp =
-            indexing::testing::reserve_initializing_index_for_test(vid, indexing::IndexVolumeKind::LocalExternal);
-        assert!(
-            indexing::lifecycle::state::is_active(vid),
-            "precondition: the index is active"
-        );
+        let _tmp = reserve_initializing_index_for_test(vid, IndexVolumeKind::LocalExternal);
+        assert!(is_index_active(vid), "precondition: the index is active");
 
         assert!(
             stop_local_external_index(vid),
             "a registered LocalExternal index must be stopped on unmount"
         );
-        assert!(
-            !indexing::lifecycle::state::is_active(vid),
-            "the instance must be removed after the stop"
-        );
+        assert!(!is_index_active(vid), "the instance must be removed after the stop");
     }
 
     #[test]
     fn unmount_cleanup_leaves_a_non_local_external_index_alone() {
-        use crate::indexing;
+        use cmdr_index::IndexVolumeKind;
+        use cmdr_index::testing::{is_index_active, reserve_initializing_index_for_test};
 
         // SMB/MTP indexes tear down through their own disconnect paths; the local
         // unmount cleanup must never stop one (it would fight that teardown).
         let vid = "volumes-cmdr-test-unmount-smb-like";
-        let _tmp = indexing::testing::reserve_initializing_index_for_test(vid, indexing::IndexVolumeKind::Smb);
-        assert!(
-            indexing::lifecycle::state::is_active(vid),
-            "precondition: the SMB index is active"
-        );
+        let _tmp = reserve_initializing_index_for_test(vid, IndexVolumeKind::Smb);
+        assert!(is_index_active(vid), "precondition: the SMB index is active");
 
         assert!(
             !stop_local_external_index(vid),
             "the local-external unmount cleanup must not stop an SMB index"
         );
-        assert!(
-            indexing::lifecycle::state::is_active(vid),
-            "the SMB instance must be left intact"
-        );
+        assert!(is_index_active(vid), "the SMB instance must be left intact");
 
         // Cleanup so the shared registry doesn't carry this test's instance.
-        let _ = indexing::lifecycle::state::stop_indexing(vid);
+        let _ = crate::index_host::index().forget_volume(vid);
     }
 }

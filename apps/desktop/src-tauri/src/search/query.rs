@@ -1,8 +1,8 @@
 //! Operations on search types: scope parsing, formatting, query summarization,
 //! directory size enrichment, and system directory exclusions.
 
-use crate::indexing::ReadPool;
-use crate::indexing::store;
+use cmdr_index::ReadPool;
+use cmdr_index::store;
 
 use super::types::{PatternType, SearchQuery};
 
@@ -12,7 +12,7 @@ use super::types::{PatternType, SearchQuery};
 // the INDEXER's policy, so the list lives with the scanner's exclusions and search
 // reads it from there. One list, so search and the importance scorer can't disagree
 // about what counts as machine output.
-pub use crate::indexing::SYSTEM_DIR_EXCLUDES;
+pub use cmdr_index::SYSTEM_DIR_EXCLUDES;
 // ── Query summary ────────────────────────────────────────────────────
 
 /// Build a dense, human-readable summary of a `SearchQuery` for logging and display.
