@@ -33,6 +33,7 @@ const snapshot: RestrictedWindowSettings = {
   fileViewerSuppressBinaryWarning: null,
   appearanceTextSize: 125,
   appearanceAppColor: 'cmdr-gold',
+  appearanceFileSizeFormat: 'si',
 }
 
 beforeEach(() => {
@@ -63,6 +64,10 @@ describe('initializeSettings({ restrictedWindow: true })', () => {
     expect(store.getSetting('viewer.wordWrap')).toBe(true)
     expect(store.getSetting('appearance.textSize')).toBe(125)
     expect(store.getSetting('appearance.appColor')).toBe('cmdr-gold')
+    // The Transfers window renders `<Size>` and is restricted, so the binary/SI
+    // choice has to reach it; falling back to the default here is what made one
+    // byte count read as 83.65 MB in the copy dialog and 79.78 "MB" in the queue.
+    expect(store.getSetting('appearance.fileSizeFormat')).toBe('si')
     // null snapshot fields fall back to the registry default
     expect(store.getSetting('fileViewer.suppressBinaryWarning')).toBe(false)
     // The whole point: no store-plugin call ever leaves this window.

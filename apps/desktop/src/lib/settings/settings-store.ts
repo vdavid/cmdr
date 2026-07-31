@@ -241,6 +241,9 @@ async function initializeSettingsRestricted(): Promise<void> {
       'fileViewer.suppressBinaryWarning': snapshot.fileViewerSuppressBinaryWarning,
       'appearance.textSize': snapshot.appearanceTextSize,
       'appearance.appColor': snapshot.appearanceAppColor,
+      // The Transfers window is restricted but renders `<Size>`; without this it
+      // would show a different number than the copy dialog for the same bytes.
+      'appearance.fileSizeFormat': snapshot.appearanceFileSizeFormat,
     }
     for (const [id, value] of Object.entries(mapped)) {
       if (value == null) continue // not persisted: registry default applies

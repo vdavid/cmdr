@@ -7124,6 +7124,12 @@ export type RestrictedWindowSettings = {
   fileViewerSuppressBinaryWarning: boolean | null
   appearanceTextSize: number | null
   appearanceAppColor: string | null
+  /**
+   *  `"binary"` (1024-based, `KB`) or `"si"` (1000-based, `kB`). The Transfers
+   *  window is restricted but renders `<Size>`, so it needs this or it shows a
+   *  different number than the copy dialog for the same byte count.
+   */
+  appearanceFileSizeFormat: string | null
 }
 
 /**

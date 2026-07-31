@@ -347,6 +347,10 @@ pub struct RestrictedWindowSettings {
     pub file_viewer_suppress_binary_warning: Option<bool>,
     pub appearance_text_size: Option<f64>,
     pub appearance_app_color: Option<String>,
+    /// `"binary"` (1024-based, `KB`) or `"si"` (1000-based, `kB`). The Transfers
+    /// window is restricted but renders `<Size>`, so it needs this or it shows a
+    /// different number than the copy dialog for the same byte count.
+    pub appearance_file_size_format: Option<String>,
 }
 
 /// Reads the [`RestrictedWindowSettings`] allowlist from `settings.json`.
@@ -378,6 +382,10 @@ fn parse_restricted_window_settings(contents: &str) -> RestrictedWindowSettings 
         appearance_text_size: json.get("appearance.textSize").and_then(|v| v.as_f64()),
         appearance_app_color: json
             .get("appearance.appColor")
+            .and_then(|v| v.as_str())
+            .map(String::from),
+        appearance_file_size_format: json
+            .get("appearance.fileSizeFormat")
             .and_then(|v| v.as_str())
             .map(String::from),
     }
@@ -606,6 +614,17 @@ mod tests {
     }
 
     #[test]
+    fn restricted_window_settings_carry_the_size_format() {
+        // The Transfers window is restricted (no `store:default`) but renders
+        // `<Size>`, so it needs the binary/SI choice in the snapshot. Without it
+        // the window silently falls back to the registry default and shows a
+        // different number than the copy dialog for the same byte count.
+        let json = r#"{ "appearance.fileSizeFormat": "si" }"#;
+        let parsed = parse_restricted_window_settings(json);
+        assert_eq!(parsed.appearance_file_size_format.as_deref(), Some("si"));
+    }
+
+    #[test]
     fn operation_log_retention_defaults_forever_and_3gb() {
         // Absent keys ⇒ forever age, 3 GB size.
         let limits = parse_operation_log_retention_limits("{}");
@@ -671,6 +690,7 @@ mod tests {
         assert_eq!(parsed.file_viewer_suppress_binary_warning, None);
         assert_eq!(parsed.appearance_text_size, None);
         assert_eq!(parsed.appearance_app_color, None);
+        assert_eq!(parsed.appearance_file_size_format, None);
     }
 
     #[test]

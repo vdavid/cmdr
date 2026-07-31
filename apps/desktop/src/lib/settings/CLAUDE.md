@@ -15,11 +15,11 @@ Registry-based user settings: defined once in `settings-registry.ts`, accessed u
 - **The registry stores i18n message KEYS, not English** (`labelKey` / `descriptionKey`, enum options too); copy lives
   in `messages/en/settings.json`. `section: string[]` stays English (routing/search identity; titles come from
   `sectionTitle()`). `cmdr/no-raw-user-facing-string` is enforced here. `DETAILS.md` § i18n.
-- **A registry entry alone does NOT render**: it also needs a `SettingRow` in its `sections/*Section.svelte` (only
-  `AdvancedSection` auto-renders `section: ['Advanced']`). Miss that and the setting is invisible though searchable.
-  Checklist: [adding a new setting](../../../../../docs/guides/adding-a-new-setting.md).
+- **A registry entry alone does NOT render**: it needs a `SettingRow` in its `sections/*Section.svelte` (only
+  `AdvancedSection` auto-renders `section: ['Advanced']`). Miss it and the setting is invisible though searchable.
+  [Checklist](../../../../../docs/guides/adding-a-new-setting.md).
 - **A setting's `section` is its ONE home**: hand-rendered on its feature page OR auto-rendered in Advanced
-  (`section[0] === 'Advanced'` + a `cardKey`), never both. (The two-FEATURE-page mirror pattern is unrelated;
+  (`section[0] === 'Advanced'` + a `cardKey`), never both. (The two-page mirror pattern is unrelated;
   `sections/DETAILS.md`.)
 - **Every setting MUST apply immediately without restart.** A backend-affecting one needs a Tauri command, a
   `$lib/tauri-commands/settings.ts` wrapper, AND an `onSettingChange` case in `settings-applier.ts`. Restart-required is
@@ -28,18 +28,18 @@ Registry-based user settings: defined once in `settings-registry.ts`, accessed u
   resolves bare names against `app_data_dir()`, ignoring `CMDR_DATA_DIR`, so isolated instances (dev, worktree, E2E)
   would read the production store. Covers `settings.json`, `shortcuts.json`, `app-status.json`.
 - **The viewer and queue windows have NO store capability by design.** Restricted mode seeds from
-  `get_restricted_window_settings` (an allowlist) and writes through `persist_restricted_window_setting`, degrading
-  failures to defaults with `log.warn`, never `log.error` (which auto-reports on every viewer open). Extend the
-  allowlist; never grant store permissions.
+  `get_restricted_window_settings`, a FIXED typed allowlist, not the whole registry: a setting missing from it reads as
+  its default there. Rendering something new in one means extending `settings/loader.rs::RestrictedWindowSettings`, the
+  bindings, AND the `mapped` table. Writes use `persist_restricted_window_setting`; failures degrade with `log.warn`,
+  never `log.error` (which auto-reports on every viewer open). Never grant store permissions.
 - **Persistence is sparse: `settings.json` holds ONLY keys an actor explicitly set.** "Explicit" is structural (which
   mutator ran, tracked in `explicitlySet`), NEVER `value !== default`. Don't seed defaults or gate saves on a value
   compare — either re-opens the leak that pinned `developer.mcpEnabled`. `resetSetting` deletes the key. `DETAILS.md` §
   Sparse persistence.
 - **Increment `SCHEMA_VERSION` and add a `migrateSettings()` case** when changing the settings FORMAT (a new key is
-  additive, no bump). Migrations must be idempotent: they re-run each launch until the first save stamps the version.
-- **Card visibility is section-owned**, never re-derived from the registry `card` field (that's the empty-card bug);
-  `cardKey` is search metadata only. `DETAILS.md` § Card groups.
-- **Reactive settings live in `reactive-settings.svelte.ts`** (`$state()` needs the `.svelte.ts` extension).
+  additive, no bump). Migrations must be idempotent: they re-run until the first save stamps the version.
+- **Card visibility is section-owned**, never re-derived from the registry `card` field (that's the empty-card bug).
+  `DETAILS.md` § Card groups.
 - **Every window gets settings from `initWindowSettings()`** (`window-settings.ts`) in the ROOT `routes/+layout.svelte`,
   never `initializeSettings()` directly: it also seeds the reactive layer and picks full vs restricted access. Skip it
   and that window renders every reactive setting at its default. DETAILS § Per-window initialization.
@@ -50,8 +50,7 @@ Registry-based user settings: defined once in `settings-registry.ts`, accessed u
   to `ai-config.ts::pushConfigToBackend()`, which re-reads every setting fresh — never pass cached values (callers just
   `setSetting(...)`). Those three plus `askCmdr.interactiveModel` also nudge `noteModelSettingChanged()`, landing a
   model switch in the open Ask Cmdr thread; `lib/ask-cmdr/DETAILS.md` § Model-change events.
-- **Cloud AI API keys live in the OS secret store, never `settings.json`** (`saveAiApiKey` / `getAiApiKey`);
-  `ai.cloudProviderConfigs` holds only `model` / `baseUrl`.
+- **Cloud AI API keys live in the OS secret store, never `settings.json`** (`saveAiApiKey` / `getAiApiKey`).
 - **A self-closing webview defers `close()` via `deferWindowClose()`** (100 ms, never `0`/`rAF`): a sync `close()`
   stalls cross-webview IPC on webkit2gtk; `0` segfaults macOS WebKit mid-teardown. DETAILS § Gotchas.
 
