@@ -409,6 +409,202 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::indexing::events::{IndexEventKind, RecordingSink};
+    use crate::indexing::lifecycle::freshness::Freshness;
+
+    /// Everything `run_scan_completion` needs, with a real writer over a real DB
+    /// and a `RecordingSink` in place of the app, so the assertions can read the
+    /// meta table the handler actually wrote.
+    struct Fixture {
+        writer: IndexWriter,
+        db_path: std::path::PathBuf,
+        events: Arc<RecordingSink>,
+        freshness: Arc<std::sync::Mutex<Option<Freshness>>>,
+        /// Held so the watcher channel stays open for the duration of the test.
+        _event_tx: tokio::sync::mpsc::UnboundedSender<FsChangeEvent>,
+        event_rx: Option<tokio::sync::mpsc::UnboundedReceiver<FsChangeEvent>>,
+        _dir: tempfile::TempDir,
+    }
+
+    impl Fixture {
+        fn new(volume_id: &str) -> Self {
+            let dir = tempfile::tempdir().expect("temp dir");
+            let db_path = dir.path().join(format!("{volume_id}.db"));
+            IndexStore::open(&db_path).expect("open store");
+            let writer =
+                IndexWriter::spawn(&db_path, crate::indexing::NoopEventSink::shared()).expect("spawn the writer");
+            let (event_tx, event_rx) = tokio::sync::mpsc::unbounded_channel();
+            Self {
+                writer,
+                db_path,
+                events: Arc::new(RecordingSink::new()),
+                // A scan is in flight when the handler runs, so start from `Scanning`
+                // (what `ScanStarted` left behind).
+                freshness: Arc::new(std::sync::Mutex::new(Some(Freshness::Scanning))),
+                _event_tx: event_tx,
+                event_rx: Some(event_rx),
+                _dir: dir,
+            }
+        }
+
+        /// Build the handler's inputs around a walk thread that resolves to `result`.
+        fn completion(&mut self, volume_id: &str, result: Result<ScanSummary, ScanError>) -> ScanCompletion {
+            ScanCompletion {
+                join_handle: std::thread::spawn(move || result),
+                scan_done: Arc::new(AtomicBool::new(false)),
+                scanning: Arc::new(AtomicBool::new(true)),
+                event_rx: self.event_rx.take().expect("one completion per fixture"),
+                watcher_overflow_flag: None,
+                volume_id: volume_id.to_string(),
+                space: IndexPathSpace::root(),
+                events: Arc::clone(&self.events) as Arc<dyn EventSink>,
+                writer: self.writer.clone(),
+                freshness: Arc::clone(&self.freshness),
+                live_event_task_slot: Arc::new(std::sync::Mutex::new(None)),
+                scan_start_event_id: 0,
+                calibration_kind: ScanCalibrationKind::FullWalk,
+            }
+        }
+
+        /// The value of `meta.scan_completed_at` once the writer has drained.
+        async fn completion_marker(&self) -> Option<String> {
+            self.writer.flush().await.expect("flush the writer");
+            let conn = IndexStore::open_read_connection(&self.db_path).expect("read connection");
+            IndexStore::get_meta(&conn, "scan_completed_at").expect("read the meta table")
+        }
+
+        fn freshness_now(&self) -> Option<Freshness> {
+            *self.freshness.lock_ignore_poison()
+        }
+    }
+
+    fn summary(entries: u64) -> ScanSummary {
+        ScanSummary {
+            total_entries: entries,
+            total_dirs: 1,
+            total_physical_bytes: 4096,
+            duration_ms: 12,
+            was_cancelled: false,
+        }
+    }
+
+    fn cancelled_summary(entries: u64) -> ScanSummary {
+        ScanSummary {
+            was_cancelled: true,
+            ..summary(entries)
+        }
+    }
+
+    /// A walk that ran to the end stamps the completion marker, so the next launch
+    /// loads the index instead of rescanning the whole volume.
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_completed_scan_writes_the_completion_marker() {
+        let mut fx = Fixture::new("done-clean");
+        let params = fx.completion("done-clean", Ok(summary(42)));
+        run_scan_completion(params).await;
+
+        assert!(
+            fx.completion_marker().await.is_some(),
+            "a clean completion must stamp `scan_completed_at`"
+        );
+        assert_eq!(
+            fx.freshness_now(),
+            Some(Freshness::Fresh),
+            "a clean completion is authoritative"
+        );
+    }
+
+    /// The one that strands an index if it ever goes wrong: a stopped scan holds
+    /// only partial totals, so marking it complete would make the next launch skip
+    /// the healing rescan and serve a permanently half-built index.
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_cancelled_scan_writes_no_completion_marker() {
+        let mut fx = Fixture::new("done-cancelled");
+        let params = fx.completion("done-cancelled", Ok(cancelled_summary(7)));
+        run_scan_completion(params).await;
+
+        assert_eq!(
+            fx.completion_marker().await,
+            None,
+            "a cancelled scan must leave `scan_completed_at` absent so it heals on restart"
+        );
+    }
+
+    /// Cancelled is its own outcome, distinguishable from BOTH neighbours. It
+    /// isn't a completion (never `Fresh`, no marker) and it isn't a failure
+    /// (freshness untouched, no `ScanAborted`), and the post-scan handoff still
+    /// runs so the rows the walk did write are reconciled and served.
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_cancelled_scan_is_neither_a_completion_nor_a_failure() {
+        let mut fx = Fixture::new("cancel-not-fail");
+        let params = fx.completion("cancel-not-fail", Ok(cancelled_summary(7)));
+        run_scan_completion(params).await;
+
+        let kinds = fx.events.kinds_for("cancel-not-fail");
+        assert!(
+            !kinds.contains(&IndexEventKind::ScanAborted),
+            "a user-stopped scan must not look like a vanished volume: {kinds:?}"
+        );
+        assert!(
+            kinds.contains(&IndexEventKind::ScanComplete),
+            "the post-scan handoff runs for a cancelled walk too (a failure's arm skips it): {kinds:?}"
+        );
+        // Not `Fresh` (that's a completion) and not `Stale` (that's a failure):
+        // a stop leaves freshness exactly where `ScanStarted` put it.
+        assert_eq!(
+            fx.freshness_now(),
+            Some(Freshness::Scanning),
+            "a cancelled scan neither claims authority nor reports a failure"
+        );
+    }
+
+    /// Failed is not cancelled and not complete: no marker, and freshness drops to
+    /// Stale so the badge offers a rescan instead of spinning forever.
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_failed_scan_writes_no_marker_and_reports_stale() {
+        let mut fx = Fixture::new("done-failed");
+        let params = fx.completion("done-failed", Err(ScanError::RootUnlistable));
+        run_scan_completion(params).await;
+
+        assert_eq!(
+            fx.completion_marker().await,
+            None,
+            "a failed scan must leave `scan_completed_at` absent"
+        );
+        assert_eq!(
+            fx.freshness_now(),
+            Some(Freshness::Stale),
+            "a failed scan is honest about being stale"
+        );
+        assert!(
+            fx.events.kinds_for("done-failed").contains(&IndexEventKind::ScanAborted),
+            "a vanished root clears the stuck scanning row"
+        );
+    }
+
+    /// The heal: a scan that runs to the end after a cancelled one stamps the
+    /// marker, so a stop is recoverable rather than a permanent state.
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_rescan_after_a_cancelled_scan_writes_the_marker() {
+        let mut fx = Fixture::new("cancel-then-rescan");
+        let cancelled = fx.completion("cancel-then-rescan", Ok(cancelled_summary(7)));
+        run_scan_completion(cancelled).await;
+        assert_eq!(
+            fx.completion_marker().await,
+            None,
+            "precondition: the cancelled scan left no marker"
+        );
+
+        let (_tx, rx) = tokio::sync::mpsc::unbounded_channel();
+        fx.event_rx = Some(rx);
+        let rescan = fx.completion("cancel-then-rescan", Ok(summary(42)));
+        run_scan_completion(rescan).await;
+
+        assert!(
+            fx.completion_marker().await.is_some(),
+            "a completed rescan heals the index that was left unmarked"
+        );
+    }
 
     /// The abort decision fires ONLY for a vanished volume (`RootUnlistable`), so a
     /// yanked drive clears its stuck "scanning" row — but a legitimately empty root
