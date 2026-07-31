@@ -13,9 +13,9 @@
 pub mod types;
 pub mod weights;
 
-pub use types::{Explanation, FolderSignals, PathClass, Score, SignalContribution, SignalKind, SignalSet};
 #[cfg(any(test, feature = "tooling"))]
 pub use types::extension_count;
+pub use types::{Explanation, FolderSignals, PathClass, Score, SignalContribution, SignalKind, SignalSet};
 pub use weights::Weights;
 
 /// Scores a folder. See the [module docs](self) for the contract.

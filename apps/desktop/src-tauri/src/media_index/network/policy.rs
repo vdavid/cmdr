@@ -52,7 +52,6 @@ impl Default for ConservativeFetchPolicy {
     }
 }
 
-
 /// The pure proceed-gate for one network-enrichment step, composing the two
 /// higher-priority claims the host reports (interactive > transfers > indexing):
 /// proceed only while the app is foreground-idle (`app_idle`, app-WIDE — heavy

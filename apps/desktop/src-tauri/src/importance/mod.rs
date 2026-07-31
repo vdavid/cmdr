@@ -38,8 +38,8 @@ pub mod tooling;
 mod fixtures;
 
 pub use read::{FloorReason, ImportanceIndex, ScoredWeight, WeightLookup};
-pub use store::ImportanceStoreError;
 pub(crate) use scheduler::signal_availability;
 pub use scorer::{
     Explanation, FolderSignals, PathClass, Score, SignalContribution, SignalKind, SignalSet, Weights, explain, score,
 };
+pub use store::ImportanceStoreError;

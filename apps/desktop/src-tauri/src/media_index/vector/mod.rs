@@ -124,7 +124,6 @@ impl BruteForceVectorStore {
     pub fn new(entries: Vec<(String, Vec<f16>)>) -> Self {
         Self { entries }
     }
-
 }
 
 impl VectorStore for BruteForceVectorStore {

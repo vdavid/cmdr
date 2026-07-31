@@ -65,7 +65,10 @@ impl FakeVisionBackend {
     /// Script the exact CLIP image embedding for a path (precise semantic-search tests).
     /// Unscripted paths get [`fake_clip_embedding`] over the path (the shared bag-of-words
     /// space the fake text encoder also projects onto, so text→image alignment holds).
-    #[allow(dead_code, reason = "a fake's scripting surface; not every knob has a test behind it yet")]
+    #[allow(
+        dead_code,
+        reason = "a fake's scripting surface; not every knob has a test behind it yet"
+    )]
     pub fn with_clip_embedding(mut self, path: impl Into<String>, embedding: Vec<f32>) -> Self {
         self.scripted_clip.insert(path.into(), embedding);
         self
@@ -86,7 +89,10 @@ impl FakeVisionBackend {
     }
 
     /// Override the OCR engine-version stamp (to simulate an OS/Vision engine change).
-    #[allow(dead_code, reason = "a fake's scripting surface; not every knob has a test behind it yet")]
+    #[allow(
+        dead_code,
+        reason = "a fake's scripting surface; not every knob has a test behind it yet"
+    )]
     pub fn with_engine_version(mut self, version: impl Into<String>) -> Self {
         self.engine_version = Some(version.into());
         self
@@ -94,7 +100,10 @@ impl FakeVisionBackend {
 
     /// Override the tag-taxonomy-version stamp (to simulate an OS taxonomy change,
     /// which must re-tag stale rows — plan Decision 4).
-    #[allow(dead_code, reason = "a fake's scripting surface; not every knob has a test behind it yet")]
+    #[allow(
+        dead_code,
+        reason = "a fake's scripting surface; not every knob has a test behind it yet"
+    )]
     pub fn with_taxonomy_version(mut self, version: impl Into<String>) -> Self {
         self.taxonomy_version = Some(version.into());
         self

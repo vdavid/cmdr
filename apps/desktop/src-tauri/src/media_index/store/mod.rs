@@ -326,9 +326,7 @@ impl MediaStore {
             }
             None => stamp_schema_version(&conn)?,
         }
-        Ok(Self {
-            read_conn: conn,
-        })
+        Ok(Self { read_conn: conn })
     }
 
     fn delete_and_recreate(db_path: &Path) -> Result<Self, MediaStoreError> {
@@ -346,9 +344,7 @@ impl MediaStore {
         super::ann::delete_index_files(db_path, super::ann::AnnSpace::Clip);
         let conn = open_write_connection(db_path)?;
         stamp_schema_version(&conn)?;
-        Ok(Self {
-            read_conn: conn,
-        })
+        Ok(Self { read_conn: conn })
     }
 
     /// Borrow the read connection for direct queries (round-trip tests).

@@ -120,7 +120,10 @@ enum WriteMessage {
     /// writer handles it and `writer/tests.rs` pins what it does. Keep it until
     /// the capability is deliberately retired, not as a side effect of a
     /// visibility change.
-    #[allow(dead_code, reason = "a supported writer message with no production sender yet; see above")]
+    #[allow(
+        dead_code,
+        reason = "a supported writer message with no production sender yet; see above"
+    )]
     Rename {
         old: String,
         new: String,
@@ -136,7 +139,10 @@ enum WriteMessage {
     /// writer handles it and `writer/tests.rs` pins what it does. Keep it until
     /// the capability is deliberately retired, not as a side effect of a
     /// visibility change.
-    #[allow(dead_code, reason = "a supported writer message with no production sender yet; see above")]
+    #[allow(
+        dead_code,
+        reason = "a supported writer message with no production sender yet; see above"
+    )]
     PurgeVolume,
     /// Apply the buffered ANN ops to the on-disk index (plan M6) and reply once
     /// saved — a barrier. Called at the same seams that invalidate the resident
@@ -284,7 +290,10 @@ impl MediaWriter {
     /// manifests as GC(old) + enrich(new), which this replaces with an O(1) update.
     /// ❌ No production caller yet: the rename-following hook this exists for
     /// isn't wired, so a rename still manifests as GC(old) + enrich(new).
-    #[allow(dead_code, reason = "a supported writer call with no production caller yet; see above")]
+    #[allow(
+        dead_code,
+        reason = "a supported writer call with no production caller yet; see above"
+    )]
     pub fn rename_path(&self, old: &str, new: &str) -> Result<bool, MediaStoreError> {
         let (tx, rx) = mpsc::channel();
         self.send(WriteMessage::Rename {
@@ -317,7 +326,10 @@ impl MediaWriter {
     /// Drop every status and OCR row for this volume. Schema stays.
     /// ❌ No production caller yet: the rename-following hook this exists for
     /// isn't wired, so a rename still manifests as GC(old) + enrich(new).
-    #[allow(dead_code, reason = "a supported writer call with no production caller yet; see above")]
+    #[allow(
+        dead_code,
+        reason = "a supported writer call with no production caller yet; see above"
+    )]
     pub fn purge_volume(&self) -> Result<(), MediaStoreError> {
         self.send(WriteMessage::PurgeVolume)
     }
