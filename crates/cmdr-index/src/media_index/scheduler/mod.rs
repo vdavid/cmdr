@@ -257,7 +257,7 @@ impl MediaScheduler {
     /// qualifying images, loads the stored statuses, and enriches the stale ones +
     /// GCs vanished rows through the shared writer. GC is safe here: this runs only
     /// on a `Completed` edge / the Fresh sweep, so the tree is complete.
-    pub fn run_pass_blocking(&self, volume_id: &str) -> Result<usize, String> {
+    pub(crate) fn run_pass_blocking(&self, volume_id: &str) -> Result<usize, String> {
         if !gate::is_enabled() {
             return Ok(0);
         }

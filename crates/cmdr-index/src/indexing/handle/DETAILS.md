@@ -110,7 +110,7 @@ measured 2026-07-31:
 - **44 root promises** — the names `lib.rs` exports, `pub mod` included.
 - **35 methods on `Index`** — the 34 above plus `Index::builder`, which the headline number treats as the constructor
   rather than a call.
-- **17 public modules** and **159 public items inside them** — the surface the root re-exports don't capture, which is
+- **17 public modules** and **156 public items inside them** — the surface the root re-exports don't capture, which is
   where `media_index` and `importance` live.
 - **10 gated items**, counted apart: the `testing` / `tooling` doors aren't the API.
 
@@ -123,7 +123,7 @@ allowlist entry. Shrinking never fails. The same check asserts the other half of
 `cmdr-fs` may reach `tauri`, `tauri-specta`, or `cmdr`, verified against the `cargo metadata` graph so the check catches
 a dependency that arrives through a helper crate rather than through the manifest.
 
-## The two exceptions, named
+## The three exceptions, named
 
 **1. `store` is wholesale public, and `IndexStore` keeps 28 methods.** `search/` is a product surface that stays
 app-side and runs its own SQL over an index database: it opens connections, walks `idx_parent`, and reads `meta`. That
@@ -138,6 +138,12 @@ no caller acts on (a poisoned registry lock, a database open failure). Every cau
 variant — `NotIndexed`, `NotConfigured`, `UnsupportedVolume` — and nothing matches on the text. Converting the residue
 means typing the failures inside `lifecycle/state.rs` and `read/queries.rs`, which is a separate change with its own
 risk; this is the honest interim, not the end state.
+
+**3. `ReadPool::with_conn` returns `Result<T, String>`.** The one public signature that isn't typed. Its error is a
+connection-open failure and every caller `.ok()`s it, so nothing branches on the text — but "typed errors everywhere"
+holds at the boundary with this and `Internal(Diagnostic)` named, not with zero exceptions. (The schedulers'
+`run_pass_blocking` had the same shape and turned out to have no consumer outside the crate at all; both are
+`pub(crate)` now, which is the better answer when it's available.)
 
 ## The platform story: no `cfg` on the surface
 

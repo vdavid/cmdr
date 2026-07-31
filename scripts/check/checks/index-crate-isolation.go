@@ -69,7 +69,7 @@ var indexCrateCeilings = surfaceCeilings{
 	RootPromises:   44,
 	HandleMethods:  35,
 	PublicModules:  17,
-	SubsystemItems: 159,
+	SubsystemItems: 156,
 }
 
 // ── The dependency graph ─────────────────────────────────────────────

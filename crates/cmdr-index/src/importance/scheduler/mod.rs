@@ -328,7 +328,12 @@ impl ImportanceScheduler {
     /// that one walk's paths, and writes through the shared long-lived writer. The
     /// async driver calls this on a blocking task after a `request` returns
     /// `Start`.
-    pub fn run_pass_blocking(&self, volume_id: &str, available: SignalSet, now_secs: u64) -> Result<usize, String> {
+    pub(crate) fn run_pass_blocking(
+        &self,
+        volume_id: &str,
+        available: SignalSet,
+        now_secs: u64,
+    ) -> Result<usize, String> {
         let Some(pool) = crate::indexing::get_read_pool_for(volume_id) else {
             return Ok(0);
         };
@@ -410,7 +415,7 @@ impl ImportanceScheduler {
     ///
     /// A `"/"` sentinel in `changed_paths` (a full-refresh emit) escalates to a
     /// full pass. Reads through the index read pool; a `None` pool is a no-op.
-    pub fn run_incremental_blocking(
+    pub(crate) fn run_incremental_blocking(
         &self,
         volume_id: &str,
         available: SignalSet,
