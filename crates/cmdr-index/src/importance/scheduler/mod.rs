@@ -1,7 +1,7 @@
 //! The importance scheduler: recompute a volume's folder weights when its index
 //! finishes scanning, and once at startup for a volume that loaded ready.
 //!
-//! ## What drives a recompute (plan Decision 4 / 5)
+//! ## What drives a recompute
 //!
 //! Two triggers, unified through one coalescing coordinator:
 //!
@@ -18,13 +18,11 @@
 //!    recompute IFF the store then carries no generation. Gating on "no generation"
 //!    (not an unconditional kick) means an already-scored volume isn't rescored on
 //!    every launch, while a fresh / schema-recreated / incremental-only store finally
-//!    gets its full pass. Each carries its typed kind (MTP excluded, SMB
-//!    degraded).
+//!    gets its full pass. Each carries its typed kind (MTP excluded, SMB degraded).
 //! 3. **The registration bus** ([`crate::indexing::lifecycle::lifecycle_bus::subscribe_registrations`]):
-//!    a volume that registers AFTER the sweep (a share mounted mid-session) is
-//!    wired then (plan M4 late-registering volumes).
+//!    a volume that registers AFTER the sweep (a share mounted mid-session) is wired then.
 //!
-//! ## Coalescing (plan Decision 4)
+//! ## Coalescing
 //!
 //! Both triggers can target one volume at once (the sweep sees it Fresh AND a
 //! concurrent startup scan completes). [`PassCoordinator`] guarantees ONE pass
@@ -32,7 +30,7 @@
 //! flag rather than starting a second pass. When the running pass finishes, it
 //! re-runs once if the flag is set. This is the pure, unit-testable core.
 //!
-//! ## Recompute (plan Decision 5)
+//! ## Recompute
 //!
 //! Full-volume: read `dir_stats` + the entry tree through the index read pool,
 //! assemble a [`FolderSignals`](crate::importance::FolderSignals) per folder (via [`signals`](super::signals)), run
@@ -42,21 +40,9 @@
 //! through the host runtime seam, never on the IPC thread. Local and SMB
 //! volumes; MTP is excluded at every entry point (`ScoringPolicy::for_kind`).
 //!
-//! ## A pass can't be stopped
-//!
-//! Unlike every other long walk in this crate, an importance pass holds no
-//! `CancellationToken` and registers no stop hook with
-//! `indexing::resources::subsystem_stop::register_subsystem_stop_hook`. So
-//! `stop_all_indexing` (the memory watchdog's emergency stop, and the shutdown
-//! path) doesn't reach it: a full recompute walks the whole index to the end
-//! regardless. That walk is O(dirs) in a small constant, 5.5–6.4 s over real
-//! 391k / 611k-folder indexes (measured 2026-07-29, `DETAILS.md` § "The scoped
-//! walk"), which is why this has been tolerable rather than urgent.
-//!
-//! TODO(importance): hand a pass the volume's cancellation token
-//! (`indexing::lifecycle::state::volume_cancel_token`, the crate's one
-//! cancellation primitive) and register a stop hook, so both the watchdog and
-//! teardown reach a running recompute.
+//! **A pass can't be stopped**: no `CancellationToken`, no stop hook, so
+//! `stop_all_indexing` (memory watchdog, shutdown) waits it out. Why, and the
+//! `TODO` for closing it: `DETAILS.md` § "A pass can't be stopped".
 
 use std::collections::HashMap;
 use std::path::PathBuf;

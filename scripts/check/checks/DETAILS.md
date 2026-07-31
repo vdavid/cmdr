@@ -806,11 +806,11 @@ writing), so ~70 of them plus ~30 KB of chatter surround the one broken link a f
 the right unit and aren't: cargo runs its `Documenting <crate>` progress line straight into the first diagnostic with no
 blank line, and rustdoc glues `error: could not document <crate>` to the warning count above it. A paragraph split
 therefore hands a diagnostic whatever preceded it, so an error that opens or closes the stream reads as a warning block
-and gets dropped — and with nothing kept, the "never swallow it" fallback dumps the whole 30 KB. `rustdocErrorDiagnostics`
-in `desktop-rust-rustdoc.go` instead starts a new diagnostic at every column-zero `error…:` / `warning…:` and keeps every
-following line (the `-->` locator, source excerpt, `= note`, `= help`, and any trailing `help:` suggestion) with it. The
-fixture in `desktop-rust-rustdoc_test.go` is shaped like real cargo output for exactly this reason; a tidy
-blank-line-separated one passes while the real thing fails.
+and gets dropped — and with nothing kept, the "never swallow it" fallback dumps the whole 30 KB.
+`rustdocErrorDiagnostics` in `desktop-rust-rustdoc.go` instead starts a new diagnostic at every column-zero `error…:` /
+`warning…:` and keeps every following line (the `-->` locator, source excerpt, `= note`, `= help`, and any trailing
+`help:` suggestion) with it. The fixture in `desktop-rust-rustdoc_test.go` is shaped like real cargo output for exactly
+this reason; a tidy blank-line-separated one passes while the real thing fails.
 
 **Decision**: nextest binary is arch-aware. **Why**: `https://get.nexte.st/latest/linux` serves the x86_64-musl build by
 default; on an arm64 container (e.g. Apple Silicon under OrbStack) cargo's rustup-shim happily syncs the aarch64

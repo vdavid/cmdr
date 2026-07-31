@@ -104,6 +104,28 @@ marker, hidden) come from the shared `classify.rs` module that BOTH `signals::si
 `fixtures::signals_for` (tests) call, so the formula's test stand-in and the real assembler can't drift on what a signal
 means.
 
+## A pass can't be stopped
+
+Every other long walk in the crate runs under a `CancellationToken` rooted at the volume
+(`../../indexing/host/DETAILS.md` § Cancellation). An importance pass runs under nothing: no token reaches
+`run_pass_blocking` or the walk below it, and the scheduler registers no
+`indexing::resources::subsystem_stop::register_subsystem_stop_hook`. Two consequences worth knowing before you assume
+otherwise:
+
+- **`stop_all_indexing` doesn't reach it.** That's both the memory watchdog's emergency stop and the shutdown path, so a
+  recompute that's running when either fires walks the whole index to the end anyway.
+- **Nothing observes a stop request**, so there's no `Cancelled` outcome to handle and no partial-pass state to reason
+  about. A pass either completes and stamps its generation, or fails.
+
+**Why it hasn't hurt.** The full walk is O(dirs) in a small constant: 5.5–6.4 s over real 391k / 611k-folder indexes
+(measured 2026-07-29, § "The scoped walk"), and an incremental is microseconds. Seconds of unstoppable work inside a 16
+GB emergency stop is survivable, where a scan's minutes wouldn't be.
+
+**Closing it** (the `TODO(importance)` sits on `recompute_folders`, the loop that would poll): take the volume's token
+via `indexing::lifecycle::state::volume_cancel_token`, thread a child into the pass, and register a stop hook. ❌ Don't
+introduce a second primitive (an `AtomicBool`, a `Notify`) — the one-token tree is what makes stopping a volume stop
+everything under it at once. The hook must be cheap and non-blocking; it runs INLINE in the stop path.
+
 ## The measurement entry point
 
 `recompute::recompute_index_to_db` walks a real index read-only, scores, and writes an `importance.db` through a fresh

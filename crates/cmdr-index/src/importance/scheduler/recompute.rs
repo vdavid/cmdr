@@ -97,8 +97,13 @@ pub(super) struct RecomputeInputs<'a> {
 /// reuses that walk for both the `kMDItemLastUsedDate` path-set and the score —
 /// no second traversal. Split from the volume-id resolution so a test drives it
 /// with a synthetic walk (no registry, no FFI). Weights are stamped at a
-/// freshly-bumped generation so every row carries the pass's as-of marker (plan
-/// Decision 2/5).
+/// freshly-bumped generation so every row carries the pass's as-of marker.
+///
+/// TODO(importance): this loop is where a cancellation check belongs. Nothing in
+/// this subsystem is stoppable today, so `stop_all_indexing` (the memory
+/// watchdog's emergency stop, and shutdown) waits out a full pass. Closing it
+/// means the volume's `CancellationToken` here plus a stop hook in the
+/// scheduler; `DETAILS.md` § "A pass can't be stopped".
 pub(super) fn recompute_folders(
     inputs: &RecomputeInputs<'_>,
     folders: &mut WalkedFolders,
