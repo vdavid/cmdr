@@ -1,8 +1,8 @@
 //! Performance guard for the non-destructive reconcile rescan (must stay cheaper than truncate-rebuild,
 //! or reconcile-on-rescan would be a regression). Marked `#[ignore]` so it never runs in CI; run explicitly:
 //!
-//!   find apps/desktop/src-tauri/src -name '*.rs' | xargs touch   # avoid stale COW build
-//!   cargo nextest run -p cmdr-lib --no-capture reconcile_bench --run-ignored all
+//!   find crates/cmdr-index/src -name '*.rs' | xargs touch   # avoid stale COW build
+//!   cargo nextest run -p cmdr-index --no-capture reconcile_bench --run-ignored all
 //!
 //! ## What it measures
 //!

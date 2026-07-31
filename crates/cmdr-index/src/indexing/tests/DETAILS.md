@@ -8,7 +8,7 @@ guardrails are in `CLAUDE.md`.
 Run Rust tests:
 
 ```sh
-cd apps/desktop/src-tauri && cargo nextest run indexing
+cargo nextest run -p cmdr-index indexing
 ```
 
 Tests use temp dirs and real SQLite. What each file covers:
@@ -88,7 +88,7 @@ The tests are `#[ignore]`d (each attaches a real disk image via hdiutil), so `pn
 default suite skips them; run them explicitly:
 
 ```sh
-cd apps/desktop/src-tauri && cargo nextest run --run-ignored only -E 'test(indexing::tests::external_drive_fixture::)'
+cargo nextest run -p cmdr-index --run-ignored only -E 'test(indexing::tests::external_drive_fixture::)'
 ```
 
 They're serialized and granted a 30 s cap via the `disk-image` nextest group (`.config/nextest.toml`) — concurrent

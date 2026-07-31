@@ -552,7 +552,7 @@ mod tests {
 
     /// Ad-hoc A/B of the two readers over a real tree, for confirming the win.
     /// Ignored (env-dependent, not an assertion). Run:
-    /// `cargo nextest run -p cmdr bulk_vs_std_walk_bench --run-ignored all --nocapture`
+    /// `cargo nextest run -p cmdr-index bulk_vs_std_walk_bench --run-ignored all --nocapture`
     #[test]
     #[ignore = "benchmark, not a correctness check; run manually with --nocapture"]
     fn bulk_vs_std_walk_bench() {
