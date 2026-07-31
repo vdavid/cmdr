@@ -112,251 +112,281 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
         }
     };
 
-    match result {
-        Ok(Ok(summary)) => {
-            log::info!(
-                "Scan: complete ({} entries, {} dirs, {:.1}s)",
-                summary.total_entries,
-                summary.total_dirs,
-                summary.duration_ms as f64 / 1000.0,
-            );
-
-            DEBUG_STATS.close_phase_with_stats(vec![
-                ("entries", summary.total_entries.to_string()),
-                ("dirs", summary.total_dirs.to_string()),
-                ("duration_s", format!("{:.1}", summary.duration_ms as f64 / 1000.0)),
-            ]);
-            set_phase_for(events.as_ref(), &volume_id, ActivityPhase::Aggregating, "post-scan");
-
-            // Step 4: Reconcile buffered watcher events, in this volume's path space
-            // (a mount-rooted drive strips its mount root before `resolve_path`).
-            let mut reconciler = EventReconciler::new_for(volume_id.clone(), space.clone());
-
-            // Drain all buffered events from the channel into the reconciler
-            let mut event_rx = event_rx;
-            let mut buffered_count = 0u64;
-            while let Ok(event) = event_rx.try_recv() {
-                reconciler.buffer_event(event);
-                buffered_count += 1;
-            }
-            log::info!(
-                "Reconciler: {} buffered during scan",
-                pluralize(buffered_count, "event")
-            );
-
-            if reconciler.did_buffer_overflow() {
-                emit_rescan_notification(
-                    events.as_ref(),
-                    &volume_id,
-                    RescanReason::ReconcilerBufferOverflow,
-                    "The filesystem watcher buffered over 500,000 events during the \
-                     scan, exceeding the reconciler's capacity. A lot of filesystem \
-                     activity was happening during the scan."
-                        .to_string(),
-                );
-            }
-
-            // Check if the FSEvents channel overflowed (events dropped
-            // before reaching the forward task). If so, our buffered events
-            // are incomplete. The reconciler replay will miss changes.
-            // We still proceed (the scan data itself is fine), but log a
-            // warning. The live event loop will detect the overflow flag
-            // and trigger a rescan at that point, since a fresh scan is
-            // the only way to recover from dropped events.
-            if let Some(ref flag) = watcher_overflow_flag
-                && flag.load(Ordering::Relaxed)
-            {
-                log::info!(
-                    "FSEvents channel overflowed during scan. Some watcher \
-                         events were dropped. Live event loop will trigger a rescan."
-                );
-            }
-
-            // Emit scan-complete first, then start the flushing phase.
-            // Order matters: the frontend's scan-complete handler calls
-            // resetAggregation(), so the saving_entries event must come
-            // after to avoid being immediately cleared.
-            events.emit(IndexEvent::ScanComplete {
-                volume_id: volume_id.clone(),
-                total_entries: summary.total_entries,
-                total_dirs: summary.total_dirs,
-                duration_ms: summary.duration_ms,
-            });
-
-            // Tell the writer how many entries the scan produced, so it
-            // can report flushing progress as it drains remaining
-            // InsertEntriesV2 batches from the channel.
-            writer.set_expected_total_entries(summary.total_entries);
-
-            // Flush the writer to ensure all scan batches are committed
-            // before opening the read connection. Without this, the WAL
-            // snapshot may not include the latest InsertEntriesV2 batches,
-            // causing resolve_path to fail for recently-scanned parents.
-            if let Err(e) = writer.flush().await {
-                log::warn!("Reconciler: writer flush before replay failed: {e}");
-            }
-
-            // Signal that aggregation (and entry flushing) is complete.
-            // The flush above drains all queued writes including
-            // ComputeAllAggregates, so by this point the UI can dismiss
-            // the progress overlay.
-            events.emit(IndexEvent::AggregationComplete {
-                volume_id: volume_id.clone(),
-            });
-
-            DEBUG_STATS.close_phase_with_stats(vec![]);
-            set_phase_for(events.as_ref(), &volume_id, ActivityPhase::Reconciling, "post-scan");
-
-            // Tell the frontend to refresh all visible listings. Directory
-            // sizes are now available for the first time after a full scan.
-            events.emit(IndexEvent::DirsUpdated {
-                paths: vec!["/".to_string()],
-            });
-
-            // Store scan metadata now, before the reconciler replay which
-            // can fail (e.g. "database is locked") and cause an early return.
-            // Without this, scan_completed_at is never persisted and the next
-            // startup triggers a full rescan of the entire volume.
-            //
-            // Gate ALL meta writes behind `!was_cancelled`: a user-stopped scan
-            // holds only partial totals, and writing `scan_completed_at` for it
-            // would mark a partial index as complete — the next startup would skip
-            // the `IncompletePreviousScan` fresh rescan. With the clear-at-start
-            // above, a cancelled scan leaves NO completion marker, so it heals on
-            // restart. The reconcile/live transition below is intentionally NOT
-            // gated; only the meta writes are.
-            if !summary.was_cancelled {
-                let now = std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .map(|d| d.as_secs().to_string())
-                    .unwrap_or_default();
-                let _ = writer.send(WriteMessage::UpdateMeta {
-                    key: "scan_completed_at".to_string(),
-                    value: now,
-                });
-                // Any completed full walk restarts the shallow-`MustScanSubDirs`
-                // sweep window and clears its coalesced count (the drift those
-                // skipped signals stood for has now been repaired). Not only a
-                // shallow-triggered sweep: the window means "a full walk happened
-                // recently", so the user's own "Rescan now" counts too. See
-                // `reconcile/reconciler/rescan_route.rs`.
-                let sweep = reconciler::record_sweep_completed(&volume_id, reconciler::now_unix());
-                if let Some(at) = sweep.last_sweep_unix {
-                    let _ = writer.send(WriteMessage::UpdateMeta {
-                        key: reconciler::SHALLOW_SWEEP_AT_KEY.to_string(),
-                        value: at.to_string(),
-                    });
-                }
-                let _ = writer.send(WriteMessage::UpdateMeta {
-                    key: reconciler::SHALLOW_COALESCED_KEY.to_string(),
-                    value: "0".to_string(),
-                });
-                // The calibration numbers go into TWO buckets: this walk kind's own
-                // keys (so the next run of the same kind gets an ETA from a
-                // comparable run) and the unsuffixed keys (the last-completed-scan
-                // facts the badge tooltip and the any-kind fallback read).
-                for (key, value) in [
-                    ("scan_duration_ms", summary.duration_ms.to_string()),
-                    ("total_entries", summary.total_entries.to_string()),
-                    ("total_physical_bytes", summary.total_physical_bytes.to_string()),
-                ] {
-                    let _ = writer.send(WriteMessage::UpdateMeta {
-                        key: calibration_kind.meta_key(key),
-                        value: value.clone(),
-                    });
-                    let _ = writer.send(WriteMessage::UpdateMeta {
-                        key: key.to_string(),
-                        value,
-                    });
-                }
-                let _ = writer.send(WriteMessage::UpdateMeta {
-                    key: "volume_path".to_string(),
-                    value: space.volume_root_string(),
-                });
-            }
-
-            // Open a read connection for path resolution during replay
-            let replay_conn = match IndexStore::open_read_connection(&writer.db_path()) {
-                Ok(c) => c,
-                Err(e) => {
-                    log::warn!("Reconciler: failed to open read connection for replay: {e}");
-                    return;
-                }
-            };
-
-            // Set a baseline last_event_id so there's always a valid
-            // event ID even if no live events were buffered during the scan.
-            // The reconciler will overwrite this with a higher ID if any
-            // post-scan events exist.
-            if scan_start_event_id > 0 {
-                let _ = writer.send(WriteMessage::UpdateLastEventId(scan_start_event_id));
-            }
-
-            // Replay events that arrived after the scan read their paths
-            match reconciler.replay(scan_start_event_id, &replay_conn, &writer, &mut |paths| {
-                reconciler::emit_dir_updated(events.as_ref(), paths)
-            }) {
-                Ok(last_id) => {
-                    log::info!("Reconciler: post-scan replay complete (last_event_id={last_id})");
-                }
-                Err(e) => {
-                    log::warn!("Reconciler: replay failed: {e}");
-                }
-            }
-
-            // Backfill dir_stats for any directories created by the replay
-            // that didn't go through the full aggregation pass.
-            let _ = writer.send(WriteMessage::BackfillMissingDirStats);
-
-            // Switch to live mode
-            reconciler.switch_to_live();
-
-            // Freshness ⇒ Fresh (green) on a clean completion. A cancelled
-            // local scan keeps its prior freshness (root stays browsable);
-            // it isn't reset to gray the way an interrupted SMB scan is,
-            // because local data isn't tied to a connection that vanished.
-            if !summary.was_cancelled {
-                super::state::apply_freshness_event_on(
-                    &freshness,
-                    events.as_ref(),
-                    &volume_id,
-                    super::freshness::FreshnessEvent::ScanCompleted,
-                );
-            }
-
-            DEBUG_STATS.close_phase_with_stats(vec![("buffered_events", buffered_count.to_string())]);
-            set_phase_for(
-                events.as_ref(),
-                &volume_id,
-                ActivityPhase::Live,
-                "post-scan reconciliation complete",
-            );
-
-            // Step 5: Start live event processing loop
-            let writer_live = writer.clone();
-            let events_live = Arc::clone(&events);
-            let volume_id_live = volume_id.clone();
-            let overflow_live = watcher_overflow_flag.clone();
-            let space_live = space.clone();
-            let handle = crate::indexing::host::runtime::spawn(async move {
-                run_live_event_loop(
-                    event_rx,
-                    reconciler,
-                    writer_live,
-                    events_live,
-                    volume_id_live,
-                    space_live,
-                    overflow_live,
-                )
-                .await;
-            });
-
-            // Store the handle so shutdown() can wait for it to drain
-            {
-                let mut guard = live_event_task_slot.lock_ignore_poison();
-                *guard = Some(handle);
-            }
+    // The three outcomes stay THREE, split exactly here, once.
+    //
+    // A cancelled walk is neither a completion nor a failure. It takes the same
+    // post-scan handoff as a clean one (the rows it wrote are real and want
+    // reconciling), but writes NO completion meta and touches NO freshness.
+    // `was_completed` gates both, so those two can never drift apart. Collapsing
+    // cancelled into either neighbour is the bug to watch for: folded into the
+    // `Ok` arm it stamps `scan_completed_at` on a partial and strands the index
+    // permanently; folded into the failure arm it fires `ScanFailed` and can
+    // raise a spurious abort for a volume that never went anywhere.
+    let (summary, was_completed) = match result {
+        Ok(Ok(summary)) => (summary, true),
+        Ok(Err(ScanError::Cancelled(partial))) => (partial, false),
+        unfinished => {
+            report_unfinished_scan(&unfinished, events.as_ref(), &volume_id, &freshness);
+            return;
         }
+    };
+
+    log::info!(
+        "Scan: {} ({} entries, {} dirs, {:.1}s)",
+        if was_completed { "complete" } else { "cancelled" },
+        summary.total_entries,
+        summary.total_dirs,
+        summary.duration_ms as f64 / 1000.0,
+    );
+
+    DEBUG_STATS.close_phase_with_stats(vec![
+        ("entries", summary.total_entries.to_string()),
+        ("dirs", summary.total_dirs.to_string()),
+        ("duration_s", format!("{:.1}", summary.duration_ms as f64 / 1000.0)),
+    ]);
+    set_phase_for(events.as_ref(), &volume_id, ActivityPhase::Aggregating, "post-scan");
+
+    // Step 4: Reconcile buffered watcher events, in this volume's path space
+    // (a mount-rooted drive strips its mount root before `resolve_path`).
+    let mut reconciler = EventReconciler::new_for(volume_id.clone(), space.clone());
+
+    // Drain all buffered events from the channel into the reconciler
+    let mut event_rx = event_rx;
+    let mut buffered_count = 0u64;
+    while let Ok(event) = event_rx.try_recv() {
+        reconciler.buffer_event(event);
+        buffered_count += 1;
+    }
+    log::info!(
+        "Reconciler: {} buffered during scan",
+        pluralize(buffered_count, "event")
+    );
+
+    if reconciler.did_buffer_overflow() {
+        emit_rescan_notification(
+            events.as_ref(),
+            &volume_id,
+            RescanReason::ReconcilerBufferOverflow,
+            "The filesystem watcher buffered over 500,000 events during the \
+             scan, exceeding the reconciler's capacity. A lot of filesystem \
+             activity was happening during the scan."
+                .to_string(),
+        );
+    }
+
+    // Check if the FSEvents channel overflowed (events dropped
+    // before reaching the forward task). If so, our buffered events
+    // are incomplete. The reconciler replay will miss changes.
+    // We still proceed (the scan data itself is fine), but log a
+    // warning. The live event loop will detect the overflow flag
+    // and trigger a rescan at that point, since a fresh scan is
+    // the only way to recover from dropped events.
+    if let Some(ref flag) = watcher_overflow_flag
+        && flag.load(Ordering::Relaxed)
+    {
+        log::info!(
+            "FSEvents channel overflowed during scan. Some watcher \
+                 events were dropped. Live event loop will trigger a rescan."
+        );
+    }
+
+    // Emit scan-complete first, then start the flushing phase.
+    // Order matters: the frontend's scan-complete handler calls
+    // resetAggregation(), so the saving_entries event must come
+    // after to avoid being immediately cleared.
+    events.emit(IndexEvent::ScanComplete {
+        volume_id: volume_id.clone(),
+        total_entries: summary.total_entries,
+        total_dirs: summary.total_dirs,
+        duration_ms: summary.duration_ms,
+    });
+
+    // Tell the writer how many entries the scan produced, so it
+    // can report flushing progress as it drains remaining
+    // InsertEntriesV2 batches from the channel.
+    writer.set_expected_total_entries(summary.total_entries);
+
+    // Flush the writer to ensure all scan batches are committed
+    // before opening the read connection. Without this, the WAL
+    // snapshot may not include the latest InsertEntriesV2 batches,
+    // causing resolve_path to fail for recently-scanned parents.
+    if let Err(e) = writer.flush().await {
+        log::warn!("Reconciler: writer flush before replay failed: {e}");
+    }
+
+    // Signal that aggregation (and entry flushing) is complete.
+    // The flush above drains all queued writes including
+    // ComputeAllAggregates, so by this point the UI can dismiss
+    // the progress overlay.
+    events.emit(IndexEvent::AggregationComplete {
+        volume_id: volume_id.clone(),
+    });
+
+    DEBUG_STATS.close_phase_with_stats(vec![]);
+    set_phase_for(events.as_ref(), &volume_id, ActivityPhase::Reconciling, "post-scan");
+
+    // Tell the frontend to refresh all visible listings. Directory
+    // sizes are now available for the first time after a full scan.
+    events.emit(IndexEvent::DirsUpdated {
+        paths: vec!["/".to_string()],
+    });
+
+    // Store scan metadata now, before the reconciler replay which
+    // can fail (e.g. "database is locked") and cause an early return.
+    // Without this, scan_completed_at is never persisted and the next
+    // startup triggers a full rescan of the entire volume.
+    //
+    // Gate ALL meta writes behind `was_completed`: a user-stopped scan holds
+    // only partial totals, and writing `scan_completed_at` for it would mark a
+    // partial index as complete — the next startup would skip the
+    // `IncompletePreviousScan` fresh rescan. With the clear-at-start above, a
+    // cancelled scan leaves NO completion marker, so it heals on restart. The
+    // reconcile/live transition below is intentionally NOT gated; only the meta
+    // writes are.
+    if was_completed {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs().to_string())
+            .unwrap_or_default();
+        let _ = writer.send(WriteMessage::UpdateMeta {
+            key: "scan_completed_at".to_string(),
+            value: now,
+        });
+        // Any completed full walk restarts the shallow-`MustScanSubDirs`
+        // sweep window and clears its coalesced count (the drift those
+        // skipped signals stood for has now been repaired). Not only a
+        // shallow-triggered sweep: the window means "a full walk happened
+        // recently", so the user's own "Rescan now" counts too. See
+        // `reconcile/reconciler/rescan_route.rs`.
+        let sweep = reconciler::record_sweep_completed(&volume_id, reconciler::now_unix());
+        if let Some(at) = sweep.last_sweep_unix {
+            let _ = writer.send(WriteMessage::UpdateMeta {
+                key: reconciler::SHALLOW_SWEEP_AT_KEY.to_string(),
+                value: at.to_string(),
+            });
+        }
+        let _ = writer.send(WriteMessage::UpdateMeta {
+            key: reconciler::SHALLOW_COALESCED_KEY.to_string(),
+            value: "0".to_string(),
+        });
+        // The calibration numbers go into TWO buckets: this walk kind's own
+        // keys (so the next run of the same kind gets an ETA from a
+        // comparable run) and the unsuffixed keys (the last-completed-scan
+        // facts the badge tooltip and the any-kind fallback read).
+        for (key, value) in [
+            ("scan_duration_ms", summary.duration_ms.to_string()),
+            ("total_entries", summary.total_entries.to_string()),
+            ("total_physical_bytes", summary.total_physical_bytes.to_string()),
+        ] {
+            let _ = writer.send(WriteMessage::UpdateMeta {
+                key: calibration_kind.meta_key(key),
+                value: value.clone(),
+            });
+            let _ = writer.send(WriteMessage::UpdateMeta {
+                key: key.to_string(),
+                value,
+            });
+        }
+        let _ = writer.send(WriteMessage::UpdateMeta {
+            key: "volume_path".to_string(),
+            value: space.volume_root_string(),
+        });
+    }
+
+    // Open a read connection for path resolution during replay
+    let replay_conn = match IndexStore::open_read_connection(&writer.db_path()) {
+        Ok(c) => c,
+        Err(e) => {
+            log::warn!("Reconciler: failed to open read connection for replay: {e}");
+            return;
+        }
+    };
+
+    // Set a baseline last_event_id so there's always a valid
+    // event ID even if no live events were buffered during the scan.
+    // The reconciler will overwrite this with a higher ID if any
+    // post-scan events exist.
+    if scan_start_event_id > 0 {
+        let _ = writer.send(WriteMessage::UpdateLastEventId(scan_start_event_id));
+    }
+
+    // Replay events that arrived after the scan read their paths
+    match reconciler.replay(scan_start_event_id, &replay_conn, &writer, &mut |paths| {
+        reconciler::emit_dir_updated(events.as_ref(), paths)
+    }) {
+        Ok(last_id) => {
+            log::info!("Reconciler: post-scan replay complete (last_event_id={last_id})");
+        }
+        Err(e) => {
+            log::warn!("Reconciler: replay failed: {e}");
+        }
+    }
+
+    // Backfill dir_stats for any directories created by the replay
+    // that didn't go through the full aggregation pass.
+    let _ = writer.send(WriteMessage::BackfillMissingDirStats);
+
+    // Switch to live mode
+    reconciler.switch_to_live();
+
+    // Freshness ⇒ Fresh (green) on a clean completion. A cancelled
+    // local scan keeps its prior freshness (root stays browsable);
+    // it isn't reset to gray the way an interrupted SMB scan is,
+    // because local data isn't tied to a connection that vanished.
+    if was_completed {
+        super::state::apply_freshness_event_on(
+            &freshness,
+            events.as_ref(),
+            &volume_id,
+            super::freshness::FreshnessEvent::ScanCompleted,
+        );
+    }
+
+    DEBUG_STATS.close_phase_with_stats(vec![("buffered_events", buffered_count.to_string())]);
+    set_phase_for(
+        events.as_ref(),
+        &volume_id,
+        ActivityPhase::Live,
+        "post-scan reconciliation complete",
+    );
+
+    // Step 5: Start live event processing loop
+    let writer_live = writer.clone();
+    let events_live = Arc::clone(&events);
+    let volume_id_live = volume_id.clone();
+    let overflow_live = watcher_overflow_flag.clone();
+    let space_live = space.clone();
+    let handle = crate::indexing::host::runtime::spawn(async move {
+        run_live_event_loop(
+            event_rx,
+            reconciler,
+            writer_live,
+            events_live,
+            volume_id_live,
+            space_live,
+            overflow_live,
+        )
+        .await;
+    });
+
+    // Store the handle so shutdown() can wait for it to drain
+    {
+        let mut guard = live_event_task_slot.lock_ignore_poison();
+        *guard = Some(handle);
+    }
+}
+
+/// Report a scan that neither finished nor was cancelled: a typed failure, or a
+/// walker thread that panicked outright. Split out so the completion path above
+/// reads as one flow, and so the failure handling can't accidentally acquire a
+/// cancelled walk (which is `Ok`-shaped work with `Err`-shaped bookkeeping).
+fn report_unfinished_scan(
+    result: &std::thread::Result<Result<ScanSummary, ScanError>>,
+    events: &dyn EventSink,
+    volume_id: &str,
+    freshness: &std::sync::Mutex<Option<super::freshness::Freshness>>,
+) {
+    match result {
         Ok(Err(e)) => {
             log::warn!("Volume scan failed: {e}");
             // The scan/reconcile bailed (e.g. `EmptyRoot`, `RootUnlistable`, or a
@@ -366,9 +396,9 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
             // available" instead of a stuck spinner. Fire through the cloned handle,
             // never the registry (no re-lock).
             super::state::apply_freshness_event_on(
-                &freshness,
-                events.as_ref(),
-                &volume_id,
+                freshness,
+                events,
+                volume_id,
                 super::freshness::FreshnessEvent::ScanFailed,
             );
 
@@ -379,15 +409,15 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
             // (`EmptyRoot`) or a panic is NOT a vanished volume, so it does not
             // abort. No `scan_completed_at` was written (the meta writes live in the
             // clean-completion arm only), so the index heals to a rescan on remount.
-            if scan_failure_is_vanished_volume(&e) {
+            if scan_failure_is_vanished_volume(e) {
                 set_phase_for(
-                    events.as_ref(),
-                    &volume_id,
+                    events,
+                    volume_id,
                     ActivityPhase::Idle,
                     "local scan aborted (volume vanished)",
                 );
                 events.emit(IndexEvent::ScanAborted {
-                    volume_id: volume_id.clone(),
+                    volume_id: volume_id.to_string(),
                 });
             }
         }
@@ -397,12 +427,16 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
             // `catch_unwind`-wrapped, so this is the residual guarded-walker/thread
             // case). Same honest reset as the `Ok(Err(_))` arm above.
             super::state::apply_freshness_event_on(
-                &freshness,
-                events.as_ref(),
-                &volume_id,
+                freshness,
+                events,
+                volume_id,
                 super::freshness::FreshnessEvent::ScanFailed,
             );
         }
+        // The caller routes finished and cancelled walks itself and never gets
+        // here; matching exhaustively keeps that split visible rather than
+        // silently absorbing a future outcome into "failed".
+        Ok(Ok(_)) => debug_assert!(false, "a completed scan must not reach the failure reporter"),
     }
 }
 
@@ -484,14 +518,6 @@ mod tests {
             total_dirs: 1,
             total_physical_bytes: 4096,
             duration_ms: 12,
-            was_cancelled: false,
-        }
-    }
-
-    fn cancelled_summary(entries: u64) -> ScanSummary {
-        ScanSummary {
-            was_cancelled: true,
-            ..summary(entries)
         }
     }
 
@@ -520,7 +546,7 @@ mod tests {
     #[tokio::test(flavor = "multi_thread")]
     async fn a_cancelled_scan_writes_no_completion_marker() {
         let mut fx = Fixture::new("done-cancelled");
-        let params = fx.completion("done-cancelled", Ok(cancelled_summary(7)));
+        let params = fx.completion("done-cancelled", Err(ScanError::Cancelled(summary(7))));
         run_scan_completion(params).await;
 
         assert_eq!(
@@ -537,7 +563,7 @@ mod tests {
     #[tokio::test(flavor = "multi_thread")]
     async fn a_cancelled_scan_is_neither_a_completion_nor_a_failure() {
         let mut fx = Fixture::new("cancel-not-fail");
-        let params = fx.completion("cancel-not-fail", Ok(cancelled_summary(7)));
+        let params = fx.completion("cancel-not-fail", Err(ScanError::Cancelled(summary(7))));
         run_scan_completion(params).await;
 
         let kinds = fx.events.kinds_for("cancel-not-fail");
@@ -589,7 +615,7 @@ mod tests {
     #[tokio::test(flavor = "multi_thread")]
     async fn a_rescan_after_a_cancelled_scan_writes_the_marker() {
         let mut fx = Fixture::new("cancel-then-rescan");
-        let cancelled = fx.completion("cancel-then-rescan", Ok(cancelled_summary(7)));
+        let cancelled = fx.completion("cancel-then-rescan", Err(ScanError::Cancelled(summary(7))));
         run_scan_completion(cancelled).await;
         assert_eq!(
             fx.completion_marker().await,

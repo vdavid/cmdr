@@ -346,13 +346,12 @@ fn build_live_children(
     live
 }
 
-fn summary(entries: u64, dirs: u64, physical_bytes: u64, start: Instant, cancelled: bool) -> ScanSummary {
+fn summary(entries: u64, dirs: u64, physical_bytes: u64, start: Instant) -> ScanSummary {
     ScanSummary {
         total_entries: entries,
         total_dirs: dirs,
         total_physical_bytes: physical_bytes,
         duration_ms: start.elapsed().as_millis() as u64,
-        was_cancelled: cancelled,
     }
 }
 
@@ -444,7 +443,12 @@ fn run_local_reconcile(
             // `SetDeltaPropagation(false)`) and there's no final aggregate here —
             // so the guard's exit pays that debt with one `ComputeAllAggregates`,
             // and the unpaid marker it wrote covers a death before that.
-            return Ok(summary(total_entries, total_dirs, total_physical_bytes, start, true));
+            return Err(ScanError::Cancelled(summary(
+                total_entries,
+                total_dirs,
+                total_physical_bytes,
+                start,
+            )));
         }
 
         // Cost backstop: this directory's subtree has already lost more time to
@@ -600,7 +604,7 @@ fn run_local_reconcile(
         start.elapsed().as_millis()
     );
 
-    Ok(summary(total_entries, total_dirs, total_physical_bytes, start, false))
+    Ok(summary(total_entries, total_dirs, total_physical_bytes, start))
 }
 
 #[cfg(test)]

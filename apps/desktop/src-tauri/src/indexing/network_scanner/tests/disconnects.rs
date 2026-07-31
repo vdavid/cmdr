@@ -157,7 +157,7 @@ async fn isolated_transient_failure_does_not_trip_backstop() {
     });
 
     let cancelled = CancellationToken::new();
-    let summary = scan_volume_via_trait(
+    scan_volume_via_trait(
         vol,
         PathBuf::from("/"),
         writer.clone(),
@@ -167,7 +167,6 @@ async fn isolated_transient_failure_does_not_trip_backstop() {
     )
     .await
     .expect("an isolated transient failure is skipped, scan completes");
-    assert!(!summary.was_cancelled);
 
     writer.flush().await.expect("flush");
     writer.shutdown();
@@ -198,6 +197,16 @@ fn terminal_disconnect_classification() {
     assert!(
         !VolumeScanError::Volume(VolumeError::PermissionDenied("root".into())).is_terminal_disconnect(),
         "a non-disconnect volume error (root-fatal) is discarded"
+    );
+    assert!(
+        !VolumeScanError::Cancelled(ScanSummary {
+            total_entries: 12,
+            total_dirs: 3,
+            total_physical_bytes: 4096,
+            duration_ms: 8,
+        })
+        .is_terminal_disconnect(),
+        "a user cancel is discardable, so it must NOT keep the partial as Stale"
     );
     assert!(!VolumeScanError::WriterSend("gone".into()).is_terminal_disconnect());
     assert!(!VolumeScanError::Context("ctx".into()).is_terminal_disconnect());

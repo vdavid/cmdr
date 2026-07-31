@@ -37,7 +37,7 @@
 //! ones stay `0` (`—`/`≥`). The completion handler (`lifecycle/manager.rs`) then keeps the
 //! instance + DB and marks the volume Stale.
 //!
-//! A **user cancel** still discards: cancelling the token returns `was_cancelled` with no
+//! A **user cancel** still discards: cancelling the token returns `Cancelled` with no
 //! marks/aggregate, and the completion handler resets the volume to gray.
 //!
 //! This scanner NEVER writes the `scan_completed_at` meta marker (on any path);
@@ -117,6 +117,14 @@ pub(crate) enum VolumeScanError {
     WriterSend(String),
     /// Setting up the scan context (root sentinel, id counter) failed.
     Context(String),
+    /// The walk stopped because its cancellation token fired, carrying the
+    /// partial totals it had reached. A distinct variant rather than a flag on
+    /// the summary, so `Ok` means "this walk finished" and no caller can mark a
+    /// partial index complete by forgetting to check. Deliberately NOT a
+    /// terminal disconnect (see [`is_terminal_disconnect`](Self::is_terminal_disconnect)):
+    /// the partial is discardable, so the completion handler resets the volume
+    /// rather than keeping it Stale.
+    Cancelled(ScanSummary),
     /// The ROOT listing SUCCEEDED but returned zero children, so the walk
     /// produced an empty index. Distinct from a root listing that FAILED
     /// (`Volume`) — here the backend answered, it just answered "nothing". For a
@@ -159,6 +167,11 @@ impl std::fmt::Display for VolumeScanError {
             }
             Self::WriterSend(m) => write!(f, "writer send failed: {m}"),
             Self::Context(m) => write!(f, "scan context setup failed: {m}"),
+            Self::Cancelled(s) => write!(
+                f,
+                "scan cancelled after {} entries in {} dirs",
+                s.total_entries, s.total_dirs
+            ),
             Self::EmptyRoot => write!(f, "root listing returned no children (treating as a failed scan)"),
         }
     }
@@ -171,9 +184,10 @@ impl std::error::Error for VolumeScanError {}
 /// task. On clean completion, fires `ComputeAllAggregates` so the existing
 /// aggregator computes `dir_stats` exactly as for a local scan.
 ///
-/// Cancelable via `cancel`; cancellation flushes the current batch and
-/// returns `was_cancelled: true`. A timeout / backend error returns `Err`; the
-/// caller discards the partial (D-interrupted).
+/// Cancelable via `cancel`; cancellation flushes the current batch and returns
+/// `Err(VolumeScanError::Cancelled)` carrying the partial totals. A timeout /
+/// backend error returns its own `Err`; the caller discards the partial in both
+/// cases (D-interrupted).
 ///
 /// `pacer` decides how many listings may be in flight at each top-up, so the walk
 /// gets out of the way while the user browses this share ([`ScanPacer`]).
@@ -243,7 +257,12 @@ pub(crate) async fn scan_volume_via_trait(
             // dropped request waiter. Flush what we batched and report the cancel.
             flush_batch(&mut batch, &writer)?;
             commit_scan_tx(&writer, &mut tx_open)?;
-            return Ok(summary(total_entries, total_dirs, total_physical_bytes, start, true));
+            return Err(VolumeScanError::Cancelled(summary(
+                total_entries,
+                total_dirs,
+                total_physical_bytes,
+                start,
+            )));
         }
 
         // Commit the insert transaction on the interval and reopen, so accumulated
@@ -466,7 +485,7 @@ pub(crate) async fn scan_volume_via_trait(
         start.elapsed().as_millis()
     );
 
-    Ok(summary(total_entries, total_dirs, total_physical_bytes, start, false))
+    Ok(summary(total_entries, total_dirs, total_physical_bytes, start))
 }
 
 /// Non-destructively RECONCILE a network volume against an already-populated
@@ -552,7 +571,12 @@ pub(crate) async fn reconcile_volume_via_trait(
             // User cancel: stop, but leave the prior index intact (no truncate ran).
             // Mirror the fresh-scan cancel contract (no marks/aggregate on cancel).
             // In-flight listings are dropped (backends tolerate a dropped waiter).
-            return Ok(summary(total_entries, total_dirs, total_physical_bytes, start, true));
+            return Err(VolumeScanError::Cancelled(summary(
+                total_entries,
+                total_dirs,
+                total_physical_bytes,
+                start,
+            )));
         }
 
         // Keep up to the current budget of listings in flight — matched (existing) child
@@ -761,7 +785,7 @@ pub(crate) async fn reconcile_volume_via_trait(
         start.elapsed().as_millis()
     );
 
-    Ok(summary(total_entries, total_dirs, total_physical_bytes, start, false))
+    Ok(summary(total_entries, total_dirs, total_physical_bytes, start))
 }
 
 /// Network-path adapter over the shared [`reconciler::finish_reconcile`] (stamp
@@ -933,13 +957,12 @@ fn log_scan_progress(last_log: &mut Instant, phase: &str, dir_path: &Path, total
     );
 }
 
-fn summary(entries: u64, dirs: u64, physical_bytes: u64, start: Instant, cancelled: bool) -> ScanSummary {
+fn summary(entries: u64, dirs: u64, physical_bytes: u64, start: Instant) -> ScanSummary {
     ScanSummary {
         total_entries: entries,
         total_dirs: dirs,
         total_physical_bytes: physical_bytes,
         duration_ms: start.elapsed().as_millis() as u64,
-        was_cancelled: cancelled,
     }
 }
 

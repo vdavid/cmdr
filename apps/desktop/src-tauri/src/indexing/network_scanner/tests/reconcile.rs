@@ -449,10 +449,9 @@ async fn reconcile_from_empty_db_with_non_root_mount_indexes_full_tree() {
     };
 
     let cancelled = CancellationToken::new();
-    let summary = reconcile_volume_via_trait(vol, root, writer.clone(), progress(), cancelled, ScanPacer::unpaced())
+    reconcile_volume_via_trait(vol, root, writer.clone(), progress(), cancelled, ScanPacer::unpaced())
         .await
         .expect("reconcile from empty DB on a non-`/` mount");
-    assert!(!summary.was_cancelled);
     writer.flush().await.expect("flush");
 
     let conn = IndexStore::open_read_connection(&db_path).expect("read conn");

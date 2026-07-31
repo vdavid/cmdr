@@ -178,7 +178,10 @@ impl ScanHandle {
     }
 }
 
-/// Summary returned when a scan completes (or is cancelled).
+/// What a walk covered. Reaching a caller as `Ok` means the walk ran to the END:
+/// a cancelled walk's partial totals arrive inside
+/// [`ScanError::Cancelled`](ScanError::Cancelled) instead, so no caller can treat
+/// a partial as a completion by forgetting to check a flag.
 #[derive(Debug, Clone)]
 pub struct ScanSummary {
     pub total_entries: u64,
@@ -187,7 +190,36 @@ pub struct ScanSummary {
     /// `bytes_scanned` counter). Apples-to-apples with the stored physical-size sums.
     pub total_physical_bytes: u64,
     pub duration_ms: u64,
-    pub was_cancelled: bool,
+}
+
+/// Everything [`run_scan`] produced, INCLUDING whether the walk ran to the end.
+///
+/// Internal on purpose: the write sequences that follow a walk (stamping listed
+/// dirs, the subtree aggregate) need the ids and the epoch on the cancel path
+/// too, so the cancelled/completed split only becomes a `Result` at the public
+/// entry points, via [`ScanOutcome::into_result`].
+#[derive(Debug)]
+struct ScanOutcome {
+    summary: ScanSummary,
+    /// True when the scan's token fired before the walk ended.
+    cancelled: bool,
+    /// Ids of the directories whose read succeeded. Empty on a cancel (honest
+    /// partial coverage), so stamping them is a no-op there.
+    listed_ids: Vec<i64>,
+    epoch: u64,
+    root_id: i64,
+}
+
+impl ScanOutcome {
+    /// The caller-facing answer: totals for a finished walk, the typed
+    /// cancellation for a stopped one.
+    fn into_result(self) -> Result<ScanSummary, ScanError> {
+        if self.cancelled {
+            Err(ScanError::Cancelled(self.summary))
+        } else {
+            Ok(self.summary)
+        }
+    }
 }
 
 /// Errors that can occur during scanning.
@@ -215,6 +247,14 @@ pub enum ScanError {
     /// the only dir and never read) and the LOCAL reconcile walk (`local_reconcile`,
     /// when its root read returns `None`).
     RootUnlistable,
+    /// The walk stopped because its cancellation token fired, carrying the
+    /// partial totals it had reached. A distinct variant rather than a flag on
+    /// the summary: `scan_completed_at` is written only on the `Ok` path, so a
+    /// caller cannot mark a half-built index complete by forgetting to check.
+    /// It is NOT a failure — the completion handlers route it to its own arm,
+    /// which keeps the prior freshness and fires no abort. See
+    /// `lifecycle/scan_completion.rs`.
+    Cancelled(ScanSummary),
     /// The reconcile walk panicked. `local_reconcile::start_local_reconcile`
     /// wraps the walk in `catch_unwind` and converts the panic payload into this
     /// typed variant (carrying the panic message), so the thread's `JoinHandle`
@@ -231,6 +271,11 @@ impl std::fmt::Display for ScanError {
             ScanError::WriterSend(msg) => write!(f, "Writer send failed: {msg}"),
             ScanError::EmptyRoot => write!(f, "root listing returned no children (treating as a failed rescan)"),
             ScanError::RootUnlistable => write!(f, "volume root became unlistable (mount vanished mid-scan)"),
+            ScanError::Cancelled(s) => write!(
+                f,
+                "scan cancelled after {} entries in {} dirs",
+                s.total_entries, s.total_dirs
+            ),
             ScanError::Panicked(msg) => write!(f, "reconcile walk panicked: {msg}"),
         }
     }
@@ -293,10 +338,12 @@ pub fn scan_volume(
             // that dir at epoch 0 and roll the whole tree to incomplete). The
             // single in-order writer enforces it. The WAL checkpoint trims the
             // GB-scale post-scan spike now instead of waiting for the ticker.
-            if let Ok((summary, listed_ids, epoch, _root_id)) = &result
-                && !summary.was_cancelled
+            // A cancelled walk sends none of it: the caller discards or heals
+            // the partial, and a truncate already ran.
+            if let Ok(outcome) = &result
+                && !outcome.cancelled
             {
-                send_marks(listed_ids, *epoch, &writer);
+                send_marks(&outcome.listed_ids, outcome.epoch, &writer);
                 if let Err(e) = writer.send(WriteMessage::ComputeAllAggregates {
                     source: AggSource::Maps,
                 }) {
@@ -306,7 +353,7 @@ pub fn scan_volume(
                 }
             }
 
-            result.map(|(summary, _, _, _)| summary)
+            result.and_then(ScanOutcome::into_result)
         })
         .map_err(ScanError::Io)?;
 
@@ -320,7 +367,7 @@ pub fn scan_volume(
 pub fn scan_subtree(root: &Path, writer: &IndexWriter, cancel: &CancellationToken) -> Result<ScanSummary, ScanError> {
     let progress = Arc::new(ScanProgress::new());
     let reader: ReadDirFn = default_reader();
-    let (summary, listed_ids, epoch, root_id) = run_scan(
+    let outcome = run_scan(
         root,
         cancel,
         &progress,
@@ -339,17 +386,19 @@ pub fn scan_subtree(root: &Path, writer: &IndexWriter, cancel: &CancellationToke
     )?;
 
     // Stamp the listed dirs before the subtree aggregate (the ordering invariant).
-    // A cancelled scan has no listed ids (honest partial coverage), so this
-    // no-ops, but the aggregate below still runs: `run_scan` already sent the
-    // destructive `DeleteDescendantsById(root_id)`, so skipping the aggregate on
-    // cancel would strand a half-rebuilt subtree with stale ancestors. The
-    // aggregate recomputes whatever entries landed and repairs the ancestor chain.
-    send_marks(&listed_ids, epoch, writer);
-    if let Err(e) = writer.send(WriteMessage::ComputeSubtreeAggregates { root_id }) {
+    // ❌ Both run on the CANCEL path too, which is why the outcome is unwrapped
+    // to a `Result` only afterwards: `run_scan` already sent the destructive
+    // `DeleteDescendantsById(root_id)`, so bailing early on cancel would strand a
+    // half-rebuilt subtree with stale ancestors. A cancelled scan has no listed
+    // ids (honest partial coverage), so the marks no-op and only the repair runs.
+    send_marks(&outcome.listed_ids, outcome.epoch, writer);
+    if let Err(e) = writer.send(WriteMessage::ComputeSubtreeAggregates {
+        root_id: outcome.root_id,
+    }) {
         log::warn!("Scanner: failed to send ComputeSubtreeAggregates: {e}");
     }
 
-    Ok(summary)
+    outcome.into_result()
 }
 
 // ── Core scan logic ──────────────────────────────────────────────────
@@ -379,7 +428,7 @@ fn run_scan(
     inodes_trustworthy: bool,
     reader: ReadDirFn,
     stall_timeout: Duration,
-) -> Result<(ScanSummary, Vec<i64>, u64, i64), ScanError> {
+) -> Result<ScanOutcome, ScanError> {
     let start = Instant::now();
 
     // Resolve the scan root id and read the epoch every listed dir is stamped with
@@ -492,18 +541,18 @@ fn run_scan(
         start.elapsed().as_millis()
     );
 
-    Ok((
-        ScanSummary {
+    Ok(ScanOutcome {
+        summary: ScanSummary {
             total_entries: snap.entries_scanned,
             total_dirs: snap.dirs_found,
             total_physical_bytes: snap.bytes_scanned,
             duration_ms: start.elapsed().as_millis() as u64,
-            was_cancelled,
         },
+        cancelled: was_cancelled,
         listed_ids,
         epoch,
         root_id,
-    ))
+    })
 }
 
 /// Fresh-scan [`DirVisitor`]: inserts every discovered entry as a new row,

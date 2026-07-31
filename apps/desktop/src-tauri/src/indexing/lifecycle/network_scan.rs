@@ -18,6 +18,7 @@ use super::manager::{IndexManager, ScanCalibration};
 use super::state::IndexVolumeKind;
 use crate::indexing::events::progress_reporter::ScanProgressReporter;
 use crate::indexing::events::{ActivityPhase, DEBUG_STATS, IndexEvent, ScanRunKind, set_phase_for};
+use crate::indexing::network_scanner::VolumeScanError;
 use crate::indexing::store::IndexStore;
 use crate::indexing::writer::{AggSource, WriteMessage};
 
@@ -390,8 +391,12 @@ impl IndexManager {
             scan_done.store(true, Ordering::Relaxed);
             scanning.store(false, Ordering::Relaxed);
 
+            // Three outcomes, three arms. `Ok` now means the walk FINISHED (a
+            // cancel arrives as `VolumeScanError::Cancelled`, which is
+            // deliberately not a terminal disconnect), so the completion marker
+            // below can only be written for a whole scan.
             match result {
-                Ok(summary) if !summary.was_cancelled => {
+                Ok(summary) => {
                     log::info!(
                         "network scan: complete ({} entries, {} dirs, {:.1}s)",
                         summary.total_entries,
@@ -525,13 +530,16 @@ impl IndexManager {
                         volume_id: volume_id.clone(),
                     });
                 }
-                other => {
+                Err(e) => {
                     // User cancel, timeout, or another genuine abort: the partial
                     // is discardable. Reset the volume to gray / not-indexed and
                     // drop the changes buffered during the aborted scan.
-                    match &other {
-                        Ok(_) => log::info!("network scan: cancelled for '{volume_id}', discarding partial"),
-                        Err(e) => log::warn!("network scan: failed for '{volume_id}' ({e}), discarding partial"),
+                    match &e {
+                        VolumeScanError::Cancelled(partial) => log::info!(
+                            "network scan: cancelled for '{volume_id}' after {} entries, discarding partial",
+                            partial.total_entries
+                        ),
+                        e => log::warn!("network scan: failed for '{volume_id}' ({e}), discarding partial"),
                     }
                     discard_buffered_changes_for_kind(kind, &volume_id);
                     super::state::reset_to_not_indexed(&volume_id);

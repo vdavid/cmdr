@@ -126,7 +126,6 @@ async fn smb_integration_volume_scan_indexes_share() {
     .await
     .expect("SMB volume scan should complete");
 
-    assert!(!summary.was_cancelled);
     assert_eq!(summary.total_entries, 3, "sub/ + leaf.txt + top.txt");
     assert_eq!(summary.total_dirs, 1, "just sub/");
 
@@ -199,7 +198,6 @@ async fn smb_integration_volume_scan_via_connection_pool() {
     .expect("pooled SMB volume scan should complete");
     vol.end_scan_session().await;
 
-    assert!(!summary.was_cancelled);
     assert_eq!(summary.total_entries, 3, "sub/ + leaf.txt + top.txt");
     assert_eq!(summary.total_dirs, 1, "just sub/");
 

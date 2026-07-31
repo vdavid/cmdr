@@ -142,7 +142,6 @@ fn no_panic_passes_the_result_through() {
         total_dirs: 2,
         total_physical_bytes: 42,
         duration_ms: 1,
-        was_cancelled: false,
     };
     let passed = run_catching_panics(|| Ok(summary.clone()));
     assert!(matches!(passed, Ok(s) if s.total_entries == 7 && s.total_physical_bytes == 42));
@@ -606,8 +605,7 @@ fn reconcile_from_empty_index_builds_correct_aggregates() {
     std::fs::write(rp.join("b/f4.txt"), vec![b'x'; 40]).unwrap();
     std::fs::write(rp.join("top.txt"), vec![b'x'; 50]).unwrap();
 
-    let summary = run_reconcile(&h, rp, false).expect("reconcile from empty");
-    assert!(!summary.was_cancelled, "the reconcile must complete, not cancel");
+    run_reconcile(&h, rp, false).expect("reconcile from empty");
 
     // Root aggregates: every file and dir, deduped sizes summed.
     let root_id = resolve(&h, rp).expect("root resolved");
@@ -710,7 +708,7 @@ fn reconcile_vanished_root_surfaces_root_unlistable_not_empty_root() {
     );
 }
 
-/// Cancel (data-safety): a cancelled reconcile returns `was_cancelled`
+/// Cancel (data-safety): a cancelled reconcile returns `ScanError::Cancelled`
 /// (so the completion handler writes no scan_completed_at) and sends no
 /// marks/aggregate, leaving the prior index intact and un-restamped.
 #[test]
@@ -728,8 +726,11 @@ fn cancelled_reconcile_leaves_prior_index_and_writes_no_marks() {
     assert_eq!(listed_epoch(&h, sub), Some(1), "sub listed at epoch 1");
 
     bump_epoch(&h); // -> 2
-    let summary = run_reconcile(&h, rp, true).expect("cancelled reconcile returns Ok");
-    assert!(summary.was_cancelled, "cancel must report was_cancelled");
+    let result = run_reconcile(&h, rp, true);
+    assert!(
+        matches!(result, Err(ScanError::Cancelled(_))),
+        "a cancelled reconcile must surface the typed cancellation, got {result:?}"
+    );
 
     assert!(
         resolve(&h, &rp.join("sub/f.txt")).is_some(),
@@ -792,10 +793,12 @@ fn a_reconcile_cancelled_after_discovering_a_dir_leaves_no_exact_size_lies() {
             reader,
             budget: CostBudget::production(),
         },
-    )
-    .expect("a cancelled reconcile returns Ok");
+    );
     h.writer.flush_blocking().unwrap();
-    assert!(summary.was_cancelled, "the walk must report the cancel");
+    assert!(
+        matches!(summary, Err(ScanError::Cancelled(_))),
+        "the walk must report the cancel, got {summary:?}"
+    );
 
     let fresh = resolve(&h, &rp.join("sub/fresh")).expect("the walk discovered the new dir");
     assert_eq!(

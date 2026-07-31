@@ -251,7 +251,6 @@ fn scan_temp_directory_tree() {
     let (handle, join_handle) = scan_volume(config, &writer, CancellationToken::new()).unwrap();
     let summary = join_handle.join().expect("scan thread panicked").unwrap();
 
-    assert!(!summary.was_cancelled);
     // We created: subdir/, file1.txt, file2.txt, subdir/nested.txt, subdir/deep/, subdir/deep/leaf.txt
     assert_eq!(summary.total_entries, 6, "expected 6 entries (2 dirs + 4 files)");
     assert_eq!(summary.total_dirs, 2, "expected 2 directories");
@@ -306,8 +305,7 @@ fn clean_scan_stamps_every_listed_dir_with_current_epoch() {
     };
 
     let (_handle, join_handle) = scan_volume(config, &writer, CancellationToken::new()).unwrap();
-    let summary = join_handle.join().expect("scan thread panicked").unwrap();
-    assert!(!summary.was_cancelled);
+    join_handle.join().expect("scan thread panicked").unwrap();
 
     writer.flush_blocking().unwrap();
     writer.shutdown();
@@ -350,7 +348,6 @@ fn scan_subtree_only() {
 
     let summary = scan_subtree(&subtree_root, &writer, &cancelled).unwrap();
 
-    assert!(!summary.was_cancelled);
     // subdir contains: nested.txt, deep/, deep/leaf.txt
     assert_eq!(summary.total_entries, 3, "expected 3 entries under subdir");
     assert_eq!(summary.total_dirs, 1, "expected 1 directory (deep/)");
@@ -368,6 +365,67 @@ fn scan_subtree_only() {
         .expect("subtree root should be in DB");
     let children = store.list_children(subtree_id).unwrap();
     assert_eq!(children.len(), 2, "subdir should have 2 children: nested.txt, deep");
+}
+
+/// Data safety on the cancel path: `scan_subtree` deletes the subtree's existing
+/// descendants BEFORE walking, so bailing out on a cancel without the aggregate
+/// would leave the ancestors claiming sizes for rows that no longer exist. The
+/// typed `Cancelled` must therefore arrive AFTER the repair, not instead of it.
+#[test]
+fn a_cancelled_subtree_scan_still_repairs_its_ancestors() {
+    let scan_root = scan_test_tempdir();
+    create_test_tree(scan_root.path());
+
+    let (writer, db_path, _db_dir) = setup_writer();
+    let subtree_root = scan_root.path().join("subdir");
+    ensure_path_in_db(&db_path, &subtree_root, &writer);
+
+    // A clean subtree scan first, so the subtree has real rows and dir_stats.
+    scan_subtree(&subtree_root, &writer, &CancellationToken::new()).expect("the seeding scan");
+    writer.flush_blocking().unwrap();
+
+    let subtree_id = {
+        let store = IndexStore::open(&db_path).unwrap();
+        let conn = store.read_conn();
+        let id = store::resolve_path(conn, &subtree_root.to_string_lossy())
+            .unwrap()
+            .expect("subtree root indexed");
+        assert!(
+            !store.list_children(id).unwrap().is_empty(),
+            "precondition: the seeded subtree has children"
+        );
+        let seeded = IndexStore::get_dir_stats_by_id(conn, id).expect("read dir_stats");
+        assert_eq!(
+            seeded.map(|s| s.recursive_file_count),
+            Some(2),
+            "precondition: the seeding scan gave the subtree real dir_stats"
+        );
+        id
+    };
+
+    // Now cancel before the walk can put anything back.
+    let cancel = CancellationToken::new();
+    cancel.cancel();
+    let result = scan_subtree(&subtree_root, &writer, &cancel);
+    assert!(
+        matches!(result, Err(ScanError::Cancelled(_))),
+        "a cancelled subtree scan must surface the typed cancellation, got {result:?}"
+    );
+    writer.flush_blocking().unwrap();
+    writer.shutdown();
+
+    let store = IndexStore::open(&db_path).unwrap();
+    let conn = store.read_conn();
+    assert!(
+        store.list_children(subtree_id).unwrap().is_empty(),
+        "the pre-walk delete ran, so the subtree is empty"
+    );
+    let stats = IndexStore::get_dir_stats_by_id(conn, subtree_id).expect("read dir_stats");
+    assert_eq!(
+        stats.map(|s| s.recursive_file_count),
+        Some(0),
+        "the aggregate must run on the cancel path too, or the ancestors keep sizes for deleted rows"
+    );
 }
 
 #[test]
@@ -388,8 +446,11 @@ fn scan_cancellation() {
     // Cancel immediately
     handle.cancel();
 
-    let summary = join_handle.join().expect("scan thread panicked").unwrap();
-    assert!(summary.was_cancelled);
+    let result = join_handle.join().expect("scan thread panicked");
+    assert!(
+        matches!(result, Err(ScanError::Cancelled(_))),
+        "a cancelled scan must surface the typed cancellation, got {result:?}"
+    );
 
     writer.shutdown();
 }
@@ -409,7 +470,6 @@ fn scan_empty_directory() {
     let (_handle, join_handle) = scan_volume(config, &writer, CancellationToken::new()).unwrap();
     let summary = join_handle.join().expect("scan thread panicked").unwrap();
 
-    assert!(!summary.was_cancelled);
     assert_eq!(summary.total_entries, 0);
     assert_eq!(summary.total_dirs, 0);
 
@@ -770,8 +830,7 @@ fn bytes_scanned_matches_stored_physical_sum_with_hardlinks() {
     };
 
     let (handle, join_handle) = scan_volume(config, &writer, CancellationToken::new()).unwrap();
-    let summary = join_handle.join().expect("scan thread panicked").unwrap();
-    assert!(!summary.was_cancelled);
+    join_handle.join().expect("scan thread panicked").unwrap();
 
     writer.flush_blocking().unwrap();
     writer.shutdown();
@@ -862,7 +921,7 @@ fn timed_out_dir_is_not_marked_listed() {
     let cancelled = CancellationToken::new();
 
     let start = Instant::now();
-    let (summary, listed_ids, epoch, _root_id) = run_scan(
+    let outcome = run_scan(
         &root,
         &cancelled,
         &progress,
@@ -880,10 +939,9 @@ fn timed_out_dir_is_not_marked_listed() {
         start.elapsed() < Duration::from_secs(1),
         "must abandon the hang, not wait it out"
     );
-    assert!(!summary.was_cancelled);
 
     // Emit the marks exactly as scan_volume does, then flush.
-    send_marks(&listed_ids, epoch, &writer);
+    send_marks(&outcome.listed_ids, outcome.epoch, &writer);
     writer
         .send(WriteMessage::ComputeAllAggregates {
             source: AggSource::Maps,

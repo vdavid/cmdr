@@ -43,7 +43,6 @@ async fn scans_in_memory_tree_into_index() {
     .await
     .expect("scan should complete");
 
-    assert!(!summary.was_cancelled);
     assert_eq!(summary.total_entries, 3, "2 files + 1 dir");
     assert_eq!(summary.total_dirs, 1);
 
@@ -97,7 +96,7 @@ async fn errored_listing_is_not_marked() {
     });
 
     let cancelled = CancellationToken::new();
-    let summary = scan_volume_via_trait(
+    scan_volume_via_trait(
         vol,
         PathBuf::from("/"),
         writer.clone(),
@@ -107,7 +106,6 @@ async fn errored_listing_is_not_marked() {
     )
     .await
     .expect("scan should complete (a single bad subdir is skipped)");
-    assert!(!summary.was_cancelled);
 
     writer.flush().await.expect("flush");
     writer.shutdown();
@@ -268,8 +266,10 @@ async fn failed_root_listing_does_not_complete() {
     writer.shutdown();
 }
 
-/// A pre-set cancel flag stops the walk immediately and reports
-/// `was_cancelled` (the caller then discards the partial — D-interrupted).
+/// An already-cancelled token stops the walk immediately and reports the typed
+/// `Cancelled` (the caller then discards the partial — D-interrupted). `Ok` is
+/// reserved for a walk that finished, so nothing downstream can mistake this
+/// partial for a whole scan.
 #[tokio::test]
 async fn honors_cancellation_before_first_listing() {
     use crate::indexing::writer::IndexWriter;
@@ -284,7 +284,7 @@ async fn honors_cancellation_before_first_listing() {
 
     let cancelled = CancellationToken::new();
     cancelled.cancel();
-    let summary = scan_volume_via_trait(
+    let result = scan_volume_via_trait(
         vol,
         PathBuf::from("/"),
         writer.clone(),
@@ -292,10 +292,11 @@ async fn honors_cancellation_before_first_listing() {
         cancelled,
         ScanPacer::unpaced(),
     )
-    .await
-    .expect("cancelled scan still returns Ok");
-    assert!(summary.was_cancelled);
-    assert_eq!(summary.total_entries, 0, "nothing scanned after immediate cancel");
+    .await;
+    let Err(VolumeScanError::Cancelled(partial)) = result else {
+        panic!("a cancelled scan must surface the typed cancellation, got {result:?}");
+    };
+    assert_eq!(partial.total_entries, 0, "nothing scanned after immediate cancel");
 
     writer.shutdown();
 }

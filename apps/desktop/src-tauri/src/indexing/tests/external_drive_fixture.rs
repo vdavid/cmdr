@@ -597,8 +597,7 @@ mod tests {
         // and flushing the writer yields a fully aggregated index.
         let (_handle, join) =
             scan_volume(config, &writer, tokio_util::sync::CancellationToken::new()).expect("start scan");
-        let summary = join.join().expect("scan thread panicked").expect("scan ok");
-        assert!(!summary.was_cancelled, "scan ran to completion, not cancelled");
+        join.join().expect("scan thread panicked").expect("scan ok");
         writer.flush_blocking().expect("flush aggregates");
 
         // Known-tree minimums (macOS may add AppleDouble `._*` sidecars on FAT, so
