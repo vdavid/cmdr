@@ -5,11 +5,14 @@ File Provider mount, plus the scope-aware exclusion policy every local code path
 
 ## Module map
 
-- **mod.rs** — the scan driver: `scan_volume` / `scan_subtree` entry points, the `InsertVisitor` (attributes children to
-  their parent via the carried `dir.id`, no path→id map), the `Scan*` types, and `LOCAL_LIST_TIMEOUT` (15 s).
+- **mod.rs** — the scan driver: `scan_volume` / `scan_subtree` entry points, `run_scan`, the `Scan*` types, and
+  `LOCAL_LIST_TIMEOUT` (15 s).
+- **insert_visitor.rs** — the per-directory half: `InsertVisitor` turns each read's children into rows, attributing them
+  to their parent via the carried `dir.id` (no path→id map). Runs on the walker's worker threads, so its shared state is
+  behind mutexes and atomics.
 - **walker/** — the hang-tolerant engine (`walk`, the watchdog, the progress-timeout verdict, the subtree give-up
-  budget) + `bulk_read` (`getattrlistbulk` batch reads on macOS), whose `bulk_read_dir_unwatched` + `RawDirEntry` /
-  `RawFileType` are re-exported at `scanner` level for the serial reconcile walk. The engine stays private.
+  budget) + `bulk_read` (`getattrlistbulk` batch reads on macOS), whose `bulk_read_dir_unwatched` + `RawFileType` are
+  re-exported at `scanner` level for the serial reconcile walk. The engine stays private, and `RawDirEntry` with it.
 - **exclusions.rs** — the two-tier `should_exclude(path, &ExclusionScope)` policy (the single exclusion gate for
   scanner, reconcile, watch verification, and the verifier).
 

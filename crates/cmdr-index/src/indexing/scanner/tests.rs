@@ -4,6 +4,7 @@
 use super::*;
 use crate::indexing::store::{self, IndexStore, ROOT_ID, ScanContext};
 use crate::indexing::writer::IndexWriter;
+use cmdr_fs::firmlinks;
 use std::fs;
 
 /// Create a temp dir for volume-scan tests. On Linux, `/tmp/` is in the exclusion list,

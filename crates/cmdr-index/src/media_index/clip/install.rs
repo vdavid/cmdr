@@ -13,7 +13,6 @@
 //! — never bundle a prebuilt one). The towers are produced by the out-of-tree conversion
 //! script (`apps/desktop/scripts/convert-clip-model/`).
 
-
 use std::path::{Path, PathBuf};
 
 use sha2::{Digest, Sha256};
