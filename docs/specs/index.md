@@ -6,6 +6,19 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
+- [ ] 2026-08-01 `smb-transfer-resilience.md` - The cause of the transfer wedge, found on the second repro and now known
+      to be ours: `smb2` never spends the credits it charges (the counter only ever grows, nothing gates a send), so
+      under concurrency we over-run the server's grant and the NAS stops answering while TCP stays up. Everything else
+      was a symptom. M0 makes the over-spend visible (`dispatch:` logs only `ChangeNotify` today, so it has been
+      inferred from code, never observed) and is M1's red step; M1 spends, gates, and makes the budget connection-wide;
+      M2 adds a session deadline plus **ECHO keepalive**, because the deadline has to sit on "is the session alive" and
+      not "has this write finished" or a slow NAS gets aborted; M3 implements the `auto_reconnect` flag that today is
+      stored and does nothing, with durable handles; M4 lets Cmdr retry the FILE rather than kill the transfer, and
+      deletes the `min(src, dst, 32)` concurrency guess now that credits are real backpressure. Carries the rule that
+      correct credits are NOT a throughput compromise (lowering concurrency is the only option here that actually costs
+      speed) and that a naive credit gate must not turn an over-spend hang into a starvation hang. Evidence:
+      `docs/notes/incidents/2026-07-31-transfer-wedge/README.md`. SPECCED, M0 in flight.
+
 - [x] 2026-07-31 `transfer-wedge-observability.md` - SHIPPED (M1-M6). A 764-file copy to an SMB share wedged after 12
       files, ignored Rollback, and had to be force-quit, leaving two byte-incomplete files at their FINAL names on the
       NAS. **The root cause is still unknown**, so M1 was observability first: a live in-flight table where every task
