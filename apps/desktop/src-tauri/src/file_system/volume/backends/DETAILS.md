@@ -113,7 +113,8 @@ listings, and media enrichment's parallel prefetch reads.
   closed when the LAST concurrent scan session ends (`scan_session_refs`, a saturating counter — an index rescan and an
   enrichment pass can overlap, and either one's `end_scan_session` must not tear the pool out from under the other);
   `on_unmount` tears it down synchronously regardless (`close_scan_pool_sync` flips the pool's `closed` flag so
-  reconnect loops bail — a member must not keep walking an unmounted volume). Steady-state footprint between scans is
+  reconnect loops bail — a member must not keep walking an unmounted volume). `on_superseded` does NOT close it (an
+  in-flight scan is still drawing from it); it only stops a retired volume opening a NEW one. Steady-state footprint between scans is
   unchanged (`scan_pool: RwLock<Option<Arc<ScanPool>>>` is `None`). The index-scan lifecycle brackets the spawned walk
   task (`indexing/lifecycle/network_scan.rs`); the media pass brackets via a drop-guard in its scheduler — both run
   `end` on every outcome.
@@ -199,6 +200,48 @@ Why this is the whole fix, cheaply:
 - **NOT a freshness claim.** This is a visible-listing UX nicety, a SEPARATE consumer from the write-op fresh-listing oracle. `ArchiveVolume::listing_is_watched` stays `false` for a remote parent regardless (the SMB watcher is lossy under load, so the oracle must keep re-reading pre-flight scans honestly). The remote-archive freshness decision and the guardrail test are in `archive/watch/DETAILS.md` § "remote archives have NO live watch". MTP keeps manual refresh (F5) as its contract.
 
 Tests: `smb_watcher/archive_refresh_test.rs` (a Modified `.zip` event refreshes the inner listing; a non-archive change doesn't — the extension gate).
+
+## Supersede vs. unmount
+
+`Volume` has two retirement hooks, and confusing them breaks live operations.
+
+- **`on_unmount`**: the device is gone (ejected, network mount torn down, FSEvents unmount). Tear everything down.
+  `SmbVolume` flips `unmounted`, forces state to `Disconnected`, cancels the watcher, closes the scan pool, and drops
+  the smb2 `Tree` + `SmbClient`. Callers: `volumes::watcher::handle_volume_unmounted` and `volume::eject`.
+- **`on_superseded`**: a NEWER instance took this volume's id in the `VolumeManager`, but the device is still there.
+  Sole caller: `network::smb_upgrade::register_replacing_predecessor`.
+
+**The invariant: a superseded volume keeps serving its holders.** The `VolumeManager` is not the only owner of a
+`Volume`. Anything that resolved the id earlier holds an `Arc` for the whole duration of its work:
+
+- a running transfer clones `src_vol` / `dst_vol` into every per-file task (`write_operations::transfer::volume_copy`),
+- the file viewer holds an open `VolumeReadStream`,
+- an in-flight listing, a conflict scan, and a preflight walk each hold one,
+- the indexer holds one across a scan session.
+
+None of those can switch to the successor mid-flight, and the busy-volumes set doesn't track most of them. So
+`SmbVolume::on_superseded` leaves `state`, `tree`, and `client` untouched. The session is released when the last `Arc`
+drops (smb2 aborts its receiver task with the last `Arc<Inner>`), which makes the lifetime structurally correct rather
+than a race to be timed. ❌ Never reinstate a teardown here: it killed a live NAS copy with `DeviceDisconnected` on a
+connection that was still healthy (a redundant upgrade pass replaced the volume mid-transfer). Pinned by
+`smb_integration_superseded_volume_still_serves_its_holders` and
+`smb_upgrade::tests::a_held_volume_reference_keeps_working_across_a_replace`.
+
+**What DOES retire is everything scoped to the volume ID**, because the successor owns that now:
+
+- The **watcher** is cancelled. It runs on its own dedicated session (so cancelling it can't disturb a transfer), and
+  two watchers on one id double-feed the listing cache and the index.
+- The **scan pool** opens no new connections (an already-open one drains with its scan).
+- **`smb-connection-changed` events** are suppressed (`emit_state_change_for_id`, `update_state_on_smb_error`). A
+  retired instance announcing a disconnect would tell the frontend a healthy volume just dropped.
+- The **index-resume hook** is skipped in `do_attempt_reconnect`; the successor ran it when it registered.
+
+A superseded volume still **reconnects** for the holders on it (their only recovery path, since they can't move to the
+successor) — silently, without respawning a watcher.
+
+**Watcher identity, not just id.** `spawn_watcher_death_reconnect` takes the dying watcher's `SmbVolume::instance_id`
+and re-resolves the manager entry against it on every backoff step. A watcher dying in the window around a swap would
+otherwise resolve the id to the SUCCESSOR and mark a perfectly healthy volume `Disconnected`.
 
 ## Gotchas
 

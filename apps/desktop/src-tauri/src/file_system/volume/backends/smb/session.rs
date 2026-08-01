@@ -213,13 +213,17 @@ pub(super) async fn refresh_credentials_from_store(params: &SmbConnectionParams)
 /// If an smb2 error indicates the session is dead, transition state to
 /// `Disconnected` and emit `smb-connection-changed`. Mirrors `handle_smb_result`
 /// for contexts without `&self` (the streaming-read producer task).
-pub(super) fn update_state_on_smb_error(state: &AtomicU8, volume_id: &str, err: &smb2::Error) {
+///
+/// `superseded` is the volume's flag: a retired instance still tracks its own
+/// state for the holders reading through it, but must not announce a disconnect
+/// under a volume id a healthy successor now owns.
+pub(super) fn update_state_on_smb_error(state: &AtomicU8, superseded: &AtomicBool, volume_id: &str, err: &smb2::Error) {
     if matches!(
         err.kind(),
         smb2::ErrorKind::ConnectionLost | smb2::ErrorKind::SessionExpired
     ) {
         let prev = state.swap(ConnectionState::Disconnected as u8, Ordering::Relaxed);
-        if prev != ConnectionState::Disconnected as u8 {
+        if prev != ConnectionState::Disconnected as u8 && !superseded.load(Ordering::Relaxed) {
             emit_state_change(volume_id, "disconnected");
         }
     }

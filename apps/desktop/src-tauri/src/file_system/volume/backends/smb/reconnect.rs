@@ -8,7 +8,7 @@ impl SmbVolume {
     /// Cancels the existing watcher task (if any). The watcher exits on its
     /// next `select!` iteration. Best-effort: if the watcher already exited on
     /// a connection error, the send is a no-op.
-    fn stop_watcher(&self) {
+    pub(super) fn stop_watcher(&self) {
         if let Some(tx) = self.watcher_cancel.lock().ok().and_then(|mut g| g.take()) {
             let _ = tx.send(());
         }
@@ -34,16 +34,27 @@ impl SmbVolume {
     pub(super) fn spawn_watcher(&self, params: &SmbConnectionParams) {
         use crate::network::smb_connection::build_smb_addr;
 
+        // A superseded instance no longer owns its volume id, and the watcher is
+        // id-scoped: it feeds the listing cache and the index for that id, and
+        // its death path resolves the id through the manager. Spawning one here
+        // would have a retired volume driving the successor's state.
+        if self.is_superseded() {
+            return;
+        }
+
         let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel();
         let addr = build_smb_addr(&params.server, params.port);
         let share = params.share_name.clone();
         let username = params.username.clone();
         let password = params.password.clone();
-        let volume_id = self.volume_id.clone();
-        let mount_path = self.mount_path.clone();
+        let volume = super::super::smb_watcher::WatchedVolume {
+            volume_id: self.volume_id.clone(),
+            instance_id: self.instance_id,
+            mount_path: self.mount_path.clone(),
+        };
 
         tokio::spawn(super::super::smb_watcher::run_smb_watcher(
-            addr, share, username, password, volume_id, mount_path, cancel_rx,
+            addr, share, username, password, volume, cancel_rx,
         ));
 
         if let Ok(mut guard) = self.watcher_cancel.lock() {
@@ -128,7 +139,7 @@ impl SmbVolume {
                                 // The password on the server changed and what we have
                                 // saved no longer works. Tell the FE so it shows a
                                 // "Sign in" prompt instead of the generic "unreachable".
-                                emit_state_change(&self.volume_id, "needs_auth");
+                                self.emit_state_change_for_id("needs_auth");
                                 return Err(map_smb_error(e2));
                             }
                         }
@@ -139,7 +150,7 @@ impl SmbVolume {
                             "SmbVolume::attempt_reconnect(share={}): no fresh credentials available; giving up on this attempt",
                             self.share_name
                         );
-                        emit_state_change(&self.volume_id, "needs_auth");
+                        self.emit_state_change_for_id("needs_auth");
                         return Err(map_smb_error(err));
                     }
                 }
@@ -189,9 +200,13 @@ impl SmbVolume {
         // spawns, so we never start the async indexer while holding `reconnect_lock`
         // (still held here). No-op for a never-enabled share or an already-active
         // index. This is the in-place-reconnect half of index recovery; the
-        // launch/upgrade half lives in `smb_upgrade::register_smb_volume`.
+        // launch/upgrade half lives in `smb_upgrade::register_smb_volume`. Skipped
+        // when superseded: the index for this id belongs to the successor, which
+        // ran the same hook when it registered.
         #[cfg(any(target_os = "macos", target_os = "linux"))]
-        crate::index_host::index().resume_after_reconnect(self.volume_id.clone());
+        if !self.is_superseded() {
+            crate::index_host::index().resume_after_reconnect(self.volume_id.clone());
+        }
 
         info!("SmbVolume::attempt_reconnect(share={}): success", self.share_name);
         Ok(())
@@ -267,21 +282,34 @@ fn reconnect_backoff_should_give_up(err: &VolumeError) -> bool {
 /// Stops early when the volume is unmounted, removed/replaced in the manager, back
 /// to Direct (an FE reconnect won the race), or an auth failure surfaced (the FE
 /// "Sign in" flow owns that). Gives up quietly once the backoff is exhausted.
-pub(crate) fn spawn_watcher_death_reconnect(volume_id: String) {
+///
+/// `instance_id` identifies the volume whose watcher died. A watcher that dies
+/// in the window around a supersede would otherwise resolve the id to the
+/// SUCCESSOR and mark a perfectly healthy volume disconnected, so every lookup
+/// checks identity, not just the id.
+pub(crate) fn spawn_watcher_death_reconnect(volume_id: String, instance_id: u64) {
+    /// Resolves `volume_id` to the live volume, but only if it's still the same
+    /// instance whose watcher died.
+    fn still_the_same_volume(volume_id: &str, instance_id: u64) -> Option<Arc<dyn Volume>> {
+        let volume = crate::file_system::get_volume_manager().get(volume_id)?;
+        let smb = volume.as_any().downcast_ref::<SmbVolume>()?;
+        if smb.instance_id != instance_id || smb.unmounted.load(Ordering::Relaxed) {
+            return None;
+        }
+        Some(Arc::clone(&volume))
+    }
+
     tokio::spawn(async move {
         // The watcher's session died ⇒ the server connection is gone. Mark the
         // volume Disconnected so `do_attempt_reconnect` actually rebuilds (it
         // no-ops while Direct) and respawns the watcher.
         {
-            let Some(volume) = crate::file_system::get_volume_manager().get(&volume_id) else {
-                return; // already gone from the manager
+            let Some(volume) = still_the_same_volume(&volume_id, instance_id) else {
+                return; // gone, replaced, or unmounted
             };
             let Some(smb) = volume.as_any().downcast_ref::<SmbVolume>() else {
-                return; // replaced by a non-SMB volume
-            };
-            if smb.unmounted.load(Ordering::Relaxed) {
                 return;
-            }
+            };
             smb.transition_to_disconnected();
         }
 
@@ -289,15 +317,12 @@ pub(crate) fn spawn_watcher_death_reconnect(volume_id: String) {
             tokio::time::sleep(*delay).await;
 
             // Re-resolve each iteration: an unmount/replace swaps the instance.
-            let Some(volume) = crate::file_system::get_volume_manager().get(&volume_id) else {
+            let Some(volume) = still_the_same_volume(&volume_id, instance_id) else {
                 return;
             };
             let Some(smb) = volume.as_any().downcast_ref::<SmbVolume>() else {
                 return;
             };
-            if smb.unmounted.load(Ordering::Relaxed) {
-                return;
-            }
             if smb.connection_state() == ConnectionState::Direct {
                 debug!("smb backend reconnect: '{}' already Direct; done", volume_id);
                 return; // an FE reconnect (or a prior attempt) won the race

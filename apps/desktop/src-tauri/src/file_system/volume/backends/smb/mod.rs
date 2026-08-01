@@ -92,6 +92,9 @@ pub(crate) struct SmbConnectionParams {
     pub password: String,
 }
 
+/// Hands out a fresh `SmbVolume::instance_id` per constructed volume.
+static NEXT_INSTANCE_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
 pub struct SmbVolume {
     /// Display name (share name).
     name: String,
@@ -138,12 +141,25 @@ pub struct SmbVolume {
     /// Once `true`, the volume is permanently dead; `attempt_reconnect` becomes
     /// a no-op error.
     unmounted: Arc<AtomicBool>,
+    /// Set by `on_superseded` when a newer instance takes over this volume's id
+    /// in the `VolumeManager`. The session stays up for whoever still holds this
+    /// instance, but everything scoped to the ID (the watcher, the scan pool,
+    /// `smb-connection-changed` events, the index-resume hook) belongs to the
+    /// successor now and must go quiet here. See `DETAILS.md` § "Supersede vs.
+    /// unmount".
+    superseded: Arc<AtomicBool>,
     /// The per-scan connection pool: extra smb2 sessions that background bulk work
     /// (the index scan's listings, media enrichment's prefetch reads) spreads
     /// across, opened lazily on `begin_scan_session` and torn down when the LAST
     /// concurrent session ends. `None` between scans (steady-state footprint is
     /// just the one browsing session). See `scan_pool.rs`.
     scan_pool: tokio::sync::RwLock<Option<Arc<scan_pool::ScanPool>>>,
+    /// Distinguishes this instance from any successor that later takes the same
+    /// `volume_id`. The watcher carries it so its death path can tell "MY volume
+    /// lost its connection" from "a volume that replaced me is fine" — without
+    /// it, a retired watcher dying just after the swap marks the healthy
+    /// successor disconnected. See `reconnect::spawn_watcher_death_reconnect`.
+    instance_id: u64,
     /// How many scan sessions are open right now. Two background users can overlap
     /// (an index rescan kicked while an enrichment pass runs); the pool must
     /// survive until the LAST one ends, or one user's `end_scan_session` tears the
@@ -184,6 +200,8 @@ impl SmbVolume {
             watcher_cancel: std::sync::Mutex::new(None),
             reconnect_lock: Arc::new(tokio::sync::Mutex::new(())),
             unmounted: Arc::new(AtomicBool::new(false)),
+            superseded: Arc::new(AtomicBool::new(false)),
+            instance_id: NEXT_INSTANCE_ID.fetch_add(1, Ordering::Relaxed),
             scan_pool: tokio::sync::RwLock::new(None),
             scan_session_refs: AtomicUsize::new(0),
         }

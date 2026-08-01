@@ -685,3 +685,103 @@ async fn smb_integration_scan_pool_opens_lists_and_closes() {
 
     ensure_clean(&vol, &dir).await;
 }
+
+// ── Supersede (an upgrade replacing a live volume) ───────────────
+
+/// The lifecycle invariant behind the SMB upgrade swap, against a real server:
+/// retiring a volume must leave its session alive for whoever still holds it.
+///
+/// A running copy holds `Arc<dyn Volume>` clones of its source and destination
+/// (`volume_copy.rs`) for the whole transfer. A redundant upgrade replacing the
+/// volume mid-copy used to call `on_unmount` on the predecessor, dropping the
+/// smb2 session under the copy and killing it with `DeviceDisconnected` on a
+/// connection that was still healthy. `on_superseded` retires the id, not the
+/// session.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_superseded_volume_still_serves_its_holders() {
+    let vol = Arc::new(make_docker_volume().await);
+    assert_eq!(vol.connection_state(), ConnectionState::Direct);
+
+    // What an in-flight operation holds across the swap.
+    let held = Arc::clone(&vol);
+    assert!(
+        held.list_directory_impl(Path::new("")).await.is_ok(),
+        "sanity: the session works before the swap"
+    );
+
+    vol.on_superseded();
+
+    assert!(
+        held.list_directory_impl(Path::new("")).await.is_ok(),
+        "a superseded volume must keep serving its holders: an upgrade is not a disconnect"
+    );
+    assert_eq!(
+        held.connection_state(),
+        ConnectionState::Direct,
+        "supersede must not flip the connection state"
+    );
+    assert!(!held.unmounted.load(Ordering::Relaxed), "supersede is not an unmount");
+
+    // The watcher IS retired, though: the successor spawns its own on its own
+    // session, and two watchers on one volume id double-feed the index and let
+    // the retired one's death path reach the successor.
+    assert!(
+        !held.listing_is_watched(Path::new("/")),
+        "the superseded volume's watcher must be cancelled"
+    );
+
+    // And a genuine unmount still tears everything down.
+    let for_unmount = Arc::clone(&vol);
+    tokio::task::spawn_blocking(move || for_unmount.on_unmount())
+        .await
+        .expect("on_unmount runs on a blocking thread");
+    assert!(
+        matches!(
+            held.list_directory_impl(Path::new("")).await,
+            Err(VolumeError::DeviceDisconnected(_))
+        ),
+        "an actual unmount still drops the session"
+    );
+}
+
+/// A retired volume isn't a dead end for the holders still on it: if its
+/// connection breaks mid-transfer, it rebuilds in place, because the running
+/// copy holds THIS instance and can't switch to the successor. What it must not
+/// do is respawn the watcher, which belongs to the volume id the successor now
+/// owns (two watchers double-feed the index, and the retired one's death path
+/// reaches the successor).
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_superseded_volume_reconnects_without_reclaiming_the_id() {
+    let vol = make_docker_volume().await;
+    vol.on_superseded();
+    assert!(
+        vol.watcher_cancel.lock().unwrap().is_none(),
+        "supersede cancelled the watcher"
+    );
+
+    // "The server hung up mid-copy": drop the session under the holder.
+    {
+        let mut client_guard = vol.client.lock().await;
+        *client_guard = None;
+    }
+    {
+        let mut tree_guard = vol.tree.write().await;
+        *tree_guard = None;
+    }
+    vol.transition_to_disconnected();
+
+    vol.do_attempt_reconnect()
+        .await
+        .expect("a retired volume still rebuilds for the operation holding it");
+    assert_eq!(vol.connection_state(), ConnectionState::Direct);
+    assert!(
+        vol.list_directory_impl(Path::new("")).await.is_ok(),
+        "the holder's work continues on the rebuilt session"
+    );
+    assert!(
+        vol.watcher_cancel.lock().unwrap().is_none(),
+        "no watcher may be respawned for an id this volume no longer owns"
+    );
+}

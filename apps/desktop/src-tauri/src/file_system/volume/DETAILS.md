@@ -58,6 +58,7 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 - `attempt_reconnect()`: tries to rebuild the volume's underlying session in place after a transient connection loss. Default `Err(NotSupported)`. Only `SmbVolume` overrides today; the Tauri command `reconnect_smb_volume` and the FE reconnect manager call this on each backoff tick. Idempotent and single-flight: concurrent callers wait on the same in-flight attempt instead of dog-piling the server.
 - `reconnect_with_credentials(username, password)`: reconnect with freshly-entered credentials, replacing whatever was cached. Default `Err(NotSupported)`; `SmbVolume` persists the new password (so the next reconnect is silent) then runs `attempt_reconnect`. Invoked by the Tauri command `reconnect_smb_volume_with_credentials` behind the "Sign in" prompt shown after an auth-failure reconnect give-up.
 - `on_unmount()`: lifecycle hook called before unregistration. `SmbVolume` uses it to disconnect its smb2 session. Default is no-op.
+- `on_superseded()`: lifecycle hook for "a newer instance took my id, but the device is still here". Defaults to `on_unmount()`; `SmbVolume` overrides it to keep serving the holders that already have it. Contract: `backends/DETAILS.md` § "Supersede vs. unmount".
 - `begin_scan_session()` / `end_scan_session()`: default-no-op async hooks the indexing lifecycle
   (`indexing/lifecycle/network_scan.rs`) calls right before and after a background `Volume`-trait scan/reconcile walk.
   Let a backend open scan-scoped resources for the duration of a walk. `SmbVolume` overrides them to open/close a pool of
@@ -153,6 +154,7 @@ Everything below is optional per the trait (methods default to `Err(NotSupported
 - [ ] Override `lane_key()` to a STABLE identifier for the shared physical resource a transfer contends on (MTP device serial, SMB server+share, local mount root). The operation manager serializes write ops that share a lane (budget 1) and parallelizes disjoint ones; the default returns the volume root, which is right for an independent mount but would over-serialize if multiple `Volume` instances actually share one device/pipe. See `../write_operations/DETAILS.md` § "Operation manager".
 - [ ] Override `space_poll_interval()` to whatever polling cadence your backend can afford (local 2 s, network 5 s, none = don't poll).
 - [ ] If the volume needs async teardown (session close, handle drop), implement `on_unmount`. The default is a no-op.
+- [ ] If tearing that state down mid-flight would break a caller still holding an `Arc`, also implement `on_superseded` (it defaults to `on_unmount`).
 - [ ] Add a branch to `detect_provider` / `provider_suggestion` in `friendly_error/provider.rs` (see `friendly_error/CLAUDE.md`) if there's a recognizable path shape or fs type worth calling out in friendly errors.
 - [ ] Add a capability-matrix row below and update the `docs/architecture.md` volume line if the shape changes meaningfully.
 
@@ -182,6 +184,7 @@ At-a-glance view of which capabilities each current volume opts into. Use this w
 | `create_directory_errors_on_existing_dir` | ✅ (default) | ❌ (protocol allows dup names) | ✅ (default) | ✅ (default) | n/a (read-only)  |
 | `scanner` / `watcher` (indexing) | ✅ / ✅          | ❌                      | ❌                        | ❌                 | ❌                       |
 | `on_unmount`                | default              | default                 | ✅ drops smb2 session     | default            | default                  |
+| `on_superseded`             | default              | default                 | ✅ retires id, keeps session | default         | default                  |
 | `smb_connection_state`      | `None`               | `None`                  | ✅                        | `None`             | `None`                   |
 | `space_poll_interval`       | 2 s (default)        | 5 s                     | 5 s                       | `None`             | `None`                   |
 | `lane_key` / `get_space_info` | mount root / statvfs+NSURL | device serial / device | server+share / smb2 | root or override / configured | **parent's** / **parent's** |

@@ -61,32 +61,33 @@ pub(crate) enum UpgradeError {
     Network(String),
 }
 
-/// Register `new_volume` under `volume_id`, calling `on_unmount` on any
-/// predecessor first. Without the explicit cleanup, a re-register (every
-/// `NSWorkspaceDidMountNotification`, or a manual "Connect directly" after
-/// an unmount+remount cycle) would still eventually tear the old volume's
-/// watcher down via `Arc` drop → `Mutex<Option<Sender>>` drop → watcher
-/// `cancel_rx` resolves to `Err`. What this helper adds:
+/// Register `new_volume` under `volume_id`, retiring any predecessor first.
 ///
-/// 1. **Deterministic timing**: the watcher exits within one `select!` tick
-///    rather than "whenever the last `Arc` drops."
-/// 2. **`unmounted` flag**: any in-flight `do_attempt_reconnect` on the
-///    displaced volume bails before installing a session into a volume
-///    that's no longer in the manager.
+/// **The predecessor is superseded, never unmounted.** A re-register (a manual
+/// "Connect directly", an `NSWorkspaceDidMountNotification`, a redundant
+/// upgrade pass) means a newer instance owns the id, NOT that the device went
+/// away. Anything that grabbed an `Arc` before the swap is still using the old
+/// instance: a running transfer holds `src_vol` / `dst_vol` clones for its whole
+/// duration (`write_operations::transfer::volume_copy`), a viewer holds a read
+/// stream, the indexer holds a scan session. `on_unmount` here dropped the smb2
+/// session under all of them and killed a live copy with `DeviceDisconnected` on
+/// a healthy connection. `Volume::on_superseded` retires the id-scoped parts
+/// (watcher, scan pool, state events) and leaves the session to be released when
+/// the last `Arc` drops.
 ///
-/// `SmbVolume::on_unmount` uses `blocking_write()` / `blocking_lock()`
-/// (designed for the sync FSEvents thread), which panics inside a tokio
-/// runtime. `spawn_blocking` moves the call to a blocking-thread-pool
-/// thread so the lock acquisition is legal. Awaited so the cleanup
-/// completes before `register` swaps the new volume in.
+/// `SmbVolume::on_superseded` is lock-free, but the trait's DEFAULT delegates to
+/// `on_unmount`, which uses `blocking_write()` / `blocking_lock()` (designed for
+/// the sync FSEvents thread) and panics inside a tokio runtime. `spawn_blocking`
+/// keeps that default legal for any backend. Awaited so the retirement completes
+/// before `register` swaps the new volume in.
 async fn register_replacing_predecessor(
     volume_id: &str,
     new_volume: std::sync::Arc<dyn crate::file_system::volume::Volume>,
 ) {
     let manager = crate::file_system::get_volume_manager();
     if let Some(prev) = manager.get(volume_id) {
-        log::debug!("Replacing existing volume at id={volume_id}; calling on_unmount on the predecessor");
-        let _ = tokio::task::spawn_blocking(move || prev.on_unmount()).await;
+        log::debug!("Replacing existing volume at id={volume_id}; retiring the predecessor (session stays up)");
+        let _ = tokio::task::spawn_blocking(move || prev.on_superseded()).await;
     }
     manager.register(volume_id, new_volume);
 
@@ -441,6 +442,7 @@ pub(crate) async fn get_keychain_password(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::Path;
     use std::time::Duration;
 
     #[test]
@@ -560,9 +562,10 @@ mod tests {
 
     // ── register_replacing_predecessor ─────────────────────────────────
 
-    /// A minimal `Volume` impl whose only purpose is to record whether
-    /// `on_unmount` was called. Used to verify `register_replacing_predecessor`
-    /// runs the cleanup hook on the displaced volume.
+    /// A minimal `Volume` impl that records its lifecycle hooks and, like a
+    /// real `SmbVolume`, stops serving requests once its session is torn down.
+    /// Used to verify `register_replacing_predecessor` retires the displaced
+    /// volume without breaking the holders still using it.
     mod tracking {
         use crate::file_system::listing::metadata::FileEntry;
         use crate::file_system::volume::{SpaceInfo, Volume, VolumeError};
@@ -574,17 +577,26 @@ mod tests {
 
         pub(super) struct TrackingVolume {
             pub(super) on_unmount_called: Arc<AtomicBool>,
+            pub(super) on_superseded_called: Arc<AtomicBool>,
             root: PathBuf,
         }
 
+        /// The hook flags of one `TrackingVolume`, for assertions.
+        pub(super) struct Hooks {
+            pub(super) unmounted: Arc<AtomicBool>,
+            pub(super) superseded: Arc<AtomicBool>,
+        }
+
         impl TrackingVolume {
-            pub(super) fn create(label: &str) -> (Arc<dyn Volume>, Arc<AtomicBool>) {
-                let flag = Arc::new(AtomicBool::new(false));
+            pub(super) fn create(label: &str) -> (Arc<dyn Volume>, Hooks) {
+                let unmounted = Arc::new(AtomicBool::new(false));
+                let superseded = Arc::new(AtomicBool::new(false));
                 let vol = Arc::new(Self {
-                    on_unmount_called: Arc::clone(&flag),
+                    on_unmount_called: Arc::clone(&unmounted),
+                    on_superseded_called: Arc::clone(&superseded),
                     root: PathBuf::from(format!("/tmp/tracking-{label}")),
                 }) as Arc<dyn Volume>;
-                (vol, flag)
+                (vol, Hooks { unmounted, superseded })
             }
         }
 
@@ -614,11 +626,22 @@ mod tests {
             fn exists<'a>(&'a self, _path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
                 Box::pin(async { false })
             }
+            /// Stands in for any real request on a held volume reference: it
+            /// succeeds while the session is up and reports the session gone
+            /// once `on_unmount` has torn it down, exactly like `SmbVolume`'s
+            /// `check_connection` gate.
             fn is_directory<'a>(
                 &'a self,
                 _path: &'a Path,
             ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
-                Box::pin(async { Err(VolumeError::NotSupported) })
+                let torn_down = self.on_unmount_called.load(Ordering::Relaxed);
+                Box::pin(async move {
+                    if torn_down {
+                        Err(VolumeError::DeviceDisconnected("session torn down".to_string()))
+                    } else {
+                        Ok(true)
+                    }
+                })
             }
             fn get_space_info<'a>(
                 &'a self,
@@ -628,36 +651,43 @@ mod tests {
             fn on_unmount(&self) {
                 self.on_unmount_called.store(true, Ordering::Relaxed);
             }
+            /// Retires without tearing the session down, so holders keep working.
+            fn on_superseded(&self) {
+                self.on_superseded_called.store(true, Ordering::Relaxed);
+            }
         }
     }
 
-    /// `register_replacing_predecessor` must call `on_unmount` on whatever
-    /// `Volume` is currently registered at the target id before installing the
-    /// new one. Without this, the predecessor's `unmounted` flag never flips and
-    /// any in-flight `attempt_reconnect` could install a fresh session into a
-    /// volume that's no longer in the manager.
+    /// `register_replacing_predecessor` must retire the displaced volume via
+    /// `on_superseded`, NOT `on_unmount`. The device is still there and the
+    /// predecessor may still be serving in-flight work; unmounting it tears a
+    /// live session out from under those holders.
     #[tokio::test]
-    async fn predecessor_on_unmount_runs_before_replace() {
+    async fn predecessor_is_superseded_not_unmounted() {
         use std::sync::atomic::Ordering;
 
         let volume_id = "test-register-replacing-predecessor-replace";
         let manager = crate::file_system::get_volume_manager();
 
-        let (old_volume, old_flag) = tracking::TrackingVolume::create("old");
-        let (new_volume, new_flag) = tracking::TrackingVolume::create("new");
+        let (old_volume, old_hooks) = tracking::TrackingVolume::create("old");
+        let (new_volume, new_hooks) = tracking::TrackingVolume::create("new");
 
         manager.register(volume_id, old_volume);
-        assert!(!old_flag.load(Ordering::Relaxed));
+        assert!(!old_hooks.superseded.load(Ordering::Relaxed));
 
         register_replacing_predecessor(volume_id, std::sync::Arc::clone(&new_volume)).await;
 
         assert!(
-            old_flag.load(Ordering::Relaxed),
-            "displaced volume's on_unmount must have been called"
+            old_hooks.superseded.load(Ordering::Relaxed),
+            "displaced volume's on_superseded must have been called"
         );
         assert!(
-            !new_flag.load(Ordering::Relaxed),
-            "new volume's on_unmount must not be called"
+            !old_hooks.unmounted.load(Ordering::Relaxed),
+            "displaced volume must NOT be unmounted: the device is still there and in-flight work still holds it"
+        );
+        assert!(
+            !new_hooks.superseded.load(Ordering::Relaxed) && !new_hooks.unmounted.load(Ordering::Relaxed),
+            "new volume gets no lifecycle hook"
         );
 
         let current = manager.get(volume_id).expect("new volume should be registered");
@@ -669,19 +699,56 @@ mod tests {
         manager.unregister(volume_id);
     }
 
+    /// The lifecycle invariant behind the whole swap: an operation that grabbed
+    /// an `Arc` to the volume before an upgrade keeps working on it afterwards.
+    ///
+    /// This is the real-world failure it pins. A copy to a NAS held `src_vol` /
+    /// `dst_vol` clones (`volume_copy.rs`) while a redundant SMB upgrade
+    /// replaced the volume; the swap called `on_unmount` on the predecessor,
+    /// which dropped the smb2 session, and the running copy died with
+    /// `DeviceDisconnected` on a connection that was demonstrably healthy.
+    #[tokio::test]
+    async fn a_held_volume_reference_keeps_working_across_a_replace() {
+        let volume_id = "test-register-replacing-predecessor-held-reference";
+        let manager = crate::file_system::get_volume_manager();
+        manager.unregister(volume_id);
+
+        let (old_volume, _) = tracking::TrackingVolume::create("busy");
+        manager.register(volume_id, old_volume);
+
+        // What a running transfer holds: an `Arc` clone taken before the swap.
+        let held = manager.get(volume_id).expect("registered above");
+        assert!(
+            held.is_directory(Path::new("/anything")).await.is_ok(),
+            "the held reference works before the swap"
+        );
+
+        let (new_volume, _) = tracking::TrackingVolume::create("upgraded");
+        register_replacing_predecessor(volume_id, new_volume).await;
+
+        assert!(
+            held.is_directory(Path::new("/anything")).await.is_ok(),
+            "the held reference must survive the swap: an upgrade is not a disconnect"
+        );
+
+        manager.unregister(volume_id);
+    }
+
     /// When no predecessor exists, `register_replacing_predecessor` just
-    /// registers — no `on_unmount` call (there's nothing to call it on), no
-    /// panic.
+    /// registers — no lifecycle hook (there's nothing to call it on), no panic.
     #[tokio::test]
     async fn register_with_no_predecessor_just_registers() {
+        use std::sync::atomic::Ordering;
+
         let volume_id = "test-register-replacing-predecessor-fresh";
         let manager = crate::file_system::get_volume_manager();
         manager.unregister(volume_id); // belt-and-suspenders in case a prior test leaked.
 
-        let (new_volume, new_flag) = tracking::TrackingVolume::create("fresh");
+        let (new_volume, new_hooks) = tracking::TrackingVolume::create("fresh");
         register_replacing_predecessor(volume_id, std::sync::Arc::clone(&new_volume)).await;
 
-        assert!(!new_flag.load(std::sync::atomic::Ordering::Relaxed));
+        assert!(!new_hooks.superseded.load(Ordering::Relaxed));
+        assert!(!new_hooks.unmounted.load(Ordering::Relaxed));
         assert!(manager.get(volume_id).is_some());
 
         manager.unregister(volume_id);

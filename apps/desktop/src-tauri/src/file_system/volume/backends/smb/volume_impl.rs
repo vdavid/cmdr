@@ -800,6 +800,34 @@ impl Volume for SmbVolume {
         Box::pin(self.do_reconnect_with_credentials(username, password))
     }
 
+    /// Retire this instance without touching the live smb2 session.
+    ///
+    /// A newer `SmbVolume` has taken this volume's id in the `VolumeManager`
+    /// (an upgrade, a re-register after a remount). The share is still there,
+    /// and everything that grabbed an `Arc` to this instance before the swap is
+    /// still using it: a running transfer holds `src_vol` / `dst_vol` clones for
+    /// its whole duration, a viewer holds a read stream, the indexer holds a
+    /// scan session. Tearing the session down here kills all of them on a
+    /// connection that is perfectly healthy, which is the bug this exists to
+    /// prevent. The session is released when the last `Arc` drops (smb2 aborts
+    /// its receiver task with the last `Arc<Inner>`), so retirement is just
+    /// letting go.
+    ///
+    /// What DOES retire is everything scoped to the volume ID, which the
+    /// successor now owns: the watcher (see below), the scan pool, the
+    /// `smb-connection-changed` events, and the index-resume hook. Two watchers
+    /// on one id double-feed the index, and the retired one's death path
+    /// (`spawn_watcher_death_reconnect`) resolves the id through the manager and
+    /// would mark the SUCCESSOR disconnected.
+    fn on_superseded(&self) {
+        self.superseded.store(true, Ordering::Relaxed);
+        self.stop_watcher();
+        debug!(
+            "SmbVolume for {}: superseded by a newer instance; session left up for in-flight work",
+            self.share_name
+        );
+    }
+
     fn on_unmount(&self) {
         // Mark the volume permanently dead so any in-flight reconnect bails
         // out before installing a session into an orphaned volume.

@@ -418,6 +418,24 @@ pub trait Volume: Send + Sync {
     /// sessions, cancel background tasks, etc.). Default is a no-op.
     fn on_unmount(&self) {}
 
+    /// Called when a NEWER instance is taking this volume's id in the registry
+    /// while this one may still be serving in-flight work.
+    ///
+    /// This is NOT an unmount: the device is still there, and every caller that
+    /// already holds an `Arc` to this instance (a running transfer, an open
+    /// viewer stream, an in-flight listing, the indexer) must keep working on
+    /// it. So an implementation may only retire the parts that belong to the
+    /// *id* (background tasks, outward-facing events) and must leave the parts
+    /// that belong to its *holders* (sessions, handles) alone. Those are
+    /// released when the last `Arc` drops.
+    ///
+    /// The default delegates to [`Volume::on_unmount`], which is the safe
+    /// choice for a backend with no live session to protect. Override it when
+    /// tearing the resources down mid-flight would break a holder.
+    fn on_superseded(&self) {
+        self.on_unmount();
+    }
+
     /// Tries to rebuild this volume's underlying session in place after a
     /// transient connection loss. Idempotent and expected to be single-flight.
     ///

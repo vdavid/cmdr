@@ -462,6 +462,47 @@ fn on_unmount_marks_volume_dead() {
     assert_eq!(vol.connection_state(), ConnectionState::Disconnected);
 }
 
+/// Being superseded is not being unmounted. The successor took the volume id,
+/// but this instance may still be serving a running copy, so its session and
+/// connection state must survive untouched. Only the id-scoped parts retire.
+#[test]
+fn on_superseded_retires_the_id_but_keeps_the_session() {
+    let vol = make_test_volume_direct();
+    let (tx, _rx) = tokio::sync::oneshot::channel::<()>();
+    *vol.watcher_cancel.lock().unwrap() = Some(tx);
+
+    vol.on_superseded();
+
+    assert!(vol.superseded.load(Ordering::Relaxed), "the volume knows it's retired");
+    assert!(
+        !vol.unmounted.load(Ordering::Relaxed),
+        "supersede must not mark the volume dead: holders still use it"
+    );
+    assert_eq!(
+        vol.connection_state(),
+        ConnectionState::Direct,
+        "the session is still up, so ops on a held reference must not be gated off"
+    );
+    assert!(
+        vol.watcher_cancel.lock().unwrap().is_none(),
+        "the watcher belongs to the volume id, which the successor now owns"
+    );
+}
+
+/// A superseded volume must not open NEW background connections: the scan pool
+/// exists to speed up indexing and enrichment for the live volume id, which the
+/// successor now owns. (The live open/close path is the Docker test.)
+#[tokio::test]
+async fn open_scan_pool_noops_when_superseded() {
+    let vol = make_test_volume_direct();
+    vol.superseded.store(true, Ordering::Relaxed);
+    vol.open_scan_pool().await;
+    assert!(
+        vol.scan_pool.read().await.is_none(),
+        "a retired volume opens no new pool connections"
+    );
+}
+
 /// Opening the scan pool no-ops when the volume is disconnected: it must not try
 /// to `build_session` (a real network round trip) against a dead volume. Cheap,
 /// server-free coverage of the guard; the live open/list/close path is the
@@ -507,6 +548,8 @@ fn make_test_volume() -> SmbVolume {
         watcher_cancel: std::sync::Mutex::new(None),
         reconnect_lock: Arc::new(tokio::sync::Mutex::new(())),
         unmounted: Arc::new(AtomicBool::new(false)),
+        superseded: Arc::new(AtomicBool::new(false)),
+        instance_id: 0,
         scan_pool: tokio::sync::RwLock::new(None),
         scan_session_refs: AtomicUsize::new(0),
     }

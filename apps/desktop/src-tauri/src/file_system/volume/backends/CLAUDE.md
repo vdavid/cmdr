@@ -27,6 +27,11 @@ Depth: `DETAILS.md` (§§ Per-backend decisions, Gotchas, SMB auto-upgrade / rec
 - **Background bulk work (scan listings + media prefetch) uses a pool of extra smb2 sessions**
   (`smb/scan_pool.rs`; ksmbd serializes per connection, 4 connections ≈ 3.8×). Reads are compound-only on members;
   dead members retry on siblings, never the MAIN session; REFCOUNTED. DETAILS § "SMB scan-connection pool".
+- **A replaced volume is SUPERSEDED, never unmounted.** `on_superseded` retires the id-scoped parts (watcher, new scan
+  connections, state events, index-resume) and leaves `state` / `tree` / `client` alone, because a running transfer,
+  viewer stream, listing, or scan still holds an `Arc` to it and can't move to the successor. Tearing the session down
+  here killed a live NAS copy with `DeviceDisconnected` on a healthy connection. ❌ Don't reinstate it. DETAILS §
+  "Supersede vs. unmount".
 - **The SMB watcher doesn't reconnect itself; on death it kicks the one reconnect path** (`spawn_watcher_death_reconnect`
   → `do_attempt_reconnect`, bounded backoff), which respawns the watcher AND resumes the index. Don't give it its OWN
   reconnect loop (a second state machine swallows real disconnects).

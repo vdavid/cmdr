@@ -25,10 +25,11 @@ background: `docs/notes/smb-auth-flow-redesign.md`.
   `NETWORK_ENABLED`; check `is_network_enabled()` before mDNS.
 - **Every NetFS mount sets `UIOption = NoUI`**: without it NetFS routes auth failures to NetAuthAgent (a system dialog
   pops, blocks, returns -6600 on dismiss) even with explicit creds. `NoUI` returns typed codes for our own form.
-- **Re-register via `register_replacing_predecessor`, never a bare overwrite**: it cleans up the displaced volume
-  (`on_unmount`, cancel old watcher, drop old session) then emits `volumes-changed`. A bare overwrite leaves the old
-  watcher's lifetime non-deterministic and lets an in-flight reconnect install a session into an evicted volume. Keeps
-  `on_unmount` in `spawn_blocking` (a direct call panics "cannot block_on within a runtime").
+- **Re-register via `register_replacing_predecessor`, never a bare overwrite**: it retires the displaced volume via
+  `Volume::on_superseded`, then emits `volumes-changed`. ❌ NOT `on_unmount`: a replace isn't a disconnect, and the
+  predecessor's smb2 session must stay up for the transfers/streams/scans still holding it (contract:
+  `file_system/volume/backends/DETAILS.md` § "Supersede vs. unmount"). Keeps the call in `spawn_blocking` because the
+  trait DEFAULT falls through to `on_unmount` (a direct call panics "cannot block_on within a runtime").
 - **A direct-session install auto-resumes the drive index**: `register_smb_volume` / `try_smb_upgrade` call
   `indexing::resume_smb_index_if_enabled` after registering (no-op unless enabled); don't drop it.
 - **All three upgrade paths share resolution**: the two auto paths route through `resolve_and_register_smb_volume`;

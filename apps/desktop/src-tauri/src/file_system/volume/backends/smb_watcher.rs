@@ -187,6 +187,18 @@ async fn process_event_batch(
 
 /// Runs the SMB change watcher on a dedicated smb2 session.
 ///
+/// The volume a watcher task belongs to.
+///
+/// `instance_id` is what distinguishes this volume from any successor that later
+/// takes the same `volume_id`: a watcher dying around a supersede must not drive
+/// the state of the volume that replaced it. See
+/// `smb::reconnect::spawn_watcher_death_reconnect`.
+pub(super) struct WatchedVolume {
+    pub(super) volume_id: String,
+    pub(super) instance_id: u64,
+    pub(super) mount_path: PathBuf,
+}
+
 /// Exits on cancel (`cancel_rx`), on `next_events` error, or on a clean
 /// watcher close. On error exit, the parent `SmbVolume`'s reconnect machinery
 /// picks up via the next hot-path op observing the dead session and respawns
@@ -196,10 +208,14 @@ pub(super) async fn run_smb_watcher(
     share_name: String,
     username: String,
     password: String,
-    volume_id: String,
-    mount_path: PathBuf,
+    volume: WatchedVolume,
     cancel_rx: tokio::sync::oneshot::Receiver<()>,
 ) {
+    let WatchedVolume {
+        volume_id,
+        instance_id,
+        mount_path,
+    } = volume;
     // ── Main watcher loop ──────────────────────────────────────────
 
     let mut cancel_rx = cancel_rx;
@@ -393,7 +409,7 @@ pub(super) async fn run_smb_watcher(
                 // which rebuilds the session, respawns this watcher, and resumes the
                 // drive index — so an enabled NAS index doesn't go dark until the
                 // user intervenes. Coalesces with any FE-driven reconnect.
-                super::smb::spawn_watcher_death_reconnect(volume_id.clone());
+                super::smb::spawn_watcher_death_reconnect(volume_id.clone(), instance_id);
                 return;
             }
         }

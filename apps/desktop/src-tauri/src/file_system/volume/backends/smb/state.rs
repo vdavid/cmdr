@@ -34,6 +34,25 @@ impl SmbVolume {
         ConnectionState::from_u8(self.state.load(Ordering::Relaxed))
     }
 
+    /// Whether a newer instance owns this volume's id (see `on_superseded`).
+    ///
+    /// A retired instance keeps serving the holders that already have it, but
+    /// it must stay silent about the id: the state the frontend, the index, and
+    /// the reconnect machinery care about is the SUCCESSOR's. Emitting
+    /// `smb-connection-changed` from here would tell the app a healthy volume
+    /// just disconnected.
+    pub(super) fn is_superseded(&self) -> bool {
+        self.superseded.load(Ordering::Relaxed)
+    }
+
+    /// `emit_state_change` for this volume, suppressed once superseded.
+    pub(super) fn emit_state_change_for_id(&self, state: &'static str) {
+        if self.is_superseded() {
+            return;
+        }
+        emit_state_change(&self.volume_id, state);
+    }
+
     /// Snapshot the smb2 client's diagnostics tree.
     ///
     /// Returns `None` while the client is disconnected (no `SmbClient`
@@ -56,7 +75,7 @@ impl SmbVolume {
     pub(super) fn transition_to_disconnected(&self) {
         let prev = self.state.swap(ConnectionState::Disconnected as u8, Ordering::Relaxed);
         if prev != ConnectionState::Disconnected as u8 {
-            emit_state_change(&self.volume_id, "disconnected");
+            self.emit_state_change_for_id("disconnected");
         }
     }
 
@@ -66,7 +85,7 @@ impl SmbVolume {
     pub(super) fn transition_to_direct(&self) {
         let prev = self.state.swap(ConnectionState::Direct as u8, Ordering::Relaxed);
         if prev != ConnectionState::Direct as u8 {
-            emit_state_change(&self.volume_id, "direct");
+            self.emit_state_change_for_id("direct");
         }
     }
 }
