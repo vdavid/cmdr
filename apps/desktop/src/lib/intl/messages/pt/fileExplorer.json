@@ -63,9 +63,21 @@
   "@fileExplorer.pane.connectedDirectlyToast": {
     "sourceHash": "5c6bcd2"
   },
-  "fileExplorer.pane.directConnectionFailedToast": "A conexão direta não funcionou: {message}",
-  "@fileExplorer.pane.directConnectionFailedToast": {
-    "sourceHash": "3c6d599"
+  "fileExplorer.pane.directConnectionUnreachableToast": "Não foi possível alcançar {server} agora, então este compartilhamento continua na conexão do sistema.",
+  "@fileExplorer.pane.directConnectionUnreachableToast": {
+    "sourceHash": "7f4ea98"
+  },
+  "fileExplorer.pane.directConnectionTooSlowToast": "{server} demorou demais para responder, então este compartilhamento continua na conexão do sistema.",
+  "@fileExplorer.pane.directConnectionTooSlowToast": {
+    "sourceHash": "bb5baea"
+  },
+  "fileExplorer.pane.directConnectionUnexpectedToast": "Não foi possível estabelecer uma conexão direta com {server}, então este compartilhamento continua na conexão do sistema.",
+  "@fileExplorer.pane.directConnectionUnexpectedToast": {
+    "sourceHash": "cce5742"
+  },
+  "fileExplorer.pane.directConnectionUnavailableToast": "Não foi possível estabelecer uma conexão direta agora, então este compartilhamento continua na conexão do sistema.",
+  "@fileExplorer.pane.directConnectionUnavailableToast": {
+    "sourceHash": "0440df9"
   },
   "fileExplorer.pane.trashUnconfirmedToast": "Não foi possível confirmar que o arquivo foi movido para a Lixeira. O volume pode estar lento, mas o arquivo pode ter sido movido mesmo assim. Confira sua Lixeira para ter certeza.",
   "@fileExplorer.pane.trashUnconfirmedToast": {

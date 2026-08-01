@@ -132,13 +132,20 @@ describe('createSmbViewState', () => {
     expect(requestVolumeRefreshSpy).not.toHaveBeenCalled()
   })
 
-  it('upgrade connect other-failure clears the form and toasts the error', async () => {
-    ipc.upgradeToSmbVolumeWithCredentials.mockResolvedValue({ status: 'failed', message: 'server gone' })
+  it('upgrade connect unreachable-server clears the form and names the server in the toast', async () => {
+    ipc.upgradeToSmbVolumeWithCredentials.mockResolvedValue({
+      status: 'networkError',
+      reason: 'unreachable',
+      displayName: 'NAS',
+    })
     const { sub } = create()
     sub.handleSmbUpgradeLogin(credentialsNeeded, 'smb-vol')
     await sub.handleSmbUpgradeConnect('admin', 'pw', false)
     expect(sub.smbUpgradeLogin).toBeNull()
-    expect(addToastSpy).toHaveBeenCalledWith('fileExplorer.pane.directConnectionFailedToast', { level: 'error' })
+    // The reason picks the catalog key; `upgrade-messages.test.ts` owns the words.
+    expect(addToastSpy).toHaveBeenCalledWith('fileExplorer.pane.directConnectionUnreachableToast', {
+      level: 'error',
+    })
   })
 
   it('upgrade connect clears the form and toasts when the IPC throws', async () => {
@@ -147,7 +154,9 @@ describe('createSmbViewState', () => {
     sub.handleSmbUpgradeLogin(credentialsNeeded, 'smb-vol')
     await sub.handleSmbUpgradeConnect('admin', 'pw', false)
     expect(sub.smbUpgradeLogin).toBeNull()
-    expect(addToastSpy).toHaveBeenCalledWith('fileExplorer.pane.directConnectionFailedToast', { level: 'error' })
+    expect(addToastSpy).toHaveBeenCalledWith('fileExplorer.pane.directConnectionUnavailableToast', {
+      level: 'error',
+    })
   })
 
   it('upgrade connect is a no-op when no form is open', async () => {

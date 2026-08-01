@@ -63,9 +63,21 @@
   "@fileExplorer.pane.connectedDirectlyToast": {
     "sourceHash": "5c6bcd2"
   },
-  "fileExplorer.pane.directConnectionFailedToast": "Directe verbinding lukte niet: {message}",
-  "@fileExplorer.pane.directConnectionFailedToast": {
-    "sourceHash": "3c6d599"
+  "fileExplorer.pane.directConnectionUnreachableToast": "{server} is nu niet bereikbaar, dus deze gedeelde map blijft op de systeemverbinding.",
+  "@fileExplorer.pane.directConnectionUnreachableToast": {
+    "sourceHash": "7f4ea98"
+  },
+  "fileExplorer.pane.directConnectionTooSlowToast": "{server} deed er te lang over om te antwoorden, dus deze gedeelde map blijft op de systeemverbinding.",
+  "@fileExplorer.pane.directConnectionTooSlowToast": {
+    "sourceHash": "bb5baea"
+  },
+  "fileExplorer.pane.directConnectionUnexpectedToast": "Een directe verbinding met {server} kwam niet tot stand, dus deze gedeelde map blijft op de systeemverbinding.",
+  "@fileExplorer.pane.directConnectionUnexpectedToast": {
+    "sourceHash": "cce5742"
+  },
+  "fileExplorer.pane.directConnectionUnavailableToast": "Een directe verbinding kwam nu niet tot stand, dus deze gedeelde map blijft op de systeemverbinding.",
+  "@fileExplorer.pane.directConnectionUnavailableToast": {
+    "sourceHash": "0440df9"
   },
   "fileExplorer.pane.trashUnconfirmedToast": "We konden niet bevestigen dat het bestand naar de prullenmand is verplaatst. Het volume is misschien traag, maar het bestand is mogelijk wel verplaatst. Controleer je prullenmand voor de zekerheid.",
   "@fileExplorer.pane.trashUnconfirmedToast": {

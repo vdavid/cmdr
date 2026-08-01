@@ -63,9 +63,21 @@
   "@fileExplorer.pane.connectedDirectlyToast": {
     "sourceHash": "5c6bcd2"
   },
-  "fileExplorer.pane.directConnectionFailedToast": "Kết nối trực tiếp không thành công: {message}",
-  "@fileExplorer.pane.directConnectionFailedToast": {
-    "sourceHash": "3c6d599"
+  "fileExplorer.pane.directConnectionUnreachableToast": "Hiện không kết nối được tới {server}, nên mục chia sẻ này vẫn dùng kết nối hệ thống.",
+  "@fileExplorer.pane.directConnectionUnreachableToast": {
+    "sourceHash": "7f4ea98"
+  },
+  "fileExplorer.pane.directConnectionTooSlowToast": "{server} phản hồi quá chậm, nên mục chia sẻ này vẫn dùng kết nối hệ thống.",
+  "@fileExplorer.pane.directConnectionTooSlowToast": {
+    "sourceHash": "bb5baea"
+  },
+  "fileExplorer.pane.directConnectionUnexpectedToast": "Không thiết lập được kết nối trực tiếp tới {server}, nên mục chia sẻ này vẫn dùng kết nối hệ thống.",
+  "@fileExplorer.pane.directConnectionUnexpectedToast": {
+    "sourceHash": "cce5742"
+  },
+  "fileExplorer.pane.directConnectionUnavailableToast": "Hiện không thiết lập được kết nối trực tiếp, nên mục chia sẻ này vẫn dùng kết nối hệ thống.",
+  "@fileExplorer.pane.directConnectionUnavailableToast": {
+    "sourceHash": "0440df9"
   },
   "fileExplorer.pane.trashUnconfirmedToast": "Không thể xác nhận tệp đã được chuyển vào Thùng rác. Ổ đĩa có thể đang chậm, nhưng tệp có lẽ vẫn đã được chuyển. Hãy kiểm tra Thùng rác để chắc chắn.",
   "@fileExplorer.pane.trashUnconfirmedToast": {

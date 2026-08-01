@@ -63,9 +63,21 @@
   "@fileExplorer.pane.connectedDirectlyToast": {
     "sourceHash": "5c6bcd2"
   },
-  "fileExplorer.pane.directConnectionFailedToast": "Direkte Verbindung nicht möglich: {message}",
-  "@fileExplorer.pane.directConnectionFailedToast": {
-    "sourceHash": "3c6d599"
+  "fileExplorer.pane.directConnectionUnreachableToast": "{server} ist gerade nicht erreichbar, daher bleibt diese Freigabe bei der Systemverbindung.",
+  "@fileExplorer.pane.directConnectionUnreachableToast": {
+    "sourceHash": "7f4ea98"
+  },
+  "fileExplorer.pane.directConnectionTooSlowToast": "{server} hat zu lange nicht geantwortet, daher bleibt diese Freigabe bei der Systemverbindung.",
+  "@fileExplorer.pane.directConnectionTooSlowToast": {
+    "sourceHash": "bb5baea"
+  },
+  "fileExplorer.pane.directConnectionUnexpectedToast": "Die direkte Verbindung zu {server} kam nicht zustande, daher bleibt diese Freigabe bei der Systemverbindung.",
+  "@fileExplorer.pane.directConnectionUnexpectedToast": {
+    "sourceHash": "cce5742"
+  },
+  "fileExplorer.pane.directConnectionUnavailableToast": "Die direkte Verbindung kam gerade nicht zustande, daher bleibt diese Freigabe bei der Systemverbindung.",
+  "@fileExplorer.pane.directConnectionUnavailableToast": {
+    "sourceHash": "0440df9"
   },
   "fileExplorer.pane.trashUnconfirmedToast": "Es ließ sich nicht bestätigen, dass die Datei in den Papierkorb bewegt wurde. Das Volume ist vielleicht langsam, aber die Datei wurde möglicherweise trotzdem bewegt. Sieh zur Sicherheit im Papierkorb nach.",
   "@fileExplorer.pane.trashUnconfirmedToast": {

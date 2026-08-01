@@ -6,6 +6,7 @@ SMB network discovery UI: host list, per-host share list, login form, and a sing
 
 - **`network-store.svelte.ts`**: Module-level `$state` singleton for all network data
 - **`lazy-trigger.ts`**: Single chokepoint for kicking off mDNS discovery on user intent
+- **`upgrade-messages.ts`**: the words for a direct-connection attempt that didn't work (typed `UpgradeFailure` → catalog copy)
 - **`NetworkBrowser.svelte`**: Host list table, rendered when pane is on the `network` volume
 - **`ShareBrowser.svelte`**: Share list for a host, handles auth flow
 - **`NetworkLoginForm.svelte`**: Credential form rendered inside `ShareBrowser`
@@ -23,6 +24,9 @@ Full architecture, data flows, auth-flow detail, and decision rationale: `DETAIL
   helper does that. Discovery runs lazily (not at startup) because macOS fires the Local Network permission prompt the
   moment mDNS browsing starts, and forcing that on fresh installs before any context is wrong. The `smb-e2e` build still
   starts at launch so tests don't wait.
+- **A direct-connection failure crosses IPC as a typed `UpgradeFailure`, never a sentence.** Rust classifies; the words
+  live in `upgrade-messages.ts` + the `fileExplorer.pane.directConnection*Toast` catalog keys. ❌ Don't put `String(e)`
+  or a backend-built message in a toast (both shapes were here): log the raw error, show the catalog copy.
 - **Don't pre-check `hasSmbCredentials` before `getSmbCredentials`.** Each macOS Keychain access can trigger a system
   prompt, so a pre-check doubles the prompts. Call `getSmbCredentials` directly and catch.
 - **Share activation never pre-prompts** (`activateShare`, every path): when `authMode === 'creds_required'` it tries

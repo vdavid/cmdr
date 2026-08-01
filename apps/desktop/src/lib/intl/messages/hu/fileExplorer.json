@@ -63,9 +63,21 @@
   "@fileExplorer.pane.connectedDirectlyToast": {
     "sourceHash": "5c6bcd2"
   },
-  "fileExplorer.pane.directConnectionFailedToast": "Nem jött létre közvetlen kapcsolat: {message}",
-  "@fileExplorer.pane.directConnectionFailedToast": {
-    "sourceHash": "3c6d599"
+  "fileExplorer.pane.directConnectionUnreachableToast": "{server} most nem érhető el, ezért ez a megosztás a rendszerkapcsolaton marad.",
+  "@fileExplorer.pane.directConnectionUnreachableToast": {
+    "sourceHash": "7f4ea98"
+  },
+  "fileExplorer.pane.directConnectionTooSlowToast": "{server} túl sokáig nem válaszolt, ezért ez a megosztás a rendszerkapcsolaton marad.",
+  "@fileExplorer.pane.directConnectionTooSlowToast": {
+    "sourceHash": "bb5baea"
+  },
+  "fileExplorer.pane.directConnectionUnexpectedToast": "Nem jött létre közvetlen kapcsolat ezzel: {server}, ezért ez a megosztás a rendszerkapcsolaton marad.",
+  "@fileExplorer.pane.directConnectionUnexpectedToast": {
+    "sourceHash": "cce5742"
+  },
+  "fileExplorer.pane.directConnectionUnavailableToast": "Most nem jött létre közvetlen kapcsolat, ezért ez a megosztás a rendszerkapcsolaton marad.",
+  "@fileExplorer.pane.directConnectionUnavailableToast": {
+    "sourceHash": "0440df9"
   },
   "fileExplorer.pane.trashUnconfirmedToast": "Nem sikerült megerősíteni, hogy a fájl a Kukába került. Lehet, hogy a kötet lassú, de a fájl így is áthelyeződhetett. A biztonság kedvéért nézd meg a Kukát.",
   "@fileExplorer.pane.trashUnconfirmedToast": {

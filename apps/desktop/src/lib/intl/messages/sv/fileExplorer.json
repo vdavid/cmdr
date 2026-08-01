@@ -63,9 +63,21 @@
   "@fileExplorer.pane.connectedDirectlyToast": {
     "sourceHash": "5c6bcd2"
   },
-  "fileExplorer.pane.directConnectionFailedToast": "Den direkta anslutningen gick inte att upprätta: {message}",
-  "@fileExplorer.pane.directConnectionFailedToast": {
-    "sourceHash": "3c6d599"
+  "fileExplorer.pane.directConnectionUnreachableToast": "Det går inte att nå {server} just nu, så den här delningen ligger kvar på systemanslutningen.",
+  "@fileExplorer.pane.directConnectionUnreachableToast": {
+    "sourceHash": "7f4ea98"
+  },
+  "fileExplorer.pane.directConnectionTooSlowToast": "{server} tog för lång tid på sig att svara, så den här delningen ligger kvar på systemanslutningen.",
+  "@fileExplorer.pane.directConnectionTooSlowToast": {
+    "sourceHash": "bb5baea"
+  },
+  "fileExplorer.pane.directConnectionUnexpectedToast": "Det gick inte att upprätta en direktanslutning till {server}, så den här delningen ligger kvar på systemanslutningen.",
+  "@fileExplorer.pane.directConnectionUnexpectedToast": {
+    "sourceHash": "cce5742"
+  },
+  "fileExplorer.pane.directConnectionUnavailableToast": "Det gick inte att upprätta en direktanslutning just nu, så den här delningen ligger kvar på systemanslutningen.",
+  "@fileExplorer.pane.directConnectionUnavailableToast": {
+    "sourceHash": "0440df9"
   },
   "fileExplorer.pane.trashUnconfirmedToast": "Det gick inte att bekräfta att filen flyttades till papperskorgen. Volymen kan vara långsam, men filen kan ändå ha flyttats. Kolla papperskorgen för att vara säker.",
   "@fileExplorer.pane.trashUnconfirmedToast": {

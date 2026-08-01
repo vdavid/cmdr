@@ -63,9 +63,21 @@
   "@fileExplorer.pane.connectedDirectlyToast": {
     "sourceHash": "5c6bcd2"
   },
-  "fileExplorer.pane.directConnectionFailedToast": "No se pudo establecer la conexión directa: {message}",
-  "@fileExplorer.pane.directConnectionFailedToast": {
-    "sourceHash": "3c6d599"
+  "fileExplorer.pane.directConnectionUnreachableToast": "Ahora mismo no se puede acceder a {server}, así que este recurso compartido sigue usando la conexión del sistema.",
+  "@fileExplorer.pane.directConnectionUnreachableToast": {
+    "sourceHash": "7f4ea98"
+  },
+  "fileExplorer.pane.directConnectionTooSlowToast": "{server} tardó demasiado en responder, así que este recurso compartido sigue usando la conexión del sistema.",
+  "@fileExplorer.pane.directConnectionTooSlowToast": {
+    "sourceHash": "bb5baea"
+  },
+  "fileExplorer.pane.directConnectionUnexpectedToast": "No se pudo establecer una conexión directa con {server}, así que este recurso compartido sigue usando la conexión del sistema.",
+  "@fileExplorer.pane.directConnectionUnexpectedToast": {
+    "sourceHash": "cce5742"
+  },
+  "fileExplorer.pane.directConnectionUnavailableToast": "No se pudo establecer una conexión directa ahora mismo, así que este recurso compartido sigue usando la conexión del sistema.",
+  "@fileExplorer.pane.directConnectionUnavailableToast": {
+    "sourceHash": "0440df9"
   },
   "fileExplorer.pane.trashUnconfirmedToast": "No se pudo confirmar que el archivo se moviera a la Papelera. Puede que el volumen vaya lento, pero quizá el archivo sí se haya movido. Revisa la Papelera para asegurarte.",
   "@fileExplorer.pane.trashUnconfirmedToast": {

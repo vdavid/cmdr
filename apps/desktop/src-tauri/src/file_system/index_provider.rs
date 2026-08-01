@@ -75,9 +75,9 @@ impl VolumeProvider for AppVolumeProvider {
             match crate::commands::network::upgrade_to_smb_volume_inner(volume_id).await {
                 Ok(UpgradeResult::Success) => Ok(()),
                 Ok(UpgradeResult::CredentialsNeeded { .. }) => Err(SmbUpgradeRefusal::CredentialsNeeded),
-                Ok(UpgradeResult::NetworkError { message }) => {
-                    Err(SmbUpgradeRefusal::Failed(format!("network error: {message}").into()))
-                }
+                Ok(UpgradeResult::NetworkError { reason, display_name }) => Err(SmbUpgradeRefusal::Failed(
+                    format!("couldn't reach {display_name} ({reason:?})").into(),
+                )),
                 Err(e) => Err(SmbUpgradeRefusal::Failed(e.to_string().into())),
             }
         })

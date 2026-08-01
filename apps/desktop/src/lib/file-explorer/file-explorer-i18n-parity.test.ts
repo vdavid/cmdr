@@ -108,8 +108,8 @@ describe('en-US parity: interpolating / plural / select fileExplorer keys (golde
 
   it('reused pane toasts the navigation layer now calls', () => {
     expect(tString('fileExplorer.pane.connectedDirectlyToast')).toBe('Connected directly for faster access')
-    expect(tString('fileExplorer.pane.directConnectionFailedToast', { message: 'timed out' })).toBe(
-      'Direct connection failed: timed out',
+    expect(tString('fileExplorer.pane.directConnectionUnreachableToast', { server: 'mynas' })).toBe(
+      "Can't reach mynas right now, so this share stays on the system connection.",
     )
     expect(tString('fileExplorer.pane.ejectFailedToast', { volumeName: 'Backup', message: 'busy' })).toBe(
       "Couldn't eject Backup: busy",

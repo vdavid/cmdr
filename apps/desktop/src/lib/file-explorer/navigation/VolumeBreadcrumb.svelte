@@ -22,6 +22,10 @@
     import type { UnlistenFn } from '@tauri-apps/api/event'
     import { ask } from '@tauri-apps/plugin-dialog'
     import { triggerNetworkDiscovery } from '../network/lazy-trigger'
+    import { directConnectionUnavailableMessage } from '../network/upgrade-messages'
+    import { getAppLogger } from '$lib/logging/logger'
+
+    const log = getAppLogger('fileExplorer')
     import { addToast, dismissToast } from '$lib/ui/toast'
     import { getDiskUsageLevel, getUsedPercent, formatDiskSpaceShort } from '../disk-space-utils'
     import {
@@ -585,11 +589,12 @@
                 if (await tryUseSavedPassword(vid, result.displayName)) return
                 onSmbUpgradeLogin?.(result, vid)
             } else {
-                addToast(tString('fileExplorer.pane.directConnectionFailedToast', { message: result.message }), { level: 'error' })
+                addToast(directConnectionUnavailableMessage(result.reason, result.displayName), { level: 'error' })
             }
         } catch (e) {
             dismissToast(connectingToastId)
-            addToast(tString('fileExplorer.pane.directConnectionFailedToast', { message: String(e) }), { level: 'error' })
+            log.error('Direct SMB connection attempt broke down', { error: String(e) })
+            addToast(tString('fileExplorer.pane.directConnectionUnavailableToast'), { level: 'error' })
         }
     }
 
@@ -627,11 +632,12 @@
                 onSmbUpgradeLogin?.(r, vid)
                 return true
             }
-            addToast(tString('fileExplorer.pane.directConnectionFailedToast', { message: r.message }), { level: 'error' })
+            addToast(directConnectionUnavailableMessage(r.reason, r.displayName), { level: 'error' })
             return true
         } catch (e) {
             dismissToast(savedToastId)
-            addToast(tString('fileExplorer.pane.directConnectionFailedToast', { message: String(e) }), { level: 'error' })
+            log.error('Direct SMB connection attempt broke down', { error: String(e) })
+            addToast(tString('fileExplorer.pane.directConnectionUnavailableToast'), { level: 'error' })
             return true
         }
     }

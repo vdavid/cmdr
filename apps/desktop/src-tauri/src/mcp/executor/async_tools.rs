@@ -420,9 +420,9 @@ pub async fn execute_upgrade_smb_to_direct<R: Runtime>(_app: &AppHandle<R>, para
                     share, server_label
                 )))
             }
-            Ok(UpgradeResult::NetworkError { message }) => Err(ToolError::internal(format!(
-                "Network error while upgrading {}: {}",
-                volume_id, message
+            Ok(UpgradeResult::NetworkError { reason, display_name }) => Err(ToolError::internal(format!(
+                "Couldn't reach {} while upgrading {} ({:?}). The share is still usable over its OS mount.",
+                display_name, volume_id, reason
             ))),
             Err(e) => Err(ToolError::internal(format!(
                 "upgrade_to_smb_volume_inner({}) failed: {}",

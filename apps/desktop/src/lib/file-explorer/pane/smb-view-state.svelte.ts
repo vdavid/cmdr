@@ -14,6 +14,7 @@
 
 import { getIpcErrorMessage } from '$lib/tauri-commands/ipc-types'
 import { disconnectSmbVolume, upgradeToSmbVolumeWithCredentials, type UpgradeResult } from '$lib/tauri-commands'
+import { directConnectionUnavailableMessage } from '../network/upgrade-messages'
 import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
 import { resolveValidPath } from '../navigation/path-resolution'
 import { requestVolumeRefresh } from '$lib/stores/volume-store.svelte'
@@ -186,15 +187,12 @@ export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
         }
       } else {
         smbUpgradeLogin = null
-        addToast(tString('fileExplorer.pane.directConnectionFailedToast', { message: result.message }), {
-          level: 'error',
-        })
+        addToast(directConnectionUnavailableMessage(result.reason, result.displayName), { level: 'error' })
       }
     } catch (e) {
       smbUpgradeLogin = null
-      addToast(tString('fileExplorer.pane.directConnectionFailedToast', { message: String(e) }), {
-        level: 'error',
-      })
+      log.error('Direct SMB connection attempt broke down', { error: String(e) })
+      addToast(tString('fileExplorer.pane.directConnectionUnavailableToast'), { level: 'error' })
     }
   }
 

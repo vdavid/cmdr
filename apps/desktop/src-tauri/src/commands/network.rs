@@ -467,7 +467,7 @@ pub async fn upgrade_to_smb_volume_inner(volume_id: String) -> Result<UpgradeRes
                 message: Some("Stored credentials didn't work".to_string()),
             })
         }
-        Err(UpgradeError::Network(msg)) => Ok(UpgradeResult::NetworkError { message: msg }),
+        Err(UpgradeError::Network { reason, display_name }) => Ok(UpgradeResult::NetworkError { reason, display_name }),
     }
 }
 
@@ -542,7 +542,7 @@ pub async fn upgrade_to_smb_volume_with_credentials(
             username_hint: username,
             message: Some("Invalid username or password".to_string()),
         }),
-        Err(UpgradeError::Network(msg)) => Ok(UpgradeResult::NetworkError { message: msg }),
+        Err(UpgradeError::Network { reason, display_name }) => Ok(UpgradeResult::NetworkError { reason, display_name }),
     }
 }
 
@@ -676,7 +676,7 @@ pub async fn upgrade_to_smb_volume_using_saved_password(
             username_hint: Some(creds.username),
             message: Some("The saved password didn't work".to_string()),
         }),
-        Err(UpgradeError::Network(msg)) => Ok(UpgradeResult::NetworkError { message: msg }),
+        Err(UpgradeError::Network { reason, display_name }) => Ok(UpgradeResult::NetworkError { reason, display_name }),
     }
 }
 

@@ -63,9 +63,21 @@
   "@fileExplorer.pane.connectedDirectlyToast": {
     "sourceHash": "5c6bcd2"
   },
-  "fileExplorer.pane.directConnectionFailedToast": "La connexion directe n''a pas abouti : {message}",
-  "@fileExplorer.pane.directConnectionFailedToast": {
-    "sourceHash": "3c6d599"
+  "fileExplorer.pane.directConnectionUnreachableToast": "{server} est injoignable pour le moment, ce partage reste donc sur la connexion système.",
+  "@fileExplorer.pane.directConnectionUnreachableToast": {
+    "sourceHash": "7f4ea98"
+  },
+  "fileExplorer.pane.directConnectionTooSlowToast": "{server} a mis trop de temps à répondre, ce partage reste donc sur la connexion système.",
+  "@fileExplorer.pane.directConnectionTooSlowToast": {
+    "sourceHash": "bb5baea"
+  },
+  "fileExplorer.pane.directConnectionUnexpectedToast": "La connexion directe à {server} n''a pas pu être établie, ce partage reste donc sur la connexion système.",
+  "@fileExplorer.pane.directConnectionUnexpectedToast": {
+    "sourceHash": "cce5742"
+  },
+  "fileExplorer.pane.directConnectionUnavailableToast": "La connexion directe n''a pas pu être établie pour le moment, ce partage reste donc sur la connexion système.",
+  "@fileExplorer.pane.directConnectionUnavailableToast": {
+    "sourceHash": "0440df9"
   },
   "fileExplorer.pane.trashUnconfirmedToast": "Impossible de confirmer le déplacement du fichier vers la corbeille. Le volume est peut-être lent, mais le fichier a peut-être bien été déplacé. Vérifiez votre corbeille pour en être sûr.",
   "@fileExplorer.pane.trashUnconfirmedToast": {

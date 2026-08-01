@@ -51,25 +51,21 @@
     },
     "screenshot": "main-window.png"
   },
-
   "fileExplorer.pane.diskUsageAriaLabel": "Disk usage",
   "@fileExplorer.pane.diskUsageAriaLabel": {
     "description": "Accessibility label for the small disk-usage bar shown under a pane, indicating how full the current volume is.",
     "screenshot": "main-window.png"
   },
-
   "fileExplorer.pane.resizePanesAriaLabel": "Resize panes",
   "@fileExplorer.pane.resizePanesAriaLabel": {
     "description": "Accessibility label for the draggable divider between the two file panes. Dragging it changes how the width is split.",
     "screenshot": "main-window.png"
   },
-
   "fileExplorer.pane.fileExplorerAriaLabel": "File explorer",
   "@fileExplorer.pane.fileExplorerAriaLabel": {
     "description": "Accessibility label for the whole two-pane file explorer region.",
     "screenshot": "main-window.png"
   },
-
   "fileExplorer.pane.disconnectFailedToast": "Couldn''t disconnect: {message}",
   "@fileExplorer.pane.disconnectFailedToast": {
     "description": "Error toast when disconnecting from a network server did not work. {message} is the underlying reason text.",
@@ -77,25 +73,39 @@
       "message": "the underlying failure reason, already worded for the user"
     }
   },
-
   "fileExplorer.pane.connectedDirectlyToast": "Connected directly for faster access",
   "@fileExplorer.pane.connectedDirectlyToast": {
     "description": "Success toast after upgrading a network share to a faster direct connection."
   },
-
-  "fileExplorer.pane.directConnectionFailedToast": "Direct connection failed: {message}",
-  "@fileExplorer.pane.directConnectionFailedToast": {
-    "description": "Error toast when upgrading a network share to a faster direct connection did not work. {message} is the underlying reason text.",
+  "fileExplorer.pane.directConnectionUnreachableToast": "Can''t reach {server} right now, so this share stays on the system connection.",
+  "@fileExplorer.pane.directConnectionUnreachableToast": {
+    "description": "Toast shown when connecting a network share directly for faster access couldn't reach the server at all. {server} is the server's friendly name or IP address. Reassures the user that the share still works, just not at the faster speed.",
     "placeholders": {
-      "message": "the underlying failure reason, already worded for the user"
+      "server": "the server's friendly name or IP address, for example Naspolya or 192.168.1.111"
     }
   },
-
+  "fileExplorer.pane.directConnectionTooSlowToast": "{server} took too long to answer, so this share stays on the system connection.",
+  "@fileExplorer.pane.directConnectionTooSlowToast": {
+    "description": "Toast shown when connecting a network share directly for faster access timed out waiting for the server. {server} is the server's friendly name or IP address.",
+    "placeholders": {
+      "server": "the server's friendly name or IP address, for example Naspolya or 192.168.1.111"
+    }
+  },
+  "fileExplorer.pane.directConnectionUnexpectedToast": "Couldn''t set up a direct connection to {server}, so this share stays on the system connection.",
+  "@fileExplorer.pane.directConnectionUnexpectedToast": {
+    "description": "Toast shown when connecting a network share directly for faster access didn't work for a reason we can't be specific about. {server} is the server's friendly name or IP address.",
+    "placeholders": {
+      "server": "the server's friendly name or IP address, for example Naspolya or 192.168.1.111"
+    }
+  },
+  "fileExplorer.pane.directConnectionUnavailableToast": "Couldn''t set up a direct connection right now, so this share stays on the system connection.",
+  "@fileExplorer.pane.directConnectionUnavailableToast": {
+    "description": "Toast shown when the direct-connection attempt itself broke down before the app learned why, so no server name is available."
+  },
   "fileExplorer.pane.trashUnconfirmedToast": "Couldn''t confirm the file was moved to Trash. The volume may be slow, but the file may still have been moved. Please check your Trash to be sure.",
   "@fileExplorer.pane.trashUnconfirmedToast": {
     "description": "Persistent warning toast shown when moving a file to the Trash (as part of a rename-overwrite) timed out, so Cmdr can''t confirm it landed. Reassures the user it may have worked and asks them to check. \"Trash\" is the macOS Trash; keep the name."
   },
-
   "fileExplorer.pane.ejectFailedToast": "Couldn''t eject {volumeName}: {message}",
   "@fileExplorer.pane.ejectFailedToast": {
     "description": "Error toast when ejecting a drive or volume did not work. {volumeName} is the drive''s display name; {message} is the underlying reason text.",
@@ -104,12 +114,10 @@
       "message": "the underlying failure reason, already worded for the user"
     }
   },
-
   "fileExplorer.errorPane.tryAgain": "Try again",
   "@fileExplorer.errorPane.tryAgain": {
     "description": "Button on the error screen shown in place of a file list when a folder could not be opened. Retries opening it."
   },
-
   "fileExplorer.errorPane.openSystemSettings": "Open {systemSettings}",
   "@fileExplorer.errorPane.openSystemSettings": {
     "description": "Button on the folder error screen that opens the macOS System Settings app (so the user can grant access). {systemSettings} is the OS name for that app.",
@@ -118,18 +126,15 @@
     },
     "screenshot": "error-message-example.png"
   },
-
   "fileExplorer.errorPane.technicalDetails": "Technical details",
   "@fileExplorer.errorPane.technicalDetails": {
     "description": "Label for a collapsible disclosure on the folder error screen that reveals raw diagnostic info.",
     "screenshot": "error-message-example.png"
   },
-
   "fileExplorer.errorPane.aMomentAgo": "a moment ago",
   "@fileExplorer.errorPane.aMomentAgo": {
     "description": "Relative time shown in the folder error screen''s diagnostic details, for something that happened within the last few seconds."
   },
-
   "fileExplorer.errorPane.secondsAgo": "{seconds}s ago",
   "@fileExplorer.errorPane.secondsAgo": {
     "description": "Relative time in the folder error diagnostics: how many seconds ago. Shown compactly, e.g. 12s ago.",
@@ -137,7 +142,6 @@
       "seconds": "number of seconds ago"
     }
   },
-
   "fileExplorer.errorPane.minutesAgo": "{minutes}m ago",
   "@fileExplorer.errorPane.minutesAgo": {
     "description": "Relative time in the folder error diagnostics: how many minutes ago. Shown compactly, e.g. 5m ago.",
@@ -145,7 +149,6 @@
       "minutes": "number of minutes ago"
     }
   },
-
   "fileExplorer.errorPane.hoursAgo": "{hours}h ago",
   "@fileExplorer.errorPane.hoursAgo": {
     "description": "Relative time in the folder error diagnostics: how many hours ago. Shown compactly, e.g. 3h ago.",
@@ -153,7 +156,6 @@
       "hours": "number of hours ago"
     }
   },
-
   "fileExplorer.errorPane.retryInfo": "Retry #{count} · first try {firstAgo}",
   "@fileExplorer.errorPane.retryInfo": {
     "description": "Diagnostic line on the folder error screen summarizing repeated failures. The dot (·) is a separator. {firstAgo} is a relative time like \"5m ago\".",
@@ -162,7 +164,6 @@
       "firstAgo": "relative time of the first attempt, e.g. 5m ago"
     }
   },
-
   "fileExplorer.errorPane.retryInfoWithLast": "Retry #{count} · first try {firstAgo} · last try {lastAgo}",
   "@fileExplorer.errorPane.retryInfoWithLast": {
     "description": "Same as the retry-info diagnostic line, but also including the most recent attempt''s relative time. The dots (·) are separators.",
@@ -172,13 +173,11 @@
       "lastAgo": "relative time of the most recent attempt, e.g. 1m ago"
     }
   },
-
   "fileExplorer.functionKeyBar.toolbarAriaLabel": "Function keys",
   "@fileExplorer.functionKeyBar.toolbarAriaLabel": {
     "description": "Accessibility label for the bottom toolbar of function-key buttons (the F1-F8 style row of file actions).",
     "screenshot": "main-window.png"
   },
-
   "fileExplorer.functionKeyBar.actionWithShortcut": "{action} ({shortcut})",
   "@fileExplorer.functionKeyBar.actionWithShortcut": {
     "description": "Accessibility label for a function-key button, naming the action and the keyboard shortcut that triggers it, e.g. \"Copy (F5)\". The shortcut updates live if the user rebinds the key.",
@@ -188,7 +187,6 @@
     },
     "screenshot": "main-window.png"
   },
-
   "fileExplorer.functionKeyBar.noShiftAction": "{fnKey} (no shift action)",
   "@fileExplorer.functionKeyBar.noShiftAction": {
     "description": "Accessibility label for a disabled function-key slot that has no action while Shift is held. {fnKey} is the key name like F2.",
@@ -197,7 +195,6 @@
     },
     "screenshot": "function-key-bar-shift.png"
   },
-
   "fileExplorer.functionKeyBar.newFileLabel": "New file",
   "@fileExplorer.functionKeyBar.newFileLabel": {
     "description": "Short button label on the function-key bar for creating a new file. Space is tight; keep it short.",
@@ -288,7 +285,6 @@
     "description": "The full spoken action name (for screen readers) of the delete (to trash) function-key button.",
     "screenshot": "main-window.png"
   },
-
   "fileExplorer.typeToJump.ariaLabel": "Jump to {buffer}",
   "@fileExplorer.typeToJump.ariaLabel": {
     "description": "Accessibility label for the type-to-jump indicator, which shows what the user has typed to jump to a matching file. {buffer} is the typed text so far.",
@@ -300,7 +296,6 @@
   "@fileExplorer.typeToJump.prefix": {
     "description": "Visible label before the typed characters in the type-to-jump indicator (the typed text follows in its own styled span). Keep the trailing space."
   },
-
   "fileExplorer.searchResults.unavailableTitle": "Search results no longer available",
   "@fileExplorer.searchResults.unavailableTitle": {
     "description": "Title of an empty-state message shown when a saved search-results view can no longer be displayed because its data was cleared."
@@ -309,7 +304,6 @@
   "@fileExplorer.searchResults.unavailableBody": {
     "description": "Body of the empty-state message shown when a saved search-results view''s data was cleared, telling the user to run a new search."
   },
-
   "fileExplorer.network.cancel": "Cancel",
   "@fileExplorer.network.cancel": {
     "description": "Button that dismisses a network dialog or form without connecting.",
@@ -350,7 +344,6 @@
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
   },
-
   "fileExplorer.network.connectDialog.title": "Connect to server",
   "@fileExplorer.network.connectDialog.title": {
     "description": "Title of the dialog for manually connecting to a network server by typing its address.",
@@ -372,7 +365,6 @@
     "description": "Help text under the connect-to-server field giving example addresses. The example values (mynas.local, the IP, smb://server/share) are literals; keep them as-is.",
     "screenshot": "connect-to-server.png"
   },
-
   "fileExplorer.network.browser.colName": "Name",
   "@fileExplorer.network.browser.colName": {
     "description": "Column header in the network host list for the host''s display name. Tight column; keep it short.",
@@ -455,7 +447,6 @@
     },
     "screenshot": "connect-to-server.png"
   },
-
   "fileExplorer.network.browser.status.resolving": "Resolving...",
   "@fileExplorer.network.browser.status.resolving": {
     "description": "Status cell in the network host list while the host''s name and IP are still being resolved.",
@@ -525,7 +516,6 @@
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
   },
-
   "fileExplorer.network.browser.tooltip.resolving": "Resolving hostname and IP address...",
   "@fileExplorer.network.browser.tooltip.resolving": {
     "description": "Hover tooltip on a host row explaining that its name and IP are still being resolved.",
@@ -575,7 +565,6 @@
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
   },
-
   "fileExplorer.network.browser.cannotRemoveDiscovered": "Can''t remove discovered hosts",
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
     "description": "Warning toast when the user tries to remove a host that was auto-discovered (only manually-added hosts can be removed).",
@@ -657,7 +646,6 @@
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
   },
-
   "fileExplorer.network.login.title": "Sign in to \"{target}\"",
   "@fileExplorer.network.login.title": {
     "description": "Title of the network sign-in card. {target} is the host name, or host/share path, in quotes already.",
@@ -721,7 +709,6 @@
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
   },
-
   "fileExplorer.network.share.credentialsStoredLocally": "Credentials stored locally (no system keyring detected)",
   "@fileExplorer.network.share.credentialsStoredLocally": {
     "description": "Info toast shown when no OS keyring is available, so credentials are kept in a local store instead.",
@@ -817,7 +804,6 @@
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
   },
-
   "fileExplorer.network.reconnect.once": "once",
   "@fileExplorer.network.reconnect.once": {
     "description": "Word for one reconnection attempt, used inside the reconnect-progress sentences (e.g. \"Retried once\"). Must read naturally where the sentences embed it.",
@@ -859,7 +845,6 @@
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
   },
-
   "fileExplorer.mtp.connectTimedOut": "Connection timed out. The device may be slow or unresponsive.",
   "@fileExplorer.mtp.connectTimedOut": {
     "description": "Message shown when connecting to a phone or camera (an MTP device) timed out. MTP is the protocol used to browse phones/cameras over USB.",
@@ -908,7 +893,6 @@
     "screenshot": "mtp-browse.png",
     "screenshotNote": "MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears as a status message in this same device context (connecting, busy, disconnected, etc.)."
   },
-
   "fileExplorer.networkMount.mounting": "Mounting {target}...",
   "@fileExplorer.networkMount.mounting": {
     "description": "Loading text while a network share is being mounted. {target} is the host or share name, or the word \"share\" when the name is unknown.",
@@ -942,7 +926,6 @@
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Shown while mounting a network share, in the same network-connection flow as the \"Connect to server\" surface pictured here."
   },
-
   "fileExplorer.smbReauth.savedPasswordFailed": "Your saved password didn’t work. Sign in to reconnect.",
   "@fileExplorer.smbReauth.savedPasswordFailed": {
     "description": "Message in the SMB re-auth view when the saved password was rejected, prompting the user to sign in again. Uses a typographic apostrophe (’)."
@@ -951,7 +934,6 @@
   "@fileExplorer.smbReauth.passwordFailed": {
     "description": "Message in the SMB re-auth view after a manual sign-in attempt failed, asking the user to recheck the password. Uses a typographic apostrophe (’)."
   },
-
   "fileExplorer.smbReconnect.totalSeconds": "{seconds} seconds",
   "@fileExplorer.smbReconnect.totalSeconds": {
     "description": "Total reconnect-cycle duration phrased in seconds, embedded in the \"Will keep trying for a total of …\" sentence.",
@@ -1027,7 +1009,6 @@
     "screenshot": "connect-to-server.png",
     "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
   },
-
   "fileExplorer.unreachable.title": "Couldn''t reach {path}",
   "@fileExplorer.unreachable.title": {
     "description": "Banner heading shown when a folder''s volume can''t be reached. {path} is the path the user tried to open.",
@@ -1059,7 +1040,6 @@
   "@fileExplorer.unreachable.openHome": {
     "description": "Button on the unreachable banner that navigates to the user''s home folder instead."
   },
-
   "fileExplorer.clipboard.copied": "Copied {countText} {count, plural, one {item} other {items}}",
   "@fileExplorer.clipboard.copied": {
     "description": "Toast confirming files were copied to the system clipboard, e.g. \"Copied 3 items\".",
@@ -1092,7 +1072,6 @@
   "@fileExplorer.clipboard.empty": {
     "description": "Warning toast when the user pastes but the clipboard has no files. \"⌘C\" is the copy shortcut glyph; keep it."
   },
-
   "fileExplorer.clipboard.pastedAsFile": "Pasted clipboard {kind, select, image {image} pdf {PDF} other {text}} as {filename}",
   "@fileExplorer.clipboard.pastedAsFile": {
     "description": "Info toast confirming that non-file clipboard content was saved into the current folder as a new file, e.g. \"Pasted clipboard text as pasted.txt\" or \"Pasted clipboard image as pasted.png\". The toast also carries a Settings button (labeled elsewhere).",
@@ -1105,7 +1084,6 @@
   "@fileExplorer.clipboard.pastedAsFileSettings": {
     "description": "Button on the paste-as-file info toast that opens Settings (Behavior > Navigation & file ops) so the user can change or turn off this paste behavior."
   },
-
   "fileExplorer.tabs.limitReached": "Tab limit reached",
   "@fileExplorer.tabs.limitReached": {
     "description": "Warning toast when the user tries to open another tab but the per-pane tab limit is already reached."
@@ -1118,7 +1096,6 @@
   "@fileExplorer.tabs.closePinnedTitle": {
     "description": "Title of the confirmation dialog for closing a pinned tab."
   },
-
   "fileExplorer.readOnly.volumeTitle": "Read-only volume",
   "@fileExplorer.readOnly.volumeTitle": {
     "description": "Alert dialog title shown when the user tries a write action on a read-only volume."
@@ -1158,12 +1135,10 @@
       "name": "the display name of the read-only device"
     }
   },
-
   "fileExplorer.archive.useTransferToCopyOut": "To copy files out of an archive, use F5 to copy or F6 to move.",
   "@fileExplorer.archive.useTransferToCopyOut": {
     "description": "Info toast when the user presses the system-clipboard copy or cut shortcut (Cmd+C / Cmd+X) inside an archive. The system clipboard can''t carry archive-inner paths, so it points them at the F5 (copy) and F6 (move) transfer keys instead. F5 and F6 are keyboard key names; keep them as-is."
   },
-
   "fileExplorer.rename.hiddenAfterRename": "Your file disappeared from view because hidden files aren''t shown.",
   "@fileExplorer.rename.hiddenAfterRename": {
     "description": "Info toast after renaming a file to a name starting with a dot, which hides it because hidden files aren''t currently shown. Reassures the user the file still exists."
@@ -1175,7 +1150,6 @@
       "reason": "the validation message explaining what is wrong with the typed name"
     }
   },
-
   "fileExplorer.columns.name": "Name",
   "@fileExplorer.columns.name": {
     "description": "File-list column header for the file/folder name. Also measured to size the column; keep it short. Used in both the Full and Brief list views.",
@@ -1209,7 +1183,6 @@
   "@fileExplorer.columns.gitTitle": {
     "description": "Hover tooltip on the Git column header explaining it shows each file''s git status. \"Git\" is the version-control tool name; keep it."
   },
-
   "fileExplorer.list.empty": "Empty folder",
   "@fileExplorer.list.empty": {
     "description": "Placeholder shown in the file list when the current folder has no files.",
@@ -1225,7 +1198,6 @@
     "description": "Accessibility label for the row of sortable column headers in the Brief list view.",
     "screenshot": "main-window.png"
   },
-
   "fileExplorer.dirSize.updatingIndexTooltip": "Updating index: size may change.",
   "@fileExplorer.dirSize.updatingIndexTooltip": {
     "description": "Hover tooltip on a folder''s size while indexing is in progress, warning that the figure may still change. Note the colon.",
@@ -1308,7 +1280,6 @@
   "@fileExplorer.dirSize.staleLine": {
     "description": "Line in a folder''s size tooltip when the size is exact but was computed at an older point (the drive hasn''t been re-scanned since reconnecting), so it''s accurate-as-of-then but possibly stale now."
   },
-
   "fileExplorer.selectionTooltip.selected": "Selected",
   "@fileExplorer.selectionTooltip.selected": {
     "description": "Label in the selection-summary size tooltip for the size of the selected items. Pairs with \"Of total\".",
@@ -1324,7 +1295,6 @@
     "description": "Section header in the selection-summary size tooltip introducing the physical on-disk sizes (as opposed to logical content sizes). Note the colon.",
     "screenshot": "selection-summary.png"
   },
-
   "fileExplorer.entry.brokenSymlink": "(broken symlink)",
   "@fileExplorer.entry.brokenSymlink": {
     "description": "Placeholder shown in the date column for a symlink whose target is missing. Shown in parentheses. A symlink is a file-system shortcut/alias."
@@ -1345,7 +1315,6 @@
   "@fileExplorer.dateTooltip.lastModified": {
     "description": "Label in a file''s date tooltip for when its contents were last changed."
   },
-
   "fileExplorer.imageIndex.file.indexed": "Indexed for image search",
   "@fileExplorer.imageIndex.file.indexed": {
     "description": "Hover tooltip on a small badge over an image file''s icon in the file list. Means this image is fully indexed, so image search can find it by the text inside it."
@@ -1467,7 +1436,6 @@
     },
     "screenshot": "main-window.png"
   },
-
   "fileExplorer.tabBar.paneTabsAriaLabel": "{paneId} pane tabs",
   "@fileExplorer.tabBar.paneTabsAriaLabel": {
     "description": "Accessibility label for one pane''s tab strip. {paneId} is the side, \"left\" or \"right\".",
@@ -1495,7 +1463,6 @@
     "description": "Accessibility label and tooltip for the button that opens a new tab.",
     "screenshot": "main-window.png"
   },
-
   "fileExplorer.summary.fileNoun": "{count, plural, one {file} other {files}}",
   "@fileExplorer.summary.fileNoun": {
     "description": "The noun \"file(s)\" used in the status-bar selection summary, e.g. \"3 of 10 files\". A separate count (shown nearby in styled markup) precedes it; this key supplies only the singular/plural noun.",
@@ -1534,7 +1501,6 @@
   "@fileExplorer.summary.selectedSuffix": {
     "description": "Word appended in the dirs-only status-bar summary when no size is shown, e.g. \"2 of 5 dirs selected.\" Only used in that no-size branch."
   },
-
   "fileExplorer.renameConflict.title": "A file with this name already exists",
   "@fileExplorer.renameConflict.title": {
     "description": "Title of the dialog shown when renaming a file to a name that already exists in the folder."
@@ -1584,7 +1550,6 @@
   "@fileExplorer.renameConflict.continueRenaming": {
     "description": "Button in the rename-conflict dialog that returns to editing the name so the user can choose a different one."
   },
-
   "fileExplorer.extensionChange.title": "Change file extension?",
   "@fileExplorer.extensionChange.title": {
     "description": "Title of the dialog confirming a change to a file''s extension during rename.",
@@ -1620,7 +1585,6 @@
     },
     "screenshot": "extension-change.png"
   },
-
   "fileExplorer.quickLookHint.spaceSelects": "In Cmdr, <space></space> selects the file under the cursor by default.",
   "@fileExplorer.quickLookHint.spaceSelects": {
     "description": "First line of the educational toast for users coming from Finder. The <space></space> tag wraps an inline keyboard-key chip showing the Space key. \"Cmdr\" is the app name; keep it. Reorder words naturally but keep the chip in the sentence.",
@@ -1666,7 +1630,6 @@
     "description": "Button on the Finder-convert toast that permanently dismisses this hint (until re-enabled in Settings).",
     "screenshot": "quick-look-hint.png"
   },
-
   "fileExplorer.navigation.groupFavorites": "Favorites",
   "@fileExplorer.navigation.groupFavorites": {
     "description": "Section heading in the volume switcher dropdown for the user''s pinned favorite folders."
@@ -1687,7 +1650,6 @@
   "@fileExplorer.navigation.groupNetwork": {
     "description": "Section heading in the volume switcher dropdown for network locations (shared servers and mounted shares)."
   },
-
   "fileExplorer.navigation.networkVolume": "Network",
   "@fileExplorer.navigation.networkVolume": {
     "description": "Name of the virtual Network entry in the volume switcher, which opens the network browser. Also shown as the current volume''s name in the breadcrumb when browsing the network.",
@@ -1705,7 +1667,6 @@
   "@fileExplorer.navigation.volumeFallback": {
     "description": "Generic fallback shown as the current volume''s name in the breadcrumb when the real volume can''t be determined yet."
   },
-
   "fileExplorer.navigation.favoritesEmpty": "(Your favorites will show here)",
   "@fileExplorer.navigation.favoritesEmpty": {
     "description": "Placeholder shown in the Favorites section of the volume switcher when the user has no favorites. Shown in parentheses as a disabled, non-clickable hint."
@@ -1734,12 +1695,10 @@
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "description": "Error toast when reordering favorites did not work, inviting the user to retry."
   },
-
   "fileExplorer.navigation.locationUnreachableToast": "Couldn''t reach that location''s drive. It might be disconnected.",
   "@fileExplorer.navigation.locationUnreachableToast": {
     "description": "Toast shown when the app can't figure out which drive (volume) a place lives on, so it can't navigate there. Happens when going to a search result, a typed path, or a downloaded file whose drive is unplugged or no longer present. \"Drive\" means a storage volume like a hard disk or USB stick."
   },
-
   "fileExplorer.navigation.connectionTooltipDirect": "Connected directly for fast file operations",
   "@fileExplorer.navigation.connectionTooltipDirect": {
     "description": "Hover tooltip on the connection indicator of a network volume that is connected directly (the fast path)."
@@ -1752,7 +1711,6 @@
   "@fileExplorer.navigation.connectDirectly": {
     "description": "Menu item (in the breadcrumb popup and the dropdown submenu) that upgrades an OS-mounted network share to a faster direct connection."
   },
-
   "fileExplorer.navigation.connectingDirectly": "Connecting directly...",
   "@fileExplorer.navigation.connectingDirectly": {
     "description": "Persistent progress toast shown while upgrading a network share to a direct connection."
@@ -1780,7 +1738,6 @@
   "@fileExplorer.navigation.useSavedPasswordCancel": {
     "description": "Cancel button in the reuse-saved-password dialog: skip the saved password and type one instead."
   },
-
   "fileExplorer.navigation.readOnlyTooltip": "Read-only",
   "@fileExplorer.navigation.readOnlyTooltip": {
     "description": "Hover tooltip on the lock icon marking a read-only volume in the breadcrumb and volume switcher."
@@ -1813,7 +1770,6 @@
   "@fileExplorer.navigation.usbSpeedNegotiated": {
     "description": "Second line of the USB-speed tooltip on a volume, clarifying that the shown speed reflects the specific cable, port, and device combination. Shown below the speed line on its own row."
   },
-
   "fileExplorer.navigation.spaceRetryingAuto": "Retrying automatically…",
   "@fileExplorer.navigation.spaceRetryingAuto": {
     "description": "Hover tooltip on a volume''s disk-space bar while the app automatically retries fetching its free space. Ends with an ellipsis character (…)."
@@ -1843,7 +1799,6 @@
     "description": "Hover tooltip on a connected phone''s disk-space readout (the free/total figure and its usage bar), shown only for phones reached over USB (MTP). Explains why the visible folders add up to far less than the space reported as used: a phone''s apps and system data count toward usage but can''t be browsed over USB. \"USB\" is the cable connection; \"Cmdr\" is the app name (do not translate).",
     "screenshot": "mtp-browse.png"
   },
-
   "fileExplorer.navigation.volumesStillUnreachable": "Still unreachable. Try again later",
   "@fileExplorer.navigation.volumesStillUnreachable": {
     "description": "Warning row at the bottom of the volume switcher after a retry to load the volume list also failed, suggesting the user try again later."
@@ -1856,7 +1811,6 @@
   "@fileExplorer.navigation.refreshVolumeList": {
     "description": "Hover tooltip on the retry button in the volume switcher''s missing-volumes warning row, which reloads the volume list."
   },
-
   "fileExplorer.navigation.driveIndex.ariaLabel": "Drive index status",
   "@fileExplorer.navigation.driveIndex.ariaLabel": {
     "description": "Accessibility label, read aloud by screen readers, for the small colored dot next to a drive in the volume switcher that shows whether the drive is indexed and up to date. The color and the live detail are in its tooltip.",

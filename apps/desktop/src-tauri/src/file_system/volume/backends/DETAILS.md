@@ -63,6 +63,31 @@ before the wait is stale by the time it's used. Two rules keep that from turning
   `smb_upgrade::is_already_direct` when the id already resolves to a healthy direct volume. `Disconnected` deliberately
   does not count: that's the manual "Connect directly" recovery path, and short-circuiting it would dead-end the user.
 
+### A first connect that never reached the server gets one more try
+
+`connect_with_retry` (in `network/smb_upgrade.rs`) wraps `connect_smb_volume` on both upgrade paths. The first direct
+connect to a private LAN address shortly after launch routinely comes back `EHOSTUNREACH` while the route and the macOS
+Local Network permission settle, and the identical attempt moments later succeeds (three times in one session on
+2026-08-01, each followed by a clean connect). Without a retry the user has to notice and click "Connect directly"
+again, which is exactly what produced the double upgrade pass above.
+
+Two bounds keep a genuinely-down server failing promptly, because someone is watching a "Connecting directly…" toast:
+
+- **Count**: `CONNECT_RETRY_BACKOFF` (300 ms, 1200 ms) ⇒ three attempts at most.
+- **Cost**: `CONNECT_RETRY_BUDGET` (2 s) measured across the ATTEMPTS. An `EHOSTUNREACH` returns instantly so a real
+  blip gets its retries; an attempt that ate the 10 s connect timeout already answered the question, and stacking
+  another would triple the wait.
+
+Only `UpgradeFailure::Unreachable` retries. An auth rejection is final (retrying risks locking the account; the "Sign
+in" flow owns that recovery), and so is anything the server itself answered with.
+
+**The reason crosses IPC typed, never as a sentence.** `UpgradeFailure` (`unreachable` / `tooSlow` / `unexpected`) is
+classified in Rust by io kind and smb2 error kind — never by message text (`no-string-matching`) — and the frontend
+writes the copy from the catalog (`src/lib/file-explorer/network/upgrade-messages.ts`). The raw error stays in the log
+where it's a diagnostic. Before this, `try_smb_upgrade` built an English sentence in Rust, the toast wrapped it in
+"Direct connection failed: " (the style guide forbids "failed" outright), and the two catch-block call sites pasted a
+raw `String(e)` in the same slot.
+
 **Only one pass runs at a time** (`smb_upgrade::UpgradePass`, an RAII guard over a process-global flag).
 `ensure_network_discovery_started` calls `upgrade_existing_smb_mounts` on every user networking action, so without the
 guard N actions stack N passes that each sleep 15 s and then fire. Dropping the extra triggers is safe precisely

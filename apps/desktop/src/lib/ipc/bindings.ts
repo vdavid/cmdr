@@ -8162,6 +8162,25 @@ export type UpdateInfo = {
   signature: string
 }
 
+/**
+ *  Why a direct connection couldn't be established, as a typed reason rather
+ *  than a sentence.
+ *
+ *  Word-free by design: the frontend renders the copy from the message catalog
+ *  (`$lib/errors/` convention — classification in Rust, words on the frontend).
+ *  A raw `No route to host (os error 65)` has no business reaching a person.
+ */
+export type UpgradeFailure =
+  /**
+   *  Nothing answered on the SMB port: the server is off, asleep, or not on
+   *  this network right now.
+   */
+  | 'unreachable'
+  // It answered, but the handshake ran out of time.
+  | 'tooSlow'
+  // It answered and then something we can't act on went wrong.
+  | 'unexpected'
+
 // Result of an SMB volume upgrade attempt.
 export type UpgradeResult =
   // Upgrade succeeded: volume now uses direct smb2.
@@ -8179,8 +8198,13 @@ export type UpgradeResult =
       // Optional message explaining why credentials are needed.
       message: string | null
     }
-  // Non-auth error (DNS, network, unreachable).
-  | { status: 'networkError'; message: string }
+  // Couldn't reach the server (DNS, network, unreachable, too slow).
+  | {
+      status: 'networkError'
+      reason: UpgradeFailure
+      // Friendly server name for the frontend to name in its copy.
+      displayName: string
+    }
 
 // Negotiated USB link speed (slowest of host port, cable, device).
 export type UsbSpeed =

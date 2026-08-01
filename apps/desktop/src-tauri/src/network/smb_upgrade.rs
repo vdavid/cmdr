@@ -33,6 +33,46 @@ fn volume_id_from_statfs(_mount_path: &str) -> Option<String> {
     None
 }
 
+/// Why a direct connection couldn't be established, as a typed reason rather
+/// than a sentence.
+///
+/// Word-free by design: the frontend renders the copy from the message catalog
+/// (`$lib/errors/` convention — classification in Rust, words on the frontend).
+/// A raw `No route to host (os error 65)` has no business reaching a person.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum UpgradeFailure {
+    /// Nothing answered on the SMB port: the server is off, asleep, or not on
+    /// this network right now.
+    Unreachable,
+    /// It answered, but the handshake ran out of time.
+    TooSlow,
+    /// It answered and then something we can't act on went wrong.
+    Unexpected,
+}
+
+impl UpgradeFailure {
+    /// Classifies a connect failure by io kind and smb2 error kind, never by
+    /// message text (`no-string-matching`).
+    pub(crate) fn from_smb_error(err: &smb2::Error) -> Self {
+        use std::io::ErrorKind as Io;
+        if let smb2::Error::Io(io_err) = err {
+            return match io_err.kind() {
+                Io::HostUnreachable | Io::NetworkUnreachable | Io::ConnectionRefused | Io::NotConnected => {
+                    Self::Unreachable
+                }
+                Io::TimedOut => Self::TooSlow,
+                _ => Self::Unexpected,
+            };
+        }
+        match err.kind() {
+            smb2::ErrorKind::TimedOut => Self::TooSlow,
+            smb2::ErrorKind::ConnectionLost => Self::Unreachable,
+            _ => Self::Unexpected,
+        }
+    }
+}
+
 /// Result of an SMB volume upgrade attempt.
 #[derive(serde::Serialize, specta::Type)]
 #[serde(tag = "status", rename_all = "camelCase", rename_all_fields = "camelCase")]
@@ -51,14 +91,70 @@ pub enum UpgradeResult {
         /// Optional message explaining why credentials are needed.
         message: Option<String>,
     },
-    /// Non-auth error (DNS, network, unreachable).
-    NetworkError { message: String },
+    /// Couldn't reach the server (DNS, network, unreachable, too slow).
+    NetworkError {
+        reason: UpgradeFailure,
+        /// Friendly server name for the frontend to name in its copy.
+        display_name: String,
+    },
 }
 
 /// Internal error type for upgrade attempts, distinguishing auth from network failures.
 pub(crate) enum UpgradeError {
     Auth,
-    Network(String),
+    Network {
+        reason: UpgradeFailure,
+        display_name: String,
+    },
+}
+
+/// Delays between direct-connect attempts.
+///
+/// The first connect to a private LAN address shortly after launch routinely
+/// comes back `EHOSTUNREACH` while the route and the macOS Local Network
+/// permission settle, and the identical attempt moments later succeeds (three
+/// times in one session on 2026-08-01, each followed by a clean connect).
+/// Deliberately short: someone is watching a "Connecting directly…" toast.
+const CONNECT_RETRY_BACKOFF: [std::time::Duration; 2] = [
+    std::time::Duration::from_millis(300),
+    std::time::Duration::from_millis(1200),
+];
+
+/// How long the attempts themselves may have taken before we stop retrying.
+///
+/// This is what keeps a genuinely-down server failing promptly. An `EHOSTUNREACH`
+/// comes back instantly, so a real blip gets its retries; an attempt that ate the
+/// 10 s connect timeout already answered the question, and stacking another would
+/// triple a user's wait for nothing.
+const CONNECT_RETRY_BUDGET: std::time::Duration = std::time::Duration::from_secs(2);
+
+/// Runs `connect` and retries a failure that never reached the server.
+///
+/// Retries only when the attempts have been cheap AND the failure is one a
+/// moment's wait can fix. An auth rejection is final (retrying risks locking the
+/// account; the "Sign in" flow owns that recovery), and so is anything the
+/// server itself answered with.
+async fn connect_with_retry<T, F, Fut>(mut connect: F) -> Result<T, smb2::Error>
+where
+    F: FnMut() -> Fut,
+    Fut: Future<Output = Result<T, smb2::Error>>,
+{
+    let started = std::time::Instant::now();
+    for delay in CONNECT_RETRY_BACKOFF {
+        match connect().await {
+            Ok(value) => return Ok(value),
+            Err(e) => {
+                if UpgradeFailure::from_smb_error(&e) != UpgradeFailure::Unreachable
+                    || started.elapsed() >= CONNECT_RETRY_BUDGET
+                {
+                    return Err(e);
+                }
+                log::debug!("Direct connect didn't reach the server ({e}); retrying in {delay:?}");
+                tokio::time::sleep(delay).await;
+            }
+        }
+    }
+    connect().await
 }
 
 /// Whether `volume_id` already resolves to a HEALTHY direct smb2 volume, in
@@ -195,7 +291,7 @@ pub(crate) async fn register_smb_volume(
 
     let params =
         crate::file_system::volume::smb::SmbConnectionParams::new(&resolved_server, share, port, username, password);
-    match connect_smb_volume(share, mount_path, &volume_id, params).await {
+    match connect_with_retry(|| connect_smb_volume(share, mount_path, &volume_id, params.clone())).await {
         Ok(volume) => {
             // Overwrite-with-retire so SmbVolume always wins over any
             // LocalPosixVolume the watcher may have registered in the race
@@ -211,11 +307,14 @@ pub(crate) async fn register_smb_volume(
             crate::index_host::index().resume_after_reconnect(volume_id.clone());
         }
         Err(e) => {
+            // Log-only path: nothing here reaches a person, so the raw error is
+            // exactly what we want (it's the diagnostic). The volume stays on the
+            // OS mount, which still works, just slower.
             log::warn!(
-                "Failed to establish smb2 connection for {}/{}: {}. \
-                 Falling back to LocalPosixVolume via OS mount.",
+                "Couldn't establish an smb2 connection for {}/{} ({:?}): {}. Staying on the OS mount.",
                 server,
                 share,
+                UpgradeFailure::from_smb_error(&e),
                 e
             );
         }
@@ -276,7 +375,7 @@ pub(crate) async fn try_smb_upgrade(
 
     let params =
         crate::file_system::volume::smb::SmbConnectionParams::new(&resolved_server, share, port, username, password);
-    match connect_smb_volume(share, mount_path, volume_id, params).await {
+    match connect_with_retry(|| connect_smb_volume(share, mount_path, volume_id, params.clone())).await {
         Ok(volume) => {
             register_replacing_predecessor(volume_id, Arc::new(volume)).await;
             log::info!("Registered SmbVolume for {} (id={})", mount_path, volume_id);
@@ -290,16 +389,20 @@ pub(crate) async fn try_smb_upgrade(
             if is_auth_error(&e) {
                 Err(UpgradeError::Auth)
             } else {
+                let reason = UpgradeFailure::from_smb_error(&e);
+                // The raw error stays in the log where it's useful; the caller
+                // gets the typed reason and the frontend writes the sentence.
                 log::warn!(
-                    "Failed to establish smb2 connection for {}/{}: {}",
+                    "Couldn't establish an smb2 connection for {}/{} ({:?}): {}",
                     resolved_server,
                     share,
+                    reason,
                     e
                 );
-                Err(UpgradeError::Network(format!(
-                    "Can't connect to {}. Check that it's reachable on your network.",
-                    display
-                )))
+                Err(UpgradeError::Network {
+                    reason,
+                    display_name: display,
+                })
             }
         }
     }
@@ -826,6 +929,105 @@ mod tests {
         );
 
         manager.unregister(volume_id);
+    }
+
+    // ── Connect retry ──────────────────────────────────────────────────
+
+    fn io_error(kind: std::io::ErrorKind) -> smb2::Error {
+        smb2::Error::Io(std::io::Error::new(kind, "test"))
+    }
+
+    /// The first direct connect to a LAN address right after launch routinely
+    /// comes back `EHOSTUNREACH` while the route and the macOS Local Network
+    /// permission settle; the identical attempt moments later succeeds. That
+    /// class of failure is worth one more try.
+    #[tokio::test]
+    async fn a_connect_that_never_reached_the_server_is_retried() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        let attempts = AtomicUsize::new(0);
+
+        let result = connect_with_retry(|| async {
+            if attempts.fetch_add(1, Ordering::Relaxed) == 0 {
+                Err(io_error(std::io::ErrorKind::HostUnreachable))
+            } else {
+                Ok("connected")
+            }
+        })
+        .await;
+
+        assert_eq!(result.ok(), Some("connected"));
+        assert_eq!(attempts.load(Ordering::Relaxed), 2, "one retry, then success");
+    }
+
+    /// Retrying a rejected password is pointless and risks locking the account.
+    /// The "Sign in" flow owns that recovery.
+    #[tokio::test]
+    async fn a_rejected_credential_is_never_retried() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        let attempts = AtomicUsize::new(0);
+
+        let result: Result<&str, _> = connect_with_retry(|| async {
+            attempts.fetch_add(1, Ordering::Relaxed);
+            Err(smb2::Error::Auth {
+                message: "bad password".to_string(),
+            })
+        })
+        .await;
+
+        assert!(result.is_err());
+        assert_eq!(attempts.load(Ordering::Relaxed), 1, "auth failures are final");
+    }
+
+    /// A server that's genuinely gone must still fail promptly: the retries are
+    /// capped in count, not just in delay.
+    #[tokio::test]
+    async fn retries_are_bounded_so_a_dead_server_fails_fast() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        let attempts = AtomicUsize::new(0);
+
+        let started = std::time::Instant::now();
+        let result: Result<&str, _> = connect_with_retry(|| async {
+            attempts.fetch_add(1, Ordering::Relaxed);
+            Err(io_error(std::io::ErrorKind::HostUnreachable))
+        })
+        .await;
+        let elapsed = started.elapsed();
+
+        assert!(result.is_err());
+        assert_eq!(
+            attempts.load(Ordering::Relaxed),
+            CONNECT_RETRY_BACKOFF.len() + 1,
+            "one initial attempt plus one per backoff step, then give up"
+        );
+        assert!(
+            elapsed < Duration::from_secs(3),
+            "someone is watching a 'Connecting directly…' toast; took {:?}",
+            elapsed
+        );
+    }
+
+    /// An attempt that burned the whole connect timeout has already answered the
+    /// question. Retrying it would stack another 10 s onto a user's wait, so the
+    /// budget stops the loop even though the failure kind looks retryable.
+    #[tokio::test]
+    async fn a_slow_first_attempt_spends_the_retry_budget() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        let attempts = AtomicUsize::new(0);
+
+        let result: Result<&str, _> = connect_with_retry(|| async {
+            attempts.fetch_add(1, Ordering::Relaxed);
+            // allowed-test-sleep: the slow attempt IS the subject — it's what spends the retry budget.
+            tokio::time::sleep(CONNECT_RETRY_BUDGET + Duration::from_millis(50)).await;
+            Err(io_error(std::io::ErrorKind::HostUnreachable))
+        })
+        .await;
+
+        assert!(result.is_err());
+        assert_eq!(
+            attempts.load(Ordering::Relaxed),
+            1,
+            "a slow attempt spends the budget; don't stack another"
+        );
     }
 
     // ── Upgrade idempotence and pass coalescing ────────────────────────
