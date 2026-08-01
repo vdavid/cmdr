@@ -108,7 +108,7 @@ fn smoke_round_trips_one_weight() {
 }
 
 /// A schema-version mismatch deletes and recreates the DB fresh (disposable
-/// cache, no migrations — plan Decision 2). We simulate an old DB by stamping a
+/// cache, no migrations). We simulate an old DB by stamping a
 /// bogus version, then reopening must wipe it.
 #[test]
 fn schema_mismatch_recreates_the_db() {
@@ -383,7 +383,7 @@ fn purge_clears_weights_and_visits() {
 
 /// A visit accumulates: the first `record_visit` creates the row at count 1, a
 /// second bumps to 2 and advances the timestamp. Counts and timestamps only —
-/// the privacy-sane shape (plan Decision 3).
+/// the privacy-sane shape.
 #[test]
 fn record_visit_accumulates_count_and_recency() {
     let (store, _dir) = fresh_store();

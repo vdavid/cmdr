@@ -79,17 +79,17 @@ pub use recompute::{MeasureOutcome, recompute_index_to_db};
 #[cfg(any(test, feature = "tooling"))]
 pub use differential::{OriginComparison, compare_walks_for_incremental, sample_origins};
 
-// ── Volume kind → scoring policy (plan M4, typed, never string-matched) ────
+// ── Volume kind → scoring policy (typed, never string-matched) ────────────
 
 /// How the importance scheduler treats a volume, decided by its typed
 /// [`IndexVolumeKind`] — never by inspecting the volume-id string (`no-string-matching`).
 ///
 /// - **Local** and **SMB** are background-scored. They differ only in signal
 ///   availability: SMB has no Spotlight, so `last_used` is UNAVAILABLE there and
-///   its weight redistributes (the scorer's `SignalSet` handles this since M1);
+///   its weight redistributes (the scorer's `SignalSet` handles this);
 ///   local macOS produces both optional signals.
-/// - **MTP is an explicit exclusion, not an accident of gating** (plan / agent
-///   spec): a phone/camera is on-demand only, never background-scored. The scheduler
+/// - **MTP is an explicit exclusion, not an accident of gating**: a phone/camera
+///   is on-demand only, never background-scored. The scheduler
 ///   skips it at every entry point (sweep, registration, bus subscription).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ScoringPolicy {
@@ -122,7 +122,7 @@ pub fn signal_availability(kind: IndexVolumeKind) -> Option<SignalSet> {
 impl ScoringPolicy {
     /// The scoring policy for a volume kind. The availability mask degrades
     /// explicitly per kind — SMB drops Spotlight — so a missing signal
-    /// redistributes rather than fabricating (plan Decision 3).
+    /// redistributes rather than fabricating.
     fn for_kind(kind: IndexVolumeKind) -> Self {
         match kind {
             // Local macOS produces both optional signals (visits + Spotlight where
@@ -405,7 +405,7 @@ impl ImportanceScheduler {
         );
 
         // Announce the completed full pass so a read-API consumer reacts instead
-        // of polling (plan Decision 6, subscribe-don't-poll).
+        // of polling (subscribe-don't-poll).
         super::read::notify_recompute_completed(volume_id, outcome.generation);
         Ok(outcome.count)
     }
@@ -413,7 +413,7 @@ impl ImportanceScheduler {
     /// Run one INCREMENTAL rescore for a volume: rescore only the folders whose
     /// listings changed (`changed_paths`) plus their capped ancestor chains, and
     /// upsert those rows WITHOUT advancing the generation (untouched folders keep
-    /// their as-of marker — plan Decision 5). Returns the number of folders
+    /// their as-of marker). Returns the number of folders
     /// rescored.
     ///
     /// A `"/"` sentinel in `changed_paths` (a full-refresh emit) escalates to a
@@ -502,9 +502,9 @@ fn build_and_wire() -> Option<Arc<ImportanceScheduler>> {
     let scheduler = Arc::new(ImportanceScheduler::new(data_dir));
 
     // Subscribe to registrations FIRST (before the sweep), so a volume that
-    // registers during the sweep isn't dropped in the gap (plan M4
-    // late-registering volumes). Each registration wires that volume's per-volume
-    // subscriptions and scores it if it's already ready.
+    // registers during the sweep isn't dropped in the gap. Each registration
+    // wires that volume's per-volume subscriptions and scores it if it's
+    // already ready.
     let reg_scheduler = Arc::clone(&scheduler);
     let mut reg_rx = lifecycle_bus::subscribe_registrations();
     crate::indexing::host::runtime::spawn(async move {
@@ -613,7 +613,7 @@ fn should_enqueue_initial_full_pass(
 fn wire_volume(scheduler: Arc<ImportanceScheduler>, volume_id: String, kind: IndexVolumeKind) {
     let available = match ScoringPolicy::for_kind(kind) {
         ScoringPolicy::Scored { available } => available,
-        // MTP: on-demand only, never background-scored (plan M4 typed exclusion).
+        // MTP: on-demand only, never background-scored (a typed exclusion).
         ScoringPolicy::Excluded => {
             log::debug!(target: "importance", "importance skips '{volume_id}' ({kind:?}): on-demand only");
             return;
@@ -621,7 +621,7 @@ fn wire_volume(scheduler: Arc<ImportanceScheduler>, volume_id: String, kind: Ind
     };
 
     // Incremental recompute: rescore only the touched subtrees + capped ancestor
-    // chains as live listing changes land (plan Decision 5). Full-volume recompute
+    // chains as live listing changes land. Full-volume recompute
     // stays the scan-completion default below.
     start_incremental(Arc::clone(&scheduler), volume_id.clone(), available);
 
@@ -646,7 +646,7 @@ fn wire_volume(scheduler: Arc<ImportanceScheduler>, volume_id: String, kind: Ind
 }
 
 /// Subscribe to a volume's dir-changed bus and run a bounded incremental rescore
-/// for each batch of live listing changes (plan Decision 5). Coalesces overlapping
+/// for each batch of live listing changes. Coalesces overlapping
 /// batches per volume (accumulating their paths) so a burst of FSEvents collapses
 /// to one pass plus at most one re-run, never a pass per event.
 fn start_incremental(scheduler: Arc<ImportanceScheduler>, volume_id: String, available: SignalSet) {

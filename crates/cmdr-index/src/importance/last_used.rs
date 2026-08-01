@@ -1,5 +1,5 @@
 //! Sampled `kMDItemLastUsedDate` (Spotlight last-used) for the recency-of-use
-//! signal, macOS-local only (plan Decision 5, agent-spec §5.1 / §18.4).
+//! signal, macOS-local only.
 //!
 //! Per-item MDItem queries are slow, so we SAMPLE rather than sweep: cap the
 //! number of folders queried per pass ([`SAMPLE_CAP`]) and skip the rest (their
@@ -16,9 +16,9 @@
 
 use std::collections::HashMap;
 
-/// The most folders to query per pass. A guess until measured on a real home
-/// (plan open-question 2 / agent-spec §18.4); measured cost goes in
-/// `docs/notes/`. Kept modest so a pass never spends unbounded time in MDItem.
+/// The most folders to query per pass. A guess until measured on a real home;
+/// measured cost goes in `docs/notes/`. Kept modest so a pass never spends
+/// unbounded time in MDItem.
 ///
 /// Defined on every platform (the sample itself is macOS-only) so a caller can hand
 /// [`sample_last_used`] the paths it can actually use rather than the whole volume's.

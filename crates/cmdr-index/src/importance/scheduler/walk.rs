@@ -174,8 +174,8 @@ impl WalkedFolders {
 /// Directory children still come from the directory set itself (a `.git`/`.hg`
 /// marker is a directory), so the direct-marker flag folds both the streamed file
 /// children and the sibling directory children. `has_marker_below` is a single upward
-/// propagation after the walk, so a `.git` deep in a tree raises its ancestors (plan
-/// Decision 3); `under_floored_ancestor` is its downward twin.
+/// propagation after the walk, so a `.git` deep in a tree raises its ancestors;
+/// `under_floored_ancestor` is its downward twin.
 pub(crate) fn walk_index_folders(conn: &rusqlite::Connection, home: &str) -> Result<WalkedFolders, String> {
     let mut walked = WalkedFolders {
         tree: DirTree::new(),
@@ -325,7 +325,7 @@ fn propagate_floor_to_descendants(walked: &mut WalkedFolders, home: &str) {
 }
 
 /// Propagate a direct project marker up to every ancestor: a `.git` deep in a subtree
-/// marks the whole path above it as project-adjacent (plan Decision 3). Seeds from each
+/// marks the whole path above it as project-adjacent. Seeds from each
 /// folder's own direct-marker flag, then walks parent pointers.
 pub(super) fn propagate_marker_to_ancestors(walked: &mut WalkedFolders) {
     let seeds: Vec<u32> = walked

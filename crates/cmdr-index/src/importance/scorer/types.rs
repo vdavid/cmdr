@@ -4,8 +4,7 @@
 //! filesystem, no clocks. A caller assembles a [`FolderSignals`] from whatever
 //! source it has (the drive index, a synthetic fixture), passes the current
 //! time in as a value, and gets a [`Score`] back. This keeps the formula
-//! unit-testable and tunable without a running app (plan Decision 3, agent-spec
-//! §6.3 / §15 testability seams).
+//! unit-testable and tunable without a running app.
 
 use serde::{Deserialize, Serialize};
 
@@ -67,13 +66,13 @@ impl PathClass {
     }
 }
 
-/// The raw signal vector a folder scores from (agent-spec §5.1).
+/// The raw signal vector a folder scores from.
 ///
 /// This is the **serde-serializable** type the store persists as the stored raw
-/// signal vector (plan Decision 2), so a future consumer can re-weight the same
+/// signal vector, so a future consumer can re-weight the same
 /// signals under its own profile without a rescan. Optional fields model signals
 /// that are not always available: a signal that is `None` is redistributed by the
-/// scorer, never fabricated (plan Decision 3). `visit_count` and `last_used_secs`
+/// scorer, never fabricated. `visit_count` and `last_used_secs`
 /// are typed here but stay `None` until their sources wire in.
 ///
 /// **Storage is compact.** Every field is `#[serde(default)]` (so any subset
@@ -119,7 +118,7 @@ pub struct FolderSignals {
     pub mtime_secs: Option<u64>,
     /// `true` when a project marker (`.git`, `Cargo.toml`, `package.json`, …) sits
     /// in this folder or a descendant, marking this as (at or above) a project
-    /// root. Raises the whole subtree (plan Decision 3).
+    /// root. Raises the whole subtree.
     #[serde(default, skip_serializing_if = "is_false")]
     pub has_project_marker: bool,
     /// The typed path-class prior for this folder (see [`PathClass`]).
@@ -171,8 +170,8 @@ impl FolderSignals {
 
 /// Which optional signals are AVAILABLE for a folder, independent of their value.
 ///
-/// This is the availability mask the scorer uses to redistribute weight (plan
-/// Decision 3): on SMB there is no Spotlight, so `last_used` is unavailable and
+/// This is the availability mask the scorer uses to redistribute weight:
+/// on SMB there is no Spotlight, so `last_used` is unavailable and
 /// its weight spreads across the signals that ARE present, rather than the folder
 /// being penalized for a signal its backend can't produce. Availability is
 /// distinct from the value being `None`: a locally-mounted folder whose
@@ -266,7 +265,7 @@ impl SignalKind {
 }
 
 /// The full explain breakdown for one folder: the score plus every signal's
-/// contribution to it (plan Decision 3 / D6, agent-spec radical-transparency).
+/// contribution to it, in service of radical transparency (`docs/design-principles.md`).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Explanation {

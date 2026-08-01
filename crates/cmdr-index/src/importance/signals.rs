@@ -52,7 +52,7 @@ pub struct ChildAggregate {
 /// no child rows are held); `path` is the directory's reconstructed absolute path;
 /// `home` is the user's home dir for path classification. `has_marker_below` lets the caller
 /// raise a folder whose project marker sits in a DESCENDANT (a `.git` deeper in
-/// the subtree still marks the root, plan Decision 3) — `children.has_direct_marker`
+/// the subtree still marks the root) — `children.has_direct_marker`
 /// handles the marker-in-this-folder case. `under_floored_ancestor` is the mirror
 /// image on the floor side: the caller sets it when a self-flooring ancestor (a
 /// denylisted / hidden / system folder) sits above this one, so the whole subtree

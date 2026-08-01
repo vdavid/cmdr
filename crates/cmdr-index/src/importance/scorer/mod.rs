@@ -37,8 +37,8 @@ pub fn explain(inputs: &FolderSignals, available: &SignalSet, weights: &Weights,
     let additive: f64 = contributions.iter().map(|c| c.contribution).sum();
 
     // FLOOR overrides: a denylisted name, a hidden/system folder, OR a folder under
-    // a floored ancestor caps the score at the floor regardless of its other signals
-    // (plan Decision 3). These are hard caps, not additive terms, so they live
+    // a floored ancestor caps the score at the floor regardless of its other signals.
+    // These are hard caps, not additive terms, so they live
     // outside the weighted sum. The ancestor case is what keeps a `node_modules`'s
     // whole subtree floored, not just the folder named `node_modules`.
     let floored = inputs.name_denylisted || inputs.hidden_or_system || inputs.under_floored_ancestor;
@@ -59,7 +59,7 @@ pub fn explain(inputs: &FolderSignals, available: &SignalSet, weights: &Weights,
 ///
 /// Weight for an unavailable optional signal ([`SignalSet`]) is spread
 /// proportionally across the available signals, so a folder is never penalized
-/// for a signal its backend can't produce (plan Decision 3). The `Visibility`
+/// for a signal its backend can't produce. The `Visibility`
 /// term reflects the SOFT (non-floor) side of hidden/system: even when not
 /// floored, being visible contributes; the hard floor is applied in [`explain`].
 fn per_signal_contributions(
@@ -113,7 +113,7 @@ impl EffectiveWeights {
 /// Redistributes the weight of unavailable optional signals across the available
 /// ones, preserving the total. If `visit`/`last_used` is unavailable, its default
 /// coefficient is removed and the remaining coefficients are scaled up so they sum
-/// to the same total as before (plan Decision 3: redistribute, never fabricate).
+/// to the same total as before (redistribute, never fabricate).
 fn effective_weights(available: &SignalSet, weights: &Weights) -> EffectiveWeights {
     let total = weights.additive_total();
 

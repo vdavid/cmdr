@@ -1,4 +1,4 @@
-//! Multi-volume tests (plan M4): floored-row transitions on the incremental path,
+//! Multi-volume tests: floored-row transitions on the incremental path,
 //! the derive-on-read parity invariant, the typed volume-kind scoring policy, SMB
 //! Spotlight degradation, offline-unmounted reads, and per-volume store isolation.
 
@@ -392,7 +392,7 @@ fn smb_recompute_degrades_spotlight_and_redistributes() {
     );
 }
 
-/// THE headline offline-unmounted read (plan M4, Decision 2): score a volume, then
+/// THE headline offline-unmounted read: score a volume, then
 /// DROP its index registration (simulate the NAS unmounting), and assert the read
 /// API STILL returns its weights — with the correct as-of generation — straight
 /// from the on-disk `importance.db`. The read API never touched the index registry
@@ -474,7 +474,7 @@ fn offline_unmounted_read_returns_stored_weights_after_index_gone() {
     );
 }
 
-/// The multi-volume scheduler recompute (plan M4 after-test): a local volume and a
+/// The multi-volume scheduler recompute: a local volume and a
 /// fake-SMB volume, each with its own synthetic index, score INDEPENDENTLY into
 /// their own `importance.db` — the per-volume keying that makes offline reads and
 /// multi-volume scoring work. Uses `recompute_folders` per volume (no registry, no

@@ -1,7 +1,7 @@
 //! Synthetic-home fixture generator for scoring against realistic trees.
 //!
 //! A builder over [`InMemoryVolume`] that constructs the kind of home directory
-//! the scorer must rank well (agent-spec §15, §20.4): a Downloads full of mixed
+//! the scorer must rank well: a Downloads full of mixed
 //! junk, a `.git` project, a `node_modules`, a monoculture log folder, and a
 //! Documents/invoices tree. It also derives a [`FolderSignals`] for any folder in
 //! the tree, so a test can build one tree and assert the scorer's ranking over it

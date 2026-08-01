@@ -3,7 +3,7 @@
 //!
 //! One DB file per volume (`importance-{volume_id}.db`), a sibling of the drive
 //! index's `index-{volume_id}.db`, carrying the index's disposable-cache
-//! discipline verbatim (plan Decision 2):
+//! discipline verbatim:
 //!
 //! - **Folded-key rows.** The primary key is a precomputed `path_folded` column
 //!   (`normalize_for_comparison(path)` — the same fold the `platform_case`
@@ -17,19 +17,19 @@
 //!   migrations, exactly like the index. Weights are regenerable derived data, so
 //!   a wipe costs one recompute on the next scan completion.
 //! - **One writer thread per DB** ([`ImportanceWriter`](super::writer)); reads go
-//!   through short-lived read connections (M2) / a read pool (M3).
+//!   through short-lived read connections.
 //!
-//! ## What a weight row holds (plan Decision 2)
+//! ## What a weight row holds
 //!
 //! Keyed by the folded path, and beyond the scalar `score` each row persists the
 //! verbatim `path` plus the serialized
 //! [`FolderSignals`] it was computed from, so a future consumer can re-weight the
 //! same signals under its own profile without a rescan. Every row carries the
 //! **as-of scan generation** it was computed at, so a consumer can tell how stale
-//! a weight is (the offline-unmounted read the plan makes a feature). The
+//! a weight is (what makes an offline-unmounted read possible). The
 //! generation is a per-volume counter in `meta`, bumped once per recompute pass.
 //!
-//! ## The visit table (plan Decision 3)
+//! ## The visit table
 //!
 //! A compact per-volume `visits` table: `path → (count, last-visit seconds)`.
 //! Counts and timestamps only — no content, local-only. It feeds the scorer's
@@ -47,8 +47,8 @@ pub(crate) use connection::open_read_connection;
 pub(crate) use connection::open_write_connection;
 
 /// Bump to invalidate on-disk `importance.db` files. A mismatch deletes the DB
-/// file and recreates it fresh (the cache is disposable, no migrations — plan
-/// Decision 2). Start at 1; bump on any schema change to the tables below OR a
+/// file and recreates it fresh (the cache is disposable, no migrations).
+/// Start at 1; bump on any schema change to the tables below OR a
 /// change to what rows/JSON the store persists.
 ///
 /// `2`: storage compaction — floored folders no longer get a row (they're derived
@@ -118,23 +118,22 @@ pub(crate) fn needs_initial_full_pass(data_dir: &Path, volume_id: &str) -> Resul
 
 /// Resolve the `importance.db` path for a volume, beside the drive index's DB in
 /// the app data dir. Mirrors the index's `index-{volume_id}.db` naming so the two
-/// disposable caches live together and relocate together (plan Decision 2:
-/// location-independence).
+/// disposable caches live together and relocate together (location-independence).
 pub fn importance_db_path(data_dir: &Path, volume_id: &str) -> PathBuf {
     data_dir.join(format!("importance-{volume_id}.db"))
 }
 
 /// A stored weight for one folder: the scalar, the raw signal vector it was
-/// computed from, and the as-of scan generation. The read side (M3's
-/// `ImportanceIndex`) hands these back; M2 uses them for round-trip tests and the
-/// scheduler's idempotency checks.
+/// computed from, and the as-of scan generation. The read side's
+/// `ImportanceIndex` hands these back; the store's own tests use them for
+/// round-trip checks and the scheduler's idempotency checks.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct StoredWeight {
     pub path: String,
     pub score: f64,
-    /// The serialized [`super::FolderSignals`] JSON (plan Decision 2: a consumer
-    /// can re-weight these under its own profile). Kept as the raw string at this
-    /// layer; the read API deserializes it.
+    /// The serialized [`super::FolderSignals`] JSON (a consumer can re-weight
+    /// these under its own profile). Kept as the raw string at this layer; the
+    /// read API deserializes it.
     pub signals_json: String,
     pub as_of_generation: u64,
 }

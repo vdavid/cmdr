@@ -53,7 +53,7 @@ fn under_floored_ancestor_floors_a_healthy_looking_folder() {
     // A folder that is NOT itself denylisted or hidden, and looks genuinely
     // important (recent, mixed, project-root prior) — but lives under a floored
     // ancestor (a node_modules/.git/cache). It must floor: the descendant of a
-    // floored folder is floored (importance plan D3, agent spec §5.1).
+    // floored folder is floored.
     let mut signals = FolderSignals::neutral();
     signals.under_floored_ancestor = true;
     signals.mtime_secs = Some(NOW);
@@ -363,11 +363,11 @@ fn fixture_ranking_matches_expected_importance_order() {
     assert!(downloads > logs, "Downloads ({downloads}) should outrank logs ({logs})");
 }
 
-// ── Serde round-trip (load-bearing for M2 persistence) ───────────────────────
+// ── Serde round-trip (load-bearing for persistence) ───────────────────────────
 
 #[test]
 fn folder_signals_serde_roundtrips() {
-    // The store persists `FolderSignals` as the raw signal vector (plan Decision 2).
+    // The store persists `FolderSignals` as the raw signal vector.
     // If its serde shape drifts, stored vectors become unreadable, so pin it here.
     let mut signals = FolderSignals::neutral();
     signals.name_denylisted = true;

@@ -1,11 +1,11 @@
-//! Incremental recompute tests (plan M3 TDD target): the touched-set computation
+//! Incremental recompute tests: the touched-set computation
 //! (ancestors, capped, unioned) and the integration that rescopes only the changed
 //! subtree while leaving untouched folders' as-of generation intact.
 
 use super::test_support::*;
 use super::*;
 
-// ── Incremental recompute (plan M3 TDD target) ────────────────────────────
+// ── Incremental recompute ──────────────────────────────────────────────────
 
 /// The bare root `/` (the universal ancestor carried by every live dir-changed
 /// batch) and empty strings are dropped, so a normal change never escalates to a
@@ -86,7 +86,7 @@ fn a_batch_of_only_floored_churn_is_dropped_whole() {
 
 /// The touched set is the changed folders PLUS their ancestor chains (so a marker
 /// or size change raises parents), and the ancestor walk is CAPPED so a deep
-/// change can't rescope half the volume (plan Decision 5 ancestor-fan-out cap).
+/// change can't rescope half the volume.
 #[test]
 fn touched_set_includes_ancestors_and_is_capped() {
     // A single deep change pulls in its ancestors up to the cap, but no further:

@@ -1,9 +1,9 @@
 //! Tunable coefficients for the importance formula.
 //!
-//! The formula must iterate against real directory trees (agent-spec §18.3), so
+//! The formula must iterate against real directory trees, so
 //! the coefficients are data, not hardcoded constants: [`Weights::default`] gives
-//! a reasonable starting point, and the M3 dev-tuning surface will override them
-//! to tune against David's home directory. Keeping them here, serde-serializable,
+//! a reasonable starting point, and the dev-tuning surface (`importance-tune`) overrides them
+//! to tune against a real home directory. Keeping them here, serde-serializable,
 //! also lets a future per-consumer weighting profile ship its own set.
 
 use super::types::SignalKind;
@@ -48,10 +48,9 @@ pub struct Weights {
 impl Default for Weights {
     fn default() -> Self {
         // The seven additive weights sum to 1.0. These are a STARTING POINT to be
-        // tuned against real trees (agent-spec §18.3, plan open-question 1); do
-        // not treat them as validated. The largest weights sit on the signals
-        // that most cleanly separate "matters" from "machine output": path class
-        // and project markers.
+        // tuned against real trees; do not treat them as validated. The largest
+        // weights sit on the signals that most cleanly separate "matters" from
+        // "machine output": path class and project markers.
         Self {
             extension_diversity: 0.15,
             mtime_recency: 0.15,

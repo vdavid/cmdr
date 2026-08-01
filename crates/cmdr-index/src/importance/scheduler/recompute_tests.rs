@@ -110,7 +110,7 @@ fn full_recompute_ranks_meaningful_folders_above_machine_output() {
     );
 }
 
-// ── Memory-fix characterization (plan M4: O(dirs) walk) ───────────────────
+// ── Memory-fix characterization (O(dirs) walk) ─────────────────────────────
 
 /// The O(dirs) walk (directories materialized, files streamed into per-parent
 /// accumulators) must produce EXACTLY the aggregate a whole-tree walk would: for

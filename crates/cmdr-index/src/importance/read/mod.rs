@@ -2,7 +2,7 @@
 //!
 //! The canonical way a consumer (the in-app agent, media-ML enrichment, future
 //! cleanup/prefetch) reaches folder importance — mirroring how `search/` reaches
-//! the drive index through `ReadPool`/`IndexStore` (plan Decision 6). No consumer
+//! the drive index through `ReadPool`/`IndexStore`. No consumer
 //! takes a raw `rusqlite` dep on `importance.db`; they call this.
 //!
 //! ## What it owns
@@ -15,8 +15,8 @@
 //! - The read calls: [`ImportanceIndex::weight_for`], [`ImportanceIndex::top_n`],
 //!   [`ImportanceIndex::above_threshold`], [`ImportanceIndex::explain`],
 //!   [`ImportanceIndex::signals_for`] — each result carrying the **as-of recompute generation** it
-//!   was computed at, so a consumer can caveat staleness (the offline-unmounted
-//!   read M4 makes a feature).
+//!   was computed at, so a consumer can caveat staleness (what makes an
+//!   offline-unmounted read possible).
 //! - A **recompute subscription** ([`subscribe`]): a `watch` receiver that fires
 //!   when a volume's weights finish a recompute, so a consumer reacts instead of
 //!   polling (the subscribe-don't-poll house rule).
@@ -26,8 +26,7 @@
 //! `weight_for` returns a weight even when it's from an older pass than the
 //! store's current generation; the caller compares [`ScoredWeight::as_of_generation`]
 //! to [`ImportanceIndex::recompute_generation`] to decide whether to caveat. The
-//! read API never hides a stale weight — staleness is first-class, never an error
-//! (plan cross-cutting, agent-spec D7).
+//! read API never hides a stale weight — staleness is first-class, never an error.
 //!
 //! ## `explain` recomputes, never re-derives
 //!
@@ -50,7 +49,7 @@ use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::sqlite_util::{THREAD_CONN_SLOTS, ThreadConnCache};
 
 /// A stored weight for one folder, as the read API hands it back: the scalar, the
-/// deserialized raw signal vector it was computed from (plan Decision 2: a
+/// deserialized raw signal vector it was computed from (a
 /// consumer can re-weight these under its own profile via [`ImportanceIndex::signals_for`]), and
 /// the as-of recompute generation.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, specta::Type)]
@@ -188,8 +187,8 @@ impl ImportanceIndex {
     }
 
     /// Override the weights used by [`explain`]. The dev tuning surface sets a
-    /// candidate `Weights` to re-score the stored signals and eyeball the ranking
-    /// (plan Decision 6, §18.3). Reads are unaffected — only `explain` re-scores.
+    /// candidate `Weights` to re-score the stored signals and eyeball the ranking.
+    /// Reads are unaffected — only `explain` re-scores.
     pub fn with_weights(mut self, weights: Weights) -> Self {
         self.weights = weights;
         self
@@ -324,8 +323,8 @@ impl ImportanceIndex {
     }
 
     /// The stored raw signal vector for one folder, or `None` if unscored. For a
-    /// consumer applying its own weighting profile instead of the default scalar
-    /// (plan Decision 2). The scalar stays the common currency.
+    /// consumer applying its own weighting profile instead of the default scalar.
+    /// The scalar stays the common currency.
     pub fn signals_for(&self, path: &str) -> Result<Option<FolderSignals>, ImportanceStoreError> {
         Ok(self.weight_for(path)?.map(|w| w.signals))
     }
@@ -335,7 +334,7 @@ impl ImportanceIndex {
     ///
     /// For a SCORED folder, recomputes the breakdown from the STORED signals via the
     /// pure scorer — the SAME formula the score was written from, so the breakdown
-    /// and the stored scalar can't drift (plan Decision 6). For a FLOORED folder
+    /// and the stored scalar can't drift. For a FLOORED folder
     /// (no row, floors by path), reports a floored `Explanation` (score `0.0`,
     /// `floored == true`) whose flag reflects WHY it floors, derived live from the
     /// path. The floored breakdown loses the stored "would-have-contributed" additive
@@ -548,8 +547,7 @@ pub fn notify_recompute_completed_for_test(volume_id: &str, generation: u64) {
 
 /// Subscribe to a volume's recompute-completed notifications. The receiver
 /// carries the last generation that finished (or `0` if none yet); each recompute
-/// bumps it. A consumer awaits `changed()` instead of polling (plan Decision 6,
-/// subscribe-don't-poll).
+/// bumps it. A consumer awaits `changed()` instead of polling (subscribe-don't-poll).
 pub fn subscribe(volume_id: &str) -> watch::Receiver<u64> {
     with_recompute_sender(volume_id, |sender| sender.subscribe())
 }

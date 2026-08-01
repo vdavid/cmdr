@@ -1,11 +1,11 @@
 //! `ImportanceWriter`: the single writer thread for one volume's `importance.db`.
 //!
 //! Mirrors the index's `IndexWriter` discipline: exactly ONE writer thread owns
-//! the single write connection per DB (plan Decision 2 / the index's
-//! one-writer-per-DB invariant), and all writes cross a bounded channel. The
-//! handle is cloneable; every clone shares the one channel and one thread.
+//! the single write connection per DB (the index's one-writer-per-DB invariant),
+//! and all writes cross a bounded channel. The handle is cloneable; every clone
+//! shares the one channel and one thread.
 //!
-//! ## Command surface (plan M2)
+//! ## Command surface
 //!
 //! - [`write_weights`](ImportanceWriter::write_weights): write a recompute pass's
 //!   weights, stamping every row with the pass generation and advancing the
@@ -14,8 +14,8 @@
 //! - [`purge_volume`](ImportanceWriter::purge_volume): drop all weights and
 //!   visits (a consumer forgot the volume). Schema stays.
 //! - [`record_visit`](ImportanceWriter::record_visit): the navigation-visit
-//!   signal — bump a path's visit count and last-visit timestamp (plan Decision
-//!   3). Counts and timestamps only.
+//!   signal — bump a path's visit count and last-visit timestamp. Counts and
+//!   timestamps only.
 //!
 //! Writes are applied under a single transaction per message so a crash mid-pass
 //! leaves the prior generation intact (crash-safety: recompute is idempotent and
@@ -41,7 +41,7 @@ use cmdr_fs::pluralize::pluralize;
 const CHANNEL_CAPACITY: usize = 1024;
 
 /// One folder's weight to persist. The scheduler builds these from the scorer's
-/// output; the serialized signal vector rides along (plan Decision 2).
+/// output; the serialized signal vector rides along.
 #[derive(Debug, Clone, PartialEq)]
 pub struct WeightRow {
     /// The folder this weight is for, absolute.
@@ -64,8 +64,7 @@ enum WriteMessage {
     /// touched set, at the current generation). Clearing the subtree first purges
     /// rows for folders that were renamed away, deleted, or became floored, so only
     /// the currently-scored folders survive — the incremental analog of a full
-    /// pass's replace-the-table. Used by the changed-subtree recompute (plan
-    /// Decision 5).
+    /// pass's replace-the-table. Used by the changed-subtree recompute.
     WriteWeightsIncremental {
         generation: u64,
         rows: Vec<WeightRow>,
@@ -143,7 +142,7 @@ impl ImportanceWriter {
     /// exactly the currently-scored folders. Untouched folders (outside every
     /// cleared subtree) keep their rows and as-of markers. The caller reads the
     /// current generation (via [`next_generation`] minus one, or the read API) and
-    /// passes it here (plan Decision 5).
+    /// passes it here.
     ///
     /// [`next_generation`]: ImportanceWriter::next_generation
     pub fn write_weights_incremental(
@@ -396,7 +395,7 @@ fn apply_visit(conn: &Connection, path: &str, at_secs: u64) -> Result<(), Import
 /// reuses the WAL file in place and never shrinks it; only an explicit TRUNCATE
 /// reclaims the space. A full recompute REPLACES the whole `weights` table and the
 /// every-60s incremental churns pages, so without this the WAL grows to ~100% of the
-/// DB and stays there (plan M9).
+/// DB and stays there.
 ///
 /// Runs on the writer thread's own connection in autocommit: every message commits
 /// its transaction before the loop reads the next, so `wal_checkpoint(TRUNCATE)`

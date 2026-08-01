@@ -136,8 +136,8 @@ fn any_ancestor_self_floors(path: &str, home: &str) -> bool {
 }
 
 /// The project markers whose presence in a folder (or a descendant) marks it as
-/// at/above a project root, raising the whole subtree (plan Decision 3). A
-/// set-membership check on the folded child name.
+/// at/above a project root, raising the whole subtree. A set-membership check on
+/// the folded child name.
 pub const PROJECT_MARKERS: &[&str] = &[
     ".git",
     "cargo.toml",

@@ -134,7 +134,7 @@ pub(super) fn recompute_folders(
     writer.flush_blocking().map_err(|e| e.to_string())?;
     // A full pass REPLACES the whole `weights` table, so the WAL just grew to ~DB size.
     // Truncate it now that the pass is committed (a quiet point). Best-effort: it never
-    // fails the recompute (plan M9).
+    // fails the recompute.
     let _ = writer.checkpoint_wal();
 
     Ok(RecomputeOutcome { count, generation })
@@ -384,7 +384,7 @@ impl<'a> IncrementalInputs<'a> {
 }
 
 /// Rescore the changed subtrees WITHOUT advancing the generation, so every
-/// untouched folder keeps its as-of marker (plan Decision 5). Returns the number of
+/// untouched folder keeps its as-of marker. Returns the number of
 /// (non-floored) folders written.
 ///
 /// The touched set is each changed path's capped ancestor chain (upward: a marker
@@ -450,7 +450,7 @@ pub(super) fn incremental_rescore(
         .write_weights_incremental(generation, rows, changed_paths.to_vec())
         .map_err(|e| e.to_string())?;
     writer.flush_blocking().map_err(|e| e.to_string())?;
-    // The every-60s incremental is the WAL churn source (plan M9): truncate at this
+    // The every-60s incremental is the WAL churn source: truncate at this
     // quiet point so the file doesn't creep up in place. Best-effort, never fails.
     let _ = writer.checkpoint_wal();
     Ok(count)
@@ -539,8 +539,8 @@ pub(super) fn is_in_changed_subtree(path: &str, changed_paths: &[String]) -> boo
 
 /// The maximum number of ancestor levels an incremental rescore walks up from a
 /// changed folder. A project marker (or a size/mtime change) can raise ancestors,
-/// but a deep change must not rescope half the volume, so the walk is capped
-/// (plan open-question / Decision 5). Generous enough for realistic home trees.
+/// but a deep change must not rescope half the volume, so the walk is capped.
+/// Generous enough for realistic home trees.
 pub(super) const ANCESTOR_WALK_CAP: usize = 32;
 
 /// Build the set of folder paths an incremental rescore should touch: each changed

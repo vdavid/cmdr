@@ -1,15 +1,15 @@
-//! Coalescing coordinator tests (plan M2 TDD target): the pure `PassCoordinator`
+//! Coalescing coordinator tests: the pure `PassCoordinator`
 //! contract, unit-tested without an app, a runtime, or the index fixtures.
 
 use super::*;
 use std::time::{Duration, Instant};
 
-// ── Coalescing coordinator (plan M2 TDD target) ──────────────────────────
+// ── Coalescing coordinator ────────────────────────────────────────────────
 
 /// The core contract: a request while a pass runs does NOT start a second pass —
 /// it sets the re-run flag, so the sweep + a concurrent `ScanCompleted` collapse
 /// to one pass, then one re-run. This is the "sweep + concurrent completion ⇒ one
-/// pass" guarantee (plan Decision 4), unit-tested without an app or a runtime.
+/// pass" guarantee, unit-tested without an app or a runtime.
 #[test]
 fn concurrent_requests_coalesce_into_one_pass_plus_one_rerun() {
     let coord = PassCoordinator::new();
