@@ -14,8 +14,7 @@ use super::super::types::{OperationEventSink, WriteOperationPhase, WriteOperatio
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 
-/// The marker every Cmdr temp carries. Files whose name contains it are ours.
-const TEMP_INFIX: &str = ".cmdr-tmp-";
+use cmdr_fs::staging::STAGING_TEMP_MARKER as TEMP_INFIX;
 
 /// How old a `.cmdr-tmp-*` leftover must be before a starting transfer reaps it.
 ///

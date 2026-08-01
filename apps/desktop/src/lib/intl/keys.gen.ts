@@ -2004,6 +2004,8 @@ export type MessageKey =
   | 'settings.advanced.resetAllConfirmTitle'
   | 'settings.advanced.serviceResolveTimeout.description'
   | 'settings.advanced.serviceResolveTimeout.label'
+  | 'settings.advanced.showStagingTempFiles.description'
+  | 'settings.advanced.showStagingTempFiles.label'
   | 'settings.advanced.updateCheckInterval.description'
   | 'settings.advanced.updateCheckInterval.label'
   | 'settings.advanced.virtualizationBufferColumns.description'

@@ -301,6 +301,17 @@ export const advancedSettings: SettingDefinitionSource[] = [
     component: 'switch',
   },
   {
+    id: 'advanced.showStagingTempFiles',
+    section: ['Advanced'],
+    cardKey: 'settings.advanced.card.networkAndMounts',
+    labelKey: 'settings.advanced.showStagingTempFiles.label',
+    descriptionKey: 'settings.advanced.showStagingTempFiles.description',
+    keywords: ['temp', 'temporary', 'staging', 'copy', 'transfer', 'cmdr-tmp', 'partial'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
+  {
     id: 'advanced.serviceResolveTimeout',
     section: ['Advanced'],
     cardKey: 'settings.advanced.card.networkAndMounts',

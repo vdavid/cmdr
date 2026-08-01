@@ -3,6 +3,38 @@
 Depth and rationale. `CLAUDE.md` holds the must-knows; this is everything else. Submodule depth lives in each
 submodule's own `DETAILS.md` (`listing/`, `write_operations/`, `volume/`).
 
+## Hiding Cmdr's scratch (`staging.rs`)
+
+Every write lands on a `.cmdr-tmp-*` sibling and takes its real name by a rename, so a copy makes files appear under
+names the user didn't create for as long as it takes to write them. The 2026-07-31 incident's visible tail was one of
+those left in the pane after an otherwise successful 768-file copy: the SMB watcher won the race against the rename, and
+its batched add landed after the rename event that would have cleared it.
+
+**Read-path, not watcher.** Filtering where the frontend asks for a range (`listing/operations.rs::visible_entries`)
+rather than where the cache is filled is what makes the fix safe. The cache stays the truth; every accessor re-tests on
+every fetch, so an entry the pane received can always be taken away again. Filtering the watcher instead inverts the bug
+into a worse one: a full listing shows the temp, the watcher skips the removal that would clear it, and the pane keeps
+an entry pointing at nothing. `smb_watcher.rs`'s `.sb-` safe-save skip is exactly that shape and has the ghost.
+
+**Ownership, not name.** A scratch file a live operation owns is noise; one nobody owns is a leftover from an
+interrupted transfer, and hiding that misreports what's on disk. `StagingTemp` is the only way to name a temp, so
+registering can't be forgotten, and the guard's `Drop` is what un-hides.
+
+**Why a guard alone isn't enough.** The transfer driver ABANDONS tasks that won't wind down under the cancel deadline,
+and an abandoned task keeps its guard alive: exactly the wedge case, where a leaked registration would hide a real
+leftover forever. So an operation's temps also carry a `Weak` to `WriteOperationState`'s liveness token, dropped by
+`end_liveness` wherever the operation leaves `WRITE_OPERATION_STATE`. ❌ Not `Arc<WriteOperationState>` reachability —
+the abandoned task holds one of those too. A force-quit is covered for free (the registry is in memory), and a temp
+minted outside any operation (the local safe-overwrite's two files) hides only until its function returns.
+
+**Known gap.** A leftover only becomes visible on the next fetch, and nothing forces one at settle. In practice
+`transfer/volume_cleanup.rs::clean_abandoned_staged_writes` deletes the leftovers and that delete fires a watcher event,
+so the pane updates on its own; the gap is the narrow case where the DELETE also fails. An immediate reveal would need
+the volume-path to display-path mapping the name-keyed registry deliberately avoids.
+
+**The escape hatch.** `advanced.showStagingTempFiles` (Settings > Advanced, off) shows the in-flight ones too. It's a
+separate axis from `showHiddenFiles`: turning on dotfiles isn't a request to watch Cmdr's scratch.
+
 ## Cloud actions (`cloud_actions.rs`)
 
 Wraps `FileManager.evictUbiquitousItem(at:)` and `startDownloadingUbiquitousItem(at:)` so the file context menu can

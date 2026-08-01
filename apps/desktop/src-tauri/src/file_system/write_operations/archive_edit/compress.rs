@@ -18,8 +18,6 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
-use uuid::Uuid;
-
 use super::super::OperationEventSink;
 use super::super::archive_remote_edit::{self, RemoteEditError};
 use super::super::scratch_dir::ScratchDir;
@@ -27,11 +25,8 @@ use super::super::state::WriteOperationState;
 use super::super::types::{ConflictResolution, WriteOperationError, WriteOperationStartResult};
 use super::copy_into::route_archive_copy_into_with_provenance;
 use crate::file_system::get_volume_manager;
+use crate::file_system::staging::StagingTemp;
 use crate::file_system::volume::Volume;
-
-/// Same-directory temp infix, mirroring the mutator's: `foo.zip` seeds through
-/// `foo.zip.cmdr-tmp-<uuid>` before the atomic rename onto `foo.zip`.
-const TEMP_INFIX: &str = ".cmdr-tmp-";
 
 /// The bytes of a valid empty zip: a bare end-of-central-directory record. The
 /// four-byte EOCD signature `PK\x05\x06` followed by 18 zero bytes (disk numbers,
@@ -58,7 +53,10 @@ pub(crate) fn seed_empty_zip(path: &Path) -> Result<(), WriteOperationError> {
     // Build into a same-directory temp, then atomically rename over `path`. A crash
     // mid-write leaves only the temp (removed by the guard on any early return), so
     // `path` is never a torn half-seed — the rename is the single instant it appears.
-    let temp_path = temp_sibling_path(path);
+    // `staged` lives to the end of this function, keeping the temp out of the
+    // pane while the seed is written and until the rename lands it.
+    let staged = StagingTemp::mint(path, None);
+    let temp_path = staged.path().to_path_buf();
     let mut guard = SeedTempGuard {
         path: temp_path.clone(),
         armed: true,
@@ -108,15 +106,6 @@ async fn seed_empty_zip_remote(parent: &dyn Volume, dest_zip_full_path: &Path) -
             },
             RemoteEditError::Op(w) => w,
         })
-}
-
-/// A fresh same-directory temp path: `foo.zip` -> `foo.zip.cmdr-tmp-<uuid>`,
-/// matching the mutator so the reaper cleans an abandoned seed the same way.
-fn temp_sibling_path(path: &Path) -> PathBuf {
-    let mut name = path.file_name().map(|s| s.to_os_string()).unwrap_or_default();
-    name.push(TEMP_INFIX);
-    name.push(Uuid::new_v4().to_string());
-    path.with_file_name(name)
 }
 
 /// fsyncs the target's parent directory so a just-completed rename is durable.

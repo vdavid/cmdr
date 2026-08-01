@@ -1274,6 +1274,14 @@
   "@settings.advanced.filterSafeSaveArtifacts.description": {
     "sourceHash": "681b1dc"
   },
+  "settings.advanced.showStagingTempFiles.label": "Visa Cmdrs tillfälliga filer",
+  "@settings.advanced.showStagingTempFiles.label": {
+    "sourceHash": "5a7636d"
+  },
+  "settings.advanced.showStagingTempFiles.description": "Vid kopiering skriver Cmdr varje fil under ett tillfälligt namn och byter namn först när filen är klar, så att en krasch inte kan lämna en halvskriven fil under ett riktigt namn. Rester från en avbruten kopiering visas alltid.",
+  "@settings.advanced.showStagingTempFiles.description": {
+    "sourceHash": "2d88a78"
+  },
   "settings.advanced.logLlmCalls.label": "Logga AI-modellanrop",
   "@settings.advanced.logLlmCalls.label": {
     "sourceHash": "f865b3e"

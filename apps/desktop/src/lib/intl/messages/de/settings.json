@@ -1275,6 +1275,14 @@
   "@settings.advanced.filterSafeSaveArtifacts.description": {
     "sourceHash": "681b1dc"
   },
+  "settings.advanced.showStagingTempFiles.label": "Cmdrs temporäre Dateien anzeigen",
+  "@settings.advanced.showStagingTempFiles.label": {
+    "sourceHash": "5a7636d"
+  },
+  "settings.advanced.showStagingTempFiles.description": "Beim Kopieren schreibt Cmdr jede Datei unter einem temporären Namen und benennt sie um, sobald sie vollständig ist. So kann ein Absturz keine halb geschriebene Datei unter einem echten Namen hinterlassen. Reste eines abgebrochenen Kopiervorgangs werden immer angezeigt.",
+  "@settings.advanced.showStagingTempFiles.description": {
+    "sourceHash": "2d88a78"
+  },
   "settings.advanced.logLlmCalls.label": "KI-Modellaufrufe protokollieren",
   "@settings.advanced.logLlmCalls.label": {
     "sourceHash": "f865b3e"

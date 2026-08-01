@@ -60,6 +60,8 @@ mod operations_test;
 #[cfg(test)]
 mod sorting_test;
 #[cfg(test)]
+mod staging_temps_test;
+#[cfg(test)]
 mod stats_test;
 #[cfg(test)]
 mod streaming_test;

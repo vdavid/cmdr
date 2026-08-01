@@ -1269,6 +1269,14 @@
   "@settings.advanced.filterSafeSaveArtifacts.description": {
     "sourceHash": "681b1dc"
   },
+  "settings.advanced.showStagingTempFiles.label": "Hiện các tệp tạm của Cmdr",
+  "@settings.advanced.showStagingTempFiles.label": {
+    "sourceHash": "5a7636d"
+  },
+  "settings.advanced.showStagingTempFiles.description": "Khi sao chép, Cmdr ghi từng tệp dưới một tên tạm và chỉ đổi tên khi tệp đã hoàn tất, nên sự cố không thể để lại tệp ghi dở dưới một tên thật. Các tệp còn sót lại từ lần sao chép bị gián đoạn luôn được hiển thị.",
+  "@settings.advanced.showStagingTempFiles.description": {
+    "sourceHash": "2d88a78"
+  },
   "settings.advanced.logLlmCalls.label": "Ghi nhật ký lệnh gọi mô hình AI",
   "@settings.advanced.logLlmCalls.label": {
     "sourceHash": "f865b3e"

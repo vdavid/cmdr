@@ -6,11 +6,18 @@ Submodule docs: `listing/CLAUDE.md`, `write_operations/CLAUDE.md`,
 `volume/CLAUDE.md`. Top-level files of note: `cloud_actions.rs` (iCloud make-available-offline / remove-download),
 `open_with.rs` (candidate apps + launch), `watcher.rs` (FSEvents incremental listing updates), `sync_status/`
 (cloud badges: bounded thread pool, cache, cancellable batches — see its `CLAUDE.md`),
+`staging.rs` (`StagingTemp`: the one way to name a `.cmdr-tmp-*` / `.cmdr-temp-*` scratch file, and the predicate
+listings filter on),
 `index_provider.rs` (the app's `VolumeProvider`: everything the index asks about mounted volumes, so it never imports
 `VolumeManager` or a platform probe), `tags.rs` (macOS Finder tags: `_kMDItemUserTags` getxattr + bplist read/write; read deferred via `enrich_tags`, write
 via `set_tags` / `toggle_color` behind the `toggle_tags` command).
 
 ## Gotchas
+
+- **Scratch files are hidden on the listing READ path, never in a watcher, and by OWNERSHIP, never by name**
+  (`staging.rs`). A watcher-side name skip strands an entry in the pane forever; a leftover nobody owns is a real file
+  and must stay visible. ❌ Don't filter scratch names anywhere but `listing/operations.rs::visible_entries`, and mint
+  every temp through `StagingTemp`. Why, and the shipped `.sb-` counterexample: `DETAILS.md` § "Hiding Cmdr's scratch".
 
 - **Tag writes (`tags.rs`) must touch ONLY `_kMDItemUserTags`, never `com.apple.FinderInfo` (D11).** That 32-byte blob
   carries `kHasCustomIcon` (`0x0400` at offset 8) plus type/creator codes; zeroing it destroys custom folder icons and

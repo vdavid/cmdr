@@ -49,7 +49,7 @@ use crate::file_system::volume::{LocalPosixVolume, Volume, VolumeError};
 /// Mirrors the local mutator's convention and the app-wide `.cmdr-` crash-
 /// recoverable-temp prefix. Used to BUILD the upload temp name and to MATCH stale
 /// leftovers for reaping — the two must stay in lockstep.
-const TEMP_INFIX: &str = ".cmdr-tmp-";
+use cmdr_fs::staging::STAGING_TEMP_MARKER as TEMP_INFIX;
 
 /// The minimum age a remote `<archive>.cmdr-tmp-*` leftover must reach before the
 /// next edit of the same archive reaps it. Deliberately generous: unlike the LOCAL

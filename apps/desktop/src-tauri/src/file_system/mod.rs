@@ -19,6 +19,7 @@ mod provider;
 #[cfg(test)]
 mod real_provider;
 #[cfg(target_os = "macos")]
+pub(crate) mod staging;
 pub mod sync_status;
 pub mod tags;
 pub mod validation;

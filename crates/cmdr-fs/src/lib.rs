@@ -27,6 +27,7 @@ pub mod ignore_poison;
 pub mod pluralize;
 pub mod process_memory;
 pub mod sqlite_util;
+pub mod staging;
 pub mod tcc_paths;
 pub mod thread_qos;
 pub mod volume;

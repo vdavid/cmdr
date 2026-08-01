@@ -27,6 +27,9 @@ catalogs, diff coalescing, metadata tiers): `DETAILS.md`.
 
 - **`get_file_range()` indices are over VISIBLE items only.** With `include_hidden=false` the frontend sees a dense
   array, so backend index N maps to a different absolute entry. Filtering happens in Rust.
+  `visible_entries` is the ONLY filter point and runs on READ, never on cache fill, so no accessor can hand out an entry
+  another one denies. An accessor iterating `listing.entries` directly breaks that (`staging_temps_test.rs` pins it).
+  Two axes: dotfiles (`include_hidden`) and in-flight scratch files (`file_system::staging`).
 
 - **Watcher diffs must update the cache AND emit an event.** The cache is the source of truth for `get_file_range()`;
   the event tells the frontend to re-fetch. Miss either and you get stale data or no UI update.

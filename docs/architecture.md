@@ -105,6 +105,8 @@ above is separate: it ships per-character widths to Rust for backend column sizi
 All under `apps/desktop/src-tauri/src/`.
 
 - `file_system/listing/`: Directory reading, streaming, caching, sorting (serves virtual scroll)
+- `apps/desktop/src-tauri/src/file_system/staging.rs`: Where every Cmdr scratch file (`.cmdr-tmp-*`, `.cmdr-temp-*`) is
+  named, and whether a listing shows it. Rules and rationale: the module's own docs
 - `file_system/write_operations/`: Copy/move/delete with safety patterns (temp+rename, staging, rollback). Umbrella +
   shared state machine, the operation manager (queue + lane admission), `OperationEventSink`, Settle contract
 - `file_system/write_operations/transfer/`: Copy + move pipelines: conflict resolution, transfer driver, platform copies

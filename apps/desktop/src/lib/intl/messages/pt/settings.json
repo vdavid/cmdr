@@ -1273,6 +1273,14 @@
   "@settings.advanced.filterSafeSaveArtifacts.description": {
     "sourceHash": "681b1dc"
   },
+  "settings.advanced.showStagingTempFiles.label": "Mostrar os arquivos temporários do Cmdr",
+  "@settings.advanced.showStagingTempFiles.label": {
+    "sourceHash": "5a7636d"
+  },
+  "settings.advanced.showStagingTempFiles.description": "Ao copiar, o Cmdr grava cada arquivo com um nome temporário e o renomeia quando o arquivo está completo, então uma falha não pode deixar um arquivo pela metade com um nome real. Sobras de uma cópia interrompida sempre aparecem.",
+  "@settings.advanced.showStagingTempFiles.description": {
+    "sourceHash": "2d88a78"
+  },
   "settings.advanced.logLlmCalls.label": "Registrar chamadas do modelo de IA",
   "@settings.advanced.logLlmCalls.label": {
     "sourceHash": "f865b3e"

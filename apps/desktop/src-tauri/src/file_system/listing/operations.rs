@@ -20,11 +20,26 @@ fn is_visible(entry: &FileEntry) -> bool {
     !entry.name.starts_with('.')
 }
 
+/// The single point every read accessor filters through, so counts, ranges,
+/// stats, selection indices, and type-to-jump can never disagree about what the
+/// pane is showing. ❌ Don't filter anywhere else.
+///
+/// Two independent reasons an entry is left out, deliberately NOT one switch:
+///
+/// - A **dotfile**, when the user hasn't asked for hidden files (`include_hidden`).
+/// - A **scratch file a running operation owns** (`file_system::staging`), always,
+///   unless `advanced.showStagingTempFiles` says otherwise. Someone who turned on
+///   dotfiles didn't thereby ask to watch Cmdr's own temporary files appear and
+///   vanish — and a scratch file NOBODY owns is a leftover, so it stays visible
+///   either way.
 fn visible_entries<'a>(entries: &'a [FileEntry], include_hidden: bool) -> Box<dyn Iterator<Item = &'a FileEntry> + 'a> {
+    let entries = entries
+        .iter()
+        .filter(|e| !crate::file_system::staging::is_hidden_from_listings(&e.name));
     if include_hidden {
-        Box::new(entries.iter())
+        Box::new(entries)
     } else {
-        Box::new(entries.iter().filter(|e| is_visible(e)))
+        Box::new(entries.filter(|e| is_visible(e)))
     }
 }
 

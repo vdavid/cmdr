@@ -33,7 +33,9 @@ use zip::{CompressionMethod, ZipArchive, ZipWriter};
 /// Same-directory temp infix: `foo.zip` builds into `foo.zip.cmdr-tmp-<uuid>`.
 /// The `.cmdr-` prefix marks a crash-recoverable temp (the app-wide convention);
 /// the sibling placement keeps the final rename atomic on one filesystem.
-const TEMP_INFIX: &str = ".cmdr-tmp-";
+use cmdr_fs::staging::STAGING_TEMP_MARKER as TEMP_INFIX;
+
+use crate::file_system::staging::StagingTemp;
 
 /// Chunk size for streaming an added file's bytes into the compressor: bounds
 /// peak in-flight memory regardless of the file's size (principle 5 — never
@@ -240,7 +242,10 @@ pub fn apply(archive_path: &Path, changeset: &Changeset, hooks: &dyn MutationHoo
 
     // Build the new archive into a same-directory sibling temp. The guard removes
     // it on any early return (error or cancel) so the original stays alone.
-    let temp_path = temp_sibling_path(archive_path);
+    // `staged` lives to the end of this function, keeping the temp out of the
+    // pane while the new archive is built and until the rename lands it.
+    let staged = StagingTemp::mint(archive_path, None);
+    let temp_path = staged.path().to_path_buf();
     hooks.note_pending(&temp_path);
     let temp_file = File::create(&temp_path).map_err(MutationError::Io)?;
     let mut guard = TempGuard {
@@ -465,14 +470,6 @@ fn plan_new_name(original_name: &str, deletes: &[String], renames: &[(String, St
 /// Whether `path` is `target` itself or a descendant of it (component-wise).
 fn path_matches_or_under(path: &str, target: &str) -> bool {
     path == target || path.strip_prefix(target).is_some_and(|rest| rest.starts_with('/'))
-}
-
-/// A fresh same-directory temp path: `foo.zip` -> `foo.zip.cmdr-tmp-<uuid>`.
-fn temp_sibling_path(archive_path: &Path) -> PathBuf {
-    let mut name = archive_path.file_name().map(|s| s.to_os_string()).unwrap_or_default();
-    name.push(TEMP_INFIX);
-    name.push(Uuid::new_v4().to_string());
-    archive_path.with_file_name(name)
 }
 
 /// Removes any `foo.zip.cmdr-tmp-*` sibling of the archive (an abandoned build

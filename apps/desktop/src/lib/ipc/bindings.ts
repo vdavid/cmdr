@@ -1553,6 +1553,13 @@ export const commands = {
   setFilterSafeSaveArtifactsCmd: (enabled: boolean) =>
     __TAURI_INVOKE<void>('set_filter_safe_save_artifacts_cmd', { enabled }),
   /**
+   *  Show or hide the temporary files Cmdr writes while copying
+   *  (`advanced.showStagingTempFiles`). Pushed live from the frontend on change.
+   *  Only affects scratch files a RUNNING operation owns: leftovers from an
+   *  interrupted transfer stay visible either way (`file_system::staging`).
+   */
+  setShowStagingTempFilesCmd: (show: boolean) => __TAURI_INVOKE<void>('set_show_staging_temp_files_cmd', { show }),
+  /**
    *  Update the SMB concurrency limit used by `SmbVolume::max_concurrent_ops()`.
    *  Clamped to `1..=32` by `set_smb_concurrency`. Pushed live from the frontend
    *  whenever `network.smbConcurrency` changes.

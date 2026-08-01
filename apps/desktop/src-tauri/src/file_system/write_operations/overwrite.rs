@@ -10,6 +10,7 @@ use super::macos_copy::{CopyProgressContext, copy_single_file_native};
 #[cfg(not(target_os = "macos"))]
 use super::types::IoResultExt;
 use super::types::WriteOperationError;
+use crate::file_system::staging::StagingTemp;
 
 /// Result of applying a conflict resolution.
 #[derive(Debug)]
@@ -43,26 +44,25 @@ pub(super) fn safe_overwrite_file(
     dest: &Path,
     #[cfg(target_os = "macos")] context: Option<&CopyProgressContext>,
 ) -> Result<u64, WriteOperationError> {
+    // Both guards live to the end of this function, keeping the two scratch
+    // files out of the pane for as long as they're on disk. Sharing one uuid
+    // makes a crash leftover legible as two halves of one overwrite.
     let uuid = Uuid::new_v4();
-    let parent = dest.parent().unwrap_or(Path::new("."));
-    let file_name = dest
-        .file_name()
-        .map(|n| n.to_string_lossy().to_string())
-        .unwrap_or_default();
-
-    let temp_path = parent.join(format!("{}.cmdr-tmp-{}", file_name, uuid));
-    let aside_path = parent.join(format!("{}.cmdr-temp-{}", file_name, uuid));
+    let temp = StagingTemp::mint_with_uuid(dest, uuid, None);
+    let aside = StagingTemp::mint_aside(dest, uuid, None);
+    let temp_path = temp.path();
+    let aside_path = aside.path();
 
     // Step 1: Copy source to temp
     #[cfg(target_os = "macos")]
-    let bytes = copy_single_file_native(source, &temp_path, false, context)?;
+    let bytes = copy_single_file_native(source, temp_path, false, context)?;
     #[cfg(not(target_os = "macos"))]
-    let bytes = fs::copy(source, &temp_path).with_path(source)?;
+    let bytes = fs::copy(source, temp_path).with_path(source)?;
 
     // Step 2: Rename original dest aside
-    if let Err(e) = fs::rename(dest, &aside_path) {
+    if let Err(e) = fs::rename(dest, aside_path) {
         // Failed to rename aside - clean up temp and return error
-        let _ = fs::remove_file(&temp_path);
+        let _ = fs::remove_file(temp_path);
         return Err(WriteOperationError::IoError {
             path: dest.display().to_string(),
             message: format!("Failed to set aside existing destination: {}", e),
@@ -70,12 +70,12 @@ pub(super) fn safe_overwrite_file(
     }
 
     // Step 3: Rename temp to final dest
-    if let Err(e) = fs::rename(&temp_path, dest) {
+    if let Err(e) = fs::rename(temp_path, dest) {
         // Failed to rename - restore aside and clean up. If the restore ALSO
         // fails, the user's original survives orphaned under the recognizable
         // `.cmdr-temp-<uuid>` aside name; log so the trail tells anyone it's
         // recoverable (AGENTS.md principle #4: protect the user's data).
-        if let Err(restore_err) = fs::rename(&aside_path, dest) {
+        if let Err(restore_err) = fs::rename(aside_path, dest) {
             crate::log_error!(
                 "safe_overwrite_file: failed to restore aside {} -> {}: {}",
                 aside_path.display(),
@@ -83,7 +83,7 @@ pub(super) fn safe_overwrite_file(
                 restore_err
             );
         }
-        let _ = fs::remove_file(&temp_path);
+        let _ = fs::remove_file(temp_path);
         return Err(WriteOperationError::IoError {
             path: dest.display().to_string(),
             message: format!("Failed to finalize overwrite: {}", e),
@@ -99,9 +99,9 @@ pub(super) fn safe_overwrite_file(
     // rollback removes new files but can't restore overwritten originals.
     // Revisit if users complain. See transfer/CLAUDE.md § "Overwrite isn't reversible".
     if aside_path.is_dir() {
-        let _ = fs::remove_dir_all(&aside_path);
+        let _ = fs::remove_dir_all(aside_path);
     } else {
-        let _ = fs::remove_file(&aside_path);
+        let _ = fs::remove_file(aside_path);
     }
 
     Ok(bytes)
@@ -145,17 +145,14 @@ pub(super) fn safe_overwrite_dir<F>(dest: &Path, materialize: F) -> Result<(), W
 where
     F: FnOnce(&Path) -> Result<(), WriteOperationError>,
 {
-    let uuid = Uuid::new_v4();
-    let parent = dest.parent().unwrap_or(Path::new("."));
-    let file_name = dest
-        .file_name()
-        .map(|n| n.to_string_lossy().to_string())
-        .unwrap_or_default();
-    let aside_path = parent.join(format!("{}.cmdr-temp-{}", file_name, uuid));
+    // The guard lives to the end of this function, keeping the aside out of the
+    // pane for as long as it's on disk.
+    let aside = StagingTemp::mint_aside(dest, Uuid::new_v4(), None);
+    let aside_path = aside.path();
 
     // Step 1: Rename existing dest aside. This survives a crash: the original
     // is recognizable on next launch and the user can rename it back by hand.
-    if let Err(e) = fs::rename(dest, &aside_path) {
+    if let Err(e) = fs::rename(dest, aside_path) {
         return Err(WriteOperationError::IoError {
             path: dest.display().to_string(),
             message: format!("Failed to set aside existing destination: {}", e),
@@ -170,9 +167,9 @@ where
         Ok(()) => {
             // Step 3: Remove the aside. Best-effort; a leftover is recognizable.
             if aside_path.is_dir() {
-                let _ = fs::remove_dir_all(&aside_path);
+                let _ = fs::remove_dir_all(aside_path);
             } else {
-                let _ = fs::remove_file(&aside_path);
+                let _ = fs::remove_file(aside_path);
             }
             Ok(())
         }
@@ -186,7 +183,7 @@ where
                     let _ = fs::remove_file(dest);
                 }
             }
-            if let Err(restore_err) = fs::rename(&aside_path, dest) {
+            if let Err(restore_err) = fs::rename(aside_path, dest) {
                 crate::log_error!(
                     "safe_overwrite_dir: failed to restore aside {} -> {}: {}",
                     aside_path.display(),

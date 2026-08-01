@@ -71,7 +71,7 @@ impl TestOperationGuard {
 
 impl Drop for TestOperationGuard {
     fn drop(&mut self) {
-        WRITE_OPERATION_STATE.write_ignore_poison().remove(&self.op_id);
+        super::state::forget_operation(&self.op_id);
     }
 }
 

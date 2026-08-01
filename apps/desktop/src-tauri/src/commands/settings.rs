@@ -123,6 +123,16 @@ pub fn set_filter_safe_save_artifacts_cmd(enabled: bool) {
     set_filter_safe_save_artifacts(enabled);
 }
 
+/// Show or hide the temporary files Cmdr writes while copying
+/// (`advanced.showStagingTempFiles`). Pushed live from the frontend on change.
+/// Only affects scratch files a RUNNING operation owns: leftovers from an
+/// interrupted transfer stay visible either way (`file_system::staging`).
+#[tauri::command]
+#[specta::specta]
+pub fn set_show_staging_temp_files_cmd(show: bool) {
+    crate::file_system::staging::set_show_staging_temps(show);
+}
+
 /// Update the SMB concurrency limit used by `SmbVolume::max_concurrent_ops()`.
 /// Clamped to `1..=32` by `set_smb_concurrency`. Pushed live from the frontend
 /// whenever `network.smbConcurrency` changes.

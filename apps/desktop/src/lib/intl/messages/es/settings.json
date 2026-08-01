@@ -1273,6 +1273,14 @@
   "@settings.advanced.filterSafeSaveArtifacts.description": {
     "sourceHash": "681b1dc"
   },
+  "settings.advanced.showStagingTempFiles.label": "Mostrar los archivos temporales de Cmdr",
+  "@settings.advanced.showStagingTempFiles.label": {
+    "sourceHash": "5a7636d"
+  },
+  "settings.advanced.showStagingTempFiles.description": "Al copiar, Cmdr escribe cada archivo con un nombre temporal y lo renombra cuando está completo, así que un fallo no puede dejar un archivo a medio escribir con un nombre real. Los restos de una copia interrumpida siempre se muestran.",
+  "@settings.advanced.showStagingTempFiles.description": {
+    "sourceHash": "2d88a78"
+  },
   "settings.advanced.logLlmCalls.label": "Registrar llamadas al modelo de IA",
   "@settings.advanced.logLlmCalls.label": {
     "sourceHash": "f865b3e"

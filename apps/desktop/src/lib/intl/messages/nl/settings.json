@@ -1275,6 +1275,14 @@
   "@settings.advanced.filterSafeSaveArtifacts.description": {
     "sourceHash": "681b1dc"
   },
+  "settings.advanced.showStagingTempFiles.label": "Cmdrs tijdelijke bestanden tonen",
+  "@settings.advanced.showStagingTempFiles.label": {
+    "sourceHash": "5a7636d"
+  },
+  "settings.advanced.showStagingTempFiles.description": "Bij het kopiëren schrijft Cmdr elk bestand onder een tijdelijke naam en hernoemt het zodra het bestand compleet is, zodat een crash geen half geschreven bestand onder een echte naam kan achterlaten. Restanten van een onderbroken kopie worden altijd getoond.",
+  "@settings.advanced.showStagingTempFiles.description": {
+    "sourceHash": "2d88a78"
+  },
   "settings.advanced.logLlmCalls.label": "Log AI-modelaanroepen",
   "@settings.advanced.logLlmCalls.label": {
     "sourceHash": "f865b3e"

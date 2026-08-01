@@ -1272,6 +1272,14 @@
   "@settings.advanced.filterSafeSaveArtifacts.description": {
     "sourceHash": "681b1dc"
   },
+  "settings.advanced.showStagingTempFiles.label": "A Cmdr ideiglenes fájljainak megjelenítése",
+  "@settings.advanced.showStagingTempFiles.label": {
+    "sourceHash": "5a7636d"
+  },
+  "settings.advanced.showStagingTempFiles.description": "Másoláskor a Cmdr minden fájlt ideiglenes néven ír ki, és csak akkor nevezi át, amikor a fájl elkészült, így egy összeomlás nem hagyhat félig megírt fájlt valódi néven. A megszakadt másolások maradványai mindig látszanak.",
+  "@settings.advanced.showStagingTempFiles.description": {
+    "sourceHash": "2d88a78"
+  },
   "settings.advanced.logLlmCalls.label": "AI-modellhívások naplózása",
   "@settings.advanced.logLlmCalls.label": {
     "sourceHash": "f865b3e"

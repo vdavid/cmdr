@@ -101,6 +101,17 @@ export async function setFilterSafeSaveArtifacts(enabled: boolean): Promise<void
 }
 
 /**
+ * Shows or hides the temporary files Cmdr writes while copying.
+ * Pushed live from the settings UI whenever `advanced.showStagingTempFiles` changes.
+ * Only covers scratch files a running operation owns; leftovers from an
+ * interrupted transfer stay visible either way.
+ * @param show - True to show Cmdr's temporary files
+ */
+export async function setShowStagingTempFiles(show: boolean): Promise<void> {
+  await commands.setShowStagingTempFilesCmd(show)
+}
+
+/**
  * Updates the SMB concurrency limit used by the batch copy engine.
  * Clamped to `1..=32` in the Rust side. Pushed live from the settings UI
  * whenever `network.smbConcurrency` changes.

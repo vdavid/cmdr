@@ -68,6 +68,8 @@ pub struct Settings {
     pub direct_smb_connection: Option<bool>,
     #[serde(alias = "advanced.filterSafeSaveArtifacts", default)]
     pub filter_safe_save_artifacts: Option<bool>,
+    #[serde(alias = "advanced.showStagingTempFiles", default)]
+    pub show_staging_temp_files: Option<bool>,
     #[serde(alias = "fileOperations.mtpEnabled", default)]
     pub mtp_enabled: Option<bool>,
     #[serde(alias = "advanced.diskSpaceChangeThreshold", default)]
@@ -179,6 +181,7 @@ impl Default for Settings {
             verbose_logging: None,
             direct_smb_connection: None,
             filter_safe_save_artifacts: None,
+            show_staging_temp_files: None,
             mtp_enabled: None,
             disk_space_change_threshold_mb: None,
             low_disk_space_notifications: None,
@@ -249,6 +252,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     let verbose_logging = json.get("developer.verboseLogging").and_then(|v| v.as_bool());
     let direct_smb_connection = json.get("network.directSmbConnection").and_then(|v| v.as_bool());
     let filter_safe_save_artifacts = json.get("advanced.filterSafeSaveArtifacts").and_then(|v| v.as_bool());
+    let show_staging_temp_files = json.get("advanced.showStagingTempFiles").and_then(|v| v.as_bool());
     let mtp_enabled = json.get("fileOperations.mtpEnabled").and_then(|v| v.as_bool());
     let disk_space_change_threshold_mb = json.get("advanced.diskSpaceChangeThreshold").and_then(|v| v.as_u64());
     let low_disk_space_notifications = json
@@ -299,6 +303,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         verbose_logging,
         direct_smb_connection,
         filter_safe_save_artifacts,
+        show_staging_temp_files,
         mtp_enabled,
         disk_space_change_threshold_mb,
         low_disk_space_notifications,

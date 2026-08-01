@@ -107,6 +107,15 @@ pub struct WriteOperationState {
     ///
     /// Empty for local-FS operations, which stage through `overwrite.rs` instead.
     pub in_flight_temps: std::sync::Mutex<Vec<PathBuf>>,
+    /// "This operation is still going." Dropped by [`end_liveness`](Self::end_liveness)
+    /// when it settles.
+    ///
+    /// Everything this operation staged holds a [`Weak`](std::sync::Weak) to it
+    /// (`file_system::staging`), so its scratch files stop being hidden the
+    /// moment it ends. ❌ Not `Arc<WriteOperationState>` reachability: a task the
+    /// driver ABANDONED after the cancel deadline still holds one of those, and
+    /// the whole point is that a wedge's leftovers become visible anyway.
+    liveness: std::sync::Mutex<Option<Arc<()>>>,
 }
 
 impl WriteOperationState {
@@ -124,7 +133,22 @@ impl WriteOperationState {
             pause_gate: PauseGate::new(),
             journal_volumes: None,
             in_flight_temps: std::sync::Mutex::new(Vec::new()),
+            liveness: std::sync::Mutex::new(Some(Arc::new(()))),
         }
+    }
+
+    /// A handle to this operation's [`liveness`](Self::liveness), for tagging
+    /// the scratch files it stages.
+    pub fn liveness_token(&self) -> Option<std::sync::Weak<()>> {
+        self.liveness.lock_ignore_poison().as_ref().map(Arc::downgrade)
+    }
+
+    /// Declares the operation over. Everything it staged stops being hidden.
+    ///
+    /// Called where the operation leaves `WRITE_OPERATION_STATE`, so it fires
+    /// for every ending — done, cancelled, rolled back, or wedged and abandoned.
+    pub(super) fn end_liveness(&self) {
+        self.liveness.lock_ignore_poison().take();
     }
 
     /// Set the volume-transfer journal target (see [`journal_volumes`](Self::journal_volumes)).
@@ -248,6 +272,21 @@ pub struct ConflictResolutionResponse {
 /// Global cache for in-progress write operation states.
 pub(super) static WRITE_OPERATION_STATE: LazyLock<RwLock<HashMap<String, Arc<WriteOperationState>>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
+
+/// Drops `operation_id`'s state, ending its liveness first.
+///
+/// ❌ Every removal from [`WRITE_OPERATION_STATE`] goes through here. Removing
+/// the entry alone would leave a wedged operation's staged temps hidden forever
+/// (a task the driver abandoned still holds an `Arc` to the state, so the map
+/// entry going away doesn't drop it): `WriteOperationState::end_liveness`.
+pub(super) fn forget_operation(operation_id: &str) {
+    let Ok(mut cache) = WRITE_OPERATION_STATE.write() else {
+        return;
+    };
+    if let Some(state) = cache.remove(operation_id) {
+        state.end_liveness();
+    }
+}
 
 /// Global cache for operation status (for query APIs).
 static OPERATION_STATUS_CACHE: LazyLock<RwLock<HashMap<String, OperationStatusInternal>>> =

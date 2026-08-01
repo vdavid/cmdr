@@ -1604,6 +1604,17 @@
     "screenshot": "settings-advanced.png"
   },
 
+  "settings.advanced.showStagingTempFiles.label": "Show Cmdr's temporary files",
+  "@settings.advanced.showStagingTempFiles.label": {
+    "description": "Advanced-section label for the toggle that shows the temporary files Cmdr writes while copying. \"Cmdr\" is the app name; keep it.",
+    "screenshot": "settings-advanced.png"
+  },
+  "settings.advanced.showStagingTempFiles.description": "While copying, Cmdr writes each file under a temporary name and renames it once the file is complete, so a crash can't leave a half-written file under a real name. Leftovers from an interrupted copy are always shown.",
+  "@settings.advanced.showStagingTempFiles.description": {
+    "description": "Help text for the show-temporary-files toggle (advanced). Explains why the temporary names exist, and that leftovers stay visible regardless of this setting. \"Cmdr\" is the app name; keep it.",
+    "screenshot": "settings-advanced.png"
+  },
+
   "settings.advanced.logLlmCalls.label": "Log AI model calls",
   "@settings.advanced.logLlmCalls.label": {
     "description": "Advanced-section label for the toggle that writes every AI model request and response to a local folder for debugging. \"AI model\" refers to the LLM (large language model) the user's AI features talk to."

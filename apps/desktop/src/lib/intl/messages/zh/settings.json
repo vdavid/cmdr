@@ -1271,6 +1271,14 @@
   "@settings.advanced.filterSafeSaveArtifacts.description": {
     "sourceHash": "681b1dc"
   },
+  "settings.advanced.showStagingTempFiles.label": "显示 Cmdr 的临时文件",
+  "@settings.advanced.showStagingTempFiles.label": {
+    "sourceHash": "5a7636d"
+  },
+  "settings.advanced.showStagingTempFiles.description": "复制时，Cmdr 会先用临时名称写入每个文件，写完后再重命名，这样崩溃就不会留下用真实名称保存的半个文件。中断的复制留下的残余文件始终会显示。",
+  "@settings.advanced.showStagingTempFiles.description": {
+    "sourceHash": "2d88a78"
+  },
   "settings.advanced.logLlmCalls.label": "记录 AI 模型调用",
   "@settings.advanced.logLlmCalls.label": {
     "sourceHash": "f865b3e"

@@ -70,7 +70,8 @@ use crate::file_system::volume::LaneKey;
 use crate::ignore_poison::IgnorePoison;
 
 use super::state::{
-    WRITE_OPERATION_STATE, WriteOperationState, register_operation_status, unregister_operation_status,
+    WRITE_OPERATION_STATE, WriteOperationState, forget_operation, register_operation_status,
+    unregister_operation_status,
 };
 use super::types::WriteOperationType;
 
@@ -491,9 +492,7 @@ impl OperationManager {
             }
         };
         if removed {
-            if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
-                cache.remove(operation_id);
-            }
+            forget_operation(operation_id);
             unregister_operation_status(operation_id);
         }
     }
@@ -517,9 +516,7 @@ impl OperationManager {
         if was_queued {
             // A queued op never reserved lanes nor registered busy status, so
             // only the `WRITE_OPERATION_STATE` entry needs clearing.
-            if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
-                cache.remove(operation_id);
-            }
+            forget_operation(operation_id);
             log::info!(target: "op_manager", "cancel queued op={operation_id}");
             self.emit_changed();
         }

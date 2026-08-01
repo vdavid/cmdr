@@ -531,6 +531,7 @@ export {
   updateServiceResolveTimeout,
   setDirectSmbConnection,
   setFilterSafeSaveArtifacts,
+  setShowStagingTempFiles,
   setLogLlmCalls,
   setSmbConcurrency,
   setMaxLogStorageMb,

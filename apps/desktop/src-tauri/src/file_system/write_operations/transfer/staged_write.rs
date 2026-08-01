@@ -31,7 +31,7 @@ use std::sync::Arc;
 
 use super::super::state::WriteOperationState;
 use super::transfer_probe::{TaskPhase, set_task_phase};
-use super::volume_conflict::temp_sibling_path;
+use crate::file_system::staging::StagingTemp;
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 
@@ -57,7 +57,26 @@ pub(super) enum WriteStaging {
 pub(super) struct StagedWrite {
     /// `Some(temp)` when we staged this write ourselves, `None` under
     /// [`WriteStaging::AlreadyStaged`] and [`WriteStaging::SingleShot`].
-    temp: Option<PathBuf>,
+    ///
+    /// The guard also keeps the temp out of the pane while it's being written
+    /// (`file_system::staging`). Dropping it un-hides the file, which is why
+    /// `commit` and `abandon` hold it until the rename or delete is done — and
+    /// why a landing that FAILS is right to let it go: the temp that survives is
+    /// the file's only complete copy, and the user needs to see it.
+    temp: Option<StagingTemp>,
+    /// Keeps a CALLER-minted temp out of the pane for the length of the write
+    /// ([`WriteStaging::AlreadyStaged`]).
+    ///
+    /// The conflict layer's safe-replace temp is minted several layers up and
+    /// passed down as a plain path (`ResolvedConflict::write_path`), through code
+    /// that clones it, so it can't carry its own guard. This adopts it for the
+    /// window that matters — the streaming write — and lets go at commit, a
+    /// rename short of the caller's `finalize_safe_replace`. Worst case that
+    /// leaves the temp visible for one round trip, which shows as a flicker and
+    /// never as a stuck entry: the pane re-reads through the same filter, so an
+    /// entry it shows once can always be taken away again.
+    #[allow(dead_code, reason = "Held for its Drop: the guard IS the hiding")]
+    caller_temp: Option<StagingTemp>,
     /// Where the file must end up. Under `AlreadyStaged` this IS the caller's
     /// temp, and landing it is the caller's job.
     final_path: PathBuf,
@@ -68,18 +87,29 @@ impl StagedWrite {
     /// Picks the staging path and, when we own it, records it as an in-flight
     /// partial on the operation so an abandoned task's litter can be found.
     pub(super) fn begin(state: &Arc<WriteOperationState>, final_path: &Path, staging: WriteStaging) -> Self {
-        let temp = match staging {
+        let mut temp = None;
+        let mut caller_temp = None;
+        match staging {
             WriteStaging::Stage => {
-                let temp = temp_sibling_path(final_path);
-                state.in_flight_temps.lock_ignore_poison().push(temp.clone());
-                Some(temp)
+                let staged = StagingTemp::mint(final_path, state.liveness_token());
+                state
+                    .in_flight_temps
+                    .lock_ignore_poison()
+                    .push(staged.path().to_path_buf());
+                temp = Some(staged);
             }
-            // Neither owns a temp: the caller's is the caller's to land, and a
-            // single-shot write has no intermediate state to track.
-            WriteStaging::AlreadyStaged | WriteStaging::SingleShot => None,
-        };
+            // The caller's temp is the caller's to land; all we take is
+            // responsibility for keeping it out of the pane while we write it.
+            WriteStaging::AlreadyStaged => {
+                caller_temp = Some(StagingTemp::adopt(final_path.to_path_buf(), state.liveness_token()))
+            }
+            // A single-shot write goes straight to the final name: no
+            // intermediate state to track, and nothing to hide.
+            WriteStaging::SingleShot => {}
+        }
         Self {
             temp,
+            caller_temp,
             final_path: final_path.to_path_buf(),
             state: Arc::clone(state),
         }
@@ -87,7 +117,7 @@ impl StagedWrite {
 
     /// Where the streaming writer must put the bytes.
     pub(super) fn target(&self) -> &Path {
-        self.temp.as_deref().unwrap_or(&self.final_path)
+        self.temp.as_ref().map_or(&self.final_path, StagingTemp::path)
     }
 
     /// The write SUCCEEDED: give the bytes their final name.
@@ -107,17 +137,17 @@ impl StagedWrite {
             // and a single-shot write already sits at its final name.
             return Ok(());
         };
-        self.deregister(&temp);
+        self.deregister(temp.path());
         // Landing is a device round trip of its own; a dump has to be able to
         // name it rather than showing a task still "streaming" at EOF.
         set_task_phase(TaskPhase::Finalizing);
-        match land(dest_volume, &temp, &self.final_path).await {
+        match land(dest_volume, temp.path(), &self.final_path).await {
             Err(VolumeError::NotSupported) => {
                 // This backend can't land a staged write at all, so the caller
                 // will rewrite the file at its final name. Drop the temp here:
                 // it isn't the only copy of anything, and leaving it would litter
                 // the destination on every single file.
-                let _ = dest_volume.delete(&temp).await;
+                let _ = dest_volume.delete(temp.path()).await;
                 Err(VolumeError::NotSupported)
             }
             other => other,
@@ -138,12 +168,12 @@ impl StagedWrite {
         let Some(temp) = self.temp.take() else {
             return;
         };
-        self.deregister(&temp);
-        if let Err(e) = dest_volume.delete(&temp).await {
+        self.deregister(temp.path());
+        if let Err(e) = dest_volume.delete(temp.path()).await {
             log::debug!(
                 target: "copy",
                 "staged write: couldn't remove the partial {} after a failed write: {e}",
-                temp.display()
+                temp.path().display()
             );
         }
     }

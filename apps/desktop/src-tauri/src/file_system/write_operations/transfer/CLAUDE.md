@@ -29,7 +29,8 @@ Shared `WriteOperationState`, `OperationIntent`, cancel/rollback, ETA, and settl
   (a conflict-minted temp) and `SingleShot` (the DESTINATION lands it whole or not at all —
   `Volume::write_is_single_shot`, today only SMB's compound frame). ❌ Single-shot-ness buys that, NEVER smallness: ask
   the destination via `resolve_staging`. A staged temp sits in `state.in_flight_temps` ONLY while it's a partial, so a
-  temp holding committed data is never swept.
+  temp holding committed data is never swept. It's also a `StagingTemp` tagged with `state.liveness_token()`, which
+  hides it while it's written; a failed landing drops that guard on purpose (`file_system::staging`).
 - **Cross-volume file→file Overwrite is a safe-replace, NOT delete-then-write**: stream into a `.cmdr-tmp-<uuid>`
   sibling, then `finalize_safe_replace`. That post-write temp is committed data, not a cleanable partial. Cross-type
   stays delete-first.

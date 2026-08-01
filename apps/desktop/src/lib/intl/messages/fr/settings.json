@@ -1277,6 +1277,14 @@
   "@settings.advanced.filterSafeSaveArtifacts.description": {
     "sourceHash": "681b1dc"
   },
+  "settings.advanced.showStagingTempFiles.label": "Afficher les fichiers temporaires de Cmdr",
+  "@settings.advanced.showStagingTempFiles.label": {
+    "sourceHash": "5a7636d"
+  },
+  "settings.advanced.showStagingTempFiles.description": "Lors d''une copie, Cmdr écrit chaque fichier sous un nom temporaire et le renomme une fois qu''il est complet. Un plantage ne peut donc pas laisser un fichier à moitié écrit sous un vrai nom. Les restes d''une copie interrompue sont toujours affichés.",
+  "@settings.advanced.showStagingTempFiles.description": {
+    "sourceHash": "2d88a78"
+  },
   "settings.advanced.logLlmCalls.label": "Journaliser les appels au modèle d''IA",
   "@settings.advanced.logLlmCalls.label": {
     "sourceHash": "f865b3e"
