@@ -7,9 +7,9 @@ the dead Rollback, the corrupt files — is a symptom.
 
 > **Correction (2026-08-01).** The credit diagnosis below was real but was **not** the cause of the permanent wedge.
 > M0/M1 shipped and were correct; the wedge kept happening on `smb2` 0.14.0 with a longest credit wait of 47 ms. The
-> actual cause was on the send side: one `TcpTransport::send` held the write half forever and every later request
-> queued behind it, so the client stopped sending and the server's silence was a consequence, not a cause. Fixed in
-> `smb2` 0.15.0 (writer task + `Error::SendTimeout` + RAII waiters + `sent_age`). Full account:
+> actual cause was on the send side: one `TcpTransport::send` held the write half forever and every later request queued
+> behind it, so the client stopped sending and the server's silence was a consequence, not a cause. Fixed in `smb2`
+> 0.15.0 (writer task + `Error::SendTimeout` + RAII waiters + `sent_age`). Full account:
 > `docs/notes/incidents/2026-07-31-transfer-wedge/README.md` § Resolution. ❌ Don't re-anchor on credits when reading
 > the milestones below.
 

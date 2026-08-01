@@ -614,7 +614,7 @@ async fn smb_integration_a_running_copy_survives_the_volume_being_replaced() {
 
     assert!(
         in_flight_at_swap < FILE_COUNT,
-        "the swap has to land MID-copy or this test proves nothing; {in_flight_at_swap}/{FILE_COUNT} files had already landed"
+        "the swap has to land MID-copy or this test proves nothing; already landed: {in_flight_at_swap} of {FILE_COUNT}"
     );
 
     let result = copy.await.expect("the copy task itself must not panic");

@@ -4,10 +4,10 @@ A user-initiated copy of 764 files (3.10 GB) from a Dropbox File Provider folder
 12 files and could not be cancelled, rolled back, or dismissed. The app had to be force-quit, leaving two
 byte-incomplete files at their final names on the destination.
 
-**Root cause found on 2026-08-01, in `smb2`. Fixed in smb2 0.15.0.** The client had stopped *sending*: one
+**Root cause found on 2026-08-01, in `smb2`. Fixed in smb2 0.15.0.** The client had stopped _sending_: one
 `TcpTransport::send` held the transport's write half forever and every later request queued behind that lock, so the
 server's "silence" was simply that nobody was asking it anything. Nothing bounded it, because every deadline the crate
-had bounds the wait for a *response* and these requests never reached the wire. See "Resolution" at the bottom.
+had bounds the wait for a _response_ and these requests never reached the wire. See "Resolution" at the bottom.
 
 The rest of this record is preserved unchanged as the forensic yield of the wedge **before** the fix, and as the target
 the observability work has to beat. The test for any instrumentation we add is: _would it have answered the open
@@ -118,11 +118,11 @@ brand-new `smb2` connection wrote 38 MB into the very same destination directory
 fault. `smb2`'s `TcpTransport::send` locked the transport's write half across its `write_all`; one send that never
 finished parked every later request behind it, with no deadline, no error, and no log line.
 
-**Why every guardrail missed it.** The 180 s response deadline and the 30 s credit deadline both live *downstream of
-the send*, so neither could fire: the server had not been asked. `giving up` and `CreditStarvation` each appear **zero**
+**Why every guardrail missed it.** The 180 s response deadline and the 30 s credit deadline both live _downstream of the
+send_, so neither could fire: the server had not been asked. `giving up` and `CreditStarvation` each appear **zero**
 times in the whole log.
 
-**Why it read as server silence for weeks.** `outstanding_requests()` timed each request from *registration*, which
+**Why it read as server silence for weeks.** `outstanding_requests()` timed each request from _registration_, which
 happens before the bytes go out, under a doc comment reading "Requests sent and not yet answered". A never-sent request
 was indistinguishable from an unanswered one. Three separate diagnoses blamed the server on that basis.
 
