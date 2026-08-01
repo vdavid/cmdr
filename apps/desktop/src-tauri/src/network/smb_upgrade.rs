@@ -229,7 +229,7 @@ impl Drop for UpgradePass {
 /// the sync FSEvents thread) and panics inside a tokio runtime. `spawn_blocking`
 /// keeps that default legal for any backend. Awaited so the retirement completes
 /// before `register` swaps the new volume in.
-async fn register_replacing_predecessor(
+pub(crate) async fn register_replacing_predecessor(
     volume_id: &str,
     new_volume: std::sync::Arc<dyn crate::file_system::volume::Volume>,
 ) {

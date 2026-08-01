@@ -492,3 +492,151 @@ async fn smb_integration_compress_local_files_onto_the_share() {
     get_volume_manager().unregister(&parent_id);
     ensure_clean(&smb_vol, &base).await;
 }
+
+/// THE regression, end to end on a real server: a running copy survives the
+/// destination volume being replaced mid-transfer.
+///
+/// This is the 2026-08-01 failure verbatim. A 3 GB copy to the NAS was underway,
+/// holding `Arc<dyn Volume>` clones of its source and destination
+/// (`volume_copy.rs` clones them into every per-file task). A redundant SMB
+/// upgrade pass fired, `register_replacing_predecessor` called `on_unmount` on
+/// the predecessor, the smb2 session was dropped out from under the copy, and the
+/// operation died with `DeviceDisconnected` on a connection that was demonstrably
+/// healthy (`fs_info` and `stat` had completed normally moments earlier).
+///
+/// Here a genuine second connection replaces the volume through the same helper
+/// the upgrade paths use, while the copy is in flight. The copy must finish, and
+/// every byte must land.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_a_running_copy_survives_the_volume_being_replaced() {
+    use crate::file_system::write_operations::{
+        CollectorEventSink, VolumeCopyConfig, WriteOperationState, copy_volumes_with_progress,
+    };
+    use crate::test_support::wait_until_async;
+    use std::time::Duration;
+
+    // Big enough that the copy is still running when the swap lands: the test
+    // asserts that below, so an under-sized payload fails loudly rather than
+    // passing vacuously.
+    const FILE_COUNT: usize = 120;
+    const FILE_BYTES: usize = 512 * 1024;
+
+    let smb_vol = Arc::new(make_docker_volume().await);
+    let volume_id = smb_vol.volume_id().to_string();
+    let base = test_dir_name();
+    ensure_clean(&smb_vol, &base).await;
+    smb_vol.create_directory(Path::new(&base)).await.unwrap();
+
+    // Enough files that the replace lands in the middle rather than before or
+    // after: each one is a separate round trip to the server.
+    let local_dir = tempfile::TempDir::new().expect("create TempDir");
+    let mut names = Vec::new();
+    for i in 0..FILE_COUNT {
+        let name = format!("file-{i:03}.bin");
+        // Distinct per-file byte so a mixed-up or truncated write can't pass.
+        std::fs::write(local_dir.path().join(&name), vec![i as u8; FILE_BYTES]).unwrap();
+        names.push(PathBuf::from(&name));
+    }
+    let source_vol: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::new(
+        "src",
+        local_dir.path().to_path_buf(),
+    ));
+
+    // What the running operation holds: an `Arc` taken before the swap.
+    let dest_vol: Arc<dyn Volume> = smb_vol.clone();
+    let manager = crate::file_system::get_volume_manager();
+    manager.register(&volume_id, Arc::clone(&dest_vol));
+
+    let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
+    let events = Arc::new(CollectorEventSink::new());
+    let config = VolumeCopyConfig::default();
+    let dest = base.clone();
+
+    let copy = tokio::spawn({
+        let source_vol = Arc::clone(&source_vol);
+        let dest_vol = Arc::clone(&dest_vol);
+        let dest = dest.clone();
+        async move {
+            copy_volumes_with_progress(
+                events,
+                "test-op-smb-replace-mid-copy",
+                &state,
+                source_vol,
+                &names,
+                dest_vol,
+                Path::new(&dest),
+                &config,
+            )
+            .await
+        }
+    });
+
+    // Wait until the copy is genuinely under way (some files landed) but not
+    // finished, so the replace hits it mid-flight.
+    // A background probe feeds an atomic that the (sync) wait condition reads;
+    // the condition can't await, and blocking on a future inside the runtime
+    // would deadlock.
+    let landed = Arc::new(AtomicUsize::new(0));
+    let probe = tokio::spawn({
+        let vol = Arc::clone(&smb_vol);
+        let dest = dest.clone();
+        let landed = Arc::clone(&landed);
+        async move {
+            loop {
+                if let Ok(entries) = vol.list_directory_impl(Path::new(&dest)).await {
+                    landed.store(entries.len(), Ordering::Relaxed);
+                }
+                // allowed-test-sleep: the probe's own polling interval; the test's
+                // WAIT is `wait_until_async` on the atomic this feeds.
+                tokio::time::sleep(Duration::from_millis(20)).await;
+            }
+        }
+    });
+    wait_until_async(Duration::from_secs(60), "the copy to start landing files", || {
+        landed.load(Ordering::Relaxed) > 0
+    })
+    .await;
+    probe.abort();
+
+    // The swap, through the exact helper every upgrade path uses. A real second
+    // smb2 connection takes the volume id.
+    let in_flight_at_swap = landed.load(Ordering::Relaxed);
+    let successor = connect_smb_volume(
+        "public",
+        "/tmp/smb-test-mount",
+        &volume_id,
+        smb_vol.params.read().await.clone(),
+    )
+    .await
+    .expect("second connection to the Docker SMB container");
+    crate::network::smb_upgrade::register_replacing_predecessor(&volume_id, Arc::new(successor)).await;
+
+    assert!(
+        in_flight_at_swap < FILE_COUNT,
+        "the swap has to land MID-copy or this test proves nothing; {in_flight_at_swap}/{FILE_COUNT} files had already landed"
+    );
+
+    let result = copy.await.expect("the copy task itself must not panic");
+    assert!(
+        result.is_ok(),
+        "a copy must survive its volume being replaced: an upgrade is not a disconnect. Got {result:?}"
+    );
+
+    // Every file landed, whole and correct. A dropped session mid-copy would
+    // leave the tail missing or truncated.
+    let entries = smb_vol.list_directory_impl(Path::new(&base)).await.unwrap();
+    assert_eq!(entries.len(), FILE_COUNT, "every file must have landed");
+    for i in [0usize, FILE_COUNT / 2, FILE_COUNT - 1] {
+        let path = format!("{base}/file-{i:03}.bin");
+        let mut stream = dest_vol.open_read_stream(Path::new(&path)).await.unwrap();
+        let mut out = Vec::new();
+        while let Some(Ok(chunk)) = stream.next_chunk().await {
+            out.extend_from_slice(&chunk);
+        }
+        assert_eq!(out, vec![i as u8; FILE_BYTES], "{path} must be byte-identical");
+    }
+
+    manager.unregister(&volume_id);
+    ensure_clean(&smb_vol, &base).await;
+}
