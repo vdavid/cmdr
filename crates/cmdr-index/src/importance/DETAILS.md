@@ -17,7 +17,7 @@ bin), `evals/DETAILS.md` (ranking quality and the corpus).
 Importance is a scoring **policy** (tunable weights, an explain breakdown, a formula that iterates) consumed by three
 unrelated features. Folding it into the indexing aggregator would couple a churny formula to the one place a bug ships
 wrong directory sizes, and force every tweak through the index's `SCHEMA_VERSION` bump. So `importance/` is a sibling of
-`search/`: a pure read consumer of `indexing/` with its own store. Plan Decision 1 has the full rationale.
+`search/`: a pure read consumer of `indexing/` with its own store.
 
 `media_index/` is a later PORT of these patterns, so a change to the shared shape here is worth checking against
 `../media_index/DETAILS.md` § Why a port of `importance/`.
@@ -78,10 +78,10 @@ _unavailable_ (`scorer/DETAILS.md` § Missing-signal redistribution); the `Signa
 `MDItem` queries against the mount, which the scheduler must never do (it reads only the local index). Off macOS
 `is_available()` is `false`, the sample is empty, and the weight redistributes.
 
-`SAMPLE_CAP` is a guess until measured on a real home (plan open-question 2, agent-spec §18.4); the caller hands the
-sampler only the paths it can use, not the whole volume's, which is worth ~60 MB of transient on a local volume.
+`SAMPLE_CAP` is a guess until measured on a real home; the caller hands the sampler only the paths it can use, not the
+whole volume's, which is worth ~60 MB of transient on a local volume.
 
-## The visit signal (`apps/desktop/src-tauri/src/commands/importance.rs` + the store's `visits` table, plan Decision 3)
+## The visit signal (`apps/desktop/src-tauri/src/commands/importance.rs` + the store's `visits` table)
 
 A typed `record_visit(Location)` IPC command the frontend's navigation-commit point calls fire-and-forget (the
 `persistLastUsedPath` hook in `apps/desktop/src/lib/file-explorer/pane/persistence-subscriber.svelte.ts`, alongside the
@@ -119,7 +119,7 @@ is idempotent and re-runs from the bus on the next scan completion.
   the generation stays a single-writer-owned value with no reader racing a concurrent write.
 - `flush_blocking`, `checkpoint_wal`, `shutdown`.
 
-### WAL checkpoint at recompute completion (Decision/Why, plan M9)
+### WAL checkpoint at recompute completion (Decision/Why)
 
 **Decision:** the writer runs `PRAGMA wal_checkpoint(TRUNCATE)` (`writer::run_wal_checkpoint`, driven by
 `ImportanceWriter::checkpoint_wal`) at every recompute completion — after both a full pass (`recompute_folders`) and an

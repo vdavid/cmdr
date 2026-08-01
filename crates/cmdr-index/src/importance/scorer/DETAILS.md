@@ -8,11 +8,10 @@ policy) is `../DETAILS.md`.
 - `explain(inputs, available, weights, now_secs) -> Explanation` — the same scalar plus the per-signal
   `SignalContribution` breakdown. `score` delegates here, so there is one formula, not two.
 
-No `rusqlite`, no `Volume`, no filesystem, no clock: "now" is passed in as a `u64` so recency is deterministic in tests
-(plan Decision 3, agent-spec §6.3 / §15 testability seams). Full design:
-`docs/specs/later/importance-subsystem-plan.md`.
+No `rusqlite`, no `Volume`, no filesystem, no clock: "now" is passed in as a `u64` so recency is deterministic in tests.
+Full design: `docs/specs/later/importance-subsystem-plan.md`.
 
-## Signal catalog (agent-spec §5.1)
+## Signal catalog
 
 `FolderSignals` carries the raw signal vector.
 
@@ -30,7 +29,7 @@ No `rusqlite`, no `Volume`, no filesystem, no clock: "now" is passed in as a `u6
 - **mtime recency** (`mtime_secs`): exponential half-life decay (`0.5 ^ (age / half_life)`), default half-life 30 days.
   `None` is neutral; a future timestamp (clock skew) clamps to `1.0`.
 - **project markers** (`has_project_marker`): `1.0` when a `.git`/`Cargo.toml`/`package.json`/… sits in the folder or a
-  descendant, raising the whole subtree (plan Decision 3).
+  descendant, raising the whole subtree.
 - **path-class prior** (`path_class`): a typed `PathClass` — `ProjectRoot` (1.0) > `UserContent` (0.8) > `Neutral` (0.4)
   > `SystemOrCache` (0.0). The caller classifies the path once; the scorer reads the variant (no path-substring branch
   > in the scorer).
@@ -41,7 +40,7 @@ No `rusqlite`, no `Volume`, no filesystem, no clock: "now" is passed in as a `u6
 `extension_count(file_names)` is the convenience the callers assembling a `FolderSignals` from a listing use: it folds
 each extension to lowercase and counts the distinct set, with no-extension files in a single bucket.
 
-## Missing-signal redistribution (plan Decision 3)
+## Missing-signal redistribution
 
 `SignalSet` marks which optional signals are AVAILABLE for a volume, independent of their value. When a signal is
 unavailable (SMB has no Spotlight), its coefficient is removed and the remaining coefficients are scaled up so they sum
@@ -64,12 +63,11 @@ Pinned by `explain_contributions_sum_to_score_unfloored` and the proptest.
 
 ## Tunable weights (`weights.rs`)
 
-The formula is unproven (agent-spec §18.3, plan open-question 1): the defaults are a STARTING POINT to tune against real
-trees, not validated values. So the coefficients are data (`Weights`, serde-serializable, defaulted), not hardcoded
-constants — the dev tuning surface overrides them (`../read/DETAILS.md` § Dev tuning surface), and a future per-consumer
-profile can ship its own set. The seven additive weights sum to `1.0` at their defaults, so a folder that maxes every
-signal (and hits no floor) reaches `1.0`; the scorer does not require that at runtime, and the redistribution and
-explain invariants hold for any values.
+The formula is unproven: the defaults are a STARTING POINT to tune against real trees, not validated values. So the
+coefficients are data (`Weights`, serde-serializable, defaulted), not hardcoded constants — the dev tuning surface
+overrides them (`../read/DETAILS.md` § Dev tuning surface), and a future per-consumer profile can ship its own set. The
+seven additive weights sum to `1.0` at their defaults, so a folder that maxes every signal (and hits no floor) reaches
+`1.0`; the scorer does not require that at runtime, and the redistribution and explain invariants hold for any values.
 
 The largest default weights sit on the signals that most cleanly separate "matters" from "machine output": path class
 (0.25) and project markers (0.20). Half-lives and the visit-saturation count are shape parameters, not additive weights.

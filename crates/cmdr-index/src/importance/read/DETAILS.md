@@ -33,7 +33,7 @@ home-relative; defaults to `$HOME`); `with_weights` overrides the weights `expla
   `cap + 1` to detect truncation without loading the whole tail. The agent's summary gate and media-ML's
   enrich-important-first.
 - `scored_folder_count()` — the `weights` row count (a `COUNT(*)`, no deserialization), for the overview surface.
-- `signals_for(path)` — the stored raw vector, for a consumer applying its own weighting profile (plan Decision 2).
+- `signals_for(path)` — the stored raw vector, for a consumer applying its own weighting profile.
 - `for_each_nonzero_weight(visit)` — STREAMS every `(path, score)` with a non-zero score (floored folders omitted), for
   a consumer that folds one snapshot into its own in-memory form and ranks many candidates against it rather than
   querying per item. It streams rather than returning a map because a `path → score` map is far wider than what the
@@ -67,7 +67,7 @@ still good, and only a re-weighting consumer loses the raw vector for that one r
 stores outlive their volume's mount by design, so this is the offline-capable roster: no live scheduler, index registry,
 or mount needed. MTP is never background-scored, so no `importance-mtp-*.db` exists to list.
 
-## Offline-unmounted reads (plan Decision 2)
+## Offline-unmounted reads
 
 `ImportanceIndex` reads a volume's `importance.db` (a local per-volume file) directly and NEVER touches the index
 registry, so a volume's weights stay queryable after it unmounts (its index registration gone, `get_read_pool_for` now
@@ -80,8 +80,8 @@ returns `None`; the next mount plus scan regenerates it — weights are disposab
 ## Staleness
 
 Every result carries `as_of_generation`; a consumer compares it to `recompute_generation()` to caveat "as of the last
-scan" (agent-spec D7). The read API never hides a stale weight. Only a full pass advances the generation, so `0` does
-not mean "unscored" — read `../scheduler/DETAILS.md` § Generation semantics before keying on it.
+scan". The read API never hides a stale weight. Only a full pass advances the generation, so `0` does not mean
+"unscored" — read `../scheduler/DETAILS.md` § Generation semantics before keying on it.
 
 ## The recompute subscription
 
@@ -92,12 +92,12 @@ exactly once per completion. The senders live in a process-global keyed by volum
 indexing lifecycle bus. A crate-visible test shim lets a consumer's subscribe→reload wiring be tested without widening
 the production notifier past the scheduler.
 
-## Dev tuning surface (`importance-tune`, plan Decision 6)
+## Dev tuning surface (`importance-tune`)
 
 A dev-only binary extending the `index-query` pattern (a `cmdr_lib`-linking CLI with the collation registered). It reads
 a volume's `importance.db` through this SAME read API and prints the ranked folders WITH their `explain` breakdowns, so
-David can eyeball the ranking against his real home directory and tune `Weights` (agent-spec §18.3). No write path — it
-reads stored signals and re-scores.
+David can eyeball the ranking against his real home directory and tune `Weights`. No write path — it reads stored
+signals and re-scores.
 
 ```
 cargo run -p index-query --bin importance-tune -- <path-to-importance-root.db> [top_n]

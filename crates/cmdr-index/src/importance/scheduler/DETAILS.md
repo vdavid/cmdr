@@ -3,7 +3,7 @@
 What recomputes a volume's folder weights, when, and how cheaply. Read this before any non-trivial work here: editing,
 planning, reorganizing, or advising.
 
-## What drives a recompute (plan Decision 4 / 5)
+## What drives a recompute
 
 Two triggers, unified through one coalescing core:
 
@@ -71,9 +71,9 @@ directory's distinct extensions, file count, and marker flag and closes at the g
 come from the directory set (a `.git`/`.hg`/`.svn` marker is a directory), so `has_direct_marker` folds both the
 streamed file children and the sibling directory children. `signals_for_dir` takes the `ChildAggregate` and the mtime,
 not child rows and not an `EntryRow`. `has_marker_below` is one upward propagation after the walk (a `.git` deep in a
-tree raises its ancestors, plan Decision 3); `under_floored_ancestor` is its downward twin, a second pass over the same
-tree that floors every folder below a self-flooring one (`../DETAILS.md` § The floor propagates to descendants). The
-floor seed set is a flag per TREE row, so an ancestor check is a binary search plus a byte, never a hash lookup.
+tree raises its ancestors); `under_floored_ancestor` is its downward twin, a second pass over the same tree that floors
+every folder below a self-flooring one (`../DETAILS.md` § The floor propagates to descendants). The floor seed set is a
+flag per TREE row, so an ancestor check is a binary search plus a byte, never a hash lookup.
 
 **Every part of that shape is load-bearing, and each was measured.** Against the shape that materialized a full
 `EntryRow` plus a reconstructed path per folder plus a per-folder `HashSet<String>` of extensions, a full pass over a
@@ -134,7 +134,7 @@ writer — the full-pass core without the registry, read-pool registry, or async
 write+flush), and the pass's memory growth. The live full pass logs that same split at info (`run_pass_blocking`,
 `target: "importance"`), so a regression in a real recompute's cost shows up in the logs.
 
-## Incremental recompute (plan Decision 5)
+## Incremental recompute
 
 A full-volume recompute on `ScanCompleted` stays the default. On top of it, live listing changes drive an **incremental
 rescore** of only the touched folders, so a single file edit doesn't re-walk-and-rescore the whole volume.

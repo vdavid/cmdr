@@ -5,16 +5,16 @@ work here: editing, planning, reorganizing, or advising. The writer thread and i
 (`../DETAILS.md` § The writer).
 
 Per-volume `importance-{volume_id}.db`, a sibling of the drive index's `index-{volume_id}.db` in the app data dir
-(`importance_db_path`). It carries the index's disposable-cache discipline verbatim (plan Decision 2): the shared
-`platform_case` collation (reused from `indexing::store`, the SAME filesystem case/normalization rule) registered on
-every connection, delete-and-recreate on a `SCHEMA_VERSION` mismatch (no migrations, weights are regenerable), and ONE
-writer thread per DB.
+(`importance_db_path`). It carries the index's disposable-cache discipline verbatim: the shared `platform_case`
+collation (reused from `indexing::store`, the SAME filesystem case/normalization rule) registered on every connection,
+delete-and-recreate on a `SCHEMA_VERSION` mismatch (no migrations, weights are regenerable), and ONE writer thread per
+DB.
 
 ## The three tables
 
 - **`weights`** — keyed by `path_folded` (the BINARY primary key), with the verbatim `path` as a plain column. Each row
   also holds the scalar `score`, the serialized raw `FolderSignals` vector (so a future consumer can re-weight under its
-  own profile without a rescan, plan Decision 2), and the **as-of `recompute_generation`** the pass stamped.
+  own profile without a rescan), and the **as-of `recompute_generation`** the pass stamped.
 - **`visits`** — the navigation-visit signal, `path → (count, last-visit seconds)`. Counts and timestamps only, no
   content, local-only. Fed by `record_visit` (`../DETAILS.md` § The visit signal).
 - **`meta`** — `schema_version` and the per-volume `recompute_generation` counter, bumped once per full pass.
