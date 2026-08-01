@@ -235,6 +235,14 @@ introduce one.
   data loss. `StagedWrite::abandon` is a no-op for a single-shot write for the same reason — only the backend can tell
   those two apart.
 
+**Residual risk, accepted (transport)**: `create_succeeded_but_write_failed` reads a typed `smb2::Error::Protocol`, so
+it only fires when the SERVER answered and named the failing command. A TRANSPORT failure mid-frame (the connection
+drops before any response) is not a `Protocol` error, so nothing is cleaned up, and the server may still have processed
+the CREATE — leaving a 0-byte file at the real name. This is not fixable from here rather than merely unfixed: with the
+connection gone there is no session to delete through, and the client cannot know whether the server got the frame at
+all. It is also the narrowest window on this path (one frame, no client round trip inside it), which is exactly why the
+exemption is scoped to single-shot writes and nothing wider.
+
 **Residual risk, accepted**: a source stream that reports a `total_size` smaller than the bytes it then yields, past the
 compound limit, falls back to the streaming writer at an unstaged final name. That needs a source lying about its own
 length (a file being appended to under us) AND a force-quit inside a 2–3 round-trip window, and what would be left at
