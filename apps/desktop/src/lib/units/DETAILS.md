@@ -44,20 +44,20 @@ bare numbers, and swapping two of them renders a plausible-looking wrong value r
 landed, and the answer held for better reasons than the ones first recorded here:
 
 - **A Rust `ByteSize` newtype buys nothing on the TypeScript side.** Measured against the pinned `specta` /
-  `specta-typescript`: a derived newtype exports as `export type ByteSize = number`, which is structurally `number`,
-  so `formatByteSize(entry.recursiveFileCount)` still compiles. A brand CAN be emitted, via
-  `specta_typescript::define`, but only with a hand-written `Type` impl, a presentation dependency in `cmdr-fs`, and
-  by downgrading `ByteCount`'s `unique symbol` key to a string literal any file can forge. That's a net loss.
-- **The mistake it would catch barely exists.** In production Rust exactly one function takes a count and a byte
-  count positionally where a swap compiles (`indexing::reconcile::local_reconcile::summary`, private, two correct
-  callers). The progress cluster is already type-distinct: `files_done: usize` against `bytes_done: u64`.
+  `specta-typescript`: a derived newtype exports as `export type ByteSize = number`, which is structurally `number`, so
+  `formatByteSize(entry.recursiveFileCount)` still compiles. A brand CAN be emitted, via `specta_typescript::define`,
+  but only with a hand-written `Type` impl, a presentation dependency in `cmdr-fs`, and by downgrading `ByteCount`'s
+  `unique symbol` key to a string literal any file can forge. That's a net loss.
+- **The mistake it would catch barely exists.** In production Rust exactly one function takes a count and a byte count
+  positionally where a swap compiles (`indexing::reconcile::local_reconcile::summary`, private, two correct callers).
+  The progress cluster is already type-distinct: `files_done: usize` against `bytes_done: u64`.
 - **The real risk is bytes-vs-bytes, which one newtype cannot separate.** `free_percent(total_bytes, available_bytes)`
-  and the `-> (u64, u64)` returns (`get_live_storage_space`, `delete_counts`, …) swap into plausible wrong answers.
-  The fix is a named struct, which is already the house pattern (`ExpectedTotals`, `VolumeSpaceInfo`), not a newtype.
+  and the `-> (u64, u64)` returns (`get_live_storage_space`, `delete_counts`, …) swap into plausible wrong answers. The
+  fix is a named struct, which is already the house pattern (`ExpectedTotals`, `VolumeSpaceInfo`), not a newtype.
 - **The lint is blind to the argument, not to the call site.** `no-private-unit-format` polices WHERE formatting
-  happens, never WHICH number is passed, so `formatByteSize(progress.filesDone)` passes it. Closing that means
-  branding `formatByteSize`'s parameter (~58 sites, no Rust) — the one narrow slice worth doing if more safety is
-  wanted. `<Size bytes>` is handed a RATE in three places, so its prop would need `ByteCount | BytesPerSecond`.
+  happens, never WHICH number is passed, so `formatByteSize(progress.filesDone)` passes it. Closing that means branding
+  `formatByteSize`'s parameter (~58 sites, no Rust) — the one narrow slice worth doing if more safety is wanted.
+  `<Size bytes>` is handed a RATE in three places, so its prop would need `ByteCount | BytesPerSecond`.
 
 Two claims in the original version of this section were wrong and are corrected above: `bindings.ts` **can** carry a
 brand, and the `FileEntry` blocker named `display_size` / `display_size_tooltip`, which are `Option<String>` git-portal
