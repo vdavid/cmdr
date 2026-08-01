@@ -8,10 +8,14 @@
 //!
 //! Four readers, three different accountants:
 //!
-//! - [`current_phys_footprint`] / [`query_task_vm_info`]: the kernel's view.
-//! - [`query_basic_info`]: RSS and its high-water mark.
-//! - [`query_mimalloc_heap`]: what OUR allocator has committed.
-//! - [`query_system_malloc_zones`]: what the SYSTEM allocator holds.
+//! (The last four are macOS-only, so they're named here rather than linked:
+//! an intra-doc link to a `cfg`-gated item is an unresolved link on every other
+//! platform, and `cargo doc` is deny-warnings in CI, which builds on Linux.)
+//!
+//! - [`current_phys_footprint`] / `query_task_vm_info`: the kernel's view.
+//! - `query_basic_info`: RSS and its high-water mark.
+//! - `query_mimalloc_heap`: what OUR allocator has committed.
+//! - `query_system_malloc_zones`: what the SYSTEM allocator holds.
 //!
 //! **The last two do not overlap, and neither alone is "the heap".** Cmdr sets
 //! mimalloc as the global allocator (`main.rs`), and mimalloc is not a
