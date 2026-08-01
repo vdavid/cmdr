@@ -589,3 +589,102 @@ async fn smb_integration_write_from_stream_source_error_deletes_partial() {
 
     ensure_clean(&vol, &dir).await;
 }
+
+// ── The single-shot write promise (staging exemption) ──────────
+
+/// `(requests_sent, compound_requests_sent)` on the volume's main connection.
+async fn request_counts(vol: &SmbVolume) -> (u64, u64) {
+    let d = vol.diagnostics().await.expect("a connected volume has diagnostics");
+    (
+        d.primary.metrics.requests_sent,
+        d.primary.metrics.compound_requests_sent,
+    )
+}
+
+/// The transfer layer skips its `.cmdr-tmp-*` staging for a write this backend
+/// promises to land in ONE shot, so the promise has to hold against a real
+/// server: a write that fits one WRITE must leave as a single compound frame
+/// (CREATE+WRITE+FLUSH+CLOSE), which is what makes it all-or-nothing.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_a_single_shot_write_leaves_as_one_compound_frame() {
+    let vol = make_docker_volume().await;
+    let dir = test_dir_name();
+    ensure_clean(&vol, &dir).await;
+    vol.create_directory(Path::new(&dir)).await.unwrap();
+
+    let data = vec![0xABu8; 4096];
+    let size = data.len() as u64;
+    assert!(
+        vol.write_is_single_shot(size).await,
+        "4 KiB fits one WRITE on every SMB2 dialect"
+    );
+
+    let smb_path = format!("{}/one-shot.bin", dir);
+    let (requests_before, compounds_before) = request_counts(&vol).await;
+    let written = vol
+        .write_from_stream(
+            Path::new(&smb_path),
+            size,
+            Box::new(InlineReadStream::new(data.clone())),
+            &|_, _| std::ops::ControlFlow::Continue(()),
+        )
+        .await
+        .unwrap();
+    let (requests_after, compounds_after) = request_counts(&vol).await;
+
+    assert_eq!(written, size);
+    // TWO compound frames leave the wire, four ops each (verified against Samba
+    // in the `smb-consumer` container, 2026-08-01): the write's
+    // CREATE+WRITE+FLUSH+CLOSE, then the CREATE+QUERY_INFO+CLOSE stat every SMB
+    // write ends with to patch the listing cache. What matters is that NOTHING
+    // outside a compound frame went out — a streaming write would show its
+    // separate CREATE, WRITE, and CLOSE round trips here.
+    assert_eq!(
+        (compounds_after - compounds_before, requests_after - requests_before),
+        (2, 8),
+        "the write must leave as ONE compound frame (plus the post-write stat), with no loose round trips"
+    );
+
+    // The bytes are at the FINAL name the moment the write returns — no temp,
+    // nothing to land.
+    let mut stream = vol.open_read_stream(Path::new(&smb_path)).await.unwrap();
+    let mut read_back = Vec::new();
+    while let Some(Ok(chunk)) = stream.next_chunk().await {
+        read_back.extend_from_slice(&chunk);
+    }
+    assert_eq!(read_back, data);
+    let names: Vec<String> = vol
+        .list_directory(Path::new(&dir), None)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|e| e.name)
+        .collect();
+    assert_eq!(names, vec!["one-shot.bin".to_string()], "no leftovers; got {names:?}");
+
+    ensure_clean(&vol, &dir).await;
+}
+
+/// The other direction against a real server: a file too big for one WRITE gets
+/// NO promise, so the transfer layer keeps staging it. ❌ The answer must come
+/// from the negotiated `max_write_size`, never from a size the caller picked.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_a_write_over_the_negotiated_limit_is_not_single_shot() {
+    let vol = make_docker_volume().await;
+    let max_write = vol
+        .negotiated_max_write()
+        .await
+        .expect("a connected volume has negotiated params");
+
+    assert!(vol.write_is_single_shot(max_write).await, "the limit itself fits");
+    assert!(
+        !vol.write_is_single_shot(max_write + 1).await,
+        "one byte over needs a second WRITE, so the write is no longer all-or-nothing"
+    );
+    assert!(
+        !vol.write_is_single_shot(0).await,
+        "an empty file has no WRITE to compound with; it takes the streaming writer"
+    );
+}

@@ -615,6 +615,35 @@ fn smb_supports_streaming() {
     assert!(vol.supports_streaming());
 }
 
+/// The compound fast path's condition, which is also the transfer layer's
+/// staging exemption. A write is one all-or-nothing frame when it has bytes and
+/// they fit one SMB2 WRITE; the boundary is inclusive, and an empty file is NOT
+/// single-shot (it has no WRITE to compound with, so it takes the streaming
+/// writer's create+finish).
+#[test]
+fn only_a_write_that_fits_one_compound_frame_is_single_shot() {
+    assert!(!fits_one_compound_write(65_536, 0), "an empty file has no WRITE");
+    assert!(fits_one_compound_write(65_536, 1));
+    assert!(fits_one_compound_write(65_536, 65_536), "the limit itself fits");
+    assert!(
+        !fits_one_compound_write(65_536, 65_537),
+        "one byte over needs two WRITEs"
+    );
+    assert!(
+        fits_one_compound_write(8 * 1024 * 1024, 65_537),
+        "a server that negotiated a bigger WRITE takes bigger files in one shot"
+    );
+}
+
+/// No live session means no promise: the transfer layer stages the write, as it
+/// does for any backend without the guarantee. ❌ Never answer from the size
+/// alone.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_disconnected_share_promises_nothing_about_single_shot_writes() {
+    let vol = make_test_volume();
+    assert!(!vol.write_is_single_shot(10).await);
+}
+
 /// Pins the `client-mutex:` and `recv:` log-message prefix convention the
 /// `MutexCaptureLogger` routes by. The prefixes are intentionally part of
 /// our log-message contract (see the actual `log::debug!` sites further up

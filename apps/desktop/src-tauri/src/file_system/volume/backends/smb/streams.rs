@@ -10,6 +10,37 @@ use super::*;
 /// chunks, 4 slots keep peak memory at a few MB regardless of file size.
 pub(super) const SMB_STREAM_CHANNEL_CAPACITY: usize = 4;
 
+/// The `max_write_size` to assume when the session hasn't reported its
+/// negotiated params. Every SMB2 dialect negotiates at least 64 KiB, so this is
+/// the conservative floor rather than a guess.
+pub(super) const ASSUMED_MAX_WRITE: u64 = 65536;
+
+/// THE condition for the compound CREATE+WRITE+FLUSH+CLOSE fast path: one SMB2
+/// WRITE carries at most `max_write_size` bytes, and an empty file has no WRITE
+/// to compound with, so it goes to the streaming writer.
+///
+/// One definition on purpose. `write_from_stream_impl` branches on it, and
+/// `write_is_single_shot` (the transfer layer's staging exemption) answers with
+/// it. If the two could ever disagree, a write the transfer left unstaged could
+/// take the multi-round-trip streaming path, and a force-quit mid-write would
+/// leave a truncated file at the user's real filename — the 2026-07-31 wedge
+/// over again (`docs/notes/incidents/2026-07-31-transfer-wedge/README.md`).
+pub(super) fn fits_one_compound_write(max_write: u64, size: u64) -> bool {
+    size > 0 && size <= max_write
+}
+
+/// Whether a compound write failed AFTER the server had created the file.
+///
+/// smb2 reports which command in the chain returned the non-success NTSTATUS. A
+/// `Create` failure means nothing of ours reached the destination path (and any
+/// file already sitting there is untouched, so it must NOT be deleted); anything
+/// later means the CREATE landed, truncating the name to whatever the server
+/// accepted. A transport error says nothing either way, so it counts as "not
+/// ours to clean up".
+fn create_succeeded_but_write_failed<T>(result: &Result<T, smb2::Error>) -> bool {
+    matches!(result, Err(smb2::Error::Protocol { command, .. }) if *command != smb2::types::Command::Create)
+}
+
 /// Streaming reader for SMB files, backed by a background producer task.
 ///
 /// The producer task owns an `OwnedMutexGuard` over the smb2 session and drives
@@ -206,6 +237,30 @@ impl SmbVolume {
         })
     }
 
+    /// The negotiated `max_write_size` for the live session, or `None` when
+    /// there isn't one.
+    ///
+    /// Reads the client's own connection rather than cloning a session: the
+    /// clones `clone_session` hands out share the connection's negotiated
+    /// params, so this is the same number the upload will see, for the price of
+    /// a brief uncontended mutex and no wire traffic.
+    pub(super) async fn negotiated_max_write(&self) -> Option<u64> {
+        let guard = self.client.lock().await;
+        guard.as_ref().and_then(|c| c.params()).map(|p| p.max_write_size as u64)
+    }
+
+    /// Inherent body for the `write_is_single_shot` trait method (thin delegator
+    /// in `volume_impl`): whether a write of `size` bytes takes the compound
+    /// fast path below, which is what makes it all-or-nothing.
+    pub(super) async fn write_is_single_shot_impl(&self, size: u64) -> bool {
+        match self.negotiated_max_write().await {
+            Some(max_write) => fits_one_compound_write(max_write, size),
+            // No live session: no promise. The transfer stages, as it would for
+            // any backend without the guarantee.
+            None => false,
+        }
+    }
+
     /// Inherent body for the `write_from_stream` trait method (thin delegator in `volume_impl`).
     pub(super) fn write_from_stream_impl<'a>(
         &'a self,
@@ -264,69 +319,93 @@ impl SmbVolume {
             // in one WRITE, drain the source stream into a buffer and send
             // CREATE+WRITE+FLUSH+CLOSE as a single compound frame (1 RTT
             // instead of 4). Small files are the hot case; we fall through
-            // to the streaming writer for anything larger or when the source
-            // returns short.
+            // to the streaming writer for anything larger.
+            //
+            // The frame is also what makes this write ALL-OR-NOTHING, which is
+            // why `write_is_single_shot` lets the transfer layer skip its
+            // `.cmdr-tmp-*` staging for exactly these writes: the server either
+            // gets the whole length-prefixed frame and runs all four ops, or
+            // discards it and creates nothing. ❌ So keep the drained buffer on
+            // this path whenever it still fits one WRITE — dropping into the
+            // multi-round-trip streaming writer after promising one shot is what
+            // would put a truncated file at the user's real filename.
             let bytes_written = 'write: {
-                if size > 0 {
-                    let max_write = conn.params().map(|p| p.max_write_size).unwrap_or(65536) as u64;
-                    if size <= max_write {
-                        let mut buffer = Vec::with_capacity(size as usize);
-                        while let Some(chunk_result) = stream.next_chunk().await {
-                            // Compound drain buffers in memory; no writer/handle
-                            // is open yet, so a source error here can't leave a
-                            // partial on the server. Just propagate.
-                            let chunk = chunk_result?;
-                            buffer.extend_from_slice(&chunk);
-                            // Fire progress per chunk AND honor cancellation, so
-                            // the fast-path has the same cancel/progress contract
-                            // as the streaming fallback below. Cancel here aborts
-                            // before the compound WRITE touches the wire: the
-                            // destination never sees a partial file.
-                            if on_progress(buffer.len() as u64, size).is_break() {
-                                return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
-                            }
+                let max_write = conn
+                    .params()
+                    .map(|p| p.max_write_size as u64)
+                    .unwrap_or(ASSUMED_MAX_WRITE);
+                if fits_one_compound_write(max_write, size) {
+                    let mut buffer = Vec::with_capacity(size as usize);
+                    while let Some(chunk_result) = stream.next_chunk().await {
+                        // Compound drain buffers in memory; no writer/handle
+                        // is open yet, so a source error here can't leave a
+                        // partial on the server. Just propagate.
+                        let chunk = chunk_result?;
+                        buffer.extend_from_slice(&chunk);
+                        // Fire progress per chunk AND honor cancellation, so
+                        // the fast-path has the same cancel/progress contract
+                        // as the streaming fallback below. Cancel here aborts
+                        // before the compound WRITE touches the wire: the
+                        // destination never sees a partial file.
+                        if on_progress(buffer.len() as u64, size).is_break() {
+                            return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
                         }
-                        if buffer.len() as u64 == size {
-                            debug!(
-                                "SmbVolume::write_from_stream: using compound fast-path ({} bytes)",
-                                buffer.len()
-                            );
-                            let mut conn = conn;
-                            let write_result = tree.write_file_compound(&mut conn, &smb_path, &buffer).await;
-                            break 'write self.handle_smb_result("write_from_stream(compound)", write_result)?;
-                        }
-                        // Size mismatch: feed the already-drained buffer through
-                        // the streaming writer on the same cloned connection.
-                        // No lock acquired; this is the rare path.
+                    }
+                    // The drained bytes, not the promised count, decide: a
+                    // source that yielded short still goes out as one frame.
+                    if fits_one_compound_write(max_write, buffer.len() as u64) {
                         debug!(
-                            "SmbVolume::write_from_stream: compound fast-path source yielded {} bytes, expected {}; falling back to streaming writer",
-                            buffer.len(),
-                            size
+                            "SmbVolume::write_from_stream: using compound fast-path ({} bytes)",
+                            buffer.len()
                         );
-                        let writer_result = tree.create_file_writer(conn, &smb_path).await;
-                        let mut writer = self.handle_smb_result("write_from_stream(open)", writer_result)?;
-                        if !buffer.is_empty() {
-                            let write_result = writer.write_chunk(&buffer).await;
-                            if let Err(ve) = self.handle_smb_result("write_from_stream(write_chunk)", write_result) {
-                                // Writer still owned: abort (closes the leaked
-                                // handle) then delete the partial, mirroring the
-                                // cancel branch, then propagate the original error.
-                                let _ = writer.abort().await;
-                                delete_partial().await;
-                                return Err(ve);
-                            }
+                        let mut conn = conn;
+                        let write_result = tree.write_file_compound(&mut conn, &smb_path, &buffer).await;
+                        if create_succeeded_but_write_failed(&write_result) {
+                            // The server created (hence truncated) the file and
+                            // then refused the bytes: out of space, over quota,
+                            // a lost lease. What's left is a 0-byte file that
+                            // may be wearing the user's real filename, since
+                            // this write was allowed to skip staging. Take it
+                            // away. A CREATE failure needs no cleanup: nothing
+                            // was created, and any existing file at that name
+                            // is still untouched, so a delete there would be
+                            // data loss.
+                            delete_partial().await;
                         }
-                        // The source signalled end-of-stream by returning None
-                        // above (we exited the drain loop). No further chunks.
-                        // `finish()` consumes the writer, so on failure the
-                        // handle is already gone (best-effort delete only).
-                        let finish_result = writer.finish().await;
-                        if let Err(ve) = self.handle_smb_result("write_from_stream(finish)", finish_result) {
+                        break 'write self.handle_smb_result("write_from_stream(compound)", write_result)?;
+                    }
+                    // The source yielded MORE than one WRITE can carry (it
+                    // reported a smaller size than it had). Feed the drained
+                    // buffer through the streaming writer on the same cloned
+                    // connection. No lock acquired; this is the rare path.
+                    debug!(
+                        "SmbVolume::write_from_stream: compound fast-path source yielded {} bytes, expected {}; falling back to streaming writer",
+                        buffer.len(),
+                        size
+                    );
+                    let writer_result = tree.create_file_writer(conn, &smb_path).await;
+                    let mut writer = self.handle_smb_result("write_from_stream(open)", writer_result)?;
+                    if !buffer.is_empty() {
+                        let write_result = writer.write_chunk(&buffer).await;
+                        if let Err(ve) = self.handle_smb_result("write_from_stream(write_chunk)", write_result) {
+                            // Writer still owned: abort (closes the leaked
+                            // handle) then delete the partial, mirroring the
+                            // cancel branch, then propagate the original error.
+                            let _ = writer.abort().await;
                             delete_partial().await;
                             return Err(ve);
                         }
-                        break 'write buffer.len() as u64;
                     }
+                    // The source signalled end-of-stream by returning None
+                    // above (we exited the drain loop). No further chunks.
+                    // `finish()` consumes the writer, so on failure the
+                    // handle is already gone (best-effort delete only).
+                    let finish_result = writer.finish().await;
+                    if let Err(ve) = self.handle_smb_result("write_from_stream(finish)", finish_result) {
+                        delete_partial().await;
+                        return Err(ve);
+                    }
+                    break 'write buffer.len() as u64;
                 }
 
                 // Streaming path for large / unknown-size writes. Drives the

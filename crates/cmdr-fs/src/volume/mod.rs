@@ -893,6 +893,29 @@ pub trait Volume: Send + Sync {
         Box::pin(async {})
     }
 
+    /// Whether a write of exactly `size` bytes to this volume lands in ONE
+    /// all-or-nothing shot: either every byte arrives at the destination path or
+    /// nothing does, with no window in which the path holds a byte-incomplete
+    /// file — not even if the process is killed mid-transfer.
+    ///
+    /// The transfer layer stages every write on a `.cmdr-tmp-*` sibling exactly
+    /// to keep a half-written file from wearing the user's real filename. A
+    /// single-shot write can't produce one, so it skips the staging and the
+    /// rename round trip that lands it.
+    ///
+    /// ❌ Answer `true` ONLY for writes this backend performs as one indivisible
+    /// operation, and answer with the SAME condition
+    /// [`write_from_stream`](Self::write_from_stream) branches on. Size is the
+    /// shape the guarantee happens to take (an SMB compound frame carries at most
+    /// `max_write_size` bytes), never the reason for it: a "small files are fine"
+    /// answer silently brings back truncated files at real names.
+    ///
+    /// `false` (the default): every write to this volume stages.
+    fn write_is_single_shot<'a>(&'a self, size: u64) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        let _ = size;
+        Box::pin(async { false })
+    }
+
     /// Writes data from a stream to the given path.
     ///
     /// `on_progress(bytes_written, total_size)` is called after each chunk is

@@ -314,6 +314,33 @@ pub(super) fn staging_for(replace_after_write: &Option<PathBuf>) -> WriteStaging
     }
 }
 
+/// Drops the staging for a write the DESTINATION lands in one indivisible shot.
+///
+/// Staging keeps a byte-incomplete file from wearing the user's real filename.
+/// A single-shot write has no in-between state to protect against — it either
+/// lands whole or leaves nothing — so the `.cmdr-tmp-*` and the rename that
+/// lands it would buy nothing and cost a round trip per file (on SMB that
+/// roughly doubles the wire cost of a file the compound fast path finishes in
+/// one frame; on a 10k-tiny-file copy to a NAS that is the whole difference).
+///
+/// ❌ The question is single-shot-ness, never smallness, and only the
+/// destination can answer it: `size` goes to `Volume::write_is_single_shot` (the
+/// same number `write_from_stream` gets, off the same stream) and the backend
+/// answers with the very condition its one-shot path branches on. A caller-side
+/// size threshold would drift from that condition the day a backend retunes it,
+/// and drifting apart means truncated files at real names again.
+///
+/// `AlreadyStaged` is never touched: the caller's temp keeps the ORIGINAL file
+/// in place until the new bytes are complete, which is a stronger guarantee than
+/// single-shot-ness and the caller's to land.
+pub(super) async fn resolve_staging(requested: WriteStaging, dest_volume: &Arc<dyn Volume>, size: u64) -> WriteStaging {
+    if requested == WriteStaging::Stage && dest_volume.write_is_single_shot(size).await {
+        WriteStaging::SingleShot
+    } else {
+        requested
+    }
+}
+
 /// Pulls one source path (a file or a whole subtree) from `source_volume` into
 /// `dest_volume` at `dest_path` with NO conflict resolution — the destination is
 /// assumed empty (a fresh scratch dir), so nothing is merged or overwritten.
@@ -414,22 +441,19 @@ async fn stream_pipe_file(
     // and no partial lingers.
     let mut retried = false;
     loop {
-        let staged = StagedWrite::begin(state, dest_path, staging);
-        note_pending_for_local_dest(dest_volume, staged.target());
         // Opening the source is a device round-trip on MTP / SMB and can hang on
-        // its own; it needs to be distinguishable from streaming in a dump.
+        // its own; it needs to be distinguishable from streaming in a dump. It
+        // happens BEFORE the staging decision because that decision needs the
+        // stream's `total_size()` — the same number the destination gets, so the
+        // exemption is asked about exactly the write that will be performed.
+        // Nothing is staged yet, so a failure here has nothing to clean up.
         set_task_phase(TaskPhase::OpeningSource);
-        let stream = match source_volume
+        let stream = source_volume
             .open_read_stream_with_hint(source_path, source_size_hint)
-            .await
-        {
-            Ok(stream) => stream,
-            Err(e) => {
-                staged.abandon(dest_volume).await;
-                return Err(e);
-            }
-        };
+            .await?;
         let size = stream.total_size();
+        let staged = StagedWrite::begin(state, dest_path, resolve_staging(staging, dest_volume, size).await);
+        note_pending_for_local_dest(dest_volume, staged.target());
         // Wrap so a paused op parks (and a long copy yields to foreground)
         // between bounded windows. `size` is read off the raw stream first — the
         // wrapper forwards `total_size()` unchanged, so the destination still sees
@@ -850,6 +874,9 @@ mod pause_tests;
 #[cfg(test)]
 #[path = "volume_strategy_sequential_tests.rs"]
 mod sequential_tests;
+#[cfg(test)]
+#[path = "volume_strategy_single_shot_tests.rs"]
+mod single_shot_tests;
 #[cfg(test)]
 #[path = "volume_strategy_stale_handle_tests.rs"]
 mod stale_handle_tests;

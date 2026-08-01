@@ -756,6 +756,15 @@ impl Volume for SmbVolume {
         })
     }
 
+    /// A write that fits one compound CREATE+WRITE+FLUSH+CLOSE frame is
+    /// all-or-nothing, so the transfer layer may write it straight to the file's
+    /// final name instead of staging it on a `.cmdr-tmp-*`. Answers with the
+    /// SAME condition `write_from_stream_impl`'s fast path branches on
+    /// (`streams::fits_one_compound_write`); the two must never drift apart.
+    fn write_is_single_shot<'a>(&'a self, size: u64) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(self.write_is_single_shot_impl(size))
+    }
+
     fn write_from_stream<'a>(
         &'a self,
         dest: &'a Path,

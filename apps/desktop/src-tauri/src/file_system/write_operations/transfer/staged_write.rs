@@ -15,12 +15,16 @@
 //! Overwrite (`volume_conflict::temp_sibling_path`) and lands it itself, so a
 //! write onto one of those is [`WriteStaging::AlreadyStaged`] and passes through
 //! untouched — staging it again would only produce a `foo.cmdr-tmp-A.cmdr-tmp-B`.
-//! Every other write is [`WriteStaging::Stage`].
+//! A write the DESTINATION lands in one indivisible shot is
+//! [`WriteStaging::SingleShot`] and needs no temp: there is no moment at which
+//! the final name holds a partial. Every other write is [`WriteStaging::Stage`].
 //!
-//! **Cost.** One extra rename per file. On SMB that is one round trip, which
-//! roughly doubles the wire cost of a small file taking the compound
-//! CREATE+WRITE+CLOSE fast path. That is the price of the invariant, and it is
-//! deliberate.
+//! **Cost.** One extra rename per staged file. On SMB that is one round trip,
+//! which roughly doubles the wire cost of a file the compound
+//! CREATE+WRITE+FLUSH+CLOSE fast path would otherwise finish in one — which is
+//! why single-shot writes are exempt. That exemption is bought by
+//! single-shot-ness, ❌ NEVER by smallness: the destination is asked
+//! (`Volume::write_is_single_shot`), the caller never guesses from a size.
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -41,13 +45,18 @@ pub(super) enum WriteStaging {
     /// keeps the original in place until the temp is complete). Write straight
     /// to it.
     AlreadyStaged,
+    /// The DESTINATION lands this write in one indivisible shot (`Volume::
+    /// write_is_single_shot`), so the final name can never hold a partial and
+    /// staging would buy nothing but a rename round trip. Write straight to the
+    /// final name.
+    SingleShot,
 }
 
 /// One file write's staging: where the bytes go, and how they get their final
 /// name.
 pub(super) struct StagedWrite {
     /// `Some(temp)` when we staged this write ourselves, `None` under
-    /// [`WriteStaging::AlreadyStaged`].
+    /// [`WriteStaging::AlreadyStaged`] and [`WriteStaging::SingleShot`].
     temp: Option<PathBuf>,
     /// Where the file must end up. Under `AlreadyStaged` this IS the caller's
     /// temp, and landing it is the caller's job.
@@ -65,7 +74,9 @@ impl StagedWrite {
                 state.in_flight_temps.lock_ignore_poison().push(temp.clone());
                 Some(temp)
             }
-            WriteStaging::AlreadyStaged => None,
+            // Neither owns a temp: the caller's is the caller's to land, and a
+            // single-shot write has no intermediate state to track.
+            WriteStaging::AlreadyStaged | WriteStaging::SingleShot => None,
         };
         Self {
             temp,
@@ -92,7 +103,9 @@ impl StagedWrite {
     /// the final name. No production backend takes that branch.
     pub(super) async fn commit(mut self, dest_volume: &Arc<dyn Volume>) -> Result<(), VolumeError> {
         let Some(temp) = self.temp.take() else {
-            return Ok(()); // the caller staged it and lands it itself
+            // Nothing of ours to land: the caller stages and lands its own temp,
+            // and a single-shot write already sits at its final name.
+            return Ok(());
         };
         self.deregister(&temp);
         // Landing is a device round trip of its own; a dump has to be able to
@@ -115,6 +128,12 @@ impl StagedWrite {
     ///
     /// Best-effort — the backend usually deleted its own partial already, and a
     /// leftover `.cmdr-tmp-*` is untidy rather than dangerous.
+    ///
+    /// A `SingleShot` write has nothing to remove: the destination promised the
+    /// bytes either all landed or none did, and cleaning up after its own failed
+    /// attempt is the backend's job (it is the only layer that can tell "the
+    /// server created the file and then refused the bytes" from "the file was
+    /// already there and we never touched it").
     pub(super) async fn abandon(mut self, dest_volume: &Arc<dyn Volume>) {
         let Some(temp) = self.temp.take() else {
             return;
@@ -197,6 +216,26 @@ mod tests {
         let staged = StagedWrite::begin(&state, caller_temp, WriteStaging::AlreadyStaged);
         assert_eq!(staged.target(), caller_temp);
         assert!(state.in_flight_temps.lock_ignore_poison().is_empty());
+    }
+
+    /// A single-shot write goes to the final name with no temp and nothing
+    /// tracked: the destination lands it whole or not at all, so there is no
+    /// partial to find, sweep, or land.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_single_shot_write_targets_the_final_name_and_needs_no_landing() {
+        let state = state();
+        let inner = Arc::new(InMemoryVolume::new("dest"));
+        let dest: Arc<dyn Volume> = Arc::clone(&inner) as Arc<dyn Volume>;
+
+        let staged = StagedWrite::begin(&state, Path::new("/notes.txt"), WriteStaging::SingleShot);
+        assert_eq!(staged.target(), Path::new("/notes.txt"));
+        assert!(state.in_flight_temps.lock_ignore_poison().is_empty());
+
+        // The backend wrote the whole file in one shot; committing is a no-op
+        // that must not touch the destination.
+        inner.create_file(Path::new("/notes.txt"), b"NEW").await.unwrap();
+        staged.commit(&dest).await.unwrap();
+        assert!(inner.exists(Path::new("/notes.txt")).await);
     }
 
     /// Committing lands the bytes at the final name and drops the temp from the

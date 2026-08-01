@@ -46,7 +46,9 @@ use events::emit_state_change;
 use mapping::{directory_entry_to_file_entry, filetime_to_unix_secs, fs_info_to_space_info, map_smb_error};
 use session::{CLIENT_LOCK_TICKET, build_session, refresh_credentials_from_store, update_state_on_smb_error};
 use state::ConnectionState;
-use streams::{InlineReadStream, SMB_STREAM_CHANNEL_CAPACITY, SmbReadStream};
+use streams::{
+    ASSUMED_MAX_WRITE, InlineReadStream, SMB_STREAM_CHANNEL_CAPACITY, SmbReadStream, fits_one_compound_write,
+};
 
 // External surface: keep these paths stable at
 // `crate::file_system::volume::backends::smb::<name>`.

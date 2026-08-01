@@ -153,11 +153,12 @@ report `max_concurrent_ops() == 1`, so this always runs on the serial copy path.
 `volume_strategy_sequential_tests.rs` (nested-subtree correctness, the random-vs-sequential routing gate, empty
 dirs + symlinks + out-of-order entries, and cancel-between-members).
 
-## Every file write is staged (no byte-incomplete file at its final name)
+## File writes are staged (no byte-incomplete file at its final name)
 
-**Decision**: every cross-volume file write streams into a `.cmdr-tmp-<uuid>` sibling and is renamed onto its final name
-only after its last byte, whether or not a conflict made it a safe-replace. `staged_write.rs` owns it; `stream_pipe_file`
-and the sequential extractor are the two write sites.
+**Decision**: a cross-volume file write streams into a `.cmdr-tmp-<uuid>` sibling and is renamed onto its final name
+only after its last byte, whether or not a conflict made it a safe-replace, unless the write is structurally incapable
+of leaving a partial there (§ "The single-shot exemption"). `staged_write.rs` owns it; `stream_pipe_file` and the
+sequential extractor are the two write sites.
 
 **Why**: the conflict layer only staged a file→file Overwrite. A NEW file has no conflict, so it streamed straight to the
 destination path — and a transfer killed mid-stream left a truncated file wearing the user's real filename, which is
@@ -169,7 +170,8 @@ than dependent on cleanup running.
 **Who stages.** `WriteStaging::AlreadyStaged` means the caller already minted the temp (the conflict layer's
 safe-replace, which additionally keeps the ORIGINAL in place until the temp is complete) and lands it itself; staging it
 again would just yield a `foo.cmdr-tmp-A.cmdr-tmp-B`. Every other write is `WriteStaging::Stage`. Each call site derives
-it identically via `volume_strategy::staging_for(&replace_after_write)`, so there is one rule, not four.
+it identically via `volume_strategy::staging_for(&replace_after_write)`, so there is one rule, not four. Both write
+sites then run that choice through `resolve_staging`, the single place a `Stage` can become `SingleShot`.
 
 **Landing** (`staged_write::land`) renames FIRST and only clears the final name if that fails. `finalize_safe_replace` is
 the other way round because there the original is known to be in the way; here it usually isn't, and a speculative
@@ -191,14 +193,59 @@ staged write touches its temp every chunk, and even a destination-side foregroun
 entry with no reported mtime is spared. It mirrors `archive_remote_edit::reap_remote_temps`. A leftover deeper inside a
 copied subtree waits for a transfer into that directory; there is no global filesystem sweep and there shouldn't be.
 
-**Cost, accepted deliberately**: one extra rename per file. On SMB that is one round trip, which roughly doubles the
-wire cost of a small file that would otherwise take the compound CREATE+WRITE+CLOSE fast path. A destination that can't
-rename can't stage; `stream_pipe_file` then re-runs the file unstaged (a `NotSupported` landing), which no production
-backend triggers — Local, SMB, and MTP all rename.
+**Cost**: one extra rename per staged file. On SMB that is one round trip, which roughly doubles the wire cost of a file
+that would otherwise take the compound CREATE+WRITE+FLUSH+CLOSE fast path — the exemption below is what keeps a
+10k-tiny-file copy to a NAS from paying it. A destination that can't rename can't stage; `stream_pipe_file` then re-runs
+the file unstaged (a `NotSupported` landing), which no production backend triggers — Local, SMB, and MTP all rename.
 
 Pinned by `volume_copy_staged_write_tests.rs` (abandon the copy future mid-stream — the in-process equivalent of the
 force-quit — and assert nothing sits at a final name, for a fresh copy, an overwrite, and a merge child) and
 `staged_write::tests`.
+
+## The single-shot exemption
+
+**Decision**: a write the DESTINATION performs as one indivisible operation skips the staging and goes straight to the
+file's final name (`WriteStaging::SingleShot`). The destination answers `Volume::write_is_single_shot(size)`;
+`volume_strategy::resolve_staging` is the only place that upgrades a `Stage` to it, and only ever a `Stage` (a caller's
+safe-replace temp keeps the ORIGINAL alive until the new bytes are complete, which is strictly stronger). Today SMB is
+the only backend that answers `true`; MTP, local FS, archives, and in-memory keep the trait default of `false`.
+
+**Why it's safe**: staging buys exactly one property — no window in which the final name holds a byte-incomplete file.
+A single SMB2 compound frame has no such window. The client sends one length-prefixed frame carrying
+CREATE+WRITE+FLUSH+CLOSE; the server either receives it whole and runs all four ops or discards it and creates nothing,
+and it needs nothing further from the client to finish. So the force-quit that started all this (kill the process
+mid-transfer, no error path, no `Drop`, no cleanup) cannot produce a truncated file on this path.
+
+**❌ Why it is NOT "small files are fine"**: smallness merely correlates with single-shot-ness today, through
+`max_write_size`. A caller-side size threshold would go on claiming the guarantee the day a backend retuned its
+fast-path condition, and the failure is silent: truncated files at real names, discovered months later. So the condition
+is asked of the destination, and the SMB backend answers with the SAME function its fast path branches on
+(`smb/streams.rs::fits_one_compound_write`, on the negotiated `max_write_size`, with `size > 0` because an empty file
+has no WRITE to compound with and takes the streaming writer). Two copies of that threshold IS the bug; don't
+introduce one.
+
+**Backend obligations** taken on with a `true` answer, both in `smb/streams.rs`:
+
+- The drained buffer, not the promised size, decides the final branch. A source that yields SHORT still goes out as one
+  compound frame rather than dropping into the multi-round-trip streaming writer, which would be a broken promise at an
+  unstaged final name.
+- A compound that fails AFTER the server's CREATE (out of space, over quota) leaves a 0-byte file at that name, so the
+  backend deletes it (`create_succeeded_but_write_failed`, which reads smb2's typed per-command status). A CREATE
+  failure is NOT cleaned up: nothing was created, and any pre-existing file there is untouched, so deleting would be
+  data loss. `StagedWrite::abandon` is a no-op for a single-shot write for the same reason — only the backend can tell
+  those two apart.
+
+**Residual risk, accepted**: a source stream that reports a `total_size` smaller than the bytes it then yields, past the
+compound limit, falls back to the streaming writer at an unstaged final name. That needs a source lying about its own
+length (a file being appended to under us) AND a force-quit inside a 2–3 round-trip window, and what would be left at
+that name is what the source actually gave us. The alternative (failing such a copy outright) is worse.
+
+Pinned by `volume_strategy_single_shot_tests.rs` (both directions: single-shot writes at the final name with no rename;
+too big, or a backend that makes no promise, still stages; a caller temp is never converted),
+`staged_write::tests::a_single_shot_write_targets_the_final_name_and_needs_no_landing`, `smb_test.rs` (the boundary of
+`fits_one_compound_write`, and no promise without a live session), and — against real Samba —
+`smb_streaming_integration_test.rs::smb_integration_a_single_shot_write_leaves_as_one_compound_frame`, which counts wire
+frames to prove the promised write really is one compound frame.
 
 ## Pause reaches between chunks (cross-volume streaming path)
 

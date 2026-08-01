@@ -24,11 +24,12 @@ Shared `WriteOperationState`, `OperationIntent`, cancel/rollback, ETA, and settl
 - **Overwrite means merge for dirs, replace for files**: enforced at the `apply_volume_conflict_resolution` call site
   (skips the delete for dirs), NOT by `Volume::delete`'s contract — else a recursive-delete backend flips merge →
   wholesale replace. Pinned by `dir_overwrite_must_merge_not_replace_even_with_recursive_delete`.
-- **EVERY cross-volume file write stages on a `.cmdr-tmp-<uuid>` and takes its final name only after its last byte**
-  (`staged_write.rs`): a force-quit must never leave a truncated file at a real name. `AlreadyStaged` passes a
-  conflict-minted temp through; every other write is `Stage`, via `staging_for(&replace_after_write)`. A staged temp
-  sits in `state.in_flight_temps` ONLY while it's a partial, so a temp holding committed data is never swept. ❌ Don't
-  call `write_from_stream` with a final name.
+- **A cross-volume file write stages on a `.cmdr-tmp-<uuid>` and takes its final name only after its last byte**
+  (`staged_write.rs`): a force-quit must never leave a truncated file at a real name. Two exemptions: `AlreadyStaged`
+  (a conflict-minted temp) and `SingleShot` (the DESTINATION lands it whole or not at all —
+  `Volume::write_is_single_shot`, today only SMB's compound frame). ❌ Single-shot-ness buys that, NEVER smallness: ask
+  the destination via `resolve_staging`. A staged temp sits in `state.in_flight_temps` ONLY while it's a partial, so a
+  temp holding committed data is never swept.
 - **Cross-volume file→file Overwrite is a safe-replace, NOT delete-then-write**: stream into a `.cmdr-tmp-<uuid>`
   sibling, then `finalize_safe_replace`. That post-write temp is committed data, not a cleanable partial. Cross-type
   stays delete-first.
