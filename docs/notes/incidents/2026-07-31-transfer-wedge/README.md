@@ -133,6 +133,6 @@ closed a second live hazard: a caller cancelled between the frame's length heade
 frame on the wire, which Cmdr can trigger any time a user cancels a copy.
 
 **Two footnotes worth keeping.** The `sync_status` XPC thread pile-up described above was a genuinely separate defect
-and had no link to this wedge. And Samba 4.9.5 panics on repeated compound writes (`smb2`
-`docs/notes/samba-4.9-compound-write-crash.md`), which is unrelated to this incident but bites the same code path on
-older servers.
+and had no link to this wedge. And Samba 4.9.5 panics on repeated compound writes, written up in the `smb2`
+repo under its own `docs/notes/` (that path is in THAT repo, not this one), which is unrelated to this incident but
+bites the same code path on older servers.
