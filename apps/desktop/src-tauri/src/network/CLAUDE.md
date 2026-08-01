@@ -35,6 +35,11 @@ background: `docs/notes/smb-auth-flow-redesign.md`.
 - **All three upgrade paths share resolution**: the two auto paths route through `resolve_and_register_smb_volume`;
   manual "Connect directly" stays separate but reuses `resolve_ip_to_hostname_with_wait` + `get_keychain_password`.
   Don't drift to the one-shot resolver (misses hostname-keyed creds → guest → `STATUS_LOGON_FAILURE`).
+- **Decide at ACT time, not trigger time**: every path waits 1.5–16.5 s for mDNS first, so re-check `is_already_direct`
+  right before connecting, and let the startup pass RE-SCAN after its wait (its pre-scan is only the
+  Local-Network-prompt gate). One `UpgradePass` at a time, since `ensure_network_discovery_started` fires on every user
+  networking action. Acting on a stale decision replaced a healthy volume three times in 15 s, once mid-copy.
+  `file_system/volume/backends/DETAILS.md` § "Every upgrade decides at ACT time".
 - **A refused/unreachable TCP connect is NOT a protocol error**: `classify_error` maps those io kinds to
   `HostUnreachable`, so an offline server skips the CLI fallback.
 

@@ -49,6 +49,28 @@ Both paths check the `network.directSmbConnection` setting (global `AtomicBool`)
 warning and the volume stays as `LocalPosixVolume`. The "Connect directly" UI action (`upgrade_to_smb_volume` command)
 and the MCP `upgrade_smb_to_direct` tool provide manual upgrade paths.
 
+### Every upgrade decides at ACT time, never at trigger time
+
+Each path waits before it connects: 1.5 s for the mDNS host cache on every path, and up to 15 s more for
+`wait_for_mdns_ready` on the startup pass. Any other path can finish the job inside that window, so a decision made
+before the wait is stale by the time it's used. Two rules keep that from turning into redundant swaps:
+
+- **The startup pass scans after its wait, not before.** `upgrade_existing_smb_mounts` still does a pre-scan, but
+  purely as a gate: nothing to do ⇒ return without touching mDNS, so a machine with no SMB mounts never sees the macOS
+  Local Network prompt. The list it acts on comes from a second `os_mounted_smb_shares()` call once mDNS has settled,
+  which also picks up shares mounted during the wait.
+- **Every connect site re-checks first.** `register_smb_volume` and `try_smb_upgrade` both bail via
+  `smb_upgrade::is_already_direct` when the id already resolves to a healthy direct volume. `Disconnected` deliberately
+  does not count: that's the manual "Connect directly" recovery path, and short-circuiting it would dead-end the user.
+
+**Only one pass runs at a time** (`smb_upgrade::UpgradePass`, an RAII guard over a process-global flag).
+`ensure_network_discovery_started` calls `upgrade_existing_smb_mounts` on every user networking action, so without the
+guard N actions stack N passes that each sleep 15 s and then fire. Dropping the extra triggers is safe precisely
+because the running pass re-scans at act time.
+
+The failure this prevents: two "Connect directly" clicks nine seconds apart replaced one healthy volume three times in
+15 seconds, and the third replacement landed in the middle of a 3 GB copy to the NAS.
+
 ## SMB live-reconnect lifecycle
 
 When a hot-path op hits `ConnectionLost` / `SessionExpired`, `handle_smb_result` flips state to `Disconnected` and

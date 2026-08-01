@@ -242,46 +242,29 @@ pub fn get_volume_manager() -> &'static VolumeManager {
 /// - or no SMB mounts are registered (no scan cost, no prompt).
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub fn upgrade_existing_smb_mounts(app_handle: tauri::AppHandle) {
-    #[cfg(target_os = "macos")]
-    use crate::volumes::get_smb_mount_info;
-    #[cfg(target_os = "linux")]
-    use crate::volumes_linux::get_smb_mount_info;
+    use crate::network::smb_upgrade::UpgradePass;
 
     if !is_direct_smb_enabled() {
         log::debug!("Direct SMB connections disabled, skipping startup upgrade");
         return;
     }
 
-    // Collect SMB volume paths to upgrade (don't hold the manager lock during async work)
-    let volumes_to_upgrade: Vec<(String, String)> = {
-        let all_volumes = VOLUME_MANAGER.list_volumes();
-        all_volumes
-            .into_iter()
-            .map(|(id, _name)| id)
-            .filter_map(|id| {
-                let vol = VOLUME_MANAGER.get(&id)?;
-                // Skip volumes that are already SmbVolume
-                if vol.smb_connection_state().is_some() {
-                    return None;
-                }
-                let path = vol.root().to_string_lossy().to_string();
-                // Check if it's an SMB mount
-                let info = get_smb_mount_info(&path)?;
-                let _ = info; // We just need to know it's SMB
-                Some((id, path))
-            })
-            .collect()
-    };
-
-    if volumes_to_upgrade.is_empty() {
-        log::debug!("No SMB mounts to upgrade at startup");
+    // Cheap gate only: is there anything here at all? Kicking off mDNS pops the
+    // macOS Local Network prompt, so a machine with no SMB mounts must not reach
+    // it. The list this returns is NOT what we act on (see below).
+    if os_mounted_smb_shares().is_empty() {
+        log::debug!("No SMB mounts to upgrade");
         return;
     }
 
-    log::info!(
-        "Found {} SMB mount(s) to upgrade to direct connections",
-        volumes_to_upgrade.len()
-    );
+    // One pass at a time. `ensure_network_discovery_started` calls us on every
+    // user networking action, and each pass then sits in `wait_for_mdns_ready`
+    // for up to 15 s: two clicks nine seconds apart used to stack two passes
+    // that both fired blind, replacing an already-healthy volume twice.
+    let Some(pass) = UpgradePass::begin() else {
+        log::debug!("An SMB upgrade pass is already in flight; not starting another");
+        return;
+    };
 
     // Kick off mDNS so the per-volume hostname resolution can find the host.
     // Without this, the Keychain lookup misses on auth-required shares (creds are
@@ -294,20 +277,32 @@ pub fn upgrade_existing_smb_mounts(app_handle: tauri::AppHandle) {
     // Wait for mDNS discovery to reach Active state (initial burst complete) so hostname
     // resolution is available for Keychain lookup.
     tauri::async_runtime::spawn(async move {
+        let _pass = pass; // released when this task ends, whatever the outcome
         wait_for_mdns_ready().await;
 
-        let mut any_upgraded = false;
-        for (_volume_id, mount_path) in volumes_to_upgrade {
-            let info = match get_smb_mount_info(&mount_path) {
-                Some(info) => info,
-                None => continue,
-            };
+        // Scan AFTER the wait, never before. The wait is up to 15 s long, and in
+        // that window another path (a manual "Connect directly", the FSEvents
+        // mount-time upgrade) can have made these volumes direct already, while
+        // a share mounted during the wait wouldn't be in a pre-scan at all. Both
+        // halves of that were real: acting on a 15-second-old list is what
+        // replaced a healthy volume out from under a running copy.
+        let volumes_to_upgrade = os_mounted_smb_shares();
+        if volumes_to_upgrade.is_empty() {
+            log::debug!("Nothing left to upgrade once mDNS settled");
+            return;
+        }
 
+        log::info!(
+            "Upgrading {} SMB mount(s) to direct connections",
+            volumes_to_upgrade.len()
+        );
+
+        for (mount_path, info) in volumes_to_upgrade {
             // Shared with the mount-time auto-upgrade path. Uses the mDNS
             // host-cache wait so creds keyed by hostname (the common case) are
-            // found instead of falling back to guest. (Previously this path used
-            // the one-shot resolver and looked creds up by LAN IP — a miss for
-            // hostname-keyed creds, hence the startup STATUS_LOGON_FAILURE.)
+            // found instead of falling back to guest. Re-checks freshness once
+            // more just before connecting (`smb_upgrade::is_already_direct`),
+            // since each volume's own 1.5 s mDNS wait reopens the window.
             crate::network::smb_upgrade::resolve_and_register_smb_volume(
                 &info.server,
                 &info.share,
@@ -315,14 +310,45 @@ pub fn upgrade_existing_smb_mounts(app_handle: tauri::AppHandle) {
                 info.port,
             )
             .await;
-            any_upgraded = true;
         }
 
         // Notify frontend to refresh volume list so indicators update from yellow to green
-        if any_upgraded {
-            crate::volume_broadcast::emit_volumes_changed();
-        }
+        crate::volume_broadcast::emit_volumes_changed();
     });
+}
+
+/// The per-platform mount-info struct `get_smb_mount_info` returns.
+#[cfg(target_os = "macos")]
+type SmbMountInfo = crate::volumes::SmbMountInfo;
+#[cfg(target_os = "linux")]
+type SmbMountInfo = crate::volumes_linux::SmbMountInfo;
+
+/// The OS-mounted SMB shares that don't have a Cmdr smb2 session yet, as
+/// `(mount_path, mount_info)`.
+///
+/// A registered `SmbVolume` (whatever its connection state) is excluded: it
+/// already has a session, and a `Disconnected` one owns its own recovery through
+/// `attempt_reconnect` rather than through a replacement.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+fn os_mounted_smb_shares() -> Vec<(String, SmbMountInfo)> {
+    #[cfg(target_os = "macos")]
+    use crate::volumes::get_smb_mount_info;
+    #[cfg(target_os = "linux")]
+    use crate::volumes_linux::get_smb_mount_info;
+
+    VOLUME_MANAGER
+        .list_volumes()
+        .into_iter()
+        .filter_map(|(id, _name)| {
+            let vol = VOLUME_MANAGER.get(&id)?;
+            if vol.smb_connection_state().is_some() {
+                return None;
+            }
+            let path = vol.root().to_string_lossy().to_string();
+            let info = get_smb_mount_info(&path)?;
+            Some((path, info))
+        })
+        .collect()
 }
 
 /// Waits until mDNS discovery reaches the `Active` state (initial burst complete).

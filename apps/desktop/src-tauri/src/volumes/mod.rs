@@ -34,7 +34,7 @@ pub use fs_type::{is_network_fs_type, is_smb_fs_type, supports_trash_for_fs_type
 pub use mounts::get_attached_volumes;
 pub use nsurl::{VolumeSpaceInfo, get_volume_space};
 pub(crate) use nsurl::{get_bool_resource, get_icon_for_path, get_volume_name, volume_name_from_path};
-pub use smb::{enrich_smb_connection_state, get_smb_mount_info};
+pub use smb::{SmbMountInfo, enrich_smb_connection_state, get_smb_mount_info};
 pub(crate) use smb::{parse_smb_mount_source, volume_id_for_mount};
 
 /// Category of a location item.

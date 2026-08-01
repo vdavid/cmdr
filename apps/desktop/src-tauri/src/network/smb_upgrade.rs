@@ -61,6 +61,59 @@ pub(crate) enum UpgradeError {
     Network(String),
 }
 
+/// Whether `volume_id` already resolves to a HEALTHY direct smb2 volume, in
+/// which case an upgrade has nothing to do.
+///
+/// Every upgrade path checks this immediately before connecting, not just at
+/// entry: all three paths wait up to 1.5 s for mDNS first, and the startup pass
+/// waits up to 15 s, so another path can finish the job during the wait. Without
+/// the re-check we paid a TCP connect, a negotiate, and a session setup to
+/// replace a perfectly good volume.
+///
+/// `Disconnected` deliberately does NOT count. That's the manual "Connect
+/// directly" recovery path after a share dropped; short-circuiting it would
+/// dead-end the user on a broken volume.
+pub(crate) fn is_already_direct(volume_id: &str) -> bool {
+    use crate::file_system::volume::SmbConnectionState;
+    matches!(
+        crate::file_system::get_volume_manager()
+            .get(volume_id)
+            .and_then(|v| v.smb_connection_state()),
+        Some(SmbConnectionState::Direct)
+    )
+}
+
+/// Whether an existing-mount upgrade pass is in flight.
+static UPGRADE_PASS_PENDING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// A single in-flight run of `file_system::upgrade_existing_smb_mounts`.
+///
+/// `ensure_network_discovery_started` fires on EVERY user networking action
+/// (opening Network, "Connect to server…", clicking "Connect directly"), and
+/// each pass waits up to 15 s for mDNS before it does anything. Two clicks nine
+/// seconds apart stacked two passes that both fired blind. Holding this guard
+/// for the lifetime of the pass means extra triggers are dropped instead of
+/// queued; the running pass re-scans after its wait, so it still picks up
+/// anything that mounted in the meantime.
+pub(crate) struct UpgradePass;
+
+impl UpgradePass {
+    /// `Some` if no pass is in flight, `None` if one already is.
+    pub(crate) fn begin() -> Option<Self> {
+        use std::sync::atomic::Ordering;
+        UPGRADE_PASS_PENDING
+            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+            .ok()
+            .map(|_| Self)
+    }
+}
+
+impl Drop for UpgradePass {
+    fn drop(&mut self) {
+        UPGRADE_PASS_PENDING.store(false, std::sync::atomic::Ordering::Release);
+    }
+}
+
 /// Register `new_volume` under `volume_id`, retiring any predecessor first.
 ///
 /// **The predecessor is superseded, never unmounted.** A re-register (a manual
@@ -116,13 +169,6 @@ pub(crate) async fn register_smb_volume(
     // Resolve mDNS service names (like "Naspolya._smb._tcp.local") to an IP
     let resolved_server = resolve_server_address(server);
 
-    log::debug!(
-        "Establishing smb2 connection for SmbVolume: {}:{}/{}",
-        resolved_server,
-        port,
-        share
-    );
-
     // Derive the volume ID before connect so SmbVolume's internal ID, the
     // ID we pass to `connect_smb_volume`, and the ID the OS-event watcher
     // computes via `volume_id_for_mount` all agree. Statfs is the canonical
@@ -131,14 +177,30 @@ pub(crate) async fn register_smb_volume(
     let volume_id = volume_id_from_statfs(mount_path)
         .unwrap_or_else(|| crate::file_system::volume::smb_volume_id(server, port, share));
 
+    // Another path (a manual "Connect directly", the mount-time upgrade, an
+    // earlier pass) may have finished the job while we waited on mDNS. Replacing
+    // a healthy direct volume costs a whole session setup and hands every
+    // in-flight holder to a superseded instance for no reason.
+    if is_already_direct(&volume_id) {
+        log::debug!("{volume_id} is already a direct smb2 connection; skipping the upgrade");
+        return;
+    }
+
+    log::debug!(
+        "Establishing smb2 connection for SmbVolume: {}:{}/{}",
+        resolved_server,
+        port,
+        share
+    );
+
     let params =
         crate::file_system::volume::smb::SmbConnectionParams::new(&resolved_server, share, port, username, password);
     match connect_smb_volume(share, mount_path, &volume_id, params).await {
         Ok(volume) => {
-            // Overwrite-with-cleanup so SmbVolume always wins over any
+            // Overwrite-with-retire so SmbVolume always wins over any
             // LocalPosixVolume the watcher may have registered in the race
-            // window, and any prior SmbVolume gets its watcher + smb2 session
-            // torn down before we replace it.
+            // window, and any prior SmbVolume is retired (not torn down) before
+            // we replace it.
             register_replacing_predecessor(&volume_id, Arc::new(volume)).await;
             log::info!("Registered SmbVolume for {} (id={})", mount_path, volume_id);
             // The session is installed and Direct. If the user had indexing
@@ -204,6 +266,13 @@ pub(crate) async fn try_smb_upgrade(
     // Resolve mDNS service names to connectable addresses
     let resolved_server = resolve_server_address(server);
     let display = friendly_server_name(server);
+
+    // Same re-check as the auto path: the 1.5 s mDNS wait upstream is enough
+    // time for another path to have upgraded this volume already.
+    if is_already_direct(volume_id) {
+        log::debug!("{volume_id} is already a direct smb2 connection; nothing to upgrade");
+        return Ok(());
+    }
 
     let params =
         crate::file_system::volume::smb::SmbConnectionParams::new(&resolved_server, share, port, username, password);
@@ -506,11 +575,18 @@ mod tests {
         );
     }
 
+    /// `network.enabled` is a process-global, so the two tests that flip it must
+    /// not run concurrently: one setting it `false` while the other polls made
+    /// the other short-circuit and fail (whichever lost the race).
+    /// Async-aware: both tests `await` while holding it.
+    static NETWORK_FLAG_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
     /// `resolve_ip_to_hostname_with_wait` must short-circuit when the runtime
     /// `network.enabled` flag is off, even for a private IP — mDNS isn't running
     /// so polling would just burn the timeout.
     #[tokio::test]
     async fn wait_helper_short_circuits_when_network_disabled() {
+        let _serialized = NETWORK_FLAG_LOCK.lock().await;
         let prev = crate::network::is_network_enabled();
         crate::network::set_network_enabled_flag(false);
 
@@ -533,6 +609,7 @@ mod tests {
     /// back to `None` so the caller can use IP-only Keychain lookup).
     #[tokio::test]
     async fn wait_helper_times_out_gracefully() {
+        let _serialized = NETWORK_FLAG_LOCK.lock().await;
         // Ensure network is "enabled" so we exercise the polling path.
         let prev = crate::network::is_network_enabled();
         crate::network::set_network_enabled_flag(true);
@@ -579,6 +656,7 @@ mod tests {
             pub(super) on_unmount_called: Arc<AtomicBool>,
             pub(super) on_superseded_called: Arc<AtomicBool>,
             root: PathBuf,
+            smb_state: Option<crate::file_system::volume::SmbConnectionState>,
         }
 
         /// The hook flags of one `TrackingVolume`, for assertions.
@@ -588,13 +666,26 @@ mod tests {
         }
 
         impl TrackingVolume {
+            /// A volume that isn't an SMB volume at all (`smb_connection_state()`
+            /// is `None`), which is what an OS-mounted share looks like before
+            /// its upgrade.
             pub(super) fn create(label: &str) -> (Arc<dyn Volume>, Hooks) {
+                Self::create_with_smb_state(label, None)
+            }
+
+            /// A volume that reports an SMB connection state, for the
+            /// "is this already upgraded?" checks.
+            pub(super) fn create_with_smb_state(
+                label: &str,
+                smb_state: Option<crate::file_system::volume::SmbConnectionState>,
+            ) -> (Arc<dyn Volume>, Hooks) {
                 let unmounted = Arc::new(AtomicBool::new(false));
                 let superseded = Arc::new(AtomicBool::new(false));
                 let vol = Arc::new(Self {
                     on_unmount_called: Arc::clone(&unmounted),
                     on_superseded_called: Arc::clone(&superseded),
                     root: PathBuf::from(format!("/tmp/tracking-{label}")),
+                    smb_state,
                 }) as Arc<dyn Volume>;
                 (vol, Hooks { unmounted, superseded })
             }
@@ -647,6 +738,9 @@ mod tests {
                 &'a self,
             ) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
                 Box::pin(async { Err(VolumeError::NotSupported) })
+            }
+            fn smb_connection_state(&self) -> Option<crate::file_system::volume::SmbConnectionState> {
+                self.smb_state
             }
             fn on_unmount(&self) {
                 self.on_unmount_called.store(true, Ordering::Relaxed);
@@ -732,6 +826,120 @@ mod tests {
         );
 
         manager.unregister(volume_id);
+    }
+
+    // ── Upgrade idempotence and pass coalescing ────────────────────────
+
+    /// An upgrade of a volume that is ALREADY a healthy direct smb2 connection
+    /// must cost nothing: no TCP connect, no negotiate, no session setup, and
+    /// above all no swap of a perfectly good volume.
+    ///
+    /// The startup pass used to snapshot its eligibility list up to 15 s before
+    /// acting, so it happily re-upgraded volumes another path had already
+    /// upgraded in the meantime. It replaced one volume three times in 15
+    /// seconds, and the third replacement landed mid-copy.
+    #[tokio::test]
+    async fn upgrading_an_already_direct_volume_costs_nothing() {
+        use crate::file_system::volume::{SmbConnectionState, smb_volume_id};
+
+        // TEST-NET-2 (RFC 5737): reserved, never routed. If the upgrade doesn't
+        // short-circuit, it tries to connect here and fails.
+        let server = "198.51.100.7";
+        let share = "unreachable";
+        let volume_id = smb_volume_id(server, 445, share);
+        let manager = crate::file_system::get_volume_manager();
+
+        let (direct, _) =
+            tracking::TrackingVolume::create_with_smb_state("already-direct", Some(SmbConnectionState::Direct));
+        manager.register(&volume_id, std::sync::Arc::clone(&direct));
+
+        let result = try_smb_upgrade(server, share, "/Volumes/unreachable", None, None, 445, &volume_id).await;
+
+        assert!(
+            result.is_ok(),
+            "an already-direct volume is the desired end state, so the upgrade succeeds trivially"
+        );
+        let current = manager.get(&volume_id).expect("still registered");
+        assert!(
+            std::sync::Arc::ptr_eq(&current, &direct),
+            "the healthy volume must not be swapped out from under its holders"
+        );
+
+        manager.unregister(&volume_id);
+    }
+
+    /// The same short-circuit on the auto-upgrade path (startup and mount-time),
+    /// which is the one that fired the redundant upgrades.
+    #[tokio::test]
+    async fn the_auto_upgrade_path_skips_an_already_direct_volume() {
+        use crate::file_system::volume::{SmbConnectionState, smb_volume_id};
+
+        let server = "198.51.100.8";
+        let share = "unreachable";
+        let volume_id = smb_volume_id(server, 445, share);
+        let manager = crate::file_system::get_volume_manager();
+
+        let (direct, _) =
+            tracking::TrackingVolume::create_with_smb_state("already-direct-auto", Some(SmbConnectionState::Direct));
+        manager.register(&volume_id, std::sync::Arc::clone(&direct));
+
+        let start = std::time::Instant::now();
+        register_smb_volume(server, share, "/Volumes/unreachable", None, None, 445).await;
+        let elapsed = start.elapsed();
+
+        assert!(
+            elapsed < Duration::from_millis(200),
+            "must short-circuit before any connect attempt; took {:?}",
+            elapsed
+        );
+        let current = manager.get(&volume_id).expect("still registered");
+        assert!(
+            std::sync::Arc::ptr_eq(&current, &direct),
+            "the healthy volume must not be swapped"
+        );
+
+        manager.unregister(&volume_id);
+    }
+
+    /// Only a HEALTHY direct volume is "nothing left to do". A DISCONNECTED
+    /// `SmbVolume` still wants the work: that's the manual "Connect directly"
+    /// recovery path after a share dropped. Skipping it there would dead-end the
+    /// user on a broken volume.
+    #[test]
+    fn only_a_healthy_direct_volume_short_circuits_the_upgrade() {
+        use crate::file_system::volume::SmbConnectionState;
+        let manager = crate::file_system::get_volume_manager();
+
+        for (label, state, expected) in [
+            ("direct", Some(SmbConnectionState::Direct), true),
+            ("disconnected", Some(SmbConnectionState::Disconnected), false),
+            ("os-mount-state", Some(SmbConnectionState::OsMount), false),
+            ("plain-local", None, false),
+        ] {
+            let volume_id = format!("test-already-direct-{label}");
+            let (vol, _) = tracking::TrackingVolume::create_with_smb_state(label, state);
+            manager.register(&volume_id, vol);
+            assert_eq!(is_already_direct(&volume_id), expected, "{label} volume");
+            manager.unregister(&volume_id);
+        }
+    }
+
+    /// `ensure_network_discovery_started` runs on every user networking action,
+    /// and each upgrade pass waits up to 15 s for mDNS before acting. Two clicks
+    /// nine seconds apart stacked two passes, both firing blind. Only one pass
+    /// may be in flight.
+    #[test]
+    fn a_second_upgrade_pass_is_dropped_while_one_is_pending() {
+        let first = UpgradePass::begin().expect("the first pass runs");
+        assert!(
+            UpgradePass::begin().is_none(),
+            "a second pass while one is still pending must be dropped, not stacked"
+        );
+        drop(first);
+        assert!(
+            UpgradePass::begin().is_some(),
+            "once the pass finishes, the next networking action starts a new one"
+        );
     }
 
     /// When no predecessor exists, `register_replacing_predecessor` just
