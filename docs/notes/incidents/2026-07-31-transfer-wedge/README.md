@@ -4,9 +4,15 @@ A user-initiated copy of 764 files (3.10 GB) from a Dropbox File Provider folder
 12 files and could not be cancelled, rolled back, or dismissed. The app had to be force-quit, leaving two
 byte-incomplete files at their final names on the destination.
 
-**The root cause is unknown and this evidence is not sufficient to find it.** That is the point of this record: it is
-the complete forensic yield of a serious production wedge, and it is preserved here as the target the observability work
-has to beat. The test for any instrumentation we add is: _would it have answered the open questions below?_
+**Root cause found on 2026-08-01, in `smb2`. Fixed in smb2 0.15.0.** The client had stopped *sending*: one
+`TcpTransport::send` held the transport's write half forever and every later request queued behind that lock, so the
+server's "silence" was simply that nobody was asking it anything. Nothing bounded it, because every deadline the crate
+had bounds the wait for a *response* and these requests never reached the wire. See "Resolution" at the bottom.
+
+The rest of this record is preserved unchanged as the forensic yield of the wedge **before** the fix, and as the target
+the observability work has to beat. The test for any instrumentation we add is: _would it have answered the open
+questions below?_ (Answer, for the record: no. What finally answered them was `nettop` showing zero bytes in **and out**
+on a live wedge, next to a log still emitting fresh requests.)
 
 Environment: Cmdr 0.36.2 (prod, `/Applications/Cmdr.app`), macOS 26.5.2, Apple silicon. Source
 `~/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore` (volume `root`, Dropbox File Provider domain, 764 files, none
@@ -101,3 +107,32 @@ Whether this contributed to the transfer wedge is **unknown** - different subsys
 - `file_system::sync_status` has no logging at all, which is why 23 wedged threads left no trace in the log.
 
 The remediation plan is `docs/specs/transfer-wedge-observability.md`.
+
+## Resolution (2026-08-01)
+
+A second wedge, caught live, gave the answer this evidence could not.
+
+**What was actually happening.** Two `ESTABLISHED` sockets, frozen for 40 minutes, with ~700 requests registered as
+in-flight and **zero bytes moving in either direction** — while the log kept logging a fresh `fs_info` every 8 s, and a
+brand-new `smb2` connection wrote 38 MB into the very same destination directory at 84 MiB/s. The NAS was never at
+fault. `smb2`'s `TcpTransport::send` locked the transport's write half across its `write_all`; one send that never
+finished parked every later request behind it, with no deadline, no error, and no log line.
+
+**Why every guardrail missed it.** The 180 s response deadline and the 30 s credit deadline both live *downstream of
+the send*, so neither could fire: the server had not been asked. `giving up` and `CreditStarvation` each appear **zero**
+times in the whole log.
+
+**Why it read as server silence for weeks.** `outstanding_requests()` timed each request from *registration*, which
+happens before the bytes go out, under a doc comment reading "Requests sent and not yet answered". A never-sent request
+was indistinguishable from an unanswered one. Three separate diagnoses blamed the server on that basis.
+
+**The fix (smb2 0.15.0)**: a dedicated writer task owns the transport's write half and callers hand it whole frames;
+each frame gets 60 s to reach the socket before `Error::SendTimeout` tears the connection down; waiters deregister on
+drop; and `OutstandingRequest::sent_age` now says which side of the wire a request is on. Whole-frame handoff also
+closed a second live hazard: a caller cancelled between the frame's length header and its body used to leave half a
+frame on the wire, which Cmdr can trigger any time a user cancels a copy.
+
+**Two footnotes worth keeping.** The `sync_status` XPC thread pile-up described above was a genuinely separate defect
+and had no link to this wedge. And Samba 4.9.5 panics on repeated compound writes (`smb2`
+`docs/notes/samba-4.9-compound-write-crash.md`), which is unrelated to this incident but bites the same code path on
+older servers.

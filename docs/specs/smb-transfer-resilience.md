@@ -2,9 +2,16 @@
 
 **Status**: specced, M0 in flight. **Owner**: David. **Date**: 2026-08-01.
 
-A 764-file copy to a QNAP NAS wedges permanently, twice reproduced. The cause is now known and is ours: the `smb2`
-client never spends the credits it charges, so under concurrency it over-runs the server's grant and the server stops
-answering. Everything downstream of that — the frozen dialog, the dead Rollback, the corrupt files — was a symptom.
+A 764-file copy to a QNAP NAS wedges permanently, twice reproduced. Everything downstream of that — the frozen dialog,
+the dead Rollback, the corrupt files — is a symptom.
+
+> **Correction (2026-08-01).** The credit diagnosis below was real but was **not** the cause of the permanent wedge.
+> M0/M1 shipped and were correct; the wedge kept happening on `smb2` 0.14.0 with a longest credit wait of 47 ms. The
+> actual cause was on the send side: one `TcpTransport::send` held the write half forever and every later request
+> queued behind it, so the client stopped sending and the server's silence was a consequence, not a cause. Fixed in
+> `smb2` 0.15.0 (writer task + `Error::SendTimeout` + RAII waiters + `sent_age`). Full account:
+> `docs/notes/incidents/2026-07-31-transfer-wedge/README.md` § Resolution. ❌ Don't re-anchor on credits when reading
+> the milestones below.
 
 The 2026-07-31 incident record is `docs/notes/incidents/2026-07-31-transfer-wedge/README.md`; the observability and
 recovery work that made this diagnosable shipped as `transfer-wedge-observability.md` (M1-M6, all merged) and is what

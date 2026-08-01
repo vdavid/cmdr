@@ -32,6 +32,11 @@ Depth: `DETAILS.md` (§§ Per-backend decisions, Gotchas, SMB auto-upgrade / rec
   reconnect loop (a second state machine swallows real disconnects).
 - **`SmbVolume::write_from_stream` uses a cloned `Connection` + owned `FileWriter`, never a borrowed `FileWriter<'a>`
   holding the client mutex across the upload** (that shape is the QNAP deadlock reproducer).
+- **An SMB request that can't reach the wire now fails instead of hanging** (smb2 0.15.0): `Error::SendTimeout` →
+  `ErrorKind::TimedOut` → `VolumeError`, after 60 s, and the connection is torn down. Before that, a stuck socket froze
+  every SMB op in the app permanently with no error and no log line — the 2026-07-31/08-01 transfer wedge. If a
+  transfer fails this way, read `sent_age` in the smb2 diagnostics before blaming the server: `None` means we never
+  asked it. Full account: `docs/notes/incidents/2026-07-31-transfer-wedge/README.md` § Resolution.
 - **`write_from_stream` error paths must `abort()` then delete the partial.** Dropping a `FileWriter` without
   `finish()`/`abort()` leaks the SMB handle, so a fresh-session delete hits a sharing violation and corrupt bytes linger
   at the user's destination name. Don't collapse the owned-writer error sites into a catch-all that loses the writer.
