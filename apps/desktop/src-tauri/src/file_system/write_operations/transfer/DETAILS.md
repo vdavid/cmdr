@@ -345,8 +345,9 @@ above it. Policy in `retry.rs`.
 
 **Why the file, not the operation**: a single failed write used to end the whole transfer. Twelve files into a 764-file
 copy, one write that never came back took the other 752 with it
-(`docs/notes/incidents/2026-07-31-transfer-wedge/README.md`). With `smb2` 0.15.0 a dead session surfaces as a typed
-error rather than a hang, so the file that hit the blip can simply be run again and the batch carries on.
+(`docs/notes/incidents/2026-07-31-transfer-wedge/README.md`). `smb2` surfaces a dead session as a typed error rather
+than a hang — a send deadline, a response deadline, and `Error::ServerUnresponsive` for a link that answered nothing at
+all — so the file that hit the blip can simply be run again and the batch carries on.
 
 **Why THAT layer, and nowhere higher.** Everything a retry must not redo has already happened above `stream_pipe_file`,
 which is what makes the retry safe by construction rather than by care:
@@ -417,14 +418,39 @@ heartbeats the UI's stall signal — and acts on nothing.
 **Why gated, and why elapsed time is not allowed to be the evidence.** Telling "slow but alive" from "dead" needs a
 keepalive: an ECHO the server either answers inside a window or does not. A silence deadline ALONE cannot do it,
 because a large write to a loaded spinning-disk NAS is legitimately slow, and killing it trades a rare wedge for
-frequent spurious failures — the worse bargain, and Decision 3 of `docs/specs/smb-transfer-resilience.md`. The `smb2`
-version this workspace pins (0.15.0) has **no keepalive**, and nothing else it exposes settles the question: its
-diagnostics describe the CLIENT's side of the wire (`send_queue_depth`, `send_failures`, `wire_bytes_sent`) or restate
-the ambiguity itself (`OutstandingRequest::sent_age` = "asked, and unanswered for this long", which is exactly what a
-slow server and a dead one have in common). `ConnectionDiagnostics::disconnected` is a hard fact but a consequence —
-by the time it is true the write has already errored, and the retry has it. So there is no sound signal to act on yet,
-and inventing one out of elapsed time would reintroduce, one layer up, the failure mode the keepalive exists to
-prevent.
+frequent spurious failures — the worse bargain, and Decision 3 of `docs/specs/smb-transfer-resilience.md`. Inventing a
+verdict out of elapsed time would reintroduce, one layer up, the failure mode the keepalive exists to prevent.
+
+**Why `smb2` 0.16.0's keepalive still doesn't open this gate** (checked 2026-08-02 against the crate's public API; the
+decision to leave `SmbVolume::connection_liveness()` unimplemented is recorded here so nobody re-derives it):
+
+- **The keepalive deliberately produces no death verdict.** A missed probe means "no deadline extension" and nothing
+  more, because a real NAS drops ECHO probes precisely when it is busy writing. `MetricsSnapshot::keepalive_failures`
+  is therefore a count of non-events, and ❌ mapping it (or `keepalive_probes_skipped`, or a rising `sent_age`) to
+  `Dead` is exactly the false positive this gate exists to avoid.
+- **The one sound verdict is an error, not a state.** `Error::ServerUnresponsive { silent_for }` fires only when a
+  request burned its whole deadline AND the connection put nothing on the wire meanwhile — sound, but it is handed to
+  the caller and it tears the connection down. By the time a consumer could observe it, every waiter on that
+  connection has already been failed, including the parked task this watchdog would have unstuck. The retry above has
+  it.
+- **What that leaves publicly readable is `Connection::is_disconnected()`** (a torn-down connection), which is a hard
+  fact but the same consequence: true only after the write has already errored. Wiring it would add a `Dead` answer
+  that arrives strictly later than the error the task is already getting.
+- **The counters can't be reassembled into the verdict either.** They are monotonic per-connection totals with no
+  timestamps, so reconstructing "the wire has been quiet for ≥ 3 probe intervals with work outstanding" from polled
+  snapshots means re-deriving the crate's own internal `unresponsive_for()` from the outside — more machinery, still
+  strictly later than the crate's own verdict, and no new coverage.
+
+**To turn the teeth on**, `smb2` has to expose the conjunction it already computes internally as something
+**pollable**: `Connection::unresponsive_for() -> Option<Duration>`, `Some(quiet)` only when the keepalive is armed AND
+the wire has been silent for ≥ `LIVENESS_WINDOW_PROBES × keepalive_after` with a request outstanding — readable
+WITHOUT a request having burned its deadline first and WITHOUT the connection being torn down, since that window is
+the only place a Cmdr-side watchdog has anything to add. Then override `connection_liveness` on **`SmbVolume` alone**,
+mapping that to `Dead`, its absence to `Alive`, and "no keepalive armed / nothing outstanding" to `None`. Nothing else
+moves: the mechanism, the stillness window, the per-attempt re-arm, the guards, and the tests are all already here and
+gated only on that answer. ❌ Do NOT then drop the stillness window and trust the verdict, and do NOT assume the 180 s
+comes down at the same time — with a fallible verdict the debounce is doing real work rather than just waiting, so it
+is a tuning call to make against the keepalive's measured false-positive behavior.
 
 **Why the two conditions are ANDed, and why that is load-bearing rather than belt-and-braces.** The liveness verdict
 this gate reads is a keepalive result, and a keepalive false-positives under exactly the load a transfer creates.
@@ -441,17 +467,10 @@ false positive. ❌ **Never collapse this to "trust the `Dead` verdict"** — th
 `transfer_probe::tests::a_task_that_keeps_moving_is_never_aborted` pins it (its probe reports `Dead` on every tick and
 the moving task is still never touched; removing the movement check turns that test red).
 
-**To turn the teeth on** — the whole change, once `smb2` ships the keepalive (0.16.0) and Cmdr moves onto it: override
-`connection_liveness` on **`SmbVolume` alone**, returning `Dead` when the keepalive's ECHO went unanswered past its
-window, `Alive` when one came back inside it, and `None` before the first verdict. Nothing else moves. The mechanism,
-the stillness window, the per-attempt re-arm, the guards, and the tests are all already here and gated only on that
-answer. Do NOT assume the 180 s comes down much at the same time: with a
-fallible verdict the debounce is doing real work rather than just waiting, so it is a tuning call to make against the
-keepalive's measured false-positive behavior, not a number to shrink on the assumption the verdict is trustworthy.
-
 **Why 180 s for the second condition.** It is a LAST resort even once armed: every backend that can bound its own waits
-already does, sooner — `smb2` gives a frame 60 s to reach the socket and a response 180 s to arrive, so a dead SMB
-session errors on its own and the file's retry picks it up without the watchdog being involved. What is left is the
+already does, sooner — `smb2` gives a frame 20 s to reach the socket and a response 30 s of silence (3 minutes on a
+connection an ECHO has just proven alive), so a dead SMB session errors on its own and the file's retry picks it up
+without the watchdog being involved. What is left is the
 case with no deadline anywhere: an OS-mounted share, a USB stack, a future backend that forgot. The number clears the
 slowest HEALTHY gap between two byte reports, which is one chunk: a 1 MiB SMB read window needs a link under 6 KB/s to
 take this long, an 8 MiB MTP window needs USB at 45 KB/s.

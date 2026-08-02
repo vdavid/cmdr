@@ -324,6 +324,28 @@ fn supports_foreground_yield_as_destination_is_on() {
     assert!(vol.supports_foreground_yield_as_destination());
 }
 
+/// THE GATE on the transfer watchdog's one aggressive action, from the backend
+/// side: `SmbVolume` reports NO liveness verdict, so the watchdog reports a stall
+/// and never ends anyone's wait.
+///
+/// `smb2` 0.16.0 has an ECHO keepalive and it still doesn't change this. A missed
+/// probe is deliberately not a death verdict — a busy NAS drops probes precisely
+/// while it writes — and the crate's one sound verdict
+/// (`Error::ServerUnresponsive`) is an error handed to the caller AFTER the
+/// connection has been torn down and every waiter failed, which the per-file
+/// retry already covers. ❌ Don't answer `Dead` here from `keepalive_failures`, a
+/// slow response, or `is_disconnected()`; read
+/// `write_operations/transfer/DETAILS.md` § "The watchdog ACTS" first, which says
+/// what `smb2` would have to expose for this to become `Some`.
+#[test]
+fn connection_liveness_reports_no_verdict() {
+    let vol = make_test_volume();
+    assert!(
+        vol.connection_liveness().is_none(),
+        "SMB has no sound dead-vs-slow signal to answer with; see the doc above before changing this"
+    );
+}
+
 /// …and the probe behind it is scoped to THIS share: navigating the volume being
 /// copied from parks the copy, navigating anything else leaves it at full speed.
 #[tokio::test]

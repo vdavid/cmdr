@@ -907,19 +907,23 @@ pub trait Volume: Send + Sync {
     /// caller ANDs it with its own stillness window. ❌ Don't add a caller that
     /// acts on this answer alone.
     ///
-    /// **Every backend answers `None` today, and that is the honest answer.**
-    /// Telling "slow" from "dead" needs a keepalive — an ECHO the server either
-    /// answers inside a window or does not — and the `smb2` version this
-    /// workspace pins (0.15.0) has none. Its diagnostics describe the CLIENT's
-    /// side of the wire (`send_queue_depth`, `send_failures`, `wire_bytes_sent`)
-    /// or the ambiguous case itself (`OutstandingRequest::sent_age` = "asked, and
-    /// unanswered for this long"), so none of them can settle it.
+    /// **Every backend answers `None` today, and that is the honest answer** —
+    /// including `SmbVolume` on `smb2` 0.16.0, which HAS the keepalive. The
+    /// keepalive deliberately declares no deaths (a busy NAS drops probes, so
+    /// `keepalive_failures` counts non-events), and the crate's one sound verdict,
+    /// `Error::ServerUnresponsive`, is handed to a caller and tears the connection
+    /// down — so by the time it is observable every waiter has already been
+    /// failed, which the transfer's per-file retry handles without this. ❌ Don't
+    /// answer `Dead` from a missed probe, a slow response, or elapsed silence.
     ///
-    /// **To turn the watchdog's teeth on**, once `smb2` ships the keepalive:
-    /// override this on `SmbVolume` alone — `Dead` when the keepalive's ECHO went
-    /// unanswered past its window, `Alive` when one came back inside it, `None`
-    /// before the first verdict. Nothing else moves; the mechanism, its stillness
-    /// window, and its tests are already in place and gated only on this answer.
+    /// **To turn the watchdog's teeth on**, `smb2` has to expose that verdict as
+    /// pollable state — "the keepalive is armed AND the wire has been silent past
+    /// the liveness window with a request outstanding" — readable BEFORE a request
+    /// burns its deadline and without the connection being torn down. Then
+    /// override this on `SmbVolume` alone. Nothing else moves; the mechanism, its
+    /// stillness window, and its tests are already in place and gated only on this
+    /// answer. Full reasoning:
+    /// `write_operations/transfer/DETAILS.md` § "The watchdog ACTS".
     fn connection_liveness(&self) -> Option<ConnectionLiveness> {
         None
     }

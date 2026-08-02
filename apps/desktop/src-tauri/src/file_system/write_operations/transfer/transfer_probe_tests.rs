@@ -463,9 +463,11 @@ fn a_new_attempt_gets_a_fresh_signal_and_a_fresh_budget() {
 /// spinning-disk NAS is legitimately slow — so a volume that reports no verdict
 /// must never have its wait ended, however long it has been still.
 ///
-/// This is production today: no backend can tell slow from dead without a
-/// keepalive, and the pinned `smb2` 0.15.0 has none. The watchdog keeps dumping
-/// the in-flight table and feeding the UI's stall signal, and acts on nothing.
+/// This is production today: no backend answers the liveness question, and
+/// `smb2` 0.16.0's keepalive doesn't change that (a missed probe is not death,
+/// and its sound verdict tears the connection down before anyone can read it).
+/// The watchdog keeps dumping the in-flight table and feeding the UI's stall
+/// signal, and acts on nothing.
 /// Deleting this test would let a future change quietly re-arm the teeth on a
 /// timer.
 #[test]

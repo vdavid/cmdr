@@ -28,8 +28,14 @@ checklist live in `../CLAUDE.md` + `../DETAILS.md`.
   client mutex across the upload (the QNAP deadlock reproducer). Its error paths must `abort()` then delete the partial:
   dropping a writer without `finish()`/`abort()` leaks the handle, so a fresh-session delete hits a sharing violation
   and corrupt bytes linger at the user's destination name.
-- **An unreachable request fails after 60 s instead of hanging** (smb2 `SendTimeout`), tearing the connection down. Read
-  `sent_age` in the smb2 diagnostics before blaming the server: `None` means we never asked it.
+- **An unreachable request fails instead of hanging**: 20 s to reach the socket (`SendTimeout`), 30 s of server silence
+  after that (`Timeout`, or `ServerUnresponsive` when the whole link went quiet), both tearing the connection down. An
+  ECHO keepalive (5 s, on by default) buys a proven-alive connection 6× the response deadline, so nothing slow-but-alive
+  is cut off. Read `sent_age` in the smb2 diagnostics before blaming the server: `None` means we never asked it.
+- **The watcher's dedicated session now discovers a dead server by itself.** CHANGE_NOTIFY counts as work outstanding,
+  so that connection is probed and its long poll ends on connection-wide silence rather than waiting forever — which is
+  what feeds `spawn_watcher_death_reconnect`. A watcher death is therefore cheaper than it looks: it marks the volume
+  Disconnected and rebuilds the session, while in-flight transfers keep their own `Arc`s and run on.
 - **Watcher filenames need normalizing** (backslash→slash, NFC→NFD) before cache lookups.
 - **Auto-upgrade is gated on `network.directSmbConnection`** and no-ops with no SMB mounts (so no macOS Local Network
   prompt). Drive INDEXING lives in `src/indexing/`, not here.

@@ -830,8 +830,8 @@ pub(crate) async fn copy_volumes_with_progress(
         total_files,
         Arc::clone(&atomic_bytes_done),
         // Both ends, so the watchdog can ask whether either connection has been
-        // PROVEN dead before it acts on a stall (it currently never can — see
-        // `Volume::connection_liveness`).
+        // PROVEN dead before it acts on a stall (no backend can answer that yet
+        // — see `Volume::connection_liveness`).
         vec![Arc::clone(&source_volume), Arc::clone(&dest_volume)],
         Arc::clone(state),
         Arc::clone(&events),

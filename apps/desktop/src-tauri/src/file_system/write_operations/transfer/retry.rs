@@ -5,8 +5,9 @@
 //! the whole transfer: 12 files into a 764-file copy, one write that never came
 //! back took the other 752 with it
 //! (`docs/notes/incidents/2026-07-31-transfer-wedge/README.md`). Now that a dead
-//! SMB session surfaces as a typed error instead of hanging (`smb2` 0.15.0), the
-//! file that hit the blip can simply be run again and the batch carries on.
+//! SMB session surfaces as a typed error instead of hanging (`smb2`'s send and
+//! response deadlines, plus `Error::ServerUnresponsive`), the file that hit the
+//! blip can simply be run again and the batch carries on.
 //!
 //! **Why it lives at `stream_pipe_file` and nowhere higher.** That function is the
 //! one place a file's bytes are streamed, for a top-level file source and for a

@@ -1,7 +1,7 @@
 # SMB transfers that survive a server going quiet, without giving up throughput
 
-**Status**: M0-M2, M4.1, and M4.4 shipped; M4.2's mechanism is in and gated shut; M3 and M4.3 open. **Owner**: David.
-**Date**: 2026-08-01.
+**Status**: M0-M3, M4.1, and M4.4 shipped; M4.2's mechanism is in and gated shut, and 0.16.0's keepalive does not open
+it; M4.3 open. **Owner**: David. **Date**: 2026-08-01.
 
 A 764-file copy to a QNAP NAS wedges permanently, twice reproduced. Everything downstream of that — the frozen dialog,
 the dead Rollback, the corrupt files — is a symptom.
@@ -18,7 +18,7 @@ The 2026-07-31 incident record is `docs/notes/incidents/2026-07-31-transfer-wedg
 recovery work that made this diagnosable shipped as `transfer-wedge-observability.md` (M1-M6, all merged) and is what
 turned an undiagnosable hang into a 20-minute read.
 
-Read before starting: `apps/desktop/src-tauri/src/file_system/volume/backends/smb/CLAUDE.md`, the `smb2` crate's
+Read before starting: `apps/desktop/src-tauri/src/file_system/volume/backends/CLAUDE.md`, the `smb2` crate's
 `AGENTS.md` and `docs/releasing.md`, and MS-SMB2 §3.2.4.1.5 / §3.3.1.2 on credits.
 
 ## The diagnosis, and the evidence for it
@@ -91,10 +91,20 @@ Finishes the half of the earlier `M1.3` that was left undone.
 
 ## M3: survive it, don't just report it (in `smb2`)
 
-- **M3.1** Implement `ClientConfig::auto_reconnect`. It exists today and does nothing — its own doc says the logic "will
-  be implemented alongside the concurrent pipeline", and the flag is merely stored.
-- **M3.2** SMB2.1 durable / SMB3 persistent handles, so an interrupted write resumes rather than restarting.
-- **M3.3** Tests: a transfer that survives a server bounce mid-file.
+✅ **Shipped in `smb2` 0.16.0, and deliberately not consumed by Cmdr yet.**
+
+- **M3.1** ✅ `ClientConfig::auto_reconnect` now arms a reviver bounded by `ReconnectPolicy` (4 attempts, 0.5 s → 8 s
+  backoff, 60 s total). The revival happens IN PLACE, so `Connection` clones held by `FileWriter` / `Watcher` / the
+  pipeline stay usable. Only work whose retry can't change what you asked for is replayed; a write, delete, or rename
+  that died in flight surfaces the error instead.
+- **M3.2** ✅ Durable handles v2 (`open_file_durable` / `reclaim_durable_handle`), a reclaim gated on two independent
+  proofs. SMB 2.1's v1 handles are deliberately not implemented (they identify an open by a recyclable server id).
+- **M3.3** ✅ Verified end to end against Samba 4.20.6.
+- **Open for David**: Cmdr sets `auto_reconnect: false` on all four `ClientConfig` sites and runs its OWN reconnect
+  state machine (`smb/reconnect.rs`, single-flight, credential-refreshing, watcher- and index-aware). Turning the
+  crate's on would mean two reconnect layers, which `backends/CLAUDE.md` explicitly forbids ("❌ No second reconnect
+  loop"). Consuming M3 is its own effort: decide which layer owns recovery, and whether a survived blip stays silent
+  (Open question 2).
 
 ## M4: Cmdr picks up the pieces
 
@@ -104,21 +114,24 @@ Finishes the half of the earlier `M1.3` that was left undone.
   Why that layer and how each data-safety invariant survives it: `transfer/DETAILS.md` § "Retrying one FILE". **Open for
   David**: a file that exhausts its attempts still ends the operation. Carrying on past it needs a "finished, N files
   missing" terminal shape and a product call; deliberately not guessed at.
-- **M4.2** 🔒 **Mechanism shipped, teeth gated** — deliberately inert until a keepalive exists. The watchdog can end a
+- **M4.2** 🔒 **Mechanism shipped, teeth gated, and 0.16.0's keepalive does NOT open the gate.** The watchdog can end a
   task's wait (turning a wedged park into a typed error M4.1 retries), but only on
-  `Volume::connection_liveness() == Dead` AND 180 s of zero byte movement. **No backend answers that on the pinned
-  `smb2` 0.15.0**, so in production it still only reports: dumps the in-flight table, feeds the UI's stall signal, acts
-  on nothing. ❌ Elapsed silence is not allowed to stand in for the verdict — that is Decision 3, and doing it here
-  would reintroduce one layer up the exact failure mode M2.2 exists to prevent. Checked and rejected as liveness signals
-  in 0.15.0: `sent_age` (restates the ambiguity), `send_queue_depth` / `send_failures` / `wire_bytes_sent`
-  (client-side), `disconnected` (a consequence the retry already handles). **Flip-on, when `smb2` 0.16.0 lands and Cmdr
-  moves onto it**: override `connection_liveness` on `SmbVolume` alone — `Dead` past the unanswered ECHO window, `Alive`
-  inside it, `None` before the first verdict. Nothing else moves. ❌ But do NOT then drop the stillness window and trust
-  the verdict: measured against David's QNAP TS-464 (2026-08-02, smb2's live-hardware suite), an ECHO probe under heavy
-  write load reported `2 answered, 1 unanswered` — a false `Dead` — while five consecutive idle runs reported
-  `0 unanswered`. The keepalive is least trustworthy exactly when a transfer is running, so the AND is load-bearing and
-  the 180 s debounce is doing real work rather than just waiting. Full reasoning and the guard tests:
-  `transfer/DETAILS.md` § "The watchdog ACTS".
+  `Volume::connection_liveness() == Dead` AND 180 s of zero byte movement. **No backend answers that**, so in production
+  it still only reports: dumps the in-flight table, feeds the UI's stall signal, acts on nothing. ❌ Elapsed silence is
+  not allowed to stand in for the verdict — that is Decision 3, and doing it here would reintroduce one layer up the
+  exact failure mode M2.2 exists to prevent. Checked and rejected as liveness signals, in 0.15.0: `sent_age` (restates
+  the ambiguity), `send_queue_depth` / `send_failures` / `wire_bytes_sent` (client-side), `disconnected` (a consequence
+  the retry already handles); and again on 0.16.0 (2026-08-02): `keepalive_failures` / `keepalive_probes_skipped` (by
+  design NOT death — measured against David's QNAP TS-464, an ECHO probe under heavy write load reported `2 answered, 1
+  unanswered` while five consecutive idle runs reported `0 unanswered`), and `Error::ServerUnresponsive` (sound, but an
+  error handed to the caller AFTER tearing the connection down, so every waiter — including the parked task the
+  watchdog would unstick — has already been failed; the M4.1 retry has it). **Flip-on** now needs a change in `smb2`
+  first: expose the conjunction it already computes internally (`unresponsive_for()`: keepalive armed AND the wire
+  silent past the liveness window with a request outstanding) as pollable state, readable BEFORE a request burns its
+  deadline and WITHOUT the connection being torn down. Then override `connection_liveness` on `SmbVolume` alone.
+  Nothing else moves. ❌ And do NOT then drop the stillness window and trust the verdict: the keepalive is least
+  trustworthy exactly when a transfer is running, so the AND is load-bearing and the 180 s debounce is doing real work
+  rather than just waiting. Full reasoning and the guard tests: `transfer/DETAILS.md` § "The watchdog ACTS".
 - **M4.3** Delete the concurrency guess. `min(src.max_concurrent_ops, dst.max_concurrent_ops, 32)` is a magic number
   standing in for backpressure; with a real credit budget the gate IS the backpressure, self-tuning per connection. This
   is where the throughput upside sits.

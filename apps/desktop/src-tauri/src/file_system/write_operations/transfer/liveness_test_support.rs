@@ -1,9 +1,11 @@
-//! A volume that reports its connection PROVEN dead, standing in for the
-//! keepalive verdict the pinned `smb2` 0.15.0 cannot give.
+//! A volume that reports its connection PROVEN dead, standing in for a verdict
+//! no real backend can give.
 //!
 //! The stall watchdog's one aggressive action is gated on
 //! `Volume::connection_liveness` answering `Dead`, and NO backend in this
-//! workspace can answer that yet — telling "slow" from "dead" needs a keepalive.
+//! workspace answers that — `smb2` 0.16.0's keepalive deliberately never reads a
+//! missed probe as death, and its sound verdict arrives only as an error that has
+//! already torn the connection down.
 //! So without this double every "the watchdog acts" test would be exercising a
 //! path production cannot reach, and the gate would be trusted rather than
 //! pinned. Its twin is the trait default (`None`), which
