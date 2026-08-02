@@ -9,9 +9,14 @@ sits". These numbers are what that premise has to survive.
 per-file destination probe that no window width can overlap. The window is worth ~14% at best; the probe is worth up to
 ~74%.
 
-Keep this note until the pre-check (below) is either fixed or ruled out. It's the before-baseline any re-measurement
-compares against, it records the two shapes' bottlenecks separately (the thing a single throughput number hides), and
-its last section scopes the pre-check fix for a go/no-go without having started it.
+**Both fixes then landed the same day, and the last section of this note has the after-numbers.** The projection was
+0.85-1.0 s for the 500-file shape; the measurement came in at 915 ms. Everything between here and there is the
+before-baseline, kept as written.
+
+Keep this note as long as the driver has a per-file destination probe at all. It's the before-baseline any
+re-measurement compares against, it records the two shapes' bottlenecks separately (the thing a single throughput number
+hides), and it's the evidence behind two guardrails in
+`apps/desktop/src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § Key decisions.
 
 ## Method
 
@@ -328,3 +333,74 @@ They share this driver, so the blast radius has to be checked, and it cuts diffe
 - **`volume_merge_tests.rs` is the correctness net**, plus a new case for the staleness risk: a destination file that
   appears after the batch's listing but before that file is written must still be treated as a conflict.
 - Worth measuring over Tailscale as well as LAN, since the whole effect is `N x RTT` and WAN is where it's largest.
+
+## After: what shipped, and what it measured (2026-08-02, same day)
+
+Two changes landed, and neither is the one M4.3 specified:
+
+1. **A LOCAL volume's `max_concurrent_ops` no longer bounds a REMOTE peer** (`transfer_concurrency` in `volume_copy.rs`,
+   on the new `Volume::operations_are_local()`). The defect from "the sweep prices" above.
+2. **The per-file destination probe is skipped for a destination directory the operation itself created**
+   (`Volume::create_directory_all` now reports `DirectoryCreation::{Created, AlreadyExisted}`). NOT option (a), (b), or
+   (c) from the proposal — the conservative fourth option, which trades away no freshness at all: nothing the user
+   already had can be inside a folder that didn't exist a moment ago.
+
+### Method change: the harness had to be able to see it
+
+`timed_copy` created the destination directory before starting the timer, "so neither shows up in the number". That
+makes every copy a MERGE into a directory the operation didn't create, which is exactly the case the fix leaves alone —
+so the sweep as committed would have reported "no change" for a change worth 2-3x. `CMDR_BENCH_DEST` now picks:
+`existing` (the old behavior, and what the before-tables above used), `fresh` (the copy creates it), or `both`.
+
+**`both` interleaves them, round-robin with the windows**, and that is what makes the two tables below comparable: these
+runs happened on a machine at load average ~150 (four other agents building), so the absolute numbers are worse than the
+before-tables and mean nothing on their own. Load hits both modes equally, so the RELATIVE comparison is sound. ❌ Don't
+compare a `fresh` number here against a before-table number; compare it against the `existing` row beside it.
+
+### NAS, many-small: 500 x 16 KiB, 5 reps, both modes interleaved
+
+| window | existing (probes per file) | fresh (probes skipped) | speedup |
+| -----: | -------------------------- | ---------------------- | ------: |
+|      4 | 5.038 s [4.930-5.282]      | 2.363 s [2.262-2.643]  |   2.13x |
+|      8 | 3.887 s [3.766-4.127]      | 1.690 s [1.223-1.756]  |   2.30x |
+|     10 | 3.725 s [3.714-3.742]      | 1.551 s [1.383-1.673]  |   2.40x |
+|     16 | 3.419 s [3.299-3.557]      | 1.176 s [0.838-1.377]  |   2.91x |
+|     32 | 3.462 s [3.376-3.614]      | 915.1 ms [0.813-1.135] |   3.78x |
+
+Serial pre-check floor, measured in the same run: 2.565 s for 500 files (5.13 ms/file), against 2.378 s (4.76 ms/file)
+before — the probe itself didn't get cheaper, the driver just stopped issuing it.
+
+Reading it:
+
+- **Spreads are disjoint at every window.** The narrowest gap is window 4 ([4.930-5.282] vs [2.262-2.643]), and it isn't
+  close. This is the clearest signal anywhere in this note.
+- **The projection held.** "~0.85-1.0 s, call it 3.5-4x faster than today" was arrived at by subtracting the floor and
+  assuming the residual stayed the residual. Measured: 915 ms at window 32, 3.78x against the same window with probes.
+  The subtraction was honest.
+- **The speedup GROWS with the window**, 2.13x at 4 to 3.78x at 32, because the probe is the serial term: removing it is
+  what lets a wider window keep buying anything. Which also means the two fixes compound — the first one is what gets a
+  Mac past window 4-8 in the first place.
+- **`fresh` has not plateaued at 32** where `existing` did at 16. The window ceiling question from "Is 32 still the
+  right ceiling?" is therefore genuinely reopened for fresh-directory copies, and ❌ this note does NOT answer it: the
+  sweep stops at 32 because the driver clamps there. Someone raising that clamp needs a run that goes past it.
+- **`existing` reproduces the before-table shape** (5.038 / 3.887 / 3.725 / 3.419 / 3.462 against 4.700 / 3.752 / 3.522
+  / 3.245 / 3.224, uniformly ~7% slower under load), which is the regression check: a merge into a pre-existing
+  directory still does exactly what it did.
+
+### What this does NOT show
+
+- **The common flow is the `existing` column, not the `fresh` one.** Every top-level probe targets the same directory
+  (`dest_path`), so the skip is all-or-nothing per operation, and it fires only when the copy itself creates that
+  directory. `TransferDialog` defaults the destination to the opposite pane's current folder, which exists. So the 2-3x
+  lands on "the user typed a new destination folder", and the ordinary F5 copy into an existing folder keeps every round
+  trip. The fix is real and the numbers are real; the flow it applies to is narrower than the table looks.
+- **The driver already pays for a listing that would answer the general case.** Phase 0.6's `reap_stale_transfer_temps`
+  lists `dest_path` once on every copy, immediately before the spawn loop. Reusing that answer IS option (b) above —
+  strictly more valuable, strictly less safe (a multi-minute batch's listing goes stale), and it needs its own decision
+  rather than arriving as an optimization.
+- **Nothing here was measured over WAN.** The effect is `N x RTT`, so a Tailscale link (~50 ms) should show far more;
+  untested.
+- **Local destinations were not measured**, and the skip is not conditioned on the destination being remote. That is
+  deliberate: it matches what `copy_directory_streaming` already does one level down for a freshly-created level, and a
+  skipped `stat` cannot be slower than a performed one. But "no measurable local effect" here is a prediction, not a
+  measurement.
