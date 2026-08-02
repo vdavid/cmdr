@@ -2,7 +2,7 @@
 
 Turns a raw OS error + path into a TYPED, word-free `ListingError` the frontend renders. The split: CLASSIFICATION in
 Rust (errno → reason, provider detection, category/retry/action), WORDS on the frontend
-(`apps/desktop/src/lib/errors/CLAUDE.md`). This module emits zero user-facing prose.
+(`apps/desktop/src/lib/error-messages/CLAUDE.md`). This module emits zero user-facing prose.
 
 Parent: `crates/cmdr-fs/CLAUDE.md` (the crate) and `apps/desktop/src-tauri/src/file_system/volume/CLAUDE.md` (the
 trait's app-side wiring, backends, capability matrix). App-wide error conventions: `docs/guides/error-handling.md`.
@@ -23,7 +23,8 @@ trait's app-side wiring, backends, capability matrix). App-wide error convention
 
 - **This layer emits NO prose.** `ListingErrorReason` carries a semantic reason + typed params; the FE switches on the
   reason to pick the words. Don't reintroduce `title`/`explanation`/`suggestion` strings here. Reason and `Provider`
-  variant names are the IPC contract with `src/lib/errors/`; renaming one without the other breaks the FE parity test.
+  variant names are the IPC contract with `src/lib/error-messages/`; renaming one without the other breaks the FE parity
+  test.
 - **The frontend NEVER sees raw errno numbers.** Rust maps errno → semantic reason; the FE switches on the reason.
   Errnos that produce identical FE copy collapse to one reason; nothing else merges (the 1:1 mapping is what makes the
   parity check meaningful).
@@ -38,8 +39,8 @@ trait's app-side wiring, backends, capability matrix). App-wide error convention
 
 ## Adding a new error message
 
-Recipe (Rust side; FE side is in `apps/desktop/src/lib/errors/CLAUDE.md`): add the `ListingErrorReason` variant (with
-its typed params), add the map arm in `errno.rs` / `volume_error.rs` / `kinds.rs` choosing the
+Recipe (Rust side; FE side is in `apps/desktop/src/lib/error-messages/CLAUDE.md`): add the `ListingErrorReason` variant
+(with its typed params), add the map arm in `errno.rs` / `volume_error.rs` / `kinds.rs` choosing the
 `category`/`retry_hint`/`action_kind`, and add a typed-mapping test in `tests.rs`. Full recipe + the provider-detection
 strategy table: `DETAILS.md`.
 

@@ -197,7 +197,7 @@ fn list_status_returns_one_per_status() {
 // ── Friendly errors ──────────────────────────────────────────────────────
 
 // The git copy and its writing-rules checks moved to the frontend
-// (`src/lib/errors/git-error-messages.ts` + `friendly-error-style.test.ts`),
+// (`src/lib/error-messages/git-error-messages.ts` + `friendly-error-style.test.ts`),
 // which iterates every kind × rendered output. Rust keeps only the typed shape.
 
 #[test]

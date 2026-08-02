@@ -6,7 +6,7 @@
 //! These assert only the typed shape (category, retry, action_kind, reason,
 //! provider) — the user-facing words live on the frontend and are
 //! behavior-preservation-checked by the frozen FE golden in
-//! `src/lib/errors/__fixtures__/friendly_error_golden.json`.
+//! `src/lib/error-messages/__fixtures__/friendly_error_golden.json`.
 
 use std::path::Path;
 

@@ -17,7 +17,7 @@ resolves user-facing text from JSON catalogs under `messages/<locale>/`, reading
   `{count, plural, …}`, `{kind, select, …}`, and rich-text `<tag>` sentences (via `Trans.svelte`). Plurals/selects are
   resolved by the engine's `Intl.PluralRules`; we never hand-roll category selection.
 - **`getMessage(key)`** returns the RAW catalog string with NO ICU parsing, for callers that do their own composition
-  and must not hit ICU's brace/apostrophe grammar, specifically the error pipeline (`$lib/errors` `compose.ts` +
+  and must not hit ICU's brace/apostrophe grammar, specifically the error pipeline (`$lib/error-messages` `compose.ts` +
   `expandSystemStrings` + snarkdown). Its `{system_settings}` tokens and `esc()` HTML entities would collide with ICU
   placeholders. Same fallback chain as `t()`, just no `format()`.
 

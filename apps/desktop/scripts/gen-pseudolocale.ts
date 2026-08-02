@@ -35,7 +35,7 @@
  *
  * Most messages render through ICU (`t()` → `intl-messageformat`); the entire
  * `errors.*` family renders RAW through `getMessage()` (see
- * `src/lib/errors/CLAUDE.md` + `src/lib/intl/CLAUDE.md`): its `{system_settings}`
+ * `src/lib/error-messages/CLAUDE.md` + `src/lib/intl/CLAUDE.md`): its `{system_settings}`
  * tokens, literal `<…>` (e.g. `<folder-path>`), markdown, and lone apostrophes
  * deliberately bypass ICU grammar, and several such values don't even parse as
  * ICU. So:

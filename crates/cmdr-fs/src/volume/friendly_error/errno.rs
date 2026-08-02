@@ -6,7 +6,7 @@
 //! with the rest of the classification would dwarf the genuinely semantic logic.
 //!
 //! Each arm emits a typed `reason` + params; the user-facing words live on the
-//! frontend (`src/lib/errors/listing-error-messages.ts`).
+//! frontend (`src/lib/error-messages/listing-error-messages.ts`).
 
 use std::path::Path;
 

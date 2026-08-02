@@ -12,7 +12,7 @@ a timeout on an SSHFS mount). Power users still get the raw errno name and code 
 section: never hidden, never in your face.
 
 That philosophy is split across two homes now: this module decides WHAT happened (the typed identity), and the frontend
-(`src/lib/errors/`) decides the WORDS. This module owns none of the prose.
+(`src/lib/error-messages/`) decides the WORDS. This module owns none of the prose.
 
 ## Architecture: classification only
 
@@ -56,13 +56,14 @@ and classification (`transfer-error-messages.ts`). There is no `friendly_error` 
 - **Rust keeps**: errno → reason mapping, the `kinds.rs` constructors, the TCC-vs-permission branch, category / retry /
   `action_kind` assignment, `enrich_with_provider` detection, the Layer-0 git pass-through and its ordering, and the
   `raw_detail` technical string.
-- **FE gains** (`src/lib/errors/`): all titles / explanations / suggestions, the provider-suggestion table, provider
-  display / app names, the reason / git / provider message factories, the markdown escaper (the XSS boundary), and the
-  `system_strings` pane-name interpolation. See `apps/desktop/src/lib/errors/CLAUDE.md` and its `DETAILS.md`.
+- **FE gains** (`src/lib/error-messages/`): all titles / explanations / suggestions, the provider-suggestion table,
+  provider display / app names, the reason / git / provider message factories, the markdown escaper (the XSS boundary),
+  and the `system_strings` pane-name interpolation. See `apps/desktop/src/lib/error-messages/CLAUDE.md` and its
+  `DETAILS.md`.
 
 ## Adding a new error message
 
-Rust side (the FE side is in `apps/desktop/src/lib/errors/DETAILS.md`):
+Rust side (the FE side is in `apps/desktop/src/lib/error-messages/DETAILS.md`):
 
 1. Add a `ListingErrorReason` variant in `mod.rs` with its typed params (model params as variant fields). Keep the
    variant name in lockstep with the TS `ListingErrorReason` union member.

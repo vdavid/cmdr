@@ -75,7 +75,7 @@ vi.mock('$lib/tauri-commands', () => ({
 }))
 vi.mock('./tag-sweep', () => ({ sweepListingTags: vi.fn() }))
 vi.mock('../navigation/path-resolution', () => ({ resolveValidPath: h.resolveValidPath }))
-vi.mock('$lib/errors/listing-error', () => ({ renderListingError: (e: unknown) => ({ rendered: e }) }))
+vi.mock('$lib/error-messages/listing-error', () => ({ renderListingError: (e: unknown) => ({ rendered: e }) }))
 vi.mock('$lib/icon-cache', () => ({ evictPerPathIconsForDir: vi.fn() }))
 vi.mock('../rename/rename-activation', () => ({ cancelClickToRename: vi.fn() }))
 vi.mock('$lib/ui/toast', () => ({ dismissTransientToastsForPane: vi.fn() }))

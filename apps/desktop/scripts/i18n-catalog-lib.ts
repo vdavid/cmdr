@@ -381,7 +381,7 @@ export function hasBrandPresent(value: string, word: string): boolean {
  * run these through `parseMessage` (it would false-flag valid raw copy as invalid
  * ICU); they compare the raw `{token}` set instead. Single source of truth for the
  * raw/ICU split, reused by the pseudolocale generator and the locale checks.
- * See `src/lib/errors/CLAUDE.md` + `src/lib/intl/CLAUDE.md`.
+ * See `src/lib/error-messages/CLAUDE.md` + `src/lib/intl/CLAUDE.md`.
  */
 export function isRawKey(key: string): boolean {
   return key.startsWith('errors.')

@@ -27,9 +27,9 @@ All under `apps/desktop/src/lib/`.
 - `file-explorer/quick-look/`: Frontend Quick Look (Shift+Space) trigger and keyboard plumbing
 - `file-operations/`: Umbrella over `transfer/`, `delete/`, `mkdir/`, `mkfile/` dialogs (shared progress dialog) plus
   `scan-throughput.ts`
-- `errors/`: The user-facing error WORDS (titles, explanations, provider suggestions) for the listing/git/empty-root
-  paths, rendered from the typed `ListingError` Rust ships; plus the markdown escaper (the XSS boundary). Canonical home
-  of error copy
+- `error-messages/`: The user-facing error WORDS (titles, explanations, provider suggestions) for the
+  listing/git/empty-root paths, rendered from the typed `ListingError` Rust ships; plus the markdown escaper (the XSS
+  boundary). Canonical home of error copy
 - `file-operations/transfer/`: Copy + move dialogs, progress dialog (reused by delete/trash), error rendering,
   scan-phase body
 - `file-operations/delete/`: F8 / Shift+F8 delete + trash confirmation dialog and pure utilities
@@ -56,6 +56,8 @@ All under `apps/desktop/src/lib/`.
 - `feedback/`: Open-beta "Send feedback" dialog (free text + optional reply-to email → api-server). Shared links in
   `lib/beta-links.ts`
 - `crash-reporter/`: Frontend half of the crash pipeline: detects the persisted crash file and offers to send it
+- `attach-email/`: The "Attach my email" opt-in (state + checkbox) shared by the crash-report, error-report, and
+  feedback dialogs
 - `ai/`: Local LLM features (folder suggestions), download flow. Runtime states only; first-launch consent owned by
   `onboarding/`
 - `indexing/`: Drive index state, events, priority triggers, scan status overlay

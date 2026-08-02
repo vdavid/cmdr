@@ -8173,7 +8173,7 @@ export type UpdateInfo = {
  *  than a sentence.
  *
  *  Word-free by design: the frontend renders the copy from the message catalog
- *  (`$lib/errors/` convention — classification in Rust, words on the frontend).
+ *  (`$lib/error-messages/` convention — classification in Rust, words on the frontend).
  *  A raw `No route to host (os error 65)` has no business reaching a person.
  */
 export type UpgradeFailure =

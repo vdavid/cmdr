@@ -2,7 +2,7 @@
 //! and SETS the typed `provider` field on the classification.
 //!
 //! Detection stays in Rust (it needs path patterns + `statfs`); the words live on
-//! the frontend (`src/lib/errors/provider-error-messages.ts`), which overlays the
+//! the frontend (`src/lib/error-messages/provider-error-messages.ts`), which overlays the
 //! provider-specific suggestion when `provider` is present.
 
 use std::path::Path;

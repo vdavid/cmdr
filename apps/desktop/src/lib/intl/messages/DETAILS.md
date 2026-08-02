@@ -46,8 +46,8 @@ double.
 
 The entire `errors.*` family (`errors.listing.*`, `errors.git.*`, `errors.provider.*`, `errors.write.*`) does NOT render
 through ICU. It resolves via `getMessage()` (a raw catalog lookup), then `interpolate()` + `expandSystemStrings()` do
-plain `.replaceAll('{token}', value)` substitution (see `apps/desktop/src/lib/errors/CLAUDE.md` and the intl runtime
-`../CLAUDE.md`). The apostrophe-doubling rule above is the OPPOSITE here. So in any `errors.*` value:
+plain `.replaceAll('{token}', value)` substitution (see `apps/desktop/src/lib/error-messages/CLAUDE.md` and the intl
+runtime `../CLAUDE.md`). The apostrophe-doubling rule above is the OPPOSITE here. So in any `errors.*` value:
 
 - **Do NOT double apostrophes.** Write `doesn't`, not `doesn''t`: there's no ICU parser to un-double them, so `''` would
   render as a literal double apostrophe.
@@ -60,9 +60,9 @@ plain `.replaceAll('{token}', value)` substitution (see `apps/desktop/src/lib/er
   them).
 
 The unit on which this raw/ICU split is decided is the KEY PREFIX (`errors.`), single-sourced as `isRawKey()` in
-`apps/desktop/src/lib/errors/CLAUDE.md`. The locale checks honor it: the ICU-validity check (`desktop-i18n-icu`) SKIPS
-`errors.*` (so valid raw copy isn't flagged as invalid ICU), and the parity check (`desktop-i18n-parity`) compares the
-raw `{token}` set instead of an ICU placeholder set for these keys. Translator-facing version of this note:
+`apps/desktop/src/lib/error-messages/CLAUDE.md`. The locale checks honor it: the ICU-validity check (`desktop-i18n-icu`)
+SKIPS `errors.*` (so valid raw copy isn't flagged as invalid ICU), and the parity check (`desktop-i18n-parity`) compares
+the raw `{token}` set instead of an ICU placeholder set for these keys. Translator-facing version of this note:
 `docs/guides/i18n.md` § Error pipeline.
 
 ## `@key` metadata schema
@@ -219,9 +219,9 @@ Two layers look for catalog keys never referenced in code:
 Keys assembled at runtime never appear verbatim, so they're carried by a closed, documented dynamic-prefix allowlist
 (`unusedKeyDynamicPrefixes` in `scripts/check/checks/desktop-message-keys-unused.go`, the single source). Today that's
 the four error-factory prefixes (`errors.git.`, `errors.listing.`, `errors.provider.`, `errors.write.`), each tied to a
-runtime construction site in `lib/errors/` (and `lib/file-operations/transfer/`); a prefix with no matching catalog key
-fails the check as a stale entry. Add a prefix ONLY for a real runtime-construction site; never to silence a genuine
-orphan.
+runtime construction site in `lib/error-messages/` (and `lib/file-operations/transfer/`); a prefix with no matching
+catalog key fails the check as a stale entry. Add a prefix ONLY for a real runtime-construction site; never to silence a
+genuine orphan.
 
 `common.downloadsFdaHint` originated as the `<Trans>` proof and now has its real call site (the Downloads FDA hint in
 `FileSystemWatchingSection.svelte`).

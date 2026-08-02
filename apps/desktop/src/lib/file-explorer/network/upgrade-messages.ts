@@ -3,7 +3,7 @@
  *
  * Rust classifies the failure into a typed, word-free `UpgradeFailure` and names
  * the server; this file owns the sentence, resolved from the message catalog.
- * Same split as `$lib/errors/` (classification in Rust, copy on the frontend),
+ * Same split as `$lib/error-messages/` (classification in Rust, copy on the frontend),
  * kept here because these are plain toast strings rather than the markdown
  * `FriendlyErrorMessage` pipeline the error pane uses.
  *

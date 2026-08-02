@@ -35,10 +35,10 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
   lives in `pane/navigate.ts::commitPathFromListing`; if you add a virtual-volume namespace with a non-filesystem
   prefix, extend the explicit prefix branch there. (The per-pane token is a separate, narrower mechanism — the
   same-token self-re-entry rule.) Full contract in `DETAILS.md` § Gotchas and `pane/CLAUDE.md`.
-- **Error/provider WORDS live on the FE** (`$lib/errors/`), error CLASSIFICATION in Rust. Rust ships a typed, word-free
-  `ListingError` (reason + params + category + provider); the FE factories render the copy. To change wording, edit
-  `$lib/errors/` (and keep the parity test green); to add a reason/provider, change both sides. See
-  [`$lib/errors/CLAUDE.md`](../errors/CLAUDE.md).
+- **Error/provider WORDS live on the FE** (`$lib/error-messages/`), error CLASSIFICATION in Rust. Rust ships a typed,
+  word-free `ListingError` (reason + params + category + provider); the FE factories render the copy. To change wording,
+  edit `$lib/error-messages/` (and keep the parity test green); to add a reason/provider, change both sides. See
+  [`$lib/error-messages/CLAUDE.md`](../error-messages/CLAUDE.md).
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

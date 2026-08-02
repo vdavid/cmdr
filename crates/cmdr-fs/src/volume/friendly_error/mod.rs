@@ -5,7 +5,7 @@
 //! structured params, an optional detected `provider`, an optional `actionKind`,
 //! a `retryHint`, and a technical `rawDetail`) and ZERO user-facing prose. The
 //! frontend owns 100% of the titles/explanations/suggestions, rendered from this
-//! typed data (`src/lib/errors/`).
+//! typed data (`src/lib/error-messages/`).
 //!
 //! Sources that produce a `ListingError`, each in its own sibling module:
 //! - `volume_error`: `VolumeError` (used by listing-error path; richest, dispatches to errno on raw
@@ -20,7 +20,7 @@
 //! `enrich_with_provider` (in submodule `provider`) detects the cloud/mount
 //! provider from the path and SETS the typed `provider` field. The frontend then
 //! overlays the provider-specific suggestion (the words live in
-//! `src/lib/errors/provider-error-messages.ts`).
+//! `src/lib/error-messages/provider-error-messages.ts`).
 
 mod empty_root;
 mod errno;

@@ -134,7 +134,7 @@ export type ErrorActionKind = 'open_privacy_settings'
 
 /**
  * Rendered, displayable error copy for `ErrorPane`. The backend ships a typed,
- * word-free `ListingError`; `lib/errors/listing-error.ts::renderListingError`
+ * word-free `ListingError`; `lib/error-messages/listing-error.ts::renderListingError`
  * composes this shape (picking the words from the FE factories, escaping runtime
  * params inside them). `explanation` / `suggestion` are trusted markdown rendered
  * through `renderErrorMarkdown` → `snarkdown`.

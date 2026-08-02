@@ -1,7 +1,7 @@
 //! Git-specific error CLASSIFICATION.
 //!
 //! Carries a typed `FriendlyGitErrorKind`; the user-facing words live on the
-//! frontend (`src/lib/errors/git-error-messages.ts`), warm and active voice,
+//! frontend (`src/lib/error-messages/git-error-messages.ts`), warm and active voice,
 //! never the words "error" or "failed".
 //!
 //! ## How git errors reach the user
@@ -161,7 +161,7 @@ mod tests {
     use super::*;
 
     // The user-facing words now live on the frontend
-    // (`src/lib/errors/git-error-messages.ts`); the writing-rules checks moved
+    // (`src/lib/error-messages/git-error-messages.ts`); the writing-rules checks moved
     // there too (`friendly-error-style.test.ts`, every kind × rendered output).
     // These tests assert only the typed mapping (category) and that the technical
     // detail preserves the path.

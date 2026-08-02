@@ -19,7 +19,7 @@
 //! English defaults we ship if any step fails. The frontend reads the snapshot
 //! once via `get_localized_system_strings` and substitutes the `{system_settings}`
 //! etc. placeholders into user-facing copy itself
-//! (`src/lib/errors/compose.ts::expandSystemStrings`); all friendly-error words
+//! (`src/lib/error-messages/compose.ts::expandSystemStrings`); all friendly-error words
 //! live on the frontend.
 //!
 //! ## Risks (knowingly accepted)
@@ -83,7 +83,7 @@ static SNAPSHOT: LazyLock<LocalizedSystemStrings> = LazyLock::new(build_snapshot
 
 /// Returns a `'static` reference to the cached snapshot. Fast (no lock,
 /// pointer-copy after first call). Placeholder expansion now lives on the
-/// frontend (`src/lib/errors/compose.ts::expandSystemStrings`), which reads the
+/// frontend (`src/lib/error-messages/compose.ts::expandSystemStrings`), which reads the
 /// snapshot via `get_localized_system_strings`; this accessor is test-only.
 /// macOS-only: its sole caller is the macOS-gated snapshot test, so on Linux
 /// `#[cfg(test)]` alone would leave it unused and trip `deny(unused)`.

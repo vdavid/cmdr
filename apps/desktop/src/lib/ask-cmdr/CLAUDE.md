@@ -20,7 +20,7 @@ their files. Backend + IPC: `src-tauri/src/agent/`, `commands/agent/`.
 - **Assistant prose is the XSS boundary.** Model text is untrusted (a crafted filename it echoes is an injection
   vector), so it renders ONLY through `renderAssistantMarkdown`; everything else (tool labels, paths, user text, error
   copy, rename evidence) is plain `{text}`, NEVER `{@html}`. ❌ Don't swap `escapeForMarkdownLite` for
-  `errors/markdown-escape.ts`. Pinned by `ask-cmdr-markdown.test.ts`.
+  `error-messages/markdown-escape.ts`. Pinned by `ask-cmdr-markdown.test.ts`.
 - **The rail gates on consent and sends NOTHING until the user opts in.** `consentState.accepted`: `false` shows the
   gate, `true` the chat, `null` neither (no flash). ❌ Never render the composer or thread outside that branch.
 - **The rail is a THIRD focus region via a parallel flag.** `explorerState.getRailFocused()` is a boolean ALONGSIDE the

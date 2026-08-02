@@ -46,7 +46,7 @@ import {
 } from '$lib/tauri-commands'
 import { sweepListingTags } from './tag-sweep'
 import { resolveValidPath } from '../navigation/path-resolution'
-import { renderListingError } from '$lib/errors/listing-error'
+import { renderListingError } from '$lib/error-messages/listing-error'
 import { evictPerPathIconsForDir } from '$lib/icon-cache'
 import { cancelClickToRename } from '../rename/rename-activation'
 import { dismissTransientToastsForPane } from '$lib/ui/toast'

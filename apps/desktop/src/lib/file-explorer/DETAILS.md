@@ -407,12 +407,13 @@ classification or OS-specific logic):
 
 ### For future agents
 
-The error messages and provider suggestions live on the **frontend** (`$lib/errors/`); Rust ships only a typed,
+The error messages and provider suggestions live on the **frontend** (`$lib/error-messages/`); Rust ships only a typed,
 word-free `ListingError` (reason + params + category + detected provider). `ErrorPane` resolves the copy via
-`renderListingError` (`$lib/errors/listing-error.ts`), which picks the base message from the listing/git factory and
-applies the provider-suggestion override. To change wording, add an error state, or add a provider: edit `$lib/errors/`
-(and keep the frozen parity test green). See [`$lib/errors/CLAUDE.md`](../errors/CLAUDE.md) for the recipes, the writing
-rules, and the markdown-escaping XSS boundary.
+`renderListingError` (`$lib/error-messages/listing-error.ts`), which picks the base message from the listing/git factory
+and applies the provider-suggestion override. To change wording, add an error state, or add a provider: edit
+`$lib/error-messages/` (and keep the frozen parity test green). See
+[`$lib/error-messages/CLAUDE.md`](../error-messages/CLAUDE.md) for the recipes, the writing rules, and the
+markdown-escaping XSS boundary.
 
 The `ErrorPane` component should rarely need changes unless you're adding new UI elements (like illustrations, new
 button types, or new sections). The content flexibility comes from markdown rendering, not component code.

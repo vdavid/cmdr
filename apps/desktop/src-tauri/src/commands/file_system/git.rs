@@ -65,7 +65,7 @@ pub async fn subscribe_git_state(app: AppHandle, repo_root: String) -> Result<Re
 /// Renders a `FriendlyGitError` as its one-line typed form so it carries through
 /// `IpcError::message` for the rare git-subscribe handshake failure (hung/corrupt
 /// repo). The user-facing git copy lives on the frontend
-/// (`src/lib/errors/git-error-messages.ts`); this fallback string is technical
+/// (`src/lib/error-messages/git-error-messages.ts`); this fallback string is technical
 /// (`git: <Kind> (<path>)`) and surfaces only via `getIpcErrorMessage()`.
 fn format_friendly_git_error(err: FriendlyGitError) -> String {
     err.to_string()

@@ -5,7 +5,7 @@
  * vector). It is rendered through `snarkdown` + `{@html}`, so the input MUST be neutralized
  * first. But unlike the friendly-error path (trusted template + escaped params), here we
  * also WANT the model's own markdown-lite to render (bold, italic, inline code, lists —
- * spec §3). So this escaper is narrower than `errors/markdown-escape.ts`: it escapes only
+ * spec §3). So this escaper is narrower than `error-messages/markdown-escape.ts`: it escapes only
  * the HTML- and link-forming characters (`&`, `<`, `>`, `[`, `]`), which
  *
  * - stops the model from injecting raw HTML (`<script>`, `<img onerror>`) — `<`/`>` become

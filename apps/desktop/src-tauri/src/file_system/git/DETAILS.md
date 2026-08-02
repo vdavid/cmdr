@@ -14,7 +14,7 @@ Backend module for the git browser. Provides:
   the working dir directly.
 - A live toggle for the portal so `cd .git` can fall through to raw on-disk contents.
 - Typed git-error classification end-to-end: every git failure reaches `ErrorPane` as a typed `FriendlyGitErrorKind`,
-  which the frontend renders into a warm title + explanation + suggestion (`src/lib/errors/git-error-messages.ts`).
+  which the frontend renders into a warm title + explanation + suggestion (`src/lib/error-messages/git-error-messages.ts`).
 
 **The portal root listing mixes real `.git/*` entries (HEAD, config, hooks/, objects/, refs/, …) with the six virtual
 categories so the user sees everything in one place.**
@@ -35,7 +35,7 @@ here:
   copy out of the portal preserve the executable bit.
 - **`friendly.rs` is classification only, deliberately word-free.** `kind.category()` maps a variant to an
   `ErrorCategory` and `raw_detail()` builds the technical-details string (kind token + path/raw); ALL user-facing copy
-  lives on the frontend in `src/lib/errors/git-error-messages.ts`, and so do the writing-rules tests
+  lives on the frontend in `src/lib/error-messages/git-error-messages.ts`, and so do the writing-rules tests
   (`friendly-error-style.test.ts`, every kind × rendered output). Adding a variant means touching both sides.
 - **`watcher.rs` does more than emit `git-state-changed`**: on a relevant `.git/*` mutation it also calls
   `notify_directory_changed(.., FullRefresh)` for any cached `.git/{branches,tags}/` listing on the local volume, so an
