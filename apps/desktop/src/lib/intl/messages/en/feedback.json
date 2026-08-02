@@ -41,7 +41,6 @@
     }
   },
 
-
   "feedback.dialog.moreWays": "You can also <github>browse and vote on GitHub</github> or <call>book a call</call> with David.",
   "@feedback.dialog.moreWays": {
     "description": "A line offering other ways to give feedback. <github> wraps a link to the GitHub issues page; <call> wraps a link to book a video call. \"GitHub\" is a brand name and \"David\" is the maker's name (do not translate either).",

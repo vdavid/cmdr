@@ -62,7 +62,6 @@
     "screenshotNote": "The crash-report dialog (shown after the app quit unexpectedly) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
   },
 
-
   "crashReporter.dialog.dismiss": "Dismiss",
   "@crashReporter.dialog.dismiss": {
     "description": "Button that closes the crash-report dialog without sending. Keep it short (a tight button).",

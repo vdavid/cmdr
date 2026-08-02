@@ -57,7 +57,6 @@
     }
   },
 
-
   "errorReporter.dialog.detailsToggle": "What''s about to be sent",
   "@errorReporter.dialog.detailsToggle": {
     "description": "Toggle that expands a panel previewing exactly what will be uploaded (manifest and sample log lines). Preceded by a disclosure triangle; followed by the bundle size in parentheses.",

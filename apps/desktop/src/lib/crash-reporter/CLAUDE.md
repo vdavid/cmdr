@@ -17,10 +17,10 @@ The flow lives in `routes/(main)/+layout.svelte` (`checkForPendingCrashReport`),
 ## Must-knows
 
 - **A crash loop overrides the opt-in.** Auto-send needs `updates.crashReports` AND `!report.possibleCrashLoop`;
-  otherwise the dialog shows. A crashing app must never silently fire a report per launch. Don't simplify that
-  condition to the setting alone.
-- **The dialog owns the send, the layout owns the auto-send.** Both call `sendCrashReport`, and only the dialog path
-  can attach an email or flip `updates.crashReports` on. Adding a send path means deciding both again.
+  otherwise the dialog shows. A crashing app must never silently fire a report per launch. Don't simplify that condition
+  to the setting alone.
+- **The dialog owns the send, the layout owns the auto-send.** Both call `sendCrashReport`, and only the dialog path can
+  attach an email or flip `updates.crashReports` on. Adding a send path means deciding both again.
 - **Attach-email comes from `$lib/attach-email`** (`createAttachEmail()` + `<AttachEmailCheckbox>`), shared with the
   error-report and feedback dialogs; `persist()` writes the sticky `updates.attachEmailToReports` back on send. Don't
   hand-roll the checkbox or add a crash-specific copy of the label.
@@ -28,7 +28,7 @@ The flow lives in `routes/(main)/+layout.svelte` (`checkForPendingCrashReport`),
   (Escape, the × button) routes through `handleDismiss` for exactly that reason. Skip it and the same report re-offers
   itself on every launch.
 - **The report JSON is shown verbatim and is safe to show.** The backend already redacted and capped it before it
-  reached disk. Don't add fields to the displayed payload here or re-sanitize it: `src-tauri/src/crash_reporter/` is
-  the single place that decides what a crash report contains.
+  reached disk. Don't add fields to the displayed payload here or re-sanitize it: `src-tauri/src/crash_reporter/` is the
+  single place that decides what a crash report contains.
 
 Flows, the dialog's states, and the dialog-gallery fixture: `DETAILS.md`.

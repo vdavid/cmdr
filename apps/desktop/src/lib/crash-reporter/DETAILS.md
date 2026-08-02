@@ -9,14 +9,14 @@ Everything starts in `routes/(main)/+layout.svelte`, in `checkForPendingCrashRep
 auto-send branch reads `updates.crashReports`, so running earlier would read the registry default):
 
 1. `checkPendingCrashReport()` over IPC. It returns `null` on the normal path, so a clean launch does nothing further.
-2. A report came back. With `updates.crashReports` on AND `possibleCrashLoop` false, `sendCrashReport(report)` fires
-   and `CrashReportToastContent` goes up as a persistent info toast. The user is told, not asked.
-3. Otherwise `CrashReportDialog` mounts with the report. That covers both the not-opted-in case and the crash-loop
-   case, which is why the condition is an AND rather than the setting alone: an app crashing on launch would otherwise
-   mail a report every single time, and the user would have no way to intervene.
+2. A report came back. With `updates.crashReports` on AND `possibleCrashLoop` false, `sendCrashReport(report)` fires and
+   `CrashReportToastContent` goes up as a persistent info toast. The user is told, not asked.
+3. Otherwise `CrashReportDialog` mounts with the report. That covers both the not-opted-in case and the crash-loop case,
+   which is why the condition is an AND rather than the setting alone: an app crashing on launch would otherwise mail a
+   report every single time, and the user would have no way to intervene.
 
-Send failures are logged and swallowed at every step. A crash report is best-effort; a failed upload must never
-produce a second error surface on top of the crash the user already lived through.
+Send failures are logged and swallowed at every step. A crash report is best-effort; a failed upload must never produce
+a second error surface on top of the crash the user already lived through.
 
 ### Why the flow isn't in this directory
 
@@ -31,26 +31,26 @@ choice. If the sequencing grows past a handful of lines, it moves to a `crash-re
 
 - **Report ID line**: only when `report.shortId` is set. Reports written by older app versions have none.
 - **Details block**: collapsed by default, expands to the pretty-printed report JSON with a Copy button. The JSON is
-  already redacted and capped backend-side, which is what makes it safe to show verbatim; `user-select: text` is set
-  so a user can grab part of it.
+  already redacted and capped backend-side, which is what makes it safe to show verbatim; `user-select: text` is set so
+  a user can grab part of it.
 - **Always send**: on send, writes `updates.crashReports = true`. Only ever flips the setting ON, and only from an
   explicit tick; there's no path here that turns it off (that's Settings > Updates).
-- **Attach my email**: `$lib/attach-email`. Hidden when no `analytics.email` is on file, never pre-ticked on first
-  use, sticky across the error-report and feedback dialogs.
+- **Attach my email**: `$lib/attach-email`. Hidden when no `analytics.email` is on file, never pre-ticked on first use,
+  sticky across the error-report and feedback dialogs.
 - **Enter** sends (the dialog has no text input to swallow it). **Dismiss**, Escape, and the × all route through
-  `handleDismiss` → `dismissCrashReport()`, which deletes the crash file backend-side. Without that call the same
-  report is pending again on the next launch, so any new close affordance has to go through the same function.
+  `handleDismiss` → `dismissCrashReport()`, which deletes the crash file backend-side. Without that call the same report
+  is pending again on the next launch, so any new close affordance has to go through the same function.
 
 ## Testing
 
 - `crash-reporter-i18n-parity.test.ts` freezes every en string the dialog and toast render. An intended copy edit lands
   in `intl/messages/en/crashReporter.json` and here together. The shared attach-email label is frozen once in
   `$lib/attach-email/attach-email-i18n-parity.test.ts`, not per dialog.
-- `CrashReportDialog.a11y.test.ts` / `CrashReportToastContent.a11y.test.ts` run axe over the default renders. The
-  dialog test mocks `analytics.email` to empty, so it exercises the no-email shape only; the attach-email checkbox's
-  own behavior is covered by `$lib/attach-email/attach-email.test.ts` and `ErrorReportDialog.a11y.test.ts`, which
-  render it with an email on file and assert the sticky write.
+- `CrashReportDialog.a11y.test.ts` / `CrashReportToastContent.a11y.test.ts` run axe over the default renders. The dialog
+  test mocks `analytics.email` to empty, so it exercises the no-email shape only; the attach-email checkbox's own
+  behavior is covered by `$lib/attach-email/attach-email.test.ts` and `ErrorReportDialog.a11y.test.ts`, which render it
+  with an email on file and assert the sticky write.
 - Both dialog states are in the dialog gallery (`dialog-gallery/fixtures/crash-report.ts`): `panic` (a modern report
-  with a short id and a long backtrace, to keep the scrollable details block honest at 440px) and
-  `signal-no-report-id` (an older signal crash with no short id, flagged as a possible crash loop). Add a fixture
-  state whenever a new branch appears in the markup.
+  with a short id and a long backtrace, to keep the scrollable details block honest at 440px) and `signal-no-report-id`
+  (an older signal crash with no short id, flagged as a possible crash loop). Add a fixture state whenever a new branch
+  appears in the markup.
