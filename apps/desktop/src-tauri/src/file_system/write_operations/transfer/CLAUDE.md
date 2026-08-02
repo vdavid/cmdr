@@ -14,8 +14,12 @@ Copy and move, local-FS and volume-aware (Local ↔ MTP ↔ SMB), through `trans
 
 - **The merge invariant**: a merge never deletes or overwrites a dest file the source doesn't shadow — every policy,
   every backend, cancel/rollback/retry mid-merge (`volume_merge_tests.rs`).
-- **Skip the top-level dest probe ONLY for a dest dir THIS op created** (`DirectoryCreation::Created`); ❌ never for one
-  that merely looks empty. A merge still probes per file.
+- **Top-level dest pre-check: skip it outright ONLY for a dest dir THIS op created** (`DirectoryCreation::Created`), ❌
+  never one that merely looks empty. A MERGE answers it from the ONE listing Phase 0.6's temp-reap already pays for
+  (`dest_name_index.rs`), ❌ not a probe per file. That listing is a SNAPSHOT: a file arriving mid-batch is overwritten
+  unprompted — David's call, ❌ no re-listing or freshness window. `DestNameIndex` says `Absent` only when NO backend
+  could route the name onto an entry it holds (case, NFC/NFD, trailing dot, `~` ⇒ `Unknown` ⇒ the real probe); ❌ never
+  a byte-exact map, and a FAILED listing ⇒ probe all. Local dests keep their `stat`s; MTP never reaches this.
 - **Dir-vs-dir is NEVER a conflict**: `resolve_volume_conflict` short-circuits to merge before any policy lookup or
   emit. Stop/Skip/Rename all merge the folder; only files prompt.
 - **Overwrite means merge for dirs, replace for files**, enforced at the `apply_volume_conflict_resolution` call site,

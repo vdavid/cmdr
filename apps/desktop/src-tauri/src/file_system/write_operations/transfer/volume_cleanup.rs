@@ -11,6 +11,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use super::super::state::{OperationIntent, WriteOperationState, load_intent, update_operation_status};
 use super::super::types::{OperationEventSink, WriteOperationPhase, WriteOperationType, WriteProgressEvent};
+use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 
@@ -218,12 +219,18 @@ pub(super) async fn clean_abandoned_staged_writes(volume: &Arc<dyn Volume>, stat
 ///
 /// Best-effort throughout: a listing or delete failure is logged at debug and
 /// never fails or delays the user's transfer.
-pub(super) async fn reap_stale_transfer_temps(volume: &Arc<dyn Volume>, dir: &Path) {
+///
+/// **Returns the listing it already paid for**, minus the temps it reaped, so
+/// the copy driver can answer its top-level conflict pre-check from it instead
+/// of one `get_metadata` round trip per source (`volume_copy.rs`, and
+/// `DETAILS.md` § "Answering the pre-check from one listing"). `None` means the
+/// listing itself failed — ❌ never read that as "the destination is empty".
+pub(super) async fn reap_stale_transfer_temps(volume: &Arc<dyn Volume>, dir: &Path) -> Option<Vec<FileEntry>> {
     let entries = match volume.list_directory(dir, None).await {
         Ok(entries) => entries,
         Err(e) => {
             log::debug!(target: "copy", "skipping stale-temp reap of {}: {e}", dir.display());
-            return;
+            return None;
         }
     };
 
@@ -233,14 +240,15 @@ pub(super) async fn reap_stale_transfer_temps(volume: &Arc<dyn Volume>, dir: &Pa
         .unwrap_or(0);
     let min_age_secs = STALE_TEMP_MIN_AGE.as_secs();
 
+    let mut survivors = Vec::with_capacity(entries.len());
     for entry in entries {
-        if entry.is_directory || !entry.name.contains(TEMP_INFIX) {
-            continue;
-        }
-        let old_enough = entry
-            .modified_at
-            .is_some_and(|modified| now_secs.saturating_sub(modified) >= min_age_secs);
-        if !old_enough {
+        let is_stale_temp = !entry.is_directory
+            && entry.name.contains(TEMP_INFIX)
+            && entry
+                .modified_at
+                .is_some_and(|modified| now_secs.saturating_sub(modified) >= min_age_secs);
+        if !is_stale_temp {
+            survivors.push(entry);
             continue;
         }
         let temp_path = dir.join(&entry.name);
@@ -253,6 +261,7 @@ pub(super) async fn reap_stale_transfer_temps(volume: &Arc<dyn Volume>, dir: &Pa
             log::debug!(target: "copy", "couldn't reap stale temp {}: {e}", temp_path.display());
         }
     }
+    Some(survivors)
 }
 
 /// Recursively deletes a file or directory on a volume.

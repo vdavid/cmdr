@@ -13,6 +13,7 @@ pub(super) mod checkpoint_stream;
 pub(super) mod chunked_copy;
 pub(super) mod copy;
 pub(super) mod copy_strategy;
+pub(super) mod dest_name_index;
 #[cfg(target_os = "linux")]
 pub(super) mod linux_copy;
 #[cfg(target_os = "macos")]

@@ -36,6 +36,7 @@ use super::super::types::{
     WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
     WriteProgressEvent,
 };
+use super::dest_name_index::{DestLookup, DestNameIndex};
 use super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, SerialLeafProgress, TransferContext,
     TransferOutcome, build_pre_skip_set, drive_transfer_serial_async, make_concurrent_per_file_progress,
@@ -650,11 +651,46 @@ pub(crate) async fn copy_volumes_with_progress(
         .await
         .map_err(|e| WriteFailure::from_volume(dest_path, e))?;
 
+    // How many top-level sources ride at once, and whether the concurrent driver
+    // runs at all. Both are decided before Phase 0.6 because the destination
+    // pre-check index below is only worth building for the concurrent path.
+    let concurrency = transfer_concurrency(&*source_volume, &*dest_volume);
+    let use_concurrent_path = source_paths.len() >= 3 && concurrency > 1;
+    // Phase 0.5 created `dest_path` rather than finding it, so nothing the user
+    // already had can be inside it and the concurrent loop's per-file conflict
+    // probe below has nothing to find. See the comment at its call site for what
+    // this does and does NOT license.
+    let dest_dir_is_ours = dest_dir_creation == DirectoryCreation::Created;
+
     // Phase 0.6: clear `.cmdr-tmp-*` partials an earlier run's crash or force-quit
     // left here. Staging means an interrupted transfer leaves a recognizable temp
     // rather than a truncated file at a real name; this is what eventually takes
     // them away. One listing, age-gated so a live transfer's temp is never touched.
-    super::volume_cleanup::reap_stale_transfer_temps(&dest_volume, dest_path).await;
+    let dest_listing = super::volume_cleanup::reap_stale_transfer_temps(&dest_volume, dest_path).await;
+
+    // That listing is also the answer to "which top-level names are already
+    // taken?", which the concurrent spawn loop otherwise asks one
+    // `get_metadata` round trip at a time — 74% of a 500-file NAS copy. Index it
+    // once here and the loop consults memory instead of the wire.
+    //
+    // Gates, all three load-bearing:
+    // - **Concurrent path only.** The serial driver keeps its own per-file
+    //   probe, which is what keeps MTP (`max_concurrent_ops() == 1`, so
+    //   `concurrency == 1`) away from this entirely: an MTP listing is
+    //   pathologically expensive (~18 s for 1046 photos on a cold cache), so
+    //   trading one cheap probe for one costly listing there is a large loss.
+    // - **A merge only.** A destination directory this operation created can
+    //   hold nothing, so it needs neither probe nor index.
+    // - **A destination whose operations cost a round trip.** On a local volume
+    //   `get_metadata` is a microsecond `stat`, and folding every name in a
+    //   200k-entry folder to copy three files into it is the worse trade. Local
+    //   destinations keep exactly the behavior they had.
+    //
+    // ❌ A listing we couldn't take is not an answer of "nothing is there":
+    // `None` falls through to per-file probes rather than skipping them.
+    let dest_index = (use_concurrent_path && !dest_dir_is_ours && !dest_volume.operations_are_local())
+        .then(|| dest_listing.map(DestNameIndex::build))
+        .flatten();
 
     // Phase 1: Preflight scan (reuses the dialog's cached preview when one is
     // available). Populates `total_files`, `total_bytes`, and per-source
@@ -705,18 +741,11 @@ pub(crate) async fn copy_volumes_with_progress(
     let mut bytes_skipped;
     let progress_interval = Duration::from_millis(config.progress_interval_ms);
 
-    // Determine concurrency for this batch. The sequential fallback (F7)
-    // handles 1-2 file batches where spawning tasks isn't worth it, and
-    // backends that return 1 from `max_concurrent_ops`.
-    let concurrency = transfer_concurrency(&*source_volume, &*dest_volume);
-    let use_concurrent_path = source_paths.len() >= 3 && concurrency > 1;
-    // Phase 0.5 created `dest_path` rather than finding it, so nothing the user
-    // already had can be inside it and the concurrent loop's per-file conflict
-    // probe below has nothing to find. See the comment at its call site for what
-    // this does and does NOT license.
-    let dest_dir_is_ours = dest_dir_creation == DirectoryCreation::Created;
+    // The concurrency window and the sequential fallback (F7, for 1-2 file
+    // batches where spawning tasks isn't worth it, and backends that return 1
+    // from `max_concurrent_ops`) were decided above Phase 0.6.
     log::debug!(
-        "copy_volumes_with_progress: {} sources, concurrency={} (src={}, dst={}), path={}, dest dir {}",
+        "copy_volumes_with_progress: {} sources, concurrency={} (src={}, dst={}), path={}, dest dir {}, top-level pre-check from {}",
         source_paths.len(),
         concurrency,
         source_volume.max_concurrent_ops(),
@@ -729,6 +758,13 @@ pub(crate) async fn copy_volumes_with_progress(
         match dest_dir_creation {
             DirectoryCreation::Created => "created by this op",
             DirectoryCreation::AlreadyExisted => "pre-existing",
+        },
+        if dest_dir_is_ours {
+            "nothing (the dest dir is ours)"
+        } else if dest_index.is_some() {
+            "one destination listing"
+        } else {
+            "a probe per source"
         },
     );
 
@@ -947,44 +983,61 @@ pub(crate) async fn copy_volumes_with_progress(
                 // after the write fully lands (safe-replace). `None` ⇒ write
                 // `dest_item_path` directly.
                 let mut replace_after_write: Option<PathBuf> = None;
-                // The per-file destination pre-check: `Ok` ⇒ something is
-                // already at this name ⇒ resolve the conflict. It is ONE ROUND
-                // TRIP PER FILE, serialized here on the driver, and on a NAS at
-                // 3.7 ms RTT it measured 2.378 s of a 3.224 s best run for 500
-                // files — 74%, and no window width can overlap it
+                // The destination pre-check: something already at this name ⇒
+                // resolve the conflict. Asked as a `get_metadata` per source it
+                // is ONE ROUND TRIP PER FILE, serialized here on the driver, and
+                // on a NAS at 3.7 ms RTT it measured 2.378 s of a 3.224 s best
+                // run for 500 files — 74%, and no window width can overlap it
                 // (`docs/notes/transfer-concurrency-window-bench-2026-08-02.md`).
                 //
-                // So skip it for a destination directory THIS OPERATION created
-                // (Phase 0.5 above): nothing the user already had can be inside
-                // a folder that didn't exist a moment ago, so every probe is a
-                // guaranteed miss. Same rule the deep-merge walker already
-                // applies one level down — `copy_directory_streaming` skips its
-                // dest listing on a fresh level and lists once on a merge.
+                // Two things answer it more cheaply, in order:
                 //
-                // ❌ Never widen this to "the destination is empty". A
-                // pre-existing empty directory can gain an entry from another
-                // process between any two instants; one we just created cannot
-                // have held anything BEFORE we made it. Only the second claim is
-                // safe, and the difference is silent when you get it wrong: a
-                // conflict that would have prompted becomes an overwrite.
-                // Residual risk, and it is real: another process can still write
-                // into our new directory WHILE the batch runs. That window is far
-                // narrower than a stale up-front listing, but it is not zero.
-                // `DETAILS.md` § "Skipping the destination pre-check".
+                // 1. **A destination directory THIS OPERATION created** (Phase
+                //    0.5): nothing the user already had can be inside a folder
+                //    that didn't exist a moment ago, so every probe is a
+                //    guaranteed miss and there's nothing even to index.
+                //    ❌ Never widen this to "the destination is empty". A
+                //    pre-existing empty directory can gain an entry from another
+                //    process between any two instants; one we just created cannot
+                //    have held anything BEFORE we made it. Only the second claim
+                //    is safe, and the difference is silent when you get it wrong.
+                // 2. **The destination listing Phase 0.6 already paid for**, for
+                //    a merge into a pre-existing folder — the ordinary F5 copy.
+                //    `DestNameIndex` answers `Absent` only when no name in that
+                //    listing can resolve to this one on any backend; anything it
+                //    can't settle comes back `Unknown` and falls through to the
+                //    probe below, which stays authoritative.
+                //
+                // The listing is taken once, at the start: by the 400th file of a
+                // large batch it can be minutes old, so a file that ARRIVES at
+                // the destination mid-batch is missed and an Overwrite replaces
+                // it with no prompt. That trade is deliberate and David chose it
+                // (2026-08-02); ❌ don't answer it with re-listing, polling, or a
+                // freshness window. `DETAILS.md` § "Answering the pre-check from
+                // one listing".
                 let existing_dest_meta = if dest_dir_is_ours {
                     None
                 } else {
-                    // Record the pre-check BEFORE awaiting it. In the 2026-07-31
-                    // incident this destination `get_metadata` was the driver's
-                    // last log line and nothing said whether it returned, so a
-                    // dump has to be able to name it as the step in progress.
-                    if let Some(probe) = op_probe.as_ref() {
-                        probe.set_driver_phase(
-                            super::transfer_probe::DriverPhase::PreparingNext,
-                            &format!("#{source_index} {}", dest_item_path.display()),
-                        );
+                    match dest_index.as_ref().map(|index| index.lookup(source_path.file_name())) {
+                        Some(DestLookup::Absent) => None,
+                        Some(DestLookup::Present(entry)) => Some(*entry),
+                        // No index (a local destination, or a listing that
+                        // failed), or a name only the backend can settle.
+                        Some(DestLookup::Unknown) | None => {
+                            // Record the pre-check BEFORE awaiting it. In the
+                            // 2026-07-31 incident this destination `get_metadata`
+                            // was the driver's last log line and nothing said
+                            // whether it returned, so a dump has to be able to
+                            // name it as the step in progress.
+                            if let Some(probe) = op_probe.as_ref() {
+                                probe.set_driver_phase(
+                                    super::transfer_probe::DriverPhase::PreparingNext,
+                                    &format!("#{source_index} {}", dest_item_path.display()),
+                                );
+                            }
+                            dest_volume.get_metadata(&dest_item_path).await.ok()
+                        }
                     }
-                    dest_volume.get_metadata(&dest_item_path).await.ok()
                 };
                 if let Some(dest_meta) = existing_dest_meta {
                     // Reuse the per-source hint from the scan instead of re-statting.
