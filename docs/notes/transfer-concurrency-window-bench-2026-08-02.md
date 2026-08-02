@@ -13,6 +13,10 @@ per-file destination probe that no window width can overlap. The window is worth
 0.85-1.0 s for the 500-file shape; the measurement came in at 915 ms. Everything between here and there is the
 before-baseline, kept as written.
 
+⚠️ **Don't quote "2-3x faster many-small copies" from this note.** The probe skip fires ONLY when the copy creates the
+destination folder itself, and the default F5 copy targets the other pane's existing folder, which keeps every probe and
+is unchanged. See "How much of the 74% this recovers, and when".
+
 Keep this note as long as the driver has a per-file destination probe at all. It's the before-baseline any
 re-measurement compares against, it records the two shapes' bottlenecks separately (the thing a single throughput number
 hides), and it's the evidence behind two guardrails in
@@ -352,6 +356,11 @@ makes every copy a MERGE into a directory the operation didn't create, which is 
 so the sweep as committed would have reported "no change" for a change worth 2-3x. `CMDR_BENCH_DEST` now picks:
 `existing` (the old behavior, and what the before-tables above used), `fresh` (the copy creates it), or `both`.
 
+**Both after-sweeps ran on `smb2` 0.15.0**, before Cmdr moved to 0.16.0 (`cd32b8a5e`), which cut the response deadline
+180 s → 30 s and the send deadline 60 s → 20 s. Neither deadline is anywhere near a healthy 3.5 ms-RTT copy, so it
+shouldn't move these numbers — but a re-run on 0.16.0 is not comparing identical clients, and if a future sweep sees a
+transfer die where these didn't, that is the first thing to check.
+
 **`both` interleaves them, round-robin with the windows**, and that is what makes the two tables below comparable: these
 runs happened on a machine at load average ~150 (four other agents building), so the absolute numbers are worse than the
 before-tables and mean nothing on their own. Load hits both modes equally, so the RELATIVE comparison is sound. ❌ Don't
@@ -402,17 +411,51 @@ per-FILE tax, so 32 files owe ~155 ms of it against a ~2.8 s link-bound run: the
 MB/s is still a saturated gigabit link either way. A change that had somehow made this shape faster would have meant the
 measurement was wrong.
 
+### How much of the 74% this recovers, and when — read this before quoting a speedup
+
+The before-baseline's headline was "74% of the fastest run is a serialized per-file probe". Here is what the shipped fix
+actually takes back, in the two cases a user can be in. Same run, same session, same connection.
+
+| destination                       | probes issued | floor paid (measured 2.565 s) | window 32 | vs merge |
+| --------------------------------- | ------------: | ----------------------------: | --------- | -------: |
+| **Pre-existing folder** (a merge) |  one per file |                          100% | 3.462 s   |        — |
+| **Folder this operation created** |          zero |                            0% | 915.1 ms  |    3.78x |
+
+**In the fresh-destination case the skip recovers essentially the whole floor**: 3.462 s - 915 ms = 2.547 s saved,
+against a floor measured at 2.565 s in that same run. That is ~99% of it, which is the arithmetic working out — there is
+no partial credit here, the probes either all run or none do.
+
+**In the merge case it recovers exactly nothing, by construction, and that is the intended behavior.** A pre-existing
+folder is where a conflict can genuinely live, so every probe stays.
+
+**Which case a user lands in is decided entirely by whether the destination folder already exists**, and there is no
+middle ground: every top-level probe targets the same `dest_path`, so the skip is all-or-nothing per operation.
+`TransferDialog` seeds the destination with the OPPOSITE PANE'S CURRENT FOLDER, which by definition exists. So:
+
+- **The default F5 copy is the top row.** It keeps every round trip and is exactly as fast as before.
+- **The bottom row is "the user typed a destination folder that doesn't exist yet"** — a new dated backup folder, a
+  fresh export directory. Real, and worth 2-3x when it happens, but not the common path.
+
+❌ So "many-small copies to a network destination got 2-3x faster" is not a true sentence about Cmdr. The true sentence
+is "copies into a folder Cmdr creates got 2-3x faster; copies into a folder that was already there are unchanged."
+
+### The listing that is already being paid for
+
+`copy_volumes_with_progress` Phase 0.6 calls `reap_stale_transfer_temps(&dest_volume, dest_path)`, which does one
+`list_directory` of the destination — **on every copy, including merges, immediately before the spawn loop**.
+
+That is the same round trip the rejected "list the destination once up front" option (b) would need. So the COST side of
+that trade is already zero: the listing happens either way, and using its result would remove the per-file probes from
+the merge case too — the common case above.
+
+**It does not answer the objection that killed it.** One up-front listing can be minutes stale by the time the last file
+in a large batch lands, so a file appearing at the destination mid-batch would be missed and an Overwrite would replace
+it with no prompt. That exposure is the reason for the conservative fix, and David chose it again with this cost fact on
+the table (2026-08-02). Recorded here as a fact, ❌ not as a proposal: the next person weighing it should start from
+"the round trip is already spent" rather than re-deriving it, and should still have to answer the staleness question.
+
 ### What this does NOT show
 
-- **The common flow is the `existing` column, not the `fresh` one.** Every top-level probe targets the same directory
-  (`dest_path`), so the skip is all-or-nothing per operation, and it fires only when the copy itself creates that
-  directory. `TransferDialog` defaults the destination to the opposite pane's current folder, which exists. So the 2-3x
-  lands on "the user typed a new destination folder", and the ordinary F5 copy into an existing folder keeps every round
-  trip. The fix is real and the numbers are real; the flow it applies to is narrower than the table looks.
-- **The driver already pays for a listing that would answer the general case.** Phase 0.6's `reap_stale_transfer_temps`
-  lists `dest_path` once on every copy, immediately before the spawn loop. Reusing that answer IS option (b) above —
-  strictly more valuable, strictly less safe (a multi-minute batch's listing goes stale), and it needs its own decision
-  rather than arriving as an optimization.
 - **Nothing here was measured over WAN.** The effect is `N x RTT`, so a Tailscale link (~50 ms) should show far more;
   untested.
 - **Local destinations were not measured**, and the skip is not conditioned on the destination being remote. That is
