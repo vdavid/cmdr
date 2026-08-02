@@ -2059,6 +2059,9 @@ mod bench;
 #[path = "volume_copy_cancel_tests.rs"]
 mod cancel_tests;
 #[cfg(test)]
+#[path = "volume_copy_concurrency_bench.rs"]
+mod concurrency_bench;
+#[cfg(test)]
 #[path = "volume_copy_concurrent_tests.rs"]
 mod concurrent_tests;
 #[cfg(test)]
