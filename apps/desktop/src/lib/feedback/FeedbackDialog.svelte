@@ -9,7 +9,8 @@
     import { onMount, tick } from 'svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
-    import Checkbox from '$lib/ui/Checkbox.svelte'
+    import AttachEmailCheckbox from '$lib/attach-email/AttachEmailCheckbox.svelte'
+    import { createAttachEmail } from '$lib/attach-email/attach-email.svelte'
     import TextArea from '$lib/ui/TextArea.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import { addToast } from '$lib/ui/toast'
@@ -18,7 +19,6 @@
     import { t, tString } from '$lib/intl/messages.svelte'
     import Trans from '$lib/intl/Trans.svelte'
     import { closeFeedbackDialog } from './feedback-flow.svelte'
-    import { getSetting, setSetting } from '$lib/settings'
     import { getAppLogger } from '$lib/logging/logger'
     import { GITHUB_ISSUES_URL, BOOK_A_CALL_URL } from '$lib/beta-links'
 
@@ -30,13 +30,7 @@
 
     let feedbackText = $state('')
     let textareaRef: HTMLTextAreaElement | undefined
-    // Beta contact email (if set) and the sticky attach-email choice. The checkbox shows
-    // only when an email is on file; never pre-ticked on first use (default false). Shares
-    // `updates.attachEmailToReports` with the error and crash report dialogs, so the
-    // choice sticks across all three.
-    const contactEmail = getSetting('analytics.email').trim()
-    let attachEmail = $state(getSetting('updates.attachEmailToReports'))
-    const emailToAttach = $derived(attachEmail && contactEmail ? contactEmail : undefined)
+    const attachEmail = createAttachEmail()
     let sending = $state(false)
     let sendFailedMessage = $state<string | null>(null)
 
@@ -53,10 +47,8 @@
         sending = true
         sendFailedMessage = null
         try {
-            if (contactEmail) {
-                setSetting('updates.attachEmailToReports', attachEmail)
-            }
-            const result = await sendFeedback(feedbackText, emailToAttach)
+            attachEmail.persist()
+            const result = await sendFeedback(feedbackText, attachEmail.emailToAttach)
             if (result.kind === 'sent') {
                 addToast(tString('feedback.sentToast'), { level: 'success' })
                 feedbackText = ''
@@ -170,11 +162,7 @@
             </p>
         {/if}
 
-        {#if contactEmail}
-            <div class="attach-email">
-                <Checkbox bind:checked={attachEmail}>{t('feedback.dialog.attachEmail', { email: contactEmail })}</Checkbox>
-            </div>
-        {/if}
+        <AttachEmailCheckbox email={attachEmail} />
 
         <p class="more-ways">
             <Trans key="feedback.dialog.moreWays" snippets={{ github: githubLink, call: callLink }} />
@@ -224,11 +212,6 @@
         margin: calc(var(--spacing-md) * -1) 0 var(--spacing-md);
         font-size: var(--font-size-xs);
         color: var(--color-error);
-    }
-
-    .attach-email {
-        margin-bottom: var(--spacing-md);
-        color: var(--color-text-secondary);
     }
 
     .more-ways {

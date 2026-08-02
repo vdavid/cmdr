@@ -24,10 +24,6 @@
   "@feedback.dialog.tooLong": {
     "sourceHash": "60a59ec"
   },
-  "feedback.dialog.attachEmail": "Đính kèm email của tôi ({email}) để chúng tôi trả lời",
-  "@feedback.dialog.attachEmail": {
-    "sourceHash": "5ab834c"
-  },
   "feedback.dialog.moreWays": "Bạn cũng có thể <github>xem và bình chọn trên GitHub</github> hoặc <call>đặt một cuộc gọi</call> với David.",
   "@feedback.dialog.moreWays": {
     "sourceHash": "5a26a7c"

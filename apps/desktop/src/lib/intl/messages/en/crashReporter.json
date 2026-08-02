@@ -62,15 +62,6 @@
     "screenshotNote": "The crash-report dialog (shown after the app quit unexpectedly) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
   },
 
-  "crashReporter.dialog.attachEmail": "Attach my email ({email}) so we can reply",
-  "@crashReporter.dialog.attachEmail": {
-    "description": "Label for an opt-in checkbox to include the user's email so the team can reply. Shown only when the user has an email on file; their actual address is shown in the parentheses.",
-    "placeholders": {
-      "email": "the user's email address on file (e.g. alex@example.com)"
-    },
-    "screenshot": "error-report.png",
-    "screenshotNote": "The crash-report dialog (shown after the app quit unexpectedly) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
-  },
 
   "crashReporter.dialog.dismiss": "Dismiss",
   "@crashReporter.dialog.dismiss": {

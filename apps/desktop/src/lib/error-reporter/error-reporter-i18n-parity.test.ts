@@ -48,9 +48,6 @@ describe('error-reporter dialog copy parity (en)', () => {
   })
 
   it('resolves the interpolated dialog strings', () => {
-    expect(t('errorReporter.dialog.attachEmail', { email: 'alex@example.com' })).toBe(
-      'Attach my email (alex@example.com) so we can reply',
-    )
     expect(t('errorReporter.dialog.counter', { currentText: '52,000', maxText: '100,000' })).toBe('52,000 / 100,000')
     expect(t('errorReporter.dialog.noteTooLong', { maxText: '100,000' })).toBe(
       'Note is too long. Maximum is 100,000 characters.',

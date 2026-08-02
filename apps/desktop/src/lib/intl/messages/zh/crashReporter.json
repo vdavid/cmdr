@@ -35,10 +35,6 @@
   "@crashReporter.dialog.alwaysSend": {
     "sourceHash": "8306c0e"
   },
-  "crashReporter.dialog.attachEmail": "附上我的邮箱（{email}）以便回复",
-  "@crashReporter.dialog.attachEmail": {
-    "sourceHash": "5ab834c"
-  },
   "crashReporter.dialog.dismiss": "关闭",
   "@crashReporter.dialog.dismiss": {
     "sourceHash": "48845bf"

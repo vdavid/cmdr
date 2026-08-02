@@ -45,9 +45,6 @@ describe('feedback dialog copy parity (en)', () => {
     expect(t('feedback.dialog.tooLong', { maxText: '100,000' })).toBe(
       "Sorry, that's too long. Maximum is 100,000 characters.",
     )
-    expect(t('feedback.dialog.attachEmail', { email: 'alex@example.com' })).toBe(
-      'Attach my email (alex@example.com) so we can reply',
-    )
   })
 
   it('renders the rich-text moreWays line in order (links stripped to text)', () => {

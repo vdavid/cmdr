@@ -26,9 +26,10 @@ event into a confirmation toast.
 - **Char counting uses `Array.from(userNote).length`** (code points) to match the Rust validator's `.chars().count()`.
   `userNote.length` (UTF-16 units) would let emoji-heavy notes pass the FE cap then fail server-side. Hard limit 100 000
   chars (Send disabled, both layers enforce); soft warning at 50 000; server also caps total payload at 10 MB.
-- **The reply-to email rides ONLY user-initiated sends.** Both Flow A and the crash dialog show "Attach my email" but
-  only when `analytics.email` is set; it threads into the send payload and writes `updates.attachEmailToReports` back
-  (sticky). Flow B (auto-send) never attaches it (see `error_reporter/DETAILS.md` § Flow-B-never-email).
+- **The reply-to email rides ONLY user-initiated sends.** Flow A's "Attach my email" opt-in is `$lib/attach-email`
+  (`createAttachEmail()` + `<AttachEmailCheckbox>`), shared with the crash-report and feedback dialogs: it shows only
+  when `analytics.email` is set and `persist()` writes the sticky `updates.attachEmailToReports` back on send. Flow B
+  (auto-send) never attaches it (see `error_reporter/DETAILS.md` § Flow-B-never-email).
 - **The dev-only "Save bundle to disk" button** calls `saveErrorReportToDisk`, gated on `import.meta.env.DEV`; the Tauri
   command is `cfg!(debug_assertions)`-only, so calling it in production returns an error.
 

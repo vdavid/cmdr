@@ -36,10 +36,6 @@
   "@errorReporter.dialog.noteTooLong": {
     "sourceHash": "835aa78"
   },
-  "errorReporter.dialog.attachEmail": "Anexar meu e-mail ({email}) para que possamos responder",
-  "@errorReporter.dialog.attachEmail": {
-    "sourceHash": "5ab834c"
-  },
   "errorReporter.dialog.detailsToggle": "O que está prestes a ser enviado",
   "@errorReporter.dialog.detailsToggle": {
     "sourceHash": "b1069f7"

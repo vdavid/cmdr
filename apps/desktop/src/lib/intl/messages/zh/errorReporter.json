@@ -36,10 +36,6 @@
   "@errorReporter.dialog.noteTooLong": {
     "sourceHash": "835aa78"
   },
-  "errorReporter.dialog.attachEmail": "附上我的电子邮件（{email}）方便我们回复",
-  "@errorReporter.dialog.attachEmail": {
-    "sourceHash": "5ab834c"
-  },
   "errorReporter.dialog.detailsToggle": "即将发送的内容",
   "@errorReporter.dialog.detailsToggle": {
     "sourceHash": "b1069f7"

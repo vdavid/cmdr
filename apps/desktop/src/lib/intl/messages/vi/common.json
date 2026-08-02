@@ -1,4 +1,8 @@
 {
+  "common.attachEmail": "Đính kèm email của tôi ({email}) để chúng tôi trả lời",
+  "@common.attachEmail": {
+    "sourceHash": "5ab834c"
+  },
   "common.downloadsFdaHint": "Cmdr cần quyền Truy cập toàn bộ đĩa để theo dõi thư mục Tải về của bạn. <settingsLink>Mở Cài đặt hệ thống</settingsLink>",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"

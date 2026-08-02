@@ -24,10 +24,6 @@
   "@feedback.dialog.tooLong": {
     "sourceHash": "60a59ec"
   },
-  "feedback.dialog.attachEmail": "附上我的邮箱（{email}）以便回复",
-  "@feedback.dialog.attachEmail": {
-    "sourceHash": "5ab834c"
-  },
   "feedback.dialog.moreWays": "你也可以<github>在 GitHub 上浏览和投票</github>，或者<call>预约通话</call>与 David 聊聊。",
   "@feedback.dialog.moreWays": {
     "sourceHash": "5a26a7c"

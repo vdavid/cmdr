@@ -36,10 +36,6 @@
   "@errorReporter.dialog.noteTooLong": {
     "sourceHash": "835aa78"
   },
-  "errorReporter.dialog.attachEmail": "Bifoga min e-postadress ({email}) så att vi kan svara",
-  "@errorReporter.dialog.attachEmail": {
-    "sourceHash": "5ab834c"
-  },
   "errorReporter.dialog.detailsToggle": "Det här är på väg att skickas",
   "@errorReporter.dialog.detailsToggle": {
     "sourceHash": "b1069f7"

@@ -1,4 +1,14 @@
 {
+  "common.attachEmail": "Attach my email ({email}) so we can reply",
+  "@common.attachEmail": {
+    "description": "Label for an opt-in checkbox to include the user's email so the team can reply. Shared verbatim by the crash-report, error-report, and feedback dialogs. Shown only when the user has an email on file; their actual address is shown in the parentheses.",
+    "placeholders": {
+      "email": "the user's email address on file (e.g. alex@example.com)"
+    },
+    "screenshot": "error-report.png",
+    "screenshotNote": "Pictured in the error-report dialog; the crash-report and feedback dialogs place the same checkbox above their Send button."
+  },
+
   "common.downloadsFdaHint": "Cmdr needs Full Disk Access to watch your Downloads folder. <settingsLink>Open System Settings</settingsLink>",
   "@common.downloadsFdaHint": {
     "description": "Hint shown when the downloads watcher lacks Full Disk Access. <settingsLink> wraps the inline action that opens System Settings.",

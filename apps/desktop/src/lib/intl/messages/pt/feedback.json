@@ -24,10 +24,6 @@
   "@feedback.dialog.tooLong": {
     "sourceHash": "60a59ec"
   },
-  "feedback.dialog.attachEmail": "Anexar meu e-mail ({email}) para podermos responder",
-  "@feedback.dialog.attachEmail": {
-    "sourceHash": "5ab834c"
-  },
   "feedback.dialog.moreWays": "Você também pode <github>ver e votar no GitHub</github> ou <call>agendar uma conversa</call> com o David.",
   "@feedback.dialog.moreWays": {
     "sourceHash": "5a26a7c"

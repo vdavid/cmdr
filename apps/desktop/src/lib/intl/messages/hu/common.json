@@ -1,4 +1,8 @@
 {
+  "common.attachEmail": "Csatold az e-mail-címemet ({email}), hogy válaszolhassunk",
+  "@common.attachEmail": {
+    "sourceHash": "5ab834c"
+  },
   "common.downloadsFdaHint": "A Cmdrnek teljes lemezhozzáférésre van szüksége a Letöltések mappád figyeléséhez. <settingsLink>Rendszerbeállítások megnyitása</settingsLink>",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"

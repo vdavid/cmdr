@@ -10,7 +10,8 @@
     import { onMount, tick } from 'svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
-    import Checkbox from '$lib/ui/Checkbox.svelte'
+    import AttachEmailCheckbox from '$lib/attach-email/AttachEmailCheckbox.svelte'
+    import { createAttachEmail } from '$lib/attach-email/attach-email.svelte'
     import TextArea from '$lib/ui/TextArea.svelte'
     import { formatInteger } from '$lib/intl/number-format'
     import Size from '$lib/ui/Size.svelte'
@@ -27,7 +28,6 @@
     import { setLastSentReportId } from './error-report-toast-state.svelte'
     import { setLastSavedBundlePath } from './bundle-saved-toast-state.svelte'
     import { closeErrorReportDialog, errorReportFlow } from './error-report-flow.svelte'
-    import { getSetting, setSetting } from '$lib/settings'
     import { getAppLogger } from '$lib/logging/logger'
     import { t, tString } from '$lib/intl/messages.svelte'
 
@@ -47,11 +47,7 @@
     const POST_SEND_TOAST_MS = 10_000
 
     let userNote = $state(errorReportFlow.initialNote)
-    // Beta contact email (if set) and the sticky attach-email choice. The checkbox shows
-    // only when an email is on file; never pre-ticked on first use (default false).
-    const contactEmail = getSetting('analytics.email').trim()
-    let attachEmail = $state(getSetting('updates.attachEmailToReports'))
-    const emailToAttach = $derived(attachEmail && contactEmail ? contactEmail : undefined)
+    const attachEmail = createAttachEmail()
     let detailsExpanded = $state(false)
     let preview = $state<PreviewPayload | null>(null)
     let preparingError = $state<string | null>(null)
@@ -79,7 +75,7 @@
 
     async function buildInitialPreview() {
         try {
-            const result = await prepareErrorReportPreview(undefined, emailToAttach)
+            const result = await prepareErrorReportPreview(undefined, attachEmail.emailToAttach)
             preview = result
             preparingError = null
         } catch (e) {
@@ -103,7 +99,7 @@
             // Overlay the live attach-email choice so toggling the checkbox updates the
             // preview without rebuilding the multi-MB bundle. The actual send rebuilds
             // with the final value.
-            email: emailToAttach,
+            email: attachEmail.emailToAttach,
         }
     })
 
@@ -116,10 +112,8 @@
         if (sending || noteOverLimit) return
         sending = true
         try {
-            if (contactEmail) {
-                setSetting('updates.attachEmailToReports', attachEmail)
-            }
-            const result = await sendErrorReport(userNote || undefined, emailToAttach)
+            attachEmail.persist()
+            const result = await sendErrorReport(userNote || undefined, attachEmail.emailToAttach)
             setLastSentReportId(result.id)
             addToast(ErrorReportToastContent, {
                 id: 'error-report-sent',
@@ -143,7 +137,7 @@
 
     async function handleSaveToDisk() {
         try {
-            const path = await saveErrorReportToDisk(userNote || undefined, emailToAttach)
+            const path = await saveErrorReportToDisk(userNote || undefined, attachEmail.emailToAttach)
             setLastSavedBundlePath(path)
             addToast(BundleSavedToastContent, {
                 id: 'error-report-bundle-saved',
@@ -237,11 +231,7 @@
             </p>
         {/if}
 
-        {#if contactEmail}
-            <div class="attach-email">
-                <Checkbox bind:checked={attachEmail}>{t('errorReporter.dialog.attachEmail', { email: contactEmail })}</Checkbox>
-            </div>
-        {/if}
+        <AttachEmailCheckbox email={attachEmail} />
 
         <button
             class="details-toggle"
@@ -377,11 +367,6 @@
         margin: calc(var(--spacing-md) * -1) 0 var(--spacing-md);
         font-size: var(--font-size-xs);
         color: var(--color-error);
-    }
-
-    .attach-email {
-        margin-bottom: var(--spacing-md);
-        color: var(--color-text-secondary);
     }
 
     .details-toggle {

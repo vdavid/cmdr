@@ -1,4 +1,8 @@
 {
+  "common.attachEmail": "Voeg mijn e-mailadres ({email}) toe zodat we kunnen reageren",
+  "@common.attachEmail": {
+    "sourceHash": "5ab834c"
+  },
   "common.downloadsFdaHint": "Cmdr heeft volledige schijftoegang nodig om je map Downloads te volgen. <settingsLink>Open Systeeminstellingen</settingsLink>",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"

@@ -1,4 +1,8 @@
 {
+  "common.attachEmail": "Adjuntar mi correo ({email}) para que podamos responder",
+  "@common.attachEmail": {
+    "sourceHash": "5ab834c"
+  },
   "common.downloadsFdaHint": "Cmdr necesita acceso a todo el disco para vigilar tu carpeta de Descargas. <settingsLink>Abrir Ajustes del Sistema</settingsLink>",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"

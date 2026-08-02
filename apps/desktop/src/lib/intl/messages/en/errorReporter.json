@@ -57,13 +57,6 @@
     }
   },
 
-  "errorReporter.dialog.attachEmail": "Attach my email ({email}) so we can reply",
-  "@errorReporter.dialog.attachEmail": {
-    "description": "Label for an opt-in checkbox to include the user's email so the team can reply. Shown only when the user has an email on file; their actual address is shown in the parentheses.",
-    "placeholders": {
-      "email": "the user's email address on file (e.g. alex@example.com)"
-    }
-  },
 
   "errorReporter.dialog.detailsToggle": "What''s about to be sent",
   "@errorReporter.dialog.detailsToggle": {

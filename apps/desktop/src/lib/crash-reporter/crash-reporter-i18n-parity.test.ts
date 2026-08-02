@@ -12,7 +12,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { _setLocaleForTests } from '$lib/intl/locale'
-import { t, tString } from '$lib/intl/messages.svelte'
+import { tString } from '$lib/intl/messages.svelte'
 
 beforeAll(() => {
   _setLocaleForTests('en-US')
@@ -39,12 +39,6 @@ describe('crash-reporter dialog copy parity (en)', () => {
     expect(tString('crashReporter.dialog.dismiss')).toBe('Dismiss')
     expect(tString('crashReporter.dialog.send')).toBe('Send report')
     expect(tString('crashReporter.dialog.sending')).toBe('Sending...')
-  })
-
-  it('resolves the interpolated attach-email label', () => {
-    expect(t('crashReporter.dialog.attachEmail', { email: 'alex@example.com' })).toBe(
-      'Attach my email (alex@example.com) so we can reply',
-    )
   })
 })
 

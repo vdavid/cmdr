@@ -36,10 +36,6 @@
   "@errorReporter.dialog.noteTooLong": {
     "sourceHash": "835aa78"
   },
-  "errorReporter.dialog.attachEmail": "Đính kèm email của tôi ({email}) để chúng tôi có thể trả lời",
-  "@errorReporter.dialog.attachEmail": {
-    "sourceHash": "5ab834c"
-  },
   "errorReporter.dialog.detailsToggle": "Những gì sắp được gửi",
   "@errorReporter.dialog.detailsToggle": {
     "sourceHash": "b1069f7"

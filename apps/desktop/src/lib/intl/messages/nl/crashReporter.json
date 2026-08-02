@@ -35,10 +35,6 @@
   "@crashReporter.dialog.alwaysSend": {
     "sourceHash": "8306c0e"
   },
-  "crashReporter.dialog.attachEmail": "Voeg mijn e-mailadres ({email}) toe zodat we kunnen reageren",
-  "@crashReporter.dialog.attachEmail": {
-    "sourceHash": "5ab834c"
-  },
   "crashReporter.dialog.dismiss": "Sluit",
   "@crashReporter.dialog.dismiss": {
     "sourceHash": "48845bf"

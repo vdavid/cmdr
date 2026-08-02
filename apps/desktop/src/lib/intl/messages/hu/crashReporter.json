@@ -35,10 +35,6 @@
   "@crashReporter.dialog.alwaysSend": {
     "sourceHash": "8306c0e"
   },
-  "crashReporter.dialog.attachEmail": "Csatold az e-mail-címemet ({email}), hogy válaszolhassunk",
-  "@crashReporter.dialog.attachEmail": {
-    "sourceHash": "5ab834c"
-  },
   "crashReporter.dialog.dismiss": "Elvetés",
   "@crashReporter.dialog.dismiss": {
     "sourceHash": "48845bf"

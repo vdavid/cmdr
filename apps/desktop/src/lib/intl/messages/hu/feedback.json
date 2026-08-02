@@ -24,10 +24,6 @@
   "@feedback.dialog.tooLong": {
     "sourceHash": "60a59ec"
   },
-  "feedback.dialog.attachEmail": "Csatold az e-mail-címemet ({email}), hogy válaszolhassunk",
-  "@feedback.dialog.attachEmail": {
-    "sourceHash": "5ab834c"
-  },
   "feedback.dialog.moreWays": "<github>Böngészhetsz és szavazhatsz a GitHubon</github>, vagy <call>foglalhatsz egy hívást</call> Daviddel.",
   "@feedback.dialog.moreWays": {
     "sourceHash": "5a26a7c"

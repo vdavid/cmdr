@@ -2,11 +2,13 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Checkbox from '$lib/ui/Checkbox.svelte'
+    import AttachEmailCheckbox from '$lib/attach-email/AttachEmailCheckbox.svelte'
+    import { createAttachEmail } from '$lib/attach-email/attach-email.svelte'
     import type { CrashReport } from '$lib/tauri-commands'
     import { sendCrashReport, dismissCrashReport } from '$lib/tauri-commands'
-    import { getSetting, setSetting } from '$lib/settings'
+    import { setSetting } from '$lib/settings'
     import { getAppLogger } from '$lib/logging/logger'
-    import { t, tString } from '$lib/intl/messages.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     const log = getAppLogger('crashReportDialog')
 
@@ -22,12 +24,7 @@
     let sending = $state(false)
     let copied = $state(false)
 
-    // The beta contact email, if the user added one. Drives whether the attach-email
-    // checkbox shows at all. Trimmed so a stray-space value doesn't count as "on file."
-    const contactEmail = $derived(getSetting('analytics.email').trim())
-    // Sticky default from the last choice (Advanced toggle or a prior report). Never
-    // pre-ticked on first use: the registry default is false.
-    let attachEmail = $state(getSetting('updates.attachEmailToReports'))
+    const attachEmail = createAttachEmail()
 
     const reportJson = $derived(JSON.stringify(report, null, 2))
 
@@ -43,13 +40,11 @@
             if (alwaysSend) {
                 setSetting('updates.crashReports', true)
             }
-            // Remember the attach-email choice (sticky) and include the email only when
-            // the box is checked AND an email is on file.
-            if (contactEmail) {
-                setSetting('updates.attachEmailToReports', attachEmail)
-            }
-            const reportToSend: CrashReport =
-                attachEmail && contactEmail ? { ...report, email: contactEmail } : report
+            // Remember the attach-email choice (sticky); the email rides along only when
+            // the box is checked AND one is on file.
+            attachEmail.persist()
+            const email = attachEmail.emailToAttach
+            const reportToSend: CrashReport = email ? { ...report, email } : report
             await sendCrashReport(reportToSend)
             log.info('Crash report sent')
         } catch (e) {
@@ -121,12 +116,9 @@
             <Checkbox bind:checked={alwaysSend}>{tString('crashReporter.dialog.alwaysSend')}</Checkbox>
         </div>
 
-        <!-- Attach-email checkbox, shown only when a beta contact email is on file -->
-        {#if contactEmail}
-            <div class="always-send">
-                <Checkbox bind:checked={attachEmail}>{t('crashReporter.dialog.attachEmail', { email: contactEmail })}</Checkbox>
-            </div>
-        {/if}
+        <!-- Renders itself only when a beta contact email is on file. The wider gap
+             matches the always-send checkbox above it. -->
+        <AttachEmailCheckbox email={attachEmail} containerStyle="margin-bottom: var(--spacing-lg)" />
     </div>
 
     {#snippet footer()}
