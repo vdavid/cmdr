@@ -1,6 +1,7 @@
 package checks
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
@@ -264,6 +265,105 @@ func TestWarnOnlyToleratesContentionAndInconclusiveButNothingElse(t *testing.T) 
 		if got := WarnOnly(c.results); got != c.want {
 			t.Errorf("%s: WarnOnly = %v, want %v", c.name, got, c.want)
 		}
+	}
+}
+
+// The lanes all funnel a red run through `resolveRustFailure`, so these pin what a lane
+// actually returns. The Linux lane joined them by injecting a container-backed runner;
+// nothing about the verdicts is lane-specific, and that's the point.
+
+// A starved suite must not read as a defect: warn, with the story in the message.
+func TestAStarvedRunResolvesToAWarnThatNamesTheTests(t *testing.T) {
+	f := &fakeRun{outputs: map[string]string{}} // everything passes alone
+	result, err := resolveRustFailure("rust tests failed on Linux", f.run, quiet, failureOutput("starved::one"))
+
+	if err != nil {
+		t.Fatalf("a starved run must not be an error, got: %v", err)
+	}
+	if result.Code != ResultWarning {
+		t.Errorf("code = %v, want %v", result.Code, ResultWarning)
+	}
+	for _, want := range []string{"starved::one", "failed under load", "none confirmed a defect"} {
+		if !strings.Contains(result.Message, want) {
+			t.Errorf("message missing %q: %q", want, result.Message)
+		}
+	}
+}
+
+// The whole point is to stop MISREPORTING starvation, not to stop failing. A test that
+// still fails alone with headroom stays a hard error, with its output intact.
+func TestATestThatFailsAloneStillHardFailsTheLane(t *testing.T) {
+	f := &fakeRun{outputs: map[string]string{
+		ContentionProbeProfile: failureOutput("broken::one"),
+		ContentionRetryProfile: failureOutput("broken::one"),
+	}}
+	trimmed := failureOutput("broken::one") + "\nthread 'broken::one' panicked at src/foo.rs:42:\n"
+	result, err := resolveRustFailure("rust tests failed on Linux", f.run, quiet, trimmed)
+
+	if err == nil {
+		t.Fatalf("a test failing alone must stay red, got result %+v", result)
+	}
+	for _, want := range []string{
+		"rust tests failed on Linux",
+		"broken::one",
+		"Still failing alone with headroom",
+		"panicked at src/foo.rs:42",
+	} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error missing %q:\n%s", want, err)
+		}
+	}
+}
+
+// One genuine failure alongside starved ones keeps the whole run red. Softening to a warn
+// because "most of it was contention" would hide the defect.
+func TestOneRealFailureAmongStarvedOnesKeepsTheRunRed(t *testing.T) {
+	f := &fakeRun{outputs: map[string]string{
+		ContentionProbeProfile: failureOutput("broken::one"),
+		ContentionRetryProfile: failureOutput("broken::one"),
+	}}
+	_, err := resolveRustFailure("rust tests failed on Linux", f.run,
+		quiet, failureOutput("starved::one", "broken::one"))
+
+	if err == nil {
+		t.Fatal("a real failure in the batch must keep the run red")
+	}
+	if !strings.Contains(err.Error(), "starved::one") || !strings.Contains(err.Error(), "broken::one") {
+		t.Errorf("both verdicts belong in the report:\n%s", err)
+	}
+}
+
+// A re-run that couldn't run at all (a dead container, a wedged daemon) is not evidence
+// about any test. It must never buy a red run a warn.
+func TestARerunThatCannotRunLeavesTheRunRed(t *testing.T) {
+	broken := func(string, []string) (string, error) {
+		return "", errors.New("contention re-run under profile contention-probe could not run in the container")
+	}
+	_, err := resolveRustFailure("rust tests failed on Linux", broken, quiet, failureOutput("starved::one"))
+
+	if err == nil {
+		t.Fatal("a runner-level failure must not soften the run")
+	}
+	if !strings.Contains(err.Error(), "starved::one") {
+		t.Errorf("the failing test still belongs in the report:\n%s", err)
+	}
+}
+
+// A build break has no failing tests to re-run. It must be reported as-is, immediately,
+// with nothing invented about contention.
+func TestAnUnclassifiableFailureIsReportedAsIs(t *testing.T) {
+	f := &fakeRun{outputs: map[string]string{}}
+	_, err := resolveRustFailure("rust tests failed on Linux", f.run, quiet,
+		"error[E0432]: unresolved import `crate::foo`\n")
+
+	if err == nil {
+		t.Fatal("a build break is still a failure")
+	}
+	if !strings.Contains(err.Error(), "E0432") {
+		t.Errorf("the compiler error must survive:\n%s", err)
+	}
+	if len(f.calls) != 0 {
+		t.Errorf("nothing to re-run, so nothing should have run: %+v", f.calls)
 	}
 }
 

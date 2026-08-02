@@ -42,7 +42,8 @@ func RunRustTests(ctx *CheckContext) (CheckResult, error) {
 		// Trim the per-test PASS/SKIP lines (the Linux lane already does): on a 4 800-test
 		// suite they bury the diagnosis and the actual panics under thousands of lines.
 		// FAIL/LEAK/TIMEOUT/SLOW and every panic body survive.
-		return resolveRustFailure("rust tests failed", ctx.RootDir, baseArgs, trimRustTestProgress(output))
+		return resolveRustFailure("rust tests failed",
+			nextestContentionRunner(ctx.RootDir, baseArgs), LoadPerCore, trimRustTestProgress(output))
 	}
 
 	// Parse test count from output: "X tests run:"
@@ -89,7 +90,12 @@ func withFailureDiagnosis(output string) string {
 // the suite is told apart from real slowness or a real defect. Only an all-contention
 // outcome softens the result, and even then to a WARN, never a pass: the re-run must not
 // become a silent absorber (that's how the retry budget rotted before it was surfaced).
-func resolveRustFailure(label, workDir string, baseArgs []string, trimmed string) (CheckResult, error) {
+//
+// `run` and `load` are injected because the three Rust lanes re-run in different places:
+// the two host lanes shell out to `cargo` here, the Docker lane execs into its still-live
+// container. The verdict logic must stay ONE implementation, or a lane quietly grows its
+// own idea of what a red run means.
+func resolveRustFailure(label string, run ContentionRunner, load LoadSampler, trimmed string) (CheckResult, error) {
 	failures := ClassifyRustFailures(trimmed)
 	real := RealFailures(failures)
 	diagnosis := DiagnoseRustFailures(failures)
@@ -99,7 +105,7 @@ func resolveRustFailure(label, workDir string, baseArgs []string, trimmed string
 		return CheckResult{}, fmt.Errorf("%s\n%s", label, indentOutput(withFailureDiagnosis(trimmed)))
 	}
 
-	results, skipped := MaybeClassifyContention(real, nextestContentionRunner(workDir, baseArgs), LoadPerCore)
+	results, skipped := MaybeClassifyContention(real, run, load)
 	if skipped {
 		return CheckResult{}, fmt.Errorf("%s\n%s", label,
 			indentOutput(diagnosis+"\n"+ContentionSkippedNote(len(real))+"\n\n"+trimmed))

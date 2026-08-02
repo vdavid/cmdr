@@ -94,8 +94,8 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 		// here is even likelier to be starvation than in the default lane. Slowest healthy
 		// test measured 2.8s (whole 53-test suite: 5.3s wall-clock), well inside the
 		// contention-retry profile's 40s headroom.
-		return resolveRustFailure("SMB integration tests failed", ctx.RootDir, baseArgs,
-			trimRustTestProgress(output))
+		return resolveRustFailure("SMB integration tests failed",
+			nextestContentionRunner(ctx.RootDir, baseArgs), LoadPerCore, trimRustTestProgress(output))
 	}
 
 	re := regexp.MustCompile(`(\d+) tests? run`)
