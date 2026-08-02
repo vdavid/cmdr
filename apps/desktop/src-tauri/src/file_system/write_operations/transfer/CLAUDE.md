@@ -14,6 +14,8 @@ Copy and move, local-FS and volume-aware (Local ↔ MTP ↔ SMB), through `trans
 
 - **The merge invariant**: a merge never deletes or overwrites a dest file the source doesn't shadow — every policy,
   every backend, cancel/rollback/retry mid-merge (`volume_merge_tests.rs`).
+- **The top-level dest probe is skipped ONLY for a dest dir THIS op created** (`DirectoryCreation::Created`). ❌ A merge
+  into a pre-existing dir still probes; ❌ "created by us" is NEVER "empty".
 - **Dir-vs-dir is NEVER a conflict**: `resolve_volume_conflict` short-circuits to merge before any policy lookup or
   emit. Stop/Skip/Rename all merge the folder; only files prompt.
 - **Overwrite means merge for dirs, replace for files**, enforced at the `apply_volume_conflict_resolution` call site,
@@ -26,13 +28,13 @@ Copy and move, local-FS and volume-aware (Local ↔ MTP ↔ SMB), through `trans
 
 - **A cross-volume file write stages on `.cmdr-tmp-<uuid>` and takes its final name only after its last byte**: a
   force-quit must never leave a truncated file at a real name. Exempt: `AlreadyStaged` and `SingleShot` — ❌
-  single-shot-ness buys that, NEVER smallness; ask `resolve_staging`. A temp is in `in_flight_temps` only while partial,
-  carrying `state.liveness_token()` so it hides.
+  single-shot-ness earns that, NEVER smallness; ask `resolve_staging`. A temp sits in `in_flight_temps` only while
+  partial, carrying `state.liveness_token()` so it hides.
 - **Cross-volume file→file Overwrite is a safe-replace** (sibling temp + `finalize_safe_replace`); that temp is
   committed data, ❌ not a partial. Cross-type: delete-first.
 - **Cleanup/rollback for a DIRECTORY source is per-FILE, never the dir root** (a merge holds pre-existing dest files,
-  so a recursive root delete is silent data loss): `last_dest_path` is cleared for a dir source, and a dir root never
-  enters `in_flight_partials`.
+  so a recursive root delete is silent data loss): `last_dest_path` clears for a dir source, and a dir root never enters
+  `in_flight_partials`.
 
 - **Cross-FS move source-delete preserves Skipped sources, AFTER `flush_created_destinations`.** Same-volume move is a
   rename-merge with top-level hints only (`bytes_total = 0`), never a subtree walk.
@@ -42,6 +44,8 @@ Copy and move, local-FS and volume-aware (Local ↔ MTP ↔ SMB), through `trans
 - **Cross-volume copy parks/yields between chunks** (`CheckpointStream`): park in place, NO release/reopen; auto-yield
   keeps the op **Running**. TWO opt-ins, ❌ don't merge: SOURCE read-yield (MTP + SMB) is UNBOUNDED; DESTINATION
   write-yield (SMB only) is HARD-CAPPED — it holds a handle the server reaps.
+- **A LOCAL `max_concurrent_ops` must NOT bound a REMOTE peer** (`transfer_concurrency`). ❌ Don't restore the `min()`;
+  ❌ don't raise `LocalPosixVolume`'s cap instead. A remote cap always binds — that's what keeps MTP serial.
 - **The concurrent driver observes cancel/rollback ON ITS AWAIT**, not only in the spawn loop: it races
   `in_flight.next()` against `state.backend_cancel`, drains under `CANCEL_DRAIN_DEADLINE`, then ABANDONS the rest. ❌
   Never unbounded.

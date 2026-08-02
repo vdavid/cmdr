@@ -1,7 +1,7 @@
 # SMB transfers that survive a server going quiet, without giving up throughput
 
-**Status**: M0-M3, M4.1, and M4.4 shipped; M4.2's mechanism is in and gated shut, and 0.16.0's keepalive does not open
-it; M4.3 open. **Owner**: David. **Date**: 2026-08-01.
+**Status**: M0-M3, M4.1, M4.3, and M4.4 shipped; M4.2's mechanism is in and gated shut, and 0.16.0's keepalive does not
+open it. **Owner**: David. **Date**: 2026-08-01.
 
 A 764-file copy to a QNAP NAS wedges permanently, twice reproduced. Everything downstream of that — the frozen dialog,
 the dead Rollback, the corrupt files — is a symptom.
@@ -132,9 +132,17 @@ Finishes the half of the earlier `M1.3` that was left undone.
   Nothing else moves. ❌ And do NOT then drop the stillness window and trust the verdict: the keepalive is least
   trustworthy exactly when a transfer is running, so the AND is load-bearing and the 180 s debounce is doing real work
   rather than just waiting. Full reasoning and the guard tests: `transfer/DETAILS.md` § "The watchdog ACTS".
-- **M4.3** Delete the concurrency guess. `min(src.max_concurrent_ops, dst.max_concurrent_ops, 32)` is a magic number
-  standing in for backpressure; with a real credit budget the gate IS the backpressure, self-tuning per connection. This
-  is where the throughput upside sits.
+- **M4.3** ✅ **Shipped, but not as specified.** The premise ("this is where the throughput upside sits") did not
+  survive measurement: swept 1-32 against a real QNAP, the window is worth ~14% at best on many-small and nothing on
+  few-large, because **74% of the fastest run was a serialized per-file destination probe no window width can overlap**
+  (`docs/notes/transfer-concurrency-window-bench-2026-08-02.md`). So the window formula was NOT replaced with a credit
+  budget. Two things shipped instead: (1) a LOCAL volume's `max_concurrent_ops` no longer bounds a REMOTE peer, which is
+  a defect fix — `LocalPosixVolume`'s CPU heuristic won the `min()` on every Mac, so `network.smbConcurrency` did
+  nothing above 4-8 while advertising 1-32 (worth 25% on an 8-core Mac, nothing on a 16-core one); (2) the per-file
+  destination probe is skipped for a destination directory the operation itself created. ❌ The 32 ceiling stays: the
+  NAS plateaus at 12 on both shapes. Open question 3 below is answered by the same numbers — "let the credit budget
+  decide" has no well-defined file-level value, since credits gate WRITE frames connection-wide while the window gates
+  concurrent FILES. Decisions and guardrails: `transfer/DETAILS.md` § Key decisions.
 - **M4.4** ✅ **Shipped** (`smb_full_concurrency_test.rs`). 400 local sources onto the Docker share at the driver's own
   concurrency, sized onto BOTH SMB write paths off the session's negotiated `max_write`, every byte verified, and the
   window's real peak fill asserted so a batch that quietly went sequential can't pass. Its wait is bounded and prints

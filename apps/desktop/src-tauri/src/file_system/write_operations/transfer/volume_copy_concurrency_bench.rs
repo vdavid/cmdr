@@ -23,6 +23,7 @@
 //! ```
 //!
 //! Knobs, all optional: `CMDR_BENCH_TARGET` (`docker` | `nas`),
+//! `CMDR_BENCH_DEST` (`existing` | `fresh`, default `existing`),
 //! `CMDR_BENCH_WINDOWS` (comma-separated, default `1,2,4,6,8,10,12,16,24,32`),
 //! `CMDR_BENCH_REPS` (default 5), `CMDR_BENCH_SHAPES` (`small` | `large` |
 //! `both`), `CMDR_BENCH_SMALL_COUNT`, `CMDR_BENCH_SMALL_KIB`,
@@ -48,6 +49,15 @@
 //!   round trips, so the per-file latency a wider window exists to hide barely
 //!   exists there. A curve that is flat on Docker says nothing about a real
 //!   network. The NAS target is what decides.
+//! - **`CMDR_BENCH_DEST` decides who creates the destination directory, and it
+//!   changes which code path is measured.** `existing` (the default, and what
+//!   the committed baseline used) pre-creates it before the timer starts, so the
+//!   copy MERGES into a directory it didn't make and pays its per-file
+//!   destination pre-check — one round trip per file, serialized on the driver.
+//!   `fresh` hands the copy a path that doesn't exist, so Phase 0.5 creates it
+//!   and the driver skips those probes (nothing can pre-exist in a folder it
+//!   just made). Running both back to back is how the pre-check skip gets
+//!   measured: same connection, same corpus, same session, one variable.
 //! - **The `window = 1` row is the SERIAL driver, not a one-wide concurrent
 //!   one.** `use_concurrent_path` needs `concurrency > 1`, so a window of 1
 //!   routes to `drive_transfer_serial_async` instead. That is exactly what a
@@ -237,6 +247,34 @@ fn scratch_name() -> String {
 
 // ── Corpus ──────────────────────────────────────────────────────────
 
+/// Who creates the destination directory, which decides whether the driver's
+/// per-file destination pre-check runs at all.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum DestMode {
+    /// The harness creates it before the timer: the copy merges into a directory
+    /// it didn't make, and probes every file. What the committed baseline used.
+    Existing,
+    /// The copy creates it itself (Phase 0.5) and skips the probes.
+    Fresh,
+}
+
+impl DestMode {
+    fn from_env() -> Self {
+        match std::env::var("CMDR_BENCH_DEST").as_deref() {
+            Ok("fresh") => Self::Fresh,
+            Ok("existing") | Err(_) => Self::Existing,
+            Ok(other) => panic!("CMDR_BENCH_DEST must be `existing` or `fresh`, got {other:?}"),
+        }
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            Self::Existing => "existing (harness pre-creates it; the copy merges and probes per file)",
+            Self::Fresh => "fresh (the copy creates it; per-file probes skipped)",
+        }
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Shape {
     /// Many files that each fit one compound frame.
@@ -322,12 +360,15 @@ struct Run {
     peak_in_flight: u32,
 }
 
-/// Runs one copy of the whole corpus into a fresh destination directory and
+/// Runs one copy of the whole corpus into an empty destination directory and
 /// times it end to end, the way the user's progress dialog does.
 ///
-/// The destination directory is created before the timer starts and emptied
-/// after it stops, so neither shows up in the number.
-async fn timed_copy(corpus: &Corpus, dest: &Arc<dyn Volume>, dir: &str, window: usize) -> Run {
+/// Under `DestMode::Existing` the directory is created before the timer starts
+/// and emptied after it stops, so neither shows up in the number. Under
+/// `DestMode::Fresh` the copy creates it itself, which is the whole point of
+/// that mode: the two `create_directory_all` round trips it costs are what
+/// replace one probe per file.
+async fn timed_copy(corpus: &Corpus, dest: &Arc<dyn Volume>, dir: &str, window: usize, dest_mode: DestMode) -> Run {
     set_smb_concurrency(window);
     assert_eq!(
         smb_concurrency(),
@@ -336,9 +377,11 @@ async fn timed_copy(corpus: &Corpus, dest: &Arc<dyn Volume>, dir: &str, window: 
          windows outside 1..=32 can't be measured on unchanged code"
     );
 
-    dest.create_directory(Path::new(dir))
-        .await
-        .expect("create the destination directory");
+    if dest_mode == DestMode::Existing {
+        dest.create_directory(Path::new(dir))
+            .await
+            .expect("create the destination directory");
+    }
 
     let guard = TestOperationGuard::register("m43-concurrency-bench");
     let operation_id = guard.id().to_owned();
@@ -583,6 +626,7 @@ fn median(sorted: &[Duration]) -> Duration {
 )]
 async fn concurrency_bench_sweep_window_against_wall_clock() {
     let windows = windows_to_sweep();
+    let dest_mode = DestMode::from_env();
     let reps = env_usize("CMDR_BENCH_REPS", DEFAULT_REPS);
     let shapes: Vec<Shape> = match std::env::var("CMDR_BENCH_SHAPES").as_deref() {
         Ok("small") => vec![Shape::Small],
@@ -597,6 +641,7 @@ async fn concurrency_bench_sweep_window_against_wall_clock() {
     println!("═══════════════════════════════════════════════════════════════════");
     println!("Transfer concurrency sweep (M4.3)");
     println!("  target     {}", target.label);
+    println!("  dest dir   {}", dest_mode.label());
     println!("  windows    {windows:?}");
     println!("  reps       {reps} (plus one discarded warm-up), round-robin");
     println!("═══════════════════════════════════════════════════════════════════");
@@ -631,7 +676,7 @@ async fn concurrency_bench_sweep_window_against_wall_clock() {
                 } else {
                     format!("{}/{}", target.scratch_parent, scratch_name())
                 };
-                let run = timed_copy(&corpus, &target.volume, &dir, window).await;
+                let run = timed_copy(&corpus, &target.volume, &dir, window, dest_mode).await;
                 if pass == 0 {
                     continue;
                 }
@@ -687,6 +732,9 @@ async fn concurrency_bench_sweep_window_against_wall_clock() {
 
         if let Some((window, med)) = best {
             println!("  fastest window: {window} at {med:.3?} median");
+            if dest_mode == DestMode::Fresh {
+                println!("  (the floor below is what this mode NO LONGER pays: the driver skipped every probe)");
+            }
             // What share of the best achievable time is spent in a serial probe
             // loop that no window can overlap. Near 100% means the window is not
             // the bottleneck and M4.3's premise needs rethinking.
