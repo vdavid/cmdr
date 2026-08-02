@@ -2,7 +2,14 @@
 //! rebuild (`do_attempt_reconnect`), the credentialed variant, watcher
 //! start/stop, and the backend-autonomous watcher-death reconnect loop.
 
-use super::*;
+use super::mapping::map_smb_error;
+use super::session::{build_session, refresh_credentials_from_store};
+use super::state::ConnectionState;
+use super::{SmbConnectionParams, SmbVolume, Volume, VolumeError};
+use log::{debug, info, warn};
+use std::sync::Arc;
+use std::sync::atomic::Ordering;
+use std::time::Duration;
 
 impl SmbVolume {
     /// Cancels the existing watcher task (if any). The watcher exits on its

@@ -3,7 +3,9 @@
 //! Holds the global `AppHandle` set once from `lib.rs::setup` so SMB state
 //! transitions can emit `smb-connection-changed` events to the frontend.
 
-use super::*;
+use log::warn;
+use std::sync::{Mutex as StdMutex, OnceLock};
+use tauri::AppHandle;
 
 /// Global `AppHandle` for emitting `smb-connection-changed` events. Set once
 /// from `lib.rs::setup`. Same pattern as `network::mdns_discovery::APP_HANDLE`.

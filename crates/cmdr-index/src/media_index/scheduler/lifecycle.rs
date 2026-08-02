@@ -15,8 +15,13 @@ use crate::IndexVolumeKind;
 #[cfg(not(target_os = "macos"))]
 use crate::media_index::backend::fake::FakeVisionBackend;
 
-use super::*;
+use super::{
+    BackendFactory, BeginOutcome, ConservativeFetchPolicy, FinishOutcome, MediaScheduler, PauseReason, VisionBackend,
+    enrich, gate, live, network,
+};
 use crate::indexing::lifecycle::lifecycle_bus;
+use std::collections::HashMap;
+use std::sync::Arc;
 
 /// Whether a LOCAL image at index path `path` is COVERED this pass — the pure
 /// coverage gate (override + importance threshold), unit-testable without a DB or an

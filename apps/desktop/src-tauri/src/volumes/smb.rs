@@ -2,7 +2,7 @@
 //! of a `statfs` mount source, tagging volumes with their SMB connection state,
 //! and deriving the SMB-aware volume ID.
 
-use super::*;
+use super::{LocationInfo, SmbConnectionState, is_smb_fs_type, path_to_id, smb_volume_id};
 
 /// Returns true if the filesystem type is SMB (macOS `smbfs` or Linux `cifs`).
 /// Enriches volume entries with SMB connection state from the `VolumeManager`.

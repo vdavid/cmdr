@@ -2,7 +2,11 @@
 //! inode / component, inserts, updates, renames/moves, and deletes. Pure code
 //! movement from the former monolithic `store.rs`.
 
-use super::*;
+use super::{EntryRow, IndexStore, IndexStoreError, normalize_for_comparison, reconstruct_path, with_savepoint};
+use rusqlite::{Connection, OptionalExtension, params};
+
+#[cfg(test)]
+use super::ROOT_ID;
 
 /// Parent ids per child-lookup query, and ids per `DELETE`. Both stay well under
 /// SQLite's default 999-parameter ceiling.

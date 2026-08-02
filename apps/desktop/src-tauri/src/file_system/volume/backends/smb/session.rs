@@ -2,7 +2,16 @@
 //! smb2 error-handling helpers (`handle_smb_result`, `with_smb_sync`,
 //! `update_state_on_smb_error`) plus session (re)build helpers.
 
-use super::*;
+use super::events::emit_state_change;
+use super::mapping::map_smb_error;
+use super::state::ConnectionState;
+use super::{SmbConnectionParams, SmbVolume, VolumeError};
+use log::{debug, warn};
+use smb2::client::tree::Tree;
+use smb2::{ClientConfig, SmbClient};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
+use std::time::Duration;
 
 pub(super) static CLIENT_LOCK_TICKET: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 

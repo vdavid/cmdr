@@ -1,7 +1,11 @@
 //! `IndexStore` meta-table and epoch helpers, plus whole-index counts and
 //! `clear_all`. Pure code movement from the former monolithic `store.rs`.
 
-use super::*;
+use super::{CURRENT_EPOCH_KEY, IndexStore, IndexStoreError, LEDGER_HEAL_KEY, with_savepoint};
+use rusqlite::{Connection, OptionalExtension, params};
+
+#[cfg(test)]
+use super::{ROOT_ID, reconstruct_path_from_map, reset_schema};
 
 impl IndexStore {
     /// Set a meta key-value pair.

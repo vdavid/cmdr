@@ -2,7 +2,7 @@
 //! classification, mount-point resolution, and read-only detection. All
 //! non-blocking (pure `statfs` / `getfsstat` reads, no NSURL enrichment).
 
-use super::*;
+use std::path::Path;
 
 /// Determine whether a filesystem type supports trash.
 ///

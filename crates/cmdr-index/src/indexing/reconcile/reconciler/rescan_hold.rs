@@ -40,8 +40,19 @@
 //! names it until the task itself releases, so the sweep keeps skipping it.
 
 use super::rescan_throttle::RescanThrottle;
-use super::*;
+use super::{IndexWriter, WriteMessage, collect_ancestor_paths};
 use crate::indexing::read::pending_sizes;
+use cmdr_fs::ignore_poison::IgnorePoison;
+use std::collections::HashSet;
+use std::path::{Path, PathBuf};
+use std::sync::Mutex;
+use std::time::Instant;
+
+// Used only by `tests` below, via `use super::*`.
+#[cfg(test)]
+use super::{EventReconciler, IndexPathSpace, IndexStore};
+#[cfg(test)]
+use std::time::Duration;
 
 /// Hold a rescan root's hourglass on `volume_id`'s tracker. No-op if the volume
 /// has no tracker (indexing stopped).

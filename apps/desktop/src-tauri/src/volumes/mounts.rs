@@ -3,7 +3,12 @@
 //! and enriching only local mounts (network mounts stay non-blocking so a hung
 //! mount can't stall discovery). See `DETAILS.md` § "Hung mounts".
 
-use super::*;
+use super::{
+    LocationCategory, LocationInfo, disk_image, get_bool_resource, get_icon_for_path, get_volume_name,
+    is_network_fs_type, is_smb_fs_type, parse_smb_mount_source, path_to_id, smb_volume_id, supports_trash_for_fs_type,
+    volume_name_from_path,
+};
+use std::path::Path;
 
 /// One entry from the kernel mount table, as returned by `getfsstat(MNT_NOWAIT)`.
 ///

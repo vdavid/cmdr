@@ -21,9 +21,18 @@ use super::rescan_hold::{
 use super::rescan_route::{self, RescanRoute};
 use super::rescan_settle;
 use super::rescan_throttle::RescanThrottle;
-use super::*;
+use super::{
+    DEBUG_STATS, EventReconciler, IndexPathSpace, IndexStore, IndexWriter, ReconcileSummary, SHALLOW_COALESCED_KEY,
+    SHALLOW_SWEEP_AT_KEY, ScanTrigger, WriteMessage, now_unix, reconcile_subtree,
+};
 use crate::indexing::lifecycle::manager;
 use crate::indexing::paths::path_prefix;
+use cmdr_fs::ignore_poison::IgnorePoison;
+use std::collections::HashSet;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 impl EventReconciler {
     /// Route a `MustScanSubDirs` anchor by depth (see [`rescan_route`]). The single

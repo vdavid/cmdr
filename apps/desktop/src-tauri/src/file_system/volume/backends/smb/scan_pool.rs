@@ -48,7 +48,16 @@ use std::time::Duration;
 use futures_util::StreamExt;
 use futures_util::stream::FuturesUnordered;
 
-use super::*;
+use super::mapping::{directory_entry_to_file_entry, map_smb_error};
+use super::session::build_session;
+use super::state::ConnectionState;
+use super::streams::InlineReadStream;
+use super::{SmbConnectionParams, SmbVolume, Volume, VolumeError, VolumeReadStream};
+use crate::file_system::listing::FileEntry;
+use smb2::SmbClient;
+use smb2::client::tree::Tree;
+use std::path::Path;
+use std::sync::Arc;
 
 /// How many EXTRA sessions a scan opens. Four is the benchmarked sweet spot: the
 /// NAS-side probe (2026-07-22) held total in-flight depth constant and varied

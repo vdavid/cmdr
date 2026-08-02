@@ -2,7 +2,8 @@
 //! path-derived volume-name fallback, per-path icon fetching, and volume-space
 //! reporting. The blocking macOS enrichment layer, only run for local mounts.
 
-use super::*;
+use serde::{Deserialize, Serialize};
+use std::path::Path;
 
 /// Display name derived purely from a mount path: the last path component, or
 /// "Macintosh HD" for the boot volume. The non-blocking fallback used for network

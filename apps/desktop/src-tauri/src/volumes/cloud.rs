@@ -2,7 +2,10 @@
 //! providers into switcher entries, and resolving an arbitrary path to the
 //! cloud drive that contains it.
 
-use super::*;
+use super::{
+    ICLOUD_VOLUME_ID, LocationCategory, LocationInfo, VolumeInfo, get_fs_type, get_icon_for_path,
+    supports_trash_for_fs_type,
+};
 use std::path::{Path, PathBuf};
 
 /// Get cloud drives (Dropbox, iCloud, Google Drive, etc.).

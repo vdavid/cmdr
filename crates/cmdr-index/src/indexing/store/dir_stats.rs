@@ -2,7 +2,8 @@
 //! plus subtree-epoch recompute. Pure code movement from the former monolithic
 //! `store.rs`.
 
-use super::*;
+use super::{DirStatsById, IndexStore, IndexStoreError, with_savepoint};
+use rusqlite::{Connection, OptionalExtension, params};
 
 impl IndexStore {
     /// Look up dir_stats for a single entry by ID.

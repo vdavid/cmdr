@@ -1,7 +1,12 @@
 //! `IndexStore` lifecycle: open/recreate, connection factories, DB-size and
 //! status reads. Pure code movement from the former monolithic `store.rs`.
 
-use super::*;
+use super::{
+    IndexStatus, IndexStore, IndexStoreError, SCHEMA_VERSION, ScanCalibration, ScanCalibrationKind, ScanCalibrationSet,
+    apply_pragmas, create_tables, register_platform_case_collation,
+};
+use rusqlite::{Connection, params};
+use std::path::Path;
 
 /// Backoff between `IndexStore::open` retries after transient lock contention, in
 /// milliseconds; its length is the retry budget (so three attempts in total).

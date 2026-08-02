@@ -5,7 +5,19 @@
 //! concern modules (`session::clone_session`, `streams::open_smb_download_stream`,
 //! `scan::scan_recursive`, `reconnect::do_attempt_reconnect`, etc.).
 
-use super::*;
+use super::mapping::{directory_entry_to_file_entry, filetime_to_unix_secs, fs_info_to_space_info};
+use super::state::ConnectionState;
+use super::streams::InlineReadStream;
+use super::{
+    BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SmbConnectionState, SmbVolume,
+    SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream, foreground_yield,
+};
+use crate::file_system::listing::FileEntry;
+use log::{debug, trace, warn};
+use std::path::{Path, PathBuf};
+use std::pin::Pin;
+use std::sync::atomic::Ordering;
+use std::time::Duration;
 
 impl SmbVolume {
     /// Converts a volume-relative path to the SMB relative path string.

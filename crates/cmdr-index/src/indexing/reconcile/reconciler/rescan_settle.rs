@@ -30,8 +30,16 @@
 //! an anchor.
 
 use super::rescan_throttle::RescanThrottle;
-use super::*;
-use std::time::SystemTime;
+use cmdr_fs::ignore_poison::IgnorePoison;
+use std::path::Path;
+use std::sync::Mutex;
+use std::time::{Duration, Instant, SystemTime};
+
+// Used only by `tests` below, via `use super::*`.
+#[cfg(test)]
+use super::{IndexPathSpace, reconcile_subtree};
+#[cfg(test)]
+use tokio_util::sync::CancellationToken;
 
 /// How long a directory must have existed before its subtree is worth walking.
 /// Long enough to outlive an updater unpacking and deleting a bundle, short

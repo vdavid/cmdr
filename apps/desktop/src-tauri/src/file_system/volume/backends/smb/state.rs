@@ -1,6 +1,8 @@
 //! Connection-state enum plus the SmbVolume state-transition and query methods.
 
-use super::*;
+use super::SmbVolume;
+use super::events::emit_state_change;
+use std::sync::atomic::Ordering;
 
 /// Connection health states for an SmbVolume.
 ///

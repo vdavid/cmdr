@@ -12,7 +12,7 @@
 //! - **macOS**: case-insensitive + NFD normalization (matching APFS)
 //! - **Linux**: binary comparison (matching ext4/btrfs)
 
-use rusqlite::{Connection, OptionalExtension, params};
+use rusqlite::{Connection, params};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};

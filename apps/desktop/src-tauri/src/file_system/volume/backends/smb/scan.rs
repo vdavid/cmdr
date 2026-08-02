@@ -3,7 +3,14 @@
 //! `scan_for_copy_batch_impl`, `scan_for_conflicts_impl`), which the trait
 //! methods in `volume_impl` delegate to.
 
-use super::*;
+use super::mapping::map_smb_error;
+use super::{BatchScanResult, CopyScanResult, ScanConflict, SmbVolume, SourceItemInfo, VolumeError};
+use crate::file_system::listing::FileEntry;
+use crate::file_system::listing::caching::try_get_watched_listing;
+use log::{debug, warn};
+use std::path::{Path, PathBuf};
+use std::pin::Pin;
+use std::sync::Arc;
 
 impl SmbVolume {
     /// Recursively scans an SMB path, returning file/dir counts and total bytes.
