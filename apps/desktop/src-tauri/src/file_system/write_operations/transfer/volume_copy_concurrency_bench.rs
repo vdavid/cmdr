@@ -259,11 +259,16 @@ enum DestMode {
 }
 
 impl DestMode {
-    fn from_env() -> Self {
+    /// Which modes to sweep. `both` interleaves them, which is the only honest
+    /// way to compare them: running every `existing` rep before every `fresh`
+    /// one hands machine load and NAS warm-up to one side, exactly the drift the
+    /// round-robin over windows exists to spread.
+    fn from_env() -> Vec<Self> {
         match std::env::var("CMDR_BENCH_DEST").as_deref() {
-            Ok("fresh") => Self::Fresh,
-            Ok("existing") | Err(_) => Self::Existing,
-            Ok(other) => panic!("CMDR_BENCH_DEST must be `existing` or `fresh`, got {other:?}"),
+            Ok("fresh") => vec![Self::Fresh],
+            Ok("both") => vec![Self::Existing, Self::Fresh],
+            Ok("existing") | Err(_) => vec![Self::Existing],
+            Ok(other) => panic!("CMDR_BENCH_DEST must be `existing`, `fresh`, or `both`, got {other:?}"),
         }
     }
 
@@ -626,7 +631,7 @@ fn median(sorted: &[Duration]) -> Duration {
 )]
 async fn concurrency_bench_sweep_window_against_wall_clock() {
     let windows = windows_to_sweep();
-    let dest_mode = DestMode::from_env();
+    let dest_modes = DestMode::from_env();
     let reps = env_usize("CMDR_BENCH_REPS", DEFAULT_REPS);
     let shapes: Vec<Shape> = match std::env::var("CMDR_BENCH_SHAPES").as_deref() {
         Ok("small") => vec![Shape::Small],
@@ -641,7 +646,9 @@ async fn concurrency_bench_sweep_window_against_wall_clock() {
     println!("═══════════════════════════════════════════════════════════════════");
     println!("Transfer concurrency sweep (M4.3)");
     println!("  target     {}", target.label);
-    println!("  dest dir   {}", dest_mode.label());
+    for mode in &dest_modes {
+        println!("  dest dir   {}", mode.label());
+    }
     println!("  windows    {windows:?}");
     println!("  reps       {reps} (plus one discarded warm-up), round-robin");
     println!("═══════════════════════════════════════════════════════════════════");
@@ -664,25 +671,28 @@ async fn concurrency_bench_sweep_window_against_wall_clock() {
             corpus.file_len,
         );
 
-        let mut samples: HashMap<usize, Vec<Duration>> = HashMap::new();
-        let mut peaks: HashMap<usize, u32> = HashMap::new();
+        // Keyed by (dest mode index, window) so the two modes interleave.
+        let mut samples: HashMap<(usize, usize), Vec<Duration>> = HashMap::new();
+        let mut peaks: HashMap<(usize, usize), u32> = HashMap::new();
 
-        // Round-robin over reps so drift lands on every window equally. Pass 0
-        // is the warm-up and is thrown away.
+        // Round-robin over reps so drift lands on every window (and every dest
+        // mode) equally. Pass 0 is the warm-up and is thrown away.
         for pass in 0..=reps {
             for &window in &windows {
-                let dir = if target.scratch_parent.is_empty() {
-                    scratch_name()
-                } else {
-                    format!("{}/{}", target.scratch_parent, scratch_name())
-                };
-                let run = timed_copy(&corpus, &target.volume, &dir, window, dest_mode).await;
-                if pass == 0 {
-                    continue;
+                for (mode_index, &dest_mode) in dest_modes.iter().enumerate() {
+                    let dir = if target.scratch_parent.is_empty() {
+                        scratch_name()
+                    } else {
+                        format!("{}/{}", target.scratch_parent, scratch_name())
+                    };
+                    let run = timed_copy(&corpus, &target.volume, &dir, window, dest_mode).await;
+                    if pass == 0 {
+                        continue;
+                    }
+                    samples.entry((mode_index, window)).or_default().push(run.elapsed);
+                    let peak = peaks.entry((mode_index, window)).or_default();
+                    *peak = (*peak).max(run.peak_in_flight);
                 }
-                samples.entry(window).or_default().push(run.elapsed);
-                let peak = peaks.entry(window).or_default();
-                *peak = (*peak).max(run.peak_in_flight);
             }
         }
 
@@ -694,25 +704,32 @@ async fn concurrency_bench_sweep_window_against_wall_clock() {
             corpus.file_len,
             corpus.total_bytes as f64 / (1024.0 * 1024.0),
         );
-        println!("  window     median        min        max      MB/s   files/s   peak");
         let mut best: Option<(usize, Duration)> = None;
-        for &window in &windows {
-            let mut runs = samples.remove(&window).unwrap_or_default();
-            runs.sort();
-            let med = median(&runs);
-            let secs = med.as_secs_f64();
-            println!(
-                "  {:>6}   {:>9.3?}  {:>9.3?}  {:>9.3?}   {:>7.1}   {:>7.1}   {:>4}",
-                window,
-                med,
-                runs.first().copied().unwrap_or_default(),
-                runs.last().copied().unwrap_or_default(),
-                corpus.total_bytes as f64 / secs / 1_000_000.0,
-                corpus.paths.len() as f64 / secs,
-                peaks.get(&window).copied().unwrap_or(0),
-            );
-            if best.is_none_or(|(_, b)| med < b) {
-                best = Some((window, med));
+        for (mode_index, dest_mode) in dest_modes.iter().enumerate() {
+            println!();
+            println!("  dest dir {}", dest_mode.label());
+            println!("  window     median        min        max      MB/s   files/s   peak");
+            for &window in &windows {
+                let mut runs = samples.remove(&(mode_index, window)).unwrap_or_default();
+                runs.sort();
+                let med = median(&runs);
+                let secs = med.as_secs_f64();
+                println!(
+                    "  {:>6}   {:>9.3?}  {:>9.3?}  {:>9.3?}   {:>7.1}   {:>7.1}   {:>4}",
+                    window,
+                    med,
+                    runs.first().copied().unwrap_or_default(),
+                    runs.last().copied().unwrap_or_default(),
+                    corpus.total_bytes as f64 / secs / 1_000_000.0,
+                    corpus.paths.len() as f64 / secs,
+                    peaks.get(&(mode_index, window)).copied().unwrap_or(0),
+                );
+                // The headline compares against the best run anywhere in the
+                // sweep, so a two-mode run reports the floor against the fastest
+                // thing the driver managed at all.
+                if best.is_none_or(|(_, b)| med < b) {
+                    best = Some((window, med));
+                }
             }
         }
         // The discriminator. Run AFTER the sweep so it never warms anything the
@@ -732,8 +749,8 @@ async fn concurrency_bench_sweep_window_against_wall_clock() {
 
         if let Some((window, med)) = best {
             println!("  fastest window: {window} at {med:.3?} median");
-            if dest_mode == DestMode::Fresh {
-                println!("  (the floor below is what this mode NO LONGER pays: the driver skipped every probe)");
+            if dest_modes.contains(&DestMode::Fresh) {
+                println!("  (the `fresh` rows do NOT pay the floor below: the driver skipped every probe)");
             }
             // What share of the best achievable time is spent in a serial probe
             // loop that no window can overlap. Near 100% means the window is not

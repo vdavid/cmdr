@@ -72,20 +72,22 @@ const WEDGE_DEADLINE: Duration = Duration::from_secs(5);
 ///
 /// Deliberately a floor, not the driver's formula. Two reasons, and both matter:
 ///
-/// 1. The formula is `min(src, dst, 32)` today and M4.3 exists to delete that
-///    guess, so pinning it here would make an unrelated change fail for the wrong
-///    reason.
+/// 1. Pinning the formula here would make any change to it fail for the wrong
+///    reason. It has already changed once (a LOCAL volume's cap no longer bounds
+///    a REMOTE peer, so this copy's window is `network.smbConcurrency` rather
+///    than `LocalPosixVolume`'s core-count clamp), and this suite is about
+///    whether the batch ran concurrently at all, not about how wide.
 /// 2. The number this reads is systematically ONE under the true window. Progress
 ///    events fire as a source finishes, so the task doing the reporting has
 ///    already left the in-flight table by the time `activity()` counts it.
 ///    Measured 2026-08-02 on an idle M3 Max: a sampled peak of 7 while a deadline
 ///    dump of the same run showed `in_flight=8/8`.
 ///
-/// So the bar is the smallest window the driver can produce anywhere, minus that
-/// one: `LocalPosixVolume::max_concurrent_ops` clamps at 4 even on a two-core CI
-/// runner, and `SmbVolume` defaults to 10. Under 3 means the batch went down the
+/// So the bar is the smallest window the driver could plausibly produce, minus
+/// that one, and it stays low on purpose. Under 3 means the batch went down the
 /// sequential path or the window never filled — either way, not the shape that
-/// wedges.
+/// wedges. ❌ Don't raise it to track a formula, and ❌ never lower it to make
+/// something pass.
 const MIN_PEAK_IN_FLIGHT: u32 = 3;
 
 /// How often the staging probe samples the destination while the copy runs.
