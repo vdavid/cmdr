@@ -462,3 +462,21 @@ the table (2026-08-02). Recorded here as a fact, ❌ not as a proposal: the next
   deliberate: it matches what `copy_directory_streaming` already does one level down for a freshly-created level, and a
   skipped `stat` cannot be slower than a performed one. But "no measurable local effect" here is a prediction, not a
   measurement.
+
+## The merge case (listing-answered pre-check): shipped, NOT measured
+
+The listing-answered pre-check (`dest_name_index.rs`, commit `28fd62a37`) extends the win to a copy into a
+PRE-EXISTING destination — the ordinary F5 flow, and the case the created-directory skip above never touches. It is
+correct by test and **unmeasured by benchmark**: the agent that built it died before running the NAS sweep, and the
+after-number was never captured.
+
+What is evidenced:
+
+- The **before** number stands: 3.462 s at window 32 for 500 x 16 KiB into a pre-existing folder (table above).
+- The mechanism is arithmetic — 500 serialized `get_metadata` calls at ~4.76 ms each are replaced by a listing the
+  driver already performs in Phase 0.6, so the ~2.378 s floor should collapse the way it did for the created-directory
+  case.
+
+What is NOT evidenced: that the recovery actually matches the ~74% the fresh-destination case achieved. Nobody has run
+`CMDR_BENCH_TARGET=nas CMDR_BENCH_DEST=existing` against the shipped code. ❌ Don't quote a speedup for the merge path
+until someone does — the reproduce command is at the top of this note and the harness is committed.
