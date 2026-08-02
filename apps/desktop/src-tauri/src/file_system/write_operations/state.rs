@@ -675,39 +675,37 @@ pub fn cancel_write_operation(operation_id: &str, rollback: bool) {
         log::warn!("cancel_write_operation: op={operation_id} rollback={rollback}: no such operation, ignoring");
         return;
     };
-    {
-        let target = if rollback {
-            OperationIntent::RollingBack
-        } else {
-            OperationIntent::Stopped
-        };
-        let current = OperationIntent::from_u8(state.intent.load(Ordering::Relaxed));
+    let target = if rollback {
+        OperationIntent::RollingBack
+    } else {
+        OperationIntent::Stopped
+    };
+    let current = OperationIntent::from_u8(state.intent.load(Ordering::Relaxed));
 
-        // Valid transitions: Running → RollingBack/Stopped, RollingBack → Stopped.
-        // Stopped is terminal; no further transitions.
-        let valid = matches!(
-            (current, target),
-            (OperationIntent::Running, _) | (OperationIntent::RollingBack, OperationIntent::Stopped)
+    // Valid transitions: Running → RollingBack/Stopped, RollingBack → Stopped.
+    // Stopped is terminal; no further transitions.
+    let valid = matches!(
+        (current, target),
+        (OperationIntent::Running, _) | (OperationIntent::RollingBack, OperationIntent::Stopped)
+    );
+    if !valid {
+        log::info!(
+            "cancel_write_operation: op={operation_id} {current:?} -> {target:?} is not a valid transition, ignoring"
         );
-        if !valid {
-            log::info!(
-                "cancel_write_operation: op={operation_id} {current:?} -> {target:?} is not a valid transition, ignoring"
-            );
-            return;
-        }
-
-        log::info!("cancel_write_operation: op={operation_id} {current:?} -> {target:?}, signalling backends");
-        state.intent.store(target as u8, Ordering::Relaxed);
-        // Any transition out of `Running` should also stop in-flight backend
-        // I/O (per-handle MTP loops, etc.) — not just the loop above it.
-        state.backend_cancel.cancel();
-        // Drop the conflict resolution sender to unblock any waiting receiver
-        let _ = state.conflict_resolution_tx.lock_ignore_poison().take();
-        // Cancellation wins over pause: wake a paused, parked op so it observes
-        // the non-Running intent and bails. Leaves the paused flag set (the op
-        // is going away regardless).
-        state.pause_gate.wake();
+        return;
     }
+
+    log::info!("cancel_write_operation: op={operation_id} {current:?} -> {target:?}, signalling backends");
+    state.intent.store(target as u8, Ordering::Relaxed);
+    // Any transition out of `Running` should also stop in-flight backend
+    // I/O (per-handle MTP loops, etc.) — not just the loop above it.
+    state.backend_cancel.cancel();
+    // Drop the conflict resolution sender to unblock any waiting receiver
+    let _ = state.conflict_resolution_tx.lock_ignore_poison().take();
+    // Cancellation wins over pause: wake a paused, parked op so it observes
+    // the non-Running intent and bails. Leaves the paused flag set (the op
+    // is going away regardless).
+    state.pause_gate.wake();
 }
 
 /// Stops all in-progress write operations without rollback.
