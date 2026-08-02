@@ -388,13 +388,18 @@ func trimBuildNoise(output string) string {
 //	cargo nextest `        PASS [   0.001s] cmdr_lib foo::bar`
 //	              `        SKIP [   0.001s] cmdr_lib foo::bar`
 //	              `        PASS [   0.001s] cmdr_lib foo::bar (reason)`
+//	              `        PASS [   0.094s] (  42/4802) cmdr_lib foo::bar`
+//
+// The progress counter is its own optional group because nextest right-aligns the
+// index to the total's width, so it can hold spaces (`(  42/4802)`). Folding it
+// into the binary field instead let exactly the 1-99 range slip through the filter.
 //
 // Anchored to the start of the line (with optional leading whitespace for the
 // nextest form) so panic-message bodies that quote these phrases can't be
 // misclassified. FAIL/LEAK/TIMEOUT/SLOW/bench results and every non-test line
 // fall through unchanged.
 var testProgressNoiseRE = regexp.MustCompile(
-	`^(?:test .+ \.\.\. (?:ok|ignored(?:, .*)?)|\s+(?:PASS|SKIP) \[[^\]]*\] \S+ \S.*)$`,
+	`^(?:test .+ \.\.\. (?:ok|ignored(?:, .*)?)|\s+(?:PASS|SKIP) \[[^\]]*\]\s+(?:\([^)]*\)\s+)?\S+ \S.*)$`,
 )
 
 // trimRustTestProgress drops `test … ok` / `test … ignored…` / nextest

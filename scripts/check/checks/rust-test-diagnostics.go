@@ -58,15 +58,18 @@ type RustFailure struct {
 }
 
 // nextest status lines share a shape: `<STATUS> [ 0.009s] (2/4) <binary> <test::path>`.
-// The `(2/4)` progress counter is `(───)` before a slot is assigned, so it's optional
-// and matched loosely. Anchored at line start so a panic body quoting these words
-// can't be misread as a status line.
+// The counter is optional (it's `(───)` before a slot is assigned) and its INSIDES may
+// contain spaces: nextest right-aligns the index to the total's width, so a 4 802-test
+// run prints `(  42/4802)`. Matching the parens as `\S+` therefore silently missed every
+// failure numbered under 1000, which meant no diagnosis and no contention re-run for it.
+// Anchored at line start so a panic body quoting these words can't be misread as a status
+// line.
 var (
-	flakyLineRE   = regexp.MustCompile(`^\s*FLAKY (\d+)/(\d+) \[[^\]]*\]\s+(?:\(\S+\)\s+)?(\S+)\s+(\S+)\s*$`)
-	tryPassLineRE = regexp.MustCompile(`^\s*TRY (\d+) PASS \[[^\]]*\]\s+(?:\(\S+\)\s+)?(\S+)\s+(\S+)\s*$`)
-	failLineRE    = regexp.MustCompile(`^\s*FAIL \[[^\]]*\]\s+(?:\(\S+\)\s+)?(\S+)\s+(\S+)\s*$`)
-	timeoutLineRE = regexp.MustCompile(`^\s*TIMEOUT \[[^\]]*\]\s+(?:\(\S+\)\s+)?(\S+)\s+(\S+)\s*$`)
-	leakLineRE    = regexp.MustCompile(`^\s*LEAK \[[^\]]*\]\s+(?:\(\S+\)\s+)?(\S+)\s+(\S+)\s*$`)
+	flakyLineRE   = regexp.MustCompile(`^\s*FLAKY (\d+)/(\d+) \[[^\]]*\]\s+(?:\([^)]*\)\s+)?(\S+)\s+(\S+)\s*$`)
+	tryPassLineRE = regexp.MustCompile(`^\s*TRY (\d+) PASS \[[^\]]*\]\s+(?:\([^)]*\)\s+)?(\S+)\s+(\S+)\s*$`)
+	failLineRE    = regexp.MustCompile(`^\s*FAIL \[[^\]]*\]\s+(?:\([^)]*\)\s+)?(\S+)\s+(\S+)\s*$`)
+	timeoutLineRE = regexp.MustCompile(`^\s*TIMEOUT \[[^\]]*\]\s+(?:\([^)]*\)\s+)?(\S+)\s+(\S+)\s*$`)
+	leakLineRE    = regexp.MustCompile(`^\s*LEAK \[[^\]]*\]\s+(?:\([^)]*\)\s+)?(\S+)\s+(\S+)\s*$`)
 
 	// Ends the search for a panic body: the next test's status line, a retry marker, or
 	// the summary separator.

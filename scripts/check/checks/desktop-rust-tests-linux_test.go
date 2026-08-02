@@ -103,6 +103,51 @@ error: test run failed
 	}
 }
 
+// Verbatim from a real 4 802-test container run (2026-08-02). nextest right-aligns the
+// progress index to the total's width, so tests 1-999 carry an internally padded counter.
+// Reading the counter as one non-space token let exactly those lines survive the filter.
+func TestTrimRustTestProgress_PaddedProgressCounter(t *testing.T) {
+	input := `                    PASS [   0.094s] (   1/4802) cmdr accent_color_linux::tests::rgb_floats_clamps_out_of_range
+                    PASS [   0.156s] (  91/4802) cmdr agent::llm::genai_impl::tests::ai_error_maps_to_typed_agent_error
+                    PASS [   0.185s] ( 493/4802) cmdr agent::llm::genai_impl::tests::declared_tools_are_never_strict
+                    PASS [   0.211s] (4256/4802) cmdr-fs sqlite_util::tests::a_passing_one
+                    SKIP [   0.000s] (  12/4802) cmdr_lib foo::baz (reason: opt-in)
+             TERMINATING [>  8.000s] (─────────) cmdr-fs sqlite_util::tests::cached_pages_come_from_the_shared_slab
+                 TIMEOUT [   8.025s] (4256/4802) cmdr-fs sqlite_util::tests::cached_pages_come_from_the_shared_slab
+                    FAIL [   0.004s] (4785/4802) index-query::bin/index-query broken::one
+`
+	out := trimRustTestProgress(input)
+
+	if strings.Contains(out, "PASS [") || strings.Contains(out, "SKIP [") {
+		t.Errorf("every PASS/SKIP line must be dropped whatever its counter padding, got:\n%s", out)
+	}
+	for _, want := range []string{"TERMINATING", "TIMEOUT [   8.025s]", "FAIL [   0.004s]"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("expected %q to survive, got:\n%s", want, out)
+		}
+	}
+}
+
+// The same padding hit the classifier harder: an unmatched status line means the failure
+// is never seen, so it gets no diagnosis and no contention re-run at all.
+func TestClassifyRustFailures_PaddedProgressCounter(t *testing.T) {
+	input := `                    FAIL [   0.007s] (  42/4802) cmdr_lib starved::one
+                 TIMEOUT [   8.025s] ( 256/4802) cmdr-fs slow::one
+                    LEAK [   0.100s] (   7/4802) cmdr_lib leaky::one
+`
+	failures := ClassifyRustFailures(input)
+	if len(failures) != 3 {
+		t.Fatalf("expected all three status lines to be classified, got %+v", failures)
+	}
+	byName := map[string]FailureClass{}
+	for _, f := range failures {
+		byName[f.Name] = f.Class
+	}
+	if byName["starved::one"] != ClassOther || byName["slow::one"] != ClassNextestCap || byName["leaky::one"] != ClassLeak {
+		t.Errorf("classes are wrong: %+v", byName)
+	}
+}
+
 func TestTrimRustTestProgress_PanicMessageWithTestPhrase(t *testing.T) {
 	// A panic body that happens to contain a "test ... ok" substring on its
 	// own line MUST be preserved. Anchoring to the start of the line is what

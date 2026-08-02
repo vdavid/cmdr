@@ -398,6 +398,22 @@ Gotchas for anyone touching this:
 - **Leaks are a PASS, not a failure.** nextest counts a leaky test in its "N passed (M leaky)" tally, so `RealFailures`
   drops them before anything re-runs or counts failures. Treating a leak as a failure both overstates a red run and
   sends the contention re-run chasing a test that passed.
+- **The progress counter can contain spaces**, because nextest right-aligns the index to the total's width: a
+  4 802-test run prints `(  42/4802)`. Every status regex matches it as `\([^)]*\)`, never `\(\S+\)`. Reading it as one
+  non-space token silently dropped every failure numbered under 1000 out of the classifier, so those got no diagnosis
+  and no contention re-run (verified against a real container run, 2026-08-02). The small-total fixtures can't catch
+  this on their own; `TestClassifyRustFailures_PaddedProgressCounter` and
+  `TestTrimRustTestProgress_PaddedProgressCounter` carry the padded form.
+- **`TRY n FAIL` lines are not failures.** They're retried attempts; counting them double-reports every flake. The
+  `FAIL` regex is line-anchored so it can't match them.
+- **The summary block repeats every `FAIL`/`TIMEOUT` line**, so classification dedupes by (binary, test) and keeps the
+  first occurrence, which is the one carrying the panic body.
+- **`ClassInTestDeadline` recognition depends on a string Rust owns**: `timed_out()` in `crates/cmdr-fs/src/testing.rs`.
+  Nothing but `TestWaitUntilPanicFormatStillMatchesTheClassifier` ties the two languages together; without it, rewording
+  the panic would silently downgrade every `wait_until` timeout to `ClassOther`. Don't delete that test.
+- **Leaks are a PASS, not a failure.** nextest counts a leaky test in its "N passed (M leaky)" tally, so `RealFailures`
+  drops them before anything re-runs or counts failures. Treating a leak as a failure both overstates a red run and
+  sends the contention re-run chasing a test that passed.
 
 ## The contention re-run (`rust-test-contention.go`)
 
