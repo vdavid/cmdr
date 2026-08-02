@@ -521,6 +521,39 @@ async fn connect_target() -> Target {
     }
 }
 
+// ── The serial pre-check floor ──────────────────────────────────────
+
+/// Times the per-file destination probe the DRIVER runs serially, so the sweep
+/// can tell two very different stories apart.
+///
+/// The concurrent spawn loop awaits `dest_volume.get_metadata(dest_item_path)`
+/// once per top-level source, **on the driver, before the task is spawned**
+/// (`volume_copy.rs`, the `PreparingNext` phase — the call that was the last
+/// driver log line in the 2026-07-31 wedge). On SMB that is one round trip per
+/// file that no window width can overlap, so a batch of N files carries a hard
+/// floor of `N × RTT` however wide the window gets.
+///
+/// That floor and "the window stopped helping" produce the SAME shape: a curve
+/// that flattens. This function measures the floor directly instead of inferring
+/// it — same call, same connection, same count, serialized the same way, on
+/// paths that don't exist (which is what a copy into a fresh directory probes).
+/// If the flattened part of the curve sits near this number, the pre-check is
+/// the bottleneck and widening the window is not the fix.
+///
+/// Deliberately measured OUTSIDE the driver: no production code is instrumented,
+/// so the sweep it explains stays a measurement of unmodified behavior.
+async fn serial_precheck_floor(dest: &Arc<dyn Volume>, dir: &str, files: usize) -> Duration {
+    let started = Instant::now();
+    for index in 0..files {
+        // Missing on purpose: a copy into a fresh destination probes names that
+        // aren't there, and a miss is the cheap answer. If anything, this
+        // UNDERSTATES the floor.
+        let probe = format!("{dir}/precheck-probe-{index:05}.missing");
+        let _ = dest.get_metadata(Path::new(&probe)).await;
+    }
+    started.elapsed()
+}
+
 // ── Reporting ───────────────────────────────────────────────────────
 
 fn median(sorted: &[Duration]) -> Duration {
@@ -633,8 +666,32 @@ async fn concurrency_bench_sweep_window_against_wall_clock() {
                 best = Some((window, med));
             }
         }
+        // The discriminator. Run AFTER the sweep so it never warms anything the
+        // sweep is timing, into a scratch dir of its own.
+        let probe_dir = if target.scratch_parent.is_empty() {
+            scratch_name()
+        } else {
+            format!("{}/{}", target.scratch_parent, scratch_name())
+        };
+        target
+            .volume
+            .create_directory(Path::new(&probe_dir))
+            .await
+            .expect("create the pre-check probe directory");
+        let floor = serial_precheck_floor(&target.volume, &probe_dir, corpus.paths.len()).await;
+        empty_directory(&target.volume, &probe_dir).await;
+
         if let Some((window, med)) = best {
             println!("  fastest window: {window} at {med:.3?} median");
+            // What share of the best achievable time is spent in a serial probe
+            // loop that no window can overlap. Near 100% means the window is not
+            // the bottleneck and M4.3's premise needs rethinking.
+            let share = floor.as_secs_f64() / med.as_secs_f64() * 100.0;
+            println!(
+                "  serial pre-check floor: {floor:.3?} for {} files ({:.2?}/file) = {share:.0}% of the fastest run",
+                corpus.paths.len(),
+                floor / u32::try_from(corpus.paths.len()).unwrap_or(1),
+            );
         }
     }
 
