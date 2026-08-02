@@ -14,10 +14,12 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       M2 adds a session deadline plus **ECHO keepalive**, because the deadline has to sit on "is the session alive" and
       not "has this write finished" or a slow NAS gets aborted; M3 implements the `auto_reconnect` flag that today is
       stored and does nothing, with durable handles; M4 lets Cmdr retry the FILE rather than kill the transfer, and
-      deletes the `min(src, dst, 32)` concurrency guess now that credits are real backpressure. Carries the rule that
-      correct credits are NOT a throughput compromise (lowering concurrency is the only option here that actually costs
-      speed) and that a naive credit gate must not turn an over-spend hang into a starvation hang. Evidence:
-      `docs/notes/incidents/2026-07-31-transfer-wedge/README.md`. SPECCED, M0 in flight.
+      revisits the concurrency guess — where measurement replaced it with a defect fix (a LOCAL cap must not bound a
+      REMOTE peer) plus skipping the per-file destination probe, rather than the credit-budget replacement M4.3
+      proposed. Carries the rule that correct credits are NOT a throughput compromise (lowering concurrency is the only
+      option here that actually costs speed) and that a naive credit gate must not turn an over-spend hang into a
+      starvation hang. Evidence: `docs/notes/incidents/2026-07-31-transfer-wedge/README.md`. M0-M2, M4.1, M4.3, and M4.4
+      shipped; M3 open.
 
 - [x] 2026-07-31 `transfer-wedge-observability.md` - SHIPPED (M1-M6). A 764-file copy to an SMB share wedged after 12
       files, ignored Rollback, and had to be force-quit, leaving two byte-incomplete files at their FINAL names on the

@@ -340,8 +340,9 @@ otherwise resolve the id to the SUCCESSOR and mark a perfectly healthy volume `D
   `copy_volumes_with_progress` at the driver's own concurrency, with sizes on BOTH SMB write paths: the large ones are
   sized off the session's negotiated `max_write` at runtime, not hardcoded, so they always land on the staged streaming
   writer. Beyond byte-exactness it asserts three things a content check alone would miss: the concurrency window really
-  filled (peak `TransferActivity::in_flight` off the progress events, against a floor rather than the driver's
-  `min(src, dst, 32)` formula, which M4.3 is about deleting), a `.cmdr-tmp-*` really appeared during the copy (else the
+  filled (peak `TransferActivity::in_flight` off the progress events, against a floor rather than the driver's own
+  formula, so a change to it can't fail this suite for the wrong reason), a `.cmdr-tmp-*` really appeared during the
+  copy (else the
   "no leftovers" check passes vacuously), and none survived it.
 
   Both tests here bound their own wait and, on expiry, panic with `transfer_probe`'s LIVE in-flight table via
