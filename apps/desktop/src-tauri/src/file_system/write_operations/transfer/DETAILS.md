@@ -393,6 +393,13 @@ blip. The bug this whole effort exists to kill is an infinite hang, so a retry l
 reintroduce it in a new costume — the cap is pinned by call count, not by hope
 (`a_destination_that_never_recovers_gives_up_at_the_attempt_cap`).
 
+**Scope: streaming writes only.** `volume_sequential_extract.rs` (a compressed tar / solid 7z source) has its own write
+site and deliberately gets NO retry. Its source is a one-pass decoder sitting at a fixed position, so a per-file
+restart would mean re-decoding the whole archive prefix — the very O(n²) the sequential path exists to avoid. The
+local-FS engine (`chunked_copy.rs`) is likewise untouched: a local write that fails with a transport errno is either a
+dying disk or a network mount the volume layer should be handling, and neither is improved by retrying inside the sync
+chunk loop.
+
 ### The watchdog ACTS (M4.2)
 
 **Decision**: past `STALL_ABORT_AFTER` (180 s of zero byte movement inside a backend call), the watchdog trips the
