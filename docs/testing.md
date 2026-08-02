@@ -248,7 +248,12 @@ only verdict whose meaning depends on a quiet machine.
 
 The re-run is capped at 15 tests. Past that the machine was too loaded for any of it to mean anything, and the output
 says so rather than quietly examining a subset. Mechanics and the two nextest profiles it drives:
-`scripts/check/checks/rust-test-contention.go`. All three Rust lanes get this, `rust-integration-tests` included.
+`scripts/check/checks/rust-test-contention.go`.
+
+All three Rust lanes get this: `rust-tests`, `rust-integration-tests`, and `rust-tests-linux`. The Docker lane re-runs
+inside the same container the failing run used, at the same deadlines. It's the lane most exposed to starvation (its
+cores are a slice of a host that may also be running both E2E lanes and a second container), and the deadlines stay
+identical on purpose: a container-only cap bump would hide the Linux-only slowness the lane exists to catch.
 
 ### Playwright retry-passes warn too
 

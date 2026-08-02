@@ -1,8 +1,8 @@
 # Check authoring
 
-Every check lives in this directory as a single Go file, registered in `registry.go`'s `AllChecks` slice. For the full
-authoring walkthrough (`CheckDefinition` field semantics, helpers, allowlist mechanics, decisions), see `DETAILS.md`.
-For the runner architecture (parallel executor, dependency graph, CLI flags, freestyle.sh), see `../CLAUDE.md`.
+Every check lives in this directory as a single Go file, registered in `registry.go`'s `AllChecks` slice. Full authoring
+walkthrough: `DETAILS.md`. Runner architecture (parallel executor, dependency graph, CLI flags, freestyle.sh):
+`../CLAUDE.md`.
 
 ## Module map
 
@@ -23,8 +23,8 @@ For the runner architecture (parallel executor, dependency graph, CLI flags, fre
 ## Must-knows
 
 - **Every check MUST declare `Inputs`** (the path globs it reads), or `TestEveryCheckDeclaresInputs` fails the suite. An
-  empty list fingerprints on the globals alone, so the check gets cache-skipped even when its own files change: a
-  correctness hole. Reuse a set from `inputs.go`, and **be conservative** — too-wide only costs cache speed, too-narrow
+  empty list fingerprints on the globals alone, so the check is cache-skipped when its own files change: a correctness
+  hole. Reuse a set from `inputs.go`, and **be conservative** — too-wide only costs cache speed, too-narrow
   costs correctness. Don't list the auto-added globals (`.mise.toml`, `scripts/check/**`).
 - **Wire every check into CI** (a step in `.github/workflows/ci.yml` / `slow-checks.yml`, or a `NotInCI` reason).
   `ci-coverage` enforces it both ways: neither invoked nor excused fails, and an excuse on an invoked check fails as
@@ -46,11 +46,14 @@ For the runner architecture (parallel executor, dependency graph, CLI flags, fre
 - **Error output uses `indentOutput()`**: `fmt.Errorf("check failed\n%s", indentOutput(output))`. Success messages carry
   useful stats ("12 tests passed"), not generic "OK". Return `Skipped(reason)` when a check can't run,
   `SuccessWithChanges` when it made local fixes (CI mode must still error on the same drift).
-- **`svelte-tests` coverage runs in a per-invocation temp `reportsDirectory`** (via `VITEST_COVERAGE_DIR`), not the
-  shared `apps/desktop/coverage/`: a fixed path lets concurrent runs clobber each other's in-flight v8 worker files
-  (`ENOENT`). DETAILS.md § "svelte-tests coverage isolation".
-- After authoring, run `pnpm check go-vet staticcheck` (staticcheck is strict about idiomatic Go) and update DETAILS.md
-  § "Apps and check counts". `--fast` membership is just `IsFast` in `registry.go`, editorially curated.
+- **`svelte-tests` coverage runs in a per-invocation temp `reportsDirectory`** (via `VITEST_COVERAGE_DIR`), never a
+  fixed path: concurrent runs clobber each other's in-flight v8 worker files (`ENOENT`). DETAILS.md § "svelte-tests
+  coverage isolation".
+- **A red Rust lane goes through `resolveRustFailure`**, which re-runs failures alone before believing them. Lanes
+  inject only WHERE: the Docker lane execs into its still-live container, so don't collapse it back into one
+  `docker run`. DETAILS.md § "The contention re-run".
+- After authoring, run `pnpm check go-vet staticcheck` (strict about idiomatic Go) and update DETAILS.md § "Apps and
+  check counts". `--fast` membership is `IsFast` in `registry.go`, editorially curated.
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

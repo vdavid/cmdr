@@ -246,12 +246,10 @@ test bench::throughput ... bench:       1,234 ns/iter (+/- 56)
 	}
 }
 
-// TestProvisionScriptSelectsForTheContainerNotTheHost pins the trap that makes this
-// lane different from every other cargo lane: the check process runs on a Mac while
-// the cargo command runs inside a Linux container. Computing the selection from the
-// host's OS leaves `cmdr-fsevent-stream` in it, where it dies at `cargo check` with
-// `E0455: link kind 'framework' is only supported on Apple targets`.
-func TestProvisionScriptSelectsForTheContainerNotTheHost(t *testing.T) {
+// repoSelection resolves the real workspace's Linux package selection, skipping when the
+// test runs somewhere the repo layout isn't visible.
+func repoSelection(t *testing.T) []string {
+	t.Helper()
 	root, err := filepath.Abs(filepath.Join("..", "..", ".."))
 	if err != nil {
 		t.Fatalf("failed to resolve repo root: %v", err)
@@ -259,18 +257,103 @@ func TestProvisionScriptSelectsForTheContainerNotTheHost(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(root, "Cargo.toml")); err != nil {
 		t.Skipf("repo layout not found from %s: %v", root, err)
 	}
-
-	script, err := buildProvisionScript(root)
+	selection, err := linuxSelectionArgs(root)
 	if err != nil {
-		t.Fatalf("buildProvisionScript: %v", err)
+		t.Fatalf("linuxSelectionArgs: %v", err)
 	}
-	if !strings.Contains(script, "--workspace") {
-		t.Errorf("the container run must be workspace-wide, got:\n%s", script)
+	return selection
+}
+
+// TestTheContainerRunSelectsForTheContainerNotTheHost pins the trap that makes this
+// lane different from every other cargo lane: the check process runs on a Mac while
+// the cargo command runs inside a Linux container. Computing the selection from the
+// host's OS leaves `cmdr-fsevent-stream` in it, where it dies at `cargo check` with
+// `E0455: link kind 'framework' is only supported on Apple targets`.
+func TestTheContainerRunSelectsForTheContainerNotTheHost(t *testing.T) {
+	selection := repoSelection(t)
+	args := append([]string{"--locked"}, selection...)
+	script := containerNextestScript(append(args, "--no-fail-fast")...)
+
+	for _, want := range []string{"'--workspace'", "'--exclude' 'cmdr-fsevent-stream'", "'--locked'"} {
+		if !strings.Contains(script, want) {
+			t.Errorf("expected the container run command to contain %q, got:\n%s", want, script)
+		}
 	}
-	if !strings.Contains(script, "--exclude cmdr-fsevent-stream") {
-		t.Errorf("the container is Linux, so the macOS-only member must be excluded, got:\n%s", script)
+}
+
+// The contention re-run MUST carry the same package selection as the failing run. A
+// re-run that selected differently could find no tests at all, which reads as
+// "everything passed alone" and turns every real Linux failure into a warn.
+func TestTheContentionRerunKeepsTheFailingRunsSelection(t *testing.T) {
+	selection := repoSelection(t)
+	args := containerRerunArgs(ContentionProbeProfile, selection, []string{"a::b"})
+
+	joined := strings.Join(args, " ")
+	for _, want := range []string{"--locked", "--profile " + ContentionProbeProfile, strings.Join(selection, " ")} {
+		if !strings.Contains(joined, want) {
+			t.Errorf("expected re-run args to contain %q, got: %v", want, args)
+		}
 	}
-	if !strings.Contains(script, "--locked") {
-		t.Errorf("every operational cargo command passes --locked, got:\n%s", script)
+	if !strings.Contains(joined, "-E test(=a::b)") {
+		t.Errorf("expected the re-run to be filtered to the failing test, got: %v", args)
+	}
+}
+
+// The filter expression carries spaces and parens, so it has to survive `sh -c` intact.
+// Unquoted, `sh` splits it and nextest either errors or (worse) selects something else.
+func TestTheContainerScriptQuotesTheFilterExpression(t *testing.T) {
+	args := containerRerunArgs(ContentionRetryProfile, []string{"--workspace"}, []string{"a::b", "c::d"})
+	script := containerNextestScript(args...)
+
+	if !strings.Contains(script, `'test(=a::b) + test(=c::d)'`) {
+		t.Errorf("the filter expression must reach nextest as one quoted argument, got:\n%s", script)
+	}
+	if !strings.Contains(script, "export PATH=/usr/local/go/bin:$PATH") {
+		t.Errorf("the re-run needs Go on PATH for build.rs, got:\n%s", script)
+	}
+}
+
+func TestShellQuoteEscapesEmbeddedQuotes(t *testing.T) {
+	if got, want := shellQuote(`it's`), `'it'\''s'`; got != want {
+		t.Errorf("shellQuote = %q, want %q", got, want)
+	}
+}
+
+// Provisioning stops before the tests run: the test run and the contention re-run are
+// separate execs into the SAME container, which is what makes re-running a failure alone
+// cost seconds instead of a fresh provision plus a full workspace rebuild.
+func TestProvisionScriptStopsBeforeRunningTests(t *testing.T) {
+	script := buildProvisionScript()
+	if strings.Contains(script, "cargo nextest run") {
+		t.Errorf("provisioning must not run the suite; that's a separate exec:\n%s", script)
+	}
+	if !strings.Contains(script, "go"+goVersion+".linux-") {
+		t.Errorf("the Go toolchain download must pin %s, got:\n%s", goVersion, script)
+	}
+	if !strings.Contains(script, "get.nexte.st/"+containerNextestVersion+"/") {
+		t.Errorf("the container's nextest must be pinned to %s, got:\n%s", containerNextestVersion, script)
+	}
+	if strings.Contains(script, "get.nexte.st/latest") {
+		t.Errorf("an unpinned nextest can classify contention differently from the host lanes:\n%s", script)
+	}
+}
+
+func TestParseContainerLoadPerCore(t *testing.T) {
+	cases := []struct {
+		name string
+		out  string
+		want float64
+	}{
+		{"busy container", "24.00 18.00 12.00 9/812 1234\n8\n", 3},
+		{"quiet container", "0.40 0.50 0.60 1/200 99\n8\n", 0.05},
+		{"unreadable load reads as quiet", "nope\n8\n", 0},
+		{"missing nproc reads as quiet", "24.00 18.00 12.00 9/812 1234\n", 0},
+		{"zero cores reads as quiet", "24.00 18.00 12.00 9/812 1234\n0\n", 0},
+		{"empty reads as quiet", "", 0},
+	}
+	for _, c := range cases {
+		if got := parseContainerLoadPerCore(c.out); got != c.want {
+			t.Errorf("%s: parseContainerLoadPerCore = %v, want %v", c.name, got, c.want)
+		}
 	}
 }

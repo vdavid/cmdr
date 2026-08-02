@@ -190,16 +190,24 @@ var processTracker = struct {
 	procs map[*exec.Cmd]struct{}
 }{procs: make(map[*exec.Cmd]struct{})}
 
-// KillAllProcesses sends SIGTERM to the process group of every tracked child.
+// KillAllProcesses sends SIGTERM to the process group of every tracked child, then
+// force-removes any container a check left running.
+//
+// The container part matters because the runner `os.Exit`s straight after this on
+// Ctrl+C, so no check's `defer` ever runs. Killing a `docker exec` client doesn't stop
+// the process inside the container (exec doesn't proxy signals), so without this a
+// cancelled `rust-tests-linux` would leave a container compiling away on its own.
 func KillAllProcesses() {
 	processTracker.mu.Lock()
-	defer processTracker.mu.Unlock()
 	for cmd := range processTracker.procs {
 		if cmd.Process != nil {
 			// Kill the entire process group (negative PID).
 			_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM)
 		}
 	}
+	processTracker.mu.Unlock()
+
+	RemoveTrackedContainers()
 }
 
 // RunCommand executes a command and captures its output.

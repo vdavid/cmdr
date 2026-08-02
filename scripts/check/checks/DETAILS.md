@@ -401,8 +401,13 @@ Gotchas for anyone touching this:
 
 ## The contention re-run (`rust-test-contention.go`)
 
-`desktop-rust-tests` doesn't believe a red run until it has re-run the failures alone. Rationale, the four verdicts, and
-the reporting contract are in `docs/testing.md`; this section is the mechanics.
+No Rust lane believes a red run until it has re-run the failures alone. Rationale, the four verdicts, and the reporting
+contract are in `docs/testing.md`; this section is the mechanics.
+
+All three lanes funnel a failure through the one `resolveRustFailure` in `desktop-rust-tests.go`, which takes the runner
+and the load sampler as parameters. That injection is the contract: a lane may say WHERE a re-run happens, never what a
+red run means. `desktop-rust-tests` and `desktop-rust-integration-tests` pass `nextestContentionRunner` (shells out to
+`cargo` on the host) and `LoadPerCore`; `desktop-rust-tests-linux` passes a container-backed pair (below).
 
 Two stages, both serialized (`test-threads = 1`), driven by two nextest profiles in `.config/nextest.toml`:
 
@@ -433,6 +438,34 @@ Gotchas:
   above applied to sampling: a bounded look must never read as a full one.
 - Worst case cost is bounded at roughly 15 × (8 s + 40 s) ≈ 12 minutes, which only happens if 15 tests genuinely hang.
   Measured reality: a 10-failure saturated run resolved in 2m51s total against a 2m0s idle baseline.
+
+### The Docker lane re-runs inside its own container
+
+`desktop-rust-tests-linux` starts its container **detached** (PID 1 is a bounded `sleep`) and execs each phase into it:
+provision, test run, then any contention re-run. That's the whole reason for the detached shape. A re-run in a fresh
+`docker run` would re-provision and recompile the workspace from a cold `CARGO_TARGET_DIR`, costing tens of minutes and
+making the mechanism unaffordable; execing back into the live container costs seconds.
+
+- **The container is removed on every exit path** (deferred `docker rm -f`, bounded by `dockerControlTimeout`). The
+  `sleep` cap (`containerKeepAlive`, 4 h) exists only for the case where the check runner is hard-killed and never runs
+  its defers. Don't replace it with `sleep infinity`.
+- **The deadlines inside the container are deliberately identical to the host's.** The container mounts the repo, so it
+  reads the same `.config/nextest.toml`; nothing grants it extra slack. A Docker-only cap bump would hide genuine
+  Linux-only slowness (the one thing this lane exists to catch), and it would have to be enormous to help anyway: the
+  starvation this handles was a 114× stretch (0.07 s natively, past 8 s in the container, at host load ~105 on 16
+  cores). Deadlines answer "did it hang"; the isolated re-run answers "was it starved".
+- **The re-run carries the failing run's package selection** (`containerRerunArgs`). Same trap as the integration lane's
+  `--run-ignored only`: a re-run that selects nothing reads as "everything passed alone" and turns every real failure
+  into a warn.
+- **Load is sampled on BOTH sides of the VM boundary and the worse one wins** (`dockerLoadSampler`). On macOS the host's
+  load average sees the Linux VM as a few vCPU threads, so a container saturated from inside barely moves it; the
+  container's own `/proc/loadavg` is blind to the Playwright shards and cargo processes competing outside the VM. An
+  unreadable load reads as 0 (quiet), which keeps a run red rather than softening it.
+- **The container's `cargo-nextest` is pinned** (`containerNextestVersion`) to the same version the host lanes install.
+  It classifies the same output with the same profile semantics, so a container drifting to `latest` would quietly
+  change what a verdict means.
+- **`docker exec` failing is a runner error, not evidence.** A dead container or wedged daemon flows through
+  `ClassifyContention`'s error paths to `VerdictReal`, so the run stays red.
 
 ## Workspace geometry: which members a Rust check reaches
 
@@ -467,26 +500,27 @@ inside a container from a Mac, so `HostCargoSelectionArgs` would answer for the 
 Feature specs are package-qualified (`cmdr/virtual-mtp`). A bare `--features virtual-mtp` changes meaning once more than
 one package is selected.
 
-**Gotcha: the Linux lane has NO contention probe, so a cluster of `TIMEOUT`s there needs disambiguating by hand.** The
-macOS lanes re-run failures serially and report "passed alone at the same deadline, so the suite was starving it";
-`desktop-rust-tests-linux` just prints the raw nextest failures with a "hang, or starvation under load" hint and leaves
-the reader to decide. Read it carefully before believing it:
+**The Linux lane is the one most likely to be starved rather than broken**, which is why it re-runs its failures alone
+inside its own container (mechanics: § "The Docker lane re-runs inside its own container"). Its cores are a slice of a
+host that may also be running three Playwright shards, a second container, and four `cargo-nextest` processes. Context
+for reading its output:
 
 - **A moving failure set across runs means starvation, not a defect.** Measured 2026-07-30 on one unchanged tree: 47
   timeouts while the full `--include-slow` suite ran (three Playwright shards plus a SECOND Docker container plus four
   `cargo-nextest` processes), 11 timeouts — of a nearly disjoint set — alone on a still-busy host, and zero alone on a
-  settled one. Nothing was wrong with the tree.
+  settled one. Nothing was wrong with the tree. The re-run now says this for you, but a warn naming a different test
+  each run is the same signal.
 - **The tests that die are the trivial ones**, because nextest batches many fast tests at once and a stall takes the
   whole batch. `read_connections_get_a_smaller_page_cache_than_write_connections` (a `tempfile::tempdir()`, two SQLite
   opens, two PRAGMA reads — no threads, no sleeps, no waits) timing out at 8 s is a machine symptom by construction.
-- **The one thing that settles it is a control run**: the same lane, alone, on a commit before the change. Two matched
-  runs beat any amount of reasoning about the diff.
+  Same shape, measured 2026-07-31: `sqlite_util::tests::cached_pages_come_from_the_shared_slab` timed out at 8 s in the
+  container across three consecutive runs while taking 0.07 s natively.
+- **A "too-slow" or "real" verdict from the re-run is not a load excuse.** Those keep the lane red on purpose; reach for
+  a control run (the same lane, alone, on a commit before the change) rather than re-running until it's green.
 - **`pkill -f check.sh` does NOT stop a run.** The runner is a compiled Go binary under the `go-build` cache parented by
   `go run .`, and killing the wrapper orphans the whole tree of Playwright, Docker, and cargo children, which then keep
   competing with whatever you start next. Kill `go-build.*/check` and `go run \. --include-slow`, then confirm with `ps`
   before drawing conclusions from the next run.
-
-Giving this lane the macOS lanes' contention re-run would remove the manual work; it hasn't been done.
 
 ## Workspace member coverage
 
