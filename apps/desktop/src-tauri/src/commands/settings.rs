@@ -362,11 +362,18 @@ mod tests {
         set_direct_smb_connection(true);
         assert!(crate::file_system::is_direct_smb_enabled());
 
-        // show_safe_save_files round-trips
-        set_show_safe_save_files_cmd(false);
-        assert!(!crate::file_system::staging::show_safe_save_files());
-        set_show_safe_save_files_cmd(true);
-        assert!(crate::file_system::staging::show_safe_save_files());
+        // show_safe_save_files round-trips. `LOCK` above is private to this
+        // module, so it serializes nothing: the listing-filter tests read this
+        // same atomic under `ShowTempsGuard`'s lock. Take that guard, so this arm
+        // queues behind them instead of flipping the flag mid-assertion, and the
+        // previous value is restored on drop (unwind included).
+        {
+            let _show = crate::file_system::staging::ShowTempsGuard::set_both(false, true);
+            set_show_safe_save_files_cmd(false);
+            assert!(!crate::file_system::staging::show_safe_save_files());
+            set_show_safe_save_files_cmd(true);
+            assert!(crate::file_system::staging::show_safe_save_files());
+        }
 
         // Restore defaults so later tests see a predictable state.
         set_smb_concurrency_cmd(10);

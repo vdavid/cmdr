@@ -199,8 +199,8 @@ running beside it own.
 so it reads as environment flake. Fix it by giving the walk a scope the test owns (make the registry a struct, keep the
 global as one instance of it, and let the test build its own), never by serializing the suites behind a mutex,
 `#[ignore]`ing the victim, or loosening the victim's assertion. Worked example, including how the global wiring stays
-covered:
-`apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "Test isolation for `WRITE_OPERATION_STATE`".
+covered: `apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "Test isolation for
+`WRITE_OPERATION_STATE`".
 
 ### ❌ `retries: 1` to mask a race
 
