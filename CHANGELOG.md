@@ -5,6 +5,208 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Highlights:
+
+- Search dialog redesign and major speedup: looks a lot nicer, and even broad queries went down from taking 12 sec to
+  0.5 sec.
+- A bunch of fixes to AI bulk rename. Now it works with hundreds of files. But still alpha.
+- A lot of SMB copy/move improvements incl. a 3x speedup for small files!
+
+### Added
+
+- Add an Acknowledgements dialog crediting all 775 open-source packages Cmdr ships
+  ([b626d7a4](https://github.com/vdavid/cmdr/commit/b626d7a4),
+  [2d41cc14](https://github.com/vdavid/cmdr/commit/2d41cc14),
+  [18add0b0](https://github.com/vdavid/cmdr/commit/18add0b0),
+  [42f76971](https://github.com/vdavid/cmdr/commit/42f76971),
+  [ede1a7d6](https://github.com/vdavid/cmdr/commit/ede1a7d6),
+  [84e5f3a5](https://github.com/vdavid/cmdr/commit/84e5f3a5))
+- Add right-click Cut / Copy / Paste / Select all in every text field
+  ([fd6fc293](https://github.com/vdavid/cmdr/commit/fd6fc293))
+- Add a "Chat memory size" setting: Automatic, or 16,000 up to 200,000 tokens
+  ([75121419](https://github.com/vdavid/cmdr/commit/75121419),
+  [14aacf89](https://github.com/vdavid/cmdr/commit/14aacf89))
+- Show how full the chat is in the Ask Cmdr rail, with a fill bar and the real token counts
+  ([0b6efe95](https://github.com/vdavid/cmdr/commit/0b6efe95))
+- Add Undo for a batch rename, per batch and across a whole multi-batch run
+  ([dcc14c13](https://github.com/vdavid/cmdr/commit/dcc14c13),
+  [032722e1](https://github.com/vdavid/cmdr/commit/032722e1),
+  [c528ea8f](https://github.com/vdavid/cmdr/commit/c528ea8f),
+  [dada4bea](https://github.com/vdavid/cmdr/commit/dada4bea),
+  [e301c1e4](https://github.com/vdavid/cmdr/commit/e301c1e4),
+  [0b25450b](https://github.com/vdavid/cmdr/commit/0b25450b))
+- Show every file and the evidence behind its proposed name in the rename review, and let you fix a name in place
+  ([56788bdc](https://github.com/vdavid/cmdr/commit/56788bdc),
+  [766c3ebb](https://github.com/vdavid/cmdr/commit/766c3ebb),
+  [64b8022e](https://github.com/vdavid/cmdr/commit/64b8022e),
+  [b456a365](https://github.com/vdavid/cmdr/commit/b456a365),
+  [0423a797](https://github.com/vdavid/cmdr/commit/0423a797),
+  [7fc00aad](https://github.com/vdavid/cmdr/commit/7fc00aad))
+- Refuse a rename plan whose content-derived names Cmdr can't verify the model actually read
+  ([285af99f](https://github.com/vdavid/cmdr/commit/285af99f),
+  [52eeb308](https://github.com/vdavid/cmdr/commit/52eeb308),
+  [0b619828](https://github.com/vdavid/cmdr/commit/0b619828),
+  [fb60f108](https://github.com/vdavid/cmdr/commit/fb60f108),
+  [6b0f066e](https://github.com/vdavid/cmdr/commit/6b0f066e))
+- Move recent searches into the query field as a dropdown, each row showing its age, result count, and filters
+  ([503e8443](https://github.com/vdavid/cmdr/commit/503e8443))
+- Show transfer speed in the Transfers window ([821307e0](https://github.com/vdavid/cmdr/commit/821307e0))
+- Say when a transfer has stopped moving and what it's waiting on, instead of a confident ETA that isn't true
+  ([066796c7](https://github.com/vdavid/cmdr/commit/066796c7),
+  [43c106cf](https://github.com/vdavid/cmdr/commit/43c106cf),
+  [a2070fa7](https://github.com/vdavid/cmdr/commit/a2070fa7),
+  [a77bf832](https://github.com/vdavid/cmdr/commit/a77bf832))
+
+### Changed
+
+- Return a broad search in under half a second instead of twelve
+  ([777c32c3](https://github.com/vdavid/cmdr/commit/777c32c3),
+  [f3591790](https://github.com/vdavid/cmdr/commit/f3591790))
+- Open the search dialog and start typing without waiting on a full index rebuild
+  ([1b8557a7](https://github.com/vdavid/cmdr/commit/1b8557a7))
+- Stop a cold NAS index freezing the search dialog, and search one NAS once rather than twice
+  ([2890fe33](https://github.com/vdavid/cmdr/commit/2890fe33),
+  [5b3b6da2](https://github.com/vdavid/cmdr/commit/5b3b6da2),
+  [9c55b0de](https://github.com/vdavid/cmdr/commit/9c55b0de))
+- Redesign the Search and Select dialog into a real Cmdr dialog: house chrome, a 2×2 query block, one surface per zone,
+  and a Path column with its width back ([2643f746](https://github.com/vdavid/cmdr/commit/2643f746),
+  [4a1ae52b](https://github.com/vdavid/cmdr/commit/4a1ae52b),
+  [6c036b1f](https://github.com/vdavid/cmdr/commit/6c036b1f),
+  [af837985](https://github.com/vdavid/cmdr/commit/af837985),
+  [d97f6f6d](https://github.com/vdavid/cmdr/commit/d97f6f6d),
+  [bf6354f2](https://github.com/vdavid/cmdr/commit/bf6354f2),
+  [b4437721](https://github.com/vdavid/cmdr/commit/b4437721),
+  [c0c6f227](https://github.com/vdavid/cmdr/commit/c0c6f227),
+  [24693d49](https://github.com/vdavid/cmdr/commit/24693d49),
+  [66412c26](https://github.com/vdavid/cmdr/commit/66412c26),
+  [a4478708](https://github.com/vdavid/cmdr/commit/a4478708),
+  [44295a78](https://github.com/vdavid/cmdr/commit/44295a78),
+  [acdaa945](https://github.com/vdavid/cmdr/commit/acdaa945),
+  [0a5170e1](https://github.com/vdavid/cmdr/commit/0a5170e1))
+- Give every text field one look: 8px corners, an accent caret, and a solid focus ring
+  ([0394c062](https://github.com/vdavid/cmdr/commit/0394c062),
+  [d7a7179f](https://github.com/vdavid/cmdr/commit/d7a7179f),
+  [a40d2c26](https://github.com/vdavid/cmdr/commit/a40d2c26))
+- Copy a small file to a network drive in one round trip instead of two
+  ([17d8a6b8](https://github.com/vdavid/cmdr/commit/17d8a6b8))
+- Skip the per-file destination check when copying into a folder Cmdr just made, 2.1–3.8x faster on a NAS
+  ([20d6fead](https://github.com/vdavid/cmdr/commit/20d6fead),
+  [c4bc6cec](https://github.com/vdavid/cmdr/commit/c4bc6cec))
+- Make the SMB concurrency setting do what it promises, worth 25% on an 8-core Mac
+  ([9f3d5a7f](https://github.com/vdavid/cmdr/commit/9f3d5a7f))
+- Recover from a network drive that goes silent in 50 seconds instead of hanging forever
+  ([560721b8](https://github.com/vdavid/cmdr/commit/560721b8),
+  [b995f699](https://github.com/vdavid/cmdr/commit/b995f699),
+  [80bc07bf](https://github.com/vdavid/cmdr/commit/80bc07bf),
+  [aa5e7b26](https://github.com/vdavid/cmdr/commit/aa5e7b26),
+  [0c5f6cd2](https://github.com/vdavid/cmdr/commit/0c5f6cd2))
+- Retry one file after a transport blip rather than ending the whole transfer
+  ([6a799377](https://github.com/vdavid/cmdr/commit/6a799377),
+  [9b8ef8a0](https://github.com/vdavid/cmdr/commit/9b8ef8a0),
+  [98f818e7](https://github.com/vdavid/cmdr/commit/98f818e7))
+- Survive a network-drive upgrade landing mid-copy, and stop re-connecting a share that's already connected
+  ([402e9b73](https://github.com/vdavid/cmdr/commit/402e9b73),
+  [7de5961b](https://github.com/vdavid/cmdr/commit/7de5961b),
+  [1685795f](https://github.com/vdavid/cmdr/commit/1685795f))
+- Cap the app's whole database page cache at 64 MiB, whatever the connection count
+  ([a780954e](https://github.com/vdavid/cmdr/commit/a780954e),
+  [2d8b6bb2](https://github.com/vdavid/cmdr/commit/2d8b6bb2))
+- Stop reopening a database connection on every pane switch ([928709f4](https://github.com/vdavid/cmdr/commit/928709f4))
+- Cut cloud sync badges from 300 thread creations a minute to none
+  ([852e7991](https://github.com/vdavid/cmdr/commit/852e7991))
+- Stop a two-folder change rescoring 90,000 folders every minute, and rescore only what changed
+  ([914004f1](https://github.com/vdavid/cmdr/commit/914004f1),
+  [555d75fe](https://github.com/vdavid/cmdr/commit/555d75fe),
+  [04e9ee40](https://github.com/vdavid/cmdr/commit/04e9ee40),
+  [4c3a794b](https://github.com/vdavid/cmdr/commit/4c3a794b))
+- Show the main window a second sooner at startup ([5ae724a9](https://github.com/vdavid/cmdr/commit/5ae724a9))
+- Hide Cmdr's and other apps' temporary save files from the pane, on every drive
+  ([66e60c3b](https://github.com/vdavid/cmdr/commit/66e60c3b),
+  [ca2a6371](https://github.com/vdavid/cmdr/commit/ca2a6371))
+- Render every size, speed, and ETA from one implementation, so two windows can't disagree
+  ([9cab4e03](https://github.com/vdavid/cmdr/commit/9cab4e03))
+- Settle one rule for the `…` menu suffix, and give Compress its icon
+  ([499ab149](https://github.com/vdavid/cmdr/commit/499ab149),
+  [b04ac721](https://github.com/vdavid/cmdr/commit/b04ac721))
+
+### Fixed
+
+- Fix ⌘V pasting twice in dialogs ([9b352123](https://github.com/vdavid/cmdr/commit/9b352123))
+- Fix ⌥⌘A opening Ask Cmdr and selecting every file at once, plus four default shortcuts that never fired
+  ([0919a6e1](https://github.com/vdavid/cmdr/commit/0919a6e1),
+  [f69cca28](https://github.com/vdavid/cmdr/commit/f69cca28),
+  [4beb9159](https://github.com/vdavid/cmdr/commit/4beb9159),
+  [4ead5e04](https://github.com/vdavid/cmdr/commit/4ead5e04))
+- Fix the whole UI freezing when you resize the window ([ceeddc43](https://github.com/vdavid/cmdr/commit/ceeddc43))
+- Keep a maximized window's position through a restart ([2b7bec84](https://github.com/vdavid/cmdr/commit/2b7bec84))
+- Fix six windows rendering every setting at its default, including binary sizes in the Transfers window
+  ([0d64c84c](https://github.com/vdavid/cmdr/commit/0d64c84c),
+  [a434418a](https://github.com/vdavid/cmdr/commit/a434418a))
+- Stop a killed transfer leaving a truncated file wearing your filename
+  ([b889e065](https://github.com/vdavid/cmdr/commit/b889e065))
+- Make Cancel and Rollback work on a stalled transfer, instead of leaving force-quit as the only way out
+  ([78ef454a](https://github.com/vdavid/cmdr/commit/78ef454a))
+- Show size and date again for folders on network drives, in archives, and on phones
+  ([a0ab6ff8](https://github.com/vdavid/cmdr/commit/a0ab6ff8))
+- Keep the Size column readable on a reconnected drive ([bdd3ccbc](https://github.com/vdavid/cmdr/commit/bdd3ccbc))
+- Retry a first network-drive connect that never reached the server
+  ([07b01142](https://github.com/vdavid/cmdr/commit/07b01142))
+- Stop Ask Cmdr inventing names for screenshots whose contents it never received
+  ([01b3f2dc](https://github.com/vdavid/cmdr/commit/01b3f2dc),
+  [5d95d588](https://github.com/vdavid/cmdr/commit/5d95d588),
+  [9496fcc6](https://github.com/vdavid/cmdr/commit/9496fcc6))
+- Fix the agent reading the wrong files on a scrolled pane ([b2f066e3](https://github.com/vdavid/cmdr/commit/b2f066e3),
+  [551795b2](https://github.com/vdavid/cmdr/commit/551795b2))
+- Let a local-model user get an answer on default settings ([02ece3ae](https://github.com/vdavid/cmdr/commit/02ece3ae))
+- Stop a batch-rename undo restoring an impostor file over your original
+  ([d300f598](https://github.com/vdavid/cmdr/commit/d300f598))
+- Keep folder importance and image indexing following the drive index after a full scan
+  ([88e07ff6](https://github.com/vdavid/cmdr/commit/88e07ff6))
+
+### Non-app
+
+- Extract the drive, media, and importance indexes into `cmdr-index` and the filesystem vocabulary into `cmdr-fs`: 93k
+  lines behind a compiler-enforced boundary, with the index's inner build loop 6–9x faster
+  ([944b0bc2](https://github.com/vdavid/cmdr/commit/944b0bc2),
+  [4323505f](https://github.com/vdavid/cmdr/commit/4323505f),
+  [913e43fb](https://github.com/vdavid/cmdr/commit/913e43fb),
+  [de9ff9f8](https://github.com/vdavid/cmdr/commit/de9ff9f8),
+  [a647efa3](https://github.com/vdavid/cmdr/commit/a647efa3),
+  [42f13a4f](https://github.com/vdavid/cmdr/commit/42f13a4f),
+  [e1081220](https://github.com/vdavid/cmdr/commit/e1081220))
+- Run every Rust check over the whole workspace, so a crate can't hide from the tests, the linter, or the license policy
+  ([cba34d77](https://github.com/vdavid/cmdr/commit/cba34d77),
+  [beb2dd50](https://github.com/vdavid/cmdr/commit/beb2dd50),
+  [bdc3849a](https://github.com/vdavid/cmdr/commit/bdc3849a),
+  [8115e928](https://github.com/vdavid/cmdr/commit/8115e928),
+  [65fb5603](https://github.com/vdavid/cmdr/commit/65fb5603))
+- Re-run a red Rust suite's failures alone before believing them, so machine contention stops reading as a defect
+  ([9e14ae57](https://github.com/vdavid/cmdr/commit/9e14ae57),
+  [32aa6322](https://github.com/vdavid/cmdr/commit/32aa6322),
+  [c92e0571](https://github.com/vdavid/cmdr/commit/c92e0571),
+  [736df70b](https://github.com/vdavid/cmdr/commit/736df70b))
+- Break `FilePane.svelte` into tested controller modules, 2,733 lines down to 1,971
+  ([0a29a457](https://github.com/vdavid/cmdr/commit/0a29a457),
+  [89493b33](https://github.com/vdavid/cmdr/commit/89493b33),
+  [bae466f9](https://github.com/vdavid/cmdr/commit/bae466f9),
+  [1dfb350f](https://github.com/vdavid/cmdr/commit/1dfb350f),
+  [c1dc27b7](https://github.com/vdavid/cmdr/commit/c1dc27b7),
+  [766a80a2](https://github.com/vdavid/cmdr/commit/766a80a2),
+  [d33ce6ea](https://github.com/vdavid/cmdr/commit/d33ce6ea),
+  [36d10e42](https://github.com/vdavid/cmdr/commit/36d10e42),
+  [0e1fb67e](https://github.com/vdavid/cmdr/commit/0e1fb67e))
+- Add a rustdoc lane that catches broken doc links, and repair the 32 it found
+  ([4092256c](https://github.com/vdavid/cmdr/commit/4092256c))
+- Serve the current release from one download URL that never goes stale
+  ([8b9947c2](https://github.com/vdavid/cmdr/commit/8b9947c2))
+- Keep app-directory listings in the repo, one file per directory
+  ([fbfea9a6](https://github.com/vdavid/cmdr/commit/fbfea9a6),
+  [68e6d4d0](https://github.com/vdavid/cmdr/commit/68e6d4d0),
+  [9daa96de](https://github.com/vdavid/cmdr/commit/9daa96de))
+- Move roadmap items into one typed data file ([2a669f4a](https://github.com/vdavid/cmdr/commit/2a669f4a))
+
 ## [0.36.2] - 2026-07-28
 
 The highlights:

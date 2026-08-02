@@ -494,6 +494,38 @@ export const roadmapSections: RoadmapSection[] = [
             icon: 'sparkles',
             done: true,
           },
+          {
+            date: '(Jul 28)',
+            title: 'Make search 25x faster',
+            description: 'Even a broad query now answers in under 0.5 sec.',
+            icon: 'zap',
+            done: true,
+          },
+          {
+            date: '(Jul 29)',
+            title: 'Better agent',
+            description: 'Reasonable context window management and UI, complex actions.',
+            icon: 'sparkles',
+            done: true,
+          },
+        ],
+      },
+      {
+        heading: 'Aug 2026',
+        milestones: [
+          {
+            date: '(Aug 1)',
+            title: 'Survive a silent NAS',
+            description: 'A wedged network transfer now recovers in seconds instead of hanging forever.',
+            done: true,
+          },
+          {
+            date: '(Aug 2)',
+            title: 'Speed up network copies',
+            description: 'Far fewer round trips per file, up to 3.8x faster to a NAS.',
+            icon: 'zap',
+            done: true,
+          },
         ],
       },
     ],

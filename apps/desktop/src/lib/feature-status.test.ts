@@ -15,11 +15,11 @@ describe('feature-status', () => {
   })
 
   it('the in-app alpha surfaces stay pinned to the JSON', () => {
-    // Search, the Selection dialog, the Ask Cmdr settings section, and the
-    // Image search settings card wear ALPHA badges in the app. If you graduate
-    // them in feature-status.json, this test reminds you the badges disappear
-    // with it (that's the point of the single source of truth).
-    expect(getFeatureStatus('search')).toBe('alpha')
+    // The Selection dialog, the Ask Cmdr settings section, and the Image search
+    // settings card wear ALPHA badges in the app; Search wears BETA. If you
+    // graduate them in feature-status.json, this test reminds you the badges
+    // change with it (that's the point of the single source of truth).
+    expect(getFeatureStatus('search')).toBe('beta')
     expect(getFeatureStatus('select-files')).toBe('alpha')
     expect(getFeatureStatus('ask-cmdr')).toBe('alpha')
     expect(getFeatureStatus('image-search')).toBe('alpha')
@@ -30,7 +30,7 @@ describe('feature-status', () => {
   })
 
   it('getBadgeStatus maps alpha and beta to badges, everything else to none', () => {
-    expect(getBadgeStatus('search')).toBe('alpha')
+    expect(getBadgeStatus('image-search')).toBe('alpha')
     expect(getBadgeStatus('network-drives')).toBe('beta')
     expect(getBadgeStatus('file-operations')).toBeUndefined() // stable: no badge by policy
     expect(getBadgeStatus('ai-batch')).toBeUndefined() // planned: no in-app surface

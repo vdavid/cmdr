@@ -10,8 +10,8 @@
     {
       "id": "search",
       "name": "Search",
-      "status": "alpha",
-      "note": "Finds files fast, but the AI query translation still misreads some prompts and a few filters are rough."
+      "status": "beta",
+      "note": "Finds files across every indexed drive in well under a second, with filters, regex, and recent searches; the AI query translation still misreads some prompts."
     },
     {
       "id": "select-files",
@@ -47,7 +47,7 @@
       "id": "network-drives",
       "name": "Network drives (SMB)",
       "status": "beta",
-      "note": "Browsing and fast direct transfers work on common NAS setups; unusual server configs can still cause surprises."
+      "note": "Browsing and fast direct transfers work on common NAS setups, and a server that goes quiet recovers instead of hanging; unusual server configs can still cause surprises."
     },
     {
       "id": "android-devices",
@@ -131,7 +131,7 @@
       "id": "ai-rename",
       "name": "AI rename",
       "status": "alpha",
-      "note": "Describe the names you want and Ask Cmdr proposes them, reading the text inside your images. You allow or deny each row before anything changes, and the whole batch is one undoable operation."
+      "note": "Describe the names you want and Ask Cmdr proposes them, reading the text inside your images. Every row shows the file and the evidence behind its name, you allow, edit, or deny each one, and the whole batch is one click from undone."
     },
     {
       "id": "ai-batch",
