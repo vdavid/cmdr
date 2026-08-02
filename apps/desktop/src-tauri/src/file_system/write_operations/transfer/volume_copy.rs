@@ -710,6 +710,11 @@ pub(crate) async fn copy_volumes_with_progress(
     // backends that return 1 from `max_concurrent_ops`.
     let concurrency = transfer_concurrency(&*source_volume, &*dest_volume);
     let use_concurrent_path = source_paths.len() >= 3 && concurrency > 1;
+    // Phase 0.5 created `dest_path` rather than finding it, so nothing the user
+    // already had can be inside it and the concurrent loop's per-file conflict
+    // probe below has nothing to find. See the comment at its call site for what
+    // this does and does NOT license.
+    let dest_dir_is_ours = dest_dir_creation == DirectoryCreation::Created;
     log::debug!(
         "copy_volumes_with_progress: {} sources, concurrency={} (src={}, dst={}), path={}, dest dir {}",
         source_paths.len(),
@@ -942,17 +947,46 @@ pub(crate) async fn copy_volumes_with_progress(
                 // after the write fully lands (safe-replace). `None` ⇒ write
                 // `dest_item_path` directly.
                 let mut replace_after_write: Option<PathBuf> = None;
-                // Record the pre-check BEFORE awaiting it. In the 2026-07-31
-                // incident this destination `get_metadata` was the driver's last
-                // log line and nothing said whether it returned, so a dump has to
-                // be able to name it as the step in progress.
-                if let Some(probe) = op_probe.as_ref() {
-                    probe.set_driver_phase(
-                        super::transfer_probe::DriverPhase::PreparingNext,
-                        &format!("#{source_index} {}", dest_item_path.display()),
-                    );
-                }
-                if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item_path).await {
+                // The per-file destination pre-check: `Ok` ⇒ something is
+                // already at this name ⇒ resolve the conflict. It is ONE ROUND
+                // TRIP PER FILE, serialized here on the driver, and on a NAS at
+                // 3.7 ms RTT it measured 2.378 s of a 3.224 s best run for 500
+                // files — 74%, and no window width can overlap it
+                // (`docs/notes/transfer-concurrency-window-bench-2026-08-02.md`).
+                //
+                // So skip it for a destination directory THIS OPERATION created
+                // (Phase 0.5 above): nothing the user already had can be inside
+                // a folder that didn't exist a moment ago, so every probe is a
+                // guaranteed miss. Same rule the deep-merge walker already
+                // applies one level down — `copy_directory_streaming` skips its
+                // dest listing on a fresh level and lists once on a merge.
+                //
+                // ❌ Never widen this to "the destination is empty". A
+                // pre-existing empty directory can gain an entry from another
+                // process between any two instants; one we just created cannot
+                // have held anything BEFORE we made it. Only the second claim is
+                // safe, and the difference is silent when you get it wrong: a
+                // conflict that would have prompted becomes an overwrite.
+                // Residual risk, and it is real: another process can still write
+                // into our new directory WHILE the batch runs. That window is far
+                // narrower than a stale up-front listing, but it is not zero.
+                // `DETAILS.md` § "Skipping the destination pre-check".
+                let existing_dest_meta = if dest_dir_is_ours {
+                    None
+                } else {
+                    // Record the pre-check BEFORE awaiting it. In the 2026-07-31
+                    // incident this destination `get_metadata` was the driver's
+                    // last log line and nothing said whether it returned, so a
+                    // dump has to be able to name it as the step in progress.
+                    if let Some(probe) = op_probe.as_ref() {
+                        probe.set_driver_phase(
+                            super::transfer_probe::DriverPhase::PreparingNext,
+                            &format!("#{source_index} {}", dest_item_path.display()),
+                        );
+                    }
+                    dest_volume.get_metadata(&dest_item_path).await.ok()
+                };
+                if let Some(dest_meta) = existing_dest_meta {
                     // Reuse the per-source hint from the scan instead of re-statting.
                     let source_hint = source_hints.get(source_path).copied();
                     let source_is_dir = source_hint.map(|h| h.is_directory).unwrap_or(false);
@@ -2114,6 +2148,9 @@ mod extract_out_tests;
 #[cfg(test)]
 #[path = "volume_merge_tests.rs"]
 mod merge_tests;
+#[cfg(test)]
+#[path = "volume_copy_precheck_tests.rs"]
+mod precheck_tests;
 #[cfg(test)]
 #[path = "volume_copy_retry_tests.rs"]
 mod retry_tests;
