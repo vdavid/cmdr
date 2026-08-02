@@ -110,6 +110,22 @@ filter = 'test(kick_tests::wire_volume_kicks_an_initial_pass_for_a_fresh_at_laun
 slow-timeout = { period = "20s", terminate-after = 1 }
 
 [[profile.default.overrides]]
+# The full-concurrency SMB copy (M4.4): the automated net under the 2026-07-31
+# transfer wedge. It bounds its own copy at 45 s and, on expiry, prints the
+# transfer probe's LIVE in-flight table — which task is parked in which phase,
+# what the driver was doing — and that dump is the entire point of the test. The
+# general 30 s `smb_integration_` cap below would SIGKILL the process before the
+# in-test deadline fires, leaving exactly the "it just hung, no trace" outcome the
+# milestone exists to end. 75 s keeps the 45 s deadline authoritative with room
+# for the 400-file fixture and the per-file hash verification either side of it,
+# and nextest stays the backstop. Don't read it as a runtime: measured 2026-08-02
+# on an idle M3 Max the whole test is 3.5 s (the copy itself 0.43 s). This
+# override precedes the general one so it wins slow-timeout (nextest: the first
+# matching override per setting wins).
+filter = 'test(smb_integration_many_files_at_full_concurrency_land_intact)'
+slow-timeout = { period = "75s", terminate-after = 1 }
+
+[[profile.default.overrides]]
 # The volume-id NetFS test's internal deadlines are 16 s (kernel-mount connect, the
 # sanctioned exception documented at the call site) + 20 s (NetFS settle wait), so the
 # general 30 s `smb_integration_` cap below could SIGKILL it before its own waits

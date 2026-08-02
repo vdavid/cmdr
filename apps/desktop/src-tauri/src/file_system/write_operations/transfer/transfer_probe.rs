@@ -561,6 +561,27 @@ pub(in crate::file_system::write_operations) fn activity_for(operation_id: &str)
         .map(|probe| probe.activity())
 }
 
+/// The in-flight table of a still-running operation, rendered.
+///
+/// The watchdog logs the same text once an operation has been still for
+/// `STALL_AFTER`, which is right for a user's session and useless to a test: a
+/// test that bounds its own wait needs the table AT the moment its deadline
+/// expires, in its panic message, where a human will actually read it. The SMB
+/// full-concurrency suite calls this before it abandons a copy that overran, so
+/// a red run names the phase every task was parked in instead of only saying
+/// "timed out".
+///
+/// `None` once the operation has settled (its guard deregistered it), so the
+/// caller must keep the copy alive — awaiting a `JoinHandle`, not the copy
+/// future itself, which would drop the guard before the dump could be taken.
+#[cfg(test)]
+pub(crate) fn render_live_dump(operation_id: &str, reason: &str) -> Option<String> {
+    REGISTRY
+        .lock_ignore_poison()
+        .get(operation_id)
+        .map(|probe| probe.render_dump(reason))
+}
+
 /// Stash a progress event so the watchdog can re-send it while nothing moves.
 /// Paired with [`activity_for`] on the `enrich_progress` path; a no-op for
 /// operations with no probe.

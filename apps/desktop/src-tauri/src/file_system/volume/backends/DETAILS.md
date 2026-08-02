@@ -319,15 +319,35 @@ otherwise resolve the id to the SUCCESSOR and mark a perfectly healthy volume `D
   (the full read/write streaming surface: progress, cancel, large multi-chunk files, plus the error/cleanup paths with
   the `ErroringReadStream` double), `smb_transfer_semantics_test.rs` (high-level merge/move contracts driven through
   the transfer pipelines), `smb_stress_test.rs` (concurrency: the no-deadlock guard with its `MutexCaptureLogger`
-  machinery, and the 100-file content-integrity test), and `smb_soak_test.rs` (below). Cross-suite helpers
+  machinery, and the 100-file content-integrity test), `smb_full_concurrency_test.rs` (below), and `smb_soak_test.rs`
+  (below). Cross-suite helpers
   (`make_docker_volume`, `test_dir_name`, `ensure_clean`, `hash_bytes`, `hash_volume_file`, `TEST_PREFIX_ROOT`,
   `cleanup_test_prefix`) live in `smb_test_support.rs` as `pub(super)` items.
-- **Docker SMB integration tests** (the four themed `smb_*_test.rs` Docker suites above): `#[ignore]` tests that require Docker SMB containers
+- **Docker SMB integration tests** (the themed `smb_*_test.rs` Docker suites above): `#[ignore]` tests that require Docker SMB containers
   (start with `apps/desktop/test/smb-servers/start.sh`). Run with `cargo nextest run smb_integration --run-ignored all`.
   Connect via `smb2::testing::guest_port()` (10480, guest/no-auth), `auth_port()` (10481, `testuser`/`testpass`),
   `readonly_port()` (10488), `slow_port()` (10493, 200ms latency). Use these for testing real SMB protocol behavior
   (streaming, error paths, network edge cases). See `apps/desktop/test/smb-servers/README.md` for the full container
   list and env var overrides.
+- **Full-concurrency copy** (`smb_full_concurrency_test.rs`): the automated net under the 2026-07-31 transfer wedge
+  (`docs/notes/incidents/2026-07-31-transfer-wedge/README.md`). 400 local sources onto the share through
+  `copy_volumes_with_progress` at the driver's own concurrency, with sizes on BOTH SMB write paths: the large ones are
+  sized off the session's negotiated `max_write` at runtime, not hardcoded, so they always land on the staged streaming
+  writer. Beyond byte-exactness it asserts three things a content check alone would miss: the concurrency window really
+  filled (peak `TransferActivity::in_flight` off the progress events, against a floor rather than the driver's
+  `min(src, dst, 32)` formula, which M4.3 is about deleting), a `.cmdr-tmp-*` really appeared during the copy (else the
+  "no leftovers" check passes vacuously), and none survived it.
+
+  Both tests here bound their own wait and, on expiry, panic with `transfer_probe`'s LIVE in-flight table via
+  `write_operations::render_live_transfer_dump` — a `#[cfg(test)]` accessor over the probe registry. They time out on
+  the copy's `JoinHandle`, never on the copy future: timing out the future DROPS it, which drops the probe guard and
+  empties the registry before there is anything to dump. `smb_integration_a_wedged_copy_is_caught_and_names_its_phase`
+  is the test of that mechanism — it parks a copy on the pause gate and asserts the bound fires with a dump naming the
+  operation, the driver phase, the window fill, and `parked(pause)`. Without it the deadline and the dump are untested
+  scaffolding, and a suite meant to catch a hang becomes one. The wedge is staged through the pause gate rather than a
+  silenced server because what is under test is the harness at expiry, and a pause reaches that state deterministically
+  without holding the shared Docker stack hostage. `.config/nextest.toml` grants the big test a 75 s cap so its own 45 s
+  deadline stays authoritative; a cap kill would leave no diagnostic, which is the exact outcome the milestone ends.
 - **SMB soak test** (`smb_soak_copy_loop` in `smb_soak_test.rs`): Repeats the SMB→Local copy pipeline for hundreds to
   thousands of iterations and watches RSS, open FDs, SMB credits, and per-iteration wall-clock drift. Catches accumulating bugs
   the single-shot integration tests can't see (credit leak, FD leak, memory growth, slowdown). Default mode:

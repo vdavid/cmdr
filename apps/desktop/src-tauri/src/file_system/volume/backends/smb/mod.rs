@@ -279,6 +279,9 @@ impl SmbConnectionParams {
 mod smb_archive_integration_test;
 
 #[cfg(test)]
+#[path = "../smb_full_concurrency_test.rs"]
+mod smb_full_concurrency_test;
+#[cfg(test)]
 #[path = "../smb_integration_test.rs"]
 mod smb_integration_test;
 #[cfg(test)]

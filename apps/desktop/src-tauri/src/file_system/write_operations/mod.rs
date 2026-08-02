@@ -180,6 +180,11 @@ pub(crate) use transfer::volume_copy::copy_volumes_with_progress;
 // via `super::archive_remote_edit`, so this re-export is test-only.
 #[cfg(test)]
 pub(crate) use archive_remote_edit::{RemoteEditError, pull_apply_upload_swap};
+// A live operation's in-flight table, so a suite that bounds its own wait can put
+// the transfer probe's dump in its panic message. Used by the live-SMB
+// full-concurrency suite, which sits outside this module.
+#[cfg(test)]
+pub(crate) use transfer::transfer_probe::render_live_dump as render_live_transfer_dump;
 
 // ============================================================================
 // Public API functions

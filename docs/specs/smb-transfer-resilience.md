@@ -104,7 +104,12 @@ Finishes the half of the earlier `M1.3` that was left undone.
 - **M4.3** Delete the concurrency guess. `min(src.max_concurrent_ops, dst.max_concurrent_ops, 32)` is a magic number
   standing in for backpressure; with a real credit budget the gate IS the backpressure, self-tuning per connection. This
   is where the throughput upside sits.
-- **M4.4** An E2E copying many files at full concurrency to the Docker SMB share, which is the shape that wedges.
+- **M4.4** ✅ **Shipped** (`smb_full_concurrency_test.rs`). 400 local sources onto the Docker share at the driver's own
+  concurrency, sized onto BOTH SMB write paths off the session's negotiated `max_write`, every byte verified, and the
+  window's real peak fill asserted so a batch that quietly went sequential can't pass. Its wait is bounded and prints
+  `transfer_probe`'s live in-flight table on expiry instead of hanging; a sibling test parks a copy on purpose to prove
+  that bound fires and that the dump names the phase. What it covers and what it does not:
+  `apps/desktop/src-tauri/src/file_system/volume/backends/DETAILS.md` § Testing.
 
 ## Sequencing
 
