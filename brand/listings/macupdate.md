@@ -3,8 +3,8 @@
 Submission form: https://member.macupdate.com/content/submit (needs a MacUpdate member account). The same form creates
 and modifies a listing (search the app name at the top to modify).
 
-Status: submitted 2026-07-29 for v0.36.2, awaiting review by their content specialists. The fields below are what was
-submitted; edit them here first when refreshing, then paste.
+Status: submitted 2026-07-29 for v0.36.2. The fields below are refreshed for v0.37.0 and ready to paste; that refresh is
+not submitted yet. Edit them here first when refreshing, then paste.
 
 Refresh cadence and what to update per release: `docs/guides/releasing.md` § "Refreshing the app-directory listings".
 
@@ -19,12 +19,12 @@ the Price field and the note to the review team instead.
 - **Download URL**: `https://getcmdr.com/download/latest/universal?ref=macupdate.com`
   - Always points at the current release, so it never needs a resubmission, and it attributes the download to MacUpdate
     in the dashboard. Plain fallback if they reject redirects:
-    `https://github.com/vdavid/cmdr/releases/download/v0.36.2/Cmdr_0.36.2_universal.dmg` (version-pinned, so it would
+    `https://github.com/vdavid/cmdr/releases/download/v0.37.0/Cmdr_0.37.0_universal.dmg` (version-pinned, so it would
     need bumping per release).
 - **Product page URL**: `https://getcmdr.com`
 - **Purchase URL**: `https://getcmdr.com/pricing`
 - **Developer support URL**: `https://github.com/vdavid/cmdr/issues`
-- **Version number**: `0.36.2`
+- **Version number**: `0.37.0`
 - **Price**: leave empty (their hint says empty means free). Cmdr is free for personal use; commercial licenses are sold
   on the purchase URL and explained to the review team below.
 
@@ -46,9 +46,9 @@ A blazing-fast, keyboard-driven two-pane file manager for macOS, with fully opti
   features that genuinely help. Built with Rust, it's extremely fast and respectful toward your CPU, RAM, and disk.
 </p>
 <p>
-  Cmdr is in open beta. There might be sharp edges in the newer features (search, archives, the operation log, and AI),
-  but the core is well-tested, stable software used every day by the author and a group of testers. Feedback goes
-  straight to the developer!
+  Cmdr is in open beta. There might be sharp edges in the newer features (archives, the operation log, and AI), but the
+  core is well-tested, stable software used every day by the author and a group of testers. Feedback goes straight to
+  the developer!
 </p>
 <h5>Core features</h5>
 <ul>
@@ -114,51 +114,61 @@ A blazing-fast, keyboard-driven two-pane file manager for macOS, with fully opti
 
 ### Version changes
 
-Their hint asks for the changes in the current version, with `<h5>` section heads and `<ul>` lists. This covers the 0.36
-line, since 0.36.0 carries the interesting work and 0.36.1 and 0.36.2 are patches on top.
+Their hint asks for the changes in the current version, with `<h5>` section heads and `<ul>` lists. This covers 0.37.0;
+the 0.36 line went in with the previous submission.
 
 ```html
 <h5>New</h5>
 <ul>
-  <li>Photo search stays fast past 50,000 images with an on-device index that switches on automatically at scale.</li>
-  <li>Image-index status shows right on the icons: a per-file badge, per-folder coverage, and a per-drive dot.</li>
+  <li>An Acknowledgements dialog crediting all 775 open-source packages Cmdr ships.</li>
+  <li>Right-click any text field for Cut, Copy, Paste, and Select all.</li>
   <li>
-    Three focused settings cards manage image indexing: switch semantic search on or off, set how many parallel workers
-    index, and reclaim the model's disk space.
+    A "Chat memory size" setting for the AI chat, from Automatic up to 200,000 tokens, with a bar showing how full the
+    conversation is.
   </li>
+  <li>Undo for an AI bulk rename, one batch at a time or a whole multi-batch run at once.</li>
+  <li>
+    Every rename review row now shows the file itself and the evidence behind its proposed name, and you can correct a
+    name in place before approving it.
+  </li>
+  <li>Recent searches live in the query field as a dropdown, each row showing its age, result count, and filters.</li>
+  <li>Transfer speed in the Transfers window, plus an honest readout when a transfer has stopped moving.</li>
 </ul>
 <h5>Improved</h5>
 <ul>
   <li>
-    A design facelift toward a native macOS feel: rounder dialogs, capsule buttons, inset file panes, redesigned Copy,
-    Move, and Delete dialogs, and settings controls matched to their job.
+    A broad search returns in under half a second instead of twelve, and the dialog opens and takes typing without
+    waiting on an index rebuild.
   </li>
   <li>
-    Checking a drive for changes is five times faster, and indexing a NAS is about 3.8 times faster by spreading the
-    scan across multiple SMB connections.
+    The Search and Select dialog is redesigned to match the rest of the app: standard window chrome, a tidy 2x2 query
+    block, and a Path column with its width back.
+  </li>
+  <li>Every text field shares one look: 8px corners, an accent-colored caret, and a solid focus ring.</li>
+  <li>
+    Copying to a network drive is up to 3.8 times faster, and a small file now costs one round trip instead of two.
   </li>
   <li>
-    File transfers and browsing now take priority over background indexing, and uploads pause while you browse the same
-    share.
+    A network drive that goes silent recovers in about 50 seconds instead of hanging forever, and a single file retries
+    after a blip rather than ending the whole transfer.
   </li>
   <li>
-    Much lighter on memory: search's folder ranking is down 85% on a NAS-sized drive, background folder scoring by two
-    thirds, and the image-search model reclaims about 550 MB after it installs.
+    Much lighter on resources: the whole database page cache is capped at 64 MB however many connections are open, and
+    cloud sync badges no longer spawn 300 threads a minute.
   </li>
-  <li>Settings is reorganized into Indexing and Notifications, with a leaner AI, Behavior, and Advanced.</li>
-  <li>Downloads show one notification per burst, always naming the newest file.</li>
+  <li>The main window appears a second sooner at startup.</li>
 </ul>
 <h5>Fixed</h5>
 <ul>
-  <li>Cmdr could balloon to tens of gigabytes of memory shortly after launch.</li>
+  <li>⌘V pasted twice in dialogs, and ⌥⌘A opened the AI chat and selected every file at once.</li>
+  <li>Resizing the window could freeze the entire interface.</li>
   <li>
-    The app could crash when you closed Settings or the file viewer, and could show a blank window on cold launch.
+    A force-quit mid-transfer could leave a truncated file wearing your filename, and Cancel and Rollback did nothing on
+    a stalled transfer.
   </li>
-  <li>Clicking or dragging inside the rename field cancelled the rename; clicking away now saves, like Finder.</li>
-  <li>
-    NAS image indexing could stall at zero images, and NAS snapshot folders inflated a share's file count and size.
-  </li>
-  <li>Every switch and checkbox now has a real name and role for screen readers.</li>
+  <li>Folders on network drives, inside archives, and on phones showed no size or date.</li>
+  <li>The AI could invent names for screenshots whose contents it was never actually shown.</li>
+  <li>A maximized window came back in the wrong place after a restart.</li>
 </ul>
 ```
 
