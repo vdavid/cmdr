@@ -10,8 +10,8 @@ per-file destination probe that no window width can overlap. The window is worth
 ~74%.
 
 Keep this note until the pre-check (below) is either fixed or ruled out. It's the before-baseline any re-measurement
-compares against, and it records the two shapes' bottlenecks separately, which is the thing a single throughput number
-hides.
+compares against, it records the two shapes' bottlenecks separately (the thing a single throughput number hides), and
+its last section scopes the pre-check fix for a go/no-go without having started it.
 
 ## Method
 
@@ -197,18 +197,134 @@ NAS many-small table:
   [3.398-4.357] vs [3.247-3.700], overlapping. Anyone measuring this on a high-core Mac will correctly conclude the
   change does nothing, and be wrong about the machines most users have.
 
+## The two floors, side by side
+
+The same measurement on the two targets:
+
+| target                  |      RTT | probe / file |   floor | best run | floor as % of best |
+| ----------------------- | -------: | -----------: | ------: | -------: | -----------------: |
+| Docker Samba (loopback) |  <0.1 ms |       492 us |  246 ms |  1.024 s |            **24%** |
+| QNAP over gigabit       | 3.729 ms |      4.76 ms | 2.378 s |  3.224 s |            **74%** |
+
+**That divergence is itself a finding, and it's a trap for anyone who benchmarks this project on Docker alone.** Both
+terms scale with latency, but not together: the serial probe pays full RTT per file with nothing to hide behind, while
+the copy work is spread across the window. So loopback systematically understates a per-file round trip and makes the
+window look like the whole story. A Docker-only sweep here recommends "widen the window, it's still climbing at 32". The
+NAS says the window stops mattering at 12 and three quarters of the time is somewhere else entirely. Same code, same
+harness, opposite conclusions.
+
+Rule of thumb for the next person: **a Docker SMB number is a correctness and regression signal, not a latency signal.**
+Anything whose cost is "one round trip per item" needs a real network before it means anything.
+
+## Is 32 still the right ceiling?
+
+Yes, leave it. The NAS plateaus at 12 on both shapes, so the 32 clamp is nowhere near binding on the deciding target.
+Docker keeps climbing to 32, but that's the loopback artifact above: its probe is ~10x cheaper, so the ceiling never
+appears. Raising the clamp would need a target that still improves past 32, and nothing here is one.
+
 ## What this says about M4.3
 
-1. **Replacing the window formula for throughput isn't supported by the evidence.** On the deciding target it's worth
-   ~14% on many-small at best and nothing measurable on few-large. That isn't where the upside sits.
-2. **Removing the local-side cap on a network transfer IS supported**, but as a defect fix, not a throughput play: it
-   makes an advertised setting real and recovers 25% on the low-core Macs that most users have. It needs a signal on the
-   `Volume` trait for "this cap is about local CPU, don't let it bound a network peer"; raising
-   `LocalPosixVolume::max_concurrent_ops()` outright would also change local-to-local copies, which nothing here
-   measured.
-3. **The serial per-file destination probe is the real target.** 74% of the best many-small run, 4.76 ms/file at 3.7 ms
-   RTT, and the fix shape already exists in this module (one dest listing, `name -> FileEntry` map, the deep-merge
-   path). It deserves its own milestone and its own before-and-after against this note, not a bolt-on.
+Three outcomes were on the table: take both changes, take only the pre-check fix, or take neither. The answer is
+**neither of the window changes as a throughput play; the local-cap fix on defect grounds only; the pre-check as its own
+proposal.**
+
+1. **The window formula is not worth changing for speed. Don't take it.** On the deciding target it's ~14% on many-small
+   (8 -> 16, and the spreads touch) and nothing measurable on few-large. Set against a v1.0 release and a change to a
+   shared `Volume` trait, that doesn't clear the bar on its own. Said plainly: **if the local-cap defect below didn't
+   exist, my recommendation would be to leave `min(src, dst, 32)` exactly as it is.**
+2. **The local-side cap IS worth fixing, as a defect.** `min()` lets `LocalPosixVolume`'s `clamp(cores/2, 4, 16)` pick
+   the window for a network transfer, so `network.smbConcurrency` does nothing above 4-8 on any Mac we ship to while its
+   own description promises 1-32. Worth 25% on an 8-core Mac (window 4 -> 10, spreads disjoint) and nothing measurable
+   on a 16-core one. It needs a `Volume` signal for "this cap is about local CPU, don't let it bound a network peer";
+   raising `LocalPosixVolume::max_concurrent_ops()` outright would also change local-to-local copies, which nothing here
+   measured. **Take it for the honest setting, and take the 25% as a bonus, not as the reason.**
+3. **The pre-check is the real prize. Proposal below; not implemented, and out of M4.3 as specified.**
 4. **"Let the credit budget decide" has no well-defined file-level value** and isn't a candidate. Credits gate WRITE
    frames connection-wide; the window gates concurrent FILES, and each file's `FileWriter` already pipelines 32 wire
    writes against those same credits. Settled before this sweep; the numbers here don't reopen it.
+
+## Proposal: stop paying N round trips for what one listing answers
+
+**Not implemented.** This is scoped for a decision, not started.
+
+### The win, with the arithmetic
+
+At window 32 the best NAS run is 3.224 s: 2.378 s of serialized probe plus 846 ms of everything else. Today's real
+window (8) gives 3.752 s. If the probe cost goes to roughly zero, the projected floor-free run is **~0.85-1.0 s, call it
+3.5-4x faster than today** on the 500-file shape.
+
+**Treat that as a projection, not a promise.** It is arrived at by subtraction, and subtraction assumes the residual 846
+ms stays the residual. Remove the serial gate and the next bottleneck (wire, server, task scheduling) becomes visible,
+and it may well sit above 850 ms. What is _measured_ is the 2.378 s: that much serialized latency is real and currently
+un-overlappable. What is projected is what's left after it goes.
+
+The win also scales with file count and RTT, and does nothing for bytes: it's `N x RTT`. Over Tailscale at ~50 ms RTT,
+those same 500 files carry a 25 s floor. Over gigabit LAN, 2.4 s. For an 8-file copy, ~40 ms and not worth a line of
+code.
+
+### Where the change goes
+
+`volume_copy.rs`, the concurrent spawn loop (the `dest_volume.get_metadata(&dest_item_path).await` at the
+`PreparingNext` phase). Three shapes, cheapest first:
+
+- **(a) Skip probes that are provably misses.** The driver _already receives_ the destination's conflicting names as
+  `config.pre_known_conflicts`, populated from the FE's `scan_for_conflicts`. Any source not in that set cannot
+  conflict, so its probe is a guaranteed miss and can be skipped outright. In the measured case (a copy into a fresh
+  directory, zero conflicts) that removes all 500 round trips. Smallest diff by far. **Blocker to check first**:
+  `pre_known_conflicts` is a `#[serde(default)]` `Vec<String>` and the frontend sends `?? []`, so "empty" means both
+  "scanned, found none" and "nobody scanned". Those must be told apart before anything can be skipped on the strength of
+  it, which means an explicit flag (or `Option<Vec<_>>`) crossing IPC. Skipping a probe on an ambiguous empty vec would
+  silently convert "would have prompted" into "overwrote".
+- **(b) One dest listing inside the driver.** Doesn't depend on the FE having scanned. This is the deep-merge path's
+  existing pattern (`copy_directory_streaming` lists a merged level once and builds a `name -> FileEntry` map with no
+  per-child probes) applied to the top level. **`SmbVolume::scan_for_conflicts` is literally already this code** (one
+  `list_directory_impl`, then an in-memory name match), so the backend work may be nil; it's the driver that doesn't use
+  the bulk answer.
+- **(c) Batch the stats instead of the listing.** Mirrors `scan_for_copy_batch`, which `SmbVolume` already overrides to
+  pipeline N stats over one connection (measured 6.5x at 100 files). Turns `N x RTT` into about `N/W x RTT` rather than
+  ~1 RTT, so it's the weakest of the three, but it's immune to the huge-directory and staleness problems below.
+
+Recommendation: **(b), with (a) as a fast follow if the flag lands.** (b) has the best win-to-risk ratio and the least
+new vocabulary.
+
+### What could go wrong
+
+- **Staleness, and this is the real one.** A per-file stat is taken moments before that file is written; one up-front
+  listing can be minutes stale by the time the last file in a large batch lands. A file that appears at the destination
+  mid-batch would be missed, and an Overwrite would replace it with no prompt. The merge path already accepts this
+  within a level, but its window is one level, not one multi-minute batch. **This is a data-safety question, not a
+  performance one, and it's the reason this is a proposal rather than a patch.** Mitigation worth pricing: re-probe only
+  the files the listing said were absent AND that are about to be overwritten, which is usually none of them.
+- **The operation's own staging temps appear in the listing.** `.cmdr-tmp-*` siblings the batch is currently writing
+  would show up as dest entries and must be filtered; the in-flight-temps machinery already exists for the listing read
+  path, so this is wiring, not invention.
+- **A huge destination directory inverts the trade.** Listing a 200k-entry folder to copy two files into it is worse
+  than two stats. Needs a small-N fallback (keep per-file probes below some count).
+
+### MTP and local destinations
+
+They share this driver, so the blast radius has to be checked, and it cuts differently for each:
+
+- **MTP never reaches this code today**, and that's load-bearing. `MtpVolume::max_concurrent_ops()` is 1, so
+  `concurrency` is 1, so `use_concurrent_path` is false and the serial driver runs instead. But an MTP listing is
+  pathologically expensive: `volume_copy.rs` already documents an MTP `scan_for_copy` costing ~18 s for 1046 photos on a
+  cold cache. **So if this fix is written into the concurrent spawn loop it can't touch MTP, and if it's refactored into
+  shared conflict-resolution instead, it turns one cheap probe into an 18-second directory listing on a phone.** Keep it
+  in the concurrent loop, or gate it explicitly per backend. This is the single most important scoping constraint on the
+  work.
+- **Local destinations should keep today's behavior.** `LocalPosixVolume::get_metadata` is a `stat`: microseconds. N of
+  them cost nothing, and a listing of a large folder would cost more. So the change must be conditional on the
+  destination being expensive per operation, not applied universally. Whatever signal option 2 above introduces for the
+  concurrency cap ("this volume is network-backed") is probably the same signal this needs, which is an argument for
+  doing them in that order.
+
+### How to verify it
+
+- **Re-run this exact sweep and diff the tables.** The harness is committed and the method is fixed, so before/after is
+  a direct comparison rather than a new argument. `serial_precheck_floor` becomes an after-number too: if the fix works,
+  its share of the best run collapses from 74% toward single digits.
+- **`pnpm check rust-integration-tests`** must stay green, M4.4's `MIN_PEAK_IN_FLIGHT` untouched (it's a floor so the
+  formula can change; don't weaken it to make something pass).
+- **`volume_merge_tests.rs` is the correctness net**, plus a new case for the staleness risk: a destination file that
+  appears after the batch's listing but before that file is written must still be treated as a conflict.
+- Worth measuring over Tailscale as well as LAN, since the whole effect is `N x RTT` and WAN is where it's largest.
