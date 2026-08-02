@@ -316,4 +316,35 @@ mod tests {
         // Edge: max_chars = 0 yields empty string.
         assert_eq!(truncate_for_menu_label("anything.txt", 0), "");
     }
+
+    /// Menu labels end with the U+2026 ellipsis character, never three periods.
+    /// Two reasons: macOS kerns `...` visibly worse next to system items, and
+    /// `set_macos_menu_icons` matches SF Symbols by exact title string, so a `...`
+    /// title silently loses its icon (six of them once did).
+    #[test]
+    fn menu_labels_use_the_ellipsis_character() {
+        const SOURCES: [(&str, &str); 4] = [
+            ("macos.rs", include_str!("macos.rs")),
+            ("linux.rs", include_str!("linux.rs")),
+            ("menu_structure.rs", include_str!("menu_structure.rs")),
+            ("open_with.rs", include_str!("open_with.rs")),
+        ];
+        // AppKit injects these titles with literal periods; `cleanup_macos_menus`
+        // matches them byte-for-byte to strip them, so they must stay as macOS ships them.
+        const SYSTEM_INJECTED: [&str; 1] = ["\"Start Dictation...\""];
+
+        for (name, source) in SOURCES {
+            for (line_number, line) in source.lines().enumerate() {
+                if SYSTEM_INJECTED.iter().any(|title| line.contains(title)) {
+                    continue;
+                }
+                assert!(
+                    !line.contains("...\""),
+                    "{name}:{} ends a menu label with `...`; use `\\u{{2026}}`: {}",
+                    line_number + 1,
+                    line.trim()
+                );
+            }
+        }
+    }
 }

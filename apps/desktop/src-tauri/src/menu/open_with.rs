@@ -32,7 +32,7 @@ use crate::file_system::open_with::AppCandidate;
 /// Menu item ID prefix for "Open with" candidate apps. Followed by the app's bundle ID.
 pub const OPEN_WITH_ID_PREFIX: &str = "open-with:";
 
-/// Menu item ID for "Open with → Other..." (NSOpenPanel picker).
+/// Menu item ID for "Open with → Other…" (NSOpenPanel picker).
 pub const OPEN_WITH_OTHER_ID: &str = "open-with-other";
 
 /// Builds the "Open with" submenu and returns it alongside a `bundle_id → app_path`
@@ -47,7 +47,7 @@ pub fn build_open_with_submenu<R: Runtime>(
 
     if candidates.is_empty() {
         // Empty intersection (heterogeneous selection, or no apps registered).
-        // Match Finder: still expose "Other..." so the user can manually pick.
+        // Match Finder: still expose "Other…" so the user can manually pick.
     } else {
         for (idx, candidate) in candidates.iter().enumerate() {
             let label = if idx == 0 {

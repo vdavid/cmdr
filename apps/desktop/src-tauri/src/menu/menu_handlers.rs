@@ -660,7 +660,7 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
         return;
     }
 
-    // === Open with → Other... : show NSOpenPanel, then launch ===
+    // === Open with → Other… : show NSOpenPanel, then launch ===
     #[cfg(target_os = "macos")]
     if id == super::open_with::OPEN_WITH_OTHER_ID {
         use crate::file_system::open_with::{open_paths_with, pick_app_via_open_panel};
@@ -681,7 +681,7 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
             && !paths.is_empty()
             && let Err(e) = open_paths_with(&paths, &app_path)
         {
-            log::warn!("Open with (Other...) failed: {e}");
+            log::warn!("Open with (Other…) failed: {e}");
         }
         return;
     }

@@ -20,16 +20,14 @@ user shortcuts, and enables/disables items by focus context.
   injects *after* construction.
 - **Accelerator changes go remove/recreate/reinsert, not in-place** (Tauri has no `set_accelerator()`).
   `update_menu_item_accelerator` handles HashMap items; `rebuild_view_mode_items` handles the four per-pane view-mode
-  CheckMenuItems (they share one ⌘1/⌘2 pair that follows the active pane). `MenuState` tracks both the `Submenu`
-  reference and positional index per updatable item for this.
+  CheckMenuItems (they share one ⌘1/⌘2 pair that follows the active pane). `MenuState` tracks each item's submenu and
+  index for this.
 - **CheckMenuItems (view modes, show hidden) must NOT use `"execute-command"`.** They auto-toggle their checked state on
   click, so emitting `execute-command` too would double-toggle. They emit `"settings-changed"` / `"view-mode-changed"`
-  directly. Sort items emit `"menu-sort"`; close-tab and "Open with" have their own paths. The four sort columns and the
-  `…` selection items are still registered in `menu_id_to_command` / `MenuState.items` only so user accelerators flow
-  through the generic update path.
-- **File-scoped commands are dual-guarded**: `activate_window_menu("other")` greys them out (visual hint only); the real
-  guard is `main_window.is_focused()` in `on_menu_event` before emitting. Both are needed: accelerators fire even when
-  items look disabled on some platforms.
+  directly. Sort items emit `"menu-sort"`; close-tab and "Open with" have their own paths. Some of those are still
+  registered in `menu_id_to_command` / `MenuState.items` purely for accelerator sync (`DETAILS.md`).
+- **File-scoped commands are dual-guarded**: `activate_window_menu("other")` greys them out (visual only); the real guard
+  is `main_window.is_focused()` in `on_menu_event`. Both are needed: accelerators fire even when items look disabled.
 - **macOS swaps the app menu bar on focus-gain (`activate_window_menu`); Linux uses per-window menus.** macOS has one
   app-level menu bar (tauri-apps/tauri#5768), so each window's focus handler swaps `app.set_menu()` between the main and
   viewer menus (stored in `MenuState`); `active_menu_kind` skips redundant swaps. After every swap re-run
@@ -41,16 +39,16 @@ user shortcuts, and enables/disables items by focus context.
   dead in settings/viewer text fields. ⌘A on the main window routes through `execute-command` (frontend checks
   `document.activeElement` for text-vs-file). Don't swap to `PredefinedMenuItem::select_all`: it conflicts with the
   custom item.
-- **`Select all` / `Deselect all` live in the `Select` top-level menu, not `Edit`.** Cmdr's `selection.selectAll`
-  operates on files, not text. Don't move them back without re-reading the decision: the file-vs-text distinction is
-  load-bearing.
+- **`Select all` / `Deselect all` live in `Select`, not `Edit`**: they operate on files, not text. Don't move them back
+  without reading the decision (`DETAILS.md`); the file-vs-text distinction is load-bearing.
 - **Linux omits F-key, Tab, and Space accelerators** (GTK intercepts them at the toolkit level, causing double-handling
   or silent swallowing); those keys dispatch through JS keydown on Linux instead. Linux also skips `Cmd+Plus`/`Cmd+Minus`
   zoom accelerators for the same reason.
+- **Trailing `…` means the dialog can change WHAT the command acts on** (`Copy…` takes a destination), not merely
+  whether it runs (`Delete` confirms). Same label in menu bar and context menu; always U+2026, never `...` (enforced by
+  `menu_labels_use_the_ellipsis_character`). Per-item verdicts and why: `DETAILS.md`.
 - **macOS SF Symbol map matches by exact title string**, including the `\u{2026}` ellipsis: keep the `MenuItem` title and
-  the symbol map byte-identical. SF Symbols are set only on the menu bar (objc2 walk of `NSApplication.mainMenu()`); our
-  context-menu items get none (Tauri doesn't expose the raw `NSMenu` pointer). "Open with" app icons are the exception
-  (full-color non-template images via `IconMenuItem`).
+  the symbol map byte-identical, or the item silently loses its icon. Menu bar only, never context menus (`DETAILS.md`).
 - **⌘G / ⌘J double-dispatch on macOS**: the combo fires both the native menu and the JS keydown. Safe here without
   suppression (⌘G dialog-open is idempotency-guarded, ⌘J re-reveal is idempotent). Expect two log lines per ⌘J press.
 

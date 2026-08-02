@@ -11,6 +11,11 @@ Writing, code, and design styles.
     it…?"), blog posts are signed personal writing, and legal pages keep the conventional "we".
   - **The app may speak as David where it's deliberately personal**: the onboarding beta step and the About window sign
     their copy ("Hi, I'm David!"). That's intentional warmth, not a violation of the website rule.
+- Menu labels
+  - **A trailing `…` means the dialog can change what the command acts on**, not that a dialog appears at all. `Copy…`
+    takes a destination; `Delete` only asks whether to go ahead. Use the U+2026 character, never three periods. The
+    verdict per item, and why this beats Apple's own "requires further input" phrasing, live in
+    `apps/desktop/src-tauri/src/menu/DETAILS.md`.
 - Specific terms
   - **Folder vs directory**: We know these mean the same. We allow both. Use whichever feels better in each situation.
     Like, on the backend, listing "folders" with `readdir` feels wrong, but also, "folder" comes more natural on the

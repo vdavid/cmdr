@@ -149,8 +149,8 @@ pub fn build_context_menu<R: Runtime>(
     // pane: the underlying file CAN be renamed, but doing it from the snapshot view
     // splits the file (snapshot keeps the old name, disk has the new) which is
     // confusing. The user can navigate to the real folder and rename there.
-    let copy_item = MenuItem::with_id(app, FILE_COPY_ID, "Copy", true, Some("F5"))?;
-    let move_item = MenuItem::with_id(app, FILE_MOVE_ID, "Move", true, Some("F6"))?;
+    let copy_item = MenuItem::with_id(app, FILE_COPY_ID, "Copy\u{2026}", true, Some("F5"))?;
+    let move_item = MenuItem::with_id(app, FILE_MOVE_ID, "Move\u{2026}", true, Some("F6"))?;
     menu.append(&copy_item)?;
     menu.append(&move_item)?;
     if !restrict_destination_actions {
@@ -162,7 +162,7 @@ pub fn build_context_menu<R: Runtime>(
     // New folder — also omitted on search-results panes (no destination folder
     // to create into; the pane IS the snapshot, not a directory).
     if !restrict_destination_actions {
-        let new_folder_item = MenuItem::with_id(app, FILE_NEW_FOLDER_ID, "New folder", true, Some("F7"))?;
+        let new_folder_item = MenuItem::with_id(app, FILE_NEW_FOLDER_ID, "New folder\u{2026}", true, Some("F7"))?;
         menu.append(&new_folder_item)?;
         menu.append(&PredefinedMenuItem::separator(app)?)?;
     }

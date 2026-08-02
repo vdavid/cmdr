@@ -61,7 +61,7 @@ Exceptions that do NOT use `"execute-command"`:
   enumerated in `menu_id_to_command`. `on_menu_event` prefix-matches `open-with:` and calls
   `file_system::open_with::open_paths_with` directly, looking up the app URL via
   `MenuState.context.open_with_apps[bundle_id]` and the launch paths via
-  `MenuState.context.paths`. The "Other..." entry shows an `NSOpenPanel` filtered to `.app`
+  `MenuState.context.paths`. The "Other…" entry shows an `NSOpenPanel` filtered to `.app`
   bundles and launches the chosen app the same way.
 - **Finder tag colors** (macOS): the file context menu carries seven `IconMenuItem` circles
   (`menu_structure.rs::append_tag_color_group`, shown for files AND folders), IDs `tag-color:<1..=7>`,
@@ -314,6 +314,9 @@ focus-gain (see "Per-window menu activation" above).
 `Deselect files…` dialog openers. `Edit` retains the text-edit operations (Cut/Copy/Paste/Move here/Copy path/Copy
 filename/Search files) plus Undo/Redo. Don't move them back without re-reading this entry — the file-vs-text-selection
 distinction is the load-bearing reason.
+
+**Decision**: A menu label ends with `…` when the dialog it opens can change WHAT the command acts on, not merely whether it runs.
+**Why**: Apple's own phrasing ("requires further input") doesn't decide Cmdr's cases, because both of our big confirmations arrive pre-filled and are usually dismissed with Return. The copy/move dialog takes a destination that is genuinely steerable (it's the focused control, and confirm is blocked while the path is invalid), so the destination pane is a suggestion, not the command. The delete dialog can't retarget anything: the file set is fixed, and its trash-vs-permanent switch only picks between two commands that already exist as two menu items (`Delete` / `Delete permanently`), so flipping it is switching command, not steering this one. Hence `Copy…` / `Move…` / `Compress…` / `New folder…` / `Search files…` / `Go to path…` / `Select files…`, and bare `Delete`, `Rename` (inline edit, no dialog), `Add to favorites`, `Operation log`, `What's new`, `Acknowledgements`, `Get info`. The looser reading ("a dialog appears") was rejected: nearly every destructive command in Cmdr shows something, so under it the mark lands on almost everything in the File menu and stops carrying information. `Check for updates…` is the one deliberate exception to the rule, kept because Sparkle-style updaters have made that exact label near-universal on macOS and dropping the ellipsis reads as a typo.
 
 **Decision**: SF Symbol icons only on the menu bar, not on context menus.
 **Why**: Tauri doesn't support SF Symbols natively. For the menu bar, we walk `NSApplication.mainMenu()` post-construction via objc2 FFI and set SF Symbols directly on `NSMenuItem` objects, producing true template images that auto-tint correctly. Context menus don't get icons because Tauri doesn't expose the raw `NSMenu` pointer, and the alternative (rasterized bitmaps via `IconMenuItem`) produces visually poor results (no template tinting, wrong size/weight).

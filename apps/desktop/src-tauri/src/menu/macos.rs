@@ -39,12 +39,13 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     // Credits the open-source libraries Cmdr ships. Sits next to About and the
     // license: it's app metadata, not a help topic, which is also where macOS
     // apps that ship one put it.
-    let acknowledgements_item =
-        MenuItem::with_id(app, ACKNOWLEDGEMENTS_ID, "Acknowledgements\u{2026}", true, None::<&str>)?;
+    let acknowledgements_item = MenuItem::with_id(app, ACKNOWLEDGEMENTS_ID, "Acknowledgements", true, None::<&str>)?;
+    // Only one of these takes input, so only one gets the ellipsis: entering a key
+    // asks for the key, seeing the details just shows them.
     let license_label = if has_existing_license {
-        "See license details..."
+        "See license details"
     } else {
-        "Enter license key..."
+        "Enter license key\u{2026}"
     };
     let license_item = MenuItem::with_id(app, ENTER_LICENSE_KEY_ID, license_label, true, None::<&str>)?;
     let check_for_updates_item = MenuItem::with_id(
@@ -55,12 +56,12 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         None::<&str>,
     )?;
     // Opens the "What's new" popup showing the latest releases (same command as Help > What's new).
-    let changelog_item = MenuItem::with_id(app, CHANGELOG_ID, "Changelog\u{2026}", true, None::<&str>)?;
+    let changelog_item = MenuItem::with_id(app, CHANGELOG_ID, "Changelog", true, None::<&str>)?;
     // Re-entry to the onboarding wizard. Placed under "Check for updates…".
     // Linux gets no menu entry (palette-only) by design — see
     // `lib/onboarding/CLAUDE.md` § "Re-entry points".
     let open_onboarding_item = MenuItem::with_id(app, OPEN_ONBOARDING_ID, "Onboarding\u{2026}", true, None::<&str>)?;
-    let settings_item = MenuItem::with_id(app, SETTINGS_ID, "Settings...", true, Some("Cmd+,"))?;
+    let settings_item = MenuItem::with_id(app, SETTINGS_ID, "Settings\u{2026}", true, Some("Cmd+,"))?;
 
     let app_menu = Submenu::with_items(
         app,
@@ -94,10 +95,10 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     let open_item = MenuItem::with_id(app, OPEN_ID, "Open", true, None::<&str>)?;
     let file_view_item = MenuItem::with_id(app, FILE_VIEW_ID, "View", true, Some("F3"))?;
     let edit_item = MenuItem::with_id(app, EDIT_ID, "Edit in editor", true, Some("F4"))?;
-    let file_copy_item = MenuItem::with_id(app, FILE_COPY_ID, "Copy...", true, Some("F5"))?;
-    let file_move_item = MenuItem::with_id(app, FILE_MOVE_ID, "Move...", true, Some("F6"))?;
-    let file_compress_item = MenuItem::with_id(app, FILE_COMPRESS_ID, "Compress...", true, Some("Alt+F5"))?;
-    let file_new_folder_item = MenuItem::with_id(app, FILE_NEW_FOLDER_ID, "New folder", true, Some("F7"))?;
+    let file_copy_item = MenuItem::with_id(app, FILE_COPY_ID, "Copy\u{2026}", true, Some("F5"))?;
+    let file_move_item = MenuItem::with_id(app, FILE_MOVE_ID, "Move\u{2026}", true, Some("F6"))?;
+    let file_compress_item = MenuItem::with_id(app, FILE_COMPRESS_ID, "Compress\u{2026}", true, Some("Alt+F5"))?;
+    let file_new_folder_item = MenuItem::with_id(app, FILE_NEW_FOLDER_ID, "New folder\u{2026}", true, Some("F7"))?;
     let file_delete_item = MenuItem::with_id(app, FILE_DELETE_ID, "Delete", true, Some("F8"))?;
     let file_delete_permanently_item = MenuItem::with_id(
         app,
@@ -157,7 +158,7 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     let edit_paste_move_item = MenuItem::with_id(app, EDIT_PASTE_MOVE_ID, "Move here", true, Some("Alt+Cmd+V"))?;
     let copy_path_item = MenuItem::with_id(app, COPY_PATH_ID, "Copy path", true, Some(copy_path_accelerator()))?;
     let copy_filename_item = MenuItem::with_id(app, COPY_FILENAME_ID, "Copy filename", true, None::<&str>)?;
-    let search_files_item = MenuItem::with_id(app, SEARCH_FILES_ID, "Search files", true, Some("Cmd+F"))?;
+    let search_files_item = MenuItem::with_id(app, SEARCH_FILES_ID, "Search files\u{2026}", true, Some("Cmd+F"))?;
 
     let edit_menu = Submenu::with_items(
         app,
@@ -277,8 +278,13 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     let zoom_submenu = build_zoom_submenu(app, Some("Cmd+0"), Some("Cmd+Plus"), Some("Cmd+Minus"))?;
     let switch_pane_item = MenuItem::with_id(app, SWITCH_PANE_ID, "Switch pane", true, Some("Tab"))?;
     let swap_panes_item = MenuItem::with_id(app, SWAP_PANES_ID, "Swap panes", true, Some("Cmd+U"))?;
-    let command_palette_item =
-        MenuItem::with_id(app, COMMAND_PALETTE_ID, "Command palette...", true, Some("Cmd+Shift+P"))?;
+    let command_palette_item = MenuItem::with_id(
+        app,
+        COMMAND_PALETTE_ID,
+        "Command palette\u{2026}",
+        true,
+        Some("Cmd+Shift+P"),
+    )?;
     // Default ⌘⌥L (Cmd+Opt+L). ⌥⌘O — the plan's first choice — is taken by "Show in Finder".
     // The accelerator syncs from the `log.operationLog` registry shortcut; this is the initial label.
     let operation_log_item = MenuItem::with_id(app, OPERATION_LOG_ID, "Operation log", true, Some("Cmd+Alt+L"))?;
@@ -647,9 +653,9 @@ fn set_macos_menu_icons_inner() {
         let mappings: &[(&str, &str)] = match title.as_str() {
             "cmdr" => &[
                 ("Enter license key\u{2026}", "key"),
-                ("See license details\u{2026}", "key"),
+                ("See license details", "key"),
                 ("Check for updates\u{2026}", "arrow.down.circle"),
-                ("Changelog\u{2026}", "list.bullet.rectangle"),
+                ("Changelog", "list.bullet.rectangle"),
                 ("Onboarding\u{2026}", "sparkles"),
                 ("Settings\u{2026}", "gearshape"),
             ],
@@ -659,7 +665,7 @@ fn set_macos_menu_icons_inner() {
                 ("Edit in editor", "pencil"),
                 ("Copy\u{2026}", "document.on.document"),
                 ("Move\u{2026}", "folder"),
-                ("New folder", "folder.badge.plus"),
+                ("New folder\u{2026}", "folder.badge.plus"),
                 ("Delete", "trash"),
                 ("Delete permanently", "trash.slash"),
                 ("Rename", "character.cursor.ibeam"),
@@ -674,7 +680,7 @@ fn set_macos_menu_icons_inner() {
                 ("Move here", "document.on.clipboard"),
                 ("Copy path", "link"),
                 ("Copy filename", "textformat"),
-                ("Search files", "magnifyingglass"),
+                ("Search files\u{2026}", "magnifyingglass"),
             ],
             "Select" => &[
                 ("Select all", "checkmark.circle"),

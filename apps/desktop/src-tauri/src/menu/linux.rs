@@ -42,10 +42,10 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     let open_item = MenuItem::with_id(app, OPEN_ID, "&Open", true, None::<&str>)?;
     let file_view_item = MenuItem::with_id(app, FILE_VIEW_ID, "&View", true, None::<&str>)?;
     let edit_item = MenuItem::with_id(app, EDIT_ID, "Edit in &editor", true, None::<&str>)?;
-    let file_copy_item = MenuItem::with_id(app, FILE_COPY_ID, "&Copy...", true, None::<&str>)?;
-    let file_move_item = MenuItem::with_id(app, FILE_MOVE_ID, "&Move...", true, None::<&str>)?;
-    let file_compress_item = MenuItem::with_id(app, FILE_COMPRESS_ID, "Comp&ress...", true, None::<&str>)?;
-    let file_new_folder_item = MenuItem::with_id(app, FILE_NEW_FOLDER_ID, "&New folder", true, None::<&str>)?;
+    let file_copy_item = MenuItem::with_id(app, FILE_COPY_ID, "&Copy\u{2026}", true, None::<&str>)?;
+    let file_move_item = MenuItem::with_id(app, FILE_MOVE_ID, "&Move\u{2026}", true, None::<&str>)?;
+    let file_compress_item = MenuItem::with_id(app, FILE_COMPRESS_ID, "Comp&ress\u{2026}", true, None::<&str>)?;
+    let file_new_folder_item = MenuItem::with_id(app, FILE_NEW_FOLDER_ID, "&New folder\u{2026}", true, None::<&str>)?;
     let file_delete_item = MenuItem::with_id(app, FILE_DELETE_ID, "&Delete", true, None::<&str>)?;
     let file_delete_permanently_item = MenuItem::with_id(
         app,
@@ -97,12 +97,14 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     let edit_paste_move_item = MenuItem::with_id(app, EDIT_PASTE_MOVE_ID, "&Move here", true, Some("Ctrl+Alt+V"))?;
     let copy_path_item = MenuItem::with_id(app, COPY_PATH_ID, "Cop&y path", true, Some(copy_path_accelerator()))?;
     let copy_filename_item = MenuItem::with_id(app, COPY_FILENAME_ID, "Copy file&name", true, None::<&str>)?;
-    let search_files_item = MenuItem::with_id(app, SEARCH_FILES_ID, "&Search files", true, Some("Cmd+F"))?;
-    let settings_item = MenuItem::with_id(app, SETTINGS_ID, "&Settings...", true, Some("Cmd+,"))?;
+    let search_files_item = MenuItem::with_id(app, SEARCH_FILES_ID, "&Search files\u{2026}", true, Some("Cmd+F"))?;
+    let settings_item = MenuItem::with_id(app, SETTINGS_ID, "&Settings\u{2026}", true, Some("Cmd+,"))?;
+    // Only one of these takes input, so only one gets the ellipsis: entering a key
+    // asks for the key, seeing the details just shows them.
     let license_label = if has_existing_license {
-        "See &license details..."
+        "See &license details"
     } else {
-        "Enter &license key..."
+        "Enter &license key\u{2026}"
     };
     let license_item = MenuItem::with_id(app, ENTER_LICENSE_KEY_ID, license_label, true, None::<&str>)?;
     let check_for_updates_item = MenuItem::with_id(
@@ -113,7 +115,7 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         None::<&str>,
     )?;
     // Opens the "What's new" popup showing the latest releases (same command as Help > What's new).
-    let changelog_item = MenuItem::with_id(app, CHANGELOG_ID, "Chan&gelog\u{2026}", true, None::<&str>)?;
+    let changelog_item = MenuItem::with_id(app, CHANGELOG_ID, "Chan&gelog", true, None::<&str>)?;
 
     let edit_menu = Submenu::with_items(
         app,
@@ -241,7 +243,7 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     let command_palette_item = MenuItem::with_id(
         app,
         COMMAND_PALETTE_ID,
-        "&Command palette...",
+        "&Command palette\u{2026}",
         true,
         Some("Cmd+Shift+P"),
     )?;
@@ -346,13 +348,7 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     let about_item = MenuItem::with_id(app, ABOUT_ID, "&About cmdr", true, None::<&str>)?;
     // Linux has no app menu, so the third-party credits sit under Help next to
     // About. `k` is the free mnemonic (A, K, t, W, f, S are taken).
-    let acknowledgements_item = MenuItem::with_id(
-        app,
-        ACKNOWLEDGEMENTS_ID,
-        "Ac&knowledgements\u{2026}",
-        true,
-        None::<&str>,
-    )?;
+    let acknowledgements_item = MenuItem::with_id(app, ACKNOWLEDGEMENTS_ID, "Ac&knowledgements", true, None::<&str>)?;
     let shortcuts_item = MenuItem::with_id(app, HELP_SHORTCUTS_ID, "&Keyboard shortcuts", true, None::<&str>)?;
     let queue_show_item = MenuItem::with_id(app, QUEUE_SHOW_ID, "Show &transfer queue", true, None::<&str>)?;
     let whats_new_item = MenuItem::with_id(app, HELP_WHATS_NEW_ID, "&What's new", true, None::<&str>)?;
