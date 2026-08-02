@@ -269,23 +269,95 @@ pub struct ConflictResolutionResponse {
     pub apply_to_all: bool,
 }
 
-/// Global cache for in-progress write operation states.
-pub(super) static WRITE_OPERATION_STATE: LazyLock<RwLock<HashMap<String, Arc<WriteOperationState>>>> =
-    LazyLock::new(|| RwLock::new(HashMap::new()));
-
-/// Drops `operation_id`'s state, ending its liveness first.
+/// The live [`WriteOperationState`] of every registered operation, keyed by
+/// operation id.
 ///
-/// ❌ Every removal from [`WRITE_OPERATION_STATE`] goes through here. Removing
-/// the entry alone would leave a wedged operation's staged temps hidden forever
-/// (a task the driver abandoned still holds an `Arc` to the state, so the map
-/// entry going away doesn't drop it): `WriteOperationState::end_liveness`.
-pub(super) fn forget_operation(operation_id: &str) {
-    let Ok(mut cache) = WRITE_OPERATION_STATE.write() else {
-        return;
-    };
-    if let Some(state) = cache.remove(operation_id) {
-        state.end_liveness();
+/// A struct with methods rather than a bare `static` map, because
+/// [`cancel_all`](Self::cancel_all) is a WALK: it touches every entry at once.
+/// A walk is only honestly testable against a registry the caller OWNS — driving
+/// the process-global one from a test cancels whatever operations OTHER tests
+/// have in flight at that moment. DETAILS § "Test isolation".
+pub(super) struct WriteOperationRegistry {
+    entries: RwLock<HashMap<String, Arc<WriteOperationState>>>,
+}
+
+impl WriteOperationRegistry {
+    fn new() -> Self {
+        Self {
+            entries: RwLock::new(HashMap::new()),
+        }
     }
+
+    /// Registers `state` under `operation_id`, so cancel / pause / conflict
+    /// resolution can reach it by id.
+    pub(super) fn insert(&self, operation_id: String, state: Arc<WriteOperationState>) {
+        if let Ok(mut entries) = self.entries.write() {
+            entries.insert(operation_id, state);
+        }
+    }
+
+    /// The live state for `operation_id`, if it's still registered. Returns an
+    /// `Arc` rather than a guard so callers don't hold the registry lock while
+    /// they touch the operation.
+    pub(super) fn get(&self, operation_id: &str) -> Option<Arc<WriteOperationState>> {
+        Some(Arc::clone(self.entries.read().ok()?.get(operation_id)?))
+    }
+
+    /// Whether `operation_id` is still registered, i.e. still running.
+    pub(super) fn contains(&self, operation_id: &str) -> bool {
+        self.entries
+            .read()
+            .is_ok_and(|entries| entries.contains_key(operation_id))
+    }
+
+    /// Drops `operation_id`'s state, ending its liveness first.
+    ///
+    /// ❌ Every removal goes through here. Removing the entry alone would leave a
+    /// wedged operation's staged temps hidden forever (a task the driver
+    /// abandoned still holds an `Arc` to the state, so the map entry going away
+    /// doesn't drop it): `WriteOperationState::end_liveness`.
+    pub(super) fn forget(&self, operation_id: &str) {
+        let Ok(mut entries) = self.entries.write() else {
+            return;
+        };
+        if let Some(state) = entries.remove(operation_id) {
+            state.end_liveness();
+        }
+    }
+
+    /// Stops every registered operation, keeping partials.
+    ///
+    /// Transitions each to `Stopped` (never `RollingBack`: teardown must not
+    /// silently delete files with no visual feedback), flips `backend_cancel` so
+    /// in-flight backend I/O bails, drops any pending conflict sender to unblock
+    /// its waiter, and wakes a paused op so it observes the cancel. Already-
+    /// `Stopped` operations are left alone.
+    pub(super) fn cancel_all(&self) {
+        let Ok(entries) = self.entries.read() else {
+            return;
+        };
+        for (id, state) in entries.iter() {
+            let current = load_intent(&state.intent);
+            if current != OperationIntent::Stopped {
+                log::info!("cancel_all_write_operations: stopping op={id}");
+                state.intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
+                state.backend_cancel.cancel();
+                // Drop the conflict resolution sender to unblock any waiting receiver
+                let _ = state.conflict_resolution_tx.lock_ignore_poison().take();
+                // Wake a paused, parked op so teardown's cancel is observed.
+                state.pause_gate.wake();
+            }
+        }
+    }
+}
+
+/// Global registry of in-progress write operation states.
+pub(super) static WRITE_OPERATION_STATE: LazyLock<WriteOperationRegistry> = LazyLock::new(WriteOperationRegistry::new);
+
+/// Drops `operation_id`'s state, ending its liveness first. See
+/// [`WriteOperationRegistry::forget`].
+pub(super) fn forget_operation(operation_id: &str) {
+    WRITE_OPERATION_STATE.forget(operation_id);
 }
 
 /// Global cache for operation status (for query APIs).
@@ -568,11 +640,7 @@ pub fn get_operation_status(operation_id: &str) -> Option<OperationStatus> {
     let status = cache.get(operation_id)?;
 
     // Check if the operation is still running
-    let is_running = WRITE_OPERATION_STATE
-        .read()
-        .ok()
-        .map(|c| c.contains_key(operation_id))
-        .unwrap_or(false);
+    let is_running = WRITE_OPERATION_STATE.contains(operation_id);
 
     Some(OperationStatus {
         operation_id: operation_id.to_string(),
@@ -603,11 +671,7 @@ pub fn cancel_write_operation(operation_id: &str, rollback: bool) {
     // invalid transition) were indistinguishable from "the intent was set and the
     // driver never observed it", which left the whole failure unexplained. See
     // `docs/notes/incidents/2026-07-31-transfer-wedge/README.md`.
-    let Ok(cache) = WRITE_OPERATION_STATE.read() else {
-        log::warn!("cancel_write_operation: op={operation_id} rollback={rollback}: state cache unavailable");
-        return;
-    };
-    let Some(state) = cache.get(operation_id) else {
+    let Some(state) = WRITE_OPERATION_STATE.get(operation_id) else {
         log::warn!("cancel_write_operation: op={operation_id} rollback={rollback}: no such operation, ignoring");
         return;
     };
@@ -652,20 +716,7 @@ pub fn cancel_write_operation(operation_id: &str, rollback: bool) {
 /// Transitions to `Stopped` (not `RollingBack`) because teardown must never silently
 /// delete files in the background without visual feedback.
 pub fn cancel_all_write_operations() {
-    if let Ok(cache) = WRITE_OPERATION_STATE.read() {
-        for (id, state) in cache.iter() {
-            let current = load_intent(&state.intent);
-            if current != OperationIntent::Stopped {
-                log::info!("cancel_all_write_operations: stopping op={id}");
-                state.intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
-                state.backend_cancel.cancel();
-                // Drop the conflict resolution sender to unblock any waiting receiver
-                let _ = state.conflict_resolution_tx.lock_ignore_poison().take();
-                // Wake a paused, parked op so teardown's cancel is observed.
-                state.pause_gate.wake();
-            }
-        }
-    }
+    WRITE_OPERATION_STATE.cancel_all();
 }
 
 /// Sets the pause flag on the live state for `operation_id`, if present.
@@ -675,9 +726,7 @@ pub fn cancel_all_write_operations() {
 /// cancelled unblocks immediately. The manager record's `LifecycleStatus` is
 /// flipped separately (see `manager::set_paused`).
 pub(super) fn pause_write_operation(operation_id: &str) -> bool {
-    if let Ok(cache) = WRITE_OPERATION_STATE.read()
-        && let Some(state) = cache.get(operation_id)
-    {
+    if let Some(state) = WRITE_OPERATION_STATE.get(operation_id) {
         state.pause_gate.pause();
         return true;
     }
@@ -688,9 +737,7 @@ pub(super) fn pause_write_operation(operation_id: &str) -> bool {
 /// Returns `true` if a state existed. Resuming a not-paused op is a harmless
 /// no-op.
 pub(super) fn resume_write_operation(operation_id: &str) -> bool {
-    if let Ok(cache) = WRITE_OPERATION_STATE.read()
-        && let Some(state) = cache.get(operation_id)
-    {
+    if let Some(state) = WRITE_OPERATION_STATE.get(operation_id) {
         state.pause_gate.resume();
         return true;
     }
@@ -708,9 +755,7 @@ pub(super) fn resume_write_operation(operation_id: &str) -> bool {
 /// * `resolution` - How to resolve the conflict (Skip, Overwrite, or Rename)
 /// * `apply_to_all` - If true, apply this resolution to all future conflicts in this operation
 pub fn resolve_write_conflict(operation_id: &str, resolution: ConflictResolution, apply_to_all: bool) {
-    if let Ok(cache) = WRITE_OPERATION_STATE.read()
-        && let Some(state) = cache.get(operation_id)
-    {
+    if let Some(state) = WRITE_OPERATION_STATE.get(operation_id) {
         // Take the sender and send the resolution through the oneshot channel
         let tx = state.conflict_resolution_tx.lock_ignore_poison().take();
         if let Some(tx) = tx {
@@ -919,16 +964,6 @@ mod tests {
     }
 
     #[test]
-    fn cancel_all_write_operations_flips_backend_cancel() {
-        let op = install_state("cancel-all-flips-backend", OperationIntent::Running);
-        cancel_all_write_operations();
-        assert!(
-            op.state().backend_cancel.is_cancelled(),
-            "cancel_all must flip backend_cancel so teardown also stops the wire activity"
-        );
-    }
-
-    #[test]
     fn cancel_stopped_is_noop_for_backend_cancel_too() {
         // Stopped → anything is terminal, so backend_cancel state must not
         // change either. This guards against a subtle regression where the
@@ -949,25 +984,141 @@ mod tests {
         cancel_write_operation("does-not-exist-xyzzy", false);
     }
 
-    // ---- cancel_all_write_operations ----
+    // ---- cancel_all: the frontend-teardown safety net -------------------------
+    //
+    // `cancel_all` is a WALK, so these drive a `WriteOperationRegistry` the test
+    // OWNS. Calling the global `cancel_all_write_operations()` here would stop
+    // every operation every OTHER concurrently-running test has in flight — the
+    // defect these tests used to be. The code under test is the same either way:
+    // the public function is a one-line delegation to this method, pinned by
+    // `cancel_all_write_operations_walks_the_global_registry` below.
+
+    /// A state registered in `registry` under a unique id, returned for direct
+    /// inspection. The registry owns the entry, so there's nothing to clean up.
+    fn registered_in(
+        registry: &WriteOperationRegistry,
+        label: &str,
+        initial: OperationIntent,
+    ) -> Arc<WriteOperationState> {
+        let state = Arc::new(WriteOperationState::new(Duration::from_millis(50)));
+        state.intent.store(initial as u8, Ordering::Relaxed);
+        registry.insert(unique_id(label), Arc::clone(&state));
+        state
+    }
 
     #[test]
     fn cancel_all_stops_running_but_does_not_re_stop_already_stopped() {
         // Pins the `current != OperationIntent::Stopped` guard. If the guard
         // flips to `==`, running operations would NOT be stopped; they'd
         // remain running.
-        let running = install_state("cancel-all-running", OperationIntent::Running);
-        let stopped = install_state("cancel-all-stopped", OperationIntent::Stopped);
-        let rb = install_state("cancel-all-rb", OperationIntent::RollingBack);
+        let registry = WriteOperationRegistry::new();
+        let running = registered_in(&registry, "cancel-all-running", OperationIntent::Running);
+        let stopped = registered_in(&registry, "cancel-all-stopped", OperationIntent::Stopped);
+        let rb = registered_in(&registry, "cancel-all-rb", OperationIntent::RollingBack);
+
+        registry.cancel_all();
+
+        assert_eq!(load_intent(&running.intent), OperationIntent::Stopped);
+        assert_eq!(load_intent(&stopped.intent), OperationIntent::Stopped);
+        assert_eq!(
+            load_intent(&rb.intent),
+            OperationIntent::Stopped,
+            "RollingBack should also be force-stopped on teardown"
+        );
+        assert!(
+            !stopped.backend_cancel.is_cancelled(),
+            "an already-Stopped op is skipped entirely: the guard, not just the intent store"
+        );
+    }
+
+    #[test]
+    fn cancel_all_flips_backend_cancel() {
+        let registry = WriteOperationRegistry::new();
+        let running = registered_in(&registry, "cancel-all-flips-backend", OperationIntent::Running);
+        assert!(!running.backend_cancel.is_cancelled());
+
+        registry.cancel_all();
+
+        assert!(
+            running.backend_cancel.is_cancelled(),
+            "cancel_all must flip backend_cancel so teardown also stops the wire activity"
+        );
+    }
+
+    #[test]
+    fn cancel_all_drops_pending_conflict_senders() {
+        // Teardown must unblock an op parked on a Stop-mode conflict prompt:
+        // nobody is left to answer it.
+        let registry = WriteOperationRegistry::new();
+        let state = registered_in(&registry, "cancel-all-conflict", OperationIntent::Running);
+        let (tx, mut rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
+        *state.conflict_resolution_tx.lock().unwrap() = Some(tx);
+
+        registry.cancel_all();
+
+        match rx.try_recv() {
+            Err(tokio::sync::oneshot::error::TryRecvError::Closed) => {} // good
+            other => panic!("teardown must drop the pending conflict sender, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn cancel_all_wakes_a_paused_parked_op() {
+        // Cancellation wins over pause on the teardown path too: without the
+        // `wake()`, an op parked on the condvar would sit there forever while the
+        // frontend that could resume it is being torn down.
+        let registry = WriteOperationRegistry::new();
+        let state = registered_in(&registry, "cancel-all-paused", OperationIntent::Running);
+        state.pause_gate.pause();
+
+        let woke = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let state_t = Arc::clone(&state);
+        let woke_t = Arc::clone(&woke);
+        let handle = std::thread::spawn(move || {
+            state_t.pause_gate.wait_while_paused_sync(&state_t.intent);
+            woke_t.store(true, Ordering::SeqCst);
+        });
+
+        // The condvar park has no "parked now" signal, so hold a window to prove
+        // the worker is really parked before the teardown lands. Otherwise a
+        // worker that never parked would pass this test.
+        // allowed-test-sleep: negative assertion over a window; the condvar park has nothing to await.
+        std::thread::sleep(Duration::from_millis(50));
+        assert!(!woke.load(Ordering::SeqCst), "still parked before teardown");
+
+        registry.cancel_all();
+
+        crate::test_support::wait_until(
+            Duration::from_secs(2),
+            "the parked worker to observe the teardown cancel",
+            || woke.load(Ordering::SeqCst),
+        );
+        handle.join().expect("worker joins");
+        assert!(
+            state.pause_gate.is_paused(),
+            "teardown wakes without resuming: the waiter returned because cancel won"
+        );
+    }
+
+    #[test]
+    fn cancel_all_write_operations_walks_the_global_registry() {
+        // The public function's one job is to point at the process-global
+        // registry; everything it then does is pinned above against a private
+        // one. This is the only write-op test that drives a process-global
+        // mutator, so it runs ONLY when it has the process to itself — under
+        // plain `cargo test` it would stop every other test's operations, which
+        // is the defect this suite was restructured to remove.
+        if !crate::file_system::write_operations::test_support::one_test_per_process() {
+            return;
+        }
+        let op = install_state("cancel-all-global-wiring", OperationIntent::Running);
 
         cancel_all_write_operations();
 
-        assert_eq!(load_intent(&running.state().intent), OperationIntent::Stopped);
-        assert_eq!(load_intent(&stopped.state().intent), OperationIntent::Stopped);
         assert_eq!(
-            load_intent(&rb.state().intent),
+            load_intent(&op.state().intent),
             OperationIntent::Stopped,
-            "RollingBack should also be force-stopped on teardown"
+            "the public teardown entry point must reach ops in the global registry"
         );
     }
 
@@ -1322,7 +1473,7 @@ mod tests {
         let payload = std::panic::catch_unwind(|| {
             let op = TestOperationGuard::register("guard-panic-safety");
             let id = op.id().to_string();
-            assert!(WRITE_OPERATION_STATE.read().unwrap().contains_key(&id));
+            assert!(WRITE_OPERATION_STATE.contains(&id));
             panic!("simulated assertion failure while the state is registered: {id}");
         })
         .expect_err("the closure should have panicked");
@@ -1335,7 +1486,7 @@ mod tests {
             .to_string();
 
         assert!(
-            !WRITE_OPERATION_STATE.read().unwrap().contains_key(&id),
+            !WRITE_OPERATION_STATE.contains(&id),
             "Drop must unregister on unwind, not only on the happy path"
         );
     }

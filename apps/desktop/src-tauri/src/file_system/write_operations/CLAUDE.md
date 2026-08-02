@@ -52,6 +52,9 @@ cross-cutting machinery both subdirs share.
 - **New op state hangs off a struct, not a `static`.** Fixtures: `test_support::TestOperationGuard` (unique id,
   drop-unregisters), never a literal id + manual remove; journal installs: `operation_log::TestJournalGuard`, never
   `set_journal`. DETAILS § "Test isolation".
+- **❌ A test NEVER drives a walk-everything mutator.** `cancel_all_write_operations()` stops every op in the process,
+  including the ones tests running beside it own; the failure lands in the victim and reads as flake. Build a
+  `WriteOperationRegistry` the test owns and call `cancel_all()` on that. DETAILS § "Test isolation".
 - **Volume-aware ops must not emit `write-error` on `Cancelled`**: the inner handler already emitted `write-cancelled`.
 
 Architecture, flows, decisions: `DETAILS.md`. Read before non-trivial work here.

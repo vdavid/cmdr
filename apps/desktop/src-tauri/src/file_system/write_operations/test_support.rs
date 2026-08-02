@@ -8,8 +8,6 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
-use crate::ignore_poison::RwLockIgnorePoison;
-
 use super::state::{WRITE_OPERATION_STATE, WriteOperationState};
 
 /// A `WRITE_OPERATION_STATE` entry registered under a unique-per-test operation
@@ -50,9 +48,7 @@ impl TestOperationGuard {
     /// where the id threads through the call under test and its assertions.
     pub(crate) fn register_as(op_id: impl Into<String>, state: Arc<WriteOperationState>) -> Self {
         let op_id = op_id.into();
-        WRITE_OPERATION_STATE
-            .write_ignore_poison()
-            .insert(op_id.clone(), Arc::clone(&state));
+        WRITE_OPERATION_STATE.insert(op_id.clone(), Arc::clone(&state));
         Self { op_id, state }
     }
 
@@ -102,6 +98,23 @@ pub(crate) async fn park_holds_at(progress: impl Fn() -> u64, what: &str) -> u64
     tokio::time::sleep(PARK_WINDOW).await;
     assert_eq!(progress(), frozen, "{what}");
     frozen
+}
+
+/// Whether this test has the whole process to itself, so it may drive a
+/// process-global mutator without stopping another test's work.
+///
+/// nextest — the sanctioned runner (`docs/testing.md`) — forks a process per
+/// test and says so in the environment. Plain `cargo test` runs the crate's
+/// tests as threads in ONE process, where a walk-everything mutator like
+/// `cancel_all_write_operations` reaches whatever else is in flight.
+///
+/// ❌ Not a licence to write global-mutating tests: the scoped fixture
+/// (`TestOperationGuard`, or a `WriteOperationRegistry` the test owns) is always
+/// the answer. This exists only for the handful of assertions whose SUBJECT is
+/// the global wiring itself, which have nothing to assert against a private
+/// instance.
+pub(crate) fn one_test_per_process() -> bool {
+    std::env::var("NEXTEST_EXECUTION_MODE").as_deref() == Ok("process-per-test")
 }
 
 /// A process-unique operation id. The counter alone would collide across

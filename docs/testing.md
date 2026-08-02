@@ -188,6 +188,20 @@ assert_eq!(intent, OperationIntent::RollingBack as u8);
 If the public function takes `AppHandle` that you can't fixture-up cheaply, extract a pure inner helper and test that
 through the public-via-helper path. Don't reach past the guard.
 
+### ❌ Calling a walk-everything global mutator from a test
+
+**The rule:** a unique per-test key isolates a test that touches ONE entry of a process-global registry. It does nothing
+for a function that walks the WHOLE registry (`cancel_all_write_operations`, a `clear()`, a "stop everything" teardown
+hook). Under plain `cargo test` the crate's tests share one process, so such a call reaches into whatever the tests
+running beside it own.
+
+**Why it's expensive:** the failure lands in the VICTIM, not the culprit, and its membership shifts with co-scheduling,
+so it reads as environment flake. Fix it by giving the walk a scope the test owns (make the registry a struct, keep the
+global as one instance of it, and let the test build its own), never by serializing the suites behind a mutex,
+`#[ignore]`ing the victim, or loosening the victim's assertion. Worked example, including how the global wiring stays
+covered:
+`apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "Test isolation for `WRITE_OPERATION_STATE`".
+
 ### ❌ `retries: 1` to mask a race
 
 Retries hide bugs. If a test flakes, find the race and fix it (Rust IPC race, missing await, watcher debounce, etc.).

@@ -289,9 +289,7 @@ impl OperationManager {
     ) {
         let operation_id = descriptor.operation_id.clone();
 
-        if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
-            cache.insert(operation_id.clone(), state);
-        }
+        WRITE_OPERATION_STATE.insert(operation_id.clone(), state);
 
         {
             let mut inner = self.inner.lock_ignore_poison();

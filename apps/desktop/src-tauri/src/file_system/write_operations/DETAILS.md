@@ -576,10 +576,30 @@ deadlock warning). Never call `set_journal` directly from a test. Residual under
 write-op tests still journal their own ops into whatever DB is installed, so journal assertions stay scoped to the
 test's own `op_id` (`journal_capture_tests::dir_volume_ids` joins dirs through the op's item rows for this reason).
 
-Known plain-`cargo test`-only race (masked by nextest's process-per-test, the sanctioned runner):
-`cancel_all_write_operations` cancels every registered op process-wide, so a concurrently-running managed-op test (for
-example `settle_event_tests::injected_sink_receives_complete_and_settled_for_local_copy`) can see `write-cancelled`
-instead of `write-complete`. Isolating it structurally needs a manager-level guard (an M2-shape effort), not a sleep.
+#### ❌ Never drive a walk-everything mutator from a test
+
+A unique key isolates a test that touches ONE entry. It does nothing for a function that walks the WHOLE registry:
+`cancel_all_write_operations` stops every registered op, so a test calling it cancels whatever operations the tests
+running beside it have in flight. That failure lands in the victim, not the culprit — a managed-op test seeing
+`write-cancelled` (or a bare 0 events) where it expects `write-complete`, membership shifting run to run with
+co-scheduling. It reads exactly like environment flake, which is how it survived: mis-blamed on load starvation once
+and on a dependency upgrade once.
+
+**The fix is a registry the test owns, not a lock around the tests.** `WriteOperationRegistry` (in `state.rs`) holds the
+map and owns `cancel_all`; `WRITE_OPERATION_STATE` is one instance of it and `cancel_all_write_operations()` is a
+one-line delegation. A test constructs its own `WriteOperationRegistry`, registers states in it, and calls
+`cancel_all()` — the same production code, on a registry nothing else can see. Serializing the two suites behind a
+mutex, `#[ignore]`ing the victim, or loosening its assertion would all have hidden the defect instead.
+
+`state::tests::cancel_all_write_operations_walks_the_global_registry` is the ONE exception, because its subject IS the
+global wiring. It's gated on `test_support::one_test_per_process()` (nextest's `NEXTEST_EXECUTION_MODE`), so it runs in
+the sanctioned lane and skips under plain `cargo test`, where it would be the poisoner. Don't copy the gate to reach for
+a global out of convenience; copy the private-registry pattern.
+
+Lower-severity siblings, both currently harmless: `manager::force_admission_pass()` (test-only) runs a process-wide
+admission pass, safe only because every manager test mints a unique `LaneKey`; and `watcher_test.rs`'s
+`handle_directory_change` tests insert into `LISTING_CACHE` by hand with a tail `remove` instead of `TestListing`, so a
+failing assertion leaks the entry (unique uuid keys keep it from poisoning anyone).
 
 **New subsystem state hangs off a struct, not a `static`.** These guards are the retrofit cost of a process-global; a
 handle threaded through its callers needs none of it.
