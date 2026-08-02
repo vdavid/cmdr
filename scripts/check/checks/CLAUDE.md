@@ -24,8 +24,8 @@ walkthrough: `DETAILS.md`. Runner architecture (parallel executor, dependency gr
 
 - **Every check MUST declare `Inputs`** (the path globs it reads), or `TestEveryCheckDeclaresInputs` fails the suite. An
   empty list fingerprints on the globals alone, so the check is cache-skipped when its own files change: a correctness
-  hole. Reuse a set from `inputs.go`, and **be conservative** — too-wide only costs cache speed, too-narrow
-  costs correctness. Don't list the auto-added globals (`.mise.toml`, `scripts/check/**`).
+  hole. Reuse a set from `inputs.go`, and **be conservative** — too-wide only costs cache speed, too-narrow costs
+  correctness. Don't list the auto-added globals (`.mise.toml`, `scripts/check/**`).
 - **Wire every check into CI** (a step in `.github/workflows/ci.yml` / `slow-checks.yml`, or a `NotInCI` reason).
   `ci-coverage` enforces it both ways: neither invoked nor excused fails, and an excuse on an invoked check fails as
   stale. There's no "registered but runs nowhere" state.

@@ -398,12 +398,12 @@ Gotchas for anyone touching this:
 - **Leaks are a PASS, not a failure.** nextest counts a leaky test in its "N passed (M leaky)" tally, so `RealFailures`
   drops them before anything re-runs or counts failures. Treating a leak as a failure both overstates a red run and
   sends the contention re-run chasing a test that passed.
-- **The progress counter can contain spaces**, because nextest right-aligns the index to the total's width: a
-  4 802-test run prints `(  42/4802)`. Every status regex matches it as `\([^)]*\)`, never `\(\S+\)`. Reading it as one
-  non-space token silently dropped every failure numbered under 1000 out of the classifier, so those got no diagnosis
-  and no contention re-run (verified against a real container run, 2026-08-02). The small-total fixtures can't catch
-  this on their own; `TestClassifyRustFailures_PaddedProgressCounter` and
-  `TestTrimRustTestProgress_PaddedProgressCounter` carry the padded form.
+- **The progress counter can contain spaces**, because nextest right-aligns the index to the total's width: a 4 802-test
+  run prints `(  42/4802)`. Every status regex matches it as `\([^)]*\)`, never `\(\S+\)`. Reading it as one non-space
+  token silently dropped every failure numbered under 1000 out of the classifier, so those got no diagnosis and no
+  contention re-run (verified against a real container run, 2026-08-02). The small-total fixtures can't catch this on
+  their own; `TestClassifyRustFailures_PaddedProgressCounter` and `TestTrimRustTestProgress_PaddedProgressCounter` carry
+  the padded form.
 - **`TRY n FAIL` lines are not failures.** They're retried attempts; counting them double-reports every flake. The
   `FAIL` regex is line-anchored so it can't match them.
 - **The summary block repeats every `FAIL`/`TIMEOUT` line**, so classification dedupes by (binary, test) and keeps the
