@@ -1265,13 +1265,13 @@
   "@settings.advanced.mountTimeout.description": {
     "sourceHash": "3da30e1"
   },
-  "settings.advanced.filterSafeSaveArtifacts.label": "Filtrar restos de guardado seguro en SMB",
-  "@settings.advanced.filterSafeSaveArtifacts.label": {
-    "sourceHash": "1763df4"
+  "settings.advanced.showSafeSaveFiles.label": "Mostrar los archivos temporales de otras apps",
+  "@settings.advanced.showSafeSaveFiles.label": {
+    "sourceHash": "3436491"
   },
-  "settings.advanced.filterSafeSaveArtifacts.description": "Oculta los archivos temporales que crea el guardado seguro de macOS (como los archivos \".sb-\" de TextEdit) en el vigilante de archivos SMB. Son transitorios y normalmente invisibles.",
-  "@settings.advanced.filterSafeSaveArtifacts.description": {
-    "sourceHash": "681b1dc"
+  "settings.advanced.showSafeSaveFiles.description": "Cuando apps como TextEdit y Preview guardan un archivo, macOS escribe la versión nueva al lado con un nombre temporal (que termina en \".sb-\") y luego la intercambia. Desactiva esto para mantenerlos fuera de la lista de archivos.",
+  "@settings.advanced.showSafeSaveFiles.description": {
+    "sourceHash": "1749ee6"
   },
   "settings.advanced.showStagingTempFiles.label": "Mostrar los archivos temporales de Cmdr",
   "@settings.advanced.showStagingTempFiles.label": {

@@ -269,8 +269,8 @@ Implementation notes:
 ### P4.3: Settings
 
 1. Add `network.smbConcurrency: number` to the settings schema (wherever it lives in `src/lib/settings/`).
-2. Global accessor in Rust (like `crate::file_system::is_filter_safe_save_artifacts_enabled`):
-   `fn smb_concurrency() -> usize` that reads from the global settings store with default 10, clamped to 1..=32.
+2. Global accessor in Rust (like `crate::file_system::is_direct_smb_enabled`): `fn smb_concurrency() -> usize` that
+   reads from the global settings store with default 10, clamped to 1..=32.
 3. `SmbVolume::max_concurrent_ops` returns `smb_concurrency()`.
 4. Svelte component in `src/lib/settings/Advanced.svelte` (or similar) with a numeric input + min/max.
 

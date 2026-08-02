@@ -530,7 +530,7 @@ export {
   updateFileWatcherDebounce,
   updateServiceResolveTimeout,
   setDirectSmbConnection,
-  setFilterSafeSaveArtifacts,
+  setShowSafeSaveFiles,
   setShowStagingTempFiles,
   setLogLlmCalls,
   setSmbConcurrency,

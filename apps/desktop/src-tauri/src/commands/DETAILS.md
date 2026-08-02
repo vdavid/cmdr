@@ -88,7 +88,8 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   and Debug. Viewers don't use it (they cascade, see `lib/window-positioning.ts`). Only the main window persists across
   launches, via `window_state/`.
 - **`settings.rs`**: port availability check, watcher debounce, menu accelerator updates, live-apply setters for
-  `network.directSmbConnection`, `advanced.filterSafeSaveArtifacts`, `network.smbConcurrency`, and the restricted-window
+  `network.directSmbConnection`, `advanced.showSafeSaveFiles`, `advanced.showStagingTempFiles`,
+  `network.smbConcurrency`, and the restricted-window
   pair `get_restricted_window_settings` / `persist_restricted_window_setting` (the viewer's typed settings surface; see
   `capabilities/CLAUDE.md` § viewer).
 - **`mcp.rs`**: `set_mcp_enabled`, `set_mcp_port` (live start/stop/port-change without app restart), `get_mcp_token`

@@ -1547,11 +1547,10 @@ export const commands = {
    */
   setDirectSmbConnection: (enabled: boolean) => __TAURI_INVOKE<void>('set_direct_smb_connection', { enabled }),
   /**
-   *  Toggle filtering of macOS safe-save artifacts (`.sb-*` files) in the SMB watcher.
-   *  Pushed live from the frontend whenever `advanced.filterSafeSaveArtifacts` changes.
+   *  Show or hide other apps' macOS safe-save scratch (`*.sb-*`) on every drive
+   *  (`advanced.showSafeSaveFiles`). Pushed live from the frontend on change.
    */
-  setFilterSafeSaveArtifactsCmd: (enabled: boolean) =>
-    __TAURI_INVOKE<void>('set_filter_safe_save_artifacts_cmd', { enabled }),
+  setShowSafeSaveFilesCmd: (show: boolean) => __TAURI_INVOKE<void>('set_show_safe_save_files_cmd', { show }),
   /**
    *  Show or hide the temporary files Cmdr writes while copying
    *  (`advanced.showStagingTempFiles`). Pushed live from the frontend on change.

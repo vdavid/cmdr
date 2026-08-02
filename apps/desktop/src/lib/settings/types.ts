@@ -459,7 +459,7 @@ export interface SettingsValues {
   'advanced.serviceResolveTimeout': number
   'advanced.mountTimeout': number
   'advanced.updateCheckInterval': number
-  'advanced.filterSafeSaveArtifacts': boolean
+  'advanced.showSafeSaveFiles': boolean
   'advanced.showStagingTempFiles': boolean
   'advanced.logLlmCalls': boolean
   'advanced.diskSpaceChangeThreshold': number

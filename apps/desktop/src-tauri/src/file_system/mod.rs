@@ -97,9 +97,6 @@ static VOLUME_MANAGER: LazyLock<VolumeManager> = LazyLock::new(VolumeManager::ne
 static DIRECT_SMB_ENABLED: AtomicBool = AtomicBool::new(true);
 
 /// Whether to filter macOS safe-save artifacts (.sb- files) in the SMB watcher.
-/// Set from the `advanced.filterSafeSaveArtifacts` setting at startup.
-static FILTER_SAFE_SAVE_ARTIFACTS: AtomicBool = AtomicBool::new(true);
-
 /// Concurrent SMB ops per session: the `SmbVolume::max_concurrent_ops()` value.
 /// Set from the `network.smbConcurrency` setting at startup. Default 10, clamped
 /// to `1..=32` (above 32 exceeds smb2's `MAX_PIPELINE_WINDOW`; below 1 is nonsense).
@@ -116,16 +113,6 @@ pub fn set_direct_smb_enabled(enabled: bool) {
 /// Returns whether direct SMB connection is enabled.
 pub fn is_direct_smb_enabled() -> bool {
     DIRECT_SMB_ENABLED.load(Ordering::Relaxed)
-}
-
-/// Sets the safe-save artifact filter preference. Call from app setup after loading settings.
-pub fn set_filter_safe_save_artifacts(enabled: bool) {
-    FILTER_SAFE_SAVE_ARTIFACTS.store(enabled, Ordering::Relaxed);
-}
-
-/// Returns whether safe-save artifact filtering is enabled.
-pub fn is_filter_safe_save_artifacts_enabled() -> bool {
-    FILTER_SAFE_SAVE_ARTIFACTS.load(Ordering::Relaxed)
 }
 
 /// Sets the SMB concurrency value. Call from app setup after loading settings.

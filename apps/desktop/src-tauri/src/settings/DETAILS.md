@@ -21,7 +21,8 @@ differs from the field name.
 - `ai_provider: Option<String>` (from `ai.provider`, for crash reports).
 - `verbose_logging: Option<bool>` (from `developer.verboseLogging`, for crash reports).
 - `direct_smb_connection: Option<bool>` (from `network.directSmbConnection`).
-- `filter_safe_save_artifacts: Option<bool>` (from `advanced.filterSafeSaveArtifacts`).
+- `show_safe_save_files: Option<bool>` (from `advanced.showSafeSaveFiles`, default on).
+- `show_staging_temp_files: Option<bool>` (from `advanced.showStagingTempFiles`, default off).
 - `mtp_enabled: Option<bool>` (from `fileOperations.mtpEnabled`).
 - `disk_space_change_threshold_mb: Option<u64>` (from `advanced.diskSpaceChangeThreshold`).
 - `low_disk_space_notifications: Option<String>` (from `behavior.fileSystemWatching.lowDiskSpaceNotifications`;

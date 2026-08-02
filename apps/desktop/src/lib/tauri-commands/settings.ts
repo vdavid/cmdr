@@ -92,12 +92,12 @@ export async function setDirectSmbConnection(enabled: boolean): Promise<void> {
 }
 
 /**
- * Toggles filtering of macOS safe-save artifacts (`.sb-*` files) in the SMB watcher.
- * Pushed live from the settings UI whenever `advanced.filterSafeSaveArtifacts` changes.
- * @param enabled - True to filter artifacts
+ * Shows or hides other apps' macOS safe-save scratch (`*.sb-*`) on every drive.
+ * Pushed live from the settings UI whenever `advanced.showSafeSaveFiles` changes.
+ * @param show - True to show safe-save files
  */
-export async function setFilterSafeSaveArtifacts(enabled: boolean): Promise<void> {
-  await commands.setFilterSafeSaveArtifactsCmd(enabled)
+export async function setShowSafeSaveFiles(show: boolean): Promise<void> {
+  await commands.setShowSafeSaveFilesCmd(show)
 }
 
 /**

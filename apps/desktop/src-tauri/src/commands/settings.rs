@@ -2,9 +2,7 @@
 
 use tauri::{AppHandle, Manager};
 
-use crate::file_system::{
-    set_direct_smb_enabled, set_filter_safe_save_artifacts, set_smb_concurrency, update_debounce_ms,
-};
+use crate::file_system::{set_direct_smb_enabled, set_smb_concurrency, update_debounce_ms};
 use crate::ignore_poison::IgnorePoison;
 use crate::menu::{
     MenuState, command_id_to_menu_id, frontend_shortcut_to_accelerator, rebuild_view_mode_items,
@@ -115,12 +113,12 @@ pub fn set_direct_smb_connection(enabled: bool) {
     set_direct_smb_enabled(enabled);
 }
 
-/// Toggle filtering of macOS safe-save artifacts (`.sb-*` files) in the SMB watcher.
-/// Pushed live from the frontend whenever `advanced.filterSafeSaveArtifacts` changes.
+/// Show or hide other apps' macOS safe-save scratch (`*.sb-*`) on every drive
+/// (`advanced.showSafeSaveFiles`). Pushed live from the frontend on change.
 #[tauri::command]
 #[specta::specta]
-pub fn set_filter_safe_save_artifacts_cmd(enabled: bool) {
-    set_filter_safe_save_artifacts(enabled);
+pub fn set_show_safe_save_files_cmd(show: bool) {
+    crate::file_system::staging::set_show_safe_save_files(show);
 }
 
 /// Show or hide the temporary files Cmdr writes while copying
@@ -364,11 +362,11 @@ mod tests {
         set_direct_smb_connection(true);
         assert!(crate::file_system::is_direct_smb_enabled());
 
-        // filter_safe_save_artifacts round-trips
-        set_filter_safe_save_artifacts_cmd(false);
-        assert!(!crate::file_system::is_filter_safe_save_artifacts_enabled());
-        set_filter_safe_save_artifacts_cmd(true);
-        assert!(crate::file_system::is_filter_safe_save_artifacts_enabled());
+        // show_safe_save_files round-trips
+        set_show_safe_save_files_cmd(false);
+        assert!(!crate::file_system::staging::show_safe_save_files());
+        set_show_safe_save_files_cmd(true);
+        assert!(crate::file_system::staging::show_safe_save_files());
 
         // Restore defaults so later tests see a predictable state.
         set_smb_concurrency_cmd(10);

@@ -1264,13 +1264,13 @@
   "@settings.advanced.mountTimeout.description": {
     "sourceHash": "3da30e1"
   },
-  "settings.advanced.filterSafeSaveArtifacts.label": "Biztonságos mentés melléktermékeinek szűrése SMB-n",
-  "@settings.advanced.filterSafeSaveArtifacts.label": {
-    "sourceHash": "1763df4"
+  "settings.advanced.showSafeSaveFiles.label": "Más alkalmazások ideiglenes fájljainak megjelenítése",
+  "@settings.advanced.showSafeSaveFiles.label": {
+    "sourceHash": "3436491"
   },
-  "settings.advanced.filterSafeSaveArtifacts.description": "Elrejti a macOS biztonságos mentés által létrehozott ideiglenes fájlokat (például a TextEdit „.sb-” fájljait) az SMB-fájlfigyelőben. Ezek átmenetiek, és normál esetben láthatatlanok.",
-  "@settings.advanced.filterSafeSaveArtifacts.description": {
-    "sourceHash": "681b1dc"
+  "settings.advanced.showSafeSaveFiles.description": "Amikor egy alkalmazás, például a TextEdit vagy a Preview elment egy fájlt, a macOS az új változatot ideiglenes néven írja ki mellé (a név „.sb-” tagra végződik), majd kicseréli. Kapcsold ki, ha ezeket nem szeretnéd látni a fájllistában.",
+  "@settings.advanced.showSafeSaveFiles.description": {
+    "sourceHash": "1749ee6"
   },
   "settings.advanced.showStagingTempFiles.label": "A Cmdr ideiglenes fájljainak megjelenítése",
   "@settings.advanced.showStagingTempFiles.label": {

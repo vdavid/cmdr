@@ -1266,13 +1266,13 @@
   "@settings.advanced.mountTimeout.description": {
     "sourceHash": "3da30e1"
   },
-  "settings.advanced.filterSafeSaveArtifacts.label": "Filtrera artefakter från säker sparning på SMB",
-  "@settings.advanced.filterSafeSaveArtifacts.label": {
-    "sourceHash": "1763df4"
+  "settings.advanced.showSafeSaveFiles.label": "Visa andra appars tillfälliga filer",
+  "@settings.advanced.showSafeSaveFiles.label": {
+    "sourceHash": "3436491"
   },
-  "settings.advanced.filterSafeSaveArtifacts.description": "Göm tillfälliga filer som skapas av macOS säker sparning (som ”.sb-”-filer från TextEdit) i SMB-filbevakaren. De är tillfälliga och normalt osynliga.",
-  "@settings.advanced.filterSafeSaveArtifacts.description": {
-    "sourceHash": "681b1dc"
+  "settings.advanced.showSafeSaveFiles.description": "När appar som TextEdit och Preview sparar en fil skriver macOS den nya versionen bredvid under ett tillfälligt namn (som slutar på ”.sb-”) och byter sedan ut den. Stäng av det här för att hålla dem borta från fillistan.",
+  "@settings.advanced.showSafeSaveFiles.description": {
+    "sourceHash": "1749ee6"
   },
   "settings.advanced.showStagingTempFiles.label": "Visa Cmdrs tillfälliga filer",
   "@settings.advanced.showStagingTempFiles.label": {

@@ -569,7 +569,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::settings::update_service_resolve_timeout,
         crate::commands::settings::update_menu_accelerator,
         crate::commands::settings::set_direct_smb_connection,
-        crate::commands::settings::set_filter_safe_save_artifacts_cmd,
+        crate::commands::settings::set_show_safe_save_files_cmd,
         crate::commands::settings::set_show_staging_temp_files_cmd,
         crate::commands::settings::set_smb_concurrency_cmd,
         crate::commands::settings::set_log_llm_calls,

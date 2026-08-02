@@ -669,7 +669,7 @@ pub fn run() {
             // Apply direct SMB connection setting (default: true)
             file_system::set_direct_smb_enabled(saved_settings.direct_smb_connection.unwrap_or(true));
             file_system::git::set_virtual_portal_enabled(saved_settings.show_virtual_git_portal.unwrap_or(true));
-            file_system::set_filter_safe_save_artifacts(saved_settings.filter_safe_save_artifacts.unwrap_or(true));
+            file_system::staging::set_show_safe_save_files(saved_settings.show_safe_save_files.unwrap_or(true));
             file_system::staging::set_show_staging_temps(saved_settings.show_staging_temp_files.unwrap_or(false));
             file_system::set_smb_concurrency(saved_settings.smb_concurrency.unwrap_or(10) as usize);
 

@@ -14,10 +14,10 @@ via `set_tags` / `toggle_color` behind the `toggle_tags` command).
 
 ## Gotchas
 
-- **Scratch files are hidden on the listing READ path, never in a watcher, and by OWNERSHIP, never by name**
-  (`staging.rs`). A watcher-side name skip strands an entry in the pane forever; a leftover nobody owns is a real file
-  and must stay visible. ❌ Don't filter scratch names anywhere but `listing/operations.rs::visible_entries`, and mint
-  every temp through `StagingTemp`. Why, and the shipped `.sb-` counterexample: `DETAILS.md` § "Hiding Cmdr's scratch".
+- **Transient scratch hides on the listing READ path, never in a watcher** (`staging.rs`): a watcher-side skip strands
+  an entry in the pane forever. ❌ Filter nowhere but `listing/operations.rs::visible_entries`. Two rules: Cmdr's own
+  (`.cmdr-tmp-*`, minted via `StagingTemp`) hides by OWNERSHIP so a wedge's leftovers stay visible; other apps' (`.sb-`)
+  hides by NAME, having no ownership signal. `DETAILS.md` § "Hiding transient scratch".
 
 - **Tag writes (`tags.rs`) must touch ONLY `_kMDItemUserTags`, never `com.apple.FinderInfo` (D11).** That 32-byte blob
   carries `kHasCustomIcon` (`0x0400` at offset 8) plus type/creator codes; zeroing it destroys custom folder icons and

@@ -101,14 +101,6 @@ async fn process_event_batch(
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_else(|| filename.clone());
 
-            // Skip macOS safe-save temp files (like "file.txt.sb-1e64c894-vFWIzN").
-            // These are transient artifacts from TextEdit/Preview/etc. that create a
-            // temp dir, write the new version, then atomically swap. Showing them in
-            // the listing confuses users. Controlled by advanced.filterSafeSaveArtifacts.
-            if crate::file_system::is_filter_safe_save_artifacts_enabled() && file_name_only.contains(".sb-") {
-                continue;
-            }
-
             match action {
                 FileNotifyAction::Added => {
                     let entry_path = to_nfd_display_path(mount_path, filename);

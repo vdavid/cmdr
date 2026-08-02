@@ -1267,13 +1267,13 @@
   "@settings.advanced.mountTimeout.description": {
     "sourceHash": "3da30e1"
   },
-  "settings.advanced.filterSafeSaveArtifacts.label": "Veilig-bewaren-artefacten op SMB filteren",
-  "@settings.advanced.filterSafeSaveArtifacts.label": {
-    "sourceHash": "1763df4"
+  "settings.advanced.showSafeSaveFiles.label": "Tijdelijke bestanden van andere apps tonen",
+  "@settings.advanced.showSafeSaveFiles.label": {
+    "sourceHash": "3436491"
   },
-  "settings.advanced.filterSafeSaveArtifacts.description": "Verberg tijdelijke bestanden die macOS aanmaakt bij veilig bewaren (zoals ‘.sb-’-bestanden van TextEdit) in de SMB-bestandsbewaker. Deze zijn vluchtig en normaal gesproken onzichtbaar.",
-  "@settings.advanced.filterSafeSaveArtifacts.description": {
-    "sourceHash": "681b1dc"
+  "settings.advanced.showSafeSaveFiles.description": "Wanneer apps als TextEdit en Preview een bestand bewaren, schrijft macOS de nieuwe versie ernaast onder een tijdelijke naam (eindigend op ‘.sb-’) en wisselt die daarna om. Zet dit uit om ze uit de bestandslijst te houden.",
+  "@settings.advanced.showSafeSaveFiles.description": {
+    "sourceHash": "1749ee6"
   },
   "settings.advanced.showStagingTempFiles.label": "Cmdrs tijdelijke bestanden tonen",
   "@settings.advanced.showStagingTempFiles.label": {

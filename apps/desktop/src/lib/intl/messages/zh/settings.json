@@ -1263,13 +1263,13 @@
   "@settings.advanced.mountTimeout.description": {
     "sourceHash": "3da30e1"
   },
-  "settings.advanced.filterSafeSaveArtifacts.label": "在 SMB 上过滤安全保存产生的临时文件",
-  "@settings.advanced.filterSafeSaveArtifacts.label": {
-    "sourceHash": "1763df4"
+  "settings.advanced.showSafeSaveFiles.label": "显示其他应用的临时文件",
+  "@settings.advanced.showSafeSaveFiles.label": {
+    "sourceHash": "3436491"
   },
-  "settings.advanced.filterSafeSaveArtifacts.description": "在 SMB 文件监视器中隐藏 macOS 安全保存产生的临时文件（如 TextEdit 生成的“.sb-”文件）。这些文件是临时的，通常不可见。",
-  "@settings.advanced.filterSafeSaveArtifacts.description": {
-    "sourceHash": "681b1dc"
+  "settings.advanced.showSafeSaveFiles.description": "TextEdit、Preview 等应用保存文件时，macOS 会在旁边用临时名称（以“.sb-”结尾）写入新版本，然后再替换。关闭此项可让它们不出现在文件列表中。",
+  "@settings.advanced.showSafeSaveFiles.description": {
+    "sourceHash": "1749ee6"
   },
   "settings.advanced.showStagingTempFiles.label": "显示 Cmdr 的临时文件",
   "@settings.advanced.showStagingTempFiles.label": {

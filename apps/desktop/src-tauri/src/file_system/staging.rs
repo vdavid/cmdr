@@ -1,21 +1,30 @@
-//! Where every Cmdr scratch file is minted, and what listings do about the ones
-//! that exist right now.
+//! Where every Cmdr scratch file is minted, and which transient files a listing
+//! leaves out of the pane.
 //!
 //! Cmdr writes a file under a temporary name and renames it once the last byte
 //! lands, so a crash can never leave a half-written file at a real name
 //! (`write_operations/transfer/staged_write.rs`). The cost is that a copy makes
 //! files appear under names like `photo.jpg.cmdr-tmp-3f2a…` for as long as it
 //! takes to write them, and a directory watcher happily reports those to the
-//! pane.
+//! pane. macOS apps do the same thing when they save (`file.txt.sb-1e64c894-…`),
+//! so the pane has two kinds of other people's scratch to deal with.
 //!
-//! ## What gets hidden, and what doesn't
+//! ## Two categories, two rules, and why they differ
 //!
-//! A scratch file some running operation put there is noise: it will be gone in
-//! moments and the user never asked to watch it. A scratch file nobody owns is a
-//! LEFTOVER from an interrupted transfer, and hiding that would be lying about
-//! what's on disk. So the rule is ownership, never the name:
+//! **Cmdr's own** (`.cmdr-tmp-*`, `.cmdr-temp-*`) hides by OWNERSHIP. One a
+//! running operation put there is noise that'll be gone in moments; one nobody
+//! owns is a LEFTOVER from an interrupted transfer, and hiding that would be
+//! lying about what's on disk — and about a Cmdr bug worth seeing. So:
 //!
 //! > Hide a scratch file while an operation has it open. Show every other one.
+//!
+//! **Other apps'** (`.sb-`, macOS safe-save) hides by NAME, because we have no
+//! ownership signal for a file another process is writing and no way to tell a
+//! live one from an abandoned one. The coarser rule is defensible here precisely
+//! because it isn't ours: an abandoned `.sb-` is evidence of TextEdit's day, not
+//! of a Cmdr bug, so nothing is lost by not surfacing it. ❌ Don't reach for this
+//! rule for Cmdr's own scratch, where ownership is knowable and the leftover is
+//! the interesting case.
 //!
 //! ## Why an RAII mint instead of a register call
 //!
@@ -193,6 +202,39 @@ pub fn show_staging_temps() -> bool {
     SHOW_STAGING_TEMPS.load(Ordering::Relaxed)
 }
 
+/// The marker macOS safe-save writes into its scratch name.
+///
+/// `NSDocument`'s atomic save makes `file.txt.sb-1e64c894-vFWIzN` next to the
+/// original, writes the new version there, swaps it in, and deletes it. TextEdit,
+/// Preview, and anything else built on AppKit's document machinery do this on
+/// every save.
+const SAFE_SAVE_MARKER: &str = ".sb-";
+
+/// Whether `name` is another app's macOS safe-save scratch.
+///
+/// Name-only, and type-agnostic: safe-save creates a temp DIRECTORY as well as
+/// the file inside it, and both are equally uninteresting.
+fn is_safe_save_name(name: &str) -> bool {
+    name.contains(SAFE_SAVE_MARKER)
+}
+
+/// Whether the user asked to see other apps' safe-save scratch
+/// (`advanced.showSafeSaveFiles`). ON by default: unlike Cmdr's own temps, these
+/// are someone else's business, and quietly hiding another app's files by name is
+/// a bigger claim to make on a user's behalf than hiding our own.
+static SHOW_SAFE_SAVE_FILES: AtomicBool = AtomicBool::new(true);
+
+/// Applies the `advanced.showSafeSaveFiles` setting. Seeded at startup from
+/// `load_settings`, then pushed on every change (settings § live-apply rule).
+pub fn set_show_safe_save_files(show: bool) {
+    SHOW_SAFE_SAVE_FILES.store(show, Ordering::Relaxed);
+}
+
+/// Whether safe-save scratch is being shown.
+pub fn show_safe_save_files() -> bool {
+    SHOW_SAFE_SAVE_FILES.load(Ordering::Relaxed)
+}
+
 /// The listing layer's question: should `name` be left out of the pane?
 ///
 /// ❌ Ask this on the READ path, never when filling the cache. The cache holds
@@ -201,33 +243,67 @@ pub fn show_staging_temps() -> bool {
 /// can't get stuck there, and one it did receive is re-tested on the next fetch.
 /// Filtering the WATCHER instead would produce exactly that stuck entry — a
 /// listing shows the temp, the watcher skips the removal that would clear it,
-/// and it stays in the pane pointing at nothing.
+/// and it stays in the pane pointing at nothing. The `.sb-` filter lived there
+/// until 2026-08-01 and had precisely that bug.
 pub fn is_hidden_from_listings(name: &str) -> bool {
-    !show_staging_temps() && is_staging_temp_in_flight(name)
+    (!show_staging_temps() && is_staging_temp_in_flight(name)) || (!show_safe_save_files() && is_safe_save_name(name))
 }
 
-/// Serializes tests whose expectations depend on [`SHOW_STAGING_TEMPS`], and
-/// restores its previous value on drop.
+/// Serializes tests whose expectations depend on either visibility setting, and
+/// restores both on drop.
 ///
-/// The setting is process-wide, so a test flipping it would otherwise change the
-/// answer under every concurrently running test that asserts a temp is hidden.
-/// Take this in any test that reads or writes it, including the ones relying on
-/// the default.
+/// The settings are process-wide, so a test flipping one would otherwise change
+/// the answer under every concurrently running test that asserts something is
+/// hidden. Take this in any test that reads or writes them, including the ones
+/// relying on the defaults.
+///
+/// ❌ ONE AT A TIME. Taking a second guard while the first is alive re-locks a
+/// non-reentrant `Mutex` on the same thread, which deadlocks the whole test
+/// binary with no timeout to end it — every other test taking the guard then
+/// piles up behind it, and the run looks like a hang rather than a failure.
+/// Scope the first in a block before taking the second. [`set_both`](Self::set_both)
+/// asserts on a same-thread re-take so the mistake fails one test loudly.
 #[cfg(test)]
 pub(crate) struct ShowTempsGuard {
-    previous: bool,
+    previous_staging: bool,
+    previous_safe_save: bool,
     _lock: std::sync::MutexGuard<'static, ()>,
 }
 
+/// Serializes the settings across tests.
+#[cfg(test)]
+static SHOW_TEMPS_LOCK: Mutex<()> = Mutex::new(());
+
+/// Which thread holds [`SHOW_TEMPS_LOCK`], so a same-thread re-take can be caught
+/// before it deadlocks. Sound to read without holding the lock: only the holder
+/// ever stores its own id, so seeing our own id proves we already hold it.
+#[cfg(test)]
+static SHOW_TEMPS_OWNER: Mutex<Option<std::thread::ThreadId>> = Mutex::new(None);
+
 #[cfg(test)]
 impl ShowTempsGuard {
+    /// Sets the Cmdr-scratch setting, leaving safe-save at its default (shown).
     pub(crate) fn set(show: bool) -> Self {
-        static LOCK: Mutex<()> = Mutex::new(());
+        Self::set_both(show, true)
+    }
+
+    pub(crate) fn set_both(show_staging: bool, show_safe_save: bool) -> Self {
+        let me = std::thread::current().id();
+        assert!(
+            *SHOW_TEMPS_OWNER.lock_ignore_poison() != Some(me),
+            "ShowTempsGuard is already held by this thread: scope the first one in a block \
+             before taking a second, or it deadlocks the test binary"
+        );
+
+        let lock = SHOW_TEMPS_LOCK.lock_ignore_poison();
+        *SHOW_TEMPS_OWNER.lock_ignore_poison() = Some(me);
         let guard = Self {
-            _lock: LOCK.lock_ignore_poison(),
-            previous: show_staging_temps(),
+            _lock: lock,
+            previous_staging: show_staging_temps(),
+            previous_safe_save: show_safe_save_files(),
         };
-        set_show_staging_temps(show);
+        set_show_staging_temps(show_staging);
+        set_show_safe_save_files(show_safe_save);
         guard
     }
 }
@@ -235,7 +311,10 @@ impl ShowTempsGuard {
 #[cfg(test)]
 impl Drop for ShowTempsGuard {
     fn drop(&mut self) {
-        set_show_staging_temps(self.previous);
+        set_show_staging_temps(self.previous_staging);
+        set_show_safe_save_files(self.previous_safe_save);
+        // Before `_lock` releases (fields drop after this body).
+        *SHOW_TEMPS_OWNER.lock_ignore_poison() = None;
     }
 }
 
@@ -356,6 +435,49 @@ mod tests {
         let _temp = StagingTemp::mint(Path::new("/dir/photo.jpg"), None);
         assert!(!is_hidden_from_listings("photo.jpg"));
         assert!(!is_hidden_from_listings(".gitignore"));
+    }
+
+    /// Safe-save scratch shows by default: it's another app's business, and
+    /// hiding someone else's files by name is a bigger claim than hiding our own.
+    #[test]
+    fn safe_save_scratch_is_shown_by_default() {
+        let _show = ShowTempsGuard::set_both(false, true);
+        assert!(!is_hidden_from_listings("notes.txt.sb-1e64c894-vFWIzN"));
+    }
+
+    /// Turning the setting off hides it purely by name: no operation owns another
+    /// app's scratch, so there's nothing else to go on.
+    #[test]
+    fn safe_save_scratch_hides_by_name_alone() {
+        let _show = ShowTempsGuard::set_both(false, false);
+        assert!(is_hidden_from_listings("notes.txt.sb-1e64c894-vFWIzN"));
+        assert!(
+            is_hidden_from_listings("notes.txt.sb-1e64c894"),
+            "the temp DIRECTORY hides too, not just the file inside it"
+        );
+        assert!(!is_hidden_from_listings("notes.txt"));
+    }
+
+    /// The two categories are independent switches, so neither setting can
+    /// silently change what the other one does.
+    #[test]
+    fn the_two_scratch_settings_are_independent() {
+        let temp = StagingTemp::mint(Path::new("/dir/photo.jpg"), None);
+        let cmdr_name = name_of(&temp);
+        let safe_save_name = "notes.txt.sb-1e64c894-vFWIzN";
+
+        // One guard at a time: the second must not be taken until the first has
+        // dropped (see `ShowTempsGuard`).
+        {
+            let _show = ShowTempsGuard::set_both(true, false);
+            assert!(!is_hidden_from_listings(&cmdr_name), "Cmdr scratch shown");
+            assert!(is_hidden_from_listings(safe_save_name), "safe-save hidden");
+        }
+        {
+            let _show = ShowTempsGuard::set_both(false, true);
+            assert!(is_hidden_from_listings(&cmdr_name), "Cmdr scratch hidden");
+            assert!(!is_hidden_from_listings(safe_save_name), "safe-save shown");
+        }
     }
 
     /// The Settings > Advanced escape hatch overrides the hiding, not the

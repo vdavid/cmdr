@@ -3,7 +3,7 @@
 Depth and rationale. `CLAUDE.md` holds the must-knows; this is everything else. Submodule depth lives in each
 submodule's own `DETAILS.md` (`listing/`, `write_operations/`, `volume/`).
 
-## Hiding Cmdr's scratch (`staging.rs`)
+## Hiding transient scratch (`staging.rs`)
 
 Every write lands on a `.cmdr-tmp-*` sibling and takes its real name by a rename, so a copy makes files appear under
 names the user didn't create for as long as it takes to write them. The 2026-07-31 incident's visible tail was one of
@@ -14,7 +14,16 @@ its batched add landed after the rename event that would have cleared it.
 rather than where the cache is filled is what makes the fix safe. The cache stays the truth; every accessor re-tests on
 every fetch, so an entry the pane received can always be taken away again. Filtering the watcher instead inverts the bug
 into a worse one: a full listing shows the temp, the watcher skips the removal that would clear it, and the pane keeps
-an entry pointing at nothing. `smb_watcher.rs`'s `.sb-` safe-save skip is exactly that shape and has the ghost.
+an entry pointing at nothing. The `.sb-` filter lived in `smb_watcher.rs` from 2026-04-10 to 2026-08-01 and had exactly
+that ghost — its `continue` sat above the `match action`, so it skipped `Removed` too.
+
+**Other apps' scratch hides by NAME, and that's a different rule on purpose.** macOS safe-save writes
+`file.txt.sb-<uuid>` next to the original on every save (TextEdit, Preview, anything on `NSDocument`). There's no
+ownership signal available for a file another process is writing and no way to tell a live one from an abandoned one, so
+`advanced.showSafeSaveFiles` is a plain name filter over every drive. That coarseness is acceptable only because the
+files aren't ours: an abandoned `.sb-` says something about TextEdit's day, not about a Cmdr bug, so nothing diagnostic
+is lost by not surfacing it. It defaults to ON (shown), where Cmdr's own defaults to hidden — hiding another app's files
+by name is a bigger claim to make on someone's behalf than hiding our own.
 
 **Ownership, not name.** A scratch file a live operation owns is noise; one nobody owns is a leftover from an
 interrupted transfer, and hiding that misreports what's on disk. `StagingTemp` is the only way to name a temp, so

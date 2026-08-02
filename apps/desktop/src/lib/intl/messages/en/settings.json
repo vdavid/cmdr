@@ -1593,14 +1593,14 @@
     "screenshot": "settings-advanced.png"
   },
 
-  "settings.advanced.filterSafeSaveArtifacts.label": "Filter safe-save artifacts on SMB",
-  "@settings.advanced.filterSafeSaveArtifacts.label": {
-    "description": "Advanced-section label for the toggle hiding macOS safe-save temp files on SMB shares. \"SMB\" is a protocol name; keep it. \"artifacts\" = leftover temporary files.",
+  "settings.advanced.showSafeSaveFiles.label": "Show other apps' temporary files",
+  "@settings.advanced.showSafeSaveFiles.label": {
+    "description": "Advanced-section label for the toggle that shows macOS safe-save scratch files other apps leave while saving.",
     "screenshot": "settings-advanced.png"
   },
-  "settings.advanced.filterSafeSaveArtifacts.description": "Hide temporary files created by macOS safe-save (like \".sb-\" files from TextEdit) in the SMB file watcher. These are transient and normally invisible.",
-  "@settings.advanced.filterSafeSaveArtifacts.description": {
-    "description": "Help text for the filter-safe-save-artifacts toggle (advanced). \"macOS\" is a brand name and \"TextEdit\" a macOS app name (keep both); \".sb-\" is a literal filename prefix (keep it exactly); \"SMB\" is a protocol name (keep it). \"safe-save\" is the atomic write-then-rename technique.",
+  "settings.advanced.showSafeSaveFiles.description": "When apps like TextEdit and Preview save a file, macOS writes the new version alongside it under a temporary name (ending in \".sb-\") and swaps it in. Turn this off to keep those out of the file list.",
+  "@settings.advanced.showSafeSaveFiles.description": {
+    "description": "Help text for the show-safe-save-files toggle (advanced). \"macOS\" is a brand name and \"TextEdit\"/\"Preview\" are macOS app names (keep all three); \".sb-\" is a literal filename fragment (keep it exactly).",
     "screenshot": "settings-advanced.png"
   },
 

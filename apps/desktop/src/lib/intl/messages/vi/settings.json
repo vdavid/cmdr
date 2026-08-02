@@ -1261,13 +1261,13 @@
   "@settings.advanced.mountTimeout.description": {
     "sourceHash": "3da30e1"
   },
-  "settings.advanced.filterSafeSaveArtifacts.label": "Lọc tệp tạm của lưu an toàn trên SMB",
-  "@settings.advanced.filterSafeSaveArtifacts.label": {
-    "sourceHash": "1763df4"
+  "settings.advanced.showSafeSaveFiles.label": "Hiện tệp tạm của các ứng dụng khác",
+  "@settings.advanced.showSafeSaveFiles.label": {
+    "sourceHash": "3436491"
   },
-  "settings.advanced.filterSafeSaveArtifacts.description": "Ẩn các tệp tạm do lưu an toàn của macOS tạo ra (như tệp \".sb-\" từ TextEdit) trong bộ theo dõi tệp SMB. Chúng là tạm thời và thường vô hình.",
-  "@settings.advanced.filterSafeSaveArtifacts.description": {
-    "sourceHash": "681b1dc"
+  "settings.advanced.showSafeSaveFiles.description": "Khi các ứng dụng như TextEdit và Preview lưu một tệp, macOS ghi phiên bản mới bên cạnh dưới một tên tạm (kết thúc bằng \".sb-\") rồi hoán đổi. Tắt tùy chọn này để giữ chúng ngoài danh sách tệp.",
+  "@settings.advanced.showSafeSaveFiles.description": {
+    "sourceHash": "1749ee6"
   },
   "settings.advanced.showStagingTempFiles.label": "Hiện các tệp tạm của Cmdr",
   "@settings.advanced.showStagingTempFiles.label": {
