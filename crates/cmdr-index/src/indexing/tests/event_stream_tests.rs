@@ -13,8 +13,9 @@ use std::time::Duration;
 use crate::indexing::events::progress_reporter::ScanProgressReporter;
 use crate::indexing::events::{IndexEventKind, RecordingSink};
 use crate::indexing::lifecycle::manager::IndexManager;
-use crate::indexing::lifecycle::state::{IndexVolumeKind, VolumeSignals};
+use crate::indexing::lifecycle::state::VolumeSignals;
 use crate::indexing::scanner::ScanProgress;
+use crate::indexing::volume::IndexVolumeKind;
 use crate::indexing::writer::{AggSource, IndexWriter};
 use cmdr_fs::testing::wait_until_async;
 

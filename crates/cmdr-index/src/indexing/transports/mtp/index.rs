@@ -91,12 +91,11 @@ mod tests {
 
     use super::*;
     use crate::indexing::lifecycle::freshness::Freshness;
-    use crate::indexing::lifecycle::state::{
-        INDEX_REGISTRY, IndexVolumeKind, get_freshness, try_reserve_initializing_phase,
-    };
+    use crate::indexing::lifecycle::state::{INDEX_REGISTRY, get_freshness, try_reserve_initializing_phase};
     use crate::indexing::read::enrichment::{ReadPool, uninstall_read_pool};
     use crate::indexing::read::pending_sizes::{PendingSizes, uninstall_pending_sizes};
     use crate::indexing::store::IndexStore;
+    use crate::indexing::volume::IndexVolumeKind;
 
     /// Reserve a volume's registry instance at a given freshness, run the body,
     /// then remove it. Mirrors `transports/smb/index`'s test harness.

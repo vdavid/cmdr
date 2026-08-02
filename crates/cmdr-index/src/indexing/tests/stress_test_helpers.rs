@@ -6,10 +6,11 @@ use std::sync::Arc;
 
 use rusqlite::Connection;
 
-use crate::indexing::lifecycle::state::{INDEX_REGISTRY, IndexInstance, IndexPhase, IndexVolumeKind, VolumeSignals};
+use crate::indexing::lifecycle::state::{INDEX_REGISTRY, IndexInstance, IndexPhase, VolumeSignals};
 use crate::indexing::read::enrichment::ReadPool;
 use crate::indexing::read::pending_sizes::PendingSizes;
 use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
+use crate::indexing::volume::IndexVolumeKind;
 use crate::indexing::writer::IndexWriter;
 use cmdr_fs::entry::FileEntry;
 

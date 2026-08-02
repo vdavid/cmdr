@@ -34,6 +34,7 @@ pub(crate) mod scanner;
 /// directly. See `handle/DETAILS.md` § "The two exceptions" for why this is wide.
 pub mod store;
 pub(crate) mod transports;
+pub(crate) mod volume;
 pub(crate) mod watch;
 pub(crate) mod writer;
 

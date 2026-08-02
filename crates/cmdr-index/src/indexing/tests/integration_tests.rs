@@ -15,8 +15,7 @@ use crate::indexing::*;
 use crate::{NoopEventSink, ReadPool};
 use cmdr_fs::entry::FileEntry;
 use lifecycle::state::{
-    INDEX_REGISTRY, IndexInstance, IndexPhase, IndexVolumeKind, ROOT_VOLUME_ID, VolumeSignals, is_initializing_phase,
-    try_reserve_initializing_phase,
+    INDEX_REGISTRY, IndexInstance, IndexPhase, VolumeSignals, is_initializing_phase, try_reserve_initializing_phase,
 };
 use read::enrichment::{READ_POOL_TEST_MUTEX, THREAD_CONNS, enrich_via_individual_paths_on, enrich_via_parent_id_on};
 use rusqlite::Connection;
@@ -24,6 +23,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 use store::{DirStatsById, EntryRow, IndexStore, ROOT_ID};
+use volume::{IndexVolumeKind, ROOT_VOLUME_ID};
 
 /// Helper: open a temp store and write connection for testing.
 fn open_temp_store() -> (IndexStore, Connection, tempfile::TempDir) {

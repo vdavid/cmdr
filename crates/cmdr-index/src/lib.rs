@@ -93,12 +93,12 @@ pub use indexing::events::{
 /// The vocabulary the handle's own signatures are written in.
 pub use indexing::aggregator::AggregationPhase;
 pub use indexing::lifecycle::freshness::Freshness;
-pub use indexing::lifecycle::state::{IndexVolumeKind, ROOT_VOLUME_ID};
 pub use indexing::read::enrichment::ReadPool;
 pub use indexing::read::expected_totals::ExpectedTotals;
 pub use indexing::scanner::SYSTEM_DIR_EXCLUDES;
 pub use indexing::store::IndexFailure;
 pub use indexing::transports::smb::index::SmbIndexGateReason;
+pub use indexing::volume::{IndexVolumeKind, ROOT_VOLUME_ID};
 
 /// The file index's test-only surface. ❌ Not part of the API; see the module docs.
 #[cfg(any(test, feature = "testing"))]

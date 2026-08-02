@@ -12,9 +12,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use rusqlite::Connection;
 
 use crate::indexing::lifecycle::state;
-use crate::indexing::lifecycle::state::ROOT_VOLUME_ID;
 use crate::indexing::paths::routing;
 use crate::indexing::store::{self, DirStatsById, IndexStore, IndexStoreError};
+use crate::indexing::volume::ROOT_VOLUME_ID;
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::firmlinks;
 use cmdr_fs::ignore_poison::IgnorePoison;

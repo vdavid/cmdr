@@ -4,8 +4,8 @@ How a per-volume index is born, lives, transitions, and dies. All invariants bel
 
 ## Module map
 
-- **state.rs** (+ `state/tests.rs`) — `INDEX_REGISTRY`, `IndexInstance`, the `IndexPhase` machine, `IndexVolumeKind`,
-  reservation / start / stop / clear / `force_scan`, the failure supervisor, `IndexManager`/`ReadPool` bootstrap.
+- **state.rs** (+ `state/tests.rs`) — `INDEX_REGISTRY`, `IndexInstance`, the `IndexPhase` machine, reservation / start /
+  stop / clear / `force_scan`, the failure supervisor, `IndexManager`/`ReadPool` bootstrap.
 - **manager.rs** — the per-volume coordinator + LOCAL scan dispatch; **network_scan.rs** its SMB/MTP trait-scan path,
   **scan_completion.rs** the post-scan handler.
 - **freshness.rs** — the Fresh/Stale/Scanning/Failed table. **failure.rs** — the fatal-storage signal.

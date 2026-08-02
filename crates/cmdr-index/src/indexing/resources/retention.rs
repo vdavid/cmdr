@@ -33,7 +33,7 @@ use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
 use crate::indexing::lifecycle::state;
-use crate::indexing::lifecycle::state::ROOT_VOLUME_ID;
+use crate::indexing::volume::ROOT_VOLUME_ID;
 
 /// Maximum number of external (non-root) index DBs to retain. Beyond this, the
 /// least-recently-used offline ones are evicted. Sized generously: a heavy user

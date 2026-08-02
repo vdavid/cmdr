@@ -4,9 +4,9 @@
 //! The themes are the sibling modules below.
 
 use super::*;
-use crate::indexing::lifecycle::state::IndexVolumeKind;
 use crate::indexing::store::{IndexStore, ROOT_ID};
 use crate::indexing::stress_test_helpers::{TestInstanceGuard, check_db_consistency};
+use crate::indexing::volume::IndexVolumeKind;
 use crate::indexing::watch::watcher::FsEventFlags;
 use std::os::unix::ffi::OsStrExt;
 use std::time::Duration;

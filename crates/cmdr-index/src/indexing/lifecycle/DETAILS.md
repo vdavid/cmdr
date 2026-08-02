@@ -9,10 +9,12 @@ concurrently without corrupting each other. Every invariant below holds independ
 ## Module structure
 
 - **state.rs** (+ `state/tests.rs`) — the lifecycle/registry CORE: the `IndexPhase` enum, the per-volume
-  `INDEX_REGISTRY` (`Mutex<HashMap<VolumeId, IndexInstance>>`), `IndexVolumeKind`, the phase transitions, the registry
-  helpers, and the `IndexManager` + `ReadPool` bootstrap. Public lifecycle API (all take a `volume_id`):
-  `start_indexing()` → `start_indexing_for(app, "root", "/")`, `stop_indexing`, `clear_index`, `force_scan`,
-  `stop_scan`, `is_active`, `trigger_verification`, plus `init()`, `should_auto_start_indexing()`, and
+  `INDEX_REGISTRY` (`Mutex<HashMap<VolumeId, IndexInstance>>`), the phase transitions, the registry helpers, and the
+  `IndexManager` + `ReadPool` bootstrap. A volume's IDENTITY (`VolumeId`, `ROOT_VOLUME_ID`, `IndexVolumeKind`) is
+  deliberately NOT here: it's the leaf `../volume.rs`, so path routing, the transports, and the bus can name a volume
+  without importing the registry. Nothing below `lifecycle` should import `lifecycle::state`. Public lifecycle API (all
+  take a `volume_id`): `start_indexing()` → `start_indexing_for(app, "root", "/")`, `stop_indexing`, `clear_index`,
+  `force_scan`, `stop_scan`, `is_active`, `trigger_verification`, plus `init()`, `should_auto_start_indexing()`, and
   `stop_all_indexing` (the memory watchdog's target). The path→volume routing and the read-only query surface moved OUT
   to `../paths` and `../read`.
 - **manager.rs** — `IndexManager`, the central per-volume coordinator, plus the LOCAL scan path and the shared dispatch.
@@ -89,12 +91,13 @@ call so they can't drift); the lifecycle-phase transitions here are the `IndexPh
 
 ## Capability axes (`IndexVolumeKind`)
 
-`IndexVolumeKind` has four variants (`Local`, `LocalExternal`, `Smb`, `Mtp`) and four orthogonal capability methods —
-the canonical per-kind table lives on the enum's doc comment, so branch on the axis, not the variant:
+`IndexVolumeKind` (defined in the leaf `../volume.rs`) has four variants (`Local`, `LocalExternal`, `Smb`, `Mtp`) and
+four orthogonal capability methods — the canonical per-kind table lives on the enum's doc comment, so branch on the
+axis, not the variant:
 
 - `uses_local_scanner()` — the guarded walker + FSEvents pipeline (`Local`, `LocalExternal`) vs the `Volume`-trait
-  scanner. Exact complement of `is_trait_scanned()` (`Smb`, `Mtp`); a partition test in `state.rs` pins that they never
-  drift, so a fifth variant must pick a side.
+  scanner. Exact complement of `is_trait_scanned()` (`Smb`, `Mtp`); a partition test in `../volume.rs` pins that they
+  never drift, so a fifth variant must pick a side.
 - `has_event_journal()` — self-heals watch continuity via FSEvents replay on launch. Only `Local` (the boot disk). Feeds
   `initial_freshness_on_launch`; a non-journaled kind loads Stale. This — NOT `last_event_id.is_some()` — gates journal
   replay: the shared local event loop persists `last_event_id` for any local-scanner volume, so a completed

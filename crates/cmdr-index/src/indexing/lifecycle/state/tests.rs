@@ -2,54 +2,6 @@ use super::*;
 use crate::NoopEventSink;
 use crate::indexing::read::enrichment::get_read_pool_for;
 
-/// Every `IndexVolumeKind`, so a new variant can't be added without deciding
-/// its capabilities here.
-const ALL_KINDS: [IndexVolumeKind; 4] = [
-    IndexVolumeKind::Local,
-    IndexVolumeKind::LocalExternal,
-    IndexVolumeKind::Smb,
-    IndexVolumeKind::Mtp,
-];
-
-/// The five capability axes must match the plan's table exactly. Each tuple is
-/// `(uses_local_scanner, is_trait_scanned, has_event_journal, mount_rooted,
-/// feeds_search)`.
-#[test]
-fn capability_axes_match_the_table() {
-    let expected = |kind: IndexVolumeKind| -> (bool, bool, bool, bool, bool) {
-        (
-            kind.uses_local_scanner(),
-            kind.is_trait_scanned(),
-            kind.has_event_journal(),
-            kind.mount_rooted(),
-            kind.feeds_search(),
-        )
-    };
-
-    // (local_scanner, trait_scanned, event_journal, mount_rooted, feeds_search)
-    assert_eq!(expected(IndexVolumeKind::Local), (true, false, true, false, true));
-    assert_eq!(
-        expected(IndexVolumeKind::LocalExternal),
-        (true, false, false, true, false)
-    );
-    assert_eq!(expected(IndexVolumeKind::Smb), (false, true, false, true, false));
-    assert_eq!(expected(IndexVolumeKind::Mtp), (false, true, false, true, false));
-}
-
-/// `uses_local_scanner` and `is_trait_scanned` are exact complements: every
-/// kind is scanned by exactly one of the two pipelines, so they can't silently
-/// drift (a new variant landing in neither, or both, fails here).
-#[test]
-fn scanner_axes_partition_the_enum() {
-    for kind in ALL_KINDS {
-        assert_ne!(
-            kind.uses_local_scanner(),
-            kind.is_trait_scanned(),
-            "{kind:?} must be scanned by exactly one pipeline"
-        );
-    }
-}
-
 /// The read path's skip-vs-route gate is "does `get_read_pool_for` return a
 /// pool?". An unregistered volume must return `None` (so its listings skip
 /// before any DB work, exactly like the old `should_exclude` early-return); a

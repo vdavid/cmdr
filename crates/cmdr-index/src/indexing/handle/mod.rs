@@ -47,10 +47,11 @@ pub use ingest::{
 use crate::indexing::events::EventSink;
 use crate::indexing::host::policy::HostPolicy;
 use crate::indexing::host::volumes::VolumeProvider;
-use crate::indexing::lifecycle::state::{self, IndexVolumeKind};
+use crate::indexing::lifecycle::state;
 use crate::indexing::read::enrichment::ReadPool;
 use crate::indexing::read::expected_totals::ExpectedTotals;
 use crate::indexing::store::{DirStats, EntryRow};
+use crate::indexing::volume::IndexVolumeKind;
 use crate::{IndexDebugStatusResponse, IndexStatusResponse, VolumeIndexStatus};
 
 #[cfg(any(test, feature = "testing"))]

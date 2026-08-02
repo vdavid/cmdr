@@ -164,8 +164,8 @@ pub(super) fn release_and_emit_completion(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::indexing::lifecycle::state::IndexVolumeKind;
     use crate::indexing::stress_test_helpers::TestInstanceGuard;
+    use crate::indexing::volume::IndexVolumeKind;
 
     /// Spawn a real NON-root writer over a throwaway DB and register a PRIVATE
     /// per-volume instance for `volume_id`, so the hold/release routes to a private

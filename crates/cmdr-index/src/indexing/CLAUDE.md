@@ -50,9 +50,14 @@ read it before non-trivial work there.
 - **`transports/CLAUDE.md`** — per-transport enable + live watch: `smb/`, `mtp/`, `local_external/`.
 - **`tests/CLAUDE.md`** — whole-pipeline integration + stress tests + the disk-image fixture.
 
-`metadata.rs` is a loose shared leaf: the single platform-specific metadata-extraction primitive (`extract_metadata`,
-`MetadataSnapshot`) used by scanner, reconcile, watch, and verifier. Homing it in any one area would invert a
-dependency.
+Two loose shared leaves sit beside the areas, both because homing them in any one area would invert a dependency:
+
+- `metadata.rs`: the single platform-specific metadata-extraction primitive (`extract_metadata`, `MetadataSnapshot`),
+  used by scanner, reconcile, watch, and verifier.
+- `volume.rs`: a volume's identity — `VolumeId`, `ROOT_VOLUME_ID`, and `IndexVolumeKind` with its pure capability
+  predicates. ❌ Don't put these back in `lifecycle/state.rs`: identity is what everything needs, the registry is what
+  only `lifecycle` needs, and merging them welds the whole subsystem into one cycle. Nothing below `lifecycle` should
+  import `lifecycle::state`.
 
 All three live host-side, in the app: IPC commands in `apps/desktop/src-tauri/src/commands/indexing.rs`, the frontend in
 `apps/desktop/src/lib/indexing/`, and search in `apps/desktop/src-tauri/src/search/`.

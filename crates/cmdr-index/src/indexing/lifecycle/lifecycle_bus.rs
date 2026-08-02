@@ -34,7 +34,7 @@ use std::sync::Mutex;
 use tokio::sync::broadcast;
 use tokio::sync::watch;
 
-use super::state::IndexVolumeKind;
+use crate::indexing::volume::IndexVolumeKind;
 use cmdr_fs::ignore_poison::IgnorePoison;
 
 /// A volume's coarse scan-lifecycle state, as seen on the bus.

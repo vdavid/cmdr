@@ -62,8 +62,8 @@ use std::collections::HashSet;
 use std::sync::{Arc, LazyLock, Mutex};
 
 use crate::indexing::lifecycle::state;
-use crate::indexing::lifecycle::state::ROOT_VOLUME_ID;
 use crate::indexing::paths::path_prefix;
+use crate::indexing::volume::ROOT_VOLUME_ID;
 use cmdr_fs::firmlinks;
 use cmdr_fs::ignore_poison::IgnorePoison;
 

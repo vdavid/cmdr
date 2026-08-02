@@ -14,11 +14,12 @@ use super::pending_sizes::get_pending_sizes_for;
 use crate::indexing::events::{DEBUG_STATS, IndexDebugStatusResponse, IndexStatusResponse, VolumeIndexStatus};
 use crate::indexing::lifecycle::manager::IndexManager;
 use crate::indexing::lifecycle::state::{
-    INDEX_REGISTRY, IndexPhase, IndexVolumeKind, ROOT_VOLUME_ID, get_freshness, index_failure, is_active, volume_kind,
+    INDEX_REGISTRY, IndexPhase, get_freshness, index_failure, is_active, volume_kind,
 };
 use crate::indexing::paths::routing::{index_read_path, volume_id_for_local_path};
 use crate::indexing::reconcile::reconciler;
 use crate::indexing::store::{self, DirStats, IndexStore};
+use crate::indexing::volume::{IndexVolumeKind, ROOT_VOLUME_ID};
 use cmdr_fs::firmlinks;
 
 /// Per-volume index status for the per-drive freshness badge.
