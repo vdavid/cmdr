@@ -145,7 +145,7 @@ impl std::error::Error for EjectError {}
 /// disk volumes) or `mtp-device-disconnected` (for MTP) will fire shortly
 /// after and panes rooted at the volume redirect to root.
 pub async fn eject(volume_id: &str) -> Result<(), EjectError> {
-    use crate::file_system::get_volume_manager;
+    use crate::file_system::volume::manager::get_volume_manager;
 
     // Safety gate: never tear down a volume while a write op is reading from or
     // writing to it. The picker disables Eject for busy volumes, so reaching
@@ -263,7 +263,7 @@ async fn stop_index_blocking(volume_id: &str) {
 /// - [`EjectError::Failed`] when the volume isn't SMB (a race or automation
 ///   caller; the UI only offers Disconnect for SMB volumes).
 pub async fn disconnect_smb(volume_id: &str) -> Result<(), EjectError> {
-    use crate::file_system::get_volume_manager;
+    use crate::file_system::volume::manager::get_volume_manager;
 
     let volume = get_volume_manager()
         .get(volume_id)

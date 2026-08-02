@@ -37,12 +37,12 @@ fn test_entry(name: &str, is_dir: bool) -> FileEntry {
 /// Caller must call `cleanup_volume` after the test.
 fn register_test_volume(volume_id: &str, entries: Vec<FileEntry>) {
     let volume = Arc::new(InMemoryVolume::with_entries("Test Volume", entries));
-    crate::file_system::get_volume_manager().register(volume_id, volume);
+    crate::file_system::volume::manager::get_volume_manager().register(volume_id, volume);
 }
 
 /// Removes the test volume and listing cache entry.
 fn cleanup(volume_id: &str, listing_id: &str) {
-    crate::file_system::get_volume_manager().unregister(volume_id);
+    crate::file_system::volume::manager::get_volume_manager().unregister(volume_id);
     if let Ok(mut cache) = LISTING_CACHE.write() {
         cache.remove(listing_id);
     }
@@ -404,7 +404,8 @@ async fn test_cancel_unwinds_the_listing_instead_of_aborting_it() {
     let started = Arc::clone(&volume.started);
     let finished = Arc::clone(&volume.finished);
     let aborted = Arc::clone(&volume.aborted);
-    crate::file_system::get_volume_manager().register(volume_id, Arc::clone(&volume) as Arc<dyn Volume>);
+    crate::file_system::volume::manager::get_volume_manager()
+        .register(volume_id, Arc::clone(&volume) as Arc<dyn Volume>);
 
     let sink = Arc::new(CollectorListingEventSink::new());
     let events: Arc<dyn ListingEventSink> = Arc::clone(&sink) as Arc<dyn ListingEventSink>;

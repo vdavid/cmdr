@@ -145,7 +145,7 @@ pub async fn media_index_set_excluded_folder(app: AppHandle, folder: String, exc
     let scheduler = Arc::clone(scheduler.inner());
     // The reachable volumes + their mount roots. An unmounted volume isn't listed, so
     // its retro-delete re-fires on reconnect (`wire_volume`).
-    let mounts: Vec<(String, String)> = crate::file_system::get_volume_manager()
+    let mounts: Vec<(String, String)> = crate::file_system::volume::manager::get_volume_manager()
         .list_volumes_with_handles()
         .into_iter()
         .map(|(id, vol)| (id, vol.root().to_string_lossy().into_owned()))

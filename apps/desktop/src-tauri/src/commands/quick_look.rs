@@ -143,7 +143,7 @@ pub async fn quick_look_close(_app: AppHandle) -> Result<(), String> {
 /// volumes — those have no NSURL the Quick Look panel can preview.
 #[cfg(target_os = "macos")]
 fn volume_supports_local_fs(volume_id: &str) -> bool {
-    let manager = crate::file_system::get_volume_manager();
+    let manager = crate::file_system::volume::manager::get_volume_manager();
     match manager.get(volume_id) {
         Some(volume) => volume.supports_local_fs_access(),
         None => {

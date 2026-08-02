@@ -18,7 +18,8 @@ FTP). Callers never touch the filesystem directly; they call `Volume` methods wi
 - **`mod.rs`**: `Volume` trait (async: most methods return `Pin<Box<dyn Future>>`; sync: `name`, `root`, `supports_*`, `local_path`, `space_poll_interval`) plus the `VolumeReadStream` and `SequentialExtract` sub-traits. Re-exports `types::*` and `ids::*`
 - **`types.rs`**: the data types the trait exchanges (`VolumeError` + its `Display`/`Error`/`From<io::Error>` impls, `SpaceInfo`, `CopyScanResult`, `BatchScanResult`, `ScanConflict`, `SourceItemInfo`, `LaneKey`, `ListingProgress`, `MutationEvent`, `SmbConnectionState`)
 - **`ids.rs`**: the volume ID helpers (`path_to_id`, `smb_volume_id`)
-- **`manager.rs`**: `VolumeManager`: thread-safe `RwLock<HashMap>` registry; supports a default volume
+- **`manager.rs`**: `VolumeManager`: thread-safe `RwLock<HashMap>` registry; supports a default volume. Also holds the
+  process-wide instance and its `get_volume_manager()` accessor
 - **`backends/`**: Per-backend `Volume` impls (`LocalPosixVolume`, `MtpVolume`, `SmbVolume` + watcher, `InMemoryVolume`). See `backends/CLAUDE.md`.
 - **`friendly_error/`**: User-facing error messages + provider detection. See `friendly_error/CLAUDE.md`.
 
@@ -300,6 +301,9 @@ lifecycle for a LocalExternal index (the wedge-safe ordering)" for the full inci
 
 **Decision**: drive indexing has no hook on `Volume`
 **Why**: the indexer reaches a volume in exactly two ways, and neither wants a per-volume plugin object. The local disk is scanned and watched by concrete calls from the lifecycle layer, chosen by volume KIND; every other transport is walked through `Volume::list_directory`. A `scanner()` / `watcher()` pair on the trait was written for "future backends", and the backends that arrived (SMB, MTP) chose the BFS shape instead, so it sat uncalled. Don't re-add it: an abstraction with one implementor and no caller costs a real dependency (`file_system` → `indexing`) to buy nothing.
+
+**Decision**: the singleton lives in `manager.rs`, its bootstrap in the `file_system` facade
+**Why**: `get_volume_manager()` is what nearly every subsystem reaches for, so putting it in `file_system/mod.rs` (which re-exports `write_operations::*` and the backends downward) welded 17 modules into one cycle: everything below reached up for the accessor while the facade reached down to re-export. Beside the type it adds no edge at all, `manager.rs`'s only crate-internal import being `super::Volume`, and a per-backend crate (FTP, S3, SFTP) can reach the registry without importing a module that knows every backend. `init_volume_manager` / `register_discovered_volumes` stay in the facade, where knowing every backend is the point. ❌ Don't add a `pub use` shim in `file_system/mod.rs`: it re-welds the cycle the moment someone imports through it.
 
 **Decision**: `VolumeManager` uses `RwLock<HashMap>` (not `DashMap` or `Mutex`)
 **Why**: Volume registration/unregistration is rare (mount/unmount events); reads are frequent (every file operation resolves a volume). `RwLock` gives concurrent read access without pulling in an extra dependency. `DashMap` would work but is heavier than needed for a registry that rarely exceeds ~10 entries.

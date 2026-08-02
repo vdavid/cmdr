@@ -2,11 +2,12 @@
 //!
 //! The VolumeManager is the central registry for all mounted volumes.
 //! It tracks both the available volumes and which one is the current default.
+//! The one instance the app runs on lives here too, behind [`get_volume_manager`].
 
 use super::Volume;
 use std::collections::{HashMap, VecDeque};
 use std::path::Path;
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, LazyLock, Mutex, RwLock};
 
 /// Archive routing (`resolve`, `.zip`-boundary predicates, the archive LRU, and
 /// [`ResolvedVolume`]) lives in a second `impl VolumeManager` block here.
@@ -185,6 +186,18 @@ impl Default for VolumeManager {
     fn default() -> Self {
         Self::new()
     }
+}
+
+/// The process-wide volume registry, created on first access.
+static VOLUME_MANAGER: LazyLock<VolumeManager> = LazyLock::new(VolumeManager::new);
+
+/// Returns a reference to the global volume manager.
+///
+/// It lives beside the type, not in the `file_system` facade, so that reaching
+/// the registry never means importing a module that knows every backend. Which
+/// volumes get registered at startup is the facade's job (`init_volume_manager`).
+pub(crate) fn get_volume_manager() -> &'static VolumeManager {
+    &VOLUME_MANAGER
 }
 
 #[cfg(test)]

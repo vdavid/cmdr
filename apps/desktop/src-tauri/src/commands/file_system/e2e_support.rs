@@ -7,7 +7,7 @@
 #[tauri::command]
 #[specta::specta]
 pub fn inject_listing_error(volume_id: String, error_code: i32) -> Result<(), String> {
-    let volume = crate::file_system::get_volume_manager()
+    let volume = crate::file_system::volume::manager::get_volume_manager()
         .get(&volume_id)
         .ok_or_else(|| format!("Volume `{}` not found", volume_id))?;
     volume.inject_error(error_code);

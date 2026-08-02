@@ -18,8 +18,8 @@ static SERIAL: Mutex<()> = Mutex::new(());
 /// Registers a real local-FS "root" volume so `resolve("root", …)` finds a parent for
 /// the on-demand `ArchiveVolume`. Idempotent; mirrors the pattern in `commands/rename.rs`.
 fn ensure_root_volume() {
-    use crate::file_system::get_volume_manager;
     use crate::file_system::volume::LocalPosixVolume;
+    use crate::file_system::volume::manager::get_volume_manager;
     get_volume_manager().register_if_absent("root", Arc::new(LocalPosixVolume::new("Test root", "/")));
 }
 

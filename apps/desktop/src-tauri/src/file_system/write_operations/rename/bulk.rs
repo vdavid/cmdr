@@ -89,7 +89,7 @@ pub(crate) fn start_bulk_rename(
     let (lanes, volume_ids, settled_volume) = if uses_local_paths {
         (vec![LaneKey::new("root")], Vec::new(), None)
     } else {
-        let volume = crate::file_system::get_volume_manager()
+        let volume = crate::file_system::volume::manager::get_volume_manager()
             .get(&volume_id)
             .ok_or_else(|| "The rename volume is no longer available.".to_string())?;
         (
@@ -338,7 +338,7 @@ fn bulk_rename_local(rows: &[BulkRenameRow], intent: &AtomicU8) -> BulkRenameRun
 }
 
 async fn bulk_rename_remote(rows: &[BulkRenameRow], volume_id: &str, intent: &AtomicU8) -> BulkRenameRun {
-    let Some(volume) = crate::file_system::get_volume_manager().get(volume_id) else {
+    let Some(volume) = crate::file_system::volume::manager::get_volume_manager().get(volume_id) else {
         return BulkRenameRun::failed(rows.len(), "volume unavailable".to_string());
     };
     let mut outcomes = vec![BulkRenameOutcome::Skipped; rows.len()];

@@ -21,10 +21,10 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::file_system::get_volume_manager;
 use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
 use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
+use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{MtpVolume, Volume};
 use crate::mtp::connection::{MtpDisconnectReason, connection_manager};
 use crate::mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};

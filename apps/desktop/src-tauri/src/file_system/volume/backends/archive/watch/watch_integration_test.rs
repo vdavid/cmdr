@@ -15,13 +15,14 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
 use std::time::{Duration, Instant};
 
+use crate::file_system::VolumeManager;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE, refresh_archive_listings};
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use crate::file_system::volume::InMemoryVolume;
 use crate::file_system::volume::Volume;
 use crate::file_system::volume::backends::archive::{ArchiveVolume, active_watch_count};
-use crate::file_system::{VolumeManager, get_volume_manager};
+use crate::file_system::volume::manager::get_volume_manager;
 
 use super::super::test_fixtures::{FixtureFile, build_zip, stored};
 

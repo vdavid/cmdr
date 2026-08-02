@@ -28,7 +28,7 @@
 //! question in the meantime.
 
 use crate::file_system::SmbVolume;
-use crate::file_system::get_volume_manager;
+use crate::file_system::volume::manager::get_volume_manager;
 
 // ── DTO mirror types ──────────────────────────────────────────────────
 

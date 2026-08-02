@@ -158,8 +158,8 @@ fn two_entry_zip() -> Vec<u8> {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_archive_routing_detection_and_extract_out() {
-    use crate::file_system::get_volume_manager;
     use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume};
+    use crate::file_system::volume::manager::get_volume_manager;
     use std::io::Write as _;
 
     let vol = Arc::new(make_docker_volume().await);

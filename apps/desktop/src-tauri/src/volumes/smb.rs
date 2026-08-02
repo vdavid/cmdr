@@ -16,7 +16,7 @@ use super::{LocationInfo, SmbConnectionState, is_smb_fs_type, path_to_id, smb_vo
 /// `cmdr://state` resource — all three need the same enrichment, so it lives in
 /// one place. Add new enrichment fields here, not at each call site.
 pub fn enrich_smb_connection_state(volumes: &mut [LocationInfo]) {
-    let manager = crate::file_system::get_volume_manager();
+    let manager = crate::file_system::volume::manager::get_volume_manager();
     for vol in volumes.iter_mut() {
         if let Some(registered) = manager.get(&vol.id) {
             vol.smb_connection_state = registered.smb_connection_state();

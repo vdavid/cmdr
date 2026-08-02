@@ -283,11 +283,11 @@ fn test_process_dir_entry_handles_directory() {
 /// caches them in LISTING_CACHE, and returns the correct count.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_list_directory_start_with_volume_caches_entries() {
-    use crate::file_system::get_volume_manager;
     use crate::file_system::listing::caching_test_support::TestListingGuard;
     use crate::file_system::listing::metadata::FileEntry;
     use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
     use crate::file_system::volume::InMemoryVolume;
+    use crate::file_system::volume::manager::get_volume_manager;
     use std::path::PathBuf;
     use std::sync::Arc;
 

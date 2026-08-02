@@ -298,7 +298,7 @@ pub(crate) fn spawn_watcher_death_reconnect(volume_id: String, instance_id: u64)
     /// Resolves `volume_id` to the live volume, but only if it's still the same
     /// instance whose watcher died.
     fn still_the_same_volume(volume_id: &str, instance_id: u64) -> Option<Arc<dyn Volume>> {
-        let volume = crate::file_system::get_volume_manager().get(volume_id)?;
+        let volume = crate::file_system::volume::manager::get_volume_manager().get(volume_id)?;
         let smb = volume.as_any().downcast_ref::<SmbVolume>()?;
         if smb.instance_id != instance_id || smb.unmounted.load(Ordering::Relaxed) {
             return None;

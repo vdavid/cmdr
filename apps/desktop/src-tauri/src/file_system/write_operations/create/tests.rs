@@ -36,8 +36,8 @@ fn cleanup_test_dir(path: &PathBuf) {
 /// `volume_id = None` (→ "root") exercises the timed `Volume` path, the same one
 /// production hits. Idempotent via `register_if_absent`.
 fn ensure_root_volume() {
-    use crate::file_system::get_volume_manager;
     use crate::file_system::volume::LocalPosixVolume;
+    use crate::file_system::volume::manager::get_volume_manager;
     use std::sync::Arc;
     get_volume_manager().register_if_absent("root", Arc::new(LocalPosixVolume::new("Test root", "/")));
 }

@@ -27,9 +27,9 @@ use uuid::Uuid;
 use super::archive_edit::{self, ArchiveEditRequest};
 use super::manager::{self, OperationDescriptor, OperationSummaryText};
 use super::types::WriteOperationType;
-use crate::file_system::get_volume_manager;
 use crate::file_system::volume::backends::archive;
 use crate::file_system::volume::backends::archive::mutator::{AddEntry, AddSource, Changeset};
+use crate::file_system::volume::manager::get_volume_manager;
 
 /// Whether a routed archive add creates a directory entry or an empty file.
 enum ArchiveEntryKind {

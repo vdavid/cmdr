@@ -23,7 +23,7 @@ use super::super::state::{OperationIntent, WriteOperationState, cancel_write_ope
 use super::super::test_support::TestOperationGuard;
 use super::super::types::{CollectorEventSink, WriteOperationConfig};
 use super::walker::delete_volume_files_with_progress_inner;
-use crate::file_system::get_volume_manager;
+use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{InMemoryVolume, Volume, VolumeError};
 use crate::test_support::wait_until_async;
 use tokio_util::sync::CancellationToken;

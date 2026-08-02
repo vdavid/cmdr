@@ -11,9 +11,9 @@ use std::sync::Arc;
 use super::super::OperationEventSink;
 use super::super::manager;
 use super::super::types::WriteOperationError;
-use crate::file_system::get_volume_manager;
 use crate::file_system::volume::backends::archive;
 use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveIndex, LocalFileSource};
+use crate::file_system::volume::manager::get_volume_manager;
 
 /// Builds a Tauri-backed event sink from the startup-wired app handle, for
 /// routing an archive-target instant op (mkdir / mkfile / rename) to the managed

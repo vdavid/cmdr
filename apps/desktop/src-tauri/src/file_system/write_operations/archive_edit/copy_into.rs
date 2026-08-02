@@ -29,10 +29,10 @@ use super::super::types::{
 use super::conflicts::{ConflictMode, conditional_overwrites, find_unique_inner, resolve_effective};
 use super::engine::{MutatorHooks, PlanError, delete_move_sources, run_managed_edit, to_write_error};
 use super::routing::{ensure_zip_writable, normalize_inner_path, read_only_error};
-use crate::file_system::get_volume_manager;
 use crate::file_system::volume::backends::archive;
 use crate::file_system::volume::backends::archive::mutator::{self, AddEntry, AddSource, Changeset, MutationError};
 use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveIndex, LocalFileSource};
+use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{LaneKey, LocalPosixVolume, Volume, VolumeError};
 use crate::operation_log::types::{ArchiveSubkind, ExecutionStatus};
 

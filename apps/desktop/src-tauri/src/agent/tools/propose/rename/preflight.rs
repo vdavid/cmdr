@@ -179,7 +179,7 @@ async fn preflight_remote(proposal: &RenameProposal, allowed_row_ids: &[String])
     let Some(volume_id) = proposal.rows.first().map(|row| row.volume_id.as_str()) else {
         return finish_preflight(rows, fingerprints);
     };
-    let Some(volume) = crate::file_system::get_volume_manager().get(volume_id) else {
+    let Some(volume) = crate::file_system::volume::manager::get_volume_manager().get(volume_id) else {
         for status in rows.values_mut() {
             if status.status == BulkRenameRowStatus::Ready {
                 block(status, BulkRenameBlockReason::VolumeUnavailable);

@@ -407,7 +407,7 @@ pub async fn handle_directory_change(listing_id: &str) {
     // same ArchiveVolume the listing used, re-registering it if the LRU evicted
     // it. (Archives get no FSEvents watcher today, so this fires for them only
     // once live archive watching lands.)
-    let volume = crate::file_system::get_volume_manager()
+    let volume = crate::file_system::volume::manager::get_volume_manager()
         .resolve(&volume_id, &path)
         .await
         .volume;

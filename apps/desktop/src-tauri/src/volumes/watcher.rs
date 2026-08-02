@@ -173,7 +173,7 @@ pub(crate) fn handle_volume_unmounted(volume_path: &str) {
     // returns the SMB mount info, so a path-derived ID would miss the SMB volume
     // we actually need to clean up. See `VolumeManager::find_by_root`.
     let registered_id = {
-        let manager = crate::file_system::get_volume_manager();
+        let manager = crate::file_system::volume::manager::get_volume_manager();
         let lookup = manager.find_by_root(std::path::Path::new(volume_path));
         if let Some((id, volume)) = &lookup {
             volume.on_unmount();
@@ -226,7 +226,7 @@ pub(crate) fn handle_volume_will_unmount(volume_path: &str) {
     // The volume is still mounted here, so look it up by root the same way the
     // post-unmount path does (robust to SMB/case-folded ids).
     if let Some((id, _volume)) =
-        crate::file_system::get_volume_manager().find_by_root(std::path::Path::new(volume_path))
+        crate::file_system::volume::manager::get_volume_manager().find_by_root(std::path::Path::new(volume_path))
     {
         stop_local_external_index_off_main(id);
     }
@@ -264,8 +264,8 @@ fn stop_local_external_index_off_main(volume_id: String) {
 /// Uses `register_if_absent` so a pre-registered `SmbVolume` (from the mount
 /// flow) is not replaced by a `LocalPosixVolume`.
 fn register_volume_with_manager(volume_path: &str) {
-    use crate::file_system::get_volume_manager;
     use crate::file_system::volume::LocalPosixVolume;
+    use crate::file_system::volume::manager::get_volume_manager;
     use std::path::Path;
     use std::sync::Arc;
 
@@ -297,7 +297,7 @@ fn register_volume_with_manager(volume_path: &str) {
 /// gone). Otherwise, fall back to deriving the ID from the path, which is only
 /// safe for local volumes where `path_to_id` is unambiguous.
 fn unregister_volume_from_manager(volume_path: &str, registered_id: Option<&str>) {
-    use crate::file_system::get_volume_manager;
+    use crate::file_system::volume::manager::get_volume_manager;
 
     let volume_id = registered_id
         .map(|s| s.to_string())
@@ -431,7 +431,7 @@ mod tests {
 
     #[test]
     fn handle_volume_mounted_registers_with_volume_manager() {
-        use crate::file_system::get_volume_manager;
+        use crate::file_system::volume::manager::get_volume_manager;
 
         // Unique path so this test doesn't collide with parallel tests.
         let volume_path = "/Volumes/cmdr-test-mount-register";
@@ -456,8 +456,8 @@ mod tests {
 
     #[test]
     fn handle_volume_unmounted_unregisters_from_volume_manager() {
-        use crate::file_system::get_volume_manager;
         use crate::file_system::volume::LocalPosixVolume;
+        use crate::file_system::volume::manager::get_volume_manager;
         use std::sync::Arc;
 
         let volume_path = "/Volumes/cmdr-test-mount-unregister";
@@ -481,7 +481,7 @@ mod tests {
 
     #[test]
     fn mount_then_unmount_round_trip_leaves_no_registration() {
-        use crate::file_system::get_volume_manager;
+        use crate::file_system::volume::manager::get_volume_manager;
 
         let volume_path = "/Volumes/cmdr-test-roundtrip";
         let volume_id = super::super::path_to_id(volume_path);
@@ -507,7 +507,7 @@ mod tests {
     /// correctly, or if the cast/key lookup is wrong, this test catches it.
     #[test]
     fn end_to_end_post_notification_runs_handler() {
-        use crate::file_system::get_volume_manager;
+        use crate::file_system::volume::manager::get_volume_manager;
 
         // Ensure the observer is wired up. Idempotent, safe to call from
         // multiple tests; only the first call actually installs.

@@ -161,7 +161,7 @@ fn read_head(file_path: &Path, max: usize) -> Vec<u8> {
 /// (`smb_connection_state().is_none()`). When no registered volume claims the path
 /// (the path is a real file outside any mount, e.g. under `/`), it's local.
 fn is_local_posix_path(file_path: &Path) -> bool {
-    let manager = crate::file_system::get_volume_manager();
+    let manager = crate::file_system::volume::manager::get_volume_manager();
     let mut best: Option<(usize, bool)> = None; // (root component count, is_local)
     for (_id, volume) in manager.list_volumes_with_handles() {
         let root = volume.root();

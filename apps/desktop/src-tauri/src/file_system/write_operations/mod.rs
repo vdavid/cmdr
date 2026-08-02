@@ -486,7 +486,7 @@ pub async fn delete_files_start(
     // falling through to a confusing parent-volume delete.
     let first_is_archive_inner = match sources.first() {
         Some(s) => {
-            crate::file_system::get_volume_manager()
+            crate::file_system::volume::manager::get_volume_manager()
                 .path_is_inside_archive(&volume_id_str, s)
                 .await
         }
@@ -508,7 +508,7 @@ pub async fn delete_files_start(
             config.progress_interval_ms,
         )));
 
-        let lane = crate::file_system::get_volume_manager()
+        let lane = crate::file_system::volume::manager::get_volume_manager()
             .get(&volume_id_str)
             .map(|v| v.lane_key())
             .unwrap_or_else(|| LaneKey::new(volume_id_str.clone()));
@@ -554,7 +554,9 @@ pub async fn delete_files_start(
                     sources.len() as u64,
                 );
 
-                let execution_status = match crate::file_system::get_volume_manager().get(&volume_id_str) {
+                let execution_status = match crate::file_system::volume::manager::get_volume_manager()
+                    .get(&volume_id_str)
+                {
                     None => {
                         events.emit_error(WriteErrorEvent::new(
                             op_id.clone(),

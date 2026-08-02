@@ -382,7 +382,7 @@ pub async fn upgrade_to_smb_volume(volume_id: String, app_handle: tauri::AppHand
 /// `upgrade_smb_to_direct` executor — both routes share the same Keychain
 /// lookup, mDNS-cached hostname resolution, and `try_smb_upgrade` body.
 pub async fn upgrade_to_smb_volume_inner(volume_id: String) -> Result<UpgradeResult, String> {
-    use crate::file_system::get_volume_manager;
+    use crate::file_system::volume::manager::get_volume_manager;
     #[cfg(target_os = "macos")]
     use crate::volumes::get_smb_mount_info;
     #[cfg(target_os = "linux")]
@@ -483,7 +483,7 @@ pub async fn upgrade_to_smb_volume_with_credentials(
     remember_in_keychain: bool,
     app_handle: tauri::AppHandle,
 ) -> Result<UpgradeResult, String> {
-    use crate::file_system::get_volume_manager;
+    use crate::file_system::volume::manager::get_volume_manager;
     #[cfg(target_os = "macos")]
     use crate::volumes::get_smb_mount_info;
     #[cfg(target_os = "linux")]
@@ -554,7 +554,7 @@ pub async fn upgrade_to_smb_volume_with_credentials(
 #[tauri::command]
 #[specta::specta]
 pub async fn system_has_saved_smb_password(volume_id: String) -> Result<bool, String> {
-    use crate::file_system::get_volume_manager;
+    use crate::file_system::volume::manager::get_volume_manager;
     use crate::secrets::system_keychain_smb;
     use crate::volumes::get_smb_mount_info;
 
@@ -600,7 +600,7 @@ pub async fn upgrade_to_smb_volume_using_saved_password(
     volume_id: String,
     app_handle: tauri::AppHandle,
 ) -> Result<UpgradeResult, String> {
-    use crate::file_system::get_volume_manager;
+    use crate::file_system::volume::manager::get_volume_manager;
     use crate::secrets::system_keychain_smb;
     use crate::volumes::get_smb_mount_info;
 
@@ -734,7 +734,7 @@ pub async fn disconnect_network_host(
 #[specta::specta]
 pub async fn reconnect_smb_volume(volume_id: String) -> Result<(), crate::commands::util::IpcError> {
     use crate::commands::util::IpcError;
-    use crate::file_system::get_volume_manager;
+    use crate::file_system::volume::manager::get_volume_manager;
 
     let volume = get_volume_manager()
         .get(&volume_id)
@@ -761,7 +761,7 @@ pub async fn reconnect_smb_volume_with_credentials(
     password: String,
 ) -> Result<(), crate::commands::util::IpcError> {
     use crate::commands::util::IpcError;
-    use crate::file_system::get_volume_manager;
+    use crate::file_system::volume::manager::get_volume_manager;
 
     let volume = get_volume_manager()
         .get(&volume_id)

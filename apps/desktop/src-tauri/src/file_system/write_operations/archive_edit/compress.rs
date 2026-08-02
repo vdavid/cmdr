@@ -24,9 +24,9 @@ use super::super::scratch_dir::ScratchDir;
 use super::super::state::WriteOperationState;
 use super::super::types::{ConflictResolution, WriteOperationError, WriteOperationStartResult};
 use super::copy_into::route_archive_copy_into_with_provenance;
-use crate::file_system::get_volume_manager;
 use crate::file_system::staging::StagingTemp;
 use crate::file_system::volume::Volume;
+use crate::file_system::volume::manager::get_volume_manager;
 
 /// The bytes of a valid empty zip: a bare end-of-central-directory record. The
 /// four-byte EOCD signature `PK\x05\x06` followed by 18 zero bytes (disk numbers,

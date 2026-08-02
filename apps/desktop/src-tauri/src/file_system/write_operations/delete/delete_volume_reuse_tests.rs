@@ -17,9 +17,9 @@ use std::time::Duration;
 use super::super::state::{CachedScanResult, OperationIntent, SCAN_PREVIEW_RESULTS, WriteOperationState};
 use super::super::types::{CollectorEventSink, WriteOperationConfig, WriteOperationError};
 use super::walker::delete_volume_files_with_progress_inner;
-use crate::file_system::get_volume_manager;
 use crate::file_system::listing::caching_test_support::{TestListing, TestListingGuard};
 use crate::file_system::listing::metadata::FileEntry;
+use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{BatchScanResult, CopyScanResult, InMemoryVolume, Volume, VolumeError};
 
 // ----------------------------------------------------------------------------

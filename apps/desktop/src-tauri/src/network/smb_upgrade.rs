@@ -172,7 +172,7 @@ where
 pub(crate) fn is_already_direct(volume_id: &str) -> bool {
     use crate::file_system::volume::SmbConnectionState;
     matches!(
-        crate::file_system::get_volume_manager()
+        crate::file_system::volume::manager::get_volume_manager()
             .get(volume_id)
             .and_then(|v| v.smb_connection_state()),
         Some(SmbConnectionState::Direct)
@@ -233,7 +233,7 @@ pub(crate) async fn register_replacing_predecessor(
     volume_id: &str,
     new_volume: std::sync::Arc<dyn crate::file_system::volume::Volume>,
 ) {
-    let manager = crate::file_system::get_volume_manager();
+    let manager = crate::file_system::volume::manager::get_volume_manager();
     if let Some(prev) = manager.get(volume_id) {
         log::debug!("Replacing existing volume at id={volume_id}; retiring the predecessor (session stays up)");
         let _ = tokio::task::spawn_blocking(move || prev.on_superseded()).await;

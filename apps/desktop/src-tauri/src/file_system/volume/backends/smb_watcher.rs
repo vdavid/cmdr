@@ -43,7 +43,7 @@ fn to_nfd_display_path(mount_path: &Path, relative: &str) -> PathBuf {
 
 /// Stats a file via the main SmbVolume connection (through VolumeManager).
 async fn stat_via_volume(volume_id: &str, path: &Path) -> Option<FileEntry> {
-    let vm = crate::file_system::get_volume_manager();
+    let vm = crate::file_system::volume::manager::get_volume_manager();
     let vol = vm.get(volume_id)?;
     vol.get_metadata(path).await.ok()
 }

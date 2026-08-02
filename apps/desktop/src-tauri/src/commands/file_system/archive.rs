@@ -10,8 +10,8 @@
 
 use std::path::Path;
 
-use crate::file_system::get_volume_manager;
 use crate::file_system::volume::backends::archive::ArchiveVolume;
+use crate::file_system::volume::manager::get_volume_manager;
 
 /// Stores `password` for the archive at `archive_path` on `parent_volume_id`,
 /// overwriting any previous one (so a fresh attempt replaces a rejected password).

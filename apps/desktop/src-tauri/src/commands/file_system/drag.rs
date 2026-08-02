@@ -23,7 +23,7 @@ fn locality_for_volume(volume_id: Option<&str>) -> DragSessionLocality {
     let Some(volume_id) = volume_id else {
         return DragSessionLocality::Local;
     };
-    match crate::file_system::get_volume_manager().get(volume_id) {
+    match crate::file_system::volume::manager::get_volume_manager().get(volume_id) {
         Some(volume) if !volume.supports_local_fs_access() => DragSessionLocality::Virtual,
         _ => DragSessionLocality::Local,
     }

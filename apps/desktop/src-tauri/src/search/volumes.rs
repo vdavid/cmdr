@@ -342,7 +342,11 @@ struct Candidate {
 /// `1` when the volume is registered in the live `VolumeManager` (it IS what's
 /// mounted at that root right now), `0` otherwise. The primary dedupe tiebreak.
 fn registered_rank(volume_id: &str) -> usize {
-    usize::from(crate::file_system::get_volume_manager().get(volume_id).is_some())
+    usize::from(
+        crate::file_system::volume::manager::get_volume_manager()
+            .get(volume_id)
+            .is_some(),
+    )
 }
 
 // ── Loading ──────────────────────────────────────────────────────────
@@ -459,7 +463,7 @@ fn read_mount_root(pool: &ReadPool, volume_id: &str) -> Option<String> {
         .flatten()
         .and_then(usable);
     from_meta.or_else(|| {
-        crate::file_system::get_volume_manager()
+        crate::file_system::volume::manager::get_volume_manager()
             .get(volume_id)
             .map(|v| v.root().to_string_lossy().into_owned())
             .and_then(usable)

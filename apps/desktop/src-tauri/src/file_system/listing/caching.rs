@@ -732,7 +732,7 @@ async fn notify_full_refresh(
     // Re-resolve from `(volume_id, parent_path)` so a `.zip`-crossing listing hits
     // the same `ArchiveVolume` the read used (the cache keys on the parent drive
     // id, and a re-resolve re-registers a lazily-evicted archive).
-    let resolved = crate::file_system::get_volume_manager()
+    let resolved = crate::file_system::volume::manager::get_volume_manager()
         .resolve(&volume_id, &parent_path)
         .await;
     let is_archive = resolved.is_archive;
@@ -928,7 +928,7 @@ pub fn try_get_watched_listing(volume_id: &str, path: &Path) -> Option<Vec<FileE
     // `listing_is_watched` honestly (true once established, false if it couldn't
     // start). This oracle runs on sync recursive scan walkers, so it can't `.await`
     // the async remote confirm — hence the local-only variant.
-    let resolved = crate::file_system::get_volume_manager().resolve_local_only(volume_id, path);
+    let resolved = crate::file_system::volume::manager::get_volume_manager().resolve_local_only(volume_id, path);
     let volume = resolved.volume?;
 
     // Honesty guard for a REMOTE archive-inner path. `resolve_local_only` can't

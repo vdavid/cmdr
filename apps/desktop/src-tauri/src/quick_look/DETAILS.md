@@ -71,4 +71,4 @@ The state-machine refactor in step 1 is the load-bearing one; the IPC and fronte
 ## Dependencies
 
 External: `objc2`, `objc2-app-kit`, `objc2-foundation`, `objc2-quick-look-ui` (all macOS-only). Internal:
-`tauri::AppHandle`, `crate::file_system::get_volume_manager` (volume gate, via the IPC layer in `commands/quick_look.rs`).
+`tauri::AppHandle`, `crate::file_system::volume::manager::get_volume_manager` (volume gate, via the IPC layer in `commands/quick_look.rs`).

@@ -82,7 +82,7 @@ pub(crate) async fn rename_managed(
     // renaming it must work like any other file — so only a genuinely-inner path
     // routes here. Parent-aware detection (not the `std::fs`-only sync predicate)
     // so a rename inside a REMOTE zip (direct SMB / MTP) routes too.
-    let manager = crate::file_system::get_volume_manager();
+    let manager = crate::file_system::volume::manager::get_volume_manager();
     if manager.path_is_inside_archive(&volume_id, &from).await || manager.path_is_inside_archive(&volume_id, &to).await
     {
         return route_archive_rename(&from, &to, &volume_id).await;
@@ -127,7 +127,7 @@ pub(crate) async fn rename_managed(
                 // Volume-aware rename (MTP, SMB, and other non-local volumes).
                 // The volume's `rename` calls `notify_mutation` internally, so
                 // the listing cache updates automatically.
-                let volume = crate::file_system::get_volume_manager()
+                let volume = crate::file_system::volume::manager::get_volume_manager()
                     .get(&volume_id)
                     .ok_or_else(|| format!("Volume '{}' not found", volume_id))?;
                 volume.rename(&from, &to, force).await.map_err(|e| format!("{}", e))
@@ -281,7 +281,7 @@ async fn notify_rename_in_listing(volume_id: &str, from: &Path, to: &Path) {
     // Plain `get`, not `resolve`: a rename INSIDE an archive is rejected upstream,
     // so this only ever runs for a normal file (incl. the `.zip` file itself),
     // which must notify through its own volume — never route to the ArchiveVolume.
-    let volume = match crate::file_system::get_volume_manager().get(volume_id) {
+    let volume = match crate::file_system::volume::manager::get_volume_manager().get(volume_id) {
         Some(v) => v,
         None => return,
     };
@@ -534,7 +534,7 @@ async fn check_sibling_conflict_via_volume(volume_id: &str, new_path: &Path) -> 
     // Plain `get`, not `resolve`: renaming INTO an archive is rejected upstream, so
     // the target is always a normal sibling (incl. a `.zip` file), checked on its
     // own volume — routing to the ArchiveVolume would mis-consult the zip's index.
-    let volume = match crate::file_system::get_volume_manager().get(volume_id) {
+    let volume = match crate::file_system::volume::manager::get_volume_manager().get(volume_id) {
         Some(v) => v,
         None => return (false, None),
     };

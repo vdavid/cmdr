@@ -28,8 +28,8 @@ use tauri::{AppHandle, Manager, Runtime};
 
 use tokio::sync::oneshot;
 
-use crate::file_system::get_volume_manager;
 use crate::file_system::volume::DEFAULT_VOLUME_ID;
+use crate::file_system::volume::manager::get_volume_manager;
 use crate::operation_log::rollback::{
     InversePlan, RollbackDispatch, RollbackRefusal, RollbackReport, SkipBreakdown, execute_rollback, inverse_kind,
     rollback_operation, undo_order,

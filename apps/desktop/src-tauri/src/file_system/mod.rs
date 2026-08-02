@@ -27,8 +27,10 @@ pub mod volume;
 pub(crate) mod watcher;
 pub(crate) mod write_operations;
 
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, LazyLock};
+
+use volume::manager::get_volume_manager;
 
 // Re-export public types from the listing module
 #[allow(unused_imports, reason = "Public API re-exports for future use")]
@@ -89,9 +91,6 @@ pub use write_operations::{
     VolumeCopyConfig, VolumeCopyScanResult, copy_between_volumes, move_between_volumes, scan_for_volume_copy,
 };
 
-/// Global volume manager instance
-static VOLUME_MANAGER: LazyLock<VolumeManager> = LazyLock::new(VolumeManager::new);
-
 /// Whether to auto-upgrade SMB mounts to direct smb2 connections.
 /// Set from the `network.directSmbConnection` setting at startup.
 static DIRECT_SMB_ENABLED: AtomicBool = AtomicBool::new(true);
@@ -144,8 +143,9 @@ pub fn init_volume_manager() {
     let root_name = "Root";
 
     let root_volume = Arc::new(LocalPosixVolume::new(root_name, "/"));
-    VOLUME_MANAGER.register("root", root_volume);
-    VOLUME_MANAGER.set_default("root");
+    let manager = get_volume_manager();
+    manager.register("root", root_volume);
+    manager.set_default("root");
 
     // Attached volumes and cloud drives are discovered and registered OFF the main
     // thread. `init_volume_manager` runs inside the Tauri `setup` closure (the main
@@ -175,7 +175,7 @@ fn register_discovered_volumes() {
         log::debug!("Registering {} attached volume(s)", attached.len());
         for location in attached {
             let volume = Arc::new(LocalPosixVolume::new(&location.name, &location.path));
-            VOLUME_MANAGER.register(&location.id, volume);
+            get_volume_manager().register(&location.id, volume);
             log::debug!("  Registered attached volume: {} -> {}", location.id, location.path);
         }
 
@@ -183,7 +183,7 @@ fn register_discovered_volumes() {
         log::debug!("Registering {} cloud drive(s)", cloud.len());
         for location in cloud {
             let volume = Arc::new(LocalPosixVolume::new(&location.name, &location.path));
-            VOLUME_MANAGER.register(&location.id, volume);
+            get_volume_manager().register(&location.id, volume);
             log::debug!("  Registered cloud drive: {} -> {}", location.id, location.path);
         }
     }
@@ -199,15 +199,10 @@ fn register_discovered_volumes() {
         log::debug!("Registering {} volume(s)", non_fav.len());
         for location in non_fav {
             let volume = Arc::new(LocalPosixVolume::new(&location.name, &location.path));
-            VOLUME_MANAGER.register(&location.id, volume);
+            get_volume_manager().register(&location.id, volume);
             log::debug!("  Registered volume: {} -> {}", location.id, location.path);
         }
     }
-}
-
-/// Returns a reference to the global volume manager.
-pub fn get_volume_manager() -> &'static VolumeManager {
-    &VOLUME_MANAGER
 }
 
 /// Upgrades all existing SMB mounts to direct smb2 connections (background task).
@@ -324,11 +319,12 @@ fn os_mounted_smb_shares() -> Vec<(String, SmbMountInfo)> {
     #[cfg(target_os = "linux")]
     use crate::volumes_linux::get_smb_mount_info;
 
-    VOLUME_MANAGER
+    let manager = get_volume_manager();
+    manager
         .list_volumes()
         .into_iter()
         .filter_map(|(id, _name)| {
-            let vol = VOLUME_MANAGER.get(&id)?;
+            let vol = manager.get(&id)?;
             if vol.smb_connection_state().is_some() {
                 return None;
             }

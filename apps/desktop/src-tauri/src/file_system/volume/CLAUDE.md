@@ -5,13 +5,14 @@ operation goes through a `Volume`, with **paths relative to the volume root**.
 
 ## Module map
 
-- `mod.rs`: re-exports all of `cmdr_fs::volume` (the trait and its sub-traits, its data types, the ID helpers,
-  `InMemoryVolume`, `friendly_error`), then declares what stayed. The trait: `crates/cmdr-fs/src/volume/mod.rs`.
-- `manager.rs`: `VolumeManager`, a thread-safe `RwLock<HashMap>` registry with a default volume.
+- `mod.rs`: re-exports all of `cmdr_fs::volume` (trait, sub-traits, data types, ID helpers, `InMemoryVolume`,
+  `friendly_error`), then declares what stayed. The trait: `crates/cmdr-fs/src/volume/mod.rs`.
+- `manager.rs`: `VolumeManager`, a thread-safe `RwLock<HashMap>` registry with a default volume, and the process-wide
+  instance behind `get_volume_manager()`.
 - `backends/`: per-backend impls (`LocalPosixVolume`, `MtpVolume`, `SmbVolume` + watcher, `InMemoryVolume`). See
   `backends/CLAUDE.md`.
 - `eject.rs` (macOS+Linux): volume teardown by kind; `commands::eject` delegates to it. See `DETAILS.md`.
-- `friendly_error/`: typed, word-free error classification, now in `cmdr-fs`; the words live on the FE. See
+- `friendly_error/`: typed, word-free error classification in `cmdr-fs`; the words live on the FE. See
   `crates/cmdr-fs/src/volume/friendly_error/CLAUDE.md`.
 
 ## Must-knows

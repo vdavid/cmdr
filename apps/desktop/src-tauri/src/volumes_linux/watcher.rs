@@ -316,8 +316,8 @@ fn emit_volume_unmounted(volume_path: &str) {
 
 /// Register a volume with the global VolumeManager.
 fn register_volume_with_manager(volume_path: &str) {
-    use crate::file_system::get_volume_manager;
     use crate::file_system::volume::LocalPosixVolume;
+    use crate::file_system::volume::manager::get_volume_manager;
     use std::sync::Arc;
 
     let volume_id = super::volume_id_for_mount(volume_path);
@@ -344,7 +344,7 @@ fn register_volume_with_manager(volume_path: &str) {
 /// when `volume_id_for_mount`'s SMB branch can no longer recover the right ID).
 /// Falls back to deriving the ID from the path if no entry matches.
 fn unregister_volume_from_manager(volume_path: &str) {
-    use crate::file_system::get_volume_manager;
+    use crate::file_system::volume::manager::get_volume_manager;
 
     let manager = get_volume_manager();
     let volume_id = manager

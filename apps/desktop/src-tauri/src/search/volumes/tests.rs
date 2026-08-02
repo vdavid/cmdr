@@ -149,8 +149,8 @@ fn distinct_mount_roots_keeps_genuinely_different_locations() {
 /// that root right now IS what the user's paths resolve to.
 #[test]
 fn a_mounted_volume_wins_over_a_newer_offline_index() {
-    use crate::file_system::get_volume_manager;
     use crate::file_system::volume::LocalPosixVolume;
+    use crate::file_system::volume::manager::get_volume_manager;
 
     let dir = tempfile::tempdir().expect("temp dir");
     let root = "/Volumes/cmdr-dedupe-nas";
@@ -284,8 +284,8 @@ fn make_index_db_without_volume_path(data_dir: &Path, volume_id: &str) {
 /// failed → 0 results). Regression: mount root resolves via the registry fallback.
 #[test]
 fn mount_root_falls_back_to_the_volume_registry() {
-    use crate::file_system::get_volume_manager;
     use crate::file_system::volume::LocalPosixVolume;
+    use crate::file_system::volume::manager::get_volume_manager;
     use std::sync::Arc;
 
     let dir = tempfile::tempdir().expect("temp dir");

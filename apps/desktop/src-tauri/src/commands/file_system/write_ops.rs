@@ -12,10 +12,10 @@ use crate::file_system::{
     cancel_all_write_operations as ops_cancel_all_write_operations, cancel_operation as ops_cancel_operation,
     cancel_operations as ops_cancel_operations, cancel_write_operation as ops_cancel_write_operation,
     copy_files_start as ops_copy_files_start, delete_files_start as ops_delete_files_start,
-    get_operation_status as ops_get_operation_status, get_volume_manager,
-    list_active_operations as ops_list_active_operations, list_operations as ops_list_operations,
-    move_files_start as ops_move_files_start, pause_all as ops_pause_all, pause_operation as ops_pause_operation,
-    resume_all as ops_resume_all, resume_operation as ops_resume_operation, trash_files_start as ops_trash_files_start,
+    get_operation_status as ops_get_operation_status, list_active_operations as ops_list_active_operations,
+    list_operations as ops_list_operations, move_files_start as ops_move_files_start, pause_all as ops_pause_all,
+    pause_operation as ops_pause_operation, resume_all as ops_resume_all, resume_operation as ops_resume_operation,
+    trash_files_start as ops_trash_files_start,
 };
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -24,6 +24,7 @@ use tokio::time::Duration;
 use crate::commands::util::IpcError;
 use crate::file_system::Volume;
 use crate::file_system::volume::backends::archive;
+use crate::file_system::volume::manager::get_volume_manager;
 use crate::operation_log::types::Initiator;
 
 use super::expand_tilde;

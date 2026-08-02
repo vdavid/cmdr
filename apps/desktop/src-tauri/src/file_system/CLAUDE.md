@@ -10,8 +10,14 @@ Directory listing, file writing, sync status, volume management, and file watchi
   so the index never imports `VolumeManager`).
 - `cloud_actions.rs` (iCloud offline/remove-download), `open_with.rs` (candidate apps + launch), `tags.rs` (macOS
   Finder tags via `_kMDItemUserTags`).
+- `mod.rs` is a facade: it re-exports downward and bootstraps the volume registry (`init_volume_manager`), which is why
+  it may know every backend.
 
 ## Gotchas
+
+- **The volume-manager singleton is `volume::manager::get_volume_manager()`, and ❌ never re-exported from here.** A
+  facade that both re-exports downward and hands out the accessor everything reaches for welds the whole subtree into
+  one cycle, and a per-backend crate can't import a facade at all. `volume/DETAILS.md` § "Key decisions".
 
 - **Transient scratch hides on the listing READ path, never in a watcher** (`staging.rs`): a watcher-side skip strands
   an entry in the pane forever. ❌ Filter nowhere but `listing/operations.rs::visible_entries`. Cmdr's own

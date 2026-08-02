@@ -108,7 +108,7 @@ pub struct RegistryResolver;
 
 impl VolumeResolver for RegistryResolver {
     fn resolve(&self, volume_id: &str) -> Option<std::sync::Arc<dyn Volume>> {
-        crate::file_system::get_volume_manager().get(volume_id)
+        crate::file_system::volume::manager::get_volume_manager().get(volume_id)
     }
 }
 

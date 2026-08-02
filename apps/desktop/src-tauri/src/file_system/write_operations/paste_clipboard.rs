@@ -17,7 +17,8 @@
 use std::path::{Path, PathBuf};
 
 use crate::clipboard::{ClipboardPayload, PastedClipboardFile, payload_to_content};
-use crate::file_system::{VolumeError, get_volume_manager};
+use crate::file_system::VolumeError;
+use crate::file_system::volume::manager::get_volume_manager;
 use crate::operation_log::types::{EntryType, Initiator, OpKind};
 
 use super::conflict::numbered_name;

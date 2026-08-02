@@ -409,7 +409,7 @@ async fn smb_integration_copy_creates_missing_nested_dest() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_compress_local_files_onto_the_share() {
-    use crate::file_system::get_volume_manager;
+    use crate::file_system::volume::manager::get_volume_manager;
     use crate::file_system::write_operations::{CollectorEventSink, ConflictResolution, compress_start};
     use std::io::Read;
     use std::time::Duration;
@@ -545,7 +545,7 @@ async fn smb_integration_a_running_copy_survives_the_volume_being_replaced() {
 
     // What the running operation holds: an `Arc` taken before the swap.
     let dest_vol: Arc<dyn Volume> = smb_vol.clone();
-    let manager = crate::file_system::get_volume_manager();
+    let manager = crate::file_system::volume::manager::get_volume_manager();
     manager.register(&volume_id, Arc::clone(&dest_vol));
 
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));

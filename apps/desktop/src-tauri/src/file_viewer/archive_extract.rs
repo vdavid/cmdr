@@ -136,8 +136,9 @@ pub(super) fn extract_if_archive_inner_with(
     if !is_inner_candidate {
         return Ok(None);
     }
-    let resolved =
-        tauri::async_runtime::block_on(crate::file_system::get_volume_manager().resolve(volume_id, requested));
+    let resolved = tauri::async_runtime::block_on(
+        crate::file_system::volume::manager::get_volume_manager().resolve(volume_id, requested),
+    );
     if !resolved.is_archive {
         return Ok(None);
     }

@@ -3,6 +3,16 @@
 Depth and rationale. `CLAUDE.md` holds the must-knows; this is everything else. Submodule depth lives in each
 submodule's own `DETAILS.md` (`listing/`, `write_operations/`, `volume/`).
 
+## What `mod.rs` is for
+
+`mod.rs` is a facade: it re-exports the listing, write-operation, volume, and watcher surfaces upward, and it owns
+startup wiring that legitimately needs to know every backend (`init_volume_manager`, `register_discovered_volumes`,
+`upgrade_existing_smb_mounts`, the direct-SMB and SMB-concurrency settings).
+
+What it deliberately does NOT own is the volume registry itself. The singleton and `get_volume_manager()` live in
+`volume/manager.rs` beside the type, and call sites import them from there. Reasons, and why a `pub use` shim back into
+this module is the thing to resist: `volume/DETAILS.md` § "Key decisions".
+
 ## Hiding transient scratch (`staging.rs`)
 
 Every write lands on a `.cmdr-tmp-*` sibling and takes its real name by a rename, so a copy makes files appear under

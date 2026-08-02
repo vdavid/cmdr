@@ -254,7 +254,7 @@ async fn predecessor_is_superseded_not_unmounted() {
     use std::sync::atomic::Ordering;
 
     let volume_id = "test-register-replacing-predecessor-replace";
-    let manager = crate::file_system::get_volume_manager();
+    let manager = crate::file_system::volume::manager::get_volume_manager();
 
     let (old_volume, old_hooks) = tracking::TrackingVolume::create("old");
     let (new_volume, new_hooks) = tracking::TrackingVolume::create("new");
@@ -297,7 +297,7 @@ async fn predecessor_is_superseded_not_unmounted() {
 #[tokio::test]
 async fn a_held_volume_reference_keeps_working_across_a_replace() {
     let volume_id = "test-register-replacing-predecessor-held-reference";
-    let manager = crate::file_system::get_volume_manager();
+    let manager = crate::file_system::volume::manager::get_volume_manager();
     manager.unregister(volume_id);
 
     let (old_volume, _) = tracking::TrackingVolume::create("busy");
@@ -439,7 +439,7 @@ async fn upgrading_an_already_direct_volume_costs_nothing() {
     let server = "198.51.100.7";
     let share = "unreachable";
     let volume_id = smb_volume_id(server, 445, share);
-    let manager = crate::file_system::get_volume_manager();
+    let manager = crate::file_system::volume::manager::get_volume_manager();
 
     let (direct, _) =
         tracking::TrackingVolume::create_with_smb_state("already-direct", Some(SmbConnectionState::Direct));
@@ -469,7 +469,7 @@ async fn the_auto_upgrade_path_skips_an_already_direct_volume() {
     let server = "198.51.100.8";
     let share = "unreachable";
     let volume_id = smb_volume_id(server, 445, share);
-    let manager = crate::file_system::get_volume_manager();
+    let manager = crate::file_system::volume::manager::get_volume_manager();
 
     let (direct, _) =
         tracking::TrackingVolume::create_with_smb_state("already-direct-auto", Some(SmbConnectionState::Direct));
@@ -500,7 +500,7 @@ async fn the_auto_upgrade_path_skips_an_already_direct_volume() {
 #[test]
 fn only_a_healthy_direct_volume_short_circuits_the_upgrade() {
     use crate::file_system::volume::SmbConnectionState;
-    let manager = crate::file_system::get_volume_manager();
+    let manager = crate::file_system::volume::manager::get_volume_manager();
 
     for (label, state, expected) in [
         ("direct", Some(SmbConnectionState::Direct), true),
@@ -541,7 +541,7 @@ async fn register_with_no_predecessor_just_registers() {
     use std::sync::atomic::Ordering;
 
     let volume_id = "test-register-replacing-predecessor-fresh";
-    let manager = crate::file_system::get_volume_manager();
+    let manager = crate::file_system::volume::manager::get_volume_manager();
     manager.unregister(volume_id); // belt-and-suspenders in case a prior test leaked.
 
     let (new_volume, new_hooks) = tracking::TrackingVolume::create("fresh");

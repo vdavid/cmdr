@@ -283,10 +283,10 @@ fn diff_includes_add_modify_and_remove_in_one_pass() {
 /// early without one, so it can't be tested directly in unit tests.)
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_handle_directory_change_refreshes_from_volume() {
-    use crate::file_system::get_volume_manager;
     use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
     use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
     use crate::file_system::volume::InMemoryVolume;
+    use crate::file_system::volume::manager::get_volume_manager;
     use crate::file_system::watcher::handle_directory_change;
     use std::path::PathBuf;
     use std::sync::Arc;
@@ -351,10 +351,10 @@ async fn test_handle_directory_change_refreshes_from_volume() {
 /// on a remote volume that the watcher detected).
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_handle_directory_change_detects_new_entries() {
-    use crate::file_system::get_volume_manager;
     use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
     use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
     use crate::file_system::volume::InMemoryVolume;
+    use crate::file_system::volume::manager::get_volume_manager;
     use crate::file_system::watcher::handle_directory_change;
     use std::path::PathBuf;
     use std::sync::Arc;

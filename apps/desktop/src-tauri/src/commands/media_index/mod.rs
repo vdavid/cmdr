@@ -126,7 +126,7 @@ fn resolve_enabled_volumes(volume_ids: &[String]) -> (Vec<(String, String)>, boo
     use cmdr_index::media_index::network::config as network_config;
     let kinds: std::collections::HashMap<String, IndexVolumeKind> =
         crate::index_host::index().ready_volumes().into_iter().collect();
-    let mounts: std::collections::HashMap<String, String> = crate::file_system::get_volume_manager()
+    let mounts: std::collections::HashMap<String, String> = crate::file_system::volume::manager::get_volume_manager()
         .list_volumes_with_handles()
         .into_iter()
         .map(|(id, vol)| (id, vol.root().to_string_lossy().into_owned()))

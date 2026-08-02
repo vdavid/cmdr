@@ -4,8 +4,8 @@ use crate::file_system::Volume;
 use crate::file_system::{
     OperationEventSink, ScanConflict, TauriEventSink, VolumeCopyConfig, VolumeCopyScanResult, WriteOperationError,
     WriteOperationStartResult, compress_start as ops_compress_start, copy_between_volumes as ops_copy_between_volumes,
-    get_volume_manager, move_between_volumes as ops_move_between_volumes,
-    route_archive_copy_into as ops_route_archive_copy_into, scan_for_volume_copy as ops_scan_for_volume_copy,
+    move_between_volumes as ops_move_between_volumes, route_archive_copy_into as ops_route_archive_copy_into,
+    scan_for_volume_copy as ops_scan_for_volume_copy,
 };
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -13,6 +13,7 @@ use tokio::time::Duration;
 
 use crate::commands::util::{IpcError, timeout_detached};
 use crate::file_system::volume::backends::archive;
+use crate::file_system::volume::manager::get_volume_manager;
 use crate::operation_log::types::Initiator;
 
 /// Expands a leading `~` in the destination path when the destination is a local
@@ -427,8 +428,8 @@ mod tests {
 
     #[tokio::test]
     async fn resolve_source_treats_the_zip_file_itself_as_a_plain_file() {
-        use crate::file_system::get_volume_manager;
         use crate::file_system::volume::LocalPosixVolume;
+        use crate::file_system::volume::manager::get_volume_manager;
         use std::sync::Arc;
 
         let dir = tempfile::tempdir().expect("tempdir");

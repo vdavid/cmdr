@@ -22,10 +22,10 @@ use super::super::types::{
 };
 use super::engine::{MutatorHooks, PlanError, delete_move_sources, run_managed_edit, to_write_error};
 use super::routing::{ensure_zip_writable, normalize_inner_path, read_only_error};
-use crate::file_system::get_volume_manager;
 use crate::file_system::volume::LaneKey;
 use crate::file_system::volume::backends::archive;
 use crate::file_system::volume::backends::archive::mutator::{self, Changeset, MutationError};
+use crate::file_system::volume::manager::get_volume_manager;
 
 /// Everything the driver needs to run one archive edit.
 pub(crate) struct ArchiveEditRequest {

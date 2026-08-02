@@ -14,7 +14,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use super::caching::try_get_watched_listing;
 use super::caching_test_support::{TestListing, TestListingGuard, unique_test_id};
 use super::metadata::FileEntry;
-use crate::file_system::get_volume_manager;
+use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{
     BatchScanResult, CopyScanResult, InMemoryVolume, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError,
     VolumeReadStream,

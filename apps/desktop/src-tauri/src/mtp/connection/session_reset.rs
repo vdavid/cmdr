@@ -334,7 +334,9 @@ mod device_tests {
         );
 
         assert!(
-            crate::file_system::get_volume_manager().get(&volume_id).is_some(),
+            crate::file_system::volume::manager::get_volume_manager()
+                .get(&volume_id)
+                .is_some(),
             "the device is still attached, so its volume must stay registered",
         );
 
@@ -416,7 +418,9 @@ mod device_tests {
             "the device never left, so nothing may run the disconnect teardown",
         );
         assert!(
-            crate::file_system::get_volume_manager().get(&volume_id).is_some(),
+            crate::file_system::volume::manager::get_volume_manager()
+                .get(&volume_id)
+                .is_some(),
             "the volume must stay in the sidebar throughout the recovery",
         );
         assert!(

@@ -20,11 +20,11 @@ pub struct AppVolumeProvider;
 
 impl VolumeProvider for AppVolumeProvider {
     fn get(&self, volume_id: &str) -> Option<Arc<dyn Volume>> {
-        super::get_volume_manager().get(volume_id)
+        super::volume::manager::get_volume_manager().get(volume_id)
     }
 
     fn volume_ids(&self) -> Vec<String> {
-        super::get_volume_manager()
+        super::volume::manager::get_volume_manager()
             .list_volumes()
             .into_iter()
             .map(|(id, _name)| id)
@@ -32,7 +32,7 @@ impl VolumeProvider for AppVolumeProvider {
     }
 
     fn mount_id_for_path(&self, path: &str) -> Option<String> {
-        super::get_volume_manager().mount_id_for_path(path)
+        super::volume::manager::get_volume_manager().mount_id_for_path(path)
     }
 
     fn mount_facts(&self, path: &Path) -> MountFacts {

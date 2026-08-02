@@ -9,7 +9,7 @@ use crate::file_system::{
     find_file_indices as ops_find_file_indices,
     fuzzy_find_first_match_in_listing as ops_fuzzy_find_first_match_in_listing, get_file_at as ops_get_file_at,
     get_file_range as ops_get_file_range, get_listing_stats as ops_get_listing_stats,
-    get_total_count as ops_get_total_count, get_volume_manager, list_directory_end as ops_list_directory_end,
+    get_total_count as ops_get_total_count, list_directory_end as ops_list_directory_end,
     list_directory_start_streaming as ops_list_directory_start_streaming,
     list_directory_start_with_volume as ops_list_directory_start_with_volume,
     refresh_listing_index_sizes as ops_refresh_listing_index_sizes, resort_listing as ops_resort_listing,
@@ -19,6 +19,7 @@ use tokio::time::Duration;
 
 use crate::commands::util::{IpcError, TimedOut, blocking_result_with_timeout, blocking_with_timeout_flag};
 use crate::file_system::validation::{MAX_NAME_BYTES, MAX_PATH_BYTES};
+use crate::file_system::volume::manager::get_volume_manager;
 
 use super::expand_tilde;
 
@@ -492,10 +493,10 @@ mod refresh_listing_tests {
     //! `LISTING_CACHE` and `VolumeManager`, then we call `refresh_listing` and
     //! assert `list_directory` was or wasn't invoked.
     use super::*;
-    use crate::file_system::get_volume_manager;
     use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
     use crate::file_system::listing::metadata::FileEntry;
     use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
+    use crate::file_system::volume::manager::get_volume_manager;
     use crate::file_system::volume::{InMemoryVolume, Volume, VolumeError};
     use std::future::Future;
     use std::path::Path;

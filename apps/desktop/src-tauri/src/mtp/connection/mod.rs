@@ -44,7 +44,8 @@ use tauri_specta::Event;
 use tokio::sync::{Mutex, broadcast};
 
 use super::types::{MtpDeviceInfo, MtpStorageInfo};
-use crate::file_system::{MtpVolume, get_volume_manager};
+use crate::file_system::MtpVolume;
+use crate::file_system::volume::manager::get_volume_manager;
 
 /// Per-USB-transfer timeout handed to mtp-rs, the ONE bound that can stop a
 /// stuck device without abandoning anything.

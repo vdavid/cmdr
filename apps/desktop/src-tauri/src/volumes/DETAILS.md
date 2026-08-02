@@ -152,7 +152,7 @@ a stable machine identifier ("apfs", "smbfs", "nfs") that matches against the kn
 IPC compatibility without a frontend migration.
 
 **Gotcha**: The watcher registers/unregisters volumes with `VolumeManager` directly (tight coupling to
-`file_system::get_volume_manager()`).
+`file_system::volume::manager::get_volume_manager()`).
 **Why**: A mounting volume must be immediately available for file operations. Emitting only a Tauri event and letting the
 frontend trigger registration would open a race window where ops fail because the volume isn't registered yet. Direct
 registration ensures that by the time the frontend gets `volume-mounted`, the volume is usable.
@@ -177,4 +177,4 @@ future macOS version breaks it.
 ## Dependencies
 
 - External: `dirs`, `objc2`, `objc2_foundation`, `objc2_app_kit` (`NSWorkspace`), `block2` (`RcBlock`).
-- Internal: `crate::file_system::{get_volume_manager, volume::LocalPosixVolume}`, `crate::icons::get_icon_for_path`.
+- Internal: `crate::file_system::volume::{manager::get_volume_manager, LocalPosixVolume}`, `crate::icons::get_icon_for_path`.

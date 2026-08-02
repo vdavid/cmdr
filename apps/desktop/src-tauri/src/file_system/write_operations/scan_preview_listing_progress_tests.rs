@@ -25,8 +25,8 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use super::scan_preview::run_oracle_aware_batch_scan;
-use crate::file_system::get_volume_manager;
 use crate::file_system::listing::metadata::FileEntry;
+use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{
     BatchScanResult, CopyScanResult, InMemoryVolume, ListingProgress, Volume, VolumeError,
 };

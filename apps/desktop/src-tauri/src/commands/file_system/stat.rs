@@ -72,7 +72,7 @@ pub async fn stat_paths_kinds(paths: Vec<String>) -> TimedOut<Vec<Option<bool>>>
             {
                 continue;
             }
-            let resolved = crate::file_system::get_volume_manager()
+            let resolved = crate::file_system::volume::manager::get_volume_manager()
                 .resolve(crate::file_system::volume::DEFAULT_VOLUME_ID, Path::new(path))
                 .await;
             if let Some(volume) = resolved.volume

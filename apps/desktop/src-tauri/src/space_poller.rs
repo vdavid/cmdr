@@ -27,8 +27,8 @@ use std::time::Duration;
 use tauri::AppHandle;
 use tauri_specta::Event;
 
-use crate::file_system::get_volume_manager;
 use crate::file_system::volume::DEFAULT_VOLUME_ID;
+use crate::file_system::volume::manager::get_volume_manager;
 
 /// Global app handle for emitting events.
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
