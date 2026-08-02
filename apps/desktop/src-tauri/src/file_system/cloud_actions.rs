@@ -138,48 +138,43 @@ pub fn request_download(_path: &Path) -> Result<(), String> {
 mod tests {
     use super::*;
 
-    fn set_test_home() {
-        // SAFETY: tests run sequentially in the same process; setting HOME during
-        // the test is fine because we only read it from these helpers.
-        unsafe {
-            std::env::set_var("HOME", "/Users/test");
-        }
+    /// The real home directory, which is what `is_in_icloud_drive` resolves.
+    ///
+    /// ❌ Don't reintroduce `env::set_var("HOME", ...)` to fake this. The
+    /// environment is process-wide, so under a plain `cargo test` (threads, one
+    /// process) it poisons every concurrently-running test that resolves a home
+    /// path — `favorites::store`'s defaults and `go_to_path` among them — and
+    /// mutating the environment while other threads read it is UB besides.
+    /// Building the fixtures from the real home tests the same comparison.
+    fn home() -> PathBuf {
+        dirs::home_dir().expect("a home directory")
     }
 
     #[test]
     fn is_in_icloud_drive_matches_icloud() {
-        set_test_home();
-        assert!(is_in_icloud_drive(Path::new(
-            "/Users/test/Library/Mobile Documents/com~apple~CloudDocs/foo.txt"
-        )));
-        assert!(is_in_icloud_drive(Path::new(
-            "/Users/test/Library/Mobile Documents/com~apple~CloudDocs/sub/folder/x"
-        )));
+        let icloud = home().join(ICLOUD_DRIVE_SUBPATH);
+        assert!(is_in_icloud_drive(&icloud.join("foo.txt")));
+        assert!(is_in_icloud_drive(&icloud.join("sub/folder/x")));
     }
 
     #[test]
     fn is_in_icloud_drive_excludes_third_party() {
-        set_test_home();
         // Third-party clouds aren't iCloud, so eviction APIs don't apply.
-        assert!(!is_in_icloud_drive(Path::new(
-            "/Users/test/Library/CloudStorage/Dropbox/foo.txt"
-        )));
-        assert!(!is_in_icloud_drive(Path::new(
-            "/Users/test/Library/CloudStorage/GoogleDrive-me@example.com/sub/file"
-        )));
-        assert!(!is_in_icloud_drive(Path::new(
-            "/Users/test/Library/CloudStorage/OneDrive-Personal/x"
-        )));
+        let cloud_storage = home().join("Library/CloudStorage");
+        assert!(!is_in_icloud_drive(&cloud_storage.join("Dropbox/foo.txt")));
+        assert!(!is_in_icloud_drive(
+            &cloud_storage.join("GoogleDrive-me@example.com/sub/file")
+        ));
+        assert!(!is_in_icloud_drive(&cloud_storage.join("OneDrive-Personal/x")));
     }
 
     #[test]
     fn is_in_icloud_drive_negative() {
-        set_test_home();
-        assert!(!is_in_icloud_drive(Path::new("/Users/test/Documents/foo.txt")));
+        assert!(!is_in_icloud_drive(&home().join("Documents/foo.txt")));
         assert!(!is_in_icloud_drive(Path::new("/tmp/foo.txt")));
-        // Path that contains the substring but isn't actually under it
-        assert!(!is_in_icloud_drive(Path::new(
-            "/Users/test/Other/Library/Mobile Documents/com~apple~CloudDocs/foo"
-        )));
+        // Contains the subpath but isn't actually under it.
+        assert!(!is_in_icloud_drive(
+            &home().join("Other").join(ICLOUD_DRIVE_SUBPATH).join("foo")
+        ));
     }
 }

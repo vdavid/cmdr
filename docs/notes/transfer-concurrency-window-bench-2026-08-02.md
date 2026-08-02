@@ -465,10 +465,10 @@ the table (2026-08-02). Recorded here as a fact, ❌ not as a proposal: the next
 
 ## The merge case (listing-answered pre-check): shipped, NOT measured
 
-The listing-answered pre-check (`dest_name_index.rs`, commit `28fd62a37`) extends the win to a copy into a
-PRE-EXISTING destination — the ordinary F5 flow, and the case the created-directory skip above never touches. It is
-correct by test and **unmeasured by benchmark**: the agent that built it died before running the NAS sweep, and the
-after-number was never captured.
+The listing-answered pre-check (`dest_name_index.rs`, commit `28fd62a37`) extends the win to a copy into a PRE-EXISTING
+destination — the ordinary F5 flow, and the case the created-directory skip above never touches. It is correct by test
+and **unmeasured by benchmark**: the agent that built it died before running the NAS sweep, and the after-number was
+never captured.
 
 What is evidenced:
 

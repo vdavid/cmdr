@@ -24,8 +24,8 @@ and rises with every backend added first.
 
 `cargo modules dependencies --lib --package <p> --no-fns --no-types --no-traits --no-owns --no-externs --no-sysroot`
 emits DOT; nodes are modules and edges are `use` dependencies. Runtime is ~19 s for the 240k-line app crate. Cycle
-detection runs on the filtered DOT (Tarjan). Scratch scripts:
-`scratchpad/{cycles.py,analyze.py,scc2.py}` in the session tmp dir; recreate them, they aren't tracked.
+detection runs on the filtered DOT (Tarjan). Scratch scripts: `scratchpad/{cycles.py,analyze.py,scc2.py}` in the session
+tmp dir; recreate them, they aren't tracked.
 
 **Trap 1: `--acyclic` is unusable.** It runs BEFORE the filters, so it always trips on a type and its own method
 (`TarCodec` ↔ `TarCodec::fmt`). Do cycle detection yourself on the filtered graph.
@@ -98,9 +98,8 @@ Replace the top-level `use super::*` in the non-test files listed above with exp
 compiler names every missing symbol. Leave `use super::*` inside `#[cfg(test)] mod tests` blocks alone, that's the
 idiomatic test pattern and it doesn't affect the production graph.
 
-**Verify:** re-run the SCC analysis and confirm the `smb::*` (10), `indexing::store::*` (4), and
-`reconciler::rescan*` (3) groups disappear, and that `volumes` drops from 8 to 2. If any survives, it was real, and it
-belongs on this list.
+**Verify:** re-run the SCC analysis and confirm the `smb::*` (10), `indexing::store::*` (4), and `reconciler::rescan*`
+(3) groups disappear, and that `volumes` drops from 8 to 2. If any survives, it was real, and it belongs on this list.
 
 **Checks:** `pnpm check rust -q`. **Docs:** none.
 
@@ -141,19 +140,20 @@ tokens under `write_operations/` are four doc comments (`scan_preview.rs:68,674`
 1. **`query_builder → commands::search` (kills a 3-cycle).** `search/ai/query_builder.rs:6` imports `TranslateDisplay`
    and `TranslatedQuery`, pure serialization DTOs at `commands/search.rs:164-194` (no methods). Move both to
    `search/ai/types.rs`, `pub use` from `commands/search.rs` so `commands/search.rs:152,153,317,330` and `ipc.rs` are
-   untouched. **specta names types by struct identity, not module, so `bindings.ts` is byte-identical** — `bindings-fresh`
-   should stay green, and if it doesn't, something else moved. ~45 lines. This is the only edge in the app crate
-   pointing INTO the IPC layer from below; cutting it makes "nothing depends on `commands`" a statable invariant.
+   untouched. **specta names types by struct identity, not module, so `bindings.ts` is byte-identical** —
+   `bindings-fresh` should stay green, and if it doesn't, something else moved. ~45 lines. This is the only edge in the
+   app crate pointing INTO the IPC layer from below; cutting it makes "nothing depends on `commands`" a statable
+   invariant.
 2. **Identity types out of the registry** (index engine cluster 1). `paths/routing.rs:27`,
-   `lifecycle/lifecycle_bus.rs:37`, and `lifecycle/network_scan.rs:18` import `lifecycle::state` **only** for
-   `VolumeId` (`state.rs:47`), `ROOT_VOLUME_ID` (`state.rs:51`), and `IndexVolumeKind` (`state.rs:589`, whose entire
-   impl is five pure `matches!` predicates at `state.rs:606-655`). Move all three to a new leaf `indexing/volume.rs`,
-   next to `metadata.rs` — `indexing/CLAUDE.md:53` already documents that file as exactly this pattern. Both public
-   items are already re-exported at `lib.rs:96`, so the public API doesn't move. ~50 lines, ~14 import sites.
+   `lifecycle/lifecycle_bus.rs:37`, and `lifecycle/network_scan.rs:18` import `lifecycle::state` **only** for `VolumeId`
+   (`state.rs:47`), `ROOT_VOLUME_ID` (`state.rs:51`), and `IndexVolumeKind` (`state.rs:589`, whose entire impl is five
+   pure `matches!` predicates at `state.rs:606-655`). Move all three to a new leaf `indexing/volume.rs`, next to
+   `metadata.rs` — `indexing/CLAUDE.md:53` already documents that file as exactly this pattern. Both public items are
+   already re-exported at `lib.rs:96`, so the public API doesn't move. ~50 lines, ~14 import sites.
 3. **Event and path helpers to leaves** (index engine cluster 3). `emit_dir_updated` (`reconcile/reconciler.rs:1627`, a
-   3-line `events.emit(IndexEvent::DirsUpdated{..})` wrapper) → `events/`. `with_ancestor_closure` (`reconciler.rs:1588`),
-   `collect_ancestor_paths`, and `compute_parent_path` (pure path arithmetic) → `paths/path_prefix.rs`. Nine call sites.
-   Bonus: shrinks `reconciler.rs` (1,634 lines, allowlisted).
+   3-line `events.emit(IndexEvent::DirsUpdated{..})` wrapper) → `events/`. `with_ancestor_closure`
+   (`reconciler.rs:1588`), `collect_ancestor_paths`, and `compute_parent_path` (pure path arithmetic) →
+   `paths/path_prefix.rs`. Nine call sites. Bonus: shrinks `reconciler.rs` (1,634 lines, allowlisted).
 
 **Docs:** `indexing/CLAUDE.md` module map, `search/DETAILS.md`. **Checks:** `pnpm check -q` per item, full at the end.
 
@@ -162,8 +162,9 @@ tokens under `write_operations/` are four doc comments (`scan_preview.rs:68,674`
 **Intent:** finish a refactor already in flight. This is residue from the recent `EventSink` work and it regrows if
 left, because the next media event payload lands in `media_index::events` for the same reason.
 
-1. Move `ActivityPhase`, `MemoryWatchdogAction`, `RescanReason`, and `ScanRunKind` (`indexing/events/mod.rs:37,82,107,120`)
-   into a leaf `indexing/events/kinds.rs`; `mod.rs` and `sink.rs` both import down. ~95 lines. Cuts `sink.rs:25`.
+1. Move `ActivityPhase`, `MemoryWatchdogAction`, `RescanReason`, and `ScanRunKind`
+   (`indexing/events/mod.rs:37,82,107,120`) into a leaf `indexing/events/kinds.rs`; `mod.rs` and `sink.rs` both import
+   down. ~95 lines. Cuts `sink.rs:25`.
 2. Move `MediaEnrichTerminalReason` (`media_index/events.rs:40`) into `sink.rs` beside the `IndexEvent` variant carrying
    it; re-export from `media_index::events` for the ~20 scheduler call sites. ~40 lines. Cuts `sink.rs:23`.
 
@@ -186,8 +187,8 @@ half is called by the writer. The cycle is that they share a file.
 1. **Move `parent_dir`** (`scheduler/enrich.rs:320-325`, a 5-line pure string helper used by nine files) to a leaf
    (`media_index/paths.rs`, or `cmdr_fs`). This alone kills `writer → enrich` (`writer/mod.rs:65`).
 2. **Split `coverage.rs`** (660 lines; `media_index/coverage/` already exists holding `tests.rs`) along its own section
-   divider into `coverage/eligible.rs` (~400), `coverage/accounted.rs` (~220), and `coverage/mod.rs` keeping the
-   joining facade `folder_coverage` + `FolderCoverageCounts` + `covered_for_volume` + `StoredPartition`. `coverage/tests.rs`
+   divider into `coverage/eligible.rs` (~400), `coverage/accounted.rs` (~220), and `coverage/mod.rs` keeping the joining
+   facade `folder_coverage` + `FolderCoverageCounts` + `covered_for_volume` + `StoredPartition`. `coverage/tests.rs`
    splits along the same seam.
 3. Optional: move `UpsertAnalysis` (`writer/mod.rs:164`) to `writer/types.rs`, cutting the `writer ↔ upsert` 2-cycle.
 
@@ -243,7 +244,7 @@ in `IndexInstance`. That's a genuine two-way loop, not an import accident.
    `watch/event_loop/verification.rs:99`.
 
 ~200 lines. Combined with M2.2 this is what takes 23 → 7 and 6; **neither works alone** (21 and 22 respectively). They
-are the same rule stated twice: *nothing below `lifecycle` may import `lifecycle::state`*.
+are the same rule stated twice: _nothing below `lifecycle` may import `lifecycle::state`_.
 
 **This touches a documented decision.** `lifecycle/CLAUDE.md:20-21` records "Root is special-cased to module globals…
 non-root handles live only in the instance" as deliberate. Two invariants must survive: the invalidate-before-DB-delete
@@ -293,7 +294,8 @@ M0 gates everything. After that:
 - **The graph lies if the globs come back.** A future `use super::*` silently re-inflates an SCC and the check reports a
   cycle that doesn't exist. Mitigation: M0, plus the traps recorded in `DETAILS.md`.
 - **Chasing the artifacts.** Roughly 16 groups are idiomatic parent/child and four more are pure glob noise. Someone
-  reading a raw cycle count will want to fix all 44. Mitigation: Decision 1 (ratchet on max SCC size), and the Non-goals.
+  reading a raw cycle count will want to fix all 44. Mitigation: Decision 1 (ratchet on max SCC size), and the
+  Non-goals.
 
 ## What we are NOT doing, and why it's tempting
 

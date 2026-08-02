@@ -346,21 +346,32 @@ fn dispatch_routes_each_mode() {
 
 #[test]
 fn tilde_in_a_path_expands_to_home() {
-    // SAFETY: single-threaded test; set HOME so `~` resolves deterministically.
-    unsafe { std::env::set_var("HOME", "/Users/test") };
+    // Seeds the row from the REAL home rather than setting `HOME` to a fake one.
+    // ❌ Don't reintroduce `env::set_var("HOME", ...)`: the environment is
+    // process-wide, so under a plain `cargo test` (threads, one process) it
+    // poisons every concurrently-running test that resolves a home path —
+    // `favorites::store`'s defaults and `go_to_path` among them — and mutating
+    // the environment while other threads read it is UB besides. Reading the
+    // real home costs nothing and tests the same expansion.
+    let home = dirs::home_dir().expect("a home directory");
+    let downloads = home.join("Downloads");
     let now = 1_000_000;
     let dir = tempfile::tempdir().expect("temp dir");
     write_db(
         dir.path(),
         "root",
-        &[("/Users/test/Downloads", scored_signals(PathClass::UserContent, now))],
+        &[(
+            downloads.to_str().expect("home path is UTF-8"),
+            scored_signals(PathClass::UserContent, now),
+        )],
         now,
     );
 
     let snapshot = snapshot_path(dir.path(), "~/Downloads", now);
     assert!(
         matches!(snapshot, PathImportance::Scored { .. }),
-        "~/Downloads resolves to the scored /Users/test/Downloads, got {snapshot:?}"
+        "~/Downloads resolves to the scored {}, got {snapshot:?}",
+        downloads.display()
     );
 }
 
