@@ -282,6 +282,146 @@
                             ></span
                         >
                         <span class="smb-value">{fmtNum(p.credits.next_message_id)}</span>
+
+                        <span class="smb-label"
+                            >Send queue <span
+                                class="info-icon"
+                                use:tooltip={{
+                                    text: 'Frames handed to smb2’s writer task and not yet written to the socket. Steadily non-zero while “Sent” bytes stand still is a stuck send side — the wedge is on our side of the wire, and the server was never asked.',
+                                }}>i</span
+                            ></span
+                        >
+                        <span class="smb-value">{fmtNum(p.credits.send_queue_depth)}</span>
+
+                        <span class="smb-label"
+                            >Credit waits <span
+                                class="info-icon"
+                                use:tooltip={{
+                                    text: 'Sends that parked because every granted credit was already in flight. A trickle is normal on a saturated pipeline; a flood means the server’s window is small relative to our chunk size, so throughput is bounded by credits rather than the network.',
+                                }}>i</span
+                            ></span
+                        >
+                        <span class="smb-value">{fmtNum(m.credit_waits)}</span>
+
+                        <span class="smb-label"
+                            >Starvations <span
+                                class="info-icon"
+                                use:tooltip={{
+                                    text: 'Sends that gave up waiting for a grant that never came (Error::CreditStarvation). A subset of credit waits — don’t sum them. Non-zero means the server stopped answering while its socket stayed up.',
+                                }}>i</span
+                            ></span
+                        >
+                        <span class="smb-value smb-value-err" class:smb-zero={m.credit_starvations === 0}
+                            >{fmtNum(m.credit_starvations)}</span
+                        >
+                    </div>
+                </div>
+
+                <!-- Deadlines and keepalive: the "slow vs. dead" panel -->
+                <div class="smb-card">
+                    <div class="smb-card-title">Deadlines and keepalive</div>
+                    <div class="smb-card-grid">
+                        <span class="smb-label"
+                            >Probes sent <span
+                                class="info-icon"
+                                use:tooltip={{
+                                    text: 'SMB2 ECHO probes the keepalive put on the wire. Zero on a healthy busy connection, and that’s correct: probing only starts once the server goes quiet with work outstanding, since responses flowing are already proof of life.',
+                                }}>i</span
+                            ></span
+                        >
+                        <span class="smb-value">{fmtNum(m.keepalive_probes_sent)}</span>
+
+                        <span class="smb-label"
+                            >Probes skipped <span
+                                class="info-icon"
+                                use:tooltip={{
+                                    text: 'Probe rounds that asked the server nothing (no credit on hand), so they’re evidence of nothing. A steady stream means the window is fully spent whenever the server goes quiet, which leaves the connection without a liveness signal.',
+                                }}>i</span
+                            ></span
+                        >
+                        <span class="smb-value">{fmtNum(m.keepalive_probes_skipped)}</span>
+
+                        <span class="smb-label"
+                            >Probes unanswered <span
+                                class="info-icon"
+                                use:tooltip={{
+                                    text: 'Probes that reached the wire and never came back. NOT a death count: a busy NAS drops ECHO probes precisely while it writes. All a dropped probe costs is the deadline extension it would have earned. Watch it next to “Deadline extensions”.',
+                                }}>i</span
+                            ></span
+                        >
+                        <span class="smb-value">{fmtNum(m.keepalive_failures)}</span>
+
+                        <span class="smb-label"
+                            >Deadline extensions <span
+                                class="info-icon"
+                                use:tooltip={{
+                                    text: 'Requests that went past the response deadline without being abandoned, because an ECHO had just proven the server alive. Each one is a slow-but-healthy operation the deadline alone would have killed — a large write to a loaded NAS, typically.',
+                                }}>i</span
+                            ></span
+                        >
+                        <span class="smb-value">{fmtNum(m.response_deadline_extensions)}</span>
+
+                        <span class="smb-label"
+                            >Response timeouts <span
+                                class="info-icon"
+                                use:tooltip={{
+                                    text: 'Requests abandoned because the server went silent past the response deadline. The clock measures total silence, not slowness — every interim STATUS_PENDING restarts it — so this is a server that said nothing at all, not one that took its time.',
+                                }}>i</span
+                            ></span
+                        >
+                        <span class="smb-value smb-value-err" class:smb-zero={m.response_timeouts === 0}
+                            >{fmtNum(m.response_timeouts)}</span
+                        >
+
+                        <span class="smb-label"
+                            >Send failures <span
+                                class="info-icon"
+                                use:tooltip={{
+                                    text: 'Frames the transport refused to write: a send that timed out or errored. Non-zero means the request never reached the server, so nothing about the server follows from it — read this before blaming the NAS.',
+                                }}>i</span
+                            ></span
+                        >
+                        <span class="smb-value smb-value-err" class:smb-zero={m.send_failures === 0}
+                            >{fmtNum(m.send_failures)}</span
+                        >
+                    </div>
+                </div>
+
+                <!-- smb2's own reconnects (Cmdr runs auto_reconnect: false, so these stay at zero) -->
+                <div class="smb-card">
+                    <div class="smb-card-title">Session revivals</div>
+                    <div class="smb-card-grid">
+                        <span class="smb-label"
+                            >Attempts <span
+                                class="info-icon"
+                                use:tooltip={{
+                                    text: 'Dials smb2 made trying to revive this connection in place. Cmdr runs its own reconnect state machine and sets auto_reconnect: false, so these stay at zero unless that changes.',
+                                }}>i</span
+                            ></span
+                        >
+                        <span class="smb-value">{fmtNum(m.reconnect_attempts)}</span>
+
+                        <span class="smb-label"
+                            >Succeeded <span
+                                class="info-icon"
+                                use:tooltip={{
+                                    text: 'Revivals that ended with a live, authenticated session on a fresh socket. The after-the-fact answer to “was this link quietly flaky?” — non-zero means a transfer survived something the user never saw.',
+                                }}>i</span
+                            ></span
+                        >
+                        <span class="smb-value">{fmtNum(m.reconnects_succeeded)}</span>
+
+                        <span class="smb-label"
+                            >Failed <span
+                                class="info-icon"
+                                use:tooltip={{
+                                    text: 'Revivals that ran out of the reconnect policy’s budget, each surfaced to its caller as Error::ReconnectFailed.',
+                                }}>i</span
+                            ></span
+                        >
+                        <span class="smb-value smb-value-err" class:smb-zero={m.reconnects_failed === 0}
+                            >{fmtNum(m.reconnects_failed)}</span
+                        >
                     </div>
                 </div>
 

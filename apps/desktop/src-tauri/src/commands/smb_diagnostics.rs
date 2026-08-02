@@ -13,6 +13,19 @@
 //! 2. We can pick a TS-friendly shape (e.g. `Duration` → milliseconds as
 //!    `u64`, enums as `String`) without leaking Rust's `std::time::Duration`
 //!    JSON shape (`{secs, nanos}`) to the frontend.
+//!
+//! **The mirror doesn't catch up by itself.** Every smb2 diagnostics type is
+//! `#[non_exhaustive]`, so a release that adds counters compiles here unchanged
+//! and the dashboard silently keeps showing the old set — which is how the panel
+//! sat three releases behind. When bumping smb2, diff its `MetricsSnapshot` /
+//! `CreditInfo` against the DTOs below and carry the new fields through to
+//! `DebugSmbDiagnosticsPanel.svelte` too.
+//!
+//! **Known gap**: `ConnectionDiagnostics::outstanding` (the in-flight request
+//! table, with `sent_age` — the field that named the 2026-07-31 wedge) is not
+//! mirrored, because it needs a table in the panel rather than another number.
+//! Cmdr's own `transfer_probe` dump covers the transfer side of the same
+//! question in the meantime.
 
 use crate::file_system::SmbVolume;
 use crate::file_system::get_volume_manager;
@@ -85,6 +98,10 @@ pub struct CreditInfoDto {
     pub available: u16,
     pub in_flight: u32,
     pub next_message_id: u64,
+    /// Frames handed to smb2's writer task and not yet written. Steadily
+    /// non-zero while `wire_bytes_sent` stands still is a stuck send side —
+    /// the wedge is on OUR side of the wire, not the server's.
+    pub send_queue_depth: u32,
 }
 
 #[derive(Debug, Clone, serde::Serialize, specta::Type)]
@@ -139,6 +156,51 @@ pub struct MetricsSnapshotDto {
     pub malformed_frames: u64,
     pub session_expired_events: u64,
     pub requests_returned_err: u64,
+
+    // Flow control and deadlines. These are the numbers that name a wedge:
+    // where a transfer stopped, and on whose side of the wire.
+    /// Sends that parked because every granted credit was already in flight. A
+    /// trickle is normal on a saturated pipeline; a flood means the server's
+    /// window is small relative to our chunk size.
+    pub credit_waits: u64,
+    /// Sends that gave up waiting for a grant. Subset of `credit_waits`; don't
+    /// sum. Non-zero means a server stopped answering with its socket still up.
+    pub credit_starvations: u64,
+    /// Requests abandoned because the server went silent past the response
+    /// deadline. Counts total SILENCE, not slowness: every interim
+    /// `STATUS_PENDING` restarts the clock.
+    pub response_timeouts: u64,
+    /// Frames the transport refused to write (a send that timed out or
+    /// errored). Non-zero means the request never reached the server, so
+    /// nothing about the server follows from it.
+    pub send_failures: u64,
+
+    // The ECHO keepalive: what tells "slow" apart from "dead".
+    /// ECHO probes put on the wire. Zero on a healthy busy connection and that
+    /// is correct — probing only starts once the wire goes quiet with work
+    /// outstanding.
+    pub keepalive_probes_sent: u64,
+    /// Probe rounds that asked nothing (no credit on hand), so they are
+    /// evidence of nothing.
+    pub keepalive_probes_skipped: u64,
+    /// Probes that reached the wire and went unanswered. ❌ NOT a death count:
+    /// a busy NAS drops probes precisely while it writes. The only thing a
+    /// dropped probe costs is the deadline extension it would have earned.
+    pub keepalive_failures: u64,
+    /// Requests that outlived the response deadline and were NOT abandoned,
+    /// because an ECHO had just proven the server alive. Each tick is a
+    /// slow-but-healthy operation the deadline alone would have killed.
+    pub response_deadline_extensions: u64,
+
+    // Reconnects. smb2's own, which Cmdr does not arm today
+    // (`auto_reconnect: false`) — so these read zero unless that changes.
+    /// Dials made trying to bring this connection back, across every revival.
+    pub reconnect_attempts: u64,
+    /// Revivals that ended with a live, authenticated session. The
+    /// after-the-fact answer to "was this link quietly flaky?".
+    pub reconnects_succeeded: u64,
+    /// Revivals that gave up.
+    pub reconnects_failed: u64,
 }
 
 // ── Conversions ───────────────────────────────────────────────────────
@@ -179,6 +241,7 @@ impl From<smb2::ConnectionDiagnostics> for ConnectionDiagnosticsDto {
                 available: c.credits.available,
                 in_flight: c.credits.in_flight as u32,
                 next_message_id: c.credits.next_message_id,
+                send_queue_depth: c.credits.send_queue_depth as u32,
             },
             signing: SigningInfoDto {
                 active: c.signing.active,
@@ -214,6 +277,17 @@ impl From<smb2::ConnectionDiagnostics> for ConnectionDiagnosticsDto {
                 malformed_frames: c.metrics.malformed_frames,
                 session_expired_events: c.metrics.session_expired_events,
                 requests_returned_err: c.metrics.requests_returned_err,
+                credit_waits: c.metrics.credit_waits,
+                credit_starvations: c.metrics.credit_starvations,
+                response_timeouts: c.metrics.response_timeouts,
+                send_failures: c.metrics.send_failures,
+                keepalive_probes_sent: c.metrics.keepalive_probes_sent,
+                keepalive_probes_skipped: c.metrics.keepalive_probes_skipped,
+                keepalive_failures: c.metrics.keepalive_failures,
+                response_deadline_extensions: c.metrics.response_deadline_extensions,
+                reconnect_attempts: c.metrics.reconnect_attempts,
+                reconnects_succeeded: c.metrics.reconnects_succeeded,
+                reconnects_failed: c.metrics.reconnects_failed,
             },
         }
     }

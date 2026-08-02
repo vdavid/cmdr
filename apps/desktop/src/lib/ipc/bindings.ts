@@ -4011,6 +4011,12 @@ export type CreditInfoDto = {
   available: number
   in_flight: number
   next_message_id: number
+  /**
+   *  Frames handed to smb2's writer task and not yet written. Steadily
+   *  non-zero while `wire_bytes_sent` stands still is a stuck send side —
+   *  the wedge is on OUR side of the wire, not the server's.
+   */
+  send_queue_depth: number
 }
 
 /**
@@ -6122,6 +6128,61 @@ export type MetricsSnapshotDto = {
   malformed_frames: number
   session_expired_events: number
   requests_returned_err: number
+  /**
+   *  Sends that parked because every granted credit was already in flight. A
+   *  trickle is normal on a saturated pipeline; a flood means the server's
+   *  window is small relative to our chunk size.
+   */
+  credit_waits: number
+  /**
+   *  Sends that gave up waiting for a grant. Subset of `credit_waits`; don't
+   *  sum. Non-zero means a server stopped answering with its socket still up.
+   */
+  credit_starvations: number
+  /**
+   *  Requests abandoned because the server went silent past the response
+   *  deadline. Counts total SILENCE, not slowness: every interim
+   *  `STATUS_PENDING` restarts the clock.
+   */
+  response_timeouts: number
+  /**
+   *  Frames the transport refused to write (a send that timed out or
+   *  errored). Non-zero means the request never reached the server, so
+   *  nothing about the server follows from it.
+   */
+  send_failures: number
+  /**
+   *  ECHO probes put on the wire. Zero on a healthy busy connection and that
+   *  is correct — probing only starts once the wire goes quiet with work
+   *  outstanding.
+   */
+  keepalive_probes_sent: number
+  /**
+   *  Probe rounds that asked nothing (no credit on hand), so they are
+   *  evidence of nothing.
+   */
+  keepalive_probes_skipped: number
+  /**
+   *  Probes that reached the wire and went unanswered. ❌ NOT a death count:
+   *  a busy NAS drops probes precisely while it writes. The only thing a
+   *  dropped probe costs is the deadline extension it would have earned.
+   */
+  keepalive_failures: number
+  /**
+   *  Requests that outlived the response deadline and were NOT abandoned,
+   *  because an ECHO had just proven the server alive. Each tick is a
+   *  slow-but-healthy operation the deadline alone would have killed.
+   */
+  response_deadline_extensions: number
+  // Dials made trying to bring this connection back, across every revival.
+  reconnect_attempts: number
+  /**
+   *  Revivals that ended with a live, authenticated session. The
+   *  after-the-fact answer to "was this link quietly flaky?".
+   */
+  reconnects_succeeded: number
+  // Revivals that gave up.
+  reconnects_failed: number
 }
 
 /**
