@@ -15,7 +15,8 @@
 use super::*;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{
-    CopyScanResult, InMemoryVolume, ListingProgress, ScanConflict, SourceItemInfo, SpaceInfo, VolumeReadStream,
+    CopyScanResult, DirectoryCreation, InMemoryVolume, ListingProgress, ScanConflict, SourceItemInfo, SpaceInfo,
+    VolumeReadStream,
 };
 use std::future::Future;
 use std::pin::Pin as StdPin;
@@ -235,7 +236,7 @@ impl Volume for IncrementalDest {
     fn create_directory_all<'a>(
         &'a self,
         path: &'a Path,
-    ) -> StdPin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+    ) -> StdPin<Box<dyn Future<Output = Result<DirectoryCreation, VolumeError>> + Send + 'a>> {
         self.inner.create_directory_all(path)
     }
     fn create_file<'a>(

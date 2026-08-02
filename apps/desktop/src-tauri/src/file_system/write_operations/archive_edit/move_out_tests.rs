@@ -7,7 +7,7 @@ use std::future::Future;
 use std::pin::Pin;
 
 use super::test_support::*;
-use crate::file_system::volume::VolumeError;
+use crate::file_system::volume::{DirectoryCreation, VolumeError};
 
 /// A destination volume whose streaming write ALWAYS fails: it delegates reads,
 /// metadata, and space to an inner `InMemoryVolume` but never implements
@@ -447,7 +447,7 @@ impl Volume for FailOnNameVolume {
     fn create_directory_all<'a>(
         &'a self,
         path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+    ) -> Pin<Box<dyn Future<Output = Result<DirectoryCreation, VolumeError>> + Send + 'a>> {
         self.inner.create_directory_all(path)
     }
     fn write_from_stream<'a>(

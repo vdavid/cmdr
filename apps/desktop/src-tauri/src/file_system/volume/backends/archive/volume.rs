@@ -46,8 +46,8 @@ use super::{
 };
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{
-    CopyScanResult, ExtractedFile, LaneKey, ListingProgress, SequentialExtract, SpaceInfo, Volume, VolumeError,
-    VolumeReadStream,
+    CopyScanResult, DirectoryCreation, ExtractedFile, LaneKey, ListingProgress, SequentialExtract, SpaceInfo, Volume,
+    VolumeError, VolumeReadStream,
 };
 use crate::ignore_poison::IgnorePoison;
 
@@ -425,7 +425,7 @@ impl Volume for ArchiveVolume {
     fn create_directory_all<'a>(
         &'a self,
         path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+    ) -> Pin<Box<dyn Future<Output = Result<DirectoryCreation, VolumeError>> + Send + 'a>> {
         let _ = path;
         Box::pin(async { Err(VolumeError::NotSupported) })
     }

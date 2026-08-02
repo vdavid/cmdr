@@ -108,14 +108,18 @@ const COPY_DEADLINE: Duration = Duration::from_secs(300);
 
 /// A `LocalPosixVolume` that reports a fixed `max_concurrent_ops`.
 ///
-/// The driver's window is `min(src, dst, 32)`. The destination side is already
-/// runtime-settable (`set_smb_concurrency`), but the source side is a CPU-core
-/// heuristic clamped to 4..=16 — so on a normal laptop the LOCAL source, not the
-/// network, is what caps a network transfer. Pinning the source high moves the
-/// whole sweep onto the destination knob, leaving one variable instead of two.
+/// The destination side of the window is already runtime-settable
+/// (`set_smb_concurrency`); pinning the source side high moves the whole sweep
+/// onto that one knob, leaving one variable instead of two.
 ///
-/// Everything except `max_concurrent_ops` delegates, so what gets measured is
-/// the production path.
+/// ❌ Don't "finish" the delegation by adding `operations_are_local` here. This
+/// wrapper deliberately answers the trait default (`false`), so
+/// `transfer_concurrency` reads its cap as a real transport limit and the swept
+/// value stays exactly `min(64, setting, 32)` = the setting, with the source
+/// side inert. Delegating it would move the sweep onto a different branch of the
+/// formula for nothing.
+///
+/// Everything else delegates, so what gets measured is the production path.
 struct FixedConcurrencySource {
     inner: LocalPosixVolume,
     concurrency: usize,

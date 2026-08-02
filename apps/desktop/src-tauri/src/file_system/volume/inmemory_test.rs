@@ -335,7 +335,7 @@ fn test_streaming_entries_are_sorted() {
 // existence so it never re-creates (or, on MTP, duplicates) an existing level.
 // ============================================================================
 
-use super::{ListingProgress, VolumeError};
+use super::{DirectoryCreation, ListingProgress, VolumeError};
 use crate::ignore_poison::{IgnorePoison, RwLockIgnorePoison};
 use std::collections::HashSet;
 use std::future::Future;
@@ -348,10 +348,11 @@ use std::sync::RwLock as StdRwLock;
 async fn create_directory_all_creates_deeply_nested_missing_dest() {
     let volume = InMemoryVolume::new("Dest");
 
-    volume
+    let creation = volume
         .create_directory_all(Path::new("/a/b/c/d"))
         .await
         .expect("recursive create should land a deeply-nested missing dest");
+    assert_eq!(creation, DirectoryCreation::Created);
 
     // Every ancestor now exists as a real directory.
     for dir in ["/a", "/a/b", "/a/b/c", "/a/b/c/d"] {
@@ -377,17 +378,21 @@ async fn create_directory_all_creates_deeply_nested_missing_dest() {
 async fn create_directory_all_is_idempotent_on_existing_dest() {
     let volume = InMemoryVolume::new("Dest");
 
-    volume
+    let first = volume
         .create_directory_all(Path::new("/x/y"))
         .await
         .expect("first create");
+    assert_eq!(first, DirectoryCreation::Created);
 
     // Re-running against an already-existing dest is a no-op, never an error
-    // (a merge into an existing folder must not fail the gate).
-    volume
+    // (a merge into an existing folder must not fail the gate) — and it must
+    // say so, because the transfer driver skips its per-file conflict probe on
+    // a `Created` answer.
+    let second = volume
         .create_directory_all(Path::new("/x/y"))
         .await
         .expect("re-running against an existing dest is a no-op");
+    assert_eq!(second, DirectoryCreation::AlreadyExisted);
 
     assert!(
         volume
@@ -407,10 +412,12 @@ async fn create_directory_all_only_creates_the_missing_tail() {
     // Only `/a/b/c` and `/a/b/c/d` are missing; the existing levels are left
     // alone (InMemory's `create_directory` would have errored `AlreadyExists`
     // had the helper blindly re-created them).
-    volume
+    let creation = volume
         .create_directory_all(Path::new("/a/b/c/d"))
         .await
         .expect("should create only the missing tail");
+    // Ancestors pre-existed, but the LEAF is ours.
+    assert_eq!(creation, DirectoryCreation::Created);
 
     assert!(
         volume
@@ -451,10 +458,11 @@ async fn create_directory_all_pre_checks_existence_on_mtp_like_backend() {
     // `/photos` already on the device.
     volume.seed_existing(Path::new("/photos"));
 
-    volume
+    let creation = volume
         .create_directory_all(Path::new("/photos/2026/trip"))
         .await
         .expect("recursive create over a partially-existing MTP tree");
+    assert_eq!(creation, DirectoryCreation::Created);
 
     // `create_directory` ran for exactly the two missing levels, never for the
     // pre-existing `/photos` (which would have duplicated it on MTP).
@@ -477,6 +485,8 @@ struct MockDirVolume {
     existing: StdRwLock<HashSet<PathBuf>>,
     create_calls: Mutex<Vec<PathBuf>>,
     fail_at: Mutex<Option<PathBuf>>,
+    /// Paths that answer `AlreadyExists` on create while `exists()` says no.
+    raced: Mutex<HashSet<PathBuf>>,
 }
 
 impl MockDirVolume {
@@ -486,6 +496,7 @@ impl MockDirVolume {
             existing: StdRwLock::new(HashSet::new()),
             create_calls: Mutex::new(Vec::new()),
             fail_at: Mutex::new(None),
+            raced: Mutex::new(HashSet::new()),
         }
     }
 
@@ -495,6 +506,13 @@ impl MockDirVolume {
 
     fn fail_create_at(&self, path: &Path) {
         *self.fail_at.lock_ignore_poison() = Some(path.to_path_buf());
+    }
+
+    /// A path that `exists()` reports as absent but whose `create_directory`
+    /// answers `AlreadyExists`: what losing a race to another process looks
+    /// like from inside the recursive walk.
+    fn claim_created_by_someone_else(&self, path: &Path) {
+        self.raced.lock_ignore_poison().insert(path.to_path_buf());
     }
 
     fn create_calls(&self) -> Vec<PathBuf> {
@@ -546,6 +564,9 @@ impl Volume for MockDirVolume {
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             self.create_calls.lock_ignore_poison().push(path.to_path_buf());
+            if self.raced.lock_ignore_poison().contains(path) {
+                return Err(VolumeError::AlreadyExists(path.display().to_string()));
+            }
             if self.fail_at.lock_ignore_poison().as_deref() == Some(path) {
                 return Err(VolumeError::IoError {
                     message: "injected create failure".to_string(),
@@ -566,4 +587,23 @@ impl Volume for MockDirVolume {
     fn create_directory_errors_on_existing_dir(&self) -> bool {
         self.errors_on_existing
     }
+}
+
+/// The race the `AlreadyExists` arm swallows: another process created the leaf
+/// between our `exists()` probe and our `create_directory`. Treating that as
+/// success keeps the gate idempotent, but it is NOT our directory — somebody
+/// else may already have written into it — so it must report `AlreadyExisted`.
+#[tokio::test]
+async fn a_leaf_that_appeared_mid_walk_is_not_reported_as_ours() {
+    let volume = MockDirVolume::new(/* errors_on_existing */ true);
+    // `exists()` says no, `create_directory` says AlreadyExists: exactly the
+    // shape of losing the race.
+    volume.claim_created_by_someone_else(Path::new("/shared/inbox"));
+
+    let creation = volume
+        .create_directory_all(Path::new("/shared/inbox"))
+        .await
+        .expect("losing the race is still a successful create");
+
+    assert_eq!(creation, DirectoryCreation::AlreadyExisted);
 }

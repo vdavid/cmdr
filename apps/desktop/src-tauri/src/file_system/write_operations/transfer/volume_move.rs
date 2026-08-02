@@ -261,6 +261,9 @@ pub(crate) async fn move_volumes_with_progress(
     // backend (parity with the local-FS `ensure_destination_dir`). Source and
     // dest are different volumes here, so the dest-inside-source guard doesn't
     // apply. A move into an already-existing dest is a no-op create.
+    // The move pipeline is serial per source, so it has no use for the
+    // `DirectoryCreation` answer the copy driver reads (see
+    // `volume_copy.rs`, Phase 0.5).
     dest_volume
         .create_directory_all(dest_path)
         .await

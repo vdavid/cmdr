@@ -284,10 +284,17 @@ pub trait Volume: Send + Sync {
     ///
     /// Backends override only if they have a cheaper native recursive mkdir;
     /// SMB and MTP don't, so the per-component loop is the right shape there.
+    ///
+    /// Reports whether the LEAF was created here or was already there
+    /// ([`DirectoryCreation`]). An overriding backend MUST answer that honestly:
+    /// the transfer driver skips its per-file destination conflict probe on a
+    /// `Created` answer, so a backend that claims to have created a directory it
+    /// merely found would turn "would have prompted" into "overwrote". When in
+    /// doubt, answer `AlreadyExisted`.
     fn create_directory_all<'a>(
         &'a self,
         path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+    ) -> Pin<Box<dyn Future<Output = Result<DirectoryCreation, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             // Collect the missing ancestors, walking leaf→root until we reach
             // one that already exists (or run out). A component with no file
@@ -304,18 +311,26 @@ pub trait Volume: Send + Sync {
                 missing.push(ancestor.to_path_buf());
             }
 
-            // `ancestors()` yields leaf→root, so create shallowest-first: a
-            // child can't be created before its parent.
-            for dir in missing.iter().rev() {
+            // `ancestors()` yields leaf→root, so `missing[0]` is the leaf and
+            // creating shallowest-first means the leaf goes last: a child can't
+            // be created before its parent.
+            let mut leaf = DirectoryCreation::AlreadyExisted;
+            for (index, dir) in missing.iter().enumerate().rev() {
                 match self.create_directory(dir).await {
-                    Ok(()) => {}
+                    Ok(()) => {
+                        if index == 0 {
+                            leaf = DirectoryCreation::Created;
+                        }
+                    }
                     // A concurrent op created it between our `exists()` check and
-                    // this call. Treat as success to keep the create idempotent.
+                    // this call. Treat as success to keep the create idempotent —
+                    // but NOT as ours: somebody else's directory may already have
+                    // something in it.
                     Err(VolumeError::AlreadyExists(_)) => {}
                     Err(e) => return Err(e),
                 }
             }
-            Ok(())
+            Ok(leaf)
         })
     }
 
@@ -515,6 +530,28 @@ pub trait Volume: Send + Sync {
     /// current sequential behavior for any new backend that doesn't override.
     fn max_concurrent_ops(&self) -> usize {
         1
+    }
+
+    /// Whether ONE operation on this volume is a local syscall — microseconds,
+    /// no transport round trip — rather than a request over a network or a bus.
+    ///
+    /// This is a claim about COST, which makes it a different question from
+    /// [`supports_local_fs_access`](Self::supports_local_fs_access): an
+    /// OS-mounted SMB share answers `true` there (its paths do go through
+    /// `std::fs`) and would answer `false` here.
+    ///
+    /// The transfer driver reads it to size its concurrency window
+    /// (`write_operations/transfer/volume_copy.rs::transfer_concurrency`). A
+    /// local volume's [`max_concurrent_ops`](Self::max_concurrent_ops) is a
+    /// CPU-core heuristic that has nothing to say about how many requests a
+    /// network peer should carry, so it isn't allowed to bound one; a remote
+    /// volume's cap is a real transport limit and always is.
+    ///
+    /// Default `false`, which is the conservative answer in both directions: an
+    /// undeclared backend keeps bounding its peer, and keeps every per-file
+    /// destination probe the driver would otherwise run.
+    fn operations_are_local(&self) -> bool {
+        false
     }
 
     /// Whether extracting from this volume is inherently SEQUENTIAL: the stream

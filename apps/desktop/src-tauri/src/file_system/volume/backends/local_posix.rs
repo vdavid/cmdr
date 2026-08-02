@@ -470,12 +470,23 @@ impl Volume for LocalPosixVolume {
         true
     }
 
+    fn operations_are_local(&self) -> bool {
+        // Every operation here is a syscall against a mounted filesystem, so a
+        // per-file `get_metadata` is a microsecond `stat` and the cap below is a
+        // statement about this Mac, not about any peer. Both facts matter to the
+        // transfer driver; see `Volume::operations_are_local`.
+        true
+    }
+
     fn max_concurrent_ops(&self) -> usize {
         // Local disk can handle several concurrent I/O streams; clamp to
         // physical-ish core count so we never spawn hundreds of tasks for
         // huge batches. `available_parallelism` returns logical CPUs, so we
         // halve it as a cheap stand-in for "physical cores" (no num_cpus dep).
         // Minimum of 4 keeps the behavior reasonable on single-core boxes.
+        //
+        // This is a guard-rail, NOT a capacity claim, which is why
+        // `operations_are_local` above stops it from bounding a network peer.
         let logical = std::thread::available_parallelism().map_or(4, |n| n.get());
         let approx_physical = (logical / 2).max(1);
         approx_physical.clamp(4, 16)

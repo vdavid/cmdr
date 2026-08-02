@@ -43,7 +43,7 @@ use super::transfer_driver::{
 use super::volume_conflict::resolve_volume_conflict;
 use super::volume_preflight::{SourceHint, scan_volume_sources};
 use super::volume_strategy::copy_single_path;
-use crate::file_system::volume::{SourceItemInfo, Volume, VolumeError};
+use crate::file_system::volume::{DirectoryCreation, SourceItemInfo, Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 use crate::operation_log::types::OpKind;
 
@@ -448,6 +448,47 @@ pub async fn scan_for_volume_copy(
     })
 }
 
+/// Hard ceiling on the concurrent driver's sliding window, matching smb2's
+/// `MAX_PIPELINE_WINDOW`. Measured against a QNAP over gigabit, both corpus
+/// shapes plateau at a window of 12, so this is nowhere near binding on the
+/// deciding target: `docs/notes/transfer-concurrency-window-bench-2026-08-02.md`.
+const MAX_TRANSFER_CONCURRENCY: usize = 32;
+
+/// How many top-level sources the concurrent driver keeps in flight for a
+/// `source → dest` pair.
+///
+/// **A LOCAL volume's cap doesn't bound a REMOTE peer.** The two sides report
+/// `max_concurrent_ops()` for completely different reasons:
+/// `LocalPosixVolume`'s is `clamp(logical_cpus / 2, 4, 16)`, a CPU-core
+/// heuristic guarding against spawning hundreds of tasks (the `.min(32)` below
+/// guards that too); `SmbVolume`'s is the user's `network.smbConcurrency`, and
+/// `MtpVolume`'s 1 is a single USB bulk transport. A plain `min()` over those
+/// treats a guard-rail and a transport limit as the same kind of number, and
+/// the guard-rail wins: 8 on a 16-core M3 Max, 4 on an 8-core Air, on every Mac
+/// Cmdr ships to. So `network.smbConcurrency` — advertised as 1-32, default 10
+/// — did nothing above 4-8, and an 8-core Mac copied 500 files to a NAS in
+/// 4.700 s where its own setting asked for 3.522 s, spreads disjoint. Measured:
+/// `docs/notes/transfer-concurrency-window-bench-2026-08-02.md`.
+///
+/// ❌ Do NOT "simplify" this back to a `min()`, and ❌ do not fix the same
+/// defect by raising `LocalPosixVolume::max_concurrent_ops()` instead — that
+/// number also governs local→local copies, which nothing has measured.
+///
+/// A remote cap always binds, in both directions, which is what keeps MTP's 1
+/// routing a phone to the serial driver (`use_concurrent_path` needs
+/// `concurrency > 1`).
+fn transfer_concurrency(source: &dyn Volume, dest: &dyn Volume) -> usize {
+    let binding_cap = |volume: &dyn Volume| (!volume.operations_are_local()).then(|| volume.max_concurrent_ops());
+    // Both local (or both remote): the smaller cap is the honest answer. One of
+    // each: only the remote side's cap means anything.
+    let pair = match (binding_cap(source), binding_cap(dest)) {
+        (Some(src), Some(dst)) => src.min(dst),
+        (Some(only), None) | (None, Some(only)) => only,
+        (None, None) => source.max_concurrent_ops().min(dest.max_concurrent_ops()),
+    };
+    pair.min(MAX_TRANSFER_CONCURRENCY)
+}
+
 /// Formats the trailing "(of which skipped N file(s), X)" annotation for
 /// the completion log. Returns an empty string when nothing was skipped, so
 /// the log stays terse on the happy path. Byte counts go through
@@ -604,7 +645,7 @@ pub(crate) async fn copy_volumes_with_progress(
     // not-yet-existing folder just works on every backend. It runs AFTER the
     // dest-inside-source guard above so we never create a folder inside a
     // source. A merge into an already-existing dest is a no-op create.
-    dest_volume
+    let dest_dir_creation = dest_volume
         .create_directory_all(dest_path)
         .await
         .map_err(|e| WriteFailure::from_volume(dest_path, e))?;
@@ -664,17 +705,13 @@ pub(crate) async fn copy_volumes_with_progress(
     let mut bytes_skipped;
     let progress_interval = Duration::from_millis(config.progress_interval_ms);
 
-    // Determine concurrency for this batch.
-    // Clamped to 32 per F6 (matches smb2's MAX_PIPELINE_WINDOW). The sequential
-    // fallback (F7) handles 1-2 file batches where spawning tasks isn't worth
-    // it, and backends that return 1 from max_concurrent_ops.
-    let concurrency = source_volume
-        .max_concurrent_ops()
-        .min(dest_volume.max_concurrent_ops())
-        .min(32);
+    // Determine concurrency for this batch. The sequential fallback (F7)
+    // handles 1-2 file batches where spawning tasks isn't worth it, and
+    // backends that return 1 from `max_concurrent_ops`.
+    let concurrency = transfer_concurrency(&*source_volume, &*dest_volume);
     let use_concurrent_path = source_paths.len() >= 3 && concurrency > 1;
     log::debug!(
-        "copy_volumes_with_progress: {} sources, concurrency={} (src={}, dst={}), path={}",
+        "copy_volumes_with_progress: {} sources, concurrency={} (src={}, dst={}), path={}, dest dir {}",
         source_paths.len(),
         concurrency,
         source_volume.max_concurrent_ops(),
@@ -683,6 +720,10 @@ pub(crate) async fn copy_volumes_with_progress(
             "concurrent"
         } else {
             "sequential"
+        },
+        match dest_dir_creation {
+            DirectoryCreation::Created => "created by this op",
+            DirectoryCreation::AlreadyExisted => "pre-existing",
         },
     );
 
@@ -2088,3 +2129,6 @@ mod tests;
 #[cfg(test)]
 #[path = "volume_copy_wedge_test_support.rs"]
 mod wedge_test_support;
+#[cfg(test)]
+#[path = "volume_copy_window_tests.rs"]
+mod window_tests;

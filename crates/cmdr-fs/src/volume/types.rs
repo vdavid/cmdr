@@ -11,6 +11,23 @@ use std::path::PathBuf;
 
 use crate::entry::FileEntry;
 
+/// Whether [`Volume::create_directory_all`](super::Volume::create_directory_all)
+/// had to create the directory it was asked for, or found one already there.
+///
+/// The distinction is what lets a transfer know the destination is a folder
+/// nothing else has ever written into. ❌ It is NOT "the directory is empty":
+/// an empty directory that already existed can gain an entry from another
+/// process at any moment, and a directory we created a second ago cannot have
+/// held anything before that. Only the second claim is safe to skip a conflict
+/// check on.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DirectoryCreation {
+    /// This call created the leaf directory. It was empty at that instant.
+    Created,
+    /// The leaf directory was already there. Anything may be inside it.
+    AlreadyExisted,
+}
+
 /// Describes a change to a directory's contents on a specific volume.
 ///
 /// Used by `file_system::listing::caching::notify_directory_changed` to apply targeted cache updates

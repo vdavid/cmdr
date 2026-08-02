@@ -17,7 +17,9 @@ use std::sync::{Arc, Mutex as StdMutex};
 use std::time::Duration;
 
 use crate::file_system::listing::FileEntry;
-use crate::file_system::volume::{ListingProgress, SpaceInfo, Volume, VolumeError, VolumeReadStream};
+use crate::file_system::volume::{
+    DirectoryCreation, ListingProgress, SpaceInfo, Volume, VolumeError, VolumeReadStream,
+};
 use crate::ignore_poison::IgnorePoison;
 
 pub(super) fn make_state() -> Arc<WriteOperationState> {
@@ -337,7 +339,7 @@ impl Volume for FlakyDest {
     fn create_directory_all<'a>(
         &'a self,
         path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+    ) -> Pin<Box<dyn Future<Output = Result<DirectoryCreation, VolumeError>> + Send + 'a>> {
         self.inner.create_directory_all(path)
     }
     fn create_file<'a>(

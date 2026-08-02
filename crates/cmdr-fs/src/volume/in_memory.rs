@@ -655,6 +655,11 @@ impl Volume for InMemoryVolume {
         true
     }
 
+    fn operations_are_local(&self) -> bool {
+        // A `HashMap` behind a lock: no transport, no round trip.
+        true
+    }
+
     fn max_concurrent_ops(&self) -> usize {
         // No backend bottleneck; return high and let the copy engine's
         // upper bound (32) clamp to sanity.

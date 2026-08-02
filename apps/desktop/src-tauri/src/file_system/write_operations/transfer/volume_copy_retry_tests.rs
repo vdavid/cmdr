@@ -10,7 +10,8 @@ use super::tests::make_state;
 use super::*;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{
-    InMemoryVolume, ListingProgress, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeReadStream,
+    DirectoryCreation, InMemoryVolume, ListingProgress, ScanConflict, SourceItemInfo, SpaceInfo, Volume,
+    VolumeReadStream,
 };
 use crate::file_system::write_operations::test_support::TestOperationGuard;
 use crate::file_system::write_operations::types::{CollectorEventSink, ConflictResolution};
@@ -98,7 +99,7 @@ impl Volume for FlakyMergeDest {
     fn create_directory_all<'a>(
         &'a self,
         path: &'a Path,
-    ) -> StdPin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+    ) -> StdPin<Box<dyn Future<Output = Result<DirectoryCreation, VolumeError>> + Send + 'a>> {
         self.inner.create_directory_all(path)
     }
     fn create_file<'a>(
