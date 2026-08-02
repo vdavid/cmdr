@@ -6,6 +6,15 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
+- [ ] 2026-08-02 `module-cycle-untangling.md` - Cut the two large module dependency cycles in the Rust crates (a
+      23-module index-engine SCC and a 17-module `file_system` ↔ `mtp` SCC) plus three small cross-subsystem ones, then
+      install a ratcheting `rust-module-cycles` check. The headline finding is that both large components are thin: the
+      17 is one `LazyLock` singleton living in a facade that also re-exports downward (moving `get_volume_manager` to
+      `volume/manager.rs` takes it 17 → 3), and six import statements take the 23 → a 7 and a 6. `M1` is a hard
+      prerequisite for the per-filesystem backend crates, since a crate can't import the app facade. Records three
+      `cargo-modules` traps that make raw output untrustworthy (`--acyclic` runs before the filters, `use super::*`
+      fabricates edges with no symbol basis, `--no-traits` misses `From` impls) — four apparent "tangles" are glob
+      artifacts, not work. Deliberately NOT chasing zero: ~16 of 44 groups are idiomatic parent/child.
 - [ ] 2026-08-01 `smb-transfer-resilience.md` - The cause of the transfer wedge, found on the second repro and now known
       to be ours: `smb2` never spends the credits it charges (the counter only ever grows, nothing gates a send), so
       under concurrency we over-run the server's grant and the NAS stops answering while TCP stays up. Everything else
