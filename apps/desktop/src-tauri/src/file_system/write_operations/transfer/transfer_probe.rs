@@ -27,6 +27,7 @@ use std::time::{Duration, Instant};
 
 use tokio_util::sync::CancellationToken;
 
+use crate::file_system::volume::{ConnectionLiveness, Volume};
 use crate::ignore_poison::IgnorePoison;
 
 use super::super::event_sinks::OperationEventSink;
@@ -410,6 +411,11 @@ pub(super) struct OperationProbe {
     /// before the watchdog ends its wait. Per-operation rather than a bare
     /// constant read so a test can shorten it (see [`stall_abort_after`]).
     stall_abort_after: Duration,
+    /// The operation's source and destination volumes, held ONLY to ask them
+    /// whether their connection has been proven dead
+    /// ([`Volume::connection_liveness`]). That verdict is the gate on the one
+    /// aggressive thing the watchdog does; see [`OperationProbe::connection_proven_dead`].
+    volumes: Vec<Arc<dyn Volume>>,
     state: Arc<WriteOperationState>,
     started: Instant,
 }
@@ -513,6 +519,24 @@ impl OperationProbe {
         );
     }
 
+    /// Has either end of this transfer been PROVEN dead, as opposed to merely
+    /// slow to answer?
+    ///
+    /// The gate on the watchdog's one aggressive action. `Volume::connection_liveness`
+    /// answers `None` for every backend in this workspace today — telling slow
+    /// from dead needs a keepalive, and the pinned `smb2` 0.15.0 has none — so
+    /// this is `false` in production and the watchdog reports without acting.
+    /// ❌ Don't substitute elapsed silence for this answer; that is the failure
+    /// mode a keepalive exists to prevent, and it kills healthy slow transfers.
+    ///
+    /// **To turn the teeth on**: override `connection_liveness` on `SmbVolume`
+    /// against the keepalive's verdict. Nothing here changes.
+    fn connection_proven_dead(&self) -> bool {
+        self.volumes
+            .iter()
+            .any(|v| v.connection_liveness() == Some(ConnectionLiveness::Dead))
+    }
+
     /// Restart every in-flight task's stillness clock, for the ticks where the
     /// whole operation is standing still on purpose (paused, or waiting on an
     /// answer). Without this a task would carry the pause into its abort budget.
@@ -534,7 +558,15 @@ impl OperationProbe {
     /// transport blip it is. That is the whole difference between the dialog
     /// saying "stalled" forever and the transfer getting itself unstuck.
     ///
-    /// Three guards keep this from touching anything healthy:
+    /// Four guards keep this from touching anything healthy, and the FIRST is the
+    /// one that matters:
+    /// - **Only on proof that the connection is DEAD**
+    ///   ([`OperationProbe::connection_proven_dead`]). Elapsed silence is not
+    ///   proof: a large write to a loaded spinning-disk NAS is legitimately slow,
+    ///   and killing it trades a rare wedge for frequent spurious failures.
+    ///   **No backend can answer this today**, so in production this method
+    ///   currently reports and never acts — which is the correct behavior until a
+    ///   keepalive exists to tell slow from dead.
     /// - **Per-task, not per-operation.** A batch where any task is still moving
     ///   bytes leaves every other task's clock running on its own merits; only a
     ///   task that has itself gone quiet is a candidate.
@@ -547,6 +579,10 @@ impl OperationProbe {
     fn track_and_abort_wedged_tasks(&self, now: Duration) {
         let now_ms = u64::try_from(now.as_millis()).unwrap_or(u64::MAX);
         let cancelling = !matches!(load_intent(&self.state.intent), OperationIntent::Running);
+        // Stillness is the debounce, never the evidence. Without a verdict the
+        // loop below only maintains each task's clock, which is what keeps the
+        // dump and the UI honest while nothing is escalated.
+        let proven_dead = self.connection_proven_dead();
         let abort_after_ms = u64::try_from(self.stall_abort_after.as_millis()).unwrap_or(u64::MAX);
         for task in self.tasks.lock_ignore_poison().iter() {
             let bytes = task.bytes_done.load(Ordering::Relaxed);
@@ -565,7 +601,7 @@ impl OperationProbe {
                 continue;
             }
             let still_for_ms = now_ms.saturating_sub(task.still_since_ms.load(Ordering::Relaxed));
-            if still_for_ms < abort_after_ms {
+            if still_for_ms < abort_after_ms || !proven_dead {
                 continue;
             }
             crate::log_error!(
@@ -774,11 +810,18 @@ static REGISTRY: LazyLock<Mutex<HashMap<String, Arc<OperationProbe>>>> = LazyLoc
 ///
 /// The returned guard deregisters on drop, which also stops the watchdog on its
 /// next tick.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one operation's whole identity for the dump: ids, sizes, the shared counter, both volumes, state, and the heartbeat sink"
+)]
 pub(super) fn register_operation(
     operation_id: &str,
     concurrency: usize,
     total_files: usize,
     bytes_done: Arc<AtomicU64>,
+    // Source and destination, held only so the watchdog can ask them whether
+    // their connection is proven dead before it acts on a stall.
+    volumes: Vec<Arc<dyn Volume>>,
     state: Arc<WriteOperationState>,
     sink: Arc<dyn OperationEventSink>,
 ) -> OperationProbeGuard {
@@ -794,6 +837,7 @@ pub(super) fn register_operation(
         last_event: Mutex::new(None),
         still_for_seconds: AtomicU64::new(0),
         stall_abort_after: stall_abort_after(),
+        volumes,
         state,
         started: Instant::now(),
     });

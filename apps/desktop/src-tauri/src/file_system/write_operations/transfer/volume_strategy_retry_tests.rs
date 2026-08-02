@@ -352,6 +352,10 @@ async fn the_watchdog_ends_a_wedged_write_and_the_file_runs_again() {
         1,
         1,
         Arc::new(std::sync::atomic::AtomicU64::new(0)),
+        // The keepalive verdict the pinned smb2 can't give. Without it the
+        // watchdog reports and never acts, which is production today — so this
+        // test would hang on the wedged write instead of proving anything.
+        vec![crate::file_system::write_operations::transfer::liveness_test_support::dead_connection_volume()],
         Arc::clone(guard.state()),
         Arc::new(crate::file_system::write_operations::event_sinks::CollectorEventSink::new()),
     );
@@ -389,6 +393,9 @@ async fn a_retry_shows_up_in_the_in_flight_table() {
         1,
         1,
         Arc::new(std::sync::atomic::AtomicU64::new(0)),
+        // No liveness verdict: this test is about the retry being VISIBLE, not
+        // about the watchdog acting.
+        Vec::new(),
         Arc::clone(guard.state()),
         Arc::new(crate::file_system::write_operations::event_sinks::CollectorEventSink::new()),
     );

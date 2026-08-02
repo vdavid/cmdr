@@ -405,23 +405,43 @@ chunk loop.
 
 ### The watchdog ACTS (M4.2)
 
-**Decision**: past `STALL_ABORT_AFTER` (180 s of zero byte movement inside a backend call), the watchdog trips the
-task's `stall_abort` token; the streaming write races it, so the park becomes a typed `ConnectionTimeout` that the
-retry above treats as the blip it is.
+**Decision**: the mechanism to end a wedged wait is built and wired, and its trigger is **gated on positive evidence
+that the connection is dead** — `Volume::connection_liveness() == Some(Dead)`, AND `STALL_ABORT_AFTER` (180 s) of zero
+byte movement inside a backend call. On both, the watchdog trips the task's `stall_abort` token, the streaming write
+races it, and the park becomes a typed `ConnectionTimeout` the retry above treats as a blip.
 
-**Why**: the watchdog used to only report. The 2026-07-31 wedge was a write parked forever with nothing anywhere to
-bound it, and the user's only way out was force-quitting the app — which is what cost them two files. Detection is the
-floor; getting unstuck is the goal.
+**Status today: the teeth are INERT, deliberately.** No backend in this workspace answers `connection_liveness` with
+anything but `None`, so in production the watchdog does exactly what it did before — dumps the in-flight table,
+heartbeats the UI's stall signal — and acts on nothing.
 
-**Why 180 s, and why it is a LAST resort.** Every backend that can bound its own waits already does, sooner: `smb2`
-gives a frame 60 s to reach the socket and a response 180 s to arrive, so a dead SMB session errors on its own and the
-file's retry picks it up without the watchdog being involved. What is left for this constant is the case with no
-deadline anywhere — an OS-mounted share, a USB stack, a future backend that forgot. The number has to clear the slowest
-HEALTHY gap between two byte reports, which is one chunk: a 1 MiB SMB read window needs a link under 6 KB/s to take
-this long, an 8 MiB MTP window needs USB at 45 KB/s. ❌ Don't tighten it toward a plausible slow link — killing a
-healthy transfer to catch a wedge sooner is the trade Decision 3 of `docs/specs/smb-transfer-resilience.md` refuses.
+**Why gated, and why elapsed time is not allowed to be the evidence.** Telling "slow but alive" from "dead" needs a
+keepalive: an ECHO the server either answers inside a window or does not. A silence deadline ALONE cannot do it,
+because a large write to a loaded spinning-disk NAS is legitimately slow, and killing it trades a rare wedge for
+frequent spurious failures — the worse bargain, and Decision 3 of `docs/specs/smb-transfer-resilience.md`. The `smb2`
+version this workspace pins (0.15.0) has **no keepalive**, and nothing else it exposes settles the question: its
+diagnostics describe the CLIENT's side of the wire (`send_queue_depth`, `send_failures`, `wire_bytes_sent`) or restate
+the ambiguity itself (`OutstandingRequest::sent_age` = "asked, and unanswered for this long", which is exactly what a
+slow server and a dead one have in common). `ConnectionDiagnostics::disconnected` is a hard fact but a consequence —
+by the time it is true the write has already errored, and the retry has it. So there is no sound signal to act on yet,
+and inventing one out of elapsed time would reintroduce, one layer up, the failure mode the keepalive exists to
+prevent.
 
-**The guards, each load-bearing:**
+**To turn the teeth on** — the whole change, once `smb2` ships the keepalive (0.16.0) and Cmdr moves onto it: override
+`connection_liveness` on **`SmbVolume` alone**, returning `Dead` when the keepalive's ECHO went unanswered past its
+window, `Alive` when one came back inside it, and `None` before the first verdict. Nothing else moves. The mechanism,
+the stillness window, the per-attempt re-arm, the guards, and the tests are all already here and gated only on that
+answer. Worth revisiting at the same time: with a real verdict, 180 s is a debounce rather than the evidence (the
+keepalive has already spent time concluding death), so it can probably come down a long way — that is a tuning call to
+make against the keepalive's own window, not a number to pre-guess now.
+
+**Why 180 s for the second condition.** It is a LAST resort even once armed: every backend that can bound its own waits
+already does, sooner — `smb2` gives a frame 60 s to reach the socket and a response 180 s to arrive, so a dead SMB
+session errors on its own and the file's retry picks it up without the watchdog being involved. What is left is the
+case with no deadline anywhere: an OS-mounted share, a USB stack, a future backend that forgot. The number clears the
+slowest HEALTHY gap between two byte reports, which is one chunk: a 1 MiB SMB read window needs a link under 6 KB/s to
+take this long, an 8 MiB MTP window needs USB at 45 KB/s.
+
+**The guards, each load-bearing** (the liveness verdict above is the first and most important; these are the rest):
 
 - **Per-task, not per-operation.** A batch where any task still moves bytes leaves every other task's clock running on
   its own merits.
@@ -447,12 +467,11 @@ narrower here: the abort only fires on a path that has been silent for three min
 was not working anyway. What it cannot cost is data at a real name — the write was staged, so the user's filename was
 never involved.
 
-**The worst case, stated.** A file on a genuinely dead path is aborted, retried, aborted, retried, aborted: three
-`STALL_ABORT_AFTER` windows plus the backoff, so **about nine minutes** before the operation reports the failure. That
-is bounded where the incident was not (it needed a force-quit), the UI heartbeats "stalled" throughout, and on the
-concurrent path a Cancel still returns within `CANCEL_DRAIN_DEADLINE`. It is the obvious tuning knob if it proves too
-patient in practice: cap the stall-aborts per file at one, or shorten the window. ❌ Don't shorten it without re-reading
-why 180 s clears the slowest healthy chunk.
+**The worst case, stated (once the gate is open).** A file on a proven-dead path would be aborted, retried, aborted,
+retried, aborted: three `STALL_ABORT_AFTER` windows plus the backoff, so **about nine minutes** before the operation
+reports the failure. Bounded where the incident was not (it needed a force-quit), and the UI heartbeats "stalled"
+throughout, but it is the obvious knob to tune when the keepalive lands: cap the stall-aborts per file at one, or
+shorten the window against the keepalive's own. Today it is unreachable — the gate is shut.
 
 **Not covered: a cancel does not reach a wedged write itself.** The backend learns about a cancel through its
 `on_progress` callback, which a wedged write never calls, so on the SERIAL path a Cancel is only observed once the write
@@ -461,7 +480,14 @@ in-flight futures at `CANCEL_DRAIN_DEADLINE`. Racing every write against `state.
 case too, but it would also skip each backend's own partial cleanup on the healthy cancel path, so it is deliberately
 not done here.
 
-Pinned by `transfer_probe::tests::{the_watchdog_ends_the_wait_on_a_task_that_stopped_moving,
+The gate itself is pinned by `transfer_probe::tests::a_connection_with_no_liveness_verdict_is_never_aborted` — a
+volume answering `None` is never acted on however long it stays still, while the watchdog keeps reporting. That test is
+the one guarding against a future change quietly re-arming the teeth on a timer; ❌ don't delete it when the keepalive
+lands, re-point it. The tests that DO exercise the abort supply a `Dead` verdict through
+`liveness_test_support::dead_connection_volume()`, because without one they would be asserting on a path production
+cannot reach.
+
+Also pinned by `transfer_probe::tests::{the_watchdog_ends_the_wait_on_a_task_that_stopped_moving,
 a_task_that_keeps_moving_is_never_aborted, a_deliberately_parked_task_is_never_aborted,
 time_spent_paused_does_not_count_toward_the_abort, the_watchdog_stands_down_once_the_operation_is_cancelling,
 a_new_attempt_gets_a_fresh_signal_and_a_fresh_budget}` and, end to end,

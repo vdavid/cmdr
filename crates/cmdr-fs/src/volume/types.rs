@@ -257,6 +257,23 @@ pub struct SourceItemInfo {
     pub is_directory: bool,
 }
 
+/// What is known about whether a volume's connection is still answering.
+///
+/// Deliberately three-valued: the interesting state is [`Unknown`](Self::Unknown),
+/// "we have no evidence either way", which is what a client with no keepalive can
+/// honestly say about a server that has gone quiet. Collapsing this to a `bool`
+/// would force every caller to guess, and the guess that elapsed silence means
+/// death is exactly the one that kills healthy slow transfers.
+///
+/// Produced by [`Volume::connection_liveness`](super::Volume::connection_liveness).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConnectionLiveness {
+    /// The connection answered inside its keepalive window.
+    Alive,
+    /// The connection failed its keepalive: it is gone, not slow.
+    Dead,
+}
+
 /// Error type for volume operations.
 #[derive(Debug, Clone)]
 pub enum VolumeError {

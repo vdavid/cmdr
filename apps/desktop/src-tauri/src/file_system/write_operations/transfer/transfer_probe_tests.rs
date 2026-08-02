@@ -7,18 +7,34 @@
 //! now), so every case here drives synthetic ticks instead of sleeping.
 
 use super::*;
+use crate::file_system::volume::Volume;
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::test_support::TestOperationGuard;
 use crate::file_system::write_operations::types::WriteOperationType;
 
-/// A probe whose stall-abort window is `window`, so a test can drive the
-/// watchdog past it in a handful of synthetic ticks.
+/// A probe whose stall-abort window is `window` AND whose connection is proven
+/// dead, so a test can drive the watchdog past the window in a handful of
+/// synthetic ticks and see it act.
+///
+/// The dead verdict is not decoration: the abort is gated on it, and no backend
+/// in this workspace can produce one yet (`Volume::connection_liveness`). A test
+/// that left the volumes at the honest `None` would be asserting nothing.
 fn probe_with_abort_window(id: &str, state: &Arc<WriteOperationState>, window: Duration) -> Arc<OperationProbe> {
     let _guard = StallAbortGuard::set(window);
-    probe_for(id, state)
+    probe_with(
+        id,
+        state,
+        vec![super::super::liveness_test_support::dead_connection_volume()],
+    )
 }
 
+/// A probe whose volumes give the honest default answer: no evidence either way.
+/// This is what production looks like today.
 fn probe_for(id: &str, state: &Arc<WriteOperationState>) -> Arc<OperationProbe> {
+    probe_with(id, state, Vec::new())
+}
+
+fn probe_with(id: &str, state: &Arc<WriteOperationState>, volumes: Vec<Arc<dyn Volume>>) -> Arc<OperationProbe> {
     Arc::new(OperationProbe {
         operation_id: id.to_owned(),
         concurrency: 8,
@@ -31,6 +47,7 @@ fn probe_for(id: &str, state: &Arc<WriteOperationState>) -> Arc<OperationProbe> 
         last_event: Mutex::new(None),
         still_for_seconds: AtomicU64::new(0),
         stall_abort_after: stall_abort_after(),
+        volumes,
         state: Arc::clone(state),
         started: Instant::now(),
     })
@@ -429,6 +446,44 @@ fn a_new_attempt_gets_a_fresh_signal_and_a_fresh_budget() {
     assert!(
         !second.is_cancelled(),
         "a fresh attempt must not inherit the previous attempt's spent budget"
+    );
+}
+
+/// THE GATE, and the most important negative in this file. Elapsed silence is
+/// not evidence that a connection is dead — a large write to a loaded
+/// spinning-disk NAS is legitimately slow — so a volume that reports no verdict
+/// must never have its wait ended, however long it has been still.
+///
+/// This is production today: no backend can tell slow from dead without a
+/// keepalive, and the pinned `smb2` 0.15.0 has none. The watchdog keeps dumping
+/// the in-flight table and feeding the UI's stall signal, and acts on nothing.
+/// Deleting this test would let a future change quietly re-arm the teeth on a
+/// timer.
+#[test]
+fn a_connection_with_no_liveness_verdict_is_never_aborted() {
+    let guard = TestOperationGuard::register("probe-abort-no-verdict");
+    let state = guard.state();
+    let _window = StallAbortGuard::set(Duration::from_secs(1));
+    // No volumes ⇒ nobody answers `connection_liveness`, exactly like every
+    // backend in the workspace today.
+    let probe = probe_for(guard.id(), state);
+    let task = probe.begin_task(0, "/src/a", "/dst/a");
+    task.probe().set_phase(TaskPhase::Streaming);
+    let signal = task.probe().arm_stall_abort();
+
+    let mut watchdog = WatchdogState::new();
+    for tick in 1..=30 {
+        probe.watchdog_step(&mut watchdog, Duration::from_secs(tick));
+    }
+
+    assert!(
+        !signal.is_cancelled(),
+        "without proof the connection is dead, a still transfer must be reported and never killed"
+    );
+    // It still did its reporting job throughout.
+    assert!(
+        probe.still_for_seconds.load(Ordering::Relaxed) > 0,
+        "the stall must still be visible to the UI and the log"
     );
 }
 

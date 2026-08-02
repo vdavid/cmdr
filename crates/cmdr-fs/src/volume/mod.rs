@@ -889,6 +889,34 @@ pub trait Volume: Send + Sync {
         false
     }
 
+    /// Has this volume's connection been PROVEN dead, as opposed to merely slow
+    /// to answer?
+    ///
+    /// This is the gate on the transfer watchdog's one aggressive action: ending
+    /// the wait on a task that has stopped moving (`transfer_probe.rs`). Only a
+    /// positive [`ConnectionLiveness::Dead`] may be acted on. ❌ Elapsed silence
+    /// is NOT an answer to this question and must never be dressed up as one: a
+    /// large write to a loaded spinning-disk NAS is legitimately slow, and
+    /// killing it trades a rare wedge for frequent spurious failures, which is
+    /// the worse bargain.
+    ///
+    /// **Every backend answers `None` today, and that is the honest answer.**
+    /// Telling "slow" from "dead" needs a keepalive — an ECHO the server either
+    /// answers inside a window or does not — and the `smb2` version this
+    /// workspace pins (0.15.0) has none. Its diagnostics describe the CLIENT's
+    /// side of the wire (`send_queue_depth`, `send_failures`, `wire_bytes_sent`)
+    /// or the ambiguous case itself (`OutstandingRequest::sent_age` = "asked, and
+    /// unanswered for this long"), so none of them can settle it.
+    ///
+    /// **To turn the watchdog's teeth on**, once `smb2` ships the keepalive:
+    /// override this on `SmbVolume` alone — `Dead` when the keepalive's ECHO went
+    /// unanswered past its window, `Alive` when one came back inside it, `None`
+    /// before the first verdict. Nothing else moves; the mechanism, its stillness
+    /// window, and its tests are already in place and gated only on this answer.
+    fn connection_liveness(&self) -> Option<ConnectionLiveness> {
+        None
+    }
+
     /// Whether a foreground op is currently pending on this volume's device.
     ///
     /// Polled once per chunk by `CheckpointStream` (cheap — an atomic load behind

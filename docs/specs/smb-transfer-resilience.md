@@ -1,6 +1,6 @@
 # SMB transfers that survive a server going quiet, without giving up throughput
 
-**Status**: M0-M2 and M4.1/M4.2/M4.4 shipped; M3 and M4.3 open. **Owner**: David. **Date**: 2026-08-01.
+**Status**: M0-M2, M4.1, and M4.4 shipped; M4.2's mechanism is in and gated shut; M3 and M4.3 open. **Owner**: David. **Date**: 2026-08-01.
 
 A 764-file copy to a QNAP NAS wedges permanently, twice reproduced. Everything downstream of that — the frozen dialog,
 the dead Rollback, the corrupt files — is a symptom.
@@ -103,10 +103,17 @@ Finishes the half of the earlier `M1.3` that was left undone.
   Why that layer and how each data-safety invariant survives it: `transfer/DETAILS.md` § "Retrying one FILE". **Open for
   David**: a file that exhausts its attempts still ends the operation. Carrying on past it needs a "finished, N files
   missing" terminal shape and a product call; deliberately not guessed at.
-- **M4.2** ✅ **Shipped**. Past 180 s of zero byte movement inside a backend call, the watchdog ends the task's wait and
-  the park becomes a typed error M4.1 retries. It is the LAST resort — `smb2`'s own 60 s send and 180 s response
-  deadlines fire first — and it stands down for every deliberate park, for a cancelling op, and for a single-shot write.
-  Same DETAILS section.
+- **M4.2** 🔒 **Mechanism shipped, teeth gated** — deliberately inert until a keepalive exists. The watchdog can end a
+  task's wait (turning a wedged park into a typed error M4.1 retries), but only on `Volume::connection_liveness() ==
+  Dead` AND 180 s of zero byte movement. **No backend answers that on the pinned `smb2` 0.15.0**, so in production it
+  still only reports: dumps the in-flight table, feeds the UI's stall signal, acts on nothing. ❌ Elapsed silence is not
+  allowed to stand in for the verdict — that is Decision 3, and doing it here would reintroduce one layer up the exact
+  failure mode M2.2 exists to prevent. Checked and rejected as liveness signals in 0.15.0: `sent_age` (restates the
+  ambiguity), `send_queue_depth` / `send_failures` / `wire_bytes_sent` (client-side), `disconnected` (a consequence the
+  retry already handles). **Flip-on, when `smb2` 0.16.0 lands and Cmdr moves onto it**: override `connection_liveness`
+  on `SmbVolume` alone — `Dead` past the unanswered ECHO window, `Alive` inside it, `None` before the first verdict.
+  Nothing else moves. Re-tune the 180 s at the same time; with a real verdict it is a debounce, not the evidence. Full
+  reasoning and the guard tests: `transfer/DETAILS.md` § "The watchdog ACTS".
 - **M4.3** Delete the concurrency guess. `min(src.max_concurrent_ops, dst.max_concurrent_ops, 32)` is a magic number
   standing in for backpressure; with a real credit budget the gate IS the backpressure, self-tuning per connection. This
   is where the throughput upside sits.

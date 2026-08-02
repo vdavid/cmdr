@@ -46,6 +46,8 @@ mod copy_integration_test;
 #[cfg(test)]
 mod hardlink_progress_tests;
 #[cfg(test)]
+pub(crate) mod liveness_test_support;
+#[cfg(test)]
 mod move_integration_test;
 #[cfg(test)]
 mod transaction_integration_test;
