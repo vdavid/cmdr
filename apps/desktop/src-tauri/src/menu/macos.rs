@@ -665,6 +665,7 @@ fn set_macos_menu_icons_inner() {
                 ("Edit in editor", "pencil"),
                 ("Copy\u{2026}", "document.on.document"),
                 ("Move\u{2026}", "folder"),
+                ("Compress\u{2026}", "archivebox"),
                 ("New folder\u{2026}", "folder.badge.plus"),
                 ("Delete", "trash"),
                 ("Delete permanently", "trash.slash"),
