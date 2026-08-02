@@ -1,57 +1,36 @@
 # File system module
 
-Core filesystem operations: directory listing, file writing, sync status, volume management, and file watching.
+Directory listing, file writing, sync status, volume management, and file watching.
 
-Submodule docs: `listing/CLAUDE.md`, `write_operations/CLAUDE.md`,
-`volume/CLAUDE.md`. Top-level files of note: `cloud_actions.rs` (iCloud make-available-offline / remove-download),
-`open_with.rs` (candidate apps + launch), `watcher.rs` (FSEvents incremental listing updates), `sync_status/`
-(cloud badges: bounded thread pool, cache, cancellable batches — see its `CLAUDE.md`),
-`staging.rs` (`StagingTemp`: the one way to name a `.cmdr-tmp-*` / `.cmdr-temp-*` scratch file, and the predicate
-listings filter on),
-`index_provider.rs` (the app's `VolumeProvider`: everything the index asks about mounted volumes, so it never imports
-`VolumeManager` or a platform probe), `tags.rs` (macOS Finder tags: `_kMDItemUserTags` getxattr + bplist read/write; read deferred via `enrich_tags`, write
-via `set_tags` / `toggle_color` behind the `toggle_tags` command).
+## Module map
+
+- Submodules: `listing/`, `write_operations/`, `volume/`, `sync_status/` (cloud badges) — each has its own `CLAUDE.md`.
+- `watcher.rs` (FSEvents incremental listing updates), `staging.rs` (`StagingTemp`: the one way to name a
+  `.cmdr-tmp-*` scratch file, and the predicate listings filter on), `index_provider.rs` (the app's `VolumeProvider`,
+  so the index never imports `VolumeManager`).
+- `cloud_actions.rs` (iCloud offline/remove-download), `open_with.rs` (candidate apps + launch), `tags.rs` (macOS
+  Finder tags via `_kMDItemUserTags`).
 
 ## Gotchas
 
 - **Transient scratch hides on the listing READ path, never in a watcher** (`staging.rs`): a watcher-side skip strands
-  an entry in the pane forever. ❌ Filter nowhere but `listing/operations.rs::visible_entries`. Two rules: Cmdr's own
+  an entry in the pane forever. ❌ Filter nowhere but `listing/operations.rs::visible_entries`. Cmdr's own
   (`.cmdr-tmp-*`, minted via `StagingTemp`) hides by OWNERSHIP so a wedge's leftovers stay visible; other apps' (`.sb-`)
   hides by NAME, having no ownership signal. `DETAILS.md` § "Hiding transient scratch".
+- **Tag writes (`tags.rs`) touch ONLY `_kMDItemUserTags`, never `com.apple.FinderInfo`.** That blob carries
+  `kHasCustomIcon`; zeroing it destroys custom folder icons. Encode the **binary** plist (`to_writer_binary` — `plist`
+  defaults to XML). Pinned by `tags::write_tests::tagging_preserves_finder_info_custom_icon_flag`.
+- **Never use rayon (or any constrained-stack pool) for calls into macOS frameworks.** NSURL/FileProvider XPC
+  round-trips blow rayon's 2 MB worker stack and can block forever. Use pooled, hard-capped OS threads with 8 MB stacks
+  (`sync_status/pool.rs` is the reference); a per-call `std::thread::scope` is NOT enough. `DETAILS.md` § "Threading".
+- **Never `tokio::spawn` from a watcher OS thread** (notify-rs, git, SMB, MTP, archive): no reactor is running, so it
+  panics. Use `tauri::async_runtime::spawn`; FullRefresh dispatch funnels through `caching::spawn_full_refresh` for
+  exactly this reason. `DETAILS.md` § "Watcher threading".
+- **Watcher event paths must be rebased into the listing's path space** (`watcher.rs::rebase_event_path`). Raw
+  `path.parent() == dir_path` drops every event under `/tmp`, `/var`, `/etc` (firmlinks) and under a symlinked watch
+  root (Google Drive's `My Drive`). `DETAILS.md` § "Watcher path rebasing".
+- **`cloud_actions.rs` is iCloud Drive only**, gated by `is_in_icloud_drive`. The cross-provider-looking
+  `NSFileProviderManager` methods are reserved for the app bundling the extension. Don't widen it.
 
-- **Tag writes (`tags.rs`) must touch ONLY `_kMDItemUserTags`, never `com.apple.FinderInfo` (D11).** That 32-byte blob
-  carries `kHasCustomIcon` (`0x0400` at offset 8) plus type/creator codes; zeroing it destroys custom folder icons and
-  breaks `icons/per_path.rs::has_custom_folder_icon`. Modern Finder reads tags straight from `_kMDItemUserTags`, so the
-  dot shows without the legacy label bits. Encode the **binary** plist (`to_writer_binary` — `plist` defaults to XML).
-  Pinned by `tags::write_tests::tagging_preserves_finder_info_custom_icon_flag`.
-- **Never use rayon (or any constrained-stack thread pool) for calls into macOS frameworks.** NSURL resource lookups,
-  FileProvider queries, and similar Objective-C APIs make synchronous XPC round-trips to system daemons that can descend
-  through FileProvider override chains (iCloud, Dropbox) and blow rayon's default 2 MB worker stack. Use dedicated OS
-  threads with an explicit 8 MB stack instead. This also keeps I/O-bound XPC off rayon's pool, which is for CPU-bound
-  work. `sync_status/pool.rs` is the reference pattern, and a per-call `std::thread::scope` is NOT good enough on its
-  own: those calls can block forever, so the threads have to be pooled and hard-capped or they accumulate (21-23 of
-  them in the 2026-07-31 wedge). (The `src/icons/` module, a separate top-level module, follows the same rule for
-  `fetch_path_icons`; see its `CLAUDE.md`.)
-- **Never `tokio::spawn` from the notify-rs debouncer callback.** It runs on the notify-rs internal thread with no Tokio
-  runtime, so `tokio::spawn` panics with "there is no reactor running". Use `tauri::async_runtime::spawn` (same as
-  `indexing::watch::watcher`). This bit the watcher's full-reread fallback path (`watcher.rs`, `>500` events or ambiguous event
-  kinds), and again in v0.24.0 via `git::watcher::refresh_local_listings_under` →
-  `listing::caching::notify_directory_changed(FullRefresh)` (CRASH-26SBB), which is why FullRefresh dispatch now funnels
-  through `caching::spawn_full_refresh`. The rule covers every watcher OS thread (git, SMB, MTP, archive), not just
-  notify-rs.
-- **Watcher event paths must be rebased into the listing's path space** (`watcher.rs::rebase_event_path`). On macOS,
-  FSEvents reports canonical paths (`/private/tmp/…`) while `LISTING_CACHE` holds the user-navigated form (`/tmp/…`).
-  The incremental handler compares the firmlink-normalized forms (`indexing::paths::firmlinks::normalize_path`) and rebases
-  matching event paths onto the listing's directory. A raw `path.parent() == dir_path` comparison silently dropped every
-  event for listings under `/tmp`, `/var`, and `/etc`, so the pane never updated until the user re-navigated. FSEvents
-  also resolves a **symlinked watch root** and reports events under the real target, so the handler also matches against
-  the `canonicalize`d watch dir. This bit Google Drive, whose `My Drive` is a symlink to `~/My Drive`, so rename/create/
-  delete never refreshed the pane; iCloud and Dropbox mount real directories and hit the firmlink path instead.
-- **`cloud_actions.rs` is iCloud Drive only.** The `NSFileProviderManager` host-side methods look cross-provider but are
-  reserved for the app that *bundles* the File Provider extension, so third-party apps get
-  `NSFileProviderErrorProviderNotFound`. The `FileManager` ubiquity APIs route through iCloud's path and accept any URL
-  in an iCloud container, so the menu items are gated by `is_in_icloud_drive` (strict prefix check against
-  `~/Library/Mobile Documents/com~apple~CloudDocs/`). Don't widen this to other providers.
-
-Full details (Open with: candidate intersection, session cache, NSWorkspace launch/terminate invalidation, open-panel
-fallback; the full cloud-actions rationale): `DETAILS.md`.
+Open-with internals, cloud-actions rationale, and the full threading/watcher story: `DETAILS.md`. Read it
+before any non-trivial work here: editing, planning, reorganizing, or advising.

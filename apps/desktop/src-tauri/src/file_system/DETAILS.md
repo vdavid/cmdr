@@ -74,9 +74,35 @@ The MCP `tag` tool wraps `tags::toggle_color` / `set_tags` (and `system_color_na
 target paths off the pane state and refreshing via `apply_tags_to_listing`. `cmdr://state` file entries also surface a
 `[tags:…]` marker mirrored from `PaneFileEntry.tags`. See `mcp/DETAILS.md`.
 
-## Threading rationale
+## Threading
 
-The 8 MB-stack OS thread pattern (instead of rayon) for macOS framework calls is in `sync_status.rs` as the reference.
-The reasoning: NSURL resource-value lookups and FileProvider queries make synchronous XPC round-trips that can consume
-deep stack frames through FileProvider override chains (iCloud, Dropbox), exceeding rayon's 2 MB worker stack; running
-them on rayon would also starve the pool, which should stay reserved for CPU-bound work.
+The 8 MB-stack OS thread pattern (instead of rayon) for macOS framework calls is in `sync_status/pool.rs` as the
+reference. The reasoning: NSURL resource-value lookups and FileProvider queries make synchronous XPC round-trips that
+can consume deep stack frames through FileProvider override chains (iCloud, Dropbox), exceeding rayon's 2 MB worker
+stack; running them on rayon would also starve the pool, which should stay reserved for CPU-bound work.
+
+A per-call `std::thread::scope` isn't good enough on its own: those calls can block forever, so the threads have to be
+pooled and hard-capped or they accumulate (21-23 of them in the 2026-07-31 wedge). `src/icons/` (a separate top-level
+module) follows the same rule for `fetch_path_icons`.
+
+## Watcher threading
+
+The notify-rs debouncer callback runs on notify-rs's internal thread, which has no Tokio runtime, so `tokio::spawn`
+there panics with "there is no reactor running". It bit `watcher.rs`'s full-reread fallback path (`>500` events or
+ambiguous event kinds), then again in v0.24.0 via `git::watcher::refresh_local_listings_under` →
+`listing::caching::notify_directory_changed(FullRefresh)` (CRASH-26SBB) — which is why FullRefresh dispatch now funnels
+through `caching::spawn_full_refresh`. Use `tauri::async_runtime::spawn` (same as `indexing::watch::watcher`), and
+apply the rule to every watcher OS thread (git, SMB, MTP, archive), not just notify-rs.
+
+## Watcher path rebasing
+
+On macOS, FSEvents reports canonical paths (`/private/tmp/…`) while `LISTING_CACHE` holds the user-navigated form
+(`/tmp/…`). `watcher.rs::rebase_event_path` compares the firmlink-normalized forms
+(`indexing::paths::firmlinks::normalize_path`) and rebases matching event paths onto the listing's directory. A raw
+`path.parent() == dir_path` comparison silently dropped every event for listings under `/tmp`, `/var`, and `/etc`, so
+the pane never updated until the user re-navigated.
+
+FSEvents also resolves a **symlinked watch root** and reports events under the real target, so the handler additionally
+matches against the `canonicalize`d watch dir. This bit Google Drive, whose `My Drive` is a symlink to `~/My Drive`, so
+rename/create/delete never refreshed the pane; iCloud and Dropbox mount real directories and hit the firmlink path
+instead.

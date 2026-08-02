@@ -1,81 +1,56 @@
 # Transfer (copy + move)
 
-Copy and move, local-FS and volume-aware (Local ↔ MTP ↔ SMB). All flows go through the shared driver
-(`transfer_driver.rs`) and emit progress via `OperationEventSink`.
-
-Shared `WriteOperationState`, `OperationIntent`, cancel/rollback, ETA, and settle contract: `../CLAUDE.md`. Delete:
-`../delete/CLAUDE.md`. Frontend: `apps/desktop/src/lib/file-operations/transfer/CLAUDE.md`.
+Copy and move, local-FS and volume-aware (Local ↔ MTP ↔ SMB), all through the shared driver (`transfer_driver/`),
+emitting via `OperationEventSink`. State, intent, cancel/rollback, ETA, the conflict mutex, and the settle contract:
+`../CLAUDE.md`. Frontend: `apps/desktop/src/lib/file-operations/transfer/CLAUDE.md`.
 
 ## Module map
 
-- Local-FS: `copy/` (orchestration, per-file `single_item.rs`, `CopyTransaction` rollback), `move_op.rs` (same-fs
-  rename / cross-fs staging), `copy_strategy.rs` + `{macos,linux,chunked}_copy.rs` (per-file strategy + backends).
-- Shared driver: `transfer_driver/` (`drive_transfer_serial_sync` + `_async`, per-file progress builders).
-- Volume: `volume_{copy,move,preflight,rename_merge,conflict,strategy}.rs`, plus `checkpoint_stream.rs`
-  (`CheckpointStream`, described below), `staged_write.rs` (every file write's `.cmdr-tmp-*` staging), and
-  `transfer_probe.rs` (the in-flight table + stall watchdog).
+- Local-FS: `copy/` (+ `CopyTransaction` rollback), `move_op.rs`, `copy_strategy.rs` + `{macos,linux,chunked}_copy.rs`.
+- Volume: `volume_{copy,move,preflight,rename_merge,conflict,strategy}.rs`, `checkpoint_stream.rs`, `staged_write.rs`,
+  `transfer_probe.rs` (in-flight table + stall watchdog).
 
-## Must-knows (data-safety invariants)
+## Merge and conflicts
 
-- **The merge invariant**: a merge never deletes or overwrites a dest file the source doesn't shadow — every policy and
-  backend, including cancel/rollback mid-merge (`volume_merge_tests.rs`).
+- **The merge invariant**: a merge never deletes or overwrites a dest file the source doesn't shadow — every policy,
+  every backend, cancel/rollback mid-merge included (`volume_merge_tests.rs`).
 - **Dir-vs-dir is NEVER a conflict**: `resolve_volume_conflict` short-circuits to merge before any policy lookup or
-  `write-conflict` emit. Even Stop/Skip/Rename merge the folder; only files prompt. Cross-type keeps the machinery.
-- **Overwrite means merge for dirs, replace for files**: enforced at the `apply_volume_conflict_resolution` call site
-  (skips the delete for dirs), NOT by `Volume::delete`'s contract — else a recursive-delete backend flips merge →
-  wholesale replace. Pinned by `dir_overwrite_must_merge_not_replace_even_with_recursive_delete`.
-- **A cross-volume file write stages on a `.cmdr-tmp-<uuid>` and takes its final name only after its last byte**
-  (`staged_write.rs`): a force-quit must never leave a truncated file at a real name. Two exemptions: `AlreadyStaged`
-  (a conflict-minted temp) and `SingleShot` (the DESTINATION lands it whole or not at all —
-  `Volume::write_is_single_shot`, today only SMB's compound frame). ❌ Single-shot-ness buys that, NEVER smallness: ask
-  the destination via `resolve_staging`. A staged temp sits in `state.in_flight_temps` ONLY while it's a partial, so a
-  temp holding committed data is never swept. It's also a `StagingTemp` tagged with `state.liveness_token()`, which
-  hides it while it's written; a failed landing drops that guard on purpose (`file_system::staging`).
-- **Cross-volume file→file Overwrite is a safe-replace, NOT delete-then-write**: stream into a `.cmdr-tmp-<uuid>`
-  sibling, then `finalize_safe_replace`. That post-write temp is committed data, not a cleanable partial. Cross-type
-  stays delete-first.
-- **Cross-volume cleanup/rollback for a DIRECTORY source is per-FILE, never the dir root** (a merge holds pre-existing
-  dest files; a recursive root delete is silent data loss). The `CreatedPaths` ledger flows out of the `Err` arms,
-  `last_dest_path` is CLEARED for a dir source, and a dir root never enters `in_flight_partials`.
-- **Cross-FS move source-delete preserves Skipped sources** and runs AFTER `flush_created_destinations` (never delete
-  the source before the dest is durable).
-- **Empty directories land via `copy.rs::create_scanned_dirs_at_destination`** (the per-file loop only creates dirs as
-  file parents). A dest already holding anything is left untouched.
-- **Same-volume move is a rename-merge with top-level hints only** (`top_level_move_hints`, `bytes_total = 0`), never a
-  subtree walk. Cross-volume move runs the full preflight.
-- **Cross-type Rename reserves the name with a 0-byte O_EXCL placeholder** (`find_unique{_volume,}_name`), returning
-  `needs_safe_overwrite: true` so the copy lands ON it (TOCTOU guard).
-- **MTP can't signal collisions via `create_directory`** (allows duplicate-name siblings); the merge walker pre-checks
-  `exists()`, gated by `Volume::create_directory_errors_on_existing_dir()`.
-- **The conflict-dispatch mutex serializes the human across concurrent/nested merges**; released on every exit, never
-  held across the write (`../CLAUDE.md`).
-- **Volume copy/move must skip `write-error` on `Cancelled`** (the inner path already emitted `write-cancelled`);
-  cancellation propagates as typed `VolumeError::Cancelled`, never `IoError`.
-- **Overwrite is NOT reversible**: rollback un-creates new files but can't restore an Overwrite-replaced original (no
-  unbounded backup — don't reintroduce that footgun).
-- **`stream_pipe_file` retries once on `VolumeError::StaleDestinationHandle`**: the only layer that can retry an MTP
-  stale-handle rejection (the backend stream is single-use), so don't drop the loop. Why:
-  `apps/desktop/src-tauri/src/mtp/connection/DETAILS.md`.
-- **Cross-volume copy parks/yields between chunks** via `CheckpointStream` (`checkpoint_stream.rs`; sync `on_progress`
-  can't `.await`). Reads hold no session between windows, so pause and yield both mean **don't start the next window**
-  (park in place, NO release/reopen). Auto-yield keeps the op **Running** — don't flip `OperationIntent`. SMB's probe is
-  per-share, ❌ never app-wide. TWO opt-ins, ❌ don't merge: SOURCE read-yield (MTP + SMB) parks UNBOUNDED; DESTINATION
-  write-yield (SMB uploads) is **HARD-CAPPED** because it holds an open write handle the server will reap. ❌ MTP never
-  opts in here. DETAILS § "Foreground auto-yield".
+  emit. Even Stop/Skip/Rename merge the folder; only files prompt.
+- **Overwrite means merge for dirs, replace for files**, enforced at the `apply_volume_conflict_resolution` call site,
+  NOT by `Volume::delete`'s contract — else a recursive-delete backend flips merge → wholesale replace.
+- **Overwrite is NOT reversible**: rollback can't restore a replaced original. ❌ No unbounded backup.
+- **Cross-type Rename reserves the name with a 0-byte `O_EXCL` placeholder** (TOCTOU guard), returning
+  `needs_safe_overwrite: true`.
 
-- **The concurrent driver observes cancel/rollback ON ITS AWAIT, not only in the spawn loop.** A driver parked on
-  `in_flight.next()` never reaches the spawn loop's `is_cancelled` check, which is why Rollback did nothing in the
-  2026-07-31 wedge. It races that await against `state.backend_cancel`, drains under `CANCEL_DRAIN_DEADLINE`, then
-  ABANDONS what hasn't wound down (logging the probe dump). ❌ Never an unbounded wait: one wedged task must not hold
-  the user's dialog open.
-- **A parked transfer is invisible to a stack sample, so every phase must announce itself** (`transfer_probe.rs`): a
-  20-minute production wedge left only a spawn and a stream-open in the log. ❌ Don't add an `.await` on a transfer path
-  without a phase around it — the next wedge is only as diagnosable as the last phase someone recorded. A watchdog dumps
-  the in-flight table after 20 s without byte movement. Tasks reach their probe via the `CURRENT_TASK_PROBE` task-local
-  (no signature threading); outside a copy task every helper is a no-op.
-- **The probe is ALSO the UI's stall signal**: every progress event carries a `TransferActivity`, attached in
-  `state.rs::enrich_progress`. ❌ Don't derive a stall from event timing on the FE — a wedged transfer emits NOTHING, so
-  the watchdog re-sends the last event once the counter has been still for `HEARTBEAT_AFTER_SECS`. Registered on BOTH
-  paths, or a directory copy gets no signal. DETAILS § "The stall signal".
+## Staging and durability
 
-Architecture, flows, and decisions: `DETAILS.md`. Read before non-trivial work here.
+- **A cross-volume file write stages on `.cmdr-tmp-<uuid>` and takes its final name only after its last byte**: a
+  force-quit must never leave a truncated file at a real name. Exemptions: `AlreadyStaged` and `SingleShot` — ❌
+  single-shot-ness buys that, NEVER smallness; ask via `resolve_staging`. A temp sits in `in_flight_temps` only while
+  partial, and carries `state.liveness_token()` so it stays hidden.
+- **Cross-volume file→file Overwrite is a safe-replace** (sibling temp + `finalize_safe_replace`), not
+  delete-then-write; that temp is committed data, not a cleanable partial. Cross-type stays delete-first.
+- **Cleanup/rollback for a DIRECTORY source is per-FILE, never the dir root**: a merge holds pre-existing dest files, so
+  a recursive root delete is silent data loss. `last_dest_path` is cleared for a dir source; a dir root never enters
+  `in_flight_partials`.
+- **Cross-FS move source-delete preserves Skipped sources and runs AFTER `flush_created_destinations`.**
+- **Same-volume move is a rename-merge with top-level hints only** (`bytes_total = 0`), never a subtree walk.
+
+## Streaming, cancel, and diagnosis
+
+- **Cross-volume copy parks/yields between chunks** (`CheckpointStream`). Pause and yield both mean **don't start the
+  next window** (park in place, NO release/reopen); auto-yield keeps the op **Running**. TWO opt-ins, ❌ don't merge:
+  SOURCE read-yield (MTP + SMB) parks UNBOUNDED; DESTINATION write-yield (SMB) is HARD-CAPPED, holding a write handle
+  the server reaps. ❌ MTP never opts in there.
+- **The concurrent driver observes cancel/rollback ON ITS AWAIT, not only in the spawn loop**: parked on
+  `in_flight.next()` it never reaches `is_cancelled`. It races that await against `state.backend_cancel`, drains under
+  `CANCEL_DRAIN_DEADLINE`, then ABANDONS the rest. ❌ Never an unbounded wait.
+- **Every phase must announce itself** (`transfer_probe.rs`): a parked transfer is invisible to a stack sample. ❌ No
+  `.await` on a transfer path without a phase around it.
+- **The probe is ALSO the UI's stall signal** (a `TransferActivity` on every progress event). ❌ Don't derive a stall
+  from FE event timing — a wedged transfer emits NOTHING. Register on BOTH paths, or a directory copy gets no signal.
+- **`stream_pipe_file` retries once on `VolumeError::StaleDestinationHandle`** — the only layer that can retry MTP's
+  stale-handle rejection. Don't drop the loop.
+
+Semantics, flows, decisions, the auto-yield and stall-signal contracts: `DETAILS.md`. Read it before any
+non-trivial work here: editing, planning, reorganizing, or advising.

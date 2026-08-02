@@ -56,10 +56,11 @@ checks (they mutate shared allowlists mid-run), and review every diff yourself. 
 - **Canonical closing-pointer line.** Every area `CLAUDE.md` ends with a one-line pointer to its `DETAILS.md` that names
   the payload AND carries a read-trigger biased toward over-reading. The trigger sentence is fixed:
   `Read it before any non-trivial work here: editing, planning, reorganizing, or advising.` So the line reads
-  `<what's inside>: [DETAILS.md](DETAILS.md). <trigger>` (default the payload to "Architecture, flows, and decisions"
-  when nothing more specific fits). The low bar ("any non-trivial work") plus the named activities are deliberate: the
-  trigger calls out planning/reorganizing/advising, not just editing, because the old "before structural changes"
-  wording let reorg and advice tasks skip the doc. `DETAILS.md` headers mirror it with "Read this before ...".
+  ``<what's inside>: `DETAILS.md`. <trigger>`` — a bare backticked path, since `docs-link-text` rejects a link whose
+  text repeats its own target (default the payload to "Architecture, flows, and decisions" when nothing more specific
+  fits). The low bar ("any non-trivial work") plus the named activities are deliberate: the trigger calls out
+  planning/reorganizing/advising, not just editing, because the old "before structural changes" wording let reorg and
+  advice tasks skip the doc. `DETAILS.md` headers mirror it with "Read this before ...".
 - **Describe current state, not history** (`.claude/rules/docs.md`): git holds the history. Drop "we originally / used
   to / no longer applicable" narration; keep the non-obvious why and constraint-encoding pain.
 - **Single-source**: a mechanism lives in ONE canonical doc; everywhere else points to it by path. `architecture.md` is
