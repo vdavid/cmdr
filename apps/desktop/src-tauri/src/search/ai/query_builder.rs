@@ -3,8 +3,9 @@
 //! This is the orchestrator: it calls mapping functions from `mappings` to convert
 //! individual fields, then assembles the results into a complete `SearchQuery`.
 
-use crate::commands::search::{TranslateDisplay, TranslatedQuery};
 use crate::search::{PatternType, SearchQuery, format_timestamp};
+
+use super::types::{TranslateDisplay, TranslatedQuery};
 
 use super::mappings::{
     keywords_to_pattern, merge_keyword_and_type, parse_exclude_list, scope_to_paths, size_to_filter, time_to_range,

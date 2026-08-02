@@ -23,6 +23,12 @@ Depth for the search backend. `CLAUDE.md` holds the must-knows; this file holds 
   logic-free prevents circular dependencies and makes the data model easy to find.
 - **AI pipeline lives in `search::ai`, not `commands/`**: the parser, prompt, and query builder are search domain logic,
   not IPC concerns; `commands/search.rs` stays a thin wrapper. AI-internal decisions live in `ai/CLAUDE.md`.
+- **The translation DTOs live with the code that fills them**: `TranslatedQuery` and `TranslateDisplay` are defined in
+  `ai/types.rs` and `pub use`d from `commands/search.rs`, so the IPC path callers import is unchanged while
+  `search::ai` no longer depends on `commands`. specta names a type by its struct identity, not its module, so
+  `bindings.ts` doesn't move either. Define a new translation DTO in `ai/types.rs` and re-export it, not the reverse:
+  the reverse is what made `commands::search ↔ search::ai ↔ query_builder` a cycle. The one remaining edge from
+  `search/` up into `commands/` is `expand_tilde` in `ai/mappings/size_scope_mapping.rs` (see `CLAUDE.md`).
 - **Add history only on "Open in pane"**: David's explicit call. The 1000-entry budget stays signal-rich when it tracks
   results worth acting on, not every keystroke-debounced filename search. The gate is a frontend convention, not
   Rust-enforced.

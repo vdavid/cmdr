@@ -14,6 +14,10 @@ use crate::search::{self, ParsedScope, SearchQuery, SearchResult, VolumeLoad};
 use crate::search::ai::{self, query_builder as ai_query_builder};
 use crate::search::history::{self, HistoryEntry};
 
+/// The translation DTOs are defined in `search::ai::types` (business logic owns
+/// its own data) and re-exported here so the IPC surface stays at this path.
+pub use crate::search::ai::types::{TranslateDisplay, TranslatedQuery};
+
 #[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PrepareResult {
@@ -158,39 +162,6 @@ pub struct TranslateResult {
     /// omitted the label or the fallback path ran (raw-keywords retry); the
     /// frontend falls back to the original natural-language prompt.
     pub label: Option<String>,
-}
-
-/// The structured query with unix timestamps, ready for `search_files`.
-#[derive(Debug, Clone, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct TranslatedQuery {
-    pub name_pattern: Option<String>,
-    pub pattern_type: String,
-    pub min_size: Option<u64>,
-    pub max_size: Option<u64>,
-    pub modified_after: Option<u64>,
-    pub modified_before: Option<u64>,
-    pub is_directory: Option<bool>,
-    pub include_paths: Option<Vec<String>>,
-    pub exclude_dir_names: Option<Vec<String>>,
-    pub case_sensitive: Option<bool>,
-    pub exclude_system_dirs: Option<bool>,
-}
-
-/// Human-readable values so the frontend can populate filter UI.
-#[derive(Debug, Clone, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct TranslateDisplay {
-    pub name_pattern: Option<String>,
-    pub pattern_type: Option<String>,
-    pub min_size: Option<u64>,
-    pub max_size: Option<u64>,
-    pub modified_after: Option<String>,
-    pub modified_before: Option<String>,
-    pub is_directory: Option<bool>,
-    pub include_paths: Option<Vec<String>>,
-    pub exclude_dir_names: Option<Vec<String>>,
-    pub case_sensitive: Option<bool>,
 }
 
 /// Translates a natural language search query into structured filters using the configured LLM.

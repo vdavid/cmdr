@@ -44,8 +44,8 @@ out across every persisted `index-{volumeId}.db`. Flat API: `use crate::search::
 - **Ranking runs per MATCH** (a 1-letter query matches millions), so it's top-k + allocation-light: folder→weight memo,
   `hash_path_from_index` (never builds the path), ASCII-fast `classify_match`, `select_nth_unstable_by`. `bench.rs`
   measures it.
-- **`ai/query_builder.rs` imports `expand_tilde` from `crate::commands::file_system`**: business logic reaching into
-  the IPC layer, intentional (moving it touches 20+ call sites), not a silent fix.
+- **`ai/mappings/size_scope_mapping.rs` imports `expand_tilde` from `crate::commands::file_system`**: business logic
+  reaching into the IPC layer, intentional (moving it touches 20+ call sites), not a silent fix.
 
 ## History store (`history.rs`)
 

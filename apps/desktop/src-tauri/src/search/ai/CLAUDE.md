@@ -16,6 +16,8 @@ enum-to-value mappings, and an assembler. The LLM only classifies intent; Rust c
   silently skipped. `fallback_keywords()` for total LLM failure: top-3 longest tokens > 2 chars.
 - **`query_builder.rs`**: assembles `SearchQuery` by invoking `mappings/`. Also `generate_caveat`,
   `build_translate_display`, `build_translated_query`, `build_label`, and `iso_date_to_timestamp`.
+- **`types.rs`**: the two serialization DTOs, `TranslatedQuery` and `TranslateDisplay`. Pure data;
+  `commands/search.rs` re-exports them, so the IPC import path is unchanged.
 - **`mappings/`**: pure LLM-enum → value conversions split by domain (`type`, `time`, `size_scope`, `keyword`) plus
   shared `KB/MB/GB` and `KNOWN_EXTENSIONS`. Re-export hub in `mappings/mod.rs`.
 

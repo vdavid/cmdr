@@ -7,6 +7,7 @@ pub(crate) mod mappings;
 pub mod parser;
 pub mod prompt;
 pub mod query_builder;
+pub mod types;
 
 // Re-exports for convenience
 pub use parser::{ParsedLlmResponse, fallback_keywords, parse_llm_response};
@@ -14,3 +15,4 @@ pub use prompt::build_classification_prompt;
 pub use query_builder::{
     build_search_query, build_translate_display, build_translated_query, generate_caveat, iso_date_to_timestamp,
 };
+pub use types::{TranslateDisplay, TranslatedQuery};
