@@ -17,7 +17,7 @@ use std::sync::{Arc, Mutex as StdMutex};
 use std::time::Duration;
 
 use crate::file_system::listing::FileEntry;
-use crate::file_system::volume::{ListingProgress, Volume, VolumeError, VolumeReadStream};
+use crate::file_system::volume::{ListingProgress, SpaceInfo, Volume, VolumeError, VolumeReadStream};
 use crate::ignore_poison::IgnorePoison;
 
 pub(super) fn make_state() -> Arc<WriteOperationState> {
@@ -211,6 +211,300 @@ impl Volume for FailOnceStaleDest {
             } else {
                 Ok(size)
             }
+        })
+    }
+}
+
+// ========================================================================
+// Flaky destination (the retry suite): fails the first N writes, then works.
+// ========================================================================
+
+/// A destination that fails its first `fail_writes` `write_from_stream` calls
+/// with `error` and delegates every call after that to a real `InMemoryVolume`.
+///
+/// Two details make it worth more than a counter:
+///
+/// - **It leaves litter.** A failing attempt writes the bytes it "received" to
+///   the target path and does NOT remove them, so the suite can prove that
+///   `StagedWrite::abandon` clears the previous attempt's partial rather than
+///   relying on a well-behaved backend to have done it. Real backends do clean up
+///   after themselves; a wedged one may not.
+/// - **It is a real volume underneath**, so staging, the landing rename, and the
+///   final content are all observable end to end.
+pub(super) struct FlakyDest {
+    pub(super) inner: Arc<crate::file_system::volume::InMemoryVolume>,
+    pub(super) fail_writes: usize,
+    pub(super) error: VolumeError,
+    pub(super) calls: AtomicUsize,
+    /// When set, only writes whose target file name STARTS WITH this string are
+    /// eligible to fail (a staged write targets `<name>.cmdr-tmp-<uuid>`, so the
+    /// prefix is how a test names one child of a merge). `None` ⇒ every write.
+    pub(super) fail_only_named: Option<String>,
+}
+
+impl FlakyDest {
+    /// A destination that fails `fail_writes` times with `error`, then works.
+    pub(super) fn new(fail_writes: usize, error: VolumeError) -> Arc<Self> {
+        Arc::new(Self {
+            inner: Arc::new(
+                crate::file_system::volume::InMemoryVolume::new("flaky-dest").with_space_info(10_000_000, 10_000_000),
+            ),
+            fail_writes,
+            error,
+            calls: AtomicUsize::new(0),
+            fail_only_named: None,
+        })
+    }
+
+    /// Narrows the failures to one file, named by the prefix of its final name.
+    pub(super) fn only_for(mut self: Arc<Self>, name: &str) -> Arc<Self> {
+        Arc::get_mut(&mut self)
+            .expect("the fixture is not shared yet")
+            .fail_only_named = Some(name.to_owned());
+        self
+    }
+
+    pub(super) fn write_calls(&self) -> usize {
+        self.calls.load(Ordering::SeqCst)
+    }
+
+    /// Everything sitting in the destination root, by name.
+    pub(super) async fn names(&self) -> Vec<String> {
+        self.inner
+            .list_directory(Path::new("/"), None)
+            .await
+            .unwrap_or_default()
+            .into_iter()
+            .map(|e| e.name)
+            .collect()
+    }
+
+    /// The bytes at `path`, or `None` when nothing is there.
+    pub(super) async fn read(&self, path: &str) -> Option<Vec<u8>> {
+        let mut stream = self.inner.open_read_stream(Path::new(path)).await.ok()?;
+        let mut buf = Vec::new();
+        while let Some(Ok(chunk)) = stream.next_chunk().await {
+            buf.extend_from_slice(&chunk);
+        }
+        Some(buf)
+    }
+}
+
+impl Volume for FlakyDest {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+    fn root(&self) -> &Path {
+        self.inner.root()
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn supports_streaming(&self) -> bool {
+        true
+    }
+    fn max_concurrent_ops(&self) -> usize {
+        self.inner.max_concurrent_ops()
+    }
+    fn list_directory<'a>(
+        &'a self,
+        path: &'a Path,
+        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        self.inner.list_directory(path, on_progress)
+    }
+    fn get_metadata<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        self.inner.get_metadata(path)
+    }
+    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        self.inner.exists(path)
+    }
+    fn is_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        self.inner.is_directory(path)
+    }
+    fn create_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        self.inner.create_directory(path)
+    }
+    fn create_directory_all<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        self.inner.create_directory_all(path)
+    }
+    fn create_file<'a>(
+        &'a self,
+        path: &'a Path,
+        content: &'a [u8],
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        self.inner.create_file(path, content)
+    }
+    fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        self.inner.delete(path)
+    }
+    fn rename<'a>(
+        &'a self,
+        from: &'a Path,
+        to: &'a Path,
+        force: bool,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        self.inner.rename(from, to, force)
+    }
+    fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
+        self.inner.get_space_info()
+    }
+    fn open_read_stream<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        self.inner.open_read_stream(path)
+    }
+    fn create_directory_errors_on_existing_dir(&self) -> bool {
+        self.inner.create_directory_errors_on_existing_dir()
+    }
+    fn write_from_stream<'a>(
+        &'a self,
+        dest: &'a Path,
+        size: u64,
+        mut stream: Box<dyn VolumeReadStream>,
+        on_progress: &'a (dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        let eligible = self.fail_only_named.as_ref().is_none_or(|name| {
+            dest.file_name()
+                .is_some_and(|n| n.to_string_lossy().starts_with(name.as_str()))
+        });
+        let attempt = if eligible {
+            self.calls.fetch_add(1, Ordering::SeqCst)
+        } else {
+            usize::MAX
+        };
+        Box::pin(async move {
+            if attempt >= self.fail_writes {
+                return self.inner.write_from_stream(dest, size, stream, on_progress).await;
+            }
+            // Drain one chunk and leave it on disk, unremoved: a wedged backend
+            // that never got to its own cleanup. The suite asserts our staging
+            // clears it before the next attempt.
+            let mut partial = Vec::new();
+            if let Some(Ok(chunk)) = stream.next_chunk().await {
+                partial.extend_from_slice(&chunk);
+            }
+            let _ = self.inner.delete(dest).await;
+            let _ = self.inner.create_file(dest, &partial).await;
+            Err(self.error.clone())
+        })
+    }
+}
+
+/// A destination whose FIRST write never returns — the wedge shape that has no
+/// deadline anywhere and cost a user a force-quit on 2026-07-31 — and whose
+/// second write works normally.
+///
+/// It is the fixture for the M4.2 → M4.1 handoff: nothing about this write will
+/// ever produce an error on its own, so the only thing that can end it is the
+/// watchdog, and the only thing that can then save the file is the retry.
+pub(super) struct WedgedThenWorkingDest {
+    pub(super) inner: Arc<crate::file_system::volume::InMemoryVolume>,
+    pub(super) calls: AtomicUsize,
+    /// Set once the wedged write has actually been entered, so a test waits on
+    /// the state it needs instead of guessing at a duration.
+    pub(super) wedged: Arc<AtomicBool>,
+}
+
+impl WedgedThenWorkingDest {
+    pub(super) fn new() -> Arc<Self> {
+        Arc::new(Self {
+            inner: Arc::new(
+                crate::file_system::volume::InMemoryVolume::new("wedged-dest").with_space_info(10_000_000, 10_000_000),
+            ),
+            calls: AtomicUsize::new(0),
+            wedged: Arc::new(AtomicBool::new(false)),
+        })
+    }
+
+    pub(super) fn write_calls(&self) -> usize {
+        self.calls.load(Ordering::SeqCst)
+    }
+}
+
+impl Volume for WedgedThenWorkingDest {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+    fn root(&self) -> &Path {
+        self.inner.root()
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn supports_streaming(&self) -> bool {
+        true
+    }
+    fn list_directory<'a>(
+        &'a self,
+        path: &'a Path,
+        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        self.inner.list_directory(path, on_progress)
+    }
+    fn get_metadata<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        self.inner.get_metadata(path)
+    }
+    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        self.inner.exists(path)
+    }
+    fn is_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        self.inner.is_directory(path)
+    }
+    fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        self.inner.delete(path)
+    }
+    fn rename<'a>(
+        &'a self,
+        from: &'a Path,
+        to: &'a Path,
+        force: bool,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        self.inner.rename(from, to, force)
+    }
+    fn open_read_stream<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        self.inner.open_read_stream(path)
+    }
+    fn write_from_stream<'a>(
+        &'a self,
+        dest: &'a Path,
+        size: u64,
+        stream: Box<dyn VolumeReadStream>,
+        on_progress: &'a (dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        let attempt = self.calls.fetch_add(1, Ordering::SeqCst);
+        let wedged = Arc::clone(&self.wedged);
+        Box::pin(async move {
+            if attempt > 0 {
+                return self.inner.write_from_stream(dest, size, stream, on_progress).await;
+            }
+            wedged.store(true, Ordering::SeqCst);
+            // Never returns, never errors, never reports a byte. Only the
+            // watchdog can end this.
+            std::future::pending::<()>().await;
+            unreachable!("a pending future never resolves")
         })
     }
 }

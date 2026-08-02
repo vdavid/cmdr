@@ -44,6 +44,18 @@ pub(in crate::file_system::write_operations::transfer) struct SerialLeafProgress
     /// Cumulative bytes already committed: prior top-level sources (seed) plus
     /// every leaf of THIS source that `on_leaf_complete` has finished.
     byte_base: AtomicU64,
+    /// The furthest the IN-FLIGHT leaf has reported, so a leaf that restarts at
+    /// byte zero can't walk the Size bar backwards.
+    ///
+    /// A file that hits a transport blip is run again from its first byte
+    /// (`retry.rs`), so `file_bytes_done` legitimately drops to 0 mid-leaf. The
+    /// bar must not: dropping from 4 MiB back to 0 reads as data being lost, and
+    /// the ETA estimator would take the reversal as negative throughput. Reporting
+    /// the high-water mark keeps the number monotonic AND keeps it honest at the
+    /// end, because `on_leaf_complete` adds the leaf's exact size once, whatever
+    /// the attempt count. Reset per leaf, so the next (possibly much smaller) one
+    /// isn't held up by this one's mark.
+    leaf_high_water: AtomicU64,
     /// Operation-wide completed-leaf counter, shared across all sources.
     files_done: Arc<AtomicUsize>,
     total_files: usize,
@@ -77,6 +89,7 @@ impl SerialLeafProgress {
             operation_type,
             file_name,
             byte_base: AtomicU64::new(bytes_done_so_far),
+            leaf_high_water: AtomicU64::new(0),
             files_done,
             total_files,
             total_bytes,
@@ -92,7 +105,12 @@ impl SerialLeafProgress {
         if is_cancelled(&self.state.intent) {
             return ControlFlow::Break(());
         }
-        let current_total = self.byte_base.load(Ordering::Relaxed) + file_bytes_done;
+        // The high-water mark, not the raw count: see `leaf_high_water`.
+        let leaf_done = self
+            .leaf_high_water
+            .fetch_max(file_bytes_done, Ordering::Relaxed)
+            .max(file_bytes_done);
+        let current_total = self.byte_base.load(Ordering::Relaxed) + leaf_done;
         try_emit_throttled_progress(
             &*self.events,
             &self.state,
@@ -116,6 +134,8 @@ impl SerialLeafProgress {
     /// counter, so without this a single large leaf would never cross `N/N`.
     pub(in crate::file_system::write_operations::transfer) fn on_leaf_complete(&self, leaf_bytes: u64) {
         let new_total = self.byte_base.fetch_add(leaf_bytes, Ordering::Relaxed) + leaf_bytes;
+        // The next leaf starts from its own first byte.
+        self.leaf_high_water.store(0, Ordering::Relaxed);
         let new_files = self.files_done.fetch_add(1, Ordering::Relaxed) + 1;
         *self.last_emit.lock_ignore_poison() = Instant::now();
         emit_progress_and_status(
@@ -143,11 +163,13 @@ impl SerialLeafProgress {
 ///
 /// `last_file_bytes` is a per-task atomic that the callback uses to
 /// convert the volume's cumulative-for-this-file count into a delta
-/// before rolling into the shared `bytes_done_atomic`. Callers must
-/// allocate a fresh `AtomicU64` per spawned task; the caller can also
-/// inspect `last_file_bytes.load() == 0` after the task finishes to
-/// detect volumes that never invoked `on_progress` and credit the file's
-/// bytes to the aggregate as a compensation.
+/// before rolling into the shared `bytes_done_atomic`. It holds the
+/// file's HIGH-WATER mark rather than its latest report, so a file that
+/// restarts at byte zero on a retry credits its bytes exactly once.
+/// Callers must allocate a fresh `AtomicU64` per spawned task; the caller
+/// can also inspect `last_file_bytes.load() == 0` after the task finishes
+/// to detect volumes that never invoked `on_progress` and credit the
+/// file's bytes to the aggregate as a compensation.
 ///
 /// Used by: `volume_copy::copy_volumes_with_progress` concurrent path.
 #[allow(
@@ -172,7 +194,12 @@ pub(in crate::file_system::write_operations::transfer) fn make_concurrent_per_fi
         if is_cancelled(&state.intent) {
             return ControlFlow::Break(());
         }
-        let prev = last_file_bytes.swap(file_bytes_done, Ordering::Relaxed);
+        // `fetch_max`, NOT `swap`: a file that is run again after a transport
+        // blip (`retry.rs`) restarts at byte zero, and a `swap` would lower the
+        // watermark and then credit the whole re-streamed prefix a second time —
+        // a silent over-count of the operation's byte total, and a Size bar that
+        // reaches 100% before the copy does.
+        let prev = last_file_bytes.fetch_max(file_bytes_done, Ordering::Relaxed);
         let delta = file_bytes_done.saturating_sub(prev);
         let current_total = bytes_done_atomic.fetch_add(delta, Ordering::Relaxed) + delta;
         let current_files_done = files_done_atomic.load(Ordering::Relaxed);
@@ -205,6 +232,137 @@ pub(in crate::file_system::write_operations::transfer) fn make_concurrent_per_fi
     clippy::too_many_arguments,
     reason = "matches WriteProgressEvent shape; bundling into a context struct adds ceremony without cleaning anything up"
 )]
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::file_system::write_operations::event_sinks::CollectorEventSink;
+    use crate::file_system::write_operations::test_support::TestOperationGuard;
+
+    /// The bytes the FE was told about, in order.
+    fn totals(sink: &CollectorEventSink) -> Vec<u64> {
+        sink.progress
+            .lock_ignore_poison()
+            .iter()
+            .map(|e| e.bytes_done)
+            .collect()
+    }
+
+    fn leaf_progress(guard: &TestOperationGuard, sink: &Arc<CollectorEventSink>, base: u64) -> Arc<SerialLeafProgress> {
+        SerialLeafProgress::new(
+            Arc::clone(sink) as Arc<dyn OperationEventSink>,
+            Arc::clone(guard.state()),
+            guard.id().to_owned(),
+            WriteOperationType::Copy,
+            None,
+            base,
+            Arc::new(AtomicUsize::new(0)),
+            10,
+            1_000_000,
+            Arc::new(Mutex::new(Instant::now() - Duration::from_secs(1))),
+            // No throttle: every call must be observable.
+            Duration::ZERO,
+        )
+    }
+
+    /// A file that is run again after a transport blip restarts at byte zero
+    /// (`retry.rs`), so the leaf's own counter goes backwards. What the user sees
+    /// must not: the Size bar dropping from 4 MiB back to 0 and climbing again
+    /// reads as data being lost, and the ETA estimator would take the reversal as
+    /// negative throughput.
+    #[test]
+    fn a_retried_leaf_never_walks_the_size_bar_backwards() {
+        let guard = TestOperationGuard::register("leaf-retry-progress");
+        let sink = Arc::new(CollectorEventSink::new());
+        let progress = leaf_progress(&guard, &sink, 1_000);
+
+        // First attempt gets a third of the way in, then the blip.
+        let _ = progress.on_chunk(2_000);
+        let _ = progress.on_chunk(4_000);
+        // The retry starts over from zero.
+        let _ = progress.on_chunk(1_000);
+        let _ = progress.on_chunk(4_000);
+        let _ = progress.on_chunk(6_000);
+        progress.on_leaf_complete(6_000);
+
+        let seen = totals(&sink);
+        assert!(
+            seen.windows(2).all(|w| w[1] >= w[0]),
+            "the reported byte total must never go backwards across a retry: {seen:?}"
+        );
+        assert_eq!(
+            *seen.last().expect("the leaf milestone emits"),
+            7_000,
+            "the finished leaf must be counted exactly once: base 1000 + 6000 bytes"
+        );
+    }
+
+    /// The concurrent path's callback rolls a per-file DELTA into a shared
+    /// operation total, so a retried file must not credit the same bytes twice.
+    /// `saturating_sub` already gives that for free — this pins it, because the
+    /// obvious "simplify" (a plain subtraction, or storing then adding) would
+    /// double-count a restart in a way nothing else would catch.
+    #[test]
+    fn a_retried_file_credits_its_bytes_to_the_operation_total_exactly_once() {
+        let guard = TestOperationGuard::register("concurrent-retry-progress");
+        let sink = Arc::new(CollectorEventSink::new());
+        let op_total = Arc::new(AtomicU64::new(0));
+        let callback = make_concurrent_per_file_progress(
+            Arc::clone(&sink) as Arc<dyn OperationEventSink>,
+            Arc::clone(guard.state()),
+            guard.id().to_owned(),
+            WriteOperationType::Copy,
+            None,
+            Arc::new(AtomicU64::new(0)),
+            Arc::clone(&op_total),
+            Arc::new(AtomicUsize::new(0)),
+            10,
+            1_000_000,
+            Arc::new(Mutex::new(Instant::now() - Duration::from_secs(1))),
+            Duration::ZERO,
+        );
+
+        // First attempt reaches 6 KB, then the blip; the retry starts over and
+        // runs the file to its full 9 KB.
+        for done in [3_000, 6_000] {
+            let _ = callback(done, 9_000);
+        }
+        for done in [3_000, 6_000, 9_000] {
+            let _ = callback(done, 9_000);
+        }
+
+        assert_eq!(
+            op_total.load(Ordering::Relaxed),
+            9_000,
+            "one 9 KB file must add 9 KB to the operation total, however many attempts it took"
+        );
+        let seen = totals(&sink);
+        assert!(
+            seen.windows(2).all(|w| w[1] >= w[0]),
+            "the operation total must never go backwards: {seen:?}"
+        );
+    }
+
+    /// And the next leaf starts from its own zero: the previous leaf's high-water
+    /// mark must not hold this one's bar up while it climbs.
+    #[test]
+    fn the_next_leaf_measures_from_its_own_first_byte() {
+        let guard = TestOperationGuard::register("leaf-retry-next");
+        let sink = Arc::new(CollectorEventSink::new());
+        let progress = leaf_progress(&guard, &sink, 0);
+
+        let _ = progress.on_chunk(5_000);
+        progress.on_leaf_complete(5_000);
+        // A second, much smaller leaf.
+        let _ = progress.on_chunk(100);
+
+        assert_eq!(
+            totals(&sink).last().copied(),
+            Some(5_100),
+            "the second leaf's bytes must add to the first leaf's total, not be swallowed by its high-water mark"
+        );
+    }
+}
+
 fn try_emit_throttled_progress(
     events: &dyn OperationEventSink,
     state: &Arc<WriteOperationState>,

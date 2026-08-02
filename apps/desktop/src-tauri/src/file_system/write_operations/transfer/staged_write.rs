@@ -178,6 +178,43 @@ impl StagedWrite {
         }
     }
 
+    /// This ATTEMPT failed and another one is about to run the same file
+    /// (`retry.rs`): clear whatever the failed attempt left at the write target,
+    /// so the next attempt writes onto a clean path.
+    ///
+    /// Wider than [`abandon`](Self::abandon) by exactly one case, and the reason
+    /// is that the next writer is US, not the caller. Under
+    /// [`WriteStaging::AlreadyStaged`] the target is the CALLER's safe-replace
+    /// temp, which `abandon` deliberately leaves alone because the caller owns its
+    /// lifetime — but between two attempts nobody else can be looking at it, it
+    /// holds nothing but the partial we just gave up on, and the ORIGINAL it will
+    /// eventually replace is untouched either way. Leaving it would make the next
+    /// attempt's behavior depend on how each backend treats a write onto an
+    /// existing path: `LocalPosixVolume` truncates, `InMemoryVolume` refuses with
+    /// `AlreadyExists`, and MTP can happily make a second object with the same
+    /// name.
+    ///
+    /// A `SingleShot` write is still left entirely to its backend: only the
+    /// backend can tell "the server created the file and then refused the bytes"
+    /// from "the file was already there and we never touched it", and that target
+    /// is the user's real filename.
+    pub(super) async fn abandon_attempt(self, dest_volume: &Arc<dyn Volume>) {
+        if self.temp.is_some() {
+            self.abandon(dest_volume).await;
+            return;
+        }
+        if self.caller_temp.is_some() {
+            let target = self.final_path.clone();
+            if let Err(e) = dest_volume.delete(&target).await {
+                log::debug!(
+                    target: "copy",
+                    "staged write: couldn't clear {} before the next attempt: {e}",
+                    target.display()
+                );
+            }
+        }
+    }
+
     fn deregister(&self, temp: &Path) {
         self.state.in_flight_temps.lock_ignore_poison().retain(|p| p != temp);
     }

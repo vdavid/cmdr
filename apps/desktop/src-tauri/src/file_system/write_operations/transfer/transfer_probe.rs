@@ -25,6 +25,8 @@ use std::sync::atomic::{AtomicU8, AtomicU64, Ordering};
 use std::sync::{Arc, LazyLock, Mutex};
 use std::time::{Duration, Instant};
 
+use tokio_util::sync::CancellationToken;
+
 use crate::ignore_poison::IgnorePoison;
 
 use super::super::event_sinks::OperationEventSink;
@@ -45,6 +47,76 @@ use super::super::types::{TransferActivity, TransferWaitReason, WriteOperationPh
 /// bar with a confident ETA is a lie the moment it stops being true.
 pub(super) const STALL_TICK: Duration = Duration::from_secs(1);
 pub(super) const STALL_AFTER: Duration = Duration::from_secs(20);
+
+/// How long a task may sit inside a backend call with ZERO byte movement before
+/// the watchdog stops reporting and ends the wait itself.
+///
+/// This is the layer of last resort, and its length says so. Every backend that
+/// can bound its own waits already does, sooner: `smb2` gives a frame 60 s to
+/// reach the socket (`SendTimeout`) and a response 180 s to arrive, so a dead SMB
+/// session surfaces as a typed error on its own and the file's retry picks it up
+/// without the watchdog ever being involved. What is left for this constant is
+/// the case that has no deadline anywhere — an OS-mounted share, a USB stack, a
+/// future backend that forgot — which is precisely the shape that cost a user two
+/// files and a force-quit on 2026-07-31.
+///
+/// 180 s, because the number has to clear the slowest HEALTHY thing that can
+/// happen between two byte reports. That is one chunk: a 1 MiB SMB read window
+/// needs a link under 6 KB/s to take this long, and an 8 MiB MTP window needs USB
+/// to run at 45 KB/s. Neither is a transfer anyone is waiting on. ❌ Don't tighten
+/// this toward a plausible slow link: killing a healthy transfer to catch a wedge
+/// sooner is the trade Decision 3 of the spec exists to refuse.
+pub(super) const STALL_ABORT_AFTER: Duration = Duration::from_secs(180);
+
+/// The stall-abort window in force, honoring a test override.
+///
+/// Read once per operation at registration, on the CALLER's thread (the copy
+/// driver's), because the watchdog itself runs on the app runtime where a
+/// thread-local override would not be visible.
+fn stall_abort_after() -> Duration {
+    #[cfg(test)]
+    if let Some(d) = stall_abort_override() {
+        return d;
+    }
+    STALL_ABORT_AFTER
+}
+
+#[cfg(test)]
+thread_local! {
+    /// Per-test override of [`STALL_ABORT_AFTER`], read when an operation
+    /// registers. `None` ⇒ the production constant. Set through
+    /// [`StallAbortGuard`].
+    static STALL_ABORT_OVERRIDE: std::cell::Cell<Option<Duration>> = const { std::cell::Cell::new(None) };
+}
+
+#[cfg(test)]
+fn stall_abort_override() -> Option<Duration> {
+    STALL_ABORT_OVERRIDE.with(std::cell::Cell::get)
+}
+
+/// Shortens the stall-abort window for the current thread, restoring it on drop,
+/// so a suite can watch the watchdog end a wedge without waiting out three
+/// minutes. Mirrors `volume_copy::wedge_test_support::CancelDrainGuard`.
+#[cfg(test)]
+pub(super) struct StallAbortGuard {
+    prev: Option<Duration>,
+}
+
+#[cfg(test)]
+impl StallAbortGuard {
+    pub(super) fn set(window: Duration) -> Self {
+        Self {
+            prev: STALL_ABORT_OVERRIDE.with(|c| c.replace(Some(window))),
+        }
+    }
+}
+
+#[cfg(test)]
+impl Drop for StallAbortGuard {
+    fn drop(&mut self) {
+        STALL_ABORT_OVERRIDE.with(|c| c.set(self.prev));
+    }
+}
 
 /// How long the byte counter must be still before the watchdog starts
 /// re-emitting the last progress event on the operation's behalf.
@@ -84,6 +156,9 @@ pub(super) enum TaskPhase {
     /// Resolving a nested conflict inside a directory source (may be waiting on
     /// the human).
     ResolvingConflict = 7,
+    /// Between attempts at the same file: a transport blip took the last one out
+    /// and the backoff is running (`retry.rs`).
+    WaitingToRetry = 8,
 }
 
 impl TaskPhase {
@@ -97,6 +172,7 @@ impl TaskPhase {
             Self::ParkedDestYield => "parked(dest-yield)",
             Self::Finalizing => "finalizing",
             Self::ResolvingConflict => "resolving-conflict",
+            Self::WaitingToRetry => "waiting-to-retry",
         }
     }
 
@@ -111,8 +187,28 @@ impl TaskPhase {
             Self::ParkedDestYield => Some(TransferWaitReason::Destination),
             Self::ParkedSourceYield => Some(TransferWaitReason::Source),
             Self::ResolvingConflict => Some(TransferWaitReason::You),
-            Self::Spawned | Self::OpeningSource | Self::Streaming | Self::ParkedPause | Self::Finalizing => None,
+            Self::Spawned
+            | Self::OpeningSource
+            | Self::Streaming
+            | Self::ParkedPause
+            | Self::Finalizing
+            // A backoff is our own doing, not a wait on a device or a person, and
+            // it is over in a second or less. The dump names the phase; the UI
+            // keeps whatever reason the stall itself produced.
+            | Self::WaitingToRetry => None,
         }
+    }
+
+    /// May the watchdog abort a task sitting in this phase when nothing has moved
+    /// for a very long time?
+    ///
+    /// Only the two phases that mean "inside a backend call, waiting on the wire".
+    /// Every park is deliberate and self-limiting — a pause ends when the user
+    /// resumes, a yield when foreground drains (and the destination yield is
+    /// hard-capped), a conflict when the human answers, a retry backoff on its own
+    /// timer — so aborting one would break something that was working as designed.
+    const fn is_abortable_on_stall(self) -> bool {
+        matches!(self, Self::OpeningSource | Self::Streaming)
     }
 
     const fn from_u8(v: u8) -> Self {
@@ -124,6 +220,7 @@ impl TaskPhase {
             5 => Self::ParkedDestYield,
             6 => Self::Finalizing,
             7 => Self::ResolvingConflict,
+            8 => Self::WaitingToRetry,
             _ => Self::Spawned,
         }
     }
@@ -178,6 +275,30 @@ pub(super) struct TaskProbe {
     phase_since_ms: AtomicU64,
     bytes_done: AtomicU64,
     total_bytes: AtomicU64,
+    /// How many times this task's current file has been run again after a
+    /// transport blip (`retry.rs`). Rendered in every dump so a log reader can
+    /// tell "this file was retried twice and then succeeded" from "this file
+    /// silently vanished".
+    retries: AtomicU64,
+    /// The watchdog's private carry-over for this task: the byte count it saw
+    /// last tick, and the tick at which this task's own counter last moved.
+    /// Written only by the watchdog (one writer), read by the dump.
+    watchdog_last_bytes: AtomicU64,
+    still_since_ms: AtomicU64,
+    /// Tripped by the watchdog when this task has been inside a backend call with
+    /// zero byte movement for `OperationProbe::stall_abort_after`. The streaming
+    /// write races it, so a wedge that the backend's own deadlines never bound
+    /// still turns into a typed error and a retry instead of an endless park.
+    ///
+    /// Re-armed with a FRESH token per write attempt ([`TaskProbe::arm_stall_abort`]),
+    /// because one task copies one top-level source — which for a directory is
+    /// many files, each with its own attempts. A token that stayed tripped would
+    /// abort every subsequent write in the subtree instantly and turn the retry
+    /// budget into three no-ops.
+    stall_abort: Mutex<CancellationToken>,
+    /// How many times the watchdog has ended this task's wait. Sticky (unlike the
+    /// token) so a dump taken later still records it.
+    stall_aborts: AtomicU64,
     started: Instant,
 }
 
@@ -197,19 +318,62 @@ impl TaskProbe {
         self.total_bytes.store(total_bytes, Ordering::Relaxed);
     }
 
+    /// This task's file is being run again after a transport blip.
+    pub(super) fn note_retry(&self) {
+        self.retries.fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// Arms a FRESH stall-abort signal for the write attempt about to start and
+    /// hands it to the caller to race.
+    ///
+    /// Also restarts this task's stillness clock, because the attempt starts at
+    /// byte zero: without that, an attempt the watchdog just ended (zero bytes
+    /// moved, so the counter doesn't change) would hand its exhausted budget
+    /// straight to the next attempt and abort it on the first tick.
+    pub(super) fn arm_stall_abort(&self) -> CancellationToken {
+        let token = CancellationToken::new();
+        *self.stall_abort.lock_ignore_poison() = token.clone();
+        // `u64::MAX` is not a reachable byte count, so the next watchdog tick
+        // reads this task as having just moved and re-seeds from there.
+        self.watchdog_last_bytes.store(u64::MAX, Ordering::Relaxed);
+        self.still_since_ms.store(
+            u64::try_from(self.started.elapsed().as_millis()).unwrap_or(u64::MAX),
+            Ordering::Relaxed,
+        );
+        token
+    }
+
+    /// End this task's wait. Trips whichever token the current attempt armed.
+    fn trip_stall_abort(&self) {
+        self.stall_aborts.fetch_add(1, Ordering::Relaxed);
+        self.stall_abort.lock_ignore_poison().cancel();
+    }
+
+    /// Is the attempt currently in flight one the watchdog has already ended?
+    fn is_stall_aborted(&self) -> bool {
+        self.stall_abort.lock_ignore_poison().is_cancelled()
+    }
+
     fn render(&self) -> String {
         let phase = TaskPhase::from_u8(self.phase.load(Ordering::Relaxed));
         let since_ms = self.phase_since_ms.load(Ordering::Relaxed);
         let now_ms = u64::try_from(self.started.elapsed().as_millis()).unwrap_or(u64::MAX);
         let total = self.total_bytes.load(Ordering::Relaxed);
+        let stall_aborts = self.stall_aborts.load(Ordering::Relaxed);
         format!(
             // allowed-pluralize-noun: a byte count in a diagnostic dump; the compact form is the point.
-            "#{idx} {phase} for {held}ms, {done}/{total} bytes, {source} -> {dest}",
+            "#{idx} {phase} for {held}ms, {done}/{total} bytes, retries={retries}{aborted}, {source} -> {dest}",
             idx = self.index,
             phase = phase.label(),
             held = now_ms.saturating_sub(since_ms),
             done = self.bytes_done.load(Ordering::Relaxed),
             total = total,
+            retries = self.retries.load(Ordering::Relaxed),
+            aborted = if stall_aborts > 0 {
+                format!(" stall-aborts={stall_aborts}")
+            } else {
+                String::new()
+            },
             source = self.source,
             dest = self.dest,
         )
@@ -242,6 +406,10 @@ pub(super) struct OperationProbe {
     /// on pause. Read by [`OperationProbe::activity`] on the progress path, so
     /// the UI and the log agree by construction rather than by review.
     still_for_seconds: AtomicU64,
+    /// How long one task may sit inside a backend call with no byte movement
+    /// before the watchdog ends its wait. Per-operation rather than a bare
+    /// constant read so a test can shorten it (see [`stall_abort_after`]).
+    stall_abort_after: Duration,
     state: Arc<WriteOperationState>,
     started: Instant,
 }
@@ -263,6 +431,14 @@ impl OperationProbe {
             phase_since_ms: AtomicU64::new(u64::try_from(self.started.elapsed().as_millis()).unwrap_or(u64::MAX)),
             bytes_done: AtomicU64::new(0),
             total_bytes: AtomicU64::new(0),
+            retries: AtomicU64::new(0),
+            // `u64::MAX` can't be a real byte count, so the first watchdog tick
+            // that sees this task always reads as "it just moved" and starts its
+            // stillness clock from there rather than from the operation's start.
+            watchdog_last_bytes: AtomicU64::new(u64::MAX),
+            still_since_ms: AtomicU64::new(0),
+            stall_abort: Mutex::new(CancellationToken::new()),
+            stall_aborts: AtomicU64::new(0),
             started: self.started,
         });
         self.tasks.lock_ignore_poison().push(Arc::clone(&probe));
@@ -299,16 +475,16 @@ impl OperationProbe {
     fn watchdog_step(&self, watchdog: &mut WatchdogState, now: Duration) {
         // A transfer waiting on a person is not stalled, and must not accrue
         // stall time or heartbeat at the UI while the conflict dialog is open.
-        if self.awaiting_human() {
+        // Same for a pause: it moves no bytes on purpose. Both restart the
+        // per-task clocks too, so the time a task spent parked can't be counted
+        // toward an abort the moment the operation resumes.
+        if self.awaiting_human() || self.state.pause_gate.is_paused() {
             watchdog.still_since = now;
             self.still_for_seconds.store(0, Ordering::Relaxed);
+            self.restart_task_stillness(now);
             return;
         }
-        if self.state.pause_gate.is_paused() {
-            watchdog.still_since = now;
-            self.still_for_seconds.store(0, Ordering::Relaxed);
-            return;
-        }
+        self.track_and_abort_wedged_tasks(now);
         let bytes = self.bytes_done.load(Ordering::Relaxed);
         if bytes != watchdog.last_bytes {
             watchdog.last_bytes = bytes;
@@ -335,6 +511,73 @@ impl OperationProbe {
             "{}",
             self.render_dump(&format!("no byte movement for {}s", still_for.as_secs()))
         );
+    }
+
+    /// Restart every in-flight task's stillness clock, for the ticks where the
+    /// whole operation is standing still on purpose (paused, or waiting on an
+    /// answer). Without this a task would carry the pause into its abort budget.
+    fn restart_task_stillness(&self, now: Duration) {
+        let now_ms = u64::try_from(now.as_millis()).unwrap_or(u64::MAX);
+        for task in self.tasks.lock_ignore_poison().iter() {
+            task.watchdog_last_bytes
+                .store(task.bytes_done.load(Ordering::Relaxed), Ordering::Relaxed);
+            task.still_since_ms.store(now_ms, Ordering::Relaxed);
+        }
+    }
+
+    /// The watchdog ACTING rather than only reporting: track each in-flight task's
+    /// own byte counter and, for one that has not moved a byte inside a backend
+    /// call for [`OperationProbe::stall_abort_after`], trip its abort signal.
+    ///
+    /// The streaming write races that signal, so tripping it turns an unbounded
+    /// park into a typed error, which the file's retry policy then treats as the
+    /// transport blip it is. That is the whole difference between the dialog
+    /// saying "stalled" forever and the transfer getting itself unstuck.
+    ///
+    /// Three guards keep this from touching anything healthy:
+    /// - **Per-task, not per-operation.** A batch where any task is still moving
+    ///   bytes leaves every other task's clock running on its own merits; only a
+    ///   task that has itself gone quiet is a candidate.
+    /// - **Only the two phases that mean "inside a backend call"**
+    ///   ([`TaskPhase::is_abortable_on_stall`]). Every park is deliberate and ends
+    ///   on its own.
+    /// - **Never while cancelling.** Cancel and rollback own their own teardown
+    ///   (the driver's drain deadline); a second abort path racing them would just
+    ///   make the wind-down harder to reason about.
+    fn track_and_abort_wedged_tasks(&self, now: Duration) {
+        let now_ms = u64::try_from(now.as_millis()).unwrap_or(u64::MAX);
+        let cancelling = !matches!(load_intent(&self.state.intent), OperationIntent::Running);
+        let abort_after_ms = u64::try_from(self.stall_abort_after.as_millis()).unwrap_or(u64::MAX);
+        for task in self.tasks.lock_ignore_poison().iter() {
+            let bytes = task.bytes_done.load(Ordering::Relaxed);
+            if task.watchdog_last_bytes.swap(bytes, Ordering::Relaxed) != bytes {
+                task.still_since_ms.store(now_ms, Ordering::Relaxed);
+                continue;
+            }
+            if cancelling || task.is_stall_aborted() {
+                continue;
+            }
+            let phase = TaskPhase::from_u8(task.phase.load(Ordering::Relaxed));
+            if !phase.is_abortable_on_stall() {
+                // A deliberate park restarts the clock, so the seconds it spent
+                // parked never count toward the abort budget once it resumes.
+                task.still_since_ms.store(now_ms, Ordering::Relaxed);
+                continue;
+            }
+            let still_for_ms = now_ms.saturating_sub(task.still_since_ms.load(Ordering::Relaxed));
+            if still_for_ms < abort_after_ms {
+                continue;
+            }
+            crate::log_error!(
+                target: "copy",
+                "transfer probe: op={op} ending the wait on a task that has moved no bytes for {secs}s. \
+                 The write is abandoned and the file runs again if it has attempts left.\n  {task}",
+                op = self.operation_id,
+                secs = still_for_ms / 1_000,
+                task = task.render(),
+            );
+            task.trip_stall_abort();
+        }
     }
 
     /// Re-emit the last progress event with a fresh activity snapshot. The
@@ -508,6 +751,21 @@ pub(super) fn set_task_bytes(bytes_done: u64, total_bytes: u64) {
     let _ = CURRENT_TASK_PROBE.try_with(|probe| probe.set_bytes(bytes_done, total_bytes));
 }
 
+/// Record that the current copy task is running its file again after a transport
+/// blip, so the dump can say how many attempts a file took.
+pub(super) fn note_task_retry() {
+    let _ = CURRENT_TASK_PROBE.try_with(|probe| probe.note_retry());
+}
+
+/// Arms a fresh stall-abort signal for the write attempt about to start, if this
+/// is running inside a copy task.
+///
+/// `None` outside one (unit tests, the local-FS path), where nothing watches and
+/// the write simply awaits as before.
+pub(super) fn arm_current_task_stall_abort() -> Option<CancellationToken> {
+    CURRENT_TASK_PROBE.try_with(|probe| probe.arm_stall_abort()).ok()
+}
+
 /// Live operations, so a watchdog tick (and any future debug command) can see
 /// every transfer at once.
 static REGISTRY: LazyLock<Mutex<HashMap<String, Arc<OperationProbe>>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
@@ -535,6 +793,7 @@ pub(super) fn register_operation(
         sink: Mutex::new(Some(sink)),
         last_event: Mutex::new(None),
         still_for_seconds: AtomicU64::new(0),
+        stall_abort_after: stall_abort_after(),
         state,
         started: Instant::now(),
     });
@@ -656,6 +915,13 @@ mod tests {
     use crate::file_system::write_operations::test_support::TestOperationGuard;
     use crate::file_system::write_operations::types::WriteOperationType;
 
+    /// A probe whose stall-abort window is `window`, so a test can drive the
+    /// watchdog past it in a handful of synthetic ticks.
+    fn probe_with_abort_window(id: &str, state: &Arc<WriteOperationState>, window: Duration) -> Arc<OperationProbe> {
+        let _guard = StallAbortGuard::set(window);
+        probe_for(id, state)
+    }
+
     fn probe_for(id: &str, state: &Arc<WriteOperationState>) -> Arc<OperationProbe> {
         Arc::new(OperationProbe {
             operation_id: id.to_owned(),
@@ -668,6 +934,7 @@ mod tests {
             sink: Mutex::new(None),
             last_event: Mutex::new(None),
             still_for_seconds: AtomicU64::new(0),
+            stall_abort_after: stall_abort_after(),
             state: Arc::clone(state),
             started: Instant::now(),
         })
@@ -904,6 +1171,169 @@ mod tests {
 
         assert_eq!(probe.still_for_seconds.load(Ordering::Relaxed), 0);
         assert_eq!(watchdog.still_since, Duration::from_secs(60), "the clock restarts");
+    }
+
+    // ========================================================================
+    // The watchdog ACTING (M4.2): ending a wait nothing else will bound.
+    // ========================================================================
+
+    /// The point of the whole thing. A task sitting inside a backend call with
+    /// zero byte movement past the window gets its wait ended, so the streaming
+    /// write it is parked on turns into a typed error the retry can use — instead
+    /// of the dialog saying "stalled" until the user force-quits.
+    #[test]
+    fn the_watchdog_ends_the_wait_on_a_task_that_stopped_moving() {
+        let guard = TestOperationGuard::register("probe-abort");
+        let state = guard.state();
+        let probe = probe_with_abort_window(guard.id(), state, Duration::from_secs(5));
+
+        let task = probe.begin_task(0, "/src/a", "/dst/a");
+        task.probe().set_phase(TaskPhase::Streaming);
+        task.probe().set_bytes(4_194_304, 13_421_021);
+        let signal = task.probe().arm_stall_abort();
+
+        let mut watchdog = WatchdogState::new();
+        // Well past the window, with the byte counter frozen the whole time.
+        for tick in 1..=8 {
+            probe.watchdog_step(&mut watchdog, Duration::from_secs(tick));
+        }
+
+        assert!(
+            signal.is_cancelled(),
+            "the watchdog has to end a wait no backend deadline is going to bound"
+        );
+        assert!(
+            probe.render_dump("test").contains("stall-aborts=1"),
+            "the dump must record that we gave up on the task: {}",
+            probe.render_dump("test")
+        );
+    }
+
+    /// A task that is still moving bytes is healthy, however slow. Aborting one
+    /// would trade a rare wedge for frequent broken transfers, which is the trade
+    /// the spec's Decision 3 exists to refuse.
+    #[test]
+    fn a_task_that_keeps_moving_is_never_aborted() {
+        let guard = TestOperationGuard::register("probe-abort-moving");
+        let state = guard.state();
+        let probe = probe_with_abort_window(guard.id(), state, Duration::from_secs(2));
+
+        let task = probe.begin_task(0, "/src/a", "/dst/a");
+        task.probe().set_phase(TaskPhase::Streaming);
+        let signal = task.probe().arm_stall_abort();
+
+        let mut watchdog = WatchdogState::new();
+        for tick in 1..=20 {
+            // One chunk lands every tick: slow, but alive.
+            task.probe().set_bytes(tick * 1_000, 1_000_000);
+            probe.watchdog_step(&mut watchdog, Duration::from_secs(tick));
+        }
+
+        assert!(!signal.is_cancelled(), "a slow but moving transfer must be left alone");
+    }
+
+    /// Every park is deliberate and ends on its own — a pause when the user
+    /// resumes, a yield when foreground drains, a prompt when the human answers.
+    /// Aborting one would break something that is working as designed.
+    #[test]
+    fn a_deliberately_parked_task_is_never_aborted() {
+        for phase in [
+            TaskPhase::ParkedPause,
+            TaskPhase::ParkedSourceYield,
+            TaskPhase::ParkedDestYield,
+            TaskPhase::ResolvingConflict,
+            TaskPhase::WaitingToRetry,
+            TaskPhase::Finalizing,
+        ] {
+            let guard = TestOperationGuard::register("probe-abort-parked");
+            let state = guard.state();
+            let probe = probe_with_abort_window(guard.id(), state, Duration::from_secs(2));
+            let task = probe.begin_task(0, "/src/a", "/dst/a");
+            task.probe().set_phase(phase);
+            let signal = task.probe().arm_stall_abort();
+
+            let mut watchdog = WatchdogState::new();
+            for tick in 1..=20 {
+                probe.watchdog_step(&mut watchdog, Duration::from_secs(tick));
+            }
+
+            assert!(
+                !signal.is_cancelled(),
+                "{phase:?} is deliberate and must not be aborted"
+            );
+        }
+    }
+
+    /// A pause must not be spent from the abort budget. Before this the seconds a
+    /// user spent paused would count, and the first tick after resume could end a
+    /// perfectly healthy transfer.
+    #[test]
+    fn time_spent_paused_does_not_count_toward_the_abort() {
+        let guard = TestOperationGuard::register("probe-abort-paused");
+        let state = guard.state();
+        let probe = probe_with_abort_window(guard.id(), state, Duration::from_secs(5));
+        let task = probe.begin_task(0, "/src/a", "/dst/a");
+        task.probe().set_phase(TaskPhase::Streaming);
+        let signal = task.probe().arm_stall_abort();
+
+        let mut watchdog = WatchdogState::new();
+        state.pause_gate.pause();
+        for tick in 1..=20 {
+            probe.watchdog_step(&mut watchdog, Duration::from_secs(tick));
+        }
+        state.pause_gate.resume();
+        // One tick after the resume: the budget has to start over here.
+        probe.watchdog_step(&mut watchdog, Duration::from_secs(21));
+
+        assert!(!signal.is_cancelled(), "a long pause must not be charged to the task");
+    }
+
+    /// Cancel and rollback own their own teardown (the driver's drain deadline).
+    /// A second abort path racing them would only make the wind-down harder to
+    /// reason about, so the watchdog stands down.
+    #[test]
+    fn the_watchdog_stands_down_once_the_operation_is_cancelling() {
+        let guard = TestOperationGuard::register("probe-abort-cancelling");
+        let state = guard.state();
+        let probe = probe_with_abort_window(guard.id(), state, Duration::from_secs(2));
+        let task = probe.begin_task(0, "/src/a", "/dst/a");
+        task.probe().set_phase(TaskPhase::Streaming);
+        let signal = task.probe().arm_stall_abort();
+        crate::file_system::write_operations::state::cancel_write_operation(guard.id(), false);
+
+        let mut watchdog = WatchdogState::new();
+        for tick in 1..=20 {
+            probe.watchdog_step(&mut watchdog, Duration::from_secs(tick));
+        }
+
+        assert!(!signal.is_cancelled(), "the cancel path owns teardown from here");
+    }
+
+    /// Arming a new attempt hands it a FRESH budget. Without this, one task
+    /// copying a directory would abort every remaining child instantly after the
+    /// first wedge, and the retry budget would be three no-ops.
+    #[test]
+    fn a_new_attempt_gets_a_fresh_signal_and_a_fresh_budget() {
+        let guard = TestOperationGuard::register("probe-abort-rearm");
+        let state = guard.state();
+        let probe = probe_with_abort_window(guard.id(), state, Duration::from_secs(5));
+        let task = probe.begin_task(0, "/src/a", "/dst/a");
+        task.probe().set_phase(TaskPhase::Streaming);
+        let first = task.probe().arm_stall_abort();
+
+        let mut watchdog = WatchdogState::new();
+        for tick in 1..=8 {
+            probe.watchdog_step(&mut watchdog, Duration::from_secs(tick));
+        }
+        assert!(first.is_cancelled());
+
+        // The retry arms its own signal; the exhausted budget must not carry over.
+        let second = task.probe().arm_stall_abort();
+        probe.watchdog_step(&mut watchdog, Duration::from_secs(9));
+        assert!(
+            !second.is_cancelled(),
+            "a fresh attempt must not inherit the previous attempt's spent budget"
+        );
     }
 
     /// While bytes flow the UI must get `Moving`, whatever the tasks are doing

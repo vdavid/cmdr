@@ -2067,6 +2067,9 @@ mod extract_out_tests;
 #[path = "volume_merge_tests.rs"]
 mod merge_tests;
 #[cfg(test)]
+#[path = "volume_copy_retry_tests.rs"]
+mod retry_tests;
+#[cfg(test)]
 #[path = "volume_copy_rollback_tests.rs"]
 mod rollback_tests;
 #[cfg(test)]

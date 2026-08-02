@@ -22,8 +22,9 @@ use super::checkpoint_stream::CheckpointStream;
 use super::staged_write::StagedWrite;
 // Re-exported so the sibling test modules (and any future caller reached through
 // this module's API) name the staging choice without a second import path.
+use super::retry;
 pub(super) use super::staged_write::WriteStaging;
-use super::transfer_probe::{TaskPhase, set_task_bytes, set_task_phase};
+use super::transfer_probe::{TaskPhase, arm_current_task_stall_abort, note_task_retry, set_task_bytes, set_task_phase};
 use super::volume_conflict::{ResolvedConflict, resolve_volume_conflict};
 use super::volume_preflight::SourceHint;
 use crate::file_system::listing::FileEntry;
@@ -430,16 +431,14 @@ async fn stream_pipe_file(
     // impl must stay usable as a copy destination, so a `NotSupported` landing
     // re-runs the file unstaged — the pre-staging behavior — instead of failing.
     let mut staging = staging;
-    // One-shot retry on a stale destination handle. A destination backend (MTP)
-    // can reject the write because the cached handle for the destination folder
-    // went stale — the device re-keyed its object handles since the folder was
-    // last listed (Android MediaProvider rescans). The backend refreshes its
-    // cache and returns `StaleDestinationHandle`; we re-open the source stream
-    // and try once more with the now-fresh handle. Safe to restart the whole
-    // file: the rejection lands at `SendObjectInfo`, before any source byte is
-    // read or any destination byte is written, so no progress is double-counted
-    // and no partial lingers.
-    let mut retried = false;
+    // Which attempt at THIS file we're on, 1-based. A transport blip
+    // (`retry::is_retryable`) runs the file again from its first byte on a fresh
+    // source stream and a fresh staging temp, up to `retry::MAX_ATTEMPTS`; see
+    // `retry.rs` for the policy and why it lives here rather than any layer above.
+    // Restarting the whole file is what keeps the retry honest: nothing partial
+    // survives an attempt, so no byte is written twice and no ledger records a
+    // file twice.
+    let mut attempt: u32 = 1;
     loop {
         // Opening the source is a device round-trip on MTP / SMB and can hang on
         // its own; it needs to be distinguishable from streaming in a dump. It
@@ -452,7 +451,8 @@ async fn stream_pipe_file(
             .open_read_stream_with_hint(source_path, source_size_hint)
             .await?;
         let size = stream.total_size();
-        let staged = StagedWrite::begin(state, dest_path, resolve_staging(staging, dest_volume, size).await);
+        let resolved_staging = resolve_staging(staging, dest_volume, size).await;
+        let staged = StagedWrite::begin(state, dest_path, resolved_staging);
         note_pending_for_local_dest(dest_volume, staged.target());
         // Wrap so a paused op parks (and a long copy yields to foreground)
         // between bounded windows. `size` is read off the raw stream first — the
@@ -473,24 +473,95 @@ async fn stream_pipe_file(
         ));
         set_task_phase(TaskPhase::Streaming);
         set_task_bytes(0, size);
-        let write_result = dest_volume
-            .write_from_stream(staged.target(), size, stream, on_file_progress)
-            .await;
+        // The watchdog ACTING (M4.2): a task that sits inside a backend call with
+        // zero byte movement for `STALL_ABORT_AFTER` has its wait ended here, and
+        // the transport error that produces feeds straight back into the retry
+        // above. It is the layer of last resort — every backend that can bound its
+        // own waits already does, sooner — for the wedge shape that has no
+        // deadline anywhere and left a user force-quitting the app.
+        //
+        // ❌ Never armed for a SINGLE-SHOT write. Those land in one indivisible
+        // frame at the file's FINAL name, and only the backend can tell "the
+        // server created the file and then refused the bytes" from "the file was
+        // already there and we never touched it" (`staged_write.rs` § abandon).
+        // Abandoning one from out here would add a client-initiated instance of
+        // the transport hazard that exemption already documents as unfixable.
+        let stall_abort = if resolved_staging == WriteStaging::SingleShot {
+            None
+        } else {
+            arm_current_task_stall_abort()
+        };
+        let write_fut = dest_volume.write_from_stream(staged.target(), size, stream, on_file_progress);
+        let write_result = match stall_abort {
+            Some(abort) => {
+                tokio::select! {
+                    biased;
+                    () = abort.cancelled() => Err(VolumeError::ConnectionTimeout(format!(
+                        "the write of {} stopped moving and the transfer stopped waiting for it",
+                        dest_path.display()
+                    ))),
+                    result = write_fut => result,
+                }
+            }
+            None => write_fut.await,
+        };
         let bytes = match write_result {
-            Ok(bytes) => bytes,
-            Err(VolumeError::StaleDestinationHandle(_)) if !retried => {
-                retried = true;
-                staged.abandon(dest_volume).await;
+            Ok(bytes) => {
+                if attempt > 1 {
+                    log::info!(
+                        target: "copy",
+                        "stream_pipe_file: {} landed on attempt {attempt} of {}",
+                        dest_path.display(),
+                        retry::MAX_ATTEMPTS,
+                    );
+                }
+                bytes
+            }
+            Err(e) if retry::should_retry(&e, attempt, state) => {
+                // The staged bytes are a partial of an attempt we're abandoning;
+                // clear them BEFORE the next attempt starts, so a retried file
+                // never leaves a trail of `.cmdr-tmp-*` siblings and the next
+                // write lands on a clean path (see `abandon_attempt` for why that
+                // reaches one case further than the terminal `abandon`).
+                staged.abandon_attempt(dest_volume).await;
                 log::warn!(
-                    "stream_pipe_file: destination handle for {} was stale; retrying once with the refreshed handle",
-                    dest_path.display()
+                    target: "copy",
+                    "stream_pipe_file: attempt {attempt} of {} for {} failed ({e}); running the file again in {:?}",
+                    retry::MAX_ATTEMPTS,
+                    dest_path.display(),
+                    retry::backoff_after(attempt),
                 );
+                note_task_retry();
+                set_task_phase(TaskPhase::WaitingToRetry);
+                if !retry::wait_before_retry(state, attempt).await {
+                    // Cancelled during the backoff. Report it as the cancel it is
+                    // rather than the transport error that triggered the retry, so
+                    // the post-loop reclassifies it and emits `write-cancelled`.
+                    return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+                }
+                attempt += 1;
                 continue;
+            }
+            // A cancel landed while an attempt was failing on something we WOULD
+            // have run again. The cancel is the reason this file stops here, so
+            // report it as one: the post-loop keys `write-cancelled` off a
+            // `Cancelled`-shaped error, and a transport error in its place would
+            // log the user's own click as a failed transfer.
+            Err(e) if retry::is_retryable(&e) && super::super::state::is_cancelled(&state.intent) => {
+                staged.abandon(dest_volume).await;
+                return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
             }
             Err(e) => {
                 // The staged bytes are a partial (a mid-stream failure, or the
                 // cancel the backend turned into `Cancelled`); drop them.
                 staged.abandon(dest_volume).await;
+                if attempt > 1 {
+                    log::warn!(
+                        target: "copy",
+                        "stream_pipe_file: giving up on {} after {attempt} attempt(s): {e}",
+                        dest_path.display(),
+                    );
+                }
                 return Err(e);
             }
         };
@@ -871,6 +942,9 @@ mod dest_yield_tests;
 #[cfg(test)]
 #[path = "volume_strategy_pause_tests.rs"]
 mod pause_tests;
+#[cfg(test)]
+#[path = "volume_strategy_retry_tests.rs"]
+mod retry_tests;
 #[cfg(test)]
 #[path = "volume_strategy_sequential_tests.rs"]
 mod sequential_tests;
