@@ -25,8 +25,10 @@ use super::{
 use crate::ActivityPhase;
 use crate::indexing::DEBUG_STATS;
 use crate::indexing::IndexPathSpace;
+use crate::indexing::events::emit_dir_updated;
 use crate::indexing::events::{EventSink, IndexEvent, RescanReason, emit_rescan_notification, set_phase_for};
 use crate::indexing::lifecycle::lifecycle_bus;
+use crate::indexing::paths::path_prefix;
 use crate::indexing::reconcile::reconciler::{self, EventReconciler};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 use cmdr_fs::pluralize::pluralize;
@@ -360,13 +362,13 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     // If origin_dirs overflowed, emit a full refresh notification with
     // just "/" so the frontend refreshes everything.
     if origins_overflow {
-        reconciler::emit_dir_updated(events.as_ref(), vec!["/".to_string()]);
+        emit_dir_updated(events.as_ref(), vec!["/".to_string()]);
     } else if !origin_dirs.is_empty() {
         // The FE refresh needs the recursive-size fact, so expand the origins to
         // their ancestor closure here (the origins alone would leave every ancestor
         // showing a stale size).
         let origins: Vec<String> = origin_dirs.iter().cloned().collect();
-        reconciler::emit_dir_updated(events.as_ref(), reconciler::with_ancestor_closure(&origins));
+        emit_dir_updated(events.as_ref(), path_prefix::with_ancestor_closure(&origins));
     }
 
     // Backfill dir_stats for any directories created by the replay
@@ -481,7 +483,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                         if !live_pending_origins.is_empty() {
                             let changed = mark_pending_and_drain(&volume_id, &mut live_pending_origins);
                             lifecycle_bus::publish_dirs_changed(&volume_id, &changed.origins);
-                            reconciler::emit_dir_updated(events.as_ref(), changed.with_ancestors);
+                            emit_dir_updated(events.as_ref(), changed.with_ancestors);
                         }
                         break;
                     }
@@ -544,7 +546,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                 if !live_pending_origins.is_empty() {
                     let changed = mark_pending_and_drain(&volume_id, &mut live_pending_origins);
                     lifecycle_bus::publish_dirs_changed(&volume_id, &changed.origins);
-                    reconciler::emit_dir_updated(events.as_ref(), changed.with_ancestors);
+                    emit_dir_updated(events.as_ref(), changed.with_ancestors);
                 }
             }
             _ = throttle_sweep_interval.tick() => {

@@ -596,7 +596,7 @@ pub(super) fn touched_folder_set(changed_paths: &[String]) -> std::collections::
 ///
 /// **Why the bare root matters (the "everything changed" trap):** every live
 /// FSEvent's affected-paths set carries the full ancestor chain up to `/`
-/// (`reconciler::collect_ancestor_paths`, so the frontend can refresh every
+/// (`paths::path_prefix::collect_ancestor_paths`, so the frontend can refresh every
 /// ancestor's displayed size). So `/` is present in essentially *every* batch —
 /// it's the universal ancestor, NOT a signal that the whole volume changed. Left
 /// in, it would (a) get treated as a full-refresh sentinel and escalate every

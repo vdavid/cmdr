@@ -30,11 +30,12 @@ is the canonical owner of `IndexPathSpace` and the read-side path transforms.
 
 - `routing.rs` — `volume_id_for_local_path` (path → owning volume), `IndexPathSpace`, `index_read_path[_pure]` +
   `mtp_index_relative_path`, `exclusion_scope_for_volume`.
-- `firmlinks.rs` — parse `/usr/share/firmlinks`, normalize to canonical form (`/System/Volumes/Data/...` → `/...`,
-  `/tmp` → `/private/tmp`).
-- `path_prefix.rs` — component-aware absolute-path prefix tests (`/a/bc` is never a child of `/a/b`).
+- `path_prefix.rs` — component-aware absolute-path prefix tests (`/a/bc` is never a child of `/a/b`), plus
+  `compute_parent_path`, `collect_ancestor_paths`, and `with_ancestor_closure` (origins → the recursive-size refresh
+  set).
 
-Owned elsewhere: the exclusion policy (`should_exclude`, `ExclusionScope`, pseudo-filesystem detection) lives in
+Owned elsewhere: firmlink normalization (`/System/Volumes/Data/...` → `/...`, `/tmp` → `/private/tmp`) lives in
+`cmdr_fs::firmlinks`; the exclusion policy (`should_exclude`, `ExclusionScope`, pseudo-filesystem detection) lives in
 `../scanner/CLAUDE.md`; the SQLite `resolve_path` in `../store/CLAUDE.md`; the write-side mount transforms in
 `../transports/CLAUDE.md`.
 

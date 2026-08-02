@@ -12,6 +12,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::indexing::IndexPathSpace;
+use crate::indexing::events::emit_dir_updated;
 use crate::indexing::events::{
     ActivityPhase, DEBUG_STATS, EventSink, IndexEvent, RescanReason, emit_rescan_notification, set_phase_for,
 };
@@ -312,7 +313,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
 
     // Replay events that arrived after the scan read their paths
     match reconciler.replay(scan_start_event_id, &replay_conn, &writer, &mut |paths| {
-        reconciler::emit_dir_updated(events.as_ref(), paths)
+        emit_dir_updated(events.as_ref(), paths)
     }) {
         Ok(last_id) => {
             log::info!("Reconciler: post-scan replay complete (last_event_id={last_id})");

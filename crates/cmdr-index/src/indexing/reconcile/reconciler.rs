@@ -51,6 +51,7 @@ mod rescan_route;
 mod rescan_settle;
 mod rescan_throttle;
 mod throttle;
+use crate::indexing::paths::path_prefix::compute_parent_path;
 use escalation::resolve_escalation_anchor;
 /// The shallow-anchor sweep window, re-exported for its out-of-module users:
 /// `manager::resume_or_scan` reseeds it from `meta` at index start,
@@ -1248,7 +1249,7 @@ fn read_fs_children_via_read_dir(dir_path: &Path, space: &IndexPathSpace) -> Opt
 /// newly created directory.
 ///
 /// ❌ It does NOT return the ancestor chain. The chain is a different fact — "these
-/// dirs' recursive sizes need refreshing" — that [`with_ancestor_closure`] rebuilds
+/// dirs' recursive sizes need refreshing" — that [`with_ancestor_closure`](crate::indexing::paths::path_prefix::with_ancestor_closure) rebuilds
 /// where it's needed. Conflating the two once made the importance scheduler, which
 /// expands each batch entry DOWNWARD into its subtree, rescore ~90,000 folders a
 /// minute for a two-folder change (`indexing/lifecycle/DETAILS.md` § The lifecycle bus).
@@ -1298,7 +1299,7 @@ pub(crate) fn process_fs_event(
     let parent_path = compute_parent_path(&normalized);
     // The ONE directory whose own listing this event changes. The ancestor chain
     // (which needs a recursive-size refresh, not a listing refresh) is rebuilt from
-    // this by `with_ancestor_closure` at the batch's drain point.
+    // this by `path_prefix::with_ancestor_closure` at the batch's drain point.
     let mut origins: Vec<String> = origin_dir(&normalized).into_iter().collect();
 
     if event.flags.item_removed {
@@ -1555,21 +1556,12 @@ fn resolve_downloads_prefix() -> Option<String> {
     dirs::download_dir().map(|p| firmlinks::normalize_path(&p.to_string_lossy()))
 }
 
-/// Compute parent path from a normalized path.
-fn compute_parent_path(path: &str) -> String {
-    match path.rfind('/') {
-        Some(0) => "/".to_string(),
-        Some(pos) => path[..pos].to_string(),
-        None => String::new(),
-    }
-}
-
 /// The directory whose OWN listing a change at `path` alters: its immediate
 /// parent. `None` when there is none (the root itself, or a relative path).
 ///
 /// This is the "origin" half of the two facts a live change carries. The other
 /// half — every ancestor whose recursive SIZE now needs refreshing — is rebuilt
-/// from the origins by [`with_ancestor_closure`]. Keeping them apart is what stops
+/// from the origins by [`with_ancestor_closure`](crate::indexing::paths::path_prefix::with_ancestor_closure). Keeping them apart is what stops
 /// a consumer that expands DOWNWARD (the importance scheduler's incremental
 /// rescore) from seeing `/Users` in every batch; see
 /// `indexing/lifecycle/DETAILS.md` § The lifecycle bus.
@@ -1579,57 +1571,6 @@ fn origin_dir(path: &str) -> Option<String> {
         return None;
     }
     Some(parent)
-}
-
-/// Expand origin directories to the recursive-size refresh set: every origin plus
-/// every ancestor up to `/`, deduplicated.
-///
-/// The `index-dir-updated` emit and the "size updating" hourglass both need this
-/// wider set (a file's size change propagates to every ancestor's `dir_stats`), so
-/// it's rebuilt here, ONCE per drained batch over the deduplicated origins, rather
-/// than per event. Consumers that care about which listings changed take the
-/// origins instead.
-pub(crate) fn with_ancestor_closure(origins: &[String]) -> Vec<String> {
-    let mut out: Vec<String> = Vec::with_capacity(origins.len());
-    let mut seen: HashSet<String> = HashSet::with_capacity(origins.len());
-    let mut push = |path: String, out: &mut Vec<String>| {
-        if seen.insert(path.clone()) {
-            out.push(path);
-        }
-    };
-    for origin in origins {
-        push(origin.clone(), &mut out);
-        for ancestor in collect_ancestor_paths(origin) {
-            push(ancestor, &mut out);
-        }
-    }
-    out
-}
-
-/// Collect all ancestor paths from the immediate parent up to "/".
-/// Used to notify the frontend that dir_stats changed along the entire ancestor chain
-/// (since propagate_delta updates all ancestors, not just the direct parent).
-fn collect_ancestor_paths(path: &str) -> Vec<String> {
-    let mut ancestors = Vec::new();
-    let mut current = path.to_string();
-    loop {
-        let parent = compute_parent_path(&current);
-        if parent.is_empty() || parent == current {
-            break;
-        }
-        ancestors.push(parent.clone());
-        if parent == "/" {
-            break;
-        }
-        current = parent;
-    }
-    ancestors
-}
-
-/// Report that these directories' recursive sizes changed, so any listing
-/// showing them is stale.
-pub(crate) fn emit_dir_updated(events: &dyn crate::EventSink, paths: Vec<String>) {
-    events.emit(crate::IndexEvent::DirsUpdated { paths });
 }
 
 // ── Tests ────────────────────────────────────────────────────────────

@@ -10,10 +10,10 @@ use std::time::Instant;
 
 use tokio_util::sync::CancellationToken;
 
+use crate::indexing::events::emit_dir_updated;
 use crate::indexing::lifecycle::lifecycle_bus;
 use crate::indexing::metadata::extract_metadata;
 use crate::indexing::read::enrichment::get_read_pool;
-use crate::indexing::reconcile::reconciler;
 use crate::indexing::scanner;
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
@@ -121,7 +121,7 @@ pub(crate) fn maybe_verify(
             // publish under the local root for the importance scheduler's
             // incremental rescore (plan Decision 5), alongside the FE emit.
             lifecycle_bus::publish_dirs_changed(crate::ROOT_VOLUME_ID, &affected_paths);
-            reconciler::emit_dir_updated(events.as_ref(), affected_paths);
+            emit_dir_updated(events.as_ref(), affected_paths);
         }
     });
 }

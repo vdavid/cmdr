@@ -295,13 +295,13 @@ direction). This is the single canonical home for the mechanism; consumer docs p
 - **The `dir-changed` payload is the ORIGIN dirs, never their ancestor closure.** A live change carries two different
   facts: _these directories' listings changed_ (a small set: the changed entry's parent, plus the entry itself when it's
   a new directory) and _these directories' recursive sizes need refreshing_ (the first set plus every ancestor up to
-  `/`). The bus carries only the first; the second is rebuilt where it's needed by `reconciler::with_ancestor_closure`
-  (the `index-dir-updated` emit and the "size updating" hourglass, both at the drain point in
-  `watch/event_loop/live.rs`). **Gotcha/Why:** publishing the closure conflated them, and every batch therefore carried
-  `/Users` and `/`. Both bus consumers expand each entry DOWNWARD — importance into the whole subtree (a folder renamed
-  to `node_modules` floors everything below it), media into the dir's own image children — so a two-folder change
-  rescored ~90,000 folders and reloaded 161,094 weights every 60 s, for the whole session (measured on prod v0.36.2,
-  2026-07-28). ❌ Don't hand `with_ancestor_closure`'s output to `publish_dirs_changed`.
+  `/`). The bus carries only the first; the second is rebuilt where it's needed by
+  `paths::path_prefix::with_ancestor_closure` (the `index-dir-updated` emit and the "size updating" hourglass, both at
+  the drain point in `watch/event_loop/live.rs`). **Gotcha/Why:** publishing the closure conflated them, and every batch
+  therefore carried `/Users` and `/`. Both bus consumers expand each entry DOWNWARD — importance into the whole subtree
+  (a folder renamed to `node_modules` floors everything below it), media into the dir's own image children — so a
+  two-folder change rescored ~90,000 folders and reloaded 161,094 weights every 60 s, for the whole session (measured on
+  prod v0.36.2, 2026-07-28). ❌ Don't hand `with_ancestor_closure`'s output to `publish_dirs_changed`.
 
 See `importance/DETAILS.md` for how the scheduler combines the sweep + the bus with per-volume coalescing and per-kind
 policy.

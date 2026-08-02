@@ -29,7 +29,7 @@ use crate::indexing::lifecycle::{lifecycle_bus, manager};
 use crate::indexing::metadata;
 use crate::indexing::paths::path_prefix;
 use crate::indexing::read::pending_sizes;
-use crate::indexing::reconcile::reconciler::{self, EventReconciler};
+use crate::indexing::reconcile::reconciler::EventReconciler;
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 use cmdr_fs::pluralize::pluralize;
@@ -71,7 +71,7 @@ pub(super) struct ChangedDirs {
 /// hourglass shows on its own rows, not root's.
 pub(super) fn mark_pending_and_drain(volume_id: &str, pending_origins: &mut HashSet<String>) -> ChangedDirs {
     let origins: Vec<String> = pending_origins.drain().collect();
-    let with_ancestors = reconciler::with_ancestor_closure(&origins);
+    let with_ancestors = path_prefix::with_ancestor_closure(&origins);
     if let Some(tracker) = pending_sizes::get_pending_sizes_for(volume_id) {
         for path in &with_ancestors {
             tracker.mark(path);

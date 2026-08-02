@@ -12,10 +12,11 @@ use std::time::Instant;
 use super::verify_guard::{self, VerifyVerdict};
 use crate::ROOT_VOLUME_ID;
 use crate::indexing::DEBUG_STATS;
+use crate::indexing::events::emit_dir_updated;
 use crate::indexing::lifecycle::{lifecycle_bus, state};
 use crate::indexing::metadata;
+use crate::indexing::paths::path_prefix;
 use crate::indexing::read::enrichment::get_read_pool;
-use crate::indexing::reconcile::reconciler;
 use crate::indexing::scanner;
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
@@ -40,7 +41,7 @@ pub(super) async fn run_background_verification(
     // the whole chain is what catches it. So expand the replay's origin dirs to their
     // ancestor closure here — the bus publishes the narrow origins instead.
     let origins: Vec<String> = origin_dirs.into_iter().collect();
-    let affected_paths: HashSet<String> = reconciler::with_ancestor_closure(&origins).into_iter().collect();
+    let affected_paths: HashSet<String> = path_prefix::with_ancestor_closure(&origins).into_iter().collect();
     log::debug!(
         "Background verification started ({} affected dirs)",
         affected_paths.len(),
@@ -161,7 +162,7 @@ pub(super) async fn run_background_verification(
             // its live corrections publish under the local root for the importance
             // scheduler's incremental rescore (plan Decision 5).
             lifecycle_bus::publish_dirs_changed(ROOT_VOLUME_ID, &visible_new_dirs);
-            reconciler::emit_dir_updated(events.as_ref(), visible_new_dirs);
+            emit_dir_updated(events.as_ref(), visible_new_dirs);
         }
 
         // No off-writer ancestor compensation for the new dirs: each `scan_subtree`
@@ -180,7 +181,7 @@ pub(super) async fn run_background_verification(
             // changed); the FE emit gets the ancestor closure, whose recursive sizes
             // the corrections moved.
             lifecycle_bus::publish_dirs_changed(ROOT_VOLUME_ID, &origins);
-            reconciler::emit_dir_updated(events.as_ref(), affected_paths.into_iter().collect());
+            emit_dir_updated(events.as_ref(), affected_paths.into_iter().collect());
         }
     }
 

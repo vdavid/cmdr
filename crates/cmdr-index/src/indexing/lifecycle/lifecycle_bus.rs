@@ -65,7 +65,7 @@ pub(crate) enum ScanState {
 /// ❌ Never publish the ancestor closure here. The "these dirs' recursive sizes
 /// need refreshing" set is a different fact with different consumers (the FE emit,
 /// the "size updating" hourglass), rebuilt where it's needed by
-/// `reconciler::with_ancestor_closure`. Publishing it once meant every batch
+/// `paths::path_prefix::with_ancestor_closure`. Publishing it once meant every batch
 /// carried `/Users`, and a two-folder change rescored ~90,000 folders a minute
 /// forever (`indexing/lifecycle/DETAILS.md` § The lifecycle bus).
 ///

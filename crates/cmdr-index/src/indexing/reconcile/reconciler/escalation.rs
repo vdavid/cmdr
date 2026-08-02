@@ -14,7 +14,7 @@ use std::path::PathBuf;
 use crate::indexing::IndexPathSpace;
 use crate::indexing::store::IndexStore;
 
-use super::compute_parent_path;
+use crate::indexing::paths::path_prefix::compute_parent_path;
 
 /// Resolve the escalation anchor for a `target_path` whose chain is (partly)
 /// missing from the index: the rescan root that lets `reconcile_subtree` heal the

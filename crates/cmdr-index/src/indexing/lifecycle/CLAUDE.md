@@ -45,7 +45,7 @@ How a per-volume index is born, lives, transitions, and dies. All invariants bel
   pre-subscribe `ScanCompleted` isn't lost.
 - **`publish_dirs_changed` takes ORIGIN dirs (whose own listings changed), ❌ never their ancestor closure.** Consumers
   expand DOWNWARD, so one ancestor rescores its whole subtree: `/Users` in every batch cost ~90 k rescored folders a
-  minute. `reconciler::with_ancestor_closure` rebuilds the size-refresh set for the FE emit + hourglass.
+  minute. `path_prefix::with_ancestor_closure` rebuilds the size-refresh set for the FE emit + hourglass.
 
 Owned elsewhere (each has its own `CLAUDE.md`), point don't restate: writer / `dir_stats` / epochs (`../writer/`); phase
 EVENT + progress (`../events/`); `IndexPathSpace` (`../paths/`); schema (`../store/`); walker (`../scanner/`); trait BFS

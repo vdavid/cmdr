@@ -40,7 +40,8 @@
 //! names it until the task itself releases, so the sweep keeps skipping it.
 
 use super::rescan_throttle::RescanThrottle;
-use super::{IndexWriter, WriteMessage, collect_ancestor_paths};
+use super::{IndexWriter, WriteMessage};
+use crate::indexing::paths::path_prefix::collect_ancestor_paths;
 use crate::indexing::read::pending_sizes;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use std::collections::HashSet;

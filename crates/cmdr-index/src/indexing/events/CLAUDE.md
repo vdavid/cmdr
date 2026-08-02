@@ -43,7 +43,7 @@ the scan-progress tick loop (progress plus mid-scan partial aggregation) shared 
 - `sink.rs` — `IndexEvent` + `IndexEventKind`, the `EventSink` trait, `NoopEventSink`, `Diagnostic`, `IndexErrorReport`,
   and the test `RecordingSink`.
 - `mod.rs` — the shared payload data types (`ScanRunKind`, `RescanReason`, `ActivityPhase`, `MemoryWatchdogAction`), the
-  IPC response types, `PhaseRecord`, `DebugStats`, `set_phase_for`, and `emit_rescan_notification`.
+  IPC response types, `PhaseRecord`, `DebugStats`, `set_phase_for`, `emit_rescan_notification`, and `emit_dir_updated`.
 - `progress_reporter.rs` — `ScanProgressReporter`, the 500 ms tick loop shared by all scan paths.
 - `partial_agg.rs` — the pure send-decision (`should_send_partial_agg`) and hot-path collection (`collect_hot_paths`).
 

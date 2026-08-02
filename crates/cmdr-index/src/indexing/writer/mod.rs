@@ -29,8 +29,8 @@ mod maintenance;
 mod repair;
 pub(crate) mod wait_probe;
 
+use crate::indexing::events::emit_dir_updated;
 use crate::indexing::read::pending_sizes;
-use crate::indexing::reconcile::reconciler;
 use aggregation::{
     handle_backfill_missing_dir_stats, handle_compute_all_aggregates, handle_compute_partial_aggregates,
     handle_compute_subtree_aggregates,
@@ -1506,7 +1506,7 @@ fn process_message(
         WriteMessage::EmitDirUpdated(paths) => {
             #[cfg(test)]
             mutation_tracker.record_emit(&paths);
-            reconciler::emit_dir_updated(events, paths);
+            emit_dir_updated(events, paths);
         }
         WriteMessage::Shutdown => return true,
     }

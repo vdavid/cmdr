@@ -502,5 +502,11 @@ pub(super) fn emit_rescan_notification(events: &dyn EventSink, volume_id: &str, 
     });
 }
 
+/// Report that these directories' recursive sizes changed, so any listing
+/// showing them is stale.
+pub(crate) fn emit_dir_updated(events: &dyn EventSink, paths: Vec<String>) {
+    events.emit(IndexEvent::DirsUpdated { paths });
+}
+
 #[cfg(test)]
 mod tests;

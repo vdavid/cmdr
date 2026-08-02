@@ -6,6 +6,8 @@
 //! compare by COMPONENT, never by raw substring — so `/a/bc` is never treated as
 //! a child of `/a/b`.
 
+use std::collections::HashSet;
+
 /// Split an absolute path into its non-empty components. `/` yields an empty
 /// slice; `/a/b` yields `["a", "b"]`.
 fn components(path: &str) -> Vec<&str> {
@@ -64,6 +66,60 @@ pub(crate) fn deepest_common_ancestor<'a>(paths: impl IntoIterator<Item = &'a st
     })
 }
 
+/// Compute parent path from a normalized path.
+pub(crate) fn compute_parent_path(path: &str) -> String {
+    match path.rfind('/') {
+        Some(0) => "/".to_string(),
+        Some(pos) => path[..pos].to_string(),
+        None => String::new(),
+    }
+}
+
+/// Expand origin directories to the recursive-size refresh set: every origin plus
+/// every ancestor up to `/`, deduplicated.
+///
+/// The `index-dir-updated` emit and the "size updating" hourglass both need this
+/// wider set (a file's size change propagates to every ancestor's `dir_stats`), so
+/// it's rebuilt here, ONCE per drained batch over the deduplicated origins, rather
+/// than per event. Consumers that care about which listings changed take the
+/// origins instead.
+pub(crate) fn with_ancestor_closure(origins: &[String]) -> Vec<String> {
+    let mut out: Vec<String> = Vec::with_capacity(origins.len());
+    let mut seen: HashSet<String> = HashSet::with_capacity(origins.len());
+    let mut push = |path: String, out: &mut Vec<String>| {
+        if seen.insert(path.clone()) {
+            out.push(path);
+        }
+    };
+    for origin in origins {
+        push(origin.clone(), &mut out);
+        for ancestor in collect_ancestor_paths(origin) {
+            push(ancestor, &mut out);
+        }
+    }
+    out
+}
+
+/// Collect all ancestor paths from the immediate parent up to "/".
+/// Used to notify the frontend that dir_stats changed along the entire ancestor chain
+/// (since propagate_delta updates all ancestors, not just the direct parent).
+pub(crate) fn collect_ancestor_paths(path: &str) -> Vec<String> {
+    let mut ancestors = Vec::new();
+    let mut current = path.to_string();
+    loop {
+        let parent = compute_parent_path(&current);
+        if parent.is_empty() || parent == current {
+            break;
+        }
+        ancestors.push(parent.clone());
+        if parent == "/" {
+            break;
+        }
+        current = parent;
+    }
+    ancestors
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -110,5 +166,40 @@ mod tests {
         // A single path is its own DCA.
         assert_eq!(deepest_common_ancestor(["/a/b/c"]), Some("/a/b/c".to_string()));
         assert_eq!(deepest_common_ancestor(std::iter::empty::<&str>()), None);
+    }
+
+    #[test]
+    fn compute_parent_path_cases() {
+        assert_eq!(compute_parent_path("/Users/foo/bar.txt"), "/Users/foo");
+        assert_eq!(compute_parent_path("/Users"), "/");
+        assert_eq!(compute_parent_path("/"), "/");
+    }
+
+    /// The recursive-size refresh set is REBUILT from the origins, so the FE emit and
+    /// the "size updating" hourglass keep seeing every ancestor up to `/` — the fact
+    /// they genuinely need. Splitting the two facts must not narrow this one.
+    #[test]
+    fn ancestor_closure_rebuilds_the_recursive_size_refresh_set() {
+        let closure = with_ancestor_closure(&["/Users/test/proj/pkg".to_string()]);
+        let mut got: Vec<&str> = closure.iter().map(String::as_str).collect();
+        got.sort_unstable();
+        assert_eq!(
+            got,
+            vec!["/", "/Users", "/Users/test", "/Users/test/proj", "/Users/test/proj/pkg"],
+            "the origin plus every ancestor up to the root"
+        );
+
+        // Two origins on the same chain fold into ONE closure, no duplicates.
+        let shared = with_ancestor_closure(&["/a/b/c".to_string(), "/a/b".to_string()]);
+        let mut got: Vec<&str> = shared.iter().map(String::as_str).collect();
+        got.sort_unstable();
+        assert_eq!(got, vec!["/", "/a", "/a/b", "/a/b/c"]);
+
+        // The root itself has no ancestors and claims nothing beyond itself.
+        assert_eq!(with_ancestor_closure(&["/".to_string()]), vec!["/".to_string()]);
+        assert!(
+            with_ancestor_closure(&[]).is_empty(),
+            "an empty batch expands to nothing"
+        );
     }
 }

@@ -5,11 +5,13 @@
 //!   the mount-relative `IndexPathSpace`, and `index_read_path` (the read-side
 //!   mount/scheme strip). The seam that teaches the local pipeline a
 //!   mount-rooted volume's path space.
-//! - [`firmlinks`]: macOS firmlink + `/private`-symlink normalization to the
-//!   canonical form the index stores and every lookup uses.
 //! - [`path_prefix`]: component-aware absolute-path prefix tests (so `/a/bc` is
 //!   never a child of `/a/b`), shared by rescan ancestor-collapse and
-//!   removal-storm coalescing.
+//!   removal-storm coalescing, plus the parent / ancestor-chain arithmetic the
+//!   live-event and size-refresh paths run on.
+//!
+//! Firmlink and `/private`-symlink normalization to the canonical form the index
+//! stores lives one layer down, in `cmdr_fs::firmlinks`.
 
 pub(crate) mod path_prefix;
 pub(crate) mod routing;

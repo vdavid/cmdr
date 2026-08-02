@@ -17,7 +17,7 @@ use cmdr_fs::pluralize::{pluralize, pluralize_with};
 use super::deferred_repair::DeferredRepairs;
 use super::repair::repair_dir_stats_upward;
 use super::{AccumulatorMaps, AggSource};
-use crate::indexing::reconcile::reconciler;
+use crate::indexing::events::emit_dir_updated;
 
 /// Log severity for the count of rows a full scan skipped on a UNIQUE
 /// `(parent_id, name_folded)` conflict (the `INSERT OR IGNORE` path).
@@ -153,7 +153,7 @@ pub(super) fn handle_compute_partial_aggregates(
             // `EmitDirUpdated`: the writes just committed on this thread, and
             // `writer_loop` wraps each message in `objc2::rc::autoreleasepool` on
             // macOS, so the ObjC-on-background-thread rule is satisfied.
-            reconciler::emit_dir_updated(events, vec!["/".to_string()]);
+            emit_dir_updated(events, vec!["/".to_string()]);
         }
         Err(e) => {
             signal.note(&e, &format!("compute_partial_aggregates({source:?})"));
