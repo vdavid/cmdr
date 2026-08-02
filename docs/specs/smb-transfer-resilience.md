@@ -113,9 +113,12 @@ Finishes the half of the earlier `M1.3` that was left undone.
   in 0.15.0: `sent_age` (restates the ambiguity), `send_queue_depth` / `send_failures` / `wire_bytes_sent`
   (client-side), `disconnected` (a consequence the retry already handles). **Flip-on, when `smb2` 0.16.0 lands and Cmdr
   moves onto it**: override `connection_liveness` on `SmbVolume` alone — `Dead` past the unanswered ECHO window, `Alive`
-  inside it, `None` before the first verdict. Nothing else moves. Re-tune the 180 s at the same time; with a real
-  verdict it is a debounce, not the evidence. Full reasoning and the guard tests: `transfer/DETAILS.md` § "The watchdog
-  ACTS".
+  inside it, `None` before the first verdict. Nothing else moves. ❌ But do NOT then drop the stillness window and trust
+  the verdict: measured against David's QNAP TS-464 (2026-08-02, smb2's live-hardware suite), an ECHO probe under heavy
+  write load reported `2 answered, 1 unanswered` — a false `Dead` — while five consecutive idle runs reported `0
+  unanswered`. The keepalive is least trustworthy exactly when a transfer is running, so the AND is load-bearing and the
+  180 s debounce is doing real work rather than just waiting. Full reasoning and the guard tests: `transfer/DETAILS.md`
+  § "The watchdog ACTS".
 - **M4.3** Delete the concurrency guess. `min(src.max_concurrent_ops, dst.max_concurrent_ops, 32)` is a magic number
   standing in for backpressure; with a real credit budget the gate IS the backpressure, self-tuning per connection. This
   is where the throughput upside sits.

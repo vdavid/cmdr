@@ -322,9 +322,18 @@ fn the_watchdog_ends_the_wait_on_a_task_that_stopped_moving() {
     );
 }
 
-/// A task that is still moving bytes is healthy, however slow. Aborting one
-/// would trade a rare wedge for frequent broken transfers, which is the trade
-/// the spec's Decision 3 exists to refuse.
+/// THE OTHER HALF OF THE CONJUNCTION: a `Dead` verdict is not sufficient on its
+/// own. This probe's volume reports its connection dead for every tick below,
+/// and the task is still never aborted, because it keeps moving bytes.
+///
+/// That is not a hypothetical guard. The verdict is a keepalive result, and a
+/// keepalive false-positives under exactly the load a transfer creates: against
+/// a QNAP TS-464 (2026-08-02, smb2's live-hardware suite) an ECHO probe under
+/// heavy write load reported `2 answered, 1 unanswered` — a false `Dead` — while
+/// five consecutive idle runs on the same box reported `0 unanswered`. So a
+/// healthy transfer to a busy NAS can genuinely be told its connection is dead,
+/// and the ONLY thing standing between that and a killed transfer is this: it is
+/// still moving. ❌ Don't let anyone simplify the gate to trust `Dead` directly.
 #[test]
 fn a_task_that_keeps_moving_is_never_aborted() {
     let guard = TestOperationGuard::register("probe-abort-moving");

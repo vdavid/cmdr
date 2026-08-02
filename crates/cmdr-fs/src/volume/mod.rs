@@ -892,13 +892,20 @@ pub trait Volume: Send + Sync {
     /// Has this volume's connection been PROVEN dead, as opposed to merely slow
     /// to answer?
     ///
-    /// This is the gate on the transfer watchdog's one aggressive action: ending
-    /// the wait on a task that has stopped moving (`transfer_probe.rs`). Only a
-    /// positive [`ConnectionLiveness::Dead`] may be acted on. ❌ Elapsed silence
-    /// is NOT an answer to this question and must never be dressed up as one: a
-    /// large write to a loaded spinning-disk NAS is legitimately slow, and
-    /// killing it trades a rare wedge for frequent spurious failures, which is
-    /// the worse bargain.
+    /// This is one of the two gates on the transfer watchdog's aggressive action:
+    /// ending the wait on a task that has stopped moving (`transfer_probe.rs`).
+    /// ❌ Elapsed silence is NOT an answer to this question and must never be
+    /// dressed up as one: a large write to a loaded spinning-disk NAS is
+    /// legitimately slow, and killing it trades a rare wedge for frequent
+    /// spurious failures, which is the worse bargain.
+    ///
+    /// **A `Dead` answer is evidence, NOT a licence to act.** Measured against a
+    /// QNAP TS-464 (2026-08-02, smb2's live-hardware suite): under heavy write
+    /// load an ECHO keepalive reported `2 answered, 1 unanswered` — a false
+    /// `Dead` — while five consecutive idle runs reported `0 unanswered`. The
+    /// verdict is least trustworthy exactly when a transfer is running, so the
+    /// caller ANDs it with its own stillness window. ❌ Don't add a caller that
+    /// acts on this answer alone.
     ///
     /// **Every backend answers `None` today, and that is the honest answer.**
     /// Telling "slow" from "dead" needs a keepalive — an ECHO the server either

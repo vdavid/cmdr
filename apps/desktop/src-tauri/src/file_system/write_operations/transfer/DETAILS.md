@@ -426,13 +426,28 @@ by the time it is true the write has already errored, and the retry has it. So t
 and inventing one out of elapsed time would reintroduce, one layer up, the failure mode the keepalive exists to
 prevent.
 
+**Why the two conditions are ANDed, and why that is load-bearing rather than belt-and-braces.** The liveness verdict
+this gate reads is a keepalive result, and a keepalive false-positives under exactly the load a transfer creates.
+Measured against David's QNAP TS-464 (2026-08-02, `smb2`'s live-hardware suite): under heavy write load an ECHO probe
+reported **`2 answered, 1 unanswered`** — a `Dead` verdict on a NAS that was demonstrably fine — while **five
+consecutive runs on the same idle box reported `0 unanswered`**. So the signal is least trustworthy precisely when it
+matters, and acting on it alone would kill healthy transfers to busy servers: the failure mode this whole gate exists
+to prevent, one layer up.
+
+The stillness window is what makes the pair sound. A NAS that drops a probe because it is busy writing has not ALSO
+moved zero bytes for `STALL_ABORT_AFTER`; a genuinely dead session has done both. Each condition covers the other's
+false positive. ❌ **Never collapse this to "trust the `Dead` verdict"** — the comment at the conjunction in
+`transfer_probe.rs` carries the same warning, and
+`transfer_probe::tests::a_task_that_keeps_moving_is_never_aborted` pins it (its probe reports `Dead` on every tick and
+the moving task is still never touched; removing the movement check turns that test red).
+
 **To turn the teeth on** — the whole change, once `smb2` ships the keepalive (0.16.0) and Cmdr moves onto it: override
 `connection_liveness` on **`SmbVolume` alone**, returning `Dead` when the keepalive's ECHO went unanswered past its
 window, `Alive` when one came back inside it, and `None` before the first verdict. Nothing else moves. The mechanism,
 the stillness window, the per-attempt re-arm, the guards, and the tests are all already here and gated only on that
-answer. Worth revisiting at the same time: with a real verdict, 180 s is a debounce rather than the evidence (the
-keepalive has already spent time concluding death), so it can probably come down a long way — that is a tuning call to
-make against the keepalive's own window, not a number to pre-guess now.
+answer. Do NOT assume the 180 s comes down much at the same time: with a
+fallible verdict the debounce is doing real work rather than just waiting, so it is a tuning call to make against the
+keepalive's measured false-positive behavior, not a number to shrink on the assumption the verdict is trustworthy.
 
 **Why 180 s for the second condition.** It is a LAST resort even once armed: every backend that can bound its own waits
 already does, sooner — `smb2` gives a frame 60 s to reach the socket and a response 180 s to arrive, so a dead SMB

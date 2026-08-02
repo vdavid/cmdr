@@ -522,12 +522,14 @@ impl OperationProbe {
     /// Has either end of this transfer been PROVEN dead, as opposed to merely
     /// slow to answer?
     ///
-    /// The gate on the watchdog's one aggressive action. `Volume::connection_liveness`
-    /// answers `None` for every backend in this workspace today — telling slow
-    /// from dead needs a keepalive, and the pinned `smb2` 0.15.0 has none — so
-    /// this is `false` in production and the watchdog reports without acting.
-    /// ❌ Don't substitute elapsed silence for this answer; that is the failure
-    /// mode a keepalive exists to prevent, and it kills healthy slow transfers.
+    /// One of the TWO conditions on the watchdog's aggressive action; see
+    /// [`OperationProbe::track_and_abort_wedged_tasks`] for why this one alone is
+    /// never enough. `Volume::connection_liveness` answers `None` for every
+    /// backend in this workspace today — telling slow from dead needs a
+    /// keepalive, and the pinned `smb2` 0.15.0 has none — so this is `false` in
+    /// production and the watchdog reports without acting. ❌ Don't substitute
+    /// elapsed silence for this answer; that is the failure mode a keepalive
+    /// exists to prevent, and it kills healthy slow transfers.
     ///
     /// **To turn the teeth on**: override `connection_liveness` on `SmbVolume`
     /// against the keepalive's verdict. Nothing here changes.
@@ -560,12 +562,13 @@ impl OperationProbe {
     ///
     /// Four guards keep this from touching anything healthy, and the FIRST is the
     /// one that matters:
-    /// - **Only on proof that the connection is DEAD**
-    ///   ([`OperationProbe::connection_proven_dead`]). Elapsed silence is not
-    ///   proof: a large write to a loaded spinning-disk NAS is legitimately slow,
-    ///   and killing it trades a rare wedge for frequent spurious failures.
-    ///   **No backend can answer this today**, so in production this method
-    ///   currently reports and never acts — which is the correct behavior until a
+    /// - **Proof that the connection is DEAD**
+    ///   ([`OperationProbe::connection_proven_dead`]) **AND** the stillness
+    ///   window, never either alone. Elapsed silence is not proof of death: a
+    ///   large write to a loaded spinning-disk NAS is legitimately slow, and
+    ///   killing it trades a rare wedge for frequent spurious failures.
+    ///   **No backend can answer the liveness question today**, so in production
+    ///   this method reports and never acts — the correct behavior until a
     ///   keepalive exists to tell slow from dead.
     /// - **Per-task, not per-operation.** A batch where any task is still moving
     ///   bytes leaves every other task's clock running on its own merits; only a
@@ -579,9 +582,25 @@ impl OperationProbe {
     fn track_and_abort_wedged_tasks(&self, now: Duration) {
         let now_ms = u64::try_from(now.as_millis()).unwrap_or(u64::MAX);
         let cancelling = !matches!(load_intent(&self.state.intent), OperationIntent::Running);
-        // Stillness is the debounce, never the evidence. Without a verdict the
-        // loop below only maintains each task's clock, which is what keeps the
-        // dump and the UI honest while nothing is escalated.
+        // ❌ NEVER collapse this conjunction to "trust the liveness verdict".
+        //
+        // The verdict it reads is a keepalive result, and a keepalive
+        // FALSE-POSITIVES under exactly the conditions a transfer creates.
+        // Measured against a QNAP TS-464 (2026-08-02, smb2's live-hardware
+        // suite): under heavy write load an ECHO probe reported `2 answered, 1
+        // unanswered` — a `Dead` verdict on a NAS that was demonstrably fine —
+        // while five consecutive runs on the same idle box reported `0
+        // unanswered`. Acting on that alone would kill healthy transfers to
+        // busy servers, which is the whole failure mode this gate exists to
+        // prevent, one layer up.
+        //
+        // The stillness window is what makes the pair sound: a NAS that drops a
+        // probe because it is busy writing has not ALSO moved zero bytes for
+        // `stall_abort_after`. Each condition covers the other's false positive,
+        // so both are load-bearing and neither is belt-and-braces.
+        //
+        // Without a verdict the loop below only maintains each task's clock,
+        // which is what keeps the dump and the UI honest while nothing escalates.
         let proven_dead = self.connection_proven_dead();
         let abort_after_ms = u64::try_from(self.stall_abort_after.as_millis()).unwrap_or(u64::MAX);
         for task in self.tasks.lock_ignore_poison().iter() {
