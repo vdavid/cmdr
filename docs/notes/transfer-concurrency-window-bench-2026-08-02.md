@@ -387,6 +387,21 @@ Reading it:
   / 3.245 / 3.224, uniformly ~7% slower under load), which is the regression check: a merge into a pre-existing
   directory still does exactly what it did.
 
+### NAS, few-large: 32 x 8 MiB (256 MiB), 3 reps, both modes interleaved
+
+| window | existing (probes per file) | fresh (probes skipped) | speedup |
+| -----: | -------------------------- | ---------------------- | ------: |
+|      8 | 3.004 s [2.969-3.133]      | 2.973 s [2.822-2.976]  |   1.01x |
+|     16 | 2.934 s [2.863-2.982]      | 2.729 s [2.647-2.898]  |   1.08x |
+|     32 | 2.843 s [2.807-2.886]      | 2.671 s [2.655-2.858]  |   1.06x |
+
+Serial pre-check floor: 154.8 ms for 32 files (4.84 ms/file) = 6% of the fastest run.
+
+**Nothing, as predicted, and that is the point of measuring it.** Spreads overlap at every window. The probe is a
+per-FILE tax, so 32 files owe ~155 ms of it against a ~2.8 s link-bound run: the ~6% the floor line reports, and ~100
+MB/s is still a saturated gigabit link either way. A change that had somehow made this shape faster would have meant the
+measurement was wrong.
+
 ### What this does NOT show
 
 - **The common flow is the `existing` column, not the `fresh` one.** Every top-level probe targets the same directory

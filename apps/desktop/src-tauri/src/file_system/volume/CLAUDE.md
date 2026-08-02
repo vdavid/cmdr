@@ -16,24 +16,26 @@ operation goes through a `Volume`, with **paths relative to the volume root**.
 
 ## Must-knows
 
-- **Optional trait methods default to `Err(NotSupported)` / `false`**, so a new backend starts with `list_directory` +
-  `get_metadata` and opts in incrementally. `DETAILS.md` § "Building a new volume".
-- **`lane_key()` is the operation manager's serialization key** (default = volume root): ops in one lane run serially,
-  disjoint lanes in parallel. Override when several `Volume`s share a physical resource.
-- **Any site passing a path calls `VolumeManager::resolve(volume_id, path).await`, never `get(volume_id)`.** `resolve`
-  routes a `.zip`-crossing path to a read-only, LRU-capped `ArchiveVolume`, path UNCHANGED; else a plain `get`.
-  **Async**: a REMOTE `.zip` needs a network probe. `resolve_local_only` is for the ONE caller that can't `.await`.
-  `backends/archive/DETAILS.md` § "Routing and lifecycle".
+- **Optional trait methods default to `Err(NotSupported)` / `false`**, so new backends start with `list_directory` +
+  `get_metadata` and opt in incrementally. New backend? `DETAILS.md` § "Building a new volume".
+- **`lane_key()` is the operation manager's serialization key** (default = volume root): write ops sharing a lane run
+  one at a time, disjoint lanes in parallel. Override when multiple `Volume` instances share one physical resource.
+- **At a site that calls a `Volume` method with a path, use `VolumeManager::resolve(volume_id, path).await`, not
+  `get(volume_id)`.** `resolve` routes a `.zip`-crossing path to a read-only `ArchiveVolume` (on-demand, LRU-capped),
+  returning the path UNCHANGED; otherwise it's a plain `get`. It's **async**: a REMOTE `.zip` needs a network probe.
+  The sync `resolve_local_only` is for the ONE caller that can't `.await`. See `backends/archive/DETAILS.md`
+  § "Routing and lifecycle".
 - **Register watcher-pre-registered volumes via `VolumeManager::register_if_absent`, not `register`.** Otherwise the
   FSEvents watcher overwrites a pre-registered `SmbVolume` with a `LocalPosixVolume`; `register` is for explicit
   replacement only (a reconnecting `SmbVolume`).
-- **All cross-volume copy flows through `open_read_stream` / `write_from_stream`**, the two methods a new backend
-  implements for it. ❌ Don't reintroduce `export_to_local` / `import_from_local`.
+- **All cross-volume copy flows through `open_read_stream` / `write_from_stream`.** Don't reintroduce
+  `export_to_local` / `import_from_local`. New backends implement those two methods for cross-volume copy.
 - **Never buffer a whole file in a transfer path** — don't drain a `VolumeReadStream` or collect a remote file into a
   `Vec<u8>`. Stream chunk-by-chunk. `DETAILS.md` § "Streaming patterns".
-- **`notify_mutation` defaults to a NO-OP, and every mutation (including `write_from_stream`) must call it.** Skipping
-  it leaves a stale pane after a copy: SMB/MTP watcher events are lossy under load. `cmdr-fs` can't default it — it
-  doesn't know the listing cache exists. `DETAILS.md` § "Mutation notification".
+- **`notify_mutation`'s trait default is a NO-OP, and every mutation (including `write_from_stream`) must call it.**
+  A backend that doesn't override it leaves a stale pane after a copy, because SMB/MTP watcher events are lossy under
+  load. `cmdr-fs` can't supply a default — it doesn't know the listing cache exists. `DETAILS.md` § "Mutation
+  notification".
 - **On macOS, never use `statvfs` alone for disk space** (ignores purgeable space: APFS snapshots, iCloud caches). Use
   `NSURLVolumeAvailableCapacityForImportantUsageKey` (`get_space_info_for_path`; `statvfs` fallback on Linux).
 - **`operations_are_local()` is about COST, not `std::fs`**: an OS-mounted share is `true` for
@@ -44,7 +46,7 @@ operation goes through a `Volume`, with **paths relative to the volume root**.
   `create_folder` silently duplicates, so the folder-merge walker pre-checks existence there — else a merge targets the
   wrong directory.
 - **`listing_is_watched(path)` defaults `false`**: a backend without a real watcher must not claim freshness, or
-  pre-flight scans reuse stale cache. `true` means "fresh as of our latest observation"; honor the per-backend debounce
+  pre-flight scans reuse stale cache. `true` means "fresh as our latest observation"; honor the per-backend debounce
   window. `DETAILS.md` § "Trait capability model".
 - **`begin_scan_session` / `end_scan_session` (default no-op) bracket background bulk work** for scan-scoped resources
   (SMB's refcounted extra-session pool; `backends/DETAILS.md`).
