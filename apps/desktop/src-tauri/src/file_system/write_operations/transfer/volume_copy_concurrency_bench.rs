@@ -48,6 +48,12 @@
 //!   round trips, so the per-file latency a wider window exists to hide barely
 //!   exists there. A curve that is flat on Docker says nothing about a real
 //!   network. The NAS target is what decides.
+//! - **The `window = 1` row is the SERIAL driver, not a one-wide concurrent
+//!   one.** `use_concurrent_path` needs `concurrency > 1`, so a window of 1
+//!   routes to `drive_transfer_serial_async` instead. That is exactly what a
+//!   user who sets `network.smbConcurrency` to 1 gets, so the row is honest —
+//!   but it is a different code path, and a step between 1 and 2 is partly that
+//!   switch rather than the window alone.
 
 use super::*;
 use crate::file_system::listing::FileEntry;
