@@ -18,8 +18,8 @@ The 2026-07-31 incident record is `docs/notes/incidents/2026-07-31-transfer-wedg
 recovery work that made this diagnosable shipped as `transfer-wedge-observability.md` (M1-M6, all merged) and is what
 turned an undiagnosable hang into a 20-minute read.
 
-Read before starting: `apps/desktop/src-tauri/src/file_system/volume/backends/CLAUDE.md`, the `smb2` crate's
-`AGENTS.md` and `docs/releasing.md`, and MS-SMB2 §3.2.4.1.5 / §3.3.1.2 on credits.
+Read before starting: `apps/desktop/src-tauri/src/file_system/volume/backends/CLAUDE.md`, the `smb2` crate's `AGENTS.md`
+and `docs/releasing.md`, and MS-SMB2 §3.2.4.1.5 / §3.3.1.2 on credits.
 
 ## The diagnosis, and the evidence for it
 
@@ -122,13 +122,13 @@ Finishes the half of the earlier `M1.3` that was left undone.
   exact failure mode M2.2 exists to prevent. Checked and rejected as liveness signals, in 0.15.0: `sent_age` (restates
   the ambiguity), `send_queue_depth` / `send_failures` / `wire_bytes_sent` (client-side), `disconnected` (a consequence
   the retry already handles); and again on 0.16.0 (2026-08-02): `keepalive_failures` / `keepalive_probes_skipped` (by
-  design NOT death — measured against David's QNAP TS-464, an ECHO probe under heavy write load reported `2 answered, 1
-  unanswered` while five consecutive idle runs reported `0 unanswered`), and `Error::ServerUnresponsive` (sound, but an
-  error handed to the caller AFTER tearing the connection down, so every waiter — including the parked task the
-  watchdog would unstick — has already been failed; the M4.1 retry has it). **Flip-on** now needs a change in `smb2`
-  first: expose the conjunction it already computes internally (`unresponsive_for()`: keepalive armed AND the wire
-  silent past the liveness window with a request outstanding) as pollable state, readable BEFORE a request burns its
-  deadline and WITHOUT the connection being torn down. Then override `connection_liveness` on `SmbVolume` alone.
+  design NOT death — measured against David's QNAP TS-464, an ECHO probe under heavy write load reported
+  `2 answered, 1 unanswered` while five consecutive idle runs reported `0 unanswered`), and `Error::ServerUnresponsive`
+  (sound, but an error handed to the caller AFTER tearing the connection down, so every waiter — including the parked
+  task the watchdog would unstick — has already been failed; the M4.1 retry has it). **Flip-on** now needs a change in
+  `smb2` first: expose the conjunction it already computes internally (`unresponsive_for()`: keepalive armed AND the
+  wire silent past the liveness window with a request outstanding) as pollable state, readable BEFORE a request burns
+  its deadline and WITHOUT the connection being torn down. Then override `connection_liveness` on `SmbVolume` alone.
   Nothing else moves. ❌ And do NOT then drop the stillness window and trust the verdict: the keepalive is least
   trustworthy exactly when a transfer is running, so the AND is load-bearing and the 180 s debounce is doing real work
   rather than just waiting. Full reasoning and the guard tests: `transfer/DETAILS.md` § "The watchdog ACTS".

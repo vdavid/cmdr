@@ -51,11 +51,10 @@ Copy and move, local-FS and volume-aware (Local ↔ MTP ↔ SMB), through `trans
 - **A transport blip retries the FILE** (`retry.rs`), ONLY inside `stream_pipe_file`: 3 attempts, bounded cancel-aware
   backoff, restarting at byte zero on a fresh temp. ❌ Never a `Cancelled`; ❌ never higher — conflicts, the ledger, the
   journal, and the milestone all sit above it and must happen once. Retryability: an exhaustive typed match.
-- **The stall watchdog's teeth are GATED and inert today**: it ends a task's wait only on
-  `Volume::connection_liveness() == Dead` **AND** `STALL_ABORT_AFTER`. ❌ Nothing answers that, and `smb2` 0.16.0's
-  keepalive doesn't change it: a missed ECHO is not death, and its one sound verdict tears the connection down before a
-  consumer could read it. ❌ Never collapse the AND — a keepalive false-`Dead`s under write load. Why, and what `smb2`
-  would have to expose: `DETAILS.md`.
+- **The stall watchdog's teeth are GATED and inert**: it ends a task's wait only on
+  `Volume::connection_liveness() == Dead` **AND** `STALL_ABORT_AFTER`. Nothing answers that, 0.16.0's keepalive
+  included: a missed ECHO isn't death. ❌ Never collapse the AND — a keepalive false-`Dead`s under write load. Why, and
+  what `smb2` must expose: `DETAILS.md`.
 - **Both progress paths report a file's HIGH-WATER bytes** (concurrent `fetch_max`, ❌ not `swap`; serial
   `leaf_high_water`), so a retry's restart neither double-counts nor reverses the bar.
 
