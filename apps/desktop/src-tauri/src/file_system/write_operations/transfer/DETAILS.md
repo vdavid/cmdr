@@ -24,6 +24,9 @@ facts that none of those carry live here:
   `1de4255d`). Pre-flight scan, dry-run, disk-space, and bulk-skip filtering stay OUTSIDE the driver, in `copy/mod.rs`.
 - **`transfer_driver_*_tests.rs` sit at the `transfer/` level, wired in as submodules via `#[path = "../…"]`**, so the
   large async-tests file keeps its `file-length` allowlist path. Don't relocate them into `transfer_driver/`.
+- **`transfer_probe_tests.rs` is a `#[path]` sibling, not an inline `mod tests`**, for the same reason every other big
+  module here splits: the probe plus its watchdog cases is 1.3k lines in one file. `retry.rs`'s policy tests stay inline
+  (the module is small and the tests read as its specification).
 - **`volume_strategy_*_tests.rs` are shallow engine tests**; the full merge + policy pipeline is pinned by
   `volume_merge_tests.rs`. `volume_rename_merge_tests.rs` drives `LocalPosixVolume` over a tempdir because
   `InMemoryVolume` models neither real subtree-rename nor empty-only-delete semantics, plus a `CaseInsensitiveVolume`
