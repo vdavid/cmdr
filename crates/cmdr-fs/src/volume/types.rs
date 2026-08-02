@@ -259,9 +259,9 @@ pub struct SourceItemInfo {
 
 /// What is known about whether a volume's connection is still answering.
 ///
-/// Deliberately three-valued: the interesting state is [`Unknown`](Self::Unknown),
-/// "we have no evidence either way", which is what a client with no keepalive can
-/// honestly say about a server that has gone quiet. Collapsing this to a `bool`
+/// Always carried in an `Option`, because the interesting state is the THIRD one:
+/// `None`, "we have no evidence either way", which is what a client with no
+/// keepalive can honestly say about a server that has gone quiet. A bare `bool`
 /// would force every caller to guess, and the guess that elapsed silence means
 /// death is exactly the one that kills healthy slow transfers.
 ///
