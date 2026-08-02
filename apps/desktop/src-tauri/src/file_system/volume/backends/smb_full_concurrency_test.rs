@@ -257,6 +257,7 @@ async fn smb_integration_many_files_at_full_concurrency_land_intact() {
     ));
     let total_bytes: usize = source_sizes.iter().sum();
     log::info!(
+        // allowed-pluralize-noun: a diagnostic log line; the counts are compile-time constants and never 1.
         "full-concurrency copy: {FILE_COUNT} files, {total_bytes} bytes, large={large_bytes} \
          (max_write={max_write}), src_concurrency={}, dst_concurrency={}",
         source_vol.max_concurrent_ops(),
@@ -356,7 +357,8 @@ async fn smb_integration_many_files_at_full_concurrency_land_intact() {
         problems.push(format!(
             "no `.cmdr-tmp-*` was ever observed on the destination, so the clean-listing check above \
              proves nothing: the {large_bytes}-byte sources were supposed to stage \
-             (max_write={max_write}, {} of {FILE_COUNT} files, copy took {elapsed:?})",
+             // allowed-pluralize-noun: a failure diagnostic; `FILE_COUNT` is a compile-time constant well above 1.
+            (max_write={max_write}, {} of {FILE_COUNT} files, copy took {elapsed:?})",
             FILE_COUNT.div_ceil(LARGE_EVERY),
         ));
     }
@@ -384,6 +386,7 @@ async fn smb_integration_many_files_at_full_concurrency_land_intact() {
             // from a chunk that came off another task's buffer (size matches,
             // hash doesn't).
             problems.push(format!(
+                // allowed-pluralize-noun: a byte count in a failure diagnostic; the compact form is the point.
                 "{name} is not byte-identical: expected {len} bytes hashing {:02x?}…, \
                  got size {} hashing {:02x?}…",
                 &expected[..4],

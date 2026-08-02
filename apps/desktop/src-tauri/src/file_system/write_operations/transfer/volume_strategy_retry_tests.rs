@@ -340,7 +340,7 @@ async fn a_retried_child_is_recorded_in_the_rollback_ledger_exactly_once() {
 async fn the_watchdog_ends_a_wedged_write_and_the_file_runs_again() {
     let guard = TestOperationGuard::register_state("retry-wedge", make_state());
     let source = source_with_payload().await;
-    let wedged = super::test_support::WedgedThenWorkingDest::new();
+    let wedged = test_support::WedgedThenWorkingDest::new();
     let dest: Arc<dyn Volume> = Arc::clone(&wedged) as Arc<dyn Volume>;
 
     // Short enough to observe, long enough to need several watchdog ticks. Read

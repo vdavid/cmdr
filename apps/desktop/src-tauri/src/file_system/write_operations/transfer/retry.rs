@@ -259,7 +259,9 @@ mod tests {
         let state = Arc::clone(guard.state());
         let op_id = guard.id().to_owned();
         tokio::spawn(async move {
-            // The wait is 250 ms; cancelling well inside it must cut it short.
+            // allowed-test-sleep: the head start IS the subject — the cancel has to land
+            // INSIDE the running 250 ms backoff, and there is no condition to wait on
+            // (a backoff in progress publishes nothing).
             tokio::time::sleep(Duration::from_millis(20)).await;
             super::super::super::state::cancel_write_operation(&op_id, false);
         });

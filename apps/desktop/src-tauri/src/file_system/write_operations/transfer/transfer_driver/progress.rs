@@ -232,6 +232,40 @@ pub(in crate::file_system::write_operations::transfer) fn make_concurrent_per_fi
     clippy::too_many_arguments,
     reason = "matches WriteProgressEvent shape; bundling into a context struct adds ceremony without cleaning anything up"
 )]
+fn try_emit_throttled_progress(
+    events: &dyn OperationEventSink,
+    state: &Arc<WriteOperationState>,
+    operation_id: &str,
+    operation_type: WriteOperationType,
+    file_name: Option<String>,
+    files_done: usize,
+    total_files: usize,
+    bytes_done: u64,
+    total_bytes: u64,
+    last_emit: &Mutex<Instant>,
+    progress_interval: Duration,
+) -> bool {
+    let mut last = last_emit.lock_ignore_poison();
+    if last.elapsed() < progress_interval {
+        return false;
+    }
+    *last = Instant::now();
+    drop(last);
+    emit_progress_and_status(
+        events,
+        state,
+        operation_id,
+        operation_type,
+        WriteOperationPhase::Copying,
+        file_name,
+        files_done,
+        total_files,
+        bytes_done,
+        total_bytes,
+    );
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -361,38 +395,4 @@ mod tests {
             "the second leaf's bytes must add to the first leaf's total, not be swallowed by its high-water mark"
         );
     }
-}
-
-fn try_emit_throttled_progress(
-    events: &dyn OperationEventSink,
-    state: &Arc<WriteOperationState>,
-    operation_id: &str,
-    operation_type: WriteOperationType,
-    file_name: Option<String>,
-    files_done: usize,
-    total_files: usize,
-    bytes_done: u64,
-    total_bytes: u64,
-    last_emit: &Mutex<Instant>,
-    progress_interval: Duration,
-) -> bool {
-    let mut last = last_emit.lock_ignore_poison();
-    if last.elapsed() < progress_interval {
-        return false;
-    }
-    *last = Instant::now();
-    drop(last);
-    emit_progress_and_status(
-        events,
-        state,
-        operation_id,
-        operation_type,
-        WriteOperationPhase::Copying,
-        file_name,
-        files_done,
-        total_files,
-        bytes_done,
-        total_bytes,
-    );
-    true
 }

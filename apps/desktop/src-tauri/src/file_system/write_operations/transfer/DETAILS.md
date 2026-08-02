@@ -334,6 +334,159 @@ incident — would have a stall timer but no reason to report.
 
 **Scoped out: the local-FS sync chunk loop.** `chunked_copy.rs::copy_data_chunked` (and the macOS `copyfile` / Linux `copy_file_range` strategies) receive only the cancel `intent` atom, not the `PauseGate` (which lives on `WriteOperationState`). So a local→local copy of one huge file pauses only at the next file boundary, not mid-file. Threading the gate through `copy_strategy.rs` + the native paths is the v2 follow-up; the user-reported case is MTP→local (the volume streaming path), which is fully covered.
 
+## Retrying one FILE, and the watchdog that ends a wait nothing else will
+
+**Decision**: a transport blip re-runs the FILE from its first byte, up to three attempts with a short cancel-aware
+backoff, and the retry lives in `stream_pipe_file` — the single place a file's bytes are streamed — not in any driver
+above it. Policy in `retry.rs`.
+
+**Why the file, not the operation**: a single failed write used to end the whole transfer. Twelve files into a 764-file
+copy, one write that never came back took the other 752 with it
+(`docs/notes/incidents/2026-07-31-transfer-wedge/README.md`). With `smb2` 0.15.0 a dead session surfaces as a typed
+error rather than a hang, so the file that hit the blip can simply be run again and the batch carries on.
+
+**Why THAT layer, and nowhere higher.** Everything a retry must not redo has already happened above `stream_pipe_file`,
+which is what makes the retry safe by construction rather than by care:
+
+- **Conflict resolution** ran on the driver (top-level) or in `copy_directory_streaming`'s merge walk (deep children).
+  A retried file re-prompts nobody and re-decides nothing; it re-runs the write the user already approved. The other
+  half of that decision — that the answer is not *stale* either — is deliberate: it was given for this file, in this
+  operation, seconds ago, so re-asking would be the surprising behavior, not the safe one. Pinned by
+  `volume_copy_retry_tests::a_retried_file_never_re_asks_the_conflict_the_user_already_answered`.
+- **The rollback ledger** (`CreatedPaths::record_file`), **the journal** (`journal::record_volume_transfer_source`),
+  and **the per-file progress milestone** are all driven from the CALLER's `Ok` arm, so a file is recorded exactly once
+  whatever it took. Pinned by `a_retried_child_is_recorded_in_the_rollback_ledger_exactly_once`.
+- **The merge invariant** is a property of the level walk, and a retry re-walks nothing: it re-runs one child's write
+  into a destination the walk already resolved. A retry can never turn a merge into a replace.
+- **Overwrite** is untouched, and a retry can only improve it. A safe-replace's `finalize_safe_replace` runs after
+  `copy_single_path` returns, so the ORIGINAL is intact through every attempt — including a file that fails all three.
+  A cross-type Overwrite's delete-first already happened in `apply_volume_conflict_resolution`; the retry re-runs only
+  the write, which is the half that can still rescue the data.
+
+**Staging across an attempt boundary.** Each attempt re-derives its staging and mints its own `.cmdr-tmp-<uuid>`, so
+nothing partial survives an attempt and no byte is written twice. `StagedWrite::abandon_attempt` clears the previous
+attempt's target first — one case WIDER than the terminal `abandon`, because between two attempts the next writer is us
+and not the caller: it also removes an `AlreadyStaged` caller temp, whose contents are only the partial we just gave up
+on. Leaving it would make the next attempt depend on how each backend treats a write onto an existing path
+(`LocalPosixVolume` truncates, `InMemoryVolume` refuses with `AlreadyExists`, MTP can make a duplicate object). A
+`SingleShot` write is still left entirely to its backend.
+
+**What is retryable, and why by type.** An exhaustive `VolumeError` match (`retry::is_retryable`), so a new variant
+can't inherit a retry by falling into a wildcard — adding one forces the decision. Retryable: `ConnectionTimeout`
+(where `smb2`'s `SendTimeout`, response `Timeout`, and `CreditStarvation` all land, via `ErrorKind::TimedOut`),
+`DeviceDisconnected` (SMB reconnects on its own, so the next attempt runs on a new session; on MTP the device really is
+gone and each attempt fails immediately, costing a bounded 1.25 s), `DeviceSessionReset` (its own doc says retrying
+works), `StaleDestinationHandle`, and an `IoError` carrying one of the errnos `error_classification.rs` already maps to
+`ConnectionInterrupted` — the case where a write onto an OS-mounted share reports the blip as an errno rather than a
+typed backend error. ❌ Everything else is a decision or a fact about the data: re-running the write fails the same way
+and only delays the report.
+
+**❌ A cancel is never retryable, and outranks a retryable error.** `should_retry` checks `is_cancelled` first, the
+backoff is a `select!` against `state.backend_cancel` (not a `sleep`), and a cancel that lands while an attempt is
+failing on something we WOULD have retried is reported AS a cancel — otherwise the post-loop, which keys
+`write-cancelled` off a `Cancelled`-shaped error, would log the user's own click as a failed transfer.
+
+**Bounded, deliberately.** `MAX_ATTEMPTS = 3` and a 250 ms → 1 s backoff, so a file can add at most 1.25 s of waiting.
+Three is the smallest number that survives the observed shape (a blip takes out the attempt in flight, the next runs on
+a session the backend has since rebuilt, the third finds a healthy connection); past two failures the problem isn't a
+blip. The bug this whole effort exists to kill is an infinite hang, so a retry loop that can spin forever would
+reintroduce it in a new costume — the cap is pinned by call count, not by hope
+(`a_destination_that_never_recovers_gives_up_at_the_attempt_cap`).
+
+### The watchdog ACTS (M4.2)
+
+**Decision**: past `STALL_ABORT_AFTER` (180 s of zero byte movement inside a backend call), the watchdog trips the
+task's `stall_abort` token; the streaming write races it, so the park becomes a typed `ConnectionTimeout` that the
+retry above treats as the blip it is.
+
+**Why**: the watchdog used to only report. The 2026-07-31 wedge was a write parked forever with nothing anywhere to
+bound it, and the user's only way out was force-quitting the app — which is what cost them two files. Detection is the
+floor; getting unstuck is the goal.
+
+**Why 180 s, and why it is a LAST resort.** Every backend that can bound its own waits already does, sooner: `smb2`
+gives a frame 60 s to reach the socket and a response 180 s to arrive, so a dead SMB session errors on its own and the
+file's retry picks it up without the watchdog being involved. What is left for this constant is the case with no
+deadline anywhere — an OS-mounted share, a USB stack, a future backend that forgot. The number has to clear the slowest
+HEALTHY gap between two byte reports, which is one chunk: a 1 MiB SMB read window needs a link under 6 KB/s to take
+this long, an 8 MiB MTP window needs USB at 45 KB/s. ❌ Don't tighten it toward a plausible slow link — killing a
+healthy transfer to catch a wedge sooner is the trade Decision 3 of `docs/specs/smb-transfer-resilience.md` refuses.
+
+**The guards, each load-bearing:**
+
+- **Per-task, not per-operation.** A batch where any task still moves bytes leaves every other task's clock running on
+  its own merits.
+- **Only `OpeningSource` / `Streaming`** (`TaskPhase::is_abortable_on_stall`). Every park is deliberate and
+  self-limiting — a pause ends when the user resumes, a source yield when foreground drains, a destination yield at its
+  hard cap, a conflict when the human answers, a backoff on its timer — so aborting one would break something working
+  as designed. A deliberate park also RESTARTS the clock, so parked seconds are never charged to the budget.
+- **Never while cancelling.** Cancel and rollback own their teardown via the driver's `CANCEL_DRAIN_DEADLINE`; a second
+  abort path racing them would only make the wind-down harder to reason about.
+- **Never for a `SingleShot` write** (the arm isn't even armed in `stream_pipe_file`). Those land in one indivisible
+  frame at the file's FINAL name, and only the backend can tell "the server created the file and then refused the
+  bytes" from "the file was already there". Aborting one from outside would add a client-initiated instance of the
+  transport hazard the single-shot exemption already documents as unfixable.
+- **Re-armed per attempt** (`TaskProbe::arm_stall_abort`, which also restarts the stillness clock). One task copies one
+  top-level source, which for a directory is many files with their own attempts; a token that stayed tripped would
+  abort every remaining child instantly and turn the retry budget into three no-ops.
+
+**Residual risk, accepted (an abandoned write handle).** Ending the wait drops the destination's `write_from_stream`
+future mid-write, so an SMB `FileWriter` goes away without `finish()` or `abort()` and its handle leaks until the server
+reaps it on idle timeout. The `abandon_attempt` delete of the staged temp may then hit a sharing violation and leave a
+`.cmdr-tmp-*` behind. This is the same trade the driver's `CANCEL_DRAIN_DEADLINE` abandon already takes, and it is
+narrower here: the abort only fires on a path that has been silent for three minutes, so the session holding that handle
+was not working anyway. What it cannot cost is data at a real name — the write was staged, so the user's filename was
+never involved.
+
+**The worst case, stated.** A file on a genuinely dead path is aborted, retried, aborted, retried, aborted: three
+`STALL_ABORT_AFTER` windows plus the backoff, so **about nine minutes** before the operation reports the failure. That
+is bounded where the incident was not (it needed a force-quit), the UI heartbeats "stalled" throughout, and on the
+concurrent path a Cancel still returns within `CANCEL_DRAIN_DEADLINE`. It is the obvious tuning knob if it proves too
+patient in practice: cap the stall-aborts per file at one, or shorten the window. ❌ Don't shorten it without re-reading
+why 180 s clears the slowest healthy chunk.
+
+**Not covered: a cancel does not reach a wedged write itself.** The backend learns about a cancel through its
+`on_progress` callback, which a wedged write never calls, so on the SERIAL path a Cancel is only observed once the write
+returns — which now happens at the abort rather than never. The concurrent path bounds it independently by dropping its
+in-flight futures at `CANCEL_DRAIN_DEADLINE`. Racing every write against `state.backend_cancel` would fix the serial
+case too, but it would also skip each backend's own partial cleanup on the healthy cancel path, so it is deliberately
+not done here.
+
+Pinned by `transfer_probe::tests::{the_watchdog_ends_the_wait_on_a_task_that_stopped_moving,
+a_task_that_keeps_moving_is_never_aborted, a_deliberately_parked_task_is_never_aborted,
+time_spent_paused_does_not_count_toward_the_abort, the_watchdog_stands_down_once_the_operation_is_cancelling,
+a_new_attempt_gets_a_fresh_signal_and_a_fresh_budget}` and, end to end,
+`volume_strategy_retry_tests::the_watchdog_ends_a_wedged_write_and_the_file_runs_again` (a write that never returns,
+never errors, and never reports a byte; the watchdog ends it and the retry lands the file).
+
+### Progress stays honest across a retry
+
+An attempt restarts at byte zero, so a file's own counter legitimately goes backwards. What the user sees must not, and
+the operation's total must not double-count. Both paths therefore report a file's HIGH-WATER mark:
+
+- **Concurrent** (`make_concurrent_per_file_progress`): `last_file_bytes.fetch_max(...)`, ❌ never `swap`. A `swap`
+  lowers the watermark on a restart and then credits the whole re-streamed prefix a second time — a silent over-count
+  and a Size bar that reaches 100% before the copy does.
+- **Serial** (`SerialLeafProgress`): a `leaf_high_water` for the in-flight leaf, reset in `on_leaf_complete` so the
+  next (possibly much smaller) leaf measures from its own first byte. `on_leaf_complete` still adds the leaf's exact
+  size once, so the end number is exact whatever the attempt count.
+
+The file counter needs nothing: `on_file_complete` fires only after `stream_pipe_file` returns `Ok`.
+
+### Seeing it in a log
+
+A silent retry would make "this file took three tries" and "this file never happened" the same log line, so every
+attempt is visible: a `warn` per retry with the attempt number, the error, and the wait; an `info` when a file lands
+past attempt 1; an error-level line with the full task row when the watchdog ends a wait; `TaskPhase::WaitingToRetry`
+naming the backoff; and `retries=N` (plus `stall-aborts=N`) on every task row in `render_dump`.
+
+### Not done here: continuing PAST a file that fails every attempt
+
+A file that exhausts its attempts still ends the operation, exactly as before. Skipping it and carrying on would need a
+terminal event shape that can say "finished, with N files missing", a frontend that shows which ones, and journal
+semantics for a partially-successful op — and, more importantly, a product decision about whether a user wants 700
+files copied with three quietly absent. That is a bigger change than M4.1 asked for and a worse default to guess at, so
+it is deliberately left for David to call.
+
 ## Cancel and rollback reach a parked driver
 
 **Decision**: the concurrent copy driver observes `OperationIntent` on the await it actually sits on, and bounds how

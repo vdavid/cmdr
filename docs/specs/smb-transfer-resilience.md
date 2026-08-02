@@ -1,6 +1,6 @@
 # SMB transfers that survive a server going quiet, without giving up throughput
 
-**Status**: specced, M0 in flight. **Owner**: David. **Date**: 2026-08-01.
+**Status**: M0-M2 and M4.1/M4.2/M4.4 shipped; M3 and M4.3 open. **Owner**: David. **Date**: 2026-08-01.
 
 A 764-file copy to a QNAP NAS wedges permanently, twice reproduced. Everything downstream of that — the frozen dialog,
 the dead Rollback, the corrupt files — is a symptom.
@@ -97,10 +97,16 @@ Finishes the half of the earlier `M1.3` that was left undone.
 
 ## M4: Cmdr picks up the pieces
 
-- **M4.1** Retry the FILE, not the operation. Today one failed write kills the whole transfer; once a dead session
-  surfaces as a typed error instead of a hang, the file should re-run and the transfer continue.
-- **M4.2** Have the stall watchdog ACT rather than only report. It currently dumps the in-flight table and the dialog
-  says "stalled"; with M2 available it can convert that into a real error and a retry.
+- **M4.1** ✅ **Shipped** (`transfer/retry.rs`, inside `stream_pipe_file`). A transport blip re-runs the FILE from its
+  first byte — 3 attempts, 250 ms then 1 s of cancel-aware backoff, a fresh staging temp each time — and the transfer
+  carries on. Retryability is an exhaustive typed `VolumeError` match; ❌ a cancel is never retryable and always wins.
+  Why that layer and how each data-safety invariant survives it: `transfer/DETAILS.md` § "Retrying one FILE". **Open for
+  David**: a file that exhausts its attempts still ends the operation. Carrying on past it needs a "finished, N files
+  missing" terminal shape and a product call; deliberately not guessed at.
+- **M4.2** ✅ **Shipped**. Past 180 s of zero byte movement inside a backend call, the watchdog ends the task's wait and
+  the park becomes a typed error M4.1 retries. It is the LAST resort — `smb2`'s own 60 s send and 180 s response
+  deadlines fire first — and it stands down for every deliberate park, for a cancelling op, and for a single-shot write.
+  Same DETAILS section.
 - **M4.3** Delete the concurrency guess. `min(src.max_concurrent_ops, dst.max_concurrent_ops, 32)` is a magic number
   standing in for backpressure; with a real credit budget the gate IS the backpressure, self-tuning per connection. This
   is where the throughput upside sits.
