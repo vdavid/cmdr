@@ -68,16 +68,25 @@ const COPY_DEADLINE: Duration = Duration::from_secs(45);
 const WEDGE_DEADLINE: Duration = Duration::from_secs(5);
 
 /// The floor the concurrency window must actually reach for this suite to be
-/// testing anything. Deliberately a floor, not the driver's formula: the formula
-/// is `min(src, dst, 32)` today and M4.3 is about deleting that guess, so pinning
-/// it here would make an unrelated change fail for the wrong reason.
-/// `LocalPosixVolume` never reports below 4 and `SmbVolume` defaults to 10, so a
-/// peak under 4 means the batch went down the sequential path or the window never
-/// filled — either way, not the shape that wedges. Measured 2026-08-02 on an idle
-/// M3 Max: 7, against an effective window of 8. It reads one under because the
-/// driver is between finishing one source and spawning the next when the sample
-/// lands, which is why this is a floor and not an equality.
-const MIN_PEAK_IN_FLIGHT: u32 = 4;
+/// testing anything.
+///
+/// Deliberately a floor, not the driver's formula. Two reasons, and both matter:
+///
+/// 1. The formula is `min(src, dst, 32)` today and M4.3 exists to delete that
+///    guess, so pinning it here would make an unrelated change fail for the wrong
+///    reason.
+/// 2. The number this reads is systematically ONE under the true window. Progress
+///    events fire as a source finishes, so the task doing the reporting has
+///    already left the in-flight table by the time `activity()` counts it.
+///    Measured 2026-08-02 on an idle M3 Max: a sampled peak of 7 while a deadline
+///    dump of the same run showed `in_flight=8/8`.
+///
+/// So the bar is the smallest window the driver can produce anywhere, minus that
+/// one: `LocalPosixVolume::max_concurrent_ops` clamps at 4 even on a two-core CI
+/// runner, and `SmbVolume` defaults to 10. Under 3 means the batch went down the
+/// sequential path or the window never filled — either way, not the shape that
+/// wedges.
+const MIN_PEAK_IN_FLIGHT: u32 = 3;
 
 /// How often the staging probe samples the destination while the copy runs.
 ///
@@ -474,7 +483,10 @@ async fn smb_integration_a_wedged_copy_is_caught_and_names_its_phase() {
     // What a human needs off a red run: which operation, how full the window was,
     // and what every in-flight task was doing. `parked(pause)` is this wedge's
     // answer; a silent server's would be `streaming` or `opening-source`.
-    assert!(dump.contains(&operation_id), "the dump must name the operation:\n{dump}");
+    assert!(
+        dump.contains(&operation_id),
+        "the dump must name the operation:\n{dump}"
+    );
     assert!(
         dump.contains("paused=true"),
         "the dump must say the operation was parked:\n{dump}"
