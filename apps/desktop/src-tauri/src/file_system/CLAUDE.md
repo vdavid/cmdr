@@ -5,9 +5,9 @@ Directory listing, file writing, sync status, volume management, and file watchi
 ## Module map
 
 - Submodules: `listing/`, `write_operations/`, `volume/`, `sync_status/` (cloud badges) — each has its own `CLAUDE.md`.
-- `watcher.rs` (FSEvents incremental listing updates), `staging.rs` (`StagingTemp`: the one way to name a
-  `.cmdr-tmp-*` scratch file, and the predicate listings filter on), `index_provider.rs` (the app's `VolumeProvider`,
-  so the index never imports `VolumeManager`).
+- `watcher.rs` (FSEvents incremental listing updates), `staging.rs` (the two scratch-visibility settings and the
+  predicate listings filter on; the `StagingTemp` mint itself is `cmdr_fs::staging`, re-exported here),
+  `index_provider.rs` (the app's `VolumeProvider`, so the index never imports `VolumeManager`).
 - `cloud_actions.rs` (iCloud offline/remove-download), `open_with.rs` (candidate apps + launch), `tags.rs` (macOS
   Finder tags via `_kMDItemUserTags`).
 - `mod.rs` is a facade: it re-exports downward and bootstraps the volume registry (`init_volume_manager`), which is why

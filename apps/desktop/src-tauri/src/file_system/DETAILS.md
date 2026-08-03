@@ -36,15 +36,15 @@ is lost by not surfacing it. It defaults to ON (shown), where Cmdr's own default
 by name is a bigger claim to make on someone's behalf than hiding our own.
 
 **Ownership, not name.** A scratch file a live operation owns is noise; one nobody owns is a leftover from an
-interrupted transfer, and hiding that misreports what's on disk. `StagingTemp` is the only way to name a temp, so
-registering can't be forgotten, and the guard's `Drop` is what un-hides.
+interrupted transfer, and hiding that misreports what's on disk. The mint, the in-flight registry, and why the RAII
+guard needs a liveness token behind it all live in `crates/cmdr-fs/src/staging.rs`, so a backend crate can stage a write
+without reaching into the app; `staging.rs` re-exports them and adds only the two visibility settings.
 
-**Why a guard alone isn't enough.** The transfer driver ABANDONS tasks that won't wind down under the cancel deadline,
-and an abandoned task keeps its guard alive: exactly the wedge case, where a leaked registration would hide a real
-leftover forever. So an operation's temps also carry a `Weak` to `WriteOperationState`'s liveness token, dropped by
-`end_liveness` wherever the operation leaves `WRITE_OPERATION_STATE`. ❌ Not `Arc<WriteOperationState>` reachability —
-the abandoned task holds one of those too. A force-quit is covered for free (the registry is in memory), and a temp
-minted outside any operation (the local safe-overwrite's two files) hides only until its function returns.
+**Which token the app hands it.** An operation's temps carry a `Weak` to `WriteOperationState`'s liveness token, dropped
+by `end_liveness` wherever the operation leaves `WRITE_OPERATION_STATE`. ❌ Not `Arc<WriteOperationState>` reachability —
+a task the driver abandoned holds one of those too, and the whole point is that its leftovers stop being hidden. A temp
+minted outside any operation (the local safe-overwrite's two files) passes `None` and hides only until its function
+returns.
 
 **Known gap.** A leftover only becomes visible on the next fetch, and nothing forces one at settle. In practice
 `transfer/volume_cleanup.rs::clean_abandoned_staged_writes` deletes the leftovers and that delete fires a watcher event,

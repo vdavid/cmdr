@@ -39,6 +39,11 @@ body, and `#[cfg(test)]` items are all invisible to a header grep.
   only one `SQLITE_CONFIG_PAGECACHE` slab per process, so it genuinely has to be one instance both sides see. (The plan
   budgeted this as "move `run_incremental_vacuum` down", counted when the module was two references; the process-wide
   page-cache work landed four days later and took it to 33.)
+- **`staging`.** The markers, the `StagingTemp` mint, and the in-flight registry. A mutating backend has to be able to
+  stage a write, and the archive mutator already does; leaving the mint in the app would mean the first backend crate
+  either reaches upward for it or grows a seam for something with no per-backend variation. What made the move
+  mechanical is that the mint's only tie to write-op state is an `Option<Weak<()>>` liveness token the CALLER hands
+  over, which names no app type. The two visibility settings stayed behind (below).
 - **`wait_until` / `wait_until_async`.** Behind the `testing` feature. The rest of the app's `test_support.rs` can't
   follow: `COUNTING_ALLOCATOR` is a `#[global_allocator]`, and a second one in any binary linking this crate is a hard
   compile error.
@@ -148,6 +153,9 @@ about an "unexpected `cfg` condition value" and takes the false branch forever.
 - **`file_system::listing::mutation::patch_listing_after_local_mutation`** — see cut 1.
 - **`detect_filesystem_for_path`** — see cut 3.
 - **`icons/per_path.rs`'s custom-folder-icon half**, the NSWorkspace fetch, and the icon disk cache.
+- **The scratch-visibility settings** (`advanced.showStagingTempFiles`, `advanced.showSafeSaveFiles`) and the listing
+  read-path filter over them. "Is this ours, and does a live operation own it?" is vocabulary; "does the user see it?"
+  is product policy, and the safe-save half is about other apps' files entirely.
 - **The archive tar decoders**, and everything else under `backends/archive/`.
 - **The allocation-counting harness**, because a `#[global_allocator]` has to be per-binary. It now sits in
   `indexing/test_support.rs`, next to the memory guards that use it.
