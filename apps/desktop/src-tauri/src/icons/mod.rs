@@ -199,16 +199,29 @@ fn get_sample_path_for_icon_id(icon_id: &str) -> Option<PathBuf> {
         return Some(PathBuf::from("/etc/hosts"));
     }
     if let Some(ext) = icon_id.strip_prefix("ext:") {
-        // Create an actual temp file with the extension
-        // macOS Launch Services needs the file to exist to get the correct icon
-        let temp_path = std::env::temp_dir().join(format!("cmdr_icon_sample.{}", ext));
-        // Create the file if it doesn't exist (empty file is fine)
-        if !temp_path.exists() {
-            let _ = std::fs::File::create(&temp_path);
-        }
-        return Some(temp_path);
+        return icon_sample_path(ext);
     }
     None
+}
+
+/// The empty stand-in file whose EXTENSION Launch Services reads to pick a
+/// document icon. Only the suffix matters; the file stays empty on purpose, so
+/// nothing content-sniffs it.
+///
+/// Samples live in a Cmdr-owned subdirectory rather than loose in the temp root.
+/// A bare `<temp>/cmdr_icon_sample.pdf` is a fixed name any other process can
+/// occupy, and it leaves one stray file per extension ever seen sitting in the
+/// temp root forever. Under a directory they stay namespaced and removable as a
+/// unit. Reuse across runs is deliberate: re-creating an empty file per launch
+/// buys nothing.
+fn icon_sample_path(ext: &str) -> Option<PathBuf> {
+    let dir = std::env::temp_dir().join("cmdr-icon-samples");
+    std::fs::create_dir_all(&dir).ok()?;
+    let path = dir.join(format!("sample.{ext}"));
+    if !path.exists() {
+        std::fs::File::create(&path).ok()?;
+    }
+    Some(path)
 }
 
 /// Resolves a real-folder icon id (one fetched from an actual filesystem path) to
@@ -395,11 +408,7 @@ fn fetch_fresh_extension_icon(ext: &str, use_app_icons_for_documents: bool) -> O
     let _ = use_app_icons_for_documents;
 
     // Fallback: use temp file approach (works on all platforms, but may use cached icons)
-    let sample_path = std::env::temp_dir().join(format!("cmdr_icon_sample.{}", ext));
-    if !sample_path.exists() {
-        let _ = std::fs::File::create(&sample_path);
-    }
-    fetch_icon_for_path(&sample_path)
+    icon_sample_path(ext).and_then(|sample_path| fetch_icon_for_path(&sample_path))
 }
 
 /// Refreshes icons for a directory listing.
@@ -544,6 +553,26 @@ mod tests {
 
     fn path_key(n: usize) -> String {
         format!("path:/folder/{n}")
+    }
+
+    /// Pins the sample out of the shared temp ROOT, where a fixed
+    /// `cmdr_icon_sample.<ext>` is a name any other process can occupy.
+    #[test]
+    fn extension_samples_live_in_a_cmdr_owned_directory() {
+        let sample = get_sample_path_for_icon_id("ext:cmdrtest").expect("a sample path for an extension id");
+
+        assert_eq!(
+            sample.parent().and_then(|p| p.file_name()),
+            Some(std::ffi::OsStr::new("cmdr-icon-samples")),
+            "samples belong in their own directory, not loose in the temp root"
+        );
+        assert_eq!(sample.extension(), Some(std::ffi::OsStr::new("cmdrtest")));
+        assert!(sample.is_file(), "Launch Services needs the sample to exist");
+        assert_eq!(
+            std::fs::metadata(&sample).expect("sample metadata").len(),
+            0,
+            "the sample stays empty so nothing content-sniffs it"
+        );
     }
 
     #[test]

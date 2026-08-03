@@ -16,6 +16,17 @@ for the real-folder ids (`special:*` / `pkg:*` / `path:*`), keyed by folder mtim
 `clear_directory_icon_cache` drops the keys macOS appearance-tints (`dir`, `symlink-dir`, `path:*`, `pkg:*`,
 `special:*`) plus the whole disk cache, on a theme/accent change.
 
+## Tier A: extension samples (`icon_sample_path`)
+
+An `ext:{x}` icon comes from asking the OS about a real file, so Cmdr keeps one empty stand-in per extension. Only the
+suffix matters, and the file stays empty on purpose so nothing content-sniffs it into a different icon.
+
+**Decision: samples live in `<temp>/cmdr-icon-samples/sample.{ext}`, not loose in the temp root.** A bare
+`<temp>/cmdr_icon_sample.{ext}` is a fixed name any other process can occupy, and it strands one file per extension ever
+seen in the temp root forever. A directory keeps them namespaced and removable as a unit. Reuse across runs is
+deliberate: re-creating an empty file every launch buys nothing. Pinned by
+`extension_samples_live_in_a_cmdr_owned_directory`.
+
 ## Tier B: special system folders (`special_folders.rs`)
 
 The finite set: Downloads, Desktop, Documents, Movies, Music, Pictures, Public, the home folder, plus (macOS only)
