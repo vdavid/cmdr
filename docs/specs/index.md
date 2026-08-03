@@ -48,6 +48,20 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       master-switch carve-out for user-initiated scans, a 24-hour expiry standing in for the branch watching that
       belongs to Space, a default scope narrowing to the current folder (deliberately sequenced last, and the change
       with an open question against it), and seven open product questions.
+- [ ] 2026-08-03 `jetbrains-plugin.md` - One sideloaded IntelliJ plugin at `tools/intellij-plugin/` carrying
+      Cmdr-specific reading aids, built so feature three is a directory rather than a redesign. v1 is two: bare commit
+      hashes in a `CHANGELOG.md` trailing group render link-colored and ⌘-click to GitHub, and a resolvable message key
+      folds to its English text (`tString('crashReporter.dialog.privacyNote')` → the sentence). A marketplace plugin
+      can't cover the second: our locale is a DIRECTORY of per-area files whose keys are already fully qualified, so
+      every i18next-shaped parser looks for `crashReporter:crashReporter.dialog.title`; the ARB `@key` metadata siblings
+      read as real keys; and a chunk of our copy reaches the UI as a bare literal on a `labelKey` property, never inside
+      a call. Everything is driven by `cmdr-plugin.json`, which doubles as the "this project is Cmdr" marker, so the
+      plugin is inert elsewhere and a worktree is recognized for free. The one real risk is whether a `.svelte`
+      template's `{tString(…)}` exposes ordinary JavaScript PSI, which M0 settles before anything is built on it (the
+      text-level `FoldingBuilder` fallback always works, so it can't sink the feature). Carries the rule that the
+      changelog parse must mirror `apps/website/src/lib/changelog.ts` exactly, guarded by a JVM-free
+      `intellij-plugin-config` Go check, because the failure mode of drift is silence: no build breaks, no test fails,
+      the feature just stops.
 - [ ] 2026-08-03 `backend-crates-plan.md` - Make "a filesystem backend is its own crate" the shape FTP(S), S3, and SFTP
       get written in, validated first against one mature backend. The `Volume` trait is already the API and already
       lives in `cmdr-fs`, so a crate boundary adds enforcement, not design: `SmbVolume` reaches into the app at 23 sites
