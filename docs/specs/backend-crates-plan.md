@@ -17,10 +17,10 @@ Two motivations, both David's, in priority order.
 
 ### Reason 1 holds, and the mechanism is enforcement, not design
 
-The `Volume` trait is **already** the API and it is **already** below the app, at `crates/cmdr-fs/src/volume/mod.rs`.
-So are all 14 types it exchanges. Nothing about the API needs inventing.
+The `Volume` trait is **already** the API and it is **already** below the app, at `crates/cmdr-fs/src/volume/mod.rs`. So
+are all 14 types it exchanges. Nothing about the API needs inventing.
 
-What a crate boundary adds is that the API becomes the *only* way through. Today `SmbVolume` reaches into
+What a crate boundary adds is that the API becomes the _only_ way through. Today `SmbVolume` reaches into
 `listing::caching`, `network::keychain`, `index_host`, `analytics::posthog`, `priority::foreground`,
 `file_system::smb_concurrency`, and `get_volume_manager()` across 23 sites, and nothing stops the 24th. After the
 boundary, each is either a named seam or a compile error.
@@ -43,8 +43,8 @@ That's separate, deliberate work, not a side effect of this plan. It is not sche
 **Full app builds get slightly slower after a backend edit.** `docs/notes/index-extraction-baseline.md` measured +11%
 for "index edit, then `cargo build`", because the app still relinks. Expect the same sign.
 
-**The real win is the scoped inner loop**, and it transfers regardless of crate size, because it comes from *not
-compiling the 245k-line app*: the index extraction measured `cargo check --lib` −83% (4.35 s → 0.75 s) and
+**The real win is the scoped inner loop**, and it transfers regardless of crate size, because it comes from _not
+compiling the 245k-line app_: the index extraction measured `cargo check --lib` −83% (4.35 s → 0.75 s) and
 `cargo test --lib --no-run` −85% (23–30 s → 3.55 s).
 
 **Release builds may get modestly faster**: the index extraction took a clean release build 214 s → 188 s (−12%),
@@ -61,8 +61,8 @@ backend, after FTP ships.
 
 ## The host seam set
 
-Every app-crate reach-through across all four backends clusters into seven concerns. This list is the design input;
-it's complete as of the survey.
+Every app-crate reach-through across all four backends clusters into seven concerns. This list is the design input; it's
+complete as of the survey.
 
 - **Listing cache** — `notify_directory_changed`, `try_get_watched_listing`, `refresh_archive_listings`,
   `find_listings_for_path_on_volume`, `patch_listing_after_local_mutation`. Needed by all four. The highest-leverage
@@ -84,8 +84,8 @@ Registration is **not** a seam: it's already solved by the "backends never regis
 (`mtp/volume_wiring.rs`, `network/smb_upgrade.rs`). Cancellation (`CancellationToken`), progress (`ListingProgress`),
 and error mapping (`friendly_error/`) are already in `cmdr-fs`.
 
-**Model to copy**: `crates/cmdr-index/src/indexing/host/` (1,124 lines), with `apps/desktop/src-tauri/src/priority/host_policy.rs`
-as the app-side adapter shape.
+**Model to copy**: `crates/cmdr-index/src/indexing/host/` (1,124 lines), with
+`apps/desktop/src-tauri/src/priority/host_policy.rs` as the app-side adapter shape.
 
 ## Design decisions
 
@@ -93,14 +93,14 @@ as the app-side adapter shape.
 
 Archive's entire coupling is three seams. SMB's is 23 sites across all seven. If the seam set is designed against
 archive, SMB will have to invent the rest and may have to redesign what archive built. So: design once from SMB's needs
-and the FTP/S3/SFTP requirements, then land archive as the first *implementation*, because it's the cheapest way to get
+and the FTP/S3/SFTP requirements, then land archive as the first _implementation_, because it's the cheapest way to get
 the crate scaffolding, the isolation check, the doc pair, and the runtime injection right without touching a network
 path.
 
 ### 2. A seam trait object may be called per mutation, never per entry
 
 Thin LTO at the workspace root is what kept the index extraction's hot paths within ±2%, and `Volume` is already
-`dyn`-dispatched so no *new* dynamic dispatch appears at the volume level. But a `ListingHost` called once per mutation
+`dyn`-dispatched so no _new_ dynamic dispatch appears at the volume level. But a `ListingHost` called once per mutation
 is free and one called per directory entry is not. This rule goes in the seam docs, the way
 `crates/cmdr-index/src/indexing/host/DETAILS.md` states its equivalents.
 
@@ -108,7 +108,7 @@ is free and one called per directory entry is not. This rule goes in the seam do
 
 `local_posix.rs` is 848 non-test lines and is the **hardest** extraction, not the easiest. It reaches
 `crate::file_system::git` at ten sites, and `file_system/git/` is 6,402 lines including a `gix`-backed repo walker and a
-`.git` watcher — the git portal is *implemented as* `LocalPosixVolume` hooks. It's also the only caller of the real-FS
+`.git` watcher — the git portal is _implemented as_ `LocalPosixVolume` hooks. It's also the only caller of the real-FS
 reader in `listing/reading.rs`, which serves the non-volume listing path too, and it's the FSEvents watcher's peer.
 
 Extracting it means extracting git or inventing a git seam with exactly one implementor. Someone will eventually propose
@@ -157,9 +157,9 @@ Move `backends/archive/**` (8,352 lines total, 4,976 non-test). Its complete app
 
 Everything else it imports (`FileEntry`, the volume types, `ignore_poison`) is already a `cmdr-fs` re-export.
 
-**No `AppHandle`, no `tauri_specta`, no `specta` derive, no credentials, no registry reach-back, no `cfg(test)`
-behavior gate.** It's headless (never registers itself), its reading core is already `Volume`-free, and its tests build
-real archives on disk — no Docker, no device, no network.
+**No `AppHandle`, no `tauri_specta`, no `specta` derive, no credentials, no registry reach-back, no `cfg(test)` behavior
+gate.** It's headless (never registers itself), its reading core is already `Volume`-free, and its tests build real
+archives on disk — no Docker, no device, no network.
 
 Also required: the manifest (the check runner auto-discovers workspace members, so no Go edit for basic coverage),
 `crates/cmdr-archive/{CLAUDE.md,DETAILS.md}` (the doc-pair check requires both), and extending `guardedIndexCrates` in
@@ -168,7 +168,7 @@ Also required: the manifest (the check runner auto-discovers workspace members, 
 Takes ~10 codec crates out of the app crate's direct manifest: `rc-zip`, `positioned-io`, `zip`, `sevenz-rust2`, `tar`,
 `flate2`, `bzip2`, `ruzstd`, `lzma-rust2`, `zeroize`.
 
-The heavy entanglement runs the *other* way, which is the safe direction, and all of it stays app-side:
+The heavy entanglement runs the _other_ way, which is the safe direction, and all of it stays app-side:
 `manager/archive_routing.rs` mints and LRU-caps `ArchiveVolume`; `write_operations/archive_edit/` drives
 `ArchiveMutator`; `commands/file_system/archive.rs` downcasts to `ArchiveVolume`; `listing/streaming.rs` and
 `caching.rs` special-case archive listings; `file_system/watcher.rs` re-registers after LRU eviction.
@@ -201,9 +201,9 @@ plan exists for.
 
 - **The seam set is wrong because it was designed from the wrong backend.** Mitigation: Decision 1 — design from SMB's
   23 sites, which are all enumerated in the survey, before archive lands.
-- **`cfg(test)` flips silently when code becomes a dependency.** This has bitten this project three times.
-  `cfg(test)` is set only for a crate's own test target. Archive has none, which is part of why it's the pilot; SMB and
-  MTP need `any(test, feature = "testing")` conversions.
+- **`cfg(test)` flips silently when code becomes a dependency.** This has bitten this project three times. `cfg(test)`
+  is set only for a crate's own test target. Archive has none, which is part of why it's the pilot; SMB and MTP need
+  `any(test, feature = "testing")` conversions.
 - **A seam ends up on a per-entry hot path.** Mitigation: Decision 2, plus measure rather than assume.
 - **Feature forwarding through an extra crate hop.** `smb2 = { features = ["testing"] }` and
   `mtp-rs = { features = ["virtual-device"] }` back the `smb-e2e` and `virtual-mtp` app features; both would need to

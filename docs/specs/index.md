@@ -8,12 +8,12 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 - [ ] 2026-08-03 `backend-crates-plan.md` - Make "a filesystem backend is its own crate" the shape FTP(S), S3, and SFTP
       get written in, validated first against one mature backend. The `Volume` trait is already the API and already
-      lives in `cmdr-fs`, so a crate boundary adds enforcement, not design: `SmbVolume` reaches into the app at 23
-      sites today and nothing stops the 24th. Every reach-through across all four backends clusters into seven host
-      seams (listing cache, runtime handle, typed event emit, credentials, index notification, settings, priority and
+      lives in `cmdr-fs`, so a crate boundary adds enforcement, not design: `SmbVolume` reaches into the app at 23 sites
+      today and nothing stops the 24th. Every reach-through across all four backends clusters into seven host seams
+      (listing cache, runtime handle, typed event emit, credentials, index notification, settings, priority and
       analytics), modelled on `crates/cmdr-index/src/indexing/host/`. Design the seams from SMB's 23 sites, then land
-      `cmdr-archive` as the pilot (its whole coupling is three seams, no Tauri types, no `cfg(test)` gates, no Docker
-      in its tests), ending at a real measurement gate that can cancel `cmdr-smb`. Two honest limits recorded up front:
+      `cmdr-archive` as the pilot (its whole coupling is three seams, no Tauri types, no `cfg(test)` gates, no Docker in
+      its tests), ending at a real measurement gate that can cancel `cmdr-smb`. Two honest limits recorded up front:
       **`pnpm check` will not get faster** (every Rust check shares one `rustInputs` set and runs `--workspace`; that
       needs separate per-crate check lanes), and full app builds get ~11% SLOWER after a backend edit, as measured for
       the index. `local_posix` is declared permanently app-resident (it's the git portal's host, 6,402 lines behind it)
