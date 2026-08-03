@@ -11,6 +11,10 @@
 //!   weights, stamping every row with the pass generation and advancing the
 //!   stored generation to it. Rows upsert on the folded-path PK (a pass rewrites every
 //!   folder).
+//! - [`write_weights_incremental`](ImportanceWriter::write_weights_incremental):
+//!   clear the changed subtrees and rewrite only what a live change touched, at the
+//!   CURRENT generation. Blocks, and reports the [`WeightDelta`] a weight-map
+//!   consumer applies instead of reloading.
 //! - [`purge_volume`](ImportanceWriter::purge_volume): drop all weights and
 //!   visits (a consumer forgot the volume). Schema stays.
 //! - [`record_visit`](ImportanceWriter::record_visit): the navigation-visit
@@ -40,6 +44,21 @@ use cmdr_fs::pluralize::pluralize;
 /// bound is plenty and provides backpressure on a pathological visit storm.
 const CHANNEL_CAPACITY: usize = 1024;
 
+/// The row-level edits one INCREMENTAL transaction made to the store's NON-ZERO
+/// weight rows — what the scheduler turns into a
+/// [`WeightsChanged::Delta`](super::read::WeightsChanged::Delta).
+///
+/// Crate-internal on purpose: the shape a CONSUMER sees is the notice's variant, and
+/// this is the writer's intermediate. See [`weight_delta`] for the two normalizations
+/// that make it describe the non-zero view rather than the raw table.
+#[derive(Debug, Default, PartialEq)]
+pub(crate) struct WeightDelta {
+    /// `(path, score)` for every folder whose row now scores above zero.
+    pub(crate) upserted: Vec<(String, f64)>,
+    /// The paths that left the non-zero set.
+    pub(crate) removed: Vec<String>,
+}
+
 /// One folder's weight to persist. The scheduler builds these from the scorer's
 /// output; the serialized signal vector rides along.
 #[derive(Debug, Clone, PartialEq)]
@@ -65,10 +84,15 @@ enum WriteMessage {
     /// rows for folders that were renamed away, deleted, or became floored, so only
     /// the currently-scored folders survive — the incremental analog of a full
     /// pass's replace-the-table. Used by the changed-subtree recompute.
+    ///
+    /// Replies with the [`WeightDelta`] the transaction produced (or `None` when it
+    /// grew past [`MAX_DELTA_ROWS`]), so the scheduler can tell a weight-map consumer
+    /// exactly what moved instead of making it re-read the table.
     WriteWeightsIncremental {
         generation: u64,
         rows: Vec<WeightRow>,
         delete_subtrees: Vec<String>,
+        reply: mpsc::Sender<Option<WeightDelta>>,
     },
     /// Drop all weight and visit rows (a consumer forgot the volume).
     PurgeVolume,
@@ -144,17 +168,36 @@ impl ImportanceWriter {
     /// current generation (via [`next_generation`] minus one, or the read API) and
     /// passes it here.
     ///
+    /// **Blocks until the transaction commits** and hands back what it changed: the
+    /// [`WeightDelta`] a weight-map consumer applies, or `None` when the pass touched
+    /// more than [`MAX_DELTA_ROWS`] and the consumer is better off reloading. Because
+    /// it waits for the reply, it doubles as the barrier a caller would otherwise get
+    /// from [`flush_blocking`](ImportanceWriter::flush_blocking).
+    ///
+    /// Crate-internal because it hands back a crate-internal [`WeightDelta`]: what
+    /// leaves the subsystem is the notice variant the scheduler builds from it, not
+    /// this. An app-side test stages weights through
+    /// [`write_weights`](ImportanceWriter::write_weights).
+    ///
     /// [`next_generation`]: ImportanceWriter::next_generation
-    pub fn write_weights_incremental(
+    pub(crate) fn write_weights_incremental(
         &self,
         generation: u64,
         rows: Vec<WeightRow>,
         delete_subtrees: Vec<String>,
-    ) -> Result<(), ImportanceStoreError> {
+    ) -> Result<Option<WeightDelta>, ImportanceStoreError> {
+        let (tx, rx) = mpsc::channel();
         self.send(WriteMessage::WriteWeightsIncremental {
             generation,
             rows,
             delete_subtrees,
+            reply: tx,
+        })?;
+        rx.recv().map_err(|_| {
+            ImportanceStoreError::Io(std::io::Error::new(
+                std::io::ErrorKind::BrokenPipe,
+                "importance writer thread is gone",
+            ))
         })
     }
 
@@ -241,10 +284,18 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>) {
                 generation,
                 rows,
                 delete_subtrees,
+                reply,
             } => {
-                if let Err(e) = apply_incremental(&mut conn, generation, &rows, &delete_subtrees) {
-                    log::warn!(target: "importance", "write_weights_incremental failed (generation {generation}): {e}");
-                }
+                // A failed transaction changed nothing we can describe, so the
+                // consumer is told to reload rather than handed a partial delta.
+                let delta = match apply_incremental(&mut conn, generation, &rows, &delete_subtrees) {
+                    Ok(delta) => delta,
+                    Err(e) => {
+                        log::warn!(target: "importance", "write_weights_incremental failed (generation {generation}): {e}");
+                        None
+                    }
+                };
+                let _ = reply.send(delta);
             }
             WriteMessage::PurgeVolume => {
                 if let Err(e) = apply_purge(&conn) {
@@ -313,12 +364,24 @@ fn apply_full_pass(conn: &mut Connection, generation: u64, rows: &[WeightRow]) -
 /// and case-folding never cross it), and `"0"` (0x30) is one past `"/"` (0x2f), so
 /// the range holds all descendants and nothing else. The `/` boundary means clearing
 /// `/a` never touches a sibling like `/ab`. See [`SUBTREE_CLEAR_SQL`].
+///
+/// Returns the [`WeightDelta`] describing what moved, or `None` when the pass grew
+/// past [`MAX_DELTA_ROWS`] and a consumer should reload instead. The DELETE's
+/// `RETURNING path` is the ONLY place the cleared rows are knowable: a cleared
+/// SUBTREE ROOT can't be expanded into keys consumer-side, because the search
+/// ranker's map is keyed by a path HASH and hashes carry no prefix structure.
 fn apply_incremental(
     conn: &mut Connection,
     generation: u64,
     rows: &[WeightRow],
     delete_subtrees: &[String],
-) -> Result<(), ImportanceStoreError> {
+) -> Result<Option<WeightDelta>, ImportanceStoreError> {
+    // Past the cap, stop describing and let the consumer re-read: the paths would
+    // cost more to ship than the table costs to stream. Decided up front for the
+    // insert side (its size is known) and during the clear for the delete side.
+    let mut describing = rows.len() <= MAX_DELTA_ROWS;
+    let mut cleared: Vec<String> = Vec::new();
+
     let tx = conn.transaction()?;
     {
         if !delete_subtrees.is_empty() {
@@ -327,14 +390,67 @@ fn apply_incremental(
                 let f = normalize_for_comparison(prefix);
                 // `?1` matches the changed folder itself (its folded PK); `?2`..`?3`
                 // is the half-open BINARY range covering exactly its descendants.
-                del.execute(rusqlite::params![f, format!("{f}/"), format!("{f}0")])?;
+                // The rows must be stepped to completion: `RETURNING` emits them as
+                // the DELETE runs, so stopping early would stop deleting.
+                let mut deleted = del.query(rusqlite::params![f, format!("{f}/"), format!("{f}0")])?;
+                while let Some(row) = deleted.next()? {
+                    if !describing {
+                        continue;
+                    }
+                    cleared.push(row.get(0)?);
+                    if cleared.len() > MAX_DELTA_ROWS {
+                        describing = false;
+                        cleared = Vec::new();
+                    }
+                }
             }
         }
         insert_rows(&tx, generation, rows)?;
     }
     tx.commit()?;
-    Ok(())
+    Ok(describing.then(|| weight_delta(rows, cleared)))
 }
+
+/// Fold a committed incremental's inserted `rows` and CLEARED paths into the delta a
+/// weight-map consumer applies.
+///
+/// Two normalizations make the result a description of the NON-ZERO weight set (what
+/// `ImportanceIndex::for_each_nonzero_weight` streams) rather than of the raw table:
+///
+/// - A row scoring `0.0` is a REMOVAL. The store keeps such a row (it isn't floored),
+///   but the stream skips it and an absent key already reads `0.0`, so treating it as
+///   a removal is what keeps a patched map identical to a rebuilt one.
+/// - A path that was cleared and then re-inserted nets down to its upsert. The common
+///   incremental clears a subtree and rewrites the same folders, so without this the
+///   delta would carry nearly every touched folder twice.
+fn weight_delta(rows: &[WeightRow], cleared: Vec<String>) -> WeightDelta {
+    let mut upserted: Vec<(String, f64)> = Vec::new();
+    let mut zeroed: Vec<String> = Vec::new();
+    for row in rows {
+        if row.score > 0.0 {
+            upserted.push((row.path.clone(), row.score));
+        } else {
+            zeroed.push(row.path.clone());
+        }
+    }
+
+    let rewritten: std::collections::HashSet<&str> = upserted.iter().map(|(path, _)| path.as_str()).collect();
+    let rezeroed: std::collections::HashSet<&str> = zeroed.iter().map(String::as_str).collect();
+    let mut removed: Vec<String> = cleared
+        .into_iter()
+        .filter(|path| !rewritten.contains(path.as_str()) && !rezeroed.contains(path.as_str()))
+        .collect();
+    removed.extend(zeroed);
+
+    WeightDelta { upserted, removed }
+}
+
+/// The most rows an incremental will describe before telling the consumer to reload
+/// instead. Past it, cloning and shipping every path approaches the cost of streaming
+/// the table back (the thing the delta exists to avoid), and the notice channel would
+/// hold that much per buffered pass. A typical incremental is a handful of rows; only
+/// the full-walk fallback over a batch covering most of a volume gets near this.
+const MAX_DELTA_ROWS: usize = 10_000;
 
 /// The subtree-clear DELETE an incremental rescore runs per changed prefix.
 ///
@@ -345,8 +461,11 @@ fn apply_incremental(
 /// row and re-running the NFD-folding `platform_case` comparison on each — the fix
 /// that stops the incremental from pegging a CPU core. Kept as a `const` so the
 /// `subtree_clear_delete_is_index_served` test EXPLAINs the exact production SQL.
+///
+/// `RETURNING path` hands back the verbatim path of every row it removed, which is
+/// what lets the pass report a removal set instead of a subtree root.
 pub(crate) const SUBTREE_CLEAR_SQL: &str =
-    "DELETE FROM weights WHERE path_folded = ?1 OR (path_folded >= ?2 AND path_folded < ?3)";
+    "DELETE FROM weights WHERE path_folded = ?1 OR (path_folded >= ?2 AND path_folded < ?3) RETURNING path";
 
 /// Upsert `rows` on the folded-path PK, stamping each at `generation`. Shared by the full
 /// pass and the incremental rescore.
@@ -460,6 +579,131 @@ mod tests {
         let generation = w.next_generation().expect("generation");
         w.write_weights(generation, rows).expect("write weights");
         w.flush_blocking().expect("flush");
+    }
+
+    /// One weight row at `path` scoring `score`.
+    fn row(path: &str, score: f64) -> WeightRow {
+        WeightRow {
+            path: path.to_string(),
+            score,
+            signals_json: "{}".to_string(),
+        }
+    }
+
+    /// Sort a delta's two lists so assertions don't depend on SQLite's row order.
+    fn sorted(mut delta: WeightDelta) -> WeightDelta {
+        delta.upserted.sort_by(|a, b| a.0.cmp(&b.0));
+        delta.removed.sort();
+        delta
+    }
+
+    /// An incremental reports exactly what a weight-map consumer has to apply: the
+    /// rows it wrote, and the paths that LEFT the store. The removed paths can only
+    /// come from here — a consumer keying on a path hash can't expand a cleared
+    /// subtree root into the keys to drop, because hashes carry no prefix structure.
+    #[test]
+    fn an_incremental_reports_the_rows_it_wrote_and_the_ones_it_cleared() {
+        let dir = tempfile::tempdir().expect("temp");
+        let (w, _db_path) = writer(dir.path());
+
+        // A full pass seeds a subtree of three plus an unrelated folder.
+        w.write_weights(
+            1,
+            vec![row("/a", 0.2), row("/a/keep", 0.4), row("/a/drop", 0.6), row("/b", 0.8)],
+        )
+        .expect("full pass");
+        w.flush_blocking().expect("flush");
+
+        // The incremental clears `/a`'s subtree and rewrites two of its three folders,
+        // so `/a/drop` is gone (deleted, renamed away, or newly floored).
+        let delta = sorted(
+            w.write_weights_incremental(1, vec![row("/a", 0.25), row("/a/keep", 0.45)], vec!["/a".to_string()])
+                .expect("incremental")
+                .expect("a two-row pass is small enough to describe"),
+        );
+
+        assert_eq!(
+            delta.upserted,
+            vec![("/a".to_string(), 0.25), ("/a/keep".to_string(), 0.45)],
+            "the rows the pass wrote"
+        );
+        assert_eq!(
+            delta.removed,
+            vec!["/a/drop".to_string()],
+            "only the folder that left: a cleared-then-rewritten path nets down to its upsert, \
+             and `/b` was never in the cleared subtree"
+        );
+        w.shutdown();
+    }
+
+    /// A row rescored to `0.0` is a REMOVAL, not an upsert. The store keeps it (it
+    /// isn't floored) but `for_each_nonzero_weight` skips it, and the delta describes
+    /// that non-zero view — which is what keeps a patched map equal to a rebuilt one.
+    #[test]
+    fn a_row_rescored_to_zero_is_reported_as_a_removal() {
+        let dir = tempfile::tempdir().expect("temp");
+        let (w, _db_path) = writer(dir.path());
+        w.write_weights(1, vec![row("/a", 0.5)]).expect("full pass");
+        w.flush_blocking().expect("flush");
+
+        let delta = w
+            .write_weights_incremental(1, vec![row("/a", 0.0)], vec!["/a".to_string()])
+            .expect("incremental")
+            .expect("describable");
+
+        assert!(delta.upserted.is_empty(), "a zero score carries no ranking signal");
+        assert_eq!(delta.removed, vec!["/a".to_string()], "so it leaves the non-zero set");
+        w.shutdown();
+    }
+
+    /// An incremental that touched nothing still reports an empty delta rather than
+    /// asking for a reload — a pass a minute must not cost a full weight-map rebuild.
+    #[test]
+    fn a_pass_that_changed_nothing_reports_an_empty_delta() {
+        let dir = tempfile::tempdir().expect("temp");
+        let (w, _db_path) = writer(dir.path());
+        let delta = w
+            .write_weights_incremental(1, Vec::new(), vec!["/nothing/here".to_string()])
+            .expect("incremental")
+            .expect("describable");
+        assert_eq!(delta, WeightDelta::default());
+        w.shutdown();
+    }
+
+    /// Past `MAX_DELTA_ROWS` the pass stops describing itself: shipping that many
+    /// paths approaches the cost of streaming the table back, which is what the delta
+    /// exists to avoid. The consumer reloads instead.
+    #[test]
+    fn a_pass_too_big_to_describe_asks_for_a_reload() {
+        let dir = tempfile::tempdir().expect("temp");
+        let (w, _db_path) = writer(dir.path());
+        let rows: Vec<WeightRow> = (0..=MAX_DELTA_ROWS).map(|i| row(&format!("/big/{i}"), 0.5)).collect();
+        assert!(
+            w.write_weights_incremental(1, rows, Vec::new())
+                .expect("incremental")
+                .is_none(),
+            "past the cap the consumer is told to reload"
+        );
+        w.shutdown();
+    }
+
+    /// The clear side is capped too: a pass that only DELETES can be just as wide as
+    /// one that writes, and it's the side a consumer can't reconstruct.
+    #[test]
+    fn a_clear_too_big_to_describe_asks_for_a_reload() {
+        let dir = tempfile::tempdir().expect("temp");
+        let (w, _db_path) = writer(dir.path());
+        let rows: Vec<WeightRow> = (0..=MAX_DELTA_ROWS).map(|i| row(&format!("/big/{i}"), 0.5)).collect();
+        w.write_weights(1, rows).expect("full pass");
+        w.flush_blocking().expect("flush");
+
+        assert!(
+            w.write_weights_incremental(1, Vec::new(), vec!["/big".to_string()])
+                .expect("incremental")
+                .is_none(),
+            "clearing more than the cap tells the consumer to reload"
+        );
+        w.shutdown();
     }
 
     #[test]

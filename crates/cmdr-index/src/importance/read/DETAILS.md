@@ -33,7 +33,6 @@ home-relative; defaults to `$HOME`); `with_weights` overrides the weights `expla
   `cap + 1` to detect truncation without loading the whole tail. The agent's summary gate and media-ML's
   enrich-important-first.
 - `scored_folder_count()` — the `weights` row count (a `COUNT(*)`, no deserialization), for the overview surface.
-- `signals_for(path)` — the stored raw vector, for a consumer applying its own weighting profile.
 - `for_each_nonzero_weight(visit)` — STREAMS every `(path, score)` with a non-zero score (floored folders omitted), for
   a consumer that folds one snapshot into its own in-memory form and ranks many candidates against it rather than
   querying per item. It streams rather than returning a map because a `path → score` map is far wider than what the
@@ -85,12 +84,54 @@ scan". The read API never hides a stale weight. Only a full pass advances the ge
 
 ## The recompute subscription
 
-`subscribe(volume_id)` returns a `tokio::sync::watch<u64>` receiver carrying the last completed generation. The
-scheduler calls `notify_recompute_completed` after each full or incremental pass, so a consumer awaits `changed()`
-instead of polling (subscribe-don't-poll). It retains the last value for a late subscriber (`send_replace`) and fires
-exactly once per completion. The senders live in a process-global keyed by volume id (surviving an unmount), like the
-indexing lifecycle bus. A crate-visible test shim lets a consumer's subscribe→reload wiring be tested without widening
+`subscribe(volume_id)` returns a `tokio::sync::broadcast<WeightsChanged>` receiver. The scheduler calls
+`notify_recompute_completed` once after each full or incremental pass, so a consumer awaits `recv()` instead of polling
+(subscribe-don't-poll). The senders live in a process-global keyed by volume id (surviving an unmount), like the
+indexing lifecycle bus. A crate-visible test shim lets a consumer's subscribe→apply wiring be tested without widening
 the production notifier past the scheduler.
+
+### The reload contract
+
+`WeightsChanged` tells a weight-caching consumer what to do, and every path has to land on the same map a fresh
+`for_each_nonzero_weight` would build:
+
+- `ReloadAll` ⇒ rebuild. Sent by a FULL pass, which replaces the whole table. ❌ A full pass must never send a delta:
+  materializing every row's path is exactly the cost the delta exists to avoid.
+- `Delta` ⇒ patch with its `upserted` `(path, score)` pairs and `removed` paths, both `Arc`-shared so a second
+  subscriber costs a refcount rather than a copy. Sent by an incremental pass, which writes at the current generation
+  without bumping it.
+- `RecvError::Lagged` ⇒ rebuild. This is the third one and it's load-bearing.
+
+**Why `broadcast` and not `watch`.** A `watch` is last-value-wins, which is correct for an idempotent generation counter
+and catastrophic for a delta: two passes landing between one consumer read silently drops the earlier delta, the map
+drifts from the store, and nothing detects it until the next full pass. `broadcast` buffers `NOTICE_BUFFER` (16)
+notices and reports the overflow, so a consumer can't miss a delta without being told. ❌ Never go back to `watch`
+semantics for this payload, and ❌ never treat `Lagged` as "nothing happened".
+
+The trade is that there's no retained value: a receiver sees only passes completing after it subscribes. Consumers
+therefore subscribe BEFORE their first load, so a pass finishing during that load can't slip through the gap
+(`search::volumes::start_importance_weight_subscriber`).
+
+### What the delta describes
+
+A delta is defined against the NON-ZERO weight set `for_each_nonzero_weight` streams, not against the raw table.
+Two normalizations, both in the writer's `weight_delta` (which fills the crate-internal `WeightDelta` the scheduler
+turns into the notice):
+
+- A row rescored to `0.0` is a REMOVAL. The store keeps such a row (it isn't floored) but the stream skips it, and an
+  absent key already reads `0.0`, so reporting it as a removal is what keeps a patched map equal to a rebuilt one.
+- A path cleared and then re-inserted nets down to its upsert, leaving the two lists disjoint by path. The common
+  incremental clears a subtree and rewrites the same folders, so without this the delta would carry nearly everything
+  twice.
+
+**The removed paths can only come from the writer.** `write_weights_incremental` takes subtree ROOTS, and the search
+ranker's map is keyed by a path HASH — hashes carry no prefix structure, so a consumer cannot expand a cleared root
+into the keys to drop. The subtree-clear DELETE therefore carries `RETURNING path` (`writer.rs`'s `SUBTREE_CLEAR_SQL`)
+and hands the actual rows back. ❌ Don't drop the `RETURNING` clause or reconstruct the removals consumer-side.
+
+Past `MAX_DELTA_ROWS` (10,000 on either side) the pass stops describing itself and sends `ReloadAll` instead: shipping
+that many paths approaches the cost of streaming the table back, and the notice buffer would hold that much per pass.
+Only the full-walk fallback over a batch covering most of a volume gets near it.
 
 ## Dev tuning surface (`importance-tune`)
 

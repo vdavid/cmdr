@@ -302,25 +302,29 @@ pub(super) fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kin
         }
     }
 
-    // The unscored → scored bridge (defer-until-scored). Subscribe to
-    // importance's recompute-completed `watch` SYNCHRONOUSLY here — BEFORE and
-    // independent of the first pass. Watch semantics: a receiver is caught up to the
-    // current version at subscribe time, so `changed()` fires only on the NEXT bump. A
-    // lazy "a pass reads `None` → then subscribe" flow has a hole: importance can
-    // complete in the gap, the receiver comes up already-caught-up, and the volume
-    // defers forever. Subscribing up front (mirroring `search`'s
-    // `start_importance_weight_subscriber`) closes it. Re-kick only the unscored →
-    // scored transition: `take_deferred_for_importance` gates on a per-volume flag a
-    // deferring pass set, so a normal volume never re-kicks and a later incremental
-    // bump doesn't re-walk the index for nothing.
+    // The unscored → scored bridge (defer-until-scored). Subscribe to importance's
+    // recompute-completed channel SYNCHRONOUSLY here — BEFORE and independent of the
+    // first pass. A lazy "a pass reads `None` → then subscribe" flow has a hole:
+    // importance can complete in the gap, the receiver comes up seeing only what
+    // follows, and the volume defers forever. Subscribing up front (mirroring
+    // `search`'s `start_importance_weight_subscriber`) closes it. Re-kick only the
+    // unscored → scored transition: `take_deferred_for_importance` gates on a
+    // per-volume flag a deferring pass set, so a normal volume never re-kicks and a
+    // later incremental pass doesn't re-walk the index for nothing.
+    //
+    // Only the EDGE matters here, never the payload: what changed is the weight-map
+    // consumer's business, so a lagged receiver is just as good a "importance moved"
+    // signal as a delivered one.
     let bridge_scheduler = Arc::clone(&scheduler);
     let bridge_volume = volume_id.clone();
     let mut imp_rx = crate::importance::read::subscribe(&volume_id);
     crate::indexing::host::runtime::spawn(async move {
-        // Catch up to the current version so `changed()` fires only on a later bump.
-        imp_rx.borrow_and_update();
-        while imp_rx.changed().await.is_ok() {
-            imp_rx.borrow_and_update();
+        // A `Closed` channel ends the task; the senders are process-global, so that
+        // never fires in practice.
+        while !matches!(
+            imp_rx.recv().await,
+            Err(tokio::sync::broadcast::error::RecvError::Closed)
+        ) {
             if bridge_scheduler.take_deferred_for_importance(&bridge_volume) {
                 spawn_pass(Arc::clone(&bridge_scheduler), bridge_volume.clone(), pass_kind);
             }

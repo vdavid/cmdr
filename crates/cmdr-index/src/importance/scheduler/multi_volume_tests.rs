@@ -46,7 +46,7 @@ fn incremental_deletes_rows_that_become_floored() {
     // The changed path is the renamed folder's parent (its listing changed) — the
     // subtree expansion then revisits everything under it.
     let changed = vec!["/Users/test/proj".to_string()];
-    incremental_rescore(
+    let outcome = incremental_rescore(
         &IncrementalInputs {
             writer: &writer,
             weights: &Weights::default(),
@@ -61,6 +61,24 @@ fn incremental_deletes_rows_that_become_floored() {
     )
     .expect("incremental");
     writer.flush_blocking().expect("flush");
+
+    // The pass ANNOUNCES the two lost rows, which is the only way a consumer keying
+    // on a path HASH can drop them: it can't expand the cleared subtree root itself.
+    let delta = outcome.delta.expect("a small pass describes itself");
+    let mut removed = delta.removed.clone();
+    removed.sort();
+    assert_eq!(
+        removed,
+        vec![
+            "/Users/test/proj/pkg".to_string(),
+            "/Users/test/proj/pkg/sub".to_string()
+        ],
+        "both folders that lost their rows are reported as removals"
+    );
+    assert!(
+        delta.upserted.iter().all(|(path, _)| path == "/Users/test/proj"),
+        "only the still-scored project root is upserted, never a floored folder"
+    );
 
     let store = ImportanceStore::open(&db_path).expect("reopen");
     // The renamed folder and its descendant both lost their rows (now floored).

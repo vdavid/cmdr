@@ -217,6 +217,7 @@ fn rescore(writer: &ImportanceWriter, home: &str, folders: &mut WalkedFolders, c
         RescoreScope::WithAncestors,
     )
     .expect("incremental")
+    .count
 }
 
 /// THE scope contract, measured: the rescore's cost tracks the batch, and the
@@ -414,7 +415,8 @@ fn incremental_rescore_rescopes_and_preserves_untouched_generation() {
         &changed,
         RescoreScope::WithAncestors,
     )
-    .expect("incremental");
+    .expect("incremental")
+    .count;
     writer.flush_blocking().expect("flush");
 
     let store = ImportanceStore::open(&db_path).expect("open");

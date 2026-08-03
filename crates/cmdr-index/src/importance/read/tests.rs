@@ -272,13 +272,14 @@ fn explain_derives_a_floored_breakdown_for_a_rowless_floored_path() {
     );
 }
 
-/// `signals_for` hands back the stored raw vector for a re-weighting consumer.
+/// A lookup hands back the stored raw signal vector, which is what a consumer
+/// applying its own weighting profile re-scores.
 #[test]
-fn signals_for_returns_the_stored_vector() {
+fn a_stored_weight_carries_the_raw_signal_vector() {
     let (index, _dir) = populated_index(&[("/p", 0.6, PathClass::ProjectRoot)]);
-    let s = index.signals_for("/p").expect("read").expect("present");
-    assert_eq!(s.path_class, PathClass::ProjectRoot);
-    assert_eq!(index.signals_for("/missing").expect("read"), None, "unscored ⇒ None");
+    let w = index.weight_for("/p").expect("read").expect("present");
+    assert_eq!(w.signals.path_class, PathClass::ProjectRoot);
+    assert_eq!(index.weight_for("/missing").expect("read"), None, "unscored ⇒ None");
 }
 
 /// A weight from an older pass is stale relative to the store's current
@@ -332,32 +333,79 @@ fn as_of_generation_reflects_the_latest_full_pass() {
     );
 }
 
-/// THE M3 subscription target: the recompute subscription fires exactly once per
-/// recompute-completed notification, carrying the finished generation. A late
-/// subscriber sees the retained last generation; a subsequent notify bumps it once.
+/// The recompute subscription delivers exactly one notice per completed pass,
+/// carrying the finished generation and what the pass changed.
 #[test]
 fn subscription_fires_once_per_recompute() {
     let vid = "sub-once-test";
-    // A late subscriber first: no recompute yet ⇒ retained 0.
     let mut rx = subscribe(vid);
-    assert_eq!(*rx.borrow_and_update(), 0, "no recompute completed yet");
-
-    // One recompute completes at generation 5.
-    notify_recompute_completed(vid, 5);
     assert!(
-        rx.has_changed().expect("sender alive"),
-        "the subscription observed the completion"
+        matches!(rx.try_recv(), Err(broadcast::error::TryRecvError::Empty)),
+        "no recompute completed yet"
     );
-    assert_eq!(*rx.borrow_and_update(), 5, "carries the finished generation");
 
-    // No further notification ⇒ no further change (fires once, not repeatedly).
+    // A full pass completes at generation 5: the whole table was replaced, so the
+    // notice tells a cached-weight consumer to rebuild.
+    notify_recompute_completed(vid, WeightsChanged::ReloadAll { generation: 5 });
     assert!(
-        !rx.has_changed().expect("sender alive"),
+        matches!(rx.try_recv(), Ok(WeightsChanged::ReloadAll { generation: 5 })),
+        "the subscription observed the completion, carrying the finished generation"
+    );
+
+    // No further notification ⇒ nothing more to receive (fires once per pass).
+    assert!(
+        matches!(rx.try_recv(), Err(broadcast::error::TryRecvError::Empty)),
         "the subscription doesn't re-fire without a new recompute"
     );
 
-    // A second recompute fires it again, exactly once.
-    notify_recompute_completed(vid, 6);
-    assert!(rx.has_changed().expect("sender alive"));
-    assert_eq!(*rx.borrow_and_update(), 6);
+    // An incremental pass at the same generation ships its row-level edits instead.
+    notify_recompute_completed(
+        vid,
+        WeightsChanged::Delta {
+            generation: 5,
+            upserted: [("/proj".to_string(), 0.7)].into(),
+            removed: ["/gone".to_string()].into(),
+        },
+    );
+    let WeightsChanged::Delta {
+        generation,
+        upserted,
+        removed,
+    } = rx.try_recv().expect("the second pass fired")
+    else {
+        panic!("an incremental pass announces a delta, not a reload");
+    };
+    assert_eq!(generation, 5, "an incremental writes at the current generation");
+    assert_eq!(*upserted, [("/proj".to_string(), 0.7)]);
+    assert_eq!(*removed, ["/gone".to_string()]);
+}
+
+/// The trap the `broadcast` exists to close: a consumer that falls behind is TOLD it
+/// missed notices (`Lagged`) instead of silently losing a delta. A `watch` would have
+/// handed it only the newest value with no way to know an earlier one existed, and a
+/// missed delta leaves a cached weight map wrong until the next full pass.
+#[test]
+fn a_consumer_that_falls_behind_is_told_it_lagged() {
+    let vid = "sub-lagged-test";
+    let mut rx = subscribe(vid);
+
+    // Overrun the buffer without reading: every notice is a delta, so a lossy channel
+    // would drop real edits here.
+    for generation in 0..(NOTICE_BUFFER as u64 + 4) {
+        notify_recompute_completed(
+            vid,
+            WeightsChanged::Delta {
+                generation,
+                upserted: [].into(),
+                removed: [].into(),
+            },
+        );
+    }
+
+    assert!(
+        matches!(rx.try_recv(), Err(broadcast::error::TryRecvError::Lagged(4))),
+        "the receiver learns it missed four notices, so it can recover with a full reload"
+    );
+    // And it keeps working afterwards, from the oldest notice still buffered.
+    assert!(matches!(rx.try_recv(), Ok(WeightsChanged::Delta { .. })));
 }

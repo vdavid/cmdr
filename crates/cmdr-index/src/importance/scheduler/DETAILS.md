@@ -325,11 +325,18 @@ change it runs at most once per `INCREMENTAL_THROTTLE_WINDOW` (60 s — a thrott
 constant change). Coalesced requests accumulate during the wait and the next drain folds them all in. Importance is a
 background signal, so the lag is invisible to consumers.
 
-The window originally paid for the full walk. Now that a typical pass is microseconds, what it paces is the store write
-and the `notify_recompute_completed` weight reload in `search::volumes`, which is itself O(all weights) — 161,094 on a
-dev machine (`docs/notes/idle-memory-profile-2026-07-28.md`). **Recommendation, not taken:** relaxing the window should
-wait until that reload is incremental too; lowering it now would trade a cheap walk for a frequent full weight-map
-rebuild.
+The window originally paid for the full walk. Neither of the two costs it used to pace is large any more: the scoped
+walk made a typical pass microseconds, and the weight reload it triggers through `notify_recompute_completed` is now a
+DELTA rather than an O(all weights) rebuild (`../read/DETAILS.md` § The reload contract). Measured 2026-08-03 over the
+real `importance-root.db` (160,302 scored folders) with `search::bench::bench_weight_reload`, release build, warm page
+cache: the full reload costs **72–74 ms**, while patching a typical 8-upsert / 1-removal delta costs **333 ns** with no
+search in flight and **72 µs** while one holds the map (`Arc::make_mut` clones it there). Three to five orders of
+magnitude.
+
+**Recommendation, David's call, not taken here:** the reason to keep the window at 60 s is gone, so it can come down.
+What's left to pace is the store write itself plus its `wal_checkpoint(TRUNCATE)`, which is real but far smaller than a
+walk. ❌ Don't lower it as a side effect of an unrelated change; it's a behavior change to make deliberately, with the
+FSEvent-firehose case (a boot volume is never truly idle) in mind.
 
 ### The dir-changed `watch` can drop a batch under bursts (accepted)
 
@@ -338,6 +345,12 @@ The incremental trigger rides the per-volume `dir-changed` `watch` channel. A `w
 batch's paths, and the earlier batch's paths can be dropped. This is **acceptable and by design**: importance is
 advisory, disposable derived data, and the next full recompute (on the next `ScanCompleted`) heals any folder a dropped
 incremental batch missed. We don't add an unbounded queue to make incremental lossless; the full pass is the backstop.
+
+**Don't "fix" this one by analogy with the OUTPUT channel.** The recompute-completed channel a pass publishes on IS
+lossless-or-loudly-lossy (a `broadcast`, `../read/DETAILS.md` § The reload contract), and the two decisions are opposite
+on purpose. A dropped `dir-changed` batch costs a folder a rescore, which the next full pass heals and nothing depends
+on. A dropped weight DELTA would leave a consumer's cached map disagreeing with the store with nothing able to detect
+it. Losing an input is a staleness; losing an output is a corruption.
 
 ## Multi-volume, kind-aware scoring
 

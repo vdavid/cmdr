@@ -16,7 +16,7 @@ use super::walk::{IndexFolder, WalkedFolders, walk_index_folders};
 use crate::importance::scorer::{SignalSet, Weights, explain};
 use crate::importance::signals::{OptionalSignals, signals_for_dir};
 use crate::importance::store::importance_db_path;
-use crate::importance::writer::{ImportanceWriter, WeightRow};
+use crate::importance::writer::{ImportanceWriter, WeightDelta, WeightRow};
 #[cfg(any(test, feature = "tooling"))]
 use crate::indexing::store::IndexStore;
 
@@ -409,7 +409,7 @@ pub(super) fn incremental_rescore(
     folders: &mut WalkedFolders,
     changed_paths: &[String],
     scope: RescoreScope,
-) -> Result<usize, String> {
+) -> Result<IncrementalOutcome, String> {
     // The set of folders to (re)insert: every walked folder in a changed path's
     // subtree (downward floor propagation), plus — on a full walk only — each
     // changed path's capped ancestor chain (upward marker propagation). The
@@ -418,7 +418,7 @@ pub(super) fn incremental_rescore(
     // memory stays proportional to what changed.
     let subset = rescore_subset(folders, changed_paths, scope);
     if subset.is_empty() && changed_paths.is_empty() {
-        return Ok(0);
+        return Ok(IncrementalOutcome::default());
     }
 
     // Sample Spotlight only when the kind's mask allows it (SMB has none, and
@@ -446,14 +446,25 @@ pub(super) fn incremental_rescore(
     // folders leave no orphan row.
     let generation = writer.next_generation().map_err(|e| e.to_string())?.saturating_sub(1);
 
-    writer
+    // Blocks until the transaction commits (so it's the flush too) and hands back the
+    // row-level delta a weight-map consumer applies — `None` when the pass was big
+    // enough that reloading beats patching.
+    let delta = writer
         .write_weights_incremental(generation, rows, changed_paths.to_vec())
         .map_err(|e| e.to_string())?;
-    writer.flush_blocking().map_err(|e| e.to_string())?;
     // The every-60s incremental is the WAL churn source: truncate at this
     // quiet point so the file doesn't creep up in place. Best-effort, never fails.
     let _ = writer.checkpoint_wal();
-    Ok(count)
+    Ok(IncrementalOutcome { count, delta })
+}
+
+/// What one incremental pass did: how many folders it wrote a row for, and the
+/// row-level [`WeightDelta`] a cached-weight consumer applies (`None` when the pass
+/// was too big to describe, so the consumer reloads instead).
+#[derive(Debug, Default)]
+pub(super) struct IncrementalOutcome {
+    pub(super) count: usize,
+    pub(super) delta: Option<WeightDelta>,
 }
 
 /// The folders an incremental pass writes rows for, each with its materialized path.

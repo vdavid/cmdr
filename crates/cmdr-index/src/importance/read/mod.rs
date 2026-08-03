@@ -13,13 +13,13 @@
 //!   case/normalization variant of a path resolves to the same row, and reads never
 //!   contend with the single writer thread (WAL).
 //! - The read calls: [`ImportanceIndex::weight_for`], [`ImportanceIndex::top_n`],
-//!   [`ImportanceIndex::above_threshold`], [`ImportanceIndex::explain`],
-//!   [`ImportanceIndex::signals_for`] — each result carrying the **as-of recompute generation** it
-//!   was computed at, so a consumer can caveat staleness (what makes an
-//!   offline-unmounted read possible).
-//! - A **recompute subscription** ([`subscribe`]): a `watch` receiver that fires
-//!   when a volume's weights finish a recompute, so a consumer reacts instead of
-//!   polling (the subscribe-don't-poll house rule).
+//!   [`ImportanceIndex::above_threshold`], [`ImportanceIndex::explain`] — each result
+//!   carrying the **as-of recompute generation** it was computed at, so a consumer
+//!   can caveat staleness (what makes an offline-unmounted read possible).
+//! - A **recompute subscription** ([`subscribe`]): a `broadcast` receiver that
+//!   fires when a volume's weights finish a recompute, carrying WHAT changed
+//!   ([`WeightsChanged`]), so a consumer reacts instead of polling (the
+//!   subscribe-don't-poll house rule).
 //!
 //! ## Staleness
 //!
@@ -40,7 +40,7 @@ use std::path::PathBuf;
 use std::sync::LazyLock;
 use std::sync::Mutex;
 
-use tokio::sync::watch;
+use tokio::sync::broadcast;
 
 use super::scorer::{Explanation, FolderSignals, Score, SignalSet, Weights, explain};
 use super::store::{ImportanceStoreError, importance_db_path, open_read_connection};
@@ -49,9 +49,9 @@ use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::sqlite_util::{THREAD_CONN_SLOTS, ThreadConnCache};
 
 /// A stored weight for one folder, as the read API hands it back: the scalar, the
-/// deserialized raw signal vector it was computed from (a
-/// consumer can re-weight these under its own profile via [`ImportanceIndex::signals_for`]), and
-/// the as-of recompute generation.
+/// deserialized raw signal vector it was computed from (a consumer applying its own
+/// weighting profile re-scores these instead of the scalar), and the as-of recompute
+/// generation.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ScoredWeight {
@@ -322,13 +322,6 @@ impl ImportanceIndex {
         self.with_conn(|conn| stream_nonzero_weights(conn, visit))
     }
 
-    /// The stored raw signal vector for one folder, or `None` if unscored. For a
-    /// consumer applying its own weighting profile instead of the default scalar.
-    /// The scalar stays the common currency.
-    pub fn signals_for(&self, path: &str) -> Result<Option<FolderSignals>, ImportanceStoreError> {
-        Ok(self.weight_for(path)?.map(|w| w.signals))
-    }
-
     /// The per-signal contribution breakdown for one folder, or `None` if the
     /// folder is genuinely unscored (no row and doesn't floor).
     ///
@@ -515,40 +508,99 @@ pub fn scored_volume_ids(data_dir: &std::path::Path) -> Vec<String> {
 
 // ── Recompute subscription ──────────────────────────────────────────────────
 
-/// The per-volume recompute-completed `watch` senders, keyed by volume id and
-/// living for the process (so a subscription survives an unmount, like the
-/// indexing lifecycle bus). Retains the last generation completed.
-static RECOMPUTE_BUS: LazyLock<Mutex<HashMap<String, watch::Sender<u64>>>> =
+/// What a completed importance pass did to a volume's weights — the recompute
+/// subscription's payload.
+///
+/// **The reload contract:** a consumer caching weights must end up with the same map
+/// a fresh [`ImportanceIndex::for_each_nonzero_weight`] would build. Two of the three
+/// ways that happens say "rebuild"; only [`Delta`](WeightsChanged::Delta) is a patch.
+/// The third is a LAGGED receiver: the channel is a `broadcast`, so a consumer that
+/// falls behind is TOLD (`RecvError::Lagged`) instead of silently missing a delta, and
+/// must rebuild. ❌ Never treat a lag as "nothing happened" — a missed delta drifts
+/// the map from the store with nothing to detect it until the next full pass.
+///
+/// **A delta describes the same view [`ImportanceIndex::for_each_nonzero_weight`]
+/// streams**, not the raw table: `upserted` carries only rows that now score ABOVE
+/// zero, and a folder whose row was deleted OR rescored to `0.0` lands in `removed`.
+/// A zero weight is the neutral default every consumer's lookup already returns, so
+/// the two shapes are interchangeable — and keeping only one of them is what makes a
+/// patched map comparable to a rebuilt one.
+#[derive(Debug, Clone)]
+pub enum WeightsChanged {
+    /// Rebuild from scratch. Sent by a FULL pass (which replaces the whole table),
+    /// and by an incremental whose delta grew past the point where shipping it beats
+    /// re-reading the table.
+    ReloadAll {
+        /// The generation the pass stamped.
+        generation: u64,
+    },
+    /// Patch the cached map with these edits. Sent by an incremental pass, which
+    /// writes at the CURRENT generation without bumping it.
+    ///
+    /// The two lists are **disjoint by path**: an incremental clears each changed
+    /// subtree and immediately rewrites most of it, and the pass nets that down to
+    /// the upsert. A consumer still applies `removed` FIRST, so a path-hash collision
+    /// (a consumer keying on a hash rather than the path) resolves in favor of the
+    /// fresher fact. Both ride an `Arc`, so a second subscriber costs a refcount
+    /// rather than a copy of every path.
+    Delta {
+        /// The generation the written rows carry.
+        generation: u64,
+        /// `(path, score)` for every folder whose row now scores above zero.
+        upserted: std::sync::Arc<[(String, f64)]>,
+        /// The paths that left the non-zero set: their row was deleted (the folder
+        /// was renamed away, deleted, or became floored) or rescored to `0.0`.
+        removed: std::sync::Arc<[String]>,
+    },
+}
+
+/// How many notices a volume's channel buffers before a slow receiver starts
+/// lagging. A lagged receiver recovers with a full reload, so this only has to
+/// absorb a consumer that's briefly busy; it doesn't have to guarantee delivery.
+const NOTICE_BUFFER: usize = 16;
+
+/// The per-volume recompute-completed senders, keyed by volume id and living for
+/// the process (so a subscription survives an unmount, like the indexing lifecycle
+/// bus).
+///
+/// A `broadcast`, deliberately, NOT a `watch`: a `watch` is last-value-wins, which is
+/// fine for an idempotent generation counter but silently drops a delta, and a dropped
+/// delta leaves a consumer's map wrong with nothing to notice it. `broadcast` buffers
+/// and reports the overflow.
+static RECOMPUTE_BUS: LazyLock<Mutex<HashMap<String, broadcast::Sender<WeightsChanged>>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
-fn with_recompute_sender<T>(volume_id: &str, f: impl FnOnce(&watch::Sender<u64>) -> T) -> T {
+fn with_recompute_sender<T>(volume_id: &str, f: impl FnOnce(&broadcast::Sender<WeightsChanged>) -> T) -> T {
     let mut bus = RECOMPUTE_BUS.lock_ignore_poison();
-    let sender = bus.entry(volume_id.to_string()).or_insert_with(|| watch::channel(0).0);
+    let sender = bus
+        .entry(volume_id.to_string())
+        .or_insert_with(|| broadcast::channel(NOTICE_BUFFER).0);
     f(sender)
 }
 
-/// Announce that a volume finished a recompute at `generation`. Called by the
-/// scheduler after a full or incremental pass commits. Retains the value for a
-/// late subscriber (`send_replace`), so a consumer that subscribes after a pass
-/// still sees the current generation.
-pub(super) fn notify_recompute_completed(volume_id: &str, generation: u64) {
+/// Announce what a volume's finished recompute changed. Called by the scheduler
+/// after a full or incremental pass commits. A send with no subscribers is a no-op,
+/// not an error — nothing caches weights for that volume yet.
+pub(super) fn notify_recompute_completed(volume_id: &str, change: WeightsChanged) {
     with_recompute_sender(volume_id, |sender| {
-        sender.send_replace(generation);
+        let _ = sender.send(change);
     });
 }
 
 /// Test-only crate-visible shim for [`notify_recompute_completed`], so a consumer's
-/// subscribe→reload wiring (the search importance weight subscriber) can be tested
+/// subscribe→apply wiring (the search importance weight subscriber) can be tested
 /// without widening the production notifier past the scheduler.
 #[cfg(any(test, feature = "testing"))]
-pub fn notify_recompute_completed_for_test(volume_id: &str, generation: u64) {
-    notify_recompute_completed(volume_id, generation);
+pub fn notify_recompute_completed_for_test(volume_id: &str, change: WeightsChanged) {
+    notify_recompute_completed(volume_id, change);
 }
 
-/// Subscribe to a volume's recompute-completed notifications. The receiver
-/// carries the last generation that finished (or `0` if none yet); each recompute
-/// bumps it. A consumer awaits `changed()` instead of polling (subscribe-don't-poll).
-pub fn subscribe(volume_id: &str) -> watch::Receiver<u64> {
+/// Subscribe to a volume's recompute-completed notifications. The receiver sees
+/// every pass that completes AFTER it subscribes (edge-triggered — there's no
+/// retained value to catch up on), and a consumer that falls behind gets
+/// `RecvError::Lagged` rather than a hole. A consumer awaits `recv()` instead of
+/// polling (subscribe-don't-poll).
+pub fn subscribe(volume_id: &str) -> broadcast::Receiver<WeightsChanged> {
     with_recompute_sender(volume_id, |sender| sender.subscribe())
 }
 

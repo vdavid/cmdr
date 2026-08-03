@@ -204,7 +204,8 @@ impl TestVolume {
             &changed,
             scope,
         )
-        .expect("incremental");
+        .expect("incremental")
+        .count;
         self.writer.flush_blocking().expect("flush");
         count
     }

@@ -53,6 +53,7 @@ use std::time::{Duration, Instant};
 use super::scorer::{SignalSet, Weights};
 use super::writer::ImportanceWriter;
 use crate::IndexVolumeKind;
+use crate::importance::read::WeightsChanged;
 use cmdr_fs::ignore_poison::IgnorePoison;
 
 /// Comparing two walks of the same index, for the measurement tools. Nothing in
@@ -404,9 +405,11 @@ impl ImportanceScheduler {
             write_elapsed,
         );
 
-        // Announce the completed full pass so a read-API consumer reacts instead
-        // of polling (subscribe-don't-poll).
-        super::read::notify_recompute_completed(volume_id, outcome.generation);
+        // Announce the pass so a read-API consumer reacts instead of polling. A full
+        // pass REPLACES the whole table, so a cached-weight consumer must rebuild;
+        // ❌ never a delta here, materializing every row's path is what it avoids.
+        let generation = outcome.generation;
+        super::read::notify_recompute_completed(volume_id, WeightsChanged::ReloadAll { generation });
         Ok(outcome.count)
     }
 
@@ -461,7 +464,7 @@ impl ImportanceScheduler {
         let visits = load_visits(&self.data_dir, volume_id);
         let writer = self.writer_for(volume_id).map_err(|e| e.to_string())?;
 
-        let count = incremental_rescore(
+        let outcome = incremental_rescore(
             &IncrementalInputs {
                 writer: &writer,
                 weights: &self.weights,
@@ -476,13 +479,23 @@ impl ImportanceScheduler {
         )?;
 
         // Announce the pass whether or not it wrote a row: it CLEARED each changed
-        // subtree either way, so a pass that only deleted rows (every origin gone,
-        // or a whole subtree newly floored) still moved the store. The incremental
-        // rows carry the current generation (no bump), so the notification announces
-        // that generation as freshly touched.
+        // subtree either way, so a pass that only deleted rows (every origin gone, or a
+        // whole subtree newly floored) still moved the store. The rows carry the current
+        // generation (no bump), so that's what the notice announces as freshly touched.
         let generation = writer.next_generation().map_err(|e| e.to_string())?.saturating_sub(1);
-        super::read::notify_recompute_completed(volume_id, generation);
-        Ok(count)
+        super::read::notify_recompute_completed(
+            volume_id,
+            match outcome.delta {
+                Some(delta) => WeightsChanged::Delta {
+                    generation,
+                    upserted: delta.upserted.into(),
+                    removed: delta.removed.into(),
+                },
+                // The pass was too big to describe row by row; reloading is cheaper.
+                None => WeightsChanged::ReloadAll { generation },
+            },
+        );
+        Ok(outcome.count)
     }
 }
 
@@ -679,13 +692,12 @@ fn incremental_key(volume_id: &str) -> String {
 /// sustained change. A busy boot volume is never truly idle, so without a window
 /// the FSEvent firehose would drive back-to-back passes forever.
 ///
-/// What the window paces is NOT the walk: the scoped walk made a typical pass
-/// microseconds (`scoped_walk.rs`). It's the store write and, through
-/// `notify_recompute_completed`, the weight reload in `search::volumes` — which is
-/// O(ALL weights) on the volume, not O(changed). ❌ Don't relax this window on the
-/// grounds that the walk is now cheap; that trades a cheap walk for a frequent
-/// full weight-map rebuild. Lower it once that reload is incremental too.
-/// Rationale and numbers: `DETAILS.md` § Throttle.
+/// What the window paces is the store write plus its WAL checkpoint. It is NOT the
+/// walk (the scoped walk made a typical pass microseconds — `scoped_walk.rs`), and it
+/// is no longer the weight reload either: `notify_recompute_completed` now ships a
+/// DELTA, so `search::volumes` patches its map in O(changed) instead of rebuilding it.
+/// **So the window CAN come down — but that's David's call, not a side effect.**
+/// Rationale and the measured numbers: `DETAILS.md` § Throttle.
 ///
 /// Importance is a background signal, so a lag of this order is invisible to its
 /// consumers.
