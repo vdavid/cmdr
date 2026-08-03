@@ -1,4 +1,4 @@
-ARG LISTMONK_VERSION=6.0.0
+ARG LISTMONK_VERSION=6.2.0
 
 # Stage 1: Fetch default static files (public pages, assets) from the matching release.
 # Our custom email templates override only the email-templates/ subdirectory.
