@@ -247,7 +247,7 @@ async fn test_listing_is_watched_flips_with_connection() {
 /// reported, and disconnecting must take them all away again.
 ///
 /// The session layer doesn't do this itself; it calls the registrar installed by
-/// [`MtpVolume::install_volume_registrar`]. Two things are pinned here:
+/// `mtp::volume_wiring::install_volume_registrar`. Two things are pinned here:
 ///
 /// 1. The registration happens at all (drop the registrar and this goes red).
 /// 2. It happens SYNCHRONOUSLY, inside `connect()`. There's no polling or

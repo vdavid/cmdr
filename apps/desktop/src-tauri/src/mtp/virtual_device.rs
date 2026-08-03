@@ -127,7 +127,7 @@ impl VirtualDeviceFixture {
 /// `connect()` would open the device and leave the sidebar empty.
 #[cfg(test)]
 pub(crate) fn setup_virtual_mtp_device() -> VirtualDeviceFixture {
-    crate::file_system::volume::MtpVolume::install_volume_registrar();
+    crate::mtp::volume_wiring::install_volume_registrar();
     let root = tempfile::tempdir().expect("failed to create a virtual-device fixture root");
     let location_id = register_virtual_mtp_device_at(root.path(), false);
     VirtualDeviceFixture { location_id, root }

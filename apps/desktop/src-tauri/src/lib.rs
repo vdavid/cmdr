@@ -514,7 +514,7 @@ pub fn run() {
             // before the virtual device and the hotplug watcher below, which
             // are the two things that can connect one.
             #[cfg(any(target_os = "macos", target_os = "linux"))]
-            file_system::volume::MtpVolume::install_volume_registrar();
+            mtp::volume_wiring::install_volume_registrar();
 
             // Wire the "busy volumes" emitter so write ops can broadcast
             // `volumes-busy-changed` (drives disabling Eject while a transfer

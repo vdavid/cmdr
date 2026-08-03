@@ -4,8 +4,7 @@
 //! deliberately does NOT know what a `Volume` is: the app installs two callbacks
 //! at startup ([`set_volume_registrar`]) and this module calls them. See
 //! `../DETAILS.md` § "Backends never register themselves" for why, and
-//! `file_system::volume::backends::mtp::install_volume_registrar` for the app
-//! side.
+//! `mtp::volume_wiring` for the app side.
 
 use log::{debug, warn};
 use std::sync::OnceLock;

@@ -130,10 +130,10 @@ auto-connect, which re-suppresses ptpcamerad if devices are found.
 
 **Decision.** A backend's session layer reports that a storage attached or detached; it does not decide that a `Volume`
 now exists. `connection/volume_registrar.rs` holds a `OnceLock<MtpVolumeRegistrar>` (two `fn` pointers, `attach` and
-`detach`); `MtpVolume::install_volume_registrar` supplies them, and `lib.rs` installs it at startup right after
-`volume_broadcast::init`, before anything can connect a device. SMB does the same thing with a plain outside wiring
-module (`network::smb_upgrade::register_replacing_predecessor` builds and registers the `SmbVolume`; the SMB session
-layer never does).
+`detach`); `volume_wiring.rs` supplies them, and `lib.rs` installs it at startup right after `volume_broadcast::init`,
+before anything can connect a device. `volume_wiring.rs` is deliberately the twin of `network/smb_upgrade.rs`, which
+builds and registers the `SmbVolume` while the SMB session layer never does: a wiring module beside the feature, aware
+of both the backend and the registry, with neither aware of it.
 
 **Why.** A session layer that constructs its own `Volume` has to import the app's volume registry, and the registry
 imports the backend: `backends::mtp` and `mtp::connection` were a genuine import cycle held together by four lines of

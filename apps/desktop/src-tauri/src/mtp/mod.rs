@@ -8,6 +8,7 @@
 //! - `types`: Type definitions for frontend communication
 //! - `discovery`: Device detection using mtp-rs
 //! - `connection`: Device connection management with global registry and file browsing
+//! - `volume_wiring`: Registers an attached storage as an `MtpVolume` (the session layer never does)
 //! - `macos_workaround`: Handles ptpcamerad interference on macOS (macOS only)
 //!
 //! # Platform Support
@@ -25,6 +26,7 @@ pub mod macos_workaround;
 pub mod types;
 #[cfg(feature = "virtual-mtp")]
 pub mod virtual_device;
+pub mod volume_wiring;
 pub mod watcher;
 
 pub use connection::{
