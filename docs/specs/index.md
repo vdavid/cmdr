@@ -6,21 +6,26 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
-- [ ] 2026-08-03 `resource-use-plan.md` - SPECCED, in progress. Cut idle CPU and RAM: prod v0.37.0 burned 93 min of CPU
-      over 7.6 h at 1.78 GB footprint while idle, writing 141,072 log lines in six hours. Five milestones. The headline
-      finding is that the per-subtree rescan throttle **works** (top anchors show 1–2 walks each) and is beaten by
-      CARDINALITY instead: cargo mints a fresh `target/debug/incremental/<crate>-<hash>/s-<hash>` path per build, so
-      3,704 distinct anchors in eight hours each take their leading edge exactly once and nothing bounds the aggregate.
-      Every existing gate keys on the anchor path; nothing is per-volume. `reconcile/DETAILS.md:483` already names this
-      shape for an Electron updater, and the settle delay answered it only because those dirs vanished before settling.
-      Denylisting build output is explicitly rejected: the app must throttle any unknown churning software. The design
-      pass must engage `cost_budget.rs:23`, which argues AGAINST charging cost up the ancestor chain and prefers one
-      accumulator at a fixed depth. Second finding: the 64 MiB SQLite page-cache slab does not bound what its docstring
-      claims, because `pcache1` overflows to plain malloc and no soft heap limit is set, leaving the real ceiling at
-      `connections × cache_size` (132 × 8 MiB); ~650 MB of `MALLOC_LARGE` stays unexplained and gets measured before
-      it gets fixed. Also: the media live tick walks thousands of dirs in SQL before applying the gates that reject
-      them, log volume needs to drop ~1000×, and the NAS gets an `fs_info` round trip every five seconds forever. The
-      SMB `ChangeNotify` long-poll liveness bound is out of scope here, owned by the `smb2` repo.
+- [ ] 2026-08-03 `resource-use-plan.md` - SPECCED, not started. Cut idle CPU and RAM: prod v0.37.0 burned 110 min of CPU
+      over 9.1 h (about 20% of a core, sustained) at a 1.78 GB footprint while idle, writing 141,072 log lines in six
+      hours. Eight milestones, reordered by an M0 that the first draft skipped. **M0 per-thread CPU attribution is the
+      whole story**: `index-writer` is 45% of busy CPU and the four `cmdr-sync-status` threads another 42%, so 87% sits
+      in two threads nobody was looking at, and the reconcile drain does not appear at all. Inside each, one avoidable
+      call dominates. The writer spends 54% of itself in `sqlite3RunParser`, because
+      `insert_entry_v2_with_id` uses `conn.execute` with a literal instead of `prepare_cached` (which the same file uses
+      21 times elsewhere), so the same INSERT is re-parsed per row. Sync status stats every path twice, once directly
+      and once inside `NSURL::fileURLWithPath`, whose single-argument form calls `_NSFileExists` to decide
+      directory-ness that the caller already knows. **Roughly half of all busy CPU is about 30 lines.** The rescan
+      governor survives as M3, demoted and restated: the per-anchor throttle **works** (top anchors show 1-2 walks), and
+      cargo's one-shot `target/debug/incremental/s-<hash>` anchors never consult a window at all, so the cost is
+      `arrival_rate x walk_cost` and the `30x` factor never enters. Denylisting build output is explicitly rejected. The
+      design must engage `cost_budget.rs:37` (against ancestor-chain charging), the external-volume blind window at
+      `rescan_route.rs:58`, the volume-wide hourglass flicker, and Spike B in `sealed-subtrees-plan.md`, which already
+      measured that churn share alone over-climbs and needs a content ratio. Also corrected: SQLite page-cache overflow
+      is individual ~4.1 KB allocations, so it can only be in `MALLOC_SMALL` (152 MB), never the 643 MB `MALLOC_LARGE`,
+      which makes that block the primary memory unknown and refutes the first draft's central claim (and the "~all
+      SQLite" line in `idle-memory-profile-2026-07-28.md`).
+
 - [ ] 2026-08-03 `unindexed-search-plan.md` - SPECCED, not started. A scoped search on a LOCAL drive returns the same
       files indexed or not, only slower, by walking the uncovered part live and writing what it finds into the drive
       index, so a drive converges toward instant through use. Unscoped search and network volumes are deliberately
