@@ -15,6 +15,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
 
+use crate::indexing::IndexPathSpace;
 use crate::indexing::store::{IndexStore, resolve_scan_root};
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 use cmdr_fs::pluralize::{pluralize, pluralize_with};
@@ -93,20 +94,14 @@ pub struct ScanConfig {
     pub batch_size: usize,
     /// Number of walker worker threads (0 = auto-detect).
     pub num_threads: usize,
-    /// Exclusion scope for the per-child gate. `BootDisk` for the `/`-rooted boot
-    /// scan (keeps it off `/Volumes/`, system trees); `MountRooted` for an external
-    /// drive scan rooted at `/Volumes/X` (skips only junk basenames, else it would
-    /// exclude its own subtree and falsely complete empty). `pub(crate)` because
-    /// `ExclusionScope` is a crate-internal type and `ScanConfig` is only built
-    /// in-crate.
-    pub(crate) scope: ExclusionScope,
-    /// Whether the scanned volume's inode is a trustworthy identity. `false` only
-    /// for a local external drive on FAT/exFAT, whose derived inodes are unstable:
-    /// the visitor then stores `inode: None` for every entry (and skips hardlink
-    /// dedup, inert at `nlink == 1` anyway) so the live rename pre-pass can never
-    /// match a reused inode. Defaults to `true`; the manager feeds it from the
-    /// volume's `IndexPathSpace`. See `filesystem_kind::has_stable_inodes`.
-    pub(crate) inodes_trustworthy: bool,
+    /// The scanned volume's path space: where it's rooted (which selects the
+    /// per-child exclusion tier) and whether its inodes are a trustworthy identity.
+    /// `boot_disk` for the `/`-rooted scan (keeps it off `/Volumes/`, system trees);
+    /// `mount_rooted` for an external drive scan rooted at `/Volumes/X` (skips only
+    /// junk basenames, else it would exclude its own subtree and falsely complete
+    /// empty). `pub(crate)` because `IndexPathSpace` is a crate-internal type and
+    /// `ScanConfig` is only built in-crate.
+    pub(crate) space: IndexPathSpace,
 }
 
 impl Default for ScanConfig {
@@ -115,8 +110,7 @@ impl Default for ScanConfig {
             root: PathBuf::from("/"),
             batch_size: 2000,
             num_threads: 0,
-            scope: ExclusionScope::boot_disk(),
-            inodes_trustworthy: true,
+            space: IndexPathSpace::root(),
         }
     }
 }
@@ -336,8 +330,7 @@ pub fn scan_volume(
                 config.batch_size,
                 config.num_threads,
                 true, // volume scan: root always maps to ROOT_ID
-                config.scope.clone(),
-                config.inodes_trustworthy,
+                &config.space,
                 reader,
                 LOCAL_LIST_TIMEOUT,
             );
@@ -372,9 +365,19 @@ pub fn scan_volume(
 
 /// Synchronous subtree scan. Runs in the caller's thread.
 ///
-/// Used by post-replay background verification. After scanning, sends
-/// `ComputeSubtreeAggregates` to the writer.
-pub fn scan_subtree(root: &Path, writer: &IndexWriter, cancel: &CancellationToken) -> Result<ScanSummary, ScanError> {
+/// Used by post-replay background verification and by the per-navigation verifier.
+/// After scanning, sends `ComputeSubtreeAggregates` to the writer.
+///
+/// `space` is the OWNING VOLUME's path space, and both halves of it matter here:
+/// `root` is an absolute FS path, so a mount-rooted volume's subtree resolves to an
+/// entry id only after the mount root is stripped, and a `BootDisk` scope would
+/// exclude every `/Volumes/X/...` child and scan the subtree to nothing.
+pub fn scan_subtree(
+    root: &Path,
+    space: &IndexPathSpace,
+    writer: &IndexWriter,
+    cancel: &CancellationToken,
+) -> Result<ScanSummary, ScanError> {
     let progress = Arc::new(ScanProgress::new());
     let reader: ReadDirFn = default_reader();
     let outcome = run_scan(
@@ -385,12 +388,7 @@ pub fn scan_subtree(root: &Path, writer: &IndexWriter, cancel: &CancellationToke
         2000,
         0,
         false,
-        // Subtree scans don't apply global exclusions (the subtree was chosen
-        // explicitly), so the scope is inert here; pass the boot-disk one.
-        ExclusionScope::boot_disk(),
-        // Subtree scans back post-replay background verification, which is
-        // root-only (the boot disk, APFS) — trustworthy inodes.
-        true,
+        space,
         reader,
         LOCAL_LIST_TIMEOUT,
     )?;
@@ -434,8 +432,7 @@ fn run_scan(
     batch_size: usize,
     num_threads: usize,
     is_volume_root: bool,
-    scope: ExclusionScope,
-    inodes_trustworthy: bool,
+    space: &IndexPathSpace,
     reader: ReadDirFn,
     stall_timeout: Duration,
 ) -> Result<ScanOutcome, ScanError> {
@@ -459,8 +456,20 @@ fn run_scan(
         } else {
             IndexStore::read_current_epoch(&conn).map_err(|e| ScanError::WriterSend(e.to_string()))?
         };
-        let root_id =
-            resolve_scan_root(&conn, root, is_volume_root).map_err(|e| ScanError::WriterSend(e.to_string()))?;
+        // A volume-root scan maps to `ROOT_ID` whatever its path is, so it hands
+        // `root` over untouched. A SUBTREE scan resolves an EXISTING entry, so its
+        // absolute root must first cross into the volume's index path space
+        // (identity on the boot disk, mount-root-stripped elsewhere): an absolute
+        // walk from `ROOT_ID` misses at the very first component on a mount-rooted
+        // volume, and a subtree outside the mount root has no entry here at all.
+        let root_id = if is_volume_root {
+            resolve_scan_root(&conn, root, true).map_err(|e| ScanError::WriterSend(e.to_string()))?
+        } else {
+            let index_root = space
+                .index_relative(&root.to_string_lossy())
+                .ok_or_else(|| ScanError::WriterSend(format!("{} is outside the volume's index", root.display())))?;
+            resolve_scan_root(&conn, Path::new(&index_root), false).map_err(|e| ScanError::WriterSend(e.to_string()))?
+        };
         (root_id, epoch)
     };
 
@@ -479,8 +488,8 @@ fn run_scan(
     let visitor = Arc::new(InsertVisitor::new(
         writer.clone(),
         is_volume_root,
-        scope,
-        inodes_trustworthy,
+        space.exclusion_scope().clone(),
+        space.inodes_trustworthy(),
         batch_size,
         progress,
         walk_cancel.clone(),

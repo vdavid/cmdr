@@ -125,6 +125,12 @@ once. Whoever OWNS the token hands a child to the work it starts — `IndexManag
 `ReplayConfig` (and from there into `EventReconciler` and the post-replay verification walk), `trigger_verification`
 into `maybe_verify` while it already holds the instance.
 
+The same hand-down covers what a walk needs to know about its VOLUME. `trigger_verification` takes the volume id, the
+writer, and `IndexManager::path_space()` off one instance under one lock, so the verifier's read pool, its writer, and
+its path space can't name different volumes (the contract, and what a mismatch costs, are in `../reconcile/DETAILS.md`).
+`path_space()` is also the single derivation of the space the scan and the replay + live loops get, so no two of them
+can disagree about where the volume is rooted.
+
 ❌ Nothing below `lifecycle` resolves a token by volume id. Beyond the import cycle that created, a late lookup is wrong
 on its own terms: a walk that starts after its volume was torn down finds no instance, falls back to a fresh token that
 never fires, and runs to completion writing into a draining writer — precisely the walk that most needs to stop. A token

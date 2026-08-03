@@ -7,6 +7,7 @@ use std::time::Duration;
 use tokio_util::sync::CancellationToken;
 
 use super::state::{INDEX_REGISTRY, IndexPhase};
+use crate::indexing::IndexPathSpace;
 use crate::indexing::events::{
     ActivityPhase, DEBUG_STATS, EventSink, IndexDebugStatusResponse, IndexEvent, IndexStatusResponse, PhaseRecord,
     RescanReason, ScanRunKind, emit_rescan_notification, set_phase_for,
@@ -348,6 +349,15 @@ impl IndexManager {
         })
     }
 
+    /// This volume's path space: pass-through for the `/`-rooted boot disk,
+    /// mount-relative strip for a mount-rooted drive, carrying its inode-trust fact.
+    ///
+    /// The one place it's derived, so the scan, the replay + live loops, and the
+    /// per-navigation verifier can't drift on where this volume is rooted.
+    pub(super) fn path_space(&self) -> IndexPathSpace {
+        IndexPathSpace::for_volume(self.kind, &self.volume_root, self.inodes_trustworthy)
+    }
+
     /// Resume from an existing index or start a fresh full scan.
     ///
     /// **macOS (with event replay support):**
@@ -553,9 +563,10 @@ impl IndexManager {
         let writer = self.writer.clone();
         let events = Arc::clone(&self.events);
         let volume_id = self.volume_id.clone();
-        let kind = self.kind;
-        let inodes_trustworthy = self.inodes_trustworthy;
-        let volume_root = self.volume_root.clone();
+        // Journal replay only runs for a journaled volume (the boot disk), so this
+        // is `root` today; it's derived rather than hardcoded so replay resolves in
+        // the same space as the live loop that follows.
+        let space = self.path_space();
         let live_event_task_slot = Arc::clone(&self.live_event_task);
         let scanning = Arc::clone(&self.scanning);
 
@@ -586,10 +597,7 @@ impl IndexManager {
                 Arc::clone(&events),
                 ReplayConfig {
                     volume_id: volume_id.clone(),
-                    // Journal replay only runs for a journaled volume (the boot disk),
-                    // so this is `root` today; it's derived rather than hardcoded so
-                    // replay resolves in the same space as the live loop that follows.
-                    space: crate::indexing::IndexPathSpace::for_volume(kind, &volume_root, inodes_trustworthy),
+                    space,
                     since_event_id,
                     estimated_total,
                     heal_after_replay,
@@ -743,7 +751,7 @@ impl IndexManager {
         // The volume's path space: pass-through for the boot disk, mount-relative
         // strip for a mount-rooted external drive. Threaded to the scanner (exclusion
         // scope), the reconcile walk, and the completion handler's replay + live loop.
-        let space = crate::indexing::IndexPathSpace::for_volume(self.kind, &self.volume_root, self.inodes_trustworthy);
+        let space = self.path_space();
 
         // Step 1: Start the FSEvents watcher BEFORE the scan so we don't miss events.
         // Unbounded so a slow buffered-event drain never backpressures the forward
@@ -830,12 +838,12 @@ impl IndexManager {
             );
             let config = ScanConfig {
                 root: self.volume_root.clone(),
-                // A mount-rooted drive uses `MountRooted` so its `/Volumes/X` subtree
-                // isn't excluded (which would falsely complete the scan empty).
-                scope: space.exclusion_scope().clone(),
-                // A FAT/exFAT drive's derived inodes are untrusted, so the scanner
+                // Carries both volume facts the walk needs: a mount-rooted drive
+                // gates children with `MountRooted` (the boot tier would exclude its
+                // own `/Volumes/X` subtree and falsely complete the scan empty), and
+                // a FAT/exFAT drive's derived inodes are untrusted, so the scanner
                 // stores `inode: None` (keeping the rename pre-pass inert).
-                inodes_trustworthy: space.inodes_trustworthy(),
+                space: space.clone(),
                 ..ScanConfig::default()
             };
             scanner::scan_volume(config, &self.writer, self.volume_cancel.child_token())

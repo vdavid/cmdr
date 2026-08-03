@@ -388,10 +388,10 @@ as a lower bound. The guard's own activations are NOT answerable this way, so th
 On each directory navigation, `trigger_verification()` (called from `streaming.rs` and `operations.rs` after enrichment)
 is fully fire-and-forget: it spawns a task that acquires the `INDEX_REGISTRY` lock (never blocking the navigation
 thread), looks up the volume's running instance, checks dedup/debounce via static `VerifierState` (in-flight set +
-recent timestamps), then spawns a second async task that: (1) reads DB children via `ReadPool`, (2) reads disk via
-`read_dir` + per-entry `symlink_metadata`, wrapped in `spawn_blocking` so a wedged path (stale FUSE / frozen iCloud dir
-/ network-as-local) can't park a tokio worker — keep this offload; don't move the disk loop back inline on the async
-path (filtering through `scanner::should_exclude`), (3) diffs by normalized name, sending
+recent timestamps), then spawns a second async task that: (1) reads DB children via that VOLUME's `ReadPool`, (2) reads
+disk via `read_dir` + per-entry `symlink_metadata`, wrapped in `spawn_blocking` so a wedged path (stale FUSE / frozen
+iCloud dir / network-as-local) can't park a tokio worker — keep this offload; don't move the disk loop back inline on
+the async path (filtering through `scanner::should_exclude`), (3) diffs by normalized name, sending
 `UpsertEntryV2`/`DeleteEntryById`/`DeleteSubtreeById`/`PropagateDeltaById` corrections. New directories are flushed then
 scanned via `scan_subtree` with delta propagation. Debounce: 30 s per path, max 2 concurrent verifications. Only runs
 after the initial scan completes (checks `scanning`). `invalidate()` clears state on shutdown/clear. The `in_flight`
@@ -399,14 +399,31 @@ slot is freed (and the path recorded in `recent`) via an `InFlightGuard` RAII `D
 panic in `verify_and_correct`/`emit_dir_updated` can't permanently leak a slot against `MAX_CONCURRENT_VERIFICATIONS`
 (pinned by `verifier.rs::tests::in_flight_slot_is_freed_on_panic_unwind`).
 
-**What the verifier does and does NOT cover** (the safety argument for skipping sweeps rests on it, and it only half
-holds). On each navigation it does a full `read_dir` of the navigated directory and diffs it against the DB, correcting
-additions, deletions, dir↔file type changes, and size/mtime drift, and it fully `scan_subtree`s directories new to the
-index — so it genuinely keeps the directory the user is looking at correct. But it lists **ONE level**: an existing
-subdirectory is compared by name/size/mtime only, so a change deep inside a subtree the user never opens is invisible to
-it, and the stale bytes stay in every ancestor until a sweep. It is also **root-scoped** (it reads the root `ReadPool`
-and bails inert on a mount-rooted volume). Those two gaps are exactly what the boot-disk-only sweep scope and the
-coalesce count answer.
+**❌ The read volume, the write volume, and the path space must be ONE volume.** `verify_and_correct` takes
+`volume_id` + `IndexPathSpace` + `IndexWriter`, and `trigger_verification` takes all three off the same running instance
+under the registry lock (`mgr.path_space()`, `mgr.writer`). Reading root's pool while writing the caller's writer made
+this a silent no-op on every SMB, MTP, and external volume: `resolve_path` was handed a mount-absolute `/Volumes/…` path
+against root's `/`-rooted index, found nothing, and returned before any correction. A no-op is the BENIGN failure of a
+disagreement here; the malignant one is corrections computed from one volume's rows landing in another's index, which is
+why the three travel together rather than being looked up separately.
+
+Every path in the verifier stays ABSOLUTE — the `read_dir`, the exclusion checks, `new_dir_paths`, the returned
+`affected_paths`, and the FE emit (which must match pane paths) — and crosses into index-relative space at exactly one
+point, `space.resolve_abs`. That is the same discipline `../paths/DETAILS.md` states for the pipeline at large. Three
+more things route by the same space: `should_exclude` uses `space.exclusion_scope()` (a `BootDisk` scope would exclude
+every `/Volumes/X/…` child on a mount-rooted volume), `scan_subtree` takes the space so its absolute root resolves
+mount-relative, and every snapshot's inode goes through `space.trust_inode` so a FAT/exFAT drive stores `inode: None`.
+Corrections publish on the lifecycle bus under the volume they were read from. Pinned by
+`verify_corrects_a_mount_rooted_volumes_own_index` and `verify_scans_a_new_directory_into_a_mount_rooted_volumes_index`.
+
+**What the verifier does and does NOT cover** (the safety argument for skipping sweeps rests on it). On each navigation
+it does a full `read_dir` of the navigated directory and diffs it against the DB, correcting additions, deletions,
+dir↔file type changes, and size/mtime drift, and it fully `scan_subtree`s directories new to the index — so it genuinely
+keeps the directory the user is looking at correct, on whichever volume they're looking at. But it lists **ONE level**:
+an existing subdirectory is compared by name/size/mtime only, so a change deep inside a subtree the user never opens is
+invisible to it, and the stale bytes stay in every ancestor until a sweep. It also only ever covers directories someone
+NAVIGATES to. Those gaps are what the sweep scope and the coalesce count answer. An MTP volume gets nothing from it
+either way: `mtp://` paths have no POSIX `read_dir`, so the disk half bails and the pass is inert.
 
 **Every detached walk here runs on a token handed IN, never one looked up.** `maybe_verify` takes the volume's child
 token from `state::trigger_verification` (which already holds the instance), and the subtree-rescan drain takes it from
@@ -665,10 +682,11 @@ That's roughly ten multi-minute-to-multi-hour full walks a day for a signal that
 now SUSPECT", not "rescan right now". At most one real sweep per volume per day.
 
 - **Boot disk ONLY.** A mount-rooted volume keeps `EXTERNAL_SHALLOW_RESCAN_MIN_INTERVAL` (45 s), selected by
-  `min_interval_for(space.is_boot_disk())`. Two load-bearing reasons not to unify: we measured the storm on `/` and have
-  no evidence of one on external volumes, so a longer window there buys nothing; and the per-navigation verifier is
-  root-scoped, so an external drive is the one volume kind with ZERO cover between sweeps — a 24-hour blind window there
-  would be a pure correctness regression. Pinned by `an_external_volume_keeps_the_short_cooldown`.
+  `min_interval_for(space.is_boot_disk())`. The reason to keep them apart: we measured the storm on `/` and have no
+  evidence of one on external volumes, so a longer window there buys nothing while a 24-hour blind window could cost.
+  (The per-navigation verifier now covers external volumes too, so an external drive is no longer the one kind with zero
+  cover between sweeps — but its cover reaches only directories the user actually opens, which is not an argument for
+  stretching the window to a day.) Pinned by `an_external_volume_keeps_the_short_cooldown`.
 - **Coalesced anchors are COUNTED, not silently dropped** (`SweepRecord.coalesced_since_sweep`). The count is **since
   the last COMPLETED sweep**, never a lifetime total (a lifetime counter would only measure how long the app has been
   installed). It rides `VolumeIndexStatus.coalesced_signals_since_sweep` alongside `next_sweep_due_at` (computed in

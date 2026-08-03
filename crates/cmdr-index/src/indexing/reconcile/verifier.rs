@@ -10,14 +10,14 @@ use std::time::Instant;
 
 use tokio_util::sync::CancellationToken;
 
+use crate::indexing::IndexPathSpace;
 use crate::indexing::events::emit_dir_updated;
 use crate::indexing::lifecycle::lifecycle_bus;
 use crate::indexing::metadata::extract_metadata;
-use crate::indexing::read::enrichment::get_read_pool;
+use crate::indexing::read::enrichment::get_read_pool_for;
 use crate::indexing::scanner;
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
-use cmdr_fs::firmlinks;
 
 // ── Dedup/debounce state ─────────────────────────────────────────────
 
@@ -61,8 +61,16 @@ impl Drop for InFlightGuard {
 
 /// Attempt to verify a directory against the index. Checks dedup/debounce,
 /// spawns an async task if the directory qualifies.
+///
+/// `volume_id` and `space` name ONE volume, and they must be the same one
+/// `writer` belongs to: the read half routes by volume id and the path half by the
+/// space's mount root, so a mismatch either reads an index that can't hold the path
+/// (a silent no-op) or writes corrections derived from another volume's rows. The
+/// caller takes all three off the same running instance (`trigger_verification`).
 pub(crate) fn maybe_verify(
+    volume_id: String,
     dir_path: String,
+    space: IndexPathSpace,
     writer: IndexWriter,
     events: std::sync::Arc<dyn crate::EventSink>,
     scanning: bool,
@@ -108,13 +116,14 @@ pub(crate) fn maybe_verify(
             dir_path: dir_path.clone(),
         };
 
-        let affected_paths = verify_and_correct(&dir_path, &writer, &cancel).await;
+        let affected_paths = verify_and_correct(&volume_id, &dir_path, &space, &writer, &cancel).await;
 
         if !affected_paths.is_empty() {
-            // The per-navigation verifier is root-scoped, so its live corrections
-            // publish under the local root for the importance scheduler's
-            // incremental rescore (plan Decision 5), alongside the FE emit.
-            lifecycle_bus::publish_dirs_changed(crate::ROOT_VOLUME_ID, &affected_paths);
+            // Corrections publish under the volume they were read from and written
+            // to, for the importance scheduler's incremental rescore (plan Decision
+            // 5), alongside the FE emit (which carries absolute paths, to match pane
+            // paths on every volume).
+            lifecycle_bus::publish_dirs_changed(&volume_id, &affected_paths);
             emit_dir_updated(events.as_ref(), affected_paths);
         }
     });
@@ -141,20 +150,32 @@ struct DiskEntry {
     nlink: Option<u64>,
 }
 
-/// Compare disk contents of `dir_path` against the index DB, sending corrections
-/// to the writer. New directories are scanned via `scan_subtree`.
-/// Returns the list of affected paths (for UI refresh), empty if no changes.
-async fn verify_and_correct(dir_path: &str, writer: &IndexWriter, cancel: &CancellationToken) -> Vec<String> {
-    let normalized = firmlinks::normalize_path(dir_path);
+/// Compare disk contents of `dir_path` against `volume_id`'s index DB, sending
+/// corrections to that volume's writer. New directories are scanned via
+/// `scan_subtree`.
+/// Returns the list of affected ABSOLUTE paths (for UI refresh), empty if no changes.
+///
+/// Every path here stays absolute — the disk reads, the exclusion checks, the
+/// returned set — and crosses into index-relative space at exactly one point, the
+/// `resolve_abs` below (`../paths/CLAUDE.md` § three path spaces).
+async fn verify_and_correct(
+    volume_id: &str,
+    dir_path: &str,
+    space: &IndexPathSpace,
+    writer: &IndexWriter,
+    cancel: &CancellationToken,
+) -> Vec<String> {
+    let normalized = space.absolute(dir_path);
 
-    // Phase 1: read DB state via ReadPool
-    let pool = match get_read_pool() {
+    // Phase 1: read DB state via THIS volume's ReadPool. `None` means the volume
+    // has no registered index, which is the read path's skip signal.
+    let pool = match get_read_pool_for(volume_id) {
         Some(p) => p,
         None => return Vec::new(),
     };
 
     let (parent_id, db_children) = match pool.with_conn(|conn| {
-        let parent_id = match store::resolve_path(conn, &normalized) {
+        let parent_id = match space.resolve_abs(conn, &normalized) {
             Ok(Some(id)) => id,
             _ => return None,
         };
@@ -175,6 +196,10 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter, cancel: &Cance
     // is pure CPU and stays on the async path.
     let disk_map: HashMap<String, DiskEntry> = {
         let scan_path = normalized.clone();
+        // Snapshots cross into the DB through here, so this is where a FAT/exFAT
+        // volume's derived inode is dropped: an unstable inode reaching the index
+        // would drive the live rename pre-pass into a false `MoveEntryV2`.
+        let inode_space = space.clone();
         // The closure returns `Option`: `None` distinguishes a `read_dir` failure
         // (bail, exactly as the old synchronous code did) from a genuinely empty
         // directory (`Some(empty map)`, which the diff below treats as "all DB
@@ -203,7 +228,7 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter, cancel: &Cance
                         logical_size: snap.logical_size,
                         physical_size: snap.physical_size,
                         modified_at: snap.modified_at,
-                        inode: snap.inode,
+                        inode: inode_space.trust_inode(snap.inode),
                         nlink: snap.nlink,
                     },
                 );
@@ -260,11 +285,11 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter, cancel: &Cance
     for (key, disk_entry) in &disk_map {
         match db_map.get(key) {
             None => {
-                // Skip excluded system paths (e.g. /System, /dev, /Volumes).
-                // Per-navigation verification runs on the boot disk today, so
-                // `BootDisk`; a mount-rooted verifier threads the kind scope here.
+                // Skip excluded paths, under THIS volume's scope: `BootDisk` gates
+                // `/System`, `/dev`, `/Volumes`; a mount-rooted volume gates only
+                // junk basenames, since the boot tier would exclude its own subtree.
                 let child_path = format!("{}/{}", parent_prefix, disk_entry.name);
-                if scanner::should_exclude(&child_path, &scanner::ExclusionScope::boot_disk()) {
+                if scanner::should_exclude(&child_path, space.exclusion_scope()) {
                     continue;
                 }
 
@@ -384,10 +409,10 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter, cancel: &Cance
         }
 
         for new_dir in &new_dir_paths {
-            if scanner::should_exclude(new_dir, &scanner::ExclusionScope::boot_disk()) {
+            if scanner::should_exclude(new_dir, space.exclusion_scope()) {
                 continue;
             }
-            match scanner::scan_subtree(Path::new(new_dir), writer, cancel) {
+            match scanner::scan_subtree(Path::new(new_dir), space, writer, cancel) {
                 Ok(summary) => {
                     log::debug!(
                         "Verifier: scanned new dir {} ({} entries, {}ms)",
@@ -418,515 +443,5 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter, cancel: &Cance
     paths
 }
 
-// ── Tests ────────────────────────────────────────────────────────────
-
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::indexing::read::enrichment::{
-        READ_POOL_TEST_MUTEX, ReadPool, install_read_pool as install_pool_for, uninstall_read_pool,
-    };
-    use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
-    use crate::indexing::stress_test_helpers::check_db_consistency;
-    use crate::indexing::writer::AggSource;
-    use crate::indexing::writer::IndexWriter;
-    use std::fs;
-    use std::sync::Arc;
-
-    /// Create a temp dir in the crate root instead of `/tmp/`.
-    /// On Linux, `/tmp/` is in `EXCLUDED_PREFIXES`, so `should_exclude`
-    /// filters out entries under it, breaking verifier tests that add
-    /// new files/dirs and expect them to appear in the diff.
-    fn test_tempdir() -> tempfile::TempDir {
-        let base = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        tempfile::Builder::new()
-            .prefix("cmdr-test-")
-            .tempdir_in(base)
-            .expect("create temp dir")
-    }
-
-    fn setup_writer() -> (IndexWriter, std::path::PathBuf, tempfile::TempDir) {
-        let dir = tempfile::tempdir().expect("create temp dir");
-        let db_path = dir.path().join("test-index.db");
-        let _store = IndexStore::open(&db_path).expect("open store");
-        let writer = IndexWriter::spawn(&db_path, crate::NoopEventSink::shared()).expect("spawn writer");
-        (writer, db_path, dir)
-    }
-
-    /// Install a root ReadPool so verify_and_correct can read the DB.
-    fn install_read_pool(db_path: &Path) {
-        let pool = Arc::new(ReadPool::new(db_path.to_path_buf()).unwrap());
-        install_pool_for(crate::ROOT_VOLUME_ID, pool);
-    }
-
-    fn remove_read_pool() {
-        uninstall_read_pool(crate::ROOT_VOLUME_ID);
-    }
-
-    /// Insert the parent directory chain for a filesystem path into the DB.
-    /// Returns the entry ID of the deepest directory.
-    /// Also syncs the writer's shared `next_id` counter with the DB.
-    fn ensure_path_in_db(db_path: &Path, path: &Path, writer: &IndexWriter) -> i64 {
-        let conn = IndexStore::open_write_connection(db_path).unwrap();
-        let path_str = path.to_string_lossy();
-        let components: Vec<&str> = path_str.split('/').filter(|c| !c.is_empty()).collect();
-        let mut parent_id = ROOT_ID;
-        for component in components {
-            parent_id = match IndexStore::resolve_component(&conn, parent_id, component) {
-                Ok(Some(id)) => id,
-                _ => IndexStore::insert_entry_v2(&conn, parent_id, component, true, false, None, None, None, None)
-                    .unwrap(),
-            };
-        }
-        // Sync the writer's next_id counter with what we just inserted
-        let db_next_id = IndexStore::get_next_id(&conn).unwrap();
-        writer
-            .next_id()
-            .fetch_max(db_next_id, std::sync::atomic::Ordering::Relaxed);
-        parent_id
-    }
-
-    /// Insert children under a parent_id matching what's on disk.
-    fn insert_children_from_disk(writer: &IndexWriter, parent_id: i64, dir_path: &Path) {
-        for entry in fs::read_dir(dir_path).unwrap().flatten() {
-            let name = entry.file_name().to_string_lossy().to_string();
-            let metadata = fs::symlink_metadata(entry.path()).unwrap();
-            let is_dir = metadata.is_dir();
-            let is_symlink = metadata.is_symlink();
-            let snap = extract_metadata(&metadata, is_dir, is_symlink);
-
-            let _ = writer.send(WriteMessage::UpsertEntryV2 {
-                parent_id,
-                name,
-                is_directory: is_dir,
-                is_symlink,
-                logical_size: snap.logical_size,
-                physical_size: snap.physical_size,
-                modified_at: snap.modified_at,
-                inode: snap.inode,
-                nlink: snap.nlink,
-            });
-        }
-        writer.flush_blocking().unwrap();
-    }
-
-    fn list_db_children_on(db_path: &Path, parent_id: i64) -> Vec<EntryRow> {
-        let conn = IndexStore::open_read_connection(db_path).unwrap();
-        IndexStore::list_children_on(parent_id, &conn).unwrap()
-    }
-
-    #[test]
-    fn verify_clean_directory() {
-        let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
-        let fs_root = test_tempdir();
-        fs::write(fs_root.path().join("file1.txt"), "hello").unwrap();
-        fs::create_dir(fs_root.path().join("subdir")).unwrap();
-
-        let (writer, db_path, _db_dir) = setup_writer();
-        let parent_id = ensure_path_in_db(&db_path, fs_root.path(), &writer);
-        insert_children_from_disk(&writer, parent_id, fs_root.path());
-        install_read_pool(&db_path);
-
-        let children_before = list_db_children_on(&db_path, parent_id);
-
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        let paths = rt.block_on(verify_and_correct(
-            &fs_root.path().to_string_lossy(),
-            &writer,
-            &CancellationToken::new(),
-        ));
-
-        writer.flush_blocking().unwrap();
-        let children_after = list_db_children_on(&db_path, parent_id);
-
-        assert!(paths.is_empty(), "clean directory should produce no diffs");
-        assert_eq!(children_before.len(), children_after.len());
-
-        remove_read_pool();
-        writer.shutdown();
-    }
-
-    #[test]
-    fn verify_detects_new_file() {
-        let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
-        let fs_root = test_tempdir();
-        fs::write(fs_root.path().join("file1.txt"), "hello").unwrap();
-
-        let (writer, db_path, _db_dir) = setup_writer();
-        let parent_id = ensure_path_in_db(&db_path, fs_root.path(), &writer);
-        insert_children_from_disk(&writer, parent_id, fs_root.path());
-        install_read_pool(&db_path);
-
-        // Add a new file after indexing
-        fs::write(fs_root.path().join("new_file.txt"), "new content").unwrap();
-
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        let paths = rt.block_on(verify_and_correct(
-            &fs_root.path().to_string_lossy(),
-            &writer,
-            &CancellationToken::new(),
-        ));
-
-        writer.flush_blocking().unwrap();
-        let children_after = list_db_children_on(&db_path, parent_id);
-
-        assert!(!paths.is_empty());
-        assert!(children_after.iter().any(|e| e.name == "new_file.txt"));
-
-        remove_read_pool();
-        writer.shutdown();
-    }
-
-    #[test]
-    fn verify_detects_deleted_file() {
-        let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
-        let fs_root = test_tempdir();
-        fs::write(fs_root.path().join("file1.txt"), "hello").unwrap();
-        fs::write(fs_root.path().join("file2.txt"), "world").unwrap();
-
-        let (writer, db_path, _db_dir) = setup_writer();
-        let parent_id = ensure_path_in_db(&db_path, fs_root.path(), &writer);
-        insert_children_from_disk(&writer, parent_id, fs_root.path());
-        install_read_pool(&db_path);
-
-        // Delete a file after indexing
-        fs::remove_file(fs_root.path().join("file1.txt")).unwrap();
-
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        let paths = rt.block_on(verify_and_correct(
-            &fs_root.path().to_string_lossy(),
-            &writer,
-            &CancellationToken::new(),
-        ));
-
-        writer.flush_blocking().unwrap();
-        let children_after = list_db_children_on(&db_path, parent_id);
-
-        assert!(!paths.is_empty());
-        assert!(!children_after.iter().any(|e| e.name == "file1.txt"));
-        assert!(children_after.iter().any(|e| e.name == "file2.txt"));
-
-        remove_read_pool();
-        writer.shutdown();
-    }
-
-    #[test]
-    fn verify_detects_modified_file() {
-        let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
-        let fs_root = test_tempdir();
-        // Write a small initial file
-        fs::write(fs_root.path().join("file1.txt"), "x").unwrap();
-
-        let (writer, db_path, _db_dir) = setup_writer();
-        let parent_id = ensure_path_in_db(&db_path, fs_root.path(), &writer);
-        insert_children_from_disk(&writer, parent_id, fs_root.path());
-        install_read_pool(&db_path);
-
-        let children_before = list_db_children_on(&db_path, parent_id);
-        let file1_before = children_before.iter().find(|e| e.name == "file1.txt").unwrap().clone();
-
-        // Write content large enough to span multiple disk blocks (>4KB ensures physical size change)
-        let large_content = vec![b'A'; 8192];
-        fs::write(fs_root.path().join("file1.txt"), &large_content).unwrap();
-
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        let paths = rt.block_on(verify_and_correct(
-            &fs_root.path().to_string_lossy(),
-            &writer,
-            &CancellationToken::new(),
-        ));
-
-        writer.flush_blocking().unwrap();
-        let children_after = list_db_children_on(&db_path, parent_id);
-        let file1_after = children_after.iter().find(|e| e.name == "file1.txt").unwrap();
-
-        assert!(!paths.is_empty());
-        let changed = file1_after.logical_size != file1_before.logical_size
-            || file1_after.modified_at != file1_before.modified_at;
-        assert!(changed, "file should show as modified after content change");
-
-        remove_read_pool();
-        writer.shutdown();
-    }
-
-    #[test]
-    fn verify_detects_new_directory() {
-        let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
-        let fs_root = test_tempdir();
-        fs::write(fs_root.path().join("file1.txt"), "hello").unwrap();
-
-        let (writer, db_path, _db_dir) = setup_writer();
-        let parent_id = ensure_path_in_db(&db_path, fs_root.path(), &writer);
-        insert_children_from_disk(&writer, parent_id, fs_root.path());
-        install_read_pool(&db_path);
-
-        // Create new directory after indexing
-        fs::create_dir(fs_root.path().join("new_dir")).unwrap();
-        fs::write(fs_root.path().join("new_dir").join("inside.txt"), "inside").unwrap();
-
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        let paths = rt.block_on(verify_and_correct(
-            &fs_root.path().to_string_lossy(),
-            &writer,
-            &CancellationToken::new(),
-        ));
-
-        writer.flush_blocking().unwrap();
-        let children_after = list_db_children_on(&db_path, parent_id);
-
-        assert!(!paths.is_empty());
-        assert!(children_after.iter().any(|e| e.name == "new_dir" && e.is_directory));
-
-        remove_read_pool();
-        writer.shutdown();
-    }
-
-    /// Leak A, end to end: a new directory appearing on disk must credit the
-    /// ancestor chain for its bytes EXACTLY once. `scan_subtree` →
-    /// `ComputeSubtreeAggregates` now repairs ancestors on the writer; with the
-    /// old off-writer `PropagateDeltaById` compensation still in place the new
-    /// dir's bytes would land twice (2× credit). The recompute-from-`entries`
-    /// oracle catches a double-count anywhere in the chain.
-    #[test]
-    fn verify_new_dir_credits_ancestors_exactly_once() {
-        let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
-        let fs_root = test_tempdir();
-        fs::write(fs_root.path().join("file1.txt"), "hello").unwrap(); // 5 bytes
-
-        let (writer, db_path, _db_dir) = setup_writer();
-        let parent_id = ensure_path_in_db(&db_path, fs_root.path(), &writer);
-        insert_children_from_disk(&writer, parent_id, fs_root.path());
-        // Exact baseline for the whole ancestor chain.
-        writer
-            .send(WriteMessage::ComputeAllAggregates {
-                source: AggSource::Maps,
-            })
-            .unwrap();
-        writer.flush_blocking().unwrap();
-        install_read_pool(&db_path);
-
-        // A new dir with two known-size files appears on disk after indexing.
-        let new_dir = fs_root.path().join("new_dir");
-        fs::create_dir(&new_dir).unwrap();
-        fs::write(new_dir.join("a.txt"), "AAAA").unwrap(); // 4 bytes
-        fs::write(new_dir.join("b.txt"), "BB").unwrap(); // 2 bytes
-
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        let _paths = rt.block_on(verify_and_correct(
-            &fs_root.path().to_string_lossy(),
-            &writer,
-            &CancellationToken::new(),
-        ));
-        writer.flush_blocking().unwrap();
-
-        let conn = IndexStore::open_write_connection(&db_path).unwrap();
-        let parent = IndexStore::get_dir_stats_by_id(&conn, parent_id).unwrap().unwrap();
-        assert_eq!(
-            (
-                parent.recursive_logical_size,
-                parent.recursive_file_count,
-                parent.recursive_dir_count
-            ),
-            // file1(5) + a(4) + b(2) = 11 bytes; 3 files; 1 new dir.
-            (11, 3, 1),
-            "the verified dir must be credited for new_dir's bytes exactly once, not doubled"
-        );
-        // The whole tree agrees with an independent recompute from `entries`.
-        check_db_consistency(&conn);
-
-        remove_read_pool();
-        writer.shutdown();
-    }
-
-    #[test]
-    fn verify_detects_deleted_directory() {
-        let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
-        let fs_root = test_tempdir();
-        fs::write(fs_root.path().join("file1.txt"), "hello").unwrap();
-        let subdir = fs_root.path().join("subdir");
-        fs::create_dir(&subdir).unwrap();
-        fs::write(subdir.join("nested.txt"), "nested").unwrap();
-
-        let (writer, db_path, _db_dir) = setup_writer();
-        let parent_id = ensure_path_in_db(&db_path, fs_root.path(), &writer);
-        insert_children_from_disk(&writer, parent_id, fs_root.path());
-        install_read_pool(&db_path);
-
-        let children_before = list_db_children_on(&db_path, parent_id);
-        assert!(children_before.iter().any(|e| e.name == "subdir" && e.is_directory));
-
-        // Remove directory after indexing
-        fs::remove_dir_all(&subdir).unwrap();
-
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        let paths = rt.block_on(verify_and_correct(
-            &fs_root.path().to_string_lossy(),
-            &writer,
-            &CancellationToken::new(),
-        ));
-
-        writer.flush_blocking().unwrap();
-        let children_after = list_db_children_on(&db_path, parent_id);
-
-        assert!(!paths.is_empty());
-        assert!(!children_after.iter().any(|e| e.name == "subdir"));
-
-        remove_read_pool();
-        writer.shutdown();
-    }
-
-    #[test]
-    fn verify_type_change_dir_to_file() {
-        let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
-        let fs_root = test_tempdir();
-        let subdir = fs_root.path().join("subdir");
-        fs::create_dir(&subdir).unwrap();
-        fs::write(subdir.join("nested.txt"), "nested").unwrap();
-
-        let (writer, db_path, _db_dir) = setup_writer();
-        let parent_id = ensure_path_in_db(&db_path, fs_root.path(), &writer);
-        insert_children_from_disk(&writer, parent_id, fs_root.path());
-        install_read_pool(&db_path);
-
-        // Replace directory with a file of the same name
-        fs::remove_dir_all(&subdir).unwrap();
-        fs::write(fs_root.path().join("subdir"), "now a file").unwrap();
-
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        let paths = rt.block_on(verify_and_correct(
-            &fs_root.path().to_string_lossy(),
-            &writer,
-            &CancellationToken::new(),
-        ));
-
-        writer.flush_blocking().unwrap();
-        let children_after = list_db_children_on(&db_path, parent_id);
-
-        assert!(!paths.is_empty());
-        let subdir_entry = children_after.iter().find(|e| e.name == "subdir").unwrap();
-        assert!(!subdir_entry.is_directory, "should now be a file, not a directory");
-
-        remove_read_pool();
-        writer.shutdown();
-    }
-
-    #[test]
-    fn verify_debounce() {
-        invalidate();
-
-        let dir_path = "/fake/debounce/test".to_string();
-
-        // Simulate an in-flight verification
-        {
-            let mut state = VERIFIER_STATE.lock().unwrap();
-            state.in_flight.insert(dir_path.clone());
-        }
-
-        // Path is in flight, so duplicate should be rejected
-        let state = VERIFIER_STATE.lock().unwrap();
-        assert!(state.in_flight.contains(&dir_path));
-        assert_eq!(state.in_flight.len(), 1);
-        drop(state);
-
-        // Simulate completion: move to recent
-        {
-            let mut state = VERIFIER_STATE.lock().unwrap();
-            state.in_flight.remove(&dir_path);
-            state.recent.push((dir_path.clone(), Instant::now()));
-        }
-
-        // Path is now in recent, so a new request should be debounced
-        let state = VERIFIER_STATE.lock().unwrap();
-        assert!(state.recent.iter().any(|(p, _)| p == &dir_path));
-        assert!(state.in_flight.is_empty());
-        drop(state);
-
-        invalidate();
-    }
-
-    #[test]
-    fn in_flight_slot_is_freed_on_panic_unwind() {
-        // A panic inside the verification body (which runs in a spawned task the
-        // runtime catches) must still free the `in_flight` slot, or the path
-        // permanently counts against MAX_CONCURRENT_VERIFICATIONS. The guard's
-        // Drop runs during unwinding; this pins that contract.
-        invalidate();
-
-        let dir_path = "/fake/panic/unwind".to_string();
-
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            {
-                let mut state = VERIFIER_STATE.lock().unwrap();
-                state.in_flight.insert(dir_path.clone());
-            }
-            let _slot = InFlightGuard {
-                dir_path: dir_path.clone(),
-            };
-            panic!("simulated verification panic");
-        }));
-
-        assert!(result.is_err(), "the closure must have panicked");
-
-        let state = VERIFIER_STATE.lock().unwrap();
-        assert!(
-            !state.in_flight.contains(&dir_path),
-            "in_flight slot must be freed even when the verification body panicked"
-        );
-        assert!(
-            state.recent.iter().any(|(p, _)| p == &dir_path),
-            "the path should be recorded as recently-verified (debounced) after the guard fires"
-        );
-        drop(state);
-
-        invalidate();
-    }
-
-    #[test]
-    fn verify_concurrent_limit() {
-        invalidate();
-
-        // Fill up in_flight to max
-        {
-            let mut state = VERIFIER_STATE.lock().unwrap();
-            for i in 0..MAX_CONCURRENT_VERIFICATIONS {
-                state.in_flight.insert(format!("/fake/path/{i}"));
-            }
-        }
-
-        // At the limit, new paths should be rejected
-        let state = VERIFIER_STATE.lock().unwrap();
-        assert_eq!(state.in_flight.len(), MAX_CONCURRENT_VERIFICATIONS);
-        assert!(!state.in_flight.contains("/another/path"));
-        drop(state);
-
-        invalidate();
-    }
-
-    #[test]
-    fn verify_empty_directory() {
-        let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
-        let fs_root = test_tempdir();
-        // Empty directory, no files
-
-        let (writer, db_path, _db_dir) = setup_writer();
-        let parent_id = ensure_path_in_db(&db_path, fs_root.path(), &writer);
-        // No children to insert
-        install_read_pool(&db_path);
-
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        let paths = rt.block_on(verify_and_correct(
-            &fs_root.path().to_string_lossy(),
-            &writer,
-            &CancellationToken::new(),
-        ));
-
-        writer.flush_blocking().unwrap();
-        let children_after = list_db_children_on(&db_path, parent_id);
-
-        assert!(paths.is_empty());
-        assert_eq!(children_after.len(), 0);
-
-        remove_read_pool();
-        writer.shutdown();
-    }
-}
+mod tests;

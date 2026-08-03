@@ -14,15 +14,16 @@ the shared `extract_metadata` primitive at `../metadata.rs` (documented in the [
 ## Module structure
 
 - **mod.rs** — the scan driver: `scan_volume()` (full scan) / `scan_subtree()` (targeted subtree rescan, used by
-  post-replay background verification), `run_scan`, the `InsertVisitor` fresh-scan visitor, the `ScanConfig` /
-  `ScanProgress` / `ScanHandle` / `ScanSummary` / `ScanError` types, the `send_marks` helper, and `LOCAL_LIST_TIMEOUT`
-  (15 s). No path→id map: the walker carries each directory's id to its own read, so the visitor attributes children to
-  their parent via the carried `parent_id` (`dir.id`) directly, allocating fresh child ids from the shared
-  `Arc<AtomicI64>` counter owned by `IndexWriter`. The scan root resolves via `resolve_scan_root` (`ROOT_ID` = 1 for a
-  volume scan, the existing entry id for a subtree scan). Sizes come from a per-child `symlink_metadata` (lstat);
-  physical sizes are `st_blocks * 512`. Hardlink dedup: files with `nlink > 1` are tracked in a mutex-guarded
-  `HashSet<u64>` by inode (workers run concurrently); only the first link's size counts, later links get `size = None`.
-  `nlink == 1` files skip the set. All files store `inode`; directories and symlinks get `inode: None`.
+  post-replay background verification and the per-navigation verifier), `run_scan`, the `InsertVisitor` fresh-scan
+  visitor, the `ScanConfig` / `ScanProgress` / `ScanHandle` / `ScanSummary` / `ScanError` types, the `send_marks`
+  helper, and `LOCAL_LIST_TIMEOUT` (15 s). No path→id map: the walker carries each directory's id to its own read, so
+  the visitor attributes children to their parent via the carried `parent_id` (`dir.id`) directly, allocating fresh
+  child ids from the shared `Arc<AtomicI64>` counter owned by `IndexWriter`. The scan root resolves via
+  `resolve_scan_root` (`ROOT_ID` = 1 for a volume scan, the existing entry id for a subtree scan). Sizes come from a
+  per-child `symlink_metadata` (lstat); physical sizes are `st_blocks * 512`. Hardlink dedup: files with `nlink > 1` are
+  tracked in a mutex-guarded `HashSet<u64>` by inode (workers run concurrently); only the first link's size counts,
+  later links get `size = None`. `nlink == 1` files skip the set. All files store `inode`; directories and symlinks get
+  `inode: None`.
 - **walker/** — the hang-tolerant engine (`walk`, `std_read_dir`, the `DirVisitor` trait, `DirTask` / `RawDirEntry` /
   `WalkReadError` / `WalkConfig` types, the watchdog, the progress-timeout verdict, the `SubtreeBudget` give-up budget)
   plus `bulk_read` (the `getattrlistbulk`-batched `bulk_read_dir` used in production on macOS). Tests are in
@@ -224,8 +225,15 @@ site, so no path can be gated without saying which volume it's being gated for. 
 `MountRooted` enum) is derived from it. `IndexPathSpace` STORES its space as an `ExclusionScope` and reads its mount
 root back through it, so the path space and the exclusion gate can't disagree about where the volume begins (see
 `../paths/DETAILS.md`). The scanner (`InsertVisitor` via `ScanConfig::scope`), the reconciler, and the local reconcile
-derive the scope from the volume's `IndexPathSpace`. The per-navigation verifier stays `BootDisk` and root-only by
-design (see `../reconcile/DETAILS.md`).
+derive the scope from the volume's `IndexPathSpace`, and so does the per-navigation verifier (see
+`../reconcile/DETAILS.md`).
+
+**Both scan entry points take the volume's `IndexPathSpace`, not a loose scope + inode flag** (`ScanConfig::space`,
+`scan_subtree`'s `space` argument): the two facts always travel together and a scan that had one right and the other
+wrong is exactly the class of bug this replaces. `scan_subtree` needs a third thing from it, which is why the type
+rather than the pair: its `root` is an ABSOLUTE FS path but `resolve_scan_root` walks from `ROOT_ID`, so a mount-rooted
+volume's subtree resolves only after `space.index_relative` strips the mount root. A volume-ROOT scan maps to `ROOT_ID`
+whatever its path is, so only the subtree half depends on this.
 
 ## Canonicalization aliases
 

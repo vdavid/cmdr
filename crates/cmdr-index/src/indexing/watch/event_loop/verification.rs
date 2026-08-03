@@ -98,12 +98,14 @@ pub(super) async fn run_background_verification(
         let scan_writer = writer.clone();
         let scan_dirs = verify_result.new_dir_paths.clone();
         if let Err(e) = crate::indexing::host::runtime::spawn_blocking(move || {
+            // Background verification backs FSEvents journal replay, which only a
+            // journaled volume (the boot disk) has, so the space is root's.
+            let space = crate::indexing::IndexPathSpace::root();
             for dir_path in &scan_dirs {
-                // Background verification is root-scoped (boot disk), so `BootDisk`.
-                if scanner::should_exclude(dir_path, &scanner::ExclusionScope::boot_disk()) {
+                if scanner::should_exclude(dir_path, space.exclusion_scope()) {
                     continue;
                 }
-                match scanner::scan_subtree(Path::new(dir_path), &scan_writer, &cancel) {
+                match scanner::scan_subtree(Path::new(dir_path), &space, &scan_writer, &cancel) {
                     Ok(summary) => {
                         log::debug!(
                             "Background verification: scanned new dir {dir_path} ({} entries, {}ms)",

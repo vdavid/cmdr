@@ -72,7 +72,6 @@
     "crates/cmdr-index/src/indexing/network_scanner/mod.rs": 867,
     "crates/cmdr-index/src/indexing/reconcile/local_reconcile/tests.rs": 817,
     "crates/cmdr-index/src/indexing/reconcile/reconciler.rs": 1634,
-    "crates/cmdr-index/src/indexing/reconcile/verifier.rs": 873,
     "crates/cmdr-index/src/indexing/scanner/tests.rs": 940,
     "crates/cmdr-index/src/indexing/store/mod.rs": 816,
     "crates/cmdr-index/src/indexing/tests/integration_tests.rs": 1227,

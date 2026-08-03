@@ -343,6 +343,23 @@ impl IndexPathSpace {
         }
     }
 
+    /// Map a canonical absolute path (from [`absolute`](Self::absolute)) into the
+    /// index-relative path `store::resolve_path` walks from `ROOT_ID`: identity for
+    /// the `/`-rooted boot disk, mount-root-stripped for a mount-rooted volume.
+    ///
+    /// `None` means the path lies outside this volume's mount root, so it has no
+    /// place in this index at all — drop it rather than mis-root it at `ROOT_ID`.
+    ///
+    /// Use this only where an index-relative path is the value needed (a scan root
+    /// handed to `resolve_scan_root`); to resolve an id, prefer
+    /// [`resolve_abs`](Self::resolve_abs), which is this plus the lookup.
+    pub(crate) fn index_relative(&self, absolute: &str) -> Option<String> {
+        match self.mount_root() {
+            None => Some(absolute.to_string()),
+            Some(root) => crate::indexing::transports::smb::watch::index_relative_path(root, absolute),
+        }
+    }
+
     /// Resolve a canonical absolute path (from [`absolute`](Self::absolute)) to its
     /// index entry id, applying the mount-relative strip for a mount-rooted volume.
     ///
@@ -351,12 +368,9 @@ impl IndexPathSpace {
     /// skip/no-op (mirrors the SMB read side dropping an off-volume path rather than
     /// mis-rooting it at `ROOT_ID`). Drop-in for a direct `store::resolve_path` call.
     pub(crate) fn resolve_abs(&self, conn: &Connection, absolute: &str) -> Result<Option<i64>, IndexStoreError> {
-        match self.mount_root() {
-            None => store::resolve_path(conn, absolute),
-            Some(root) => match crate::indexing::transports::smb::watch::index_relative_path(root, absolute) {
-                Some(rel) => store::resolve_path(conn, &rel),
-                None => Ok(None),
-            },
+        match self.index_relative(absolute) {
+            Some(rel) => store::resolve_path(conn, &rel),
+            None => Ok(None),
         }
     }
 }

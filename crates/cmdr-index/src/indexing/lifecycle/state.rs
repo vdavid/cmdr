@@ -255,6 +255,12 @@ pub fn trigger_verification(volume_id: &str, dir_path: &str) {
             let writer = mgr.writer.clone();
             let events = Arc::clone(&mgr.events);
             let scanning = mgr.scanning.load(Ordering::Relaxed);
+            // The volume's path space, taken off the SAME instance the writer came
+            // from. The verifier reads `volume_id`'s index and writes `mgr.writer`,
+            // so the two must name one volume: routing the read through root's pool
+            // (or resolving a mount-absolute path against root's index) made this a
+            // silent no-op on every SMB, MTP, and external volume.
+            let space = mgr.path_space();
             // Hand the walk a child of THIS volume's stop signal, taken here where
             // we already hold the instance. The verifier feeds this volume's writer,
             // so tearing the volume down must stop the walk rather than let it write
@@ -263,7 +269,7 @@ pub fn trigger_verification(volume_id: &str, dir_path: &str) {
             // volume is gone.
             let cancel = signals.cancel.child_token();
             drop(reg);
-            verifier::maybe_verify(dir_path, writer, events, scanning, cancel);
+            verifier::maybe_verify(volume_id, dir_path, space, writer, events, scanning, cancel);
         }
     });
 }

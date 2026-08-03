@@ -24,9 +24,12 @@ exclusion gate can't disagree about where the volume begins. Operations:
 
 - **`absolute(raw)`** — the canonical ABSOLUTE path in this volume's world: `firmlinks::normalize_path` for the boot
   disk, identity for a mount-rooted drive (no firmlink normalization). This is what every path SET holds.
-- **`resolve_abs(conn, absolute)`** — resolves that absolute path to an entry id, applying the mount-relative strip for
-  a mount-rooted volume (via `transports::smb::watch::index_relative_path`). `Ok(None)` for a path outside the mount
-  root, which every caller already treats as skip/no-op.
+- **`index_relative(absolute)`** — the mount-relative strip on its own (identity for the boot disk, via
+  `transports::smb::watch::index_relative_path` otherwise), `None` for a path outside the mount root. Reach for it only
+  where the index-relative PATH is the value needed — the scan root `scan_subtree` hands `resolve_scan_root`.
+- **`resolve_abs(conn, absolute)`** — `index_relative` plus the lookup: resolves that absolute path to an entry id.
+  `Ok(None)` for a path outside the mount root (or a genuinely absent entry), which every caller already treats as
+  skip/no-op.
 - **`exclusion_scope()`** — the scope the scan/live gate uses; a mount-rooted scan skips only the per-volume tier (under
   `BootDisk` its own `/Volumes/X` subtree would be excluded and the scan would falsely complete empty). Either way the
   scope carries the volume ROOT, so the root-position pseudo-filesystem skip works on every volume.
@@ -44,10 +47,11 @@ insertion breaks the FS reads and the FE emit; omitting it breaks resolution. Th
 load-bearing, and why the mount-relative resolution tests pin both the miss (`root` space drops a `/Volumes/X` path) and
 the fix (`mount_rooted` space resolves it).
 
-**Root-only sites left as `BootDisk` / `ROOT_VOLUME_ID` (deliberate).** Journal replay (gated on `has_event_journal()` =
-boot disk only), post-replay background verification, and the per-navigation verifier don't run for a `LocalExternal`
-volume, so their `ROOT_VOLUME_ID` / boot-disk scope stays. Replay still threads the space (it's `root` today) so it
-resolves in the same space as the live loop that follows. Write-side storage is already mount-relative:
+**Root-only sites left as `BootDisk` / `ROOT_VOLUME_ID` (deliberate).** Journal replay and the post-replay background
+verification it feeds are gated on `has_event_journal()` (boot disk only), so their `ROOT_VOLUME_ID` / boot-disk scope
+stays. Replay still threads the space (it's `root` today) so it resolves in the same space as the live loop that
+follows. The per-navigation verifier is NOT one of these: it runs on every volume the user navigates and takes its
+space + volume id off the running instance (`../reconcile/DETAILS.md`). Write-side storage is already mount-relative:
 `resolve_scan_root` maps a volume-root scan → `ROOT_ID` kind-agnostically, and the fresh scanner attributes children via
 the carried `parent_id`, so a mount-rooted fresh scan naturally stores `EntryRow`s under `ROOT_ID` by mount-relative
 name (mirroring SMB/MTP).

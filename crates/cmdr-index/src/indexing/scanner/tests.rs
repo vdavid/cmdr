@@ -346,7 +346,7 @@ fn scan_subtree_only() {
     // Pre-insert the subtree root's parent chain so ScanContext can resolve it
     ensure_path_in_db(&db_path, &subtree_root, &writer);
 
-    let summary = scan_subtree(&subtree_root, &writer, &cancelled).unwrap();
+    let summary = scan_subtree(&subtree_root, &IndexPathSpace::root(), &writer, &cancelled).unwrap();
 
     // subdir contains: nested.txt, deep/, deep/leaf.txt
     assert_eq!(summary.total_entries, 3, "expected 3 entries under subdir");
@@ -381,7 +381,13 @@ fn a_cancelled_subtree_scan_still_repairs_its_ancestors() {
     ensure_path_in_db(&db_path, &subtree_root, &writer);
 
     // A clean subtree scan first, so the subtree has real rows and dir_stats.
-    scan_subtree(&subtree_root, &writer, &CancellationToken::new()).expect("the seeding scan");
+    scan_subtree(
+        &subtree_root,
+        &IndexPathSpace::root(),
+        &writer,
+        &CancellationToken::new(),
+    )
+    .expect("the seeding scan");
     writer.flush_blocking().unwrap();
 
     let subtree_id = {
@@ -406,7 +412,7 @@ fn a_cancelled_subtree_scan_still_repairs_its_ancestors() {
     // Now cancel before the walk can put anything back.
     let cancel = CancellationToken::new();
     cancel.cancel();
-    let result = scan_subtree(&subtree_root, &writer, &cancel);
+    let result = scan_subtree(&subtree_root, &IndexPathSpace::root(), &writer, &cancel);
     assert!(
         matches!(result, Err(ScanError::Cancelled(_))),
         "a cancelled subtree scan must surface the typed cancellation, got {result:?}"
@@ -533,8 +539,7 @@ fn scan_nulls_inode_on_inode_untrusted_volume() {
             root: scan_root.path().to_path_buf(),
             batch_size: 100,
             num_threads: 1,
-            inodes_trustworthy,
-            ..ScanConfig::default()
+            space: IndexPathSpace::root().with_inodes_trustworthy(inodes_trustworthy),
         };
         let (_handle, join_handle) = scan_volume(config, &writer, CancellationToken::new()).unwrap();
         join_handle.join().expect("scan thread panicked").unwrap();
@@ -929,8 +934,7 @@ fn timed_out_dir_is_not_marked_listed() {
         100,
         4,
         true,
-        ExclusionScope::boot_disk(),
-        true, // inodes trustworthy (boot-disk-scope test)
+        &IndexPathSpace::root(), // boot-disk scope, trustworthy inodes
         reader,
         Duration::from_millis(50), // short timeout so the hang is abandoned fast
     )
@@ -1010,8 +1014,7 @@ fn volume_root_that_never_lists_surfaces_root_unlistable() {
         100,
         4,
         true, // volume-root scan
-        ExclusionScope::boot_disk(),
-        true,
+        &IndexPathSpace::root(),
         reader,
         Duration::from_millis(50),
     );
