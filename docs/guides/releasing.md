@@ -231,23 +231,40 @@ in `bundle_dmg.sh` pops a "control Finder" prompt; if no one's at the keyboard, 
 and TCC records `auth_value=0` (denied) for that node path in `~/Library/Application Support/com.apple.TCC/TCC.db`.
 Every subsequent DMG build hangs the same way until you flip the bit.
 
-Recovery: trigger the prompt while you're at the keyboard and click Allow. Run this once:
+Read the state first, resolving the REAL path (`externals/` is a symlink into `externals.<version>/`, and tccd keys its
+rows on the resolved path):
 
 ```bash
-NODE=~/actions-runner/externals/node20/bin/node
-"$NODE" -e "require('child_process').execFileSync('/usr/bin/osascript', ['-e', 'tell application \"Finder\" to return name of startup disk'], { stdio: 'inherit' })"
+NODE=$(readlink -f ~/actions-runner/externals/node20/bin/node)
+sqlite3 ~/Library/Application\ Support/com.apple.TCC/TCC.db \
+  "SELECT auth_value FROM access WHERE client='$NODE' AND service='kTCCServiceAppleEvents' AND indirect_object_identifier='com.apple.finder';"
 ```
 
-A macOS dialog should appear within a second or two. Click Allow. From then on, every `osascript` call from this
-runner-node path is authorized and `bundle_dmg.sh` runs cleanly until the runner auto-updates again.
+`auth_value` codes: 0=denied, 1=ask, 2=allowed. Empty or `1` just needs someone at the keyboard when the next build
+runs. `2` is fine. `0` blocks every DMG build until it's cleared, and clearing it is the hard case:
 
-`auth_value` codes in `TCC.db`: 0=denied, 1=ask, 2=allowed. Don't try to fix a stuck `auth_value=0` by `UPDATE`-ing the
-row to 2 directly: tccd re-validates each row's `csreq` against the live binary's code signature on use, plus there's an
-integrity layer on Sonoma+. A hand-edited row reads back fine via `SELECT` but tccd treats it as untrusted and
-re-prompts. The only reliable path is to make the prompt fire.
+- **The `externals/` symlink carries its OWN row**, left at `2` by earlier grants, so a check against the symlink path
+  reports "allowed" while the resolved path sits at `0`. ❌ Never read the state through the symlink. This masked a real
+  denial on the 0.37.0 release and cost all three matrix jobs.
+- **You cannot fire the prompt from a Terminal or agent shell.** TCC attributes the request to the responsible process,
+  which there is the already-granted shell, so `osascript` succeeds without ever asking about node and no row changes.
+  Only the runner's launchd service (`SessionCreate=true`) puts node in that role, which is why the prompt appears
+  during a real build and nowhere else.
+- **System Settings → Privacy & Security → Automation may refuse to flip it.** A stuck `0` row's Finder checkbox can
+  bounce straight back off (observed on the 0.37.0 release, macOS 26.5.2). Several older runner-node entries sit there
+  allowed, which makes the broken one easy to miss.
+- **`tccutil` can't target it**: it takes a bundle identifier, and this client is a bare binary path
+  (`tccutil: No such bundle identifier`). The only supported clear is `tccutil reset AppleEvents` with no argument,
+  which drops EVERY app's Automation grant on the machine, so every one of them re-prompts on next use. Get the user's
+  explicit consent before running it; it's their whole system, not just the runner.
+- ❌ Don't `UPDATE` the row to 2 by hand: tccd re-validates each row's `csreq` against the live binary's signature, plus
+  there's an integrity layer on Sonoma+. It reads back fine via `SELECT` and still behaves as untrusted.
 
-Prevention: the `/release` agent prompt fires an `osascript`-via-runner-node canary right after the CHANGELOG draft so
-the prompt lands while the user is at the keyboard. See step 3 of `.claude/commands/release.md`.
+After a reset, start a build with the user at the keyboard: the prompt lands within a second or two of
+`Running bundle_dmg.sh`, and one Allow authorizes that runner-node path until the runner auto-updates again.
+
+Prevention: step 3 of `.claude/commands/release.md` reads the resolved path's `auth_value` right after the CHANGELOG
+draft, so a denial is found before anything is tagged rather than after three jobs burn.
 
 ### `bundle_dmg.sh` fails fast (~3 s) on the universal/aarch64/x86_64 build
 

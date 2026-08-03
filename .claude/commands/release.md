@@ -122,24 +122,32 @@ Prepare a release based on docs/guides/releasing.md.
      draft had a Fixed entry whose SHAs were a strict subset of an Added entry's.)
    - Strip internal symbol names, file paths, and enum variants that survived the first pass.
 
-3. **Pre-warm the runner's Finder Automation permission** so `bundle_dmg.sh` doesn't hang for ~2 minutes per matrix job.
-   Run the canary AFTER presenting the CHANGELOG draft for review (the user is at the keyboard anyway). If a macOS
-   dialog appears asking to allow control of Finder, tell the user to click Allow. See `docs/guides/releasing.md` §
-   "`bundle_dmg.sh` hangs ~2 minutes then fails on every matrix job" for why this is needed, the `auth_value` codes, and
-   how to recover if the entry is already stuck at denied.
+3. **Check the runner's Finder Automation permission** so `bundle_dmg.sh` doesn't hang for ~2 minutes per matrix job.
+   Run this AFTER presenting the CHANGELOG draft for review (the user is at the keyboard anyway). See
+   `docs/guides/releasing.md` § "`bundle_dmg.sh` hangs ~2 minutes then fails on every matrix job" for why this is
+   needed, the `auth_value` codes, and how to recover.
+
+   ❌ **Resolve the REAL path, never `externals/`.** That's a symlink into `externals.<version>/`, tccd keys its rows on
+   the resolved path, and the symlink path carries a stale `2` row of its own from earlier grants. Checking the symlink
+   reports "already allowed" exactly when the runner has just auto-updated, which is the one case this step exists to
+   catch.
 
    ```bash
-   NODE=$(readlink ~/actions-runner/externals 2>/dev/null)
-   [ -n "$NODE" ] && NODE=~/actions-runner/externals/node20/bin/node
+   NODE=$(readlink -f ~/actions-runner/externals/node20/bin/node 2>/dev/null)
    if [ -x "$NODE" ]; then
      CURRENT=$(sqlite3 ~/Library/Application\ Support/com.apple.TCC/TCC.db \
        "SELECT auth_value FROM access WHERE client='$NODE' AND service='kTCCServiceAppleEvents' AND indirect_object_identifier='com.apple.finder';")
-     if [ "$CURRENT" != "2" ]; then
-       echo "Triggering Finder permission prompt for $NODE — click Allow if macOS asks."
-       "$NODE" -e "require('child_process').execFileSync('/usr/bin/osascript', ['-e', 'tell application \"Finder\" to return name of startup disk'], { stdio: 'inherit' })" || echo "Canary failed; user may have denied or TCC entry stuck at 0."
-     fi
+     echo "auth_value='${CURRENT:-<no row>}' for $NODE"
    fi
    ```
+
+   Read the answer as: `2` is allowed, carry on. `0` is **denied and blocks the release** — no prompt will ever fire
+   again, so fix it before tagging (recovery in the guide; it needs the user at the GUI). Empty or `1` means the next
+   build prompts, so tell the user to stay at the keyboard and click Allow when it appears.
+
+   ❌ **Don't try to pre-fire the prompt from your own shell.** An `osascript` run from an agent/Terminal shell is
+   attributed to that shell's already-granted responsible process, so it succeeds without asking about node and writes
+   nothing useful. Only the runner's own launchd session (`SessionCreate=true`) makes node the responsible process.
 
 4. Apply the roadmap and feature-status updates (edit the files, don't just advise; the user reviews before committing).
    - **Roadmap** (@apps/website/src/pages/roadmap.astro): add a dated milestone (with a date!) for each major
@@ -162,9 +170,9 @@ Prepare a release based on docs/guides/releasing.md.
      the others stay `queued`, which is normal).
    - **If all three are still `queued` after ~30s, the self-hosted runner is down.** Confirm with
      `launchctl list | grep cmdr` and look for `actions.runner.vdavid-cmdr.*`. Restart with
-     `cd ~/actions-runner-cmdr && ./svc.sh start` (fall back to `launchctl bootout` + `bootstrap` if `svc.sh` errors
-     with "Load failed: 5: Input/output error"). Re-check after another 30 s. The queued jobs pick up automatically once
-     the runner reports in. No need to re-trigger or re-tag.
+     `cd ~/actions-runner && ./svc.sh start` (fall back to `launchctl bootout` + `bootstrap` if `svc.sh` errors with
+     "Load failed: 5: Input/output error"). Re-check after another 30 s. The queued jobs pick up automatically once the
+     runner reports in. No need to re-trigger or re-tag.
 9. **Then arm `caffeinate`** to prevent the Mac from sleeping during the build (a display or system sleep drops the
    self-hosted runner connection and fails every in-flight matrix job). Follow the check/arm/disarm procedure in
    `docs/guides/releasing.md` § "Keep the Mac awake during the build": check `pgrep -lf 'caffeinate -dimsu'` first, arm
