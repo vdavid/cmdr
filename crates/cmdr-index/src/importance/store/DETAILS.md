@@ -37,17 +37,17 @@ collation, and the verbatim `path` rides along as a non-key column for return va
 against `path_folded`. This reuses the index store's own `name_folded` pattern, for the same reason.
 
 **Why not a `platform_case`-collated `path` PK:** a custom collation on the key defeats SQLite's b-tree range and
-LIKE-prefix optimizations. The incremental subtree-clear DELETE (`writer::apply_incremental`) therefore FULL-SCANNED the
-whole `weights` table and re-ran the NFD-folding `platform_case_compare` on every row, per changed prefix. CPU profiling
+LIKE-prefix optimizations. The incremental's per-prefix subtree query (`writer::apply_incremental`) therefore
+FULL-SCANNED the whole `weights` table and re-ran the NFD-folding `platform_case_compare` on every row. CPU profiling
 put an incremental's entire cost in that comparison over the scan, and on the root volume (near-continuous FSEvent churn
-⇒ incrementals firing constantly) it pegged a CPU core. With a BINARY `path_folded` PK the same DELETE is index-served:
+⇒ incrementals firing constantly) it pegged a CPU core. With a BINARY `path_folded` PK the same range is index-served:
 `EXPLAIN QUERY PLAN` shows `SEARCH weights USING PRIMARY KEY` for both the equality and the half-open descendant range
-(a `MULTI-INDEX OR`), instead of `SCAN weights`. Pinned by `subtree_clear_delete_is_index_served`.
+(a `MULTI-INDEX OR`), instead of `SCAN weights`. Pinned by `subtree_read_is_index_served`.
 
 **The descendant range.** `path_folded = folded(P)` covers the changed folder itself, and
 `folded(P) + "/" <= path_folded < folded(P) + "0"` covers every descendant: `"0"` (0x30) is one past `"/"` (0x2f), and
 `/` is an ASCII boundary folding never crosses, so the range holds exactly `P`'s descendants. The `/` boundary is what
-keeps clearing `/a` from touching a sibling like `/ab`.
+keeps a pass over `/a` from touching a sibling like `/ab`.
 
 **Correctness is preserved exactly.** `path_folded` is byte-identical to what the collation computed, so which case/NFD
 variants collide into one row is unchanged; case/NFD-insensitive lookup still resolves
@@ -56,8 +56,10 @@ unaffected: the score is pure Rust (never touches SQL collation), the search ran
 `HashMap`, and `ORDER BY score DESC, path ASC` is a determinism tiebreak on the verbatim path. On case-sensitive volumes
 `normalize_for_comparison` is identity, so `path_folded == path`.
 
-Measurements (the index-served DELETE, plus why the full walk stays deferred rather than targeted):
-`docs/notes/idle-cpu-indexing-streamlining-2026-07.md`.
+Measurements (the index-served range, plus why the full walk stays deferred rather than targeted):
+`docs/notes/idle-cpu-indexing-streamlining-2026-07.md`. What the range costs now that a pass READS it instead of
+DELETE-ing it (10 ms against 550–620 ms over a real 51,081-row subtree):
+`docs/notes/importance-treadmill-2026-08-04.md`.
 
 ## Storage model: no floored rows, trimmed JSON (compaction)
 

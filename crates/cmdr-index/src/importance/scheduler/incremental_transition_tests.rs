@@ -173,6 +173,8 @@ impl TestVolume {
 
     /// Run ONE incremental pass for `origins`, mirroring `run_incremental_blocking`:
     /// sanitize, de-duplicate, read the previous markers, walk, rescore, write.
+    /// Returns how many rows the pass actually WROTE (the scope it considered is
+    /// pinned by `incremental_tests.rs` instead).
     fn incremental(&mut self, origins: &[&str]) -> usize {
         let batch: Vec<String> = origins.iter().map(|p| (*p).to_string()).collect();
         let changed = dedupe_nested_origins(&sanitize_incremental_batch(&batch, HOME));
@@ -205,7 +207,8 @@ impl TestVolume {
             scope,
         )
         .expect("incremental")
-        .count;
+        .report
+        .written;
         self.writer.flush_blocking().expect("flush");
         count
     }
@@ -592,6 +595,92 @@ fn an_origin_spelled_in_another_case_behaves_the_same_under_both_walks() {
 
 /// De-duplication drops an origin nested under another, and keeps the batch's order
 /// otherwise — the clear list and the insert set stay one slice.
+/// A pass that finds nothing changed writes NOTHING — the idle case, end to end.
+///
+/// This is the treadmill `docs/notes/importance-treadmill-2026-08-04.md` measured:
+/// on a real home, 99.88% of the rows a `$HOME`-origin pass rewrote every 60 s
+/// carried a byte-identical signals blob. Both halves matter — the second pass
+/// reports zero folders, AND the store it leaves behind is identical to the one the
+/// first pass left, so the skip can't be hiding a write that mattered.
+#[test]
+fn a_repeated_pass_over_an_unchanged_subtree_writes_no_rows() {
+    for strategy in STRATEGIES {
+        let mut v = TestVolume::new(strategy);
+        two_projects(&mut v);
+        v.full_pass();
+
+        // A real change: the folder gains a file, so its `file_count` signal moves.
+        v.touch("/Users/test/projects/alpha/src/api/extra.md");
+        let changed_pass = v.incremental(&["/Users/test/projects/alpha/src/api"]);
+        let after_change = v.weights();
+
+        // The same batch again, with nothing else touched.
+        let idle_pass = v.incremental(&["/Users/test/projects/alpha/src/api"]);
+        let after_idle = v.weights();
+        v.writer.shutdown();
+
+        assert!(changed_pass > 0, "{strategy:?}: a real change is written");
+        assert_eq!(idle_pass, 0, "{strategy:?}: nothing changed, so nothing is written");
+        assert_eq!(after_change, after_idle, "{strategy:?}: the store is untouched");
+    }
+}
+
+/// An incremental that runs straight after a FULL pass writes nothing at all.
+///
+/// The production shape exactly: a full pass scores every folder, then dotfile churn
+/// in `$HOME` makes it an origin every 60 s while no folder under it has actually
+/// moved. Pinned separately from the test above because it exercises the
+/// full-pass-then-incremental handoff rather than two incrementals in a row.
+#[test]
+fn an_incremental_over_an_untouched_volume_writes_no_rows() {
+    for strategy in STRATEGIES {
+        let mut v = TestVolume::new(strategy);
+        two_projects(&mut v);
+        v.full_pass();
+        let after_full = v.weights();
+
+        let written = v.incremental(&["/Users/test/projects"]);
+        let after_incremental = v.weights();
+        v.writer.shutdown();
+
+        assert_eq!(written, 0, "{strategy:?}: the full pass already wrote every row");
+        assert_eq!(
+            after_full, after_incremental,
+            "{strategy:?}: a no-op pass leaves the store alone"
+        );
+    }
+}
+
+/// Skipping the unchanged rows must not spare a STALE one: the clear and the insert
+/// have to keep agreeing about the subtree.
+///
+/// The one way this optimization can lose (or keep) data. `docs` is deleted while
+/// its sibling `src/api` is untouched, and both live under the same origin — so the
+/// pass has to drop exactly one row and leave the other alone.
+#[test]
+fn a_deleted_folder_loses_its_row_while_its_unchanged_siblings_keep_theirs() {
+    let weights = differential(|v| {
+        two_projects(v);
+        v.full_pass();
+        v.remove("/Users/test/projects/alpha/docs");
+        v.incremental(&["/Users/test/projects/alpha"]);
+    });
+
+    assert!(
+        !weights.contains_key("/Users/test/projects/alpha/docs"),
+        "the deleted folder's row is gone"
+    );
+    for kept in [
+        "/Users/test/projects/alpha",
+        "/Users/test/projects/alpha/src",
+        "/Users/test/projects/alpha/src/api",
+        "/Users/test/projects/beta/src",
+    ] {
+        // allowed-pluralize-noun: `kept` is a folder path, not a count.
+        assert!(weights.contains_key(kept), "{kept} keeps its row");
+    }
+}
+
 #[test]
 fn nested_origins_collapse_to_their_outermost() {
     let batch: Vec<String> = ["/a/b/c", "/a/b", "/x", "/a/bc"]

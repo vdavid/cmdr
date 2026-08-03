@@ -437,7 +437,6 @@ pub(super) fn incremental_rescore(
     };
 
     let rows = rescore_rows(&inputs.scoring(), &subset, &last_used);
-    let count = rows.len();
 
     let writer = inputs.writer;
     // The incremental rows carry the CURRENT generation (no bump), so they're
@@ -446,24 +445,47 @@ pub(super) fn incremental_rescore(
     // folders leave no orphan row.
     let generation = writer.next_generation().map_err(|e| e.to_string())?.saturating_sub(1);
 
-    // Blocks until the transaction commits (so it's the flush too) and hands back the
-    // row-level delta a weight-map consumer applies — `None` when the pass was big
-    // enough that reloading beats patching.
-    let delta = writer
+    // Blocks until the transaction commits (so it's the flush too) and hands back what
+    // it really wrote: the rescored rows are the CANDIDATES, and the writer skips
+    // every one whose signals already match the store. On an idle volume that is all
+    // of them, which is what stops a `$HOME`-origin batch from rewriting ~51 k rows a
+    // minute (`docs/notes/importance-treadmill-2026-08-04.md`).
+    let considered = rows.len();
+    let write = writer
         .write_weights_incremental(generation, rows, changed_paths.to_vec())
         .map_err(|e| e.to_string())?;
     // The every-60s incremental is the WAL churn source: truncate at this
     // quiet point so the file doesn't creep up in place. Best-effort, never fails.
     let _ = writer.checkpoint_wal();
-    Ok(IncrementalOutcome { count, delta })
+    Ok(IncrementalOutcome {
+        report: IncrementalReport {
+            considered,
+            written: write.count,
+        },
+        delta: write.delta,
+    })
 }
 
-/// What one incremental pass did: how many folders it wrote a row for, and the
-/// row-level [`WeightDelta`] a cached-weight consumer applies (`None` when the pass
-/// was too big to describe, so the consumer reloads instead).
+/// What one incremental pass did, in the two numbers worth telling apart.
+///
+/// Keeping both is what makes a wide-but-idle batch visible: `written` alone reads as
+/// "this pass was free", and `considered` alone reads as the treadmill that ran until
+/// 2026-08-04. Together they say "the batch covered 51,081 folders and 3 of them
+/// moved", which names the remaining problem (the batch's width) instead of hiding it.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub(crate) struct IncrementalReport {
+    /// Folders the pass rescored — the batch's true cost, set by how wide the changed
+    /// subtrees are.
+    pub(crate) considered: usize,
+    /// Folders whose stored row actually changed. Zero over a subtree nothing touched.
+    pub(crate) written: usize,
+}
+
+/// [`IncrementalReport`] plus the row-level [`WeightDelta`] a cached-weight consumer
+/// applies (`None` when the pass was too big to describe, so the consumer reloads).
 #[derive(Debug, Default)]
 pub(super) struct IncrementalOutcome {
-    pub(super) count: usize,
+    pub(super) report: IncrementalReport,
     pub(super) delta: Option<WeightDelta>,
 }
 

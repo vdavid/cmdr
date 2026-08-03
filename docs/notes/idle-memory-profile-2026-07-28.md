@@ -67,6 +67,13 @@ expand each entry DOWNWARD — importance into the whole subtree (floor transiti
 So one cargo build deep under `~/projects-git/…` put `/Users` into the batch, and the rescore matched every folder under
 the home directory.
 
+**Correction (2026-08-04): the four steps below fixed the cause described above, but not the treadmill.** Prod v0.37.0
+still ran a full-walk pass rewriting ~51 k rows, in bursts, for hours. The cause named here (an ancestor riding in via
+the size-refresh set) was real and is gone; a SECOND, independent cause produces the same shape — a dotfile written
+directly in `~` makes `$HOME` itself an origin, and `$HOME` covers 83% of the volume's directories. Step 4's delta also
+never ran in v0.37.0, which was tagged before it landed. What was measured, what was refuted, and what is still open:
+`importance-treadmill-2026-08-04.md`.
+
 **Fixed** in three steps:
 
 1. The two facts now travel separately: `DirsChanged.origins` carries only the dirs whose own listings changed, and

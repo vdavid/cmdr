@@ -203,6 +203,37 @@ descendants are cleared (they had no row anyway) then inserted because they now 
 site. A full pass replaces the whole table instead, which purges any folder that floored or vanished since the last
 pass. The clear's range math is a property of the folded PK: `../store/DETAILS.md` § The folded-key primary key.
 
+### Only what moved is written
+
+A pass RESCORES its subset and then writes only the rows that actually changed. `apply_incremental` (`../writer.rs`)
+reads each rescored subtree over the same folded-PK range the writes key on, gives every stored row exactly one
+`StoredRowFate`, and acts on that: `Keep` (leave it entirely alone), `Rewrite` (the insert overwrites it), `Remove` (the
+pass no longer scores it — deleted, renamed away, or newly floored). Rows OUTSIDE every rescored subtree — a full-walk
+pass's capped ancestor chain — get a PK probe each, bounded by `ANCESTOR_WALK_CAP` × the origin count. ❌ A row there is
+never REMOVED: only a rescored subtree is cleared.
+
+**Decision/Why the equality key is the SIGNALS blob, never the score.** A score is a function of the signals AND
+`now_secs`, and `scorer::recency` decays continuously, so every score moves a little every pass even when nothing about
+the folder changed. Measured 2026-08-04 on the real 160,719-row root store, comparing what the app had written against a
+fresh recompute over the same index snapshot: of the 51,081 rows a `$HOME`-origin pass rewrote, **99.88% carried a
+byte-identical signals blob and 0.03% an identical score**. A score diff would have skipped 17 rows in 51,081 and left
+the treadmill running. `FolderSignals` carries no clock (raw `mtime_secs`, counts, flags), which is what makes it a
+sound identity. Full evidence: `docs/notes/importance-treadmill-2026-08-04.md`.
+
+**Decision/Why keeping a row keeps its old score.** A `Keep` row stays at the `now_secs` it was last written at. That is
+the SAME bounded staleness `RescoreScope::ChangedSubtreesOnly` already accepts for an origin's ancestors (above), and it
+makes the store MORE uniform: every folder now ages between full passes instead of only the churny ones being
+re-decayed. It also means a `Weights` change reaches a `Keep` row only at the next full pass — which was already true
+for the 99.9% of folders no incremental touches, so it widens nothing new.
+
+Measured on that same real store, over the 51,081-row `$HOME` subtree: the range READ costs **10 ms** where the old
+subtree-DELETE-plus-reinsert cost **550–620 ms**.
+
+**Both numbers are logged, on purpose.** `IncrementalReport` carries `considered` (folders rescored — the batch's true
+cost, set by how wide the changed subtrees are) and `written`. `written` alone would read as "this pass was free" while
+the batch still drags in most of the volume, which is the cost that remains. ❌ Don't drop `considered` from the log
+line; it is what names a too-wide batch.
+
 ### Generation semantics on the incremental path
 
 An incremental pass writes its rows at the CURRENT generation and does NOT bump it, so every untouched folder keeps its

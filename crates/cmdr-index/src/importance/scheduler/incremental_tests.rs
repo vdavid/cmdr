@@ -199,7 +199,12 @@ fn wide_tree(projects: usize, subs: usize) -> Vec<String> {
 }
 
 /// Run one incremental rescore over `folders` for `changed`, returning how many
-/// rows it wrote.
+/// folders it RESCORED.
+///
+/// The scope, not the write count: these tests pin how wide a batch reaches, and the
+/// writer deliberately skips a rescored folder whose signals already match the store
+/// (`../writer.rs`'s `fate_of_stored_row`), so a write count would read as zero over
+/// a tree nothing touched no matter how much of it the batch dragged in.
 fn rescore(writer: &ImportanceWriter, home: &str, folders: &mut WalkedFolders, changed: &[String]) -> usize {
     incremental_rescore(
         &IncrementalInputs {
@@ -217,7 +222,8 @@ fn rescore(writer: &ImportanceWriter, home: &str, folders: &mut WalkedFolders, c
         RescoreScope::WithAncestors,
     )
     .expect("incremental")
-    .count
+    .report
+    .considered
 }
 
 /// THE scope contract, measured: the rescore's cost tracks the batch, and the
@@ -416,7 +422,8 @@ fn incremental_rescore_rescopes_and_preserves_untouched_generation() {
         RescoreScope::WithAncestors,
     )
     .expect("incremental")
-    .count;
+    .report
+    .considered;
     writer.flush_blocking().expect("flush");
 
     let store = ImportanceStore::open(&db_path).expect("open");

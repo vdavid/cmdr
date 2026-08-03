@@ -270,10 +270,14 @@ fn spawn_incremental(scheduler: Arc<ImportanceScheduler>, volume_id: String, ava
                 })
                 .await;
                 match result {
-                    Ok(Ok(count)) => log::debug!(
+                    // BOTH numbers: `written` alone would read as "this pass was
+                    // free" while the batch still covers most of the volume, which is
+                    // the cost that remains once the writes are gone.
+                    Ok(Ok(report)) => log::debug!(
                         target: "importance",
-                        "incremental rescore of '{volume_id}' updated {}",
-                        cmdr_fs::pluralize::pluralize(count as u64, "folder")
+                        "incremental rescore of '{volume_id}' updated {} (of {} rescored)",
+                        cmdr_fs::pluralize::pluralize(report.written as u64, "folder"),
+                        report.considered
                     ),
                     Ok(Err(e)) => log::warn!(target: "importance", "incremental rescore of '{volume_id}' failed: {e}"),
                     Err(e) => log::warn!(target: "importance", "incremental task for '{volume_id}' panicked: {e}"),

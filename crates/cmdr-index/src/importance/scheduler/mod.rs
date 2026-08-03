@@ -66,8 +66,8 @@ mod walk;
 /// Construction plus the lifecycle subscriptions that decide when a pass runs.
 mod wiring;
 use recompute::{
-    IncrementalInputs, RecomputeInputs, dedupe_nested_origins, incremental_rescore, load_previous_markers, load_visits,
-    recompute_folders, sanitize_incremental_batch, walk_for_incremental,
+    IncrementalInputs, IncrementalReport, RecomputeInputs, dedupe_nested_origins, incremental_rescore,
+    load_previous_markers, load_visits, recompute_folders, sanitize_incremental_batch, walk_for_incremental,
 };
 // Re-exported for the eval corpus tool, which walks a real index the SAME way a
 // recompute does (so dumped signals match production exactly).
@@ -416,9 +416,9 @@ impl ImportanceScheduler {
 
     /// Run one INCREMENTAL rescore for a volume: rescore only the folders whose
     /// listings changed (`changed_paths`) plus their capped ancestor chains, and
-    /// upsert those rows WITHOUT advancing the generation (untouched folders keep
-    /// their as-of marker). Returns the number of folders
-    /// rescored.
+    /// write back only the rows whose signals moved, WITHOUT advancing the generation
+    /// (untouched folders keep their as-of marker). Returns the pass's
+    /// [`IncrementalReport`]: how many folders it rescored and how many it wrote.
     ///
     /// A `"/"` sentinel in `changed_paths` (a full-refresh emit) escalates to a
     /// full pass. Reads through the index read pool; a `None` pool is a no-op.
@@ -428,7 +428,7 @@ impl ImportanceScheduler {
         available: SignalSet,
         changed_paths: &[String],
         now_secs: u64,
-    ) -> Result<usize, String> {
+    ) -> Result<IncrementalReport, String> {
         // The batch gate, BEFORE anything expensive: drop the bare root, empties, and
         // every path that floors (build output, caches, dot-directories — none of
         // which can produce a weight row). Never escalate to a full pass here; full
@@ -442,11 +442,11 @@ impl ImportanceScheduler {
         // slice, so they can't disagree about the region.
         let changed_paths = dedupe_nested_origins(&changed_paths);
         if changed_paths.is_empty() {
-            return Ok(0);
+            return Ok(IncrementalReport::default());
         }
 
         let Some(pool) = crate::indexing::get_read_pool_for(volume_id) else {
-            return Ok(0);
+            return Ok(IncrementalReport::default());
         };
 
         // The "before" side of the scoped walk's guard, read before the walk so the
@@ -496,6 +496,6 @@ impl ImportanceScheduler {
                 None => WeightsChanged::ReloadAll { generation },
             },
         );
-        Ok(outcome.count)
+        Ok(outcome.report)
     }
 }

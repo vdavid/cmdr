@@ -8,8 +8,8 @@ disposable-cache rule and the floor doctrine are in `../CLAUDE.md`.
 
 - **Rows key on a BINARY `path_folded` PK** (the precomputed `normalize_for_comparison` fold), with the verbatim `path`
   as a plain column for return values. ❌ Never go back to a `platform_case`-collated `path` PK, and ❌ never make the
-  subtree clear a `LIKE` prefix: a custom collation defeats SQLite's b-tree range optimization, so the incremental
-  subtree-clear DELETE full-scans the table and pegs a CPU core. `subtree_clear_delete_is_index_served` pins the plan.
+  incremental's subtree query a `LIKE` prefix: a custom collation defeats SQLite's b-tree range optimization, so that
+  query full-scans the table and pegs a CPU core. `subtree_read_is_index_served` pins the plan.
 - **The `platform_case` collation is still registered on every connection** for parity with the index store, but no
   importance query relies on it. Every write folds once through `normalize_for_comparison`; every read binds
   `folded(query)`. ❌ Don't add a query that compares `path` under the collation.

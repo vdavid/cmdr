@@ -2,7 +2,7 @@
 //! discipline and the as-of-generation staleness predicate.
 
 use super::*;
-use crate::importance::writer::{ImportanceWriter, SUBTREE_CLEAR_SQL, WeightRow};
+use crate::importance::writer::{ImportanceWriter, SUBTREE_READ_SQL, WeightRow};
 
 /// Run `EXPLAIN QUERY PLAN` over the given SQL and return the `detail` column of
 /// every step joined by newline. Binds a dummy string for each `?` placeholder (the
@@ -21,17 +21,19 @@ fn explain_plan(conn: &Connection, sql: &str) -> String {
         .join("\n")
 }
 
-/// The incremental rescore's subtree-clear DELETE MUST be index-served, not a full
-/// scan of the `weights` table. This is the whole point of the folded-key column:
-/// with a custom-collation PK the `LIKE`-prefix clear full-scanned ~166k rows and
+/// The incremental rescore's subtree READ MUST be index-served, not a full scan of
+/// the `weights` table. This is the whole point of the folded-key column: with a
+/// custom-collation PK the `LIKE`-prefix subtree query full-scanned ~166k rows and
 /// re-ran the NFD-folding comparison on every one, pegging a CPU core. A BINARY
 /// `path_folded` PK lets the equality + half-open range be served by index SEARCHes.
+/// The pass runs this range once per rescored prefix, every 60 s, so it carries the
+/// same weight it did when it was a DELETE.
 ///
 /// A full table scan shows as a bare `SCAN weights` with no `USING`; an index or PK
 /// lookup shows as `SEARCH`. We reject any bare `SCAN` step. The row count doesn't
 /// change the plan (it's structural), so a modest table proves it cheaply.
 #[test]
-fn subtree_clear_delete_is_index_served() {
+fn subtree_read_is_index_served() {
     let dir = tempfile::tempdir().expect("temp dir");
     let path = importance_db_path(dir.path(), "root");
     let writer = ImportanceWriter::spawn(&path).expect("spawn");
@@ -49,13 +51,11 @@ fn subtree_clear_delete_is_index_served() {
     writer.flush_blocking().expect("flush");
 
     let store = ImportanceStore::open(&path).expect("open");
-    let plan = explain_plan(store.read_conn(), SUBTREE_CLEAR_SQL);
+    let plan = explain_plan(store.read_conn(), SUBTREE_READ_SQL);
     for line in plan.lines() {
         let trimmed = line.trim();
         if trimmed.starts_with("SCAN") && !trimmed.contains("USING") {
-            panic!(
-                "subtree-clear DELETE full-scans the weights table — offending step:\n{trimmed}\nfull plan:\n{plan}"
-            );
+            panic!("the subtree read full-scans the weights table — offending step:\n{trimmed}\nfull plan:\n{plan}");
         }
     }
     writer.shutdown();

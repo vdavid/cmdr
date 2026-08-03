@@ -7,6 +7,12 @@ Two notes are load-bearing rather than historical, and both are before-and-after
 method each number was taken with. Keep them: they're what any future "did this get slower?" re-measurement compares
 against, and they record what a crate boundary did and didn't buy.
 
+A third is load-bearing for a decision that hasn't been made yet:
+
+- `importance-treadmill-2026-08-04.md` — what the 60-second rescore treadmill really was, why raising
+  `SCOPED_WALK_MAX_DIRS` is refuted, and the measurement (99.88% against 0.03%) behind the signals-not-score equality
+  key. Keep it until the open batch-width question in it is settled.
+
 - `index-extraction-baseline.md` — the `cmdr-index` extraction.
 - `archive-extraction-baseline.md` — the `cmdr-archive` extraction, the measurement gate
   `docs/specs/backend-crates-plan.md` ends at. **Its numbers are provisional**: the machine was contended and the volume

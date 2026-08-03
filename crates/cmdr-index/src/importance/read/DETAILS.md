@@ -129,6 +129,12 @@ ranker's map is keyed by a path HASH — hashes carry no prefix structure, so a 
 the keys to drop. The subtree-clear DELETE therefore carries `RETURNING path` (`writer.rs`'s `SUBTREE_CLEAR_SQL`) and
 hands the actual rows back. ❌ Don't drop the `RETURNING` clause or reconstruct the removals consumer-side.
 
+**A delta describes what the pass WROTE, not what it rescored.** The writer skips every row whose signals already match
+the store (`../scheduler/DETAILS.md` § "Only what moved is written"), and a skipped row is correctly absent from the
+delta: the store didn't change, so a consumer's cached entry is already right. That shrinks a typical delta to nothing
+and keeps a wide-but-idle batch under the cap below, but ❌ don't rely on the cap never firing — a genuine mass
+transition (a big subtree renamed to `node_modules`) still exceeds it.
+
 Past `MAX_DELTA_ROWS` (10,000 on either side) the pass stops describing itself and sends `ReloadAll` instead: shipping
 that many paths approaches the cost of streaming the table back, and the notice buffer would hold that much per pass.
 Only the full-walk fallback over a batch covering most of a volume gets near it.

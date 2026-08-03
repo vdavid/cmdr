@@ -109,10 +109,12 @@ is idempotent and re-runs from the bus on the next scan completion.
 - `write_weights(generation, rows)` — a full pass: clear the table, insert, and advance the generation in ONE
   transaction, so a reader never sees a bumped generation with un-written or stale rows. Clearing first is what purges a
   folder that has since floored or vanished, which the compacted store requires.
-- `write_weights_incremental(generation, rows, delete_subtrees)` — an incremental pass in one transaction: CLEAR each
-  changed subtree, then upsert the touched non-floored folders at the CURRENT generation without bumping it. The
-  transition model this implements is `scheduler/DETAILS.md` § Transition semantics; the clear's index-served range math
-  is `store/DETAILS.md` § The folded-key primary key.
+- `write_weights_incremental(generation, rows, rescored_subtrees)` — an incremental pass in one transaction: READ each
+  rescored subtree, then write back only what moved (upsert the rows whose signals differ, delete the stored rows the
+  pass no longer scores) at the CURRENT generation without bumping it. Every stored row in the subtree takes exactly one
+  `StoredRowFate`, which is what keeps the delete and the insert from disagreeing. The transition model this implements
+  is `scheduler/DETAILS.md` § Transition semantics, the skip and its signals-not-score equality key are the same file's
+  § "Only what moved is written", and the index-served range math is `store/DETAILS.md` § The folded-key primary key.
 - `purge_volume` — drop all weights and visits (a consumer forgot the volume); the schema stays.
 - `record_visit(path, at_secs)` — bump a path's visit count and last-visit timestamp.
 - `next_generation()` — read the current generation on the writer thread's OWN connection and return `current + 1`, so
