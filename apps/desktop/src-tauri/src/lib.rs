@@ -508,6 +508,14 @@ pub fn run() {
             // Initialize volume broadcast (must be before watchers so they can emit)
             volume_broadcast::init(app.handle());
 
+            // Teach the MTP session layer how an attached storage becomes a
+            // volume. Backends never register themselves, so without this an
+            // MTP device would connect and show no volumes at all. Must be
+            // before the virtual device and the hotplug watcher below, which
+            // are the two things that can connect one.
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            file_system::volume::MtpVolume::install_volume_registrar();
+
             // Wire the "busy volumes" emitter so write ops can broadcast
             // `volumes-busy-changed` (drives disabling Eject while a transfer
             // touches a device). Before any write op can run.

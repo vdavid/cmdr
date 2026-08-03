@@ -85,7 +85,8 @@ Each event is only a trigger; `check_for_device_changes()` stays the reconciler,
   `list_mtp_devices()` sees both it and real hardware.
 - **The `MTP_ENABLED` gate.** Events arrive while auto-connect is off; the `KNOWN_DEVICES` diff is what picks the device
   up when it's switched back on.
-- **Cmdr's ids.** Auto-connect keys on `identity::device_id_for(serial, location_id)`, derived in `discovery.rs`.
+- **Cmdr's ids.** Auto-connect keys on `cmdr_fs::volume::mtp_ids::device_id_for(serial, location_id)`, derived in
+  `discovery.rs`.
 
 **No double-count at startup:** `start_mtp_watcher` enumerates and seeds `KNOWN_DEVICES` synchronously, *before* it
 spawns the watcher task, so the stream's initial already-connected `Arrived` burst diffs to nothing. When MTP is
@@ -103,8 +104,8 @@ USB plug-in
     → MtpConnectionManager::connect()
     → open_device() via MtpDeviceBuilder
     → probe_write_capability() per storage
-    → register MtpVolume in global VolumeManager
-    → start_event_loop() per device
+    → attach_storage_volume() per storage (the registrar hook; see below)
+    → start_event_loop() per device (strictly AFTER every attach)
     → emit mtp-device-connected (JSON includes `deviceName` from `connected_info.device.product`, "" if unknown)
     → broadcast::emit_volumes_changed()
 
@@ -118,12 +119,40 @@ USB unplug
 Event loop (event_loop.rs)
   → device.next_event()
   → ObjectAdded/Removed/Changed → compute_diff() → emit directory-diff
-  → StoreAdded → handle_storage_added() → register MtpVolume → emit volumes-changed
-  → StoreRemoved → handle_storage_removed() → unregister MtpVolume → emit volumes-changed
+  → StoreAdded → handle_storage_added() → attach_storage_volume() → emit volumes-changed
+  → StoreRemoved → handle_storage_removed() → detach_storage_volume() → emit volumes-changed
 ```
 
 `MtpDisconnectReason` distinguishes explicit toggle-off from hotplug-loss in logs and UI. Re-enabling MTP triggers
 auto-connect, which re-suppresses ptpcamerad if devices are found.
+
+## Backends never register themselves
+
+**Decision.** A backend's session layer reports that a storage attached or detached; it does not decide that a `Volume`
+now exists. `connection/volume_registrar.rs` holds a `OnceLock<MtpVolumeRegistrar>` (two `fn` pointers, `attach` and
+`detach`); `MtpVolume::install_volume_registrar` supplies them, and `lib.rs` installs it at startup right after
+`volume_broadcast::init`, before anything can connect a device. SMB does the same thing with a plain outside wiring
+module (`network::smb_upgrade::register_replacing_predecessor` builds and registers the `SmbVolume`; the SMB session
+layer never does).
+
+**Why.** A session layer that constructs its own `Volume` has to import the app's volume registry, and the registry
+imports the backend: `backends::mtp` and `mtp::connection` were a genuine import cycle held together by four lines of
+wiring. Neither module could then be understood or moved alone, and MTP can't become its own crate while it imports the
+app. This is the shape FTP, S3, and SFTP should copy: **the wiring knows the backend, the backend never knows the
+registry.**
+
+**Gotcha: the attach must complete before the event loop starts, and the hook must not break that.** `connect()`
+attaches every storage and only then calls `start_event_loop`. Everything the loop reaches routes through the volume
+registry (open listings are looked up by volume id; the per-volume index routes by device id), so an event that arrived
+before the volumes existed would have nothing to land on and the update would be dropped. The registrar adds an
+indirection but not a delay: `attach_storage_volume` is a direct synchronous call. ❌ Never spawn it, never make it
+async. Pinned by `connect_attaches_a_volume_for_every_storage_and_disconnect_detaches_them`
+(`file_system/volume/backends/mtp_test.rs`), which asserts registration with no polling at all, so a scheduled attach
+fails it.
+
+**Gotcha: a test that connects a device must install the registrar.** `setup_virtual_mtp_device` does it, mirroring
+startup. Without it a `connect()` opens the device and leaves the sidebar empty, and the failure looks like a volume bug
+rather than missing wiring.
 
 ## Cancel propagation wiring
 
@@ -164,4 +193,6 @@ is fully quiet, which avoids provoking the bug in practice.
 
 - `mtp_rs`: MTP session, object listing, file transfer, and hotplug events (`mtp::watch_devices()`).
 - `futures_util`: `StreamExt` for the hotplug stream.
-- `crate::file_system`: `VolumeManager`, `MtpVolume`, `FileEntry`, `compute_diff`.
+- `cmdr_fs`: `FileEntry`, `CopyScanResult`, `ListingProgress`, the `mtp_ids` volume-id helpers.
+- `crate::file_system`: the listing cache and `compute_diff`. ❌ Not `MtpVolume` or the volume manager, by the decision
+  above.

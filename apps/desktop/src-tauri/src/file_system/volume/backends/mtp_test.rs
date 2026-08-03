@@ -243,6 +243,65 @@ async fn test_listing_is_watched_flips_with_connection() {
     );
 }
 
+/// Connecting a device must leave a browsable volume behind for EVERY storage it
+/// reported, and disconnecting must take them all away again.
+///
+/// The session layer doesn't do this itself; it calls the registrar installed by
+/// [`MtpVolume::install_volume_registrar`]. Two things are pinned here:
+///
+/// 1. The registration happens at all (drop the registrar and this goes red).
+/// 2. It happens SYNCHRONOUSLY, inside `connect()`. There's no polling or
+///    `wait_until` below on purpose: `connect()` attaches the volumes before it
+///    starts the device's event loop, and an attach that merely got scheduled
+///    would let the loop's first event race a registry that doesn't know the
+///    volume yet. If someone spawns the hook, this assertion fails.
+#[cfg(feature = "virtual-mtp")]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn connect_attaches_a_volume_for_every_storage_and_disconnect_detaches_them() {
+    use crate::file_system::volume::manager::get_volume_manager;
+    use crate::mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
+
+    let _guard = virtual_device_test_lock().lock().await;
+    let fixture = setup_virtual_mtp_device();
+    let device_id = crate::mtp::list_mtp_devices()
+        .into_iter()
+        .find(|d| d.location_id == fixture.location_id)
+        .map(|d| d.id)
+        .expect("the virtual device must appear in discovery");
+
+    let info = connection_manager()
+        .connect(&device_id, None)
+        .await
+        .expect("virtual-mtp connect should succeed");
+    assert!(
+        info.storages.len() > 1,
+        "the virtual device reports two storages, so this covers the per-storage loop"
+    );
+
+    let volume_ids: Vec<String> = info
+        .storages
+        .iter()
+        .map(|s| cmdr_fs::volume::mtp_ids::mtp_volume_id(&device_id, s.id))
+        .collect();
+    for volume_id in &volume_ids {
+        assert!(
+            get_volume_manager().get(volume_id).is_some(),
+            "storage {volume_id} must be browsable the moment connect() returns"
+        );
+    }
+
+    connection_manager()
+        .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+        .await
+        .expect("virtual-mtp disconnect should succeed");
+    for volume_id in &volume_ids {
+        assert!(
+            get_volume_manager().get(volume_id).is_none(),
+            "storage {volume_id} must be gone the moment disconnect() returns"
+        );
+    }
+}
+
 /// Source stream that yields one good chunk, then errors. Drives the
 /// upload's data phase far enough that `SendObjectInfo` has created the
 /// object on the device, then fails the transfer mid-stream. The library

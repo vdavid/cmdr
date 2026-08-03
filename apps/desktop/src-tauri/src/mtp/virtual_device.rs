@@ -121,8 +121,13 @@ impl VirtualDeviceFixture {
 /// and push these tests past nextest's 8 s cap. Only the E2E/dev startup path
 /// ([`setup_virtual_mtp_device_at`]) arms it, and E2E is the one consumer that
 /// exercises live watching.
+///
+/// Installs the MTP volume registrar too, the way `lib.rs` does at startup: the
+/// session layer never registers its own volumes, so without it a test's
+/// `connect()` would open the device and leave the sidebar empty.
 #[cfg(test)]
 pub(crate) fn setup_virtual_mtp_device() -> VirtualDeviceFixture {
+    crate::file_system::volume::MtpVolume::install_volume_registrar();
     let root = tempfile::tempdir().expect("failed to create a virtual-device fixture root");
     let location_id = register_virtual_mtp_device_at(root.path(), false);
     VirtualDeviceFixture { location_id, root }

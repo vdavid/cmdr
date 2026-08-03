@@ -7,11 +7,11 @@ Parent: `../CLAUDE.md`.
 
 - **`mod.rs`** `MtpConnectionManager`, `DeviceEntry` map, connect/disconnect; **`errors.rs`** `map_mtp_error()`;
   **`scheduler.rs`** `DevicePriorityGate`; **`cache.rs`** `PathHandleCache` (path ↔ handle), `ListingCache` (5 s TTL),
-  `EventDebouncer`.
+  `EventDebouncer`; **`volume_registrar.rs`** the app's attach/detach hook.
 - **`directory_ops.rs`** `list_directory()`, `list_directory_for_scan()`, `resolve_path_to_handle()`,
   `handle_device_disconnected()`; **`bulk_ops.rs`** `scan_for_copy()`; **`handle_resolver.rs`**
-  `resolve_handle_to_path()`, `resolve_object_for_index()`; **`event_loop.rs`** per-device `next_event()` poll,
-  refreshing the live pane and feeding the index.
+  `resolve_handle_to_path()`, `resolve_object_for_index()`; **`event_loop.rs`** per-device `next_event()` poll, feeding
+  the live pane and the index.
 - **`file_ops.rs`** transfers (`open_read_session` + `read_next_window`, `read_range_direct`, `upload_from_stream`);
   **`mutation_ops.rs`** recursive `delete()`, `create_folder()`, `rename()`, `move_object()`, no copy+delete fallback;
   **`session_reset.rs`** `handle_device_session_reset()`.
@@ -24,7 +24,7 @@ Parent: `../CLAUDE.md`.
   `list_objects_with_cancel`, `list_directory_for_scan`). Enforced by `pnpm check mtp-dropping-timeout`.
   `DETAILS.md` § "No dropping timeouts".
 - **Device lock**: `Arc<Mutex<MtpDevice>>` held across `.await` for one USB call; ops serialize per device.
-  `DEVICE_LOCK_WAIT_SECS` (300 s) caps only the WAIT for it, never a device call — ops legitimately run for minutes.
+  `DEVICE_LOCK_WAIT_SECS` (300 s) caps only the WAIT, never a device call — ops legitimately run for minutes.
   Event polling clones `MtpDevice` to sidestep it.
 - **Foreground-priority scheduler (`scheduler.rs`)**: ❌ Every foreground op (nav, delete, rename, move, upload,
   visible-pane resolve) MUST hold `foreground_guard(device_id)`, or background users won't yield. ❌ A READ takes NO
@@ -42,9 +42,9 @@ Parent: `../CLAUDE.md`.
 - **❌ A `SessionReset` (mtp-rs `DeviceReset`) is NOT a disconnect** — only the PTP session died. `session_reset.rs`
   drops the entry, flips the index Stale, KEEPS the volume in the sidebar, then reopens with backoff. ❌ Never route it
   to `handle_device_disconnected`; ❌ never tighten the backoff (hammering re-wedges it); ❌ never add a USB transport
-  reset — on Android that's a kill switch costing a replug, and the reopen self-heals without it
-  (`pnpm check mtp-no-transport-reset`). Failing ops report the RETRYABLE `DeviceSessionReset`.
-  `DETAILS.md` § "Session reset is not a disconnect", then § "No transport reset in recovery".
+  reset — on Android that's a kill switch costing a replug, and the reopen self-heals
+  (`pnpm check mtp-no-transport-reset`). Failing ops report the RETRYABLE `DeviceSessionReset`. `DETAILS.md`
+  § "Session reset is not a disconnect", then § "No transport reset in recovery".
 - **The event loop feeds the per-volume index, not just the live pane**: `ObjectAdded`/`ObjectInfoChanged` →
   `feed_index_added_or_changed` (upsert STORING the handle in `inode`); `ObjectRemoved` → `feed_index_removed`.
 - **`MtpDisconnectReason`** drives logs/UI: `User` only for the settings toggle / explicit disconnect;

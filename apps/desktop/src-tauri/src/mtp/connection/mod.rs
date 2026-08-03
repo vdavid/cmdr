@@ -25,12 +25,15 @@ mod mutation_ops;
 mod path_cache_sync_test;
 mod scheduler;
 mod session_reset;
+mod volume_registrar;
 
 use cache::{EVENT_DEBOUNCE_MS, EventDebouncer, ListingCache, PathHandleCache};
 pub use errors::MtpConnectionError;
 use errors::map_mtp_error;
 pub(crate) use file_ops::MtpReadSession;
 use scheduler::{DevicePriorityGate, ForegroundGuard};
+pub(crate) use volume_registrar::{MtpVolumeRegistrar, set_volume_registrar};
+use volume_registrar::{attach_storage_volume, detach_storage_volume};
 
 use log::{debug, error, info, warn};
 use mtp_rs::{MtpDevice, MtpDeviceBuilder};
@@ -44,8 +47,6 @@ use tauri_specta::Event;
 use tokio::sync::{Mutex, broadcast};
 
 use super::types::{MtpDeviceInfo, MtpStorageInfo};
-use crate::file_system::MtpVolume;
-use crate::file_system::volume::manager::get_volume_manager;
 
 /// Per-USB-transfer timeout handed to mtp-rs, the ONE bound that can stop a
 /// stuck device without abandoning anything.
@@ -435,13 +436,16 @@ impl MtpConnectionManager {
             );
         }
 
-        // Register MTP volumes for each storage with the global VolumeManager
-        // This enables MTP browsing through the standard file listing pipeline
+        // Attach every storage as a browsable volume, so MTP browsing goes
+        // through the standard file listing pipeline.
+        //
+        // ❗ This must finish BEFORE the event loop starts, and it does because
+        // `attach_storage_volume` is a plain synchronous call. The loop's
+        // consumers (open listings, the per-volume index) route through the
+        // volume registry, so an event that beat the volumes into existence
+        // would have nothing to land on. See `volume_registrar.rs`.
         for storage in &connected_info.storages {
-            let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id(device_id, storage.id);
-            let volume = Arc::new(MtpVolume::new(device_id, storage.id, &storage.name));
-            get_volume_manager().register(&volume_id, volume);
-            debug!("Registered MTP volume: {} ({})", volume_id, storage.name);
+            attach_storage_volume(device_id, storage.id, &storage.name);
         }
 
         // Start the event loop for file watching (requires AppHandle)
@@ -503,11 +507,9 @@ impl MtpConnectionManager {
             });
         };
 
-        // Unregister MTP volumes from the VolumeManager
+        // Detach this device's volumes
         for storage in &entry.storages {
-            let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id(device_id, storage.id);
-            get_volume_manager().unregister(&volume_id);
-            debug!("Unregistered MTP volume: {}", volume_id);
+            detach_storage_volume(device_id, storage.id);
         }
 
         // The device will be closed when it's dropped.
@@ -687,10 +689,8 @@ impl MtpConnectionManager {
         // Release device lock before updating registry
         drop(device);
 
-        // Register the volume
-        let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id(device_id, storage_id);
-        let volume = Arc::new(MtpVolume::new(device_id, storage_id, &storage_info.name));
-        get_volume_manager().register(&volume_id, volume);
+        // Attach the volume
+        attach_storage_volume(device_id, storage_id, &storage_info.name);
 
         // Update the DeviceEntry's storage list
         {
@@ -794,8 +794,6 @@ impl MtpConnectionManager {
 
     /// Handles a StoreRemoved event: unregisters the volume and broadcasts the change.
     pub async fn handle_storage_removed(&self, device_id: &str, storage_id: u32, app: &AppHandle) {
-        let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id(device_id, storage_id);
-
         // Remove from DeviceEntry
         {
             let mut devices = self.devices.lock().await;
@@ -807,9 +805,9 @@ impl MtpConnectionManager {
             }
         }
 
-        // Unregister the volume
-        get_volume_manager().unregister(&volume_id);
-        info!("Unregistered MTP volume: {} (storage removed)", volume_id);
+        // Detach the volume
+        detach_storage_volume(device_id, storage_id);
+        info!("MTP storage {storage_id} removed from {device_id}");
 
         // Emit event so frontend updates
         let _ = MtpStorageRemoved {

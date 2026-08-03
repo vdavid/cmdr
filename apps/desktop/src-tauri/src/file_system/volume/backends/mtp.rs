@@ -9,6 +9,7 @@ use super::{
 };
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::try_get_watched_listing;
+use crate::file_system::volume::manager::get_volume_manager;
 use crate::mtp::connection::{MtpConnectionError, MtpReadSession, connection_manager};
 use log::debug;
 use std::future::Future;
@@ -91,6 +92,29 @@ impl MtpVolume {
             root: PathBuf::from(format!("mtp://{}/{}", device_id, storage_id)),
             volume_id,
         }
+    }
+
+    /// Teaches the MTP session layer how a storage becomes a volume.
+    ///
+    /// Call once at startup, before anything can connect a device. The session
+    /// layer reports attach/detach and this turns those into registry writes;
+    /// it never reaches for `MtpVolume` itself, which is the same shape
+    /// `SmbVolume` uses (`network::smb_upgrade`). New backends copy this: the
+    /// wiring knows the backend, never the reverse.
+    pub(crate) fn install_volume_registrar() {
+        crate::mtp::connection::set_volume_registrar(crate::mtp::connection::MtpVolumeRegistrar {
+            attach: |device_id, storage_id, storage_name| {
+                let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id(device_id, storage_id);
+                let volume = std::sync::Arc::new(MtpVolume::new(device_id, storage_id, storage_name));
+                get_volume_manager().register(&volume_id, volume);
+                debug!("Registered MTP volume: {volume_id} ({storage_name})");
+            },
+            detach: |device_id, storage_id| {
+                let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id(device_id, storage_id);
+                get_volume_manager().unregister(&volume_id);
+                debug!("Unregistered MTP volume: {volume_id}");
+            },
+        });
     }
 
     /// Converts a Volume path to an MTP inner path.
