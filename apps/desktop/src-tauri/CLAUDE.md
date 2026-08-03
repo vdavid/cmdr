@@ -19,6 +19,9 @@ The Tauri 2 + Rust backend. Subsystem must-knows live in each module's colocated
 - ❌ No hand-rolled poll loop or fixed sleep in a test: both pass silently or flake. Wait on a condition with
   `crate::test_support::wait_until` / `wait_until_async` (re-exported from `cmdr_fs::testing`), which panic on
   timeout. Rules: `docs/testing.md`.
+- ❌ No fixed-name fixture dir (`std::env::temp_dir().join("cmdr_foo_test")`): every process on the machine shares it,
+  so two suite runs delete each other's live fixtures. Use `crate::test_support::TestDir`, which is process-unique and
+  removes itself on drop. Rules: `docs/testing.md` § "Scratch directories (Rust)".
 - ❌ Never build with raw `cargo build` (white screen, no embedded frontend). Use `pnpm tauri build` or the
   `tauri-wrapper.ts build` wrapper. See `../scripts/CLAUDE.md`.
 - ❌ Every `unsafe {}` block (and `unsafe impl`) needs a `// SAFETY:` comment on the line above naming the concrete

@@ -28,6 +28,8 @@ work into it that a unit test would cover.
 - **Behavior coverage of an existing tested function**: `cargo mutants` survivor triage: every survived mutant is a
   behavior-level gap
 - **State machine transition**: Rust unit test, **drive via the public interface**, not by setting the atomic directly
+- **A scratch directory in a Rust test**: `crate::test_support::TestDir` (`cmdr_fs::testing::TestDir` from another
+  crate), see § "Scratch directories (Rust)". **Never** `std::env::temp_dir().join("cmdr_something")`
 - **Wait for background work in a Rust test**: `crate::test_support::wait_until` (sync) / `wait_until_async`
   (`#[tokio::test]`), see § "Waiting for background work (Rust)". **Never** a hand-rolled poll loop or a fixed sleep
 - **`#[tauri::command]` boundary**: vitest IPC contract test using `installIpcMock()` from
@@ -42,6 +44,48 @@ work into it that a unit test would cover.
 - **Cross-component flow (return-focus, dialog stack, navigation)**: E2E (Playwright)
 - **Storage volume operation (MTP, SMB)**: Integration test against a virtual fixture (virtual-mtp feature, Docker SMB
   containers)
+
+## Scratch directories (Rust)
+
+`TestDir` is the only sanctioned way for a Rust test to get a directory to write in. It lives in `cmdr_fs::testing`
+beside the wait helpers, and the app re-exports it, so app tests use the short path and another crate's tests
+dev-depend on `cmdr-fs` with `features = ["testing"]`:
+
+```rust
+use crate::test_support::TestDir;
+
+let dir = TestDir::new("listing_sort");
+fs::write(dir.join("a.txt"), b"x").unwrap();
+let volume = LocalPosixVolume::new("Test", &dir);
+```
+
+- **The handle owns the directory.** It's removed when the handle drops, unwind included, so a failing test cleans up
+  after itself. Keep it bound for as long as you need the files (`let dir = …`, never `let _ = …`): a `_` binding drops
+  immediately and takes the directory with it. A helper that builds a file inside one has to hand the `TestDir` back
+  alongside the path (`error_reporter/tail_walker.rs::write_tmp` returns `(TestDir, PathBuf)`), or a struct fixture has
+  to hold it in a `_dir` field (`archive/volume_test.rs::TestArchive`).
+- **`label` is cosmetic**: it names the directory readably in `/tmp` while it lives. Don't add a PID, a UUID, or a
+  thread id to it; the random suffix already covers uniqueness, and a hand-rolled one only makes the name longer.
+- It derefs to `Path` **and** implements `AsRef<Path>`, so `dir.join(…)`, `dir.to_string_lossy()`, and a generic
+  `impl AsRef<Path>` parameter all work. Both impls are load-bearing; the type's doc comment says why.
+
+❌ **Never build a fixture path from a compile-time constant** (`std::env::temp_dir().join("cmdr_list_test")`). That
+path is shared by every process on the machine, and it costs three ways:
+
+1. **Cross-process collision.** Two suite runs at once (parallel worktrees, or CI beside a local run) get the same
+   directory, and whichever calls `remove_dir_all` first deletes the other's live fixture mid-test. nextest's
+   process-per-test does NOT isolate this: processes share the filesystem.
+2. **Cross-run contamination.** A run that doesn't clean up leaves the next one a pre-populated directory, so "the
+   listing has three entries" can pass on leftovers and go red later for reasons nobody can reproduce. It also hides
+   weak assertions: `listing/operations_test.rs` asserted `entries.len() >= 3` because an exact count was never safe.
+3. **No cleanup on panic.** Teardown written as a `remove_dir_all` after the assertions never runs when an assertion
+   fails, which is exactly when the debris matters most.
+
+Two exceptions stay on a raw OS-temp path deliberately, and both name their reason in a comment: `updater/installer.rs`'s
+`staging_dir_sits_under_temp_dir` asserts on the path itself, and `git/test_fixtures.rs::temp_dir` is already
+process-and-run unique (PID plus a nanosecond stamp) and keeps its directory on panic on purpose, for post-mortem
+inspection. Production code that stages into the OS temp dir (the updater, the icon sample files, `smb_smbclient`'s auth
+file, `write_operations/scratch_dir.rs`) is correct as-is and is not test scaffolding.
 
 ## Waiting for background work (Rust)
 

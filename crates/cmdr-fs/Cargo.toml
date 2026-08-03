@@ -20,16 +20,17 @@ playwright-e2e = []
 # "This is a test build." Consumers turn it on through a dev-dependency, which
 # keeps it off in every shipped build. Three effects:
 #
-# 1. Widens the test-wait helpers (`wait_until` / `wait_until_async`) from
-#    `#[cfg(test)]`-only to `pub`, so OTHER crates' tests can wait on a condition
-#    instead of sleeping.
+# 1. Widens the test helpers (`TestDir`, `wait_until` / `wait_until_async`) from
+#    `#[cfg(test)]`-only to `pub`, so OTHER crates' tests can get a scratch
+#    directory and wait on a condition instead of sleeping.
 # 2. Makes `thread_qos::set_current_thread_qos` a no-op, matching what `cfg(test)`
 #    used to do while this code lived in the app. `cfg(test)` is NOT set when a
 #    consumer compiles us as a dependency, so without this the real Utility QoS
 #    would start applying inside every consumer's parallel test run.
 # 3. Adds the recording and scripted fakes for the `volume::host` seams, so a
 #    backend crate's tests can assert on what their backend told its host.
-testing = []
+# 4. Pulls in `tempfile`, which only `TestDir` needs.
+testing = ["dep:tempfile"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
@@ -62,6 +63,13 @@ uuid = { version = "1.19.0", features = ["v4"] }
 # `wait_until_async`'s: it polls on tokio's clock, so a `start_paused` runtime
 # auto-advances through the wait instead of burning wall-clock.
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "time"] }
+# `testing` only: `TestDir` wraps a `tempfile::TempDir` and hands it back to its
+# caller. ❌ Don't "clean this up" into a dev-dependency: a dev-dependency isn't
+# linkable when ANOTHER crate compiles this one as a library, so `TestDir` would
+# stop existing for every consumer's tests. The dev-dependency below is a
+# separate thing, covering this crate's OWN tests, where the feature is off. Same
+# shape, and the same reason, as `cmdr-index`'s optional `tempfile`.
+tempfile = { version = "3", optional = true }
 # `CancellationToken`, the ONE cancellation primitive every layer speaks. The
 # `Volume` trait's cancel-aware methods take it, so it has to live here rather
 # than in either consumer. `default-features = false` keeps it to `tokio_util::sync`,

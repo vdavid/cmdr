@@ -13,6 +13,15 @@ fixture trees, see `../guides/generating-test-files.md`.
 Standard. Faster than `cargo test`. Run a single test by name: `cd apps/desktop/src-tauri && cargo nextest run <name>`.
 Run all: through the checker: `pnpm check rust-tests`. Don't run raw `cargo test` (see AGENTS.md).
 
+### `crate::test_support::TestDir` (scratch directory)
+
+In `crates/cmdr-fs/src/testing.rs` beside the wait helpers, behind the `testing` feature, re-exported as
+`crate::test_support` in the app. `TestDir::new("label")` gives a process-unique directory that removes itself when the
+handle drops (unwind included); it derefs to `Path` and implements `AsRef<Path>`, so a converted test body reads like
+the `PathBuf` it replaced. It's the only sanctioned way to get a directory to write in — a fixed
+`std::env::temp_dir().join("cmdr_foo")` is shared by every process on the machine. Rules and the three failure modes:
+`../testing.md` § "Scratch directories (Rust)".
+
 ### `crate::test_support::wait_until` / `wait_until_async` (waiting for background work)
 
 In `crates/cmdr-fs/src/testing.rs`, behind the `testing` feature, re-exported as `crate::test_support` in the app.

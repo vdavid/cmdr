@@ -1,10 +1,15 @@
 //! Shared test-only helpers for the whole crate.
 //!
-//! Waiting for background work to land: [`wait_until`] serves sync `#[test]`s,
-//! [`wait_until_async`] serves `#[tokio::test]`s. Both live in `cmdr_fs::testing` (every crate in
-//! the workspace waits the same way) and are re-exported here so `crate::test_support::wait_until`
-//! keeps resolving. Don't hand-roll a poll loop, and don't sleep a fixed span hoping the work
-//! landed: the sleep inside those two helpers is the only sanctioned one in Rust test code.
+//! A scratch directory to write into: [`TestDir`]. Waiting for background work to land:
+//! [`wait_until`] serves sync `#[test]`s, [`wait_until_async`] serves `#[tokio::test]`s. All three
+//! live in `cmdr_fs::testing` (every crate in the workspace gets a scratch dir and waits the same
+//! way) and are re-exported here so `crate::test_support::wait_until` keeps resolving. Don't
+//! hand-roll a poll loop, and don't sleep a fixed span hoping the work landed: the sleep inside
+//! those two helpers is the only sanctioned one in Rust test code.
+//!
+//! ❌ Don't build a fixture directory out of a compile-time-constant path
+//! (`std::env::temp_dir().join("cmdr_foo_test")`): every process on the machine shares it. See
+//! [`TestDir`] for the three ways that bites.
 //!
 //! ## Why the live-bytes counter is duplicated here
 //!
@@ -21,7 +26,7 @@
 
 use std::cell::Cell;
 
-pub(crate) use cmdr_fs::testing::{wait_until, wait_until_async};
+pub(crate) use cmdr_fs::testing::{TestDir, wait_until, wait_until_async};
 
 // Live heap bytes accounted so far ON THIS THREAD. Thread-local rather than global so the
 // harness's other threads can allocate freely without polluting a measurement: a plain

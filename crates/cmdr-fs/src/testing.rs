@@ -1,18 +1,85 @@
-//! Waiting for background work to land, in tests.
+//! The two things a Rust test needs from the host: somewhere to write, and a way to wait.
 //!
-//! [`wait_until`] serves sync `#[test]`s, [`wait_until_async`] serves
-//! `#[tokio::test]`s. Both poll a condition to a deadline and panic when it never
-//! holds, so a wait can't silently pass. Don't hand-roll a poll loop, and don't
-//! sleep a fixed span hoping the work landed: the sleep inside these two helpers
-//! is the only sanctioned one in Rust test code, and the `test-sleep` check
-//! enforces that.
+//! [`TestDir`] is the scratch directory. [`wait_until`] serves sync `#[test]`s,
+//! [`wait_until_async`] serves `#[tokio::test]`s; both poll a condition to a
+//! deadline and panic when it never holds, so a wait can't silently pass. Don't
+//! hand-roll a poll loop, and don't sleep a fixed span hoping the work landed:
+//! the sleep inside those two helpers is the only sanctioned one in Rust test
+//! code, and the `test-sleep` check enforces that.
 //!
 //! Gated behind the `testing` feature, so it exists in dev targets and in no
 //! shipped build.
 
 use std::future::Future;
 use std::panic::Location;
+use std::path::Path;
 use std::time::{Duration, Instant};
+
+/// A scratch directory owned by ONE test run, removed when the handle drops.
+///
+/// ```ignore
+/// let dir = TestDir::new("listing_sort");
+/// std::fs::write(dir.join("a.txt"), b"x").unwrap();
+/// ```
+///
+/// **Why not `std::env::temp_dir().join("cmdr_something")`.** That path is
+/// shared by every process on the machine, which costs three ways:
+///
+/// 1. Two suite runs at once (parallel worktrees, or CI beside a local run) get
+///    the same directory, and whichever calls `remove_dir_all` first deletes the
+///    other's live fixture mid-test. Running each test in its own process
+///    (nextest) doesn't help: processes share the filesystem.
+/// 2. A run that doesn't clean up leaves the next one a pre-populated directory,
+///    so "the listing has three entries" can pass on leftovers and go red later
+///    for no reason anyone can reproduce.
+/// 3. Teardown written as a `remove_dir_all` after the assertions never runs
+///    when an assertion fails, which is exactly when the mess is worst.
+///
+/// A `TestDir` is process-unique (a random suffix), and its `Drop` runs on
+/// unwind, so a failing test cleans up after itself. `label` is cosmetic: it
+/// names the directory readably while it exists.
+///
+/// Keep the handle bound for as long as you need the files (`let dir = …`, never
+/// `let _ = …`): a `_` binding drops immediately and takes the directory with it.
+///
+/// ❌ **Both [`Deref`](std::ops::Deref) and [`AsRef<Path>`] below are
+/// load-bearing; neither is redundant.** `Deref` is what lets a converted test
+/// body keep reading like the `PathBuf` it replaced (`dir.join("a.txt")`,
+/// `dir.to_string_lossy()`). `AsRef` is what a generic `impl AsRef<Path>`
+/// parameter takes, and deref coercion cannot reach through a type parameter:
+/// `LocalPosixVolume::new("Test", &dir)` fails to compile without it.
+/// `tempfile::TempDir` ships only the `AsRef` half, which is exactly why this
+/// wrapper exists.
+#[derive(Debug)]
+pub struct TestDir(tempfile::TempDir);
+
+impl TestDir {
+    /// Creates an empty scratch directory, named after `label` for readability.
+    #[track_caller]
+    pub fn new(label: &str) -> Self {
+        Self(
+            tempfile::Builder::new()
+                .prefix(&format!("cmdr_{label}_"))
+                .tempdir()
+                .expect("failed to create a test scratch directory"),
+        )
+    }
+}
+
+// Both impls, on purpose — see the `TestDir` doc comment before deleting either.
+impl std::ops::Deref for TestDir {
+    type Target = Path;
+
+    fn deref(&self) -> &Path {
+        self.0.path()
+    }
+}
+
+impl AsRef<Path> for TestDir {
+    fn as_ref(&self) -> &Path {
+        self.0.path()
+    }
+}
 
 /// How often we re-check the condition: short enough that a satisfied wait returns promptly, long
 /// enough that a cheap predicate doesn't spin a core.
@@ -123,6 +190,31 @@ mod tests {
     #[should_panic(expected = "timed out after 20.0ms waiting for a condition that never holds")]
     async fn a_condition_that_never_holds_panics_with_the_description_async() {
         wait_until_async(Duration::from_millis(20), "a condition that never holds", || false).await;
+    }
+
+    #[test]
+    fn two_dirs_with_the_same_label_do_not_share_a_path() {
+        let a = TestDir::new("same_label");
+        let b = TestDir::new("same_label");
+        assert_ne!(*a, *b, "a shared path is the collision this type exists to prevent");
+        assert!(a.exists() && b.exists());
+    }
+
+    #[test]
+    fn dropping_the_handle_removes_the_directory_and_its_contents() {
+        let dir = TestDir::new("drop_cleanup");
+        let path = dir.to_path_buf();
+        std::fs::write(dir.join("leftover.txt"), b"x").expect("write");
+        drop(dir);
+        assert!(!path.exists(), "a dropped TestDir must leave nothing behind");
+    }
+
+    #[test]
+    fn a_fresh_dir_starts_empty() {
+        // Cross-run contamination is the second failure mode: a test that asserts
+        // on a directory's contents has to start from a known-empty one.
+        let dir = TestDir::new("fresh");
+        assert_eq!(std::fs::read_dir(&dir).expect("read_dir").count(), 0);
     }
 
     #[test]
