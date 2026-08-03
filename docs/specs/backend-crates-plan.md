@@ -154,6 +154,32 @@ Five findings that correct the design input above. They matter to P1b and P3:
 5. **`FullRefresh` re-enters the backend** via `Volume::list_directory`. It's spawned rather than inline, so reporting
    under a lock happens to be safe today. Documented as a thing not to rely on.
 
+### What P1 changed, and two things FTP will hit
+
+P1 is **shipped**. `StagingTemp` moved down whole (`crates/cmdr-fs/src/staging.rs`), and every seam has an app-side
+implementor, built once in `apps/desktop/src-tauri/src/volume_host.rs`.
+
+**The traits survived contact with the real app: no signature had to change**, and both questions P0 left open resolved
+against changing them. `watched_listing` keeps its owned `Vec<FileEntry>` (the cache clones under its read lock and
+drops the lock before anything crosses a volume boundary; a borrow would hold that lock across the caller's work), and
+`CredentialStore` stays blocking (`network::keychain` → `secrets::store()` is synchronous down to the OS call, so an
+async variant would only wrap a blocking call in a future).
+
+P1a's premise was wrong, though, and the correction made it simpler: the plan said the staging guard stayed in the app
+"because it registers with write-op state". It doesn't. The registry is `staging.rs`'s own static, and the only thing an
+operation contributes is a bare `Weak<()>` liveness token the caller passes in, naming no app type. So there was nothing
+to inject and no narrower seam to invent.
+
+**Two mismatches that are product decisions, not plumbing, and both land on FTP:**
+
+1. **The connection event is SMB-named end to end.** `network::SmbConnectionChanged` / `smb-connection-changed` is what
+   the frontend reconnect manager subscribes to, so every backend's connection transitions currently ride an SMB-named
+   channel. A second connecting backend needs a **frontend-visible rename**; no adapter can absorb this.
+2. **There is one stored concurrency knob.** `AppBackendSettings` ignores the backend namespace rather than branching on
+   it (the seam forbids branching), so an FTP volume would read the SMB slider until a second slider exists.
+
+Neither blocks P2. Both block FTP shipping well, so they belong in P4's scope rather than being discovered there.
+
 ### P0 — Design the seam set (no code)
 
 Deliverable: the trait set (`ListingHost`, `EventSink`, `CredentialStore`, `IndexNotifier`, runtime `Handle`, settings
