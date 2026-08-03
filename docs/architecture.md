@@ -118,10 +118,9 @@ All under `apps/desktop/src-tauri/src/`.
   from `crates/cmdr-fs/`. Checklist + capability matrix for new backends
 - `file_system/volume/backends/`: Per-backend `Volume` impls: `LocalPosixVolume`, `MtpVolume`, `SmbVolume` (+
   `SmbWatcher`), `InMemoryVolume`
-- `file_system/volume/backends/archive/`: `ArchiveVolume` (read-only zip: browse + extract) + its decoupled reading core
-  (central-directory parse, synthetic tree, streaming decompress, Zip Slip) + `boundary.rs` (the shared `.zip`-boundary
-  detector). Paths that cross a `.zip` route here via `VolumeManager::resolve` (on-demand registration, archive LRU).
-  See its `apps/desktop/src-tauri/src/file_system/volume/backends/archive/CLAUDE.md`
+- `file_system/volume/backends/`'s `archive.rs`: a re-export of the `cmdr-archive` crate under its original path, plus
+  the app-side half of its watch tests. Routing (which paths cross into an archive), the archive LRU, and edit driving
+  stay app-side; the backend itself is `crates/cmdr-archive/`
 - `file_system/git/`: Git browser: repo discovery/info/status, watcher, virtual `.git` portal wired through `Volume`
   hooks, typed git-error classification (`FriendlyGitErrorKind`)
 - `file_viewer/`: Three-backend file viewer (FullLoad, ByteSeek, LineIndex)
@@ -199,9 +198,10 @@ All under `apps/desktop/src-tauri/src/`.
 
 ## Workspace crates
 
-All under `crates/`, alongside the four apps. `cmdr-fs` and `cmdr-index` carry no `tauri` dependency and no reach into
-the app; `index-crate-isolation` enforces both against the `cargo metadata` graph, and caps `cmdr-index`'s public
-surface at the numbers its audit landed on. The two dev CLIs and the vendored fork are ordinary members.
+All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, and `cmdr-archive` carry no `tauri` dependency
+and no reach into the app; `index-crate-isolation` enforces that against the `cargo metadata` graph, and caps the public
+surface of `cmdr-index` and `cmdr-archive` at the numbers their audits landed on. The two dev CLIs and the vendored fork
+are ordinary members.
 
 - `crates/cmdr-fs/`: the filesystem vocabulary and host primitives every layer speaks in — the `Volume` trait and its
   data types, `FileEntry`, typed error classification (`ListingError` / `ListingErrorReason` / `ErrorCategory`, errno →
@@ -211,6 +211,11 @@ surface at the numbers its audit landed on. The two dev CLIs and the vendored fo
     connection events, credentials, index notification, settings, user activity, analytics. What a backend crate is
     written against; the app answers them from `apps/desktop/src-tauri/src/volume_host.rs`. See
     `crates/cmdr-fs/src/volume/host/CLAUDE.md`
+- `crates/cmdr-archive/`: the archive backend — a `Volume` over a zip / tar / 7z file that physically lives on another
+  volume. Browse + extract for every format, plus temp+rename WRITES for zip, over a decoupled `Volume`-free reading
+  core (central-directory parse, synthetic tree, streaming decompress, Zip Slip defense) and the shared boundary
+  detector its host routes with. The first backend in its own crate, so it's the worked example for the next one. See
+  `crates/cmdr-archive/CLAUDE.md`
 - `crates/cmdr-index/`: the index — everything Cmdr knows about what's on a volume, what's inside its images, and which
   of its folders matter — behind one `Index` handle the host builds and holds. Tauri-free: everything it needs from an
   application arrives through the traits in `host/`, and everything it reports leaves through an `EventSink`. Three

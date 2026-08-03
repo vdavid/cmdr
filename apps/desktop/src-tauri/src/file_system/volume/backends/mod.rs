@@ -9,17 +9,14 @@
 //! matrix, and `backends/CLAUDE.md` for the per-backend decisions and gotchas
 //! that drive each implementation here.
 
-// The archive reading core carries a few accessors (`ArchiveIndex::has_encrypted_entries`,
-// `ArchiveEntryReader::bytes_read`, `BytesSource`, …) that only its own tests call, and each
-// backend keeps a little scaffolding in the same shape. `#![deny(unused)]` at the crate root
-// would flag them against a non-test build. Scoped to `backends`: the manager and eject are
-// fully live, and the trait and its types now live in `cmdr-fs`, so don't widen this back up
-// the tree.
-#![allow(dead_code, reason = "Archive-core accessors and per-backend scaffolding")]
+// Each backend keeps a little scaffolding only its own tests call. `#![deny(unused)]` at the
+// crate root would flag it against a non-test build. Scoped to `backends`: the manager and
+// eject are fully live, and the trait and its types now live in `cmdr-fs`, so don't widen
+// this back up the tree.
+#![allow(dead_code, reason = "Per-backend test scaffolding")]
 
-// Archive reading core (zip). Cross-platform (pure Rust), so it isn't gated
-// like the mtp/smb backends. The `ArchiveVolume` `Volume` impl is built on top
-// of this.
+// A re-export of the `cmdr-archive` crate under its original path, plus the
+// app-side half of its watch tests. See `archive.rs`.
 pub mod archive;
 mod local_posix;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -48,11 +45,6 @@ pub(crate) use super::{
     SpaceInfo, Volume, VolumeError, VolumeReadStream,
 };
 
-// The app's half of the archive live-content watch: what a refresh DOES to the
-// listing cache. The backend's half (an on-disk edit reaching the refresh seam
-// at all) lives with the watch itself, in `archive/watch/host_seam_test.rs`.
-#[cfg(test)]
-mod archive_watch_integration_test;
 #[cfg(test)]
 mod local_posix_test;
 // `mtp_test` is gated on the same platforms as the `mtp` module it tests (the

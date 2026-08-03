@@ -8,14 +8,14 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
-use super::super::test_fixtures::{
+use super::*;
+use crate::test_fixtures::{
     FixtureFile, build_encrypted_7z, build_zip, build_zipcrypto_zip, deflated, dir, encrypted_entry,
     overstate_record_count, set_first_entry_encrypted, stored,
 };
-use super::*;
-use crate::file_system::volume::InMemoryVolume;
-use crate::file_system::volume::{ListingProgress, Volume, VolumeError, VolumeReadStream};
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::volume::InMemoryVolume;
+use cmdr_fs::volume::{ListingProgress, Volume, VolumeError, VolumeReadStream};
 
 /// A zip written to a unique temp file, cleaned up on drop. Hands out
 /// `ArchiveVolume`s backed by a configurable parent (default: a plain

@@ -4,9 +4,9 @@ The archive-browsing feature shipped 2026-07-06 (browse + edit zip, browse + ext
 parents, full i18n). This spec captures everything deliberately deferred or flagged since, ranked by combined user + dev
 impact (highest first). Each item stands alone; pick from the top.
 
-Canonical docs (don't restate mechanisms here): `apps/desktop/src-tauri/src/file_system/volume/backends/archive/` C+D.md
-(read core, formats, remote sources), `apps/desktop/src-tauri/src/file_system/write_operations/` C+D.md § "Archive
-edits" (mutation, remote edit contract). The durable original decisions are already in the colocated docs.
+Canonical docs (don't restate mechanisms here): `crates/cmdr-archive/` C+D.md (read core, formats, remote sources),
+`apps/desktop/src-tauri/src/file_system/write_operations/` C+D.md § "Archive edits" (mutation, remote edit contract).
+The durable original decisions are already in the colocated docs.
 
 ## 1. One-pass bulk extract for sequential archives (perf, user-visible) — SHIPPED 2026-07-08
 

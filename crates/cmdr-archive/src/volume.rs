@@ -44,13 +44,13 @@ use super::{
     ArchiveByteSource, ArchiveEntryReader, ArchiveError, ArchiveFormat, ArchiveIndex, ArchiveIndexCache, ArchiveNode,
     DEFAULT_TAIL_CACHE_LEN, LocalFileSource, SubtreeExtractReader, TailCachedSource,
 };
-use crate::file_system::listing::FileEntry;
-use crate::file_system::volume::{
+use cmdr_fs::entry::FileEntry;
+use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::volume::host::VolumeHost;
+use cmdr_fs::volume::{
     CopyScanResult, DirectoryCreation, ExtractedFile, LaneKey, ListingProgress, SequentialExtract, SpaceInfo, Volume,
     VolumeError, VolumeReadStream,
 };
-use crate::ignore_poison::IgnorePoison;
-use cmdr_fs::volume::host::VolumeHost;
 
 /// A read-only [`Volume`] that presents a zip archive as a browsable folder.
 pub struct ArchiveVolume {

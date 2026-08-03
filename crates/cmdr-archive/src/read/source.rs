@@ -19,7 +19,7 @@ use std::sync::{Arc, Mutex};
 
 use positioned_io::{RandomAccessFile, ReadAt, Size};
 
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 /// Default tail window a [`TailCachedSource`] prefetches: enough that a typical
 /// zip's whole central directory (plus the EOCD it hunts backward for) lands in

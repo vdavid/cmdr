@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 use super::error::ArchiveError;
 use super::format::ArchiveFormat;
@@ -40,6 +40,8 @@ pub struct ArchiveIndexCache {
 }
 
 impl ArchiveIndexCache {
+    /// An empty cache. Every `ArchiveVolume` owns one, so its parsed indexes drop
+    /// with the volume.
     pub fn new() -> Self {
         Self::default()
     }
@@ -110,6 +112,7 @@ impl ArchiveIndexCache {
         self.entries.lock_ignore_poison().len()
     }
 
+    /// Whether nothing is cached. For tests and diagnostics.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }

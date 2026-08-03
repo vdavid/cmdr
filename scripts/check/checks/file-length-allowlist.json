@@ -13,7 +13,6 @@
     "apps/desktop/src-tauri/src/error_reporter/tests.rs": 998,
     "apps/desktop/src-tauri/src/file_system/listing/caching.rs": 926,
     "apps/desktop/src-tauri/src/file_system/listing/caching_test.rs": 896,
-    "apps/desktop/src-tauri/src/file_system/volume/backends/archive/volume.rs": 882,
     "apps/desktop/src-tauri/src/file_system/volume/backends/local_posix.rs": 837,
     "apps/desktop/src-tauri/src/file_system/volume/backends/mtp.rs": 1095,
     "apps/desktop/src-tauri/src/file_system/volume/backends/smb/volume_impl.rs": 840,

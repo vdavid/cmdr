@@ -23,9 +23,9 @@ use std::time::{Duration, Instant};
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::listings::{ListingHost, RecordingListings};
 
-use crate::file_system::volume::backends::archive::test_fixtures::{FixtureFile, build_zip, stored};
-use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume, active_watch_count};
-use crate::file_system::volume::{InMemoryVolume, Volume};
+use crate::test_fixtures::{FixtureFile, build_zip, stored};
+use crate::{ArchiveFormat, ArchiveVolume, active_watch_count};
+use cmdr_fs::volume::{InMemoryVolume, Volume};
 
 /// The parent drive id the listing cache keys archive listings on. The refresh
 /// must carry this, never the archive's own registry id.

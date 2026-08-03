@@ -12,7 +12,7 @@ use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use super::*;
-use crate::file_system::volume::backends::archive::test_fixtures::{build_zip, deflated, dir, stored};
+use crate::test_fixtures::{build_zip, deflated, dir, stored};
 
 /// Writes `bytes` to `dir/name.zip` and returns the path.
 fn write_zip(dir: &Path, name: &str, bytes: &[u8]) -> PathBuf {
@@ -412,7 +412,7 @@ fn an_edit_preserves_the_archive_mode_mtime_and_xattrs() {
 
 #[test]
 fn an_edit_that_would_retain_an_encrypted_entry_is_refused_and_leaves_the_original_intact() {
-    use crate::file_system::volume::backends::archive::test_fixtures::set_first_entry_encrypted;
+    use crate::test_fixtures::set_first_entry_encrypted;
 
     let tmp = tempfile::tempdir().expect("tempdir");
     let mut bytes = build_zip(&[
@@ -451,7 +451,7 @@ fn an_edit_that_would_retain_an_encrypted_entry_is_refused_and_leaves_the_origin
 
 #[test]
 fn deleting_an_encrypted_entry_is_allowed() {
-    use crate::file_system::volume::backends::archive::test_fixtures::set_first_entry_encrypted;
+    use crate::test_fixtures::set_first_entry_encrypted;
 
     let tmp = tempfile::tempdir().expect("tempdir");
     let mut bytes = build_zip(&[
@@ -523,7 +523,7 @@ fn a_paused_add_parks_then_completes_on_resume() {
         apply(&path_for_thread, &changeset, &*hooks_for_thread)
     });
 
-    crate::test_support::wait_until(std::time::Duration::from_secs(2), "the edit to park", || {
+    cmdr_fs::testing::wait_until(std::time::Duration::from_secs(2), "the edit to park", || {
         hooks.parked.load(Ordering::SeqCst)
     });
     // While parked, the original archive is untouched (nothing renamed yet).
@@ -704,7 +704,7 @@ fn a_local_path_add_streams_its_bytes_and_counts_them() {
 
 #[test]
 fn a_local_path_add_carries_the_source_files_mtime() {
-    use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveIndex, LocalFileSource};
+    use crate::{ArchiveFormat, ArchiveIndex, LocalFileSource};
 
     let tmp = tempfile::tempdir().expect("tempdir");
     let path = write_zip(tmp.path(), "a", &build_zip(&[stored("keep.txt", b"keep".to_vec())]));

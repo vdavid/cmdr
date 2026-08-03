@@ -7,8 +7,8 @@ use std::io::Write;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use super::super::test_fixtures::build_encrypted_7z;
 use super::*;
+use crate::test_fixtures::build_encrypted_7z;
 
 /// Wraps a byte source and counts reads that start at offset 0. A sequential
 /// decoder (compressed tar, 7z) reads front-to-back, so each independent decode

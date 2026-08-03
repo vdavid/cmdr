@@ -198,7 +198,7 @@ At-a-glance view of which capabilities each current volume opts into. Use this w
 
 Legend: ✅ = implemented, ❌ = opted out (default or explicitly), ⚠️ = implemented but suboptimal (memory-heavy or otherwise worth revisiting).
 
-`ArchiveVolume` is the read-only zip backend (`backends/archive/CLAUDE.md`); its `lane_key` and
+`ArchiveVolume` is the read-only zip backend (`crates/cmdr-archive/CLAUDE.md`); its `lane_key` and
 `get_space_info` uniquely delegate to a **parent** volume (the volume storing the `.zip`), so archive work shares the
 device's lane and the space check sees the parent drive's real free space.
 

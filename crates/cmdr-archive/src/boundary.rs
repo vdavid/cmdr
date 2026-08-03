@@ -175,9 +175,9 @@ fn file_matches_archive_magic(path: &Path, format: ArchiveFormat) -> bool {
 /// marker (`PK\x07\x08`). Fewer than four bytes isn't a zip.
 ///
 /// The single magic-byte predicate shared by the local sniff
-/// ([`file_starts_with_zip_signature`]) and the REMOTE confirm in
-/// `VolumeManager::resolve` (which reads the first four bytes over the parent
-/// volume's `read_range`), so local and remote agree on what "is a zip" means.
+/// ([`file_matches_archive_magic`]) and a host's REMOTE confirm (which reads the
+/// first four bytes over the parent volume's `read_range`), so local and remote
+/// agree on what "is a zip" means.
 pub fn bytes_start_with_zip_signature(bytes: &[u8]) -> bool {
     matches!(
         bytes.get(..4),

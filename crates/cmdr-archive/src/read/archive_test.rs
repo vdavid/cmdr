@@ -3,11 +3,11 @@
 
 use std::sync::Arc;
 
-use super::super::test_fixtures::{
+use super::*;
+use crate::test_fixtures::{
     build_aes_zip, build_zip, build_zipcrypto_zip, deflated, dir, encrypted_entry, overstate_record_count,
     patch_equal_len, plain_entry, set_first_entry_encrypted, stored, zip64_stored,
 };
-use super::*;
 
 fn bytes_source(bytes: Vec<u8>) -> Arc<dyn ArchiveByteSource> {
     Arc::new(BytesSource::new(bytes))

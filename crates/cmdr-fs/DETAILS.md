@@ -156,7 +156,7 @@ about an "unexpected `cfg` condition value" and takes the false branch forever.
 - **The scratch-visibility settings** (`advanced.showStagingTempFiles`, `advanced.showSafeSaveFiles`) and the listing
   read-path filter over them. "Is this ours, and does a live operation own it?" is vocabulary; "does the user see it?"
   is product policy, and the safe-save half is about other apps' files entirely.
-- **The archive tar decoders**, and everything else under `backends/archive/`.
+- **The archive tar decoders**, and everything else in `cmdr-archive`.
 - **The allocation-counting harness**, because a `#[global_allocator]` has to be per-binary. It now sits in
   `indexing/test_support.rs`, next to the memory guards that use it.
 

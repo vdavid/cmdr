@@ -1,12 +1,12 @@
 # Archive reading core — details
 
-Pull-tier docs for the read-only reading engine. Must-know invariants live in `CLAUDE.md`. Read this before
-any non-trivial work here: editing, planning, reorganizing, or advising.
+Pull-tier docs for the read-only reading engine. Must-know invariants live in `CLAUDE.md`. Read this before any
+non-trivial work here: editing, planning, reorganizing, or advising.
 
 This module is decoupled from the `Volume` trait on purpose — it deals in archive-native types and the
 [volume layer](../volume.rs) maps them — so it's fully unit-testable without Tauri or volume machinery. The
 `ArchiveVolume` layer, routing, remote-backed byte source, and the `ArchiveError → VolumeError` mapping live in the
-parent `../DETAILS.md`.
+parent `../../DETAILS.md`.
 
 ## What this module does
 
@@ -21,9 +21,9 @@ decompress) ourselves, over `ArchiveByteSource`. We deliberately do **not** use 
 reasons that are both load-bearing here:
 
 1. **Owned, cached streams.** `rc-zip-tokio`'s only public entry reader (`EntryHandle::reader()`) borrows its
-   `ArchiveHandle`, which itself borrows the byte source. That can't back a reader we hand out and keep alive alongside a
-   cached, owned index. Driving `EntryFsm` ourselves lets the reader own its state (a `spawn_blocking` producer) and read
-   from a shared `Arc<dyn ArchiveByteSource>` with no self-referential lifetime.
+   `ArchiveHandle`, which itself borrows the byte source. That can't back a reader we hand out and keep alive alongside
+   a cached, owned index. Driving `EntryFsm` ourselves lets the reader own its state (a `spawn_blocking` producer) and
+   read from a shared `Arc<dyn ArchiveByteSource>` with no self-referential lifetime.
 2. **Off-executor decompression.** `rc-zip-tokio` decompresses inside its `AsyncRead::poll_read` — i.e. on the async
    executor. Project principle 3 (never block the runtime) requires CPU-bound decompress off it. Our reader runs the
    whole `EntryFsm` loop on a `spawn_blocking` thread.
@@ -44,9 +44,9 @@ shared cursor, so parallel entry reads don't contend.
 - `TailCachedSource` (a decorator, `Volume`-free): caches the file's tail so the central-directory parse (rc-zip hunts
   the EOCD + directory near the end) is ONE ranged read of a slow backend, not many. Applied only to the remote source.
 - `BytesSource`: in-memory (tests + small resident archives).
-- The REMOTE byte source (`VolumeByteSource`) lives in the `Volume`-aware `../volume.rs`; it bridges the
-  blocking `read_at` to the parent volume's async `read_range`. See `../DETAILS.md` § "Remote-backed
-  archives (read path)". No change to the parser or reader.
+- The REMOTE byte source (`VolumeByteSource`) lives in the `Volume`-aware `../volume.rs`; it bridges the blocking
+  `read_at` to the parent volume's async `read_range`. See `../../DETAILS.md` § "Remote-backed archives (read path)". No
+  change to the parser or reader.
 
 ## Central-directory parse → synthetic tree
 
@@ -59,10 +59,10 @@ shared cursor, so parallel entry reads don't contend.
    readable entry's handle for later reads, then `build_tree` synthesizes the hierarchy.
 
 **Synthetic dirs.** Most archives carry no explicit directory entries: `a/b/c.txt` alone must produce browsable `a/` and
-`a/b/`. `build_tree` walks each accepted entry's ancestors shallowest-first, creating a synthetic dir node for any that's
-missing (no timestamp — it's inferred). An explicit dir entry (trailing slash or dir mode bits) that arrives later
-*upgrades* the implied one in place (fills its real mtime) rather than duplicating it; order-independent. Children are
-stored per-directory, pre-sorted directories-first then case-insensitive by name.
+`a/b/`. `build_tree` walks each accepted entry's ancestors shallowest-first, creating a synthetic dir node for any
+that's missing (no timestamp — it's inferred). An explicit dir entry (trailing slash or dir mode bits) that arrives
+later _upgrades_ the implied one in place (fills its real mtime) rather than duplicating it; order-independent. Children
+are stored per-directory, pre-sorted directories-first then case-insensitive by name.
 
 **Path collisions are first-writer-wins (order-dependent, by design).** A malformed archive can carry both a file and a
 directory at the same path. Whoever claims the path first keeps it: `foo` (file) then `foo/bar` → `foo` stays a file and
@@ -81,8 +81,8 @@ onto `FileEntry`. Inner paths are `/`-separated, no leading/trailing slash; the 
 The synthetic tree materializes one node (with a path string) per ancestor prefix of every entry, so a small central
 directory can expand into a huge tree — a browse-time DoS. Two caps bound it on both axes:
 
-- **Per-entry depth** (`name::MAX_COMPONENT_DEPTH`, 256): an entry named `a/a/…` with N components costs O(N) nodes whose
-  path strings sum to O(N²) bytes; a `u16` name field allows N ≈ 32k (≈1 GB from one entry). Over-deep entries are
+- **Per-entry depth** (`name::MAX_COMPONENT_DEPTH`, 256): an entry named `a/a/…` with N components costs O(N) nodes
+  whose path strings sum to O(N²) bytes; a `u16` name field allows N ≈ 32k (≈1 GB from one entry). Over-deep entries are
   **quarantined** at sanitize time (`QuarantineReason::TooDeep`), before any tree building, so the archive stays
   browsable. 256 is an order of magnitude past any real archive's nesting.
 - **Total node count** (`index::MAX_TREE_NODES`, 2,000,000): the many-entries backstop. Exceeding it fails the whole
@@ -95,7 +95,7 @@ directory can expand into a huge tree — a browse-time DoS. Two caps bound it o
 ## Zip Slip guarantee (`sanitize_entry_name`)
 
 Entry names are attacker-controlled. `sanitize_entry_name` is the **single choke point** every entry passes before it
-enters the tree; its guarantee: *no `Accepted` path, joined under any root, escapes that root.* Enforced at the index
+enters the tree; its guarantee: _no `Accepted` path, joined under any root, escapes that root._ Enforced at the index
 layer (not only at extraction) so an escaping path never even becomes a browsable node — defense in depth.
 
 Rules: normalize `\`→`/`; drop empty and `.` components (collapses leading/trailing/doubled slashes); **clamp** absolute
@@ -109,7 +109,8 @@ Note `..` matches only a whole component — `..foo` and `foo..bar` are legitima
 
 ## Streaming reads, off the executor (`ArchiveEntryReader`)
 
-Mirrors the SMB backend's channel-backed read (see `apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "Pattern B"):
+Mirrors the SMB backend's channel-backed read (see `apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "Pattern
+B"):
 
 - A `spawn_blocking` producer owns the `Arc<dyn ArchiveByteSource>` and the entry handle, seeks to the entry's local
   header offset, and drives `EntryFsm` (read compressed bytes → decompress) entirely off the executor.
@@ -124,7 +125,7 @@ delivery. Concurrency: each reader has its own `EntryFsm` and read offset, so N 
 independent (`concurrent_reads_are_independent`).
 
 The fsm reads ahead (its buffer always has spare room), so it asks to read past the entry's own bytes and reaches the
-real file end even for a complete entry — EOF alone is not truncation. Truncation is EOF *plus* a `process` that then
+real file end even for a complete entry — EOF alone is not truncation. Truncation is EOF _plus_ a `process` that then
 makes no progress; that yields a typed `Corrupt` error rather than a spin on repeated empty reads
 (`truncated_entry_data_errors_instead_of_hanging`).
 
@@ -143,28 +144,29 @@ method. Browsing an encrypted archive always works (names live in the central di
 
 rc-zip parses the index but does NOT decrypt, so an encrypted entry's bytes are read through the `zip` crate (zip2)
 instead — `zip.rs`'s `run_decrypt_producer` opens a `ZipArchive` over the same `SourceReader` and calls
-`by_index_decrypt(ordinal, password)`. Two crates, one archive: rc-zip stays the index/tree authority, the `zip` crate is
-the per-entry decrypt engine. (7z decryption is threaded through `sevenz-rust2` instead — see below.)
+`by_index_decrypt(ordinal, password)`. Two crates, one archive: rc-zip stays the index/tree authority, the `zip` crate
+is the per-entry decrypt engine. (7z decryption is threaded through `sevenz-rust2` instead — see below.)
 
 - **Decrypt by ORDINAL, not name.** `ZipHandle` stores each entry's zero-based central-directory position (assigned in
   `zip::parse` via `enumerate`). rc-zip and the `zip` crate both parse the SAME central directory in the SAME physical
-  order, so the ordinal addresses the identical entry in `by_index_decrypt`. This sidesteps cross-crate filename-decoding
-  drift (a name that decodes differently in each crate would miss). **This alignment is load-bearing — pinned by
-  `archive_test::zip_crate_ordinals_align_with_rc_zip`** (a mixed archive, distinct per-entry content, decrypt-by-ordinal
-  must yield each entry's own bytes) for ZipCrypto and by `winzip_aes_mixed_archive_decrypts_each_by_ordinal` for AES. It
-  holds; if it ever breaks, fall back to `by_name_decrypt` with the RAW name bytes.
-- **Both zip encryption kinds decrypt through this one path.** Legacy PKWARE ZipCrypto (macOS Archive Utility / `zip -e`)
-  and WinZip AES (the `Method::Aex` marker; `7z -mem=AES256`, recent WinZip) share `by_index_decrypt` — the `zip` crate
-  picks the cipher from the entry's own metadata. `aes-crypto` is enabled; `aes 0.9.1` (stable) unifies with `smb2`'s
-  SMB3 AEAD stack (the pre-release pin that once forced deferral is gone). `open_read` routes any encrypted entry (flag
-  bit 0 or AE-x) through the decrypt producer.
+  order, so the ordinal addresses the identical entry in `by_index_decrypt`. This sidesteps cross-crate
+  filename-decoding drift (a name that decodes differently in each crate would miss). **This alignment is load-bearing —
+  pinned by `archive_test::zip_crate_ordinals_align_with_rc_zip`** (a mixed archive, distinct per-entry content,
+  decrypt-by-ordinal must yield each entry's own bytes) for ZipCrypto and by
+  `winzip_aes_mixed_archive_decrypts_each_by_ordinal` for AES. It holds; if it ever breaks, fall back to
+  `by_name_decrypt` with the RAW name bytes.
+- **Both zip encryption kinds decrypt through this one path.** Legacy PKWARE ZipCrypto (macOS Archive Utility /
+  `zip -e`) and WinZip AES (the `Method::Aex` marker; `7z -mem=AES256`, recent WinZip) share `by_index_decrypt` — the
+  `zip` crate picks the cipher from the entry's own metadata. `aes-crypto` is enabled; `aes 0.9.1` (stable) unifies with
+  `smb2`'s SMB3 AEAD stack (the pre-release pin that once forced deferral is gone). `open_read` routes any encrypted
+  entry (flag bit 0 or AE-x) through the decrypt producer.
 - **Wrong-password detection differs by cipher.** WinZip AES carries a 2-byte password-verification value, so a wrong
   password fails at open (`by_index_decrypt` → `ZipError::InvalidPassword` → `WrongPassword`, deterministic). ZipCrypto
   checks a single byte at open, so ~1/256 of wrong passwords slip through and surface LATE as an end-of-stream CRC
   mismatch: `io::ErrorKind::InvalidData`, which `pump_decrypt` maps to `WrongPassword` by the io KIND (not the message —
   `no-string-matching`); the same late path also catches an AES HMAC failure. No password on an encrypted entry ⇒
   `Encrypted` (the needs-password signal). The `ArchiveError → VolumeError` mapping (both to typed
-  `NeedsPassword { wrong_attempt }`) lives in `../DETAILS.md`.
+  `NeedsPassword { wrong_attempt }`) lives in `../../DETAILS.md`.
 
 ## Filename encoding
 
@@ -193,12 +195,13 @@ sanitize + `build_tree` + prune over any `H`, returning a `BuiltIndex<H>` the fo
 new `parse` + producer + `EntryStore` arm; the tree, safety, and caps come for free. `ArchiveVolume` holds the
 `ArchiveFormat` (decided from the path at resolve time) and threads it into every parse.
 
-**Format detection (`format.rs`).** `format_for_name` is the single source of truth (both `has_supported_archive_extension`
-and the FE mirror defer to it). It matches by NAME SUFFIX, longest-first, so `.tar.gz` is a gzip tar (not the `.tar` its
-substring suggests, nor a bare `.gz` — a single compressed file with nothing to browse is deliberately NOT an archive).
-The boundary detector (`../boundary.rs`) then confirms with per-format magic (`bytes_match_archive_magic`): zip `PK`,
-gzip `1f 8b`, bzip2 `BZh`, xz `fd 37 7a 58 5a 00`, zstd `28 b5 2f fd`, 7z `37 7a bc af 27 1c`, and — the one that isn't
-at offset 0 — a plain tar's `ustar` at offset 257, so the confirm reads a 512-byte prefix (`ARCHIVE_MAGIC_PREFIX_LEN`).
+**Format detection (`format.rs`).** `format_for_name` is the single source of truth (both
+`has_supported_archive_extension` and the FE mirror defer to it). It matches by NAME SUFFIX, longest-first, so `.tar.gz`
+is a gzip tar (not the `.tar` its substring suggests, nor a bare `.gz` — a single compressed file with nothing to browse
+is deliberately NOT an archive). The boundary detector (`../boundary.rs`) then confirms with per-format magic
+(`bytes_match_archive_magic`): zip `PK`, gzip `1f 8b`, bzip2 `BZh`, xz `fd 37 7a 58 5a 00`, zstd `28 b5 2f fd`, 7z
+`37 7a bc af 27 1c`, and — the one that isn't at offset 0 — a plain tar's `ustar` at offset 257, so the confirm reads a
+512-byte prefix (`ARCHIVE_MAGIC_PREFIX_LEN`).
 
 **Codecs — all pure-Rust, all pull-model `Read`, bounded memory (`format.rs::open_tar_decoder`).** gzip → `flate2`
 (`miniz_oxide`), bzip2 → `bzip2` (pure `libbz2-rs-sys` default, no C libbz2), xz → `lzma-rust2`'s `XzReader` (the pure
@@ -223,7 +226,8 @@ cases (content + header, right/wrong/no password, plus a solid-block subtree ext
 
 **Access class — the sequential trap (`ArchiveFormat::is_sequential`, `Volume::extraction_is_sequential`).** A plain
 `.tar` is RANDOM-access: `TarStore` records each member's data offset, so `open_read` seeks and streams the member's
-exact bytes (no decompression). A COMPRESSED tar and 7z are SEQUENTIAL: there's no random access into the decoded stream.
+exact bytes (no decompression). A COMPRESSED tar and 7z are SEQUENTIAL: there's no random access into the decoded
+stream.
 
 - **tar (compressed):** `open_read` prefix-decodes the whole stream from the start, matching entries by their sanitized
   name, and streams the target — O(prefix) per entry, bounded memory (data before the target is decoded and discarded).
@@ -243,8 +247,7 @@ make it correct and bounded:
   their tree sizes so they match `scan_for_copy` totals). Directories — synthetic ones with no archive entry, and empty
   explicit ones — carry no bytes, so the copy engine creates the destination folders from the tree and reserves the one
   decode pass for byte-carrying entries (see the copy planner in
-  `apps/desktop/src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "One-pass sequential
-  extract").
+  `apps/desktop/src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "One-pass sequential extract").
 - **Early stop.** `stream_subtree` removes each delivered path from `wanted` and returns the moment it empties, so a
   subtree near the front of a large archive doesn't decode the tail. A not-wanted entry is still skipped through the one
   decoder (compressed tar) or read to a sink (7z solid block) — the honest single-pass cost of reaching later members.
@@ -275,7 +278,7 @@ the sanitizer (incl. the depth cap) and the tree builder (incl. the node-count c
 `lzma-rust2`'s `XzWriter`, `zstd`, and `sevenz-rust2`'s `compress` feature — the shipped path stays decode-only) and
 covers the tar synthetic tree, a per-codec round-trip (plain/gzip/bzip2/xz/zstd), bounded-chunk streaming, the tar Zip
 Slip quarantine (a hostile `../evil.txt` injected as a raw ustar header), the symlink-extracts-to-nothing safety, and 7z
-browse + solid-block extract of a later member. It also pins the ONE-PASS extractor: a `CountingSource` (counts
-offset-0 reads = decode passes) proves `open_subtree_extract` decodes a compressed tar / solid 7z subtree exactly once
-(not once per file), delivers only the subtree's files, and round-trips a later chunk-spanning member. `format.rs`
-unit-tests suffix detection and the sequential class.
+browse + solid-block extract of a later member. It also pins the ONE-PASS extractor: a `CountingSource` (counts offset-0
+reads = decode passes) proves `open_subtree_extract` decodes a compressed tar / solid 7z subtree exactly once (not once
+per file), delivers only the subtree's files, and round-trips a later chunk-spanning member. `format.rs` unit-tests
+suffix detection and the sequential class.

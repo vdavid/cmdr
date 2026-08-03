@@ -5,7 +5,8 @@ checklist live in `../CLAUDE.md` + `../DETAILS.md`.
 
 ## Module map
 
-- `local_posix.rs`, `mtp.rs` (macOS/Linux only), `archive/` (zip/tar/7z, see `archive/CLAUDE.md`).
+- `local_posix.rs`, `mtp.rs` (macOS/Linux only), `archive.rs` (a re-export of the `crates/cmdr-archive` crate,
+  zip/tar/7z).
 - `smb/`: `SmbVolume` over direct async smb2, split into `events`, `state`, `mapping`, `session`, `reconnect`,
   `streams`, `scan`, `scan_pool`, `volume_impl` (the whole `impl Volume`, since a trait impl can't span files).
   `smb_watcher.rs`: background change watcher.

@@ -180,7 +180,7 @@ sources**.
    of streaming each file's bytes it records the resolved destination (`PlannedWrite { dest_path, replace_after_write }`)
    in the plan, keyed by the file's full source path, and streams nothing.
 2. **Data** — it opens `source_volume.open_sequential_extract(source_path)` (the archive's one-pass extractor, decode
-   ONCE; mechanism in [archive `read/DETAILS.md`](../../volume/backends/archive/read/DETAILS.md) § "One-pass subtree
+   ONCE; mechanism in `crates/cmdr-archive/src/read/DETAILS.md` § "One-pass subtree
    extract") and walks the files in ARCHIVE order. Each file the plan kept is streamed through the destination's
    `write_from_stream` (same safe-overwrite temp+rename, downloads-watcher registration, fsync, and
    `finalize_safe_replace` safe-replace as `stream_pipe_file`), recorded in `created`, and reported via `on_file_complete`

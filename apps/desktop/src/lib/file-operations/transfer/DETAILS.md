@@ -163,7 +163,7 @@ error dialog.
   polish spec item 2 for the dependency conflict deferring AES.
 
 Backend counterpart (decrypt path, the typed signal, per-archive password storage + LRU lifetime):
-`apps/desktop/src-tauri/src/file_system/volume/backends/archive/DETAILS.md` § "Password-protected archives".
+`crates/cmdr-archive/DETAILS.md` § "Password-protected archives".
 
 ## Key decisions
 

@@ -24,7 +24,7 @@ operation goes through a `Volume`, with **paths relative to the volume root**.
 - **At a site that calls a `Volume` method with a path, use `VolumeManager::resolve(volume_id, path).await`, not
   `get(volume_id)`.** `resolve` routes a `.zip`-crossing path to a read-only `ArchiveVolume` (on-demand, LRU-capped),
   returning the path UNCHANGED; otherwise it's a plain `get`. It's **async**: a REMOTE `.zip` needs a network probe.
-  The sync `resolve_local_only` is for the ONE caller that can't `.await`. See `backends/archive/DETAILS.md`
+  The sync `resolve_local_only` is for the ONE caller that can't `.await`. See `crates/cmdr-archive/DETAILS.md`
   § "Routing and lifecycle".
 - **Register watcher-pre-registered volumes via `VolumeManager::register_if_absent`, not `register`.** Otherwise the
   FSEvents watcher overwrites a pre-registered `SmbVolume` with a `LocalPosixVolume`; `register` is for explicit

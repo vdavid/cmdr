@@ -1,0 +1,100 @@
+[package]
+name = "cmdr-archive"
+version = "0.0.0"
+edition = "2024"
+license = "LicenseRef-BSL-1.1"
+publish = false
+
+# The house lint set lives in the workspace root's `[workspace.lints]`, so this
+# crate can't quietly become a lint-free zone. `unused_crate_dependencies` is the
+# one lint that stays at the crate root instead (it's judged per compilation unit).
+[lints]
+workspace = true
+
+[features]
+# "This is a test build." Consumers turn it on through a dev-dependency, which
+# keeps it off in every shipped build. It publishes `test_fixtures` — the zip and
+# 7z builders — so the app's own archive tests build fixtures the same way this
+# crate's do instead of growing a second, drifting set. Building an encrypted 7z
+# fixture needs the ENCODER the shipped decode-only path omits, hence the
+# `sevenz-rust2/compress` forward.
+testing = ["sevenz-rust2/compress"]
+
+[dependencies]
+# The `Volume` trait, every type it exchanges, and the host seams this backend
+# asks the app through. The only crate below this one.
+cmdr-fs = { path = "../cmdr-fs" }
+log = "0.4"
+# `spawn_blocking` for the parse and every decompress (both are CPU-bound and must
+# stay off the async executor), and `tokio::sync::Mutex` for the one-pass subtree
+# extractor's shared decoder.
+tokio = { version = "1", features = ["rt"] }
+# The live content watch on the backing archive: a debounced, non-recursive watch
+# on the archive's PARENT directory, so a safe-overwrite's inode swap can't
+# silence it.
+notify-debouncer-full = "0.7.0"
+# The unique suffix a mutation's same-directory temp ends in.
+uuid = { version = "1.19.0", features = ["v4"] }
+# The zip WRITE side (temp+rename mutation), plus the read side's decrypt path:
+# rc-zip parses the central directory but does NOT decrypt, so an encrypted entry's
+# bytes go through this crate's `by_index_decrypt`. `aes-crypto` adds WinZip AES
+# (AE-1/AE-2) on top of the built-in legacy PKWARE ZipCrypto.
+zip = { version = "8.6", default-features = false, features = ["deflate", "aes-crypto"] }
+# The zip READ side: a sans-IO reader whose state machines (`ArchiveFsm` for the
+# central directory, `EntryFsm` per entry) request byte ranges and let the caller
+# supply them under any I/O model. We drive those fsms over our own
+# `ArchiveByteSource` rather than the `rc-zip-tokio` wrapper, whose only public
+# entry reader borrows its handle and decompresses on the async executor.
+rc-zip = { version = "5.4.1", features = ["deflate", "bzip2", "lzma", "zstd"] }
+# A `ReadAt` cursor over a local `File`, for the local byte source.
+positioned-io = "0.3.5"
+# The tar family and 7z, all pure-Rust and decode-only, driven as pull-model `Read`
+# decoders so a whole-file decompress streams in bounded chunks. `bzip2` defaults to
+# the pure-Rust `libbz2-rs-sys` backend; `ruzstd` is a pure-Rust zstd DECODER;
+# `lzma-rust2` gives the `.xz` streaming `Read` that `lzma-rs` lacks.
+tar = "0.4"
+flate2 = "1"
+bzip2 = "0.6.1"
+ruzstd = "0.9.0"
+lzma-rust2 = "0.18.0"
+# 7z: metadata-only index, then per-block streaming. LZMA/LZMA2 decode is built in
+# (via `lzma-rust2`); `bzip2`/`deflate`/`ppmd` add the other common 7z codecs.
+# `aes256` decrypts a password-protected 7z. `compress` (the encoders) stays off
+# except under the `testing` feature, which fixtures need.
+sevenz-rust2 = { version = "0.21.2", default-features = false, features = [
+  "aes256",
+  "bzip2",
+  "deflate",
+  "ppmd",
+  "util",
+] }
+# Wipes the per-archive password from memory on drop (`Zeroizing<String>`).
+zeroize = "1.9.0"
+# The MS-DOS date/time a preserved zip entry carries: `SystemTime` has to become
+# broken-down local-free UTC fields before `zip::DateTime` can take them.
+chrono = "0.4"
+
+[dev-dependencies]
+# Depending on ourselves turns the `testing` feature on for every DEV target and
+# leaves it off for the lib, so a shipped build carries no fixture builders and no
+# 7z encoder. Same shape as the app's own self dev-dependency.
+cmdr-archive = { path = ".", features = ["testing"] }
+# `wait_until_async`, for the FSEvents-driven watch tests.
+cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
+# Real archives on disk: the local byte source needs a real path.
+tempfile = "3"
+# `#[tokio::test]` needs `macros`; the watch tests need a multi-threaded runtime.
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+# Unique fixture paths under the system temp dir.
+uuid = { version = "1.19.0", features = ["v4"] }
+# The zstd ENCODER for `.tar.zst` fixtures (the shipped path decodes with the
+# pure-Rust `ruzstd`). Dev-only, so no C dependency reaches a shipped build.
+zstd = "0.13"
+# `CancellationToken`, for the cancelable-listing test. Same version and feature
+# shape as `cmdr-fs`'s, so no second copy enters the graph.
+tokio-util = { version = "0.7.18", default-features = false }
+# The mutator's metadata-preservation tests read back what it wrote: mtime through
+# `filetime`, Finder tags through `xattr`. Both are already in the workspace graph
+# at these versions.
+filetime = "0.2"
+xattr = "1"

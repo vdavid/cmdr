@@ -12,13 +12,17 @@ use zip::{CompressionMethod, ZipWriter};
 
 /// A file to write into a fixture zip.
 pub struct FixtureFile {
+    /// The entry's inner path. A trailing `/` writes a directory entry.
     pub name: String,
+    /// The entry's uncompressed bytes.
     pub content: Vec<u8>,
+    /// How to compress it.
     pub method: CompressionMethod,
     /// Force a zip64 entry (zip64 extra field + zip64 EOCD) regardless of size.
     pub zip64: bool,
 }
 
+/// An uncompressed (`Stored`) entry.
 pub fn stored(name: impl Into<String>, content: impl Into<Vec<u8>>) -> FixtureFile {
     FixtureFile {
         name: name.into(),
@@ -28,6 +32,7 @@ pub fn stored(name: impl Into<String>, content: impl Into<Vec<u8>>) -> FixtureFi
     }
 }
 
+/// A `Deflated` entry.
 pub fn deflated(name: impl Into<String>, content: impl Into<Vec<u8>>) -> FixtureFile {
     FixtureFile {
         name: name.into(),
@@ -66,13 +71,15 @@ pub fn build_zip(entries: &[FixtureFile]) -> Vec<u8> {
             .compression_method(entry.method)
             .large_file(entry.zip64);
         if entry.name.ends_with('/') {
-            writer.add_directory(entry.name.trim_end_matches('/'), opts).unwrap();
+            writer
+                .add_directory(entry.name.trim_end_matches('/'), opts)
+                .expect("write a fixture directory entry");
         } else {
-            writer.start_file(&*entry.name, opts).unwrap();
-            writer.write_all(&entry.content).unwrap();
+            writer.start_file(&*entry.name, opts).expect("start a fixture entry");
+            writer.write_all(&entry.content).expect("write a fixture entry's bytes");
         }
     }
-    writer.finish().unwrap().into_inner()
+    writer.finish().expect("finish the fixture archive").into_inner()
 }
 
 /// Serializes a zip whose flagged entries are WinZip-AES-encrypted (AE-2) with
@@ -89,10 +96,10 @@ pub fn build_aes_zip(entries: &[CryptoFixtureFile], password: &str, mode: zip::A
         if entry.encrypted {
             opts = opts.with_aes_encryption(mode, password);
         }
-        writer.start_file(&*entry.name, opts).unwrap();
-        writer.write_all(&entry.content).unwrap();
+        writer.start_file(&*entry.name, opts).expect("start a fixture entry");
+        writer.write_all(&entry.content).expect("write a fixture entry's bytes");
     }
-    writer.finish().unwrap().into_inner()
+    writer.finish().expect("finish the fixture archive").into_inner()
 }
 
 /// Replaces every occurrence of `from` with `to` in `bytes`. Requires equal
@@ -156,11 +163,16 @@ fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
 /// One entry for [`build_zipcrypto_zip`]: name, plaintext content, and whether to
 /// ZipCrypto-encrypt it (so a single fixture can mix encrypted and plain entries).
 pub struct CryptoFixtureFile {
+    /// The entry's inner path.
     pub name: String,
+    /// The entry's PLAINTEXT bytes; the builder encrypts them if asked.
     pub content: Vec<u8>,
+    /// Whether to encrypt this one, so a fixture can mix encrypted and plain
+    /// entries.
     pub encrypted: bool,
 }
 
+/// An entry the builder encrypts with the fixture's password.
 pub fn encrypted_entry(name: impl Into<String>, content: impl Into<Vec<u8>>) -> CryptoFixtureFile {
     CryptoFixtureFile {
         name: name.into(),
@@ -169,6 +181,7 @@ pub fn encrypted_entry(name: impl Into<String>, content: impl Into<Vec<u8>>) -> 
     }
 }
 
+/// An entry left unencrypted, next to encrypted siblings.
 pub fn plain_entry(name: impl Into<String>, content: impl Into<Vec<u8>>) -> CryptoFixtureFile {
     CryptoFixtureFile {
         name: name.into(),

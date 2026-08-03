@@ -4,8 +4,8 @@ Refreshes any open listing inside an archive when the backing `.zip` changes on 
 over it, this app's own mutation's final rename). The watch handle lives on the [`ArchiveVolume`](../volume.rs); this
 module is the OS watch + event filter behind it.
 
-Depth, the remote-no-watch decision, and the test list: `DETAILS.md`. Read it before any non-trivial work
-here: editing, planning, reorganizing, or advising.
+Depth, the remote-no-watch decision, and the test list: `DETAILS.md`. Read it before any non-trivial work here: editing,
+planning, reorganizing, or advising.
 
 ## Must-knows
 

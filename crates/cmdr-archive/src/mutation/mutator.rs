@@ -35,7 +35,7 @@ use zip::{CompressionMethod, ZipArchive, ZipWriter};
 /// the sibling placement keeps the final rename atomic on one filesystem.
 use cmdr_fs::staging::STAGING_TEMP_MARKER as TEMP_INFIX;
 
-use crate::file_system::staging::StagingTemp;
+use cmdr_fs::staging::StagingTemp;
 
 /// Chunk size for streaming an added file's bytes into the compressor: bounds
 /// peak in-flight memory regardless of the file's size (principle 5 — never
@@ -52,7 +52,9 @@ pub enum AddSource {
 
 /// One file to add to the archive at `inner_path` (`/`-separated, archive-root-relative).
 pub struct AddEntry {
+    /// Where the entry lands, `/`-separated and relative to the archive root.
     pub inner_path: String,
+    /// Where its bytes come from.
     pub source: AddSource,
 }
 
@@ -93,12 +95,17 @@ pub struct Changeset {
 /// `entries_total`, on the terminal event.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct MutationProgress {
+    /// Entries written into the temp so far, retained ones included.
     pub entries_done: usize,
+    /// Entries the rewrite will write in total, retained ones included. ❌ Not the
+    /// user-facing count; see the struct doc.
     pub entries_total: usize,
     /// Constant across ticks: the count of entries added, deleted, or renamed
     /// (the user-facing affected-item count). See the struct doc.
     pub entries_changed: usize,
+    /// Uncompressed bytes written so far.
     pub bytes_done: u64,
+    /// Uncompressed bytes the rewrite will write in total.
     pub bytes_total: u64,
 }
 
@@ -143,9 +150,17 @@ pub enum MutationError {
     /// a header that no longer says "encrypted"). We refuse the whole edit rather
     /// than risk that. Deleting the encrypted entry instead is allowed (it isn't
     /// retained). Editing encrypted archives is out of scope in v1.
-    EncryptedEntryRetained { name: String },
+    EncryptedEntryRetained {
+        /// The entry's inner path, so the host can name it.
+        name: String,
+    },
     /// An added entry's source bytes couldn't be read.
-    ReadSource { inner_path: String, source: io::Error },
+    ReadSource {
+        /// Where the entry would have landed in the archive.
+        inner_path: String,
+        /// What the read failed with.
+        source: io::Error,
+    },
     /// Filesystem I/O on the temp (create, flush, fsync, rename).
     Io(io::Error),
 }

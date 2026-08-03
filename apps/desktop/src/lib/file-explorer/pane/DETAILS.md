@@ -579,8 +579,7 @@ routing happens backend-side in `VolumeManager::resolve(volume_id, path)`.
   for an archive-inner path (backend test `resolve_location_inside_an_archive_returns_the_parent_drive`). A deleted zip
   falls into the existing unreachable-path handling.
 
-Full backend routing, the LRU lifecycle, and the viewer temp-extract:
-`src-tauri/src/file_system/volume/backends/archive/DETAILS.md`.
+Full backend routing, the LRU lifecycle, and the viewer temp-extract: `crates/cmdr-archive/DETAILS.md`.
 
 ## Enter-behavior policy (archives and bundles)
 

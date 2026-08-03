@@ -47,7 +47,10 @@ pub struct ArchiveNode {
     /// Full inner path relative to the archive root, `/`-separated, no leading
     /// or trailing slash. The root directory is the empty string.
     pub path: String,
+    /// Whether this node is a directory, explicit in the archive or implied by
+    /// a deeper entry's path.
     pub is_dir: bool,
+    /// Whether the archive recorded this entry as a symlink.
     pub is_symlink: bool,
     /// Uncompressed size in bytes. `None` for directories (synthetic dirs have
     /// no size; explicit dir entries carry a zero size we still report as None).

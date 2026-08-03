@@ -95,7 +95,7 @@ impl SubtreeExtractReader {
     ///
     /// Only sequential formats have a producer; a random-access store (zip, plain
     /// tar) yields nothing — the copy planner never routes those here (it gates on
-    /// [`Volume::extraction_is_sequential`](crate::file_system::volume::Volume::extraction_is_sequential)),
+    /// [`Volume::extraction_is_sequential`](cmdr_fs::volume::Volume::extraction_is_sequential)),
     /// so an empty stream is the correct defensive fallback.
     pub(super) fn spawn(
         store: &EntryStore,

@@ -28,7 +28,7 @@ smb-e2e = ["smb2/testing"]
 # consumer compiles it as a dependency.
 # Enabled automatically for every dev target and only for those; see the self
 # dev-dependency under `[dev-dependencies]`. Never enable in production builds.
-testing = ["cmdr-fs/testing", "cmdr-index/testing"]
+testing = ["cmdr-archive/testing", "cmdr-fs/testing", "cmdr-index/testing"]
 
 [[bin]]
 name = "Cmdr"
@@ -51,6 +51,10 @@ tauri-build = { version = "2", features = [] }
 # `Volume` trait and its data types, `FileEntry`, the typed error classification,
 # thread QoS, process memory, poison-free locking. No Tauri, no index.
 cmdr-fs = { path = "../../../crates/cmdr-fs" }
+# The archive backend: a `Volume` over a zip / tar / 7z file. Its own crate, with
+# no `tauri` in its tree, so the ~10 codec crates it needs stay out of this
+# manifest and `cargo check -p cmdr-archive` verifies it without building the app.
+cmdr-archive = { path = "../../../crates/cmdr-archive" }
 # The index: the file index, the media index, and folder importance, behind one
 # `Index` handle. Tauri-free by design and enforced — the app is its host, which
 # is why every seam it needs is answered in `src/index_host.rs` and nowhere else.
@@ -132,54 +136,16 @@ time = { version = "0.3", features = ["parsing", "macros", "formatting"] }
 # non-frontmost windows like Settings or the viewer).
 tauri-plugin-playwright = { version = "0.4.1", optional = true }
 # Error reporter: zip the bundle (manifest + redacted log files). `deflate` is the default
-# compression algorithm; we don't need bzip2/zstd/etc. for log text.
-# Also the archive read side's decrypt path: rc-zip parses the index but does NOT decrypt, so
-# an encrypted entry's bytes are read through this crate's `by_index_decrypt`. `aes-crypto`
-# adds WinZip AES (AE-1/AE-2, crate `aes`) on top of the built-in legacy PKWARE ZipCrypto (what
-# macOS Archive Utility / `zip -e` produce); both decrypt by central-directory ordinal in the
-# archive read core. `aes 0.9.1` (stable) unifies with `smb2`'s SMB3 AEAD stack.
+# compression algorithm; we don't need bzip2/zstd/etc. for log text. The archive backend's own
+# use of this crate (the write side, and the decrypt path rc-zip can't serve) lives in
+# `cmdr-archive`; `aes-crypto` is declared there and unifies here, so the feature set is a
+# superset of both. `aes 0.9.1` (stable) unifies with `smb2`'s SMB3 AEAD stack.
 zip = { version = "8.6", default-features = false, features = ["deflate", "aes-crypto"] }
-# Archive browsing (read side): rc-zip is a sans-IO zip reader whose state machines
-# (`ArchiveFsm` for the central directory, `EntryFsm` for per-entry decompression) request byte
-# ranges and let the caller supply them under any I/O model. We drive those fsms directly over
-# our own `ArchiveByteSource` trait (see `backends/archive/`) rather than the `rc-zip-tokio`
-# wrapper, for two reasons: its only public entry reader borrows its `ArchiveHandle` (can't back
-# an owned, cached stream), and it decompresses on the async executor (we need CPU-bound
-# decompress off it, via `spawn_blocking`). `positioned-io` gives a `ReadAt` cursor over a local
-# `File` for the byte source. Codec features beyond the `deflate` default cover the compression
-# methods real-world zips use (bzip2/lzma/zstd), so extracting those entries doesn't error.
-# Pinned latest stable, all >3 days old (verified crates.io 2026-07-03).
-rc-zip = { version = "5.4.1", features = ["deflate", "bzip2", "lzma", "zstd"] }
-positioned-io = "0.3.5"
-# Archive browsing (read side, tar + 7z formats): all pure-Rust, decode-only, and
-# driven as pull-model `Read` decoders so the whole-file decompress streams in
-# bounded chunks (never whole-buffered). `tar` + `flate2` (gzip, pure-Rust
-# `miniz_oxide` backend) cover `.tar`/`.tar.gz` and must stay in this untargeted
-# block: the archive code uses them on every target (gating them macOS-only broke
-# the Linux build). The macOS-only custom updater reuses them for its tarball path.
-# The rest cover the other tar codecs and 7z.
-# `bzip2` defaults to the pure-Rust `libbz2-rs-sys` backend (no C libbz2). `ruzstd`
-# is a pure-Rust zstd DECODER (`StreamingDecoder: Read`). `lzma-rust2` gives a
-# pure-Rust `.xz` streaming `Read` (`XzReader`) that `lzma-rs` lacks. `sevenz-rust2`
-# is a pure-Rust 7z decoder (`ArchiveReader`/`BlockDecoder`, metadata-only index
-# then per-block streaming). Pinned latest stable, all >3 days old (verified
-# crates.io 2026-07-05: bzip2 0.6.1 2025-10-16, ruzstd 0.8.3 2026-05-08,
-# lzma-rust2 0.16.4 2026-05-31, sevenz-rust2 0.21.2 2026-07-01).
+# The macOS custom updater unpacks its release tarball with these two, and
+# `write_operations/compress_estimate.rs` sizes a deflate stream with `flate2`. The archive
+# backend declares its own copies (plus the other tar codecs and 7z) in `cmdr-archive`.
 flate2 = "1"
 tar = "0.4"
-bzip2 = "0.6.1"
-ruzstd = "0.9.0"
-lzma-rust2 = "0.18.0"
-# LZMA/LZMA2 decode is built in (via `lzma-rust2`); `bzip2`/`deflate`/`ppmd` add
-# the other common 7z codecs (all pure-Rust). `aes256` decrypts a password-protected
-# 7z (the `AES256_SHA256` coder, over `aes 0.9.1` stable, which unifies with `smb2`'s
-# SMB3 AEAD stack); the archive read core threads a per-archive password through parse
-# and every re-open. `compress` (encoders) stays off — decode only.
-sevenz-rust2 = { version = "0.21.2", default-features = false, features = ["aes256", "bzip2", "deflate", "ppmd", "util"] }
-# Wipes the per-archive password from memory on drop (`Zeroizing<String>` on the
-# `ArchiveVolume`). Already in the tree transitively; pinned to the locked 1.9.0
-# so no new crate is added.
-zeroize = "1.9.0"
 # Error reporter: short-ID generation (`ERR-XXXXX`) using rejection sampling.
 rand = "0.10"
 # Pure-Rust git library for the git browser (M1: discover, repo info, status).
@@ -331,16 +297,6 @@ env_logger = "0.11.10"
 rand_core = { version = "0.6", features = ["getrandom"] }
 # Every app-side use is inside a `#[cfg(test)] mod tests`.
 tempfile = "3"
-# Archive-browsing test fixtures build compressed tars and 7z archives in-memory
-# (no checked-in blobs), so tests need the ENCODERS the shipped decode-only path
-# omits. `zstd` (C, dev-only — already in the graph via rc-zip) encodes `.tar.zst`
-# fixtures (the shipped path decodes with pure-Rust `ruzstd`). `sevenz-rust2`'s
-# `compress` feature adds the 7z encoder for building 7z fixtures; `aes256` lets those
-# fixtures be AES-encrypted (content or `-mhe`-style header encryption) so the decrypt
-# path is tested against real encrypted 7z bytes. Dev-deps are excluded from release
-# builds, so the shipped binary stays decode-only.
-zstd = "0.13"
-sevenz-rust2 = { version = "0.21.2", default-features = false, features = ["aes256", "compress", "util"] }
 # Property-based testing. Used for algorithmic functions where the input space
 # is too large for example tests to cover meaningfully (parser, glob→regex,
 # topological sort, Unicode collation). Pinned at 1.11.0 (published 2026-03-24,

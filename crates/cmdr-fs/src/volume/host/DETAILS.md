@@ -230,9 +230,9 @@ unknown in moving SMB, and it's test-only, which is why the pilot backend is one
 
 ### The archive rustdoc link
 
-`archive/volume.rs` carries an intra-doc link to `VolumeManager::resolve`, which no longer resolves once the backend
-leaves the app crate and would fail `desktop-rust-rustdoc`. Rewrite as prose. Cheap, but it's the kind of thing that
-only surfaces at the end of a move.
+`cmdr-archive`'s `volume.rs` carried an intra-doc link to `VolumeManager::resolve`, an app symbol no backend crate can
+name, and it would have failed `desktop-rust-rustdoc`. It's prose now. Cheap to fix, but the kind of thing that only
+surfaces at the end of a move: check every `[\`Type::method\`]` link for an app-side target before moving a backend.
 
 ## Writing a new backend
 
