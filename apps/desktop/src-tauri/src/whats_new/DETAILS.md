@@ -35,11 +35,13 @@ short numbered list of highlights.
 ## Per-entry post-processing
 
 - Joins wrapped continuation lines.
-- Strips the trailing `([hash](url), …)` commit group. Hashes are 6-8 hex chars and one entry may carry several
-  comma-separated links wrapped across source lines, so the stripper matches the whole variable-length, multi-link
-  trailing parenthetical structurally, only when every comma-separated item inside is a bare `[hex](url)` link. A real
-  trailing aside like `(non-link aside)` survives.
-- Flattens other markdown links to their label. Bold / italic / `code` / quotes stay verbatim.
+- Strips the trailing `(hash, hash, …)` commit group. One entry may carry several comma-separated hashes wrapped
+  across source lines, so the stripper matches the whole variable-length trailing parenthetical structurally, only
+  when every comma-separated item inside is a bare hash (6-40 lowercase hex chars). A real trailing aside like
+  `(~40x speed-up!)` survives. The 6-40 range is the shared contract with the `changelog-commit-links` check and the
+  website's linkifier (`apps/website/src/lib/changelog.ts`); `scripts/check/checks/DETAILS.md` § "CHANGELOG commit
+  refs" owns the rule and the reasoning behind its floor.
+- Flattens markdown links to their label. Bold / italic / `code` / quotes stay verbatim.
 
 ## Version comparison
 

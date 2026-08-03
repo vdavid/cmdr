@@ -4,7 +4,7 @@
 //! The changelog is the source of truth: whatever lands in a release's prose lead
 //! and its Added / Changed / Fixed / Security sections renders verbatim in the
 //! app. This parser only strips machinery the user shouldn't see (trailing
-//! commit-link groups, the `Non-app` section, unknown sections) and never grows
+//! commit-hash groups, the `Non-app` section, unknown sections) and never grows
 //! "fix up bad entries" logic. Garbage in the popup gets fixed in `CHANGELOG.md`,
 //! never patched here. See `CLAUDE.md`.
 //!
@@ -44,7 +44,7 @@ pub struct WhatsNewRelease {
 pub struct WhatsNewSection {
     /// One of `Added`, `Changed`, `Fixed`, `Security`.
     pub title: String,
-    /// Bulleted entries, commit-link groups already stripped, other links flattened to text.
+    /// Bulleted entries, commit-hash groups already stripped, markdown links flattened to text.
     pub entries: Vec<String>,
 }
 
@@ -396,20 +396,20 @@ fn strip_bullet_marker(line: &str) -> Option<&str> {
     None
 }
 
-/// Strips the trailing commit-link group, then flattens other markdown links.
+/// Strips the trailing commit-hash group, then flattens markdown links.
 fn finalize_entry(entry: &str) -> String {
-    let without_links = strip_trailing_commit_group(entry);
-    flatten_markdown_links(&without_links)
+    let without_hashes = strip_trailing_commit_group(entry);
+    flatten_markdown_links(&without_hashes)
 }
 
-/// Removes the trailing ` ([hash](url), [hash](url), …)` parenthetical that the
-/// release flow appends. Hashes are 6-8 hex chars; an entry may carry several
-/// comma-separated links (already joined from wrapped lines by `parse_entries`).
+/// Removes the trailing ` (hash, hash, …)` parenthetical that the release flow
+/// appends. Hashes are bare 6-40 hex chars; an entry may carry several
+/// comma-separated ones (already joined from wrapped lines by `parse_entries`).
 ///
 /// The group is recognized structurally: the entry must end with `)`, the
 /// matching `(` opens a parenthetical, and every comma-separated item inside is a
-/// bare `[hex](url)` commit link. If any item isn't, the parenthetical is real
-/// content and we leave it alone.
+/// bare hex hash. If any item isn't, the parenthetical is real content and we
+/// leave it alone.
 fn strip_trailing_commit_group(entry: &str) -> String {
     let trimmed = entry.trim_end();
     if !trimmed.ends_with(')') {
@@ -419,7 +419,7 @@ fn strip_trailing_commit_group(entry: &str) -> String {
         return trimmed.to_string();
     };
     let inner = &trimmed[open + 1..trimmed.len() - 1];
-    if !inner.split(',').map(str::trim).all(is_commit_link) {
+    if inner.is_empty() || !inner.split(',').map(str::trim).all(is_commit_hash) {
         return trimmed.to_string();
     }
     trimmed[..open].trim_end().to_string()
@@ -444,20 +444,14 @@ fn find_matching_open_paren(s: &str) -> Option<usize> {
     None
 }
 
-/// True when `item` is exactly a `[hex](url)` commit link with a 6-8 hex hash.
-fn is_commit_link(item: &str) -> bool {
-    let Some(rest) = item.strip_prefix('[') else {
-        return false;
-    };
-    let Some(close) = rest.find(']') else {
-        return false;
-    };
-    let hash = &rest[..close];
-    if !(6..=8).contains(&hash.len()) || !hash.chars().all(|c| c.is_ascii_hexdigit()) {
-        return false;
-    }
-    let after = &rest[close + 1..];
-    after.starts_with('(') && after.ends_with(')') && after.len() >= 2
+/// True when `item` is exactly a bare commit hash: 6-40 lowercase hex chars.
+///
+/// The 6-char floor is what history needs (the oldest entries abbreviate that
+/// short) and is also the risk floor: a shorter hex-only word like "added" or
+/// "faced" reads as prose, not a hash. The same range is the shared contract with
+/// the `changelog-commit-links` check and the website's linkifier.
+fn is_commit_hash(item: &str) -> bool {
+    (6..=40).contains(&item.len()) && item.chars().all(|c| c.is_ascii_digit() || matches!(c, 'a'..='f'))
 }
 
 /// Flattens any `[text](url)` markdown link to its `text`, leaving all other

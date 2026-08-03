@@ -8644,7 +8644,7 @@ export type WhatsNewRelease = {
 export type WhatsNewSection = {
   // One of `Added`, `Changed`, `Fixed`, `Security`.
   title: string
-  // Bulleted entries, commit-link groups already stripped, other links flattened to text.
+  // Bulleted entries, commit-hash groups already stripped, markdown links flattened to text.
   entries: string[]
 }
 

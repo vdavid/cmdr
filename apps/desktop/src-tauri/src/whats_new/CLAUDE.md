@@ -15,8 +15,8 @@ most the five newest in-range releases; older notes live on the website.
 
 - **The changelog is the single source of truth; fix bad formatting THERE, never grow fix-up logic here.** Whatever
   lands in a release's lead and its Added / Changed / Fixed / Security sections renders verbatim. The parser only strips
-  machinery the user shouldn't see (the trailing commit-link group, `Non-app` and unknown sections) and flattens
-  non-commit markdown links to their text. Teaching it to "clean up" garbled entries would make it a second source of
+  machinery the user shouldn't see (the trailing commit-hash group, `Non-app` and unknown sections) and flattens
+  markdown links to their text. Teaching it to "clean up" garbled entries would make it a second source of
   truth that rots the moment the two disagree.
 - **Resilience over strictness.** Malformed input must never panic or block startup: skip what doesn't parse, log at
   debug (`target: "whats_new"`), show what does.
@@ -30,5 +30,5 @@ most the five newest in-range releases; older notes live on the website.
   `cargo build` picks it up. Don't add the file to the watcher: it would restart the app on every changelog edit.
 - **No runtime I/O.** The changelog is embedded, so the commands can't hang and intentionally skip `blocking_with_timeout`.
 
-Full details (the exact parse contract: heading recognition, lead capture, the variable-length commit-link stripper,
+Full details (the exact parse contract: heading recognition, lead capture, the variable-length commit-hash stripper,
 semver comparison, the no-`Development history`-cutoff reasoning): `DETAILS.md`.

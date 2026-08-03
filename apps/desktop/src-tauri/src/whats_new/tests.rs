@@ -17,7 +17,7 @@ All notable changes to Cmdr will be documented in this file.
 
 ### Added
 
-- This must never appear in any result ([deadbeef](https://github.com/vdavid/cmdr/commit/deadbeef))
+- This must never appear in any result (deadbeef)
 
 ## [0.10.0] - 2026-07-01
 
@@ -26,15 +26,15 @@ order.
 
 ### Added
 
-- A multi-line entry whose commit links wrap across two source lines and carry
-  several hashes ([abc123](https://github.com/vdavid/cmdr/commit/abc123),
-  [d4e5f6a7](https://github.com/vdavid/cmdr/commit/d4e5f6a7))
+- A multi-line entry whose commit hashes wrap across two source lines and carry
+  several of them (abc123,
+  d4e5f6a7)
 - Keep inline **bold** and `code` and a [docs page](https://getcmdr.com/docs) flattened to text
-  ([1a2b3c4](https://github.com/vdavid/cmdr/commit/1a2b3c4))
+  (1a2b3c4)
 
 ### Non-app
 
-- This entire section is dropped ([ffffff](https://github.com/vdavid/cmdr/commit/ffffff))
+- This entire section is dropped (ffffff)
 
 ## [0.9.0] - 2026-06-15
 
@@ -44,24 +44,24 @@ Second lead paragraph after a blank line.
 
 ### Changed
 
-- A six-char-hash entry ([abc123](https://github.com/vdavid/cmdr/commit/abc123))
+- A six-char-hash entry (abc123)
 
 ### Surprise
 
-- An unknown section that must be dropped ([beef12](https://github.com/vdavid/cmdr/commit/beef12))
+- An unknown section that must be dropped (beef12)
 
 ## [0.8.0] - 2026-06-01
 
 ### Fixed
 
-- An entry with no lead above it ([12345678](https://github.com/vdavid/cmdr/commit/12345678))
+- An entry with no lead above it (12345678)
 
 ## [0.7.0] - 2026-05-01
 
 ### Non-app
 
 - Only a Non-app section, so this whole release is omitted
-  ([777aaa](https://github.com/vdavid/cmdr/commit/777aaa))
+  (777aaa)
 
 ## [0.6.0] - 2026-04-01
 
@@ -69,8 +69,10 @@ Lead with a real (parenthetical aside) that must survive, plus a security note.
 
 ### Security
 
-- Patch a thing while keeping a trailing (non-link aside)
-  ([0a0a0a0a](https://github.com/vdavid/cmdr/commit/0a0a0a0a))
+- Patch a thing while keeping a trailing (non-hash aside)
+  (0a0a0a0a)
+- Speed up the scan (~40x speed-up!)
+- Bump the dep (smb2 0.8.0)
 "#;
 
 /// A larger fixture for the slicing/cap tests: 10 trivial releases, 0.20.0 down
@@ -145,7 +147,7 @@ fn preserves_numbered_list_lead() {
 
 ### Added
 
-- Something ([abc123](https://github.com/vdavid/cmdr/commit/abc123))
+- Something (abc123)
 ";
     let releases = parse(md);
     assert_eq!(
@@ -173,7 +175,7 @@ fn reflows_wrapped_numbered_list_item() {
 
 ### Added
 
-- Something ([abc123](https://github.com/vdavid/cmdr/commit/abc123))
+- Something (abc123)
 ";
     let releases = parse(md);
     assert_eq!(
@@ -230,14 +232,14 @@ fn omits_release_with_only_non_app_and_no_lead() {
 }
 
 #[test]
-fn strips_multi_link_wrapped_commit_group() {
+fn strips_multi_hash_wrapped_commit_group() {
     let releases = parse(FIXTURE);
     let r = releases.iter().find(|r| r.version == "0.10.0").unwrap();
     let added = r.sections.iter().find(|s| s.title == "Added").unwrap();
     let entry = &added.entries[0];
     assert_eq!(
         entry,
-        "A multi-line entry whose commit links wrap across two source lines and carry several hashes"
+        "A multi-line entry whose commit hashes wrap across two source lines and carry several of them"
     );
 }
 
@@ -258,7 +260,7 @@ fn strips_eight_char_hash_commit_group() {
 }
 
 #[test]
-fn keeps_inline_markdown_and_flattens_non_commit_link() {
+fn keeps_inline_markdown_and_flattens_a_real_link() {
     let releases = parse(FIXTURE);
     let r = releases.iter().find(|r| r.version == "0.10.0").unwrap();
     let added = r.sections.iter().find(|s| s.title == "Added").unwrap();
@@ -274,11 +276,15 @@ fn keeps_a_real_trailing_parenthetical_that_is_not_a_commit_group() {
     let releases = parse(FIXTURE);
     let r = releases.iter().find(|r| r.version == "0.6.0").unwrap();
     let security = r.sections.iter().find(|s| s.title == "Security").unwrap();
-    // The commit group is stripped, but the "(non-link aside)" stays.
+    // The commit group is stripped, but the "(non-hash aside)" stays.
     assert_eq!(
         security.entries[0],
-        "Patch a thing while keeping a trailing (non-link aside)"
+        "Patch a thing while keeping a trailing (non-hash aside)"
     );
+    // A trailing aside with no commit group at all survives untouched: the hash
+    // shape is what makes a parenthetical machinery, not its position.
+    assert_eq!(security.entries[1], "Speed up the scan (~40x speed-up!)");
+    assert_eq!(security.entries[2], "Bump the dep (smb2 0.8.0)");
     // And the lead's real aside survives too.
     assert!(r.lead.as_ref().unwrap().contains("(parenthetical aside)"));
 }
@@ -394,7 +400,8 @@ fn smoke_real_changelog_parses() {
         );
     }
 
-    // No commit-link residue leaked into any rendered entry.
+    // No commit-ref residue leaked into any rendered entry: neither a bare hash
+    // group (what the changelog carries) nor a URL (the deprecated form).
     for release in &latest_five {
         for section in &release.sections {
             assert!(DISPLAYABLE_SECTIONS.contains(&section.title.as_str()));
@@ -402,6 +409,11 @@ fn smoke_real_changelog_parses() {
                 assert!(
                     !entry.contains("github.com/vdavid/cmdr/commit/"),
                     "commit link leaked into entry: {entry:?}"
+                );
+                assert_eq!(
+                    strip_trailing_commit_group(entry),
+                    *entry,
+                    "commit hash group leaked into entry: {entry:?}"
                 );
             }
         }
