@@ -82,8 +82,10 @@ Three failure modes follow, and `caching_test_support.rs` closes all three:
   orphan-eligible under someone else's sweep in the first place. Pinned by
   `caching_reaper_test::a_reaper_sweep_leaves_a_sibling_tests_listing_alone`.
 
-The guard mirrors `indexing::tests::stress_test_helpers::TestInstanceGuard` (same pattern over `INDEX_REGISTRY`) and
-`write_operations::test_support::TestOperationGuard` (over `WRITE_OPERATION_STATE`); knowing one is knowing all three.
+The guard mirrors `indexing::tests::stress_test_helpers::TestInstanceGuard` (over `INDEX_REGISTRY`),
+`write_operations::test_support::TestOperationGuard` (over `WRITE_OPERATION_STATE`), and
+`volume::manager::test_support::TestVolumeRegistration` (over the global `VolumeManager`); knowing one is knowing all
+four.
 
 **New subsystem state hangs off a struct, not a `static`.** These guards are the retrofit cost of a process-global; a
 handle threaded through its callers needs none of it.

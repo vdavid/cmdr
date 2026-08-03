@@ -364,6 +364,26 @@ lifecycle for a LocalExternal index (the wedge-safe ordering)" for the full inci
 Per-backend tests live colocated with their backend in `backends/`. See `backends/DETAILS.md` §
 "Testing".
 
+### Test isolation for the global `VolumeManager`
+
+Prefer a **private** `VolumeManager::new()` (most `manager.rs` and `archive_routing.rs` tests do), or a **unique**
+volume id when the code under test reaches for `get_volume_manager()`. Neither works for the handful of tests whose
+subject IS a hardcoded id: `create_*_core(None, …)`, `write_payload_to_dir(None, …)`, and `scan_preview_source_volume`
+resolve `None` to `"root"`, so the volume has to be registered under exactly that.
+
+Under plain `cargo test` a crate's tests share one process, so those tests are all writing to one `"root"` slot:
+- Installing an **equivalent** volume idempotently is safe. `ensure_root_volume()` (duplicated in `create/tests.rs`,
+  `write_operations/paste_clipboard_tests.rs`, `file_viewer/archive_extract_test.rs`, and `commands/rename.rs`)
+  `register_if_absent`s a local-FS `"root"`, so whoever runs first wins and the value is the same either way.
+- Installing a **different** volume needs `manager::test_support::TestVolumeRegistration`, which restores the previous
+  registration from `Drop` (unwind included). Without it, `commands/file_system/write_ops.rs`'s `InMemoryVolume` `"root"`
+  outlives its test, `ensure_root_volume`'s `register_if_absent` then silently no-ops, and every later real-FS
+  create/paste assertion fails against an in-memory volume with no hint of who swapped it.
+
+Same guard family as `listing::caching_test_support::TestListingGuard` (over `LISTING_CACHE`),
+`write_operations::test_support::TestOperationGuard` (over `WRITE_OPERATION_STATE`), and
+`indexing::tests::stress_test_helpers::TestInstanceGuard` (over `INDEX_REGISTRY`).
+
 ## Mutation notification
 
 `Volume::notify_mutation`'s trait default is a **no-op**, and that's deliberate: the trait lives in `cmdr-fs`, which

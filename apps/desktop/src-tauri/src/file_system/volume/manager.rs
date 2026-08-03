@@ -13,6 +13,9 @@ use std::sync::{Arc, LazyLock, Mutex, RwLock};
 /// [`ResolvedVolume`]) lives in a second `impl VolumeManager` block here.
 mod archive_routing;
 
+#[cfg(test)]
+pub(crate) mod test_support;
+
 /// Manages registered volumes and provides access to them.
 ///
 /// Thread-safe registry storing volumes by ID, with support for a default volume.

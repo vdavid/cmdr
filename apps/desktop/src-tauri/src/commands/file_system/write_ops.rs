@@ -457,6 +457,7 @@ mod tests {
     #[tokio::test]
     async fn scan_preview_routes_an_archive_source_to_the_archive_volume() {
         use crate::file_system::volume::InMemoryVolume;
+        use crate::file_system::volume::manager::test_support::TestVolumeRegistration;
 
         let dir = tempfile::tempdir().expect("tempdir");
         let zip = dir.path().join("bundle.zip");
@@ -464,8 +465,11 @@ mod tests {
 
         // resolve needs the parent drive registered to build the ArchiveVolume.
         // The `.zip` is a real temp file, so the parent is LOCAL (std::fs confirm).
-        // (nextest runs each test in its own process, so this global is isolated.)
-        get_volume_manager().register("root", Arc::new(InMemoryVolume::new("Root").with_local_fs_access()));
+        // The guard puts the previous `"root"` back on drop: under plain
+        // `cargo test` this global is shared, and a leftover `InMemoryVolume`
+        // here fails every real-FS create/paste test that resolves `None` to it.
+        let _root =
+            TestVolumeRegistration::install("root", Arc::new(InMemoryVolume::new("Root").with_local_fs_access()));
 
         // An archive-inner source resolves to the ArchiveVolume (its root() is the
         // `.zip`), so the preview scans INSIDE the zip instead of via `std::fs`

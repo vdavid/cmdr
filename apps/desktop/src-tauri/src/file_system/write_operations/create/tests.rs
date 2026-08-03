@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
+use tempfile::TempDir;
 
 use crate::file_system::volume::{LaneKey, ListingProgress};
 use crate::file_system::{FileEntry, Volume, VolumeError};
@@ -21,15 +22,20 @@ fn unique(label: &str) -> String {
     format!("create-test-{label}-{n}-{:?}", std::thread::current().id())
 }
 
-fn create_test_dir(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("cmdr_create_test_{}", name));
-    let _ = fs::remove_dir_all(&dir);
-    fs::create_dir_all(&dir).expect("Failed to create test directory");
-    dir
-}
-
-fn cleanup_test_dir(path: &PathBuf) {
-    let _ = fs::remove_dir_all(path);
+/// A scratch directory owned by ONE test run, removed when the returned handle
+/// drops (unwind included).
+///
+/// It has to be process-unique, not merely test-unique: a fixed
+/// `/tmp/cmdr_create_test_<label>` is shared by every process on the machine, so
+/// two concurrent suite runs (parallel worktrees, or CI beside a local run) land
+/// on the same path and the second run's `remove_dir_all` deletes the first
+/// run's fixture out from under it. `label` survives only to name the dir
+/// readably while it exists.
+fn create_test_dir(label: &str) -> TempDir {
+    tempfile::Builder::new()
+        .prefix(&format!("cmdr_create_test_{label}_"))
+        .tempdir()
+        .expect("Failed to create test directory")
 }
 
 /// Registers a real local-FS "root" volume so `create_*_core` with
@@ -85,7 +91,7 @@ async fn create_directory_managed_journals_a_create_folder_op() {
     )));
 
     let tmp = create_test_dir("managed_journal");
-    let parent = tmp.to_string_lossy().to_string();
+    let parent = tmp.path().to_string_lossy().to_string();
     let created = create_directory_managed(
         None,
         parent,
@@ -109,50 +115,46 @@ async fn create_directory_managed_journals_a_create_folder_op() {
     assert_eq!(items[0].source_name, "made-folder");
     let _ = read_operation(&conn, &op.op_id);
     assert!(created.ends_with("made-folder"));
-    cleanup_test_dir(&tmp);
 }
 
 #[tokio::test]
 async fn create_directory_success() {
     ensure_root_volume();
     let tmp = create_test_dir("create_success");
-    let parent = tmp.to_string_lossy().to_string();
+    let parent = tmp.path().to_string_lossy().to_string();
     let result = create_directory_core(None, &parent, "new-folder").await;
     assert!(result.is_ok());
     let (created_path, _) = result.unwrap();
     assert!(created_path.is_dir());
     assert!(created_path.to_string_lossy().ends_with("new-folder"));
-    cleanup_test_dir(&tmp);
 }
 
 #[tokio::test]
 async fn create_directory_already_exists() {
     ensure_root_volume();
     let tmp = create_test_dir("create_exists");
-    let parent = tmp.to_string_lossy().to_string();
-    fs::create_dir(tmp.join("existing")).unwrap();
+    let parent = tmp.path().to_string_lossy().to_string();
+    fs::create_dir(tmp.path().join("existing")).unwrap();
     let result = create_directory_core(None, &parent, "existing").await;
     assert!(result.is_err());
     // allowed-error-string-match: the module returns a String; message is the signal
     assert!(result.unwrap_err().contains("already exists"));
-    cleanup_test_dir(&tmp);
 }
 
 #[tokio::test]
 async fn create_directory_empty_name() {
     let tmp = create_test_dir("create_empty");
-    let parent = tmp.to_string_lossy().to_string();
+    let parent = tmp.path().to_string_lossy().to_string();
     let result = create_directory_core(None, &parent, "").await;
     assert!(result.is_err());
     // allowed-error-string-match: the module returns a String; message is the signal
     assert!(result.unwrap_err().contains("cannot be empty"));
-    cleanup_test_dir(&tmp);
 }
 
 #[tokio::test]
 async fn create_directory_invalid_chars() {
     let tmp = create_test_dir("create_invalid");
-    let parent = tmp.to_string_lossy().to_string();
+    let parent = tmp.path().to_string_lossy().to_string();
     let result = create_directory_core(None, &parent, "foo/bar").await;
     assert!(result.is_err());
     // allowed-error-string-match: the module returns a String; message is the signal
@@ -162,7 +164,6 @@ async fn create_directory_invalid_chars() {
     assert!(result.is_err());
     // allowed-error-string-match: the module returns a String; message is the signal
     assert!(result.unwrap_err().contains("invalid characters"));
-    cleanup_test_dir(&tmp);
 }
 
 #[tokio::test]
@@ -178,16 +179,15 @@ async fn create_directory_unregistered_volume_errors_without_fs_write() {
     // `std::fs::create_dir` on the async executor. Now it returns a typed
     // "Volume not found" error and writes nothing.
     let tmp = create_test_dir("create_unregistered_vol");
-    let parent = tmp.to_string_lossy().to_string();
+    let parent = tmp.path().to_string_lossy().to_string();
     let result = create_directory_core(Some("no-such-volume-xyz".to_string()), &parent, "would-be-folder").await;
     assert!(result.is_err());
     // allowed-error-string-match: the module returns a String; message is the signal
     assert!(result.unwrap_err().contains("Volume not found"));
     assert!(
-        !tmp.join("would-be-folder").exists(),
+        !tmp.path().join("would-be-folder").exists(),
         "no directory should be created when the volume isn't registered"
     );
-    cleanup_test_dir(&tmp);
 }
 
 // ============================================================================
@@ -199,60 +199,56 @@ async fn create_file_unregistered_volume_errors_without_fs_write() {
     // Same contract as the directory case: an unregistered volume_id returns
     // a typed error instead of an untimed `std::fs::File::create_new`.
     let tmp = create_test_dir("create_file_unregistered_vol");
-    let parent = tmp.to_string_lossy().to_string();
+    let parent = tmp.path().to_string_lossy().to_string();
     let result = create_file_core(Some("no-such-volume-xyz".to_string()), &parent, "would-be-file.txt").await;
     assert!(result.is_err());
     // allowed-error-string-match: the module returns a String; message is the signal
     assert!(result.unwrap_err().contains("Volume not found"));
     assert!(
-        !tmp.join("would-be-file.txt").exists(),
+        !tmp.path().join("would-be-file.txt").exists(),
         "no file should be created when the volume isn't registered"
     );
-    cleanup_test_dir(&tmp);
 }
 
 #[tokio::test]
 async fn create_file_success() {
     ensure_root_volume();
     let tmp = create_test_dir("create_file_success");
-    let parent = tmp.to_string_lossy().to_string();
+    let parent = tmp.path().to_string_lossy().to_string();
     let result = create_file_core(None, &parent, "new-file.txt").await;
     assert!(result.is_ok());
     let (created_path, _) = result.unwrap();
     assert!(created_path.is_file());
     assert!(created_path.to_string_lossy().ends_with("new-file.txt"));
     assert_eq!(fs::read(&created_path).unwrap(), b"");
-    cleanup_test_dir(&tmp);
 }
 
 #[tokio::test]
 async fn create_file_already_exists() {
     ensure_root_volume();
     let tmp = create_test_dir("create_file_exists");
-    let parent = tmp.to_string_lossy().to_string();
-    fs::write(tmp.join("existing.txt"), b"hello").unwrap();
+    let parent = tmp.path().to_string_lossy().to_string();
+    fs::write(tmp.path().join("existing.txt"), b"hello").unwrap();
     let result = create_file_core(None, &parent, "existing.txt").await;
     assert!(result.is_err());
     // allowed-error-string-match: the module returns a String; message is the signal
     assert!(result.unwrap_err().contains("already exists"));
-    cleanup_test_dir(&tmp);
 }
 
 #[tokio::test]
 async fn create_file_empty_name() {
     let tmp = create_test_dir("create_file_empty");
-    let parent = tmp.to_string_lossy().to_string();
+    let parent = tmp.path().to_string_lossy().to_string();
     let result = create_file_core(None, &parent, "").await;
     assert!(result.is_err());
     // allowed-error-string-match: the module returns a String; message is the signal
     assert!(result.unwrap_err().contains("cannot be empty"));
-    cleanup_test_dir(&tmp);
 }
 
 #[tokio::test]
 async fn create_file_invalid_chars() {
     let tmp = create_test_dir("create_file_invalid");
-    let parent = tmp.to_string_lossy().to_string();
+    let parent = tmp.path().to_string_lossy().to_string();
     let result = create_file_core(None, &parent, "foo/bar.txt").await;
     assert!(result.is_err());
     // allowed-error-string-match: the module returns a String; message is the signal
@@ -262,7 +258,6 @@ async fn create_file_invalid_chars() {
     assert!(result.is_err());
     // allowed-error-string-match: the module returns a String; message is the signal
     assert!(result.unwrap_err().contains("invalid characters"));
-    cleanup_test_dir(&tmp);
 }
 
 // ============================================================================
@@ -273,7 +268,7 @@ async fn create_file_invalid_chars() {
 async fn create_directory_managed_creates_folder_and_cleans_up_record() {
     ensure_root_volume();
     let tmp = create_test_dir("create_managed_ok");
-    let parent = tmp.to_string_lossy().to_string();
+    let parent = tmp.path().to_string_lossy().to_string();
     let result = create_directory_managed(
         None,
         parent,
@@ -293,7 +288,6 @@ async fn create_directory_managed_creates_folder_and_cleans_up_record() {
             .all(|o| o.operation_type != WriteOperationType::CreateFolder),
         "no lingering CreateFolder record after the managed create settles"
     );
-    cleanup_test_dir(&tmp);
 }
 
 // ============================================================================
@@ -403,7 +397,7 @@ fn write_zip_magic(path: &Path) {
 #[tokio::test]
 async fn create_directory_core_rejects_a_target_inside_an_archive() {
     let dir = create_test_dir("archive-mkdir");
-    let zip = dir.join("bundle.zip");
+    let zip = dir.path().join("bundle.zip");
     write_zip_magic(&zip);
 
     // Parent is inside the archive → read-only until zip mutation lands.
@@ -415,13 +409,12 @@ async fn create_directory_core_rejects_a_target_inside_an_archive() {
     // refusal is the signal that the FORK fired — a natural mkdir failure (volume
     // not found, ENOTDIR) also errors, so `is_err()` alone wouldn't prove the guard.
     assert!(err.contains("archive"), "expected the archive refusal, got: {err}");
-    cleanup_test_dir(&dir);
 }
 
 #[tokio::test]
 async fn create_file_core_rejects_a_target_inside_an_archive() {
     let dir = create_test_dir("archive-mkfile");
-    let zip = dir.join("bundle.zip");
+    let zip = dir.path().join("bundle.zip");
     write_zip_magic(&zip);
 
     // The archive root itself is also read-only.
@@ -430,7 +423,6 @@ async fn create_file_core_rejects_a_target_inside_an_archive() {
         .expect_err("creating inside an archive must be refused");
     // allowed-error-string-match: see `create_directory_core_rejects_...`.
     assert!(err.contains("archive"), "expected the archive refusal, got: {err}");
-    cleanup_test_dir(&dir);
 }
 
 /// Builds a real, parseable zip with the given entries.
@@ -454,7 +446,7 @@ async fn route_archive_create_on_an_existing_inner_name_errors_without_building_
     // shows the friendly copy instead of the raw `zip` "Duplicate filename" — and
     // no temp is built for the doomed edit.
     let dir = create_test_dir("archive-dup-create");
-    let zip = dir.join("bundle.zip");
+    let zip = dir.path().join("bundle.zip");
     write_real_zip(&zip, &[("existing.txt", b"x"), ("sub/existing.txt", b"y")]);
 
     // mkfile onto an existing name at the archive root.
@@ -474,7 +466,7 @@ async fn route_archive_create_on_an_existing_inner_name_errors_without_building_
     assert!(err_dir.contains("already exists"), "got: {err_dir}");
 
     // Neither doomed edit built a temp.
-    let temps: Vec<_> = fs::read_dir(&dir)
+    let temps: Vec<_> = fs::read_dir(dir.path())
         .expect("read dir")
         .flatten()
         .filter(|e| e.file_name().to_string_lossy().contains(".cmdr-tmp-"))
@@ -483,5 +475,4 @@ async fn route_archive_create_on_an_existing_inner_name_errors_without_building_
         temps.is_empty(),
         "a pre-checked duplicate must not build a temp, found {temps:?}"
     );
-    cleanup_test_dir(&dir);
 }
