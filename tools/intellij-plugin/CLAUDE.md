@@ -11,7 +11,7 @@ lands.
 ## Module map
 
 - `build.gradle.kts` + `gradle.properties`: builds against the **local** IDE install (`cmdrIdePath`), so there's no IDE
-  download. `seedIdeSandbox` makes `runIde` land on the fixture with nothing to click.
+  download. `seedIdeSandbox` pre-trusts the fixture project so `runIde` has nothing to click.
 - `src/main/resources/META-INF/`: `plugin.xml` plus `cmdr-svelte.xml`, loaded only when the Svelte plugin is present.
 - `src/main/kotlin/com/getcmdr/idea/`: features. `src/test/kotlin/…`: the tier 1 fixtures.
 - `sandbox-project/`: the tier 2 fixture project the sandbox IDE opens.

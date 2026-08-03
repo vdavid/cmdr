@@ -131,11 +131,11 @@ kill $PID
 - **Target the process by PID, never by name.** David's real IDE is also called `idea`;
   `first process whose name is "idea"` raises his window, not the sandbox's. The `grep cmdr-idea-plugin` above is what
   disambiguates.
-- **`seedIdeSandbox` writes the sandbox's `trusted-paths.xml` and the fixture's `.idea/workspace.xml`** before launch.
-  Without the first, the only thing a screenshot ever captures is the modal "Trust and Open Project?" dialog.
-- **Pre-seeding `workspace.xml` does NOT restore the open editor** on 2026.2; the file survives on disk untouched and
-  the IDE still opens with an empty editor. Passing the file as a second launch argument (`runIde` →
-  `[<projectDir>, <file>]`) is what actually opens it, and that's what `build.gradle.kts` does. It points at `probe.ts`;
+- **`seedIdeSandbox` writes the sandbox's `trusted-paths.xml`** before launch. Without it, the only thing a screenshot
+  ever captures is the modal "Trust and Open Project?" dialog.
+- **Don't reach for `.idea/workspace.xml` to pre-open a file.** It looks like the tidy way and it doesn't work: on
+  2026.2 the seeded file survives on disk untouched and the IDE still opens an empty editor. Passing the file as a
+  second launch argument (`runIde` → `[<projectDir>, <file>]`) is what opens it. It points at `probe.ts`;
   `Probe.svelte` sits in the same fixture project for sideloaded verification, per the next point.
 - **The sandbox IDE runs unlicensed, so Ultimate-only plugins don't load.** The log says it plainly:
   `Plugin 'Svelte' (dev.blachut.svelte.lang) requires plugin with id=com.intellij.modules.ultimate to be enabled`, and
