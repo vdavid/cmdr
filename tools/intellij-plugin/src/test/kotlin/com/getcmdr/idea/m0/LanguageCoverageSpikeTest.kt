@@ -25,7 +25,10 @@ class LanguageCoverageSpikeTest : BasePlatformTestCase() {
         println("[spike] folding builders for JavaScript: ${forJavaScript.joinToString()}")
         println("[spike] folding builders for TypeScript: ${forTypeScript.joinToString()}")
 
-        assertTrue(JS_FOLDING_BUILDER, forJavaScript.contains(JS_FOLDING_BUILDER))
+        assertTrue(
+            "the platform no longer registers $JS_FOLDING_BUILDER for JavaScript; this test needs a new witness",
+            forJavaScript.contains(JS_FOLDING_BUILDER),
+        )
         assertFalse(
             "if this fails, base-language registrations now merge and the per-language duplication can go",
             forTypeScript.contains(JS_FOLDING_BUILDER),
@@ -63,14 +66,14 @@ class LanguageCoverageSpikeTest : BasePlatformTestCase() {
 
     fun testTheProbeCollapsesByDefault() {
         myFixture.configureByText("probe.ts", "const marker = '${M0ProbeFoldingBuilder.PROBE_TOKEN}'\n")
-        val descriptors = M0ProbeFoldingBuilder()
-            .buildFoldRegions(myFixture.file, myFixture.editor.document, false)
+        val builder = M0ProbeFoldingBuilder()
+        val descriptors = builder.buildFoldRegions(myFixture.file, myFixture.editor.document, false)
 
         // Asserted on the descriptor, not on the live region: `updateFoldRegions` deliberately preserves whatever
         // expansion state the editor already has and never applies defaults, so a region's `isExpanded` in tier 1
         // says nothing. Whether a freshly opened file really shows the placeholder is a tier 2 observation.
         assertEquals(1, descriptors.size)
-        assertTrue(M0ProbeFoldingBuilder().isCollapsedByDefault(descriptors.single().element))
+        assertTrue(builder.isCollapsedByDefault(descriptors.single().element))
     }
 
     private fun baseLanguageChain(id: String): List<String> {
