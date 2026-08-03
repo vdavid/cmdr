@@ -411,6 +411,7 @@ mod tests {
         // SAFETY: see note in the sibling test.
         unsafe { std::env::remove_var("CMDR_INSTANCE_ID") };
         let dir = staging_dir();
+        // allowed-fixed-temp-dir: the OS temp root IS the assertion; this reads no fixture of its own
         assert!(dir.starts_with(std::env::temp_dir()), "{:?} should sit under tmp", dir);
     }
 

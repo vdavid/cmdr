@@ -589,7 +589,10 @@ Checks by app and tech:
   sqlite-open-direct (every SQLite connection opens through `crate::sqlite_util`, so the process-wide shared page cache
   is always installed before SQLite initializes), error-string-match, lock-poison, test-sleep (flags a fixed
   `thread::sleep` / `tokio::time::sleep` in test code, where a condition-based `wait_until` belongs; opt out a genuine
-  sleep-is-the-subject site with `// allowed-test-sleep: <reason>`), mtp-dropping-timeout, mtp-no-transport-reset,
+  sleep-is-the-subject site with `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture built on
+  `std::env::temp_dir()`, where every process on the machine shares the path and two suite runs delete each other's
+  live fixtures; the sanctioned fixture is `crate::test_support::TestDir`, and a site where the temp root is load
+  bearing opts out with `// allowed-fixed-temp-dir: <reason>`), mtp-dropping-timeout, mtp-no-transport-reset,
   bindings-fresh, ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow)
 - **Crates / Rust**: workspace-member-coverage (every workspace member is reachable by the cargo lanes and the source
   scanners, and every Rust check has declared which of the two it is), index-crate-isolation (no guarded crate —

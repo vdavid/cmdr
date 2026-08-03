@@ -38,6 +38,7 @@ var rustScannerJurisdictions = map[string]ScannerJurisdiction{
 	"desktop-rust-lock-poison":        {Kinds: []MemberKind{KindApp, KindTool}},
 	"desktop-rust-error-string-match": {Kinds: []MemberKind{KindApp, KindTool}},
 	"desktop-rust-test-sleep":         {Kinds: []MemberKind{KindApp, KindTool}},
+	"desktop-rust-fixed-temp-dir":     {Kinds: []MemberKind{KindApp, KindTool}},
 	"desktop-rust-ipc-enum-camelcase": {Kinds: []MemberKind{KindApp, KindTool}},
 	"desktop-rust-jscpd":              {Kinds: []MemberKind{KindApp, KindTool}},
 	"desktop-rust-sqlite-open-direct": {

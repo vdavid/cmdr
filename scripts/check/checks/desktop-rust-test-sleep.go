@@ -133,9 +133,13 @@ func scanForTestSleep(rootDir, srcDir string) ([]testSleepSite, []orphanDirectiv
 // isRustTestPath reports whether every line of a file is test code. That's the
 // conventional test-file names (isRustTestFile), plus any file under a `/tests/`
 // module directory (e.g. `indexing/tests/external_drive_fixture.rs`,
-// `mcp/tests/mod.rs`), plus a `*test_support*.rs` helper module. A production
-// file that merely carries an inline `#[cfg(test)] mod tests` is NOT one of
-// these; its test lines are found by the region tracker instead.
+// `mcp/tests/mod.rs`), plus a `*test_support*.rs` or `*test_fixtures*.rs` helper
+// module. A production file that merely carries an inline `#[cfg(test)] mod tests`
+// is NOT one of these; its test lines are found by the region tracker instead.
+//
+// The helper-module clauses match on the FILE name because such a module is
+// gated at its declaration site (`#[cfg(test)] mod test_fixtures;`), leaving
+// nothing inside the file for the region tracker to find.
 func isRustTestPath(relPath, baseName string) bool {
 	if isRustTestFile(baseName) {
 		return true
@@ -143,18 +147,21 @@ func isRustTestPath(relPath, baseName string) bool {
 	if strings.Contains(relPath, "/tests/") {
 		return true
 	}
-	if strings.Contains(baseName, "test_support") {
+	if strings.Contains(baseName, "test_support") || strings.Contains(baseName, "test_fixtures") {
 		return true
 	}
 	return false
 }
 
-// testSleepScanState tracks the inline `#[cfg(test)] mod { ... }` region inside a
+// rustTestModState tracks the inline `#[cfg(test)] mod { ... }` region inside a
 // production file. It arms on a `#[cfg(test)]` attribute, enters on the next
 // `mod ... {`, and leaves when brace depth returns to where the mod opened. It
 // mirrors lock-poison's tracker but INVERTS the verdict: lock-poison skips the
 // test mod, we scan only inside it.
-type testSleepScanState struct {
+//
+// Shared by every scanner whose jurisdiction is test code (test-sleep,
+// fixed-temp-dir), so the region rules can't drift apart between them.
+type rustTestModState struct {
 	inTestMod      bool
 	testModDepth   int
 	pendingCfgTest bool
@@ -174,7 +181,7 @@ func scanRustFileForTestSleep(path, relPath string, wholeFileIsTest bool) ([]tes
 	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
 
 	var violations []testSleepSite
-	var state testSleepScanState
+	var state rustTestModState
 	tracker := newDirectiveTracker(AllowTestSleepComment, "//")
 	// The directive can sit anywhere in the contiguous comment block immediately
 	// above the sleep, because a reason often wraps across two comment lines. We
@@ -237,7 +244,7 @@ func scanRustFileForTestSleep(path, relPath string, wholeFileIsTest bool) ([]tes
 // opening `mod ... {` line and the attribute line themselves return false: they
 // carry no sleep worth flagging, and keeping them out matches how the directive
 // tracker should see only real test-body lines.
-func advanceTestModRegion(line string, state *testSleepScanState) bool {
+func advanceTestModRegion(line string, state *rustTestModState) bool {
 	if state.inTestMod {
 		state.testModDepth += strings.Count(line, "{") - strings.Count(line, "}")
 		if state.testModDepth <= 0 {

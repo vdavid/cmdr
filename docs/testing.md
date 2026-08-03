@@ -81,6 +81,11 @@ path is shared by every process on the machine, and it costs three ways:
 3. **No cleanup on panic.** Teardown written as a `remove_dir_all` after the assertions never runs when an assertion
    fails, which is exactly when the debris matters most.
 
+Enforced by `fixed-temp-dir`, which scans test code only: a dedicated test file, a `*test_support*` / `*test_fixtures*`
+helper module, or the body of a `#[cfg(test)] mod` inside a production file. Opt a deliberate site out with
+`// allowed-fixed-temp-dir: <reason>` on the line above or as a trailing comment; a directive that stops matching
+anything is reported as orphaned, so the opt-outs can't quietly outlive their reason.
+
 Two exceptions stay on a raw OS-temp path deliberately, and both name their reason in a comment: `updater/installer.rs`'s
 `staging_dir_sits_under_temp_dir` asserts on the path itself, and `git/test_fixtures.rs::temp_dir` is already
 process-and-run unique (PID plus a nanosecond stamp) and keeps its directory on panic on purpose, for post-mortem

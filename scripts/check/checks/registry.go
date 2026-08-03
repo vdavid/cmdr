@@ -177,6 +177,18 @@ var AllChecks = []CheckDefinition{
 		Run:               RunTestSleep,
 	},
 	{
+		ID:                "desktop-rust-fixed-temp-dir",
+		Nickname:          "fixed-temp-dir",
+		DisplayName:       "fixed-temp-dir",
+		App:               AppDesktop,
+		Tech:              "🦀 Rust",
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		IsFast:            true,
+		Inputs:            rustInputs,
+		Run:               RunFixedTempDir,
+	},
+	{
 		ID:                "desktop-rust-lock-poison",
 		Nickname:          "lock-poison",
 		DisplayName:       "lock-poison",

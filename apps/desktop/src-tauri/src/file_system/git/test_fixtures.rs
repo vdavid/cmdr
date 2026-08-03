@@ -63,6 +63,9 @@ const DEFAULT_COMMIT_SECS: u64 = 1_700_000_000;
 /// The path includes the module prefix, the supplied name, the PID, and a
 /// nanosecond timestamp, so concurrent test invocations don't collide.
 pub(super) fn temp_dir(module_prefix: &str, name: &str) -> PathBuf {
+    // allowed-fixed-temp-dir: the PID and nanosecond stamp below already make this
+    // unique per process and per run, and `Fixture` deliberately KEEPS the directory
+    // on panic for post-mortem inspection, which `TestDir`'s drop would undo
     let dir = std::env::temp_dir().join(format!(
         "cmdr_git_{}_{}_{}_{}",
         module_prefix,
