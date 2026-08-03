@@ -10,32 +10,32 @@ import (
 	"strings"
 )
 
-// The index crates' boundary, made self-defending.
+// The app-free crates' boundary, made self-defending.
 //
-// `cmdr-index` and `cmdr-fs` exist so the app can't reach into index internals and
-// an index change can't have an unbounded blast radius. Two properties carry that,
-// and both erode the same way — one convenient addition at a time, each individually
-// reasonable:
+// `cmdr-index`, `cmdr-fs`, and `cmdr-archive` exist so the app can't reach into their
+// internals and a change inside one can't have an unbounded blast radius. Two
+// properties carry that, and both erode the same way — one convenient addition at a
+// time, each individually reasonable:
 //
 //  1. **No `tauri` in the dependency tree.** The moment the index can name
 //     `AppHandle`, every seam in `indexing/host/` is optional and the boundary is a
 //     convention again. Machine-checkable against `cargo metadata`, which is the
 //     point: the compiler already enforces "no reach into the app", but nothing
 //     stops someone adding the dependency that would make the reach legal.
-//  2. **A bounded public surface.** Making the index a crate means everything the
+//  2. **A bounded public surface.** Making a subsystem a crate means everything the
 //     app touches has to be `pub`, so the honest failure mode is 65 `pub(crate)`
 //     items quietly becoming 65 `pub` items: the build-time split lands and the
 //     encapsulation is abandoned, with everything still green. The item-by-item
-//     audit behind today's shape is
+//     audit behind the index's shape is
 //     `crates/cmdr-index/src/indexing/handle/DETAILS.md`; this check is what stops
 //     the next `pub` from being added without going through it.
 //
-// The ceilings below are the numbers that audit landed on. Raising one is a design
-// decision that needs David's say-so, exactly like a `file-length` allowlist entry.
-// Shrinking is always fine and never fails.
+// The ceilings below are what each crate actually exposes today, with no headroom.
+// Raising one is a design decision that needs David's say-so, exactly like a
+// `file-length` allowlist entry. Shrinking is always fine and never fails.
 
 // guardedIndexCrates are the crates whose dependency trees must stay app-free.
-var guardedIndexCrates = []string{"cmdr-index", "cmdr-fs"}
+var guardedIndexCrates = []string{"cmdr-index", "cmdr-fs", "cmdr-archive"}
 
 // forbiddenForIndexCrates are the packages that must not appear in a guarded
 // crate's tree. `cmdr` is the app; `tauri` and `tauri-specta` are what would let
@@ -44,32 +44,75 @@ var guardedIndexCrates = []string{"cmdr-index", "cmdr-fs"}
 // consumer, so it's a schema dependency on data, not a presentation one.
 var forbiddenForIndexCrates = []string{"cmdr", "tauri", "tauri-specta"}
 
-// surfaceCeilings caps each bucket of the public surface. See the audit for what
-// justifies each number, item by item.
+// surfaceCeilings caps each bucket of the public surface. See each crate's entry in
+// surfaceGuardedCrates for what justifies its numbers.
 type surfaceCeilings struct {
 	// RootPromises is what `lib.rs` exports: a `pub` there says "a host may rely on
 	// this forever".
 	RootPromises int
-	// HandleMethods is the count of `pub fn` on `Index`. The plan's target was about
-	// 25; the audit landed at 34 and justified the nine in writing.
+	// HandleMethods is the count of `pub fn` on the crate's one handle type, when it
+	// has one. Zero (with an empty HandleType) means the crate has no such type.
 	HandleMethods int
 	// PublicModules is how many modules a host can name a path into, across the
 	// whole crate.
 	PublicModules int
 	// SubsystemItems is every `pub` item inside those modules — the surface the
-	// root re-exports don't capture, which is where `media_index` and `importance`
-	// live.
+	// root re-exports don't capture.
 	SubsystemItems int
 }
 
-// Measured 2026-07-31, and each number is where the audit landed rather than where
-// the code happened to be. `HandleMethods` is 35 rather than the audit's headline 34
-// because this count includes `Index::builder`, the constructor.
-var indexCrateCeilings = surfaceCeilings{
-	RootPromises:   44,
-	HandleMethods:  35,
-	PublicModules:  17,
-	SubsystemItems: 156,
+// surfaceGuardedCrates are the guarded crates whose public surface is ALSO capped.
+// Not every guarded crate is: `cmdr-fs` is deliberately absent, because it's shared
+// vocabulary whose whole job is to be named from everywhere, so a count of its `pub`
+// items would measure the wrong thing.
+//
+// HandleType names the one type whose methods get their own bucket, or is empty when
+// the crate has no such type. A backend crate doesn't: its API is the `Volume` trait
+// it implements, whose methods aren't a promise of its own.
+var surfaceGuardedCrates = []struct {
+	Name       string
+	HandleType string
+	Ceilings   surfaceCeilings
+}{
+	{
+		Name: "cmdr-index",
+		// Measured 2026-07-31, and each number is where the item-by-item audit
+		// landed rather than where the code happened to be. `HandleMethods` is 35
+		// rather than the audit's headline 34 because this count includes
+		// `Index::builder`, the constructor.
+		HandleType: "Index",
+		Ceilings: surfaceCeilings{
+			RootPromises:   44,
+			HandleMethods:  35,
+			PublicModules:  17,
+			SubsystemItems: 156,
+		},
+	},
+	{
+		// Measured 2026-08-03, at the extraction, and set to exactly what the crate
+		// exposes — no headroom, so the first addition has to be argued for.
+		//
+		// A backend's API is the `Volume` trait it implements, which is `cmdr-fs`'s
+		// promise rather than this crate's, so everything counted here exists for one
+		// of exactly three callers, and a new item should name which:
+		//
+		//   - the boundary detector the host routes with (`boundary`, 9 of the root
+		//     promises),
+		//   - the reading core the host's archive-edit driver and file viewer parse
+		//     and stream through (`read`, 23 of them),
+		//   - `ArchiveVolume` itself, plus `mutator` and `active_watch_count`.
+		//
+		// Four public modules is the whole module tree a host can name a path into:
+		// `boundary`, `read`, `volume`, `watch`. `mutation` is private and reaches the
+		// root only as the `mutator` re-export; `test_fixtures` is `testing`-gated and
+		// counts apart.
+		Name: "cmdr-archive",
+		Ceilings: surfaceCeilings{
+			RootPromises:   35,
+			PublicModules:  4,
+			SubsystemItems: 36,
+		},
+	},
 }
 
 // ── The dependency graph ─────────────────────────────────────────────
@@ -277,18 +320,20 @@ type surfaceCounts struct {
 	Gated int
 }
 
-func ceilingBreaches(counts surfaceCounts, ceilings surfaceCeilings) []string {
+func ceilingBreaches(crate string, counts surfaceCounts, ceilings surfaceCeilings, handleType string) []string {
 	var problems []string
 	check := func(bucket string, got, cap int, remedy string) {
 		if got > cap {
 			problems = append(problems, fmt.Sprintf(
-				"%s: %d, over the ceiling of %d. %s", bucket, got, cap, remedy))
+				"%s: %s is %d, over the ceiling of %d. %s", crate, bucket, got, cap, remedy))
 		}
 	}
 	check("root promises in `lib.rs`", counts.RootPromises, ceilings.RootPromises,
 		"A `pub` there is a promise a host may rely on forever.")
-	check("public methods on the `Index` handle", counts.HandleMethods, ceilings.HandleMethods,
-		"Reach for a facade method, a fold into an existing call, or the `testing` gate first.")
+	if handleType != "" {
+		check(fmt.Sprintf("public methods on the `%s` handle", handleType), counts.HandleMethods, ceilings.HandleMethods,
+			"Reach for a facade method, a fold into an existing call, or the `testing` gate first.")
+	}
 	check("public modules", counts.PublicModules, ceilings.PublicModules,
 		"A `pub mod` exposes everything `pub` inside it, including items nobody meant to promise.")
 	check("public items in those modules", counts.SubsystemItems, ceilings.SubsystemItems,
@@ -304,7 +349,7 @@ func ceilingBreaches(counts surfaceCounts, ceilings surfaceCeilings) []string {
 // does, which a line-shaped count over rustfmt-normalized source does reliably.
 //
 // `files` maps a crate-root-relative path to that file's contents.
-func countSurface(files map[string]string, rootFile string) surfaceCounts {
+func countSurface(files map[string]string, rootFile, handleType string) surfaceCounts {
 	var counts surfaceCounts
 	publicTypes := map[string]bool{}
 
@@ -355,13 +400,17 @@ func countSurface(files map[string]string, rootFile string) surfaceCounts {
 		} else {
 			counts.SubsystemItems += items
 		}
-		counts.SubsystemItems += countInherentMethods(source, publicTypes, file == rootFile)
+		counts.SubsystemItems += countInherentMethods(source, publicTypes, handleType)
 	}
 
-	// `Index`'s methods are also subsystem items; counting them in their own bucket
-	// is what pins Decision 3's target rather than letting it hide in a total.
-	for _, source := range files {
-		counts.HandleMethods += countMethodsOn(source, "Index")
+	// The handle's methods are also subsystem items; counting them in their own
+	// bucket is what pins the index's target rather than letting it hide in a total.
+	// A crate with no handle type skips this and keeps every method in the subsystem
+	// bucket.
+	if handleType != "" {
+		for _, source := range files {
+			counts.HandleMethods += countMethodsOn(source, handleType)
+		}
 	}
 	return counts
 }
@@ -495,16 +544,13 @@ func publicTypeNames(source string) []string {
 
 // countInherentMethods counts `pub fn` / `pub const` in inherent `impl` blocks for
 // types a host can name. Trait impls are skipped: their methods are the trait's
-// surface, not a new promise. `skipIndex` keeps the handle's methods out of the
-// subsystem bucket, where they'd be counted twice.
-func countInherentMethods(source string, publicTypes map[string]bool, skipIndex bool) int {
+// surface, not a new promise. `handleType`, when the crate has one, is skipped here
+// because it's counted in its own bucket.
+func countInherentMethods(source string, publicTypes map[string]bool, handleType string) int {
 	total := 0
 	for name := range publicTypes {
-		if skipIndex && name == "Index" {
+		if handleType != "" && name == handleType {
 			continue
-		}
-		if name == "Index" {
-			continue // counted in its own bucket
 		}
 		total += countMethodsOn(source, name)
 	}
@@ -635,7 +681,7 @@ func readCrateSources(srcDir string) (map[string]string, error) {
 	return files, err
 }
 
-// RunIndexCrateIsolation enforces both halves of the index crates' boundary.
+// RunIndexCrateIsolation enforces both halves of the app-free crates' boundary.
 func RunIndexCrateIsolation(ctx *CheckContext) (CheckResult, error) {
 	graph, err := readCargoGraph(ctx.RootDir)
 	if err != nil {
@@ -643,26 +689,33 @@ func RunIndexCrateIsolation(ctx *CheckContext) (CheckResult, error) {
 	}
 	problems := isolationViolations(graph, guardedIndexCrates, forbiddenForIndexCrates)
 
-	srcDir := filepath.Join(ctx.RootDir, "crates", "cmdr-index", "src")
-	files, err := readCrateSources(srcDir)
-	if err != nil {
-		return CheckResult{}, fmt.Errorf("couldn't read `cmdr-index`'s sources: %w", err)
+	var summaries []string
+	for _, crate := range surfaceGuardedCrates {
+		srcDir := filepath.Join(ctx.RootDir, "crates", crate.Name, "src")
+		files, err := readCrateSources(srcDir)
+		if err != nil {
+			return CheckResult{}, fmt.Errorf("couldn't read `%s`'s sources: %w", crate.Name, err)
+		}
+		if _, ok := files["lib.rs"]; !ok {
+			return CheckResult{}, fmt.Errorf("`%s/lib.rs` is missing, so the public surface can't be counted", srcDir)
+		}
+		counts := countSurface(files, "lib.rs", crate.HandleType)
+		problems = append(problems, ceilingBreaches(crate.Name, counts, crate.Ceilings, crate.HandleType)...)
+		summary := fmt.Sprintf("%s: %d root promises", crate.Name, counts.RootPromises)
+		if crate.HandleType != "" {
+			summary += fmt.Sprintf(", %d handle methods", counts.HandleMethods)
+		}
+		summaries = append(summaries, fmt.Sprintf("%s, %d public modules, %d items in them (+%d gated)",
+			summary, counts.PublicModules, counts.SubsystemItems, counts.Gated))
 	}
-	if _, ok := files["lib.rs"]; !ok {
-		return CheckResult{}, fmt.Errorf("`%s/lib.rs` is missing, so the public surface can't be counted", srcDir)
-	}
-	counts := countSurface(files, "lib.rs")
-	problems = append(problems, ceilingBreaches(counts, indexCrateCeilings)...)
 
 	if len(problems) > 0 {
 		return CheckResult{}, fmt.Errorf(
-			"%d index-boundary %s:\n  %s\n\nThe audit behind the surface is `crates/cmdr-index/src/indexing/handle/DETAILS.md`; "+
+			"%d crate-boundary %s:\n  %s\n\nThe audit behind the index's surface is `crates/cmdr-index/src/indexing/handle/DETAILS.md`; "+
 				"raising a ceiling needs David's explicit say-so, like a `file-length` allowlist entry",
 			len(problems), Pluralize(len(problems), "problem", "problems"), strings.Join(problems, "\n  "))
 	}
 
-	return Success(fmt.Sprintf(
-		"no tauri in %s; %d root promises, %d handle methods, %d public modules, %d items in them (+%d gated)",
-		strings.Join(guardedIndexCrates, " or "),
-		counts.RootPromises, counts.HandleMethods, counts.PublicModules, counts.SubsystemItems, counts.Gated)), nil
+	return Success(fmt.Sprintf("no tauri in %s; %s",
+		strings.Join(guardedIndexCrates, ", "), strings.Join(summaries, "; "))), nil
 }

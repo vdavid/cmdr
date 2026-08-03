@@ -121,7 +121,7 @@ impl std::fmt::Debug for Index {
 }
 `,
 	}
-	counts := countSurface(source, "lib.rs")
+	counts := countSurface(source, "lib.rs", "Index")
 	if counts.RootPromises != 4 {
 		t.Fatalf("root promises: want 4 (host, Index, IndexError, IndexFailure), got %d", counts.RootPromises)
 	}
@@ -162,7 +162,7 @@ pub struct AlsoNotReachable {}
 pub fn also_never() {}
 `,
 	}
-	counts := countSurface(source, "lib.rs")
+	counts := countSurface(source, "lib.rs", "Index")
 	// `media_index` + `media_index::read` are public; the other two aren't.
 	if counts.PublicModules != 2 {
 		t.Fatalf("public modules: want 2, got %d", counts.PublicModules)
@@ -176,18 +176,52 @@ pub fn also_never() {}
 
 func TestCeilingFailsOnGrowthAndNotesShrink(t *testing.T) {
 	over := surfaceCounts{RootPromises: 5, HandleMethods: 40, PublicModules: 10, SubsystemItems: 90}
-	problems := ceilingBreaches(over, surfaceCeilings{RootPromises: 5, HandleMethods: 34, PublicModules: 10, SubsystemItems: 90})
+	problems := ceilingBreaches("cmdr-index", over, surfaceCeilings{RootPromises: 5, HandleMethods: 34, PublicModules: 10, SubsystemItems: 90}, "Index")
 	if len(problems) != 1 || !strings.Contains(problems[0], "handle") {
 		t.Fatalf("growth past a ceiling must fail and name the bucket, got %v", problems)
 	}
 
 	exact := surfaceCounts{RootPromises: 5, HandleMethods: 34, PublicModules: 10, SubsystemItems: 90}
-	if problems := ceilingBreaches(exact, surfaceCeilings{RootPromises: 5, HandleMethods: 34, PublicModules: 10, SubsystemItems: 90}); len(problems) != 0 {
+	if problems := ceilingBreaches("cmdr-index", exact, surfaceCeilings{RootPromises: 5, HandleMethods: 34, PublicModules: 10, SubsystemItems: 90}, "Index"); len(problems) != 0 {
 		t.Fatalf("sitting exactly at the ceiling is fine, got %v", problems)
 	}
 
 	under := surfaceCounts{RootPromises: 4, HandleMethods: 30, PublicModules: 9, SubsystemItems: 80}
-	if problems := ceilingBreaches(under, surfaceCeilings{RootPromises: 5, HandleMethods: 34, PublicModules: 10, SubsystemItems: 90}); len(problems) != 0 {
+	if problems := ceilingBreaches("cmdr-index", under, surfaceCeilings{RootPromises: 5, HandleMethods: 34, PublicModules: 10, SubsystemItems: 90}, "Index"); len(problems) != 0 {
 		t.Fatalf("shrinking is never a failure, got %v", problems)
+	}
+}
+
+// A backend crate has no single handle type: its API is the `Volume` trait it
+// implements. Its inherent methods must land in the subsystem bucket instead of
+// vanishing, and the handle bucket must not be reported at all.
+func TestCeilingWithoutAHandleTypeCountsEveryMethodAsASubsystemItem(t *testing.T) {
+	source := map[string]string{
+		"lib.rs": `
+pub mod volume;
+`,
+		"volume.rs": `
+pub struct ArchiveVolume {}
+
+impl ArchiveVolume {
+    pub fn new() {}
+    pub fn set_password(&self) {}
+    fn private_helper(&self) {}
+}
+`,
+	}
+	counts := countSurface(source, "lib.rs", "")
+	if counts.HandleMethods != 0 {
+		t.Fatalf("a crate with no handle type has no handle bucket: want 0, got %d", counts.HandleMethods)
+	}
+	// The struct plus its two `pub fn`s.
+	if counts.SubsystemItems != 3 {
+		t.Fatalf("subsystem items: want 3 (the struct and its two methods), got %d", counts.SubsystemItems)
+	}
+
+	over := surfaceCounts{RootPromises: 1, HandleMethods: 99, PublicModules: 1, SubsystemItems: 3}
+	ceilings := surfaceCeilings{RootPromises: 1, PublicModules: 1, SubsystemItems: 3}
+	if problems := ceilingBreaches("cmdr-archive", over, ceilings, ""); len(problems) != 0 {
+		t.Fatalf("a crate with no handle type must never report a handle breach, got %v", problems)
 	}
 }

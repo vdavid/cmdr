@@ -104,8 +104,8 @@ is supposed to BE the surface.
 
 ## The ceiling that keeps this honest
 
-`index-crate-isolation` (error-level) counts the surface on every run and fails when a bucket grows. Four buckets,
-measured 2026-07-31:
+`index-crate-isolation` (error-level) counts the surface on every run and fails when a bucket grows. It caps
+`cmdr-archive` the same way, from its own entry in the check. Four buckets here, measured 2026-07-31:
 
 - **44 root promises** — the names `lib.rs` exports, `pub mod` included.
 - **35 methods on `Index`** — the 34 above plus `Index::builder`, which the headline number treats as the constructor
