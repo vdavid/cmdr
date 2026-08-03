@@ -5,8 +5,11 @@ their files. Backend + IPC: `src-tauri/src/agent/`, `commands/agent/`.
 
 ## Module map
 
-- `ask-cmdr-trigger.svelte.ts`: the core `$state` store + mutators, the one place core state changes.
-  `ask-cmdr-messages.ts` holds its rail-item types, `ask-cmdr-history.ts` the pure history→rail fold.
+- `ask-cmdr-state.svelte.ts`: the core `$state` store, its types, and its accessors — the one place core state is
+  DEFINED. Three slices mutate it and never each other: `ask-cmdr-trigger.svelte.ts` (the rail: open/close, focus,
+  width, threads; also the entry point that re-exports the rest), `ask-cmdr-stream.svelte.ts` (send + the streaming
+  reducer + the progress watchdog), `ask-cmdr-rename-review.svelte.ts` (the review and its undo). `ask-cmdr-messages.ts`
+  holds the rail-item types, `ask-cmdr-history.ts` the pure history→rail fold.
 - `ask-cmdr-sessions.svelte.ts`: a SEPARATE slice for the sessions panel. Calls into the trigger; never imported back.
 - `AskCmdrRail.svelte`: the panel, mounted by `routes/(main)/+page.svelte` beside `DualPaneExplorer`, hosting
   `AskCmdrSessions.svelte` as an overlay, with `AskCmdrMessage` / `ToolLine` / `Composer` / `AttachmentChip` parts.

@@ -1,148 +1,59 @@
 /**
- * Ask Cmdr rail state: open/close, focus, the active conversation, and the live
- * streaming model. Modeled on `operation-log-trigger.svelte.ts` (a module-level `$state`
- * object mutated by exported functions).
+ * The Ask Cmdr rail itself: open/close, focus, width, and which conversation is loaded. Also
+ * the entry point every consumer imports from — it re-exports the slices it composes, so a
+ * component asks this module for the rail and gets the whole feature.
  *
- * The thread is a flat list of {@link RailMessage}s. History (loaded via
- * `getAskCmdrConversation`) and the live stream both write into the same list; streaming
- * events mutate the last assistant message in place (Svelte 5 deep-proxies the array and
- * its objects, so field mutation is reactive).
+ * The slices, each usable on its own:
  *
- * **Cancel finalizes locally.** The runtime returns `Cancelled` with NO terminal event,
- * so a stop won't be echoed back — `stopStreaming` finalizes the bubble itself.
+ * - `ask-cmdr-state.svelte.ts`: the shared `$state` object, its types, and its accessors.
+ * - `ask-cmdr-stream.svelte.ts`: sending a message and folding the event stream into it.
+ * - `ask-cmdr-rename-review.svelte.ts`: the bulk-rename review and its undo.
+ *
+ * Modeled on `operation-log-trigger.svelte.ts` (a module-level `$state` object mutated by
+ * exported functions).
  */
 
 import { saveAppStatus } from '$lib/app-status-store'
 import { explorerState } from '$lib/file-explorer/pane/explorer-state.svelte'
 import { getAppLogger } from '$lib/logging/logger'
-import { SvelteSet } from 'svelte/reactivity'
 import { consentState, refreshConsent } from './ask-cmdr-consent.svelte'
-import type { ContextUsage } from './ask-cmdr-context-usage'
 import { buildRailMessages } from './ask-cmdr-history'
-import type { RailMessage } from './ask-cmdr-messages'
+import { discardRenameReview } from './ask-cmdr-rename-review.svelte'
+import { askCmdrState, hasOlderMessages, MESSAGE_PAGE, RAIL_MAX_WIDTH, RAIL_MIN_WIDTH } from './ask-cmdr-state.svelte'
+import { stopStreaming } from './ask-cmdr-stream.svelte'
 import { growMainWindowForRail, shrinkMainWindowForRail } from './rail-window'
-import { undoStateFromReport } from './rename-undo'
 import {
-  applyBulkRename,
-  cancelAskCmdr,
-  cancelBulkRenameProposal,
   getAskCmdrConversation,
   listAskCmdrConversations,
   recordAskCmdrModelChange,
-  preflightBulkRename,
-  reviseBulkRenameRow,
-  sendAskCmdrMessage,
-  undoOperations,
-  type AskCmdrErrorKind,
-  type AskCmdrStreamEvent,
   type AttachmentRef,
-  type RenameEvidence,
-  type RenameEvidenceCoverage,
 } from '$lib/tauri-commands'
 
 const log = getAppLogger('askCmdr')
 
 export type { RailMessage, RailToolCall } from './ask-cmdr-messages'
-
-/** Past this many thread messages the rail nudges "start a fresh one?" (mirrors the Rust
- * `THREAD_SOFT_CAP_MESSAGES`; no hard cut). */
-export const THREAD_SOFT_CAP_MESSAGES = 40
-
-/** How many messages a thread page holds. Threads are small (soft cap ~40), so the first
- * page is usually the whole thread; paging is the insurance for a long one. Loading is
- * tail-first (newest page), with "load earlier" prepending older pages. */
-export const MESSAGE_PAGE = 50
-const STALL_AFTER_MS = 30_000
-const STOP_AFTER_MS = 90_000
-let stallTimer: ReturnType<typeof setTimeout> | null = null
-let stopTimer: ReturnType<typeof setTimeout> | null = null
-
-export interface BulkRenameReviewRow {
-  rowId: string
-  sourceName: string
-  destinationName: string
-  /** The file this row renames, for its thumbnail and the full viewer. Display only: apply
-   * sends opaque row ids, and the backend resolves paths from its own stored proposal. */
-  sourcePath: string
-  volumeId: string
-  /** What the backend verified this name is based on. Display only; `detail` is
-   * model-authored text, so it renders as plain text and is never branched on. */
-  evidence: RenameEvidence
-  /** How much of the text Cmdr read in the image the quote covers (`imageText` rows only),
-   * so a thin match looks thin. Backend-derived, never model-authored. */
-  coverage: RenameEvidenceCoverage | null
-  allowed: boolean
-  blockedReason: string | null
-  warnings: Array<'extensionChanged' | 'cycle'>
-  /** True when the last name the user typed here wasn't a usable filename, so the row kept the
-   * name it had. Display only; the backend is the authority on what a name may be. */
-  nameRejected: boolean
-}
-
-export interface BulkRenameReview {
-  proposalId: string
-  rows: BulkRenameReviewRow[]
-  preflighting: boolean
-  expired: boolean
-  requestVersion: number
-}
-
-interface AskCmdrState {
-  open: boolean
-  /** Rail width in px (clamped 280-520), persisted. */
-  width: number
-  /** The active thread, or `null` for an unsaved new chat. */
-  conversationId: number | null
-  messages: RailMessage[]
-  streaming: boolean
-  loadingHistory: boolean
-  /** Total messages the active thread had at load, so paging knows when older exist. */
-  messageTotal: number
-  /** History rows loaded so far, from the newest end. `< messageTotal` ⇒ older remain. */
-  historyCount: number
-  /** True while a "load earlier" page is in flight. */
-  loadingOlder: boolean
-  /** Files/folders staged in the composer for the next send (path + kind only). */
-  attachments: AttachmentRef[]
-  renameReview: BulkRenameReview | null
-  /** How full the model's view got on the thread's last measured turn, for the footer gauge.
-   * `null` means no turn has been measured, which the gauge shows as nothing at all. */
-  contextUsage: ContextUsage | null
-  /** Destination names the user turned down in the last review, newest first, waiting to ride
-   * the NEXT send so the following batch doesn't propose the same style again. Cleared once
-   * sent: they're feedback on one decision, not a permanent denylist. */
-  deniedNames: string[]
-}
-
-export const RAIL_MIN_WIDTH = 280
-export const RAIL_MAX_WIDTH = 520
-const RAIL_DEFAULT_WIDTH = 340
-
-export const askCmdrState = $state<AskCmdrState>({
-  open: false,
-  width: RAIL_DEFAULT_WIDTH,
-  conversationId: null,
-  messages: [],
-  streaming: false,
-  loadingHistory: false,
-  messageTotal: 0,
-  historyCount: 0,
-  loadingOlder: false,
-  attachments: [],
-  renameReview: null,
-  contextUsage: null,
-  deniedNames: [],
-})
-
-/** True once the thread grows past the soft cap (drives the "start a fresh one?" nudge). */
-export function isOverSoftCap(): boolean {
-  return askCmdrState.messages.length > THREAD_SOFT_CAP_MESSAGES
-}
-
-/** True when older history pages exist beyond what's loaded (drives "load earlier"). */
-export function hasOlderMessages(): boolean {
-  return askCmdrState.historyCount < askCmdrState.messageTotal
-}
+export type { AskCmdrState, BulkRenameReview, BulkRenameReviewRow } from './ask-cmdr-state.svelte'
+export {
+  askCmdrState,
+  hasOlderMessages,
+  isOverSoftCap,
+  MESSAGE_PAGE,
+  RAIL_MAX_WIDTH,
+  RAIL_MIN_WIDTH,
+  THREAD_SOFT_CAP_MESSAGES,
+} from './ask-cmdr-state.svelte'
+export { sendMessage, stopStreaming } from './ask-cmdr-stream.svelte'
+export {
+  allowAllRenameRows,
+  applyRenameReview,
+  cancelRenameReview,
+  denyAllRenameRows,
+  noteRenameApplied,
+  renameReviewListingChanged,
+  reviseRenameRow,
+  setRenameRowAllowed,
+  undoRename,
+} from './ask-cmdr-rename-review.svelte'
 
 // ── Open / close / focus ───────────────────────────────────────────────────────
 
@@ -301,34 +212,6 @@ export async function loadOlderMessages(): Promise<void> {
     askCmdrState.loadingOlder = false
   }
 }
-
-// ── Sending + streaming ──────────────────────────────────────────────────────────
-
-/** Send the user's message and stream the answer. No-ops on empty text or while streaming
- * (single-flight per thread; the composer is disabled mid-turn). */
-export function sendMessage(text: string): void {
-  const trimmed = text.trim()
-  if (!trimmed || askCmdrState.streaming) return
-  const attachments = askCmdrState.attachments
-  askCmdrState.messages.push({ kind: 'user', id: null, text: trimmed, attachments })
-  askCmdrState.streaming = true
-  resetProgressWatchdog()
-  askCmdrState.attachments = []
-  // The names the user turned down ride this turn only. Clearing them here (not on the
-  // response) keeps a retry from re-sending feedback the model already acted on.
-  const deniedNames = askCmdrState.deniedNames
-  askCmdrState.deniedNames = []
-  void sendAskCmdrMessage(askCmdrState.conversationId, trimmed, attachments, deniedNames, handleStreamEvent).then(
-    (id) => {
-      askCmdrState.conversationId = id
-    },
-    (e: unknown) => {
-      log.warn('sending a message failed: {error}', { error: String(e) })
-      if (askCmdrState.streaming) applyFailed('provider', String(e))
-    },
-  )
-}
-
 // ── Attachments (staged in the composer for the next send) ─────────────────────
 
 /** Stage attachment refs in the composer, de-duplicated by path (counts stay tiny, so a
@@ -344,440 +227,6 @@ export function addAttachments(refs: AttachmentRef[]): void {
 /** Remove one staged attachment by path. */
 export function removeAttachment(path: string): void {
   askCmdrState.attachments = askCmdrState.attachments.filter((a) => a.path !== path)
-}
-
-/** Stop the in-flight turn. The runtime sends no terminal event on cancel, so finalize the
- * current bubble locally. */
-export function stopStreaming(): void {
-  if (!askCmdrState.streaming) return
-  if (askCmdrState.conversationId !== null) void cancelAskCmdr(askCmdrState.conversationId)
-  finalizeAssistant()
-  askCmdrState.streaming = false
-  clearProgressWatchdog()
-}
-
-function handleStreamEvent(event: AskCmdrStreamEvent): void {
-  switch (event.type) {
-    case 'started':
-      askCmdrState.conversationId = event.conversationId
-      return
-    case 'queued':
-      return
-    case 'userPersisted':
-      applyUserPersisted(event.messageId)
-      return
-    case 'assistantStarted':
-      {
-        const assistant = currentAssistant()
-        if (assistant) {
-          assistant.streaming = true
-        } else {
-          askCmdrState.messages.push({
-            kind: 'assistant',
-            id: null,
-            text: '',
-            tools: [],
-            thinking: false,
-            stalled: false,
-            streaming: true,
-          })
-        }
-      }
-      return
-    case 'textDelta':
-      applyTextDelta(event.text)
-      return
-    case 'reasoningTick':
-      applyThinking()
-      return
-    case 'toolCallStarted':
-      applyToolStarted(event.callId, event.tool)
-      return
-    case 'toolCallFinished':
-      applyToolFinished(event.callId, event.ok)
-      return
-    case 'proposalReady':
-      openRenameReview(event.proposal)
-      return
-    case 'done':
-      applyDone(event.messageId)
-      return
-    case 'failed':
-      applyFailed(event.kind, event.detail)
-      return
-    case 'modelChanged':
-      applyModelChanged(event.model)
-      return
-    default:
-      handleContextEvent(event)
-  }
-}
-
-/** The two events that report on the CONTEXT rather than on the answer: what the assembly set
- * aside, and what it cost. Split out so `handleStreamEvent` stays under the complexity ceiling
- * and both halves stay exhaustive. */
-function handleContextEvent(event: Extract<AskCmdrStreamEvent, { type: 'contextTrimmed' | 'contextUsage' }>): void {
-  switch (event.type) {
-    case 'contextTrimmed':
-      applyContextTrimmed(event.elidedResults)
-      return
-    case 'contextUsage':
-      applyContextUsage(event.estimatedTokens, event.budgetTokens, event.elidedResults)
-  }
-}
-
-/** Record what this turn's prompt cost, for the footer gauge. One event per answered turn, so
- * this is a straight replace rather than an accumulation. */
-function applyContextUsage(estimatedTokens: number, budgetTokens: number, elidedResults: number): void {
-  askCmdrState.contextUsage = { estimatedTokens, budgetTokens, elidedResults }
-}
-
-/** Show that the budget pushed older lookups out of this turn's context. It goes before the
- * streaming bubble, where the drop happened. */
-function applyContextTrimmed(elidedResults: number): void {
-  const assistant = currentAssistant()
-  const notice: RailMessage = { kind: 'contextTrimmed', count: elidedResults }
-  if (assistant) {
-    askCmdrState.messages.splice(askCmdrState.messages.indexOf(assistant), 0, notice)
-  } else {
-    askCmdrState.messages.push(notice)
-  }
-}
-
-function applyUserPersisted(messageId: number): void {
-  const user = lastUserMessage()
-  if (user) user.id = messageId
-}
-
-function applyTextDelta(text: string): void {
-  const assistant = currentAssistant()
-  if (assistant) {
-    assistant.text += text
-    assistant.thinking = false
-    assistant.stalled = false
-    resetProgressWatchdog()
-  }
-}
-
-function applyThinking(): void {
-  const assistant = currentAssistant()
-  if (assistant) assistant.thinking = true
-}
-
-function applyToolStarted(callId: string, tool: string): void {
-  currentAssistant()?.tools.push({ callId, tool, running: true, ok: true, path: null })
-  resetProgressWatchdog()
-}
-
-function applyToolFinished(callId: string, ok: boolean): void {
-  const tool = askCmdrState.messages
-    .findLast(
-      (message): message is Extract<RailMessage, { kind: 'assistant' }> =>
-        message.kind === 'assistant' && message.tools.some((candidate) => candidate.callId === callId),
-    )
-    ?.tools.find((candidate) => candidate.callId === callId)
-  if (tool) {
-    tool.running = false
-    tool.ok = ok
-  }
-  resetProgressWatchdog()
-}
-
-function applyDone(messageId: number): void {
-  finalizeAssistant(messageId)
-  askCmdrState.streaming = false
-  clearProgressWatchdog()
-}
-
-function applyFailed(kind: AskCmdrErrorKind, detail: string | null): void {
-  finalizeAssistant()
-  askCmdrState.messages.push({ kind: 'error', errorKind: kind, detail: detail ?? undefined })
-  askCmdrState.streaming = false
-  clearProgressWatchdog()
-}
-
-function resetProgressWatchdog(): void {
-  clearProgressWatchdog()
-  if (!askCmdrState.streaming) return
-  stallTimer = setTimeout(() => {
-    const assistant = currentAssistant()
-    if (assistant?.streaming) assistant.stalled = true
-  }, STALL_AFTER_MS)
-  stopTimer = setTimeout(() => {
-    if (!askCmdrState.streaming) return
-    stopStreaming()
-    askCmdrState.messages.push({ kind: 'error', errorKind: 'timeout' })
-  }, STOP_AFTER_MS)
-}
-
-function clearProgressWatchdog(): void {
-  if (stallTimer) clearTimeout(stallTimer)
-  if (stopTimer) clearTimeout(stopTimer)
-  stallTimer = null
-  stopTimer = null
-}
-
-/** The model changed between the previous turn and this one, so the line belongs BEFORE
- * this turn's user bubble (which is already rendered optimistically). */
-function applyModelChanged(model: string): void {
-  const item: RailMessage = { kind: 'modelChange', model }
-  const lastUserIndex = askCmdrState.messages.findLastIndex((m) => m.kind === 'user')
-  if (lastUserIndex >= 0) askCmdrState.messages.splice(lastUserIndex, 0, item)
-  else askCmdrState.messages.push(item)
-}
-
-function openRenameReview(proposal: Extract<AskCmdrStreamEvent, { type: 'proposalReady' }>['proposal']): void {
-  discardRenameReview()
-  askCmdrState.renameReview = {
-    proposalId: proposal.proposalId,
-    rows: proposal.rows.map((row) => ({
-      ...row,
-      allowed: true,
-      blockedReason: null,
-      warnings: [],
-      nameRejected: false,
-    })),
-    preflighting: false,
-    expired: false,
-    requestVersion: 0,
-  }
-  void refreshRenamePreflight()
-}
-
-/** Change one row's user decision, then revalidate the exact allowed subset. */
-export function setRenameRowAllowed(rowId: string, allowed: boolean): void {
-  const review = askCmdrState.renameReview
-  const row = review?.rows.find((candidate) => candidate.rowId === rowId)
-  if (!review || !row || (row.blockedReason && allowed)) return
-  row.allowed = allowed
-  void refreshRenamePreflight()
-}
-
-/**
- * Replace one row's proposed name with the one the user typed, then revalidate.
- *
- * The backend owns everything about the new name: it validates it, swaps the row's evidence for
- * the "you typed this" marker (the model's quote described the model's name), and invalidates the
- * accepted preflight — so the fresh preflight below is what lets the edited name be applied at
- * all. A name it won't take leaves the row on the name it had, said plainly on the row.
- */
-export async function reviseRenameRow(rowId: string, destinationName: string): Promise<void> {
-  const review = askCmdrState.renameReview
-  const row = review?.rows.find((candidate) => candidate.rowId === rowId)
-  if (!review || !row || review.expired) return
-  // No IPC for a field the user left as it was (a blur after no edit, or Enter twice).
-  if (destinationName === row.destinationName) {
-    row.nameRejected = false
-    return
-  }
-  try {
-    const revised = await reviseBulkRenameRow(review.proposalId, rowId, destinationName)
-    const current = liveRenameRow(review.proposalId, rowId)
-    if (!current) return
-    current.destinationName = revised.destinationName
-    current.evidence = revised.evidence
-    current.coverage = revised.coverage
-    current.nameRejected = false
-    await refreshRenamePreflight()
-  } catch (e) {
-    log.warn('revising a proposed name failed: {error}', { error: String(e) })
-    const current = liveRenameRow(review.proposalId, rowId)
-    if (current) current.nameRejected = true
-  }
-}
-
-/** The row as it stands NOW, or `null` if the review closed or was replaced meanwhile. */
-function liveRenameRow(proposalId: string, rowId: string): BulkRenameReviewRow | null {
-  const current = askCmdrState.renameReview
-  if (!current || current.proposalId !== proposalId) return null
-  return current.rows.find((candidate) => candidate.rowId === rowId) ?? null
-}
-
-/** Allow every row the latest preflight did not block. */
-export function allowAllRenameRows(): void {
-  const review = askCmdrState.renameReview
-  if (!review) return
-  for (const row of review.rows) {
-    if (!row.blockedReason) row.allowed = true
-  }
-  void refreshRenamePreflight()
-}
-
-/** Deny every row. This sends no filesystem request and creates no operation. */
-export function denyAllRenameRows(): void {
-  const review = askCmdrState.renameReview
-  if (!review) return
-  for (const row of review.rows) row.allowed = false
-  void refreshRenamePreflight()
-}
-
-/** Revalidates a review when the pane's existing file watcher reports a name
- * that participates in the proposal. The backend remains authoritative; this
- * name filter only avoids unrelated watcher traffic causing extra IPC. */
-export async function renameReviewListingChanged(
-  changes: ReadonlyArray<{ type?: string; entry: { name: string } }>,
-): Promise<void> {
-  const review = askCmdrState.renameReview
-  if (!review) return
-  const reviewedNames = new SvelteSet(review.rows.flatMap((row) => [row.sourceName, row.destinationName]))
-  if (changes.some((change) => reviewedNames.has(change.entry.name))) await refreshRenamePreflight()
-}
-
-/** The destination names in this review the user did NOT take: denied rows, and (when the whole
- * review is cancelled) every row. Names only — what the model needs is the fact that a style was
- * rejected, and a reason would be its own words handed back to it. */
-function rememberDeniedNames(rows: { allowed: boolean; destinationName: string }[]): void {
-  const denied = rows.filter((row) => !row.allowed).map((row) => row.destinationName)
-  if (denied.length === 0) return
-  // Newest first, so the cap in the envelope keeps the most recent decision.
-  askCmdrState.deniedNames = [...denied, ...askCmdrState.deniedNames]
-}
-
-/** Cancel closes the review and consumes its server-owned proposal. */
-export function cancelRenameReview(): void {
-  const review = askCmdrState.renameReview
-  if (!review) return
-  // Cancelling turns down every row, and that is exactly the feedback the next batch needs.
-  rememberDeniedNames(review.rows.map((row) => ({ allowed: false, destinationName: row.destinationName })))
-  askCmdrState.renameReview = null
-  void cancelBulkRenameProposal(review.proposalId)
-}
-
-/** Starts the one managed operation for the rows the user currently allows. */
-export async function applyRenameReview(): Promise<void> {
-  const review = askCmdrState.renameReview
-  if (!review || review.preflighting || review.expired) return
-  const allowedRowIds = review.rows.filter((row) => row.allowed && !row.blockedReason).map((row) => row.rowId)
-  if (allowedRowIds.length === 0) return
-  review.preflighting = true
-  try {
-    const started = await applyBulkRename(review.proposalId, allowedRowIds)
-    // Applying a subset is a decision about the rest: carry those names into the next batch.
-    rememberDeniedNames(review.rows)
-    noteRenameApplied(started.operationId, allowedRowIds.length)
-    if (askCmdrState.renameReview?.proposalId === review.proposalId) askCmdrState.renameReview = null
-  } catch (e) {
-    const current = askCmdrState.renameReview
-    if (!current || current.proposalId !== review.proposalId) return
-    current.preflighting = false
-    log.warn('starting the rename plan failed: {error}', { error: String(e) })
-    void refreshRenamePreflight()
-  }
-}
-
-/**
- * Record a finished batch in the thread, with its undo.
- *
- * The line goes in the thread rather than in the (now closed) review dialog,
- * because that's where the user is looking and because a run of batches then reads
- * as a run. **Only the newest line carries the job-wide undo**, and only once a run
- * has more than one batch: the previous lines hand their ids over and keep just
- * their own Undo, so "undo everything" appears once, at the bottom.
- */
-export function noteRenameApplied(operationId: string, fileCount: number): void {
-  const run = renameRunLines()
-  // Built from the lines themselves, never from a previous line's stored job set:
-  // that set already includes its predecessors, so folding it in would repeat ids.
-  const jobOperationIds = [...run.map((line) => line.operationId), operationId]
-  const jobFileCount = run.reduce((total, line) => total + line.fileCount, 0) + fileCount
-  // The older lines are no longer the newest, so they give up the job-wide action.
-  for (const line of run) {
-    line.jobOperationIds = []
-    line.jobFileCount = 0
-  }
-  askCmdrState.messages.push({
-    kind: 'renameApplied',
-    operationId,
-    fileCount,
-    jobOperationIds: jobOperationIds.length > 1 ? jobOperationIds : [],
-    jobFileCount: jobOperationIds.length > 1 ? jobFileCount : 0,
-    undo: { status: 'undoable' },
-  })
-}
-
-/** Every rename line in this thread that can still be undone, oldest first. */
-function renameRunLines(): Extract<RailMessage, { kind: 'renameApplied' }>[] {
-  return askCmdrState.messages.filter(
-    (message): message is Extract<RailMessage, { kind: 'renameApplied' }> =>
-      message.kind === 'renameApplied' && message.undo.status === 'undoable',
-  )
-}
-
-/**
- * Put the old names back for one batch, or (`scope: 'job'`) for every batch of the
- * run this line closes.
- *
- * The ids go over in APPLY order; the backend reverses them newest first, which is
- * the only order that works when a later batch took a name an earlier one freed. It
- * resolves when the reversal has actually finished, so the line can report what
- * came back rather than claiming success on dispatch.
- */
-export async function undoRename(
-  line: Extract<RailMessage, { kind: 'renameApplied' }>,
-  scope: 'batch' | 'job' = 'batch',
-): Promise<void> {
-  if (line.undo.status !== 'undoable') return
-  const operationIds = scope === 'job' && line.jobOperationIds.length > 0 ? line.jobOperationIds : [line.operationId]
-  const covered = renameRunLines().filter((candidate) => operationIds.includes(candidate.operationId))
-  // Remember each covered line's state so a call that never reached the backend can
-  // hand its Undo back. A plain array of pairs, since this map is local and never
-  // read reactively (`SvelteMap` would be reactivity nobody observes).
-  const previous = covered.map((candidate) => [candidate, candidate.undo] as const)
-  for (const candidate of covered) candidate.undo = { status: 'undoing' }
-  try {
-    const report = await undoOperations(operationIds)
-    const state = undoStateFromReport(report)
-    // The line the user clicked reports the whole tally; the others it covered are
-    // done with, so they stop offering an Undo that would now be refused.
-    line.undo = state
-    for (const candidate of covered) {
-      if (candidate !== line) candidate.undo = { status: 'unavailable' }
-      candidate.jobOperationIds = []
-      candidate.jobFileCount = 0
-    }
-  } catch (e) {
-    log.warn('undoing the rename failed: {error}', { error: String(e) })
-    // Nothing is known to have moved, so hand every line its Undo back.
-    for (const [candidate, state] of previous) candidate.undo = state
-  }
-}
-
-function discardRenameReview(): void {
-  const review = askCmdrState.renameReview
-  if (!review) return
-  askCmdrState.renameReview = null
-  void cancelBulkRenameProposal(review.proposalId)
-}
-
-async function refreshRenamePreflight(): Promise<void> {
-  const review = askCmdrState.renameReview
-  if (!review) return
-  const version = review.requestVersion + 1
-  review.requestVersion = version
-  review.preflighting = true
-  // Validate every displayed row, including denied and previously blocked rows.
-  // Otherwise a target that disappears after blocking its row could never make
-  // that row reviewable again. Apply still submits only the user's allowed ids.
-  const allowedRowIds = review.rows.map((row) => row.rowId)
-  try {
-    const result = await preflightBulkRename(review.proposalId, allowedRowIds)
-    const current = askCmdrState.renameReview
-    if (!current || current.proposalId !== review.proposalId || current.requestVersion !== version) return
-    current.preflighting = false
-    current.expired = result.status === 'expired'
-    if (current.expired) return
-    for (const row of current.rows) {
-      const backend = result.rows.find((candidate) => candidate.rowId === row.rowId)
-      row.blockedReason = backend?.status === 'blocked' ? backend.reason : null
-      if (backend) row.warnings = backend.warnings
-      if (row.blockedReason) row.allowed = false
-    }
-  } catch (e) {
-    const current = askCmdrState.renameReview
-    if (!current || current.proposalId !== review.proposalId || current.requestVersion !== version) return
-    current.preflighting = false
-    log.warn('checking the rename plan failed: {error}', { error: String(e) })
-  }
 }
 
 /** How long to wait after a model-affecting settings change before asking the backend to
@@ -814,33 +263,5 @@ async function recordModelChangeForActiveThread(): Promise<void> {
     }
   } catch (e) {
     log.warn('recording a model change failed: {error}', { error: String(e) })
-  }
-}
-
-function currentAssistant(): Extract<RailMessage, { kind: 'assistant' }> | null {
-  const last = askCmdrState.messages.at(-1)
-  return last?.kind === 'assistant' ? last : null
-}
-
-function lastUserMessage(): Extract<RailMessage, { kind: 'user' }> | null {
-  for (let i = askCmdrState.messages.length - 1; i >= 0; i--) {
-    const message = askCmdrState.messages[i]
-    if (message.kind === 'user') return message
-  }
-  return null
-}
-
-/** Finalize the streaming assistant bubble: retire unfinished activity, stop its cursor,
- * and drop it if it never produced anything. Finished tool history stays visible. */
-function finalizeAssistant(messageId?: number): void {
-  const assistant = currentAssistant()
-  if (!assistant) return
-  assistant.streaming = false
-  assistant.thinking = false
-  assistant.stalled = false
-  assistant.tools = assistant.tools.filter((tool) => !tool.running)
-  if (messageId !== undefined) assistant.id = messageId
-  if (assistant.text.length === 0 && assistant.tools.length === 0) {
-    askCmdrState.messages.pop()
   }
 }
