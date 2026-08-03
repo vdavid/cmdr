@@ -214,6 +214,17 @@ Partial coverage works: covered volumes still return results alongside the note(
   case_sensitive | exclude_system_dirs`. Same key = same search; the most recent copy wins (move-to-top).
 - **Cap**: `search.recentSearches.maxCount` (default 1000). `apply_max_count` trims in-memory on live-apply; `0` clears
   and short-circuits future adds.
+- **Concurrency**: a `Mutex<HistoryStore>` cache plus a separate `DISK_LOCK` for the read-modify-write. Drop the cache
+  guard before any `fs` call, and never `.await` while holding a guard.
+- **Shared types**: `selection/` re-exports `HistoryMode` / `HistoryFilters` one-way; the entry structs stay separate.
+  If the two mode sets ever fork, copy the types rather than widening the re-export.
+
+## AI backend resolution
+
+`ai/` builds the prompt and parses the reply, but it never picks a provider. The `translate_search_query` command
+(`commands/search.rs`) resolves one through `crate::ai::manager::resolve_translate_backend`, then runs
+`crate::ai::translate::translate_once`. Backend choice, keys, and settings therefore stay in `crate::ai`, and `search/`
+takes no dependency on them.
 
 ## Image-OCR search boundary (`media_index`)
 
