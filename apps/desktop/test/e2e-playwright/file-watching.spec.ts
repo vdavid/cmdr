@@ -83,8 +83,11 @@ test.describe('File watching', () => {
     await ensureAppReady(tauriPage)
     const fixtureRoot = getFixtureRoot()
 
-    // file-a.txt is part of the fixture, should be visible
-    expect(await fileExistsInFocusedPane(tauriPage, 'file-a.txt')).toBe(true)
+    // file-a.txt is part of the fixture, so it should be visible. POLL rather than
+    // assert once: `recreateFixtures` rewrites everything under `left/` while the
+    // watch is live, and the debounced batch for those deletes can land just after
+    // `ensureAppReady`'s listing, transiently dropping the file from the pane.
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'file-a.txt'), { timeout: 2000 }).toBe(true)
 
     fs.unlinkSync(path.join(fixtureRoot, 'left', 'file-a.txt'))
     await flushFileWatcher(tauriPage)
@@ -98,7 +101,9 @@ test.describe('File watching', () => {
     await ensureAppReady(tauriPage)
     const fixtureRoot = getFixtureRoot()
 
-    expect(await fileExistsInFocusedPane(tauriPage, 'file-a.txt')).toBe(true)
+    // Polled for the same reason as the delete test's precondition above: the
+    // fixture recreate's watch batch can transiently drop the file.
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'file-a.txt'), { timeout: 2000 }).toBe(true)
 
     fs.renameSync(path.join(fixtureRoot, 'left', 'file-a.txt'), path.join(fixtureRoot, 'left', 'file-a-renamed.txt'))
     await flushFileWatcher(tauriPage)
