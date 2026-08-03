@@ -175,7 +175,30 @@ currently reports this fixed.
 
 **Checks**: `pnpm check rust`, `pnpm check --include-slow`.
 
-## Also: the search arena may never be dropped (~600 MB)
+## RESOLVED, negative: the search arena IS dropped, and is not the memory culprit
+
+Checked 2026-08-04 against the same prod log. The drop path works:
+
+```
+16:22:10  DEBUG search::volumes  Search idle timeout reached, dropping indices
+16:22:10  DEBUG search::volumes  Search indices dropped (all volumes)
+16:53:03  DEBUG search::volumes  Search idle timeout reached, dropping indices
+16:53:03  DEBUG search::volumes  Search indices dropped (all volumes)
+```
+
+The earlier "no drop line in five hours" claim was a **bad grep**, not a finding: it searched for "Search index
+dropped/unloaded/released/evicted" while the actual message is "Search indices dropped (all volumes)". The arena loaded
+at 16:15 and 16:16 and was gone by 16:53, so the 947 MB Rust heap measured around 21:00 is something else.
+
+That eliminates the largest single memory candidate for the cost of one grep, which is what made it worth doing first.
+**The remaining hypothesis, and it is now the leading one: MT.** A full walk over ~600k folders plus a 160,718-entry
+weight map, every 60 seconds forever, churns hundreds of MB per minute. That is exactly the shape that leaves mimalloc
+holding large arenas, and it fits the measured "947 MB dirty plus 725 MB reclaimable" better than any allocation leak
+would. Re-measure the footprint after MT lands before hunting further.
+
+The stale text below is kept only for the second lead, which still stands.
+
+### The original entry (its premise refuted above)
 
 `apps/desktop/src-tauri/src/search/DETAILS.md:9` says the search index "loads lazily on dialog open and drops after idle
 (5 min timer + 10 min backstop), **~600 MB resident while active**". The log shows it loaded twice:
