@@ -152,7 +152,64 @@ Both are "too much churn arrives, so a bounded mechanism gives up and does the e
 design, because a fix for one may be the fix for both, and because `SCOPED_WALK_MAX_DIRS` is exactly the kind of
 cardinality cliff M3 exists to stop falling off.
 
-### What to investigate, in order
+### INVESTIGATED 2026-08-04. Three of the premises above are wrong.
+
+Full write-up with the measurements: `docs/notes/importance-treadmill-2026-08-04.md`. Corrections first, because the
+framing above misled once already:
+
+- **The counts are not "pinned".** Across 681 rescores the folder count takes hundreds of values (`52071` 12 times,
+  `51920` 28, also `17`, `4`, `0`). Nearly stable, not pinned, and that distinction is why a naive diff fails.
+- **It is not "every 60 s forever".** An incremental pass runs every 60 s (681 in 10.5 h), but the FULL walk fired 330
+  times, in bursts, and stopped entirely after 22:42.
+- **Q4 was already fixed on `main`, just unreleased.** v0.37.0 was tagged at 07:37 on 2026-08-03; the delta reload landed
+  at 11:25 the same day (`8d8118132`). `git merge-base --is-ancestor 8d8118132 v0.37.0` says NO. The running binary had
+  no delta path, hence 616 `loaded` lines and zero `patched`.
+
+**Q1, the actual trigger, and it is one path.** `origin_dir` (`reconcile/reconciler.rs:1616`) is the PARENT of the
+changed file, so any file written directly in `~` makes `$HOME` an origin. `$HOME` does not floor, and it covers
+**574,007 of the volume's 694,963 directories (83%)**, so its subtree instantly blows the 20,000 cap. The writers are
+ordinary dotfile churn: `~/.claude.json` (Claude Code, constantly), `~/.zsh_history`, `~/.zcompdump`. The clincher: the
+last full-walk fallback in the whole log is **22:42:27**, and the last write to `~/.claude.json` is **22:42:19**. Eight
+seconds apart, and the treadmill never fires again. Only 19 non-floored dirs on the volume have >20,000-dir subtrees,
+and every one except `$HOME` / `/Users` / `/` is static.
+
+**Q2, refuted by measurement. Do NOT raise `SCOPED_WALK_MAX_DIRS`.** With the cap lifted to 2,000,000 against a copy of
+the real 7.0M-row index: `$HOME` scoped walk **6.02 s** versus the full walk's **4.9 s**, so raising the cap makes the
+one origin that actually fires *worse*. The general reasoning ("subtree is 20k, volume is 600k") is sound, and the
+crossover is ~440,000 dirs, but `$HOME` sits past it. The abandoned probe costs 31 ms, which is not worth optimizing.
+
+**Q3, confirmed defect and the biggest single cost.** There is no diff anywhere: `rescore_rows` (`recompute.rs:498`)
+scores every folder unconditionally and `apply_incremental` (`writer.rs:373`) clears each subtree and re-inserts every
+row. Measured against a fresh recompute over the same snapshot, of 51,081 rows in the `$HOME` subtree:
+
+- **identical `signals_json`: 51,021 (99.88%)**
+- identical `score`: **17 (0.03%)**
+
+**So `signals_json` is the equality key and `score` is not.** `recency()` (`scorer/mod.rs:214`) reads `now_secs`, so
+every score drifts ~2e-6 per pass; `FolderSignals` is entirely clock-free. A score diff would find nothing to skip.
+
+Cost, from the log's own timestamps over 330 full-walk passes: **median 15.3 s, mean 20.1 s, max 363 s, total
+6,639 s ,  17.6% of the 10.5-hour log spent inside an importance pass.** Uncontended measurements put the walk at 4.9 s
+and the write at 558 ms, so ~10 s of each pass is contention with six concurrent cargo builds. That decomposition is
+inference, not measurement, and is flagged as such.
+
+### Decisions
+
+- **Landing now: skip rows whose signals blob is unchanged.** Correct on its own merits, worth 99.88% of the write, and
+  semantics-preserving (the stored data ends up identical). Guarded by the clear/insert agreement invariant and the
+  eval suite.
+- **For David: bound the origin by subtree size.** `dir_stats.recursive_dir_count` is already populated and exact
+  (verified: reads 574,006 against a computed 574,007) and is a single indexed PK lookup, so a pass can ask "how much of
+  the volume does this origin cover?" in O(1), replacing the 31 ms probe. **This is cardinality-based, not path-shaped,
+  which is exactly the mechanism M3 exists to provide.** What to do with an over-budget origin is the open question:
+  drop it (staleness the next full pass heals) or demote it to "rescore the origin and its ancestors, not its subtree"
+  (more honest, since a dotfile write in `~` genuinely cannot change any descendant's signals). The demotion is the
+  recommendation. It is a semantic change, so the eval suite applies.
+- Note that even once the delta reload ships, `MAX_DELTA_ROWS` is 10,000 while a `$HOME` pass writes 51,081, so this
+  treadmill still forces `ReloadAll`. Fixing the origin bound removes that; leaving it means the delta does not help
+  here.
+
+### The original investigation list (kept for the questions it framed)
 
 1. **Why do the changed subtrees exceed 20,000 dirs on an idle machine?** Log the origins and the descent count at the
    bail. If `sanitize_incremental_batch` is letting build output through, that is the bug and it is upstream of
