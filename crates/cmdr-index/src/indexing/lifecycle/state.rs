@@ -824,8 +824,8 @@ pub fn disable_drive_index_persist_intent(volume_id: &str) -> Result<(), String>
     Ok(())
 }
 
-/// Remove a volume's instance from the registry and uninstall its read-path
-/// handles (for root, the module globals). Used on start-up failure paths.
+/// Remove a volume's instance from the registry and withdraw its read-path
+/// handles from the tables in `read/handles.rs`. Used on start-up failure paths.
 fn remove_instance_and_handles(volume_id: &str) {
     {
         let mut reg = INDEX_REGISTRY.lock().expect("INDEX_REGISTRY lock poisoned");

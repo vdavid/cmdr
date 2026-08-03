@@ -19,8 +19,8 @@
 use std::collections::{HashSet, VecDeque};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
-// `Ordering` isn't used directly in this file, but the `rescan*` submodules and
-// the `tests/` files reach it through `super::*` / `super::super::*`.
+// `Ordering` isn't used directly in this file; the `tests/` files reach it through
+// their `use super::*`. (The `rescan*` submodules import it themselves.)
 #[cfg(test)]
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};

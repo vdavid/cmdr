@@ -119,17 +119,17 @@ intent, not as remaining work):
   ninth back-edge turned up in `write_operations/rollback.rs` that the eight-edge count had missed (it wasn't in the
   cycle, so the count was right about the cycle and short about the churn).
 - **M2** — the `commands::search` 3-cycle is gone; `cmdr-index` 23 → 20. `bindings.ts` byte-identical, as predicted.
-- **M3** — the `events ↔ sink ↔ media_index::events` 3-group is gone and no module under `events/` is in any cycle.
-  **It did not move the 20**: the progress pump sits on `manager → reporter → writer → … → manager` whichever parent
-  owns it, so moving it to `lifecycle/` renamed a node rather than removing one. The payload enums live in
-  `events/payload.rs`, not the `kinds.rs` this plan named — "kind", "type", and "category" are names to avoid.
+- **M3** — the `events ↔ sink ↔ media_index::events` 3-group is gone and no module under `events/` is in any cycle. **It
+  did not move the 20**: the progress pump sits on `manager → reporter → writer → … → manager` whichever parent owns it,
+  so moving it to `lifecycle/` renamed a node rather than removing one. The payload enums live in `events/payload.rs`,
+  not the `kinds.rs` this plan named — "kind", "type", and "category" are names to avoid.
 - **M4** — `media_index` 5 → 0, plus the `writer ↔ upsert` pair, landing exactly the DAG below. Needed one thing the
   plan didn't foresee: `accounted`'s items had to drop their `accounted_` prefix, because while the writer still wrote
   `use super::coverage;` the edge landed on the facade and the cycle survived the split.
 - **M5** — `backends::mtp` is out of every cycle; `mtp::connection ↔ file_ops` stays, as intended. The registrar lives
   in `mtp/volume_wiring.rs`, the structural twin of `network/smb_upgrade.rs`, so the two backends read as one pattern.
 - **M6** — `cmdr-index` 20 → 6, better than the 7 estimated. Both invariants survive and the DB-delete one got
-  *stronger*: withdrawal now actually un-routes a volume, closing a window where a reader could open a fresh connection
+  _stronger_: withdrawal now actually un-routes a volume, closing a window where a reader could open a fresh connection
   to a database about to be unlinked. `state::volume_cancel_token` is gone entirely (three sites, not the one named).
 
 ### M0 — Replace the non-test `use super::*` globs
@@ -362,18 +362,20 @@ M0 gates everything. After that:
 
 Each of these turned up while cutting a cycle and is out of scope for this plan. Listed so they don't get lost.
 
-- **The per-navigation verifier is a silent no-op on every non-root volume.** `reconcile/verifier.rs::verify_and_correct`
-  reads the ROOT pool via `get_read_pool()` but writes through the *caller's* writer, which `trigger_verification` takes
-  from whichever volume the app named. `Index::verify_directory` runs per navigation for every volume, so on SMB, MTP,
-  and external drives it reads a path that can't resolve in root's index, gets nothing, and does nothing. Fixing it
-  means routing through `get_read_pool_for(volume_id)` plus `routing::index_read_path` and publishing under the right
-  volume: a behavior change, and the one item here worth real attention.
+- **The per-navigation verifier is a silent no-op on every non-root volume.**
+  `reconcile/verifier.rs::verify_and_correct` reads the ROOT pool via `get_read_pool()` but writes through the
+  _caller's_ writer, which `trigger_verification` takes from whichever volume the app named. `Index::verify_directory`
+  runs per navigation for every volume, so on SMB, MTP, and external drives it reads a path that can't resolve in root's
+  index, gets nothing, and does nothing. Fixing it means routing through `get_read_pool_for(volume_id)` plus
+  `routing::index_read_path` and publishing under the right volume: a behavior change, and the one item here worth real
+  attention.
 - **`backends/mtp.rs` is 1,194 lines against a 1,095 allowlist entry.** Pre-existing, and inside the growth buffer, so
   it doesn't warn. Splitting it is its own job.
-- **A test-isolation gap that only bare `cargo test` sees.** `indexing::host::volumes::tests::an_uninstalled_provider_reports_nothing_mounted`
-  doesn't take `handle::test_lock()` the way its siblings do, and `handle/tests.rs`'s `.install_for_test()` call doesn't
-  hold it either, despite the method's own doc saying to. In-process runs fail it roughly 2 of 3 times on `main` as
-  well. nextest (one process per test, and the project's runner) is unaffected, which is why it has stayed hidden.
+- **A test-isolation gap that only bare `cargo test` sees.**
+  `indexing::host::volumes::tests::an_uninstalled_provider_reports_nothing_mounted` doesn't take `handle::test_lock()`
+  the way its siblings do, and `handle/tests.rs`'s `.install_for_test()` call doesn't hold it either, despite the
+  method's own doc saying to. In-process runs fail it roughly 2 of 3 times on `main` as well. nextest (one process per
+  test, and the project's runner) is unaffected, which is why it has stayed hidden.
 
 ## Related
 
