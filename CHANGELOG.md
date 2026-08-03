@@ -1291,160 +1291,161 @@ version.
 - Run Docker SMB integration tests on every push (26 tests against real servers) (257269bb)
 - Byte-level blake3 hash verification on every SMB copy test (fd5a2d84)
 - SMB copy soak harness: 30-min Docker run, 41,984 iterations, zero drift (3a9b58f2, 6a9e046d)
-- Add changelog-commit-links check (surfaced and fixed 8 bad links) (4e28130)
+- Add changelog-commit-links check (surfaced and fixed 8 bad links) (4e281303)
 
 ## [0.12.0] - 2026-04-18
 
 ### Added
 
 - Add friendly error pane for listing failures (provider-aware suggestions for Dropbox, Drive, OneDrive, iCloud,
-  MacDroid, VeraCrypt, etc.) (eec50ff, cc7bb3)
-- Live disk-space updates in status bar (configurable threshold, 3 s timeout) (d67dd3)
-- Add "Copy path" to breadcrumb context menu (eb4d3c)
-- Add SMB streaming reads/writes (MTP↔SMB and SMB↔SMB copies skip temp files, ~1 MiB peak RAM) (ac71bd, a82709, 35120d,
-  043597f)
-- Disambiguate same-named SMB shares per server (76671b)
-- Inline SMB login form on direct-connection upgrade (b315b4)
-- Instant dialog open for large selections (50k-file Copy/Move: ~10 s to ~1 ms) (48ea60)
-- Add MTP Samsung support (phones reporting 0 storages at connect time now appear) (14b3ac)
-- Batch MTP scan for copy (one USB call per parent dir, not per file) (70978c)
-- Skip rename extension warning on case-only changes (photo.JPG to photo.jpg) (1401017)
-- Split filename + extension in Full view (275d091)
-- Volume selector polish (clickable spacebar area, no clipping over F-key bar) (700eac)
-- File-op dialog polish (thousand separators, mid-text truncation, fixed 500 px width) (d67dd3)
-- Add debug-window error-pane preview with all 47 error states (cc7bb3)
+  MacDroid, VeraCrypt, etc.) (eec50ff5, cc7bb319)
+- Live disk-space updates in status bar (configurable threshold, 3 s timeout) (d67dd382)
+- Add "Copy path" to breadcrumb context menu (eb4d3c92)
+- Add SMB streaming reads/writes (MTP↔SMB and SMB↔SMB copies skip temp files, ~1 MiB peak RAM) (ac71bd0a, a8270909,
+  35120da0, 043597f8)
+- Disambiguate same-named SMB shares per server (76671bf5)
+- Inline SMB login form on direct-connection upgrade (b315b421)
+- Instant dialog open for large selections (50k-file Copy/Move: ~10 s to ~1 ms) (48ea6030)
+- Add MTP Samsung support (phones reporting 0 storages at connect time now appear) (14b3ac3f)
+- Batch MTP scan for copy (one USB call per parent dir, not per file) (70978c84)
+- Skip rename extension warning on case-only changes (photo.JPG to photo.jpg) (1401017d)
+- Split filename + extension in Full view (275d0918)
+- Volume selector polish (clickable spacebar area, no clipping over F-key bar) (700eac4a)
+- File-op dialog polish (thousand separators, mid-text truncation, fixed 500 px width) (d67dd382)
+- Add debug-window error-pane preview with all 47 error states (cc7bb319)
 
 ### Fixed
 
-- User cancels no longer log as ERROR (6f79392)
-- Fix copy/move crash from a reactivity race (0cdd7d)
-- Fix stuck "Scanning 0 files" transfer dialog (dd06d68)
-- Fix double-dispatched MCP autoConfirm copies (4af22ab)
-- Fix file watcher panic on 500+ external changes (4087e30)
-- Match Finder for copy space checks (count APFS purgeable space) (3454656)
-- Fix SMB paths with spaces, serialize concurrent manual-server writes, fix viewer search after emoji/CJK (97c0481)
-- Fix SMB port handling and human host display for mDNS names (c26f7e8, 017b7043)
-- Fix "Connect directly" on QNAP (2666db8)
-- Hide Clear-index button when there's no index (fixes AA contrast) (b1915d9)
-- Network pane no longer sticks on old host after mount (41c1860)
-- Fix llama-server startup on Linux with locked keyring (encrypted-file fallback) (55ccde3)
-- Fix nested-runtime panics on MTP/SMB (async Volume trait end-to-end, runtime-safe MTP reads) (531bb9b, 9d4982a,
-  694ddc1, 1598f8c)
+- User cancels no longer log as ERROR (6f793929)
+- Fix copy/move crash from a reactivity race (0cdd7d7e)
+- Fix stuck "Scanning 0 files" transfer dialog (dd06d680)
+- Fix double-dispatched MCP autoConfirm copies (4af22ab5)
+- Fix file watcher panic on 500+ external changes (4087e30e)
+- Match Finder for copy space checks (count APFS purgeable space) (34546567)
+- Fix SMB paths with spaces, serialize concurrent manual-server writes, fix viewer search after emoji/CJK (97c04818)
+- Fix SMB port handling and human host display for mDNS names (c26f7e87, 017b7043)
+- Fix "Connect directly" on QNAP (2666db8a)
+- Hide Clear-index button when there's no index (fixes AA contrast) (b1915d9b)
+- Network pane no longer sticks on old host after mount (41c18609)
+- Fix llama-server startup on Linux with locked keyring (encrypted-file fallback) (55ccde30)
+- Fix nested-runtime panics on MTP/SMB (async Volume trait end-to-end, runtime-safe MTP reads) (531bb9b9, 9d4982a8,
+  694ddc12, 1598f8cf)
 
 ### Changed
 
-- Cancelled SMB uploads skip the server flush (~100 ms to 1 s saved per cancel) (6fa0780)
+- Cancelled SMB uploads skip the server flush (~100 ms to 1 s saved per cancel) (6fa07801)
 
 ### Non-app
 
-- Add design-time WCAG contrast checker (resolves CSS vars and color-mix chains, replaces flaky axe rule) (db25f0d,
-  55af258)
-- Fix 18 real WCAG AA contrast failures (747507f, 67d42ba, 4a15a53)
-- Add tier-3 component-level a11y tests (61 files, 146 tests, ~6.3 s) and a11y-coverage check (33300a4, d56c1df,
-  398bf7a)
-- Switch Lucide to UnoCSS pure-CSS icons (93548fa)
-- Add file-length check; split 20+ long files into sub-800-line modules (7514cb4, 2939bfe, 4514a83, 315609a)
-- Run Linux E2E in Docker (8803c3c, f39177c)
-- Drop CrabNebula/WebDriverIO macOS E2E suite (Playwright covers all 15) (4cecfb9)
-- Upgrade rustls-webpki 0.103.12 (RUSTSEC-2026-0098/0099) and bitstream-io 4.10.0 (3734502)
-- Add docs/error-handling.md contributor guide (a4a5fdb)
+- Add design-time WCAG contrast checker (resolves CSS vars and color-mix chains, replaces flaky axe rule) (db25f0d3,
+  55af2581)
+- Fix 18 real WCAG AA contrast failures (747507f1, 67d42ba3, 4a15a53d)
+- Add tier-3 component-level a11y tests (61 files, 146 tests, ~6.3 s) and a11y-coverage check (33300a4f, d56c1dfe,
+  398bf7a5)
+- Switch Lucide to UnoCSS pure-CSS icons (93548fa6)
+- Add file-length check; split 20+ long files into sub-800-line modules (7514cb4e, 2939bfee, 4514a832, 315609a3)
+- Run Linux E2E in Docker (8803c3c6, f39177c2)
+- Drop CrabNebula/WebDriverIO macOS E2E suite (Playwright covers all 15) (4cecfb91)
+- Upgrade rustls-webpki 0.103.12 (RUSTSEC-2026-0098/0099) and bitstream-io 4.10.0 (3734502a)
+- Add docs/error-handling.md contributor guide (a4a5fdb5)
 
 ## [0.11.1] - 2026-04-10
 
 ### Added
 
-- Add striped-rows setting (alternating row shading in Full and Brief) (faa2534)
-- Add MTP per-file copy progress and instant mid-file cancel (~300 ms via USB SIC abort) (ac5ec4d, a66adf6)
+- Add striped-rows setting (alternating row shading in Full and Brief) (faa25349)
+- Add MTP per-file copy progress and instant mid-file cancel (~300 ms via USB SIC abort) (ac5ec4df, a66adf67)
 
 ### Fixed
 
-- Sync View menu Full/Brief checkmarks across panes (6e36a49)
-- Stop MTP `ObjectNotFound` log spam on every copy (0cc675a)
-- Fix MTP mid-stream cancel corrupting USB session (mtp-rs 0.11.0) (a66adf6)
-- A11y: darken accent-text for WCAG AA, fix search placeholder opacity (b7744dd)
-- Fix Linux compilation (cross-platform SMB types, get_smb_mount_info) (00c5f18)
+- Sync View menu Full/Brief checkmarks across panes (6e36a49b)
+- Stop MTP `ObjectNotFound` log spam on every copy (0cc675a6)
+- Fix MTP mid-stream cancel corrupting USB session (mtp-rs 0.11.0) (a66adf67)
+- A11y: darken accent-text for WCAG AA, fix search placeholder opacity (b7744dd9)
+- Fix Linux compilation (cross-platform SMB types, get_smb_mount_info) (00c5f184)
 
 ## [0.11.0] - 2026-04-10
 
 ### Added
 
-- Add SMB direct connections via smb2 (~4× faster, OS mount stays for Finder/Terminal) (dea46ec)
-- Auto-upgrade existing and new SMB mounts to direct connections in the background (a6ab2ca)
-- Add "Connect to server" for SMB by hostname, IP, or `smb://` URL (persisted, context-menu Disconnect/Forget) (2df24ac)
-- Add SMB connection status indicators with one-click upgrade (0473250)
-- Real-time SMB transfer progress with end-to-end cancel (f530355)
+- Add SMB direct connections via smb2 (~4× faster, OS mount stays for Finder/Terminal) (dea46ecc)
+- Auto-upgrade existing and new SMB mounts to direct connections in the background (a6ab2ca1)
+- Add "Connect to server" for SMB by hostname, IP, or `smb://` URL (persisted, context-menu Disconnect/Forget)
+  (2df24aca)
+- Add SMB connection status indicators with one-click upgrade (04732500)
+- Real-time SMB transfer progress with end-to-end cancel (f5303551)
 - All SMB write ops (create, delete, rename, copy, move) through direct connections with full conflict handling
-  (e72c082, 4f030d7)
-- Unified SMB/MTP change notifications with incremental cache patches (2d0bc98)
-- Warn in transfer dialog when using slower OS mount (d25de48)
-- Auto-suppress ptpcamerad on macOS for MTP (d161f9b)
-- Add MTP settings (disable toggle, "Don't show again" toast, dedicated section) (2467ece, 70d8d40)
-- Brief mode shows real recursive directory sizes in selection info (53ee5ef)
-- Cursor jumps to newly created directories (eff84d1)
+  (e72c0828, 4f030d7f)
+- Unified SMB/MTP change notifications with incremental cache patches (2d0bc986)
+- Warn in transfer dialog when using slower OS mount (d25de484)
+- Auto-suppress ptpcamerad on macOS for MTP (d161f9b1)
+- Add MTP settings (disable toggle, "Don't show again" toast, dedicated section) (2467ecef, 70d8d40a)
+- Brief mode shows real recursive directory sizes in selection info (53ee5efb)
+- Cursor jumps to newly created directories (eff84d17)
 
 ### Fixed
 
-- Fix per-file copy progress (counts files, not top-level items) (d10d9cc)
-- Faster SMB deletes (skip stat round-trip) (0e7f072)
-- Copy cancellation checks between every file in tree copies (a7d401a)
-- Fix cross-volume copy misclassifying SmbVolume as local (4a86a85)
-- Fix SMB paths with accented characters (NFC normalization) (baaccc8)
-- Resolve SMB IPs to hostnames via mDNS so Keychain finds saved credentials (b1addfd)
-- Show login form on stale Keychain credentials instead of empty share list (46609f1)
-- Block navigating above SMB mount root, fall back to home when unreachable (d25de48)
-- Fix stale cursor index after file ops (945093b)
-- Fix drag & drop after wry upgrade (a816c77)
-- Fix stale dir sizes after copy/create (1479108)
-- Fix scan-preview race in progress dialog (5d9b91b)
-- Fix dir_stats count drift on file/dir type changes (364ddf1)
-- Fix index entry ID race via shared atomic counter (6e173e4)
-- Fix MTP move not refreshing UI on Linux (mtp-rs 0.9.1) (5b27ead)
+- Fix per-file copy progress (counts files, not top-level items) (d10d9cc0)
+- Faster SMB deletes (skip stat round-trip) (0e7f0727)
+- Copy cancellation checks between every file in tree copies (a7d401ac)
+- Fix cross-volume copy misclassifying SmbVolume as local (4a86a85c)
+- Fix SMB paths with accented characters (NFC normalization) (baaccc84)
+- Resolve SMB IPs to hostnames via mDNS so Keychain finds saved credentials (b1addfd2)
+- Show login form on stale Keychain credentials instead of empty share list (46609f16)
+- Block navigating above SMB mount root, fall back to home when unreachable (d25de484)
+- Fix stale cursor index after file ops (945093bc)
+- Fix drag & drop after wry upgrade (a816c77c)
+- Fix stale dir sizes after copy/create (1479108e)
+- Fix scan-preview race in progress dialog (5d9b91bd)
+- Fix dir_stats count drift on file/dir type changes (364ddf15)
+- Fix index entry ID race via shared atomic counter (6e173e45)
+- Fix MTP move not refreshing UI on Linux (mtp-rs 0.9.1) (5b27ead1)
 
 ### Non-app
 
-- Replace smb/smb-rpc crates with our own smb2 (2d7904f)
+- Replace smb/smb-rpc crates with our own smb2 (2d7904f0)
 
 ## [0.10.0] - 2026-04-08
 
 ### Added
 
-- Visible copy rollback (progress bars count back, Cancel stops the rollback) (0ac5d0)
-- Dual progress bars in transfer dialogs (size + file count) (ced9d2)
-- MCP: cmdr://settings resource and set_setting tool (c71115)
-- MCP: move_cursor awaits frontend confirmation (6341c25)
+- Visible copy rollback (progress bars count back, Cancel stops the rollback) (0ac5d05f)
+- Dual progress bars in transfer dialogs (size + file count) (ced9d253)
+- MCP: cmdr://settings resource and set_setting tool (c7111582)
+- MCP: move_cursor awaits frontend confirmation (6341c255)
 
 ### Fixed
 
-- Fix MTP move conflicts silently overwriting (27f2ff)
-- Fix MTP watcher missing external file changes (266026)
-- Fix MTP event debouncer dropping suppressed events (21b3bc)
-- Fix MTP pane falling back to local root after copy (9deba7)
-- Fix MTP volumes missing from copy/move dialog (cd6603)
-- Fix MTP event-loop lock contention blocking copy/move/scan (0461e33, 547a41)
-- Fix MTP scan preview showing 0/0/0 in confirmation dialog (4e1efa)
-- Fix MTP rename conflicts not showing dialog on non-local volumes (25f2b2)
-- Fix copy "Cancel" (keep partial files) triggering unintended rollback (3042f2)
-- Fix copy cancel hanging 30+ s on network mounts (816e9e)
-- Fix UI blocking on network filesystem ops (bed59d)
-- Fix indexing replay progress showing "Scanning..." instead of replay overlay (32c053)
-- Push-based volume selector, fixes mount/unmount races (b09665)
-- Fix volume path resolution to <1 ms regardless of mount health, handle APFS firmlinks (5a1f78)
-- Harden unsafe Rust (main-thread markers, scoped Send impls, SAFETY comments) (541804)
+- Fix MTP move conflicts silently overwriting (27f2ff0b)
+- Fix MTP watcher missing external file changes (266026d5)
+- Fix MTP event debouncer dropping suppressed events (21b3bc5f)
+- Fix MTP pane falling back to local root after copy (9deba727)
+- Fix MTP volumes missing from copy/move dialog (cd66031e)
+- Fix MTP event-loop lock contention blocking copy/move/scan (0461e33a, 547a4131)
+- Fix MTP scan preview showing 0/0/0 in confirmation dialog (4e1efab7)
+- Fix MTP rename conflicts not showing dialog on non-local volumes (25f2b263)
+- Fix copy "Cancel" (keep partial files) triggering unintended rollback (3042f234)
+- Fix copy cancel hanging 30+ s on network mounts (816e9e12)
+- Fix UI blocking on network filesystem ops (bed59dbe)
+- Fix indexing replay progress showing "Scanning..." instead of replay overlay (32c05393)
+- Push-based volume selector, fixes mount/unmount races (b0966592)
+- Fix volume path resolution to <1 ms regardless of mount health, handle APFS firmlinks (5a1f78cb)
+- Harden unsafe Rust (main-thread markers, scoped Send impls, SAFETY comments) (541804c3)
 
 ### Changed
 
-- Typed write-op errors (9 variants) replace string parsing (c10e06)
-- Typed MTP volume errors (8f2296)
+- Typed write-op errors (9 variants) replace string parsing (c10e0614)
+- Typed MTP volume errors (8f2296a4)
 
 ### Non-app
 
-- Backend owns MTP move strategy, frontend no longer orchestrates (547a41)
-- Demote noisy per-file copy/move/MTP logs from INFO to DEBUG (357fef)
-- Fix all WCAG violations found by axe-core (d29a7c, 438046, 6e6230)
+- Backend owns MTP move strategy, frontend no longer orchestrates (547a4131)
+- Demote noisy per-file copy/move/MTP logs from INFO to DEBUG (357feff0)
+- Fix all WCAG violations found by axe-core (d29a7cdd, 4380469e, 6e623083)
 - Port E2E tests from WebDriverIO to Playwright; add 80+ tests (MTP, SMB, conflicts, a11y, indexing) (77d05937,
   7d58bd6c, 4f83aeb8)
-- Replace Prettier with oxfmt (10–20× faster) (995f8c)
-- Split indexing module (1951 lines) into focused files (390864)
+- Replace Prettier with oxfmt (10–20× faster) (995f8c8e)
+- Split indexing module (1951 lines) into focused files (39086418)
 - Add light/dark website theme, features page, OG images, blog Like buttons (49dbe782, 98bdcc35, 56a9e764, 5cff7c35)
 - Dashboard: color-coded charts, GitHub star tracking, error reporting (4b7c9e1e, 67efc4ae, 2e26b956)
 
@@ -1452,191 +1453,193 @@ version.
 
 ### Fixed
 
-- Fix orphaned llama-server processes after rapid AI provider switching (b3382e)
-- Fix vendor-specific MTP detection (Kindle, USB class 0xFF) via mtp-rs 0.4.1 (1a170d)
+- Fix orphaned llama-server processes after rapid AI provider switching (b3382efe)
+- Fix vendor-specific MTP detection (Kindle, USB class 0xFF) via mtp-rs 0.4.1 (1a170dbd)
 
 ### Non-app
 
 - API server: migrate telemetry to D1, add crash email notifications via Resend, rename license-server to api-server
-  (7dc0da)
-- Split search.rs (2361 lines) and SearchDialog.svelte (1552 lines) into focused modules (c17c21)
-- Deduplicate repeated patterns across Rust, Svelte, TS, and Go (52afe3)
-- Bump 9 Rust deps (reqwest 0.13, rusqlite 0.39, notify-debouncer-full 0.7, etc.) (929556)
-- Skip pnpm install when lockfile unchanged (~20 s saved per run) (8d2b39)
-- Blog: add Kindle support article (5c9d5b)
+  (7dc0da23)
+- Split search.rs (2361 lines) and SearchDialog.svelte (1552 lines) into focused modules (c17c210c)
+- Deduplicate repeated patterns across Rust, Svelte, TS, and Go (52afe37a)
+- Bump 9 Rust deps (reqwest 0.13, rusqlite 0.39, notify-debouncer-full 0.7, etc.) (929556f2)
+- Skip pnpm install when lockfile unchanged (~20 s saved per run) (8d2b39b8)
+- Blog: add Kindle support article (5c9d5b16)
 
 ## [0.9.0] - 2026-03-23
 
 ### Added
 
 - Add whole-drive file search (⌘F): glob/regex, size/date filters, scope, AI mode, MCP search and ai_search tools
-  (058136, 15110c, 8c3546, cf5827, 415db3, 21d32e, 26d682)
-- Add opt-in crash reporting (panic hook + signal handler, inspect-and-send dialog, no PII) (016ee3, be29af)
-- Add Shift+F4 (Total Commander style): create new file, open in default editor (da8ca9)
-- Add smart size display (min logical/physical, dual-size tooltips, hardlink dedup, mismatch icons) (1d666a, b302d0,
-  065820, 1d588f, a93a8b, 9c450c)
-- Add sortable Ext column in Full mode (e834b4)
-- Add replay progress overlay during cold-start (f166b0)
-- Show live MTP disk space in volume dropdown and status bar (b155f1, c4cc26)
-- Show MTP loading progress on large folders (77ebaa)
-- Add focus indicators on search and command palette inputs (179221)
-- Selection summary includes directory sizes (3928c1c)
-- MCP: show directory sizes in state resource (9cb775)
+  (05813639, 15110c0d, 8c3546dc, cf5827b1, 415db3f1, 21d32ef1, 26d682cd)
+- Add opt-in crash reporting (panic hook + signal handler, inspect-and-send dialog, no PII) (016ee3a5, be29affc)
+- Add Shift+F4 (Total Commander style): create new file, open in default editor (da8ca934)
+- Add smart size display (min logical/physical, dual-size tooltips, hardlink dedup, mismatch icons) (1d666a70, b302d0eb,
+  06582001, 1d588f84, a93a8bb2, 9c450cdc)
+- Add sortable Ext column in Full mode (e834b4cb)
+- Add replay progress overlay during cold-start (f166b063)
+- Show live MTP disk space in volume dropdown and status bar (b155f1f8, c4cc26f2)
+- Show MTP loading progress on large folders (77ebaa00)
+- Add focus indicators on search and command palette inputs (1792216b)
+- Selection summary includes directory sizes (3928c1c9)
+- MCP: show directory sizes in state resource (9cb77509)
 
 ### Fixed
 
-- Fix multi-GB macOS memory leak (ObjC calls on background threads now run inside autoreleasepool) (777f9e)
-- Fix stack overflow in sync status (8 MB OS threads instead of rayon for NSURL/XPC calls) (fa28cd)
-- Fix size overcounting (hardlink dedup, exclude cloud-only files, smart-size for dataless) (fe5eff)
-- Fix file watcher: instant updates in large dirs via incremental diffs (df558e)
-- Fix selection clearing after file ops; gradual deselection per source item (538ec5)
-- Fix selection indices drifting after external file changes (453ec0)
-- Fix cursor lost after deleting all files (17808d)
-- Fix stale dir sizes on rename (10213d)
-- Fix indexing not starting on fresh DB (a61376d)
-- Fix "Scanning..." stuck after replay (4a44d7, fb796e)
-- Fix verifier + replay transaction conflict via named savepoints (72ca9f)
-- Fix MTP browsing panic; show device name on single-storage devices (d37b8a)
-- Fix MTP duplicate directory listing on connect (17efe8)
-- Fix MCP stale state after server crash; auto-probe port when configured port is in use (0369d2, d69f87)
-- Fix OpenAI compatibility (795a67)
-- Hide misleading rollback button for move ops (fbdba5)
-- Raise replay/journal gap thresholds to reduce unnecessary full rescans (377919, af2bf7)
+- Fix multi-GB macOS memory leak (ObjC calls on background threads now run inside autoreleasepool) (777f9ec3)
+- Fix stack overflow in sync status (8 MB OS threads instead of rayon for NSURL/XPC calls) (fa28cd43)
+- Fix size overcounting (hardlink dedup, exclude cloud-only files, smart-size for dataless) (fe5eff72)
+- Fix file watcher: instant updates in large dirs via incremental diffs (df558e8b)
+- Fix selection clearing after file ops; gradual deselection per source item (538ec5ac)
+- Fix selection indices drifting after external file changes (453ec02b)
+- Fix cursor lost after deleting all files (17808d4b)
+- Fix stale dir sizes on rename (10213d84)
+- Fix indexing not starting on fresh DB (a61376d6)
+- Fix "Scanning..." stuck after replay (4a44d7df, fb796e72)
+- Fix verifier + replay transaction conflict via named savepoints (72ca9fbb)
+- Fix MTP browsing panic; show device name on single-storage devices (d37b8a5f)
+- Fix MTP duplicate directory listing on connect (17efe8be)
+- Fix MCP stale state after server crash; auto-probe port when configured port is in use (0369d219, d69f8761)
+- Fix OpenAI compatibility (795a6775)
+- Hide misleading rollback button for move ops (fbdba5b4)
+- Raise replay/journal gap thresholds to reduce unnecessary full rescans (37791986, af2bf7a7)
 
 ### Non-app
 
-- Add full-stack analytics dashboard (6 data sources, agent-readable report) (b4f740, 0766c4, b97028)
-- Enforce CSS design tokens via Stylelint (50f2b4, e3259b, 36b340)
-- Drop desktop smoke tests, speed up store tests by ~20 s (c6210a, dab071)
-- Reduce code duplication across write ops, listing, events, search dialog (33ec2f)
-- Website: story + testimonials sections, landing page polish, Docker healthcheck, Remark42 CSP (d5a7f4, 51acd8, 424a80,
-  dd5e34)
-- Bump mtp-rs to 0.2.0 (634255)
+- Add full-stack analytics dashboard (6 data sources, agent-readable report) (b4f740a1, 0766c4b7, b97028f6)
+- Enforce CSS design tokens via Stylelint (50f2b422, e3259b0a, 36b3408c)
+- Drop desktop smoke tests, speed up store tests by ~20 s (c6210ae4, dab071f5)
+- Reduce code duplication across write ops, listing, events, search dialog (33ec2f27)
+- Website: story + testimonials sections, landing page polish, Docker healthcheck, Remark42 CSP (d5a7f430, 51acd88c,
+  424a8075, dd5e3403)
+- Bump mtp-rs to 0.2.0 (63425523)
 
 ## [0.8.2] - 2026-03-15
 
 ### Fixed
 
-- Fix crash on launch after auto-update (kernel code-signing cache SIGKILL: temp + rename for a fresh inode) (d2923af)
-- Fix indexing drift: per-navigation verifier with 30 s debounce; skip /System and /dev as empty stubs (0f28b51,
-  b0b1730)
-- Fix dir size display during indexing (refresh on aggregation-complete, not scan-complete) (d0746fb)
-- Fix navigation latency: fire-and-forget verification, parallelize 6 listen() calls (a4e87f1)
-- Fix indexing perf (integer-only index: 25 min to seconds on 5.1M entries; 99% replay-event dedup) (a5b5beb, 44fecd6,
-  d9877c1)
+- Fix crash on launch after auto-update (kernel code-signing cache SIGKILL: temp + rename for a fresh inode) (d2923aff)
+- Fix indexing drift: per-navigation verifier with 30 s debounce; skip /System and /dev as empty stubs (0f28b51e,
+  b0b17305)
+- Fix dir size display during indexing (refresh on aggregation-complete, not scan-complete) (d0746fbb)
+- Fix navigation latency: fire-and-forget verification, parallelize 6 listen() calls (a4e87f1a)
+- Fix indexing perf (integer-only index: 25 min to seconds on 5.1M entries; 99% replay-event dedup) (a5b5beb7, 44fecd66,
+  d9877c14)
 
 ### Non-app
 
-- Separate dev and prod log dirs, fix Linux test output capture, fix smoke test timeout (e8762be, 83d2365, 88901f9)
-- Improve agent instructions (dec19cf)
+- Separate dev and prod log dirs, fix Linux test output capture, fix smoke test timeout (e8762be4, 83d23655, 88901f91)
+- Improve agent instructions (dec19cf4)
 
 ## [0.8.1] - 2026-03-14
 
 ### Fixed
 
 - Fix indexing (lock-free dir-stats reads, drop stale PathResolver cache, fix "DB is locked", fix overlay race, lost
-  scan metadata, dir→file replacement orphans) (50bd4fa, 44abfd1, 7319c5c, 26785fc, 795e48b, 424eedb, dbccec1, 8f87a4f)
-- Fix traffic light position in production builds (7551df2)
+  scan metadata, dir→file replacement orphans) (50bd4faa, 44abfd10, 7319c5c4, 26785fcd, 795e48b7, 424eedb3, dbccec1b,
+  8f87a4f5)
+- Fix traffic light position in production builds (7551df2f)
 
 ### Non-app
 
-- Add indexing concurrency stress tests, event loop tests, reconciler tests (3ad3adc, 8a084cd, dbccec1)
+- Add indexing concurrency stress tests, event loop tests, reconciler tests (3ad3adc9, 8a084cda, dbccec1b)
 
 ## [0.8.0] - 2026-03-13
 
 ### Added
 
 - Add custom macOS updater that preserves Full Disk Access (syncs into existing .app bundle, privilege escalation)
-  (190a637)
-- Add MTP delete, rename, move (full progress, cancel, dry-run) (812ad07)
-- Add breadcrumb polish ("/" prefix, "~" for home) (44b7105)
-- Add auto-rescan on FSEvents channel overflow (ca7cece)
-- Add index debug dashboard (DB stats, watcher status, event-rate sparkline) (7510ec3)
+  (190a6377)
+- Add MTP delete, rename, move (full progress, cancel, dry-run) (812ad073)
+- Add breadcrumb polish ("/" prefix, "~" for home) (44b71056)
+- Add auto-rescan on FSEvents channel overflow (ca7cece3)
+- Add index debug dashboard (DB stats, watcher status, event-rate sparkline) (7510ec39)
 
 ### Fixed
 
 - Fix indexing (interrupt-safe reconciler, stop micro-scans, faster bulk inserts, false FSEvents deletes, missing dir
-  sizes after replay, periodic DB vacuum) (31df59e, 981b311, da74290, f0c225f, bf0b47f, d125a24, 67684bb)
-- Fix drag swizzle failing on wry 0.54+ (2680bae)
-- Fix MCP live start/stop UX (backend state as ground truth, port auto-check) (f4c107a)
-- Fix MCP server not stopping on app quit (61fe290)
-- Fix traffic light position in production builds (b74ed39)
-- Fix scan overlay showing stale state (218bcb9)
+  sizes after replay, periodic DB vacuum) (31df59e6, 981b3113, da742904, f0c225f4, bf0b47f2, d125a241, 67684bbb)
+- Fix drag swizzle failing on wry 0.54+ (2680bae8)
+- Fix MCP live start/stop UX (backend state as ground truth, port auto-check) (f4c107aa)
+- Fix MCP server not stopping on app quit (61fe290a)
+- Fix traffic light position in production builds (b74ed395)
+- Fix scan overlay showing stale state (218bcb98)
 
 ### Non-app
 
-- Vendor cmdr-fsevent-stream fork as workspace crate (8b937a6)
-- Fix two FOUC flickers on website page load (8c21ac7)
-- Set up self-hosted macOS GitHub Actions runner; add index DB query tool, website deploy workflow extracted (665f63a,
-  37f1062, 5744636)
-- Pink title bar in dev to distinguish from prod (d2c9ae4)
+- Vendor cmdr-fsevent-stream fork as workspace crate (8b937a6b)
+- Fix two FOUC flickers on website page load (8c21ac78)
+- Set up self-hosted macOS GitHub Actions runner; add index DB query tool, website deploy workflow extracted (665f63a9,
+  37f10629, 5744636f)
+- Pink title bar in dev to distinguish from prod (d2c9ae41)
 
 ## [0.7.1] - 2026-03-12
 
 ### Fixed
 
-- Fix scan overlay stuck at 100% after directory size aggregation (424eedb)
+- Fix scan overlay stuck at 100% after directory size aggregation (424eedb3)
 
 ## [0.7.0] - 2026-03-12
 
 ### Added
 
 - Add AI settings: three providers (off / cloud / local LLM), 15 cloud presets, per-provider keys, model combobox, RAM
-  gauge, context size (b41365b, abfc248, 423e669)
-- Live MCP server start/stop in Settings (no app restart) (e0c55e7)
-- Add stale index detection with toast + auto-rescan (b590a54)
-- Add device tracking for license abuse, fair-use terms in ToS (cf4f913)
-- Add license section to Settings (status display, action buttons, dynamic labels) (39cf7b4)
-- Improve app icon for macOS Sequoia (cc80d28)
+  gauge, context size (b41365b3, abfc2481, 423e669f)
+- Live MCP server start/stop in Settings (no app restart) (e0c55e73)
+- Add stale index detection with toast + auto-rescan (b590a54e)
+- Add device tracking for license abuse, fair-use terms in ToS (cf4f9138)
+- Add license section to Settings (status display, action buttons, dynamic labels) (39cf7b4b)
+- Improve app icon for macOS Sequoia (cc80d280)
 
 ### Changed
 
-- Drop supporter license tier (legacy keys map to Personal) (c0a63f5)
-- Split Settings UI horizontally 50/50 (9493f88)
-- Rename settings-v2.json to settings.json (d987cc8)
+- Drop supporter license tier (legacy keys map to Personal) (c0a63f57)
+- Split Settings UI horizontally 50/50 (9493f880)
+- Rename settings-v2.json to settings.json (d987cc8f)
 
 ### Fixed
 
-- Fix startup panic from blocking_lock in async context (f9855ca)
-- Fix SQLite write pragmas on read-only connections (panic in subtree scans) (a53a275)
-- Fix llama-server not stopping on quit, stale PIDs, excess memory (256k to 4k default context) (eae70f1, ffcbc81,
-  e45c742)
-- Fix Settings UI freezing ~5 s when stopping AI server (instant SIGKILL for stateless llama-server) (2af7ee8)
-- Separate dev/prod data dir and MCP port (b8b058a)
-- Fix fallback path resolution falling to / instead of ~ (8d7c644)
-- Fix indexing (100× faster aggregation, DB auto-vacuum, truncate before full scan) (47a2e8e, cad1af5, aff2046, 96323e9)
-- Fix FSEvents storms causing memory pressure (mimalloc, 1 s dedup window) (207ddee)
+- Fix startup panic from blocking_lock in async context (f9855ca0)
+- Fix SQLite write pragmas on read-only connections (panic in subtree scans) (a53a2753)
+- Fix llama-server not stopping on quit, stale PIDs, excess memory (256k to 4k default context) (eae70f10, ffcbc818,
+  e45c742a)
+- Fix Settings UI freezing ~5 s when stopping AI server (instant SIGKILL for stateless llama-server) (2af7ee82)
+- Separate dev/prod data dir and MCP port (b8b058a2)
+- Fix fallback path resolution falling to / instead of ~ (8d7c6441)
+- Fix indexing (100× faster aggregation, DB auto-vacuum, truncate before full scan) (47a2e8ef, cad1af56, aff2046e,
+  96323e97)
+- Fix FSEvents storms causing memory pressure (mimalloc, 1 s dedup window) (207ddee1)
 
 ### Non-app
 
 - Replace 19 ADRs with colocated Decision/Why entries in 11 CLAUDE.md files; slim AGENTS.md from 245 to 93 lines
-  (ccf5cc7, d297a1a, 0595796)
-- Website: version + file size on download buttons, fix Intel/Apple detection flicker (bd17056, ec35b1f)
-- Add html-validate and circular-dep checks (3dbd5af, 4bead2b)
-- Eliminate all circular deps via refactor (volume grouping, menu platform code, viewer scroll/search) (7740fbc,
-  8522e71, e16bd91, 7ed1cea)
+  (ccf5cc7f, d297a1a8, 05957961)
+- Website: version + file size on download buttons, fix Intel/Apple detection flicker (bd170563, ec35b1f7)
+- Add html-validate and circular-dep checks (3dbd5af5, 4bead2b9)
+- Eliminate all circular deps via refactor (volume grouping, menu platform code, viewer scroll/search) (7740fbc4,
+  8522e71f, e16bd918, 7ed1cea1)
 
 ## [0.6.1] - 2026-03-10
 
 ### Added
 
-- Add top menu icons (1a2621a)
-- Add View, Copy, Move, New folder, and Delete actions to context menu (a966f17)
+- Add top menu icons (1a2621af)
+- Add View, Copy, Move, New folder, and Delete actions to context menu (a966f174)
 
 ### Fixed
 
 - Fix OOM crash from unbounded indexing buffers; toggling Full Disk Access could replay millions of FSEvents with zero
   backpressure, consuming 500+ GB RAM. All buffers are now bounded (~350 MB peak), with a memory watchdog that stops
-  indexing at 16 GB (f1501ec)
+  indexing at 16 GB (f1501ece)
 
 ### Non-app
 
-- Website: add llms.txt, Schema.org JSON-LD, and auto-generated sitemap for agent accessibility (ba64c36)
-- Website: update roadmap (5197120)
+- Website: add llms.txt, Schema.org JSON-LD, and auto-generated sitemap for agent accessibility (ba64c362)
+- Website: update roadmap (51971200)
 - CI: simplify release pipeline, download sigs directly from release, generate `latest.json` with `jq`, validate all 3
-  sigs before proceeding (d3095cb, 5b82cd0)
-- CI: fix Backspace E2E test on WebKitGTK, fix CI failures, fix 3 flaky tests (7c22951, 79f593c, 8f4ea82)
-- Docs: add troubleshooting section to releasing guide (1768b29)
+  sigs before proceeding (d3095cbc, 5b82cd01)
+- CI: fix Backspace E2E test on WebKitGTK, fix CI failures, fix 3 flaky tests (7c22951a, 79f593cb, 8f4ea825)
+- Docs: add troubleshooting section to releasing guide (1768b29a)
 
 ## [0.6.0] - 2026-03-08
 
@@ -1645,234 +1648,234 @@ version.
 - Add Linux support (alpha): volumes via /proc/mounts, file ops with reflink support, trash via FreeDesktop spec,
   inotify file watching, MTP ungated, SMB via mDNS + smbclient fallback, GVFS-mounted shares as volumes, native file
   icons via freedesktop-icons, accent color via XDG Desktop Portal, encrypted credential fallback when no system
-  keyring, distro-specific install hints, USB permission handling (b6e80f6, 20be0c3, 9c51fa9, 64e41f9, 40cc1a9, c3ad1ed,
-  d40ea25, 60063ec, e65d993, 22e2ea7, afe2609, 4bbcbb0, 48af543)
+  keyring, distro-specific install hints, USB permission handling (b6e80f6b, 20be0c38, 9c51fa9b, 64e41f9d, 40cc1a98,
+  c3ad1ed5, d40ea256, 60063ece, e65d993c, 22e2ea79, afe26090, 4bbcbb09, 48af543b)
 - Add per-pane tab support: ⌘T/⌘W, ⌃Tab cycling, pin/unpin, context menu, persistence with migration, per-tab sort
-  (791a29a)
+  (791a29a9)
 - Add delete/trash feature (F8): trash by default, ⇧F8 for permanent delete, confirmation dialog with scan preview,
-  batch progress with cancellation, volume trash support detection (e3560a3)
+  batch progress with cancellation, volume trash support detection (e3560a36)
 - Add clipboard for files: ⌘C/⌘V/⌘X with Finder interop, ⌥⌘V for "Move here", cut state tracking, text clipboard in all
-  windows via NSPasteboard (0dc2953, 60baeba)
+  windows via NSPasteboard (0dc29536, 60baebad)
 - Add toast notification system with centralized store, dedup, stacking, three levels, transient/persistent modes
-  (6c5c452, 2329f2f)
-- Add per-pane disk space display: 2px usage bar, free-space text in status bar, mini bars in volume dropdown (9b6d057)
+  (6c5c4525, 2329f2f5)
+- Add per-pane disk space display: 2px usage bar, free-space text in status bar, mini bars in volume dropdown (9b6d0579)
 - Add custom tooltips with glass material effect, shortcut badges, smart positioning, accessibility support, replacing
-  all native tooltips (3c7f965)
+  all native tooltips (3c7f9654)
 - Add drive indexing with integer-keyed DB schema (7.4x size reduction, 3.8 GB → 0.54 GB), LRU path cache,
-  platform-aware collation, recursive CTE aggregation (7c5d3ce, daee97b, 5e10fa9, 68be3ab)
+  platform-aware collation, recursive CTE aggregation (7c5d3ce1, daee97b0, 5e10fa9f, 68be3abb)
 - Add IPC hardening: timeout-protect all filesystem commands, transparent timeout UI with retry/fallback for volumes,
-  tabs, file ops, and viewer (6a58278, 71de96e)
-- Add accent color option in Settings: macOS theme or Cmdr gold, "Recolor to gold" for folder icons (330e824, ef9de79)
-- Add directory sorting by size with toggle in Settings (a7dd8ca)
-- Add "Forget saved password" UI for SMB network shares (7d751d5)
-- Add path validation in copy/move and mkdir dialogs with platform-correct limits (6b295ec)
-- Add centralized keyboard shortcut dispatch with runtime custom bindings (e40bcc2)
-- Add macOS entitlements and TCC usage descriptions for proper permission prompts (ff0c27e)
-- Add Apple code signing, notarization, and arch-specific downloads (aarch64, x86_64, universal) (b03f91e, 944085f)
+  tabs, file ops, and viewer (6a582788, 71de96e1)
+- Add accent color option in Settings: macOS theme or Cmdr gold, "Recolor to gold" for folder icons (330e8245, ef9de79d)
+- Add directory sorting by size with toggle in Settings (a7dd8cae)
+- Add "Forget saved password" UI for SMB network shares (7d751d53)
+- Add path validation in copy/move and mkdir dialogs with platform-correct limits (6b295ec4)
+- Add centralized keyboard shortcut dispatch with runtime custom bindings (e40bcc2f)
+- Add macOS entitlements and TCC usage descriptions for proper permission prompts (ff0c27ee)
+- Add Apple code signing, notarization, and arch-specific downloads (aarch64, x86_64, universal) (b03f91ec, 944085fb)
 - Add licensing UI improvements: verify/commit split, typed errors, short code in signed payload, Paddle live setup
-  (0abc704, 1f2308b)
+  (0abc7049, 1f2308be)
 
 ### Fixed
 
 - Fix file viewer: search progress bar with spinner and stop button, incremental match delivery, 10k match cap,
-  byte-seek navigation, loading very long files (9c0a3c3, a3b9d0e, 31cf5fd, d15ecde, 86ef2a5, 0fcdb13, 8b57bbe)
-- Fix 3–10s startup block from index enrichment holding the mutex (267e02b)
-- Fix mDNS host resolution arriving before discovery, causing SMB auth failures (2dda99b)
-- Fix focus escaping panes with focus guard, removing ~50 redundant refocus calls (4c9aadc)
-- Fix clipboard shortcuts in text fields on macOS (20f3de0)
-- Fix non-blocking navigation on slow/dead SMB shares with timeouts and optimistic UI (c85c8c2)
-- Fix copy feature: auto-rollback on panic, deadlock prevention, cancel race condition (2b17ab5)
-- Fix status bar not refreshing after file watcher diffs (e880f9f)
-- Fix pinned tab volume change now opens new tab instead of navigating in-place (ff4c8f2)
-- Fix cancel-loading to return to previous folder instead of home (8ff2379)
-- Fix ⌘, to refocus Settings window if already open (71b3e61)
-- Fix Settings: ⌥+key shortcuts showing "Dead" on macOS, key filter subset matching, ESC clears filter (1fd540a,
-  5056bb6, 47050e0)
-- Fix settings not initialized warning at startup (b540fcc)
-- Fix SMB share showing 0 bytes free on network filesystems (f791153)
-- Fix volumes cached to prevent timeout at startup (024e48f)
-- Fix top menu items staying enabled on non-main windows (7572d13)
-- Fix live file count during large folder loading (7815d0f)
-- Fix window content height for production builds (0cbd0fd)
-- Fix folder icons updating on OS theme change (6b02445)
-- Fix focus lost after rename cancellation (edace18)
-- Fix file viewer not loading settings (acfef93)
-- Fix drive indexing: orphaned entries, missing dir sizes, background scan failures, DB transaction issues (323ae86,
-  004f302, c331143)
-- Fix MCP protocol version mismatch warnings at startup (2af0b90)
-- Fix arrow up/down performance in large folders (e6f268c)
-- Fix PostHog CSP and make it cookieless (1700d99, 9cea85a)
-- Fix app loading slowly due to startup optimizations: license cache, async validation (3835866, 87de136)
+  byte-seek navigation, loading very long files (9c0a3c39, a3b9d0ee, 31cf5fdc, d15ecded, 86ef2a5e, 0fcdb13c, 8b57bbe6)
+- Fix 3–10s startup block from index enrichment holding the mutex (267e02b8)
+- Fix mDNS host resolution arriving before discovery, causing SMB auth failures (2dda99b6)
+- Fix focus escaping panes with focus guard, removing ~50 redundant refocus calls (4c9aadc9)
+- Fix clipboard shortcuts in text fields on macOS (20f3de02)
+- Fix non-blocking navigation on slow/dead SMB shares with timeouts and optimistic UI (c85c8c26)
+- Fix copy feature: auto-rollback on panic, deadlock prevention, cancel race condition (2b17ab55)
+- Fix status bar not refreshing after file watcher diffs (e880f9f7)
+- Fix pinned tab volume change now opens new tab instead of navigating in-place (ff4c8f2f)
+- Fix cancel-loading to return to previous folder instead of home (8ff23798)
+- Fix ⌘, to refocus Settings window if already open (71b3e612)
+- Fix Settings: ⌥+key shortcuts showing "Dead" on macOS, key filter subset matching, ESC clears filter (1fd540a0,
+  5056bb6b, 47050e02)
+- Fix settings not initialized warning at startup (b540fcc5)
+- Fix SMB share showing 0 bytes free on network filesystems (f791153b)
+- Fix volumes cached to prevent timeout at startup (024e48f2)
+- Fix top menu items staying enabled on non-main windows (7572d130)
+- Fix live file count during large folder loading (7815d0fb)
+- Fix window content height for production builds (0cbd0fd2)
+- Fix folder icons updating on OS theme change (6b024453)
+- Fix focus lost after rename cancellation (edace189)
+- Fix file viewer not loading settings (acfef93b)
+- Fix drive indexing: orphaned entries, missing dir sizes, background scan failures, DB transaction issues (323ae866,
+  004f3026, c331143d)
+- Fix MCP protocol version mismatch warnings at startup (2af0b901)
+- Fix arrow up/down performance in large folders (e6f268c3)
+- Fix PostHog CSP and make it cookieless (1700d999, 9cea85aa)
+- Fix app loading slowly due to startup optimizations: license cache, async validation (3835866c, 87de1369)
 
 ### Non-app
 
 - Overhaul native menus on macOS and Linux: build from scratch, strip macOS system-injected items, unify dispatch via
-  single event, context-aware graying, full accelerator sync (b38c552)
-- Unify frontend + backend logging via tauri-plugin-log, demote noisy log levels, suppress smb/sspi noise (22f4ab5,
-  dbbcc55, 1e59a56)
+  single event, context-aware graying, full accelerator sync (b38c552b)
+- Unify frontend + backend logging via tauri-plugin-log, demote noisy log levels, suppress smb/sspi noise (22f4ab5b,
+  dbbcc551, 1e59a564)
 - Design system: unified button styles, consistent loading states, improved text readability, redesigned network screens
-  (8dc2e33, 4d07ad0, 71dbe0b, b5d8b28, a018a3e, 90e2010)
+  (8dc2e33c, 4d07ad0b, 71dbe0be, b5d8b280, a018a3ec, 90e20104)
 - Docs overhaul: CLAUDE.md staleness checker in CI, enriched 25 CLAUDE.md files with Decision/Why entries, cross-cutting
-  patterns in architecture.md, split infrastructure.md into per-service files (ff8b3be, 347ae9b, f961f19, 2f7bff1)
+  patterns in architecture.md, split infrastructure.md into per-service files (ff8b3be2, 347ae9bd, f961f195, 2f7bff1a)
 - Website: add blog with first post, PostHog and Umami analytics, arch-specific download buttons, Docker build check,
-  newsletter improvements (01681c1, 75d5228, 78de573, ae8f6cb, 34ecc70)
+  newsletter improvements (01681c19, 75d52283, 78de5731, ae8f6cb9, 34ecc703)
 - Check runner: CSV stats logging, cfg-gate enclosing block scope detection, file length check, flag combining fix
-  (9ac4b54, 539db62, 4a24562, 6fe48a9)
+  (9ac4b54b, 539db62f, 4a245623, 6fe48a96)
 - Refactors: split DualPaneExplorer and FilePane, extract dialog state, deduplicate templates and Settings CSS, split
-  tauri-commands (337f620, cfae0db, dad8790, 35a4239, ba86d87)
-- License server: download tracking via Cloudflare Analytics Engine (ef0f049)
-- Add Renovate for automated dependency updates (00880a0)
-- Add macOS Playwright E2E tests and CrabNebula E2E tests (ec900ee, a768c03)
-- Infra: uptime monitoring with UptimeRobot + Pushover, hardened deploy script (19baefd)
-- Add cfg-gate lint check for macOS-only Rust crates (075c1d4)
+  tauri-commands (337f6207, cfae0db4, dad8790c, 35a42394, ba86d874)
+- License server: download tracking via Cloudflare Analytics Engine (ef0f0494)
+- Add Renovate for automated dependency updates (00880a0c)
+- Add macOS Playwright E2E tests and CrabNebula E2E tests (ec900eec, a768c030)
+- Infra: uptime monitoring with UptimeRobot + Pushover, hardened deploy script (19baefd1)
+- Add cfg-gate lint check for macOS-only Rust crates (075c1d4a)
 
 ## [0.5.0] - 2026-02-15
 
 ### Added
 
 - Add file viewer (F3) with three-backend architecture for files of any size, virtual scrolling, search with multibyte
-  support, word wrap, horizontal scrolling, and keyboard shortcuts (79268a4, 9f91bce, b10002a, 2ad2521, b65c422,
-  43adc86)
+  support, word wrap, horizontal scrolling, and keyboard shortcuts (79268a4c, 9f91bce0, b10002a9, 2ad2521b, b65c422f,
+  43adc86c)
 - Add drag-and-drop into Cmdr: pane and folder-level targeting, canvas overlay with file names and icons, Alt to switch
-  copy/move, smart overlay suppression for large source images (1ad1493, 6207d8e, a89f18f, 371746b, a3eae1c, c776eed,
-  e97d3db)
+  copy/move, smart overlay suppression for large source images (1ad14932, 6207d8e2, a89f18fb, 371746bb, a3eae1cf,
+  c776eed9, e97d3db7)
 - Add settings window (⌘,) with declarative registry, fuzzy search, persistence, keyboard shortcut customization with
-  conflict detection, and cross-window sync (db121f6, 418f790, 8f78596, 218b79b, 9c39db3, 4e90137)
+  conflict detection, and cross-window sync (db121f6d, 418f7902, 8f78596c, 218b79b7, 9c39db32, 4e90137d)
 - Add MTP (Android device) support: browsing, file operations (copy, delete, rename, new folder), USB hotplug,
-  multi-storage, MTP-to-MTP transfers (938e87c, 672fa6e, d1e9f80, 7ac1528, b08af36, ea845a6, fd8dad6)
-- Add move feature (F6) reusing the copy UI as a unified transfer abstraction (682d33a, cb9e047)
-- Add rename feature with edge-case handling (62799c6)
-- Add swap panes feature with ⌘U shortcut (2a1b329)
-- Add local AI for folder name suggestions in New Folder dialog, optional download (b9a112e, 3dc19c0)
-- Add chunked copy with cancellation and pause support on network drives (ba5409e)
+  multi-storage, MTP-to-MTP transfers (938e87c4, 672fa6e5, d1e9f802, 7ac1528b, b08af36f, ea845a66, fd8dad66)
+- Add move feature (F6) reusing the copy UI as a unified transfer abstraction (682d33a2, cb9e0471)
+- Add rename feature with edge-case handling (62799c6a)
+- Add swap panes feature with ⌘U shortcut (2a1b3296)
+- Add local AI for folder name suggestions in New Folder dialog, optional download (b9a112ed, 3dc19c09)
+- Add chunked copy with cancellation and pause support on network drives (ba5409ef)
 - Add 6 copy/move safety checks: path canonicalization, writability, disk space, inode identity, name length, special
-  file filtering (9548022)
-- Add sync status polling so iCloud/Dropbox icons update in real time (ed36158, 6296412)
-- Add CSP to Tauri webview for XSS protection (68bd510)
-- Add copy/move folder-into-subfolder warning with clear error message (521ab5e)
+  file filtering (95480228)
+- Add sync status polling so iCloud/Dropbox icons update in real time (ed361582, 62964125)
+- Add CSP to Tauri webview for XSS protection (68bd510b)
+- Add copy/move folder-into-subfolder warning with clear error message (521ab5e8)
 
 ### Fixed
 
-- Fix panes getting stale when current directory or its parents are deleted (1b5ad52)
-- Fix multi-window race conditions that could crash the app (9a33e24)
-- Fix recovering from poisoned mutexes instead of crashing (56 lock sites) (62fd685)
-- Fix wrong cursor position after show/hide hidden files (223b041)
-- Fix selection and cursor position breaking on sort change (36d61d0)
-- Fix panel unresponsive after Brief/Full view change (2b6d513)
-- Fix copy operationId capture race condition (9b5c57c)
-- Fix $effect listener cleanup race in FilePane (e2c6ee1)
-- Fix condvar hang on unresolved conflict dialog (2975c45)
-- Fix first click on main window not changing file focus (59c5da4)
-- Fix AppleScript injection in get_info command (e3378c3)
-- Fix URL-encoding of SMB username in smbutil URLs (f908a74)
-- Fix mouse/keyboard interaction bug for volume picker (8afd0de)
-- Fix drop coordinates when DevTools is docked (a9a041f)
-- Fix MCP server always returning left pane as selected (2f9160a)
-- Redact PII from production log statements (fe31316)
+- Fix panes getting stale when current directory or its parents are deleted (1b5ad52a)
+- Fix multi-window race conditions that could crash the app (9a33e24b)
+- Fix recovering from poisoned mutexes instead of crashing (56 lock sites) (62fd6852)
+- Fix wrong cursor position after show/hide hidden files (223b041e)
+- Fix selection and cursor position breaking on sort change (36d61d08)
+- Fix panel unresponsive after Brief/Full view change (2b6d5131)
+- Fix copy operationId capture race condition (9b5c57c1)
+- Fix $effect listener cleanup race in FilePane (e2c6ee12)
+- Fix condvar hang on unresolved conflict dialog (2975c450)
+- Fix first click on main window not changing file focus (59c5da48)
+- Fix AppleScript injection in get_info command (e3378c35)
+- Fix URL-encoding of SMB username in smbutil URLs (f908a74b)
+- Fix mouse/keyboard interaction bug for volume picker (8afd0de6)
+- Fix drop coordinates when DevTools is docked (a9a041f1)
+- Fix MCP server always returning left pane as selected (2f9160a5)
+- Redact PII from production log statements (fe31316f)
 
 ### Non-app
 
-- Migrate network discovery from NSNetServiceBrowser to mdns-sd: 68% code reduction, no unsafe code (3d44cf1)
-- Rewrite MCP server with fewer tools but more capabilities, auto-reconnect, and instructions field (1061fad, ede6463,
-  82345d1)
-- Introduce ModalDialog component for all soft modals with drag support (ffbf14a)
-- Major refactors: split DualPaneExplorer, FilePane, volume_copy, listing/operations, connection modules (04dc3de,
-  e14c289, 2da8e6d, c0bd500, 707a96a)
+- Migrate network discovery from NSNetServiceBrowser to mdns-sd: 68% code reduction, no unsafe code (3d44cf17)
+- Rewrite MCP server with fewer tools but more capabilities, auto-reconnect, and instructions field (1061fad7, ede6463a,
+  82345d18)
+- Introduce ModalDialog component for all soft modals with drag support (ffbf14a7)
+- Major refactors: split DualPaneExplorer, FilePane, volume_copy, listing/operations, connection modules (04dc3deb,
+  e14c2893, 2da8e6dd, c0bd500b, 707a96a9)
 - Security: pin GitHub Actions to commit SHAs, fix Paddle webhook timing attack, use crypto.getRandomValues for license
-  codes, HTML-escape license emails, add webhook idempotency, constant-time admin auth (c0d8cc3, 70bc594, 51cd0b5,
-  bea3b2a, 9db450b, b82f857)
-- Docs overhaul: add colocated CLAUDE.md files throughout repo, architecture.md, branding guide (eac9e61, dd91c78)
+  codes, HTML-escape license emails, add webhook idempotency, constant-time admin auth (c0d8cc31, 70bc5948, 51cd0b57,
+  bea3b2a9, 9db450b7, b82f857a)
+- Docs overhaul: add colocated CLAUDE.md files throughout repo, architecture.md, branding guide (eac9e618, dd91c788)
 - Website: add changelog, roadmap, newsletter signup with Listmonk + AWS SES, mobile responsiveness fixes, 512px logo
-  (643de6a, 07936d1, ba4812d, aa661cf)
-- Add dead code check, manual CI trigger, pnpm security audit, LoC counter, summary job for branch protection (9876600,
-  3b20e66, ad22eba)
-- Tooling: extract shared Go check helpers, add VNC mode for Linux testing, fix Linux E2E environment (550c353, 6aa5ff7,
-  fa907b6)
-- License server: add input validation, webhook idempotency, and security hardening (4363a32, 9db450b, 7398965)
+  (643de6ad, 07936d1d, ba4812d5, aa661cff)
+- Add dead code check, manual CI trigger, pnpm security audit, LoC counter, summary job for branch protection (9876600d,
+  3b20e660, ad22eba9)
+- Tooling: extract shared Go check helpers, add VNC mode for Linux testing, fix Linux E2E environment (550c3536,
+  6aa5ff7c, fa907b6b)
+- License server: add input validation, webhook idempotency, and security hardening (4363a320, 9db450b7, 7398965b)
 
 ## [0.4.0] - 2026-01-27
 
 ### Added
 
 - Add file selection: Space toggles, Shift+arrows for range, Cmd+A for select all, selection info in status bar
-  (4d44cda, 1cac4b3)
-- Add copy feature with F5: copy dialog, destination picker with free space display, conflict handling (281f45e,
-  fb5f027, a6d148d, 6c661f2)
-- Add new folder feature with F7 shortcut and conflict handling (80ec297)
-- Add "Open in editor" feature with F4 shortcut (7eb66ac)
-- Add function key bar at bottom of UI for mouse-initiated actions (537e040)
-- Add pane resizing: drag to resize between 25–75%, double-click to reset to 50% (542b491)
-- Add multifile external drag and drop (7426334)
-- Add keyboard navigation to network panes: PgUp/PgDn, Home/End, arrow keys (70aa341)
-- Add "Opening folder..." loading phase for network folders with distinct status messages (9eb1185)
-- Add license key entry dialog with organization address and tax ID collection (52480ce, 29eb6fe)
+  (4d44cda0, 1cac4b31)
+- Add copy feature with F5: copy dialog, destination picker with free space display, conflict handling (281f45ee,
+  fb5f0275, a6d148d8, 6c661f29)
+- Add new folder feature with F7 shortcut and conflict handling (80ec297d)
+- Add "Open in editor" feature with F4 shortcut (7eb66aca)
+- Add function key bar at bottom of UI for mouse-initiated actions (537e0405)
+- Add pane resizing: drag to resize between 25–75%, double-click to reset to 50% (542b4910)
+- Add multifile external drag and drop (74263344)
+- Add keyboard navigation to network panes: PgUp/PgDn, Home/End, arrow keys (70aa3410)
+- Add "Opening folder..." loading phase for network folders with distinct status messages (9eb1185e)
+- Add license key entry dialog with organization address and tax ID collection (52480cef, 29eb6fe1)
 
 ### Fixed
 
-- Fix UI not updating on external file renames (5de9346)
-- Fix light mode colors (42888c7)
-- Fix cursor going out of Full view bounds (7edcac8)
-- Fix ESC during loading navigating to wrong location (b8c12e7)
-- Fix focus after dragging window (8488de6)
-- Fix multiple volume selectors opening at once (f4c4c21)
-- Fix frontend race condition from refactor (646c7af)
+- Fix UI not updating on external file renames (5de93465)
+- Fix light mode colors (42888c70)
+- Fix cursor going out of Full view bounds (7edcac89)
+- Fix ESC during loading navigating to wrong location (b8c12e78)
+- Fix focus after dragging window (8488de6a)
+- Fix multiple volume selectors opening at once (f4c4c214)
+- Fix frontend race condition from refactor (646c7af3)
 
 ### Non-app
 
-- Add E2E tests with tauri-driver on Linux using WebDriverIO in Docker (1b0cbac)
-- Revamp checker script: parallel execution, dependency graph, aligned output, colored durations (7835b4c)
-- Add type drift detection between Rust and Svelte types (b3ae1c3)
-- Add jscpd for Rust code duplication detection, CSS health checks, Go checks (67e6c15, d177eb3, 2540752)
-- Add Claude hooks for pre-session context and post-edit autoformat (3d59dde, 122182d)
-- Add LogTape logging for Svelte and debug pane for dev mode (affa548, f494e15)
-- Require reasoning in clippy lint exceptions (d327cf4)
-- Website: fix hero image animation and sizing, fix broken Paddle references (40faeee, 278ad4c, 5eb5a52)
-- License server: wire up Paddle checkout, fix webhook email fetching, support quantity > 1 (3c40929)
+- Add E2E tests with tauri-driver on Linux using WebDriverIO in Docker (1b0cbac5)
+- Revamp checker script: parallel execution, dependency graph, aligned output, colored durations (7835b4cb)
+- Add type drift detection between Rust and Svelte types (b3ae1c3f)
+- Add jscpd for Rust code duplication detection, CSS health checks, Go checks (67e6c15a, d177eb36, 25407523)
+- Add Claude hooks for pre-session context and post-edit autoformat (3d59ddea, 122182d6)
+- Add LogTape logging for Svelte and debug pane for dev mode (affa5482, f494e15f)
+- Require reasoning in clippy lint exceptions (d327cf49)
+- Website: fix hero image animation and sizing, fix broken Paddle references (40faeeef, 278ad4c8, 5eb5a523)
+- License server: wire up Paddle checkout, fix webhook email fetching, support quantity > 1 (3c40929c)
 
 ## [0.3.2] - 2026-01-14
 
 ### Fixed
 
-- Fix auto-updater to download updates and restart the app after updating (c0bff9a)
+- Fix auto-updater to download updates and restart the app after updating (c0bff9a6)
 
 ### Non-app
 
-- Website: redesign with mustard yellow theme, view transitions, hero animation, and reduced motion support (0296379,
-  18b729f, 689a151)
-- Website: avoid aggressive caching, rearrange T&C (8ca0539, c92dff8)
-- Tooling: turn off MCP stdio sidecar, fix Rust-Linux check, reduce CI frequency, fix latest.json formatting (5dda608,
-  2ec3f7e, 42d81ab, 52980ae)
-- Docs: release process and auto-updater documentation (c7c36f6, 765f5ad, f3785da, 10e43de)
+- Website: redesign with mustard yellow theme, view transitions, hero animation, and reduced motion support (0296379a,
+  18b729fd, 689a1513)
+- Website: avoid aggressive caching, rearrange T&C (8ca05395, c92dff8c)
+- Tooling: turn off MCP stdio sidecar, fix Rust-Linux check, reduce CI frequency, fix latest.json formatting (5dda608a,
+  2ec3f7e1, 42d81ab9, 52980aec)
+- Docs: release process and auto-updater documentation (c7c36f60, 765f5ad0, f3785da7, 10e43de7)
 
 ## [0.3.1] - 2026-01-14
 
 ### Added
 
-- Add custom title bar, 4 px narrower for more content space (33e90c8)
+- Add custom title bar, 4 px narrower for more content space (33e90c8b)
 
 ### Changed
 
-- Replace rusty icon with yellow one (79777e3)
+- Replace rusty icon with yellow one (79777e34)
 
 ### Fixed
 
-- Fix app name in task switcher: shows "Cmdr" instead of "cmdr" (8117300)
+- Fix app name in task switcher: shows "Cmdr" instead of "cmdr" (8117300e)
 
 ## [0.3.0] - 2026-01-13
 
 ### Added
 
-- Add MCP server with file exploring tools (f6dcf27)
-- Add stdio MCP interface for broader client compatibility (3b193f7)
-- Add Streamable HTTP support to MCP server (1d0549b)
-- Stream folder contents for blazing fast experience (1d82ec9)
-- Add "listing complete" state showing file count (5059e00)
-- Add Linux checks to checker script (02ab0ab)
+- Add MCP server with file exploring tools (f6dcf273)
+- Add stdio MCP interface for broader client compatibility (3b193f7c)
+- Add Streamable HTTP support to MCP server (1d0549b0)
+- Stream folder contents for blazing fast experience (1d82ec9f)
+- Add "listing complete" state showing file count (5059e00b)
+- Add Linux checks to checker script (02ab0ab7)
 
 ### Fixed
 
-- Fix MCP server port and tool naming (c2ae7de)
-- Fix race condition when loading files (38865e6)
+- Fix MCP server port and tool naming (c2ae7de7)
+- Fix race condition when loading files (38865e62)
 
 ## [0.2.0] - 2026-01-10
 
@@ -1880,30 +1883,30 @@ Initial public release. Free forever for personal use (BSL license).
 
 ### Added
 
-- Dual-pane file explorer with keyboard and mouse navigation (c945f18)
+- Dual-pane file explorer with keyboard and mouse navigation (c945f18c)
 - Full mode (vertical scroll with size/date columns) and Brief mode (horizontal multi-column), switchable via ⌘1/⌘2
-  (c779a6d)
-- Virtual scrolling for 100k+ files (cf6c35d)
-- Chunked directory loading (50k files: 350 ms to first files) (869cdfb)
-- File icons from OS with caching (b8c588e)
-- File metadata panel with size color coding and date tooltips (bc3dc85)
-- Native context menu (Open, Show in Finder, Copy path, Quick Look) (7d977a1)
-- Live file watching with incremental diffs (cf12372)
-- Dropbox and iCloud sync status icons (46f1770)
-- Volume switching with keyboard navigation (ba3e770)
-- Network drives (SMB): host discovery via Bonjour, share listing, authentication, and mounting (54ee04f)
-- Sorting by name, size, date, extension with alphanumeric sort (e7b7206)
-- Back/Forward navigation (56a5bf6)
-- Drag and drop from the app (8e1d53b)
-- Command palette with fuzzy search (7b0ea13)
-- Window state persistence (position and size remembered) (b8d93c5)
-- Dark mode support (7deb986)
-- Show hidden files menu item (4af855d)
-- Full disk access permission handling (9f433d8)
-- Licensing features (validation, about screen, expiry modal) (dc68eeb)
-- Keyboard shortcuts: Backspace/⌘↑ (go up), ⌥↑/↓ (home/end), Fn arrows (page up/down) (fc899d4)
-- getcmdr.com website (0f9eb21)
-- License server (Cloudflare Worker) with Ed25519-signed keys (bff3e8a)
+  (c779a6de)
+- Virtual scrolling for 100k+ files (cf6c35d0)
+- Chunked directory loading (50k files: 350 ms to first files) (869cdfb3)
+- File icons from OS with caching (b8c588ec)
+- File metadata panel with size color coding and date tooltips (bc3dc85b)
+- Native context menu (Open, Show in Finder, Copy path, Quick Look) (7d977a12)
+- Live file watching with incremental diffs (cf123728)
+- Dropbox and iCloud sync status icons (46f1770d)
+- Volume switching with keyboard navigation (ba3e7704)
+- Network drives (SMB): host discovery via Bonjour, share listing, authentication, and mounting (54ee04f5)
+- Sorting by name, size, date, extension with alphanumeric sort (e7b72068)
+- Back/Forward navigation (56a5bf61)
+- Drag and drop from the app (8e1d53b5)
+- Command palette with fuzzy search (7b0ea13c)
+- Window state persistence (position and size remembered) (b8d93c58)
+- Dark mode support (7deb986b)
+- Show hidden files menu item (4af855d7)
+- Full disk access permission handling (9f433d8b)
+- Licensing features (validation, about screen, expiry modal) (dc68eeb9)
+- Keyboard shortcuts: Backspace/⌘↑ (go up), ⌥↑/↓ (home/end), Fn arrows (page up/down) (fc899d4d)
+- getcmdr.com website (0f9eb210)
+- License server (Cloudflare Worker) with Ed25519-signed keys (bff3e8a2)
 
 ---
 
@@ -1916,136 +1919,136 @@ Initial public release. Free forever for personal use (BSL license).
 
 Initial public release.
 
-- Add licensing features to app (validation, about screen, expiry modal) (dc68eeb)
-- Add command palette with fuzzy search (7b0ea13)
-- Switch to BSL license (free for individuals) (06c49cb)
+- Add licensing features to app (validation, about screen, expiry modal) (dc68eeb9)
+- Add command palette with fuzzy search (7b0ea13c)
+- Switch to BSL license (free for individuals) (06c49cba)
 
 #### 2026-01-09
 
 License server improvements.
 
-- Add checkout tester tool for license server (38774fe)
-- Add sandbox/live environment duality for license tests (15b3957)
-- Unify trial period to 14 days (7e68c27)
+- Add checkout tester tool for license server (38774feb)
+- Add sandbox/live environment duality for license tests (15b39576)
+- Unify trial period to 14 days (7e68c276)
 
 #### 2026-01-08
 
 Cmdr, website, licensing.
 
-- Rename to Cmdr (016a3e3)
-- Restructure as monorepo with desktop app in apps/desktop (c0e764a)
-- Add getcmdr.com website (0f9eb21)
-- Add license server (Cloudflare Worker) with Ed25519-signed keys (bff3e8a)
-- Add legal pages (privacy policy, terms, refund policy, pricing) (4f32a29)
-- Streamline CI (website-only PRs: 22 min → 2 min) (4894003)
+- Rename to Cmdr (016a3e3c)
+- Restructure as monorepo with desktop app in apps/desktop (c0e764a7)
+- Add getcmdr.com website (0f9eb210)
+- Add license server (Cloudflare Worker) with Ed25519-signed keys (bff3e8a2)
+- Add legal pages (privacy policy, terms, refund policy, pricing) (4f32a298)
+- Streamline CI (website-only PRs: 22 min → 2 min) (48940033)
 
 #### 2026-01-07
 
 Network fixes.
 
-- Fix network share unnecessary login prompts (dbeebaf)
-- Fix Back/Forward navigation across network screens (bf462e9)
-- Sort network hosts and shares alphabetically (9de5f2b)
+- Fix network share unnecessary login prompts (dbeebaf9)
+- Fix Back/Forward navigation across network screens (bf462e95)
+- Sort network hosts and shares alphabetically (9de5f2b6)
 
 #### 2026-01-05-06
 
 Network drives (SMB).
 
-- Add network host discovery via Bonjour (54ee04f)
-- Add SMB share listing (693e926)
-- Add network share authentication (283e5fd)
-- Add network share mounting (308d55c)
-- Add volume mount/unmount watching (76bbf22)
+- Add network host discovery via Bonjour (54ee04f5)
+- Add SMB share listing (693e9262)
+- Add network share authentication (283e5fd0)
+- Add network share mounting (308d55cc)
+- Add volume mount/unmount watching (76bbf222)
 
 #### 2026-01-04
 
 Sorting.
 
-- Add sorting feature (name, size, date, extension) with alphanumeric sort (e7b7206)
-- Add Stylelint for CSS quality (a778dcc)
+- Add sorting feature (name, size, date, extension) with alphanumeric sort (e7b72068)
+- Add Stylelint for CSS quality (a778dccd)
 
 #### 2026-01-02-03
 
 Navigation and permissions.
 
-- Add ⌘↑ shortcut to go up a folder (848e2f1)
-- Add full disk access permission handling (9f433d8)
-- Add Back/Forward navigation with menu items (56a5bf6)
-- Add keyboard navigation to volume selector (46c3023)
-- Save last directory per volume (9886fcd)
-- Set minimum window size (237c5a9)
-- Fix opening files (714dc5a)
+- Add ⌘↑ shortcut to go up a folder (848e2f1a)
+- Add full disk access permission handling (9f433d8b)
+- Add Back/Forward navigation with menu items (56a5bf61)
+- Add keyboard navigation to volume selector (46c30239)
+- Save last directory per volume (9886fcdc)
+- Set minimum window size (237c5a92)
+- Fix opening files (714dc5a2)
 
 #### 2026-01-01
 
 Drag and drop, volumes.
 
-- Add drag and drop FROM the app (8e1d53b)
-- Add volume switching feature (ba3e770)
-- Remove Tailwind (was slowing down app startup) (5354a48)
+- Add drag and drop FROM the app (8e1d53b5)
+- Add volume switching feature (ba3e7704)
+- Remove Tailwind (was slowing down app startup) (5354a48b)
 
 #### 2025-12-31
 
 Polish.
 
-- Add font width measuring for precise Brief mode layout (848f68f)
-- Abstract file system access for better testing (eb9dd72)
-- Fix Dropbox sync icon false positives (64007f0)
-- Fix file watching reliability (aefe3e7)
+- Add font width measuring for precise Brief mode layout (848f68fe)
+- Abstract file system access for better testing (eb9dd726)
+- Fix Dropbox sync icon false positives (64007f07)
+- Fix file watching reliability (aefe3e72)
 
 #### 2025-12-30
 
 Speed optimizations.
 
-- Add keyboard shortcuts: ⌥↑/↓ for home/end, Fn arrows for page up/down (6298990)
-- Move file cache to backend for major speed improvements (a42eda5)
-- Optimize directory loading (phase 1 and 2) (7efd61a)
+- Add keyboard shortcuts: ⌥↑/↓ for home/end, Fn arrows for page up/down (62989901)
+- Move file cache to backend for major speed improvements (a42eda53)
+- Optimize directory loading (phase 1 and 2) (7efd61a3)
 
 #### 2025-12-29
 
 View modes and cloud sync.
 
-- Add Full mode (vertical scroll with size/date columns) and Brief mode (horizontal multi-column) (c779a6d)
-- Add Dropbox and iCloud sync status icons (46f1770)
-- Add loading screen animation (234f0a7)
+- Add Full mode (vertical scroll with size/date columns) and Brief mode (horizontal multi-column) (c779a6de)
+- Add Dropbox and iCloud sync status icons (46f1770d)
+- Add loading screen animation (234f0a70)
 
 #### 2025-12-28
 
 Performance and file operations.
 
-- Add chunked directory loading (50k files: 350 ms to first files) (869cdfb)
-- Add file metadata panel with size color coding and date tooltips (bc3dc85)
-- Add native context menu (Open, Show in Finder, Copy path, Quick Look) (7d977a1)
-- Add live file watching with incremental diffs (cf12372)
-- Add virtual scrolling for 100k+ files (cf6c35d)
-- Add Backspace shortcut to go up a folder (fc899d4)
-- Scroll to last folder when navigating up (8ccd8bd)
+- Add chunked directory loading (50k files: 350 ms to first files) (869cdfb3)
+- Add file metadata panel with size color coding and date tooltips (bc3dc85b)
+- Add native context menu (Open, Show in Finder, Copy path, Quick Look) (7d977a12)
+- Add live file watching with incremental diffs (cf123728)
+- Add virtual scrolling for 100k+ files (cf6c35d0)
+- Add Backspace shortcut to go up a folder (fc899d4d)
+- Scroll to last folder when navigating up (8ccd8bd8)
 
 #### 2025-12-27
 
 File metadata and icons.
 
-- Add file metadata display (owner, size, dates) (d9994bc)
-- Add file icons from OS with caching (b8c588e)
-- Add per-folder custom icons support (210f23b)
-- Add Tauri MCP server for AI tooling integration (0a64eb3)
-- Fix symlinked directory handling (5a134ac)
+- Add file metadata display (owner, size, dates) (d9994bc9)
+- Add file icons from OS with caching (b8c588ec)
+- Add per-folder custom icons support (210f23be)
+- Add Tauri MCP server for AI tooling integration (0a64eb3c)
+- Fix symlinked directory handling (5a134ac4)
 
 #### 2025-12-26
 
 Dual-pane explorer.
 
-- Add dual-pane file explorer with home directory listing (c945f18)
-- Add window state persistence (position and size remembered) (b8d93c5)
-- Add file navigation with keyboard and mouse (20424e0)
-- Add "Show hidden files" menu item (4af855d)
-- Add dark mode support (7deb986)
+- Add dual-pane file explorer with home directory listing (c945f18c)
+- Add window state persistence (position and size remembered) (b8d93c58)
+- Add file navigation with keyboard and mouse (20424e01)
+- Add "Show hidden files" menu item (4af855d7)
+- Add dark mode support (7deb986b)
 
 #### 2025-12-25
 
 Project init.
 
-- Initialize Rust + Tauri 2 + Svelte 5 project (b410bd9)
-- Add GitHub Actions workflow (6dbf265)
+- Initialize Rust + Tauri 2 + Svelte 5 project (b410bd94)
+- Add GitHub Actions workflow (6dbf2657)
 
 </details>
