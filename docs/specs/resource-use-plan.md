@@ -109,6 +109,91 @@ Two further caveats on the numbers here. The CPU baseline covers 9.1 hours, the 
 case, not an unrepresentative one, but the fixes need a quiet-machine sanity check so we do not tune for one workload.
 See § Definition of done.
 
+## MT: the 60-second rescore treadmill is back (found last, ranks first)
+
+Found while chasing M0's "third candidate". It is a regression of a fix
+`docs/notes/idle-memory-profile-2026-07-28.md` § "Cause 2" records as shipped, it runs forever on an idle app, and it
+matches the 180 s sample's hot stacks exactly. **Do this before anything else.**
+
+Every ~60 seconds, without a user touching the app, the log shows the same three lines:
+
+```
+21:21:27  DEBUG importance  incremental rescore takes the full walk: the changed subtrees cover too much of the volume
+21:21:42  DEBUG importance  incremental rescore of 'root' updated 52071 folders
+21:21:42  DEBUG search      importance weights loaded for 'root': 160718 scored folders
+```
+
+842 rescore lines and 474 weight loads in the current log. The folder count is pinned at 52,071 and the weight count at
+160,718, so **nothing is changing and it rewrites and reloads all of it anyway.**
+
+### The mechanism, end to end
+
+1. `try_scoped_walk` (`importance/scheduler/scoped_walk.rs`) gives up when the changed subtrees hold more than
+   `SCOPED_WALK_MAX_DIRS = 20_000` directories, returning `FullWalkReason::SubtreesTooLarge` (`:76`, `:94`).
+2. `walk_for_incremental` (`scheduler/recompute.rs:296-300`) then runs the **full O(dirs) walk** over the whole 6.5 M-row
+   root index and escalates the scope to `RescoreScope::WithAncestors`.
+3. That rewrites 52,071 folder rows and wakes the search weight reload, which reads all 160,718 weights.
+
+The full walk is measured at ~9 µs per folder (5.5 s over 611,699 folders, `scheduler/DETAILS.md:253`). Running it once
+a minute forever is the shape `idle-memory-profile-2026-07-28.md` describes as the treadmill, and the 180 s sample's top
+stacks (`importance::scheduler::spawn_incremental` → `recompute::walk_for_incremental` → `walk::walk_index_folders`,
+over `sqlite3BtreeTableMoveto` and `DirTree::path_at_into`) are exactly this path.
+
+### Why the 2026-07-28 fix does not hold here
+
+That fix added `sanitize_incremental_batch`, which drops paths that floor by path (`target/`, `Library/Caches`,
+dot-directories) before the walk. It reduces the batch; it does not bound the **subtree size** the surviving origins
+cover. On this machine the changed subtrees still exceed 20,000 directories every minute, so the `SubtreesTooLarge`
+escape hatch fires and the pass takes the full walk anyway. **The escape hatch has become the default path.**
+
+### This is the same root cause as M3, seen from the other end
+
+Both are "too much churn arrives, so a bounded mechanism gives up and does the expensive thing". Worth stating in the
+design, because a fix for one may be the fix for both, and because `SCOPED_WALK_MAX_DIRS` is exactly the kind of
+cardinality cliff M3 exists to stop falling off.
+
+### What to investigate, in order
+
+1. **Why do the changed subtrees exceed 20,000 dirs on an idle machine?** Log the origins and the descent count at the
+   bail. If `sanitize_incremental_batch` is letting build output through, that is the bug and it is upstream of
+   everything here.
+2. **Should `SubtreesTooLarge` fall back to a full walk at all?** Falling back to the most expensive option when the
+   cheap one is overloaded is backwards under load. The alternatives are to walk the subtrees in bounded chunks across
+   passes, or to skip the pass and let the next one try, or to raise the cap. Each has a staleness cost; argue it.
+3. **Why does an unchanged result rewrite 52,071 rows?** A pass that finds nothing changed should write nothing. If the
+   rescore is not diffing against stored values, that is a second, independent defect.
+4. **Why does the weight reload read all 160,718 weights?** The 2026-07-28 fix made it a delta
+   (`importance/read/DETAILS.md` § "The reload contract"). A full reload every minute means the delta path is bypassed
+   on the `WithAncestors` scope, which is precisely the scope this treadmill takes.
+
+**Tests**: test-first. The characteristic case is an idle volume whose changed-subtree set exceeds the cap: assert the
+pass does not run a full walk every window, and that a pass finding no changes writes no rows. There is a differential
+oracle already (the full walk is the scoped walk's oracle), so correctness has a ready check.
+
+**Docs**: `importance/scheduler/DETAILS.md`, plus a correction to `idle-memory-profile-2026-07-28.md` § "Cause 2", which
+currently reports this fixed.
+
+**Checks**: `pnpm check rust`, `pnpm check --include-slow`.
+
+## Also: the search arena may never be dropped (~600 MB)
+
+`apps/desktop/src-tauri/src/search/DETAILS.md:9` says the search index "loads lazily on dialog open and drops after idle
+(5 min timer + 10 min backstop), **~600 MB resident while active**". The log shows it loaded twice:
+
+```
+16:15:38  DEBUG search::index  Search index loaded: 6562042 entries, generation 1340883, took 3.301279875s
+16:16:39  DEBUG search::index  Search index loaded: 6562034 entries, generation 1341019, took 3.727664375s
+```
+
+and **no drop line in the five hours since**. Either the drop is not logged, or the arena is still resident. That is a
+yes-or-no question worth ~600 MB of the 947 MB Rust heap, and it is the cheapest memory lead in this plan. **Answer it
+before M6a's hunt for the 643 MB `MALLOC_LARGE`**, which is the smaller number.
+
+Second lead on the same heap: the evidence line reads "947 MB dirty plus 725 MB reclaimable", and
+`docs/tooling/memory-debugging.md:26-27` says a collapsing balloon is "usually mimalloc decommitting pages". So part of
+the Rust heap may be mimalloc holding rather than using, which is a purge-tuning question, not an allocation hunt. Name
+it so nobody spends a day looking for a culprit that does not exist.
+
 ## The evidence for the rest
 
 - **7,007,762 rows** in the root index; **974,485 (14%) under `.claude/worktrees/`**. 26,536 `node_modules` dirs, 131
@@ -611,9 +696,15 @@ Targets, to be sharpened once M1 and M2 land and the attribution is re-run:
 
 ## Sequencing
 
-**Step zero: re-measure.** Run `ps -M` plus a longer, three-bucket `sample` (§ M0) before committing to this order. M1 is
-first regardless, because its samples are pure userspace codegen; what the re-measurement decides is whether M2 really
-outranks M3.
+**MT goes first.** It runs every 60 seconds forever on an idle app, it is a regression of a fix believed shipped, and it
+is the only candidate whose cost is visible in the log rather than inferred from a sample. Everything else is sized
+against a machine that has stopped doing it.
+
+**Step zero alongside it: re-measure.** Run `ps -M` plus a longer, three-bucket `sample` (§ M0). The search-arena
+residency question is one grep and belongs here too.
+
+M1 is next regardless of what the measurement says, because its defect is confirmed by reading the code rather than by
+sampling. What the re-measurement decides is whether M2 outranks M3.
 
 1. **M1** (writer statement cache **plus the cache-capacity guard**, which is the part that makes it work), then **M1b**
    (time-boxed delta transaction, copying `network_scanner`'s `SCAN_COMMIT_INTERVAL` shape) separately.
