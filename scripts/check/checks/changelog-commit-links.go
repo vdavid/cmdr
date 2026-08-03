@@ -41,7 +41,7 @@ type changelogCommitLinkFinding struct {
 type changelogScanResult struct {
 	findings   []changelogCommitLinkFinding
 	uniqueSHAs map[string]int // sha -> first line seen
-	totalRefs int            // count of all (non-unique) commit refs
+	totalRefs  int            // count of all (non-unique) commit refs
 }
 
 // RunChangelogCommitLinks validates that every commit hash referenced in

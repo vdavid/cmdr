@@ -1,23 +1,19 @@
 # Network scanner (SMB/MTP)
 
 The `Volume`-trait BFS scanner for SMB and MTP shares, over the SAME `Volume::list_directory` API the live pane uses.
-Everything downstream of `EntryRow` (id counter, writer, aggregator, `dir_stats`) is reused unchanged; only how entries
-are discovered and stat'd differs from the local guarded walker.
+Everything downstream of `EntryRow` (id counter, writer, aggregator, `dir_stats`) is reused unchanged; only discovery
+and stat'ing differ from the local guarded walker.
 
 ## Module map
 
-- **mod.rs** — `VolumeScanError` plus the round-trip disciplines both walks share: the timed/cancelable/pooled
-  `list_one_directory`, the typed-disconnect test, the progress log, and the summary.
-- **full_scan.rs** — `scan_volume_via_trait` (fresh BFS after a `TruncateData`), plus its batch/transaction helpers and
-  the terminal-disconnect partial-preserving finish.
-- **reconcile_scan.rs** — `reconcile_volume_via_trait` (rescan-in-place BFS): same walk, but diffs each dir against the
-  DB and writes only changes, so the last-good index stays visible throughout.
+- **mod.rs** — `VolumeScanError` + the round-trip disciplines both walks share (`list_one_directory`, typed-disconnect
+  test, progress log, summary). **full_scan.rs** — `scan_volume_via_trait`, the fresh BFS. **reconcile_scan.rs** —
+  `reconcile_volume_via_trait`, the same walk diffing each dir against the DB.
 - **scan_pace.rs** — `ScanPacer`: the per-volume paced listing budget (`FULL_LISTING_BUDGET` 64 ↔
-  `YIELDING_LISTING_BUDGET`
-  1. that yields to navigation. `pace_tests.rs` is its test module.
-- **system_dirs.rs** — `is_recursion_excluded_dir` (NAS pseudo-dirs whose subtree isn't recursed) plus the
-  exclusion-list stamp that drives the rebuild.
-- **tests/** — the scanner test modules, by theme.
+  `YIELDING_LISTING_BUDGET` 1) that yields to navigation. `pace_tests.rs` is its test module.
+- **system_dirs.rs** — `is_recursion_excluded_dir` (NAS pseudo-dirs whose subtree isn't recursed) + the exclusion-list
+  stamp driving the rebuild.
+- **tests/** — scanner tests, by theme.
 
 ## Must-knows
 
@@ -45,11 +41,11 @@ are discovered and stat'd differs from the local guarded walker.
 - **The FRESH scan wraps its inserts in periodic explicit transactions** (`SCAN_COMMIT_INTERVAL`, 2 s): the single
   writer fsyncs per interval, not per 2000-entry batch — the lever that keeps it from becoming the bottleneck once the
   SMB connection pool lifts listing throughput ~4×. `commit_scan_tx` closes the transaction before EVERY exit, so marks
-  - the final aggregate run in autocommit and a crash loses only the last interval (heals to a rescan). Reconcile is
-    untouched (it already brackets via `BulkReconcileGuard`).
+  and the final aggregate run in autocommit and a crash loses only the last interval (heals to a rescan). Reconcile
+  already brackets via `BulkReconcileGuard`.
 - **A backend may fan `list_directory_for_scan` out across an internal connection pool** (SMB opens extra TCP sessions;
-  `backends/DETAILS.md` § "SMB scan-connection pool"). The walk is transport-agnostic and the global in-flight budget
-  still caps concurrency, so pacing survives for free.
+  `backends/DETAILS.md` § "SMB scan-connection pool"). The walk is transport-agnostic and the in-flight budget still
+  caps concurrency, so pacing survives.
 
 Architecture, the concurrency pump, the pacing decision, the NAS-dir rationale, and empty-root handling: `DETAILS.md`.
 Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

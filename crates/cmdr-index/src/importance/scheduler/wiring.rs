@@ -79,7 +79,7 @@ pub(super) fn build_and_wire() -> Option<Arc<ImportanceScheduler>> {
 /// moments later (the prod-upgrade ordering trap). The probe (a DB open) runs on a
 /// blocking task; when unscored it hands off to the normal coordinated
 /// [`spawn_recompute`], so a concurrent `ScanCompleted` coalesces correctly.
-fn enqueue_initial_full_pass_if_unscored(
+pub(super) fn enqueue_initial_full_pass_if_unscored(
     scheduler: Arc<ImportanceScheduler>,
     volume_id: String,
     kind: IndexVolumeKind,

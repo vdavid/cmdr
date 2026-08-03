@@ -1,10 +1,9 @@
 # Importance scheduler
 
-Fills each volume's store: `mod.rs` (the `ImportanceScheduler` handle, `ScoringPolicy`, the `PassCoordinator`, running a
-pass), `wiring.rs` (construction, the lifecycle-bus subscriptions and startup sweep, the incremental throttle, the
-spawn paths), `walk.rs` (the O(dirs) full-pass index walk), `scoped_walk.rs` (the O(touched)
-incremental walk), `recompute.rs` (signals + score + write, full and incremental), `differential.rs` (the two-walk
-correctness harness). The volume-kind policy and the floor doctrine are in `../CLAUDE.md`.
+Fills each volume's store: `mod.rs` (the `ImportanceScheduler` handle, `ScoringPolicy`, `PassCoordinator`, running a
+pass), `wiring.rs` (construction, bus subscriptions + sweep, throttle, spawns), `walk.rs` (the O(dirs) full-pass walk),
+`scoped_walk.rs` (the O(touched) incremental walk), `recompute.rs` (signals + score + write, full and incremental),
+`differential.rs` (the two-walk correctness harness). Volume-kind policy and the floor doctrine: `../CLAUDE.md`.
 
 ## Must-knows
 

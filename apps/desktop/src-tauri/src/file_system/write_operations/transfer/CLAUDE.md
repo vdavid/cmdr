@@ -7,9 +7,8 @@ Copy and move, local-FS and volume-aware (Local ↔ MTP ↔ SMB), through `trans
 ## Module map
 
 - Local-FS: `copy/` (+ `CopyTransaction` rollback), `move_op.rs`, `copy_strategy.rs` + `{macos,linux,chunked}_copy.rs`.
-- Volume: `volume_{copy,move,preflight,rename_merge,conflict,strategy}.rs`. `volume_copy.rs` runs the phases and the
-  post-loop, then drives ONE of `volume_copy_{concurrent,serial}.rs` (the `FuturesUnordered` window, or one source at a
-  time). Plus `checkpoint_stream.rs`, `staged_write.rs`,
+- Volume: `volume_{copy,move,preflight,rename_merge,conflict,strategy}.rs`; `volume_copy.rs` runs the phases + post-loop
+  and drives ONE of `volume_copy_{concurrent,serial}.rs`. Plus `checkpoint_stream.rs`, `staged_write.rs`,
   `retry.rs` (per-file retry policy), `transfer_probe.rs` (in-flight table + stall watchdog + the abort it trips).
 
 ## Merge and conflicts

@@ -55,7 +55,7 @@ export interface BulkRenameReview {
   requestVersion: number
 }
 
-export interface AskCmdrState {
+interface AskCmdrState {
   open: boolean
   /** Rail width in px (clamped 280-520), persisted. */
   width: number

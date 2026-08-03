@@ -7,8 +7,8 @@ How a per-volume index is born, lives, transitions, and dies. Every invariant be
 - **state.rs** (+ `state/tests.rs`) — `INDEX_REGISTRY`, `IndexInstance`, the `IndexPhase` machine, every transition, the
   failure supervisor, and the `IndexManager` + `ReadPool` bootstrap.
 - **manager.rs** the per-volume coordinator (+ **manager/start.rs**, the LOCAL scan and journal-replay starts);
-  **network_scan.rs** the SMB/MTP trait scan;
-  **scan_completion.rs** post-scan; **progress_reporter.rs** + **partial_agg.rs** the 500 ms progress pump.
+  **network_scan.rs** the SMB/MTP trait scan; **scan_completion.rs** post-scan; **progress_reporter.rs** +
+  **partial_agg.rs** the 500 ms progress pump.
 - **freshness.rs**, **failure.rs**, **master.rs** (the master switch), and **lifecycle_bus.rs** (the neutral
   scan-completed / registration / dirs-changed bus).
 
