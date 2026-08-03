@@ -66,6 +66,17 @@ impl TestListingGuard {
         self.with_listing(|listing| listing.entries.iter().map(|e| e.name.clone()).collect())
     }
 
+    /// This listing's cached entry names, or empty if the entry is gone. For a
+    /// `wait_until` predicate, where `entry_names`' panic would end the run
+    /// instead of polling again.
+    pub(crate) fn entry_names_or_empty(&self) -> Vec<String> {
+        let cache = LISTING_CACHE.read_ignore_poison();
+        cache
+            .get(&self.listing_id)
+            .map(|listing| listing.entries.iter().map(|e| e.name.clone()).collect())
+            .unwrap_or_default()
+    }
+
     /// Whether the entry is still in the cache. For tests that assert on teardown.
     pub(crate) fn is_cached(&self) -> bool {
         LISTING_CACHE.read_ignore_poison().contains_key(&self.listing_id)

@@ -17,25 +17,13 @@
 
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
+use crate::file_system::listing::caching_test_support::{TestListing, TestListingGuard};
 use crate::file_system::listing::metadata::FileEntry;
-use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use crate::file_system::volume::Volume;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::smb::{SmbConnectionParams, SmbVolume, connect_smb_volume};
 use crate::file_system::volume::smb_volume_id;
-
-fn unique(suffix: &str) -> String {
-    static N: AtomicU64 = AtomicU64::new(0);
-    format!(
-        "smb_oracle_{}_{}_{}",
-        suffix,
-        std::process::id(),
-        N.fetch_add(1, Ordering::Relaxed)
-    )
-}
 
 fn make_file_entry(name: &str, parent: &str, size: u64) -> FileEntry {
     FileEntry {
@@ -53,31 +41,15 @@ fn make_file_entry(name: &str, parent: &str, size: u64) -> FileEntry {
     }
 }
 
-fn insert_listing(id: &str, volume_id: &str, path: &str, entries: Vec<FileEntry>) {
-    let mut cache = LISTING_CACHE
-        .write()
-        .expect("LISTING_CACHE lock poisoned by a panicked test thread");
-    cache.insert(
-        id.to_string(),
-        CachedListing {
-            volume_id: volume_id.to_string(),
-            path: PathBuf::from(path),
-            entries,
-            sort_by: SortColumn::Name,
-            sort_order: SortOrder::Ascending,
-            directory_sort_mode: DirectorySortMode::LikeFiles,
-            sequence: AtomicU64::new(1),
-            created_at: std::time::Instant::now(),
-            last_accessed_ms: AtomicU64::new(0),
-        },
-    );
-}
-
-fn remove_listing(id: &str) {
-    let mut cache = LISTING_CACHE
-        .write()
-        .expect("LISTING_CACHE lock poisoned by a panicked test thread");
-    cache.remove(id);
+/// Seeds a cached listing owned by this test; the guard tears it down on drop,
+/// unwind included.
+fn insert_listing(tag: &str, volume_id: &str, path: &str, entries: Vec<FileEntry>) -> TestListingGuard {
+    TestListing::new()
+        .volume(volume_id)
+        .path(path)
+        .entries(entries)
+        .sequence(1)
+        .insert(tag)
 }
 
 async fn make_docker_volume() -> SmbVolume {
@@ -106,12 +78,11 @@ async fn smb_scan_uses_oracle_on_hit_skips_stat_pipeline() {
     // need to host these files: the oracle short-circuit reads from cache,
     // and we'll drop the SMB session so any fallthrough would fail.
     let parent = "/Volumes/TestShare/oracle-test";
-    let lid = unique("hit");
     let cached = vec![
         make_file_entry("a.bin", parent, 4096),
         make_file_entry("b.bin", parent, 8192),
     ];
-    insert_listing(&lid, &vid, parent, cached);
+    let _listing = insert_listing("smb-oracle-hit", &vid, parent, cached);
 
     // Now break the session. With no client, any pipelined stat fails with
     // DeviceDisconnected. The oracle path doesn't acquire the client lock at
@@ -135,7 +106,6 @@ async fn smb_scan_uses_oracle_on_hit_skips_stat_pipeline() {
     );
     assert_eq!(result.per_path.len(), 2);
 
-    remove_listing(&lid);
     get_volume_manager().unregister(&vid);
     // No need to clean up the share: nothing was written.
     // Note: we don't transition the volume back to Direct here. The volume is

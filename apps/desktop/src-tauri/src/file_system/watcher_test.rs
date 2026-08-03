@@ -283,8 +283,7 @@ fn diff_includes_add_modify_and_remove_in_one_pass() {
 /// early without one, so it can't be tested directly in unit tests.)
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_handle_directory_change_refreshes_from_volume() {
-    use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
-    use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
+    use crate::file_system::listing::caching_test_support::TestListing;
     use crate::file_system::volume::InMemoryVolume;
     use crate::file_system::volume::manager::get_volume_manager;
     use crate::file_system::watcher::handle_directory_change;
@@ -292,7 +291,6 @@ async fn test_handle_directory_change_refreshes_from_volume() {
     use std::sync::Arc;
 
     let volume_id = format!("test-vol-hdc-{}", uuid::Uuid::new_v4());
-    let listing_id = format!("listing-hdc-{}", uuid::Uuid::new_v4());
     let dir_path = PathBuf::from("/testdir");
 
     // Create volume with files X and Y (paths must match dir_path)
@@ -308,41 +306,20 @@ async fn test_handle_directory_change_refreshes_from_volume() {
     get_volume_manager().register(&volume_id, volume);
 
     // Insert stale cache with only X
-    {
-        let mut cache = LISTING_CACHE.write().unwrap();
-        cache.insert(
-            listing_id.clone(),
-            CachedListing {
-                volume_id: volume_id.clone(),
-                path: dir_path.clone(),
-                entries: vec![make_entry_in("x.txt", "/testdir", Some(100))],
-                sort_by: SortColumn::Name,
-                sort_order: SortOrder::Ascending,
-                directory_sort_mode: DirectorySortMode::LikeFiles,
-                sequence: std::sync::atomic::AtomicU64::new(0),
-                created_at: std::time::Instant::now(),
-                last_accessed_ms: std::sync::atomic::AtomicU64::new(0),
-            },
-        );
-    }
+    let listing = TestListing::new()
+        .volume(&volume_id)
+        .path(&dir_path)
+        .entries(vec![make_entry_in("x.txt", "/testdir", Some(100))])
+        .insert("watcher-hdc");
 
-    handle_directory_change(&listing_id).await;
+    handle_directory_change(listing.id()).await;
 
     // Assert: cache now has both X and Y
-    {
-        let cache = LISTING_CACHE.read().unwrap();
-        let listing = cache.get(&listing_id).unwrap();
-        let names: Vec<&str> = listing.entries.iter().map(|e| e.name.as_str()).collect();
-        assert_eq!(names.len(), 2, "Expected 2 entries, got: {:?}", names);
-        assert!(names.contains(&"x.txt"), "Missing x.txt in {:?}", names);
-        assert!(names.contains(&"y.txt"), "Missing y.txt in {:?}", names);
-    }
+    let names = listing.entry_names();
+    assert_eq!(names.len(), 2, "Expected 2 entries, got: {:?}", names);
+    assert!(names.iter().any(|n| n == "x.txt"), "Missing x.txt in {:?}", names);
+    assert!(names.iter().any(|n| n == "y.txt"), "Missing y.txt in {:?}", names);
 
-    // Cleanup
-    {
-        let mut cache = LISTING_CACHE.write().unwrap();
-        cache.remove(&listing_id);
-    }
     get_volume_manager().unregister(&volume_id);
 }
 
@@ -351,8 +328,7 @@ async fn test_handle_directory_change_refreshes_from_volume() {
 /// on a remote volume that the watcher detected).
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_handle_directory_change_detects_new_entries() {
-    use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
-    use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
+    use crate::file_system::listing::caching_test_support::TestListing;
     use crate::file_system::volume::InMemoryVolume;
     use crate::file_system::volume::manager::get_volume_manager;
     use crate::file_system::watcher::handle_directory_change;
@@ -360,7 +336,6 @@ async fn test_handle_directory_change_detects_new_entries() {
     use std::sync::Arc;
 
     let volume_id = format!("test-vol-new-{}", uuid::Uuid::new_v4());
-    let listing_id = format!("listing-new-{}", uuid::Uuid::new_v4());
     let dir_path = PathBuf::from("/testdir");
 
     // Create volume with file A initially (paths must match dir_path)
@@ -372,23 +347,11 @@ async fn test_handle_directory_change_detects_new_entries() {
     get_volume_manager().register(&volume_id, volume.clone());
 
     // Cache reflects current state (A only)
-    {
-        let mut cache = LISTING_CACHE.write().unwrap();
-        cache.insert(
-            listing_id.clone(),
-            CachedListing {
-                volume_id: volume_id.clone(),
-                path: dir_path.clone(),
-                entries: vec![make_entry_in("a.txt", "/testdir", Some(100))],
-                sort_by: SortColumn::Name,
-                sort_order: SortOrder::Ascending,
-                directory_sort_mode: DirectorySortMode::LikeFiles,
-                sequence: std::sync::atomic::AtomicU64::new(0),
-                created_at: std::time::Instant::now(),
-                last_accessed_ms: std::sync::atomic::AtomicU64::new(0),
-            },
-        );
-    }
+    let listing = TestListing::new()
+        .volume(&volume_id)
+        .path(&dir_path)
+        .entries(vec![make_entry_in("a.txt", "/testdir", Some(100))])
+        .insert("watcher-new-entries");
 
     // Add a new file to the volume (simulating external change).
     volume
@@ -397,22 +360,13 @@ async fn test_handle_directory_change_detects_new_entries() {
         .unwrap();
 
     // Trigger re-read
-    handle_directory_change(&listing_id).await;
+    handle_directory_change(listing.id()).await;
 
     // Assert: cache now has A and B
-    {
-        let cache = LISTING_CACHE.read().unwrap();
-        let listing = cache.get(&listing_id).unwrap();
-        let names: Vec<&str> = listing.entries.iter().map(|e| e.name.as_str()).collect();
-        assert_eq!(names.len(), 2, "Expected 2 entries, got: {:?}", names);
-        assert!(names.contains(&"a.txt"));
-        assert!(names.contains(&"b.txt"));
-    }
+    let names = listing.entry_names();
+    assert_eq!(names.len(), 2, "Expected 2 entries, got: {:?}", names);
+    assert!(names.iter().any(|n| n == "a.txt"));
+    assert!(names.iter().any(|n| n == "b.txt"));
 
-    // Cleanup
-    {
-        let mut cache = LISTING_CACHE.write().unwrap();
-        cache.remove(&listing_id);
-    }
     get_volume_manager().unregister(&volume_id);
 }

@@ -15,15 +15,12 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::AtomicU64;
-use std::time::Instant;
 
 use smb2::FileNotifyAction;
 
 use super::process_event_batch;
 use crate::file_system::listing::FileEntry;
-use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
-use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
+use crate::file_system::listing::caching_test_support::{TestListing, TestListingGuard};
 use crate::file_system::volume::InMemoryVolume;
 use crate::file_system::volume::backends::archive::test_fixtures::{FixtureFile, build_zip, stored};
 use crate::file_system::volume::manager::get_volume_manager;
@@ -66,37 +63,14 @@ fn stub_entry(archive_path: &Path, inner_name: &str) -> FileEntry {
     }
 }
 
-/// Seeds a cached listing at `path` on `volume_id` with `entries`, returning its id.
-fn seed_listing(volume_id: &str, path: &Path, entries: Vec<FileEntry>) -> String {
-    let listing_id = format!("listing-{}", uuid::Uuid::new_v4());
-    let mut cache = LISTING_CACHE.write().expect("cache lock");
-    cache.insert(
-        listing_id.clone(),
-        CachedListing {
-            volume_id: volume_id.to_string(),
-            path: path.to_path_buf(),
-            entries,
-            sort_by: SortColumn::Name,
-            sort_order: SortOrder::Ascending,
-            directory_sort_mode: DirectorySortMode::LikeFiles,
-            sequence: AtomicU64::new(0),
-            created_at: Instant::now(),
-            last_accessed_ms: AtomicU64::new(0),
-        },
-    );
-    listing_id
-}
-
-fn listing_names(listing_id: &str) -> Vec<String> {
-    let cache = LISTING_CACHE.read().expect("cache lock");
-    cache
-        .get(listing_id)
-        .map(|l| l.entries.iter().map(|e| e.name.clone()).collect())
-        .unwrap_or_default()
-}
-
-fn drop_listing(listing_id: &str) {
-    LISTING_CACHE.write().expect("cache lock").remove(listing_id);
+/// Seeds a cached listing at `path` on `volume_id` with `entries`. The returned
+/// guard owns the entry and tears it down on drop, unwind included.
+fn seed_listing(tag: &str, volume_id: &str, path: &Path, entries: Vec<FileEntry>) -> TestListingGuard {
+    TestListing::new()
+        .volume(volume_id)
+        .path(path)
+        .entries(entries)
+        .insert(tag)
 }
 
 /// Registers an `InMemoryVolume` parent (with local-fs access so the archive reads
@@ -135,6 +109,7 @@ async fn a_modified_zip_event_refreshes_the_inner_listing() {
     // The listing starts stale: it lists only a.txt, though the on-disk zip
     // already has a.txt + b.txt.
     let inner_listing = seed_listing(
+        "smb-archive-modified",
         &volume_id,
         &fixture.zip_path,
         vec![stub_entry(&fixture.zip_path, "a.txt")],
@@ -147,7 +122,7 @@ async fn a_modified_zip_event_refreshes_the_inner_listing() {
     )
     .await;
 
-    let mut names = listing_names(&inner_listing);
+    let mut names = inner_listing.entry_names();
     names.sort();
     assert_eq!(
         names,
@@ -155,7 +130,6 @@ async fn a_modified_zip_event_refreshes_the_inner_listing() {
         "a Modified event for the .zip must refresh the inner listing to reflect the new entry"
     );
 
-    drop_listing(&inner_listing);
     get_volume_manager().unregister(&volume_id);
 }
 
@@ -169,6 +143,7 @@ async fn a_modified_non_archive_event_leaves_the_inner_listing_alone() {
 
     // Same stale seed as above (lists only a.txt).
     let inner_listing = seed_listing(
+        "smb-archive-non-archive",
         &volume_id,
         &fixture.zip_path,
         vec![stub_entry(&fixture.zip_path, "a.txt")],
@@ -183,11 +158,10 @@ async fn a_modified_non_archive_event_leaves_the_inner_listing_alone() {
     .await;
 
     assert_eq!(
-        listing_names(&inner_listing),
+        inner_listing.entry_names(),
         vec!["a.txt"],
         "a non-archive change must not refresh the archive-inner listing"
     );
 
-    drop_listing(&inner_listing);
     get_volume_manager().unregister(&volume_id);
 }

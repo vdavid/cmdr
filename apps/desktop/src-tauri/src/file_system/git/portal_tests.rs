@@ -383,35 +383,19 @@ async fn cross_volume_copy_preserves_executable_bit() {
 
 #[test]
 fn watcher_invalidates_branches_listing_on_new_branch() {
-    use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
-    use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
+    use crate::file_system::listing::caching_test_support::TestListing;
     use crate::file_system::volume::DEFAULT_VOLUME_ID;
-    use std::sync::atomic::AtomicU64;
 
     let dir = build_fixture_repo();
     let (handle, root) = discover_repo(&dir).unwrap();
     let entries = virtual_listing::list_branches(&handle, &root).unwrap();
 
     // Plant a fake cached listing on `.git/branches`.
-    let listing_path = root.join(".git").join("branches");
-    let listing_id = format!("test-listing-{}", std::process::id());
-    {
-        let mut cache = LISTING_CACHE.write().unwrap();
-        cache.insert(
-            listing_id.clone(),
-            CachedListing {
-                volume_id: DEFAULT_VOLUME_ID.to_string(),
-                path: listing_path.clone(),
-                entries,
-                sort_by: SortColumn::Name,
-                sort_order: SortOrder::Ascending,
-                directory_sort_mode: DirectorySortMode::LikeFiles,
-                sequence: AtomicU64::new(0),
-                created_at: std::time::Instant::now(),
-                last_accessed_ms: AtomicU64::new(0),
-            },
-        );
-    }
+    let listing = TestListing::new()
+        .volume(DEFAULT_VOLUME_ID)
+        .path(root.join(".git").join("branches"))
+        .entries(entries)
+        .insert("git-branches-invalidate");
 
     // Make the watcher see a "ref change" by adding a new branch via
     // gix, then run the invalidation entry point directly. The unit-
@@ -435,15 +419,6 @@ fn watcher_invalidates_branches_listing_on_new_branch() {
     super::watcher::invalidate_for_test(&root);
 
     // Assert the listing is still in the cache (we full-refresh, not evict).
-    {
-        let cache = LISTING_CACHE.read().unwrap();
-        assert!(cache.contains_key(&listing_id));
-    }
-
-    // Cleanup the listing.
-    {
-        let mut cache = LISTING_CACHE.write().unwrap();
-        cache.remove(&listing_id);
-    }
+    assert!(listing.is_cached());
     cleanup(&dir);
 }

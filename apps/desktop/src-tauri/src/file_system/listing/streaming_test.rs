@@ -10,7 +10,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tokio_util::sync::CancellationToken;
 
-use crate::file_system::listing::caching::LISTING_CACHE;
+use crate::file_system::listing::caching_test_support::{TestListingGuard, unique_test_id};
 use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use crate::file_system::listing::streaming::{
@@ -40,12 +40,10 @@ fn register_test_volume(volume_id: &str, entries: Vec<FileEntry>) {
     crate::file_system::volume::manager::get_volume_manager().register(volume_id, volume);
 }
 
-/// Removes the test volume and listing cache entry.
-fn cleanup(volume_id: &str, listing_id: &str) {
+/// Removes the test volume. The listing entry is owned by a `TestListingGuard`,
+/// which tears it down on drop (unwind included).
+fn cleanup(volume_id: &str) {
     crate::file_system::volume::manager::get_volume_manager().unregister(volume_id);
-    if let Ok(mut cache) = LISTING_CACHE.write() {
-        cache.remove(listing_id);
-    }
 }
 
 fn new_state() -> Arc<StreamingListingState> {
@@ -57,7 +55,7 @@ fn new_state() -> Arc<StreamingListingState> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_streaming_list_populates_cache() {
     let volume_id = &format!("test-cache-{}", uuid::Uuid::new_v4());
-    let listing_id = &format!("listing-cache-{}", uuid::Uuid::new_v4());
+    let listing = TestListingGuard::adopt(unique_test_id("streaming-cache"));
 
     let entries = vec![
         test_entry("photos", true),
@@ -71,7 +69,7 @@ async fn test_streaming_list_populates_cache() {
 
     let result = read_directory_with_progress(
         &events,
-        listing_id,
+        listing.id(),
         &state,
         volume_id,
         Path::new("/"),
@@ -85,16 +83,14 @@ async fn test_streaming_list_populates_cache() {
     assert!(result.is_ok(), "Expected Ok, got {:?}", result);
 
     // Verify cache
-    {
-        let cache = LISTING_CACHE.read().unwrap();
-        let cached = cache.get(listing_id).expect("Listing should be cached");
+    listing.with_listing(|cached| {
         assert_eq!(cached.entries.len(), 3);
         // Dirs first, then alpha
         assert_eq!(cached.entries[0].name, "photos");
         assert!(cached.entries[0].is_directory);
         assert_eq!(cached.entries[1].name, "apple.txt");
         assert_eq!(cached.entries[2].name, "zebra.txt");
-    }
+    });
 
     // Verify complete event
     let collector = events.as_ref() as *const dyn ListingEventSink as *const CollectorListingEventSink;
@@ -107,13 +103,13 @@ async fn test_streaming_list_populates_cache() {
     assert_eq!(complete.len(), 1);
     assert_eq!(complete[0].1, 3); // total_count
 
-    cleanup(volume_id, listing_id);
+    cleanup(volume_id);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_streaming_list_emits_opening_and_complete() {
     let volume_id = &format!("test-events-{}", uuid::Uuid::new_v4());
-    let listing_id = &format!("listing-events-{}", uuid::Uuid::new_v4());
+    let listing = TestListingGuard::adopt(unique_test_id("streaming-events"));
 
     register_test_volume(volume_id, vec![test_entry("file.txt", false)]);
 
@@ -123,7 +119,7 @@ async fn test_streaming_list_emits_opening_and_complete() {
 
     let result = read_directory_with_progress(
         &events,
-        listing_id,
+        listing.id(),
         &state,
         volume_id,
         Path::new("/"),
@@ -138,11 +134,11 @@ async fn test_streaming_list_emits_opening_and_complete() {
 
     let opening = sink.opening.lock().unwrap();
     assert_eq!(opening.len(), 1);
-    assert_eq!(opening[0], listing_id.as_str());
+    assert_eq!(opening[0], listing.id());
 
     let complete = sink.complete.lock().unwrap();
     assert_eq!(complete.len(), 1);
-    assert_eq!(complete[0].0, listing_id.as_str());
+    assert_eq!(complete[0].0, listing.id());
 
     let read_complete = sink.read_complete.lock().unwrap();
     assert_eq!(read_complete.len(), 1);
@@ -151,13 +147,13 @@ async fn test_streaming_list_emits_opening_and_complete() {
     assert!(sink.errors.lock().unwrap().is_empty());
     assert!(sink.cancelled.lock().unwrap().is_empty());
 
-    cleanup(volume_id, listing_id);
+    cleanup(volume_id);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_streaming_list_cancellation() {
     let volume_id = &format!("test-cancel-{}", uuid::Uuid::new_v4());
-    let listing_id = &format!("listing-cancel-{}", uuid::Uuid::new_v4());
+    let listing = TestListingGuard::adopt(unique_test_id("streaming-cancel"));
 
     register_test_volume(volume_id, vec![test_entry("file.txt", false)]);
 
@@ -170,7 +166,7 @@ async fn test_streaming_list_cancellation() {
 
     let result = read_directory_with_progress(
         &events,
-        listing_id,
+        listing.id(),
         &state,
         volume_id,
         Path::new("/"),
@@ -186,23 +182,20 @@ async fn test_streaming_list_cancellation() {
     // Cancelled event should be emitted
     let cancelled = sink.cancelled.lock().unwrap();
     assert_eq!(cancelled.len(), 1);
-    assert_eq!(cancelled[0], listing_id.as_str());
+    assert_eq!(cancelled[0], listing.id());
 
     // No entries cached
-    {
-        let cache = LISTING_CACHE.read().unwrap();
-        assert!(cache.get(listing_id).is_none());
-    }
+    assert!(!listing.is_cached());
 
     // No complete event
     assert!(sink.complete.lock().unwrap().is_empty());
 
-    cleanup(volume_id, listing_id);
+    cleanup(volume_id);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_streaming_list_volume_not_found() {
-    let listing_id = &format!("listing-notfound-{}", uuid::Uuid::new_v4());
+    let listing = TestListingGuard::adopt(unique_test_id("streaming-notfound"));
     let volume_id = &format!("nonexistent-volume-{}", uuid::Uuid::new_v4());
 
     let events: Arc<dyn ListingEventSink> = Arc::new(CollectorListingEventSink::new());
@@ -210,7 +203,7 @@ async fn test_streaming_list_volume_not_found() {
 
     let result = read_directory_with_progress(
         &events,
-        listing_id,
+        listing.id(),
         &state,
         volume_id,
         Path::new("/"),
@@ -233,7 +226,7 @@ async fn test_streaming_list_volume_not_found() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_streaming_list_empty_directory() {
     let volume_id = &format!("test-empty-{}", uuid::Uuid::new_v4());
-    let listing_id = &format!("listing-empty-{}", uuid::Uuid::new_v4());
+    let listing = TestListingGuard::adopt(unique_test_id("streaming-empty"));
 
     register_test_volume(volume_id, vec![]);
 
@@ -243,7 +236,7 @@ async fn test_streaming_list_empty_directory() {
 
     let result = read_directory_with_progress(
         &events,
-        listing_id,
+        listing.id(),
         &state,
         volume_id,
         Path::new("/"),
@@ -256,19 +249,15 @@ async fn test_streaming_list_empty_directory() {
 
     assert!(result.is_ok());
 
-    // Cache should have 0 entries
-    {
-        let cache = LISTING_CACHE.read().unwrap();
-        let cached = cache.get(listing_id).expect("Listing should be cached even when empty");
-        assert_eq!(cached.entries.len(), 0);
-    }
+    // Cache should have 0 entries (`with_listing` panics if it wasn't cached at all)
+    listing.with_listing(|cached| assert_eq!(cached.entries.len(), 0));
 
     // Complete should report 0
     let complete = sink.complete.lock().unwrap();
     assert_eq!(complete.len(), 1);
     assert_eq!(complete[0].1, 0);
 
-    cleanup(volume_id, listing_id);
+    cleanup(volume_id);
 }
 
 /// A volume whose listing only ends when its cancel flag flips: the stand-in for
@@ -398,7 +387,7 @@ const FLAG_FLIPS_WITHIN: std::time::Duration = std::time::Duration::from_secs(2)
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_cancel_unwinds_the_listing_instead_of_aborting_it() {
     let volume_id = &format!("test-coop-{}", uuid::Uuid::new_v4());
-    let listing_id = &format!("listing-coop-{}", uuid::Uuid::new_v4());
+    let listing = TestListingGuard::adopt(unique_test_id("streaming-coop"));
 
     let volume = Arc::new(CooperativeCancelVolume::new());
     let started = Arc::clone(&volume.started);
@@ -415,7 +404,7 @@ async fn test_cancel_unwinds_the_listing_instead_of_aborting_it() {
         let events = Arc::clone(&events);
         let state = Arc::clone(&state);
         let volume_id = volume_id.clone();
-        let listing_id = listing_id.clone();
+        let listing_id = listing.id().to_string();
         tokio::spawn(async move {
             read_directory_with_progress(
                 &events,
@@ -459,5 +448,5 @@ async fn test_cancel_unwinds_the_listing_instead_of_aborting_it() {
         "the listing future was dropped mid-flight; on MTP that abandons a PTP transaction and wedges the device"
     );
 
-    cleanup(volume_id, listing_id);
+    cleanup(volume_id);
 }

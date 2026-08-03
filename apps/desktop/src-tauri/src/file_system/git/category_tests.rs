@@ -251,54 +251,24 @@ fn list_submodules_redirects_to_working_dir() {
 
 #[test]
 fn watcher_invalidates_commits_listing_on_new_commit() {
-    use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
-    use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
+    use crate::file_system::listing::caching_test_support::TestListing;
     use crate::file_system::volume::DEFAULT_VOLUME_ID;
-    use std::sync::atomic::AtomicU64;
 
     let (dir, mut f) = build_simple_repo("m3", 1);
     let (handle, root) = discover_repo(&dir).unwrap();
     let entries = git_log::list_commits(&handle, &root).unwrap();
 
-    let listing_path = root.join(".git").join("commits");
-    let listing_id = format!("test-listing-commits-{}-{}", std::process::id(), rand_suffix());
-    {
-        let mut cache = LISTING_CACHE.write().unwrap();
-        cache.insert(
-            listing_id.clone(),
-            CachedListing {
-                volume_id: DEFAULT_VOLUME_ID.to_string(),
-                path: listing_path.clone(),
-                entries,
-                sort_by: SortColumn::Name,
-                sort_order: SortOrder::Ascending,
-                directory_sort_mode: DirectorySortMode::LikeFiles,
-                sequence: AtomicU64::new(0),
-                created_at: std::time::Instant::now(),
-                last_accessed_ms: AtomicU64::new(0),
-            },
-        );
-    }
+    let listing = TestListing::new()
+        .volume(DEFAULT_VOLUME_ID)
+        .path(root.join(".git").join("commits"))
+        .entries(entries)
+        .insert("git-commits-invalidate");
 
     // Add a new commit and run the watcher invalidation entry point.
     f.commit_file("new.txt", b"x\n", "added new");
     super::watcher::invalidate_for_test(&root);
 
     // The listing is still in the cache (we full-refresh, not evict).
-    {
-        let cache = LISTING_CACHE.read().unwrap();
-        assert!(cache.contains_key(&listing_id));
-    }
-    {
-        let mut cache = LISTING_CACHE.write().unwrap();
-        cache.remove(&listing_id);
-    }
+    assert!(listing.is_cached());
     cleanup(&dir);
-}
-
-// Best-effort suffix to keep parallel test invocations distinct.
-fn rand_suffix() -> u64 {
-    use std::sync::atomic::{AtomicU64, Ordering};
-    static N: AtomicU64 = AtomicU64::new(0);
-    N.fetch_add(1, Ordering::Relaxed)
 }

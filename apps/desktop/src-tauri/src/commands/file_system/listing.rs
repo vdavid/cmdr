@@ -493,16 +493,15 @@ mod refresh_listing_tests {
     //! `LISTING_CACHE` and `VolumeManager`, then we call `refresh_listing` and
     //! assert `list_directory` was or wasn't invoked.
     use super::*;
-    use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
+    use crate::file_system::listing::caching_test_support::{TestListing, TestListingGuard, unique_test_id};
     use crate::file_system::listing::metadata::FileEntry;
-    use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
     use crate::file_system::volume::manager::get_volume_manager;
     use crate::file_system::volume::{InMemoryVolume, Volume, VolumeError};
     use std::future::Future;
     use std::path::Path;
     use std::pin::Pin;
     use std::sync::Arc;
-    use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
+    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
     /// Wraps an `InMemoryVolume` and counts `list_directory` calls. `watched` is
     /// flipped per test to pin both short-circuit and fall-through behaviour.
@@ -569,50 +568,21 @@ mod refresh_listing_tests {
         }
     }
 
-    fn unique(suffix: &str) -> String {
-        static N: AtomicU64 = AtomicU64::new(0);
-        format!(
-            "refresh_listing_{}_{}_{}",
-            suffix,
-            std::process::id(),
-            N.fetch_add(1, Ordering::Relaxed)
-        )
-    }
-
-    fn insert_listing(listing_id: &str, volume_id: &str, path: &str) {
-        let mut cache = LISTING_CACHE.write().unwrap();
-        cache.insert(
-            listing_id.to_string(),
-            CachedListing {
-                volume_id: volume_id.to_string(),
-                path: PathBuf::from(path),
-                entries: Vec::new(),
-                sort_by: SortColumn::Name,
-                sort_order: SortOrder::Ascending,
-                directory_sort_mode: DirectorySortMode::LikeFiles,
-                sequence: AtomicU64::new(1),
-                created_at: std::time::Instant::now(),
-                last_accessed_ms: AtomicU64::new(0),
-            },
-        );
-    }
-
-    fn remove_listing(listing_id: &str) {
-        let _ = LISTING_CACHE.write().unwrap().remove(listing_id);
+    fn insert_listing(tag: &str, volume_id: &str, path: &str) -> TestListingGuard {
+        TestListing::new().volume(volume_id).path(path).sequence(1).insert(tag)
     }
 
     /// Watched volume: short-circuit fires, `list_directory` never called.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn refresh_listing_short_circuits_on_watched_volume() {
-        let vid = unique("short_circuit_vid");
-        let lid = unique("short_circuit_lid");
+        let vid = unique_test_id("refresh-listing-short-circuit-vid");
         let path = "/dcim";
 
         let vol = Arc::new(CountingVolume::new("watched-vol", true));
         get_volume_manager().register(&vid, vol.clone() as Arc<dyn Volume>);
-        insert_listing(&lid, &vid, path);
+        let listing = insert_listing("refresh-listing-short-circuit", &vid, path);
 
-        let result = refresh_listing(lid.clone()).await;
+        let result = refresh_listing(listing.id().to_string()).await;
 
         assert!(!result.timed_out, "short-circuit returns timed_out=false");
         assert_eq!(
@@ -621,7 +591,6 @@ mod refresh_listing_tests {
             "watched-backed refresh_listing must skip list_directory",
         );
 
-        remove_listing(&lid);
         get_volume_manager().unregister(&vid);
     }
 
@@ -630,17 +599,16 @@ mod refresh_listing_tests {
     /// listing rather than NotFound.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn refresh_listing_falls_through_on_unwatched() {
-        let vid = unique("fallthrough_vid");
-        let lid = unique("fallthrough_lid");
+        let vid = unique_test_id("refresh-listing-fallthrough-vid");
         let path = "/dcim";
 
         let vol = Arc::new(CountingVolume::new("unwatched-vol", false));
         // Populate one file so `list_directory` succeeds.
         vol.inner.create_file(Path::new("/dcim/a.jpg"), b"alpha").await.unwrap();
         get_volume_manager().register(&vid, vol.clone() as Arc<dyn Volume>);
-        insert_listing(&lid, &vid, path);
+        let listing = insert_listing("refresh-listing-fallthrough", &vid, path);
 
-        let result = refresh_listing(lid.clone()).await;
+        let result = refresh_listing(listing.id().to_string()).await;
 
         assert!(!result.timed_out, "fast InMemory list_directory shouldn't time out");
         assert!(
@@ -649,7 +617,6 @@ mod refresh_listing_tests {
             vol.list_dir_count(),
         );
 
-        remove_listing(&lid);
         get_volume_manager().unregister(&vid);
     }
 
@@ -658,7 +625,7 @@ mod refresh_listing_tests {
     /// suppress that path or panic; we just assert the call completes cleanly.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn refresh_listing_falls_through_on_missing_listing() {
-        let lid = unique("missing_lid");
+        let lid = unique_test_id("refresh-listing-missing");
         // No insert_listing call; no register call.
         let result = refresh_listing(lid).await;
         assert!(
@@ -673,22 +640,19 @@ mod refresh_listing_tests {
     /// for the path which doesn't exist, and returns cleanly without panic).
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn refresh_listing_falls_through_when_volume_not_registered() {
-        let vid = unique("unregistered_vid");
-        let lid = unique("unregistered_lid");
+        let vid = unique_test_id("refresh-listing-unregistered-vid");
         // Use a path that doesn't exist on disk so the std::fs fallback returns
         // NotFound and the function exits cleanly.
         let path = "/tmp/cmdr-refresh-listing-test-nonexistent-path-xyz123";
 
         // Note: NO get_volume_manager().register() call.
-        insert_listing(&lid, &vid, path);
+        let listing = insert_listing("refresh-listing-unregistered", &vid, path);
 
-        let result = refresh_listing(lid.clone()).await;
+        let result = refresh_listing(listing.id().to_string()).await;
 
         assert!(
             !result.timed_out,
             "unregistered-volume fallthrough should resolve quickly"
         );
-
-        remove_listing(&lid);
     }
 }

@@ -19,11 +19,9 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
+use crate::file_system::listing::caching_test_support::{TestListing, TestListingGuard};
 use crate::file_system::listing::metadata::FileEntry;
-use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{MtpVolume, Volume};
 use crate::mtp::connection::{MtpDisconnectReason, connection_manager};
@@ -36,17 +34,6 @@ use super::backends::mtp::test_hooks;
 // `virtual_device_test_lock()` (via `VirtualDeviceGuard`): all virtual devices
 // register under one serial, hence one Cmdr device id, which matters whenever
 // several run in the SAME process (plain `cargo test`; nextest forks per test).
-
-/// Unique-per-test counter so parallel tests don't collide in the listing cache.
-fn unique(suffix: &str) -> String {
-    static N: AtomicU64 = AtomicU64::new(0);
-    format!(
-        "mtp_oracle_{}_{}_{}",
-        suffix,
-        std::process::id(),
-        N.fetch_add(1, Ordering::Relaxed)
-    )
-}
 
 fn make_file_entry(name: &str, parent: &str, size: u64) -> FileEntry {
     FileEntry {
@@ -64,31 +51,15 @@ fn make_file_entry(name: &str, parent: &str, size: u64) -> FileEntry {
     }
 }
 
-fn insert_listing(id: &str, volume_id: &str, path: &str, entries: Vec<FileEntry>) {
-    let mut cache = LISTING_CACHE
-        .write()
-        .expect("LISTING_CACHE lock poisoned by a panicked test thread");
-    cache.insert(
-        id.to_string(),
-        CachedListing {
-            volume_id: volume_id.to_string(),
-            path: PathBuf::from(path),
-            entries,
-            sort_by: SortColumn::Name,
-            sort_order: SortOrder::Ascending,
-            directory_sort_mode: DirectorySortMode::LikeFiles,
-            sequence: AtomicU64::new(1),
-            created_at: std::time::Instant::now(),
-            last_accessed_ms: AtomicU64::new(0),
-        },
-    );
-}
-
-fn remove_listing(id: &str) {
-    let mut cache = LISTING_CACHE
-        .write()
-        .expect("LISTING_CACHE lock poisoned by a panicked test thread");
-    cache.remove(id);
+/// Seeds a cached listing owned by this test; the guard tears it down on drop,
+/// unwind included.
+fn insert_listing(tag: &str, volume_id: &str, path: &str, entries: Vec<FileEntry>) -> TestListingGuard {
+    TestListing::new()
+        .volume(volume_id)
+        .path(path)
+        .entries(entries)
+        .sequence(1)
+        .insert(tag)
 }
 
 /// Keeps a test's virtual device alive and exclusive: the process-wide lock (all
@@ -142,13 +113,12 @@ async fn mtp_scan_uses_oracle_on_hit_skips_list_directory() {
     // any real file on the virtual device. If the oracle short-circuit fails
     // (override calls `list_directory` and uses real sizes), `total_bytes`
     // would be the device's real numbers, not these cached ones.
-    let lid = unique("hit");
     let cached = vec![
         make_file_entry("a.jpg", "/DCIM", 1000),
         make_file_entry("b.jpg", "/DCIM", 2000),
         make_file_entry("c.jpg", "/DCIM", 3000),
     ];
-    insert_listing(&lid, &vid, "/DCIM", cached);
+    let _listing = insert_listing("mtp-oracle-hit", &vid, "/DCIM", cached);
 
     // Sanity-check the oracle gate. Without this, an unrelated regression in
     // `listing_is_watched` would make the test claim the wrong cause.
@@ -179,7 +149,6 @@ async fn mtp_scan_uses_oracle_on_hit_skips_list_directory() {
     assert_eq!(result.aggregate.total_bytes, 6000);
     assert_eq!(result.per_path.len(), 3);
 
-    remove_listing(&lid);
     get_volume_manager().unregister(&vid);
     connection_manager()
         .disconnect(&device_id, None, MtpDisconnectReason::User)

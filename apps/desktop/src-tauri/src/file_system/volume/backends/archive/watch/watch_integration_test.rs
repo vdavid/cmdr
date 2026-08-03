@@ -12,13 +12,12 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::AtomicU64;
 use std::time::{Duration, Instant};
 
 use crate::file_system::VolumeManager;
 use crate::file_system::listing::FileEntry;
-use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE, refresh_archive_listings};
-use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
+use crate::file_system::listing::caching::refresh_archive_listings;
+use crate::file_system::listing::caching_test_support::{TestListing, TestListingGuard};
 use crate::file_system::volume::InMemoryVolume;
 use crate::file_system::volume::Volume;
 use crate::file_system::volume::backends::archive::{ArchiveVolume, active_watch_count};
@@ -83,38 +82,14 @@ fn stub_entry(archive_path: &Path, inner_name: &str) -> FileEntry {
     }
 }
 
-/// Seeds a cached listing at `path` on `volume_id` with `entries` and returns
-/// its listing id.
-fn seed_listing(volume_id: &str, path: &Path, entries: Vec<FileEntry>) -> String {
-    let listing_id = format!("listing-{}", uuid::Uuid::new_v4());
-    let mut cache = LISTING_CACHE.write().expect("cache lock");
-    cache.insert(
-        listing_id.clone(),
-        CachedListing {
-            volume_id: volume_id.to_string(),
-            path: path.to_path_buf(),
-            entries,
-            sort_by: SortColumn::Name,
-            sort_order: SortOrder::Ascending,
-            directory_sort_mode: DirectorySortMode::LikeFiles,
-            sequence: AtomicU64::new(0),
-            created_at: Instant::now(),
-            last_accessed_ms: AtomicU64::new(0),
-        },
-    );
-    listing_id
-}
-
-fn listing_names(listing_id: &str) -> Vec<String> {
-    let cache = LISTING_CACHE.read().expect("cache lock");
-    cache
-        .get(listing_id)
-        .map(|l| l.entries.iter().map(|e| e.name.clone()).collect())
-        .unwrap_or_default()
-}
-
-fn drop_listing(listing_id: &str) {
-    LISTING_CACHE.write().expect("cache lock").remove(listing_id);
+/// Seeds a cached listing at `path` on `volume_id` with `entries`. The returned
+/// guard owns the entry and tears it down on drop, unwind included.
+fn seed_listing(tag: &str, volume_id: &str, path: &Path, entries: Vec<FileEntry>) -> TestListingGuard {
+    TestListing::new()
+        .volume(volume_id)
+        .path(path)
+        .entries(entries)
+        .insert(tag)
 }
 
 /// Drives a real-FSEvents-observed archive rewrite to a reliable refresh,
@@ -128,7 +103,7 @@ fn drop_listing(listing_id: &str) {
 /// still lands here instead of racing a SIGTERM). Mirrors
 /// `downloads::watcher::observe_mutation`; this is what lets both callers sit in
 /// the retries=0 self-healing nextest group.
-async fn drive_refresh_until(listing_id: &str, target: &str, mut rewrite: impl FnMut()) {
+async fn drive_refresh_until(listing: &TestListingGuard, target: &str, mut rewrite: impl FnMut()) {
     const BUDGET: Duration = Duration::from_secs(15);
     // A live stream refreshes within the debounce (a few hundred ms) plus the async
     // re-read, so re-rewrite on that cadence: a dropped event triggers another rewrite
@@ -142,7 +117,7 @@ async fn drive_refresh_until(listing_id: &str, target: &str, mut rewrite: impl F
             rewrite();
             next_rewrite = Instant::now() + ROUND;
         }
-        listing_names(listing_id).iter().any(|n| n == target)
+        listing.entry_names_or_empty().iter().any(|n| n == target)
     })
     .await;
 }
@@ -166,19 +141,25 @@ async fn refresh_reflects_a_new_entry_and_leaves_outside_listings_alone() {
     // A listing at the archive root, plus a sibling listing on the same drive
     // that is NOT inside the archive — the refresh must not touch the sibling.
     let inner_listing = seed_listing(
+        "archive-refresh-inner",
         &volume_id,
         &fixture.zip_path,
         vec![stub_entry(&fixture.zip_path, "a.txt")],
     );
     let outside_dir = fixture.zip_path.parent().expect("parent").join("elsewhere");
-    let outside_listing = seed_listing(&volume_id, &outside_dir, vec![stub_entry(&outside_dir, "keep.txt")]);
+    let outside_listing = seed_listing(
+        "archive-refresh-outside",
+        &volume_id,
+        &outside_dir,
+        vec![stub_entry(&outside_dir, "keep.txt")],
+    );
 
     // Add a second entry to the zip, then refresh directly (deterministic; no
     // reliance on FSEvents timing).
     fixture.rewrite(&[stored("a.txt", b"a".to_vec()), stored("b.txt", b"bb".to_vec())]);
     refresh_archive_listings(&volume_id, &fixture.zip_path).await;
 
-    let mut inner = listing_names(&inner_listing);
+    let mut inner = inner_listing.entry_names();
     inner.sort();
     assert_eq!(
         inner,
@@ -186,13 +167,11 @@ async fn refresh_reflects_a_new_entry_and_leaves_outside_listings_alone() {
         "the archive listing must reflect the new entry"
     );
     assert_eq!(
-        listing_names(&outside_listing),
+        outside_listing.entry_names(),
         vec!["keep.txt"],
         "a listing outside the archive must be left untouched"
     );
 
-    drop_listing(&inner_listing);
-    drop_listing(&outside_listing);
     get_volume_manager().unregister(&volume_id);
 }
 
@@ -209,6 +188,7 @@ async fn a_truncated_midwrite_archive_keeps_the_previous_listing() {
     get_volume_manager().resolve(&volume_id, &fixture.zip_path).await;
 
     let listing = seed_listing(
+        "archive-truncated",
         &volume_id,
         &fixture.zip_path,
         vec![
@@ -222,7 +202,7 @@ async fn a_truncated_midwrite_archive_keeps_the_previous_listing() {
     std::fs::write(&fixture.zip_path, b"PK\x03\x04half-written-no-central-directory").expect("truncate");
     refresh_archive_listings(&volume_id, &fixture.zip_path).await;
 
-    let mut names = listing_names(&listing);
+    let mut names = listing.entry_names();
     names.sort();
     assert_eq!(
         names,
@@ -230,7 +210,6 @@ async fn a_truncated_midwrite_archive_keeps_the_previous_listing() {
         "an unreadable mid-write archive must keep the last good listing, not blank it"
     );
 
-    drop_listing(&listing);
     get_volume_manager().unregister(&volume_id);
 }
 
@@ -266,6 +245,7 @@ async fn a_live_watch_refreshes_the_listing_when_the_zip_changes_on_disk() {
     );
 
     let listing = seed_listing(
+        "archive-live-watch",
         &volume_id,
         &fixture.zip_path,
         vec![stub_entry(&fixture.zip_path, "a.txt")],
@@ -278,7 +258,6 @@ async fn a_live_watch_refreshes_the_listing_when_the_zip_changes_on_disk() {
     })
     .await;
 
-    drop_listing(&listing);
     get_volume_manager().unregister(&volume_id);
 }
 
@@ -299,6 +278,7 @@ async fn a_temp_rename_swap_refreshes_the_listing() {
     start_watch_on(&archive, &volume_id);
 
     let listing = seed_listing(
+        "archive-temp-rename",
         &volume_id,
         &fixture.zip_path,
         vec![stub_entry(&fixture.zip_path, "a.txt")],
@@ -312,7 +292,6 @@ async fn a_temp_rename_swap_refreshes_the_listing() {
     })
     .await;
 
-    drop_listing(&listing);
     get_volume_manager().unregister(&volume_id);
 }
 
