@@ -122,10 +122,11 @@ Prepare a release based on docs/guides/releasing.md.
      draft had a Fixed entry whose SHAs were a strict subset of an Added entry's.)
    - Strip internal symbol names, file paths, and enum variants that survived the first pass.
 
-3. **Check the runner's Finder Automation permission** so `bundle_dmg.sh` doesn't hang for ~2 minutes per matrix job.
-   Run this AFTER presenting the CHANGELOG draft for review (the user is at the keyboard anyway). See
-   `docs/guides/releasing.md` § "`bundle_dmg.sh` hangs ~2 minutes then fails on every matrix job" for why this is
-   needed, the `auth_value` codes, and how to recover.
+3. **Only if `release.yml`'s `build.runs-on` is the self-hosted runner** (it is `macos-latest` today, so normally SKIP
+   this step): check the runner's Finder Automation permission so `bundle_dmg.sh` doesn't hang for ~2 minutes per matrix
+   job. Run it AFTER presenting the CHANGELOG draft for review (the user is at the keyboard anyway). See
+   `docs/guides/releasing.md` § "Which runner builds the release" and § "`bundle_dmg.sh` hangs ~2 minutes then fails on
+   every matrix job" for why this is needed, the `auth_value` codes, and how to recover.
 
    ❌ **Resolve the REAL path, never `externals/`.** That's a symlink into `externals.<version>/`, tccd keys its rows on
    the resolved path, and the symlink path carries a stale `2` row of its own from earlier grants. Checking the symlink
@@ -164,25 +165,28 @@ Prepare a release based on docs/guides/releasing.md.
    launches), and give the user the `./scripts/release.sh x.x.x` command to run.
 6. **Offer to run the release script** for the user. Wait for confirmation before running.
 7. **Push immediately** with `git push origin main --tags` IFF the release script completed cleanly. Else: stop and ask.
-8. **After pushing**, confirm the self-hosted runner picked up the build:
-   - Wait ~30 seconds, then run `gh run view <release-run-id> --json jobs` and check the `Build (...)` jobs.
-   - At least one `Build (...)` job should be `in_progress` (the self-hosted runner serializes the three matrix jobs, so
-     the others stay `queued`, which is normal).
-   - **If all three are still `queued` after ~30s, the self-hosted runner is down.** Confirm with
-     `launchctl list | grep cmdr` and look for `actions.runner.vdavid-cmdr.*`. Restart with
+8. **After pushing**, confirm the build started. Wait ~30 seconds, then run `gh run view <release-run-id> --json jobs`
+   and check the `Build (...)` jobs. On GitHub-hosted runners (the current setup) all three should be `in_progress`
+   together, because they run in parallel.
+   - **Self-hosted only**: exactly one goes `in_progress` and the other two stay `queued`, which is normal (one machine,
+     serialized). If all three are still `queued` after ~30 s the runner is down: confirm with
+     `launchctl list | grep cmdr` (look for `actions.runner.vdavid-cmdr.*`) and restart with
      `cd ~/actions-runner && ./svc.sh start` (fall back to `launchctl bootout` + `bootstrap` if `svc.sh` errors with
-     "Load failed: 5: Input/output error"). Re-check after another 30 s. The queued jobs pick up automatically once the
-     runner reports in. No need to re-trigger or re-tag.
-9. **Then arm `caffeinate`** to prevent the Mac from sleeping during the build (a display or system sleep drops the
-   self-hosted runner connection and fails every in-flight matrix job). Follow the check/arm/disarm procedure in
-   `docs/guides/releasing.md` § "Keep the Mac awake during the build": check `pgrep -lf 'caffeinate -dimsu'` first, arm
-   a background `caffeinate -dimsu` only if none is running, disarm it once the workflow reports `completed` (and only
-   if you armed it), and re-arm before a re-run of failed jobs if none is running.
+     "Load failed: 5: Input/output error"). Queued jobs pick up automatically once the runner reports in; no re-trigger
+     or re-tag needed.
+9. **Self-hosted only, so normally SKIP: arm `caffeinate`** so the Mac can't sleep mid-build (a display or system sleep
+   drops the self-hosted runner connection and fails every in-flight matrix job). While the build runs on GitHub's
+   hardware nothing local matters, so don't arm it. Follow the check/arm/disarm procedure in `docs/guides/releasing.md`
+   § "Keep the Mac awake during the build": check `pgrep -lf 'caffeinate -dimsu'` first, arm a background
+   `caffeinate -dimsu` only if none is running, disarm it once the workflow reports `completed` (and only if you armed
+   it), and re-arm before a re-run of failed jobs if none is running.
 10. **Monitor the CI build**:
 
-- Remind the user not to close their laptop for ~15 minutes while the self-hosted runner builds.
+- On GitHub-hosted runners, tell the user their laptop is free: they can close it or sleep the Mac, the build is
+  elsewhere. **Self-hosted only**: remind them NOT to close the laptop for ~15 minutes.
 - Poll `gh run view` every few minutes in the background and report progress (which jobs are done, which are still
-  running). aarch64 and x86_64 builds took about 5min 10sec each, universal takes about 7 min.
+  running). Self-hosted, warm cache, sequential: ~5 min each for aarch64 and x86_64, ~7 min for universal. Hosted, cold
+  cache, parallel: expect appreciably longer per job, offset by them running at the same time.
 - Report when all jobs complete (success or failure). If a job fails, show the failure details, and advise how to fix.
 - Suggest the user to also track the build at https://github.com/vdavid/cmdr/actions.
 

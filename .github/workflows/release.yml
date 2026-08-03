@@ -11,8 +11,17 @@ permissions:
 jobs:
   build:
     name: Build (${{ matrix.arch }})
-    runs-on: [self-hosted, macOS, ARM64]
-    timeout-minutes: 30
+    # Two runners can build this: GitHub's hosted macOS images, and David's self-hosted M3 MBP
+    # (`[self-hosted, macOS, ARM64]`). GitHub-hosted is the ACTIVE one; see
+    # `docs/guides/releasing.md` § "Which runner builds the release" for the trade-offs and the
+    # Finder-Automation permission problem that took the self-hosted one out of service.
+    # Switching back is this one line, plus re-enabling the runner service on the Mac.
+    runs-on: macos-latest
+    # Generous because a hosted runner is ephemeral: every job pays a cold ~1000-crate Tauri
+    # compile (the self-hosted runner's warm cargo cache made 30 minutes plenty). The three arch
+    # jobs run in PARALLEL here rather than queueing on one machine, so wall-clock is one cold
+    # build, not three. Apple's notarization sits inside this budget too.
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -28,33 +37,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
-      - name: Use a persistent cargo target dir
-        # The biggest release-time cost is recompiling the ~1000-crate Tauri tree from scratch,
-        # three times. By default `target/` lives in the workspace, which actions/checkout wipes
-        # (`git clean -ffdx`) at the start of every job, so nothing is ever reused. Point
-        # CARGO_TARGET_DIR at a stable path OUTSIDE the workspace so it survives checkout and is
-        # shared by all three (sequential, single-runner) arch jobs and across releases:
-        #   - Within a release: the universal build compiles BOTH the aarch64 and x86_64 slices;
-        #     whichever arch job runs first compiles its slice once, the rest hit cargo's cache.
-        #   - Across releases: an unchanged-Cargo.lock release recompiles only the `cmdr` crate.
-        # Cargo's own fingerprinting keeps this correct. The dir grows to ~15-30 GB (three target
-        # triples, release profile) and is intentionally never pruned; `cargo clean` it by hand if
-        # disk ever gets tight. Safe ONLY because these jobs run sequentially on one runner; a
-        # shared target dir under concurrent cargo builds would corrupt/lock.
-        run: echo "CARGO_TARGET_DIR=$HOME/.cache/cmdr-release-target" >> "$GITHUB_ENV"
-
       - name: Install mise
         uses: jdx/mise-action@dad1bfd3df957f44999b559dd69dc1671cb4e9ea # v4
-        with:
-          # Self-hosted runner: mise tools persist locally in ~/.local/share/mise across runs,
-          # so `mise install` is already a no-op. The action's default GitHub-Actions cache
-          # (save + restore of the whole mise dir every run) is pure round-trip waste here
-          # (~1 min/job), with nothing to gain over the local persistence. CI keeps it on
-          # because GitHub-hosted runners are ephemeral; this runner is not.
-          cache: false
+        # Caching left at the action's default (on). A hosted runner is ephemeral, so there's no
+        # local ~/.local/share/mise to persist and the cache is what keeps `mise install` cheap.
+        # ❌ Don't set `cache: false` here without also moving back to the self-hosted runner;
+        # that setting only made sense when the tools already lived on the machine.
 
       - name: Install tools with mise
         run: mise install
+
+      - name: Install create-dmg
+        # tauri's DMG bundler shells out to create-dmg's `bundle_dmg.sh`. The self-hosted Mac had
+        # it installed once, by hand; a hosted runner starts clean every time.
+        run: brew install create-dmg
 
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
@@ -71,16 +67,18 @@ jobs:
         run: |
           # tauri-action's bundler does the APP-BUNDLE signing-keychain setup itself from the
           # APPLE_CERTIFICATE env vars, but only at BUNDLING time. The llama-server dylib signing
-          # in beforeBuildCommand (download-llama-server.go) runs BEFORE that, and the runner's
-          # launchd service (SessionCreate=true) lives in its own security session where the login
-          # keychain's private key isn't usable: codesign fails with errSecInternalComponent
-          # (works fine from a GUI shell). Give that signing its own hermetic keychain.
+          # in beforeBuildCommand (download-llama-server.go) runs BEFORE that, so it needs a
+          # signing identity of its own. On a hosted runner there is no login keychain holding the
+          # cert at all; on the self-hosted Mac there is one, but the runner's launchd service
+          # (SessionCreate=true) lives in its own security session where its private key isn't
+          # usable and codesign fails with errSecInternalComponent (the same command works from a
+          # GUI shell). A hermetic keychain is the answer on both.
           #
           # The keychain MUST be both targeted explicitly (codesign --keychain via
           # $LLAMA_SIGN_KEYCHAIN in download-llama-server.go) AND in the user keychain search
           # list: --keychain alone fails with errSecInternalComponent for a keychain outside the
-          # search list (verified empirically on this runner). The explicit --keychain pins
-          # identity resolution to this keychain, so the login keychain's copy of the same
+          # search list (verified empirically on the self-hosted runner). The explicit --keychain
+          # pins identity resolution to this keychain, so a login keychain's copy of the same
           # identity can't make resolution ambiguous (the failure mode an earlier manual-import
           # step had). The "Restore keychain search list" cleanup step below resets the search
           # list to login-only on every run, pass or fail.
@@ -110,10 +108,11 @@ jobs:
 
       - name: Detach stale Cmdr* DMG mounts
         # tauri-action's bundle_dmg.sh fails fast (~3 s) when the "Cmdr" volume name is already
-        # taken in /Volumes (typically from a previous Finder double-click on an old DMG;
-        # the self-hosted runner shares /Volumes with the dev's interactive session). Detach any
-        # leftovers so the new bundle gets the canonical volume name. scripts/release.sh has the
-        # same guard pre-tag-push, but this catches mounts that appear AFTER the tag push.
+        # taken in /Volumes (typically from a previous Finder double-click on an old DMG). A
+        # hosted runner has a clean /Volumes so this is a no-op there; it earns its keep on the
+        # self-hosted Mac, which shares /Volumes with the dev's interactive session. Kept either
+        # way because it costs nothing and the runner choice is one line away from flipping.
+        # scripts/release.sh has the same guard pre-tag-push; this catches mounts appearing AFTER.
         run: |
           while IFS= read -r vol; do
             if [[ -n "$vol" ]]; then
@@ -157,10 +156,11 @@ jobs:
         run: |
           # tauri-action's bundler creates a temporary signing keychain, appends it to the user
           # keychain search list, and on teardown deletes the keychain file but never restores the
-          # search list. On this persistent self-hosted runner that leaves a stale (deleted) entry
-          # in the list across releases, which can re-introduce identity ambiguity. Reset the user
-          # search list to the canonical login keychain so `gh` (its OAuth token lives there via
-          # secure storage) and other keychain-backed tools keep working after a release.
+          # search list. A hosted runner is thrown away, so this is only insurance there; on the
+          # self-hosted Mac it is load-bearing, since a stale (deleted) entry persists across
+          # releases and can re-introduce identity ambiguity. Reset the user search list to the
+          # canonical login keychain so `gh` (its OAuth token lives there via secure storage) and
+          # other keychain-backed tools keep working after a release.
           security list-keychains -d user -s "$HOME/Library/Keychains/login.keychain-db"
 
   publish:

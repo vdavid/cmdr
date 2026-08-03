@@ -9,19 +9,35 @@ Related guides for the signing and distribution steps: `apple-signing-and-notari
 ## Prerequisites
 
 - `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` in GitHub secrets
-- Self-hosted runner: `create-dmg` must be installed (`brew install create-dmg`)
 
-## Build caching on the self-hosted runner
+## Which runner builds the release
 
-The three arch jobs (`aarch64`, `x86_64`, `universal`) run sequentially on the one self-hosted Mac runner. To avoid
-recompiling the ~1000-crate Tauri tree from scratch each time, `release.yml` sets `CARGO_TARGET_DIR` to
-`~/.cache/cmdr-release-target`, outside the workspace that `actions/checkout` wipes. The `universal` build already
-compiles both the aarch64 and x86_64 slices, so the per-arch jobs reuse those (whichever job runs first compiles a given
-slice; the rest hit cargo's cache), and an unchanged-`Cargo.lock` release recompiles only the `cmdr` crate.
+Two runners can build Cmdr, and the choice is one line in `release.yml` (`build.runs-on`).
 
-This dir grows to ~15–30 GB and is never auto-pruned. If runner disk gets tight, `rm -rf ~/.cache/cmdr-release-target`
-(or `cargo clean` it), and the next release just pays one cold build. The sharing is safe ONLY because the jobs run
-sequentially on one runner; never let them run concurrently against this shared dir (cargo would lock/corrupt it).
+**GitHub-hosted (`macos-latest`) is what runs today.** The self-hosted Mac is registered and can be re-enabled, but its
+service is stopped.
+
+- **Why hosted won**: `bundle_dmg.sh` drives Finder over AppleScript, which on the self-hosted Mac needs a TCC
+  Automation grant for the runner's bundled `node`. That path changes on every runner auto-update, so the grant lapses
+  silently, and once a prompt times out unattended the entry sticks at denied with no supported way to clear it short of
+  a machine-wide `tccutil reset AppleEvents`. That failure took all three matrix jobs on the 0.37.0 release; the
+  troubleshooting section below has the full anatomy. Hosted images have no such gate.
+- **What hosted costs**: every job is ephemeral, so each pays a cold ~1000-crate Tauri compile instead of reusing a warm
+  cargo cache, and GitHub bills macOS minutes at a 10x multiplier. Partly offset by the three arch jobs running in
+  parallel rather than queueing on one machine, so wall-clock is roughly one cold build.
+- **What hosted needs that self-hosted didn't**: `brew install create-dmg` as a step (the Mac had it installed by hand),
+  and mise's action cache left on (there's no local tool dir to persist).
+
+**To switch back**: set `runs-on: [self-hosted, macOS, ARM64]`, restart the service with
+`cd ~/actions-runner && ./svc.sh start`, and fix the Finder Automation grant first, or the DMG step hangs ~2 minutes and
+fails every job. Worth doing if hosted minutes get expensive or cold builds get painful; the whole workflow still
+carries the self-hosted-specific guards (the stale-`/Volumes/Cmdr` detach, the keychain search-list restore), so nothing
+else has to change.
+
+Re-enabling the persistent cargo target dir belongs with that switch, not before it: the old `CARGO_TARGET_DIR`
+(`~/.cache/cmdr-release-target`, outside the workspace `actions/checkout` wipes) was safe ONLY because the jobs ran
+sequentially on one machine. Under hosted runners they run concurrently, where a shared target dir would have cargo
+locking and corrupting it. The directory is still on the Mac and still ~15–30 GB; `rm -rf` it if disk gets tight.
 
 ## Release gates that abort before tagging
 
@@ -70,7 +86,11 @@ If a new `color-mix()` token lands without a matching entry in the `@supports no
 break on old WebKit. Keep the lists in `app.css` in sync, and prefer the JS-derivation pattern (`accent-color.ts`,
 `volume-tint.svelte.ts`) for any token that depends on the live macOS accent color.
 
-## Keep the Mac awake during the build
+## Keep the Mac awake during the build (self-hosted only)
+
+**Not needed while `runs-on` is `macos-latest`**: the build happens on GitHub's hardware, so this Mac can sleep, and the
+laptop can close, with no effect on the release. Everything below applies the moment the runner switches back to
+self-hosted.
 
 The self-hosted runner lives on this Mac. If the machine sleeps (even briefly, or just the display), GitHub Actions
 drops the runner connection and every in-flight matrix job fails with
@@ -223,7 +243,10 @@ keychain (secure storage, no `oauth_token` in `~/.config/gh/hosts.yml`). The old
 lost. Restore it with `security list-keychains -d user -s "$HOME/Library/Keychains/login.keychain-db"`. The workflow's
 `Restore keychain search list` cleanup step now does this automatically on every release (`if: always()`).
 
-### `bundle_dmg.sh` hangs ~2 minutes then fails on every matrix job
+### `bundle_dmg.sh` hangs ~2 minutes then fails on every matrix job (self-hosted only)
+
+This is the failure that moved releases to GitHub-hosted runners (see § "Which runner builds the release"). It can't
+happen on a hosted image; read on only when running self-hosted.
 
 The `actions-runner` auto-updated to a new version and its bundled `node` at
 `~/actions-runner/externals.<version>/node20/bin/node` is a TCC client macOS has never seen. The first `osascript` call
