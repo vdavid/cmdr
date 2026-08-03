@@ -1058,6 +1058,9 @@ mod types;
 /// Typed, word-free classification of why a volume operation failed.
 pub mod friendly_error;
 
+// Everything a backend needs from the application around it, as named seams.
+pub mod host;
+
 pub use ids::*;
 pub use in_memory::InMemoryVolume;
 pub use types::*;

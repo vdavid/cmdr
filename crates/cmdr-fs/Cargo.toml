@@ -18,7 +18,7 @@ workspace = true
 # enable it in a production build.
 playwright-e2e = []
 # "This is a test build." Consumers turn it on through a dev-dependency, which
-# keeps it off in every shipped build. Two effects:
+# keeps it off in every shipped build. Three effects:
 #
 # 1. Widens the test-wait helpers (`wait_until` / `wait_until_async`) from
 #    `#[cfg(test)]`-only to `pub`, so OTHER crates' tests can wait on a condition
@@ -27,7 +27,9 @@ playwright-e2e = []
 #    used to do while this code lived in the app. `cfg(test)` is NOT set when a
 #    consumer compiles us as a dependency, so without this the real Utility QoS
 #    would start applying inside every consumer's parallel test run.
-testing = ["dep:tokio"]
+# 3. Adds the recording and scripted fakes for the `volume::host` seams, so a
+#    backend crate's tests can assert on what their backend told its host.
+testing = []
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
@@ -49,14 +51,17 @@ rusqlite = { version = "0.40", features = ["bundled", "collation", "fallible_uin
 dirs = "6"
 # uid/gid → name resolution for `FileEntry`'s owner and group columns.
 uzers = "0.12.2"
-# `testing` only: `wait_until_async` polls on tokio's clock, so a `start_paused`
-# runtime auto-advances through the wait instead of burning wall-clock.
-tokio = { version = "1", features = ["time"], optional = true }
+# `rt` for the runtime seam: `volume::host` hands backends a `tokio::runtime::Handle`
+# the app injects, because a backend's watcher threads have no ambient runtime to
+# inherit and `tokio::spawn` panics there. `rt-multi-thread` builds the fallback that
+# keeps benches, tools, and tests working with a detached host. `time` is
+# `wait_until_async`'s: it polls on tokio's clock, so a `start_paused` runtime
+# auto-advances through the wait instead of burning wall-clock.
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "time"] }
 # `CancellationToken`, the ONE cancellation primitive every layer speaks. The
 # `Volume` trait's cancel-aware methods take it, so it has to live here rather
-# than in either consumer. `default-features = false`: `tokio_util::sync` is
-# unconditional, and the `rt` feature would drag a tokio runtime into a crate
-# that doesn't need one.
+# than in either consumer. `default-features = false` keeps it to `tokio_util::sync`,
+# which is all any layer uses.
 tokio-util = { version = "0.7.18", default-features = false }
 
 [target.'cfg(target_os = "macos")'.dependencies]
@@ -77,6 +82,5 @@ serde_json = "1"
 # `sqlite_util`'s tests open real on-disk databases: the page-cache budget and the
 # freelist reclamation only mean anything against a file-backed connection.
 tempfile = "3"
-# This crate's own tests exercise `testing` under plain `cfg(test)`, where the
-# optional dependency above isn't switched on.
-tokio = { version = "1", features = ["rt", "macros", "time"] }
+# `#[tokio::test]` needs the `macros` feature, which the lib build has no use for.
+tokio = { version = "1", features = ["macros"] }

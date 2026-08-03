@@ -10,8 +10,9 @@ editing app code; use `cmdr_fs::…` from another crate.
 ## Module map
 
 - `volume/`: the `Volume` trait plus `VolumeReadStream` / `SequentialExtract`, the data types it exchanges (`types.rs`),
-  the volume ID helpers (`ids.rs`), `InMemoryVolume`, and `friendly_error/` (typed, word-free error classification — see
-  its own `CLAUDE.md`).
+  the volume ID helpers (`ids.rs`), `InMemoryVolume`, `friendly_error/` (typed, word-free error classification — see its
+  own `CLAUDE.md`), and `host/` — everything a backend needs from the app around it, as named traits. Read
+  `crates/cmdr-fs/src/volume/host/CLAUDE.md` before writing a new backend or moving an existing one out of the app.
 - `entry.rs`: `FileEntry`, `TagRef`, `get_icon_id`, and the uid/gid → name caches. What every listing yields.
 - `icons/`: the two per-entry icon classifiers `get_icon_id` calls — `special_folders` (a `HashMap` lookup) and
   `packages` (a suffix test). Nothing that touches the disk.
