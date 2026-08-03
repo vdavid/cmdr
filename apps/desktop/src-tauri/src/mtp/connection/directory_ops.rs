@@ -14,7 +14,7 @@ use super::{
     DeviceEntry, MtpConnectionManager, MtpDeviceDisconnected, MtpDisconnectReason, acquire_device_lock,
     convert_mtp_datetime, get_mtp_icon_id, map_mtp_error, normalize_mtp_path,
 };
-use crate::file_system::FileEntry;
+use cmdr_fs::entry::FileEntry;
 use cmdr_index::{WatchGap, WatchScope};
 
 /// Global counter for generating unique request IDs for debugging.
@@ -123,7 +123,7 @@ impl MtpConnectionManager {
         device_id: &str,
         storage_id: u32,
         path: &str,
-        on_progress: &(dyn Fn(crate::file_system::volume::ListingProgress) + Sync),
+        on_progress: &(dyn Fn(cmdr_fs::volume::ListingProgress) + Sync),
         cancel: Option<&CancelToken>,
     ) -> Result<Vec<FileEntry>, MtpConnectionError> {
         use std::sync::atomic::Ordering;
@@ -505,7 +505,7 @@ impl MtpConnectionManager {
         storage_id: u32,
         path: &str,
         call_start: Instant,
-        on_progress: &(dyn Fn(crate::file_system::volume::ListingProgress) + Sync),
+        on_progress: &(dyn Fn(cmdr_fs::volume::ListingProgress) + Sync),
         cancel: Option<&CancelToken>,
     ) -> Result<Vec<FileEntry>, MtpConnectionError> {
         let parent_path = normalize_mtp_path(path);
@@ -582,7 +582,7 @@ impl MtpConnectionManager {
         // `entries.len()` so dirs / file-bytes / file-count are all available
         // to the FE mid-stream (the Volume trait progress callback takes a
         // `ListingProgress` carrying all three).
-        let mut tally = crate::file_system::volume::ListingProgress::default();
+        let mut tally = cmdr_fs::volume::ListingProgress::default();
 
         while let Some(result) = listing.next().await {
             let info = match result {

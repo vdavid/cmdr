@@ -4,8 +4,8 @@ use log::debug;
 
 use super::errors::MtpConnectionError;
 use super::{MtpConnectionManager, normalize_mtp_path};
-use crate::file_system::CopyScanResult;
-use crate::file_system::listing::FileEntry;
+use cmdr_fs::entry::FileEntry;
+use cmdr_fs::volume::CopyScanResult;
 
 impl MtpConnectionManager {
     /// Scans an MTP path recursively to get statistics for a copy operation.

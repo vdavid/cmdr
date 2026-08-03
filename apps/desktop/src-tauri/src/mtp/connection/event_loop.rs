@@ -14,9 +14,10 @@ use mtp_rs::ObjectHandle;
 
 use super::cache::EVENT_DEBOUNCE_MS;
 use super::{MtpConnectionManager, connection_manager, normalize_mtp_path};
+use crate::file_system::compute_diff;
 use crate::file_system::listing::{get_listings_by_volume_prefix, update_listing_entries};
-use crate::file_system::{FileEntry, compute_diff};
 use crate::ignore_poison::RwLockIgnorePoison;
+use cmdr_fs::entry::FileEntry;
 use std::path::{Path, PathBuf};
 
 impl MtpConnectionManager {
