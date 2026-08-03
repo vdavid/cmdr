@@ -826,15 +826,34 @@ pub fn disable_drive_index_persist_intent(volume_id: &str) -> Result<(), String>
 
 /// Remove a volume's instance from the registry and withdraw its read-path
 /// handles from the tables in `read/handles.rs`. Used on start-up failure paths.
+///
+/// ⚠️ Freeing the slot and withdrawing the handles is ONE critical section, and
+/// must stay one. Freeing the slot first and releasing the guard before the
+/// withdrawal lets a competing `start_indexing_for` reserve the now-empty slot and
+/// install FRESH handles in between — which this call then withdraws, leaving a
+/// live, registered index that routes no read pool, so its listings show `<dir>`
+/// until the next stop/start. ❌ Don't "tidy" the withdrawal out of the guard.
+///
+/// Holding the registry across it is safe by the leaf-lock property in
+/// `read/handles.rs` (a hash removal, nothing called under the guard), and it's the
+/// same registry → table nesting `try_reserve_initializing_phase` already uses, so
+/// it adds no ordering hazard. `invalidate()` stays OUTSIDE: it's the one part no
+/// successor can observe, and the guard has no reason to cover it.
+///
+/// The other teardown paths (`stop_indexing`, `clear_index`, `fail_index`) withdraw
+/// BEFORE they touch the registry and are safe for the mirror-image reason: the key
+/// still exists while they withdraw, so no competing start can reserve yet.
 fn remove_instance_and_handles(volume_id: &str) {
-    {
+    let pool = {
         let mut reg = INDEX_REGISTRY.lock().expect("INDEX_REGISTRY lock poisoned");
         reg.remove(volume_id);
-    }
-    if let Some(pool) = uninstall_read_pool(volume_id) {
+        let pool = uninstall_read_pool(volume_id);
+        uninstall_pending_sizes(volume_id);
+        pool
+    };
+    if let Some(pool) = pool {
         pool.invalidate();
     }
-    uninstall_pending_sizes(volume_id);
 }
 
 /// Stop all scans, shut down the writer, delete the DB file, and reset state
