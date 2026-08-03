@@ -170,8 +170,10 @@ struct UndoLoop {
     vm: crate::file_system::VolumeManager,
     /// Owns the scratch directory: holding the guard (rather than a bare path
     /// copied out of it) is what keeps the directory alive for the fixture's
-    /// lifetime and removes it afterwards.
+    /// lifetime and removes it afterwards. Same for `_journal_dir`, which holds
+    /// the operation-log database the writer above reads and writes throughout.
     dir: TestDir,
+    _journal_dir: TestDir,
     op_id: String,
 }
 
@@ -182,6 +184,9 @@ impl UndoLoop {
         use crate::operation_log::store::operation_log_db_path;
         use crate::operation_log::writer::OperationLogWriter;
 
+        // Held in the struct below, not just here: the writer keeps using this
+        // database for the fixture's whole life, so dropping the handle at the end
+        // of `new` would delete `operation-log.db` out from under it.
         let journal_dir = create_test_dir(&format!("{name}_journal"));
         let writer = OperationLogWriter::spawn(&operation_log_db_path(&journal_dir)).expect("spawn writer");
         let writer_journal = Arc::new(WriterJournal::new(writer));
@@ -199,6 +204,7 @@ impl UndoLoop {
             writer_journal,
             vm,
             dir: create_test_dir(name),
+            _journal_dir: journal_dir,
             op_id: format!("op-{name}"),
         }
     }

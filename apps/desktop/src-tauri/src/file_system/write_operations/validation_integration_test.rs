@@ -590,7 +590,10 @@ fn test_validate_path_length_exact_limit() {
 fn test_special_file_socket_skipped() {
     use std::os::unix::net::UnixListener;
 
-    let temp_dir = create_temp_dir("special_socket");
+    // A short label on purpose: `sockaddr_un` caps the whole path at 104 bytes
+    // (SUN_LEN), and macOS's per-user `$TMPDIR` already eats 49 of them, so the
+    // usual `create_temp_dir` prefix overflows the bind.
+    let temp_dir = TestDir::new("sock");
     let socket_path = temp_dir.join("test.sock");
 
     // Create a Unix domain socket
