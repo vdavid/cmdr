@@ -17,9 +17,10 @@ use crate::media_index::backend::fake::FakeVisionBackend;
 
 use super::{
     BackendFactory, BeginOutcome, ConservativeFetchPolicy, FinishOutcome, MediaScheduler, PauseReason, VisionBackend,
-    enrich, gate, live, network,
+    gate, live, network,
 };
 use crate::indexing::lifecycle::lifecycle_bus;
+use crate::media_index::paths::parent_dir;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -48,7 +49,7 @@ pub fn local_should_enrich(
 ) -> bool {
     match scores {
         None => config.covers(volume_id, path),
-        Some(map) => config.covers(volume_id, path) || map.contains_key(enrich::parent_dir(path)),
+        Some(map) => config.covers(volume_id, path) || map.contains_key(parent_dir(path)),
     }
 }
 

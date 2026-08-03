@@ -46,9 +46,10 @@ use crate::media_index::store::{EnrichmentState, needs_clip, needs_enrichment};
 use crate::media_index::writer::MediaWriter;
 use cmdr_fs::ignore_poison::IgnorePoison;
 
+use crate::media_index::paths::parent_dir;
+
 use super::enrich::{
-    EnrichGates, GcScope, ImageEntry, PassSummary, apply_media_upsert, enrichable_totals, gc_targets, parent_dir,
-    status_row,
+    EnrichGates, GcScope, ImageEntry, PassSummary, apply_media_upsert, enrichable_totals, gc_targets, status_row,
 };
 
 /// Build a fresh independent backend for an extra worker slot (workers 1..N). In

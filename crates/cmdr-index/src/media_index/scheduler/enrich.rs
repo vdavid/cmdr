@@ -10,6 +10,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::indexing::store::{DirTree, IndexStore, resolve_path};
 use crate::media_index::backend::{Analysis, MediaAnalysis, VisionBackend};
+use crate::media_index::paths::parent_dir;
 use crate::media_index::predicate::{MediaKind, Qualification, qualify_dir};
 use crate::media_index::progress::EnrichProgressSink;
 use crate::media_index::store::{EnrichmentState, MediaStatusRow};
@@ -313,15 +314,6 @@ pub(crate) struct EnrichGates<'a> {
 /// truncate window transiently empties the tree (plan Decision 3).
 pub(crate) fn gc_targets<'a>(stored: impl IntoIterator<Item = &'a String>, current: &HashSet<String>) -> Vec<String> {
     stored.into_iter().filter(|p| !current.contains(*p)).cloned().collect()
-}
-
-/// The parent directory of an absolute path (the folder importance keys on). `"/"`
-/// for a top-level file. A pure slice, no allocation.
-pub(crate) fn parent_dir(path: &str) -> &str {
-    match path.rfind('/') {
-        Some(0) | None => "/",
-        Some(i) => &path[..i],
-    }
 }
 
 /// Order the walked images so HIGH-importance folders enrich first (plan

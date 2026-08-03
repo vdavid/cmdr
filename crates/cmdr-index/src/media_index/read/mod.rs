@@ -461,7 +461,8 @@ mod tests;
 /// sibling-aware (a RAW beside its JPEG changes the verdict), so it can't be
 /// decided from one path on its own.
 pub fn qualifying_images_for_paths(volume_id: &str, paths: &[String]) -> HashMap<String, ImageEntry> {
-    use crate::media_index::scheduler::enrich::{parent_dir, walk_image_entries_in_dirs};
+    use crate::media_index::paths::parent_dir;
+    use crate::media_index::scheduler::enrich::walk_image_entries_in_dirs;
 
     let dirs: std::collections::HashSet<String> = paths.iter().map(|p| parent_dir(p).to_string()).collect();
     let Some(pool) = crate::indexing::read::enrichment::get_read_pool_for(volume_id) else {

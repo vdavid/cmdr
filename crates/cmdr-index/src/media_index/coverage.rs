@@ -22,7 +22,8 @@ use rusqlite::Connection;
 use cmdr_fs::ignore_poison::IgnorePoison;
 
 use super::gate::IndexScope;
-use super::scheduler::enrich::{ImageEntry, for_each_qualifying_image, parent_dir};
+use super::paths::parent_dir;
+use super::scheduler::enrich::{ImageEntry, for_each_qualifying_image};
 use super::store::EnrichmentState;
 
 /// The qualifying-image counts for one volume: how many images each folder holds, and

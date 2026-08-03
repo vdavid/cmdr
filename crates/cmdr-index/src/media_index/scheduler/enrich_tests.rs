@@ -7,11 +7,12 @@ use std::collections::{HashMap, HashSet};
 
 use super::enrich::{
     EnrichGates, GcScope, ImageEntry, PassHooks, enrich_and_gc, enrich_and_gc_scoped, enrichable_totals, gc_targets,
-    load_statuses, parent_dir, prioritized, walk_image_entries, walk_image_entries_in_dirs,
+    load_statuses, prioritized, walk_image_entries, walk_image_entries_in_dirs,
 };
 use crate::indexing::store::{IndexStore, ROOT_ID};
 use crate::media_index::backend::fake::FakeVisionBackend;
 use crate::media_index::coverage::{build_counts, count_qualifying_images};
+use crate::media_index::paths::parent_dir;
 use crate::media_index::predicate::MediaKind;
 use crate::media_index::progress::{EnrichProgress, EnrichProgressSink, NoopProgressSink};
 use crate::media_index::read::MediaIndex;

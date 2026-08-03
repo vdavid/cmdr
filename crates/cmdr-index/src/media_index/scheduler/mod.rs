@@ -44,6 +44,7 @@ use super::network;
 use super::network::enrich::{NetworkEnrichCtx, NetworkPassOutcome, PauseReason, enrich_network_and_gc};
 use super::network::fetch::FsByteFetcher;
 use super::network::policy::ConservativeFetchPolicy;
+use super::paths::parent_dir;
 use cmdr_fs::ignore_poison::IgnorePoison;
 
 pub(crate) mod enrich;
@@ -619,7 +620,7 @@ impl MediaScheduler {
             let index_path = os_path.strip_prefix(mount_root.as_str()).unwrap_or(os_path);
             let importance = scores
                 .as_ref()
-                .map(|m| m.get(enrich::parent_dir(index_path)).copied().unwrap_or(0.0) as f32);
+                .map(|m| m.get(parent_dir(index_path)).copied().unwrap_or(0.0) as f32);
             network::policy::should_enrich_image(covered, importance, threshold as f32)
         };
         let is_excluded = |os_path: &str| -> bool { network::config::is_excluded(os_path) };

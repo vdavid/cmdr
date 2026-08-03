@@ -18,6 +18,7 @@ pub mod coverage;
 pub mod events;
 pub mod gate;
 pub mod network;
+pub(crate) mod paths;
 pub mod predicate;
 pub(crate) mod progress;
 pub mod read;
