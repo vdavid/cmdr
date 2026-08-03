@@ -4,8 +4,9 @@
     <vendor email="veszelovszki@gmail.com" url="https://getcmdr.com">David Veszelovszki</vendor>
 
     <description><![CDATA[
-        Reading aids for the Cmdr repository: commit-hash links in <code>CHANGELOG.md</code>, and i18n keys folded to
-        the English text they resolve to. Never published to the Marketplace; sideloaded from
+        Reading aids for the Cmdr repository. Scaffold so far: the only thing it does today is fold the literal
+        <code>'CMDR_M0_PROBE'</code>. Commit-hash links in <code>CHANGELOG.md</code> and i18n keys folded to their
+        English text come next. Never published to the Marketplace; sideloaded from
         <code>build/distributions/</code>.
     ]]></description>
 
@@ -17,9 +18,9 @@
     <depends optional="true" config-file="cmdr-svelte.xml">dev.blachut.svelte.lang</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <!-- M0 probe. Two registrations, and the count is the finding: `JavaScript` does NOT reach `TypeScript`, so
-             every JS-family language needs naming. `SveltePsiSpikeTest` proves it. Delete once a real feature
-             replaces it. -->
+        <!-- M0 probe. Two registrations, and the count is the finding: a registration for `JavaScript` is shadowed at
+             the `TypeScript` level and never reaches `.ts`, so every language needs naming.
+             `LanguageCoverageSpikeTest` pins that. Delete once a real feature replaces it. -->
         <lang.foldingBuilder
             language="JavaScript"
             implementationClass="com.getcmdr.idea.m0.M0ProbeFoldingBuilder"/>
