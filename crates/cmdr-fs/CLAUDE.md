@@ -43,9 +43,7 @@ editing app code; use `cmdr_fs::…` from another crate.
   the app's background threads, starving a walker test past its watchdog. It compiles clean and surfaces as someone
   else's flake. `DETAILS.md` § "Gotcha: `cfg(test)`-conditioned BEHAVIOR".
 - **Turn the `testing` feature on through a dev-dependency, never a normal one.** That's what keeps it out of shipped
-  builds. It gates `testing::TestDir`, `testing::wait_until` / `wait_until_async`, and the QoS no-op together.
-  `tempfile` is an OPTIONAL dependency of this crate rather than a dev-dependency because `TestDir` hands one back to
-  its caller; a dev-dependency isn't linkable when a consumer compiles us as a library. Don't "tidy" it back.
+  builds. It gates `testing::TestDir`, `wait_until` / `wait_until_async`, and the QoS no-op together.
 - **Nothing here produces user-facing prose.** Errors carry typed reasons and structured params; the frontend renders
   every word. `pluralize` and `FileEntry`'s `display_size` are the named exceptions — see `DETAILS.md`.
 
