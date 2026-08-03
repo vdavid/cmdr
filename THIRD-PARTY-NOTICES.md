@@ -6,9 +6,9 @@ the app, with its license, and reproduces the license texts in full.
 Generated from `Cargo.lock` and `pnpm-lock.yaml` by `pnpm check third-party-notices`. Don't edit it
 by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices.go` instead.
 
-- Rust crates: 650
+- Rust crates: 655
 - npm packages: 125
-- Distinct license texts: 291
+- Distinct license texts: 290
 
 ## Rust crates
 
@@ -43,12 +43,15 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **axum-core** 0.5.6, MIT, <https://github.com/tokio-rs/axum>
 - **base64** 0.21.7, MIT OR Apache-2.0, <https://github.com/marshallpierce/rust-base64>
 - **base64** 0.22.1, MIT OR Apache-2.0, <https://github.com/marshallpierce/rust-base64>
+- **base64** 0.23.0, MIT OR Apache-2.0, <https://github.com/marshallpierce/rust-base64>
 - **bincode2** 2.0.1, MIT, <https://github.com/pravega/bincode2>
+- **bisync** 0.3.0, MIT OR Apache-2.0, <https://github.com/JM4ier/bisync>
+- **bisync_macros** 0.2.3, MIT OR Apache-2.0, <https://github.com/JM4ier/bisync>
 - **bit-set** 0.8.0, Apache-2.0 OR MIT, <https://github.com/contain-rs/bit-set>
 - **bit-vec** 0.8.0, Apache-2.0 OR MIT, <https://github.com/contain-rs/bit-vec>
 - **bit_field** 0.10.3, Apache-2.0 OR MIT, <https://github.com/phil-opp/rust-bit-field>
 - **bitflags** 1.3.2, MIT OR Apache-2.0, <https://github.com/bitflags/bitflags>
-- **bitflags** 2.13.0, MIT OR Apache-2.0, <https://github.com/bitflags/bitflags>
+- **bitflags** 2.13.1, MIT OR Apache-2.0, <https://github.com/bitflags/bitflags>
 - **bitstream-io** 4.10.0, MIT OR Apache-2.0, <https://github.com/tuffy/bitstream-io>
 - **block-buffer** 0.10.4, MIT OR Apache-2.0, <https://github.com/RustCrypto/utils>
 - **block-buffer** 0.12.1, MIT OR Apache-2.0, <https://github.com/RustCrypto/utils>
@@ -63,7 +66,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **bytemuck** 1.25.0, Zlib OR Apache-2.0 OR MIT, <https://github.com/Lokathor/bytemuck>
 - **byteorder** 1.5.0, Unlicense OR MIT, <https://github.com/BurntSushi/byteorder>
 - **byteorder-lite** 0.1.0, Unlicense OR MIT, <https://github.com/image-rs/byteorder-lite>
-- **bytes** 1.12.0, MIT, <https://github.com/tokio-rs/bytes>
+- **bytes** 1.12.1, MIT, <https://github.com/tokio-rs/bytes>
 - **bytesize** 2.4.2, Apache-2.0, <https://github.com/bytesize-rs/bytesize>
 - **bzip2** 0.6.1, MIT OR Apache-2.0, <https://github.com/trifectatechfoundation/bzip2-rs>
 - **camino** 1.2.4, MIT OR Apache-2.0, <https://github.com/camino-rs/camino>
@@ -177,6 +180,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **flate2** 1.1.9, MIT OR Apache-2.0, <https://github.com/rust-lang/flate2-rs>
 - **flume** 0.12.0, Apache-2.0 OR MIT, <https://github.com/zesterer/flume>
 - **fnv** 1.0.7, Apache-2.0  OR  MIT, <https://github.com/servo/rust-fnv>
+- **foldhash** 0.1.5, Zlib, <https://github.com/orlp/foldhash>
 - **foldhash** 0.2.0, Zlib, <https://github.com/orlp/foldhash>
 - **foreign-types** 0.5.0, MIT OR Apache-2.0, <https://github.com/sfackler/foreign-types>
 - **foreign-types-macros** 0.2.3, MIT OR Apache-2.0, <https://github.com/sfackler/foreign-types>
@@ -185,15 +189,15 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **fs_extra** 1.3.0, MIT, <https://github.com/webdesus/fs_extra>
 - **fsevent-sys** 4.1.0, MIT, <https://github.com/octplane/fsevent-rust/tree/master/fsevent-sys>
 - **futures** 0.3.32, MIT OR Apache-2.0, <https://github.com/rust-lang/futures-rs>
-- **futures-channel** 0.3.32, MIT OR Apache-2.0, <https://github.com/rust-lang/futures-rs>
-- **futures-core** 0.3.32, MIT OR Apache-2.0, <https://github.com/rust-lang/futures-rs>
+- **futures-channel** 0.3.33, MIT OR Apache-2.0, <https://github.com/rust-lang/futures-rs>
+- **futures-core** 0.3.33, MIT OR Apache-2.0, <https://github.com/rust-lang/futures-rs>
 - **futures-executor** 0.3.32, MIT OR Apache-2.0, <https://github.com/rust-lang/futures-rs>
-- **futures-io** 0.3.32, MIT OR Apache-2.0, <https://github.com/rust-lang/futures-rs>
-- **futures-macro** 0.3.32, MIT OR Apache-2.0, <https://github.com/rust-lang/futures-rs>
-- **futures-sink** 0.3.32, MIT OR Apache-2.0, <https://github.com/rust-lang/futures-rs>
-- **futures-task** 0.3.32, MIT OR Apache-2.0, <https://github.com/rust-lang/futures-rs>
+- **futures-io** 0.3.33, MIT OR Apache-2.0, <https://github.com/rust-lang/futures-rs>
+- **futures-macro** 0.3.33, MIT OR Apache-2.0, <https://github.com/rust-lang/futures-rs>
+- **futures-sink** 0.3.33, MIT OR Apache-2.0, <https://github.com/rust-lang/futures-rs>
+- **futures-task** 0.3.33, MIT OR Apache-2.0, <https://github.com/rust-lang/futures-rs>
 - **futures-timer** 3.0.4, MIT OR Apache-2.0, <https://github.com/async-rs/futures-timer>
-- **futures-util** 0.3.32, MIT OR Apache-2.0, <https://github.com/rust-lang/futures-rs>
+- **futures-util** 0.3.33, MIT OR Apache-2.0, <https://github.com/rust-lang/futures-rs>
 - **genai** 0.6.5, MIT OR Apache-2.0, <https://github.com/jeremychone/rust-genai>
 - **generic-array** 0.14.7, MIT, <https://github.com/fizyk20/generic-array.git>
 - **getrandom** 0.2.17, MIT OR Apache-2.0, <https://github.com/rust-random/getrandom>
@@ -201,62 +205,63 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **getrandom** 0.4.3, MIT OR Apache-2.0, <https://github.com/rust-random/getrandom>
 - **ghash** 0.6.0, Apache-2.0 OR MIT, <https://github.com/RustCrypto/universal-hashes>
 - **gif** 0.14.2, MIT OR Apache-2.0, <https://github.com/image-rs/image-gif>
-- **gix** 0.85.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-actor** 0.41.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-archive** 0.34.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-attributes** 0.33.2, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-bitmap** 0.3.2, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-blame** 0.15.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-chunk** 0.7.2, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix** 0.86.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-actor** 0.41.2, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-archive** 0.35.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-attributes** 0.34.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-bitmap** 0.3.3, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-blame** 0.16.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-chunk** 0.7.3, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
 - **gix-command** 0.9.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-commitgraph** 0.37.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-config** 0.58.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-config-value** 0.18.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-credentials** 0.38.2, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-commitgraph** 0.38.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-config** 0.59.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-config-value** 0.19.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-credentials** 0.39.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
 - **gix-date** 0.15.6, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-diff** 0.65.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-dir** 0.27.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-discover** 0.53.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-diff** 0.66.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-dir** 0.28.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-discover** 0.54.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
 - **gix-error** 0.2.5, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-features** 0.48.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-filter** 0.32.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-fs** 0.21.2, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-glob** 0.26.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-hash** 0.25.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-hashtable** 0.15.2, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-ignore** 0.21.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-imara-diff** 0.2.3, Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-index** 0.53.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-lock** 23.0.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-mailmap** 0.33.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-negotiate** 0.33.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-object** 0.62.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-odb** 0.82.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-pack** 0.72.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-packetline** 0.21.5, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-path** 0.12.2, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-pathspec** 0.18.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-prompt** 0.15.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-protocol** 0.63.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-features** 0.49.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-filter** 0.33.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-fs** 0.22.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-glob** 0.27.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-hash** 0.26.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-hashtable** 0.16.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-ignore** 0.22.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-imara-diff** 0.2.4, Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-index** 0.54.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-lock** 24.0.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-mailmap** 0.33.2, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-negotiate** 0.34.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-object** 0.63.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-odb** 0.83.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-pack** 0.73.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-packetline** 0.22.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-path** 0.12.3, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-pathspec** 0.19.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-prompt** 0.16.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-protocol** 0.64.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
 - **gix-quote** 0.7.2, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-ref** 0.65.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-refspec** 0.43.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-revision** 0.47.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-revwalk** 0.33.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-sec** 0.14.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-shallow** 0.12.1, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-status** 0.32.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-submodule** 0.32.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-tempfile** 23.0.2, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-trace** 0.1.20, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-transport** 0.57.2, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-traverse** 0.59.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-url** 0.36.2, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-utils** 0.3.3, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-validate** 0.11.2, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-worktree** 0.54.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-worktree-state** 0.32.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
-- **gix-worktree-stream** 0.34.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-ref** 0.66.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-refspec** 0.44.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-revision** 0.48.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-revwalk** 0.34.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-sec** 0.14.2, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-shallow** 0.13.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-status** 0.33.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-submodule** 0.33.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-tempfile** 24.0.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-trace** 0.1.21, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-transport** 0.58.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-traverse** 0.60.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-url** 0.37.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-utils** 0.3.5, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-validate** 0.11.3, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-worktree** 0.55.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-worktree-state** 0.33.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-worktree-stream** 0.35.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
+- **gix-zlib** 0.1.0, MIT OR Apache-2.0, <https://github.com/GitoxideLabs/gitoxide>
 - **glob** 0.3.3, MIT OR Apache-2.0, <https://github.com/rust-lang/glob>
 - **global-hotkey** 0.8.0, Apache-2.0 OR MIT, <https://github.com/tauri-apps/global-hotkey>
 - **h2** 0.4.15, MIT, <https://github.com/hyperium/h2>
@@ -264,6 +269,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **hash32** 0.3.1, MIT OR Apache-2.0, <https://github.com/japaric/hash32>
 - **hashbrown** 0.12.3, MIT OR Apache-2.0, <https://github.com/rust-lang/hashbrown>
 - **hashbrown** 0.14.5, MIT OR Apache-2.0, <https://github.com/rust-lang/hashbrown>
+- **hashbrown** 0.15.5, MIT OR Apache-2.0, <https://github.com/rust-lang/hashbrown>
 - **hashbrown** 0.16.1, MIT OR Apache-2.0, <https://github.com/rust-lang/hashbrown>
 - **hashbrown** 0.17.1, MIT OR Apache-2.0, <https://github.com/rust-lang/hashbrown>
 - **hashlink** 0.12.1, MIT OR Apache-2.0, <https://github.com/djc/hashlink>
@@ -315,10 +321,9 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **json-patch** 3.0.1, MIT OR Apache-2.0, <https://github.com/idubrov/json-patch>
 - **jsonptr** 0.6.3, MIT OR Apache-2.0, <https://github.com/chanced/jsonptr>
 - **keyboard-types** 0.7.0, MIT OR Apache-2.0, <https://github.com/pyfisch/keyboard-types>
-- **kstring** 2.0.2, MIT OR Apache-2.0, <https://github.com/cobalt-org/kstring>
 - **lebe** 0.5.3, BSD-3-Clause, <https://github.com/johannesvollmer/lebe>
 - **libbz2-rs-sys** 0.2.5, bzip2-1.0.6, <https://github.com/trifectatechfoundation/libbzip2-rs>
-- **libc** 0.2.186, MIT OR Apache-2.0, <https://github.com/rust-lang/libc>
+- **libc** 0.2.189, MIT OR Apache-2.0, <https://github.com/rust-lang/libc>
 - **libmimalloc-sys** 0.1.49, MIT, <https://github.com/purpleprotocol/mimalloc_rust/tree/master/libmimalloc-sys>
 - **libsqlite3-sys** 0.38.1, MIT, <https://github.com/rusqlite/rusqlite>
 - **link-cplusplus** 1.0.12, MIT OR Apache-2.0, <https://github.com/dtolnay/link-cplusplus>
@@ -329,16 +334,16 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **lz4_flex** 0.13.1, MIT, <https://github.com/pseitz/lz4_flex>
 - **lzma-rs** 0.3.0, MIT, <https://github.com/gendx/lzma-rs>
 - **lzma-rust2** 0.16.4, Apache-2.0, <https://github.com/hasenbanck/lzma-rust2/>
+- **lzma-rust2** 0.18.0, Apache-2.0, <https://github.com/hasenbanck/lzma-rust2/>
 - **mac-notification-sys** 0.6.15, MIT OR Apache-2.0, <https://github.com/h4llow3En/mac-notification-sys>
 - **mach2** 0.5.0, BSD-2-Clause OR MIT OR Apache-2.0, <https://github.com/JohnTitor/mach2>
 - **markup5ever** 0.38.0, MIT OR Apache-2.0, <https://github.com/servo/html5ever>
 - **matchit** 0.8.4, MIT AND BSD-3-Clause, <https://github.com/ibraheemdev/matchit>
-- **maybe-async** 0.2.11, MIT, <https://github.com/fMeow/maybe-async-rs>
 - **maybe-rayon** 0.1.1, MIT, <https://github.com/shssoichiro/maybe-rayon>
 - **md-5** 0.11.0, MIT OR Apache-2.0, <https://github.com/RustCrypto/hashes>
 - **md4** 0.11.0, MIT OR Apache-2.0, <https://github.com/RustCrypto/hashes>
-- **mdns-sd** 0.20.2, Apache-2.0 OR MIT, <https://github.com/keepsimple1/mdns-sd>
-- **memchr** 2.8.2, Unlicense OR MIT, <https://github.com/BurntSushi/memchr>
+- **mdns-sd** 0.20.3, Apache-2.0 OR MIT, <https://github.com/keepsimple1/mdns-sd>
+- **memchr** 2.8.3, Unlicense OR MIT, <https://github.com/BurntSushi/memchr>
 - **memmap2** 0.9.11, MIT OR Apache-2.0, <https://github.com/RazrFalcon/memmap2-rs>
 - **mimalloc** 0.1.52, MIT, <https://github.com/purpleprotocol/mimalloc_rust>
 - **mime** 0.3.17, MIT OR Apache-2.0, <https://github.com/hyperium/mime>
@@ -434,7 +439,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **ppmd-rust** 1.4.0, CC0-1.0 OR MIT-0, <https://github.com/hasenbanck/ppmd-rust>
 - **ppv-lite86** 0.2.21, MIT OR Apache-2.0, <https://github.com/cryptocorrosion/cryptocorrosion>
 - **precomputed-hash** 0.1.1, MIT, <https://github.com/emilio/precomputed-hash>
-- **proc-macro-crate** 3.5.0, MIT OR Apache-2.0, <https://github.com/bkchr/proc-macro-crate>
+- **proc-macro-crate** 1.3.1, MIT OR Apache-2.0, <https://github.com/bkchr/proc-macro-crate>
 - **proc-macro2** 1.0.106, MIT OR Apache-2.0, <https://github.com/dtolnay/proc-macro2>
 - **prodash** 31.0.0, MIT, <https://github.com/GitoxideLabs/prodash>
 - **profiling** 1.0.18, MIT OR Apache-2.0, <https://github.com/aclysma/profiling>
@@ -456,8 +461,8 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **rayon** 1.12.0, MIT OR Apache-2.0, <https://github.com/rayon-rs/rayon>
 - **rayon-core** 1.13.0, MIT OR Apache-2.0, <https://github.com/rayon-rs/rayon>
 - **rc-zip** 5.4.1, Apache-2.0 OR MIT, <https://github.com/bearcove/rc-zip>
-- **regex** 1.12.4, MIT OR Apache-2.0, <https://github.com/rust-lang/regex>
-- **regex-automata** 0.4.14, MIT OR Apache-2.0, <https://github.com/rust-lang/regex>
+- **regex** 1.13.1, MIT OR Apache-2.0, <https://github.com/rust-lang/regex>
+- **regex-automata** 0.4.16, MIT OR Apache-2.0, <https://github.com/rust-lang/regex>
 - **regex-syntax** 0.8.11, MIT OR Apache-2.0, <https://github.com/rust-lang/regex>
 - **reqwest** 0.13.4, MIT OR Apache-2.0, <https://github.com/seanmonstar/reqwest>
 - **rfd** 0.16.0, MIT, <https://github.com/PolyMeilex/rfd>
@@ -472,7 +477,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **rustls-platform-verifier** 0.7.0, MIT OR Apache-2.0, <https://github.com/rustls/rustls-platform-verifier>
 - **rustls-webpki** 0.103.13, ISC, <https://github.com/rustls/webpki>
 - **rustversion** 1.0.22, MIT OR Apache-2.0, <https://github.com/dtolnay/rustversion>
-- **ruzstd** 0.8.3, MIT, <https://github.com/KillingSpark/zstd-rs>
+- **ruzstd** 0.9.0, MIT, <https://github.com/KillingSpark/zstd-rs>
 - **ryu** 1.0.23, Apache-2.0 OR BSL-1.0, <https://github.com/dtolnay/ryu>
 - **same-file** 1.0.6, Unlicense OR MIT, <https://github.com/BurntSushi/same-file>
 - **schemars** 0.8.22, MIT, <https://github.com/GREsau/schemars>
@@ -483,12 +488,12 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **security-framework-sys** 2.17.0, MIT OR Apache-2.0, <https://github.com/kornelski/rust-security-framework>
 - **selectors** 0.36.1, MPL-2.0, <https://github.com/servo/stylo>
 - **semver** 1.0.28, MIT OR Apache-2.0, <https://github.com/dtolnay/semver>
-- **serde** 1.0.228, MIT OR Apache-2.0, <https://github.com/serde-rs/serde>
+- **serde** 1.0.229, MIT OR Apache-2.0, <https://github.com/serde-rs/serde>
 - **serde-untagged** 0.1.9, MIT OR Apache-2.0, <https://github.com/dtolnay/serde-untagged>
-- **serde_core** 1.0.228, MIT OR Apache-2.0, <https://github.com/serde-rs/serde>
-- **serde_derive** 1.0.228, MIT OR Apache-2.0, <https://github.com/serde-rs/serde>
+- **serde_core** 1.0.229, MIT OR Apache-2.0, <https://github.com/serde-rs/serde>
+- **serde_derive** 1.0.229, MIT OR Apache-2.0, <https://github.com/serde-rs/serde>
 - **serde_derive_internals** 0.29.1, MIT OR Apache-2.0, <https://github.com/serde-rs/serde>
-- **serde_json** 1.0.150, MIT OR Apache-2.0, <https://github.com/serde-rs/json>
+- **serde_json** 1.0.151, MIT OR Apache-2.0, <https://github.com/serde-rs/json>
 - **serde_path_to_error** 0.1.20, MIT OR Apache-2.0, <https://github.com/dtolnay/path-to-error>
 - **serde_repr** 0.1.20, MIT OR Apache-2.0, <https://github.com/dtolnay/serde-repr>
 - **serde_spanned** 1.1.1, MIT OR Apache-2.0, <https://github.com/toml-rs/toml>
@@ -498,7 +503,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **serialize-to-javascript** 0.1.2, MIT OR Apache-2.0, <https://github.com/chippers/serialize-to-javascript>
 - **serialize-to-javascript-impl** 0.1.2, MIT OR Apache-2.0, <https://github.com/chippers/serialize-to-javascript>
 - **servo_arc** 0.4.3, MIT OR Apache-2.0, <https://github.com/servo/stylo>
-- **sevenz-rust2** 0.21.2, Apache-2.0, <https://github.com/hasenbanck/sevenz-rust>
+- **sevenz-rust2** 0.21.3, Apache-2.0, <https://github.com/hasenbanck/sevenz-rust>
 - **sha1** 0.10.6, MIT OR Apache-2.0, <https://github.com/RustCrypto/hashes>
 - **sha1** 0.11.0, MIT OR Apache-2.0, <https://github.com/RustCrypto/hashes>
 - **sha1-checked** 0.10.0, MIT OR Apache-2.0, <https://github.com/RustCrypto/hashes>
@@ -524,7 +529,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **specta-typescript** 0.0.11, MIT, <https://github.com/specta-rs/specta>
 - **spin** 0.9.9, MIT, <https://github.com/mvdnes/spin-rs.git>
 - **stable_deref_trait** 1.2.1, MIT OR Apache-2.0, <https://github.com/storyyeller/stable_deref_trait>
-- **static_assertions** 1.1.0, MIT OR Apache-2.0, <https://github.com/nvzqz/static-assertions-rs>
 - **string_cache** 0.9.0, MIT OR Apache-2.0, <https://github.com/servo/string-cache>
 - **string_cache_codegen** 0.6.1, MIT OR Apache-2.0, <https://github.com/servo/string-cache>
 - **strsim** 0.11.1, MIT, <https://github.com/rapidfuzz/strsim-rs>
@@ -547,14 +551,14 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **tauri-macros** 2.6.3, Apache-2.0 OR MIT, <https://github.com/tauri-apps/tauri>
 - **tauri-plugin** 2.6.3, Apache-2.0 OR MIT, <https://github.com/tauri-apps/tauri>
 - **tauri-plugin-clipboard-manager** 2.3.2, Apache-2.0 OR MIT, <https://github.com/tauri-apps/plugins-workspace>
-- **tauri-plugin-dialog** 2.7.1, Apache-2.0 OR MIT, <https://github.com/tauri-apps/plugins-workspace>
+- **tauri-plugin-dialog** 2.7.2, Apache-2.0 OR MIT, <https://github.com/tauri-apps/plugins-workspace>
 - **tauri-plugin-fs** 2.5.1, Apache-2.0 OR MIT, <https://github.com/tauri-apps/plugins-workspace>
 - **tauri-plugin-global-shortcut** 2.3.2, Apache-2.0 OR MIT, <https://github.com/tauri-apps/plugins-workspace>
 - **tauri-plugin-mcp-bridge** 0.12.0, MIT, <https://github.com/hypothesi/mcp-server-tauri>
 - **tauri-plugin-notification** 2.3.3, Apache-2.0 OR MIT, <https://github.com/tauri-apps/plugins-workspace>
 - **tauri-plugin-opener** 2.5.4, Apache-2.0 OR MIT, <https://github.com/tauri-apps/plugins-workspace>
 - **tauri-plugin-process** 2.3.1, Apache-2.0 OR MIT, <https://github.com/tauri-apps/plugins-workspace>
-- **tauri-plugin-store** 2.4.3, Apache-2.0 OR MIT, <https://github.com/tauri-apps/plugins-workspace>
+- **tauri-plugin-store** 2.4.4, Apache-2.0 OR MIT, <https://github.com/tauri-apps/plugins-workspace>
 - **tauri-plugin-updater** 2.10.1, Apache-2.0 OR MIT, <https://github.com/tauri-apps/plugins-workspace>
 - **tauri-runtime** 2.11.3, Apache-2.0 OR MIT, <https://github.com/tauri-apps/tauri>
 - **tauri-runtime-wry** 2.11.4, Apache-2.0 OR MIT, <https://github.com/tauri-apps/tauri>
@@ -570,23 +574,24 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **thiserror-impl** 1.0.69, MIT OR Apache-2.0, <https://github.com/dtolnay/thiserror>
 - **thiserror-impl** 2.0.18, MIT OR Apache-2.0, <https://github.com/dtolnay/thiserror>
 - **tiff** 0.11.3, MIT, <https://github.com/image-rs/image-tiff>
-- **time** 0.3.53, MIT OR Apache-2.0, <https://github.com/time-rs/time>
+- **time** 0.3.54, MIT OR Apache-2.0, <https://github.com/time-rs/time>
 - **time-core** 0.1.9, MIT OR Apache-2.0, <https://github.com/time-rs/time>
-- **time-macros** 0.2.31, MIT OR Apache-2.0, <https://github.com/time-rs/time>
+- **time-macros** 0.2.32, MIT OR Apache-2.0, <https://github.com/time-rs/time>
 - **tinystr** 0.8.3, Unicode-3.0, <https://github.com/unicode-org/icu4x>
 - **tinyvec** 1.11.0, Zlib OR Apache-2.0 OR MIT, <https://github.com/Lokathor/tinyvec>
 - **tinyvec_macros** 0.1.1, MIT OR Apache-2.0 OR Zlib, <https://github.com/Soveu/tinyvec_macros>
-- **tokio** 1.52.3, MIT, <https://github.com/tokio-rs/tokio>
+- **tokio** 1.53.1, MIT, <https://github.com/tokio-rs/tokio>
 - **tokio-macros** 2.7.0, MIT, <https://github.com/tokio-rs/tokio>
 - **tokio-rustls** 0.26.4, MIT OR Apache-2.0, <https://github.com/rustls/tokio-rustls>
-- **tokio-stream** 0.1.18, MIT, <https://github.com/tokio-rs/tokio>
+- **tokio-stream** 0.1.19, MIT, <https://github.com/tokio-rs/tokio>
 - **tokio-tungstenite** 0.28.0, MIT, <https://github.com/snapview/tokio-tungstenite>
-- **tokio-util** 0.7.18, MIT, <https://github.com/tokio-rs/tokio>
+- **tokio-util** 0.7.19, MIT, <https://github.com/tokio-rs/tokio>
 - **toml** 0.9.12+spec-1.1.0, MIT OR Apache-2.0, <https://github.com/toml-rs/toml>
 - **toml** 1.1.2+spec-1.1.0, MIT OR Apache-2.0, <https://github.com/toml-rs/toml>
+- **toml_datetime** 0.6.3, MIT OR Apache-2.0, <https://github.com/toml-rs/toml>
 - **toml_datetime** 0.7.5+spec-1.1.0, MIT OR Apache-2.0, <https://github.com/toml-rs/toml>
 - **toml_datetime** 1.1.1+spec-1.1.0, MIT OR Apache-2.0, <https://github.com/toml-rs/toml>
-- **toml_edit** 0.25.12+spec-1.1.0, MIT OR Apache-2.0, <https://github.com/toml-rs/toml>
+- **toml_edit** 0.19.15, MIT OR Apache-2.0, <https://github.com/toml-rs/toml>
 - **toml_parser** 1.1.2+spec-1.1.0, MIT OR Apache-2.0, <https://github.com/toml-rs/toml>
 - **toml_writer** 1.1.1+spec-1.1.0, MIT OR Apache-2.0, <https://github.com/toml-rs/toml>
 - **tower** 0.5.3, MIT, <https://github.com/tower-rs/tower>
@@ -624,7 +629,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **usearch** 2.26.0, Apache-2.0, <https://github.com/unum-cloud/USearch>
 - **utf-8** 0.7.6, MIT OR Apache-2.0, <https://github.com/SimonSapin/rust-utf8>
 - **utf8_iter** 1.0.4, Apache-2.0 OR MIT, <https://github.com/hsivonen/utf8_iter>
-- **uuid** 1.23.4, Apache-2.0 OR MIT, <https://github.com/uuid-rs/uuid>
+- **uuid** 1.24.0, Apache-2.0 OR MIT, <https://github.com/uuid-rs/uuid>
 - **uzers** 0.12.2, MIT, <https://github.com/rustadopt/uzers-rs>
 - **v_frame** 0.3.9, BSD-2-Clause, <https://github.com/rust-av/v_frame>
 - **value-ext** 0.1.5, MIT OR Apache-2.0, <https://github.com/jeremychone/rust-value-ext>
@@ -671,7 +676,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **@floating-ui/dom** 1.8.0, MIT, <https://floating-ui.com>
 - **@floating-ui/utils** 0.2.12, MIT, <https://floating-ui.com>
 - **@formatjs/fast-memoize** 3.1.7, MIT, <https://github.com/formatjs/formatjs#readme>
-- **@formatjs/icu-messageformat-parser** 3.5.15, MIT, <https://github.com/formatjs/formatjs#readme>
+- **@formatjs/icu-messageformat-parser** 3.5.16, MIT, <https://github.com/formatjs/formatjs#readme>
 - **@formatjs/icu-skeleton-parser** 2.1.11, MIT, <https://github.com/formatjs/formatjs#readme>
 - **@internationalized/date** 3.12.2, Apache-2.0, <https://github.com/adobe/react-spectrum/tree/main#readme>
 - **@internationalized/number** 3.6.6, Apache-2.0, <https://github.com/adobe/react-spectrum#readme>
@@ -681,20 +686,20 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **@jridgewell/sourcemap-codec** 1.5.5, MIT, <https://github.com/jridgewell/sourcemaps/tree/main/packages/sourcemap-codec>
 - **@jridgewell/trace-mapping** 0.3.31, MIT, <https://github.com/jridgewell/sourcemaps/tree/main/packages/trace-mapping>
 - **@leeoniya/ufuzzy** 1.0.19, MIT, <https://github.com/leeoniya/uFuzzy#readme>
-- **@logtape/logtape** 2.2.4, MIT, <https://logtape.org/>
+- **@logtape/logtape** 2.3.0, MIT, <https://logtape.org/>
 - **@sveltejs/acorn-typescript** 1.0.11, MIT, <https://github.com/sveltejs/acorn-typescript#readme>
 - **@swc/helpers** 0.5.23, Apache-2.0, <https://swc.rs>
 - **@tauri-apps/api** 2.11.1, Apache-2.0 OR MIT, <https://github.com/tauri-apps/tauri#readme>
-- **@tauri-apps/plugin-dialog** 2.7.1, MIT OR Apache-2.0, <https://github.com/tauri-apps/plugins-workspace#readme>
+- **@tauri-apps/plugin-dialog** 2.7.2, MIT OR Apache-2.0, <https://github.com/tauri-apps/plugins-workspace#readme>
 - **@tauri-apps/plugin-fs** 2.5.1, MIT OR Apache-2.0, <https://github.com/tauri-apps/plugins-workspace#readme>
 - **@tauri-apps/plugin-notification** 2.3.3, MIT OR Apache-2.0, <https://github.com/tauri-apps/plugins-workspace#readme>
 - **@tauri-apps/plugin-opener** 2.5.4, MIT OR Apache-2.0, <https://github.com/tauri-apps/plugins-workspace#readme>
 - **@tauri-apps/plugin-process** 2.3.1, MIT OR Apache-2.0, <https://github.com/tauri-apps/plugins-workspace#readme>
-- **@tauri-apps/plugin-store** 2.4.3, MIT OR Apache-2.0, <https://github.com/tauri-apps/plugins-workspace#readme>
+- **@tauri-apps/plugin-store** 2.4.4, MIT OR Apache-2.0, <https://github.com/tauri-apps/plugins-workspace#readme>
 - **@tauri-apps/plugin-updater** 2.10.1, MIT OR Apache-2.0, <https://github.com/tauri-apps/plugins-workspace#readme>
 - **@types/estree** 1.0.9, MIT, <https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/estree>
 - **@types/trusted-types** 2.0.7, MIT, <https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/trusted-types>
-- **@typescript-eslint/types** 8.64.0, MIT, <https://typescript-eslint.io>
+- **@typescript-eslint/types** 8.65.0, MIT, <https://typescript-eslint.io>
 - **@zag-js/accordion** 1.41.2, MIT, <https://github.com/chakra-ui/zag#readme>
 - **@zag-js/anatomy** 1.41.2, MIT, <https://github.com/chakra-ui/zag#readme>
 - **@zag-js/angle-slider** 1.41.2, MIT, <https://github.com/chakra-ui/zag#readme>
@@ -770,15 +775,15 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **@zag-js/tree-view** 1.41.2, MIT, <https://github.com/chakra-ui/zag#readme>
 - **@zag-js/types** 1.41.2, MIT, <https://github.com/chakra-ui/zag#readme>
 - **@zag-js/utils** 1.41.2, MIT, <https://github.com/chakra-ui/zag#readme>
-- **acorn** 8.17.0, MIT, <https://github.com/acornjs/acorn>
+- **acorn** 8.18.0, MIT, <https://github.com/acornjs/acorn>
 - **aria-query** 5.3.1, Apache-2.0, <https://github.com/A11yance/aria-query#readme>
 - **axobject-query** 4.1.0, Apache-2.0, <https://github.com/A11yance/axobject-query#readme>
 - **clsx** 2.1.1, MIT, <https://github.com/lukeed/clsx#readme>
 - **csstype** 3.2.3, MIT, <https://github.com/frenic/csstype#readme>
-- **devalue** 5.8.1, MIT, <https://github.com/sveltejs/devalue#readme>
+- **devalue** 5.9.0, MIT, <https://github.com/sveltejs/devalue#readme>
 - **esm-env** 1.2.2, MIT, <https://github.com/benmccann/esm-env>
 - **esrap** 2.2.13, MIT, <https://github.com/sveltejs/esrap#readme>
-- **intl-messageformat** 11.2.12, BSD-3-Clause, <https://github.com/formatjs/formatjs>
+- **intl-messageformat** 11.2.13, BSD-3-Clause, <https://github.com/formatjs/formatjs>
 - **is-reference** 3.0.3, MIT, <https://github.com/Rich-Harris/is-reference#readme>
 - **locate-character** 3.0.0, MIT, <https://gitlab.com/Rich-Harris/locate-character#README>
 - **magic-string** 0.30.21, MIT, <https://github.com/Rich-Harris/magic-string#readme>
@@ -786,7 +791,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **proxy-compare** 3.0.1, MIT, <https://github.com/dai-shi/proxy-compare#readme>
 - **proxy-memoize** 3.0.1, MIT, <https://github.com/dai-shi/proxy-memoize#readme>
 - **snarkdown** 2.0.0, MIT, <https://github.com/developit/snarkdown>
-- **svelte** 5.56.6, MIT, <https://svelte.dev>
+- **svelte** 5.56.8, MIT, <https://svelte.dev>
 - **tslib** 2.8.1, 0BSD, <https://www.typescriptlang.org/>
 - **uqr** 0.1.3, MIT, <https://github.com/unjs/uqr#readme>
 - **zimmerframe** 1.1.4, MIT, <https://github.com/sveltejs/zimmerframe#readme>
@@ -1509,7 +1514,7 @@ Apache License
 
 ### Apache-2.0
 
-Covers: gix-imara-diff 0.2.3, ring 0.17.14
+Covers: gix-imara-diff 0.2.4, ring 0.17.14
 
 Text from: `LICENSE`
 
@@ -1719,7 +1724,7 @@ limitations under the License.
 
 ### Apache-2.0
 
-Covers: lzma-rust2 0.16.4, sevenz-rust2 0.21.2
+Covers: lzma-rust2 0.16.4, lzma-rust2 0.18.0, sevenz-rust2 0.21.3
 
 Text from: `LICENSE`
 
@@ -3368,7 +3373,7 @@ Text from: `LICENSE.txt`
 
 ### MIT
 
-Covers: adler2 2.0.1, anyhow 1.0.103, async-trait 0.1.89, atomic-waker 1.1.2, camino 1.2.4, cargo-platform 0.1.9, cargo_metadata 0.19.2, curve25519-dalek-derive 0.1.1, cxx 1.0.198, cxx-build 1.0.198, cxxbridge-flags 1.0.198, cxxbridge-macro 1.0.198, displaydoc 0.2.6, dtoa 1.0.11, dyn-clone 1.0.20, erased-serde 0.4.10, fastrand 2.4.1, itoa 1.0.18, link-cplusplus 1.0.12, minimal-lexical 0.2.1, num_enum 0.7.6, num_enum_derive 0.7.6, nusb 0.2.4, once_cell 1.21.4, paste 1.0.15, pastey 0.1.1, pin-project-lite 0.2.17, proc-macro-crate 3.5.0, proc-macro2 1.0.106, quote 1.0.46, rustix 1.1.4, rustversion 1.0.22, scratch 1.0.9, semver 1.0.28, serde 1.0.228, serde-untagged 0.1.9, serde_core 1.0.228, serde_derive 1.0.228, serde_derive_internals 0.29.1, serde_json 1.0.150, serde_path_to_error 0.1.20, serde_repr 0.1.20, servo_arc 0.4.3, syn 2.0.118, syn 3.0.3, thiserror 1.0.69, thiserror 2.0.18, thiserror-impl 1.0.69, thiserror-impl 2.0.18, typed-path 0.12.3, typeid 1.0.3, unicode-ident 1.0.24, utf-8 0.7.6, zmij 1.0.21
+Covers: adler2 2.0.1, anyhow 1.0.103, async-trait 0.1.89, atomic-waker 1.1.2, camino 1.2.4, cargo-platform 0.1.9, cargo_metadata 0.19.2, curve25519-dalek-derive 0.1.1, cxx 1.0.198, cxx-build 1.0.198, cxxbridge-flags 1.0.198, cxxbridge-macro 1.0.198, displaydoc 0.2.6, dtoa 1.0.11, dyn-clone 1.0.20, erased-serde 0.4.10, fastrand 2.4.1, itoa 1.0.18, link-cplusplus 1.0.12, minimal-lexical 0.2.1, num_enum 0.7.6, num_enum_derive 0.7.6, nusb 0.2.4, once_cell 1.21.4, paste 1.0.15, pastey 0.1.1, pin-project-lite 0.2.17, proc-macro-crate 1.3.1, proc-macro2 1.0.106, quote 1.0.46, rustix 1.1.4, rustversion 1.0.22, scratch 1.0.9, semver 1.0.28, serde 1.0.229, serde-untagged 0.1.9, serde_core 1.0.229, serde_derive 1.0.229, serde_derive_internals 0.29.1, serde_json 1.0.151, serde_path_to_error 0.1.20, serde_repr 0.1.20, servo_arc 0.4.3, syn 2.0.118, syn 3.0.3, thiserror 1.0.69, thiserror 2.0.18, thiserror-impl 1.0.69, thiserror-impl 2.0.18, typed-path 0.12.3, typeid 1.0.3, unicode-ident 1.0.24, utf-8 0.7.6, zmij 1.0.21
 
 Text from: `LICENSE-MIT`
 
@@ -3538,7 +3543,7 @@ DEALINGS IN THE SOFTWARE.
 
 ### MIT
 
-Covers: aho-corasick 1.1.4, byteorder 1.5.0, byteorder-lite 0.1.0, jiff 0.2.31, memchr 2.8.2, termcolor 1.4.1, walkdir 2.5.0
+Covers: aho-corasick 1.1.4, byteorder 1.5.0, byteorder-lite 0.1.0, jiff 0.2.31, memchr 2.8.3, termcolor 1.4.1, walkdir 2.5.0
 
 Text from: `LICENSE-MIT`
 
@@ -4081,6 +4086,36 @@ THE SOFTWARE.
 
 ### MIT
 
+Covers: base64 0.23.0
+
+Text from: `LICENSE-MIT`
+
+```text
+The MIT License (MIT)
+
+Copyright (c) 2025 Alice Maz, Marshall Pierce
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+```
+
+### MIT
+
 Covers: bincode2 2.0.1
 
 Text from: `LICENSE.md`
@@ -4107,6 +4142,31 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```
+
+### MIT
+
+Covers: bisync 0.3.0, bisync_macros 0.2.3, block2 0.5.1, block2 0.6.2, brotli-decompressor 5.0.3, cargo_toml 0.22.3, chrono 0.4.45, dispatch2 0.3.1, dpi 0.1.2, eventsource-stream 0.2.3, file_icon_provider 1.0.1, instant-clip-tokenizer 0.1.0, mac-notification-sys 0.6.15, minisign-verify 0.2.5, mtp-rs 0.29.0, objc-sys 0.3.5, objc2 0.5.2, objc2 0.6.4, objc2-app-kit 0.2.2, objc2-app-kit 0.3.2, objc2-av-foundation 0.3.2, objc2-cloud-kit 0.3.2, objc2-core-data 0.3.2, objc2-core-foundation 0.3.2, objc2-core-graphics 0.3.2, objc2-core-image 0.3.2, objc2-core-media 0.3.2, objc2-core-ml 0.3.2, objc2-core-text 0.3.2, objc2-core-video 0.3.2, objc2-encode 4.1.0, objc2-exception-helper 0.1.1, objc2-foundation 0.2.2, objc2-foundation 0.3.2, objc2-image-io 0.3.2, objc2-io-kit 0.3.2, objc2-metal 0.3.2, objc2-osa-kit 0.3.2, objc2-pdf-kit 0.3.2, objc2-quartz-core 0.3.2, objc2-quick-look-ui 0.3.2, objc2-uniform-type-identifiers 0.3.2, objc2-vision 0.3.2, objc2-web-kit 0.2.2, objc2-web-kit 0.3.2, profiling 1.0.18, profiling-procmacros 1.0.18, rc-zip 5.4.1, simd_helpers 0.1.0, siphasher 1.0.3, specta 2.0.0-rc.24, specta-macros 2.0.0-rc.24, specta-serde 0.0.11, specta-tags 0.0.0, specta-typescript 0.0.11, tauri 2.11.5, tauri-build 2.6.3, tauri-codegen 2.6.3, tauri-macros 2.6.3, tauri-plugin 2.6.3, tauri-plugin-clipboard-manager 2.3.2, tauri-plugin-dialog 2.7.2, tauri-plugin-fs 2.5.1, tauri-plugin-global-shortcut 2.3.2, tauri-plugin-notification 2.3.3, tauri-plugin-opener 2.5.4, tauri-plugin-process 2.3.1, tauri-plugin-store 2.4.4, tauri-plugin-updater 2.10.1, tauri-runtime 2.11.3, tauri-runtime-wry 2.11.4, tauri-specta 2.0.0-rc.24, tauri-specta-macros 2.0.0-rc.24, tauri-utils 2.9.3, unic-char-property 0.9.0, unic-char-range 0.9.0, unic-common 0.9.0, unic-ucd-ident 0.9.0, unic-ucd-version 0.9.0, zune-inflate 0.2.54
+
+```text
+MIT License
+
+Copyright (c) <year> <copyright holders>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+associated documentation files (the "Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the
+following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial
+portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO
+EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
 ### MIT
@@ -4175,7 +4235,7 @@ SOFTWARE.
 
 ### MIT
 
-Covers: bitflags 1.3.2, bitflags 2.13.0, glob 0.3.3, log 0.4.33, num-bigint 0.4.8, num-derive 0.4.2, num-integer 0.1.46, num-rational 0.4.2, num-traits 0.2.19, regex 1.12.4, regex-automata 0.4.14, regex-syntax 0.8.11
+Covers: bitflags 1.3.2, bitflags 2.13.1, glob 0.3.3, log 0.4.33, num-bigint 0.4.8, num-derive 0.4.2, num-integer 0.1.46, num-rational 0.4.2, num-traits 0.2.19, regex 1.13.1, regex-automata 0.4.16, regex-syntax 0.8.11
 
 Text from: `LICENSE-MIT`
 
@@ -4307,31 +4367,6 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
-```
-
-### MIT
-
-Covers: block2 0.5.1, block2 0.6.2, brotli-decompressor 5.0.3, cargo_toml 0.22.3, chrono 0.4.45, dispatch2 0.3.1, dpi 0.1.2, eventsource-stream 0.2.3, file_icon_provider 1.0.1, instant-clip-tokenizer 0.1.0, mac-notification-sys 0.6.15, minisign-verify 0.2.5, mtp-rs 0.29.0, objc-sys 0.3.5, objc2 0.5.2, objc2 0.6.4, objc2-app-kit 0.2.2, objc2-app-kit 0.3.2, objc2-av-foundation 0.3.2, objc2-cloud-kit 0.3.2, objc2-core-data 0.3.2, objc2-core-foundation 0.3.2, objc2-core-graphics 0.3.2, objc2-core-image 0.3.2, objc2-core-media 0.3.2, objc2-core-ml 0.3.2, objc2-core-text 0.3.2, objc2-core-video 0.3.2, objc2-encode 4.1.0, objc2-exception-helper 0.1.1, objc2-foundation 0.2.2, objc2-foundation 0.3.2, objc2-image-io 0.3.2, objc2-io-kit 0.3.2, objc2-metal 0.3.2, objc2-osa-kit 0.3.2, objc2-pdf-kit 0.3.2, objc2-quartz-core 0.3.2, objc2-quick-look-ui 0.3.2, objc2-uniform-type-identifiers 0.3.2, objc2-vision 0.3.2, objc2-web-kit 0.2.2, objc2-web-kit 0.3.2, profiling 1.0.18, profiling-procmacros 1.0.18, rc-zip 5.4.1, simd_helpers 0.1.0, siphasher 1.0.3, specta 2.0.0-rc.24, specta-macros 2.0.0-rc.24, specta-serde 0.0.11, specta-tags 0.0.0, specta-typescript 0.0.11, tauri 2.11.5, tauri-build 2.6.3, tauri-codegen 2.6.3, tauri-macros 2.6.3, tauri-plugin 2.6.3, tauri-plugin-clipboard-manager 2.3.2, tauri-plugin-dialog 2.7.1, tauri-plugin-fs 2.5.1, tauri-plugin-global-shortcut 2.3.2, tauri-plugin-notification 2.3.3, tauri-plugin-opener 2.5.4, tauri-plugin-process 2.3.1, tauri-plugin-store 2.4.3, tauri-plugin-updater 2.10.1, tauri-runtime 2.11.3, tauri-runtime-wry 2.11.4, tauri-specta 2.0.0-rc.24, tauri-specta-macros 2.0.0-rc.24, tauri-utils 2.9.3, unic-char-property 0.9.0, unic-char-range 0.9.0, unic-common 0.9.0, unic-ucd-ident 0.9.0, unic-ucd-version 0.9.0, zune-inflate 0.2.54
-
-```text
-MIT License
-
-Copyright (c) <year> <copyright holders>
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-associated documentation files (the "Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the
-following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial
-portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
-LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO
-EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
 ### MIT
@@ -4476,7 +4511,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ### MIT
 
-Covers: bytes 1.12.0
+Covers: bytes 1.12.1
 
 Text from: `LICENSE`
 
@@ -4579,7 +4614,7 @@ DEALINGS IN THE SOFTWARE.
 
 ### MIT
 
-Covers: cc 1.2.65, cfg-if 1.0.4, cmake 0.1.58, filetime 0.2.29, find-msvc-tools 0.1.9, futures-timer 3.0.4, jobserver 0.1.34, pkg-config 0.3.33, socket2 0.6.4
+Covers: cc 1.2.65, cfg-if 1.0.4, cmake 0.1.58, filetime 0.2.29, find-msvc-tools 0.1.9, futures-timer 3.0.4, jobserver 0.1.34, pkg-config 0.3.33, socket2 0.6.4, toml_datetime 0.6.3
 
 Text from: `LICENSE-MIT`
 
@@ -6318,7 +6353,7 @@ SOFTWARE.
 
 ### MIT
 
-Covers: futures 0.3.32, futures-channel 0.3.32, futures-core 0.3.32, futures-executor 0.3.32, futures-io 0.3.32, futures-macro 0.3.32, futures-sink 0.3.32, futures-task 0.3.32, futures-util 0.3.32
+Covers: futures 0.3.32, futures-channel 0.3.33, futures-core 0.3.33, futures-executor 0.3.32, futures-io 0.3.33, futures-macro 0.3.33, futures-sink 0.3.33, futures-task 0.3.33, futures-util 0.3.33
 
 Text from: `LICENSE-MIT`
 
@@ -6548,7 +6583,7 @@ SOFTWARE.
 
 ### MIT
 
-Covers: gix 0.85.0, gix-actor 0.41.1, gix-archive 0.34.0, gix-attributes 0.33.2, gix-bitmap 0.3.2, gix-blame 0.15.0, gix-chunk 0.7.2, gix-command 0.9.1, gix-commitgraph 0.37.1, gix-config 0.58.0, gix-config-value 0.18.1, gix-credentials 0.38.2, gix-date 0.15.6, gix-diff 0.65.0, gix-dir 0.27.0, gix-discover 0.53.0, gix-error 0.2.5, gix-features 0.48.1, gix-filter 0.32.0, gix-fs 0.21.2, gix-glob 0.26.1, gix-hash 0.25.1, gix-hashtable 0.15.2, gix-ignore 0.21.1, gix-index 0.53.0, gix-lock 23.0.1, gix-mailmap 0.33.1, gix-negotiate 0.33.0, gix-object 0.62.0, gix-odb 0.82.0, gix-pack 0.72.0, gix-packetline 0.21.5, gix-path 0.12.2, gix-pathspec 0.18.1, gix-prompt 0.15.1, gix-protocol 0.63.0, gix-quote 0.7.2, gix-ref 0.65.0, gix-refspec 0.43.0, gix-revision 0.47.0, gix-revwalk 0.33.0, gix-sec 0.14.1, gix-shallow 0.12.1, gix-status 0.32.0, gix-submodule 0.32.0, gix-tempfile 23.0.2, gix-trace 0.1.20, gix-transport 0.57.2, gix-traverse 0.59.0, gix-url 0.36.2, gix-utils 0.3.3, gix-validate 0.11.2, gix-worktree 0.54.0, gix-worktree-state 0.32.0, gix-worktree-stream 0.34.0
+Covers: gix 0.86.0, gix-actor 0.41.2, gix-archive 0.35.0, gix-attributes 0.34.0, gix-bitmap 0.3.3, gix-blame 0.16.0, gix-chunk 0.7.3, gix-command 0.9.1, gix-commitgraph 0.38.0, gix-config 0.59.0, gix-config-value 0.19.0, gix-credentials 0.39.0, gix-date 0.15.6, gix-diff 0.66.0, gix-dir 0.28.0, gix-discover 0.54.0, gix-error 0.2.5, gix-features 0.49.0, gix-filter 0.33.0, gix-fs 0.22.0, gix-glob 0.27.0, gix-hash 0.26.0, gix-hashtable 0.16.0, gix-ignore 0.22.0, gix-index 0.54.0, gix-lock 24.0.0, gix-mailmap 0.33.2, gix-negotiate 0.34.0, gix-object 0.63.0, gix-odb 0.83.0, gix-pack 0.73.0, gix-packetline 0.22.0, gix-path 0.12.3, gix-pathspec 0.19.0, gix-prompt 0.16.0, gix-protocol 0.64.0, gix-quote 0.7.2, gix-ref 0.66.0, gix-refspec 0.44.0, gix-revision 0.48.0, gix-revwalk 0.34.0, gix-sec 0.14.2, gix-shallow 0.13.0, gix-status 0.33.0, gix-submodule 0.33.0, gix-tempfile 24.0.0, gix-trace 0.1.21, gix-transport 0.58.0, gix-traverse 0.60.0, gix-url 0.37.0, gix-utils 0.3.5, gix-validate 0.11.3, gix-worktree 0.55.0, gix-worktree-state 0.33.0, gix-worktree-stream 0.35.0, gix-zlib 0.1.0
 
 Text from: `LICENSE-MIT`
 
@@ -6666,7 +6701,7 @@ SOFTWARE.
 
 ### MIT
 
-Covers: hashbrown 0.12.3, hashbrown 0.14.5, hashbrown 0.16.1, hashbrown 0.17.1
+Covers: hashbrown 0.12.3, hashbrown 0.14.5, hashbrown 0.15.5, hashbrown 0.16.1, hashbrown 0.17.1
 
 Text from: `LICENSE-MIT`
 
@@ -7495,35 +7530,7 @@ THE SOFTWARE.
 
 ### MIT
 
-Covers: kstring 2.0.2, serde_spanned 1.1.1, toml 0.9.12+spec-1.1.0, toml 1.1.2+spec-1.1.0, toml_datetime 0.7.5+spec-1.1.0, toml_datetime 1.1.1+spec-1.1.0, toml_edit 0.25.12+spec-1.1.0, toml_parser 1.1.2+spec-1.1.0, toml_writer 1.1.1+spec-1.1.0
-
-Text from: `LICENSE-MIT`
-
-```text
-Copyright (c) Individual contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### MIT
-
-Covers: libc 0.2.186
+Covers: libc 0.2.189
 
 Text from: `LICENSE-MIT`
 
@@ -7822,34 +7829,6 @@ SOFTWARE.
 
 ### MIT
 
-Covers: maybe-async 0.2.11
-
-Text from: `LICENSE`
-
-```text
-Copyright (c) 2020 Guoli Lyu
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-```
-
-### MIT
-
 Covers: maybe-rayon 0.1.1
 
 Text from: `LICENSE`
@@ -7952,7 +7931,7 @@ DEALINGS IN THE SOFTWARE.
 
 ### MIT
 
-Covers: mdns-sd 0.20.2
+Covers: mdns-sd 0.20.3
 
 Text from: `LICENSE-MIT`
 
@@ -9148,7 +9127,7 @@ SOFTWARE.
 
 ### MIT
 
-Covers: ruzstd 0.8.3
+Covers: ruzstd 0.9.0
 
 Text from: `LICENSE`
 
@@ -9297,6 +9276,34 @@ FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
+### MIT
+
+Covers: serde_spanned 1.1.1, toml 0.9.12+spec-1.1.0, toml 1.1.2+spec-1.1.0, toml_datetime 0.7.5+spec-1.1.0, toml_datetime 1.1.1+spec-1.1.0, toml_edit 0.19.15, toml_parser 1.1.2+spec-1.1.0, toml_writer 1.1.1+spec-1.1.0
+
+Text from: `LICENSE-MIT`
+
+```text
+Copyright (c) Individual contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 ```
 
 ### MIT
@@ -9755,36 +9762,6 @@ DEALINGS IN THE SOFTWARE.
 
 ### MIT
 
-Covers: static_assertions 1.1.0
-
-Text from: `LICENSE-MIT`
-
-```text
-MIT License
-
-Copyright (c) 2017 Nikolai Vazquez
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### MIT
-
 Covers: strsim 0.11.1
 
 Text from: `LICENSE`
@@ -10154,7 +10131,7 @@ SOFTWARE.
 
 ### MIT
 
-Covers: time 0.3.53, time-core 0.1.9, time-macros 0.2.31
+Covers: time 0.3.54, time-core 0.1.9, time-macros 0.2.32
 
 Text from: `LICENSE-MIT`
 
@@ -10226,7 +10203,7 @@ SOFTWARE.
 
 ### MIT
 
-Covers: tokio 1.52.3, tokio-stream 0.1.18, tokio-util 0.7.18
+Covers: tokio 1.53.1, tokio-stream 0.1.19, tokio-util 0.7.19
 
 Text from: `LICENSE`
 
@@ -10691,7 +10668,7 @@ SOFTWARE.
 
 ### MIT
 
-Covers: uuid 1.23.4
+Covers: uuid 1.24.0
 
 Text from: `LICENSE-MIT`
 
@@ -12801,7 +12778,7 @@ authorization of the copyright holder.
 
 ### Zlib
 
-Covers: foldhash 0.2.0
+Covers: foldhash 0.1.5, foldhash 0.2.0
 
 Text from: `LICENSE`
 

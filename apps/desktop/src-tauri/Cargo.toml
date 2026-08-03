@@ -70,7 +70,7 @@ serde_json = "1"
 notify = "8"
 dirs = "6"
 image = "0.25.10"
-base64 = "0.22.1"
+base64 = "0.23.0"
 rayon = "1.11.0"
 regex = "1"
 uuid = { version = "1.19.0", features = ["v4"] }
@@ -168,8 +168,8 @@ positioned-io = "0.3.5"
 flate2 = "1"
 tar = "0.4"
 bzip2 = "0.6.1"
-ruzstd = "0.8.3"
-lzma-rust2 = "0.16.4"
+ruzstd = "0.9.0"
+lzma-rust2 = "0.18.0"
 # LZMA/LZMA2 decode is built in (via `lzma-rust2`); `bzip2`/`deflate`/`ppmd` add
 # the other common 7z codecs (all pure-Rust). `aes256` decrypts a password-protected
 # 7z (the `AES256_SHA256` coder, over `aes 0.9.1` stable, which unifies with `smb2`'s
@@ -192,7 +192,7 @@ rand = "0.10"
 # loaded machine; one fixture chain used to spawn ~31 of them and time
 # out the 8 s nextest cap under check.sh contention). Pure API addition,
 # no extra runtime cost on the prod read paths.
-gix = { version = "0.85", features = ["tree-editor"] }
+gix = { version = "0.86", features = ["tree-editor"] }
 # Multi-provider LLM client. Normalizes OpenAI / OpenAI Responses / Anthropic / Gemini /
 # xAI / Groq / DeepSeek / Ollama / OpenRouter / etc. Auto-routes `gpt-5*` / `*-codex` /
 # `*-pro` to the Responses API; uses native protocols for Anthropic + Gemini. Replaces
@@ -231,7 +231,7 @@ trash = "5.2"
 keyring-core = "1"
 zbus-secret-service-keyring-store = { version = "1", features = ["rt-tokio-crypto-rust"] }
 # Encrypted file-based credential storage fallback when no secret service is available
-cocoon = "0.4"
+cocoon = "0.5"
 # D-Bus client for XDG Desktop Portal (accent color, appearance settings)
 zbus = "5"
 # Native file icons: XDG icon theme lookup (pure Rust, no GTK dependency)
