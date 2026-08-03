@@ -16,12 +16,9 @@ The Tauri 2 + Rust backend. Subsystem must-knows live in each module's colocated
   exempt (`clippy.toml` `allow-unwrap-in-tests`), but test *helper* fns outside one aren't.
 - ❌ No `thiserror` / `anyhow` as a direct dependency, anywhere in the workspace: errors are hand-rolled enums with a
   manual `From`, each variant carrying the data a caller acts on rather than a sentence. Transitive copies are fine.
-- ❌ No hand-rolled poll loop or fixed sleep in a test: both pass silently or flake. Wait on a condition with
-  `crate::test_support::wait_until` / `wait_until_async` (re-exported from `cmdr_fs::testing`), which panic on
-  timeout. Rules: `docs/testing.md`.
-- ❌ No fixed-name fixture dir (`std::env::temp_dir().join("cmdr_foo_test")`): every process on the machine shares it,
-  so two suite runs delete each other's live fixtures. Use `crate::test_support::TestDir`, which is process-unique and
-  removes itself on drop. Rules: `docs/testing.md` § "Scratch directories (Rust)".
+- ❌ In a Rust test, never hand-roll a poll loop, a fixed sleep, or a constant-path fixture dir: all three pass silently
+  or collide. `crate::test_support` replaces them (`wait_until`, `wait_until_async`, `TestDir`). Rules:
+  `docs/testing.md`.
 - ❌ Never build with raw `cargo build` (white screen, no embedded frontend). Use `pnpm tauri build` or the
   `tauri-wrapper.ts build` wrapper. See `../scripts/CLAUDE.md`.
 - ❌ Every `unsafe {}` block (and `unsafe impl`) needs a `// SAFETY:` comment on the line above naming the concrete

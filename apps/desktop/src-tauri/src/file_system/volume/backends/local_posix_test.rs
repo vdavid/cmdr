@@ -150,7 +150,6 @@ async fn test_write_operations() {
 
 #[tokio::test]
 async fn test_rename_conflict_no_force() {
-
     let test_dir = TestDir::new("rename_conflict_test");
 
     let volume = LocalPosixVolume::new("Test", &*test_dir);
@@ -477,7 +476,6 @@ async fn test_write_from_stream_multichunk_is_durable_and_correct() {
 
 #[tokio::test]
 async fn test_scan_for_conflicts_no_conflicts() {
-
     let test_dir = TestDir::new("conflicts_none_test");
 
     let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());

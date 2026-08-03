@@ -124,7 +124,6 @@ async fn streaming_copy_parks_mid_file_while_paused_then_resumes() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn streaming_copy_cancel_while_paused_mid_file_unblocks() {
-
     let gate = Arc::new(tokio::sync::Semaphore::new(0));
     let source: Arc<dyn Volume> = Arc::new(SlowSource {
         gate: Arc::clone(&gate),
@@ -319,7 +318,6 @@ async fn paused_mtp_copy_parks_in_place_then_resumes_byte_exact() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn paused_mtp_copy_cancel_while_paused_keeps_no_partial() {
-
     let log = Arc::new(StdMutex::new(RelLog::default()));
     let gate = Arc::new(tokio::sync::Semaphore::new(0));
     let source: Arc<dyn Volume> = Arc::new(ReleasingSource {

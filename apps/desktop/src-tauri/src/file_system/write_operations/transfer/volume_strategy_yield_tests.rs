@@ -348,7 +348,6 @@ async fn auto_yield_min_progress_floor_prevents_starvation() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn auto_yield_cancel_while_yielding_keeps_no_partial() {
-
     let _tuning = AutoYieldTuningGuard::new(Duration::from_millis(400), REL_CHUNK as u64);
 
     let log = Arc::new(StdMutex::new(RelLog::default()));
