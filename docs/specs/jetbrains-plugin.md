@@ -39,8 +39,10 @@ Decided. Don't relitigate while implementing.
    out of the discussion; if we ever want to publish, that's an extraction, not a config flag.
 4. **The JDK is pinned in a scoped `tools/intellij-plugin/.mise.toml`, not the root one.** The root file pins
    node/pnpm/go for everyone; nobody should pull a JDK for a tool only David runs.
-5. **Not wired into `pnpm check` as a build.** A Gradle build drags a JVM into CI for zero product value. One cheap Go
-   check guards the coupling instead (see § The guard check).
+5. **Not wired into `pnpm check`, and nothing guards the coupling.** A Gradle build drags a JVM into CI for zero product
+   value. Renaming `tString` or moving `messages/en/` will silently stop the folding, and that's accepted: this is
+   private dev tooling, the loss is a reading aid rather than a shipped behavior, and noticing takes one glance at a
+   file.
 6. **Every feature is config-driven and inert outside Cmdr.** Detection is the presence of
    `tools/intellij-plugin/cmdr-plugin.json` under the project base dir. No project-name matching, no absolute paths, and
    a worktree checkout is recognized for free.
@@ -87,17 +89,22 @@ IDE, so it's the right one, but it isn't the single click the request asked for 
 single click in an editor. Opening lands in the default browser per the IDE's web-browser settings, which is where "new
 window" is decided; the plugin doesn't get a say.
 
-**Parsing.** The rule must mirror `apps/website/src/lib/changelog.ts` exactly, because a hash the website links and the
-plugin doesn't (or the reverse) is a bug report waiting to happen:
+**Parsing.** Modelled on `apps/website/src/lib/changelog.ts`, tightened:
 
 - Only the group **anchored to the end of a logical entry** counts. This is what keeps prose safe: entries routinely
   close on `(~40x speed-up!)` or `(smb2 0.8.0)`, and a hex-looking word mid-sentence is never considered.
 - A logical entry is a bullet opened by `- ` / `* ` / `+ ` at column zero plus its indented continuation lines, joined
   before matching, so a group that wrapped across two source lines still matches.
-- Hashes are `[0-9a-f]{6,40}`, comma-separated.
+- Hashes are `[0-9a-f]{6,8}`, comma-separated. The website's `{6,40}` is deliberately loosened here, because a
+  40-character blob has no business in a changelog entry and the narrow bound is a second guard behind the anchor.
 
-Three copies of that rule now exist (`scripts/check/checks/changelog-commit-links.go`, the website, the plugin). The
-guard check below asserts the plugin's copy agrees with the website's rather than letting them drift silently.
+**The length bound is 6–8, not exactly 7.** Counted on 2026-08-03 across the whole file: 909 refs are 8 characters, 425
+are 7, and 93 are 6. Git's auto-abbreviation grows with the object count, so old entries are shorter than new ones and
+tomorrow's could be 9. An exactly-7 rule would blank out 1,002 of 1,427 links, including `75121419` from the reported
+example. If the intent was "don't match loose hex", the trailing-group anchor already does that work.
+
+Drift against the website or `scripts/check/checks/changelog-commit-links.go` is fine and needs no guard: this is
+private dev tooling, and the failure mode is a link not showing up, which is visible the moment you look at the file.
 
 **Implementation.** A `PsiReferenceContributor` over Markdown PSI text elements, contributing a `WebReference` per hash
 range (that's what gives ⌘-click plus the standard tooltip), and an `Annotator` applying the hyperlink text attribute so
@@ -152,16 +159,16 @@ to find out. M0 settles it before anything is built on top.
 and regex-matches their text. Folding regions only need `TextRange`s, so this always works; it's uglier and slightly
 more false-positive-prone, and it's why the risk can't sink the feature.
 
-**Tests.** `BasePlatformTestCase` folding fixtures over `.ts` files run headless and cover the call-expression and
-key-property paths. The `.svelte` path needs `runIde` and human eyes; that's a known gap, called out rather than papered
-over.
+**Tests.** `BasePlatformTestCase` folding fixtures over `.ts` files cover the call-expression and key-property paths
+headlessly. The `.svelte` path depends on how M0 lands: if the Svelte plugin resolves as a test dependency it joins tier
+1, otherwise it's a tier-2 screenshot check (see § The feedback loop).
 
 ## Milestones
 
-- **M0, spike (kill switch).** Gradle scaffold that builds and loads in the IDE, plus a PSI probe on a real `.svelte`
-  file at a `tString` site: which language, which element type, does a JavaScript-registered extension see it. Output is
-  a paragraph in `DETAILS.md` and a go/no-go on the primary approach for M3. Nothing else gets built first, because
-  everything else assumes the answer.
+- **M0, spike (kill switch).** Gradle scaffold that builds and loads in the IDE, the tier 1 and tier 2 loops proven on a
+  do-nothing feature, and a PSI probe on a real `.svelte` file at a `tString` site: which language, which element type,
+  does a JavaScript-registered extension see it. Output is a paragraph in `DETAILS.md` and a go/no-go on the primary
+  approach for M3. Nothing else gets built first, because everything else assumes both answers.
 - **M1, core.** `CmdrProjectService`, `cmdr-plugin.json` loading, the settings panel with feature toggles, and the
   `plugin.xml` skeleton. Verified by a feature that does nothing except log that it's enabled in Cmdr and disabled in a
   scratch project.
@@ -169,22 +176,20 @@ over.
 - **M3, i18n folding.** `.ts` call expressions first (headless-testable), then key properties, then `.svelte` and
   `<Trans>` per M0's answer.
 - **M4, ⌘-click key to catalog.** Reuses M3's index.
-- **M5, wiring.** `README.md`, the `CLAUDE.md` + `DETAILS.md` pair, the guard check, and the docs links from § Docs
-  wiring.
+- **M5, wiring.** `README.md`, the `CLAUDE.md` + `DETAILS.md` pair, and the docs links from § Docs wiring.
 
 M0 through M2 is the standalone-valuable slice. M3 onward can wait if the spike says the Svelte path is a slog.
 
 ## `cmdr-plugin.json`
 
-Doubles as the project marker and the feature config. Read by the plugin at runtime and by the guard check in CI, which
-is what keeps it honest.
+Doubles as the project marker and the feature config.
 
 ```json
 {
   "changelog": {
     "files": ["CHANGELOG.md"],
     "commitUrl": "https://github.com/vdavid/cmdr/commit/{hash}",
-    "trailingGroupPattern": "\\(([0-9a-f]{6,40}(?:,\\s*[0-9a-f]{6,40})*)\\)$"
+    "trailingGroupPattern": "\\(([0-9a-f]{6,8}(?:,\\s*[0-9a-f]{6,8})*)\\)$"
   },
   "i18n": {
     "catalogGlob": "apps/desktop/src/lib/intl/messages/en/*.json",
@@ -196,19 +201,35 @@ is what keeps it honest.
 }
 ```
 
-## The guard check
+## The feedback loop
 
-A new `intellij-plugin-config` entry in `scripts/check/checks/registry.go` (`App: AppOther`, `IsFast: true`, inputs
-scoped to the config file, the catalog dir, and `apps/website/src/lib/changelog.ts`). No JVM: it only reads JSON and
-source text. It asserts:
+An agent has to be able to see this working without David driving an IDE. Three tiers, in the order they get reached
+for.
 
-- `i18n.catalogGlob` matches at least one file.
-- Every name in `i18n.functions` is still exported from `apps/desktop/src/lib/intl/messages.svelte.ts`.
-- Every name in `i18n.keyProperties` still appears as a `MessageKey`-typed field in `src/lib/settings/types.ts`.
-- `changelog.trailingGroupPattern` is byte-identical to the pattern the website uses.
+**Tier 1, headless fixture tests. The primary loop.** `./gradlew test` runs `BasePlatformTestCase` fixtures against a
+real, in-process IntelliJ Platform: no window, no display, no license, seconds per run. Folding regions, references, and
+annotations are all directly assertable (`myFixture.assertPreviewText`, the folding-region model, `WebReference`
+targets), so both features are testable at the level that matters. This is where the loop lives, and it's the reason the
+M0 spike de-risks so much: once the PSI shape is known, everything after it is red-green.
 
-Without this, renaming `tString` or moving `messages/en/` leaves the plugin silently showing nothing, which is the worst
-failure mode available: no build breaks, no test fails, the feature just quietly stops.
+**Tier 2, a real IDE the agent launches and screenshots.** `./gradlew runIde` starts a sandboxed IDE (its own config and
+plugin dirs, so it can't touch the running one) with a seeded project directory, opened on a fixture file. The agent
+runs it in the background, waits for the window, takes a `screencapture -l <window-id>` PNG, and reads it. Slow, roughly
+a minute per cycle, and it needs the desktop session, so it's the confirm step and never the iteration step: "the fold
+really renders and is really colored", once per feature, not per edit.
+
+**Tier 3, scripted UI runs.** The Starter framework (`TestFrameworkType.Starter` behind the `testIdeUi` task, JUnit 5)
+drives a real IDE from test code and collects output including screenshots. It exists and it works, but it is heavier
+and flakier than tier 2's one-shot screenshot. Only worth it if we end up with a UI surface complicated enough to
+regress, which two reading aids are not.
+
+**Community Edition covers exactly half of this.** Markdown is bundled in Community, so the whole changelog feature
+builds, tests, and runs there. JavaScript and TypeScript are Ultimate-only, and the Svelte plugin depends on them, so
+feature 2 cannot be exercised on Community at all. Target the local **IntelliJ IDEA 2026.2 EAP** install instead (the
+Gradle plugin accepts a local IDE installation as the platform dependency): it's the IDE David actually reads code in,
+so what the loop sees is what he sees, and an EAP build sidesteps the licensing question that a downloaded Ultimate
+artifact would raise for tier 2. Verify at M0 that the platform artifact for tier 1 resolves without a license; if it
+somehow doesn't, tier 1 still covers the changelog feature on Community and feature 2 falls back to tier 2 only.
 
 ## Docs wiring
 
@@ -228,6 +249,10 @@ failure mode available: no build breaks, no test fails, the feature just quietly
 - The installed IDE is **IntelliJ IDEA 2026.2 EAP** (`/Applications`, 2026-08-03). M0 pins `sinceBuild` off the real
   build number; an EAP target means a `sinceBuild` bump is likely at the 2026.3 upgrade.
 - The Svelte plugin is `dev.blachut.svelte.lang` ([marketplace](https://plugins.jetbrains.com/plugin/12375-svelte)).
+- Commit-ref lengths in `CHANGELOG.md`: 909 are 8 characters, 425 are 7, 93 are 6 (counted 2026-08-03 by matching
+  trailing groups per source line, so wrapped groups are undercounted; the ratio is what matters).
+- The Starter UI testing framework is real and current (`TestFrameworkType.Starter`, driven by the `testIdeUi` task,
+  JUnit 5 only), per the IntelliJ Platform Gradle Plugin docs, checked 2026-08-03.
 
 ## Open questions for David
 

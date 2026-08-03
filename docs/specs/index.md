@@ -58,10 +58,12 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       a call. Everything is driven by `cmdr-plugin.json`, which doubles as the "this project is Cmdr" marker, so the
       plugin is inert elsewhere and a worktree is recognized for free. The one real risk is whether a `.svelte`
       template's `{tString(…)}` exposes ordinary JavaScript PSI, which M0 settles before anything is built on it (the
-      text-level `FoldingBuilder` fallback always works, so it can't sink the feature). Carries the rule that the
-      changelog parse must mirror `apps/website/src/lib/changelog.ts` exactly, guarded by a JVM-free
-      `intellij-plugin-config` Go check, because the failure mode of drift is silence: no build breaks, no test fails,
-      the feature just stops.
+      text-level `FoldingBuilder` fallback always works, so it can't sink the feature). The agent loop is headless
+      `BasePlatformTestCase` fixtures for iteration plus one `runIde`-and-screenshot pass to confirm, targeting the
+      local IDEA EAP because Community has no JavaScript support and so can't run the i18n feature at all. Drift against
+      the website's parse and the `changelog-commit-links` check is explicitly NOT guarded: it's private dev tooling.
+      Hashes are bounded `[0-9a-f]{6,8}` rather than fixed at 7, because the file holds 909 eight-character refs against
+      425 seven-character ones (git's abbreviation grows with the repo).
 - [ ] 2026-08-03 `backend-crates-plan.md` - Make "a filesystem backend is its own crate" the shape FTP(S), S3, and SFTP
       get written in, validated first against one mature backend. The `Volume` trait is already the API and already
       lives in `cmdr-fs`, so a crate boundary adds enforcement, not design: `SmbVolume` reaches into the app at 23 sites
