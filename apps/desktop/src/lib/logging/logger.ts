@@ -31,8 +31,6 @@ import { load, type Store } from '@tauri-apps/plugin-store'
 import { resolveStorePath } from '$lib/settings/store-path'
 import { getTauriBridgeSink, startBridge } from './log-bridge'
 
-// Re-export getLogger for convenience
-export { getLogger } from '@logtape/logtape'
 export type { Logger } from '@logtape/logtape'
 
 const isDev = import.meta.env.DEV

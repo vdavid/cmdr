@@ -42,7 +42,7 @@ import {
 
 const log = getAppLogger('askCmdr')
 
-export type { RailMessage, RailToolCall, RenameUndoState } from './ask-cmdr-messages'
+export type { RailMessage, RailToolCall } from './ask-cmdr-messages'
 
 /** Past this many thread messages the rail nudges "start a fresh one?" (mirrors the Rust
  * `THREAD_SOFT_CAP_MESSAGES`; no hard cut). */

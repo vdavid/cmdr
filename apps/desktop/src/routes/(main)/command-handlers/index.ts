@@ -34,5 +34,4 @@ export const commandHandlers: CommandHandlerRecord = {
   ...miscHandlers,
 }
 
-export type { CommandHandlerContext, CommandHandler, CommandHandlerRecord, DispatchExemptId } from './types'
-export { DISPATCH_EXEMPT_IDS } from './types'
+export type { CommandHandler, CommandHandlerRecord } from './types'

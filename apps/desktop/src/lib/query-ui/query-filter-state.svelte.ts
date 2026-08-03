@@ -22,7 +22,6 @@
 import type { SearchResultEntry, PatternType, SearchQuery, HistoryFilters } from '$lib/tauri-commands'
 import { baseFor } from '$lib/units'
 import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
-export type { PatternType }
 
 /**
  * `eq` is a UI/chip-summary concern only: it round-trips through the matcher and history as
@@ -88,8 +87,8 @@ export const SEARCH_AUTO_APPLY_DEBOUNCE_MS = 1000
  * import the helper without pulling the factory; we re-export them here so the factory
  * stays the one-stop import for the dialog's state surface.
  */
-import { deriveEnterAction, type LastDialogEvent, type EnterAction } from './enter-action'
-export { deriveEnterAction, type LastDialogEvent, type EnterAction }
+import { deriveEnterAction, type LastDialogEvent } from './enter-action'
+export { deriveEnterAction, type LastDialogEvent }
 
 /**
  * Converts size input + unit to bytes, using the user's binary/SI base so the

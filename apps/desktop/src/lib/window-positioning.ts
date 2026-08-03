@@ -15,13 +15,11 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { getChildWindowRect, setChildWindowRect } from '$lib/tauri-commands'
 import type { MonitorRect, Rect } from './window-positioning-utils'
 
-export type { ChildSize, MonitorRect, Rect } from './window-positioning-utils'
+export type { MonitorRect, Rect } from './window-positioning-utils'
 export {
   cascadeFromMain,
-  cascadeOffset,
   centerOnMain,
   clampToMonitor,
-  isFullyOnScreen,
   nearestMonitor,
   resolveChildPosition,
 } from './window-positioning-utils'

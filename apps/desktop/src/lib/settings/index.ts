@@ -4,26 +4,17 @@
 
 // Types
 export type {
-  AiLocalContextSize,
   AiProvider,
   AppColor,
   DateTimeFormat,
-  DensityValues,
-  DurationUnit,
-  EnumOption,
   DirectorySortMode,
   SizeDisplayMode,
   BriefColumnWidthMode,
   ExtensionChangePolicy,
   FileSizeFormat,
   FileSizeUnit,
-  NetworkTimeoutMode,
-  SettingConstraints,
-  SettingDefinition,
   SettingId,
-  SettingSearchResult,
   SettingsValues,
-  SettingType,
   SizeColorsPalette,
   DateColorsPalette,
   ThemeMode,
@@ -33,24 +24,14 @@ export type {
 
 export {
   densityMappings,
-  durationUnitFactor,
   durationValueToMs,
   formatDurationSetting,
   msToDurationValue,
-  SettingValidationError,
   VOLUME_TINT_COLORS,
 } from './types'
 
 // Registry
-export {
-  buildSectionTree,
-  getAdvancedSettings,
-  getDefaultValue,
-  getSettingDefinition,
-  getSettingsInSection,
-  settingsRegistry,
-  validateSettingValue,
-} from './settings-registry'
+export { buildSectionTree, getAdvancedSettings, getDefaultValue, getSettingDefinition } from './settings-registry'
 
 export type { SettingsSection } from './settings-registry'
 
@@ -69,15 +50,6 @@ export {
   setSetting,
 } from './settings-store'
 
-// Search
-export {
-  clearSearchIndex,
-  getMatchingSections,
-  highlightMatches,
-  searchSettings,
-  sectionHasMatches,
-} from './settings-search'
-
 // Cloud provider presets
 export {
   cloudProviderPresets,
@@ -86,10 +58,6 @@ export {
   setProviderConfig,
   resolveCloudConfig,
 } from './cloud-providers'
-export type { CloudProviderPreset, CloudProviderConfig } from './cloud-providers'
-
-// Network settings helpers
-export { getMountTimeoutMs, getNetworkTimeoutMs, getShareCacheTtlMs } from './network-settings'
 
 // MCP main bridge (settings event handlers for the main window)
 export { setupMcpMainBridge, cleanupMcpMainBridge } from './mcp-main-bridge'

@@ -13,7 +13,7 @@ import { isMacOS } from '$lib/shortcuts/key-capture'
 // (Settings section, command-dispatch, tests) keep using the old import path.
 import { updateState, type UpdateInfo, type UpdateState } from './update-state.svelte'
 export { updateState }
-export type { UpdateInfo, UpdateState }
+export type { UpdateState }
 
 const log = getAppLogger('updater')
 

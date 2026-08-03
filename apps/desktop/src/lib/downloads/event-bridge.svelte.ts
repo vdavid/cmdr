@@ -44,7 +44,7 @@ import { getAppLogger } from '$lib/logging/logger'
 import { ensureMacosNotificationPermission } from '$lib/notifications/macos-notification-permission'
 import { tString } from '$lib/intl/messages.svelte'
 import { formatInteger } from '$lib/intl/number-format'
-import { getDownloadsNotificationsMode, type DownloadsNotificationsMode } from './notifications-mode'
+import { getDownloadsNotificationsMode } from './notifications-mode'
 import { getGlobalGoToLatestEnabled, getGlobalGoToLatestBinding } from './global-shortcut-setting'
 import { getDownloadsToastCollapsed } from './downloads-toast-collapsed'
 import DownloadToastContent from './DownloadToastContent.svelte'
@@ -267,9 +267,3 @@ function relativeSubdir(parentDir: string): string {
   if (i === -1) return parentDir
   return 'Downloads/' + parentDir.slice(i + marker.length) + '/'
 }
-
-/**
- * Re-export the typed setting union so the rest of the app can refer to it
- * via the bridge module rather than reaching into `notifications-mode`.
- */
-export type { DownloadsNotificationsMode }

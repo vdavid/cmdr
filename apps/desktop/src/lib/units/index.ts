@@ -44,7 +44,6 @@ export {
   bytesPerSecond,
   baseFor,
   unitLabel,
-  fixedUnitFor,
   dynamicTierIndex,
   formatFileSizeWithFormat,
 } from './byte-size'

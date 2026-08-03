@@ -26,7 +26,7 @@ import { shouldDropCrossSourceDuplicate } from './dispatch-dedup'
 
 // Re-exported so existing importers (`+page.svelte`, the dispatch tests) keep
 // resolving these from `./command-dispatch` after the move to the context leaf.
-export type { CommandDispatchContext, CommandDispatchDialogs } from './command-dispatch-context'
+export type { CommandDispatchContext } from './command-dispatch-context'
 
 const log = getAppLogger('user-action')
 

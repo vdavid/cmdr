@@ -23,22 +23,8 @@ import { createSearchExtrasState } from './search-extras-state.svelte'
 import { buildSearchQuery as buildSearchQueryImpl } from './build-search-query'
 
 // Re-export the core's pure helpers + types so the call sites stay stable.
-export {
-  parseSizeToBytes,
-  parseDateToTimestamp,
-  deriveEnterAction,
-  SEARCH_AUTO_APPLY_DEBOUNCE_MS,
-} from '$lib/query-ui/query-filter-state.svelte'
-export type {
-  SearchMode,
-  SizeFilter,
-  SizeUnit,
-  DateFilter,
-  TypeFilter,
-  PatternType,
-  LastDialogEvent,
-  EnterAction,
-} from '$lib/query-ui/query-filter-state.svelte'
+export { parseSizeToBytes, parseDateToTimestamp } from '$lib/query-ui/query-filter-state.svelte'
+export type { SearchMode } from '$lib/query-ui/query-filter-state.svelte'
 
 const core = createQueryFilterState({ defaultMode: 'filename' })
 const extras = createSearchExtrasState()
