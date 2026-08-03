@@ -1,4 +1,5 @@
 build/
 .gradle/
 .intellijPlatform/
+.kotlin/
 sandbox-project/.idea/
