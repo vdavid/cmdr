@@ -4,8 +4,11 @@ Prepare a release based on docs/guides/releasing.md.
    `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` both exist. If either is missing, warn the user and stop.
 2. Update @CHANGELOG.md based on git commits since last release.
    - Commits have title + body. Read all!
-   - You can link multiple commits for changelog items if needed.
+   - You can reference multiple commits for changelog items if needed.
    - List major but non-app changes in a "Non-app" section.
+   - **Reference commits as bare hashes in a trailing group**: `- Some change (b626d7a4, 2d41cc14)`. Never write a
+     markdown link; the website and the What's new popup linkify (or strip) the hashes themselves, and the
+     `changelog-links` check rejects a `…/commit/<sha>` URL.
    - **Get commit SHAs via `git log --format='%h' --abbrev=8`**. Never extend a 7-char prefix from `git log --oneline`
      by guessing the next character. The committed changelog convention is 8 chars; let git produce them. The
      `changelog-links` check will reject fabricated SHAs and abort the release.
@@ -17,10 +20,10 @@ Prepare a release based on docs/guides/releasing.md.
 
    One file, two audiences:
    - **Primary: Cmdr users.** The prose lead and the Added / Changed / Fixed / Security sections become the GitHub
-     release notes and the in-app "What's new" popup, rendered with commit links stripped and Non-app dropped. Write
+     release notes and the in-app "What's new" popup, rendered with commit hashes stripped and Non-app dropped. Write
      them so every entry works standalone, in plain English, with zero internals.
-   - **Secondary: David and agents tracing changes.** Served by the commit links and the Non-app section; Non-app is the
-     only place internals (tooling, refactors, infra, website) belong.
+   - **Secondary: David and agents tracing changes.** Served by the commit hashes and the Non-app section; Non-app is
+     the only place internals (tooling, refactors, infra, website) belong.
 
    ### Style: plain-sentence, dense, impact-focused
    - **Write a 1–2 sentence plain-prose lead** directly under the `## [Unreleased]` heading, before `### Added`: what
@@ -58,56 +61,55 @@ Prepare a release based on docs/guides/releasing.md.
 
    > - **Dynamic text size.** New `Settings > Appearance > Text size` slider (75–150 %, default 100 %) that compounds
    >   with the macOS Accessibility text-size setting. New `View > Zoom` submenu with `⌘+` / `⌘-` / `⌘0` to zoom in,
-   >   out, and reset. Everything scales: row height, icons, column widths, breadcrumbs, viewer ([3 SHAs]).
+   >   out, and reset. Everything scales: row height, icons, column widths, breadcrumbs, viewer (3 SHAs)
 
    **Do**:
 
-   > - Add dynamic text size slider in Settings (75–150%, ⌘+/⌘-/⌘0 shortcuts) ([3 > > SHAs]).
+   > - Add dynamic text size slider in Settings (75–150%, ⌘+/⌘-/⌘0 shortcuts) (3 SHAs)
 
    **Don't**:
 
-   > - Brief network blips no longer kick you out of the folder; only a real not-found triggers eviction
-   >   ([48ac9bf8](...)).
+   > - Brief network blips no longer kick you out of the folder; only a real not-found triggers eviction (48ac9bf8)
 
    **Do**:
 
-   > - Fix temp network issues kicking users out of folders ([48ac9bf8](...)).
+   > - Fix temp network issues kicking users out of folders (48ac9bf8)
 
    **Don't**:
 
    > - Friendly errors for the git browser: damaged repos, orphaned worktrees, shallow-boundary commits, locked indexes
-   >   get plain-language explanations and a next step ([19d5b075](...), [af64689f](...)).
+   >   get plain-language explanations and a next step (19d5b075, af64689f)
 
    **Do**:
 
-   > - Add friendly errors for git browser ([19d5b075](...), [af64689f](...)).
+   > - Add friendly errors for git browser (19d5b075, af64689f)
 
    **Don't** (multi-sentence narration; a real past draft):
 
    > - Folders always merge on copy and move. A folder landing on a same-named folder now blends into it instead of
    >   asking you to overwrite, skip, or rename the whole folder. Your conflict choice (skip, overwrite, or rename)
-   >   applies to the clashing files inside, so dest-only files always survive the merge ([2 SHAs]).
+   >   applies to the clashing files inside, so dest-only files always survive the merge (2 SHAs)
 
    **Do**:
 
    > - Folders always merge on copy and move: your conflict choice (skip, overwrite, or rename) applies to the clashing
-   >   files inside, and dest-only files survive ([2 SHAs]).
+   >   files inside, and dest-only files survive (2 SHAs)
 
    **Don't** (trailing benefit clause; a real past draft):
 
    > - Add per-feature stability badges (ALPHA, BETA) in the app and a Feature status page on the website, so you always
-   >   know how solid each feature is ([219549db](...)).
+   >   know how solid each feature is (219549db)
 
    **Do**:
 
-   > - Add stability badges (ALPHA, BETA) in the app and a feature status page on the website ([219549db](...)).
+   > - Add stability badges (ALPHA, BETA) in the app and a feature status page on the website (219549db)
 
    **Keep long when warranted** (true tentpole launches like Linux alpha, with many real commits and a big story):
 
    > - Add Linux support (alpha): volumes via /proc/mounts, file ops with reflink support, trash via FreeDesktop spec,
    >   inotify file watching, MTP ungated, SMB via mDNS + smbclient fallback, GVFS-mounted shares as volumes, native
    >   file icons via freedesktop-icons, accent color via XDG Desktop Portal, encrypted credential fallback when no
-   >   system keyring, distro-specific install hints, USB permission handling ([13 SHAs]).
+   >   system keyring, distro-specific install hints, USB permission handling (13 SHAs)
 
    #### Self-edit pass (mandatory)
 
