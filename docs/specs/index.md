@@ -6,6 +6,24 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
+- [ ] 2026-08-03 `unindexed-search-plan.md` - SPECCED, not started. A scoped search on a LOCAL drive returns the same
+      files indexed or not, only slower, by walking the uncovered part live and writing what it finds into the drive
+      index, so a drive converges toward instant through use. Unscoped search and network volumes are deliberately
+      deferred and named as such. Three findings shape it. The descent rule needs BOTH epoch fields: `min_subtree_epoch`
+      alone degenerates to "walk everything", since its zero-absorbing min forces zero on every ancestor of any gap.
+      Exclusions are a live-walk concern only, because an excluded dir gets no `entries` row at all, so the index-side
+      query can never emit one; the walk must therefore index what the scanner does, with `excludeSystemDirs` staying a
+      match-time filter. And the convergence the whole design rests on **does not exist today**: a cancelled
+      `scan_subtree` stamps zero coverage and deletes descendants first, while the non-destructive alternative
+      (`reconcile_subtree`, which marks what it listed even when interrupted) is already measured at 19× slower on the
+      add-everything delta a frontier walk always is, so M3a picks between them with a measurement rather than a
+      preference. A cold volume needs real bootstrap work either way: no DB, epoch, writer, or ancestor chain exists.
+      Rejected an ephemeral in-memory arena: the index already models partial coverage, and durable data is what
+      Space-to-size needs anyway. Also fixes the reason none of this is reachable today: search returns before running
+      at all when root's arena isn't loaded. Carries a 13-item register of accepted indexed-versus-not differences, the
+      master-switch carve-out for user-initiated scans, a 24-hour expiry standing in for the branch watching that
+      belongs to Space, a default scope narrowing to the current folder (deliberately sequenced last, and the change
+      with an open question against it), and seven open product questions.
 - [ ] 2026-08-03 `backend-crates-plan.md` - Make "a filesystem backend is its own crate" the shape FTP(S), S3, and SFTP
       get written in, validated first against one mature backend. The `Volume` trait is already the API and already
       lives in `cmdr-fs`, so a crate boundary adds enforcement, not design: `SmbVolume` reaches into the app at 23 sites
