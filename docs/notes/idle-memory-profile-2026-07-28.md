@@ -74,6 +74,10 @@ the home directory.
 2. `sanitize_incremental_batch` drops paths that floor by path, before the read pool opens and before the walk — the
    idle gate. Machine churn (`target/`, `Library/Caches`, dot-directories) can no longer cost a pass at all.
 3. An allocation-free `is_in_changed_subtree` (it built a `format!` needle per folder per changed path).
+4. The weight reload the pass woke is now a DELTA: an incremental reports the rows it wrote and the paths it cleared,
+   and `search::volumes` patches its map in place instead of re-reading all 161,094 weights. Contract and the
+   before/after numbers: `crates/cmdr-index/src/importance/read/DETAILS.md` § The reload contract and
+   `crates/cmdr-index/src/importance/scheduler/DETAILS.md` § Throttle.
 
 Contracts, the accepted lossiness, and the guardrails: `crates/cmdr-index/src/importance/scheduler/DETAILS.md` and
 `crates/cmdr-index/src/indexing/lifecycle/DETAILS.md`.
