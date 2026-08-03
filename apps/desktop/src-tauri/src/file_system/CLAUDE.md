@@ -8,7 +8,7 @@ Directory listing, file writing, sync status, volume management, and file watchi
 - `watcher.rs` (FSEvents incremental listing updates), `staging.rs` (the two scratch-visibility settings and the
   predicate listings filter on; the `StagingTemp` mint itself is `cmdr_fs::staging`, re-exported here),
   `index_provider.rs` (the app's `VolumeProvider`, so the index never imports `VolumeManager`).
-- `cloud_actions.rs` (iCloud offline/remove-download), `open_with.rs` (candidate apps + launch), `tags.rs` (macOS
+- `backend_settings.rs` (the live per-backend knobs a storage backend reads), `cloud_actions.rs` (iCloud offline/remove-download), `open_with.rs` (candidate apps + launch), `tags.rs` (macOS
   Finder tags via `_kMDItemUserTags`).
 - `mod.rs` is a facade: it re-exports downward and bootstraps the volume registry (`init_volume_manager`), which is why
   it may know every backend.

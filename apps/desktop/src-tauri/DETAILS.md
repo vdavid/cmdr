@@ -11,6 +11,20 @@ it. Anything that relaunches the app against a live data dir (an updater path, a
 harness) must let the old process exit, or wait out the lock's ~5 s retry window. Mechanism, rationale, and
 the retry-window callers: `docs/tooling/instance-isolation.md` § Instance lock.
 
+## Where the app answers a subsystem's seams (`index_host.rs`, `volume_host.rs`)
+
+Two subsystems live below the app and can't reach it: the index (`crates/cmdr-index/`) and storage backends
+(`crates/cmdr-fs/src/volume/host/`). Each declares what it needs as traits, and each has ONE crate-root module here
+that answers, called from `setup()` before anything can start background work or construct a volume. Keeping the
+answers in one file per subsystem is the point: "what does the app owe the index?" has a single readable answer, and
+adding a seam over there means adding a line here.
+
+The two differ in shape, deliberately. The index is reached through a process-wide handle (`index_host::index()`), a
+concession to the globals it grew up with. A backend instead takes a cheaply-cloned `VolumeHost` VALUE in its
+constructor, so a test can build one with fakes and pass it in, and nothing needs an install-and-restore guard;
+`volume_host::host()` is only where the app parks the one it built. Each adapter lives beside the subsystem that can
+answer it, listed in `crates/cmdr-fs/src/volume/host/DETAILS.md` and `index_host.rs`.
+
 ## Number types over IPC (`ipc.rs`, specta bindings)
 
 Tauri's IPC serializes through JSON, so the generated `bindings.ts` never sees a JS `bigint`.

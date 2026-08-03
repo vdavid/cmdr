@@ -1,13 +1,19 @@
 //! Test isolation for the process-global `LISTING_CACHE`.
 
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::future::Future;
+use std::path::{Path, PathBuf};
+use std::pin::Pin;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Instant;
 
 use super::caching::{CachedListing, LISTING_CACHE, epoch_millis_now};
 use super::metadata::FileEntry;
 use super::operations::list_directory_end;
 use super::sorting::{DirectorySortMode, SortColumn, SortOrder};
+use crate::file_system::volume::{
+    BatchScanResult, CopyScanResult, InMemoryVolume, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError,
+    VolumeReadStream,
+};
 use crate::ignore_poison::RwLockIgnorePoison;
 
 /// A `LISTING_CACHE` entry owned by ONE test, torn down on drop.
@@ -186,4 +192,106 @@ pub(crate) fn unique_test_id(tag: &str) -> String {
         std::process::id(),
         N.fetch_add(1, Ordering::Relaxed)
     )
+}
+
+/// A `Volume` whose `listing_is_watched` answer a test pins, delegating every
+/// other method to an `InMemoryVolume`.
+///
+/// The fresh-listing oracle only answers when the volume says a live watcher is
+/// keeping the view fresh, and `InMemoryVolume` says `false` (the trait's
+/// default). Pinning the flag is what lets a test drive both sides of that
+/// without an `AppHandle` or a real `WATCHER_MANAGER` entry.
+pub(crate) struct WatchedFlagVolume {
+    inner: InMemoryVolume,
+    watched: AtomicBool,
+}
+
+impl WatchedFlagVolume {
+    pub(crate) fn new(name: &str, watched: bool) -> Self {
+        Self {
+            inner: InMemoryVolume::new(name),
+            watched: AtomicBool::new(watched),
+        }
+    }
+
+    pub(crate) fn set_watched(&self, v: bool) {
+        self.watched.store(v, Ordering::Relaxed);
+    }
+}
+
+impl Volume for WatchedFlagVolume {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+
+    fn root(&self) -> &Path {
+        self.inner.root()
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn list_directory<'a>(
+        &'a self,
+        path: &'a Path,
+        on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        self.inner.list_directory(path, on_progress)
+    }
+
+    fn get_metadata<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        self.inner.get_metadata(path)
+    }
+
+    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        self.inner.exists(path)
+    }
+
+    fn is_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        self.inner.is_directory(path)
+    }
+
+    fn listing_is_watched(&self, _path: &Path) -> bool {
+        self.watched.load(Ordering::Relaxed)
+    }
+
+    fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
+        self.inner.get_space_info()
+    }
+
+    fn scan_for_copy<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
+        self.inner.scan_for_copy(path)
+    }
+
+    fn scan_for_copy_batch<'a>(
+        &'a self,
+        paths: &'a [PathBuf],
+    ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
+        self.inner.scan_for_copy_batch(paths)
+    }
+
+    fn scan_for_conflicts<'a>(
+        &'a self,
+        source_items: &'a [SourceItemInfo],
+        dest_path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<ScanConflict>, VolumeError>> + Send + 'a>> {
+        self.inner.scan_for_conflicts(source_items, dest_path)
+    }
+
+    fn open_read_stream<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        self.inner.open_read_stream(path)
+    }
 }

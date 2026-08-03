@@ -46,4 +46,7 @@ deliberately isn't a seam.
 Each file also carries a recording or scripted fake under the `testing` feature, for the backend tests that assert on
 what a backend told its host.
 
+The other end: Cmdr builds its host in `apps/desktop/src-tauri/src/volume_host.rs`, and each answer is an adapter next
+to the subsystem that gives it (`DETAILS.md` § "Where the app answers each seam").
+
 Rationale, the seam-by-seam map of the sites each replaces, and what deliberately isn't a seam: `DETAILS.md`.

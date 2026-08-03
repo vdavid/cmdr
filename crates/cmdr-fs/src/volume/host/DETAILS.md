@@ -145,8 +145,9 @@ and the app's adapter maps it.
 reset invalidates all of them at once. That's the transport layer's shape, and MTP is app-resident. A volume backend
 reports per volume id; the adapter wraps it.
 
-The `#[cfg(any(target_os = "macos", target_os = "linux"))]` guards that surround every index call site today do not
-cross the seam. The adapter owns the platform fork, so a backend calls unconditionally.
+The `#[cfg(any(target_os = "macos", target_os = "linux"))]` guards that surround the app's own index call sites don't
+cross the seam: `Index::on_watch_gap` compiles on every platform and gates its own MTP arm, so both the adapter and a
+backend call unconditionally.
 
 ### `BackendSettings`
 
@@ -250,14 +251,41 @@ only surfaces at the end of a move.
 9. Write your tests against the fakes here. Assert on `change_count` as well as contents: that's what keeps a seam call
    from drifting into a per-entry loop.
 
-## What isn't built yet
+## Where the app answers each seam
 
-The app-side adapters. Nothing implements these traits against Cmdr's real listing cache, keychain, index handle,
-settings, priority tracker, or analytics client, so the traits are validated only against the fakes and against a
-site-by-site reading of the SMB backend — not against a compiler proving the app can satisfy them. Two things could
-still move once an adapter exists: `ListingHost::watched_listing` returning owned `Vec<FileEntry>` may want a
-borrow-shaped alternative if a real listing turns out to be copied on a hot path, and `CredentialStore`'s blocking
-contract may want an async variant if the app's keychain wrapper already offers one.
+`apps/desktop/src-tauri/src/volume_host.rs` builds the one host and hands it out; each answer is a small adapter next to
+the subsystem that can actually give it.
+
+- `ListingHost` ⇒ `file_system::listing::listing_host::AppListings`
+- `VolumeEventSink` ⇒ `events::volume_mapping::TauriVolumeEvents`
+- `CredentialStore` ⇒ `network::credential_store::KeychainCredentials`
+- `IndexNotifier` ⇒ `index_host::VolumeIndexNotifier`
+- `UserActivity` ⇒ `priority::host_policy::AppUserActivity`
+- `AnalyticsSink` ⇒ `analytics::volume_sink::PostHogVolumeAnalytics`
+- `BackendSettings` ⇒ `file_system::backend_settings::AppBackendSettings`
+- the runtime ⇒ the app's own `tauri::async_runtime` handle, so there's one thread pool
+
+Both signatures the design left open resolved to "no change" against the real app. `watched_listing`'s owned
+`Vec<FileEntry>` is what the cache can give: it clones the entries under its read lock and drops the lock before
+anything crosses a volume boundary, so a borrow-shaped variant would have to hold that lock across the caller's work.
+And `CredentialStore`'s blocking contract matches the keychain wrapper exactly, which is synchronous down to the OS
+call, so an async variant would only wrap a blocking call in a future.
+
+Three things the adapters found that aren't trait shape, and matter to whoever wires a backend up:
+
+- **The connection event is named for SMB.** `network::SmbConnectionChanged` and its `smb-connection-changed` wire name
+  are what the frontend's reconnect manager subscribes to, so every backend's transitions ride it today. A second
+  connecting backend wants a generic payload, and that's a frontend-visible rename rather than something the adapter can
+  absorb.
+- **There is ONE stored concurrency knob**, so `AppBackendSettings` ignores the namespace it's handed rather than
+  branching on it. When a second backend earns its own slider this becomes a lookup keyed by the namespace, never a
+  `match`.
+- **`IndexNotifier` needs no platform fork.** `Index::on_watch_gap` compiles everywhere and cfg-gates its own MTP arm,
+  so the adapter is unconditional; only the app's own call sites carry
+  `#[cfg(any(target_os = "macos", target_os = "linux"))]`.
+
+Nothing in the app calls a seam yet: the backends still reach `listing::caching`, `network::keychain`, and the rest
+directly, and each one switches over when it moves into its own crate.
 
 The broader plan this belongs to, including which backend is extracted first and why:
 `docs/specs/backend-crates-plan.md`.

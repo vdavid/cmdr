@@ -10,6 +10,7 @@ non-blocking I/O and progress events.
 - **caching.rs**: `LISTING_CACHE`, `CachedListing`, incremental patch helpers, `notify_directory_changed`.
   **mutation.rs**: what `Volume::notify_mutation` means for a local-FS backend. **diff_emitter.rs**: coalesces
   `directory-diff` emits into one event per 50 ms trailing window.
+- **listing_host.rs**: `AppListings`, what a storage backend in its own crate asks instead of reaching `caching`.
 - **sorting.rs**, **brief_columns.rs** (Brief-mode column widths), **fuzzy_jump.rs** (type-to-jump). `FileEntry` lives
   in `crates/cmdr-fs/src/entry.rs`, aliased here as `listing::metadata`.
 

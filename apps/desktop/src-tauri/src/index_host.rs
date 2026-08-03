@@ -88,3 +88,56 @@ pub fn index() -> &'static Index {
             .expect("nothing builds the index before `index_host::install`")
     })
 }
+
+/// What a storage backend owes the file index, answered from the handle above.
+///
+/// The other direction from [`install`]: there the app answers the index, here it
+/// answers a BACKEND that must not depend on the index at all. A backend crate
+/// could import `cmdr_index` (both are Tauri-free), and that's exactly what the
+/// seam exists to stop — it would put a quarter of the codebase inside
+/// `cargo check -p cmdr-ftp` for two method calls. So the backend speaks the
+/// seam's own vocabulary and this maps it.
+pub struct VolumeIndexNotifier;
+
+impl cmdr_fs::volume::host::indexing::IndexNotifier for VolumeIndexNotifier {
+    fn watch_gap(&self, volume_id: &str, gap: cmdr_fs::volume::host::indexing::WatchGap) {
+        use cmdr_fs::volume::host::indexing::WatchGap as SeamGap;
+        use cmdr_index::{WatchGap, WatchScope};
+
+        // A volume backend reports for its own volume; `WatchScope::Device` is the
+        // transport layer's shape (one MTP session carrying several volumes) and
+        // stays app-side with the transport that has one.
+        let reason = match gap {
+            SeamGap::WatcherStopped => WatchGap::WatcherStopped,
+            SeamGap::EventsOverflowed => WatchGap::EventsOverflowed,
+            SeamGap::ConnectionReset => WatchGap::ConnectionReset,
+        };
+        index().on_watch_gap(WatchScope::Volume(volume_id), reason);
+    }
+
+    fn resume_after_reconnect(&self, volume_id: &str) {
+        index().resume_after_reconnect(volume_id.to_string());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use cmdr_fs::volume::host::indexing::{IndexNotifier, WatchGap};
+
+    use super::VolumeIndexNotifier;
+
+    /// The seam promises a backend it can report every watcher exit blindly,
+    /// including for a volume nobody indexed. If that weren't free, a backend
+    /// would start deciding whether a gap is worth reporting, and the ones it
+    /// decided against are exactly the ones that leave an index looking fresh
+    /// forever.
+    #[test]
+    fn reporting_a_gap_for_an_unindexed_volume_costs_nothing() {
+        let volume_id = "test://index-notifier/never-indexed";
+
+        VolumeIndexNotifier.watch_gap(volume_id, WatchGap::WatcherStopped);
+        VolumeIndexNotifier.watch_gap(volume_id, WatchGap::EventsOverflowed);
+        VolumeIndexNotifier.watch_gap(volume_id, WatchGap::ConnectionReset);
+        VolumeIndexNotifier.resume_after_reconnect(volume_id);
+    }
+}

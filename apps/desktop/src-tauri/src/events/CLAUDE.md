@@ -26,6 +26,8 @@ all live on this side of the boundary.
 ## Module map
 
 - `index_mapping.rs` — the 15 payload structs, `route`, the error-report rendering, and `TauriEventSink`.
+- `volume_mapping.rs` — `TauriVolumeEvents`, which turns a storage backend's typed connection transitions into
+  `SmbConnectionChanged` and owns the three wire values the frontend matches on.
 
 There are TWO `TauriEventSink` types in the crate: this one (for `IndexEvent`) and
 `file_system::write_operations::TauriEventSink` (for `OperationEventSink`). Deliberate — each is its area's Tauri

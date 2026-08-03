@@ -5,5 +5,7 @@
 //! payload shapes, and the words a human reads on this side of the boundary.
 //!
 //! - `index_mapping`: the drive index, media index, and importance subsystems.
+//! - `volume_mapping`: a storage backend's connection transitions.
 
 pub mod index_mapping;
+pub mod volume_mapping;

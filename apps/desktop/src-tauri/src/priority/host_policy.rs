@@ -1,13 +1,15 @@
-//! The app's answer to the index's "may background work run right now?" question.
+//! The app's answers to "may background work run right now?", for the two
+//! subsystems that can't reach `crate::priority` to work it out themselves.
 //!
-//! The index subsystems are being extracted into a crate that can't reach
-//! `crate::priority`, so they ask through `indexing::host::policy::HostPolicy` and
-//! this is the implementation the app installs at startup. It's a pure adapter: the
-//! priority order, the scopes, and the signals all still live in this module's
-//! siblings, and every decision the index used to make inline is made here now.
+//! The index subsystems live in a crate of their own and ask through
+//! `indexing::host::policy::HostPolicy`; a storage backend asks the narrower
+//! `cmdr_fs::volume::host::activity::UserActivity`. Both implementations here are
+//! pure adapters: the priority order, the scopes, and the signals all still live
+//! in this module's siblings.
 
 use std::time::Duration;
 
+use cmdr_fs::volume::host::activity::UserActivity;
 use cmdr_index::host::policy::{HostPolicy, OpenListing, WorkClearance};
 
 use super::{foreground, transfers};
@@ -32,6 +34,21 @@ impl HostPolicy for AppHostPolicy {
                 path: listing.path,
             })
             .collect()
+    }
+}
+
+/// Answers a storage backend's "is the user busy on this volume?" from the same
+/// foreground signal.
+///
+/// Per volume, and only per volume: a transfer off a NAS is work the user asked
+/// for and is watching a progress bar for, so it stands aside for contention on
+/// the volume it's competing with and for nothing else. The THRESHOLD stays with
+/// the caller, which is why none appears here.
+pub struct AppUserActivity;
+
+impl UserActivity for AppUserActivity {
+    fn volume_idle_for(&self, volume_id: &str, threshold: Duration) -> bool {
+        foreground::global().idle_for_volume(volume_id, threshold)
     }
 }
 
@@ -76,5 +93,23 @@ mod tests {
         );
         transfers::note_transfer_finished(std::slice::from_ref(&busy));
         assert!(!AppHostPolicy.clearance(&busy, window).transfer_active);
+    }
+
+    /// A backend yields to browsing on ITS volume and to nothing else. Collapsing
+    /// this to the app-wide signal would park a NAS copy every time the user
+    /// scrolls a local folder.
+    #[test]
+    fn a_backend_sees_only_its_own_volume_as_busy() {
+        let browsed = "test://user_activity/browsed";
+        let quiet = "test://user_activity/quiet";
+        let window = Duration::from_secs(30);
+
+        foreground::note_foreground_activity_on(browsed);
+
+        assert!(!AppUserActivity.volume_idle_for(browsed, window));
+        assert!(
+            AppUserActivity.volume_idle_for(quiet, window),
+            "a volume nobody browsed is one nobody is waiting on"
+        );
     }
 }

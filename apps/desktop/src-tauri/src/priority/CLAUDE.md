@@ -8,8 +8,8 @@ them at their own loop boundaries.
 
 - `foreground.rs`: last-interactive-activity timestamps, app-wide + per volume. Written by the hot listing IPC.
 - `transfers.rs`: per-volume gauge of user-initiated write ops (copy/move/delete/trash/drag-out).
-- `host_policy.rs`: `AppHostPolicy`, the adapter that answers the index subsystems' `HostPolicy` question from the two
-  signals above. Installed once in `setup()`.
+- `host_policy.rs`: `AppHostPolicy` (the index subsystems' `HostPolicy`) and `AppUserActivity` (a storage backend's
+  narrower per-volume question), both answering from the two signals above. Installed once in `setup()`.
 
 ## Must-knows
 

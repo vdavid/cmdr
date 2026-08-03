@@ -7,6 +7,7 @@
 
 mod config_shape;
 pub mod posthog;
+pub mod volume_sink;
 
 use serde::Serialize;
 use std::path::PathBuf;

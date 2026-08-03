@@ -160,6 +160,7 @@ mod text_size;
 mod updater;
 mod usb_speed;
 mod volume_broadcast;
+mod volume_host;
 #[cfg(target_os = "macos")]
 mod volumes;
 #[cfg(target_os = "linux")]
@@ -308,6 +309,11 @@ pub fn run() {
             // before anything can start background work. Mirror of
             // `indexing/host/`, which declares the other side of each seam.
             index_host::install(app.handle());
+
+            // Everything a storage backend needs from this app, in one place.
+            // Must run before any volume is constructed. Mirror of
+            // `cmdr_fs::volume::host`, which declares the other side of each seam.
+            volume_host::install(app.handle());
 
             // Mount the typed `tauri-specta` events onto the app. Required before
             // any `Event::emit` / `Event::listen` call resolves the event name

@@ -1,122 +1,17 @@
-//! `try_get_watched_listing` tests (M1 oracle).
+//! `try_get_watched_listing` tests, the fresh-listing oracle.
 //!
-//! These tests use a small `WatchedFlagVolume` wrapper around `InMemoryVolume`
-//! because `InMemoryVolume::listing_is_watched` always returns false (the
-//! default). The wrapper lets tests pin the watcher flag to `true` or `false`
-//! without touching `WATCHER_MANAGER` (which would require an `AppHandle`).
+//! They drive the watcher flag through `WatchedFlagVolume`
+//! (`caching_test_support`), which is what lets both answers be tested without
+//! an `AppHandle` or a real `WATCHER_MANAGER` entry.
 
-use std::future::Future;
-use std::path::{Path, PathBuf};
-use std::pin::Pin;
+use std::path::Path;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 
 use super::caching::try_get_watched_listing;
-use super::caching_test_support::{TestListing, TestListingGuard, unique_test_id};
+use super::caching_test_support::{TestListing, TestListingGuard, WatchedFlagVolume, unique_test_id};
 use super::metadata::FileEntry;
+use crate::file_system::volume::Volume;
 use crate::file_system::volume::manager::get_volume_manager;
-use crate::file_system::volume::{
-    BatchScanResult, CopyScanResult, InMemoryVolume, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError,
-    VolumeReadStream,
-};
-
-/// A test-only volume wrapper that overrides `listing_is_watched` with a
-/// flag controlled per test. Delegates every other method to the inner
-/// `InMemoryVolume`.
-struct WatchedFlagVolume {
-    inner: InMemoryVolume,
-    watched: AtomicBool,
-}
-
-impl WatchedFlagVolume {
-    fn new(name: &str, watched: bool) -> Self {
-        Self {
-            inner: InMemoryVolume::new(name),
-            watched: AtomicBool::new(watched),
-        }
-    }
-
-    fn set_watched(&self, v: bool) {
-        self.watched.store(v, Ordering::Relaxed);
-    }
-}
-
-impl Volume for WatchedFlagVolume {
-    fn name(&self) -> &str {
-        self.inner.name()
-    }
-
-    fn root(&self) -> &Path {
-        self.inner.root()
-    }
-
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn list_directory<'a>(
-        &'a self,
-        path: &'a Path,
-        on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
-        self.inner.list_directory(path, on_progress)
-    }
-
-    fn get_metadata<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
-        self.inner.get_metadata(path)
-    }
-
-    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
-        self.inner.exists(path)
-    }
-
-    fn is_directory<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
-        self.inner.is_directory(path)
-    }
-
-    fn listing_is_watched(&self, _path: &Path) -> bool {
-        self.watched.load(Ordering::Relaxed)
-    }
-
-    fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
-        self.inner.get_space_info()
-    }
-
-    fn scan_for_copy<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
-        self.inner.scan_for_copy(path)
-    }
-
-    fn scan_for_copy_batch<'a>(
-        &'a self,
-        paths: &'a [PathBuf],
-    ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
-        self.inner.scan_for_copy_batch(paths)
-    }
-
-    fn scan_for_conflicts<'a>(
-        &'a self,
-        source_items: &'a [SourceItemInfo],
-        dest_path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<ScanConflict>, VolumeError>> + Send + 'a>> {
-        self.inner.scan_for_conflicts(source_items, dest_path)
-    }
-
-    fn open_read_stream<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
-        self.inner.open_read_stream(path)
-    }
-}
 
 fn make_test_entry(name: &str) -> FileEntry {
     FileEntry {

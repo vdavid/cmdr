@@ -11,7 +11,8 @@ background: `docs/notes/smb-auth-flow-redesign.md`.
 - Discovery + servers: `mdns_discovery.rs`, `manual_servers.rs`, `virtual_smb_hosts.rs` (`smb-e2e` only).
 - Share listing: `smb_client.rs` (guest→keychain→prompt), `smb_connection.rs`, `smb_cache.rs`, `smb_smbutil.rs` /
   `smb_smbclient.rs` (CLI fallback), `smb_util.rs`, `smb_upgrade.rs`.
-- Mount/auth/state: `mount.rs` / `mount_linux.rs`, `keychain.rs`, `known_shares.rs`, `server_identity.rs`.
+- Mount/auth/state: `mount.rs` / `mount_linux.rs`, `keychain.rs`, `known_shares.rs`, `server_identity.rs`,
+  `credential_store.rs` (`KeychainCredentials`, the store as a storage backend asks for it).
 
 ## Must-knows
 

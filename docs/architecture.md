@@ -209,7 +209,8 @@ surface at the numbers its audit landed on. The two dev CLIs and the vendored fo
   poison-free locking. The app re-exports all of it from the original paths. See `crates/cmdr-fs/CLAUDE.md`
   - `src/volume/host/`: the seams a storage backend reaches its host through — pane listings, the runtime handle, typed
     connection events, credentials, index notification, settings, user activity, analytics. What a backend crate is
-    written against. See `crates/cmdr-fs/src/volume/host/CLAUDE.md`
+    written against; the app answers them from `apps/desktop/src-tauri/src/volume_host.rs`. See
+    `crates/cmdr-fs/src/volume/host/CLAUDE.md`
 - `crates/cmdr-index/`: the index — everything Cmdr knows about what's on a volume, what's inside its images, and which
   of its folders matter — behind one `Index` handle the host builds and holds. Tauri-free: everything it needs from an
   application arrives through the traits in `host/`, and everything it reports leaves through an `EventSink`. Three

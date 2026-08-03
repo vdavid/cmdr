@@ -1,5 +1,6 @@
 //! File system module - operations, watchers, volumes, and providers.
 
+pub mod backend_settings;
 pub mod cloud_actions;
 pub mod filesystem_kind;
 pub mod git;

@@ -9,6 +9,7 @@ pulling in `analytics`.
 
 - `mod.rs`: heartbeat loop, consent gate, payload struct, fire-and-forget send, and the helpers `posthog` reuses.
 - `posthog.rs`: the `capture` path, the debug-build PII net, the build-time key.
+- `volume_sink.rs`: `PostHogVolumeAnalytics`, the storage backends' counter seam, feeding `capture` and its gates.
 - `config_shape.rs`: the config-shape builder and `CATEGORICAL_STRING_KEYS` allowlist (the ONE place the PII-free rule
   lives), shared by the heartbeat `config` and the PostHog `$set`.
 

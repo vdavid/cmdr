@@ -8,6 +8,7 @@
 //!   backend)
 //! - `mount.rs` / `mount_linux.rs`: SMB mounting (macOS NetFS / Linux gio)
 
+pub mod credential_store;
 pub mod keychain;
 
 pub mod known_shares;
