@@ -99,21 +99,18 @@ volume routes `None`, so no reader can still be holding — or can still open �
 This is also why the `Failed` phase needs no read-path special case: a `Failed` instance stays registered for the badge,
 but `fail_index` withdrew its handles before flipping the phase, so reads already skip.
 
-**Freeing a slot and withdrawing its handles is ONE critical section**
-(`remove_instance_and_handles`, the start-up failure path). The two orders are not
-equivalent: withdraw-then-free is safe because the key still exists while the withdrawal
-runs, so no competing start can reserve yet; free-then-withdraw is NOT, because a
-competing `start_indexing_for` can take the freed slot in between, install fresh handles,
-and have them withdrawn under it — leaving a registered, live index that routes no read
-pool, so its listings show `<dir>` until the next stop/start. The teardown paths
-(`stop_indexing`, `clear_index`, `fail_index`) take the first order; the failure path
-holds the registry across both steps. Holding it there is safe by the leaf-lock property
-above, and it's the same registry → table nesting the reservation already uses.
+**Freeing a slot and withdrawing its handles is ONE critical section** (`remove_instance_and_handles`, the start-up
+failure path). The two orders are not equivalent: withdraw-then-free is safe because the key still exists while the
+withdrawal runs, so no competing start can reserve yet; free-then-withdraw is NOT, because a competing
+`start_indexing_for` can take the freed slot in between, install fresh handles, and have them withdrawn under it —
+leaving a registered, live index that routes no read pool, so its listings show `<dir>` until the next stop/start. The
+teardown paths (`stop_indexing`, `clear_index`, `fail_index`) take the first order; the failure path holds the registry
+across both steps. Holding it there is safe by the leaf-lock property above, and it's the same registry → table nesting
+the reservation already uses.
 
-This one resists a regression test: the window is a few nanoseconds of straight-line code
-after a mutex release, and a competing thread — even one spinning on the lock with its
-`IndexStore` pre-opened — never lands inside it (measured: 5 runs × 1,000 rounds against
-the broken order, zero detections). Reproducing it would need an injection seam in
+This one resists a regression test: the window is a few nanoseconds of straight-line code after a mutex release, and a
+competing thread — even one spinning on the lock with its `IndexStore` pre-opened — never lands inside it (measured: 5
+runs × 1,000 rounds against the broken order, zero detections). Reproducing it would need an injection seam in
 production code, which isn't worth it. The guardrail is the comment on the function.
 
 **Test isolation follows the same shape.** `stress_test_helpers::TestInstanceGuard` installs a private volume's pool +
