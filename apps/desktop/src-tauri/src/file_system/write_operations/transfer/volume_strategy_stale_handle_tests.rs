@@ -15,14 +15,13 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
 use crate::file_system::volume::{LocalPosixVolume, Volume};
+use crate::test_support::TestDir;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn stream_pipe_file_retries_once_on_stale_destination_handle() {
     use std::fs;
 
-    let src_dir = std::env::temp_dir().join("cmdr_retry_stale_src");
-    let _ = fs::remove_dir_all(&src_dir);
-    fs::create_dir_all(&src_dir).unwrap();
+    let src_dir = TestDir::new("retry_stale_src");
     fs::write(src_dir.join("a.txt"), "payload-bytes").unwrap(); // 13 bytes
 
     let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Source", src_dir.to_str().unwrap()));
@@ -56,6 +55,4 @@ async fn stream_pipe_file_retries_once_on_stale_destination_handle() {
         2,
         "write_from_stream must be called exactly twice: the stale-handle rejection, then the retry"
     );
-
-    let _ = fs::remove_dir_all(&src_dir);
 }

@@ -22,12 +22,10 @@ use super::super::types::{CollectorEventSink, WriteOperationConfig, WriteOperati
 use super::walker::delete_volume_files_with_progress_inner;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{LocalPosixVolume, Volume};
+use crate::test_support::TestDir;
 
-fn create_temp_root(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("cmdr_volume_hardlink_{name}"));
-    let _ = fs::remove_dir_all(&dir);
-    fs::create_dir_all(&dir).expect("create temp root");
-    dir
+fn create_temp_root(name: &str) -> TestDir {
+    TestDir::new(&format!("volume_hardlink_{name}"))
 }
 
 fn unique_op_id(name: &str) -> String {

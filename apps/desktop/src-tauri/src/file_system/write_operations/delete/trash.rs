@@ -395,20 +395,13 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::TestDir;
     use std::sync::Arc;
     use std::time::Duration;
 
     #[cfg(target_os = "macos")]
-    fn create_test_dir(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("cmdr_trash_test_{}", name));
-        let _ = fs::remove_dir_all(&dir);
-        fs::create_dir_all(&dir).expect("Failed to create test directory");
-        dir
-    }
-
-    #[cfg(target_os = "macos")]
-    fn cleanup_test_dir(path: &PathBuf) {
-        let _ = fs::remove_dir_all(path);
+    fn create_test_dir(name: &str) -> TestDir {
+        TestDir::new(&format!("trash_test_{}", name))
     }
 
     // ========================================================================
@@ -437,7 +430,6 @@ mod tests {
         );
         assert!(fs::symlink_metadata(&in_trash).is_ok(), "the item exists in Trash");
         let _ = fs::remove_file(&in_trash);
-        cleanup_test_dir(&tmp);
     }
 
     #[cfg(target_os = "macos")]
@@ -451,7 +443,6 @@ mod tests {
         let result = move_to_trash_sync(&dir);
         assert!(result.is_ok());
         assert!(fs::symlink_metadata(&dir).is_err());
-        cleanup_test_dir(&tmp);
     }
 
     #[test]
@@ -481,7 +472,6 @@ mod tests {
         let result = move_to_trash_sync(&link);
         assert!(result.is_ok());
         assert!(fs::symlink_metadata(&link).is_err());
-        cleanup_test_dir(&tmp);
     }
 
     // ========================================================================

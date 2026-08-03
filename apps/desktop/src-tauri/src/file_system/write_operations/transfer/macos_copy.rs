@@ -479,18 +479,12 @@ fn map_io_error_with_path(err: std::io::Error, source: &Path, destination: &Path
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::TestDir;
     use std::fs;
     use std::os::unix::fs::PermissionsExt;
 
-    fn create_temp_dir(name: &str) -> std::path::PathBuf {
-        let temp_dir = std::env::temp_dir().join(format!("cmdr_macos_copy_test_{}", name));
-        let _ = fs::remove_dir_all(&temp_dir);
-        fs::create_dir_all(&temp_dir).expect("Failed to create temp directory");
-        temp_dir
-    }
-
-    fn cleanup_temp_dir(path: &std::path::PathBuf) {
-        let _ = fs::remove_dir_all(path);
+    fn create_temp_dir(name: &str) -> TestDir {
+        TestDir::new(&format!("macos_copy_test_{}", name))
     }
 
     #[test]
@@ -505,8 +499,6 @@ mod tests {
         assert!(result.is_ok());
         assert!(dst.exists());
         assert_eq!(fs::read_to_string(&dst).unwrap(), "Hello, world!");
-
-        cleanup_temp_dir(&temp_dir);
     }
 
     #[test]
@@ -524,8 +516,6 @@ mod tests {
         let dst_perms = fs::metadata(&dst).unwrap().permissions().mode();
         // Check executable bits are preserved (mask with 0o777 to ignore file type bits)
         assert_eq!(dst_perms & 0o777, 0o755);
-
-        cleanup_temp_dir(&temp_dir);
     }
 
     #[test]
@@ -545,8 +535,6 @@ mod tests {
         assert!(dst_link.is_symlink());
         let link_target = fs::read_link(&dst_link).unwrap();
         assert_eq!(link_target, target);
-
-        cleanup_temp_dir(&temp_dir);
     }
 
     #[test]
@@ -565,8 +553,6 @@ mod tests {
         // Verify it's a broken symlink
         assert!(dst_link.is_symlink());
         assert!(!dst_link.exists()); // exists() returns false for broken symlinks
-
-        cleanup_temp_dir(&temp_dir);
     }
 
     #[test]
@@ -584,8 +570,6 @@ mod tests {
 
         // Original content should be preserved
         assert_eq!(fs::read_to_string(&dst).unwrap(), "existing");
-
-        cleanup_temp_dir(&temp_dir);
     }
 
     #[test]
@@ -600,8 +584,6 @@ mod tests {
         let result = copy_single_file_native(&src, &dst, true, None);
         assert!(result.is_ok());
         assert_eq!(fs::read_to_string(&dst).unwrap(), "new content");
-
-        cleanup_temp_dir(&temp_dir);
     }
 
     #[test]
@@ -623,8 +605,6 @@ mod tests {
         assert!(dst_dir.join("subdir/file2.txt").exists());
         assert_eq!(fs::read_to_string(dst_dir.join("file1.txt")).unwrap(), "file1");
         assert_eq!(fs::read_to_string(dst_dir.join("subdir/file2.txt")).unwrap(), "file2");
-
-        cleanup_temp_dir(&temp_dir);
     }
 
     #[test]
@@ -640,7 +620,5 @@ mod tests {
         let _result = copy_single_file_native(&src, &dst, false, Some(&context));
         // Note: cancellation is checked in the callback, so for small files it may complete
         // before the callback runs. This test verifies the mechanism exists.
-
-        cleanup_temp_dir(&temp_dir);
     }
 }

@@ -1,22 +1,15 @@
 //! Integration tests for delete operations.
 
+use crate::test_support::TestDir;
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
-use std::path::PathBuf;
 
 // ============================================================================
 // Test utilities
 // ============================================================================
 
-fn create_temp_dir(name: &str) -> PathBuf {
-    let temp_dir = std::env::temp_dir().join(format!("cmdr_write_integration_test_{}", name));
-    let _ = fs::remove_dir_all(&temp_dir);
-    fs::create_dir_all(&temp_dir).expect("Failed to create temp directory");
-    temp_dir
-}
-
-fn cleanup_temp_dir(path: &PathBuf) {
-    let _ = fs::remove_dir_all(path);
+fn create_temp_dir(name: &str) -> TestDir {
+    TestDir::new(&format!("write_integration_test_{}", name))
 }
 
 // ============================================================================
@@ -35,8 +28,6 @@ fn test_delete_single_file() {
     fs::remove_file(&file).unwrap();
 
     assert!(!file.exists());
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -68,8 +59,6 @@ fn test_delete_directory_files_then_dirs() {
 
     // Verify everything is deleted
     assert!(!target.exists());
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -103,7 +92,6 @@ fn test_delete_permission_error_on_file() {
 
     // Restore permissions for cleanup
     fs::set_permissions(&protected_dir, fs::Permissions::from_mode(0o755)).unwrap();
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -153,7 +141,6 @@ fn test_delete_partial_state_on_error() {
 
     // Restore permissions for cleanup
     fs::set_permissions(&protected_dir, fs::Permissions::from_mode(0o755)).unwrap();
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -168,6 +155,4 @@ fn test_delete_empty_directory() {
     fs::remove_dir(&empty_dir).unwrap();
 
     assert!(!empty_dir.exists());
-
-    cleanup_temp_dir(&temp_dir);
 }

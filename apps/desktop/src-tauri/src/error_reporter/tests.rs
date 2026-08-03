@@ -5,10 +5,11 @@ use super::bundle_builder::{
 use super::bundle_capper::cap_bundle_to_bytes;
 use super::*;
 use crate::redact;
+use crate::test_support::TestDir;
 use chrono::{DateTime, Utc};
 use std::collections::{BTreeMap, HashSet};
 use std::io::Read;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::{Duration, SystemTime};
 use zip::{DateTime as ZipDateTime, ZipArchive};
 
@@ -523,14 +524,7 @@ fn zip_entries_carry_real_mtimes() {
 fn build_bundle_24h_filter_drops_old_files() {
     use std::fs;
 
-    let dir = std::env::temp_dir().join(format!(
-        "cmdr-error-reporter-24h-{}",
-        SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or(0),
-    ));
-    fs::create_dir_all(&dir).expect("temp dir");
+    let dir = TestDir::new("error-reporter-24h");
 
     // Two files: one that looks fresh, one whose mtime we set to 48h ago via filetime.
     let fresh = dir.join("cmdr.log");
@@ -561,8 +555,6 @@ fn build_bundle_24h_filter_drops_old_files() {
         stale_lines.is_empty(),
         "stale (>24h) file lines should be filtered out, got {stale_lines:?}",
     );
-
-    fs::remove_dir_all(&dir).ok();
 }
 
 /// Fix #5: Flow B's window-anchored scope keeps lines inside `[first - 30 min, now]`
@@ -571,14 +563,7 @@ fn build_bundle_24h_filter_drops_old_files() {
 fn build_bundle_window_scope_trims_old_lines() {
     use std::fs;
 
-    let dir = std::env::temp_dir().join(format!(
-        "cmdr-error-reporter-window-{}",
-        SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or(0),
-    ));
-    fs::create_dir_all(&dir).expect("temp dir");
+    let dir = TestDir::new("error-reporter-window");
 
     let now_utc = Utc::now();
     let first_error_at = now_utc - chrono::Duration::minutes(5);
@@ -614,8 +599,6 @@ fn build_bundle_window_scope_trims_old_lines() {
         lines[0].contains("NEW line that should be kept"),
         "kept the wrong line: {lines:?}"
     );
-
-    fs::remove_dir_all(&dir).ok();
 }
 
 /// Sets the file's mtime to `now - age` via the `filetime` crate (already in our dep
@@ -733,16 +716,8 @@ mod streaming_tests {
     use std::fs;
     use std::io::Write as IoWrite;
 
-    fn make_log_dir(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!(
-            "cmdr-streaming-{name}-{}",
-            SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| d.as_nanos())
-                .unwrap_or(0),
-        ));
-        fs::create_dir_all(&dir).expect("temp dir");
-        dir
+    fn make_log_dir(name: &str) -> TestDir {
+        TestDir::new(&format!("streaming-{name}"))
     }
 
     fn iso(ts: DateTime<Utc>) -> String {
@@ -797,8 +772,6 @@ mod streaming_tests {
         // sample_first/last are populated.
         assert!(!bundle.sample_first.is_empty());
         assert!(!bundle.sample_last.is_empty());
-
-        fs::remove_dir_all(&dir).ok();
     }
 
     /// Continuation lines (no leading timestamp) ride along with the previous
@@ -846,8 +819,6 @@ mod streaming_tests {
         assert!(log_body.contains("recovered"));
         assert!(!log_body.contains("old1"));
         assert!(!log_body.contains("old2"));
-
-        fs::remove_dir_all(&dir).ok();
     }
 
     /// Cap stops streaming: a synthetic file forces the compressed cap before the
@@ -905,8 +876,6 @@ mod streaming_tests {
             "expected early termination; consumed all {} lines",
             bundle.total_redacted_lines,
         );
-
-        fs::remove_dir_all(&dir).ok();
     }
 
     /// Empty + nonexistent files are handled cleanly.
@@ -931,7 +900,6 @@ mod streaming_tests {
         assert!(entries.contains_key("manifest.json"));
         // No log entry for an empty file.
         assert!(!entries.keys().any(|k| k.starts_with("logs/")));
-        fs::remove_dir_all(&dir).ok();
     }
 
     /// Performance smoke test: a single ~80 MB file (4× the cmdr.log rotation size on
@@ -994,6 +962,5 @@ mod streaming_tests {
             elapsed < Duration::from_secs(1),
             "streaming pipeline should finish in <1s on an 80 MB log; took {elapsed:?}",
         );
-        fs::remove_dir_all(&dir).ok();
     }
 }

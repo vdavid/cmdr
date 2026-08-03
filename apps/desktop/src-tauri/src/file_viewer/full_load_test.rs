@@ -8,6 +8,7 @@ use std::sync::atomic::AtomicBool;
 use super::full_load::FullLoadBackend;
 use super::search_matcher::{Matcher, SearchMode};
 use super::{FileViewerBackend, MAX_SEARCH_MATCHES, SearchMatch, SeekTarget};
+use crate::test_support::TestDir;
 
 fn literal_matcher(query: &str, case_sensitive: bool) -> Matcher {
     Matcher::build(
@@ -20,15 +21,8 @@ fn literal_matcher(query: &str, case_sensitive: bool) -> Matcher {
     .expect("test query must build")
 }
 
-fn create_test_dir(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("cmdr_viewer_full_{}", name));
-    let _ = fs::remove_dir_all(&dir);
-    fs::create_dir_all(&dir).expect("Failed to create test directory");
-    dir
-}
-
-fn cleanup(path: &PathBuf) {
-    let _ = fs::remove_dir_all(path);
+fn create_test_dir(name: &str) -> TestDir {
+    TestDir::new(&format!("viewer_full_{}", name))
 }
 
 #[test]
@@ -41,8 +35,6 @@ fn open_reads_lines_correctly() {
     assert_eq!(backend.total_lines(), Some(4)); // 3 lines + trailing empty
     assert_eq!(backend.file_name(), "test.txt");
     assert_eq!(backend.total_bytes(), 21);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -54,8 +46,6 @@ fn open_empty_file() {
     let backend = FullLoadBackend::open(&file).unwrap();
     assert_eq!(backend.total_lines(), Some(1)); // At least one line
     assert_eq!(backend.total_bytes(), 0);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -69,7 +59,6 @@ fn open_directory_fails() {
     let dir = create_test_dir("open_dir");
     let result = FullLoadBackend::open(&dir);
     assert!(result.is_err());
-    cleanup(&dir);
 }
 
 #[test]
@@ -257,8 +246,6 @@ fn binary_content_handled() {
     // but the newline split still gives two lines.
     assert_eq!(chunk.lines.len(), 2);
     assert!(!chunk.lines[0].is_empty());
-
-    cleanup(&dir);
 }
 
 #[test]

@@ -207,17 +207,11 @@ fn map_io_error(err: std::io::Error, source: &Path, destination: &Path) -> Write
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::TestDir;
     use std::sync::atomic::Ordering;
 
-    fn create_temp_dir(name: &str) -> std::path::PathBuf {
-        let dir = std::env::temp_dir().join(format!("cmdr_linux_copy_test_{}", name));
-        let _ = fs::remove_dir_all(&dir);
-        fs::create_dir_all(&dir).expect("Failed to create temp dir");
-        dir
-    }
-
-    fn cleanup_temp_dir(path: &std::path::PathBuf) {
-        let _ = fs::remove_dir_all(path);
+    fn create_temp_dir(name: &str) -> TestDir {
+        TestDir::new(&format!("linux_copy_test_{}", name))
     }
 
     #[test]
@@ -233,8 +227,6 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 13);
         assert_eq!(fs::read_to_string(&dst).unwrap(), "Hello, Linux!");
-
-        cleanup_temp_dir(&dir);
     }
 
     #[test]
@@ -254,8 +246,6 @@ mod tests {
 
         let dst_perms = fs::metadata(&dst).unwrap().permissions().mode();
         assert_eq!(dst_perms & 0o777, 0o755);
-
-        cleanup_temp_dir(&dir);
     }
 
     #[test]
@@ -271,8 +261,6 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 0);
         assert_eq!(fs::read_to_string(&dst).unwrap(), "");
-
-        cleanup_temp_dir(&dir);
     }
 
     #[test]
@@ -290,8 +278,6 @@ mod tests {
 
         assert!(matches!(result, Err(WriteOperationError::Cancelled { .. })));
         assert!(!dst.exists());
-
-        cleanup_temp_dir(&dir);
     }
 
     #[test]
@@ -307,8 +293,6 @@ mod tests {
         let result = copy_single_file_linux(&src, &dst, false, &cancelled, None);
         assert!(result.is_err());
         assert_eq!(fs::read_to_string(&dst).unwrap(), "existing");
-
-        cleanup_temp_dir(&dir);
     }
 
     #[test]
@@ -324,8 +308,6 @@ mod tests {
         let result = copy_single_file_linux(&src, &dst, true, &cancelled, None);
         assert!(result.is_ok());
         assert_eq!(fs::read_to_string(&dst).unwrap(), "new content");
-
-        cleanup_temp_dir(&dir);
     }
 
     #[test]
@@ -351,7 +333,5 @@ mod tests {
         let result = copy_single_file_linux(&src, &dst, false, &cancelled, Some(&cb));
         assert!(result.is_ok());
         assert_eq!(last_bytes.load(Ordering::Relaxed), 1000);
-
-        cleanup_temp_dir(&dir);
     }
 }

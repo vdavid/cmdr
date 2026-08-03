@@ -8,6 +8,7 @@ use crate::test_fixtures::{
     build_aes_zip, build_zip, build_zipcrypto_zip, deflated, dir, encrypted_entry, overstate_record_count,
     patch_equal_len, plain_entry, set_first_entry_encrypted, stored, zip64_stored,
 };
+use cmdr_fs::testing::TestDir;
 
 fn bytes_source(bytes: Vec<u8>) -> Arc<dyn ArchiveByteSource> {
     Arc::new(BytesSource::new(bytes))
@@ -511,7 +512,8 @@ async fn zip64_archive_parses_and_reads() {
 
 #[test]
 fn cache_reuses_index_then_invalidates_on_change() {
-    let path = std::env::temp_dir().join(format!("cmdr-archive-cache-{}.zip", uuid::Uuid::new_v4()));
+    let dir = TestDir::new("archive-cache");
+    let path = dir.join("archive.zip");
     std::fs::write(&path, build_zip(&[stored("one.txt", "1")])).unwrap();
 
     let cache = ArchiveIndexCache::new();
@@ -529,15 +531,14 @@ fn cache_reuses_index_then_invalidates_on_change() {
 
     cache.clear();
     assert!(cache.is_empty());
-    let _ = std::fs::remove_file(&path);
 }
 
 #[test]
 fn cache_reports_a_typed_error_for_a_non_archive_file() {
-    let path = std::env::temp_dir().join(format!("cmdr-archive-bad-{}.bin", uuid::Uuid::new_v4()));
+    let dir = TestDir::new("archive-bad");
+    let path = dir.join("not-an-archive.bin");
     std::fs::write(&path, b"not a zip").unwrap();
     let cache = ArchiveIndexCache::new();
     let err = cache.index_for_local(&path, ArchiveFormat::Zip, None).unwrap_err();
     assert!(matches!(err, ArchiveError::NotAnArchive), "got {err:?}");
-    let _ = std::fs::remove_file(&path);
 }

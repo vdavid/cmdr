@@ -88,13 +88,11 @@ pub async fn stat_paths_kinds(paths: Vec<String>) -> TimedOut<Vec<Option<bool>>>
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::TestDir;
     use std::fs;
 
-    fn test_dir(name: &str) -> std::path::PathBuf {
-        let dir = std::env::temp_dir().join(format!("cmdr_stat_kinds_test_{name}"));
-        let _ = fs::remove_dir_all(&dir);
-        fs::create_dir_all(&dir).expect("create test dir");
-        dir
+    fn test_dir(name: &str) -> TestDir {
+        TestDir::new(&format!("stat_kinds_test_{name}"))
     }
 
     #[test]

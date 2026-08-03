@@ -230,18 +230,12 @@ pub(super) fn copy_file_with_strategy(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::TestDir;
     use std::fs;
     use std::sync::atomic::AtomicU8;
 
-    fn create_temp_dir(name: &str) -> std::path::PathBuf {
-        let temp_dir = std::env::temp_dir().join(format!("cmdr_copy_strategy_test_{}", name));
-        let _ = fs::remove_dir_all(&temp_dir);
-        fs::create_dir_all(&temp_dir).expect("Failed to create temp directory");
-        temp_dir
-    }
-
-    fn cleanup_temp_dir(path: &std::path::PathBuf) {
-        let _ = fs::remove_dir_all(path);
+    fn create_temp_dir(name: &str) -> TestDir {
+        TestDir::new(&format!("copy_strategy_test_{}", name))
     }
 
     #[test]
@@ -259,8 +253,6 @@ mod tests {
         assert_eq!(result.unwrap().bytes, 21);
         assert!(dst.exists());
         assert_eq!(fs::read_to_string(&dst).unwrap(), "Hello, copy strategy!");
-
-        cleanup_temp_dir(&temp_dir);
     }
 
     #[test]
@@ -278,8 +270,6 @@ mod tests {
         assert!(result.is_ok());
         assert!(dst.exists());
         assert_eq!(fs::read_to_string(&dst).unwrap(), "New content");
-
-        cleanup_temp_dir(&temp_dir);
     }
 
     #[test]
@@ -299,8 +289,6 @@ mod tests {
         assert!(result.is_ok());
         let dst_perms = fs::metadata(&dst).unwrap().permissions().mode();
         assert_eq!(dst_perms & 0o777, 0o755);
-
-        cleanup_temp_dir(&temp_dir);
     }
 
     // ----------------------------------------------------------------------
@@ -323,7 +311,6 @@ mod tests {
             is_apfs(&temp_dir),
             "tempfs path on macOS dev box should be APFS. If this fails on a non-APFS bot, gate the test on a precheck."
         );
-        cleanup_temp_dir(&temp_dir);
     }
 
     #[cfg(target_os = "macos")]
@@ -348,7 +335,6 @@ mod tests {
             is_same_apfs_volume(&src, &dst),
             "two paths in the same tmp dir should be on the same APFS volume"
         );
-        cleanup_temp_dir(&temp_dir);
     }
 
     #[cfg(target_os = "macos")]
@@ -359,7 +345,6 @@ mod tests {
         let src = temp_dir.join("does-not-exist.txt");
         let dst = temp_dir.join("dest.txt");
         assert!(!is_same_apfs_volume(&src, &dst));
-        cleanup_temp_dir(&temp_dir);
     }
 
     #[cfg(target_os = "macos")]
@@ -373,7 +358,6 @@ mod tests {
         fs::write(&src, "x").unwrap();
         let dst = Path::new("/nonexistent-parent-xyzzy/child.txt");
         assert!(!is_same_apfs_volume(&src, dst));
-        cleanup_temp_dir(&temp_dir);
     }
 
     #[test]
@@ -391,7 +375,5 @@ mod tests {
         assert_eq!(result.unwrap().bytes, 0);
         assert!(dst.exists());
         assert_eq!(fs::read_to_string(&dst).unwrap(), "");
-
-        cleanup_temp_dir(&temp_dir);
     }
 }

@@ -4,6 +4,7 @@ use crate::file_system::volume::{CopyScanResult, InMemoryVolume, ListingProgress
 use crate::file_system::write_operations::types::{
     CollectorEventSink, ConflictResolution, WriteConflictEvent, WriteErrorEvent, WriteSourceItemDoneEvent,
 };
+use crate::test_support::TestDir;
 use std::sync::atomic::AtomicU8;
 
 #[test]
@@ -223,12 +224,8 @@ fn test_map_volume_error_needs_password() {
 async fn test_scan_for_volume_copy_with_local_volumes() {
     use std::fs;
 
-    let src_dir = std::env::temp_dir().join("cmdr_volume_scan_src");
-    let dst_dir = std::env::temp_dir().join("cmdr_volume_scan_dst");
-    let _ = fs::remove_dir_all(&src_dir);
-    let _ = fs::remove_dir_all(&dst_dir);
-    fs::create_dir_all(&src_dir).unwrap();
-    fs::create_dir_all(&dst_dir).unwrap();
+    let src_dir = TestDir::new("volume_scan_src");
+    let dst_dir = TestDir::new("volume_scan_dst");
 
     // Create source files
     fs::write(src_dir.join("file1.txt"), "Hello").unwrap();
@@ -245,21 +242,14 @@ async fn test_scan_for_volume_copy_with_local_volumes() {
     assert_eq!(scan.total_bytes, 10); // "Hello" + "World"
     assert!(scan.conflicts.is_empty());
     assert!(scan.dest_space.total_bytes > 0);
-
-    let _ = fs::remove_dir_all(&src_dir);
-    let _ = fs::remove_dir_all(&dst_dir);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_scan_for_volume_copy_detects_conflicts() {
     use std::fs;
 
-    let src_dir = std::env::temp_dir().join("cmdr_volume_conflict_src");
-    let dst_dir = std::env::temp_dir().join("cmdr_volume_conflict_dst");
-    let _ = fs::remove_dir_all(&src_dir);
-    let _ = fs::remove_dir_all(&dst_dir);
-    fs::create_dir_all(&src_dir).unwrap();
-    fs::create_dir_all(&dst_dir).unwrap();
+    let src_dir = TestDir::new("volume_conflict_src");
+    let dst_dir = TestDir::new("volume_conflict_dst");
 
     // Create source file
     fs::write(src_dir.join("conflict.txt"), "New content").unwrap();
@@ -284,21 +274,14 @@ async fn test_scan_for_volume_copy_detects_conflicts() {
     assert_eq!(scan.conflicts[0].source_path, "conflict.txt");
     assert_eq!(scan.conflicts[0].source_size, 11); // "New content"
     assert_eq!(scan.conflicts[0].dest_size, 11); // "Old content"
-
-    let _ = fs::remove_dir_all(&src_dir);
-    let _ = fs::remove_dir_all(&dst_dir);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_scan_for_volume_copy_max_conflicts() {
     use std::fs;
 
-    let src_dir = std::env::temp_dir().join("cmdr_volume_max_conflicts_src");
-    let dst_dir = std::env::temp_dir().join("cmdr_volume_max_conflicts_dst");
-    let _ = fs::remove_dir_all(&src_dir);
-    let _ = fs::remove_dir_all(&dst_dir);
-    fs::create_dir_all(&src_dir).unwrap();
-    fs::create_dir_all(&dst_dir).unwrap();
+    let src_dir = TestDir::new("volume_max_conflicts_src");
+    let dst_dir = TestDir::new("volume_max_conflicts_dst");
 
     // Create 5 conflicting files
     let mut source_paths = Vec::new();
@@ -317,9 +300,6 @@ async fn test_scan_for_volume_copy_max_conflicts() {
         .await
         .unwrap();
     assert_eq!(scan.conflicts.len(), 3); // Limited to max
-
-    let _ = fs::remove_dir_all(&src_dir);
-    let _ = fs::remove_dir_all(&dst_dir);
 }
 
 // ========================================================================
@@ -1743,12 +1723,8 @@ async fn test_pre_known_conflicts_ignored_outside_skip_mode() {
 async fn test_pre_known_conflicts_bulk_skip_on_real_local_volumes() {
     use std::fs;
 
-    let src_dir = std::env::temp_dir().join("cmdr_prek_bulk_skip_src");
-    let dst_dir = std::env::temp_dir().join("cmdr_prek_bulk_skip_dst");
-    let _ = fs::remove_dir_all(&src_dir);
-    let _ = fs::remove_dir_all(&dst_dir);
-    fs::create_dir_all(&src_dir).unwrap();
-    fs::create_dir_all(&dst_dir).unwrap();
+    let src_dir = TestDir::new("prek_bulk_skip_src");
+    let dst_dir = TestDir::new("prek_bulk_skip_dst");
 
     // 5 source files: a, c, e are pre-known conflicts; b, d are fresh.
     fs::write(src_dir.join("a.txt"), "AA").unwrap(); //   2 bytes
@@ -1818,9 +1794,6 @@ async fn test_pre_known_conflicts_bulk_skip_on_real_local_volumes() {
     assert_eq!(complete[0].files_processed, 5);
     // Bytes: skipped (a + c + e = 2 + 6 + 10 = 18) + copied (b + d = 4 + 8 = 12) = 30.
     assert_eq!(complete[0].bytes_processed, 30);
-
-    let _ = fs::remove_dir_all(&src_dir);
-    let _ = fs::remove_dir_all(&dst_dir);
 }
 
 /// `scan_for_copy_batch_with_progress` must invoke the callback as it discovers

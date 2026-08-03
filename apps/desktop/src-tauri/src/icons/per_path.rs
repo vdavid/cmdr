@@ -72,6 +72,7 @@ pub fn has_custom_folder_icon(path: &Path) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::TestDir;
 
     #[test]
     fn app_bundle_is_a_package() {
@@ -156,10 +157,7 @@ mod tests {
     #[cfg(target_os = "macos")]
     #[test]
     fn has_custom_folder_icon_reads_a_real_xattr() {
-        use std::fs;
-        let dir = std::env::temp_dir().join(format!("cmdr_custom_icon_test_{}", std::process::id()));
-        let _ = fs::remove_dir_all(&dir);
-        fs::create_dir_all(&dir).expect("create temp dir");
+        let dir = TestDir::new("custom_icon_test");
 
         // No xattr yet → not a custom-icon folder.
         assert!(!has_custom_folder_icon(&dir));
@@ -173,7 +171,5 @@ mod tests {
         let cleared = finder_info_with_flags(0);
         xattr::set(&dir, "com.apple.FinderInfo", &cleared).expect("clear xattr");
         assert!(!has_custom_folder_icon(&dir));
-
-        let _ = fs::remove_dir_all(&dir);
     }
 }

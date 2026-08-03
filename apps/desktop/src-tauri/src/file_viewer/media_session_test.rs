@@ -11,16 +11,10 @@ use std::path::{Path, PathBuf};
 use super::content_kind::ViewerContentKind;
 use super::media;
 use super::session;
+use crate::test_support::TestDir;
 
-fn create_test_dir(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("cmdr_viewer_media_session_{}", name));
-    let _ = fs::remove_dir_all(&dir);
-    fs::create_dir_all(&dir).expect("Failed to create test directory");
-    dir
-}
-
-fn cleanup(path: &Path) {
-    let _ = fs::remove_dir_all(path);
+fn create_test_dir(name: &str) -> TestDir {
+    TestDir::new(&format!("viewer_media_session_{}", name))
 }
 
 /// A valid 1x1 transparent PNG, byte-for-byte (so `image::image_dimensions` reads
@@ -74,7 +68,6 @@ fn open_png_yields_image_session_with_token_and_dimensions() {
         media::resolve_token(&token).is_none(),
         "close_session drops the media token"
     );
-    cleanup(&dir);
 }
 
 #[test]
@@ -93,7 +86,6 @@ fn open_pdf_yields_pdf_session_with_token_and_no_dimensions() {
 
     session::close_session(&result.session_id).unwrap();
     assert!(media::resolve_token(&token).is_none());
-    cleanup(&dir);
 }
 
 #[test]
@@ -110,7 +102,6 @@ fn open_text_file_falls_through_to_text_pipeline() {
     assert!(!result.initial_lines.lines.is_empty());
 
     session::close_session(&result.session_id).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -127,5 +118,4 @@ fn open_as_text_forces_text_for_a_media_file() {
     assert!(result.media_dimensions.is_none());
 
     session::close_session(&result.session_id).unwrap();
-    cleanup(&dir);
 }

@@ -1,6 +1,7 @@
 //! Tests for LocalPosixVolume.
 
 use super::*;
+use crate::test_support::TestDir;
 use std::path::Path;
 
 #[test]
@@ -114,11 +115,9 @@ async fn test_write_operations() {
     use std::fs;
 
     // Create a temp directory for this test
-    let test_dir = std::env::temp_dir().join("cmdr_write_ops_test");
-    let _ = fs::remove_dir_all(&test_dir);
-    fs::create_dir_all(&test_dir).unwrap();
+    let test_dir = TestDir::new("write_ops_test");
 
-    let volume = LocalPosixVolume::new("Test", &test_dir);
+    let volume = LocalPosixVolume::new("Test", &*test_dir);
 
     // Test create_file
     let result = volume.create_file(Path::new("test.txt"), b"hello world").await;
@@ -147,20 +146,14 @@ async fn test_write_operations() {
     assert!(result.is_ok());
     assert!(!test_dir.join("old.txt").exists());
     assert!(test_dir.join("new.txt").exists());
-
-    // Cleanup
-    let _ = fs::remove_dir_all(&test_dir);
 }
 
 #[tokio::test]
 async fn test_rename_conflict_no_force() {
-    use std::fs;
 
-    let test_dir = std::env::temp_dir().join("cmdr_rename_conflict_test");
-    let _ = fs::remove_dir_all(&test_dir);
-    fs::create_dir_all(&test_dir).unwrap();
+    let test_dir = TestDir::new("rename_conflict_test");
 
-    let volume = LocalPosixVolume::new("Test", &test_dir);
+    let volume = LocalPosixVolume::new("Test", &*test_dir);
     volume.create_file(Path::new("source.txt"), b"source").await.unwrap();
     volume.create_file(Path::new("target.txt"), b"target").await.unwrap();
 
@@ -171,19 +164,15 @@ async fn test_rename_conflict_no_force() {
     // Both files still intact
     assert!(test_dir.join("source.txt").exists());
     assert!(test_dir.join("target.txt").exists());
-
-    let _ = fs::remove_dir_all(&test_dir);
 }
 
 #[tokio::test]
 async fn test_rename_force_overwrites() {
     use std::fs;
 
-    let test_dir = std::env::temp_dir().join("cmdr_rename_force_test");
-    let _ = fs::remove_dir_all(&test_dir);
-    fs::create_dir_all(&test_dir).unwrap();
+    let test_dir = TestDir::new("rename_force_test");
 
-    let volume = LocalPosixVolume::new("Test", &test_dir);
+    let volume = LocalPosixVolume::new("Test", &*test_dir);
     volume
         .create_file(Path::new("source.txt"), b"new content")
         .await
@@ -199,8 +188,6 @@ async fn test_rename_force_overwrites() {
     assert!(result.is_ok());
     assert!(!test_dir.join("source.txt").exists());
     assert_eq!(fs::read_to_string(test_dir.join("target.txt")).unwrap(), "new content");
-
-    let _ = fs::remove_dir_all(&test_dir);
 }
 
 #[tokio::test]
@@ -211,11 +198,9 @@ async fn test_create_file_does_not_clobber_existing() {
     // the user's data when the listing-cache pre-check race fails.
     use std::fs;
 
-    let test_dir = std::env::temp_dir().join("cmdr_create_file_no_clobber_test");
-    let _ = fs::remove_dir_all(&test_dir);
-    fs::create_dir_all(&test_dir).unwrap();
+    let test_dir = TestDir::new("create_file_no_clobber_test");
 
-    let volume = LocalPosixVolume::new("Test", &test_dir);
+    let volume = LocalPosixVolume::new("Test", &*test_dir);
     let target = test_dir.join("notes.txt");
 
     fs::write(&target, "important user data").unwrap();
@@ -232,8 +217,6 @@ async fn test_create_file_does_not_clobber_existing() {
         "important user data",
         "original file contents must survive a colliding create_file"
     );
-
-    let _ = fs::remove_dir_all(&test_dir);
 }
 
 // ============================================================================
@@ -246,9 +229,7 @@ async fn test_symlink_to_file_detected() {
     use std::os::unix::fs::symlink;
 
     // Create a test file and symlink in /tmp
-    let test_dir = std::env::temp_dir().join("cmdr_symlink_file_test");
-    let _ = fs::remove_dir_all(&test_dir);
-    fs::create_dir_all(&test_dir).unwrap();
+    let test_dir = TestDir::new("symlink_file_test");
 
     let target_file = test_dir.join("target.txt");
     let link_file = test_dir.join("link_to_file.txt");
@@ -266,9 +247,6 @@ async fn test_symlink_to_file_detected() {
     assert!(metadata.is_symlink);
     assert!(!metadata.is_directory);
     assert_eq!(metadata.name, "link_to_file.txt");
-
-    // Cleanup
-    let _ = fs::remove_dir_all(&test_dir);
 }
 
 #[tokio::test]
@@ -276,9 +254,7 @@ async fn test_symlink_to_directory_detected() {
     use std::fs;
     use std::os::unix::fs::symlink;
 
-    let test_dir = std::env::temp_dir().join("cmdr_symlink_dir_test");
-    let _ = fs::remove_dir_all(&test_dir);
-    fs::create_dir_all(&test_dir).unwrap();
+    let test_dir = TestDir::new("symlink_dir_test");
 
     let target_dir = test_dir.join("target_dir");
     let link_to_dir = test_dir.join("link_to_dir");
@@ -293,19 +269,13 @@ async fn test_symlink_to_directory_detected() {
     assert!(metadata.is_symlink);
     assert!(metadata.is_directory); // Target is a directory
     assert_eq!(metadata.name, "link_to_dir");
-
-    // Cleanup
-    let _ = fs::remove_dir_all(&test_dir);
 }
 
 #[tokio::test]
 async fn test_broken_symlink_still_exists() {
-    use std::fs;
     use std::os::unix::fs::symlink;
 
-    let test_dir = std::env::temp_dir().join("cmdr_broken_symlink_test");
-    let _ = fs::remove_dir_all(&test_dir);
-    fs::create_dir_all(&test_dir).unwrap();
+    let test_dir = TestDir::new("broken_symlink_test");
 
     let broken_link = test_dir.join("broken_link.txt");
     symlink("/definitely_does_not_exist_12345", &broken_link).unwrap();
@@ -319,9 +289,6 @@ async fn test_broken_symlink_still_exists() {
     let metadata = volume.get_metadata(Path::new("broken_link.txt")).await.unwrap();
     assert!(metadata.is_symlink);
     assert!(!metadata.is_directory); // Target doesn't exist, so defaults to false
-
-    // Cleanup
-    let _ = fs::remove_dir_all(&test_dir);
 }
 
 // ============================================================================
@@ -338,9 +305,7 @@ fn test_supports_export_returns_true() {
 async fn test_scan_for_copy_single_file() {
     use std::fs;
 
-    let test_dir = std::env::temp_dir().join("cmdr_scan_copy_file_test");
-    let _ = fs::remove_dir_all(&test_dir);
-    fs::create_dir_all(&test_dir).unwrap();
+    let test_dir = TestDir::new("scan_copy_file_test");
 
     // Create a single file with known content
     fs::write(test_dir.join("test.txt"), "Hello, World!").unwrap();
@@ -351,17 +316,13 @@ async fn test_scan_for_copy_single_file() {
     assert_eq!(result.file_count, 1);
     assert_eq!(result.dir_count, 0);
     assert_eq!(result.total_bytes, 13); // "Hello, World!" is 13 bytes
-
-    let _ = fs::remove_dir_all(&test_dir);
 }
 
 #[tokio::test]
 async fn test_scan_for_copy_directory() {
     use std::fs;
 
-    let test_dir = std::env::temp_dir().join("cmdr_scan_copy_dir_test");
-    let _ = fs::remove_dir_all(&test_dir);
-    fs::create_dir_all(&test_dir).unwrap();
+    let test_dir = TestDir::new("scan_copy_dir_test");
 
     // Create directory structure
     let subdir = test_dir.join("mydir");
@@ -380,8 +341,6 @@ async fn test_scan_for_copy_directory() {
     assert_eq!(result.total_bytes, 10); // 3 + 6 + 1
     // No hardlinks: dedup'd source size equals the write footprint.
     assert_eq!(result.dedup_bytes, 10);
-
-    let _ = fs::remove_dir_all(&test_dir);
 }
 
 /// A tree where one 1 KiB inode is shared by three hardlinks plus one
@@ -394,9 +353,7 @@ async fn test_scan_for_copy_directory() {
 async fn test_scan_for_copy_dedupes_hardlinks_for_source_size_only() {
     use std::fs;
 
-    let test_dir = std::env::temp_dir().join("cmdr_scan_copy_hardlink_test");
-    let _ = fs::remove_dir_all(&test_dir);
-    fs::create_dir_all(&test_dir).unwrap();
+    let test_dir = TestDir::new("scan_copy_hardlink_test");
 
     let tree = test_dir.join("tree");
     fs::create_dir(&tree).unwrap();
@@ -418,17 +375,13 @@ async fn test_scan_for_copy_dedupes_hardlinks_for_source_size_only() {
         result.dedup_bytes, 5120,
         "source size counts each inode once, matching `du`"
     );
-
-    let _ = fs::remove_dir_all(&test_dir);
 }
 
 #[tokio::test]
 async fn test_open_read_stream_single_file() {
     use std::fs;
 
-    let src_dir = std::env::temp_dir().join("cmdr_read_stream_src_test");
-    let _ = fs::remove_dir_all(&src_dir);
-    fs::create_dir_all(&src_dir).unwrap();
+    let src_dir = TestDir::new("read_stream_src_test");
 
     fs::write(src_dir.join("source.txt"), "Test content").unwrap();
 
@@ -441,17 +394,13 @@ async fn test_open_read_stream_single_file() {
         content.extend_from_slice(&chunk.unwrap());
     }
     assert_eq!(content, b"Test content");
-
-    let _ = fs::remove_dir_all(&src_dir);
 }
 
 #[tokio::test]
 async fn test_open_read_stream_rejects_directory() {
     use std::fs;
 
-    let src_dir = std::env::temp_dir().join("cmdr_read_stream_dir_test");
-    let _ = fs::remove_dir_all(&src_dir);
-    fs::create_dir_all(&src_dir).unwrap();
+    let src_dir = TestDir::new("read_stream_dir_test");
 
     // Create a nested dir so we can attempt to stream it.
     fs::create_dir(src_dir.join("sourcedir")).unwrap();
@@ -459,8 +408,6 @@ async fn test_open_read_stream_rejects_directory() {
     let volume = LocalPosixVolume::new("Test", src_dir.to_str().unwrap());
     let result = volume.open_read_stream(Path::new("sourcedir")).await;
     assert!(result.is_err(), "streaming a directory should fail");
-
-    let _ = fs::remove_dir_all(&src_dir);
 }
 
 #[tokio::test]
@@ -468,9 +415,7 @@ async fn test_write_from_stream_creates_file() {
     use crate::file_system::volume::InMemoryVolume;
     use std::fs;
 
-    let vol_dir = std::env::temp_dir().join("cmdr_write_from_stream_test");
-    let _ = fs::remove_dir_all(&vol_dir);
-    fs::create_dir_all(&vol_dir).unwrap();
+    let vol_dir = TestDir::new("write_from_stream_test");
 
     // Source: an in-memory file that we stream into LocalPosix.
     let source = InMemoryVolume::new("Source");
@@ -494,8 +439,6 @@ async fn test_write_from_stream_creates_file() {
         fs::read_to_string(vol_dir.join("imported.txt")).unwrap(),
         "Imported content"
     );
-
-    let _ = fs::remove_dir_all(&vol_dir);
 }
 
 #[tokio::test]
@@ -510,9 +453,7 @@ async fn test_write_from_stream_multichunk_is_durable_and_correct() {
     // fully + correctly written through the durable finish path. A panic or an
     // error mishandled in the `sync_data` / parent-dir fsync logic would
     // surface here.
-    let vol_dir = std::env::temp_dir().join("cmdr_write_from_stream_durable_test");
-    let _ = fs::remove_dir_all(&vol_dir);
-    fs::create_dir_all(&vol_dir).unwrap();
+    let vol_dir = TestDir::new("write_from_stream_durable_test");
 
     // 200 KiB of deterministic bytes => ~4 chunks at 64 KiB each.
     let payload: Vec<u8> = (0..200 * 1024).map(|i| (i % 251) as u8).collect();
@@ -532,17 +473,12 @@ async fn test_write_from_stream_multichunk_is_durable_and_correct() {
 
     assert_eq!(bytes, payload.len() as u64);
     assert_eq!(fs::read(vol_dir.join("imported.bin")).unwrap(), payload);
-
-    let _ = fs::remove_dir_all(&vol_dir);
 }
 
 #[tokio::test]
 async fn test_scan_for_conflicts_no_conflicts() {
-    use std::fs;
 
-    let test_dir = std::env::temp_dir().join("cmdr_conflicts_none_test");
-    let _ = fs::remove_dir_all(&test_dir);
-    fs::create_dir_all(&test_dir).unwrap();
+    let test_dir = TestDir::new("conflicts_none_test");
 
     let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
 
@@ -563,17 +499,13 @@ async fn test_scan_for_conflicts_no_conflicts() {
 
     let conflicts = volume.scan_for_conflicts(&source_items, Path::new("")).await.unwrap();
     assert!(conflicts.is_empty());
-
-    let _ = fs::remove_dir_all(&test_dir);
 }
 
 #[tokio::test]
 async fn test_scan_for_conflicts_with_conflicts() {
     use std::fs;
 
-    let test_dir = std::env::temp_dir().join("cmdr_conflicts_some_test");
-    let _ = fs::remove_dir_all(&test_dir);
-    fs::create_dir_all(&test_dir).unwrap();
+    let test_dir = TestDir::new("conflicts_some_test");
 
     // Create existing files
     fs::write(test_dir.join("existing.txt"), "Old content").unwrap();
@@ -610,8 +542,6 @@ async fn test_scan_for_conflicts_with_conflicts() {
     assert_eq!(existing_conflict.source_size, 100);
     assert_eq!(existing_conflict.dest_size, 11); // "Old content" is 11 bytes
     assert_eq!(existing_conflict.source_modified, Some(1_700_000_000));
-
-    let _ = fs::remove_dir_all(&test_dir);
 }
 
 #[tokio::test]
@@ -631,9 +561,7 @@ async fn test_list_directory_includes_symlinks() {
     use std::fs;
     use std::os::unix::fs::symlink;
 
-    let test_dir = std::env::temp_dir().join("cmdr_symlink_list_test");
-    let _ = fs::remove_dir_all(&test_dir);
-    fs::create_dir_all(&test_dir).unwrap();
+    let test_dir = TestDir::new("symlink_list_test");
 
     // Create a regular file, a directory, and symlinks to each
     let file = test_dir.join("file.txt");
@@ -660,9 +588,6 @@ async fn test_list_directory_includes_symlinks() {
     let link_dir_entry = entries.iter().find(|e| e.name == "link_to_dir").unwrap();
     assert!(link_dir_entry.is_symlink);
     assert!(link_dir_entry.is_directory); // Points to directory
-
-    // Cleanup
-    let _ = fs::remove_dir_all(&test_dir);
 }
 
 /// `listing_is_watched` flips with the watcher lifecycle: false before a listing

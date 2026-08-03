@@ -31,6 +31,7 @@ use std::sync::{Arc, Mutex as StdMutex};
 use std::time::Duration;
 
 use crate::file_system::volume::{LocalPosixVolume, Volume, VolumeError};
+use crate::test_support::TestDir;
 
 #[tokio::test(flavor = "current_thread")]
 async fn auto_yield_parks_before_next_window_then_resumes_byte_exact() {
@@ -47,9 +48,7 @@ async fn auto_yield_parks_before_next_window_then_resumes_byte_exact() {
         foreground: Arc::clone(&foreground),
     });
 
-    let dst_dir = std::env::temp_dir().join(format!("cmdr_autoyield_dst_{:?}", std::thread::current().id()));
-    let _ = fs::remove_dir_all(&dst_dir);
-    fs::create_dir_all(&dst_dir).unwrap();
+    let dst_dir = TestDir::new("autoyield_dst");
     let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
     let state = make_state();
@@ -141,8 +140,6 @@ async fn auto_yield_parks_before_next_window_then_resumes_byte_exact() {
             assert_eq!(opens, vec![0], "a single open at offset 0; no reopen across the yield");
         })
         .await;
-
-    let _ = fs::remove_dir_all(&dst_dir);
 }
 
 // The clock is PAUSED for this test: tokio auto-advances virtual time only when
@@ -166,9 +163,7 @@ async fn auto_yield_debounces_a_burst_into_one_park() {
         foreground: Arc::clone(&foreground),
     });
 
-    let dst_dir = std::env::temp_dir().join(format!("cmdr_autoyield_burst_dst_{:?}", std::thread::current().id()));
-    let _ = fs::remove_dir_all(&dst_dir);
-    fs::create_dir_all(&dst_dir).unwrap();
+    let dst_dir = TestDir::new("autoyield_burst_dst");
     let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
     let state = make_state();
@@ -253,8 +248,6 @@ async fn auto_yield_debounces_a_burst_into_one_park() {
             );
         })
         .await;
-
-    let _ = fs::remove_dir_all(&dst_dir);
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -275,9 +268,7 @@ async fn auto_yield_min_progress_floor_prevents_starvation() {
         foreground: Arc::clone(&foreground),
     });
 
-    let dst_dir = std::env::temp_dir().join(format!("cmdr_autoyield_floor_dst_{:?}", std::thread::current().id()));
-    let _ = fs::remove_dir_all(&dst_dir);
-    fs::create_dir_all(&dst_dir).unwrap();
+    let dst_dir = TestDir::new("autoyield_floor_dst");
     let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
     let state = make_state();
@@ -353,13 +344,10 @@ async fn auto_yield_min_progress_floor_prevents_starvation() {
             assert_eq!(fs::read(dst_dir.join("movie.bin")).unwrap(), rel_expected_bytes());
         })
         .await;
-
-    let _ = fs::remove_dir_all(&dst_dir);
 }
 
 #[tokio::test(flavor = "current_thread")]
 async fn auto_yield_cancel_while_yielding_keeps_no_partial() {
-    use std::fs;
 
     let _tuning = AutoYieldTuningGuard::new(Duration::from_millis(400), REL_CHUNK as u64);
 
@@ -370,9 +358,7 @@ async fn auto_yield_cancel_while_yielding_keeps_no_partial() {
         foreground: Arc::clone(&foreground),
     });
 
-    let dst_dir = std::env::temp_dir().join(format!("cmdr_autoyield_cancel_dst_{:?}", std::thread::current().id()));
-    let _ = fs::remove_dir_all(&dst_dir);
-    fs::create_dir_all(&dst_dir).unwrap();
+    let dst_dir = TestDir::new("autoyield_cancel_dst");
     let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
     let op = TestOperationGuard::register_state("test-autoyield-cancel", make_state());
@@ -452,7 +438,6 @@ async fn auto_yield_cancel_while_yielding_keeps_no_partial() {
             );
         })
         .await;
-    let _ = fs::remove_dir_all(&dst_dir);
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -477,9 +462,7 @@ async fn non_mtp_source_never_auto_yields_for_foreground() {
         "the double must NOT support foreground yield"
     );
 
-    let dst_dir = std::env::temp_dir().join(format!("cmdr_autoyield_nonmtp_dst_{:?}", std::thread::current().id()));
-    let _ = fs::remove_dir_all(&dst_dir);
-    fs::create_dir_all(&dst_dir).unwrap();
+    let dst_dir = TestDir::new("autoyield_nonmtp_dst");
     let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
     let state = make_state();
@@ -505,8 +488,6 @@ async fn non_mtp_source_never_auto_yields_for_foreground() {
     let l = log.lock().unwrap();
     assert_eq!(l.releases, 0, "no foreground yield ⇒ no release");
     assert_eq!(l.opens, vec![0], "no release ⇒ a single open at offset 0");
-
-    let _ = fs::remove_dir_all(&dst_dir);
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -527,9 +508,7 @@ async fn yield_capable_source_with_no_foreground_pending_never_self_yields() {
         opens: Arc::clone(&opens),
     });
 
-    let dst_dir = std::env::temp_dir().join(format!("cmdr_no_self_yield_dst_{:?}", std::thread::current().id()));
-    let _ = fs::remove_dir_all(&dst_dir);
-    fs::create_dir_all(&dst_dir).unwrap();
+    let dst_dir = TestDir::new("no_self_yield_dst");
     let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
     let state = make_state();
@@ -568,6 +547,4 @@ async fn yield_capable_source_with_no_foreground_pending_never_self_yields() {
             assert_eq!(*opens.lock().unwrap(), vec![0], "a single open at offset 0; no reopen");
         })
         .await;
-
-    let _ = fs::remove_dir_all(&dst_dir);
 }

@@ -24,6 +24,7 @@ use crate::media_index::network::config::NetworkEnrichConfig;
 use crate::media_index::predicate::MediaKind;
 use crate::media_index::store::{EnrichmentState, MediaStatusRow, MediaStore, media_db_path};
 use crate::media_index::writer::MediaWriter;
+use cmdr_fs::testing::TestDir;
 use cmdr_fs::testing::wait_until;
 
 const ROOT: &str = "root";
@@ -86,7 +87,8 @@ fn scored_local_enriches_folders_in_the_map_and_defers_the_rest() {
 
 #[test]
 fn deferred_flag_is_read_once_per_deferral() {
-    let sched = MediaScheduler::new(std::env::temp_dir(), fake_backend());
+    let root = TestDir::new("media_sched_deferred");
+    let sched = MediaScheduler::new(root.to_path_buf(), fake_backend());
     // Not deferred yet.
     assert!(!sched.take_deferred_for_importance(ROOT));
     // A pass deferred ⇒ the bridge consumes it exactly once (so a later incremental

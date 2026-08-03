@@ -30,6 +30,7 @@ use std::sync::{Arc, Mutex as StdMutex};
 use std::time::Duration;
 
 use crate::file_system::volume::{InMemoryVolume, LocalPosixVolume, Volume, VolumeError};
+use crate::test_support::TestDir;
 
 /// Waits until the copy has reported at least `target` bytes. Progress is the
 /// real signal, so a descheduled runtime can't race the assertion.
@@ -123,7 +124,6 @@ async fn streaming_copy_parks_mid_file_while_paused_then_resumes() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn streaming_copy_cancel_while_paused_mid_file_unblocks() {
-    use std::fs;
 
     let gate = Arc::new(tokio::sync::Semaphore::new(0));
     let source: Arc<dyn Volume> = Arc::new(SlowSource {
@@ -132,9 +132,7 @@ async fn streaming_copy_cancel_while_paused_mid_file_unblocks() {
     // Local-FS destination — the user's real case is MTP→local, whose dest is
     // `LocalPosixVolume`. On cancel its `write_from_stream` returns typed
     // `VolumeError::Cancelled` and removes the in-flight partial.
-    let dst_dir = std::env::temp_dir().join(format!("cmdr_midchunk_cancel_dst_{:?}", std::thread::current().id()));
-    let _ = fs::remove_dir_all(&dst_dir);
-    fs::create_dir_all(&dst_dir).unwrap();
+    let dst_dir = TestDir::new("midchunk_cancel_dst");
     let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
     // Install into the global state cache so the production cancel API reaches it.
@@ -212,7 +210,6 @@ async fn streaming_copy_cancel_while_paused_mid_file_unblocks() {
         !dest.exists(Path::new("big.bin")).await,
         "a cancelled mid-file copy leaves no partial dest file"
     );
-    let _ = fs::remove_dir_all(&dst_dir);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
@@ -228,9 +225,7 @@ async fn paused_mtp_copy_parks_in_place_then_resumes_byte_exact() {
         gate: Some(Arc::clone(&gate)),
     });
 
-    let dst_dir = std::env::temp_dir().join(format!("cmdr_relpause_dst_{:?}", std::thread::current().id()));
-    let _ = fs::remove_dir_all(&dst_dir);
-    fs::create_dir_all(&dst_dir).unwrap();
+    let dst_dir = TestDir::new("relpause_dst");
     let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
     let state = make_state();
@@ -320,13 +315,10 @@ async fn paused_mtp_copy_parks_in_place_then_resumes_byte_exact() {
     // reopen-at-offset in the bounded-window model.
     let opens = log.lock().unwrap().opens.clone();
     assert_eq!(opens, vec![0], "a single open at offset 0; no reopen while paused");
-
-    let _ = fs::remove_dir_all(&dst_dir);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn paused_mtp_copy_cancel_while_paused_keeps_no_partial() {
-    use std::fs;
 
     let log = Arc::new(StdMutex::new(RelLog::default()));
     let gate = Arc::new(tokio::sync::Semaphore::new(0));
@@ -335,9 +327,7 @@ async fn paused_mtp_copy_cancel_while_paused_keeps_no_partial() {
         gate: Some(Arc::clone(&gate)),
     });
 
-    let dst_dir = std::env::temp_dir().join(format!("cmdr_relpause_cancel_dst_{:?}", std::thread::current().id()));
-    let _ = fs::remove_dir_all(&dst_dir);
-    fs::create_dir_all(&dst_dir).unwrap();
+    let dst_dir = TestDir::new("relpause_cancel_dst");
     let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
     let op = TestOperationGuard::register_state("test-relpause-cancel", make_state());
@@ -414,7 +404,6 @@ async fn paused_mtp_copy_cancel_while_paused_keeps_no_partial() {
         !dest.exists(Path::new("movie.bin")).await,
         "a cancelled mid-file copy leaves no partial dest file"
     );
-    let _ = fs::remove_dir_all(&dst_dir);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
@@ -429,9 +418,7 @@ async fn unpaused_mtp_copy_streams_straight_through() {
         gate: None,
     });
 
-    let dst_dir = std::env::temp_dir().join(format!("cmdr_relpause_nopause_dst_{:?}", std::thread::current().id()));
-    let _ = fs::remove_dir_all(&dst_dir);
-    fs::create_dir_all(&dst_dir).unwrap();
+    let dst_dir = TestDir::new("relpause_nopause_dst");
     let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
     let state = make_state();
@@ -457,6 +444,4 @@ async fn unpaused_mtp_copy_streams_straight_through() {
     let l = log.lock().unwrap();
     assert_eq!(l.releases, 0, "no pause ⇒ no release");
     assert_eq!(l.opens, vec![0], "no pause ⇒ a single open at offset 0");
-
-    let _ = fs::remove_dir_all(&dst_dir);
 }

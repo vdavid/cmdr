@@ -303,17 +303,11 @@ fn copy_permissions(source: &Path, dest: &Path) -> Result<(), WriteOperationErro
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::TestDir;
     use std::fs;
 
-    fn create_temp_dir(name: &str) -> std::path::PathBuf {
-        let temp_dir = std::env::temp_dir().join(format!("cmdr_chunked_copy_test_{}", name));
-        let _ = fs::remove_dir_all(&temp_dir);
-        fs::create_dir_all(&temp_dir).expect("Failed to create temp directory");
-        temp_dir
-    }
-
-    fn cleanup_temp_dir(path: &std::path::PathBuf) {
-        let _ = fs::remove_dir_all(path);
+    fn create_temp_dir(name: &str) -> TestDir {
+        TestDir::new(&format!("chunked_copy_test_{}", name))
     }
 
     #[test]
@@ -331,8 +325,6 @@ mod tests {
         assert_eq!(result.unwrap(), 20); // "Hello, chunked copy!" is 20 bytes
         assert!(dst.exists());
         assert_eq!(fs::read_to_string(&dst).unwrap(), "Hello, chunked copy!");
-
-        cleanup_temp_dir(&temp_dir);
     }
 
     #[test]
@@ -352,8 +344,6 @@ mod tests {
         assert!(matches!(result, Err(WriteOperationError::Cancelled { .. })));
         // Partial file cleanup is now async/best-effort (fires on a detached thread),
         // so we don't assert file absence here; it may or may not be deleted yet.
-
-        cleanup_temp_dir(&temp_dir);
     }
 
     #[test]
@@ -373,8 +363,6 @@ mod tests {
         assert!(result.is_ok());
         let dst_perms = fs::metadata(&dst).unwrap().permissions().mode();
         assert_eq!(dst_perms & 0o777, 0o755);
-
-        cleanup_temp_dir(&temp_dir);
     }
 
     #[test]
@@ -392,8 +380,6 @@ mod tests {
         assert_eq!(result.unwrap(), 0);
         assert!(dst.exists());
         assert_eq!(fs::read_to_string(&dst).unwrap(), "");
-
-        cleanup_temp_dir(&temp_dir);
     }
 
     // ------------------------------------------------------------------
@@ -434,8 +420,6 @@ mod tests {
             target_mtime.unix_seconds(),
             "chunked copy must preserve source mtime (copy_timestamps was stubbed out?)"
         );
-
-        cleanup_temp_dir(&temp_dir);
     }
 
     #[cfg(target_os = "macos")]
@@ -454,7 +438,6 @@ mod tests {
             // Some CI / encrypted-disk setups disallow user xattrs. Skip in
             // that case rather than failing: the test is opportunistic.
             log::warn!("chunked_copy_preserves_user_xattrs: setting xattr failed: {e}; skipping");
-            cleanup_temp_dir(&temp_dir);
             return;
         }
 
@@ -467,8 +450,6 @@ mod tests {
             Some(val.as_slice()),
             "chunked copy must preserve user xattrs (copy_xattrs was stubbed out?)"
         );
-
-        cleanup_temp_dir(&temp_dir);
     }
 
     #[test]
@@ -496,8 +477,6 @@ mod tests {
             "returned byte count must equal source length over multiple chunks"
         );
         assert_eq!(fs::metadata(&dst).unwrap().len(), expected);
-
-        cleanup_temp_dir(&temp_dir);
     }
 
     #[test]
@@ -533,7 +512,5 @@ mod tests {
         assert!(callback_count.load(Ordering::Relaxed) >= 3);
         // Last callback should report all bytes
         assert_eq!(last_bytes.load(Ordering::Relaxed), expected_size);
-
-        cleanup_temp_dir(&temp_dir);
     }
 }

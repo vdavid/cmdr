@@ -17,6 +17,7 @@ use std::time::Instant;
 
 use super::repo::{discover_repo, repo_info};
 use super::status::list_status;
+use crate::test_support::TestDir;
 
 const FILE_COUNT: usize = 50_000;
 const RUNS: usize = 21; // p95 of 21 sorted samples = the 20th.
@@ -161,10 +162,8 @@ fn bench_50k_files_list_status_under_budget() {
 
 /// Builds a small repo with `branches` branches, each `ahead` commits ahead
 /// of `main`. Used to bench `list_branches` (Modified + ahead/behind).
-fn build_branches_fixture(branches: usize, ahead: usize) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("cmdr_bench_branches_{}_{}", branches, std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).expect("create temp dir");
+fn build_branches_fixture(branches: usize, ahead: usize) -> TestDir {
+    let dir = TestDir::new(&format!("bench_branches_{branches}"));
     run(&dir, &["init", "-q", "-b", "main"]);
     run(&dir, &["config", "user.name", "Bench"]);
     run(&dir, &["config", "user.email", "bench@cmdr.local"]);
@@ -211,8 +210,6 @@ fn bench_list_branches_with_ahead_behind() {
     );
     // Sanity guard: stay under the 500 ms threshold the spec calls out.
     assert!(p95_us / 1000 <= 500, "p95 over 500 ms threshold: {}ms", p95_us / 1000);
-
-    let _ = std::fs::remove_dir_all(&dir);
 }
 
 // ── Per-file Modified dates inside snapshots ────────────────────────
@@ -221,10 +218,8 @@ fn bench_list_branches_with_ahead_behind() {
 /// file in a 100-entry top-level dir. Used to bench the per-file date
 /// walk-once batching at "Cmdr-scale" (5000 commits) and "monorepo-scale"
 /// (50k commits).
-fn build_deep_history_fixture(commits: usize, top_level_files: usize, name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("cmdr_bench_per_file_dates_{}_{}", name, std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
+fn build_deep_history_fixture(commits: usize, top_level_files: usize, name: &str) -> TestDir {
+    let dir = TestDir::new(&format!("bench_per_file_dates_{name}"));
     run(&dir, &["init", "-q", "-b", "main"]);
     run(&dir, &["config", "user.name", "Bench"]);
     run(&dir, &["config", "user.email", "bench@cmdr.local"]);
@@ -291,8 +286,6 @@ fn bench_per_file_dates_5k_commits_under_budget() {
         warm_p50, warm_p95
     );
     assert!(warm_p95 <= 5_000, "warm p95 over 5 ms: {}µs", warm_p95);
-
-    let _ = std::fs::remove_dir_all(&dir);
 }
 
 #[test]
@@ -321,17 +314,13 @@ fn bench_per_file_dates_50k_commits_under_budget() {
         cold_p95 / 1000
     );
     assert!(cold_p95 / 1000 <= 500, "p95 over 500 ms budget: {}ms", cold_p95 / 1000);
-
-    let _ = std::fs::remove_dir_all(&dir);
 }
 
 #[test]
 #[ignore = "Slow: builds a 200-commit fixture; opt-in via `cargo test -- --ignored`"]
 fn bench_list_commits_files_changed() {
     use super::log;
-    let dir = std::env::temp_dir().join(format!("cmdr_bench_commits_{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
+    let dir = TestDir::new("bench_commits");
     run(&dir, &["init", "-q", "-b", "main"]);
     run(&dir, &["config", "user.name", "Bench"]);
     run(&dir, &["config", "user.email", "bench@cmdr.local"]);
@@ -356,5 +345,4 @@ fn bench_list_commits_files_changed() {
         p50_us / 1000,
         p95_us / 1000
     );
-    let _ = std::fs::remove_dir_all(&dir);
 }

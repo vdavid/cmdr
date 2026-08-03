@@ -12,17 +12,14 @@ use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::time::Duration;
 
 use crate::file_system::volume::{InMemoryVolume, LocalPosixVolume, Volume, VolumeError};
+use crate::test_support::TestDir;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_copy_single_path_local_to_local() {
     use std::fs;
 
-    let src_dir = std::env::temp_dir().join("cmdr_copy_single_src");
-    let dst_dir = std::env::temp_dir().join("cmdr_copy_single_dst");
-    let _ = fs::remove_dir_all(&src_dir);
-    let _ = fs::remove_dir_all(&dst_dir);
-    fs::create_dir_all(&src_dir).unwrap();
-    fs::create_dir_all(&dst_dir).unwrap();
+    let src_dir = TestDir::new("copy_single_src");
+    let dst_dir = TestDir::new("copy_single_dst");
 
     fs::write(src_dir.join("source.txt"), "Source content").unwrap();
 
@@ -50,21 +47,14 @@ async fn test_copy_single_path_local_to_local() {
 
     assert_eq!(bytes, 14); // "Source content"
     assert_eq!(fs::read_to_string(dst_dir.join("dest.txt")).unwrap(), "Source content");
-
-    let _ = fs::remove_dir_all(&src_dir);
-    let _ = fs::remove_dir_all(&dst_dir);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_copy_single_path_cancelled() {
     use std::fs;
 
-    let src_dir = std::env::temp_dir().join("cmdr_copy_cancel_src");
-    let dst_dir = std::env::temp_dir().join("cmdr_copy_cancel_dst");
-    let _ = fs::remove_dir_all(&src_dir);
-    let _ = fs::remove_dir_all(&dst_dir);
-    fs::create_dir_all(&src_dir).unwrap();
-    fs::create_dir_all(&dst_dir).unwrap();
+    let src_dir = TestDir::new("copy_cancel_src");
+    let dst_dir = TestDir::new("copy_cancel_dst");
 
     fs::write(src_dir.join("source.txt"), "Content").unwrap();
 
@@ -92,9 +82,6 @@ async fn test_copy_single_path_cancelled() {
 
     assert!(result.is_err());
     assert!(matches!(result.unwrap_err(), VolumeError::Cancelled(_)));
-
-    let _ = fs::remove_dir_all(&src_dir);
-    let _ = fs::remove_dir_all(&dst_dir);
 }
 
 // ========================================================================

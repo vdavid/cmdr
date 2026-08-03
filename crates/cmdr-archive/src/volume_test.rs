@@ -14,13 +14,16 @@ use crate::test_fixtures::{
     overstate_record_count, set_first_entry_encrypted, stored,
 };
 use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::testing::TestDir;
 use cmdr_fs::volume::InMemoryVolume;
 use cmdr_fs::volume::{ListingProgress, Volume, VolumeError, VolumeReadStream};
 
-/// A zip written to a unique temp file, cleaned up on drop. Hands out
+/// A zip written into a scratch dir, cleaned up on drop. Hands out
 /// `ArchiveVolume`s backed by a configurable parent (default: a plain
 /// in-memory volume).
 struct TestArchive {
+    /// Held for its `Drop`: it owns the directory `path` lives in.
+    _dir: TestDir,
     path: PathBuf,
 }
 
@@ -30,9 +33,10 @@ impl TestArchive {
     }
 
     fn from_bytes(bytes: Vec<u8>) -> Self {
-        let path = std::env::temp_dir().join(format!("cmdr-archive-vol-{}.zip", uuid::Uuid::new_v4()));
+        let dir = TestDir::new("archive-vol");
+        let path = dir.join("fixture.zip");
         std::fs::write(&path, bytes).expect("write fixture zip");
-        Self { path }
+        Self { _dir: dir, path }
     }
 
     fn volume(&self) -> ArchiveVolume {
@@ -52,12 +56,6 @@ impl TestArchive {
     fn sevenz_volume(&self) -> ArchiveVolume {
         let parent = Arc::new(InMemoryVolume::new("parent").with_local_fs_access());
         ArchiveVolume::new(parent, self.path.clone(), ArchiveFormat::SevenZ, VolumeHost::detached())
-    }
-}
-
-impl Drop for TestArchive {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_file(&self.path);
     }
 }
 

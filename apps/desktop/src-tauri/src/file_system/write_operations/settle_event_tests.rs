@@ -11,7 +11,6 @@
 //! the full lifecycle runs without a Tauri runtime.
 
 use std::fs;
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -20,6 +19,7 @@ use super::state::WriteSettledGuard;
 use super::types::{
     CollectorEventSink, OperationEventSink, WriteOperationConfig, WriteOperationType, WriteSettledEvent,
 };
+use crate::test_support::TestDir;
 
 /// Bridge sink that keeps a direct handle to the underlying `CollectorEventSink`
 /// for inspection. Needed because the guard takes `Arc<dyn OperationEventSink>`,
@@ -187,15 +187,8 @@ fn settled_fires_for_every_operation_type() {
 // Injected event sink drives the managed spawn path end to end
 // ============================================================================
 
-fn create_temp_dir(name: &str) -> PathBuf {
-    let temp_dir = std::env::temp_dir().join(format!("cmdr_write_test_{}", name));
-    let _ = fs::remove_dir_all(&temp_dir); // Clean up any previous run
-    fs::create_dir_all(&temp_dir).expect("Failed to create temp directory");
-    temp_dir
-}
-
-fn cleanup_temp_dir(path: &PathBuf) {
-    let _ = fs::remove_dir_all(path);
+fn create_temp_dir(name: &str) -> TestDir {
+    TestDir::new(&format!("write_test_{}", name))
 }
 
 /// Drives `copy_files_start` through the operation manager with a
@@ -217,7 +210,7 @@ async fn injected_sink_receives_complete_and_settled_for_local_copy() {
     let result = copy_files_start(
         events,
         vec![src_file.clone()],
-        dst_dir.clone(),
+        dst_dir.to_path_buf(),
         WriteOperationConfig::default(),
         vec![],
         None,
@@ -250,7 +243,4 @@ async fn injected_sink_receives_complete_and_settled_for_local_copy() {
         dst_dir.join("hello.txt").exists(),
         "the copied file must exist at the destination"
     );
-
-    cleanup_temp_dir(&src_dir);
-    cleanup_temp_dir(&dst_dir);
 }

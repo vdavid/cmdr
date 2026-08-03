@@ -132,6 +132,7 @@ impl SecretStore for PlainFileStore {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::TestDir;
 
     #[test]
     fn test_store_contents_serde_roundtrip() {
@@ -156,9 +157,7 @@ mod tests {
         // (half-written) secrets.json would parse-fail and silently get
         // replaced with `StoreContents::default()` on the next `set`, losing
         // every SMB credential and AI API key on disk.
-        let dir = std::env::temp_dir().join("cmdr-test-plain-file-corrupt");
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
+        let dir = TestDir::new("test-plain-file-corrupt");
         let path = dir.join("secrets.json");
         std::fs::write(&path, b"{\"bad\":json,").unwrap();
 
@@ -175,8 +174,6 @@ mod tests {
             b"{\"bad\":json,",
             "corrupt file must stay on disk for forensic inspection"
         );
-
-        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
@@ -184,11 +181,9 @@ mod tests {
         // Regression for the low-severity audit finding: the write must go
         // through a temp file + rename so a crash mid-write can't truncate
         // the on-disk secrets and lose everything.
-        let dir = std::env::temp_dir().join("cmdr-test-plain-file-atomic");
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
+        let dir = TestDir::new("test-plain-file-atomic");
 
-        let store = PlainFileStore::new(dir.clone());
+        let store = PlainFileStore::new(dir.to_path_buf());
         store.set("k", b"v").unwrap();
 
         // The final secrets file is in place.
@@ -211,17 +206,13 @@ mod tests {
                 .mode();
             assert_eq!(mode & 0o777, 0o600, "secrets file must be 0o600 from creation");
         }
-
-        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
     fn test_plain_file_store_roundtrip() {
-        let dir = std::env::temp_dir().join("cmdr-test-plain-file-store");
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
+        let dir = TestDir::new("test-plain-file-store");
 
-        let store = PlainFileStore::new(dir.clone());
+        let store = PlainFileStore::new(dir.to_path_buf());
 
         // Set and get
         store.set("test-key", b"test-value").unwrap();
@@ -242,7 +233,5 @@ mod tests {
             store.delete("no-such-key"),
             Err(SecretStoreError::NotFound(_))
         ));
-
-        let _ = std::fs::remove_dir_all(&dir);
     }
 }

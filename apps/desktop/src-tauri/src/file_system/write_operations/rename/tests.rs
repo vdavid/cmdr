@@ -14,6 +14,7 @@ use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{LaneKey, ListingProgress};
 use crate::file_system::write_operations::busy_volume_ids;
 use crate::file_system::{FileEntry, Volume, VolumeError};
+use crate::test_support::TestDir;
 
 fn unique(label: &str) -> String {
     static N: AtomicU64 = AtomicU64::new(0);
@@ -21,11 +22,8 @@ fn unique(label: &str) -> String {
     format!("rename-test-{label}-{n}-{:?}", std::thread::current().id())
 }
 
-fn create_test_dir(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("cmdr_rename_mod_test_{}", name));
-    let _ = fs::remove_dir_all(&dir);
-    fs::create_dir_all(&dir).expect("Failed to create test directory");
-    dir
+fn create_test_dir(name: &str) -> TestDir {
+    TestDir::new(&format!("rename_mod_test_{}", name))
 }
 
 // ============================================================================

@@ -5,20 +5,14 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 
 use super::*;
+use crate::test_support::TestDir;
 
 // ============================================================================
 // Test utilities
 // ============================================================================
 
-fn create_temp_dir(name: &str) -> PathBuf {
-    let temp_dir = std::env::temp_dir().join(format!("cmdr_write_integration_test_{}", name));
-    let _ = fs::remove_dir_all(&temp_dir);
-    fs::create_dir_all(&temp_dir).expect("Failed to create temp directory");
-    temp_dir
-}
-
-fn cleanup_temp_dir(path: &PathBuf) {
-    let _ = fs::remove_dir_all(path);
+fn create_temp_dir(name: &str) -> TestDir {
+    TestDir::new(&format!("write_integration_test_{}", name))
 }
 
 // ============================================================================
@@ -38,8 +32,6 @@ fn test_find_unique_name() {
     let path = temp_dir.join("file.txt");
     let unique = find_unique_name(&path);
     assert_eq!(unique.file_name().unwrap().to_str().unwrap(), "file (3).txt");
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -52,8 +44,6 @@ fn test_find_unique_name_no_extension() {
     let path = temp_dir.join("file");
     let unique = find_unique_name(&path);
     assert_eq!(unique.file_name().unwrap().to_str().unwrap(), "file (2)");
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -69,8 +59,6 @@ fn test_conflict_rename_generates_unique_names() {
     let path = temp_dir.join("file.txt");
     let unique = find_unique_name(&path);
     assert_eq!(unique.file_name().unwrap().to_str().unwrap(), "file (3).txt");
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 // ============================================================================
@@ -115,8 +103,6 @@ fn test_validate_sources_with_existing_files() {
 
     let result = validate_sources(&[file1, file2]);
     assert!(result.is_ok());
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -130,8 +116,6 @@ fn test_validate_sources_with_missing_file() {
 
     let result = validate_sources(&[file1, file2]);
     assert!(matches!(result, Err(WriteOperationError::SourceNotFound { .. })));
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -147,8 +131,6 @@ fn test_validate_sources_with_symlink() {
     // Should accept symlinks
     let result = validate_sources(&[link]);
     assert!(result.is_ok());
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -162,8 +144,6 @@ fn test_validate_sources_with_broken_symlink() {
     // Should accept broken symlinks (symlink_metadata succeeds)
     let result = validate_sources(&[link]);
     assert!(result.is_ok());
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -177,8 +157,6 @@ fn test_ensure_destination_dir_with_existing_dir() {
     let result = ensure_destination_dir(&dest);
     assert!(result.is_ok());
     assert!(dest.is_dir());
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -192,8 +170,6 @@ fn test_ensure_destination_dir_creates_missing_dir() {
     let result = ensure_destination_dir(&dest);
     assert!(result.is_ok());
     assert!(dest.is_dir(), "the missing destination should have been created");
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -207,8 +183,6 @@ fn test_ensure_destination_dir_creates_nested_missing_dirs() {
     let result = ensure_destination_dir(&dest);
     assert!(result.is_ok());
     assert!(dest.is_dir(), "all missing ancestors should have been created");
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -223,8 +197,6 @@ fn test_ensure_destination_dir_rejects_a_file() {
     assert!(matches!(result, Err(WriteOperationError::IoError { .. })));
     // The file must be left untouched.
     assert!(dest.is_file());
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[cfg(unix)]
@@ -260,7 +232,6 @@ fn test_ensure_destination_dir_surfaces_create_failure() {
     let mut perms = fs::metadata(&parent).unwrap().permissions();
     perms.set_mode(0o700);
     fs::set_permissions(&parent, perms).unwrap();
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -278,8 +249,6 @@ fn test_validate_not_same_location_different() {
 
     let result = validate_not_same_location(&[file], &dst_dir);
     assert!(result.is_ok());
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -293,8 +262,6 @@ fn test_validate_not_same_location_same() {
     // Copying file to same directory
     let result = validate_not_same_location(&[file], &temp_dir);
     assert!(matches!(result, Err(WriteOperationError::SameLocation { .. })));
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -309,8 +276,6 @@ fn test_validate_destination_not_inside_source_ok() {
 
     let result = validate_destination_not_inside_source(&[src_dir], &dst_dir);
     assert!(result.is_ok());
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -329,8 +294,6 @@ fn test_validate_destination_not_inside_source_nested() {
         result,
         Err(WriteOperationError::DestinationInsideSource { .. })
     ));
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 // ============================================================================
@@ -350,8 +313,6 @@ fn test_is_same_filesystem_same_volume() {
     let result = is_same_filesystem(&dir1, &dir2);
     assert!(result.is_ok());
     assert!(result.unwrap()); // Should be same filesystem
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -364,8 +325,6 @@ fn test_is_same_filesystem_with_root() {
     let result = is_same_filesystem(&temp_dir, std::path::Path::new("/"));
     assert!(result.is_ok());
     // Note: Result depends on whether temp is on the same volume as root
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 // ============================================================================
@@ -388,8 +347,6 @@ fn test_validate_destination_not_inside_source_dotdot_bypass() {
         matches!(result, Err(WriteOperationError::DestinationInsideSource { .. })),
         "Should detect destination inside source even with '..' segments"
     );
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -417,8 +374,6 @@ fn test_validate_destination_not_inside_source_allows_nonexistent_dest_outside()
         "nonexistent dest outside source must validate, got {:?}",
         result
     );
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -445,8 +400,6 @@ fn test_validate_destination_not_inside_source_fails_closed_on_nonexistent_sourc
     // canonicalize-fail with `is_dir() == true` silently passing.
     let result = validate_destination_not_inside_source(std::slice::from_ref(&bad_source), &dst_dir);
     assert!(result.is_ok(), "missing source path is handled by other validators");
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -468,8 +421,6 @@ fn test_validate_destination_not_inside_source_symlink_bypass() {
         matches!(result, Err(WriteOperationError::DestinationInsideSource { .. })),
         "Should detect destination inside source even through symlinks"
     );
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 // ============================================================================
@@ -486,8 +437,6 @@ fn test_validate_destination_writable_ok() {
 
     let result = validate_destination_writable(&dest);
     assert!(result.is_ok());
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -514,7 +463,6 @@ fn test_validate_destination_writable_readonly() {
 
     // Restore for cleanup
     fs::set_permissions(&dest, fs::Permissions::from_mode(0o755)).unwrap();
-    cleanup_temp_dir(&temp_dir);
 }
 
 // ============================================================================
@@ -532,8 +480,6 @@ fn test_is_same_file_different_files() {
     fs::write(&file2, "content2").unwrap();
 
     assert!(!is_same_file(&file1, &file2));
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -548,8 +494,6 @@ fn test_is_same_file_via_symlink() {
 
     // file and link resolve to the same inode
     assert!(is_same_file(&file, &link));
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -564,8 +508,6 @@ fn test_is_same_file_via_hardlink() {
 
     // Hard links share the same inode
     assert!(is_same_file(&file, &link));
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -579,8 +521,6 @@ fn test_is_same_file_nonexistent_dest() {
 
     // Should return false when destination doesn't exist
     assert!(!is_same_file(&file, &missing));
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 // ============================================================================
@@ -665,8 +605,6 @@ fn test_special_file_socket_skipped() {
 
     // The scan functions skip special files; we verify the metadata detection works
     // (Full scan integration requires a Tauri app handle, tested at a higher level)
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[cfg(unix)]
@@ -689,8 +627,6 @@ fn test_special_file_fifo_skipped() {
     assert!(!metadata.is_file());
     assert!(!metadata.is_dir());
     assert!(!metadata.is_symlink());
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 // ============================================================================
@@ -706,8 +642,6 @@ fn test_validate_disk_space_sufficient() {
     // Requesting 1 byte should always succeed on any volume with free space
     let result = validate_disk_space(&temp_dir, 1);
     assert!(result.is_ok());
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[cfg(unix)]
@@ -723,6 +657,4 @@ fn test_validate_disk_space_insufficient() {
         "Should reject when required space exceeds available, got: {:?}",
         result
     );
-
-    cleanup_temp_dir(&temp_dir);
 }

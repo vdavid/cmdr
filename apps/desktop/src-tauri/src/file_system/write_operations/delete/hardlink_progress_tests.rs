@@ -10,7 +10,6 @@
 //! `walker.rs::delete_files_with_progress_inner` for the active site.
 
 use std::fs;
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -18,17 +17,11 @@ use super::super::state::WriteOperationState;
 use super::super::test_support::TestOperationGuard;
 use super::super::types::{CollectorEventSink, WriteOperationConfig};
 use super::walker::delete_files_with_progress_inner;
+use crate::test_support::TestDir;
 
 /// Builds a unique-per-test scratch directory under `$TMPDIR`.
-fn create_temp_dir(name: &str) -> PathBuf {
-    let temp_dir = std::env::temp_dir().join(format!("cmdr_hardlink_progress_{name}"));
-    let _ = fs::remove_dir_all(&temp_dir);
-    fs::create_dir_all(&temp_dir).expect("Failed to create temp directory");
-    temp_dir
-}
-
-fn cleanup(path: &PathBuf) {
-    let _ = fs::remove_dir_all(path);
+fn create_temp_dir(name: &str) -> TestDir {
+    TestDir::new(&format!("hardlink_progress_{name}"))
 }
 
 fn unique_op_id(name: &str) -> String {
@@ -67,7 +60,7 @@ fn delete_hardlinked_files_does_not_overshoot_progress() {
     );
 
     let sink = CollectorEventSink::new();
-    let sources = vec![dir.clone()];
+    let sources = vec![dir.to_path_buf()];
     let config = WriteOperationConfig::default();
 
     let result = delete_files_with_progress_inner(&sink, &op_id, op.state(), &sources, &config);
@@ -109,6 +102,4 @@ fn delete_hardlinked_files_does_not_overshoot_progress() {
             event.phase
         );
     }
-
-    cleanup(&dir);
 }

@@ -18,16 +18,10 @@ use super::super::test_support::TestOperationGuard;
 use super::super::types::{CollectorEventSink, WriteOperationConfig};
 use super::copy::copy_files_with_progress_inner;
 use super::move_op::move_files_with_progress_inner;
+use crate::test_support::TestDir;
 
-fn create_temp_dir(name: &str) -> PathBuf {
-    let temp_dir = std::env::temp_dir().join(format!("cmdr_hardlink_xfer_{name}"));
-    let _ = fs::remove_dir_all(&temp_dir);
-    fs::create_dir_all(&temp_dir).expect("Failed to create temp directory");
-    temp_dir
-}
-
-fn cleanup(path: &PathBuf) {
-    let _ = fs::remove_dir_all(path);
+fn create_temp_dir(name: &str) -> TestDir {
+    TestDir::new(&format!("hardlink_xfer_{name}"))
 }
 
 fn unique_op_id(name: &str) -> String {
@@ -126,8 +120,6 @@ fn copy_counts_write_footprint_for_hardlinks() {
         "copy numerator must reach the write-footprint denominator exactly"
     );
     assert_no_mid_flight_overshoot(&sink);
-
-    cleanup(&root);
 }
 
 /// Cross-fs move would be the truer test for hardlink dedup (rename within
@@ -152,6 +144,4 @@ fn move_hardlinked_files_does_not_overshoot_progress() {
 
     assert!(result.is_ok(), "move must succeed; got {result:?}");
     assert_no_mid_flight_overshoot(&sink);
-
-    cleanup(&root);
 }

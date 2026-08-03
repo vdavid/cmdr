@@ -402,7 +402,7 @@ mod tests {
 #[cfg(all(test, target_os = "macos"))]
 mod write_tests {
     use super::*;
-    use std::path::PathBuf;
+    use crate::test_support::TestDir;
 
     fn tag(name: &str, color: u8) -> TagRef {
         TagRef {
@@ -411,11 +411,8 @@ mod write_tests {
         }
     }
 
-    fn temp_dir(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("cmdr_tags_write_{}_{name}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).expect("create temp dir");
-        dir
+    fn temp_dir(name: &str) -> TestDir {
+        TestDir::new(&format!("tags_write_{}_{name}", std::process::id()))
     }
 
     fn path_str(p: &Path) -> String {
@@ -565,13 +562,10 @@ mod write_tests {
 #[cfg(all(test, target_os = "macos"))]
 mod macos_fs_tests {
     use super::*;
-    use std::path::PathBuf;
+    use crate::test_support::TestDir;
 
-    fn temp_dir(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("cmdr_tags_test_{name}"));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).expect("create temp dir");
-        dir
+    fn temp_dir(name: &str) -> TestDir {
+        TestDir::new(&format!("tags_test_{name}"))
     }
 
     /// The red.txt fixture bytes (a Finder-written `["Red\n6"]` binary plist).

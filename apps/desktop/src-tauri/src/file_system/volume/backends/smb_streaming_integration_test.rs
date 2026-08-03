@@ -13,6 +13,7 @@
 use super::smb_test_support::*;
 use super::*;
 use crate::file_system::volume::InMemoryVolume;
+use crate::test_support::TestDir;
 
 // ── SMB streaming integration tests (Docker) ───────────────────
 
@@ -354,12 +355,10 @@ async fn smb_integration_write_from_stream_local_source_large_file() {
     let size = 4 * 1024 * 1024; // 4 MB, spans multiple import chunks
     let data: Vec<u8> = (0..size).map(|i| ((i * 13) % 251) as u8).collect();
 
-    let local_tmp = std::env::temp_dir().join(format!("cmdr-smb-import-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&local_tmp);
-    std::fs::create_dir_all(&local_tmp).unwrap();
+    let local_tmp = TestDir::new("smb-import");
     std::fs::write(local_tmp.join("import-large.bin"), &data).unwrap();
 
-    let local_vol = crate::file_system::volume::LocalPosixVolume::new("local-src", local_tmp.clone());
+    let local_vol = crate::file_system::volume::LocalPosixVolume::new("local-src", local_tmp.to_path_buf());
 
     let smb_path = format!("{}/import-large.bin", dir);
     let progress_calls = AtomicUsize::new(0);
@@ -397,7 +396,6 @@ async fn smb_integration_write_from_stream_local_source_large_file() {
         expected_hash, actual_hash
     );
 
-    let _ = std::fs::remove_dir_all(&local_tmp);
     ensure_clean(&vol, &dir).await;
 }
 

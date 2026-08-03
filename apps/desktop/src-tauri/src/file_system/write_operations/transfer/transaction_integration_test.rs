@@ -1,21 +1,14 @@
 //! Integration tests for CopyTransaction rollback behavior.
 
+use crate::test_support::TestDir;
 use std::fs;
-use std::path::PathBuf;
 
 // ============================================================================
 // Test utilities
 // ============================================================================
 
-fn create_temp_dir(name: &str) -> PathBuf {
-    let temp_dir = std::env::temp_dir().join(format!("cmdr_write_integration_test_{}", name));
-    let _ = fs::remove_dir_all(&temp_dir);
-    fs::create_dir_all(&temp_dir).expect("Failed to create temp directory");
-    temp_dir
-}
-
-fn cleanup_temp_dir(path: &PathBuf) {
-    let _ = fs::remove_dir_all(path);
+fn create_temp_dir(name: &str) -> TestDir {
+    TestDir::new(&format!("write_integration_test_{}", name))
 }
 
 // ============================================================================
@@ -38,8 +31,6 @@ fn test_copy_transaction_records_files() {
     assert_eq!(tx.created_files.len(), 2);
     assert!(tx.created_files.contains(&file1));
     assert!(tx.created_files.contains(&file2));
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -58,8 +49,6 @@ fn test_copy_transaction_records_dirs() {
     assert_eq!(tx.created_dirs.len(), 2);
     assert!(tx.created_dirs.contains(&dir1));
     assert!(tx.created_dirs.contains(&dir2));
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -89,8 +78,6 @@ fn test_copy_transaction_rollback_removes_files() {
     // Verify files deleted
     assert!(!file1.exists());
     assert!(!file2.exists());
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -119,8 +106,6 @@ fn test_copy_transaction_rollback_removes_dirs() {
     // Verify dirs deleted
     assert!(!dir2.exists());
     assert!(!dir1.exists());
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -150,8 +135,6 @@ fn test_copy_transaction_rollback_mixed() {
     // Files should be deleted first, then directories
     assert!(!file1.exists());
     assert!(!dir1.exists());
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -173,6 +156,4 @@ fn test_copy_transaction_commit_preserves_files() {
 
     // File should still exist
     assert!(file1.exists());
-
-    cleanup_temp_dir(&temp_dir);
 }

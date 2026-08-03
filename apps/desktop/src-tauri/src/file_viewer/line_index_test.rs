@@ -9,6 +9,7 @@ use super::line_index::LineIndexBackend;
 use super::search_cancel_test_support::{assert_search_stops_on_per_match_cancel, many_matches_corpus};
 use super::search_matcher::{Matcher, SearchMode};
 use super::{FileViewerBackend, INDEX_CHECKPOINT_INTERVAL, SearchMatch, SeekTarget};
+use crate::test_support::TestDir;
 
 fn literal_matcher(query: &str, case_sensitive: bool) -> Matcher {
     Matcher::build(
@@ -21,15 +22,8 @@ fn literal_matcher(query: &str, case_sensitive: bool) -> Matcher {
     .expect("test query must build")
 }
 
-fn create_test_dir(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("cmdr_viewer_lidx_{}", name));
-    let _ = fs::remove_dir_all(&dir);
-    fs::create_dir_all(&dir).expect("Failed to create test directory");
-    dir
-}
-
-fn cleanup(path: &Path) {
-    let _ = fs::remove_dir_all(path);
+fn create_test_dir(name: &str) -> TestDir {
+    TestDir::new(&format!("viewer_lidx_{}", name))
 }
 
 fn write_test_file(dir: &Path, name: &str, content: &str) -> PathBuf {
@@ -49,8 +43,6 @@ fn open_builds_index() {
     assert_eq!(backend.total_lines(), Some(4)); // 3 lines + trailing empty
     assert_eq!(backend.file_name(), "test.txt");
     assert_eq!(backend.total_bytes(), 21);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -66,7 +58,6 @@ fn open_directory_fails() {
     let cancel = AtomicBool::new(false);
     let result = LineIndexBackend::open(&dir, &cancel);
     assert!(result.is_err());
-    cleanup(&dir);
 }
 
 #[test]
@@ -79,8 +70,6 @@ fn open_cancellation() {
     let cancel = AtomicBool::new(true); // Pre-cancelled
     let result = LineIndexBackend::open(&file, &cancel);
     assert!(result.is_err());
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -95,8 +84,6 @@ fn get_lines_from_start() {
     assert_eq!(chunk.lines, vec!["alpha", "beta", "gamma"]);
     assert_eq!(chunk.first_line_number, 0);
     assert_eq!(chunk.total_lines, Some(5));
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -110,8 +97,6 @@ fn get_lines_from_middle() {
     let chunk = backend.get_lines(&SeekTarget::Line(3), 2).unwrap();
     assert_eq!(chunk.lines, vec!["d", "e"]);
     assert_eq!(chunk.first_line_number, 3);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -125,8 +110,6 @@ fn get_lines_past_end() {
     let chunk = backend.get_lines(&SeekTarget::Line(10), 5).unwrap();
     // Should clamp to last line
     assert_eq!(chunk.first_line_number, 3); // 4 lines (including trailing empty), last is index 3
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -142,8 +125,6 @@ fn get_lines_by_fraction() {
     let chunk = backend.get_lines(&SeekTarget::Fraction(0.0), 1).unwrap();
     assert_eq!(chunk.first_line_number, 0);
     assert_eq!(chunk.lines[0], "line 1");
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -157,8 +138,6 @@ fn get_lines_no_trailing_newline() {
     let chunk = backend.get_lines(&SeekTarget::Line(0), 10).unwrap();
     assert_eq!(chunk.lines, vec!["a", "b", "c"]);
     assert_eq!(backend.total_lines(), Some(3));
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -186,8 +165,6 @@ fn sparse_index_checkpoints() {
     let chunk2 = backend.get_lines(&SeekTarget::Line(target_line2), 2).unwrap();
     assert_eq!(chunk2.first_line_number, target_line2);
     assert_eq!(chunk2.lines[0], format!("line {:06}", target_line2));
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -213,8 +190,6 @@ fn search_finds_matches() {
     assert_eq!(matches[1].line, 2);
     // "hello world\n" = 12 bytes, "foo bar\n" = 8 bytes → line 2 starts at byte 20
     assert_eq!(matches[1].byte_offset, 20);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -235,8 +210,6 @@ fn search_case_insensitive() {
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 3);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -258,8 +231,6 @@ fn search_cancellation() {
     let matches = results.lock().unwrap();
 
     assert!(matches.len() < 10000);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -275,8 +246,6 @@ fn capabilities_correct() {
     assert!(caps.supports_byte_seek);
     assert!(caps.supports_fraction_seek);
     assert!(caps.knows_total_lines);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -289,8 +258,6 @@ fn empty_file() {
 
     assert_eq!(backend.total_bytes(), 0);
     assert_eq!(backend.total_lines(), Some(1)); // One empty line
-
-    cleanup(&dir);
 }
 
 // ─── Multi-byte UTF-8 tests ────────────────────────────────────────────
@@ -309,8 +276,6 @@ fn line_count_with_multibyte_chars() {
 
     let chunk = backend.get_lines(&SeekTarget::Line(0), 4).unwrap();
     assert_eq!(chunk.lines, vec!["café", "漢字", "🦀🎉", "plain"]);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -326,8 +291,6 @@ fn seek_line_after_multibyte_content() {
     let chunk = backend.get_lines(&SeekTarget::Line(2), 1).unwrap();
     assert_eq!(chunk.first_line_number, 2);
     assert_eq!(chunk.lines[0], "plain");
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -351,8 +314,6 @@ fn search_emoji_utf16_column() {
     assert_eq!(matches.len(), 1);
     assert_eq!(matches[0].column, 2); // 🦀 = 2 UTF-16 code units
     assert_eq!(matches[0].length, 4); // "rust" = 4 ASCII chars = 4 UTF-16 units
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -375,8 +336,6 @@ fn search_cjk_utf16_column() {
     assert_eq!(matches.len(), 1);
     assert_eq!(matches[0].column, 2); // 2 CJK chars = 2 UTF-16 code units
     assert_eq!(matches[0].length, 4);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -400,8 +359,6 @@ fn search_accented_char_utf16_column() {
     assert_eq!(matches.len(), 1);
     assert_eq!(matches[0].column, 5); // "café " = 5 chars = 5 UTF-16 code units
     assert_eq!(matches[0].length, 5);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -426,8 +383,6 @@ fn search_on_last_line_without_newline_utf16() {
     assert_eq!(matches[0].line, 1);
     assert_eq!(matches[0].column, 2); // 🦀 = 2 UTF-16 code units
     assert_eq!(matches[0].length, 4);
-
-    cleanup(&dir);
 }
 
 // ─── extend_to: tail-mode index extension ───────────────────────────────
@@ -462,8 +417,6 @@ fn extend_to_matches_open_at_target_size() {
     let ext_chunk = extended.get_lines(&SeekTarget::Line(0), 10).unwrap();
     let fresh_chunk = fresh.get_lines(&SeekTarget::Line(0), 10).unwrap();
     assert_eq!(ext_chunk.lines, fresh_chunk.lines);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -498,8 +451,6 @@ fn extend_to_appends_checkpoints_past_interval() {
     let chunk = extended.get_lines(&SeekTarget::Line(target), 1).unwrap();
     assert_eq!(chunk.first_line_number, target);
     assert_eq!(chunk.lines[0], format!("more  {:06}", 5));
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -521,8 +472,6 @@ fn extend_to_observes_cancel() {
     let pre_cancel = AtomicBool::new(true);
     let result = backend.extend_to(new_size, &pre_cancel);
     assert!(matches!(result, Err(super::ViewerError::Cancelled)));
-
-    cleanup(&dir);
 }
 
 // -- Property test: extend_to(N) ≡ open-at-N -------------------------------------
@@ -555,8 +504,7 @@ proptest! {
         ),
         split_pct in 0u8..=100u8,
     ) {
-        let dir = std::env::temp_dir().join(format!("cmdr_lidx_proptest_{}", std::process::id()));
-        let _ = fs::create_dir_all(&dir);
+        let dir = TestDir::new("lidx_proptest");
         let split = (seed.len() * split_pct as usize) / 100;
         let split = split.min(seed.len());
 
@@ -611,6 +559,4 @@ fn test_per_match_cancel_observes_within_100ms() {
     let open_cancel = AtomicBool::new(false);
     let backend = LineIndexBackend::open(&path, &open_cancel).unwrap();
     assert_search_stops_on_per_match_cancel(&backend, &literal_matcher("a", true));
-
-    cleanup(&dir);
 }

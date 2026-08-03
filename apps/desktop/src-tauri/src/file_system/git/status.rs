@@ -399,11 +399,10 @@ mod cache_tests {
 
     use super::super::repo::discover_repo;
     use super::*;
+    use crate::test_support::TestDir;
 
-    fn temp_repo(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("cmdr_status_cache_{}_{}", name, std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
+    fn temp_repo(name: &str) -> TestDir {
+        let dir = TestDir::new(&format!("status_cache_{name}"));
         run(&dir, &["init", "-q", "-b", "main"]);
         run(&dir, &["config", "user.name", "Test"]);
         run(&dir, &["config", "user.email", "test@cmdr.local"]);
@@ -441,8 +440,6 @@ mod cache_tests {
         assert_eq!(first.len(), second.len());
         // After the first call, the cache must have an entry.
         assert!(cache_len_for_test() >= 1);
-
-        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
@@ -482,8 +479,6 @@ mod cache_tests {
             entries_second.contains(&"new.txt"),
             "post-add status missed the new file"
         );
-
-        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
@@ -498,8 +493,6 @@ mod cache_tests {
 
         invalidate_status_cache(&root);
         assert!(!status_cache().read().unwrap().contains_key(&canonical));
-
-        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
@@ -535,7 +528,5 @@ mod cache_tests {
         let scoped_paths: Vec<&str> = scoped.iter().map(|e| e.relative_path.as_str()).collect();
         assert!(!scoped_paths.contains(&"top.txt"));
         assert!(scoped_paths.contains(&"sub/a.txt"));
-
-        let _ = std::fs::remove_dir_all(&dir);
     }
 }

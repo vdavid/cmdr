@@ -19,6 +19,7 @@ use crate::file_system::volume::{InMemoryVolume, Volume, VolumeError};
 use cmdr_fs::volume::host::VolumeHost;
 
 use super::super::super::state::OperationIntent;
+use crate::test_support::TestDir;
 
 /// A tar entry to build into a fixture.
 enum Item<'a> {
@@ -30,13 +31,13 @@ enum Item<'a> {
 /// Builds a gzip-compressed tar from `(name, bytes)` files and writes it to a
 /// unique temp path (the local-backed `ArchiveVolume` reads a real file). Cleaned
 /// up by [`TarGzFixture`]'s `Drop`.
-fn write_targz(files: &[(&str, &[u8])]) -> PathBuf {
+fn write_targz(files: &[(&str, &[u8])]) -> (TestDir, PathBuf) {
     let items: Vec<Item> = files.iter().map(|(n, d)| Item::File(n, d)).collect();
     write_targz_items(&items)
 }
 
 /// Like [`write_targz`] but accepts dirs and symlinks too.
-fn write_targz_items(items: &[Item]) -> PathBuf {
+fn write_targz_items(items: &[Item]) -> (TestDir, PathBuf) {
     let mut builder = ::tar::Builder::new(Vec::new());
     for item in items {
         let mut header = ::tar::Header::new_ustar();
@@ -74,28 +75,29 @@ fn write_targz_items(items: &[Item]) -> PathBuf {
     enc.write_all(&plain).expect("gz write");
     let bytes = enc.finish().expect("gz finish");
 
-    let path = std::env::temp_dir().join(format!("cmdr-seq-extract-{}.tar.gz", uuid::Uuid::new_v4()));
+    let dir = TestDir::new("seq-extract");
+    let path = dir.join("fixture.tar.gz");
     std::fs::write(&path, bytes).expect("write fixture");
-    path
+    (dir, path)
 }
 
-/// Owns a temp `.tar.gz` and hands out an `ArchiveVolume` over it; removes the
-/// file on drop.
+/// Owns a scratch `.tar.gz` and hands out an `ArchiveVolume` over it; the
+/// directory goes away on drop.
 struct TarGzFixture {
+    /// Held for its `Drop`: it owns the directory `path` lives in.
+    _dir: TestDir,
     path: PathBuf,
 }
 
 impl TarGzFixture {
     fn new(files: &[(&str, &[u8])]) -> Self {
-        Self {
-            path: write_targz(files),
-        }
+        let (dir, path) = write_targz(files);
+        Self { _dir: dir, path }
     }
 
     fn from_items(items: &[Item]) -> Self {
-        Self {
-            path: write_targz_items(items),
-        }
+        let (dir, path) = write_targz_items(items);
+        Self { _dir: dir, path }
     }
 
     fn volume(&self) -> Arc<dyn Volume> {
@@ -112,12 +114,6 @@ impl TarGzFixture {
 
     fn inner(&self, rel: &str) -> PathBuf {
         self.path.join(rel)
-    }
-}
-
-impl Drop for TarGzFixture {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_file(&self.path);
     }
 }
 

@@ -16,6 +16,7 @@ use crate::file_system::write_operations::types::{
     CollectorEventSink, ConflictResolution, WriteCancelledEvent, WriteConflictEvent, WriteErrorEvent,
     WriteProgressEvent, WriteSourceItemDoneEvent,
 };
+use crate::test_support::TestDir;
 use std::sync::atomic::{AtomicU8, Ordering};
 
 fn make_state() -> Arc<WriteOperationState> {
@@ -634,10 +635,9 @@ async fn cross_volume_move_cancel_mid_batch_preserves_completed() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn cross_volume_move_on_real_local_volumes() {
     use std::fs;
-    let base = std::env::temp_dir().join("cmdr_move_real_fs");
+    let base = TestDir::new("move_real_fs");
     let src_dir = base.join("src");
     let dst_dir = base.join("dst");
-    let _ = fs::remove_dir_all(&base);
     fs::create_dir_all(&src_dir).unwrap();
     fs::create_dir_all(&dst_dir).unwrap();
 
@@ -667,8 +667,6 @@ async fn cross_volume_move_on_real_local_volumes() {
     assert!(!src_dir.join("note.txt").exists());
     assert_eq!(fs::read_to_string(dst_dir.join("doc.txt")).unwrap(), "hello");
     assert_eq!(fs::read_to_string(dst_dir.join("note.txt")).unwrap(), "world");
-
-    let _ = fs::remove_dir_all(&base);
 }
 
 fn config_default() -> VolumeCopyConfig {

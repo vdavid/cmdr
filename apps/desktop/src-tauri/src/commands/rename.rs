@@ -131,17 +131,11 @@ pub async fn rename_file(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::TestDir;
     use std::fs;
 
-    fn create_test_dir(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("cmdr_rename_cmd_test_{}", name));
-        let _ = fs::remove_dir_all(&dir);
-        fs::create_dir_all(&dir).expect("Failed to create test directory");
-        dir
-    }
-
-    fn cleanup_test_dir(path: &PathBuf) {
-        let _ = fs::remove_dir_all(path);
+    fn create_test_dir(name: &str) -> TestDir {
+        TestDir::new(&format!("rename_cmd_test_{}", name))
     }
 
     /// Registers a real local-FS "root" volume so `rename_file` with
@@ -165,7 +159,6 @@ mod tests {
         fs::write(&file, "content").unwrap();
         let result = check_rename_permission(file.to_string_lossy().to_string()).await;
         assert!(result.is_ok());
-        cleanup_test_dir(&tmp);
     }
 
     #[tokio::test]
@@ -192,7 +185,6 @@ mod tests {
         assert!(!check.has_conflict);
         assert!(!check.is_case_only_rename);
         assert!(check.conflict.is_none());
-        cleanup_test_dir(&tmp);
     }
 
     #[tokio::test]
@@ -204,7 +196,6 @@ mod tests {
         let check = result.unwrap();
         assert!(!check.valid);
         assert!(check.error.is_some());
-        cleanup_test_dir(&tmp);
     }
 
     #[tokio::test]
@@ -215,7 +206,6 @@ mod tests {
         assert!(result.is_ok());
         let check = result.unwrap();
         assert!(!check.valid);
-        cleanup_test_dir(&tmp);
     }
 
     #[tokio::test]
@@ -234,7 +224,6 @@ mod tests {
         let conflict = check.conflict.unwrap();
         assert_eq!(conflict.name, "existing.txt");
         assert_eq!(conflict.size, 16); // "existing content" = 16 bytes
-        cleanup_test_dir(&tmp);
     }
 
     #[cfg(unix)]
@@ -254,7 +243,6 @@ mod tests {
         if check.has_conflict {
             assert!(check.is_case_only_rename);
         }
-        cleanup_test_dir(&tmp);
     }
 
     // ========================================================================
@@ -280,7 +268,6 @@ mod tests {
         assert!(!old.exists());
         assert!(new.exists());
         assert_eq!(fs::read_to_string(&new).unwrap(), "content");
-        cleanup_test_dir(&tmp);
     }
 
     #[tokio::test]
@@ -305,7 +292,6 @@ mod tests {
         // Both files still intact
         assert!(old.exists());
         assert!(new.exists());
-        cleanup_test_dir(&tmp);
     }
 
     #[tokio::test]
@@ -327,7 +313,6 @@ mod tests {
         assert!(result.is_ok());
         assert!(!old.exists());
         assert_eq!(fs::read_to_string(&new).unwrap(), "new content");
-        cleanup_test_dir(&tmp);
     }
 
     // ========================================================================
@@ -343,7 +328,6 @@ mod tests {
         let result = move_to_trash(file.to_string_lossy().to_string()).await;
         assert!(result.is_ok());
         assert!(!file.exists());
-        cleanup_test_dir(&tmp);
     }
 
     #[tokio::test]

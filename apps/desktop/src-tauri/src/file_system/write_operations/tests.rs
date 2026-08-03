@@ -4,23 +4,15 @@
 //! We keep deserialization tests as they verify the API contract with the frontend.
 
 use super::*;
+use crate::test_support::TestDir;
 use std::fs;
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 /// Creates a temporary test directory with a unique name.
-fn create_temp_dir(name: &str) -> PathBuf {
-    let temp_dir = std::env::temp_dir().join(format!("cmdr_write_test_{}", name));
-    let _ = fs::remove_dir_all(&temp_dir); // Clean up any previous run
-    fs::create_dir_all(&temp_dir).expect("Failed to create temp directory");
-    temp_dir
-}
-
-/// Cleans up a test directory.
-fn cleanup_temp_dir(path: &PathBuf) {
-    let _ = fs::remove_dir_all(path);
+fn create_temp_dir(name: &str) -> TestDir {
+    TestDir::new(&format!("write_test_{}", name))
 }
 
 // ============================================================================
@@ -123,12 +115,16 @@ fn test_io_error_other_conversion() {
 
 #[test]
 fn test_create_and_cleanup_temp_dir() {
+    // The subject here is the fixture lifecycle itself, so the drop has to be
+    // explicit: cleanup is no longer a call the test makes, it's `TestDir`'s
+    // `Drop`. Capture the path first, since the handle is what owns it.
     let temp_dir = create_temp_dir("helper_test");
+    let path = temp_dir.to_path_buf();
     assert!(temp_dir.exists());
     assert!(temp_dir.is_dir());
 
-    cleanup_temp_dir(&temp_dir);
-    assert!(!temp_dir.exists());
+    drop(temp_dir);
+    assert!(!path.exists(), "dropping the handle must remove the directory");
 }
 
 // ============================================================================
@@ -172,8 +168,6 @@ fn test_copy_transaction_rollback_deletes_files() {
         !temp_dir.join("subdir").exists(),
         "subdir should be deleted after rollback"
     );
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -202,8 +196,6 @@ fn test_copy_transaction_commit_keeps_files() {
     // Verify content is intact
     assert_eq!(fs::read_to_string(&file1).unwrap(), "content1");
     assert_eq!(fs::read_to_string(&file2).unwrap(), "content2");
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -223,8 +215,6 @@ fn test_copy_transaction_rollback_handles_already_deleted_files() {
 
     // Rollback should not panic even if files are already gone
     transaction.rollback(); // Should not panic
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -291,8 +281,6 @@ fn test_cancel_flag_stops_delete_loop() {
     assert!(files[2].exists(), "file2 should still exist");
     assert!(files[3].exists(), "file3 should still exist");
     assert!(files[4].exists(), "file4 should still exist");
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -384,8 +372,6 @@ fn test_copy_transaction_drop_without_commit_rolls_back() {
     // Files should be rolled back (deleted)
     assert!(!file1.exists(), "file1 should be deleted by Drop rollback");
     assert!(!file2.exists(), "file2 should be deleted by Drop rollback");
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -402,8 +388,6 @@ fn test_copy_transaction_commit_prevents_drop_rollback() {
     }
 
     assert!(file1.exists(), "file1 should still exist after commit + drop");
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 // ============================================================================
@@ -437,8 +421,6 @@ fn test_safe_overwrite_basic() {
         assert!(!name.contains(".cmdr-tmp-"), "temp file should be cleaned up: {name}");
         assert!(!name.contains(".cmdr-temp-"), "aside file should be cleaned up: {name}");
     }
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -460,8 +442,6 @@ fn test_safe_overwrite_preserves_dest_on_missing_source() {
         "old-data",
         "original dest content must be untouched"
     );
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -483,8 +463,6 @@ fn test_safe_overwrite_dest_has_new_content_after_completion() {
 
     // After completion, reading dest returns the full new content (no partial writes)
     assert_eq!(fs::read_to_string(&dest).unwrap(), new_content);
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -520,8 +498,6 @@ fn test_safe_overwrite_different_sizes() {
 
     result.expect("small-to-large overwrite should succeed");
     assert_eq!(fs::read_to_string(&dest_large).unwrap(), "tiny");
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 // ============================================================================
@@ -566,8 +542,6 @@ fn test_safe_overwrite_file_replaces_existing_folder() {
             "no temp / aside artifacts should remain: {name}"
         );
     }
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 // ============================================================================
@@ -616,8 +590,6 @@ fn test_safe_overwrite_dir_materializes_folder_over_existing_file() {
             "no aside artifacts should remain: {name}"
         );
     }
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -669,8 +641,6 @@ fn test_safe_overwrite_dir_restores_original_on_materialize_failure() {
             "aside should be rolled back, not left on disk: {name}"
         );
     }
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -708,8 +678,6 @@ fn test_safe_overwrite_dir_over_folder_dest_replaces_contents() {
             "no aside artifacts should remain: {name}"
         );
     }
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 /// Delete and trash deliberately don't flush after deleting, and copy/move

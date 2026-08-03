@@ -7,6 +7,7 @@ use std::time::Duration;
 
 use super::session::{self, SearchStatus};
 use super::{FULL_LOAD_THRESHOLD, FileEncoding, MAX_SEARCH_MATCHES, RangeEnd, SearchMode, ViewerError};
+use crate::test_support::TestDir;
 use crate::test_support::wait_until;
 
 /// Default mode for existing tests: literal, case-sensitive (matches pre-mode behaviour
@@ -24,15 +25,8 @@ fn literal_mode() -> SearchMode {
 /// loaded CI runner never trips it. Blowing it means the worker never spawned.
 const GATE_TIMEOUT: Duration = Duration::from_secs(30);
 
-fn create_test_dir(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("cmdr_viewer_session_{}", name));
-    let _ = fs::remove_dir_all(&dir);
-    fs::create_dir_all(&dir).expect("Failed to create test directory");
-    dir
-}
-
-fn cleanup(path: &Path) {
-    let _ = fs::remove_dir_all(path);
+fn create_test_dir(name: &str) -> TestDir {
+    TestDir::new(&format!("viewer_session_{}", name))
 }
 
 fn write_test_file(dir: &Path, name: &str, content: &str) -> PathBuf {
@@ -99,7 +93,6 @@ fn open_small_file_uses_full_load() {
 
     // Cleanup session
     session::close_session(&result.session_id).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -121,7 +114,6 @@ fn open_large_file_uses_byte_seek() {
     assert!(!result.initial_lines.lines.is_empty());
 
     session::close_session(&result.session_id).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -135,7 +127,6 @@ fn open_directory_fails() {
     let dir = create_test_dir("dir_fail");
     let result = session::open_session(dir.to_str().unwrap(), "root");
     assert!(result.is_err());
-    cleanup(&dir);
 }
 
 #[test]
@@ -150,7 +141,6 @@ fn get_lines_after_open() {
     assert_eq!(chunk.lines, vec!["c", "d", "e"]);
 
     session::close_session(&open_result.session_id).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -175,8 +165,6 @@ fn close_session_cleans_up() {
 
     // Now it should fail
     assert!(session::get_lines(&sid, super::SeekTarget::Line(0), 1).is_err());
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -201,7 +189,6 @@ fn search_start_and_poll() {
     });
 
     session::close_session(sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -236,7 +223,6 @@ fn search_cancel_works() {
     });
 
     session::close_session(sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -275,7 +261,6 @@ fn search_poll_after_cancel_surfaces_cancelled_then_idle_after_new_start() {
     );
 
     session::close_session(sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -290,7 +275,6 @@ fn search_poll_no_active_search() {
     assert!(matches!(poll.status, SearchStatus::Idle));
 
     session::close_session(sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -332,7 +316,6 @@ fn large_file_upgrades_to_line_index() {
     assert!(chunk.lines[0].starts_with("line 00000010 "));
 
     session::close_session(sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -356,7 +339,6 @@ fn multiple_sessions() {
 
     session::close_session(&res1.session_id).unwrap();
     session::close_session(&res2.session_id).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -385,7 +367,6 @@ fn search_poll_reports_match_limit() {
     });
 
     session::close_session(sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -422,7 +403,6 @@ fn search_poll_incremental_delivery() {
     assert_eq!(poll_none.total_match_count, 3);
 
     session::close_session(sid).unwrap();
-    cleanup(&dir);
 }
 
 // ----- viewer_read_range tests -----
@@ -443,7 +423,6 @@ fn read_range_full_load_anchor_equals_focus_returns_empty() {
     assert_eq!(out, "");
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -459,7 +438,6 @@ fn read_range_full_load_single_line_slice() {
     assert_eq!(out, "ello w");
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -475,7 +453,6 @@ fn read_range_full_load_multi_line_includes_newlines_between() {
     assert_eq!(out, "pha\nbeta\ngamma\ndel");
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -492,7 +469,6 @@ fn read_range_full_load_reversed_inputs_normalised() {
     assert_eq!(forward, "hello");
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -507,7 +483,6 @@ fn read_range_full_load_out_of_range_returns_typed_error() {
     assert!(matches!(err, ViewerError::OutOfRange));
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -525,7 +500,6 @@ fn read_range_full_load_eof_selects_to_end() {
     // start is included. Trailing newline trimming leaves "first\nsecond\nthird\n".
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -552,7 +526,6 @@ fn read_range_full_load_utf16_surrogate_clamps_down() {
     assert_eq!(out_emoji, "👋");
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -569,7 +542,6 @@ fn read_range_full_load_only_newlines_file() {
     assert_eq!(out, "\n\n");
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -589,7 +561,6 @@ fn read_range_byte_seek_eof_selects_whole_file() {
     assert_eq!(out, expected);
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -655,7 +626,6 @@ fn read_range_session_cancellation_returns_cancelled_and_cleans_up() {
     assert_eq!(session::active_read_count(&sid), 0);
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -686,7 +656,6 @@ fn read_range_full_load_crlf_preserves_carriage_returns() {
     assert_eq!(slice, "pha\r\nbet");
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -701,7 +670,6 @@ fn read_range_cleans_up_active_reads_on_success() {
     assert_eq!(session::active_read_count(&sid), 0);
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -722,7 +690,6 @@ fn cancel_read_unknown_id_is_no_op() {
     session::cancel_read(&sid, 99).unwrap();
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -746,7 +713,6 @@ fn write_range_to_file_writes_atomically() {
     assert!(!leftover, "temp file leaked after successful write");
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -763,7 +729,6 @@ fn write_range_to_file_propagates_out_of_range_error() {
     assert!(!dest.exists());
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -781,7 +746,6 @@ fn read_range_stitching_adjacent_ranges_equals_one_big_range() {
     assert_eq!(big, format!("{}{}", first, second));
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 // ─── Step 1.2: per-match cancellation ──────────────────────────────────────────────
@@ -814,7 +778,6 @@ fn search_pre_cancelled_starts_and_finishes_quickly() {
     );
 
     session::close_session(sid).unwrap();
-    cleanup(&dir);
 }
 
 // ─── Step 1.4: watchdog protocol ───────────────────────────────────────────────────
@@ -955,7 +918,6 @@ fn test_new_search_after_watchdog_cancelled_starts_clean() {
     );
 
     session::close_session(sid).unwrap();
-    cleanup(&dir);
 }
 
 // ─── Step 1.5: invalid query surface ──────────────────────────────────────────────
@@ -984,7 +946,6 @@ fn test_invalid_regex_surfaces_as_invalid_query_status() {
     }
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -1009,7 +970,6 @@ fn test_multiline_regex_surfaces_as_invalid_query_status() {
     );
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -1036,7 +996,6 @@ fn test_regex_search_returns_matches() {
     });
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 // -- Encoding-switch tests --------------------------------------------------------
@@ -1065,7 +1024,6 @@ fn get_encoding_options_returns_detected_and_all() {
     assert!(opts.all.iter().any(|c| c.encoding == FileEncoding::Utf16Le));
 
     session::close_session(&result.session_id).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -1087,7 +1045,6 @@ fn set_encoding_full_load_swaps_decoder() {
     assert_eq!(chunk.lines[0], "caf\u{FFFD}");
 
     session::close_session(&result.session_id).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -1124,7 +1081,6 @@ fn set_encoding_large_file_utf8_to_utf16_rebuilds_under_new_encoding() {
     });
 
     session::close_session(&result.session_id).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -1187,7 +1143,6 @@ fn test_append_during_encoding_rebuild_not_dropped() {
     );
 
     session::close_session(&result.session_id).unwrap();
-    cleanup(&dir);
 }
 
 // ─── Tail mode + reload + watcher wiring (milestone 3) ─────────────────
@@ -1206,7 +1161,6 @@ fn tail_mode_toggle_persists_on_session() {
     assert!(!session::test_only_tail_mode(&sid));
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -1226,7 +1180,6 @@ fn reload_replaces_backend_against_current_disk_contents() {
     assert_eq!(chunk.lines, vec!["second", "third"]);
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -1261,7 +1214,6 @@ fn set_tail_mode_enabling_catches_up_existing_growth() {
     let _chunk = session::get_lines(&sid, super::SeekTarget::Fraction(0.99), 2).unwrap();
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -1326,7 +1278,6 @@ fn tail_mode_on_extends_backend_when_watcher_reports_grew() {
     });
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 // ─── Audit fix coverage ────────────────────────────────────────────────────────────
@@ -1380,7 +1331,6 @@ fn test_tail_extend_during_encoding_rebuild_discards_stale_extend() {
     );
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -1436,7 +1386,6 @@ fn test_append_during_upgrade_not_dropped() {
     );
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -1488,7 +1437,6 @@ fn test_append_between_drain_and_swap_not_dropped() {
     );
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -1535,7 +1483,6 @@ fn test_session_emits_file_changed_on_append() {
     );
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -1577,7 +1524,6 @@ fn test_session_tail_mode_off_does_not_extend_index() {
     );
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -1616,7 +1562,6 @@ fn test_session_rotation_reopens_backend() {
     );
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -1645,8 +1590,6 @@ fn test_session_close_stops_watcher() {
         "close_session to drop the watcher subscription",
         || super::watcher::test_only_emit(&canonical, super::watcher::WatcherEvent::MetadataOnly) == 0,
     );
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -1715,7 +1658,6 @@ fn test_set_encoding_during_rebuild_serialization() {
     );
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }
 
 #[test]
@@ -1759,5 +1701,4 @@ fn test_set_encoding_ascii_compatible_is_instant() {
     assert_eq!(opts.current, FileEncoding::Windows1252);
 
     session::close_session(&sid).unwrap();
-    cleanup(&dir);
 }

@@ -196,23 +196,18 @@ pub fn parse_leading_iso8601(line: &str) -> Option<DateTime<Utc>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::TestDir;
     use chrono::Duration as ChronoDuration;
     use std::io::Write;
 
-    fn write_tmp(name: &str, body: &[u8]) -> std::path::PathBuf {
-        let dir = std::env::temp_dir().join(format!(
-            "cmdr-tail-walker-{}-{}",
-            name,
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| d.as_nanos())
-                .unwrap_or(0),
-        ));
-        std::fs::create_dir_all(&dir).expect("temp dir");
+    /// Returns the scratch dir alongside the file path: the caller has to keep
+    /// the `TestDir` bound, or the directory (and the file) go away immediately.
+    fn write_tmp(name: &str, body: &[u8]) -> (TestDir, std::path::PathBuf) {
+        let dir = TestDir::new(&format!("tail-walker-{name}"));
         let p = dir.join("log");
         let mut f = File::create(&p).expect("create");
         f.write_all(body).expect("write");
-        p
+        (dir, p)
     }
 
     fn iso_line(ts: DateTime<Utc>, body: &str) -> String {
@@ -229,7 +224,7 @@ mod tests {
             iso_line(now - ChronoDuration::seconds(2), "B"),
             iso_line(now - ChronoDuration::seconds(1), "C"),
         );
-        let p = write_tmp("basic", body.as_bytes());
+        let (_dir, p) = write_tmp("basic", body.as_bytes());
         let result = walk_tail(&p, now - ChronoDuration::days(1)).unwrap();
         assert_eq!(result.lines.len(), 3);
         assert!(result.lines[0].ends_with(" A"));
@@ -251,7 +246,7 @@ mod tests {
             iso_line(now - ChronoDuration::seconds(2), "short"),
             big_line,
         );
-        let p = write_tmp("longline", body.as_bytes());
+        let (_dir, p) = write_tmp("longline", body.as_bytes());
         let result = walk_tail(&p, now - ChronoDuration::days(1)).unwrap();
         assert_eq!(result.lines.len(), 2);
         assert!(result.lines[0].ends_with(" short"));
@@ -267,7 +262,7 @@ mod tests {
             iso_line(now - ChronoDuration::seconds(2), "first"),
             iso_line(now - ChronoDuration::seconds(1), "last-without-newline"),
         );
-        let p = write_tmp("no-trailing-nl", body.as_bytes());
+        let (_dir, p) = write_tmp("no-trailing-nl", body.as_bytes());
         let result = walk_tail(&p, now - ChronoDuration::days(1)).unwrap();
         assert_eq!(result.lines.len(), 2);
         assert!(result.lines[1].ends_with(" last-without-newline"));
@@ -276,7 +271,7 @@ mod tests {
 
     #[test]
     fn empty_file_returns_no_lines() {
-        let p = write_tmp("empty", b"");
+        let (_dir, p) = write_tmp("empty", b"");
         let result = walk_tail(&p, Utc::now()).unwrap();
         assert!(result.lines.is_empty());
         assert!(!result.hit_cutoff);
@@ -297,7 +292,7 @@ mod tests {
             header = iso_line(inside, "").trim_end(),
             newer = iso_line(now - ChronoDuration::minutes(1), "").trim_end(),
         );
-        let p = write_tmp("multiline", body.as_bytes());
+        let (_dir, p) = write_tmp("multiline", body.as_bytes());
         let result = walk_tail(&p, now - ChronoDuration::hours(1)).unwrap();
         // Should keep: the recovered line, the panic header + 2 frames. Drop the OLD
         // line. Order: oldest-first (header, frame 0, frame 1, recovered).
@@ -322,7 +317,7 @@ mod tests {
             iso_line(now - ChronoDuration::minutes(20), "kept-1"),
             iso_line(now - ChronoDuration::minutes(5), "kept-2"),
         );
-        let p = write_tmp("window", body.as_bytes());
+        let (_dir, p) = write_tmp("window", body.as_bytes());
         let result = walk_tail(&p, cutoff).unwrap();
         let joined = result.lines.join("\n");
         assert!(joined.contains("kept-1"));
@@ -337,7 +332,7 @@ mod tests {
     fn crlf_trailing_carriage_return_is_trimmed() {
         let now = Utc::now();
         let body = format!("{}\r\n", iso_line(now - ChronoDuration::seconds(1), "winline"));
-        let p = write_tmp("crlf", body.as_bytes());
+        let (_dir, p) = write_tmp("crlf", body.as_bytes());
         let result = walk_tail(&p, now - ChronoDuration::days(1)).unwrap();
         assert_eq!(result.lines.len(), 1);
         assert!(!result.lines[0].ends_with('\r'));

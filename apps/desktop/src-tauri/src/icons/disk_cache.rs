@@ -183,25 +183,31 @@ fn now_secs() -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::TestDir;
 
     /// A hermetic test fixture: an isolated cache dir plus a target "folder" whose
     /// mtime stands in for a real browsed folder. Both are unique per test and
     /// cleaned up on drop, so tests never touch the real data dir or each other.
     struct Fixture {
+        /// Held for its `Drop`: it owns the base both paths below live in.
+        _base: TestDir,
         cache_dir: PathBuf,
         folder: String,
     }
 
     impl Fixture {
         fn new(tag: &str) -> Self {
-            let base = std::env::temp_dir().join(format!("cmdr_icon_disk_{tag}_{}", std::process::id()));
+            let base = TestDir::new(&format!("icon_disk_{tag}"));
             let cache_dir = base.join("cache");
             let folder = base.join("folder");
-            let _ = fs::remove_dir_all(&base);
             fs::create_dir_all(&cache_dir).expect("create cache dir");
             fs::create_dir_all(&folder).expect("create target folder");
             let folder = folder.to_string_lossy().into_owned();
-            let me = Self { cache_dir, folder };
+            let me = Self {
+                _base: base,
+                cache_dir,
+                folder,
+            };
             me.set_folder_mtime(now_secs());
             me
         }
@@ -211,15 +217,6 @@ mod tests {
         fn set_folder_mtime(&self, secs: u64) {
             let t = filetime::FileTime::from_unix_time(secs as i64, 0);
             filetime::set_file_mtime(&self.folder, t).expect("set mtime");
-        }
-    }
-
-    impl Drop for Fixture {
-        fn drop(&mut self) {
-            // Both dirs share the same `..` base; remove it wholesale.
-            if let Some(base) = self.cache_dir.parent() {
-                let _ = fs::remove_dir_all(base);
-            }
         }
     }
 

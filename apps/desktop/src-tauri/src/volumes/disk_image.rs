@@ -92,6 +92,7 @@ pub fn is_disk_image_mount(path: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::TestDir;
 
     #[test]
     fn classifies_disk_image_device_model() {
@@ -115,8 +116,7 @@ mod tests {
     fn is_disk_image_mount_detects_real_dmg() {
         use std::process::Command;
 
-        let dir = std::env::temp_dir().join("cmdr-dmg-probe");
-        let _ = std::fs::create_dir_all(&dir);
+        let dir = TestDir::new("dmg-probe");
         let dmg = dir.join("probe.dmg");
 
         let create = Command::new("hdiutil")
@@ -147,7 +147,6 @@ mod tests {
 
         // Always detach before asserting, so a failure doesn't leak the mount.
         let _ = Command::new("hdiutil").args(["detach", mount_point]).output();
-        let _ = std::fs::remove_file(&dmg);
 
         assert!(detected, "expected {mount_point} to be detected as a disk image");
         // A non-disk-image path must read false.

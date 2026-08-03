@@ -1,22 +1,15 @@
 //! Integration tests for move operations and cross-filesystem staging.
 
+use crate::test_support::TestDir;
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
-use std::path::PathBuf;
 
 // ============================================================================
 // Test utilities
 // ============================================================================
 
-fn create_temp_dir(name: &str) -> PathBuf {
-    let temp_dir = std::env::temp_dir().join(format!("cmdr_write_integration_test_{}", name));
-    let _ = fs::remove_dir_all(&temp_dir);
-    fs::create_dir_all(&temp_dir).expect("Failed to create temp directory");
-    temp_dir
-}
-
-fn cleanup_temp_dir(path: &PathBuf) {
-    let _ = fs::remove_dir_all(path);
+fn create_temp_dir(name: &str) -> TestDir {
+    TestDir::new(&format!("write_integration_test_{}", name))
 }
 
 // ============================================================================
@@ -57,8 +50,6 @@ fn test_move_same_fs_uses_rename() {
         let dst_inode = fs::metadata(&dst_file).unwrap().ino();
         assert_eq!(src_inode, dst_inode);
     }
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 // ============================================================================
@@ -103,8 +94,6 @@ fn test_staging_copy_then_rename_preserves_content() {
     // Source files still exist (deletion is a separate phase)
     assert!(src_dir.join("file1.txt").exists());
     assert!(src_dir.join("subdir/file2.txt").exists());
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -128,8 +117,6 @@ fn test_staging_cleanup_on_copy_failure() {
     );
     // Destination directory itself should remain untouched
     assert!(dst_dir.exists());
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -172,8 +159,6 @@ fn test_staging_cleanup_on_rename_failure() {
         !dst_dir.join("file1.txt").exists(),
         "Failed rename should not leave files in destination"
     );
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -206,8 +191,6 @@ fn test_staging_source_preserved_on_failure() {
         fs::read_to_string(src_dir.join("also_important.txt")).unwrap(),
         "more data"
     );
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -228,8 +211,6 @@ fn test_staging_dir_naming_uses_operation_id() {
         staging_dir.file_name().unwrap().to_str().unwrap().starts_with('.'),
         "Staging directory should be hidden (dot-prefixed)"
     );
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -264,6 +245,4 @@ fn test_staging_atomic_rename_is_same_inode() {
         let final_inode = fs::metadata(&final_file).unwrap().ino();
         assert_eq!(staged_inode, final_inode, "Rename should preserve inode (atomic)");
     }
-
-    cleanup_temp_dir(&temp_dir);
 }

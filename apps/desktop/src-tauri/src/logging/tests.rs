@@ -1,20 +1,13 @@
 //! Unit tests for the logging support module.
 
 use super::*;
+use crate::test_support::TestDir;
 use std::fs;
 use std::time::{Duration, SystemTime};
 
-/// Creates a unique temp dir under the OS temp root and returns its path. Tests are
-/// responsible for cleaning up. We deliberately avoid the `tempfile` crate to keep this
-/// module dependency-free.
-fn make_temp_dir(label: &str) -> PathBuf {
-    let nanos = SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_nanos())
-        .unwrap_or(0);
-    let dir = std::env::temp_dir().join(format!("cmdr-logging-test-{label}-{nanos}"));
-    fs::create_dir_all(&dir).expect("create temp dir");
-    dir
+/// A scratch log directory, removed when the returned handle drops.
+fn make_temp_dir(label: &str) -> TestDir {
+    TestDir::new(&format!("logging-test-{label}"))
 }
 
 /// Writes a log file and stamps its mtime `age_secs` into the past.
@@ -49,8 +42,6 @@ fn list_recent_log_files_sorted() {
     assert_eq!(names[1], "cmdr.log.1");
     assert_eq!(names[2], "cmdr.log.2");
     assert_eq!(names[3], "cmdr.log.3");
-
-    fs::remove_dir_all(&dir).ok();
 }
 
 #[test]
@@ -75,8 +66,6 @@ fn eager_prune_keeps_n_newest() {
     assert_eq!(names[0], "cmdr.log", "live file must survive");
     assert_eq!(names[1], "cmdr.log.1");
     assert_eq!(names[2], "cmdr.log.2");
-
-    fs::remove_dir_all(&dir).ok();
 }
 
 #[test]
@@ -91,8 +80,6 @@ fn eager_prune_handles_zero() {
     // Everything is wiped: the plugin recreates the live file on the next write.
     assert_eq!(deleted, 4);
     assert_eq!(list_recent_log_files(&dir).len(), 0);
-
-    fs::remove_dir_all(&dir).ok();
 }
 
 #[test]
@@ -129,8 +116,6 @@ fn list_recent_log_files_rejects_legacy_naming() {
     );
     assert!(!names.contains(&"cmdr.logsy"));
     assert!(!names.contains(&"notes.log"));
-
-    fs::remove_dir_all(&dir).ok();
 }
 
 /// Fix #2 (cleanup half): `cleanup_legacy_log_files` removes legacy rotation files
@@ -157,8 +142,6 @@ fn cleanup_legacy_log_files_removes_only_legacy() {
     // Idempotent: a second sweep removes nothing.
     let again = cleanup_legacy_log_files(&dir);
     assert_eq!(again, 0, "second sweep must find nothing");
-
-    fs::remove_dir_all(&dir).ok();
 }
 
 #[test]

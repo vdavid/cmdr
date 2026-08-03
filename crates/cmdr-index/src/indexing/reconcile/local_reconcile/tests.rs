@@ -8,6 +8,7 @@ use crate::indexing::store::{self, DirStatsById, IndexStore, ROOT_ID};
 use crate::indexing::stress_test_helpers::check_db_consistency;
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 use cmdr_fs::firmlinks;
+use cmdr_fs::testing::TestDir;
 
 struct Harness {
     writer: IndexWriter,
@@ -696,8 +697,10 @@ fn reconcile_vanished_root_surfaces_root_unlistable_not_empty_root() {
     // `setup`), so the walk reaches the FS read — which fails because the path is
     // gone — surfacing `RootUnlistable`. An `EmptyRoot` would instead require a
     // readable-but-empty root, so the two cases are genuinely distinct.
-    let missing = std::env::temp_dir().join("cmdr-reconcile-vanished-root-does-not-exist");
-    let _ = std::fs::remove_dir_all(&missing);
+    // A never-created child of a directory we own, so "absent" is guaranteed
+    // rather than a fixed /tmp name another process might be using.
+    let scratch = TestDir::new("reconcile_vanished_root");
+    let missing = scratch.join("vanished-root");
     assert!(!missing.exists(), "precondition: the mount root must be absent");
 
     let space = IndexPathSpace::mount_rooted(missing.to_string_lossy().to_string());

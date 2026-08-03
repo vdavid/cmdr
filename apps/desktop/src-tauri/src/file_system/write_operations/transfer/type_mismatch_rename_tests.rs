@@ -26,7 +26,6 @@
 //! Stop-mode oneshot channel.
 
 use std::fs;
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -34,16 +33,10 @@ use super::super::state::WriteOperationState;
 use super::super::types::{CollectorEventSink, ConflictResolution, WriteOperationConfig};
 use super::copy::copy_files_with_progress_inner;
 use super::move_op::move_files_with_progress_inner;
+use crate::test_support::TestDir;
 
-fn create_temp_dir(name: &str) -> PathBuf {
-    let temp_dir = std::env::temp_dir().join(format!("cmdr_type_mismatch_rename_{}_{}", name, uuid::Uuid::new_v4()));
-    let _ = fs::remove_dir_all(&temp_dir);
-    fs::create_dir_all(&temp_dir).expect("Failed to create temp directory");
-    temp_dir
-}
-
-fn cleanup_temp_dir(path: &PathBuf) {
-    let _ = fs::remove_dir_all(path);
+fn create_temp_dir(name: &str) -> TestDir {
+    TestDir::new(&format!("type_mismatch_rename_{}_{}", name, uuid::Uuid::new_v4()))
 }
 
 fn rename_config() -> WriteOperationConfig {
@@ -136,8 +129,6 @@ fn folder_over_file_rename_keeps_existing_file_lands_folder_renamed() {
         vec!["thing".to_string(), "thing (1)".to_string()]
     );
     assert_no_temp_artifacts(&dst_root);
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 // ============================================================================
@@ -202,8 +193,6 @@ fn file_over_folder_rename_keeps_existing_folder_lands_file_with_bytes() {
         vec!["item".to_string(), "item (1)".to_string()]
     );
     assert_no_temp_artifacts(&dst_root);
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 // ============================================================================
@@ -250,8 +239,6 @@ fn file_over_folder_rename_escalates_past_existing_numbered_name() {
     assert_eq!(fs::read_to_string(&escalated).unwrap(), source_bytes);
 
     assert_no_temp_artifacts(&dst_root);
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 /// folder→file Rename with a pre-existing numbered name escalates too, and the
@@ -289,8 +276,6 @@ fn folder_over_file_rename_escalates_past_existing_numbered_name() {
     );
 
     assert_no_temp_artifacts(&dst_root);
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 // ============================================================================
@@ -336,8 +321,6 @@ fn move_folder_over_file_rename_keeps_existing_file_lands_folder_renamed() {
     // Move consumed the source.
     assert!(!src_root.join("thing").exists(), "source folder moved away");
     assert_no_temp_artifacts(&dst_root);
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 /// file→folder Rename on the same-FS move path: existing folder kept, incoming
@@ -382,6 +365,4 @@ fn move_file_over_folder_rename_keeps_existing_folder_lands_file() {
     );
     assert!(!src_root.join("item").exists(), "source file moved away");
     assert_no_temp_artifacts(&dst_root);
-
-    cleanup_temp_dir(&temp_dir);
 }

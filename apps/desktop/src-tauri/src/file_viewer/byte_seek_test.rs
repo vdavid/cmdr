@@ -9,6 +9,7 @@ use super::byte_seek::ByteSeekBackend;
 use super::search_cancel_test_support::{assert_search_stops_on_per_match_cancel, many_matches_corpus};
 use super::search_matcher::{Matcher, SearchMode};
 use super::{FileViewerBackend, MAX_SEARCH_MATCHES, SearchMatch, SeekTarget};
+use crate::test_support::TestDir;
 
 /// Build a literal matcher for tests. Mirrors the pre-mode "lowercase substring"
 /// default but keeps the matcher visible in each call site.
@@ -23,15 +24,8 @@ fn literal_matcher(query: &str, case_sensitive: bool) -> Matcher {
     .expect("test query must build")
 }
 
-fn create_test_dir(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("cmdr_viewer_byte_{}", name));
-    let _ = fs::remove_dir_all(&dir);
-    fs::create_dir_all(&dir).expect("Failed to create test directory");
-    dir
-}
-
-fn cleanup(path: &Path) {
-    let _ = fs::remove_dir_all(path);
+fn create_test_dir(name: &str) -> TestDir {
+    TestDir::new(&format!("viewer_byte_{}", name))
 }
 
 fn write_test_file(dir: &Path, name: &str, content: &str) -> PathBuf {
@@ -49,8 +43,6 @@ fn open_succeeds() {
     assert_eq!(backend.file_name(), "test.txt");
     assert_eq!(backend.total_bytes(), 12);
     assert_eq!(backend.total_lines(), None); // ByteSeek doesn't know total lines
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -64,7 +56,6 @@ fn open_directory_fails() {
     let dir = create_test_dir("open_dir");
     let result = ByteSeekBackend::open(&dir);
     assert!(result.is_err());
-    cleanup(&dir);
 }
 
 #[test]
@@ -78,8 +69,6 @@ fn get_lines_from_start() {
     assert_eq!(chunk.lines, vec!["line 1", "line 2", "line 3"]);
     assert_eq!(chunk.byte_offset, 0);
     assert_eq!(chunk.total_lines, None);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -93,8 +82,6 @@ fn get_lines_from_middle_byte_offset() {
 
     assert_eq!(chunk.lines, vec!["line 2", "line 3"]);
     assert_eq!(chunk.byte_offset, 7);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -109,8 +96,6 @@ fn get_lines_with_backward_scan() {
     // Should find start of "line 2" (byte 7)
     assert_eq!(chunk.byte_offset, 7);
     assert_eq!(chunk.lines[0], "line 2");
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -125,8 +110,6 @@ fn get_lines_by_fraction() {
     let chunk = backend.get_lines(&SeekTarget::Fraction(0.0), 1).unwrap();
     assert_eq!(chunk.byte_offset, 0);
     assert_eq!(chunk.lines[0], "line 1");
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -141,8 +124,6 @@ fn get_lines_fraction_end() {
     let chunk = backend.get_lines(&SeekTarget::Fraction(1.0), 1).unwrap();
     // Should find the last line or be at/near end
     assert!(chunk.byte_offset > 0);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -162,8 +143,6 @@ fn get_lines_line_target_estimates_offset() {
     // 5 * 80 = 400, clamped to 6 bytes (file size), backward scan finds last newline
     assert_eq!(chunk2.byte_offset, 6); // At EOF
     assert!(chunk2.lines.is_empty()); // No lines after EOF
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -175,8 +154,6 @@ fn get_lines_last_line_no_newline() {
     let chunk = backend.get_lines(&SeekTarget::ByteOffset(0), 10).unwrap();
 
     assert_eq!(chunk.lines, vec!["line 1", "line 2"]);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -204,8 +181,6 @@ fn search_finds_matches() {
 
     // Progress should equal total bytes after search completes
     assert_eq!(*progress.lock().unwrap(), backend.total_bytes());
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -224,8 +199,6 @@ fn search_case_insensitive() {
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 3);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -246,8 +219,6 @@ fn search_cancellation() {
 
     // Should stop early
     assert!(matches.len() < 10000);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -266,8 +237,6 @@ fn search_no_matches() {
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 0);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -291,8 +260,6 @@ fn search_with_multibyte_chars() {
     // "café " is 5 characters, not 6 bytes
     assert_eq!(matches[0].column, 5);
     assert_eq!(matches[0].length, 5);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -319,8 +286,6 @@ fn search_with_replacement_chars() {
     // Column should be 1 (after replacement char), not 3 (byte offset of U+FFFD)
     assert_eq!(matches[0].column, 1);
     assert_eq!(matches[0].length, 3);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -335,8 +300,6 @@ fn capabilities_correct() {
     assert!(caps.supports_byte_seek);
     assert!(caps.supports_fraction_seek);
     assert!(!caps.knows_total_lines);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -353,8 +316,6 @@ fn backward_scan_with_no_newline_caps_at_max() {
 
     // Should fall back to scan_start = 15000 - 8192 = 6808
     assert_eq!(chunk.byte_offset, 15000 - 8192);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -368,8 +329,6 @@ fn empty_file() {
     let chunk = backend.get_lines(&SeekTarget::ByteOffset(0), 10).unwrap();
     // Empty file should produce empty lines
     assert!(chunk.lines.is_empty() || (chunk.lines.len() == 1 && chunk.lines[0].is_empty()));
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -394,8 +353,6 @@ fn search_caps_at_match_limit() {
     // Should stop scanning early (not read the whole file)
     assert!(scanned < backend.total_bytes());
     assert!(scanned > 0);
-
-    cleanup(&dir);
 }
 
 // ─── Multi-byte UTF-8 tests ────────────────────────────────────────────
@@ -412,8 +369,6 @@ fn seek_mid_multibyte_char_snaps_to_line_start() {
     // Should backward-scan to byte 0 (start of "café") since byte 4 is mid-char inside first line
     assert_eq!(chunk.byte_offset, 0);
     assert_eq!(chunk.lines[0], "café");
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -427,8 +382,6 @@ fn seek_mid_emoji_snaps_to_line_start() {
 
     assert_eq!(chunk.byte_offset, 0);
     assert_eq!(chunk.lines[0], "🦀go");
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -442,8 +395,6 @@ fn seek_mid_cjk_char_snaps_to_line_start() {
 
     assert_eq!(chunk.byte_offset, 0);
     assert_eq!(chunk.lines[0], "漢字");
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -460,8 +411,6 @@ fn read_lines_with_mixed_scripts() {
     assert_eq!(chunk.lines[1], "漢字テスト");
     assert_eq!(chunk.lines[2], "🎉🦀🌍");
     assert_eq!(chunk.lines[3], "plain");
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -483,8 +432,6 @@ fn search_emoji_utf16_column() {
     assert_eq!(matches.len(), 1);
     assert_eq!(matches[0].column, 2); // 🦀 = 2 UTF-16 code units
     assert_eq!(matches[0].length, 4); // "rust" = 4 ASCII chars = 4 UTF-16 units
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -506,8 +453,6 @@ fn search_cjk_utf16_column() {
     assert_eq!(matches.len(), 1);
     assert_eq!(matches[0].column, 2); // 2 CJK chars = 2 UTF-16 code units
     assert_eq!(matches[0].length, 4);
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -520,8 +465,6 @@ fn read_emoji_only_lines() {
 
     assert_eq!(chunk.lines[0], "🎉🎊🎈");
     assert_eq!(chunk.lines[1], "🦀🦞🦐");
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -533,8 +476,6 @@ fn test_per_match_cancel_observes_within_100ms() {
 
     let backend = ByteSeekBackend::open(&path).unwrap();
     assert_search_stops_on_per_match_cancel(&backend, &literal_matcher("a", true));
-
-    cleanup(&dir);
 }
 
 #[test]
@@ -553,6 +494,4 @@ fn read_file_starting_with_bom() {
     assert!(chunk.lines[0].starts_with('\u{FEFF}'));
     assert!(chunk.lines[0].ends_with("hello"));
     assert_eq!(chunk.lines[1], "world");
-
-    cleanup(&dir);
 }

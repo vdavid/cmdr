@@ -3,19 +3,16 @@
 use super::reading::{get_extended_metadata_batch, list_directory_core};
 use crate::file_system::provider::FileSystemProvider;
 use crate::file_system::real_provider::RealFileSystemProvider;
+use crate::test_support::TestDir;
 use std::fs;
 
 #[test]
 fn test_list_directory() {
     let provider = RealFileSystemProvider;
     // Create our own temp directory to avoid permission issues
-    let temp_dir = std::env::temp_dir().join("cmdr_list_test");
-    fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
+    let temp_dir = TestDir::new("list_test");
 
     let result = provider.list_directory(&temp_dir);
-
-    // Cleanup
-    let _ = fs::remove_dir(&temp_dir);
 
     assert!(result.is_ok(), "list_directory failed: {:?}", result.err());
 }
@@ -23,17 +20,12 @@ fn test_list_directory() {
 #[test]
 fn test_list_directory_entries_have_names() {
     let provider = RealFileSystemProvider;
-    let temp_dir = std::env::temp_dir().join("cmdr_ops_test");
-    fs::create_dir_all(&temp_dir).unwrap();
+    let temp_dir = TestDir::new("ops_test");
 
     let test_file = temp_dir.join("test_file.txt");
     fs::write(&test_file, "content").unwrap();
 
     let entries = provider.list_directory(&temp_dir).unwrap();
-
-    // Cleanup
-    let _ = fs::remove_file(&test_file);
-    let _ = fs::remove_dir(&temp_dir);
 
     assert!(!entries.is_empty());
     assert!(entries.iter().any(|e| e.name == "test_file.txt"));
@@ -45,17 +37,12 @@ fn test_list_directory_entries_have_names() {
 
 #[test]
 fn test_list_directory_core_returns_entries_without_extended_metadata() {
-    let temp_dir = std::env::temp_dir().join("cmdr_core_test");
-    fs::create_dir_all(&temp_dir).unwrap();
+    let temp_dir = TestDir::new("core_test");
 
     let test_file = temp_dir.join("core_test.txt");
     fs::write(&test_file, "content").unwrap();
 
     let entries = list_directory_core(&temp_dir).unwrap();
-
-    // Cleanup
-    let _ = fs::remove_file(&test_file);
-    let _ = fs::remove_dir(&temp_dir);
 
     assert!(!entries.is_empty());
     let file_entry = entries.iter().find(|e| e.name == "core_test.txt").unwrap();
@@ -73,8 +60,7 @@ fn test_list_directory_core_returns_entries_without_extended_metadata() {
 
 #[test]
 fn test_list_directory_core_is_sorted() {
-    let temp_dir = std::env::temp_dir().join("cmdr_sort_test");
-    fs::create_dir_all(&temp_dir).unwrap();
+    let temp_dir = TestDir::new("sort_test");
 
     // Create files in non-alphabetical order
     fs::write(temp_dir.join("zebra.txt"), "").unwrap();
@@ -83,32 +69,22 @@ fn test_list_directory_core_is_sorted() {
 
     let entries = list_directory_core(&temp_dir).unwrap();
 
-    // Cleanup
-    let _ = fs::remove_file(temp_dir.join("zebra.txt"));
-    let _ = fs::remove_file(temp_dir.join("alpha.txt"));
-    let _ = fs::remove_dir(temp_dir.join("a_dir"));
-    let _ = fs::remove_dir(&temp_dir);
-
-    // Directories should come first, then sorted alphabetically
-    assert!(entries.len() >= 3);
+    // Directories should come first, then sorted alphabetically. The fixture dir is
+    // ours alone, so the count is exact rather than a floor over someone's leftovers.
+    assert_eq!(entries.len(), 3);
     assert_eq!(entries[0].name, "a_dir");
     assert!(entries[0].is_directory);
 }
 
 #[test]
 fn test_get_extended_metadata_batch() {
-    let temp_dir = std::env::temp_dir().join("cmdr_extended_test");
-    fs::create_dir_all(&temp_dir).unwrap();
+    let temp_dir = TestDir::new("extended_test");
 
     let test_file = temp_dir.join("extended_test.txt");
     fs::write(&test_file, "content").unwrap();
 
     let paths = vec![test_file.to_string_lossy().to_string()];
     let extended = get_extended_metadata_batch(paths.clone());
-
-    // Cleanup
-    let _ = fs::remove_file(&test_file);
-    let _ = fs::remove_dir(&temp_dir);
 
     assert_eq!(extended.len(), 1);
     assert_eq!(extended[0].path, paths[0]);
@@ -133,17 +109,12 @@ fn test_get_extended_metadata_batch_empty_input() {
 
 #[test]
 fn test_get_single_entry_file() {
-    let temp_dir = std::env::temp_dir().join("cmdr_single_entry_test");
-    fs::create_dir_all(&temp_dir).unwrap();
+    let temp_dir = TestDir::new("single_entry_test");
 
     let test_file = temp_dir.join("single_file.txt");
     fs::write(&test_file, "test content").unwrap();
 
     let entry = super::get_single_entry(&test_file).unwrap();
-
-    // Cleanup
-    let _ = fs::remove_file(&test_file);
-    let _ = fs::remove_dir(&temp_dir);
 
     assert_eq!(entry.name, "single_file.txt");
     assert!(!entry.is_directory);
@@ -154,13 +125,9 @@ fn test_get_single_entry_file() {
 
 #[test]
 fn test_get_single_entry_directory() {
-    let temp_dir = std::env::temp_dir().join("cmdr_single_dir_test");
-    fs::create_dir_all(&temp_dir).unwrap();
+    let temp_dir = TestDir::new("single_dir_test");
 
     let entry = super::get_single_entry(&temp_dir).unwrap();
-
-    // Cleanup
-    let _ = fs::remove_dir(&temp_dir);
 
     assert!(entry.name.contains("cmdr_single_dir_test"));
     assert!(entry.is_directory);
@@ -224,8 +191,7 @@ fn test_cancel_listing_nonexistent_does_not_panic() {
 fn test_process_dir_entry_returns_file_entry() {
     use super::reading::process_dir_entry;
 
-    let temp_dir = std::env::temp_dir().join("cmdr_process_entry_test");
-    fs::create_dir_all(&temp_dir).unwrap();
+    let temp_dir = TestDir::new("process_entry_test");
 
     let test_file = temp_dir.join("process_test.txt");
     fs::write(&test_file, "test content").unwrap();
@@ -235,10 +201,6 @@ fn test_process_dir_entry_returns_file_entry() {
     let dir_entry = entries.iter().find(|e| e.file_name() == "process_test.txt").unwrap();
 
     let file_entry = process_dir_entry(dir_entry);
-
-    // Cleanup
-    let _ = fs::remove_file(&test_file);
-    let _ = fs::remove_dir(&temp_dir);
 
     assert!(file_entry.is_some());
     let entry = file_entry.unwrap();
@@ -252,8 +214,7 @@ fn test_process_dir_entry_returns_file_entry() {
 fn test_process_dir_entry_handles_directory() {
     use super::reading::process_dir_entry;
 
-    let temp_dir = std::env::temp_dir().join("cmdr_process_dir_test");
-    fs::create_dir_all(&temp_dir).unwrap();
+    let temp_dir = TestDir::new("process_dir_test");
 
     let sub_dir = temp_dir.join("sub_directory");
     fs::create_dir(&sub_dir).unwrap();
@@ -263,10 +224,6 @@ fn test_process_dir_entry_handles_directory() {
     let dir_entry = entries.iter().find(|e| e.file_name() == "sub_directory").unwrap();
 
     let file_entry = process_dir_entry(dir_entry);
-
-    // Cleanup
-    let _ = fs::remove_dir(&sub_dir);
-    let _ = fs::remove_dir(&temp_dir);
 
     assert!(file_entry.is_some());
     let entry = file_entry.unwrap();

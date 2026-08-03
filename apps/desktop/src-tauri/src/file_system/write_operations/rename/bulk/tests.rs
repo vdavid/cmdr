@@ -5,6 +5,7 @@ use std::sync::atomic::AtomicU8;
 use uuid::Uuid;
 
 use super::super::super::operation_intent::OperationIntent;
+use crate::test_support::TestDir;
 
 /// A fixture directory in `$TMPDIR`.
 ///
@@ -17,10 +18,8 @@ use super::super::super::operation_intent::OperationIntent;
 /// still passes, since a case-insensitive lookup finds the file. That reads as a mystery
 /// failure reproducing only in the container. `$TMPDIR` is container-local, so the
 /// fixture's case sensitivity matches the OS the code was compiled for.
-fn create_test_dir(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("cmdr_bulk_rename_test_{name}_{}", Uuid::new_v4()));
-    fs::create_dir_all(&dir).expect("create test directory");
-    dir
+fn create_test_dir(name: &str) -> TestDir {
+    TestDir::new(&format!("bulk_rename_test_{name}_{}", Uuid::new_v4()))
 }
 
 fn local_row(row_id: &str, source: PathBuf, destination: PathBuf) -> BulkRenameRow {
@@ -169,7 +168,10 @@ struct UndoLoop {
     _journal: crate::operation_log::TestJournalGuard,
     writer_journal: Arc<crate::operation_log::capture::WriterJournal>,
     vm: crate::file_system::VolumeManager,
-    dir: PathBuf,
+    /// Owns the scratch directory: holding the guard (rather than a bare path
+    /// copied out of it) is what keeps the directory alive for the fixture's
+    /// lifetime and removes it afterwards.
+    dir: TestDir,
     op_id: String,
 }
 

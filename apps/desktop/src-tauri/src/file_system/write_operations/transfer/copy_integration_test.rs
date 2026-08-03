@@ -1,22 +1,15 @@
 //! Integration tests for copy operations.
 
+use crate::test_support::TestDir;
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
-use std::path::PathBuf;
 
 // ============================================================================
 // Test utilities
 // ============================================================================
 
-fn create_temp_dir(name: &str) -> PathBuf {
-    let temp_dir = std::env::temp_dir().join(format!("cmdr_write_integration_test_{}", name));
-    let _ = fs::remove_dir_all(&temp_dir);
-    fs::create_dir_all(&temp_dir).expect("Failed to create temp directory");
-    temp_dir
-}
-
-fn cleanup_temp_dir(path: &PathBuf) {
-    let _ = fs::remove_dir_all(path);
+fn create_temp_dir(name: &str) -> TestDir {
+    TestDir::new(&format!("write_integration_test_{}", name))
 }
 
 // ============================================================================
@@ -48,8 +41,6 @@ fn test_copy_single_file() {
         assert!(dst_file.exists());
         assert_eq!(fs::read_to_string(&dst_file).unwrap(), "Hello, world!");
     }
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -76,8 +67,6 @@ fn test_copy_directory_recursive() {
         assert!(dst_dir.join("src/subdir1/file2.txt").exists());
         assert!(dst_dir.join("src/subdir1/subdir2/file3.txt").exists());
     }
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 /// Mirrors the copy flow's destination gate: `ensure_destination_dir` creates a
@@ -113,8 +102,6 @@ fn test_copy_into_nonexistent_nested_dest_creates_it_and_lands_files() {
         assert!(result.is_ok());
         assert_eq!(fs::read_to_string(&dst_file).unwrap(), "Hello, new folder!");
     }
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -140,8 +127,6 @@ fn test_copy_preserves_permissions() {
         let dst_perms = fs::metadata(&dst_file).unwrap().permissions().mode();
         assert_eq!(dst_perms & 0o777, 0o755);
     }
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -172,8 +157,6 @@ fn test_copy_preserves_symlinks() {
         let link_target = fs::read_link(&dst_link).unwrap();
         assert_eq!(link_target, target_file);
     }
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -201,8 +184,6 @@ fn test_copy_handles_broken_symlink() {
         assert!(dst_link.is_symlink());
         assert!(!dst_link.exists()); // exists() returns false for broken symlinks
     }
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 // ============================================================================
@@ -232,8 +213,6 @@ fn test_copy_detects_symlink_loop() {
     assert!(loop_link.is_symlink());
     let link_target = fs::read_link(&loop_link).unwrap();
     assert_eq!(link_target, a_dir);
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 // ============================================================================
@@ -265,8 +244,6 @@ fn test_special_characters_in_paths() {
             assert!(dst_file.exists());
         }
     }
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -290,8 +267,6 @@ fn test_empty_directory() {
         assert!(dst_dir.join("empty").exists());
         assert!(dst_dir.join("empty").is_dir());
     }
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -323,8 +298,6 @@ fn test_readonly_source() {
 
     // Cleanup: restore write permissions so we can delete
     fs::set_permissions(&src_file, fs::Permissions::from_mode(0o644)).unwrap();
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -362,8 +335,6 @@ fn test_long_paths() {
         assert!(result.is_ok());
         assert!(dst_file.exists());
     }
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -394,8 +365,6 @@ fn test_readonly_destination() {
 
     // Restore permissions for cleanup
     fs::set_permissions(&dst_dir, fs::Permissions::from_mode(0o755)).unwrap();
-
-    cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
@@ -416,7 +385,6 @@ fn test_copy_preserves_xattrs() {
 
     if xattr_result.is_err() || !xattr_result.as_ref().unwrap().status.success() {
         // Skip test if xattr command not available
-        cleanup_temp_dir(&temp_dir);
         return;
     }
 
@@ -437,6 +405,4 @@ fn test_copy_preserves_xattrs() {
         let value = String::from_utf8_lossy(&output.stdout);
         assert_eq!(value.trim(), "test_value", "xattr not preserved: {}", value);
     }
-
-    cleanup_temp_dir(&temp_dir);
 }

@@ -273,11 +273,10 @@ fn canonicalize_scope_path_resolves_symlinks() {
     // A real dir with a child, plus a symlink pointing at the real dir — the
     // /tmp → /private/tmp shape the index stores canonically but scopes report
     // symlinked.
-    let base = std::env::temp_dir().join(format!("cmdr-scope-canon-{}", std::process::id()));
+    let base = TestDir::new("scope-canon");
     let real = base.join("real");
     std::fs::create_dir_all(real.join("child")).expect("create real dir");
     let link = base.join("link");
-    let _ = std::fs::remove_file(&link);
     symlink(&real, &link).expect("create symlink");
 
     // A path THROUGH the symlink canonicalizes to the real path (both fully
@@ -293,8 +292,6 @@ fn canonicalize_scope_path_resolves_symlinks() {
     // A non-existent path keeps the literal (best-effort: the offline-index case).
     let missing = link.join("nope").to_string_lossy().into_owned();
     assert_eq!(canonicalize_scope_path(&missing), missing);
-
-    std::fs::remove_dir_all(&base).ok();
 }
 
 // ── parse_scope ─────────────────────────────────────────────────
@@ -397,6 +394,7 @@ fn parse_scope_whitespace_trimming() {
 // (`/Volumes/naspi`) must search the WHOLE volume, and a path that isn't in the
 // index must be reported as unresolved rather than silently returning nothing.
 
+use crate::test_support::TestDir;
 use cmdr_index::ReadPool;
 use cmdr_index::store::{IndexStore, ROOT_ID};
 
