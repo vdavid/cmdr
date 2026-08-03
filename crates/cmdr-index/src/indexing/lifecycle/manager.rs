@@ -7,11 +7,11 @@ use std::time::Duration;
 use tokio_util::sync::CancellationToken;
 
 use super::state::{INDEX_REGISTRY, IndexPhase};
-use crate::indexing::events::progress_reporter::ScanProgressReporter;
 use crate::indexing::events::{
     ActivityPhase, DEBUG_STATS, EventSink, IndexDebugStatusResponse, IndexEvent, IndexStatusResponse, PhaseRecord,
     RescanReason, ScanRunKind, emit_rescan_notification, set_phase_for,
 };
+use crate::indexing::lifecycle::progress_reporter::ScanProgressReporter;
 use crate::indexing::reconcile::local_reconcile;
 use crate::indexing::reconcile::reconciler;
 use crate::indexing::scanner::{self, ScanConfig};

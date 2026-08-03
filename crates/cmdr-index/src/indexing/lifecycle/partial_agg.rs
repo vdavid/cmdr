@@ -1,6 +1,6 @@
 //! Send-decision logic and hot-path collection for mid-scan partial aggregation.
 //!
-//! The scan progress loop in `events/progress_reporter.rs` ticks every 500 ms. On each
+//! The scan progress loop in [`super::progress_reporter`] ticks every 500 ms. On each
 //! tick it asks `should_send_partial_agg` whether to fire a
 //! `ComputePartialAggregates` message; when it does, `collect_hot_paths` turns
 //! the live listing snapshot into the message's `hot_paths`. Keeping both pure

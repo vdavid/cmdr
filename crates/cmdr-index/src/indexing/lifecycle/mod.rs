@@ -11,6 +11,9 @@
 //! - [`lifecycle_bus`]: the neutral registration / dirs-changed event bus.
 //! - [`master`]: the master drive-indexing switch and how it overrides per-drive
 //!   intent. Every start/resume path passes through its gate.
+//! - [`progress_reporter`]: the 500 ms scan-progress + partial-aggregation pump
+//!   both scan paths spawn alongside their scan. [`partial_agg`]: its pure
+//!   send-decision and hot-path collection.
 
 pub(crate) mod failure;
 pub mod freshness;
@@ -18,5 +21,7 @@ pub(crate) mod lifecycle_bus;
 pub(crate) mod manager;
 pub mod master;
 pub(crate) mod network_scan;
+pub(crate) mod partial_agg;
+pub(crate) mod progress_reporter;
 pub(crate) mod scan_completion;
 pub(crate) mod state;

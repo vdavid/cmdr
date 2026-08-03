@@ -1,9 +1,19 @@
-# Indexing events + progress surface details
+# Indexing events details
 
 Read this before any non-trivial work in `indexing/events/`: editing, planning, reorganizing, or advising. Must-know
 invariants are in `CLAUDE.md`.
 
-This area owns the frontend-facing event payloads, the phase-transition emitter, and the scan-progress tick loop.
+This area owns the typed event values, the `IndexEvent` envelope and its `EventSink` seam, the IPC response types, and
+the phase-transition emitter. It imports DOWN only, so it sits in no dependency cycle.
+
+## The values an event carries (`payload.rs`)
+
+`ScanRunKind`, `RescanReason`, `ActivityPhase`, and `MemoryWatchdogAction` live below both `sink.rs` and `mod.rs`
+because both name them: the envelope carries them, and the IPC responses (`IndexStatusResponse.scan_run_kind`,
+`IndexDebugStatusResponse.activity_phase`) report them back. Keeping them in `mod.rs` is what made `sink.rs` import its
+own parent — one of the three edges in the `events ↔ sink ↔ media_index::events` cycle. `MediaEnrichTerminalReason` is
+the same idea from the other direction: it now sits in `sink.rs` beside the `IndexEvent` variant that carries it, with a
+`pub use` from `media_index::events` so the scheduler's call sites are unchanged.
 
 ## The event seam (`sink.rs`)
 
@@ -66,7 +76,7 @@ maps each to a toast. The triggers that CHOOSE each reason live in `../watch/DET
 Two reports that could look like they belong here but don't: `AggregationProgress` is the writer's
 (`../writer/DETAILS.md`), and `SearchIndexReadyEvent` (`search-index-ready`) is `commands/search.rs`'s.
 
-## `ScanRunKind` — what kind of run this is (`mod.rs`)
+## `ScanRunKind` — what kind of run this is (`payload.rs`)
 
 A serde `snake_case` specta enum shipped on `index-scan-started` (and, for a mid-scan reload, on
 `IndexStatusResponse.scan_run_kind`) so the frontend states the run instead of inferring it:
@@ -119,44 +129,6 @@ the FE drives the "compute folder sizes" step off the aggregation events, not a 
 `saving_entries` never fires for network (entries insert inline during the walk), so that step simply doesn't appear.
 Don't fake either by calling local-only helpers on the network path.
 
-## `ScanProgressReporter` (`progress_reporter.rs`)
-
-The 500 ms progress + mid-scan partial-aggregation tick loop shared by EVERY scan path (local fresh/reconcile via
-`start_scan`, SMB/MTP trait fresh/reconcile via `network_scan`), so the coordinator reads as "dispatch scanner → await
-completion → spawn live loop".
-
-- `new(progress, writer, events, volume_id, partial_agg_source)` builds it; `spawn(scan_done)` runs the loop on
-  `host::runtime::spawn` (a scan can start from the sync Tauri `setup()` hook) until the completion handler sets
-  `scan_done`. Partial passes are therefore structurally scoped to the full-scan window.
-- `partial_agg_source` is chosen by the caller per scan kind: `Maps` for a fresh scan (accumulator maps populated by
-  `InsertEntriesV2`), `Sql` for a reconcile rescan (maps empty). See the `source: Maps|Sql` contract in
-  `../writer/DETAILS.md`.
-- Each `tick()` reports `IndexEvent::ScanProgress`, then — via a tick counter gated behind
-  `partial_agg::should_send_partial_agg` — snapshots the listing cache (`caching::snapshot_listings()`), runs
-  `partial_agg::collect_hot_paths`, maps each firmlink-normalized absolute hot path into the volume's index-relative
-  space via `routing::index_read_path` (the SAME volume-root strip enrichment uses; a pass-through for `root`,
-  mount/scheme strip for SMB/MTP), and fires a non-blocking
-  `writer.try_send(ComputePartialAggregates { hot_paths, source })`. The whole partial-agg block sits behind the gate,
-  so skipped ticks do zero extra work.
-- Keeps its sink by value (cloned in by the caller), so the spawned loop owns everything it needs; the genuinely pure
-  decision logic already lives (and is unit-tested) in `partial_agg`.
-
-## `partial_agg` — the pure helpers (`partial_agg.rs`)
-
-Side-effect-free so the timer loop stays a dumb caller and both helpers are exhaustively unit-tested.
-
-- `should_send_partial_agg(tick, queue_depth)` — the send gate: fires every `PARTIAL_AGG_TICK_INTERVAL`-th tick (10 = 5
-  s), never on tick 0, skips when `queue_depth > PARTIAL_AGG_MAX_QUEUE_DEPTH` (4,000; a depth of exactly the max still
-  sends). So partial passes never compete with the real insert backlog.
-- `collect_hot_paths(listings, scanned_volume_id)` — turns a `snapshot_listings()` result into firmlink-normalized hot
-  paths: keeps only listings whose `volume_id` equals the scanned volume's (dropping `network`/`search-results`/`mtp-*`/
-  SMB and other local volumes whose absolute-looking paths would resolve against the wrong per-volume DB) and whose
-  `path` is absolute, normalizes via `firmlinks::normalize_path`, and dedups preserving first-seen order.
-- Both constants live here with their rationale and the real-volume tuning numbers.
-
-Why this exists (the UX call): during a full scan, folder sizes otherwise don't exist until the single end-of-scan
-`ComputeAllAggregates` pass, so every listing shows placeholders for the whole scan (~2.5 min on a 5M-entry volume) and
-all sizes pop in at once — exactly when a new user is judging the headline feature. Partial passes refresh listings
-every few seconds with growing numbers next to the existing hourglass (a partial number beats a placeholder). The
-writer-side handler that consumes these messages (borrow-not-consume the maps, the depth-≤3 write cap, the empty-maps
-SQL-free no-op) is owned by `../writer/DETAILS.md`.
+The scan-progress pump that used to live here is `../lifecycle/DETAILS.md` § "`ScanProgressReporter`". It drives a scan
+rather than describing one, and its reach into `scanner`, `writer`, and `paths` is what kept this subtree inside a
+dependency cycle.

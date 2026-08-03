@@ -1,9 +1,16 @@
-# Indexing events + progress surface
+# Indexing events
 
-The `EventSink` seam, the typed `IndexEvent` every index subsystem reports through, the phase-transition emitter, and
-the scan-progress tick loop (progress plus mid-scan partial aggregation) shared by every scan path.
+The `EventSink` seam, the typed `IndexEvent` every index subsystem reports through, the values those events carry, and
+the phase-transition emitter.
 
 ## Must-knows
+
+- **This subtree is cycle-free, and it stays that way by importing DOWN only** (`store`, `aggregator`,
+  `lifecycle::freshness`). ❌ Never import a sideways index area from here. A scan-progress pump used to live here and
+  reached into `scanner`, `writer`, and `paths`; that's why it's now `../lifecycle/progress_reporter.rs`.
+- **A new value an event carries goes in `payload.rs`, NOT in `mod.rs`.** `mod.rs` holds the IPC response types and the
+  debug ring, and it names the same enums — so an enum added there makes `sink.rs` import its own parent, which is the
+  cycle this module just came out of. If both an event and a response need it, it belongs below both.
 
 - **This area produces no wire format and no user-facing words.** A subsystem emits a typed `IndexEvent`; the app's
   `events/index_mapping.rs` owns the Tauri payloads, the kebab event names, and every sentence a human reads. Adding a
@@ -23,34 +30,25 @@ the scan-progress tick loop (progress plus mid-scan partial aggregation) shared 
 - **Network scans emit only `Scanning → Live`** (no distinct `Aggregating` / `Reconciling`), and `saving_entries` never
   fires for network (entries insert inline). Don't fake either by calling local-only helpers on the network path; the FE
   drives the "compute folder sizes" step off the aggregation events instead.
-- **`partial_agg` helpers stay pure and side-effect-free** so the timer loop is a dumb caller. `collect_hot_paths` keeps
-  only listings on the scanned volume (else they resolve against the wrong per-volume DB). Constants and cadence:
-  `DETAILS.md`.
-- **The reporter runs on `host::runtime::spawn`, not `tokio::spawn`** — a scan can start from the synchronous Tauri
-  `setup()` hook where no Tokio runtime exists. Its loop dies with the scan, which structurally scopes partial passes to
-  the full-scan window. It SLEEPS 500 ms before its first tick, so a small fixture scan can finish without ever
-  reporting progress; don't write a test that assumes one fired.
 - **`ScanRunKind` on `ScanStarted` is the ONLY honest answer to "what kind of run is this"** (`FirstScan` /
   `FullRebuild` / `ChangeCheck`, from `ScanRunKind::classify` at each scan-start funnel). Don't let the FE re-derive it
   from `prior_total_entries`: that disagrees on a populated index whose last scan never completed. Its
   `calibration_kind()` also picks the per-kind ETA bucket (`../store/`).
-- **The typed data an event carries stays here, the envelope doesn't.** `ScanRunKind`, `RescanReason`, `ActivityPhase`,
-  and `MemoryWatchdogAction` keep their `specta::Type` derives: a schema derive on a value is fine, a presentation
-  decision isn't.
+- **The typed data an event carries stays here, the envelope doesn't.** The four `payload.rs` enums keep their
+  `specta::Type` derives: a schema derive on a value is fine, a presentation decision isn't.
 
 ## Module map
 
+- `payload.rs` — the four values an event carries: `ScanRunKind`, `RescanReason`, `ActivityPhase`,
+  `MemoryWatchdogAction`. The bottom of the subtree.
 - `sink.rs` — `IndexEvent` + `IndexEventKind`, the `EventSink` trait, `NoopEventSink`, `Diagnostic`, `IndexErrorReport`,
-  and the test `RecordingSink`.
-- `mod.rs` — the shared payload data types (`ScanRunKind`, `RescanReason`, `ActivityPhase`, `MemoryWatchdogAction`), the
-  IPC response types, `PhaseRecord`, `DebugStats`, `set_phase_for`, `emit_rescan_notification`, and `emit_dir_updated`.
-- `progress_reporter.rs` — `ScanProgressReporter`, the 500 ms tick loop shared by all scan paths.
-- `partial_agg.rs` — the pure send-decision (`should_send_partial_agg`) and hot-path collection (`collect_hot_paths`).
+  `MediaEnrichTerminalReason`, and the test `RecordingSink`.
+- `mod.rs` — the IPC response types, `PhaseRecord`, `DebugStats`, `set_phase_for`, `emit_rescan_notification`, and
+  `emit_dir_updated`.
 
-Owned elsewhere: the freshness state machine and phase lifecycle live in `../lifecycle/CLAUDE.md`; the writer-side
-`ComputePartialAggregates` handler + aggregation events in `../writer/CLAUDE.md`; the `index_read_path` mapping the
-reporter uses in `../paths/CLAUDE.md`; the rescan triggers that pick each `RescanReason` in `../watch/CLAUDE.md` and
-`../reconcile/CLAUDE.md`.
+Owned elsewhere: the scan-progress pump is `../lifecycle/progress_reporter.rs`; the freshness state machine and phase
+lifecycle live in `../lifecycle/CLAUDE.md`; the writer-side aggregation events in `../writer/CLAUDE.md`; the rescan
+triggers that pick each `RescanReason` in `../watch/CLAUDE.md` and `../reconcile/CLAUDE.md`.
 
-The payload catalog, `set_phase_for`, the progress reporter, and partial aggregation: `DETAILS.md`. Read it before any
-non-trivial work here: editing, planning, reorganizing, or advising.
+The event catalog, the error-report variants, and `set_phase_for`: `DETAILS.md`. Read it before any non-trivial work
+here: editing, planning, reorganizing, or advising.

@@ -9,6 +9,7 @@
 //! We construct a fresh `DebugStats` per test (not the global) so tests
 //! don't fight over the singleton.
 use super::*;
+use crate::indexing::store::ScanCalibrationKind;
 
 fn last_phase(stats: &DebugStats) -> ActivityPhase {
     let history = stats.phase_history.lock().expect("phase_history poisoned");

@@ -19,10 +19,13 @@
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
-use serde::{Deserialize, Serialize};
-
 use crate::{EventSink, IndexEvent};
 use cmdr_fs::ignore_poison::IgnorePoison;
+
+/// Re-exported so the scheduler's ~20 call sites keep their `events::…` path. The
+/// enum itself lives beside the `IndexEvent` variant that carries it: an event's
+/// payload type belongs with the event, not with the module that emits it.
+pub use crate::indexing::events::sink::MediaEnrichTerminalReason;
 
 use super::progress::{EnrichProgress, EnrichProgressSink, should_emit_progress};
 
@@ -31,29 +34,6 @@ use super::progress::{EnrichProgress, EnrichProgressSink, should_emit_progress};
 /// final tick). Keeps emission off the per-image hot path bar a counter + time check.
 const MIN_INTERVAL_MS: u64 = 500;
 const MIN_STEP: u64 = 100;
-
-/// Why a volume's enrichment pass ended. A typed discriminant, never a string
-/// (`no-string-matching`): the frontend clears the indicator row on `Completed` /
-/// `Cancelled` / `Failed` and re-voices it paused on the two pause reasons.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase", rename_all_fields = "camelCase", tag = "kind")]
-pub enum MediaEnrichTerminalReason {
-    /// The pass enriched every eligible image and GC'd vanished rows.
-    Completed {
-        /// Images the pass enriched.
-        enriched: u64,
-        /// Rows it removed for images that no longer exist.
-        gc_count: u64,
-    },
-    /// A network pass paused because the app is in use (resumes when idle again).
-    PausedWaitingForIdle,
-    /// A network pass paused because the volume disconnected (resumes on reconnect).
-    PausedDisconnected,
-    /// The memory watchdog stopped the pass (resumes on the next scan / re-enable).
-    Cancelled,
-    /// The pass bubbled an error (e.g. a writer-send failure). The row must still clear.
-    Failed,
-}
 
 // ── The production progress sink (throttled) ────────────────────────────────
 

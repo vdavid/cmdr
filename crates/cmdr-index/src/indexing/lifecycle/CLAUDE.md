@@ -8,6 +8,8 @@ How a per-volume index is born, lives, transitions, and dies. All invariants bel
   stop / clear / `force_scan`, the failure supervisor, `IndexManager`/`ReadPool` bootstrap.
 - **manager.rs** — the per-volume coordinator + LOCAL scan dispatch; **network_scan.rs** its SMB/MTP trait-scan path,
   **scan_completion.rs** the post-scan handler.
+- **progress_reporter.rs** + **partial_agg.rs** — the 500 ms scan-progress pump both scan paths spawn, and its pure
+  send-decision helpers.
 - **freshness.rs** — the Fresh/Stale/Scanning/Failed table. **failure.rs** — the fatal-storage signal.
   **lifecycle_bus.rs** — the neutral scan-completed / registration / dirs-changed bus. **master.rs** — the master
   switch + the composed per-drive gate + `drives_to_resume`.
@@ -43,13 +45,13 @@ How a per-volume index is born, lives, transitions, and dies. All invariants bel
   A narrow deferral, NOT the master switch; never feed it into `set_master_enabled`.
 - **The lifecycle bus is neutral and one-way** (consumer → indexing): `watch`, not `broadcast`, `send_replace` so a
   pre-subscribe `ScanCompleted` isn't lost.
-- **`publish_dirs_changed` takes ORIGIN dirs (whose own listings changed), ❌ never their ancestor closure.** Consumers
-  expand DOWNWARD, so one ancestor rescores its whole subtree: `/Users` in every batch cost ~90 k rescored folders a
-  minute. `path_prefix::with_ancestor_closure` rebuilds the size-refresh set for the FE emit + hourglass.
+- **`publish_dirs_changed` takes ORIGIN dirs, ❌ never their ancestor closure.** Consumers expand DOWNWARD, so one
+  ancestor rescores its whole subtree (`/Users` in every batch cost ~90 k rescored folders a minute).
+  `path_prefix::with_ancestor_closure` rebuilds the size-refresh set for the FE emit + hourglass.
 
-Owned elsewhere (each has its own `CLAUDE.md`), point don't restate: writer / `dir_stats` / epochs (`../writer/`); phase
-EVENT + progress (`../events/`); `IndexPathSpace` (`../paths/`); schema (`../store/`); walker (`../scanner/`); trait BFS
-(`../network_scanner/`); per-transport enable + watch (`../transports/`); event loop (`../watch/`); memory + retention
-(`../resources/`).
+Owned elsewhere (each has its own `CLAUDE.md`), point don't restate: writer / `dir_stats` / epochs (`../writer/`); the
+event seam + phase EVENT (`../events/`); `IndexPathSpace` (`../paths/`); schema (`../store/`); walker (`../scanner/`);
+trait BFS (`../network_scanner/`); per-transport enable + watch (`../transports/`); event loop (`../watch/`); memory +
+retention (`../resources/`).
 
 Depth on every bullet above: `DETAILS.md`. Read it before any non-trivial work here.

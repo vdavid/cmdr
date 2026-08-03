@@ -79,7 +79,7 @@ pure, unit-tested decision it wraps:
   `None` for a path not under the mount root, or a volume with no registered mount root (drop rather than mis-root).
 
 Firmlink normalization stays local-only — it must NOT touch virtual SMB/MTP paths. `index_read_path` is called by
-`read/enrichment.rs`, `read/queries.rs`, and `events/progress_reporter.rs` (which maps firmlink-normalized hot paths
+`read/enrichment.rs`, `read/queries.rs`, and `lifecycle/progress_reporter.rs` (which maps firmlink-normalized hot paths
 into index-relative space before the partial-aggregate send, so the same transform is single-sourced).
 
 ## Path → volume routing (`routing.rs`)

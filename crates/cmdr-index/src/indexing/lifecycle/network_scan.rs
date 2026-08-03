@@ -15,8 +15,8 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
 use super::manager::{IndexManager, ScanCalibration};
-use crate::indexing::events::progress_reporter::ScanProgressReporter;
 use crate::indexing::events::{ActivityPhase, DEBUG_STATS, IndexEvent, ScanRunKind, set_phase_for};
+use crate::indexing::lifecycle::progress_reporter::ScanProgressReporter;
 use crate::indexing::network_scanner::VolumeScanError;
 use crate::indexing::store::IndexStore;
 use crate::indexing::volume::IndexVolumeKind;

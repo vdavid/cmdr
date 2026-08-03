@@ -22,7 +22,7 @@ use std::time::Duration;
 use tokio::task::JoinHandle;
 
 use super::partial_agg;
-use super::{EventSink, IndexEvent};
+use crate::indexing::events::{EventSink, IndexEvent};
 use crate::indexing::paths::routing;
 use crate::indexing::scanner::ScanProgress;
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
