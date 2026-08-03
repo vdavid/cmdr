@@ -9,5 +9,5 @@ against, and they record what a crate boundary did and didn't buy.
 
 - `index-extraction-baseline.md` — the `cmdr-index` extraction.
 - `archive-extraction-baseline.md` — the `cmdr-archive` extraction, the measurement gate
-  `docs/specs/backend-crates-plan.md` ends at. **Its numbers are provisional**: the machine was contended and the
-  volume near-full throughout, so most readings are withdrawn and the note carries the procedure for re-taking them.
+  `docs/specs/backend-crates-plan.md` ends at. **Its numbers are provisional**: the machine was contended and the volume
+  near-full throughout, so most readings are withdrawn and the note carries the procedure for re-taking them.

@@ -26,11 +26,11 @@ one thing the crate boundary was built to buy.
 | Archive edit, then `cargo check --lib` on what you're editing | ~4.7           | ~0.34         | ~14×, provisional |
 | Archive edit, then `cargo test --lib --no-run` on it          | ~27.6          | ~2.7          | ~10×, provisional |
 
-**Why these two survive when the others don't.** They're CPU seconds (user + sys, children included), not wall clock,
-so they measure work done rather than time spent waiting behind other agents. And the structural reason is independent
-of any measurement: `cargo check -p cmdr-archive` compiles ~8k lines plus `cmdr-fs`, where the same question used to
-compile the 332k-line app crate, because before the split there was no way to ask for less. A 14× gap is consistent
-with that; contention could plausibly move it to 10× or 20×, not to 1×.
+**Why these two survive when the others don't.** They're CPU seconds (user + sys, children included), not wall clock, so
+they measure work done rather than time spent waiting behind other agents. And the structural reason is independent of
+any measurement: `cargo check -p cmdr-archive` compiles ~8k lines plus `cmdr-fs`, where the same question used to
+compile the 332k-line app crate, because before the split there was no way to ask for less. A 14× gap is consistent with
+that; contention could plausibly move it to 10× or 20×, not to 1×.
 
 **Treat the multipliers as "roughly ten to fifteen times", never as −93% / −90%.** The precision isn't there.
 
@@ -54,8 +54,8 @@ with that; contention could plausibly move it to 10× or 20×, not to 1×.
 ## What the gate's answer does NOT depend on
 
 Worth stating plainly, because it means the plan isn't blocked on the re-take: **the recommendation to write new
-backends as crates and to hold `cmdr-smb` doesn't rest on any number here.** It rests on a cost asymmetry taken from
-the survey, not the stopwatch:
+backends as crates and to hold `cmdr-smb` doesn't rest on any number here.** It rests on a cost asymmetry taken from the
+survey, not the stopwatch:
 
 - Archive's whole coupling was three seams, no `cfg(test)` behavior gates, no Docker, no Tauri types.
 - SMB's is 23 sites across all seven seams, an `AppHandle` in a `OnceLock` feeding `tauri_specta` emits, two registry
@@ -68,10 +68,10 @@ So: **P4 unconditionally; `cmdr-smb` only when someone is about to spend sustain
 could strengthen or weaken the SIZE of the benefit, but it would have to invert the inner-loop result entirely — not
 merely shrink it — to change that ordering.
 
-One measured argument in P3's favor that the plan didn't anticipate, and that no timing affects: the extraction
-surfaced two latent defects the app crate had been hiding (seven `.unwrap()`s legal only because their file was
-`cfg(test)`, and a rustdoc link to a function that no longer exists). Neither was caught by any check while the code
-lived in the app. SMB's test surface is 1.6× archive's.
+One measured argument in P3's favor that the plan didn't anticipate, and that no timing affects: the extraction surfaced
+two latent defects the app crate had been hiding (seven `.unwrap()`s legal only because their file was `cfg(test)`, and
+a rustdoc link to a function that no longer exists). Neither was caught by any check while the code lived in the app.
+SMB's test surface is 1.6× archive's.
 
 ## Re-taking this properly
 
@@ -111,5 +111,5 @@ ls -l target/release/Cmdr
 Time each with bash's `time` keyword under `TIMEFORMAT='%3R %3U %3S'` (wall, user, sys) rather than `/usr/bin/time -p`:
 the latter writes its report to the same stderr you want to discard from the build, and silently yields nothing.
 
-**Thin LTO must be on for both sides** (`[profile.release] lto = "thin"` at the workspace root), as it was for the
-index measurement. It already is; just don't toggle it while comparing.
+**Thin LTO must be on for both sides** (`[profile.release] lto = "thin"` at the workspace root), as it was for the index
+measurement. It already is; just don't toggle it while comparing.
