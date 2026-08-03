@@ -8,11 +8,12 @@ use std::path::{Path, PathBuf};
 
 use super::cache::Route;
 use super::*;
+use crate::media_index::coverage::accounted;
+use crate::media_index::predicate::MediaKind;
 use crate::media_index::read::MediaIndex;
 use crate::media_index::store::{EnrichmentState, MediaStatusRow, MediaStore, media_db_path};
 use crate::media_index::vector::cache as vector_cache;
 use crate::media_index::writer::{MediaWriter, UpsertAnalysis};
-use crate::media_index::{coverage, predicate::MediaKind};
 
 /// A fresh media store + writer over a scratch volume. Volume ids are unique per
 /// test (the accounted cache is process-global and keyed by volume id).
@@ -106,7 +107,7 @@ fn below_the_threshold_search_stays_brute_force_and_builds_no_index() {
     assert!(!index_path(&db_path, AnnSpace::Clip).exists(), "no index file is built");
 
     w.shutdown();
-    coverage::invalidate_accounted("ann-below-threshold");
+    accounted::invalidate("ann-below-threshold");
 }
 
 #[test]
@@ -132,7 +133,7 @@ fn at_the_threshold_a_missing_index_falls_back_exactly_until_a_rebuild_serves_an
     assert_eq!(paths_of(&hits), vec!["/p/000.jpg", "/p/001.jpg", "/p/002.jpg"]);
 
     w.shutdown();
-    coverage::invalidate_accounted("ann-missing-index");
+    accounted::invalidate("ann-missing-index");
 }
 
 #[test]
@@ -165,7 +166,7 @@ fn ann_results_match_brute_force_ordering_exactly() {
     }
 
     w.shutdown();
-    coverage::invalidate_accounted("ann-vs-brute");
+    accounted::invalidate("ann-vs-brute");
 }
 
 #[test]
@@ -215,7 +216,7 @@ fn re_rank_orders_by_db_truth_not_by_ann_distances() {
     );
 
     w.shutdown();
-    coverage::invalidate_accounted("ann-rerank-truth");
+    accounted::invalidate("ann-rerank-truth");
 }
 
 #[test]
@@ -238,7 +239,7 @@ fn ghost_keys_in_the_index_drop_out_of_results() {
     );
 
     w.shutdown();
-    coverage::invalidate_accounted("ann-ghost-keys");
+    accounted::invalidate("ann-ghost-keys");
 }
 
 #[test]
@@ -279,7 +280,7 @@ fn writer_fed_upserts_land_on_flush_and_re_embeds_overwrite() {
     );
 
     w.shutdown();
-    coverage::invalidate_accounted("ann-writer-upserts");
+    accounted::invalidate("ann-writer-upserts");
 }
 
 #[test]
@@ -301,7 +302,7 @@ fn gc_removes_keys_from_the_index_on_flush() {
     assert_eq!(paths_of(&hits), vec!["/p/001.jpg", "/p/002.jpg", "/p/003.jpg"]);
 
     w.shutdown();
-    coverage::invalidate_accounted("ann-gc-removes");
+    accounted::invalidate("ann-gc-removes");
 }
 
 #[test]
@@ -336,7 +337,7 @@ fn a_rename_touches_neither_the_index_nor_the_dirty_marker_and_hits_follow() {
     assert_eq!(paths_of(&hits), vec!["/q/renamed.jpg"], "the hit follows the rename");
 
     w.shutdown();
-    coverage::invalidate_accounted("ann-rename");
+    accounted::invalidate("ann-rename");
 }
 
 #[test]
@@ -357,7 +358,7 @@ fn a_corrupt_index_file_falls_back_to_exact_results() {
     assert_eq!(paths_of(&hits), vec!["/p/000.jpg", "/p/001.jpg", "/p/002.jpg"]);
 
     w.shutdown();
-    coverage::invalidate_accounted("ann-corrupt");
+    accounted::invalidate("ann-corrupt");
 }
 
 #[test]
@@ -391,7 +392,7 @@ fn a_bad_index_kicks_a_background_rebuild_that_heals_it() {
     assert_eq!(paths_of(&hits), vec!["/p/000.jpg", "/p/001.jpg", "/p/002.jpg"]);
 
     w.shutdown();
-    coverage::invalidate_accounted("ann-background-heal");
+    accounted::invalidate("ann-background-heal");
 }
 
 #[test]
@@ -444,7 +445,7 @@ fn a_flush_during_an_in_flight_rebuild_retains_ops_and_replays_them_after() {
     );
 
     w.shutdown();
-    coverage::invalidate_accounted("ann-rebuild-race");
+    accounted::invalidate("ann-rebuild-race");
 }
 
 #[test]
@@ -478,7 +479,7 @@ fn a_shutdown_during_an_in_flight_rebuild_keeps_the_marker_and_the_next_spawn_wi
     );
 
     w2.shutdown();
-    coverage::invalidate_accounted(vid);
+    accounted::invalidate(vid);
 }
 
 #[test]
@@ -512,7 +513,7 @@ fn a_model_mismatch_in_the_sidecar_is_detected_and_a_rebuild_recovers() {
     assert!(matches!(route_for(&db_path, 1), Route::Ann(_)));
 
     w.shutdown();
-    coverage::invalidate_accounted("ann-model-mismatch");
+    accounted::invalidate("ann-model-mismatch");
 }
 
 #[test]
@@ -533,7 +534,7 @@ fn a_format_bump_in_the_sidecar_reads_as_incompatible() {
     ));
 
     w.shutdown();
-    coverage::invalidate_accounted("ann-format-bump");
+    accounted::invalidate("ann-format-bump");
 }
 
 #[test]
@@ -562,7 +563,7 @@ fn a_flush_over_a_stale_sidecar_deletes_the_index_for_rebuild() {
     );
 
     w.shutdown();
-    coverage::invalidate_accounted("ann-flush-stale");
+    accounted::invalidate("ann-flush-stale");
 }
 
 #[test]
@@ -593,7 +594,7 @@ fn a_crashed_session_wipes_the_stale_index_at_writer_spawn() {
     );
 
     w2.shutdown();
-    coverage::invalidate_accounted("ann-crash-wipe");
+    accounted::invalidate("ann-crash-wipe");
 }
 
 #[test]
@@ -616,7 +617,7 @@ fn a_clean_shutdown_flushes_pending_ops_and_does_not_look_like_a_crash() {
     let meta = read_meta(&db_path, AnnSpace::Clip, AnnSpace::Clip.current_model_id()).expect("meta");
     assert_eq!(meta.rows, 5, "the late op landed before the thread died");
 
-    coverage::invalidate_accounted("ann-clean-shutdown");
+    accounted::invalidate("ann-clean-shutdown");
 }
 
 #[test]
@@ -640,7 +641,7 @@ fn a_flush_with_no_index_drops_ops_and_clears_the_marker() {
     );
 
     w.shutdown();
-    coverage::invalidate_accounted("ann-no-index-flush");
+    accounted::invalidate("ann-no-index-flush");
 }
 
 #[test]
@@ -660,7 +661,7 @@ fn prune_all_clip_deletes_the_index_files() {
     assert!(!dirty_path(&db_path, AnnSpace::Clip).exists());
 
     w.shutdown();
-    coverage::invalidate_accounted("ann-prune-all-clip");
+    accounted::invalidate("ann-prune-all-clip");
 }
 
 #[test]
@@ -687,7 +688,7 @@ fn a_schema_recreate_takes_the_index_files_with_it() {
     );
     assert!(!meta_path(&db_path, AnnSpace::Clip).exists(), "…and the sidecar");
 
-    coverage::invalidate_accounted("ann-schema-wipe");
+    accounted::invalidate("ann-schema-wipe");
 }
 
 // ── Real-corpus recall + latency harness (plan M6 verification) ──────────────

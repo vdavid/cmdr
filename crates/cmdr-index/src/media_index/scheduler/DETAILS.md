@@ -210,8 +210,8 @@ derives ONLY from settings state, so it needs no `Completed` edge.
   coverage), `doomed_stored` (outside it — the reclaim "delete N" AND the `keptCount`, the SAME set), and
   `covered_qualifying` (drive-index qualifying images in covered folders — the slider preview's number, a DIFFERENT
   thing: it counts what WOULD be indexed, not what IS). It guarantees `total_stored = surviving_stored + doomed_stored`,
-  and reuses the `coverage.rs` cache path for `covered_qualifying` (never a second derivation). In the AUTOMATIC scope
-  it returns `None` when importance hasn't scored the volume (importance's scoring makes that transient) — the partition
+  and reuses the `coverage` cache path for `covered_qualifying` (never a second derivation). In the AUTOMATIC scope it
+  returns `None` when importance hasn't scored the volume (importance's scoring makes that transient) — the partition
   can't be computed safely, so the command reports `pending` and the UI hides the reclaim line rather than proposing a
   destructive count off a lower bound. In the narrow scope importance isn't an input, so it partitions against an empty
   score map and stays answerable.

@@ -61,7 +61,7 @@ pub use upsert::UpsertAnalysis;
 use upsert::{ClipWrite, apply_upsert, apply_upsert_clip};
 
 use super::ann;
-use super::coverage;
+use super::coverage::accounted;
 use super::paths::parent_dir;
 use super::store::{EnrichmentState, MediaStatusRow, MediaStoreError, open_write_connection};
 use cmdr_fs::ignore_poison::IgnorePoison;
@@ -372,7 +372,7 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>, vol
     ann::wipe_if_crashed(&db_path, ann::AnnSpace::Clip);
     // Seed BEFORE the first write (§ accounted): if a row is ever committed, the seed
     // already ran, so a concurrent command-side seed can never race a delta.
-    coverage::seed_accounted_from_conn(&volume_id, &conn);
+    accounted::seed_from_conn(&volume_id, &conn);
     let mut ann_pending = AnnPending::new(db_path);
     while let Ok(msg) = receiver.recv() {
         match msg {
@@ -383,7 +383,7 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>, vol
                     // `done`↔`failed` transition on an existing path does NOT (the path
                     // was already counted).
                     Ok(true) if matches!(row.state, EnrichmentState::Done | EnrichmentState::Failed) => {
-                        coverage::accounted_inc(&volume_id, parent_dir(&row.path));
+                        accounted::inc(&volume_id, parent_dir(&row.path));
                     }
                     Ok(_) => {}
                     Err(e) => log::warn!(target: "media_index", "upsert failed for '{}': {e}", row.path),
@@ -454,8 +454,8 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>, vol
                 if moved {
                     let (old_dir, new_dir) = (parent_dir(&old), parent_dir(&new));
                     if old_dir != new_dir {
-                        coverage::accounted_dec(&volume_id, old_dir);
-                        coverage::accounted_inc(&volume_id, new_dir);
+                        accounted::dec(&volume_id, old_dir);
+                        accounted::inc(&volume_id, new_dir);
                     }
                 }
                 let _ = done.send(moved);
@@ -484,7 +484,7 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>, vol
                 ann_pending.mark_dirty();
                 match apply_purge(&conn) {
                     Ok(()) => {
-                        coverage::accounted_reset(&volume_id);
+                        accounted::reset(&volume_id);
                         // All rows are gone; the derivative index goes with them.
                         ann::delete_index_files(&ann_pending.db_path, ann::AnnSpace::Clip);
                         ann_pending.clear_after_delete();
@@ -520,7 +520,7 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>, vol
 /// no-op at flush, so rows without a CLIP vector cost nothing).
 fn note_deleted(volume_id: &str, ann_pending: &mut AnnPending, deleted: &[DeletedRow]) {
     for row in deleted {
-        coverage::accounted_dec(volume_id, parent_dir(&row.path));
+        accounted::dec(volume_id, parent_dir(&row.path));
         ann_pending.push(ann::AnnOp::Remove {
             key: row.file_id as u64,
         });

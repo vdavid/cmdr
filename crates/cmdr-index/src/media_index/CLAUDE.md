@@ -6,8 +6,8 @@ first).
 
 ## Areas (routing map)
 
-Each area subdir has its own `CLAUDE.md` (must-knows) + `DETAILS.md` (depth). Touch a dir and its `CLAUDE.md` autoloads;
-read it before non-trivial work there.
+Each area subdir has its own `CLAUDE.md` (must-knows) + `DETAILS.md` (depth); read the area's before non-trivial work
+there.
 
 - **`scheduler/CLAUDE.md`** — the pass machinery: full, network, and live-tick passes, bus wiring, the parallel worker
   pool, importance ordering, the reclaim prune. **`network/CLAUDE.md`** — SMB byte-fetch, the conservative fetch policy,
@@ -22,13 +22,12 @@ The IPC surface lives app-side in `../commands/media_index/`, not here: commands
 not. It reaches back in through `read/`, `gate.rs`, and `network::config`.
 
 ❌ **Nothing here reads a settings file.** The app builds an `IndexConfig` (`commands/media_index::index_config_from`)
-and `indexing::host::config::set_config` applies its media half to `gate.rs` and `network/config.rs`, which stay the
-storage the hot paths read. `MediaScheduler::start()` returns the scheduler for the host to hold; it never registers
-itself anywhere.
+and `indexing::host::config::set_config` applies its media half to `gate.rs` and `network/config.rs`, the storage the
+hot paths read. `MediaScheduler::start()` hands the scheduler to the host; it never registers itself.
 
-Top-level leaves this file owns: `coverage.rs` (the eligible/accounted caches), `gate.rs` (toggle / scope / threshold /
-parallelism atomics), `writer/` + `writer_registry.rs` (ONE writer thread per volume), `events.rs`, `progress.rs`,
-`thermal.rs`, and `predicate.rs`, whose `qualify_dir` stays PURE.
+Top-level leaves this file owns: `coverage/` (the rule + its two caches), `gate.rs` (toggle / scope / threshold /
+parallelism atomics), `paths.rs` (`parent_dir`), `writer/` + `writer_registry.rs` (ONE writer thread per volume),
+`events.rs`, `progress.rs`, `thermal.rs`, `predicate.rs` (`qualify_dir` stays PURE).
 
 ## Subsystem-wide must-knows
 
@@ -45,7 +44,8 @@ parallelism atomics), `writer/` + `writer_registry.rs` (ONE writer thread per vo
 - **Counts stream; polls never build them.** Aggregate through the `for_each_qualifying_image` sink, ❌ never over
   `walk_image_entries`: one path `String` per image is the 50 GB launch runaway. Polls and startup read
   `coverage::cached`; only user-initiated settings reads call `get_or_build`. `None` means "no number yet", ❌ never
-  `0`. `accounted` is INCREMENTAL (writer ±1) in its own cache, ❌ never rebuilt from a walk.
+  `0`. `accounted` is INCREMENTAL (writer ±1) in `coverage::accounted`, ❌ never rebuilt from a walk nor merged into
+  walk-driven `eligible` (one shared file welds walk and writer into an import cycle).
 - **Cancellation hooks the EXISTING indexing watchdog** (❌ no second one; one shared memory ceiling). The
   between-images hook is `gate::should_stop` (watchdog OR toggle OFF); ❌ don't narrow it to `is_cancelled`.
 - **CLIP is a SEPARATE vector space from the Vision feature print**; ❌ never cosine-compare the two.

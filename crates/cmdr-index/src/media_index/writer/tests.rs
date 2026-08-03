@@ -185,7 +185,7 @@ fn prune_all_clip_drops_embeddings_resets_stamps_and_keeps_vision() {
 fn rename_moves_all_children_via_one_row_update_and_keeps_only_those() {
     let dir = tempfile::tempdir().expect("temp");
     let vid = "writer-test-rename";
-    coverage::invalidate_accounted(vid);
+    accounted::invalidate(vid);
     let w = writer(dir.path(), vid);
     let db_path = media_db_path(dir.path(), vid);
     seed(&w, "/a/x.jpg");
@@ -229,7 +229,7 @@ fn rename_moves_all_children_via_one_row_update_and_keeps_only_those() {
         "destination already enriched"
     );
     w.shutdown();
-    coverage::invalidate_accounted(vid);
+    accounted::invalidate(vid);
 }
 
 #[test]
@@ -308,14 +308,14 @@ fn upsert_state(w: &MediaWriter, path: &str, mtime: u64, state: EnrichmentState)
 
 /// The accounted subtree total for `dir` on `volume_id`.
 fn accounted(volume_id: &str, dir: &str) -> u64 {
-    coverage::accounted_subtrees(volume_id, &[dir.to_string()])[0]
+    accounted::subtrees(volume_id, &[dir.to_string()])[0]
 }
 
 #[test]
 fn accounted_increments_only_on_a_genuinely_new_done_or_failed_row() {
     let dir = tempfile::tempdir().expect("temp");
     let vid = "writer-test-accounted-increment";
-    coverage::invalidate_accounted(vid);
+    accounted::invalidate(vid);
     let w = writer(dir.path(), vid);
 
     // A brand-new done row bumps its dir's accounted count.
@@ -343,14 +343,14 @@ fn accounted_increments_only_on_a_genuinely_new_done_or_failed_row() {
     assert_eq!(accounted(vid, "/photos"), 2, "a new failed row counts toward accounted");
 
     w.shutdown();
-    coverage::invalidate_accounted(vid);
+    accounted::invalidate(vid);
 }
 
 #[test]
 fn accounted_decrements_on_delete_and_never_goes_negative() {
     let dir = tempfile::tempdir().expect("temp");
     let vid = "writer-test-accounted-decrement";
-    coverage::invalidate_accounted(vid);
+    accounted::invalidate(vid);
     let w = writer(dir.path(), vid);
 
     upsert_state(&w, "/p/a.jpg", 1, EnrichmentState::Done);
@@ -372,7 +372,7 @@ fn accounted_decrements_on_delete_and_never_goes_negative() {
     assert_eq!(accounted(vid, "/p"), 0, "the folder drains to zero, never negative");
 
     w.shutdown();
-    coverage::invalidate_accounted(vid);
+    accounted::invalidate(vid);
 }
 
 #[test]
@@ -382,28 +382,28 @@ fn accounted_is_seeded_from_existing_rows_when_a_writer_spawns() {
     // must seed accounted from the on-disk rows, not start at zero.
     let dir = tempfile::tempdir().expect("temp");
     let vid = "writer-test-accounted-seed-on-spawn";
-    coverage::invalidate_accounted(vid);
+    accounted::invalidate(vid);
     let w1 = writer(dir.path(), vid);
     upsert_state(&w1, "/seed/a.jpg", 1, EnrichmentState::Done);
     upsert_state(&w1, "/seed/b.jpg", 1, EnrichmentState::Failed);
     w1.shutdown();
 
     // Drop the in-memory aggregate, then spawn a fresh writer over the same DB.
-    coverage::invalidate_accounted(vid);
+    accounted::invalidate(vid);
     let w2 = writer(dir.path(), vid);
     // A flush barrier guarantees the writer thread ran its seed (its first action).
     w2.flush_blocking().expect("flush");
     assert_eq!(accounted(vid, "/seed"), 2, "the spawn seeded both stored rows");
 
     w2.shutdown();
-    coverage::invalidate_accounted(vid);
+    accounted::invalidate(vid);
 }
 
 #[test]
 fn purge_resets_the_accounted_aggregate() {
     let dir = tempfile::tempdir().expect("temp");
     let vid = "writer-test-accounted-purge";
-    coverage::invalidate_accounted(vid);
+    accounted::invalidate(vid);
     let w = writer(dir.path(), vid);
     upsert_state(&w, "/x/a.jpg", 1, EnrichmentState::Done);
     upsert_state(&w, "/y/b.jpg", 1, EnrichmentState::Done);
@@ -414,5 +414,5 @@ fn purge_resets_the_accounted_aggregate() {
     assert_eq!(accounted(vid, "/"), 0, "purge zeroes the whole aggregate");
 
     w.shutdown();
-    coverage::invalidate_accounted(vid);
+    accounted::invalidate(vid);
 }

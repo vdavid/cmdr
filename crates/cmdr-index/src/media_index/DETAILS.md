@@ -153,7 +153,13 @@ The matching importance-side fix (a fresh/recreated store actually GETS a full p
 `importance/DETAILS.md` § The initial full pass; fixing both means media's read-side check is defense in depth, not the
 only guard.
 
-## Covered-count preview + honest progress (`coverage.rs`, `apps/desktop/src-tauri/src/commands/media_index/state.rs`)
+## Covered-count preview + honest progress (`coverage/`, `apps/desktop/src-tauri/src/commands/media_index/state.rs`)
+
+`coverage/` is four files: `mod.rs` (the coverage RULE — `covered_in_scope`, `partition_stored`, `stored_row_survives`,
+`importance_scores` — plus `folder_coverage`, the one read that joins both halves), `eligible.rs` (the denominator
+cache, described here), `accounted.rs` (the numerator cache, § The per-folder accounted aggregate), and `rollup.rs` (the
+subtree arithmetic both caches share). Everything a host may name is re-exported from `mod.rs`; `eligible` and `rollup`
+are private, and `accounted` is visible only inside `media_index` because the writer thread mutates it directly.
 
 `media_index_covered_count(threshold, volume_ids)` powers the slider's live preview: across the ENABLED volumes (master
 on AND (local, or SMB opted-in); MTP never), how many folders score `≥ threshold` and how many images they hold —
@@ -207,29 +213,32 @@ and skipped: 6.4x on the root DB but ~nothing on the image-dense NAS, for a sche
 runs once per session (`docs/notes/m7-ext-index-walk-bench-2026-07-24.md`, incl. why the old 42 s baseline didn't
 reproduce). Revisit only off an in-app measurement showing tens of seconds, or a sparse-image 10M+-file corpus.
 
-## The per-folder accounted aggregate + the index-status indicators (`coverage.rs`,
+## The per-folder accounted aggregate + the index-status indicators (`coverage/accounted.rs`,
 
 `apps/desktop/src-tauri/src/commands/media_index/file_status.rs`)
 
 The covered-count cache above is the DENOMINATOR (`eligible`: images the drive index says qualify per folder). The quiet
 per-image / per-folder / per-drive index indicators also need the NUMERATOR: how many of those are actually indexed. So
-`coverage.rs` maintains a per-directory `accounted` count = images whose `media_status` row is `done` OR `failed` (both
-count — a `failed` image can't progress, so completion is `accounted == eligible`, else one corrupt file keeps a folder
-reading incomplete forever).
+`coverage/accounted.rs` maintains a per-directory `accounted` count = images whose `media_status` row is `done` OR
+`failed` (both count — a `failed` image can't progress, so completion is `accounted == eligible`, else one corrupt file
+keeps a folder reading incomplete forever).
 
-**Why a SEPARATE cache from `COUNTS`, not a field on it.** The two aggregates have different sources and update models:
-`eligible` (`COUNTS`) is REBUILT from a whole-volume index walk each pass (`replace_from_entries`), reflecting the live
-filesystem; `accounted` (`ACCOUNTED`) is maintained INCREMENTALLY from the stored rows. Folding accounted into `COUNTS`
-would let the walk-driven `replace_from_entries` wipe the incrementally-maintained counts every pass. They're reported
-together by the folder-coverage command but live apart.
+**Why a SEPARATE cache from `COUNTS`, and a separate FILE.** The two aggregates have different sources and update
+models: `eligible` (`COUNTS`) is REBUILT from a whole-volume index walk each pass (`replace_from_entries`), reflecting
+the live filesystem; `accounted` (`ACCOUNTED`) is maintained INCREMENTALLY from the stored rows. Folding accounted into
+`COUNTS` would let the walk-driven `replace_from_entries` wipe the incrementally-maintained counts every pass. They're
+reported together by the folder-coverage command but live apart. ❌ Don't re-merge the two files either: the eligible
+half reaches the index walk and the accounted half is written by the writer thread the walk feeds, so one shared file
+puts `coverage`, `scheduler::enrich`, and `writer` back in one import cycle. Split, each half depends only on leaves
+(`paths`, `rollup`, `store`) and the graph is a DAG:
+`coverage::eligible → scheduler::enrich → writer → coverage::accounted`.
 
 **The maintenance invariants (mirroring how `eligible` is seeded and patched):**
 
 - **Seed** once from a `SELECT path, state FROM media_status` scan bucketed by parent dir. This happens on the ONE
-  writer thread as its FIRST action (`writer_loop` calls `coverage::seed_accounted_from_conn` before processing any
-  message), OR lazily via `ensure_accounted_seeded`, which `coverage::folder_coverage` runs itself when the writer
-  hasn't spawned this session (feature just enabled / volume never enriched). Both go through `seed_accounted_if_absent`
-  (insert-if-absent).
+  writer thread as its FIRST action (`writer_loop` calls `accounted::seed_from_conn` before processing any message), OR
+  lazily via `accounted::ensure_seeded`, which `coverage::folder_coverage` runs itself when the writer hasn't spawned
+  this session (feature just enabled / volume never enriched). Both go through `seed_if_absent` (insert-if-absent).
 - **Increment** on a genuinely-new completion: `apply_upsert` does a cheap PK existence check (`SELECT EXISTS(…)`)
   inside its transaction and returns whether it INSERTED vs updated; the writer bumps `accounted[parent_dir] += 1` only
   on a new `done`/`failed` row. A `done`↔`failed` transition or a re-enrich of an existing path does NOT move it (the
@@ -238,9 +247,10 @@ together by the folder-coverage command but live apart.
   (`delete_rows_for_paths` collects the ones `DELETE` reported), and the writer `-1`s each parent dir (saturating, never
   negative). `PurgeVolume` resets the whole aggregate.
 - **Subtree rollups**: `folder_coverage` returns each folder's `eligible` and `accounted` summed over the folder AND all
-  descendant dirs (`build_subtree_rollup` adds each dir's count to itself and every ancestor). The rollup is cached
-  alongside the per-dir map (`VolumeAccounted.subtree`, `ELIGIBLE_ROLLUP`) and invalidated on any change; a query is a
-  cached-map lookup, NEVER a `media_status` scan.
+  descendant dirs (`rollup::build_subtree_rollup` adds each dir's count to itself and every ancestor — the one piece
+  both halves share, which is why it's its own leaf file). The rollup is cached alongside the per-dir map
+  (`VolumeAccounted.subtree`, `ELIGIBLE_ROLLUP`) and invalidated on any change; a query is a cached-map lookup, NEVER a
+  `media_status` scan.
 
 **The concurrency line (why insert-if-absent is race-free).** The writer is the ONE mutator of both `media.db` and this
 volume's `accounted`, and it seeds BEFORE its first commit. So whenever a committed row could exist, the entry is
@@ -483,7 +493,7 @@ listener. Fine at a few-volumes scale, but it scales per mounted volume — note
 
 ## What's left for later
 
-- **Per-folder COUNTS now exist** (`coverage.rs`'s incremental `accounted` aggregate + subtree rollups): the honest
+- **Per-folder COUNTS now exist** (`coverage/accounted.rs`'s incremental aggregate + subtree rollups): the honest
   `eligible` / `accounted` per folder feed `media_index_file_status` / `media_index_folder_coverage`, which the file-
   and folder-icon overlays consume (`file-explorer/selection/DETAILS.md` § Image-index overlay) and the drive dot rolls
   up per volume. Accepted staleness caveat: § The per-folder accounted aggregate.
@@ -498,7 +508,8 @@ Most tests are FFI-free and registry-free. Per-area inventories live in each are
 level owns:
 
 - **Pure, top-level:** the qualification predicate (`predicate.rs`), the covered-count arithmetic over a synthetic
-  counts+scores map (`coverage.rs`), the command limit clamp and the `*_should_kick` decisions
+  counts+scores map (`coverage/tests.rs`), the two caches (`coverage/eligible/tests.rs`, `coverage/accounted/tests.rs`),
+  the command limit clamp and the `*_should_kick` decisions
   (`apps/desktop/src-tauri/src/commands/media_index/tests.rs`), the progress throttle (`progress.rs`).
 - **Privacy retro-delete (all real red→green — deletion is data-safety-critical):** the writer prune primitives
   (`writer/tests.rs`) — `prune_under_folder` deletes rows at or under a folder across ALL four tables and only those,
