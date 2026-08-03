@@ -12,9 +12,9 @@
 //! backend and is asserted against a recording host in `watch/host_seam_test.rs`.
 //! No FSEvents timing lives in this file.
 
+use cmdr_fs::volume::host::listings::ListingHost;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use cmdr_fs::volume::host::listings::ListingHost;
 
 use crate::file_system::VolumeManager;
 use crate::file_system::listing::FileEntry;
