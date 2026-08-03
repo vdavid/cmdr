@@ -22,7 +22,7 @@ use super::rescan_route::{self, RescanRoute};
 use super::rescan_settle;
 use super::rescan_throttle::RescanThrottle;
 use super::{
-    DEBUG_STATS, EventReconciler, IndexPathSpace, IndexStore, IndexWriter, ReconcileSummary, SHALLOW_COALESCED_KEY,
+    DEBUG_STATS, EventReconciler, IndexStore, IndexWriter, ReconcileSummary, RescanDrain, SHALLOW_COALESCED_KEY,
     SHALLOW_SWEEP_AT_KEY, ScanTrigger, WriteMessage, now_unix, reconcile_subtree,
 };
 use crate::indexing::lifecycle::manager;
@@ -30,11 +30,24 @@ use crate::indexing::paths::path_prefix;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
 impl EventReconciler {
+    /// This reconciler's drain handles, cloned for a spawned walk.
+    pub(super) fn rescan_drain(&self) -> RescanDrain {
+        RescanDrain {
+            pending: Arc::clone(&self.pending_rescans),
+            active: Arc::clone(&self.rescan_active),
+            active_path: Arc::clone(&self.active_rescan_path),
+            throttle: Arc::clone(&self.rescan_throttle),
+            space: self.space.clone(),
+            volume_id: self.volume_id.clone(),
+            cancel: self.cancel.clone(),
+        }
+    }
+
     /// Route a `MustScanSubDirs` anchor by depth (see [`rescan_route`]). The single
     /// entry point for the two feeders the churn-resilience fix targets — the live
     /// path (`process_live_event`) and the post-replay handoff (`event_loop::replay`):
@@ -174,15 +187,7 @@ impl EventReconciler {
             return;
         }
 
-        start_next_rescan(
-            Arc::clone(&self.pending_rescans),
-            Arc::clone(&self.rescan_active),
-            Arc::clone(&self.active_rescan_path),
-            Arc::clone(&self.rescan_throttle),
-            self.space.clone(),
-            self.volume_id.clone(),
-            writer,
-        );
+        start_next_rescan(self.rescan_drain(), writer);
     }
 
     /// Start a rescan if any are pending and none is running. Drains rescans that
@@ -195,15 +200,7 @@ impl EventReconciler {
         if self.pending_rescans.lock_ignore_poison().is_empty() {
             return;
         }
-        start_next_rescan(
-            Arc::clone(&self.pending_rescans),
-            Arc::clone(&self.rescan_active),
-            Arc::clone(&self.active_rescan_path),
-            Arc::clone(&self.rescan_throttle),
-            self.space.clone(),
-            self.volume_id.clone(),
-            writer,
-        );
+        start_next_rescan(self.rescan_drain(), writer);
     }
 
     /// Trailing edge of the per-subtree throttle, driven by the event loop's
@@ -347,15 +344,16 @@ pub(super) fn pick_and_collapse_rescan(
 ///
 /// Standalone function (not a method) so the spawned task can call it after
 /// completion to drain the pending queue automatically.
-pub(super) fn start_next_rescan(
-    pending_rescans: Arc<Mutex<HashSet<PathBuf>>>,
-    rescan_active: Arc<AtomicBool>,
-    active_rescan_path: Arc<Mutex<Option<PathBuf>>>,
-    rescan_throttle: Arc<Mutex<RescanThrottle>>,
-    space: IndexPathSpace,
-    volume_id: String,
-    writer: &IndexWriter,
-) {
+pub(super) fn start_next_rescan(drain: RescanDrain, writer: &IndexWriter) {
+    let RescanDrain {
+        pending: pending_rescans,
+        active: rescan_active,
+        active_path: active_rescan_path,
+        throttle: rescan_throttle,
+        space,
+        volume_id,
+        cancel: volume_cancel,
+    } = drain;
     let path = {
         let mut pending = pending_rescans.lock_ignore_poison();
         let throttle = rescan_throttle.lock_ignore_poison();
@@ -386,6 +384,22 @@ pub(super) fn start_next_rescan(
     let throttle_for_task = Arc::clone(&rescan_throttle);
     let space_for_task = space.clone();
     let volume_id_for_task = volume_id.clone();
+    // A child of THIS volume's stop signal, taken BEFORE the walk starts, so
+    // tearing the index down stops a long subtree walk instead of letting it write
+    // into a writer that's shutting down.
+    let cancel = volume_cancel.child_token();
+    // The same handles again, as one value, for the self-drain call this walk makes
+    // when it finishes (on either exit path — the borrow checker sees the early
+    // return, so one binding covers both).
+    let drain_for_next = RescanDrain {
+        pending: Arc::clone(&pending_rescans),
+        active: Arc::clone(&rescan_active),
+        active_path: Arc::clone(&active_rescan_path),
+        throttle: Arc::clone(&rescan_throttle),
+        space: space.clone(),
+        volume_id: volume_id.clone(),
+        cancel: volume_cancel,
+    };
 
     // Debug, not info: this is one line per walk, thousands a day, and it's paired
     // with a completion line that carries the duration. The info-level signal for
@@ -406,13 +420,6 @@ pub(super) fn start_next_rescan(
         .name("rescan-subtree".into())
         .spawn(move || {
             cmdr_fs::thread_qos::set_current_thread_qos(cmdr_fs::thread_qos::QosClass::Utility);
-            // A child of THIS volume's stop signal, so tearing the index down
-            // stops a long subtree walk instead of letting it write into a
-            // writer that's shutting down. An unregistered volume yields a token
-            // that never fires (the honest answer with no volume behind it).
-            let cancel = crate::indexing::lifecycle::state::volume_cancel_token(&volume_id_for_task)
-                .map(|t| t.child_token())
-                .unwrap_or_default();
             // The reconciler holds a READ connection (invariant: reconciler/event
             // loops never open a write connection — a write conn contends with the
             // writer thread and `SQLITE_BUSY` silently kills live indexing). Every
@@ -437,15 +444,7 @@ pub(super) fn start_next_rescan(
                     active_for_task.store(false, Ordering::Relaxed);
                     *active_path_for_task.lock_ignore_poison() = None;
                     // Try the next pending rescan even if this one failed
-                    start_next_rescan(
-                        pending_for_task,
-                        active_for_task,
-                        active_path_for_task,
-                        throttle_for_task,
-                        space_for_task,
-                        volume_id_for_task,
-                        &writer,
-                    );
+                    start_next_rescan(drain_for_next, &writer);
                     return;
                 }
             };
@@ -514,15 +513,7 @@ pub(super) fn start_next_rescan(
             *active_path_for_task.lock_ignore_poison() = None;
 
             // Automatically start the next queued rescan
-            start_next_rescan(
-                pending_for_task,
-                active_for_task,
-                active_path_for_task,
-                throttle_for_task,
-                space_for_task,
-                volume_id_for_task,
-                &writer,
-            );
+            start_next_rescan(drain_for_next, &writer);
         });
 
     if let Err(e) = spawn_result {

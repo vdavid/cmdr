@@ -5,8 +5,8 @@ use crate::indexing::read::enrichment::get_read_pool_for;
 /// The read path's skip-vs-route gate is "does `get_read_pool_for` return a
 /// pool?". An unregistered volume must return `None` (so its listings skip
 /// before any DB work, exactly like the old `should_exclude` early-return); a
-/// reserved one (root → global pool, non-root → instance pool) returns the
-/// pool. Reserving installs the pool, so the gate flips on; removing drops it.
+/// reserved one returns its own pool. Reserving installs the pool, so the gate
+/// flips on; teardown withdraws it.
 #[test]
 fn read_pool_routing_tracks_registration() {
     let _guard = INDEX_REGISTRY_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
@@ -17,8 +17,8 @@ fn read_pool_routing_tracks_registration() {
     assert!(!indexed("root"), "no pool => not indexed");
     assert!(!indexed("smb-nas"), "absent key => not indexed");
 
-    // Reserve root (installs the global pool) and a non-root volume (installs
-    // the instance pool). Both must then route to a pool.
+    // Reserve root and a non-root volume; reservation installs each one's pool,
+    // so both must then route.
     let dir = tempfile::tempdir().expect("temp dir");
     let reserve = |name: &str| {
         let db_path = dir.path().join(format!("{name}.db"));
@@ -124,12 +124,12 @@ fn reservations_are_independent_across_volumes() {
     );
     assert!(is_active("vol-b"), "vol-b unaffected by vol-a's rejected start");
 
-    // Remove vol-a; vol-b survives.
-    INDEX_REGISTRY.lock().unwrap().remove("vol-a");
+    // Stop vol-a through the real teardown path; vol-b survives.
+    stop_indexing("vol-a").expect("stop vol-a");
     assert!(!is_active("vol-a"));
     assert!(
         get_read_pool_for("vol-a").is_none(),
-        "vol-a's pool gone with its instance"
+        "stopping vol-a withdrew its pool, so reads skip"
     );
     assert!(is_active("vol-b"), "removing vol-a must not disturb vol-b");
     assert!(get_read_pool_for("vol-b").is_some(), "vol-b still routable");
@@ -383,6 +383,10 @@ fn forget_stale_index_transitions_to_gray_and_deletes_db() {
     );
     assert_eq!(get_freshness("smb-forget-test"), Some(Freshness::Stale), "loads Stale");
     assert!(db_path.exists(), "DB file exists before forget");
+    assert!(
+        get_read_pool_for("smb-forget-test").is_some(),
+        "a reserved volume routes to its pool"
+    );
 
     // Forget it.
     clear_index("smb-forget-test").expect("clear_index must succeed");
@@ -395,6 +399,13 @@ fn forget_stale_index_transitions_to_gray_and_deletes_db() {
     );
     assert!(!is_active("smb-forget-test"), "the instance must be removed");
     assert!(!db_path.exists(), "forget must delete the index DB from disk");
+    // The withdraw-before-delete ordering, observed from the read side: by the time
+    // the file is gone the volume routes nothing, so no reader can still be opening
+    // a connection to it.
+    assert!(
+        get_read_pool_for("smb-forget-test").is_none(),
+        "clear_index must withdraw the read pool, not just delete the DB"
+    );
 
     clear_registry_and_pools();
 }
@@ -592,7 +603,8 @@ fn fresh(initial: Option<Freshness>) -> Arc<std::sync::Mutex<Option<Freshness>>>
 }
 
 /// Reset every registry-backed test global: remove ONLY the volume ids these
-/// tests reserve, plus the root read-path globals (which live outside the map).
+/// tests reserve, from the registry AND from the read-handle tables (which are
+/// keyed separately, so a registry removal alone leaves a routable pool behind).
 ///
 /// ❌ Never `INDEX_REGISTRY.clear()` here. The registry is a process-global shared
 /// with EVERY other test module, and under bare `cargo test` (threads in one
@@ -622,8 +634,10 @@ fn clear_registry_and_pools() {
         reg.remove(*vid);
     }
     drop(reg);
-    uninstall_read_pool(ROOT_VOLUME_ID);
-    uninstall_pending_sizes(ROOT_VOLUME_ID);
+    for vid in STATE_TEST_VIDS {
+        uninstall_read_pool(vid);
+        uninstall_pending_sizes(vid);
+    }
 }
 
 /// Tests that mutate `INDEX_REGISTRY` serialize on this guard (mirrors

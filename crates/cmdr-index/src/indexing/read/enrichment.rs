@@ -11,7 +11,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use rusqlite::Connection;
 
-use crate::indexing::lifecycle::state;
+use super::handles::VolumeHandles;
 use crate::indexing::paths::routing;
 use crate::indexing::store::{self, DirStatsById, IndexStore, IndexStoreError};
 use crate::indexing::volume::ROOT_VOLUME_ID;
@@ -85,57 +85,43 @@ impl ReadPool {
     }
 }
 
-/// The root volume's read pool. The fast handle for local-disk enrichment, root
-/// filename search, and IPC dir-stats. The root `IndexInstance` shares this same
-/// `Arc`, so registry and read path can't drift. (Non-root filename search opens
-/// its own read-only pool from the volume's `index-{id}.db`; see `search/volumes.rs`.)
+/// Every indexed volume's read pool, keyed by volume id: the handle behind
+/// local-disk enrichment, filename search, and IPC dir-stats. Lifecycle pushes a
+/// pool in when it reserves the volume's slot and takes it back out on stop /
+/// clear / failure, so this table and the registry can't drift.
 ///
-/// Root is special-cased to this global (rather than read from the registry)
-/// for two reasons: search reads it on the hot path, and the indexing tests
-/// install it directly. Non-root volumes' pools live in their `IndexInstance`
-/// (see `crate::indexing::lifecycle::state::get_instance_read_pool`).
-pub(crate) static READ_POOL: LazyLock<std::sync::Mutex<Option<Arc<ReadPool>>>> =
-    LazyLock::new(|| std::sync::Mutex::new(None));
+/// (Non-root filename search opens its own read-only pool from the volume's
+/// `index-{id}.db` instead; see `search/volumes.rs`.)
+static READ_POOLS: LazyLock<VolumeHandles<ReadPool>> = LazyLock::new(VolumeHandles::new);
 
-/// Tests that touch `READ_POOL` must hold this lock to avoid races with parallel test threads.
+/// Tests that touch the root volume's pool must hold this lock to avoid races with
+/// parallel test threads.
 #[cfg(any(test, feature = "testing"))]
 pub static READ_POOL_TEST_MUTEX: LazyLock<std::sync::Mutex<()>> = LazyLock::new(|| std::sync::Mutex::new(()));
 
-/// Clone the root volume's pool Arc. Lock held for nanoseconds (just an Arc
-/// clone). Kept for the search module (local-disk-only by D7) and the root
-/// read-path callers.
+/// Clone the root volume's pool Arc. Kept for the callers that are root-scoped by
+/// construction (the search module, local-disk-only by D7; post-replay verification).
 pub(crate) fn get_read_pool() -> Option<Arc<ReadPool>> {
-    READ_POOL.lock().ok()?.as_ref().cloned()
+    get_read_pool_for(ROOT_VOLUME_ID)
 }
 
-/// Clone a specific volume's read pool. Routes root to `READ_POOL`, every other
-/// volume to its `IndexInstance` in the registry. `None` means "no index
-/// registered for this volume" — the read path skips before any DB work.
+/// Clone a specific volume's read pool. `None` means "no index registered for
+/// this volume" — the read path skips before any DB work.
 pub(crate) fn get_read_pool_for(volume_id: &str) -> Option<Arc<ReadPool>> {
-    if volume_id == ROOT_VOLUME_ID {
-        get_read_pool()
-    } else {
-        state::get_instance_read_pool(volume_id)
-    }
+    READ_POOLS.get(volume_id)
 }
 
-/// Install the root volume's read pool into the global fast handle. No-op for
-/// non-root volumes: their pool is owned by the `IndexInstance` directly.
+/// Publish a volume's read pool so the read path can route to it. Called by
+/// lifecycle while it reserves the volume's registry slot, so a volume is never
+/// registered without a routable pool.
 pub(crate) fn install_read_pool(volume_id: &str, pool: Arc<ReadPool>) {
-    if volume_id == ROOT_VOLUME_ID {
-        *READ_POOL.lock_ignore_poison() = Some(pool);
-    }
+    READ_POOLS.install(volume_id, pool);
 }
 
-/// Clear the root volume's global read pool and return it (for invalidation on
-/// stop/clear). Non-root volumes' pools are dropped with their `IndexInstance`;
-/// this returns the instance's pool so the caller can `invalidate()` it.
+/// Withdraw a volume's read pool and return it, so the caller can `invalidate()`
+/// its thread-local connections. After this returns, reads for the volume skip.
 pub(crate) fn uninstall_read_pool(volume_id: &str) -> Option<Arc<ReadPool>> {
-    if volume_id == ROOT_VOLUME_ID {
-        READ_POOL.lock_ignore_poison().take()
-    } else {
-        state::get_instance_read_pool(volume_id)
-    }
+    READ_POOLS.uninstall(volume_id)
 }
 
 /// Test-only: install a root read pool over `db_path` (an existing index DB) so a
@@ -256,11 +242,9 @@ fn listing_parent_path(entries: &[FileEntry]) -> Option<String> {
 /// `dir_stats` by integer IDs. Two indexed queries total.
 pub fn enrich_entries_with_index_on_volume(volume_id: &str, entries: &mut [FileEntry]) {
     // Skip if no index is registered for this volume: `get_read_pool_for`
-    // returns `None`, which IS the "no index registered" signal (root's pool
-    // lives in `READ_POOL`; a non-root volume's pool lives in its registry
-    // instance). When only root is registered, this fires for every volume
-    // except root, preserving the network-mount fast skip. A single lock-free
-    // Arc-clone check.
+    // returns `None`, which IS the "no index registered" signal. When only root
+    // is registered, this fires for every volume except root, preserving the
+    // network-mount fast skip. One read-lock + Arc clone.
     let pool = match get_read_pool_for(volume_id) {
         Some(p) => p,
         None => {

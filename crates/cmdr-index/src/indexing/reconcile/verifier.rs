@@ -66,6 +66,7 @@ pub(crate) fn maybe_verify(
     writer: IndexWriter,
     events: std::sync::Arc<dyn crate::EventSink>,
     scanning: bool,
+    cancel: CancellationToken,
 ) {
     if scanning {
         return;
@@ -107,13 +108,6 @@ pub(crate) fn maybe_verify(
             dir_path: dir_path.clone(),
         };
 
-        // A child of the ROOT volume's stop signal (the verifier is root-scoped),
-        // so tearing that index down also stops a subtree scan this kicked off.
-        // No registered root volume ⇒ a token that never fires, which is the
-        // honest answer for work with no volume behind it.
-        let cancel = crate::indexing::lifecycle::state::volume_cancel_token(crate::ROOT_VOLUME_ID)
-            .map(|t| t.child_token())
-            .unwrap_or_default();
         let affected_paths = verify_and_correct(&dir_path, &writer, &cancel).await;
 
         if !affected_paths.is_empty() {
@@ -429,7 +423,9 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter, cancel: &Cance
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::indexing::read::enrichment::{READ_POOL, READ_POOL_TEST_MUTEX, ReadPool};
+    use crate::indexing::read::enrichment::{
+        READ_POOL_TEST_MUTEX, ReadPool, install_read_pool as install_pool_for, uninstall_read_pool,
+    };
     use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
     use crate::indexing::stress_test_helpers::check_db_consistency;
     use crate::indexing::writer::AggSource;
@@ -457,14 +453,14 @@ mod tests {
         (writer, db_path, dir)
     }
 
-    /// Install a ReadPool so verify_and_correct can read the DB.
+    /// Install a root ReadPool so verify_and_correct can read the DB.
     fn install_read_pool(db_path: &Path) {
         let pool = Arc::new(ReadPool::new(db_path.to_path_buf()).unwrap());
-        *READ_POOL.lock().unwrap() = Some(pool);
+        install_pool_for(crate::ROOT_VOLUME_ID, pool);
     }
 
     fn remove_read_pool() {
-        *READ_POOL.lock().unwrap() = None;
+        uninstall_read_pool(crate::ROOT_VOLUME_ID);
     }
 
     /// Insert the parent directory chain for a filesystem path into the DB.

@@ -570,6 +570,11 @@ impl IndexManager {
         // channel so the fallback logs the real cause instead of guessing "gap".
         let (fallback_tx, fallback_rx) = tokio::sync::oneshot::channel::<RescanReason>();
 
+        // The loop's own branch of this volume's stop signal. Taken here, where the
+        // manager owns it, so nothing below has to reach back into the registry for
+        // it (see `ReplayConfig::cancel`).
+        let replay_cancel = self.volume_cancel.child_token();
+
         // Spawn through the host runtime seam, which resolves a handle instead of
         // inheriting one: indexing can start from the app's synchronous setup() hook,
         // where there's no ambient Tokio runtime for `tokio::spawn` to find.
@@ -588,6 +593,7 @@ impl IndexManager {
                     since_event_id,
                     estimated_total,
                     heal_after_replay,
+                    cancel: replay_cancel,
                 },
                 fallback_tx,
                 watcher_overflow,
@@ -886,6 +892,7 @@ impl IndexManager {
                 live_event_task_slot,
                 scan_start_event_id,
                 calibration_kind: run_kind.calibration_kind(),
+                cancel: self.volume_cancel.child_token(),
             },
         ));
 

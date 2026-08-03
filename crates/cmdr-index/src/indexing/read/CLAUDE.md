@@ -5,6 +5,10 @@ thread-local connections), NEVER the lifecycle registry lock.
 
 ## Must-knows
 
+- **Handles arrive PUSHED, they are never pulled.** Lifecycle installs a volume's `ReadPool`/`PendingSizes` into the
+  volume-keyed tables in `handles.rs` and withdraws them on teardown. ❌ Nothing here may import `lifecycle::state`: a
+  registry lookup would put the hot read path behind the mutex a shutdown drain holds. The table lock is a LEAF — ❌
+  never call out while holding it.
 - **`get_read_pool_for(vid)` returning `None` IS the skip signal.** `enrich_entries_with_index_on_volume` early-returns
   before any DB work when the volume has no registered index (`None` pool). The gate is pool-presence, not
   registry-key-presence, so it can never disagree with the routing call that asks the same question. Every non-root
@@ -36,6 +40,7 @@ thread-local connections), NEVER the lifecycle registry lock.
   mutation.
 - `expected_totals.rs` — index-derived copy/move/delete progress denominators.
 - `pending_sizes.rs` — the "size updating" hourglass `PendingSizes` marked-set + its held-roots tier.
+- `handles.rs` — the volume-keyed tables both handles live in, and their leaf-lock discipline.
 
 Owned elsewhere: the `dir_stats` ledger, honest sizes, and epochs live in `../writer/CLAUDE.md`; the registry,
 `ReadPool`/`PendingSizes` bootstrap, phase, and freshness in `../lifecycle/CLAUDE.md`; path routing in

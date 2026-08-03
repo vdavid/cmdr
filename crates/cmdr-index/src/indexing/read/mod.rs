@@ -8,8 +8,11 @@
 //!   mutation.
 //! - [`expected_totals`]: index-derived write-op progress-bar denominators.
 //! - [`pending_sizes`]: the per-directory "size updating" hourglass marked-set.
+//! - [`handles`]: the volume-keyed tables the two handles above live in, and the
+//!   leaf-lock discipline that keeps this side underneath lifecycle.
 
 pub(crate) mod enrichment;
 pub mod expected_totals;
+mod handles;
 pub(crate) mod pending_sizes;
 pub(crate) mod queries;

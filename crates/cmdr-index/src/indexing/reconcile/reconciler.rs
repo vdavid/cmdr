@@ -257,6 +257,43 @@ pub struct EventReconciler {
     /// scanner path. `Registry` in production (spawns `perform_registry_rescan`);
     /// tests inject `Disabled`/`Recording`. See [`ScanTrigger`] and [`rescan_route`].
     scan_trigger: ScanTrigger,
+    /// The volume's stop signal, handed down by whoever built this reconciler.
+    /// Every detached subtree walk takes a `child_token()` of it, so tearing the
+    /// volume down stops them. Pushed in rather than looked up, because a walk
+    /// that starts after teardown would look up nothing and never stop.
+    cancel: CancellationToken,
+}
+
+/// Everything a rescan walk needs, cloned out of the [`EventReconciler`] so the
+/// spawned thread — and the self-drain call it makes on completion — can own it.
+///
+/// It travels as one value because the drain re-enters itself: a seven-argument
+/// call repeated at four sites is where a mismatched pair sneaks in. It lives
+/// HERE rather than beside the drain in `rescan.rs` because `EventReconciler`'s
+/// own method returns it: naming a `rescan` type in this module's signatures
+/// would import the child back into the parent, and that direction closes a
+/// cycle through `lifecycle::manager`.
+#[derive(Clone)]
+struct RescanDrain {
+    /// Anchors waiting to walk. Shared with the spawned walk so it can drain the
+    /// queue on completion.
+    pending: Arc<Mutex<HashSet<PathBuf>>>,
+    /// Whether a walk is in flight (the drain is single-flight).
+    active: Arc<AtomicBool>,
+    /// The path of the in-flight walk, for the removal-storm drop rule.
+    active_path: Arc<Mutex<Option<PathBuf>>>,
+    /// The per-subtree throttle consulted at pick time and recorded on completion.
+    throttle: Arc<Mutex<RescanThrottle>>,
+    /// The volume's path space, so the walk resolves in the right one.
+    space: IndexPathSpace,
+    /// The volume this drain belongs to (routes the hourglass hold/release).
+    volume_id: String,
+    /// The volume's stop signal. Each walk takes a `child_token()` of it, so
+    /// tearing the volume down stops a long walk instead of letting it write into
+    /// a draining writer. ❌ Don't resolve this from the registry inside the walk:
+    /// once the volume is gone the lookup answers with a token that never fires,
+    /// which is exactly the case that needs to stop.
+    cancel: CancellationToken,
 }
 
 impl EventReconciler {
@@ -268,7 +305,11 @@ impl EventReconciler {
     /// [`set_recording_scan_trigger`](Self::set_recording_scan_trigger).
     #[cfg(test)]
     pub fn new() -> Self {
-        let mut reconciler = Self::new_for(ROOT_VOLUME_ID.to_string(), IndexPathSpace::root());
+        let mut reconciler = Self::new_for(
+            ROOT_VOLUME_ID.to_string(),
+            IndexPathSpace::root(),
+            CancellationToken::new(),
+        );
         reconciler.scan_trigger = ScanTrigger::Disabled;
         reconciler
     }
@@ -276,12 +317,17 @@ impl EventReconciler {
     /// Create a reconciler bound to a volume's id + path space. A mount-rooted
     /// external drive passes its space so live/replay resolution strips the mount
     /// root, and its id so the rescan hourglass routes to its own tracker.
-    pub(crate) fn new_for(volume_id: String, space: IndexPathSpace) -> Self {
-        Self::with_space_and_throttle(volume_id, space, Throttle::new(resolve_downloads_prefix()))
+    pub(crate) fn new_for(volume_id: String, space: IndexPathSpace, cancel: CancellationToken) -> Self {
+        Self::with_space_and_throttle(volume_id, space, Throttle::new(resolve_downloads_prefix()), cancel)
     }
 
     /// Construct with a caller-supplied id + space + throttle (tests inject a short window).
-    fn with_space_and_throttle(volume_id: String, space: IndexPathSpace, throttle: LiveThrottle) -> Self {
+    fn with_space_and_throttle(
+        volume_id: String,
+        space: IndexPathSpace,
+        throttle: LiveThrottle,
+        cancel: CancellationToken,
+    ) -> Self {
         Self {
             buffer: Vec::new(),
             buffering: true,
@@ -294,6 +340,7 @@ impl EventReconciler {
             space,
             volume_id,
             scan_trigger: ScanTrigger::Registry,
+            cancel,
         }
     }
 
@@ -305,6 +352,7 @@ impl EventReconciler {
             ROOT_VOLUME_ID.to_string(),
             IndexPathSpace::root(),
             Throttle::with_window(window, None),
+            CancellationToken::new(),
         );
         reconciler.scan_trigger = ScanTrigger::Disabled;
         reconciler

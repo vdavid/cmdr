@@ -39,7 +39,7 @@ search-generation bump. Other areas point here.
   pass must see empty maps and no-op), never bumps the generation, writes depth ≤ 3 + hot dirs.
 - **`WRITER_GENERATION` bumps only for the search-feeding (root) writer** (`MutationTracker`), so an SMB/MTP write never
   thrashes the root search reload. Meta-only messages never bump it.
-- **Tests must never assert on process-global state (`WRITER_GENERATION`, `PENDING_SIZES`) across a before/after
+- **Tests must never assert on process-global state (`WRITER_GENERATION`, the root tracker) across a before/after
   window**: every `IndexWriter::spawn()` is a ROOT writer that bumps and clears the root tracker, so a global read
   flakes under `cargo test`. Use `global_generation_bumps` or a `TestInstanceGuard`. DETAILS § "Test isolation".
 - **`flush_blocking` ≠ settled**: it replies from inside the handler, before the end-of-iteration hourglass clear and

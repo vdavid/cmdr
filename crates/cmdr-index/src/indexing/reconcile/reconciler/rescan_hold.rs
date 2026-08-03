@@ -167,6 +167,7 @@ mod tests {
     use super::*;
     use crate::indexing::stress_test_helpers::TestInstanceGuard;
     use crate::indexing::volume::IndexVolumeKind;
+    use tokio_util::sync::CancellationToken;
 
     /// Spawn a real NON-root writer over a throwaway DB and register a PRIVATE
     /// per-volume instance for `volume_id`, so the hold/release routes to a private
@@ -239,7 +240,8 @@ mod tests {
     fn a_throttled_anchor_does_not_hold_its_ancestors_hourglass() {
         let volume_id = "smb://rescan-test-throttled-quiet";
         let (writer, _dir, instance) = spawn_probe_writer_for(volume_id);
-        let mut reconciler = EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root());
+        let mut reconciler =
+            EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root(), CancellationToken::new());
         // Keep the anchor queued (no spawn), so we observe the pending state itself.
         reconciler.set_rescan_active_for_test(true);
         let anchor = PathBuf::from("/aaa/Library/Caches/cmdr/WebKit/NetworkCache/Resource");
@@ -272,7 +274,8 @@ mod tests {
     fn a_settling_anchor_does_not_hold_its_ancestors_hourglass() {
         let volume_id = "smb://rescan-test-settling-quiet";
         let (writer, _dir, instance) = spawn_probe_writer_for(volume_id);
-        let mut reconciler = EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root());
+        let mut reconciler =
+            EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root(), CancellationToken::new());
         // Keep the anchor queued (no spawn), so we observe the pending state itself.
         reconciler.set_rescan_active_for_test(true);
         // A REAL directory created a moment ago: the enqueue path stats it.
@@ -305,7 +308,8 @@ mod tests {
     fn an_established_anchor_holds_from_the_moment_it_is_queued() {
         let volume_id = "smb://rescan-test-established-holds";
         let (writer, _dir, instance) = spawn_probe_writer_for(volume_id);
-        let mut reconciler = EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root());
+        let mut reconciler =
+            EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root(), CancellationToken::new());
         reconciler.set_rescan_active_for_test(true);
         reconciler.set_settle_delay_for_test(Duration::ZERO);
         let established = tempfile::tempdir().expect("temp dir");
@@ -332,7 +336,8 @@ mod tests {
     fn an_anchor_with_no_readable_birthtime_is_not_delayed() {
         let volume_id = "smb://rescan-test-no-birthtime";
         let (writer, _dir, instance) = spawn_probe_writer_for(volume_id);
-        let mut reconciler = EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root());
+        let mut reconciler =
+            EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root(), CancellationToken::new());
         reconciler.set_rescan_active_for_test(true);
         let staging = tempfile::tempdir().expect("temp dir");
         // Never created on disk: there is no birthtime to read.
@@ -380,7 +385,8 @@ mod tests {
     fn an_eligible_queued_anchor_still_holds() {
         let volume_id = "smb://rescan-test-eligible-holds";
         let (writer, _dir, instance) = spawn_probe_writer_for(volume_id);
-        let mut reconciler = EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root());
+        let mut reconciler =
+            EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root(), CancellationToken::new());
         reconciler.set_rescan_active_for_test(true);
         let anchor = PathBuf::from("/aaa/bbb/ccc/ddd/target");
 
@@ -403,7 +409,8 @@ mod tests {
     fn the_sweep_tick_drops_the_hold_of_a_now_throttled_anchor() {
         let volume_id = "smb://rescan-test-sweep-drops";
         let (writer, _dir, instance) = spawn_probe_writer_for(volume_id);
-        let mut reconciler = EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root());
+        let mut reconciler =
+            EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root(), CancellationToken::new());
         reconciler.set_rescan_active_for_test(true);
         let anchor = PathBuf::from("/aaa/bbb/ccc/ddd/churny");
 
@@ -436,7 +443,8 @@ mod tests {
     fn the_sweep_tick_never_strips_the_active_walks_hold() {
         let volume_id = "smb://rescan-test-sweep-active";
         let (writer, _dir, instance) = spawn_probe_writer_for(volume_id);
-        let mut reconciler = EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root());
+        let mut reconciler =
+            EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root(), CancellationToken::new());
         reconciler.set_rescan_active_for_test(true);
         let anchor = PathBuf::from("/aaa/bbb/ccc/ddd/walking");
         // The walk is in flight and holding; its record is from the PREVIOUS walk.

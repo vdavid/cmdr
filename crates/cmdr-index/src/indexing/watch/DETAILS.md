@@ -18,11 +18,12 @@ post-replay verification COST-BOUNDING (the two teeth) in `../reconcile/DETAILS.
   stub. `supports_event_replay()` lets callers branch on whether journal replay is available.
 - **event_loop.rs** — holds only what more than one loop uses: `merge_fs_events` (deduplication with flag priority),
   `open_read_conn_with_retry` (read-connection open at each loop's start), `ReplayConfig` (the manager→replay bridge
-  struct), the cross-loop flush/gap constants (`LIVE_FLUSH_INTERVAL_MS`, `THROTTLE_SWEEP_INTERVAL_MS`,
-  `JOURNAL_GAP_THRESHOLD`), and the ingestion-pressure model (`INGESTION_BACKLOG_WARN`, `INGESTION_HARD_CAP`,
-  `classify_ingestion_pressure`, `BacklogTracker` / `report_backlog`). Re-exports `run_live_event_loop` /
-  `process_live_batch` / `run_replay_event_loop` so external callers (`lifecycle/manager.rs`, `scan_completion.rs`, the
-  stress tests) keep stable paths.
+  struct, which also carries the volume's stop token down so nothing here looks one up), the cross-loop flush/gap
+  constants (`LIVE_FLUSH_INTERVAL_MS`, `THROTTLE_SWEEP_INTERVAL_MS`, `JOURNAL_GAP_THRESHOLD`), and the
+  ingestion-pressure model (`INGESTION_BACKLOG_WARN`, `INGESTION_HARD_CAP`, `classify_ingestion_pressure`,
+  `BacklogTracker` / `report_backlog`). Re-exports `run_live_event_loop` / `process_live_batch` /
+  `run_replay_event_loop` so external callers (`lifecycle/manager.rs`, `scan_completion.rs`, the stress tests) keep
+  stable paths.
 - **event_loop/live.rs** — `run_live_event_loop` (real-time processing after scan completes), `process_live_batch`
   (three-phase; below), and the live-path helpers `mark_pending_and_drain` / `split_parent_and_name`.
   `detect_renames_by_inode` lives here.
@@ -132,13 +133,13 @@ emit for free. The rescan queue itself and its per-subtree throttle live in `../
 
 ## Background verification (structure)
 
-`run_background_verification(affected_paths, writer, app)` runs off the async pool AFTER live mode starts (so the app is
-responsive immediately) and readdir-diffs each directory the replay touched — FSEvents journal replay coalesces events,
-so a child deletion may only show as "parent dir modified" and a new child may get no individual creation event, so each
-affected parent is re-listed and reconciled with the DB. Corrections go through the writer channel, which serializes
-them with live writes. It is **root-scoped (boot disk only)**: it reads the ROOT `ReadPool` (`get_read_pool()`),
-resolves against root's index, and publishes under `ROOT_VOLUME_ID` — post-replay, and replay is gated on
-`has_event_journal()`, so it never runs for a mount-rooted volume.
+`run_background_verification(affected_paths, writer, events, cancel)` runs off the async pool AFTER live mode starts (so
+the app is responsive immediately) and readdir-diffs each directory the replay touched — FSEvents journal replay
+coalesces events, so a child deletion may only show as "parent dir modified" and a new child may get no individual
+creation event, so each affected parent is re-listed and reconciled with the DB. Corrections go through the writer
+channel, which serializes them with live writes. It is **root-scoped (boot disk only)**: it reads the ROOT `ReadPool`
+(`get_read_pool()`), resolves against root's index, and publishes under `ROOT_VOLUME_ID` — post-replay, and replay is
+gated on `has_event_journal()`, so it never runs for a mount-rooted volume.
 
 `verify_affected_dirs` is the lock-free, two-phase DB-vs-disk reconcile it calls (it acquires NO lifecycle lock): Phase
 1 (sync, SQLite) materializes each affected path's DB children off the `ReadPool`; Phase 2 (`spawn_blocking`) readdirs

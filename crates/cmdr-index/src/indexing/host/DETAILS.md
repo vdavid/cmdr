@@ -141,8 +141,8 @@ One primitive, `tokio_util::sync::CancellationToken`, from the `Volume` trait in
 compose. `importance/` is the gap, not a third topology (below).
 
 **The topology is a tree, rooted per volume.** `VolumeSignals.cancel` (`lifecycle/state.rs`) is held by BOTH the
-registry `IndexInstance` and its `IndexManager`, so the two can't disagree; read it from elsewhere through
-`state::volume_cancel_token`. Everything below it runs on a `child_token()`:
+registry `IndexInstance` and its `IndexManager`, so the two can't disagree. Everything below it runs on a
+`child_token()`:
 
 - the full scan and the network trait scan (`manager::start_scan`, `network_scan::start_volume_scan`)
 - the local reconcile walk
@@ -157,9 +157,12 @@ that existed only to mirror one flag into another.
 `stop_scan` cancels one scan's child, so the volume can start another; `shutdown` cancels the volume token, so
 everything under it stops at once.
 
-**A caller with no volume behind it degrades, it doesn't panic**:
-`volume_cancel_token(...).map(child).unwrap_or_default()` gives a token that never fires, the same shape every other
-seam here uses.
+**A child token is handed DOWN to the work, never looked up by volume id.** The manager passes one into `ScanCompletion`
+and `ReplayConfig` (and from there into `EventReconciler` and background verification); `trigger_verification` passes
+one into `maybe_verify` while it still holds the instance. This is both what keeps `lifecycle::state` out of the layers
+below and what makes cancellation correct: a walk that resolved its token after its volume was torn down would find
+nothing, default to a token that never fires, and run on into a draining writer. A test fixture with no volume behind it
+constructs a plain `CancellationToken::new()` and degrades the same way, on purpose.
 
 **`media_index` shares the primitive but not the tree.** Its emergency stop (`gate::stop_token`) is process-wide, and
 re-enabling installs a FRESH token rather than un-cancelling — a token is one-shot by design, and a pass the user
@@ -171,7 +174,7 @@ scopes an enrichment pass to a volume's token.
 (watchdog stop, shutdown) doesn't reach a running recompute: it walks the whole index to the end. Tolerable because that
 walk is 5.5–6.4 s over real 391k / 611k-folder indexes (measured 2026-07-29), not because anything stops it. The
 `TODO(importance)` on `importance/scheduler/recompute.rs`'s `recompute_folders` is the entry point for closing it; the
-fix is the volume token via `state::volume_cancel_token` plus a stop hook, not a new primitive.
+fix is a child of the volume token, threaded in from whoever starts the pass, plus a stop hook — not a new primitive.
 
 ## Cancellation is observable, as a typed error
 

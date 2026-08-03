@@ -8,12 +8,13 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::atomic::Ordering;
 use std::time::Instant;
+use tokio_util::sync::CancellationToken;
 
 use super::verify_guard::{self, VerifyVerdict};
 use crate::ROOT_VOLUME_ID;
 use crate::indexing::DEBUG_STATS;
 use crate::indexing::events::emit_dir_updated;
-use crate::indexing::lifecycle::{lifecycle_bus, state};
+use crate::indexing::lifecycle::lifecycle_bus;
 use crate::indexing::metadata;
 use crate::indexing::paths::path_prefix;
 use crate::indexing::read::enrichment::get_read_pool;
@@ -32,6 +33,7 @@ pub(super) async fn run_background_verification(
     origin_dirs: HashSet<String>,
     writer: IndexWriter,
     events: std::sync::Arc<dyn crate::EventSink>,
+    cancel: CancellationToken,
 ) {
     DEBUG_STATS.verifying.store(true, Ordering::Relaxed);
     let verify_start = Instant::now();
@@ -95,11 +97,6 @@ pub(super) async fn run_background_verification(
         // pool is essential.
         let scan_writer = writer.clone();
         let scan_dirs = verify_result.new_dir_paths.clone();
-        // A child of the ROOT volume's stop signal (background verification is
-        // root-scoped), so tearing that index down stops this walk too.
-        let cancel = state::volume_cancel_token(ROOT_VOLUME_ID)
-            .map(|t| t.child_token())
-            .unwrap_or_default();
         if let Err(e) = crate::indexing::host::runtime::spawn_blocking(move || {
             for dir_path in &scan_dirs {
                 // Background verification is root-scoped (boot disk), so `BootDisk`.
@@ -450,7 +447,9 @@ mod tests {
     //! `READ_POOL_TEST_MUTEX`.
 
     use super::*;
-    use crate::indexing::read::enrichment::{READ_POOL, READ_POOL_TEST_MUTEX, ReadPool};
+    use crate::indexing::read::enrichment::{
+        READ_POOL_TEST_MUTEX, ReadPool, install_read_pool as install_pool_for, uninstall_read_pool,
+    };
     use crate::indexing::store::{DirStatsById, EntryRow, ROOT_ID};
     use cmdr_fs::ignore_poison::IgnorePoison;
     use std::fs;
@@ -477,11 +476,11 @@ mod tests {
 
     fn install_read_pool(db_path: &Path) {
         let pool = Arc::new(ReadPool::new(db_path.to_path_buf()).unwrap());
-        *READ_POOL.lock_ignore_poison() = Some(pool);
+        install_pool_for(ROOT_VOLUME_ID, pool);
     }
 
     fn remove_read_pool() {
-        *READ_POOL.lock_ignore_poison() = None;
+        uninstall_read_pool(ROOT_VOLUME_ID);
     }
 
     /// Insert the directory chain for `path` and return the deepest dir's id.

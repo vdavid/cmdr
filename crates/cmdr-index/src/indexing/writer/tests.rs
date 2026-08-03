@@ -320,7 +320,7 @@ fn the_idle_epoch_ticks_every_time_the_writer_catches_up() {
 /// survive and the assertion would fail.
 #[test]
 fn non_root_writer_drain_clears_its_own_tracker_not_root() {
-    use crate::indexing::lifecycle::state::get_instance_pending_sizes;
+    use crate::indexing::read::pending_sizes::get_pending_sizes_for;
 
     let volume_id = "smb://writer-test-nonroot";
     let (db_path, _dir) = setup_db();
@@ -330,7 +330,7 @@ fn non_root_writer_drain_clears_its_own_tracker_not_root() {
 
     assert!(
         Arc::ptr_eq(
-            &get_instance_pending_sizes(volume_id).expect("instance tracker registered"),
+            &get_pending_sizes_for(volume_id).expect("instance tracker registered"),
             &instance.tracker
         ),
         "the writer's volume resolves to the tracker we registered"

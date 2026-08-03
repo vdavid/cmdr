@@ -121,10 +121,11 @@ otherwise:
 (measured 2026-07-29, § "The scoped walk"), and an incremental is microseconds. Seconds of unstoppable work inside a 16
 GB emergency stop is survivable, where a scan's minutes wouldn't be.
 
-**Closing it** (the `TODO(importance)` sits on `recompute_folders`, the loop that would poll): take the volume's token
-via `indexing::lifecycle::state::volume_cancel_token`, thread a child into the pass, and register a stop hook. ❌ Don't
-introduce a second primitive (an `AtomicBool`, a `Notify`): the one-token tree is what makes stopping a volume stop
-everything under it at once. The hook must be cheap and non-blocking; it runs INLINE in the stop path.
+**Closing it** (the `TODO(importance)` sits on `recompute_folders`, the loop that would poll): thread a child of the
+volume's token in from whoever starts the pass (it is handed down, never looked up by id — `indexing/host/DETAILS.md` §
+Cancellation), and register a stop hook. ❌ Don't introduce a second primitive (an `AtomicBool`, a `Notify`): the
+one-token tree is what makes stopping a volume stop everything under it at once. The hook must be cheap and
+non-blocking; it runs INLINE in the stop path.
 
 ## The measurement entry point
 

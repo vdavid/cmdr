@@ -84,6 +84,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
         since_event_id,
         estimated_total,
         heal_after_replay,
+        cancel,
     } = config;
 
     log::info!("Replay: started (since_event_id={since_event_id}, estimated_total={estimated_total:?})");
@@ -407,7 +408,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     scanning.store(false, Ordering::Relaxed);
 
     log::info!("Replay: switching to live mode");
-    let mut reconciler = EventReconciler::new_for(volume_id.clone(), space.clone());
+    let mut reconciler = EventReconciler::new_for(volume_id.clone(), space.clone(), cancel.clone());
     reconciler.switch_to_live();
 
     // Spawn background verification: runs concurrently with live events.
@@ -416,8 +417,9 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     if !origins_overflow {
         let verify_writer = writer.clone();
         let verify_events = Arc::clone(&events);
+        let verify_cancel = cancel.child_token();
         crate::indexing::host::runtime::spawn(async move {
-            run_background_verification(origin_dirs, verify_writer, verify_events).await;
+            run_background_verification(origin_dirs, verify_writer, verify_events, verify_cancel).await;
         });
     }
 

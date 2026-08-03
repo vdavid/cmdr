@@ -29,13 +29,14 @@ tests stay colocated in each module; these are the integration tier.
   discipline; they're the guardrail against the incident.
 - **Tests serialize on a dedicated mutex.** `INDEX_REGISTRY` is a global; concurrent tests corrupt each other. The
   pattern (in `integration_tests.rs` and `state/tests.rs`): a dedicated guard mutex + an `IndexStore` fixtured via
-  `tempdir`, clearing the `root` entry AND the root read-path globals before and after. ❌ NEVER
+  `tempdir`, clearing the `root` entry AND withdrawing root's read handles before and after. ❌ NEVER
   `INDEX_REGISTRY.clear()` in a test: it wipes every OTHER module's concurrent private instances (an isolation flake);
-  remove only your own ids.
+  remove only your own ids. A registry removal alone no longer un-routes reads — uninstall the handles too, or go
+  through `stop_indexing`.
 - **A test that asserts on pending-sizes / read-pool / `dir_stats` state must route through a PRIVATE per-volume
-  instance, never the root `PENDING_SIZES` / `READ_POOL` globals** (foreign root writers clear those under bare
-  `cargo test`). `stress_test_helpers::TestInstanceGuard` (the shared home) registers one under a unique id and removes
-  it on drop; `register_identity_paths` gives an `mtp-` id whose read side maps plain `/paths` identically, so
+  instance, never the ROOT volume's tracker or pool** (foreign root writers clear those under bare `cargo test`).
+  `stress_test_helpers::TestInstanceGuard` (the shared home) registers one under a unique id and removes it on drop;
+  `register_identity_paths` gives an `mtp-` id whose read side maps plain `/paths` identically, so
   `get_dir_stats_on_volume` / `enrich_*_on_volume` work privately. Rationale: `writer/DETAILS.md` § "Test isolation".
 - **"Disabled" is the absence of an instance.** There's no `IndexPhase::Disabled`, so assert `!contains_key` (or
   `get_read_pool_for(vid).is_none()`, the read-path "is it indexed?" predicate), never "phase is Disabled".

@@ -11,6 +11,7 @@
 use crate::indexing::lifecycle::state::{clear_index, should_auto_start_indexing, stop_indexing};
 use crate::indexing::read::enrichment::enrich_entries_with_index_on_volume;
 use crate::indexing::read::queries::get_status;
+use crate::indexing::stress_test_helpers::TestInstanceGuard;
 use crate::indexing::*;
 use crate::{NoopEventSink, ReadPool};
 use cmdr_fs::entry::FileEntry;
@@ -519,21 +520,19 @@ fn setup_db_for_pool() -> (PathBuf, tempfile::TempDir) {
 /// via the `ReadPool` without contending on it.
 #[test]
 fn enrichment_under_contention() {
-    // This is the one enrichment test that legitimately uses the process-global
-    // root `READ_POOL` (its whole point is that root's pool is decoupled from
-    // `INDEX_REGISTRY`, so it can't route through a private non-root instance whose
-    // pool lives IN the registry). Hold `INDEXING_TEST_GUARD` too, so a concurrent
-    // `reset_indexing_for_test` (the IndexPhase tests, which clear root `READ_POOL`
-    // under this same guard) can't wipe the pool mid-read.
+    // Uses the ROOT volume's read pool deliberately: the point is that a pool
+    // installed for a volume is readable while `INDEX_REGISTRY` is held by someone
+    // else. Hold `INDEXING_TEST_GUARD` too, so a concurrent `reset_indexing_for_test`
+    // (the IndexPhase tests, which withdraw the root pool under this same guard)
+    // can't wipe the pool mid-read.
     let _reg_guard = INDEXING_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
     let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
     let (db_path, _dir) = setup_db_for_pool();
     let pool = Arc::new(ReadPool::new(db_path).expect("create pool"));
 
-    // Install pool into READ_POOL so `enrich_entries_with_index` can find it.
-    // For root, an installed pool IS the skip-vs-route gate signal, so no
-    // registry entry is needed here.
-    *read::enrichment::READ_POOL.lock().unwrap() = Some(Arc::clone(&pool));
+    // Install the pool so `enrich_entries_with_index` can find it. An installed
+    // pool IS the skip-vs-route gate signal, so no registry entry is needed here.
+    read::enrichment::install_read_pool(ROOT_VOLUME_ID, Arc::clone(&pool));
 
     // Hold INDEX_REGISTRY.lock() on a background thread. It signals once the lock is actually held,
     // then blocks until this thread releases it, so the enrichment below is guaranteed to run while
@@ -566,8 +565,49 @@ fn enrichment_under_contention() {
 
     lock_handle.join().unwrap();
 
-    // Clean up global state
-    *read::enrichment::READ_POOL.lock().unwrap() = None;
+    // Clean up the shared root handle
+    read::enrichment::uninstall_read_pool(ROOT_VOLUME_ID);
+}
+
+/// The same contention guarantee for a NON-root volume, which is where it used to
+/// be missing: a non-root pool was resolved by locking `INDEX_REGISTRY`, so any
+/// listing on an SMB/MTP/external volume parked behind whatever held the lifecycle
+/// lock — a 5 s shutdown drain, a `force_scan`. Reads now resolve out of the
+/// volume-keyed read-handle table, which lifecycle only ever writes to.
+///
+/// Pre-fix this test does not fail, it HANGS: the enrichment below blocks until the
+/// background thread releases the registry.
+#[test]
+fn enrichment_under_contention_non_root() {
+    let _reg_guard = INDEXING_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+    let (db_path, _dir) = setup_db_for_pool();
+    // An `mtp-` id maps plain `/absolute` paths identically on the read side, and
+    // the guard installs this volume's pool + tracker (and withdraws them on drop).
+    let instance = TestInstanceGuard::register_identity_paths("enrich-contention", &db_path);
+
+    // Hold `INDEX_REGISTRY` on a background thread for the whole enrichment.
+    let (acquired_tx, acquired_rx) = std::sync::mpsc::channel::<()>();
+    let (release_tx, release_rx) = std::sync::mpsc::channel::<()>();
+    let lock_handle = std::thread::spawn(move || {
+        let guard = INDEX_REGISTRY.lock().unwrap();
+        acquired_tx.send(()).unwrap();
+        release_rx.recv().unwrap();
+        drop(guard);
+    });
+    acquired_rx.recv().unwrap();
+
+    let mut entries = vec![make_file_entry("projects", "/projects", true)];
+    enrich_entries_with_index_on_volume(&instance.volume_id, &mut entries);
+
+    release_tx.send(()).unwrap();
+    lock_handle.join().unwrap();
+
+    assert_eq!(
+        entries[0].recursive_size,
+        Some(42),
+        "a non-root listing must enrich while the lifecycle lock is held"
+    );
+    assert_eq!(entries[0].recursive_file_count, Some(1));
 }
 
 /// Mid-scan, enrichment reads the partial `dir_stats` rows: a top-level dir's
@@ -740,7 +780,7 @@ fn dir_stats_carry_pending_flag() {
     // writer clearing the process-global root `PENDING_SIZES` mid-assertion (the
     // isolation flake that used to poison the shared test mutex and cascade).
     let (db_path, _dir) = setup_db_for_pool();
-    let instance = stress_test_helpers::TestInstanceGuard::register_identity_paths("dir-stats-pending", &db_path);
+    let instance = TestInstanceGuard::register_identity_paths("dir-stats-pending", &db_path);
     let vid = instance.volume_id.as_str();
 
     // Nothing marked yet: not pending.
@@ -926,16 +966,16 @@ fn should_auto_start_indexing_blocked_when_indexing_disabled() {
 
 static INDEXING_TEST_GUARD: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
-/// Clear the `root` registry instance and the root read-path globals. Used at
+/// Clear the `root` registry instance and the root read handles. Used at
 /// the start of each IndexPhase test so transient state from earlier tests (or
 /// the running app, if these tests run inside a warmed-up debug build) doesn't
 /// bleed in.
 fn reset_indexing_for_test() {
     INDEX_REGISTRY.lock().expect("registry poisoned").remove(ROOT_VOLUME_ID);
-    // The stop/clear paths invalidate the root READ_POOL/PENDING_SIZES; mirror
-    // that so we don't carry stale handles from a prior test.
-    *read::enrichment::READ_POOL.lock().unwrap() = None;
-    *read::pending_sizes::PENDING_SIZES.lock().unwrap() = None;
+    // The stop/clear paths withdraw the root read pool + tracker; mirror that so
+    // we don't carry stale handles from a prior test.
+    read::enrichment::uninstall_read_pool(ROOT_VOLUME_ID);
+    read::pending_sizes::uninstall_pending_sizes(ROOT_VOLUME_ID);
 }
 
 /// Whether the `root` volume has a registered instance (the registry's
@@ -1034,15 +1074,11 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
         let dir3 = tempfile::tempdir().expect("temp dir");
         let db3 = dir3.path().join("from-shutdown.db");
         let store_sd = IndexStore::open(&db3).expect("open store");
-        let pool_sd = Arc::new(ReadPool::new(db3.clone()).expect("pool"));
-        let pending_sd = Arc::new(read::pending_sizes::PendingSizes::new());
         INDEX_REGISTRY.lock().unwrap().insert(
             ROOT_VOLUME_ID.to_string(),
             IndexInstance {
                 phase: IndexPhase::ShuttingDown,
                 kind: IndexVolumeKind::Local,
-                read_pool: pool_sd,
-                pending_sizes: pending_sd,
                 signals: VolumeSignals::new(Arc::new(std::sync::Mutex::new(None)), NoopEventSink::shared()),
             },
         );
@@ -1166,15 +1202,11 @@ fn shutdown_drain_does_not_hold_indexing_lock() {
         let db = dir.path().join("shutdown-drain.db");
         let store = IndexStore::open(&db).expect("open store");
         drop(store); // ShuttingDown carries no store
-        let pool = Arc::new(ReadPool::new(db.clone()).expect("pool"));
-        let pending = Arc::new(read::pending_sizes::PendingSizes::new());
         INDEX_REGISTRY.lock().expect("registry poisoned").insert(
             ROOT_VOLUME_ID.to_string(),
             IndexInstance {
                 phase: IndexPhase::ShuttingDown,
                 kind: IndexVolumeKind::Local,
-                read_pool: pool,
-                pending_sizes: pending,
                 signals: VolumeSignals::new(Arc::new(std::sync::Mutex::new(None)), NoopEventSink::shared()),
             },
         );

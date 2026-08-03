@@ -12,11 +12,12 @@ concurrently without corrupting each other. Every invariant below holds independ
   `INDEX_REGISTRY` (`Mutex<HashMap<VolumeId, IndexInstance>>`), the phase transitions, the registry helpers, and the
   `IndexManager` + `ReadPool` bootstrap. A volume's IDENTITY (`VolumeId`, `ROOT_VOLUME_ID`, `IndexVolumeKind`) is
   deliberately NOT here: it's the leaf `../volume.rs`, so path routing, the transports, and the bus can name a volume
-  without importing the registry. Nothing below `lifecycle` should import `lifecycle::state`. Public lifecycle API (all
-  take a `volume_id`): `start_indexing()` → `start_indexing_for(app, "root", "/")`, `stop_indexing`, `clear_index`,
-  `force_scan`, `stop_scan`, `is_active`, `trigger_verification`, plus `init()`, `should_auto_start_indexing()`, and
-  `stop_all_indexing` (the memory watchdog's target). The path→volume routing and the read-only query surface moved OUT
-  to `../paths` and `../read`.
+  without importing the registry. Nothing below `lifecycle` imports `lifecycle::state` — a volume's read handles and its
+  stop token are pushed DOWN to the code that needs them (both sections below), which is what keeps that statable.
+  Public lifecycle API (all take a `volume_id`): `start_indexing()` → `start_indexing_for(app, "root", "/")`,
+  `stop_indexing`, `clear_index`, `force_scan`, `stop_scan`, `is_active`, `trigger_verification`, plus `init()`,
+  `should_auto_start_indexing()`, and `stop_all_indexing` (the memory watchdog's target). The path→volume routing and
+  the read-only query surface moved OUT to `../paths` and `../read`.
 - **manager.rs** — `IndexManager`, the central per-volume coordinator, plus the LOCAL scan path and the shared dispatch.
   Owns the SQLite store (reads), the writer thread (writes), the scanner handle, and the FSEvents watcher.
   `resume_or_scan` / `force_rescan` dispatch by TYPED `IndexVolumeKind`: a trait-scanned (SMB/MTP) volume routes to
@@ -48,15 +49,14 @@ concurrently without corrupting each other. Every invariant below holds independ
 ## The per-volume registry
 
 ```
-INDEX_REGISTRY: Mutex<HashMap<VolumeId, IndexInstance { phase, kind, read_pool, pending_sizes, freshness }>>
+INDEX_REGISTRY: Mutex<HashMap<VolumeId, IndexInstance { phase, kind, signals { freshness, events, cancel } }>>
 ```
 
-`IndexInstance` bundles everything one volume's index owns: its lifecycle `phase` (`IndexPhase`), its `ReadPool`
-(lock-free enrichment/verification reads), its `PendingSizes` (the "size updating" hourglass), and its freshness `Arc`.
-The registry is the single authority for WHICH volumes are indexed and for each volume's lifecycle. Every invariant the
-single-volume design held now holds per volume id, keyed independently so two volumes can't corrupt each other:
-single-writer-per-DB, lock-first reservation, drop-guard-before-drain,
-reads-via-`ReadPool`-never-under-the-lifecycle-lock.
+`IndexInstance` holds what a volume's LIFECYCLE owns: its `phase` (`IndexPhase`), its `kind`, and the `VolumeSignals`
+bundle it shares with its `IndexManager` (freshness `Arc`, event sink, stop token). The registry is the single authority
+for WHICH volumes are indexed and for each volume's lifecycle. Every invariant the single-volume design held now holds
+per volume id, keyed independently so two volumes can't corrupt each other: single-writer-per-DB, lock-first
+reservation, drop-guard-before-drain, reads-via-`ReadPool`-never-under-the-lifecycle-lock.
 
 **Disabled is the absence of a key.** There is no `IndexPhase::Disabled`. An `IndexInstance` only ever exists in
 `Initializing` / `Running` / `ShuttingDown` / `Failed`; a stopped or never-started volume has no entry. `get_status`/
@@ -64,21 +64,57 @@ reads-via-`ReadPool`-never-under-the-lifecycle-lock.
 This is why IPC `get_index_status` for a stopped volume returns the same "not initialized" response a never-started one
 does.
 
-**Why a registry of bundled instances** (vs. three parallel `HashMap`s or a `DashMap`): bundling
-`{phase, read_pool, pending_sizes, freshness}` in one struct keyed by volume id means a volume's lifecycle phase and its
-read handles are taken/dropped together — no window where the phase says "Running" but the pool is gone. One
+**Why one bundled instance** (vs. parallel `HashMap`s or a `DashMap`): keeping `{phase, kind, signals}` in one struct
+keyed by volume id means a volume's phase and the handles its manager fires through are taken and dropped together. One
 `Mutex<HashMap>` (not `DashMap`) keeps the lock-discipline reasoning identical to the old single-`Mutex` model: the lock
 guards lifecycle transitions only, never reads.
 
-**Root's read-path handles are special-cased to module globals.** Root's `ReadPool` lives in the `READ_POOL` global and
-its `PendingSizes` in `PENDING_SIZES`; the root `IndexInstance` holds the SAME `Arc`s (one allocation, no drift). Two
-reasons: the search module (local-disk-only) reads `get_read_pool()` on its hot path and shouldn't take the registry
-lock, and the indexing tests install `READ_POOL`/`PENDING_SIZES` directly. Non-root volumes' handles live only in their
-instance; `get_read_pool_for(vid)` / `get_pending_sizes_for(vid)` route root→global, non-root→`state::get_instance_*`.
-
 The read-routing "skip if no index registered" gate (enrichment early-returns when `get_read_pool_for(vid)` is `None`)
 lives with enrichment in `../read/CLAUDE.md`; the path→volume resolution (`volume_id_for_local_path`) lives in
-`../paths/CLAUDE.md`. Both consume the registry but aren't owned here.
+`../paths/CLAUDE.md`. Neither consumes the registry.
+
+## Where a volume's read handles live
+
+A volume's `ReadPool` (lock-free enrichment/verification reads) and `PendingSizes` (the "size updating" hourglass) live
+in volume-keyed tables in `../read/handles.rs`, NOT in its `IndexInstance`. This module builds both while it reserves
+the volume's slot, PUSHES them in under the registry lock, and withdraws them on every teardown path (`stop_indexing`,
+`clear_index`, `fail_index`, `remove_instance_and_handles`). `get_read_pool_for(vid)` / `get_pending_sizes_for(vid)`
+answer from those tables alone and never touch `INDEX_REGISTRY`.
+
+**Why push instead of letting the read side pull.** The read path runs on every listing, roughly twice a second per
+pane. Resolving a handle out of the registry made that hot path wait on the same mutex teardown holds while it works,
+and made `read` depend on `lifecycle` while `lifecycle` depended on `read` for the handle types — a genuine two-way
+dependency, and the reason the index engine's largest module cycle was 20 modules wide. Pushing keeps the read side
+strictly underneath lifecycle: `INDEX_REGISTRY` guards lifecycle only, exactly as the top-level invariant claims.
+
+**Lock ordering.** The handle tables are LEAF locks: every operation is a hash lookup plus an `Arc` clone, with nothing
+called while the guard is alive. Lifecycle takes a table lock while holding `INDEX_REGISTRY` (in
+`try_reserve_initializing_phase`, so a volume is never visible in the registry without a routable read path); nothing
+ever takes `INDEX_REGISTRY` while holding a table. One direction only, so no cycle exists to deadlock on. ❌ Don't add a
+callback parameter or any other reach-out to `../read/handles.rs` — that's what would create the reverse edge.
+
+**Withdraw-before-delete.** `stop_indexing` / `clear_index` / `fail_index` uninstall the handles and `invalidate()` the
+pool BEFORE the drain and before any DB file is deleted. Withdrawal is what makes reads skip: after it returns, the
+volume routes `None`, so no reader can still be holding — or can still open — a connection to a file that's about to go.
+This is also why the `Failed` phase needs no read-path special case: a `Failed` instance stays registered for the badge,
+but `fail_index` withdrew its handles before flipping the phase, so reads already skip.
+
+**Test isolation follows the same shape.** `stress_test_helpers::TestInstanceGuard` installs a private volume's pool +
+tracker alongside its registry entry and withdraws both on drop. ❌ A bare `INDEX_REGISTRY.remove(vid)` in a test no
+longer un-routes reads; go through `stop_indexing` or uninstall explicitly.
+
+## A volume's stop signal is handed down, never looked up
+
+`VolumeSignals::cancel` is the root of every cancellation under a volume: each long walk it starts (a full scan, a
+reconcile, a subtree rescan, a verification) runs on a `child_token()`, so tearing the volume down stops all of them at
+once. Whoever OWNS the token hands a child to the work it starts — `IndexManager` into `ScanCompletion` and
+`ReplayConfig` (and from there into `EventReconciler` and the post-replay verification walk), `trigger_verification`
+into `maybe_verify` while it already holds the instance.
+
+❌ Nothing below `lifecycle` resolves a token by volume id. Beyond the import cycle that created, a late lookup is wrong
+on its own terms: a walk that starts after its volume was torn down finds no instance, falls back to a fresh token that
+never fires, and runs to completion writing into a draining writer — precisely the walk that most needs to stop. A token
+captured up front cancels correctly in that case.
 
 ## The `IndexPhase` machine (and where the pipeline-phase EVENT lives)
 
@@ -109,13 +145,14 @@ axis, not the variant:
 
 **Lock-first `start_indexing`.** `start_indexing_for(app, volume_id, root)` opens a temporary `IndexStore` plus the
 volume's `ReadPool`/`PendingSizes`, then atomically claims the `(absent) → Initializing(store)` transition via
-`try_reserve_initializing_phase(volume_id, store, pool, pending)` BEFORE constructing the heavy `IndexManager` (which
-spawns the writer thread). The reservation rejects when the volume already has ANY instance, so a second start for the
-SAME volume no-ops; different volumes reserve independently. Without the lock-first claim, two near-simultaneous calls
-for one volume can both spawn writer threads — each with its own `Arc<AtomicI64>` ID counter and `AccumulatorMaps` —
-racing on the same DB (one of the mechanisms behind a historical ghost-size bug; the other, two writers racing, is
-closed by this guard, with `UNIQUE (parent_id, name_folded)` as the safety net). The reservation also installs the
-volume's read-path handles so enrichment works during `Initializing`.
+`try_reserve_initializing_phase(volume_id, kind, store, pool, pending, signals)` BEFORE constructing the heavy
+`IndexManager` (which spawns the writer thread). The reservation rejects when the volume already has ANY instance, so a
+second start for the SAME volume no-ops; different volumes reserve independently. Without the lock-first claim, two
+near-simultaneous calls for one volume can both spawn writer threads — each with its own `Arc<AtomicI64>` ID counter and
+`AccumulatorMaps` — racing on the same DB (one of the mechanisms behind a historical ghost-size bug; the other, two
+writers racing, is closed by this guard, with `UNIQUE (parent_id, name_folded)` as the safety net). The reservation also
+publishes the volume's read handles, in the same critical section, so enrichment works from `Initializing` onward and no
+window exists where the registry knows a volume the read path can't route.
 
 **Drop the registry guard before the shutdown drain.** `stop_indexing(vid)` and `clear_index(vid)` swap the volume's
 phase to `ShuttingDown` under the registry lock (taking the `IndexManager` out by value), then RELEASE the lock before
@@ -226,8 +263,8 @@ DISTINCT from "absent = disabled" so the badge is honest, yet its writer/watcher
 
 - `IndexPhase::Failed { reason: IndexFailure, db_path }`: the instance STAYS registered (discoverable for the badge +
   recovery) but carries no live manager. `get_status`/`get_debug_status` treat it like disabled; `is_active` is `false`;
-  `get_instance_read_pool`/`get_instance_pending_sizes` return `None`, so reads SKIP cleanly (no per-navigation flood on
-  a dead DB). The stored `db_path` lets `clear_index` reclaim the file.
+  its read handles were withdrawn before the phase flipped, so reads SKIP cleanly (no per-navigation flood on a dead
+  DB). The stored `db_path` lets `clear_index` reclaim the file.
 - `Freshness::Failed` (red): drives the badge through the SAME `index-freshness-changed` event the other colors use. It
   is TERMINAL in `Freshness::on` (only `ScanStarted` leaves it), so a concurrent scan-completion unwinding as the index
   is torn down can't downgrade a dead index back to Stale/Fresh.

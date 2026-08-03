@@ -44,11 +44,10 @@
 //!
 //! **Per-volume routing (both tiers).** Marks, holds, releases, and the
 //! writer-drain clear all target the OWNING volume's tracker via
-//! `get_pending_sizes_for(volume_id)` (root → the `PENDING_SIZES` global,
-//! non-root → the registry instance). A root-only `get_pending_sizes()` from a
-//! non-root writer would wipe root's hourglass on a non-root drain AND never
-//! clear its own — so the volume id is threaded through `queue_must_scan_sub_dirs`
-//! and the writer loop rather than defaulting to root.
+//! `get_pending_sizes_for(volume_id)`. A root-only handle used from a non-root
+//! writer would wipe root's hourglass on a non-root drain AND never clear its
+//! own — so the volume id is threaded through `queue_must_scan_sub_dirs` and the
+//! writer loop rather than defaulting to root.
 //!
 //! The tradeoff is coarse granularity: during a storm every touched ancestor
 //! stays flagged until the writer fully drains (transient) or the rescan
@@ -61,8 +60,9 @@
 use std::collections::HashSet;
 use std::sync::{Arc, LazyLock, Mutex};
 
-use crate::indexing::lifecycle::state;
+use super::handles::VolumeHandles;
 use crate::indexing::paths::path_prefix;
+#[cfg(test)]
 use crate::indexing::volume::ROOT_VOLUME_ID;
 use cmdr_fs::firmlinks;
 use cmdr_fs::ignore_poison::IgnorePoison;
@@ -169,47 +169,38 @@ impl PendingSizes {
     }
 }
 
-/// The root volume's pending-size tracker, installed/cleared in lockstep with
-/// `READ_POOL` (see `read/enrichment.rs` and the lifecycle sites in `lifecycle/state.rs`).
-/// `None` whenever root indexing isn't running, so reads return "not pending".
-/// The root `IndexInstance` shares this same `Arc`. Non-root volumes' trackers
-/// live in their `IndexInstance` (see `crate::indexing::lifecycle::state::get_instance_pending_sizes`).
-pub(crate) static PENDING_SIZES: LazyLock<Mutex<Option<Arc<PendingSizes>>>> = LazyLock::new(|| Mutex::new(None));
+/// Every indexed volume's pending-size tracker, keyed by volume id. Installed and
+/// withdrawn by lifecycle in lockstep with the volume's read pool (`enrichment.rs`
+/// and the lifecycle sites in `lifecycle/state.rs`); an absent entry means that
+/// volume isn't indexed, so reads answer "not pending".
+static PENDING_SIZES: LazyLock<VolumeHandles<PendingSizes>> = LazyLock::new(VolumeHandles::new);
 
-/// Tests that touch `PENDING_SIZES` must hold this lock to avoid races with
-/// parallel test threads (mirrors `READ_POOL_TEST_MUTEX`).
+/// Tests that touch the root volume's tracker must hold this lock to avoid races
+/// with parallel test threads (mirrors `READ_POOL_TEST_MUTEX`).
 #[cfg(test)]
 pub(crate) static PENDING_SIZES_TEST_MUTEX: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 
-/// Clone the root tracker `Arc`, if installed. Lock held for nanoseconds.
+/// Clone the root tracker `Arc`, if installed.
+#[cfg(test)]
 pub(crate) fn get_pending_sizes() -> Option<Arc<PendingSizes>> {
-    PENDING_SIZES.lock().ok()?.as_ref().cloned()
+    get_pending_sizes_for(ROOT_VOLUME_ID)
 }
 
-/// Clone a specific volume's tracker. Routes root to `PENDING_SIZES`, every
-/// other volume to its `IndexInstance` in the registry.
+/// Clone a specific volume's tracker. `None` means the volume isn't indexed.
 pub(crate) fn get_pending_sizes_for(volume_id: &str) -> Option<Arc<PendingSizes>> {
-    if volume_id == ROOT_VOLUME_ID {
-        get_pending_sizes()
-    } else {
-        state::get_instance_pending_sizes(volume_id)
-    }
+    PENDING_SIZES.get(volume_id)
 }
 
-/// Install the root volume's tracker into the global fast handle. No-op for
-/// non-root volumes: their tracker is owned by the `IndexInstance` directly.
+/// Publish a volume's tracker, alongside its read pool, as lifecycle reserves the
+/// volume's registry slot.
 pub(crate) fn install_pending_sizes(volume_id: &str, tracker: Arc<PendingSizes>) {
-    if volume_id == ROOT_VOLUME_ID {
-        *PENDING_SIZES.lock_ignore_poison() = Some(tracker);
-    }
+    PENDING_SIZES.install(volume_id, tracker);
 }
 
-/// Clear the root volume's global tracker (on stop/clear). Non-root volumes'
-/// trackers drop with their `IndexInstance`.
+/// Withdraw a volume's tracker on stop / clear / failure. Afterwards the hourglass
+/// reads "not pending" for that volume, which is the truth once it stops indexing.
 pub(crate) fn uninstall_pending_sizes(volume_id: &str) {
-    if volume_id == ROOT_VOLUME_ID {
-        *PENDING_SIZES.lock_ignore_poison() = None;
-    }
+    PENDING_SIZES.uninstall(volume_id);
 }
 
 #[cfg(test)]
@@ -370,33 +361,44 @@ mod tests {
         // rely on: a non-root volume id must NOT resolve to the root tracker.
         let _guard = PENDING_SIZES_TEST_MUTEX.lock().unwrap();
         let root_tracker = Arc::new(PendingSizes::new());
-        *PENDING_SIZES.lock().unwrap() = Some(Arc::clone(&root_tracker));
+        install_pending_sizes(ROOT_VOLUME_ID, Arc::clone(&root_tracker));
         // Root id routes to the installed root tracker.
         let via_root = get_pending_sizes_for(ROOT_VOLUME_ID).expect("root tracker installed");
         assert!(Arc::ptr_eq(&via_root, &root_tracker));
-        // A non-root id with no registered instance resolves to None, never to root.
+        // A non-root id with nothing installed resolves to None, never to root.
         assert!(
             get_pending_sizes_for("smb://no-such-volume").is_none(),
             "a non-root id must not fall through to the root tracker"
         );
-        *PENDING_SIZES.lock().unwrap() = None;
+        // An installed non-root id routes to its OWN tracker.
+        let smb_tracker = Arc::new(PendingSizes::new());
+        install_pending_sizes("smb://writes-its-own", Arc::clone(&smb_tracker));
+        let via_smb = get_pending_sizes_for("smb://writes-its-own").expect("smb tracker installed");
+        assert!(Arc::ptr_eq(&via_smb, &smb_tracker));
+        assert!(
+            !Arc::ptr_eq(&via_smb, &root_tracker),
+            "a non-root volume must not share root's tracker"
+        );
+        uninstall_pending_sizes("smb://writes-its-own");
+        assert!(get_pending_sizes_for("smb://writes-its-own").is_none());
+        uninstall_pending_sizes(ROOT_VOLUME_ID);
     }
 
     #[test]
     fn global_get_returns_none_when_uninstalled() {
         let _guard = PENDING_SIZES_TEST_MUTEX.lock().unwrap();
-        *PENDING_SIZES.lock().unwrap() = None;
+        uninstall_pending_sizes(ROOT_VOLUME_ID);
         assert!(get_pending_sizes().is_none());
     }
 
     #[test]
     fn global_install_and_clear_roundtrip() {
         let _guard = PENDING_SIZES_TEST_MUTEX.lock().unwrap();
-        *PENDING_SIZES.lock().unwrap() = Some(Arc::new(PendingSizes::new()));
+        install_pending_sizes(ROOT_VOLUME_ID, Arc::new(PendingSizes::new()));
         let tracker = get_pending_sizes().expect("installed");
         tracker.mark("/aaa/bbb");
         assert!(tracker.is_pending("/aaa/bbb"));
-        *PENDING_SIZES.lock().unwrap() = None;
+        uninstall_pending_sizes(ROOT_VOLUME_ID);
         assert!(get_pending_sizes().is_none());
     }
 }

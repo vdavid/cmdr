@@ -7,20 +7,21 @@ use std::sync::Arc;
 use rusqlite::Connection;
 
 use crate::indexing::lifecycle::state::{INDEX_REGISTRY, IndexInstance, IndexPhase, VolumeSignals};
-use crate::indexing::read::enrichment::ReadPool;
-use crate::indexing::read::pending_sizes::PendingSizes;
+use crate::indexing::read::enrichment::{ReadPool, install_read_pool, uninstall_read_pool};
+use crate::indexing::read::pending_sizes::{PendingSizes, install_pending_sizes, uninstall_pending_sizes};
 use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
 use crate::indexing::volume::IndexVolumeKind;
 use crate::indexing::writer::IndexWriter;
 use cmdr_fs::entry::FileEntry;
 
-/// A privately-registered per-volume `IndexInstance`, for tests that must NOT
-/// assert on the process-global root `PENDING_SIZES` / `READ_POOL`.
+/// A privately-registered per-volume `IndexInstance` plus its read handles, for
+/// tests that must NOT assert on the root volume's shared pending-sizes tracker
+/// or read pool.
 ///
 /// **Why this exists.** `cargo test` runs a crate's tests as threads in ONE
 /// process. Every `IndexWriter::spawn()` in the binary is a ROOT writer whose
-/// end-of-drain hook CLEARS the global root `PENDING_SIZES`, and `reset_indexing_for_test`
-/// clears the root `READ_POOL`. A test that installs one of those globals and
+/// end-of-drain hook CLEARS the ROOT volume's tracker, and `reset_indexing_for_test`
+/// withdraws the root read pool. A test that installs handles under `root` and
 /// asserts a mark/pool survives is therefore clobbered by any OTHER test's
 /// writer, flakes, and — worse — poisons the shared `*_TEST_MUTEX`, cascading
 /// `.lock().unwrap()` panics into every other holder. A crate-wide lock can't
@@ -28,9 +29,9 @@ use cmdr_fs::entry::FileEntry;
 /// crate. Registering a PRIVATE instance under a UNIQUE volume id routes the
 /// state to a tracker + pool immune to any foreign root writer.
 ///
-/// Removes its registry entry on drop — including on a failed assertion — so a
-/// panicking test never leaks a stray instance into another test's registry
-/// sweep. `freshness: None` keeps it out of the scheduler sweeps' `Fresh` filter
+/// Removes its registry entry AND its read handles on drop — including on a
+/// failed assertion — so a panicking test never leaks a stray instance into
+/// another test's registry sweep or read-path routing. `freshness: None` keeps it out of the scheduler sweeps' `Fresh` filter
 /// while it's registered.
 ///
 /// See `writer/DETAILS.md` § "Test isolation".
@@ -48,17 +49,17 @@ impl TestInstanceGuard {
     pub fn register(volume_id: impl Into<String>, db_path: &Path, kind: IndexVolumeKind) -> Self {
         let volume_id = volume_id.into();
         let tracker = Arc::new(PendingSizes::new());
-        // The read pool lives in the registry instance; per-volume reads
-        // (`get_read_pool_for` / `enrich_*_on_volume` / `get_dir_stats_on_volume`)
-        // resolve it from there by volume id, so the guard doesn't retain a handle.
+        // Mirror production: the handles go into the read-side tables keyed by this
+        // volume id, so per-volume reads (`get_read_pool_for` / `enrich_*_on_volume`
+        // / `get_dir_stats_on_volume`) route here. The guard doesn't retain the pool.
         let read_pool = Arc::new(ReadPool::new(db_path.to_path_buf()).expect("open read pool"));
+        install_read_pool(&volume_id, read_pool);
+        install_pending_sizes(&volume_id, Arc::clone(&tracker));
         INDEX_REGISTRY.lock().unwrap_or_else(|e| e.into_inner()).insert(
             volume_id.clone(),
             IndexInstance {
                 phase: IndexPhase::ShuttingDown,
                 kind,
-                read_pool,
-                pending_sizes: Arc::clone(&tracker),
                 signals: VolumeSignals::new(Arc::new(std::sync::Mutex::new(None)), crate::NoopEventSink::shared()),
             },
         );
@@ -87,6 +88,8 @@ impl Drop for TestInstanceGuard {
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .remove(&self.volume_id);
+        uninstall_read_pool(&self.volume_id);
+        uninstall_pending_sizes(&self.volume_id);
     }
 }
 

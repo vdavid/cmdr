@@ -24,6 +24,7 @@ use crate::indexing::watch::watcher::FsChangeEvent;
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::pluralize::pluralize;
+use tokio_util::sync::CancellationToken;
 
 /// Everything the post-scan completion task takes ownership of from
 /// `start_scan`. These are exactly the variables the former inline closure
@@ -66,6 +67,10 @@ pub(super) struct ScanCompletion {
     /// two walks differ ~5x in wall clock, so writing them into one slot makes
     /// the next run of the OTHER kind predict a wildly wrong ETA.
     pub calibration_kind: ScanCalibrationKind,
+    /// This volume's stop signal (the same one the manager holds). Handed to the
+    /// post-scan reconciler so its detached subtree walks stop when the volume
+    /// does; see `EventReconciler::new_for`.
+    pub cancel: CancellationToken,
 }
 
 /// Whether a failed local scan should emit `index-scan-aborted`: only when the
@@ -94,6 +99,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
         live_event_task_slot,
         scan_start_event_id,
         calibration_kind,
+        cancel,
     } = params;
 
     // Wait for scan to complete
@@ -149,7 +155,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
 
     // Step 4: Reconcile buffered watcher events, in this volume's path space
     // (a mount-rooted drive strips its mount root before `resolve_path`).
-    let mut reconciler = EventReconciler::new_for(volume_id.clone(), space.clone());
+    let mut reconciler = EventReconciler::new_for(volume_id.clone(), space.clone(), cancel.clone());
 
     // Drain all buffered events from the channel into the reconciler
     let mut event_rx = event_rx;
@@ -500,6 +506,7 @@ mod tests {
                 live_event_task_slot: Arc::new(std::sync::Mutex::new(None)),
                 scan_start_event_id: 0,
                 calibration_kind: ScanCalibrationKind::FullWalk,
+                cancel: CancellationToken::new(),
             }
         }
 

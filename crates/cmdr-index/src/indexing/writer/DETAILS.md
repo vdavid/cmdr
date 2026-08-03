@@ -411,7 +411,7 @@ mercy of every OTHER test's writers. Two globals here bite:
   can't fix it: the colliding bumpers span the whole crate, not this module. The isolation-independent probe is the
   per-writer `MutationTracker::global_generation_bumps` (`#[cfg(test)]`, ticked next to the real bump) — the
   search-generation tests assert on THAT, never on `WRITER_GENERATION` directly.
-- **`PENDING_SIZES`** (root's global tracker). Every root writer's end-of-drain hook CLEARS it, so a test that installs
+- **The ROOT volume's `PendingSizes` tracker.** Every root writer's end-of-drain hook CLEARS it, so a test that installs
   it and asserts a mark survives flakes AND poisons `PENDING_SIZES_TEST_MUTEX`, cascading `.lock().unwrap()` panics into
   every other holder. The pending-sizes writer tests instead register a per-volume `IndexInstance` under a UNIQUE volume
   id (`stress_test_helpers::TestInstanceGuard`, the shared cross-module helper, which removes the entry on drop, even on
@@ -424,8 +424,8 @@ window. (Verified: bare `cargo test --lib indexing::writer` failed ~4 tests/run 
 
 The SAME per-volume-instance pattern fixes the `reconcile::reconciler` and `tests::integration_tests` isolation flakes
 (the hourglass-hold routing tests, the enrichment/`dir_stats` pending-flag tests): route through a private
-`TestInstanceGuard` volume, never the root `PENDING_SIZES` / `READ_POOL` globals. Two corollaries the private-instance
-approach depends on: (1) a test must NEVER `INDEX_REGISTRY.clear()` (it wipes every concurrent test's private instance —
+`TestInstanceGuard` volume, never the ROOT volume's tracker or pool. Two corollaries the private-instance approach
+depends on: (1) a test must NEVER `INDEX_REGISTRY.clear()` (it wipes every concurrent test's private instance —
 `lifecycle/state/tests.rs` removes only its own ids); (2)
 `stress_test_helpers::TestInstanceGuard::register_identity_paths` uses an `mtp-` id so `get_dir_stats_on_volume` /
 `enrich_*_on_volume` map plain `/paths` identically (identity read-side routing) while staying private.

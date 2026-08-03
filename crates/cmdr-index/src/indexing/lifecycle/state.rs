@@ -7,20 +7,19 @@
 //!
 //! ## Registry shape
 //!
-//! Each indexed volume has one `IndexInstance` bundling its `{phase, read_pool,
-//! pending_sizes}`. The registry is the authority for *which* volumes are
-//! indexed and for their lifecycle transitions. Every invariant the
-//! single-volume design held — single-writer per DB, lock-first reservation,
-//! drop-guard-before-drain, reads via `ReadPool` never under the lifecycle
-//! lock — now holds *per volume id*, keyed independently in the map so two
-//! volumes can't corrupt each other.
+//! Each indexed volume has one `IndexInstance` bundling its `{phase, kind,
+//! signals}`. The registry is the authority for *which* volumes are indexed and
+//! for their lifecycle transitions. Every invariant the single-volume design
+//! held — single-writer per DB, lock-first reservation, drop-guard-before-drain,
+//! reads via `ReadPool` never under the lifecycle lock — now holds *per volume
+//! id*, keyed independently in the map so two volumes can't corrupt each other.
 //!
-//! The root volume's `ReadPool` and `PendingSizes` are *also* reachable through
-//! the standalone `READ_POOL` / `PENDING_SIZES` module globals (the read-path
-//! fast handles used by enrichment, search, and IPC dir-stats). The root
-//! `IndexInstance` shares the very same `Arc`s, so there is exactly one
-//! allocation per volume and the two can't drift. See `read/enrichment.rs` /
-//! `read/pending_sizes.rs` and the `DETAILS.md` registry section.
+//! A volume's read handles (`ReadPool`, `PendingSizes`) are NOT in its instance.
+//! This module builds them, then PUSHES them into the volume-keyed tables in
+//! `read/handles.rs` as it reserves the slot, and withdraws them on every
+//! teardown path. That's what keeps the read path — the hottest path in the
+//! subsystem — from having to reach back into this registry. See
+//! `read/handles.rs` and the `DETAILS.md` registry section.
 //!
 //! `mod.rs` is a thin facade that re-exports the public functions defined
 //! here; module-internal callers (e.g. `lifecycle/manager.rs`) can use the items
@@ -80,14 +79,6 @@ pub(crate) enum IndexPhase {
     Failed { reason: IndexFailure, db_path: PathBuf },
 }
 
-/// One volume's index: its lifecycle phase plus the read-path handles
-/// (`ReadPool` for lock-free enrichment/verification reads, `PendingSizes` for
-/// the "size updating" hourglass). Bundling them per volume means a second
-/// volume's pool can never be confused for this one's.
-///
-/// For the root volume, `read_pool` and `pending_sizes` are the same `Arc`s
-/// installed into the `READ_POOL` / `PENDING_SIZES` module globals, so the
-/// read-path fast handles and the registry never disagree.
 /// The three handles a volume's registry instance and its `IndexManager` both
 /// hold: its freshness signal, where its reports go, and its stop signal. Passed
 /// as ONE value so the two can never be built with different halves — a manager
@@ -110,8 +101,13 @@ pub(crate) struct VolumeSignals {
     /// This volume's stop signal — the ROOT of every cancellation under it.
     /// Every long walk it starts (a full scan, a reconcile, a subtree rescan, a
     /// verification) runs on a `child_token()`, so tearing the volume down stops
-    /// all of them at once. Read it through [`volume_cancel_token`] from anywhere
-    /// that starts work for a volume without holding its manager.
+    /// all of them at once.
+    ///
+    /// ❌ Nothing below `lifecycle` looks this up by volume id. Whoever starts the
+    /// work is handed a child token by the layer that owns this one (the manager,
+    /// or `trigger_verification` while it already holds the instance). A late
+    /// lookup would answer `None` for a volume that just went away and hand the
+    /// walk a token that never fires — precisely the walk that needs to stop.
     pub(crate) cancel: CancellationToken,
 }
 
@@ -127,6 +123,14 @@ impl VolumeSignals {
     }
 }
 
+/// One volume's index: its lifecycle phase, its scan kind, and the handles it
+/// shares with its `IndexManager`.
+///
+/// ❌ The read-path handles (`ReadPool`, `PendingSizes`) are deliberately NOT
+/// here. They live in the volume-keyed tables in `read/handles.rs`, which
+/// lifecycle pushes into; putting a copy back would let the two disagree and
+/// would re-create the read-path-depends-on-lifecycle cycle. See `DETAILS.md`
+/// § "Where a volume's read handles live".
 pub(crate) struct IndexInstance {
     pub(crate) phase: IndexPhase,
     /// This volume's scan kind (Local / SMB / MTP). Retained so a consumer of the
@@ -134,8 +138,6 @@ pub(crate) struct IndexInstance {
     /// kind — score Local + SMB, exclude MTP — instead of re-deriving it from the
     /// volume-id string (which the `no-string-matching` rule forbids).
     pub(crate) kind: IndexVolumeKind,
-    pub(crate) read_pool: Arc<ReadPool>,
-    pub(crate) pending_sizes: Arc<PendingSizes>,
     /// The handles this volume shares with its `IndexManager`.
     pub(crate) signals: VolumeSignals,
 }
@@ -212,31 +214,6 @@ pub fn should_auto_start_indexing(indexing_enabled: Option<bool>, fda_pending: b
 
 // ── Registry helpers ─────────────────────────────────────────────────
 
-/// Clone a non-root volume's read pool from its registry instance. Root's pool
-/// lives in the `READ_POOL` global instead (see `enrichment::get_read_pool`).
-pub(crate) fn get_instance_read_pool(volume_id: &str) -> Option<Arc<ReadPool>> {
-    let reg = INDEX_REGISTRY.lock().ok()?;
-    let instance = reg.get(volume_id)?;
-    // A `Failed` volume's DB is dead: reads must SKIP (return `None`, the same "no
-    // index" signal an absent key gives), not hit the dead pool and log per
-    // navigation. The instance stays registered only so the badge is honest.
-    if matches!(instance.phase, IndexPhase::Failed { .. }) {
-        return None;
-    }
-    Some(Arc::clone(&instance.read_pool))
-}
-
-/// Clone a non-root volume's pending-size tracker from its registry instance.
-/// Root's tracker lives in the `PENDING_SIZES` global instead.
-pub(crate) fn get_instance_pending_sizes(volume_id: &str) -> Option<Arc<PendingSizes>> {
-    let reg = INDEX_REGISTRY.lock().ok()?;
-    let instance = reg.get(volume_id)?;
-    if matches!(instance.phase, IndexPhase::Failed { .. }) {
-        return None;
-    }
-    Some(Arc::clone(&instance.pending_sizes))
-}
-
 /// Clone a volume's writer handle (and read whether a full scan is in progress)
 /// if it has a `Running` index. Used by the SMB watch→index translator to
 /// enqueue change messages (`UpsertEntryV2` / `DeleteEntryById` / …) onto the
@@ -271,14 +248,22 @@ pub fn trigger_verification(volume_id: &str, dir_path: &str) {
         };
         if let Some(IndexInstance {
             phase: IndexPhase::Running(mgr),
+            signals,
             ..
         }) = reg.get(&volume_id)
         {
             let writer = mgr.writer.clone();
             let events = Arc::clone(&mgr.events);
             let scanning = mgr.scanning.load(Ordering::Relaxed);
+            // Hand the walk a child of THIS volume's stop signal, taken here where
+            // we already hold the instance. The verifier feeds this volume's writer,
+            // so tearing the volume down must stop the walk rather than let it write
+            // into a draining writer — and a token resolved here can't come back
+            // `None` (and silently never fire) the way a later lookup could, once the
+            // volume is gone.
+            let cancel = signals.cancel.child_token();
             drop(reg);
-            verifier::maybe_verify(dir_path, writer, events, scanning);
+            verifier::maybe_verify(dir_path, writer, events, scanning, cancel);
         }
     });
 }
@@ -290,9 +275,11 @@ pub fn trigger_verification(volume_id: &str, dir_path: &str) {
 pub fn stop_indexing(volume_id: &str) -> Result<(), String> {
     verifier::invalidate();
 
-    // Invalidate this volume's ReadPool/PendingSizes read-path handles before
-    // shutdown so thread-local connections are discarded. For root these are the
-    // module globals.
+    // Withdraw this volume's ReadPool/PendingSizes and invalidate the pool before
+    // shutdown, so in-flight readers stop routing here and thread-local connections
+    // are discarded. Uninstalling first (not after the registry removal) is what
+    // leaves no window where a reader can still open a connection to a DB that's
+    // about to be drained.
     if let Some(pool) = uninstall_read_pool(volume_id) {
         pool.invalidate();
     }
@@ -381,9 +368,12 @@ pub(crate) fn is_initializing_phase(phase: &IndexPhase) -> bool {
 /// thread while `resume_or_scan` runs). Keyed per volume, two starts for the
 /// *same* volume still can't race, while two *different* volumes start freely.
 ///
-/// On success, installs the volume's `read_pool`/`pending_sizes` into the
-/// registry instance (and, for root, the module globals) so enrichment works
-/// during the `Initializing` phase.
+/// On success, and STILL UNDER THE REGISTRY LOCK, publishes the volume's
+/// `read_pool`/`pending_sizes` into the read-side tables, so a volume is never
+/// visible in the registry without a routable read path and enrichment works from
+/// the `Initializing` phase onward. Both `install_*` calls are leaf-lock
+/// operations (a hash insert), so taking them under this lock adds no ordering
+/// hazard: nothing ever acquires the registry while holding a read-handle table.
 ///
 /// The caller owns the `freshness` `Arc` (it shares a clone with the
 /// `IndexManager`, which fires scan transitions through it WITHOUT re-locking
@@ -401,32 +391,17 @@ pub(crate) fn try_reserve_initializing_phase(
     if reg.contains_key(volume_id) {
         return Err(Box::new(store));
     }
-    install_read_pool(volume_id, Arc::clone(&read_pool));
-    install_pending_sizes(volume_id, Arc::clone(&pending_sizes));
+    install_read_pool(volume_id, read_pool);
+    install_pending_sizes(volume_id, pending_sizes);
     reg.insert(
         volume_id.to_string(),
         IndexInstance {
             phase: IndexPhase::Initializing { store },
             kind,
-            read_pool,
-            pending_sizes,
             signals,
         },
     );
     Ok(())
-}
-
-/// This volume's stop signal, for code that starts long work for a volume
-/// without holding its `IndexManager` (the subtree-rescan drain, the
-/// verification walks). Take a `child_token()` off it so the work stops when the
-/// volume is torn down, and `unwrap_or_default()` when the volume isn't
-/// registered — a fresh token that never fires, which is the honest answer for
-/// work with no volume behind it (a test fixture, a tool).
-pub(crate) fn volume_cancel_token(volume_id: &str) -> Option<CancellationToken> {
-    INDEX_REGISTRY
-        .lock()
-        .ok()
-        .and_then(|reg| reg.get(volume_id).map(|i| i.signals.cancel.clone()))
 }
 
 /// Apply a freshness transition for a volume via the pure state machine
@@ -869,8 +844,10 @@ fn remove_instance_and_handles(volume_id: &str) {
 pub fn clear_index(volume_id: &str) -> Result<(), String> {
     verifier::invalidate();
 
-    // Invalidate this volume's ReadPool/PendingSizes before deleting DB files so
-    // thread-local connections are discarded.
+    // Withdraw this volume's ReadPool/PendingSizes and invalidate the pool BEFORE
+    // the DB files go, so no reader can be holding (or can still open) a connection
+    // to a file we're about to delete. This ordering is load-bearing; ❌ don't move
+    // it below the drain.
     if let Some(pool) = uninstall_read_pool(volume_id) {
         pool.invalidate();
     }
@@ -1210,11 +1187,11 @@ pub(crate) fn spawn_failure_supervisor(
 fn fail_index(events: &dyn crate::EventSink, volume_id: &str, reason: IndexFailure) {
     verifier::invalidate();
 
-    // Uninstall + invalidate the read-path handles BEFORE the phase flips to
-    // `Failed`: for root this clears the `READ_POOL` global; for a non-root volume
-    // it reads the instance pool (still visible while `Running`) so we can
-    // invalidate its thread-local connections. Once `Failed` is installed,
-    // `get_instance_read_pool` returns `None`, so reads skip.
+    // Withdraw + invalidate the read-path handles BEFORE the phase flips to
+    // `Failed`. A `Failed` instance stays registered so the badge can be honest,
+    // but its DB is dead, so reads must skip: withdrawing the handles here is what
+    // makes them skip, and it's why a `Failed` phase needs no read-path special
+    // case anywhere.
     if let Some(pool) = uninstall_read_pool(volume_id) {
         pool.invalidate();
     }

@@ -408,6 +408,12 @@ it, and the stale bytes stay in every ancestor until a sweep. It is also **root-
 and bails inert on a mount-rooted volume). Those two gaps are exactly what the boot-disk-only sweep scope and the
 coalesce count answer.
 
+**Every detached walk here runs on a token handed IN, never one looked up.** `maybe_verify` takes the volume's child
+token from `state::trigger_verification` (which already holds the instance), and the subtree-rescan drain takes it from
+the `RescanDrain` the `EventReconciler` was built with. ❌ Don't reach into `lifecycle::state` for a token by volume id:
+besides the import cycle, a walk that starts after its volume was torn down would find nothing, default to a token that
+never fires, and keep writing into a draining writer. Topology: `../host/DETAILS.md` § Cancellation.
+
 **Progressive `index-dir-updated` emit during background verification.** `run_background_verification` emits one
 `index-dir-updated` per successfully-scanned new subtree, immediately after the post-scan writer flush. Don't buffer
 new-dir paths and fire a single end-of-verification emit: that window runs up to 5 minutes for a typical home folder,

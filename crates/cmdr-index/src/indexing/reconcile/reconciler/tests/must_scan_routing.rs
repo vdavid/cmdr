@@ -3,6 +3,7 @@
 //! parent chain is missing, and the queue that drains itself.
 
 use super::*;
+use tokio_util::sync::CancellationToken;
 
 #[tokio::test]
 async fn must_scan_sub_dirs_queued() {
@@ -62,7 +63,8 @@ async fn root_scale_must_scan_routes_to_scanner_without_a_stuck_hold() {
     // clean sweep window without touching the process-global `SHALLOW_SWEEPS`.
     let volume_id = "smb://reconciler-test-root-scale";
     let (writer, _dir, conn, instance) = setup_private_writer(volume_id);
-    let mut reconciler = EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root());
+    let mut reconciler =
+        EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root(), CancellationToken::new());
     reconciler.switch_to_live();
     let sink = Arc::new(Mutex::new(Vec::<String>::new()));
     reconciler.set_recording_scan_trigger(Arc::clone(&sink));
@@ -108,7 +110,8 @@ async fn a_second_root_scale_must_scan_does_not_reach_the_scanner() {
     // window, so the first `/` sweeps and the second coalesces.
     let volume_id = "smb://reconciler-test-second-root-scale";
     let (writer, _dir, conn, _instance) = setup_private_writer(volume_id);
-    let mut reconciler = EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root());
+    let mut reconciler =
+        EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root(), CancellationToken::new());
     reconciler.switch_to_live();
     let sink = Arc::new(Mutex::new(Vec::<String>::new()));
     reconciler.set_recording_scan_trigger(Arc::clone(&sink));
@@ -144,7 +147,8 @@ async fn deep_must_scan_keeps_the_reconcile_drain() {
     // cascaded into every other holder).
     let volume_id = "smb://reconciler-test-deep";
     let (writer, _dir, conn, instance) = setup_private_writer(volume_id);
-    let mut reconciler = EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root());
+    let mut reconciler =
+        EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root(), CancellationToken::new());
     reconciler.switch_to_live();
     // Keep the queued anchor visible (no spawn), so we assert on the queue directly.
     reconciler.rescan_active.store(true, Ordering::Relaxed);

@@ -5,16 +5,37 @@ invariants are in `CLAUDE.md`.
 
 This area serves recursive sizes and index status back to the app. Four concerns: enrichment (the hot path), the IPC
 query surface, write-op expected totals, and the "size updating" hourglass. All read via the per-volume `ReadPool`; none
-take the lifecycle registry lock.
+takes the lifecycle registry lock, and nothing here imports `lifecycle::state` at all.
+
+## Where the handles come from (`handles.rs`)
+
+`VolumeHandles<T>` is a volume-id-keyed table of one kind of read handle; there is one for `ReadPool` and one for
+`PendingSizes`. Lifecycle PUSHES a volume's handles in as it reserves the volume's registry slot, and withdraws them on
+every teardown path; this side only ever looks one up. A missing entry means "not indexed", which is the read path's
+skip signal.
+
+Two properties make it safe, and both must survive any edit:
+
+- **The table lock is a LEAF.** Every operation is a hash lookup plus an `Arc` clone, with nothing called while the
+  guard is alive. Lifecycle takes it while holding `INDEX_REGISTRY`; nothing takes `INDEX_REGISTRY` while holding a
+  table. One direction only. ❌ Never add a callback parameter, or a `log::` call that formats a handle, here.
+- **Withdrawal is the skip point.** Teardown uninstalls before it drains or deletes anything, so once a volume's DB is
+  going away no reader can still open a connection to it.
+
+Why push rather than let this side pull from the registry: enrichment runs on every listing (~2/s per live pane), and
+resolving a handle out of `INDEX_REGISTRY` put that on the far side of the same mutex a 5 s shutdown drain holds — plus
+it made `read` and `lifecycle` import each other. Rationale and the teardown ordering: `../lifecycle/DETAILS.md` §
+"Where a volume's read handles live". Regression-guarded by
+`tests::integration_tests::enrichment_under_contention{,_non_root}` (enrich while a background thread holds the
+registry; pre-fix the non-root case HANGS).
 
 ## Enrichment (`enrichment.rs`)
 
 `ReadPool` is defined here: lock-free thread-local read connections for enrichment and verification. `with_conn`'s
 signature (`fn with_conn<T>(&self, f: impl FnOnce(&Connection) -> T)`) ensures the `&Connection` can't escape the
-closure, so async task migration can't break thread affinity — enforced by the type, not convention. The root pool lives
-in the `READ_POOL` module global; non-root pools live in their registry instance. `get_read_pool_for(vid)` routes root →
-`READ_POOL`, non-root → `state::get_instance_read_pool`. (The globals and instance storage are owned by
-`../lifecycle/DETAILS.md`; this area holds the `ReadPool` type and the readers.)
+closure, so async task migration can't break thread affinity — enforced by the type, not convention. Every volume's
+pool, root included, lives in the `READ_POOLS` table (above); `get_read_pool_for(vid)` is a lookup in it, and
+`get_read_pool()` is that lookup for `ROOT_VOLUME_ID`, kept for the callers that are root-scoped by construction.
 
 `test_install_root_read_pool` / `test_uninstall_root_read_pool` / `test_read_pool_lock` are gated on
 `any(test, feature = "testing")` rather than plain `cfg(test)`, and are `pub` under it, because
@@ -118,9 +139,8 @@ in flight for that dir even when no scan runs.
 
 - `mark(path)` inserts the normalized path plus every ancestor; `is_pending(path)` is the membership test; `clear()`
   wipes the transient set.
-- The root tracker is a module-global (`PENDING_SIZES`) installed in lockstep with `READ_POOL`; non-root trackers live
-  in their registry instance (`get_pending_sizes_for(vid)` routes root → `PENDING_SIZES`, non-root →
-  `state::get_instance_pending_sizes`).
+- Every volume's tracker lives in the `PENDING_SIZES` table (above), installed and withdrawn in lockstep with its read
+  pool; `get_pending_sizes_for(vid)` is a lookup in it.
 - **Marked** at the live event loop's `pending_paths` drain points (`watch/event_loop`'s `mark_pending_and_drain`,
   live-only — NOT the shared `process_fs_event`, so replay doesn't flag everything during startup).
 - **Cleared wholesale** by the writer thread once `queue_depth` hits 0. This is self-healing: an empty queue means no
