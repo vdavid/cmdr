@@ -35,10 +35,13 @@ The `(path, size, mtime)` key already misses after any edit, so `cache.clear()` 
 releases the old `Arc<ArchiveIndex>` instead of leaking one parsed index per edit. Clearing runs in the (synchronous)
 `notify` callback before the async refresh spawns, so the re-read re-parses the new bytes.
 
-## Off the executor
+## Off the executor, and through the host
 
-The debouncer callback runs on notify-rs's own thread, which has no Tokio runtime, so it uses
-`tauri::async_runtime::spawn` (never `tokio::spawn`, which would panic) — the same rule as `file_system::watcher`.
+The debouncer callback runs on notify-rs's own thread, which has no Tokio runtime, so it spawns through
+`host.runtime()` (never `tokio::spawn`, which INHERITS an ambient runtime and panics where there is none) — the same
+rule as `file_system::watcher`. The refresh itself goes through `host.listings().refresh_archive_listings(...)`, not a
+direct call into the app's listing cache. Both seams come from the `VolumeHost` the `ArchiveVolume` was constructed
+with; see `crates/cmdr-fs/src/volume/host/CLAUDE.md`.
 
 ## Mid-write safety (keep the old listing)
 
@@ -91,18 +94,25 @@ reader's `LocalFileSource` opens whichever inode the rename has published. The r
 but it doesn't need to be — atomicity, not lane serialization, is what prevents the torn read. The `(path, size, mtime)`
 key plus this watch's `cache.clear()` guarantee the post-rename read re-parses the new file.
 
-## Testing
+## Testing, split at the seam
 
 The pure event filter (`event_path_targets_archive`: exact match, the `/private` firmlink normalization, sibling and
-prefix-similar rejection) is unit-tested inline. `watch_integration_test.rs` drives the whole refresh through
-`VolumeManager::resolve` + `LISTING_CACHE` against real temp zips: an on-disk edit reflected in the listing while an
-outside listing is left untouched (scoping), a truncated mid-write keeping the previous listing, the two real-notify
-end-to-end refresh tests (an in-place rewrite and a temp+rename inode swap), and LRU eviction releasing the archive's
-watch (`Arc::strong_count` drops to the test's own after eviction).
+prefix-similar rejection) is unit-tested inline.
 
-The two real-notify tests are **self-healing** under a saturated suite, not retry-dependent:
-`drive_refresh_until` redoes the zip rewrite until the watch delivers a refresh and the new entry lands in the listing,
-all inside one 15 s budget. This defeats both the just-registered-watch arming window (a mutation landing before macOS
-finishes arming FSEvents is dropped outright, not delayed) and a lone coalesced/dropped event when every core is busy —
-both unrecoverable by waiting. It mirrors `downloads::watcher::observe_mutation`; the shared `real-notify` nextest group
-(serialized, `retries = 0`) lives in `.config/nextest.toml`.
+`host_seam_test.rs` owns everything that depends on FSEvents: a real on-disk rewrite reaching
+`host.listings().refresh_archive_listings` with the PARENT drive id and the archive path, the same across a temp+rename
+inode swap (the case a file-pinned watch would miss), and a remote parent establishing no watch and claiming no
+freshness. It asserts against a `RecordingListings` host, so it needs no listing cache and no `VolumeManager`.
+
+The app-side companion (`file_system/volume/backends/archive_watch_integration_test.rs`) owns what a refresh DOES: a
+refresh through `AppListings` reflected in an open listing while an outside listing is left untouched (scoping), a
+truncated mid-write keeping the previous listing, and LRU eviction releasing the archive's watch
+(`Arc::strong_count` drops to the test's own after eviction). It drives refreshes directly, so no FSEvents timing lives
+there.
+
+The FSEvents-driven tests are **self-healing** under a saturated suite, not retry-dependent: each redoes the zip
+rewrite on a 750 ms cadence until the watch delivers, inside one 15 s budget. This defeats both the just-registered
+arming window (a mutation landing before macOS finishes arming FSEvents is dropped outright, not delayed) and a lone
+coalesced/dropped event when every core is busy — both unrecoverable by waiting. It mirrors
+`downloads::watcher::observe_mutation`; the shared `real-notify` nextest group (serialized, `retries = 0`) lives in
+`.config/nextest.toml`.

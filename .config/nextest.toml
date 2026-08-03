@@ -175,9 +175,9 @@ slow-timeout = { period = "30s", terminate-after = 1 }
 #     the others' starvation.
 #   - `viewer_tail_integration`: the appender writes continuously until the test
 #     sees a `Grew`.
-#   - `archive::watch_integration_test` live-watch + temp-rename tests:
-#     `drive_refresh_until` redoes the zip rewrite (in place, or via temp+rename)
-#     until the watch-driven refresh lands the new entry in the listing.
+#   - `archive::watch::host_seam_test`'s two rewrite tests: `drive_until_refreshed`
+#     redoes the zip rewrite (in place, or via temp+rename) until the watch reaches
+#     the host's archive-refresh seam.
 # They still need this override: the redo/continuous loops can run ~11 s under
 # saturation, past the global 8 s cap, and `real-notify` serialization keeps
 # their live watches from multiplying each other's starvation. NOTE this group
@@ -187,7 +187,7 @@ slow-timeout = { period = "30s", terminate-after = 1 }
 # full-suite `cargo nextest run` loops green at `retries = 0`, and 10/10
 # `cargo test --lib downloads::watcher` loops green (verified 2026-07 on a
 # 16-core M-series; baseline before the in-test fix was ~2/3 runs failing).
-filter = 'test(downloads::watcher::tests::dropping_a_file_emits_one_event) + test(downloads::watcher::tests::partial_rename_to_final_emits_for_final_path) + test(downloads::watcher::tests::latest_download_returns_ring_value_after_event) + test(downloads::watcher::tests::note_pending_write_suppresses_matching_event) + test(downloads::watcher::tests::scan_latest_fallback_finds_file_with_no_events) + test(tail_watcher_sees_appender_task_events_within_debounce) + test(archive::watch::watch_integration_test::a_live_watch_refreshes_the_listing_when_the_zip_changes_on_disk) + test(archive::watch::watch_integration_test::a_temp_rename_swap_refreshes_the_listing)'
+filter = 'test(downloads::watcher::tests::dropping_a_file_emits_one_event) + test(downloads::watcher::tests::partial_rename_to_final_emits_for_final_path) + test(downloads::watcher::tests::latest_download_returns_ring_value_after_event) + test(downloads::watcher::tests::note_pending_write_suppresses_matching_event) + test(downloads::watcher::tests::scan_latest_fallback_finds_file_with_no_events) + test(tail_watcher_sees_appender_task_events_within_debounce) + test(archive::watch::host_seam_test::a_rewrite_asks_the_host_to_refresh_the_archive_listings) + test(archive::watch::host_seam_test::a_temp_rename_swap_still_asks_for_a_refresh)'
 test-group = 'real-notify'
 slow-timeout = { period = "20s", terminate-after = 1 }
 
@@ -216,7 +216,7 @@ slow-timeout = { period = "30s", terminate-after = 1 }
 # re-runs the one test in a fresh process with a fresh watch, which reliably
 # catches the event. Coverage isn't lost — the assertions are unchanged, only
 # real-OS event timing is tolerated. If these ever get the `observe_mutation` /
-# `drive_refresh_until` redo treatment (see the self-healing override above),
+# `drive_until_refreshed` redo treatment (see the self-healing override above),
 # drop the retries. (The archive live-watch tests already made that move.)
 # The retries are NOT free and NOT silent: `rust-tests` parses nextest's `FLAKY n/m`
 # lines and downgrades a retry-rescued run from pass to WARN, naming each test and the

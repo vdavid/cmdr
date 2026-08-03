@@ -98,6 +98,7 @@ async fn read_device_zip(vol: &MtpVolume, path: &Path) -> std::collections::Hash
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn virtual_mtp_archive_browses_and_extracts_via_read_range() {
     use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume};
+    use cmdr_fs::volume::host::VolumeHost;
     use std::sync::Arc;
 
     async fn drain(archive: &ArchiveVolume, inner: &str) -> Vec<u8> {
@@ -122,6 +123,7 @@ async fn virtual_mtp_archive_browses_and_extracts_via_read_range() {
         Arc::clone(&vol) as Arc<dyn Volume>,
         std::path::PathBuf::from("/bundle.zip"),
         ArchiveFormat::Zip,
+        VolumeHost::detached(),
     );
 
     // Browse: synthetic `dir` first, then the root file.

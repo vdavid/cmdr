@@ -1,29 +1,31 @@
-//! Integration tests for the archive live-content watch.
+//! The app's half of the archive live-content watch: what a refresh DOES.
 //!
-//! These drive real temp `.zip` files through `VolumeManager::resolve` (which
-//! starts the watch) and the listing cache, so they exercise the whole
-//! refresh path: an external edit → drop the stale index → re-read through the
-//! re-resolved `ArchiveVolume` → update the pane listing. The two real-notify
-//! tests redo the rewrite until the watch delivers a refresh
-//! (`drive_refresh_until`, mirroring `downloads::watcher::observe_mutation`), so
-//! neither the just-registered arming window nor a coalesced/dropped event under
-//! a saturated suite can starve them — they self-heal within one budget and need
-//! no nextest retries.
+//! These drive real temp `.zip` files through `VolumeManager::resolve` and the
+//! listing cache, so they cover the second half of the refresh path: an archive
+//! refresh → re-read through the re-resolved `ArchiveVolume` → update the pane
+//! listing, plus what LRU eviction releases. They go through
+//! [`AppListings`], the adapter a backend actually reaches, rather than
+//! `caching::refresh_archive_listings` directly.
+//!
+//! The FIRST half — a real on-disk edit reaching the refresh seam at all, across
+//! an inode swap, and what a watch that can't establish reports — belongs to the
+//! backend and is asserted against a recording host in `watch/host_seam_test.rs`.
+//! No FSEvents timing lives in this file.
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use cmdr_fs::volume::host::listings::ListingHost;
 
 use crate::file_system::VolumeManager;
 use crate::file_system::listing::FileEntry;
-use crate::file_system::listing::caching::refresh_archive_listings;
 use crate::file_system::listing::caching_test_support::{TestListing, TestListingGuard};
+use crate::file_system::listing::listing_host::AppListings;
 use crate::file_system::volume::InMemoryVolume;
 use crate::file_system::volume::Volume;
-use crate::file_system::volume::backends::archive::{ArchiveVolume, active_watch_count};
+use crate::file_system::volume::backends::archive::ArchiveVolume;
 use crate::file_system::volume::manager::get_volume_manager;
 
-use super::super::test_fixtures::{FixtureFile, build_zip, stored};
+use crate::file_system::volume::backends::archive::test_fixtures::{FixtureFile, build_zip, stored};
 
 /// Starts the content watch on a resolved archive volume. `VolumeManager::resolve`
 /// only auto-starts the watch when an app handle is registered (production); a
@@ -55,16 +57,6 @@ impl ArchiveFixture {
     fn rewrite(&self, entries: &[FixtureFile]) {
         std::fs::write(&self.zip_path, build_zip(entries)).expect("rewrite fixture zip");
     }
-
-    /// Rewrites the archive the way editors and safe-overwrites do: build a
-    /// sibling temp file, then atomically rename it over the archive. This swaps
-    /// the file's inode, which a file-pinned watch would miss — the parent-dir
-    /// watch must still catch it.
-    fn rewrite_via_temp_rename(&self, entries: &[FixtureFile]) {
-        let tmp = self.zip_path.with_extension("zip.tmp");
-        std::fs::write(&tmp, build_zip(entries)).expect("write temp zip");
-        std::fs::rename(&tmp, &self.zip_path).expect("rename temp over zip");
-    }
 }
 
 /// A synthetic `FileEntry` for seeding a cached listing (the watcher replaces
@@ -90,36 +82,6 @@ fn seed_listing(tag: &str, volume_id: &str, path: &Path, entries: Vec<FileEntry>
         .path(path)
         .entries(entries)
         .insert(tag)
-}
-
-/// Drives a real-FSEvents-observed archive rewrite to a reliable refresh,
-/// defeating both the just-registered-watch arming window and FSEvents' habit of
-/// coalescing or dropping a lone event when the host is saturated (a full-suite
-/// run pins every core). `Debouncer::watch` returns before macOS finishes arming
-/// the stream, and a rewrite landing inside that window is dropped outright, not
-/// merely delayed — unrecoverable by waiting. So `rewrite` is redone each round
-/// until an event lands and the refresh puts `target` in the listing, all inside
-/// ONE 15 s budget (kept under the 20 s nextest cap so a merely-slow delivery
-/// still lands here instead of racing a SIGTERM). Mirrors
-/// `downloads::watcher::observe_mutation`; this is what lets both callers sit in
-/// the retries=0 self-healing nextest group.
-async fn drive_refresh_until(listing: &TestListingGuard, target: &str, mut rewrite: impl FnMut()) {
-    const BUDGET: Duration = Duration::from_secs(15);
-    // A live stream refreshes within the debounce (a few hundred ms) plus the async
-    // re-read, so re-rewrite on that cadence: a dropped event triggers another rewrite
-    // rather than burning the whole budget.
-    const ROUND: Duration = Duration::from_millis(750);
-
-    let description = format!("the live watch to refresh the listing to include `{target}` (FSEvents watch starved)");
-    let mut next_rewrite = Instant::now();
-    crate::test_support::wait_until_async(BUDGET, &description, || {
-        if Instant::now() >= next_rewrite {
-            rewrite();
-            next_rewrite = Instant::now() + ROUND;
-        }
-        listing.entry_names_or_empty().iter().any(|n| n == target)
-    })
-    .await;
 }
 
 /// Re-reading through the re-resolved `ArchiveVolume` picks up an entry added to
@@ -157,7 +119,9 @@ async fn refresh_reflects_a_new_entry_and_leaves_outside_listings_alone() {
     // Add a second entry to the zip, then refresh directly (deterministic; no
     // reliance on FSEvents timing).
     fixture.rewrite(&[stored("a.txt", b"a".to_vec()), stored("b.txt", b"bb".to_vec())]);
-    refresh_archive_listings(&volume_id, &fixture.zip_path).await;
+    AppListings
+        .refresh_archive_listings(&volume_id, &fixture.zip_path)
+        .await;
 
     let mut inner = inner_listing.entry_names();
     inner.sort();
@@ -200,7 +164,9 @@ async fn a_truncated_midwrite_archive_keeps_the_previous_listing() {
     // Simulate a writer mid-rewrite: a local header signature but no central
     // directory / EOCD yet — an unreadable archive.
     std::fs::write(&fixture.zip_path, b"PK\x03\x04half-written-no-central-directory").expect("truncate");
-    refresh_archive_listings(&volume_id, &fixture.zip_path).await;
+    AppListings
+        .refresh_archive_listings(&volume_id, &fixture.zip_path)
+        .await;
 
     let mut names = listing.entry_names();
     names.sort();
@@ -209,88 +175,6 @@ async fn a_truncated_midwrite_archive_keeps_the_previous_listing() {
         vec!["a.txt", "b.txt"],
         "an unreadable mid-write archive must keep the last good listing, not blank it"
     );
-
-    get_volume_manager().unregister(&volume_id);
-}
-
-/// End-to-end through the real notify machinery: an on-disk edit to the zip makes
-/// the live watch fire, which refreshes the open listing. Redoes the rewrite
-/// until the refresh lands (see `drive_refresh_until`), so it self-heals under a
-/// saturated suite instead of leaning on nextest retries.
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn a_live_watch_refreshes_the_listing_when_the_zip_changes_on_disk() {
-    let fixture = ArchiveFixture::new(&[stored("a.txt", b"a".to_vec())]);
-    let volume_id = format!("test-vol-{}", uuid::Uuid::new_v4());
-    get_volume_manager().register(
-        &volume_id,
-        Arc::new(InMemoryVolume::new("parent").with_local_fs_access()),
-    );
-
-    // Resolve registers the archive; without an app handle it doesn't auto-start
-    // the watch, so start it directly (see `start_watch_on`).
-    let resolved = get_volume_manager().resolve(&volume_id, &fixture.zip_path).await;
-    let archive = resolved.volume.expect("archive volume");
-    assert!(
-        !archive.listing_is_watched(&fixture.zip_path),
-        "resolve must not auto-start the watch without an app handle"
-    );
-    start_watch_on(&archive, &volume_id);
-    assert!(
-        archive.listing_is_watched(&fixture.zip_path),
-        "an archive with an established watch must report listing_is_watched"
-    );
-    assert!(
-        active_watch_count() >= 1,
-        "the live watch must count toward the active total"
-    );
-
-    let listing = seed_listing(
-        "archive-live-watch",
-        &volume_id,
-        &fixture.zip_path,
-        vec![stub_entry(&fixture.zip_path, "a.txt")],
-    );
-
-    // Edit the zip on disk (redone until an event lands); the parent-directory
-    // watch should notice and refresh the listing to include the new entry.
-    drive_refresh_until(&listing, "b.txt", || {
-        fixture.rewrite(&[stored("a.txt", b"a".to_vec()), stored("b.txt", b"bb".to_vec())]);
-    })
-    .await;
-
-    get_volume_manager().unregister(&volume_id);
-}
-
-/// The editor-style inode swap: rewriting the archive via a sibling temp file +
-/// atomic rename (a new inode) must still refresh the listing. A file-pinned
-/// watch would miss this; the parent-directory watch catches it.
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn a_temp_rename_swap_refreshes_the_listing() {
-    let fixture = ArchiveFixture::new(&[stored("a.txt", b"a".to_vec())]);
-    let volume_id = format!("test-vol-{}", uuid::Uuid::new_v4());
-    get_volume_manager().register(
-        &volume_id,
-        Arc::new(InMemoryVolume::new("parent").with_local_fs_access()),
-    );
-
-    let resolved = get_volume_manager().resolve(&volume_id, &fixture.zip_path).await;
-    let archive = resolved.volume.expect("archive volume");
-    start_watch_on(&archive, &volume_id);
-
-    let listing = seed_listing(
-        "archive-temp-rename",
-        &volume_id,
-        &fixture.zip_path,
-        vec![stub_entry(&fixture.zip_path, "a.txt")],
-    );
-
-    // Swap the archive's inode via temp+rename (the editor / safe-overwrite
-    // path), redone until an event lands; the parent-dir watch must catch the
-    // inode swap a file-pinned watch would miss and refresh the listing.
-    drive_refresh_until(&listing, "b.txt", || {
-        fixture.rewrite_via_temp_rename(&[stored("a.txt", b"a".to_vec()), stored("b.txt", b"bb".to_vec())]);
-    })
-    .await;
 
     get_volume_manager().unregister(&volume_id);
 }
@@ -308,6 +192,13 @@ async fn lru_eviction_releases_the_archive_and_its_watch() {
     let zip_a = base.path().join("a.zip");
     std::fs::write(&zip_a, build_zip(&[stored("x.txt", b"x".to_vec())])).expect("write a.zip");
     let a = manager.resolve("root", &zip_a).await.volume.expect("archive a");
+    // `resolve` registers the archive but gates the watch on a registered app
+    // handle, which a headless test has none of — so no real OS watch starts
+    // behind our back, and this test starts one itself.
+    assert!(
+        !a.listing_is_watched(&zip_a),
+        "resolve must not auto-start the watch without an app handle"
+    );
     start_watch_on(&a, "root");
     assert!(a.listing_is_watched(&zip_a), "A's watch must be live while registered");
     assert_eq!(Arc::strong_count(&a), 2, "the registry and the test each hold one Arc");

@@ -44,14 +44,14 @@ impl TestArchive {
     }
 
     fn volume_with_parent(&self, parent: Arc<dyn Volume>) -> ArchiveVolume {
-        ArchiveVolume::new(parent, self.path.clone(), ArchiveFormat::Zip)
+        ArchiveVolume::new(parent, self.path.clone(), ArchiveFormat::Zip, VolumeHost::detached())
     }
 
     /// A local-backed volume over the fixture bytes read as a 7z (the path
     /// extension is cosmetic; `ArchiveVolume` takes the format explicitly).
     fn sevenz_volume(&self) -> ArchiveVolume {
         let parent = Arc::new(InMemoryVolume::new("parent").with_local_fs_access());
-        ArchiveVolume::new(parent, self.path.clone(), ArchiveFormat::SevenZ)
+        ArchiveVolume::new(parent, self.path.clone(), ArchiveFormat::SevenZ, VolumeHost::detached())
     }
 }
 
@@ -608,7 +608,12 @@ async fn remote_archive(bytes: Vec<u8>) -> (Arc<InMemoryVolume>, ArchiveVolume) 
         .create_file(&archive_path, &bytes)
         .await
         .expect("load remote zip into parent store");
-    let volume = ArchiveVolume::new(Arc::clone(&parent) as Arc<dyn Volume>, archive_path, ArchiveFormat::Zip);
+    let volume = ArchiveVolume::new(
+        Arc::clone(&parent) as Arc<dyn Volume>,
+        archive_path,
+        ArchiveFormat::Zip,
+        VolumeHost::detached(),
+    );
     (parent, volume)
 }
 

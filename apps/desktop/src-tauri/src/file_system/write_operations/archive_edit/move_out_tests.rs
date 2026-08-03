@@ -82,6 +82,7 @@ impl Volume for FailingWriteVolume {
 fn archive_source_volume(archive_path: &Path) -> Arc<dyn Volume> {
     use crate::file_system::volume::InMemoryVolume;
     use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume};
+    use cmdr_fs::volume::host::VolumeHost;
     let parent: Arc<dyn Volume> = Arc::new(
         InMemoryVolume::new("parent")
             .with_local_fs_access()
@@ -91,6 +92,7 @@ fn archive_source_volume(archive_path: &Path) -> Arc<dyn Volume> {
         parent,
         archive_path.to_path_buf(),
         ArchiveFormat::Zip,
+        VolumeHost::detached(),
     ))
 }
 

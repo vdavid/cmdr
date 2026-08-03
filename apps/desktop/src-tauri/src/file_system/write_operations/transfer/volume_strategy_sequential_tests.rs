@@ -16,6 +16,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume, TarCodec};
 use crate::file_system::volume::{InMemoryVolume, Volume, VolumeError};
+use cmdr_fs::volume::host::VolumeHost;
 
 use super::super::super::state::OperationIntent;
 
@@ -105,6 +106,7 @@ impl TarGzFixture {
             parent,
             self.path.clone(),
             ArchiveFormat::Tar(TarCodec::Gzip),
+            VolumeHost::detached(),
         ))
     }
 
@@ -183,7 +185,12 @@ async fn compressed_tar_is_sequential_but_zip_is_random() {
 
     // A zip archive volume over the same-shaped path reports random-access.
     let zip_parent: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("p").with_local_fs_access());
-    let zip_vol = ArchiveVolume::new(zip_parent, PathBuf::from("/tmp/whatever.zip"), ArchiveFormat::Zip);
+    let zip_vol = ArchiveVolume::new(
+        zip_parent,
+        PathBuf::from("/tmp/whatever.zip"),
+        ArchiveFormat::Zip,
+        VolumeHost::detached(),
+    );
     assert!(
         !zip_vol.extraction_is_sequential(Path::new("/tmp/whatever.zip/d")),
         "a zip must keep the random-access per-entry path"

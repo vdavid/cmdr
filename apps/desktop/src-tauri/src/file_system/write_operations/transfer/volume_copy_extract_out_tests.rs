@@ -50,12 +50,18 @@ async fn read_dest_file(dest: &Arc<dyn Volume>, path: &str) -> Vec<u8> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn extract_out_copies_a_file_and_a_directory_subtree_out_of_a_zip() {
     use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume};
+    use cmdr_fs::volume::host::VolumeHost;
 
     let (_tmp, zip_path) = build_extract_out_fixture();
 
     // Source = the read-only ArchiveVolume over the zip; dest = in-memory.
     let parent: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Parent").with_local_fs_access());
-    let source: Arc<dyn Volume> = Arc::new(ArchiveVolume::new(parent, zip_path.clone(), ArchiveFormat::Zip));
+    let source: Arc<dyn Volume> = Arc::new(ArchiveVolume::new(
+        parent,
+        zip_path.clone(),
+        ArchiveFormat::Zip,
+        VolumeHost::detached(),
+    ));
     let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest").with_space_info(10_000_000, 10_000_000));
 
     let events = Arc::new(CollectorEventSink::new());
@@ -100,6 +106,7 @@ async fn extract_out_copies_a_file_and_a_directory_subtree_out_of_a_zip() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn extracting_a_symlink_entry_writes_a_regular_file_never_a_symlink() {
     use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume};
+    use cmdr_fs::volume::host::VolumeHost;
 
     // Pins that extraction never CREATES a symlink from archive data: a symlink
     // entry's content is its target path, and writing those bytes verbatim as a
@@ -119,7 +126,12 @@ async fn extracting_a_symlink_entry_writes_a_regular_file_never_a_symlink() {
     }
 
     let parent: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Parent").with_local_fs_access());
-    let source: Arc<dyn Volume> = Arc::new(ArchiveVolume::new(parent, zip_path.clone(), ArchiveFormat::Zip));
+    let source: Arc<dyn Volume> = Arc::new(ArchiveVolume::new(
+        parent,
+        zip_path.clone(),
+        ArchiveFormat::Zip,
+        VolumeHost::detached(),
+    ));
 
     // A real-filesystem destination so we can stat the landed entry's kind.
     let dst_dir = tempfile::tempdir().expect("dst tempdir");

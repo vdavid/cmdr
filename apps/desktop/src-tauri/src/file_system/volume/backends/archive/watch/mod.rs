@@ -20,8 +20,8 @@
 //! The [`ArchiveContentWatch`] handle lives in the `ArchiveVolume`. When the
 //! archive LRU evicts the volume (or the app tears down), the volume's `Arc`
 //! drops, this handle drops, and the `Debouncer`'s own `Drop` stops the OS watch.
-//! [`active_watch_count`] observes the live-handle count so tests can prove no
-//! watcher leaks past eviction.
+//! [`active_watch_count`] observes the live-handle count, so a test can see that
+//! a watch really did arm.
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -35,14 +35,16 @@ use notify_debouncer_full::{
 
 use super::ArchiveIndexCache;
 use cmdr_fs::firmlinks;
+use cmdr_fs::volume::host::VolumeHost;
 
 /// Debounce window for archive content events. Matches the listing watcher's
 /// default so a burst of writes during a rewrite collapses into one refresh.
 const ARCHIVE_WATCH_DEBOUNCE: Duration = Duration::from_millis(200);
 
 /// Count of live archive content watches. Incremented when a watch starts,
-/// decremented when its handle drops (eviction or teardown). Tests assert it
-/// returns to zero to prove eviction leaks no watchers.
+/// decremented when its handle drops (eviction or teardown). It's process-wide,
+/// so a test asserts presence rather than an exact total; that eviction leaks no
+/// watcher is proven from the registry's `Arc` count instead.
 static ACTIVE_ARCHIVE_WATCHES: AtomicUsize = AtomicUsize::new(0);
 
 /// Number of archive content watches currently live. For tests and diagnostics.
@@ -66,8 +68,8 @@ impl Drop for ArchiveContentWatch {
 
 /// Starts a content watch on `archive_path`'s parent directory, filtering events
 /// down to the archive file. On a matching change it drops the stale parsed index
-/// (`cache.clear()`, releasing the old `Arc`) and refreshes every open listing
-/// inside the zip through `refresh_archive_listings`.
+/// (`cache.clear()`, releasing the old `Arc`) and asks the host to refresh every
+/// open listing inside the zip.
 ///
 /// Returns `None` when the watch can't be established (no parent directory, or
 /// `notify` refuses the path) — the caller then leaves `listing_is_watched`
@@ -76,11 +78,13 @@ impl Drop for ArchiveContentWatch {
 /// `parent_volume_id` is the archive's PARENT DRIVE id (the id the listing cache
 /// keys on); the refresh re-resolves `(parent_volume_id, inner_path)` back to this
 /// archive. `cache` is the volume's own `ArchiveIndexCache`, shared so the
-/// callback can invalidate it.
+/// callback can invalidate it. `host` supplies both the runtime the callback
+/// spawns onto and the listing seam the refresh goes through.
 pub fn start_watch(
     archive_path: PathBuf,
     parent_volume_id: String,
     cache: Arc<ArchiveIndexCache>,
+    host: VolumeHost,
 ) -> Option<ArchiveContentWatch> {
     let watch_dir = archive_path.parent()?.to_path_buf();
 
@@ -103,12 +107,16 @@ pub fn start_watch(
         cache.clear();
 
         // The debouncer callback runs on notify-rs's own thread, which has no
-        // Tokio runtime — `tokio::spawn` would panic. `tauri::async_runtime`
+        // Tokio runtime — `tokio::spawn` would panic there. `host.runtime()`
+        // RESOLVES the app's runtime instead of inheriting an ambient one, so it
         // works from any thread (same rule as `file_system::watcher`).
         let volume_id = parent_volume_id.clone();
         let archive_path = archive_path.clone();
-        tauri::async_runtime::spawn(async move {
-            crate::file_system::listing::caching::refresh_archive_listings(&volume_id, &archive_path).await;
+        let host = host.clone();
+        host.runtime().spawn(async move {
+            host.listings()
+                .refresh_archive_listings(&volume_id, &archive_path)
+                .await;
         });
     })
     .map_err(|e| log::warn!("archive watch: failed to create debouncer: {e}"))
@@ -140,7 +148,7 @@ fn event_path_targets_archive(event_path: &Path, archive_path: &Path) -> bool {
 }
 
 #[cfg(test)]
-mod watch_integration_test;
+mod host_seam_test;
 
 #[cfg(test)]
 mod tests {

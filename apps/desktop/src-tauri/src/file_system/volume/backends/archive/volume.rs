@@ -50,6 +50,7 @@ use crate::file_system::volume::{
     VolumeError, VolumeReadStream,
 };
 use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::volume::host::VolumeHost;
 
 /// A read-only [`Volume`] that presents a zip archive as a browsable folder.
 pub struct ArchiveVolume {
@@ -83,16 +84,24 @@ pub struct ArchiveVolume {
     /// password never persists: `set_password` overwrites, and a detected wrong
     /// attempt clears it (see [`clear_password_if_wrong`](Self::clear_password_if_wrong)).
     password: Mutex<Option<Zeroizing<String>>>,
+    /// Everything this backend needs from the app around it. Only the content
+    /// watch uses it today (the runtime it spawns on, and the listing seam its
+    /// refresh goes through), but it's a constructor argument rather than a
+    /// `start_content_watch` one because that's the shape every backend takes:
+    /// the host is a value the app hands down, never a static a backend reaches.
+    host: VolumeHost,
 }
 
 impl ArchiveVolume {
     /// Builds a read-only archive volume over `archive_path` (a `format` archive),
-    /// backed by `parent`.
+    /// backed by `parent`, asking `host` for whatever it can't answer itself.
     ///
     /// Cheap and infallible: the directory is parsed lazily on first use (and
     /// cached). The routing layer confirms the file is a real, supported archive
-    /// (extension + magic) and picks the `format` before constructing one.
-    pub fn new(parent: Arc<dyn Volume>, archive_path: PathBuf, format: ArchiveFormat) -> Self {
+    /// (extension + magic) and picks the `format` before constructing one. A
+    /// caller that only reads bytes (a test, a bench, a tool) passes
+    /// [`VolumeHost::detached`], which answers everything with a no-op.
+    pub fn new(parent: Arc<dyn Volume>, archive_path: PathBuf, format: ArchiveFormat, host: VolumeHost) -> Self {
         let name = archive_path
             .file_name()
             .map(|s| s.to_string_lossy().into_owned())
@@ -105,6 +114,7 @@ impl ArchiveVolume {
             cache: Arc::new(ArchiveIndexCache::new()),
             watch: Mutex::new(None),
             password: Mutex::new(None),
+            host,
         }
     }
 
@@ -132,13 +142,11 @@ impl ArchiveVolume {
     /// (an editor rewriting it, a `cp` over it, a future in-app mutation's final
     /// rename) refreshes any open listing inside the zip.
     ///
-    /// Called once by the routing layer ([`VolumeManager::resolve`]) when this
-    /// volume first registers, so repeated resolves of an already-registered
-    /// archive don't churn watchers; a no-op if a watch is already live.
-    /// `parent_volume_id` is the drive id the listing cache keys on, threaded
-    /// through so the refresh re-resolves back to this archive.
-    ///
-    /// [`VolumeManager::resolve`]: crate::file_system::volume::VolumeManager::resolve
+    /// Called once by the app's archive routing layer (`VolumeManager::resolve`)
+    /// when this volume first registers, so repeated resolves of an
+    /// already-registered archive don't churn watchers; a no-op if a watch is
+    /// already live. `parent_volume_id` is the drive id the listing cache keys
+    /// on, threaded through so the refresh re-resolves back to this archive.
     pub fn start_content_watch(&self, parent_volume_id: &str) {
         let mut watch = self.watch.lock_ignore_poison();
         if watch.is_some() {
@@ -148,6 +156,7 @@ impl ArchiveVolume {
             self.archive_path.clone(),
             parent_volume_id.to_string(),
             Arc::clone(&self.cache),
+            self.host.clone(),
         );
     }
 

@@ -31,6 +31,7 @@ use super::*;
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_archive_browse_and_extract_via_read_range() {
     use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume};
+    use cmdr_fs::volume::host::VolumeHost;
     use std::io::Write as _;
 
     async fn drain_archive(archive: &ArchiveVolume, inner: &str) -> Vec<u8> {
@@ -69,6 +70,7 @@ async fn smb_integration_archive_browse_and_extract_via_read_range() {
         Arc::clone(&vol) as Arc<dyn Volume>,
         zip_path.clone(),
         ArchiveFormat::Zip,
+        VolumeHost::detached(),
     );
 
     // Browse: root shows the synthetic `dir` first, then the file.
@@ -160,6 +162,7 @@ fn two_entry_zip() -> Vec<u8> {
 async fn smb_integration_archive_routing_detection_and_extract_out() {
     use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume};
     use crate::file_system::volume::manager::get_volume_manager;
+    use cmdr_fs::volume::host::VolumeHost;
     use std::io::Write as _;
 
     let vol = Arc::new(make_docker_volume().await);
@@ -190,6 +193,7 @@ async fn smb_integration_archive_routing_detection_and_extract_out() {
         Arc::clone(&vol) as Arc<dyn Volume>,
         zip_path.clone(),
         ArchiveFormat::Zip,
+        VolumeHost::detached(),
     );
     let local_dir = tempfile::tempdir().unwrap();
     let out_path = local_dir.path().join("drop.txt");

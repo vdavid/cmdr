@@ -73,16 +73,6 @@ pub fn install(app: &AppHandle) {
 /// `VolumeHost::detached()`: every seam answers with a no-op, which is a complete
 /// host and not a stub. That's deliberate, so no construction path needs an
 /// `Option<VolumeHost>` or a "the app isn't up yet" branch.
-// `expect` rather than `allow` so this disappears on its own the day a backend
-// constructor takes a host; `not(test)` because the test below is already a
-// caller, and an expectation is judged per target.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the constructor of the first backend to live in its own crate is what calls this; until then the seams are installed but nothing asks"
-    )
-)]
 pub fn host() -> VolumeHost {
     HOST.get().cloned().unwrap_or_else(VolumeHost::detached)
 }

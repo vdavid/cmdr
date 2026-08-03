@@ -48,7 +48,11 @@ pub(crate) use super::{
     SpaceInfo, Volume, VolumeError, VolumeReadStream,
 };
 
+// The app's half of the archive live-content watch: what a refresh DOES to the
+// listing cache. The backend's half (an on-disk edit reaching the refresh seam
+// at all) lives with the watch itself, in `archive/watch/host_seam_test.rs`.
 #[cfg(test)]
+mod archive_watch_integration_test;
 #[cfg(test)]
 mod local_posix_test;
 // `mtp_test` is gated on the same platforms as the `mtp` module it tests (the

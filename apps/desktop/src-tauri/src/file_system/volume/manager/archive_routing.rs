@@ -188,7 +188,7 @@ impl VolumeManager {
         // boundary always carries a supported extension, so `format_for_path`
         // yields `Some`; the `Zip` fallback only guards a future path shape.
         let format = format_for_path(&zip_path).unwrap_or(ArchiveFormat::Zip);
-        let archive = Arc::new(ArchiveVolume::new(parent, zip_path, format));
+        let archive = Arc::new(ArchiveVolume::new(parent, zip_path, format, crate::volume_host::host()));
         // Only the resolve that actually registered starts the content watch, so
         // repeated resolves of an already-registered archive don't churn notify
         // watchers. The watch lives on the registered `ArchiveVolume` and stops
