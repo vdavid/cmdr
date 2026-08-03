@@ -104,9 +104,9 @@ the production notifier past the scheduler.
 
 **Why `broadcast` and not `watch`.** A `watch` is last-value-wins, which is correct for an idempotent generation counter
 and catastrophic for a delta: two passes landing between one consumer read silently drops the earlier delta, the map
-drifts from the store, and nothing detects it until the next full pass. `broadcast` buffers `NOTICE_BUFFER` (16)
-notices and reports the overflow, so a consumer can't miss a delta without being told. ❌ Never go back to `watch`
-semantics for this payload, and ❌ never treat `Lagged` as "nothing happened".
+drifts from the store, and nothing detects it until the next full pass. `broadcast` buffers `NOTICE_BUFFER` (16) notices
+and reports the overflow, so a consumer can't miss a delta without being told. ❌ Never go back to `watch` semantics for
+this payload, and ❌ never treat `Lagged` as "nothing happened".
 
 The trade is that there's no retained value: a receiver sees only passes completing after it subscribes. Consumers
 therefore subscribe BEFORE their first load, so a pass finishing during that load can't slip through the gap
@@ -114,9 +114,9 @@ therefore subscribe BEFORE their first load, so a pass finishing during that loa
 
 ### What the delta describes
 
-A delta is defined against the NON-ZERO weight set `for_each_nonzero_weight` streams, not against the raw table.
-Two normalizations, both in the writer's `weight_delta` (which fills the crate-internal `WeightDelta` the scheduler
-turns into the notice):
+A delta is defined against the NON-ZERO weight set `for_each_nonzero_weight` streams, not against the raw table. Two
+normalizations, both in the writer's `weight_delta` (which fills the crate-internal `WeightDelta` the scheduler turns
+into the notice):
 
 - A row rescored to `0.0` is a REMOVAL. The store keeps such a row (it isn't floored) but the stream skips it, and an
   absent key already reads `0.0`, so reporting it as a removal is what keeps a patched map equal to a rebuilt one.
@@ -125,9 +125,9 @@ turns into the notice):
   twice.
 
 **The removed paths can only come from the writer.** `write_weights_incremental` takes subtree ROOTS, and the search
-ranker's map is keyed by a path HASH — hashes carry no prefix structure, so a consumer cannot expand a cleared root
-into the keys to drop. The subtree-clear DELETE therefore carries `RETURNING path` (`writer.rs`'s `SUBTREE_CLEAR_SQL`)
-and hands the actual rows back. ❌ Don't drop the `RETURNING` clause or reconstruct the removals consumer-side.
+ranker's map is keyed by a path HASH — hashes carry no prefix structure, so a consumer cannot expand a cleared root into
+the keys to drop. The subtree-clear DELETE therefore carries `RETURNING path` (`writer.rs`'s `SUBTREE_CLEAR_SQL`) and
+hands the actual rows back. ❌ Don't drop the `RETURNING` clause or reconstruct the removals consumer-side.
 
 Past `MAX_DELTA_ROWS` (10,000 on either side) the pass stops describing itself and sends `ReloadAll` instead: shipping
 that many paths approaches the cost of streaming the table back, and the notice buffer would hold that much per pass.

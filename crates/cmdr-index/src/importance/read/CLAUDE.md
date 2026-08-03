@@ -21,11 +21,11 @@ else.
   allocates nothing. Floored folders are omitted, so a consumer must treat "absent" as `0.0`.
 - **Staleness is first-class, never hidden.** Every result carries `as_of_generation`; the CALLER compares it to
   `recompute_generation()` and caveats. ❌ Don't filter stale rows out or fail on them.
-- **Consumers subscribe, they don't poll**: `subscribe(volume_id)` is a `broadcast<WeightsChanged>`, fired once per
-  pass by the scheduler. A FULL pass says `ReloadAll` (❌ never a delta — that's 161k `String`s); an incremental ships a
-  `Delta` (`upserted` + `removed`) to patch with. **A `RecvError::Lagged` MUST trigger a full reload**: it's the only thing standing
-  between a missed delta and a weight map that silently disagrees with the store until the next full pass. ❌ Don't go
-  back to `watch` (last-value-wins drops deltas), and ❌ don't ignore a lag.
+- **Consumers subscribe, they don't poll**: `subscribe(volume_id)` is a `broadcast<WeightsChanged>`, fired once per pass
+  by the scheduler. A FULL pass says `ReloadAll` (❌ never a delta — that's 161k `String`s); an incremental ships a
+  `Delta` (`upserted` + `removed`) to patch with. **A `RecvError::Lagged` MUST trigger a full reload**: it's the only
+  thing standing between a missed delta and a weight map that silently disagrees with the store until the next full
+  pass. ❌ Don't go back to `watch` (last-value-wins drops deltas), and ❌ don't ignore a lag.
 - **The delta describes the NON-ZERO set, so a patch equals a rebuild.** A row rescored to `0.0` reports as a REMOVAL,
   and a cleared-then-rewritten path nets to its upsert. Removals come from the writer's `RETURNING path` because a
   hash-keyed consumer can't expand a cleared subtree root itself.
