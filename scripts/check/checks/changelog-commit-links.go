@@ -13,18 +13,23 @@ import (
 	"strings"
 )
 
-// changelogCommitURLPattern matches valid commit URLs with a 6–40 char hex SHA.
-// Group 1 captures the SHA.
-var changelogCommitURLPattern = regexp.MustCompile(`https://github\.com/vdavid/cmdr/commit/([0-9a-f]{6,40})`)
+// changelogTrailingRefsPattern matches a bullet entry's trailing `(hash, hash, …)`
+// group, the only place the changelog carries commit references. Group 1 captures
+// the comma-separated hashes. It runs against a logical entry (wrapped source lines
+// already joined), so `$` really is the end of the entry.
+//
+// Anchoring to the end is what keeps ordinary prose safe: plenty of entries close on
+// a parenthetical like `(~40x speed-up!)` or `(smb2 0.8.0)`, and a hex-looking word
+// mid-sentence is never even considered.
+var changelogTrailingRefsPattern = regexp.MustCompile(`\(([0-9a-f]{6,40}(?:,\s*[0-9a-f]{6,40})*)\)$`)
 
-// changelogAnyCommitURLPattern matches any commit URL with a hex-looking SHA,
-// so we can also surface URLs whose SHA is shorter than 6 or longer than 40.
-var changelogAnyCommitURLPattern = regexp.MustCompile(`https://github\.com/vdavid/cmdr/commit/([0-9a-f]+)`)
+// changelogCommitURLPattern matches the deprecated `…/commit/<sha>` URL form in any
+// shape (bare, or wrapped in a markdown link). The changelog stores bare hashes and
+// lets the renderers linkify them, so any URL here is a regression to catch.
+var changelogCommitURLPattern = regexp.MustCompile(`https://github\.com/vdavid/cmdr/commit/`)
 
-// changelogPairedLinkPattern matches `[hash](https://github.com/vdavid/cmdr/commit/hash2)`.
-// Group 1: the bracketed text (expected to be a hex SHA prefix-compatible with group 2).
-// Group 2: the SHA in the URL.
-var changelogPairedLinkPattern = regexp.MustCompile(`\[([0-9a-fA-F]+)\]\(https://github\.com/vdavid/cmdr/commit/([0-9a-f]+)\)`)
+// changelogBulletMarkers are the list markers that open a logical entry at column zero.
+var changelogBulletMarkers = []string{"- ", "* ", "+ "}
 
 // changelogCommitLinkFinding records a problem with a specific line.
 type changelogCommitLinkFinding struct {
@@ -32,17 +37,17 @@ type changelogCommitLinkFinding struct {
 	message string
 }
 
-// changelogScanResult holds what the line-by-line scan collected.
+// changelogScanResult holds what the scan collected.
 type changelogScanResult struct {
 	findings   []changelogCommitLinkFinding
 	uniqueSHAs map[string]int // sha -> first line seen
-	totalLinks int            // count of all (non-unique) commit URLs
+	totalRefs int            // count of all (non-unique) commit refs
 }
 
-// RunChangelogCommitLinks validates that every GitHub commit URL referenced in
-// CHANGELOG.md resolves to a real commit in the repo, and that any `[sha](url)`
-// pair has matching SHAs. If CHANGELOG.md is missing, the check succeeds with
-// 0 SHAs validated; no CHANGELOG means no risk of bad links.
+// RunChangelogCommitLinks validates that every commit hash referenced in
+// CHANGELOG.md resolves to a real commit reachable from HEAD, and that nobody has
+// reintroduced the deprecated `[sha](url)` link form. If CHANGELOG.md is missing,
+// the check succeeds with 0 SHAs validated; no CHANGELOG means no risk of bad refs.
 func RunChangelogCommitLinks(ctx *CheckContext) (CheckResult, error) {
 	path := filepath.Join(ctx.RootDir, "CHANGELOG.md")
 	file, err := os.Open(path)
@@ -102,18 +107,25 @@ func RunChangelogCommitLinks(ctx *CheckContext) (CheckResult, error) {
 
 	count := len(shas)
 	if count == 0 {
-		return Success("No commit links to validate"), nil
+		return Success("No commit refs to validate"), nil
 	}
 	result := Success(fmt.Sprintf("%d unique %s resolved (%d %s)",
 		count, Pluralize(count, "SHA", "SHAs"),
-		scan.totalLinks, Pluralize(scan.totalLinks, "link", "links")))
+		scan.totalRefs, Pluralize(scan.totalRefs, "reference", "references")))
 	result.Total = count
 	return result, nil
 }
 
-// scanChangelogForCommitLinks walks the file line by line, collecting unique
-// URL SHAs and flagging per-line structural issues (short/long SHAs, text/URL
-// mismatches).
+// changelogSourceLine is one physical line of the file, kept with its 1-based
+// number so a finding can cite where a hash actually sits.
+type changelogSourceLine struct {
+	num  int
+	text string
+}
+
+// scanChangelogForCommitLinks reads the file, rebuilds each bullet entry from its
+// wrapped source lines, and collects the hashes in each entry's trailing ref group.
+// It also flags any leftover commit URL, the deprecated form.
 func scanChangelogForCommitLinks(r io.Reader) (changelogScanResult, error) {
 	var result changelogScanResult
 	result.uniqueSHAs = make(map[string]int)
@@ -121,57 +133,89 @@ func scanChangelogForCommitLinks(r io.Reader) (changelogScanResult, error) {
 	scanner := bufio.NewScanner(r)
 	scanner.Buffer(make([]byte, 1024*1024), 1024*1024)
 	lineNum := 0
+	var entry []changelogSourceLine
 	for scanner.Scan() {
 		lineNum++
 		line := scanner.Text()
-		result.findings = append(result.findings, scanLineForLinkIssues(line, lineNum)...)
-		for _, m := range changelogCommitURLPattern.FindAllStringSubmatch(line, -1) {
-			sha := strings.ToLower(m[1])
-			result.totalLinks++
-			if _, exists := result.uniqueSHAs[sha]; !exists {
-				result.uniqueSHAs[sha] = lineNum
-			}
+
+		if changelogCommitURLPattern.MatchString(line) {
+			result.findings = append(result.findings, changelogCommitLinkFinding{
+				line:    lineNum,
+				message: "commit URL found; write the bare hash instead and let the renderers link it",
+			})
+		}
+
+		switch {
+		case startsChangelogEntry(line):
+			result.collectEntryRefs(entry)
+			entry = []changelogSourceLine{{num: lineNum, text: line}}
+		case len(entry) > 0 && isChangelogContinuation(line):
+			entry = append(entry, changelogSourceLine{num: lineNum, text: line})
+		default:
+			result.collectEntryRefs(entry)
+			entry = nil
 		}
 	}
+	result.collectEntryRefs(entry)
+
 	if err := scanner.Err(); err != nil {
 		return result, fmt.Errorf("failed to read CHANGELOG.md: %w", err)
 	}
 	return result, nil
 }
 
-// scanLineForLinkIssues checks a single line for text/URL mismatches and SHA
-// length violations. It does NOT resolve SHAs against the repo.
-func scanLineForLinkIssues(line string, lineNum int) []changelogCommitLinkFinding {
-	var findings []changelogCommitLinkFinding
-
-	// Paired `[hash](url)`: flag mismatches where neither is a prefix of the other.
-	for _, m := range changelogPairedLinkPattern.FindAllStringSubmatch(line, -1) {
-		textSHA := strings.ToLower(m[1])
-		urlSHA := strings.ToLower(m[2])
-		if textSHA != urlSHA && !strings.HasPrefix(textSHA, urlSHA) && !strings.HasPrefix(urlSHA, textSHA) {
-			findings = append(findings, changelogCommitLinkFinding{
-				line:    lineNum,
-				message: fmt.Sprintf("text/URL SHA mismatch: [%s] vs /commit/%s", m[1], m[2]),
-			})
+// startsChangelogEntry reports whether the line opens a bullet entry: a list marker
+// at column zero. An indented marker is a nested bullet, part of the entry above it.
+func startsChangelogEntry(line string) bool {
+	for _, marker := range changelogBulletMarkers {
+		if strings.HasPrefix(line, marker) {
+			return true
 		}
 	}
+	return false
+}
 
-	// Any URL: flag SHAs below 6 or above 40 chars.
-	for _, m := range changelogAnyCommitURLPattern.FindAllStringSubmatch(line, -1) {
-		sha := strings.ToLower(m[1])
-		if len(sha) < 6 {
-			findings = append(findings, changelogCommitLinkFinding{
-				line:    lineNum,
-				message: fmt.Sprintf("SHA too short (%d chars, need ≥6): %s", len(sha), sha),
-			})
-		} else if len(sha) > 40 {
-			findings = append(findings, changelogCommitLinkFinding{
-				line:    lineNum,
-				message: fmt.Sprintf("SHA too long (%d chars, max 40): %s", len(sha), sha),
-			})
+// isChangelogContinuation reports whether the line is a wrapped continuation of the
+// entry above it: indented and non-blank.
+func isChangelogContinuation(line string) bool {
+	return strings.TrimSpace(line) != "" && (strings.HasPrefix(line, " ") || strings.HasPrefix(line, "\t"))
+}
+
+// collectEntryRefs joins an entry's source lines, pulls the hashes out of its
+// trailing ref group (if it has one), and records each with the line it sits on.
+func (result *changelogScanResult) collectEntryRefs(entry []changelogSourceLine) {
+	if len(entry) == 0 {
+		return
+	}
+	parts := make([]string, 0, len(entry))
+	for _, line := range entry {
+		parts = append(parts, strings.TrimSpace(line.text))
+	}
+	joined := strings.TrimSpace(strings.Join(parts, " "))
+
+	match := changelogTrailingRefsPattern.FindStringSubmatch(joined)
+	if match == nil {
+		return
+	}
+	for _, sha := range strings.Split(match[1], ",") {
+		sha = strings.TrimSpace(sha)
+		result.totalRefs++
+		if _, exists := result.uniqueSHAs[sha]; !exists {
+			result.uniqueSHAs[sha] = lineOfSHA(entry, sha)
 		}
 	}
-	return findings
+}
+
+// lineOfSHA returns the number of the line a hash sits on. The ref group trails the
+// entry, so the search runs backwards; it falls back to the entry's first line if
+// the hash somehow isn't found verbatim.
+func lineOfSHA(entry []changelogSourceLine, sha string) int {
+	for i := len(entry) - 1; i >= 0; i-- {
+		if strings.Contains(entry[i].text, sha) {
+			return entry[i].num
+		}
+	}
+	return entry[0].num
 }
 
 // formatFindingsError builds the aggregated error message listing every finding,
@@ -187,7 +231,7 @@ func formatFindingsError(findings []changelogCommitLinkFinding) error {
 	for _, f := range findings {
 		sb.WriteString(fmt.Sprintf("  CHANGELOG.md:%d %s\n", f.line, f.message))
 	}
-	return fmt.Errorf("found %d %s in CHANGELOG.md commit links:\n%s",
+	return fmt.Errorf("found %d %s in CHANGELOG.md commit refs:\n%s",
 		len(findings), Pluralize(len(findings), "issue", "issues"),
 		strings.TrimRight(sb.String(), "\n"))
 }

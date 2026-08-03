@@ -23,8 +23,8 @@ recipe for adding one is § "Adding a new check". Only the layout rules live her
 - **Not every scanner is a registry check.** `e2e-durations.go` is embedded in the two E2E checks (§ "E2E test duration
   flagger" has the why), and `docs_graph.go` is a shared library behind both `docs-reachable` and the `--docs-graph`
   renderer in `../docs_graph_render.go`. Neither appears in `AllChecks`.
-- **`changelog-commit-links.go` resolves every `…/commit/<sha>` URL in `CHANGELOG.md` through ONE
-  `git cat-file --batch-check` process**, not a process per link.
+- **`changelog-commit-links.go` resolves every commit hash in `CHANGELOG.md` through ONE `git cat-file --batch-check`
+  process**, not a process per reference. The recognition rule is § "CHANGELOG commit refs" below.
 
 ## Check definition shape
 
@@ -235,6 +235,37 @@ are skipped. A target is tried both relative to the linking doc's directory (sta
 a `../`-heavy path that escapes the repo root is treated as unverifiable and skipped rather than flagged. No allowlist:
 a dead link is always a fix (correct the path or drop the link), never an exemption. Reuses `findMarkdownDocs` and the
 link regex from `docs_graph.go`.
+
+## CHANGELOG commit refs
+
+`changelog-commit-links` (`IsFast`, nickname `changelog-links`) is the canonical owner of how `CHANGELOG.md` carries
+commit references. Everything below is the shared contract; the two renderers (the app's What's new parser in
+`apps/desktop/src-tauri/src/whats_new/`, and the website's linkifier in `apps/website/src/lib/changelog.ts`) implement
+the same rule and point here.
+
+**The form is a bare trailing group**: `- Some change (b626d7a4, 2d41cc14)`. The changelog stores hashes, never markdown
+links, and each renderer linkifies (website) or strips (What's new popup) on the way out. The third consumer, the GitHub
+release body that `release.yml` seds out of the section, leans on GitHub's own autolinking of a bare same-repo SHA
+(documented behavior, not yet observed on a real Cmdr release: confirm on the first release after 2026-08-03). Dropping
+the URLs cut the file by ~43% (206 KB to 117 KB); it was ~40% URL boilerplate, which every agent reading the file paid
+for and which wrapped entries across three or four lines. The check **fails on any `…/commit/<sha>` URL** so the linked
+form can't creep back.
+
+**Recognition is structural, not positional-guess:** rebuild each bullet entry from its wrapped source lines, then
+require that the entry ENDS with a parenthetical whose every comma-separated item is 6-40 lowercase hex chars. Anchoring
+to the end of the entry is what keeps prose safe: entries routinely close on `(~40x speed-up!)`, `(smb2 0.8.0)`, or
+`(photo.JPG to photo.jpg)`, and a hex-looking word mid-sentence is never even considered.
+
+**Why the floor is 6 and not lower:** the oldest entries abbreviate to 6, so 6 has to be legal, and it's also where the
+false-positive risk turns real. Plenty of short English words are hex-only ("added", "faced", "beaded"), so a 5-char
+group is read as prose and ignored rather than flagged. The trade: a genuine 5-char hash silently escapes validation.
+That's the right side to err on, and the release flow produces 8 anyway. A 6-char hex WORD in a trailing parenthetical
+("decade") would be read as a hash and fail to resolve, which is loud and one rephrase away from fixed.
+
+Each unique SHA is then resolved through one `git cat-file --batch-check` process and required to be **reachable from
+HEAD**, not merely present in the object DB: an abbreviated SHA of a rebased-away commit still resolves locally via the
+reflog, but CI's clean clone has no reflog and would fail there instead. Findings cite the line the hash actually sits
+on, which for a wrapped group is a continuation line, not the entry's first.
 
 ## CLAUDE.md / DETAILS.md sibling
 
