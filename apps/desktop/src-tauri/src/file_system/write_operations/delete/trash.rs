@@ -395,6 +395,8 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
 #[cfg(test)]
 mod tests {
     use super::*;
+    // Only the macOS-gated cases below build a real directory.
+    #[cfg(target_os = "macos")]
     use crate::test_support::TestDir;
     use std::sync::Arc;
     use std::time::Duration;

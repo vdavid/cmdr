@@ -72,6 +72,8 @@ pub fn has_custom_folder_icon(path: &Path) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    // Only the macOS-gated cases below build a real directory.
+    #[cfg(target_os = "macos")]
     use crate::test_support::TestDir;
 
     #[test]
