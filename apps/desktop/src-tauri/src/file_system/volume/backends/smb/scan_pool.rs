@@ -297,7 +297,7 @@ impl ScanPool {
                     return;
                 }
                 Err(e) if crate::network::smb_util::is_auth_error(&e) => {
-                    // The main session owns the credential-refresh / needs_auth
+                    // The main session owns the credential-refresh / needs_credentials
                     // flow. A pool member is an accelerator: give up quietly and let
                     // listings fall back to the main session.
                     log::debug!(

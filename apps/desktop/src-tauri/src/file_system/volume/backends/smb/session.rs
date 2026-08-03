@@ -6,6 +6,7 @@ use super::events::emit_state_change;
 use super::mapping::map_smb_error;
 use super::state::ConnectionState;
 use super::{SmbConnectionParams, SmbVolume, VolumeError};
+use crate::network::VolumeConnection;
 use log::{debug, warn};
 use smb2::client::tree::Tree;
 use smb2::{ClientConfig, SmbClient};
@@ -220,7 +221,7 @@ pub(super) async fn refresh_credentials_from_store(params: &SmbConnectionParams)
 }
 
 /// If an smb2 error indicates the session is dead, transition state to
-/// `Disconnected` and emit `smb-connection-changed`. Mirrors `handle_smb_result`
+/// `Disconnected` and emit `volume-connection-changed`. Mirrors `handle_smb_result`
 /// for contexts without `&self` (the streaming-read producer task).
 ///
 /// `superseded` is the volume's flag: a retired instance still tracks its own
@@ -233,7 +234,7 @@ pub(super) fn update_state_on_smb_error(state: &AtomicU8, superseded: &AtomicBoo
     ) {
         let prev = state.swap(ConnectionState::Disconnected as u8, Ordering::Relaxed);
         if prev != ConnectionState::Disconnected as u8 && !superseded.load(Ordering::Relaxed) {
-            emit_state_change(volume_id, "disconnected");
+            emit_state_change(volume_id, ConnectionState::Disconnected.into());
         }
     }
 }

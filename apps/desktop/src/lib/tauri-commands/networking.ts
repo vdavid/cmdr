@@ -2,13 +2,7 @@
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
 import { commands, events } from '$lib/ipc/bindings'
-import type {
-  MountResult,
-  NetworkHostContextAction,
-  SmbConnectionChanged,
-  SmbCredentials,
-  UpgradeResult,
-} from '$lib/ipc/bindings'
+import type { MountResult, NetworkHostContextAction, SmbCredentials, UpgradeResult } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 import type {
   AuthOptions,
@@ -104,16 +98,6 @@ export function onNetworkHostResolved(handler: (host: NetworkHost) => void): Pro
 export function onNetworkDiscoveryStateChanged(handler: (state: DiscoveryState) => void): Promise<UnlistenFn> {
   return events.networkDiscoveryStateChanged.listen((event) => {
     handler(event.payload.state)
-  })
-}
-
-/**
- * Fires when a direct-SMB volume's session flips Direct / Disconnected / needs-auth.
- * `state` is a free-form string on the wire; callers narrow it to their own union.
- */
-export function onSmbConnectionChanged(handler: (payload: SmbConnectionChanged) => void): Promise<UnlistenFn> {
-  return events.smbConnectionChanged.listen((event) => {
-    handler(event.payload)
   })
 }
 
@@ -422,7 +406,7 @@ export async function reconnectSmbVolume(volumeId: string): Promise<void> {
  * Reconnects an SMB volume with freshly-entered credentials. Used by the "Sign in"
  * affordance shown when an in-place reconnect gave up on an auth failure (the saved
  * password went stale). The backend persists the new password and reconnects; on
- * success a `smb-connection-changed { state: "direct" }` event follows.
+ * success a `volume-connection-changed { state: "connected" }` event follows.
  *
  * Resolves on success; throws on failure with an `IpcError`-shaped exception.
  */

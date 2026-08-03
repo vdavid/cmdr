@@ -6,6 +6,7 @@ use super::mapping::map_smb_error;
 use super::session::{build_session, refresh_credentials_from_store};
 use super::state::ConnectionState;
 use super::{SmbConnectionParams, SmbVolume, Volume, VolumeError};
+use crate::network::VolumeConnection;
 use log::{debug, info, warn};
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -77,7 +78,7 @@ impl SmbVolume {
     /// - On auth failure, re-pulls credentials from the secret store (in case the user updated
     ///   them) and retries once before giving up.
     /// - On success: stores the new client + tree, restarts the watcher, emits
-    ///   `smb-connection-changed { state: "direct" }`.
+    ///   `volume-connection-changed { state: "connected" }`.
     /// - On failure: state stays `Disconnected`; the FE backoff cycle decides whether to retry.
     pub(super) async fn do_attempt_reconnect(&self) -> Result<(), VolumeError> {
         // Bail early if `on_unmount` already ran. Doing this before taking the
@@ -146,7 +147,7 @@ impl SmbVolume {
                                 // The password on the server changed and what we have
                                 // saved no longer works. Tell the FE so it shows a
                                 // "Sign in" prompt instead of the generic "unreachable".
-                                self.emit_state_change_for_id("needs_auth");
+                                self.emit_state_change_for_id(VolumeConnection::NeedsCredentials);
                                 return Err(map_smb_error(e2));
                             }
                         }
@@ -157,7 +158,7 @@ impl SmbVolume {
                             "SmbVolume::attempt_reconnect(share={}): no fresh credentials available; giving up on this attempt",
                             self.share_name
                         );
-                        self.emit_state_change_for_id("needs_auth");
+                        self.emit_state_change_for_id(VolumeConnection::NeedsCredentials);
                         return Err(map_smb_error(err));
                     }
                 }
@@ -220,10 +221,10 @@ impl SmbVolume {
     }
 
     /// Reconnect with freshly-entered credentials (the "Sign in" affordance after a
-    /// `needs_auth` give-up). Persists the new password server-level — mirroring how the
+    /// `needs_credentials` give-up). Persists the new password server-level — mirroring how the
     /// login form saves, so the NEXT reconnect finds it silently — updates the in-memory
     /// params, then runs the standard reconnect. If these credentials are also wrong,
-    /// `do_attempt_reconnect` re-emits `needs_auth`, so a bad retry re-prompts rather than
+    /// `do_attempt_reconnect` re-emits `needs_credentials`, so a bad retry re-prompts rather than
     /// dead-ending.
     pub(super) async fn do_reconnect_with_credentials(
         &self,
@@ -265,7 +266,7 @@ const WATCHER_DEATH_RECONNECT_BACKOFF: [Duration; 6] = [
 
 /// Whether a failed reconnect attempt is terminal for the backoff loop (stop) vs.
 /// transient (keep backing off). An auth failure (`PermissionDenied`) is terminal:
-/// `do_attempt_reconnect` already re-pulled credentials and emitted `needs_auth`,
+/// `do_attempt_reconnect` already re-pulled credentials and emitted `needs_credentials`,
 /// so only the user's "Sign in" (the FE flow) can fix it, and retrying risks
 /// locking the account. Everything else (network down, timeout, server rebooting)
 /// is transient.

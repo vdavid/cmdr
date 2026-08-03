@@ -4,7 +4,7 @@
      * (the saved password went stale — `needs-auth`). Reuses `NetworkLoginForm` and
      * reconnects with the entered credentials via `reconnectSmbVolumeWithCredentials`,
      * which persists the new password so future reconnects are silent. On success the
-     * backend emits `smb-connection-changed { state: "direct" }`, which the reconnect
+     * backend emits `volume-connection-changed { state: "connected" }`, which the reconnect
      * manager turns into the pane's reload — so this view just needs to fire the command
      * and surface any error.
      */

@@ -7,12 +7,12 @@
  *
  * Lifecycle:
  * - `init()` is called once at app startup. Sets up the global
- *   `smb-connection-changed` event listener.
+ *   `volume-connection-changed` event listener.
  * - `subscribe(volumeId, onSuccess?)` returns an unsubscribe fn. Refcounted;
  *   when the last subscriber leaves, any in-flight cycle is cancelled (the
  *   connection stays Disconnected; lazy reconnect on next nav handles re-entry).
- * - On `disconnected` event for a volume with subscribers, a cycle starts
- *   automatically. On `direct`, the cycle resolves and registered `onSuccess`
+ * - On a `disconnected` event for a volume with subscribers, a cycle starts
+ *   automatically. On `connected`, the cycle resolves and registered `onSuccess`
  *   callbacks fire.
  * - `startCycle(volumeId)` exposes the same trigger for the lazy nav path
  *   (when the user opens a share that's already Disconnected and we never saw
@@ -24,7 +24,7 @@
 import { untrack } from 'svelte'
 import { SvelteMap } from 'svelte/reactivity'
 import { type UnlistenFn } from '@tauri-apps/api/event'
-import { reconnectSmbVolume, onSmbConnectionChanged } from '$lib/tauri-commands'
+import { reconnectSmbVolume, onVolumeConnectionChanged } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { tString } from '$lib/intl/messages.svelte'
 import { formatInteger } from '$lib/intl/number-format'
@@ -73,15 +73,19 @@ class SmbReconnectManager {
   /** Idempotent. Call once at app startup before any FilePane mounts. */
   async init(): Promise<void> {
     if (this.unlisten) return
-    this.unlisten = await onSmbConnectionChanged((payload) => {
+    this.unlisten = await onVolumeConnectionChanged((payload) => {
       const { volumeId, state } = payload
-      log.debug('smb-connection-changed: volumeId={volumeId}, state={state}', { volumeId, state })
-      if (state === 'disconnected') {
-        this.handleDisconnected(volumeId)
-      } else if (state === 'needs_auth') {
-        this.handleNeedsAuth(volumeId)
-      } else {
-        this.handleDirect(volumeId)
+      log.debug('volume-connection-changed: volumeId={volumeId}, state={state}', { volumeId, state })
+      switch (state) {
+        case 'disconnected':
+          this.handleDisconnected(volumeId)
+          break
+        case 'needs_credentials':
+          this.handleNeedsAuth(volumeId)
+          break
+        case 'connected':
+          this.handleConnected(volumeId)
+          break
       }
     })
   }
@@ -147,7 +151,7 @@ class SmbReconnectManager {
 
   /**
    * Explicitly kicks off a cycle. Used by the lazy nav-time path when the user
-   * opens a share that's already Disconnected (no recent `smb-connection-changed`
+   * opens a share that's already Disconnected (no recent `volume-connection-changed`
    * event would arrive in that case).
    *
    * No-op if a cycle is already running for this volume.
@@ -219,7 +223,7 @@ class SmbReconnectManager {
    * (the server's password changed). Stop the futile backoff — retrying the same
    * stale credentials can't succeed — and flip to `needs-auth` so FilePane shows a
    * "Sign in" prompt instead of the generic "unreachable" banner. The user signs in
-   * via `reconnectSmbVolumeWithCredentials`; success arrives as a `direct` event.
+   * via `reconnectSmbVolumeWithCredentials`; success arrives as a `connected` event.
    */
   private handleNeedsAuth(volumeId: string): void {
     untrack(() => {
@@ -232,14 +236,14 @@ class SmbReconnectManager {
     })
   }
 
-  private handleDirect(volumeId: string): void {
+  private handleConnected(volumeId: string): void {
     untrack(() => {
       const entry = this.map.get(volumeId)
       if (!entry) return
       // Idempotent: if no cycle is in flight (state is the baseline + no timer),
       // there's nothing to clean up and no subscribers to notify. This guards
       // against double-firing when both `runAttempt`'s success branch and the
-      // `smb-connection-changed` event fire; whichever runs first wins.
+      // `volume-connection-changed` event fire; whichever runs first wins.
       const noActiveCycle = entry.state.status === 'waiting' && entry.timerId === null && entry.state.attemptIndex === 0
       if (noActiveCycle) return
       if (entry.timerId) clearTimeout(entry.timerId)
@@ -279,8 +283,8 @@ class SmbReconnectManager {
 
   /**
    * Fires one reconnect attempt against the backend. On success, the
-   * `smb-connection-changed { state: "direct" }` event will arrive and
-   * `handleDirect` cleans up. On failure, schedule the next attempt or give up.
+   * `volume-connection-changed { state: "connected" }` event will arrive and
+   * `handleConnected` cleans up. On failure, schedule the next attempt or give up.
    */
   private async runAttempt(volumeId: string, attemptIndex: number): Promise<void> {
     const entry = this.map.get(volumeId)
@@ -291,10 +295,10 @@ class SmbReconnectManager {
 
     try {
       await reconnectSmbVolume(volumeId)
-      // Success: defensive backstop in case the `smb-connection-changed`
-      // event somehow doesn't arrive (unexpected, but `handleDirect` is
+      // Success: defensive backstop in case the `volume-connection-changed`
+      // event somehow doesn't arrive (unexpected, but `handleConnected` is
       // idempotent so calling both paths is safe).
-      this.handleDirect(volumeId)
+      this.handleConnected(volumeId)
     } catch (e) {
       log.info('Reconnect attempt {attempt} for {volumeId} failed: {error}', {
         attempt: attemptIndex + 1,
@@ -304,7 +308,7 @@ class SmbReconnectManager {
       // Re-fetch entry: `cancel` may have run during the attempt.
       const e2 = this.map.get(volumeId)
       if (!e2) return
-      // The backend may have emitted `needs_auth` during this attempt (stale password).
+      // The backend may have emitted `needs_credentials` during this attempt (stale password).
       // `handleNeedsAuth` already stopped the cycle; don't schedule another doomed retry.
       if (e2.state.status === 'needs-auth') return
       const next = attemptIndex + 1

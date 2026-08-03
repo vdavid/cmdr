@@ -96,6 +96,14 @@ and the diff proves it.
   `{ volumeIds: […] }`, and every consumer that read `event.payload` directly switches to `payload.hex` (etc.). A
   payloadless `()` (or `{}`) emit becomes a unit struct, which specta generates as `type X = null`: byte-identical to
   the old `listen<null>(...)`, and the FE wrapper takes no payload (`callback: () => void`).
+- **A field that classifies state carries a `specta`-typed enum, never a `String`.** The generated union is what lets a
+  consumer branch exhaustively instead of string-matching (the `no-string-matching` project rule). The enum may be WIDER
+  than any single producer's internal state machine: `volume-connection-changed` ships
+  `VolumeConnection = 'connected' | 'disconnected' | 'needs_credentials'` while SMB's own `ConnectionState` is binary,
+  because `needs_credentials` is a transient signal that accompanies a failed reconnect rather than a state a backend
+  rests in. A consumer that only handles part of the union narrows explicitly (`volume-store.svelte.ts`'s
+  `toSmbConnectionState` returns `null` for the variant its picker can't render), so the gap is a typed decision instead
+  of a silent `else`.
 - **A struct event that's ALSO emitted bare delivers `null` at runtime, which the generated `{ field }` type doesn't
   model.** `open-settings` carries `{ section }` from the MCP path, but the E2E `openSettingsWindowViaProd` helper emits
   it with no payload to open the default section. The generated `OpenSettings = { section: string }` says the payload is
@@ -153,11 +161,6 @@ Converting a consumer to an `on*` wrapper routes through `events.<name>.listen`,
   `volumeName` / `deviceName`: silently `undefined` for years. The fix is `rename_all_fields = "camelCase"` on the enum
   (the `ipc-enum-camelcase` check only flags `rename_all = "camelCase"` enums, so a `snake_case`-tagged one slipped
   past). When an event payload nests a tagged enum, eyeball its multi-word variant fields.
-- **`smb-connection-changed`** carries `state: String` (wire values `"direct"` / `"disconnected"` / `"needs_auth"`; not
-  a literal union, since `needs_auth` is a transient FE-only signal that isn't a backend `SmbConnectionState` variant).
-  The volume store filters out anything but `direct` / `disconnected` before assigning to its narrower field. That
-  filter also closed a latent bug: the old `listen<{ state: 'direct' | 'disconnected' }>` cast lied about the runtime
-  `needs_auth` value.
 
 The authoritative list of typed events is the `collect_events![…]` block in `ipc.rs::builder()` (and the generated
 `events.*` in `bindings.ts`).

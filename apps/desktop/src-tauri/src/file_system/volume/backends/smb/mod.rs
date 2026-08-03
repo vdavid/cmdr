@@ -144,7 +144,7 @@ pub struct SmbVolume {
     /// Set by `on_superseded` when a newer instance takes over this volume's id
     /// in the `VolumeManager`. The session stays up for whoever still holds this
     /// instance, but everything scoped to the ID (the watcher, the scan pool,
-    /// `smb-connection-changed` events, the index-resume hook) belongs to the
+    /// `volume-connection-changed` events, the index-resume hook) belongs to the
     /// successor now and must go quiet here. See `DETAILS.md` § "Supersede vs.
     /// unmount".
     superseded: Arc<AtomicBool>,

@@ -73,7 +73,7 @@ use crate::mtp::{
 };
 use crate::network::{
     NetworkDiscoveryStateChanged, NetworkHostContextAction, NetworkHostFound, NetworkHostLost, NetworkHostResolved,
-    SmbConnectionChanged,
+    VolumeConnectionChanged,
 };
 use crate::space_poller::{LowDiskSpacePayload, VolumeSpaceChanged};
 use crate::volume_broadcast::{VolumeContextAction, VolumeMounted, VolumeUnmounted, VolumesChanged};
@@ -753,6 +753,11 @@ pub fn builder() -> Builder<tauri::Wry> {
             VolumesBusyChanged,
             VolumeContextAction,
             LowDiskSpacePayload, // event_name = "low-disk-space"
+            // Session health of a connecting volume. Backend-neutral: SMB emits it
+            // today (file_system/volume/backends/smb/), the next connecting backend
+            // reuses it. The type lives in `network/mod.rs` so it resolves on every
+            // platform (see its doc comment).
+            VolumeConnectionChanged,
             // Indexing (indexing/, commands/search.rs). Each pins its wire name
             // via `event_name` because the struct names carry an `…Event` suffix
             // (or live in a differently-named module) that wouldn't kebab-case to
@@ -784,8 +789,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             MtpPermissionError,
             MtpPtpcameradSuppressed,
             MtpPtpcameradRestored,
-            // Network + git (network/, file_system/git/, file_system/volume/backends/smb/,
-            // menu/menu_handlers.rs). Host-found / host-resolved flatten the bare
+            // Network + git (network/, file_system/git/, menu/menu_handlers.rs).
+            // Host-found / host-resolved flatten the bare
             // `NetworkHost`; `git-state-changed` pins its wire name via `event_name`
             // (the `…Payload` suffix wouldn't kebab-case to it); `network-host-context-action`
             // is window-scoped (`emit_to`).
@@ -794,7 +799,6 @@ pub fn builder() -> Builder<tauri::Wry> {
             NetworkHostResolved,
             NetworkDiscoveryStateChanged,
             NetworkHostContextAction,
-            SmbConnectionChanged,
             GitStateChangedPayload, // event_name = "git-state-changed"
             // AI + system/misc events.
             // AI lifecycle (ai/manager.rs, ai/download.rs). The payloadless ones

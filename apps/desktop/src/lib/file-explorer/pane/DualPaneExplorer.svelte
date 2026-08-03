@@ -602,7 +602,7 @@
 
         // Initialize volume store (subscribes to backend-pushed volume list)
         // and MTP store (subscribes to device connection events). Also wire up
-        // the SMB reconnect manager; it listens for `smb-connection-changed`
+        // the SMB reconnect manager; it listens for `volume-connection-changed`
         // and runs the per-volume backoff cycle that drives `SmbReconnectingView`.
         await Promise.all([
             initVolumeStore(),

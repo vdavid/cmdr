@@ -9,7 +9,8 @@
  */
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
-import { listVolumes, refreshVolumes, onVolumesChanged, onSmbConnectionChanged } from '$lib/tauri-commands'
+import { listVolumes, refreshVolumes, onVolumesChanged, onVolumeConnectionChanged } from '$lib/tauri-commands'
+import type { VolumeConnection } from '$lib/ipc/bindings'
 import type { SmbConnectionState, VolumeInfo } from '$lib/file-explorer/types'
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
@@ -24,7 +25,7 @@ let retryFailedTimer: ReturnType<typeof setTimeout> | null = null
 let receivedEvent = false
 let initialized = $state(false)
 let unlistenVolumesChanged: UnlistenFn | undefined
-let unlistenSmbConnectionChanged: UnlistenFn | undefined
+let unlistenVolumeConnectionChanged: UnlistenFn | undefined
 
 /** Returns the current volume list. Reactive. */
 export function getVolumes(): VolumeInfo[] {
@@ -65,6 +66,27 @@ export function requestVolumeRefresh(): void {
 }
 
 /**
+ * Narrows a `volume-connection-changed` state to the `smbConnectionState` the volume
+ * picker renders, or `null` when the picker has nothing to show for it.
+ *
+ * The two unions overlap only partly, in both directions. `needs_credentials` is a
+ * reconnect-manager-only signal (an attempt gave up on a stale password, the session's
+ * health didn't change), so the picker keeps showing whatever it had. `os_mount` runs the
+ * other way: only the backend's `enrich_smb_connection_state` decides it, so it never
+ * arrives on this event.
+ */
+function toSmbConnectionState(state: VolumeConnection): SmbConnectionState | null {
+  switch (state) {
+    case 'connected':
+      return 'direct'
+    case 'disconnected':
+      return 'disconnected'
+    case 'needs_credentials':
+      return null
+  }
+}
+
+/**
  * Initializes the volume store.
  *
  * 1. Subscribes to `volumes-changed` events from the backend.
@@ -101,24 +123,22 @@ export async function initVolumeStore(): Promise<void> {
     })
   })
 
-  // Subscribe to SMB connection-state changes so the picker dot, the
+  // Subscribe to per-volume connection changes so the picker dot, the
   // `currentVolumeInfo.smbConnectionState` field, and any pane-level UI keying
-  // off this volume update the moment a session flips Direct/Disconnected,
+  // off this volume update the moment a session flips connected/disconnected,
   // without waiting for the next `volumes-changed` (which may not fire, as the
   // volume itself didn't appear or disappear, just its session quality).
-  unlistenSmbConnectionChanged = await onSmbConnectionChanged((payload) => {
+  unlistenVolumeConnectionChanged = await onVolumeConnectionChanged((payload) => {
     const { volumeId } = payload
-    // `needs_auth` is a reconnect-manager-only signal; the picker only tracks
-    // Direct / Disconnected, so ignore other states here.
-    if (payload.state !== 'direct' && payload.state !== 'disconnected') return
-    const state: SmbConnectionState = payload.state
+    const state = toSmbConnectionState(payload.state)
+    if (state === null) return
     const idx = volumes.findIndex((v) => v.id === volumeId)
     if (idx < 0) return
     // Replace the entry so consumers using `$derived` over `getVolumes()` re-run.
     const next = [...volumes]
     next[idx] = { ...next[idx], smbConnectionState: state }
     volumes = next
-    logger.debug('smb-connection-changed: {volumeId} → {state}', { volumeId, state })
+    logger.debug('volume-connection-changed: {volumeId} → {state}', { volumeId, state })
   })
 
   // Bootstrap: fetch initial list via IPC (in case the backend event
@@ -142,8 +162,8 @@ export async function initVolumeStore(): Promise<void> {
 export function cleanupVolumeStore(): void {
   unlistenVolumesChanged?.()
   unlistenVolumesChanged = undefined
-  unlistenSmbConnectionChanged?.()
-  unlistenSmbConnectionChanged = undefined
+  unlistenVolumeConnectionChanged?.()
+  unlistenVolumeConnectionChanged = undefined
   volumes = []
   timedOut = false
   refreshing = false

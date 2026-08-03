@@ -3036,9 +3036,9 @@ export const commands = {
    *  Reconnects an SMB volume with freshly-entered credentials.
    *
    *  Invoked by the "Sign in" affordance shown when an in-place reconnect gave up on an
-   *  auth failure (a `needs_auth` `smb-connection-changed` event). The volume persists the
-   *  new password (so future reconnects are silent) and runs the standard reconnect; on
-   *  success the backend emits `smb-connection-changed { state: "direct" }`. On a non-SMB
+   *  auth failure (a `needs_credentials` `volume-connection-changed` event). The volume persists
+   *  the new password (so future reconnects are silent) and runs the standard reconnect; on
+   *  success the backend emits `volume-connection-changed { state: "connected" }`. On a non-SMB
    *  volume this yields `NotSupported` (trait default); the FE only invokes it for SMB.
    */
   reconnectSmbVolumeWithCredentials: (volumeId: string, username: string, password: string) =>
@@ -3318,11 +3318,11 @@ export const events = {
   scanProgress: makeEvent<ScanProgressEvent>('scan-progress'),
   searchIndexReady: makeEvent<SearchIndexReadyEvent>('search-index-ready'),
   settingsChanged: makeEvent<SettingsChanged>('settings-changed'),
-  smbConnectionChanged: makeEvent<SmbConnectionChanged>('smb-connection-changed'),
   systemTextSizeChanged: makeEvent<SystemTextSizeChanged>('system-text-size-changed'),
   tabContextAction: makeEvent<TabContextAction>('tab-context-action'),
   viewModeChanged: makeEvent<ViewModeChanged>('view-mode-changed'),
   viewerWordWrapToggled: makeEvent<ViewerWordWrapToggled>('viewer-word-wrap-toggled'),
+  volumeConnectionChanged: makeEvent<VolumeConnectionChanged>('volume-connection-changed'),
   volumeContextAction: makeEvent<VolumeContextAction>('volume-context-action'),
   volumeMounted: makeEvent<VolumeMounted>('volume-mounted'),
   volumeSpaceChanged: makeEvent<VolumeSpaceChanged>('volume-space-changed'),
@@ -7823,27 +7823,6 @@ export type SkipReason =
   | 'failed'
 
 /**
- *  Typed `smb-connection-changed` Tauri event. The frontend reconnect manager
- *  listens for this and runs the per-volume backoff cycle. Defined here (in the
- *  always-compiled `network` module rather than the macOS/Linux-only SMB backend)
- *  so `collect_events!` in `ipc.rs`, which can't cfg-gate inline, references it on
- *  every platform. The backend `SmbVolume` emit site builds and emits it.
- */
-export type SmbConnectionChanged = {
-  volumeId: string
-  /**
-   *  `"direct"`, `"disconnected"`, or `"needs_auth"`. The internal connection state
-   *  machine is binary (Direct / Disconnected); `"needs_auth"` is a transient FE-only
-   *  signal emitted when an in-place reconnect gave up on an auth failure (password
-   *  changed on the server), so the reconnect manager shows a "Sign in" prompt instead
-   *  of the generic "unreachable" banner. It does not correspond to a backend
-   *  `ConnectionState` variant. The OS-mount fallback likewise only exists at the outer
-   *  `SmbConnectionState` layer (driven by `enrich_smb_connection_state`).
-   */
-  state: string
-}
-
-/**
  *  SMB connection state for the frontend indicator and the reconnect UI.
  *
  *  `Direct` means Cmdr's smb2 session is active (fast path).
@@ -8415,6 +8394,47 @@ export type ViewerSessionStatus = {
  *  viewer window had focus. Emitted to that specific viewer's label.
  */
 export type ViewerWordWrapToggled = null
+
+/**
+ *  How a connecting volume's session looks to the frontend, as carried by
+ *  `volume-connection-changed`.
+ *
+ *  Deliberately wider than any backend's internal state machine. SMB's
+ *  `ConnectionState` (`file_system/volume/backends/smb/state.rs`) is binary,
+ *  `Direct ⇄ Disconnected`, and widens into `Connected` / `Disconnected` through a
+ *  `From` impl there. `NeedsCredentials` has no counterpart in it: no backend ever
+ *  rests in that state, it rides alongside a failed reconnect attempt. The OS-mount
+ *  fallback likewise lives only at the outer `SmbConnectionState` layer (driven by
+ *  `enrich_smb_connection_state`), never here.
+ */
+export type VolumeConnection =
+  // The backend holds a live session; operations take the fast path.
+  | 'connected'
+  // The session dropped. The frontend runs the per-volume backoff cycle.
+  | 'disconnected'
+  /**
+   *  A reconnect gave up because the saved credentials no longer work (the password
+   *  changed on the server), so the reconnect manager shows a "Sign in" prompt
+   *  instead of the generic "unreachable" banner. Transient: it accompanies a failed
+   *  attempt rather than describing a state the volume settles in.
+   */
+  | 'needs_credentials'
+
+/**
+ *  Typed `volume-connection-changed` Tauri event. The frontend reconnect manager
+ *  listens for this and runs the per-volume backoff cycle.
+ *
+ *  Backend-neutral on purpose: SMB is the only emitter today, and the next connecting
+ *  backend (FTP, S3, SFTP) reuses this channel instead of adding a parallel one.
+ *
+ *  Defined here (in the always-compiled `network` module rather than the
+ *  macOS/Linux-only SMB backend) so `collect_events!` in `ipc.rs`, which can't cfg-gate
+ *  inline, references it on every platform. The backend emit site builds and emits it.
+ */
+export type VolumeConnectionChanged = {
+  volumeId: string
+  state: VolumeConnection
+}
 
 /**
  *  Typed `volume-context-action` Tauri event. Emitted to the `main` window when

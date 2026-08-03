@@ -13,11 +13,16 @@ lifecycle", § "SMB live-reconnect lifecycle", § "SMB scan-connection pool", §
 split / watcher session / `write_from_stream` shape, § Testing for the SMB suites and their `#[path = "../smb_*.rs"]`
 wiring), or in `archive/DETAILS.md` for `ArchiveVolume`. Only the layout facts that none of those carry live here:
 
-- **`smb/events.rs` deliberately does NOT own `SmbConnectionChanged`.** It holds the global `AppHandle`
-  (`set_app_handle` from `lib.rs::setup`) and `emit_state_change`, but the typed `tauri_specta::Event` struct stays in
-  the always-compiled `network/mod.rs`, so `collect_events!` in `ipc.rs` can reference it on EVERY platform. The `smb/`
-  module is `#[cfg]`-gated to macOS and Linux (as is `mtp.rs`); moving the struct in here breaks the Windows build of
-  the event collector.
+- **`smb/events.rs` deliberately does NOT own `VolumeConnectionChanged`.** It holds the global `AppHandle`
+  (`set_app_handle` from `lib.rs::setup`) and `emit_state_change`, but the typed `tauri_specta::Event` struct and its
+  `VolumeConnection` state enum stay in the always-compiled `network/mod.rs`, so `collect_events!` in `ipc.rs` can
+  reference them on EVERY platform. The `smb/` module is `#[cfg]`-gated to macOS and Linux (as is `mtp.rs`); moving the
+  struct in here breaks the Windows build of the event collector.
+- **`volume-connection-changed` is backend-neutral, and SMB is only its first emitter.** Any backend that holds a
+  session (FTP, S3, SFTP) emits the same event and inherits the frontend's unreachable banner, per-volume backoff, and
+  "Sign in" prompt for free. ❌ Don't add a second, backend-named connection event: widen `VolumeConnection` and reuse
+  this one. The `From<ConnectionState>` impl in `smb/state.rs` shows the shape a backend supplies, mapping its own
+  internal state machine onto the wire enum.
 - **`smb/volume_impl.rs` holds the ENTIRE `impl Volume for SmbVolume`** because a trait impl can't be split across
   files. The heavy bodies live as inherent `*_impl` methods in `scan.rs` / `streams.rs`, with `volume_impl.rs` reduced
   to one-line delegators. A new trait method goes here and delegates; don't try to move a trait method out.
@@ -99,7 +104,7 @@ The failure this prevents: two "Connect directly" clicks nine seconds apart repl
 ## SMB live-reconnect lifecycle
 
 When a hot-path op hits `ConnectionLost` / `SessionExpired`, `handle_smb_result` flips state to `Disconnected` and
-`transition_to_disconnected` emits `smb-connection-changed { volumeId, state: "disconnected" }`. The frontend reconnect
+`transition_to_disconnected` emits `volume-connection-changed { volumeId, state: "disconnected" }`. The frontend reconnect
 manager listens for this event and runs a per-volume backoff cycle (timer-driven, calling the
 `reconnect_smb_volume(volumeId)` Tauri command on each tick).
 
@@ -109,8 +114,8 @@ manager listens for this event and runs a per-volume backoff cycle (timer-driven
 2. If state is already `Direct`, returns Ok cheaply.
 3. Tries `build_session()` with the cached `SmbConnectionParams` (the credentials that worked at original connect).
 4. If that fails with an auth error, calls `refresh_credentials_from_store` (which re-reads from `keychain::get_credentials`) and retries once with the fresh creds. On success, the new credentials replace the cached ones via `params.write()`.
-5. On success: installs the new client + tree, restarts the watcher with `spawn_watcher` (the prior watcher is cancelled via `stop_watcher` first), then `transition_to_direct` flips state and emits `smb-connection-changed { state: "direct" }`. Doing the state flip last means observers wake up to a fully-installed session.
-6. On failure: state stays `Disconnected`. The FE backoff cycle decides whether to retry. **Auth give-up is special**: when the failure is an auth error and the refreshed store creds also fail (or there are none), `do_attempt_reconnect` emits `smb-connection-changed { state: "needs_auth" }` before returning Err. `"needs_auth"` is a transient FE-only signal (not a `ConnectionState` variant — the backend state stays binary Direct/Disconnected); the reconnect manager flips to `needs-auth`, stops the futile backoff, and FilePane shows a "Sign in" prompt (`SmbReauthView`) instead of the generic "unreachable" banner. The user signs in via `Volume::reconnect_with_credentials` (Tauri `reconnect_smb_volume_with_credentials`), which persists the new password server-level (so the next reconnect is silent), updates the in-memory params, and runs `do_attempt_reconnect`. If the new creds are also wrong, it re-emits `needs_auth` — a bad retry re-prompts rather than dead-ending.
+5. On success: installs the new client + tree, restarts the watcher with `spawn_watcher` (the prior watcher is cancelled via `stop_watcher` first), then `transition_to_direct` flips state and emits `volume-connection-changed { state: "connected" }`. Doing the state flip last means observers wake up to a fully-installed session.
+6. On failure: state stays `Disconnected`. The FE backoff cycle decides whether to retry. **Auth give-up is special**: when the failure is an auth error and the refreshed store creds also fail (or there are none), `do_attempt_reconnect` emits `volume-connection-changed { state: "needs_credentials" }` before returning Err. `NeedsCredentials` is a transient signal for the frontend, not a `ConnectionState` variant: the backend state machine stays binary Direct/Disconnected, which is why `From<ConnectionState> for VolumeConnection` (in `smb/state.rs`) only ever produces the other two and the give-up path names the variant directly. The reconnect manager flips to `needs-auth`, stops the futile backoff, and FilePane shows a "Sign in" prompt (`SmbReauthView`) instead of the generic "unreachable" banner. The user signs in via `Volume::reconnect_with_credentials` (Tauri `reconnect_smb_volume_with_credentials`), which persists the new password server-level (so the next reconnect is silent), updates the in-memory params, and runs `do_attempt_reconnect`. If the new creds are also wrong, it re-emits `needs_credentials` — a bad retry re-prompts rather than dead-ending.
 
 Credentials are kept in memory for the lifetime of the `SmbVolume` (no security concern: they're already in the
 process's address space for every smb2 call). Only re-pulled from the secret store on auth failure, in case the user
@@ -177,7 +182,7 @@ listings, and media enrichment's parallel prefetch reads.
   `try_begin_reconnect`), decoupled from the real sessions so the handout/replacement logic is testable server-free.
 - **Failure handling.** A listing failing with a typed `ConnectionLost`/`SessionExpired` is retried on a sibling member,
   the dead member is dropped, and a single-flight background task reconnects it (`build_session`, bounded growing backoff
-  `POOL_MEMBER_RECONNECT_BACKOFF`; gives up on auth — the MAIN session owns the credential-refresh / `needs_auth` flow).
+  `POOL_MEMBER_RECONNECT_BACKOFF`; gives up on auth — the MAIN session owns the credential-refresh / `needs_credentials` flow).
   A dead member NEVER transitions the main volume's connection state. A per-directory error (permission, not-found) is
   the same on any connection, so it's surfaced immediately, not retried. If every member is momentarily dead, the
   listing falls back to the main session, which keeps the scan progressing and, if it too is dead, yields the
@@ -285,7 +290,7 @@ connection that was still healthy (a redundant upgrade pass replaced the volume 
 - The **watcher** is cancelled. It runs on its own dedicated session (so cancelling it can't disturb a transfer), and
   two watchers on one id double-feed the listing cache and the index.
 - The **scan pool** opens no new connections (an already-open one drains with its scan).
-- **`smb-connection-changed` events** are suppressed (`emit_state_change_for_id`, `update_state_on_smb_error`). A
+- **`volume-connection-changed` events** are suppressed (`emit_state_change_for_id`, `update_state_on_smb_error`). A
   retired instance announcing a disconnect would tell the frontend a healthy volume just dropped.
 - The **index-resume hook** is skipped in `do_attempt_reconnect`; the successor ran it when it registered.
 

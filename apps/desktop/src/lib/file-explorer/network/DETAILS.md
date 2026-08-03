@@ -121,22 +121,25 @@ Escape/Cancel returns to the share list. Non-auth errors (unreachable, timeout, 
 When a direct-SMB session drops mid-use, four pieces coordinate to recover:
 
 1. **Backend** (`SmbVolume::handle_smb_result` in `volume/backends/smb/session.rs`) detects `ConnectionLost` /
-   `SessionExpired`, flips to `Disconnected`, and emits `smb-connection-changed { volumeId, state: "disconnected" }`.
-   (See `volume/backends/DETAILS.md` § SMB live-reconnect lifecycle.)
+   `SessionExpired`, flips to `Disconnected`, and emits `volume-connection-changed { volumeId, state: "disconnected" }`.
+   The event is backend-neutral (any connecting backend emits it); everything below is what the frontend does with it,
+   and a new backend inherits all of it. (See `volume/backends/DETAILS.md` § SMB live-reconnect lifecycle.)
 2. **`stores/volume-store.svelte.ts`** patches the matching volume's `smbConnectionState`, keeping the picker dot, the
    breadcrumb, and `currentVolumeInfo` reactive without waiting for the next `volumes-changed`.
 3. **`smb-reconnect-manager.svelte.ts`** (if any subscribers are present) starts a per-volume backoff cycle calling
-   `reconnectSmbVolume(volumeId)` per tick. Resolves when the BE emits a follow-up `state: "direct"` event.
+   `reconnectSmbVolume(volumeId)` per tick. Resolves when the BE emits a follow-up `state: "connected"` event. Only its
+   per-tick command is SMB-specific; the cycle itself is backend-agnostic, so it keeps the SMB name until a second
+   backend needs it and the command generalizes.
 4. **`FilePane.svelte`** subscribes via `$effect` whenever the pane is on an SMB volume. Subscription is refcounted
    (both panes on one share share a cycle). During an active cycle FilePane swaps the list for `SmbReconnectingView`; on
    `gave-up` it swaps to `VolumeUnreachableBanner` (`smbGaveUp` variant); on success the `onSuccess` callback re-runs
    `loadDirectory`.
 
 Auth-failure give-up → "Sign in", not "unreachable" (`needs-auth` status): when reconnect fails on an auth error the
-saved password can't fix, the backend emits `state: "needs_auth"`. The manager's `handleNeedsAuth` stops the backoff
-(retrying a stale password is futile) and flips to `needs-auth`; FilePane shows `pane/SmbReauthView.svelte` (a thin
-wrapper over `NetworkLoginForm`). Submitting calls `reconnectSmbVolumeWithCredentials(volumeId, …)`, which persists the
-new password and reconnects; success arrives as a `direct` event that clears the state and reloads. Pinned by
+saved password can't fix, the backend emits `state: "needs_credentials"`. The manager's `handleNeedsAuth` stops the
+backoff (retrying a stale password is futile) and flips to `needs-auth`; FilePane shows `pane/SmbReauthView.svelte` (a
+thin wrapper over `NetworkLoginForm`). Submitting calls `reconnectSmbVolumeWithCredentials(volumeId, …)`, which persists
+the new password and reconnects; success arrives as a `connected` event that clears the state and reloads. Pinned by
 `smb-reconnect-manager.svelte.test.ts`.
 
 Lazy-nav path: opening a share that's already `Disconnected` (no fresh event in flight), the FilePane `$effect` notices

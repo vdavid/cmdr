@@ -2,24 +2,24 @@
  * Unit tests for the per-volume SMB reconnect manager.
  *
  * Covers: backoff progression on repeated failures, success path via the
- * `smb-connection-changed` event, "Retry now" reset semantics, "Cancel"
+ * `volume-connection-changed` event, "Retry now" reset semantics, "Cancel"
  * cleanup, refcounted subscriptions, give-up after exhausting the array,
  * and the pure display helpers (`ordinalCount`, `reconnectProgressMessage`).
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import type { SmbConnectionChanged } from '$lib/ipc/bindings'
+import type { VolumeConnection, VolumeConnectionChanged } from '$lib/ipc/bindings'
 
 // Hoisted mocks: must run before importing the module under test.
 const mockReconnect = vi.fn<(volumeId: string) => Promise<void>>()
-const mockListen = vi.fn<(handler: (payload: SmbConnectionChanged) => void) => Promise<() => void>>()
-let lastEventHandler: ((payload: SmbConnectionChanged) => void) | null = null
+const mockListen = vi.fn<(handler: (payload: VolumeConnectionChanged) => void) => Promise<() => void>>()
+let lastEventHandler: ((payload: VolumeConnectionChanged) => void) | null = null
 
 vi.mock('$lib/tauri-commands', () => ({
   reconnectSmbVolume: (id: string) => mockReconnect(id),
-  // The manager subscribes to `smb-connection-changed` through this typed wrapper,
+  // The manager subscribes to `volume-connection-changed` through this typed wrapper,
   // so the test captures its unwrapped-payload handler here.
-  onSmbConnectionChanged: (handler: (payload: SmbConnectionChanged) => void) => {
+  onVolumeConnectionChanged: (handler: (payload: VolumeConnectionChanged) => void) => {
     lastEventHandler = handler
     return mockListen(handler)
   },
@@ -34,7 +34,7 @@ import {
 } from './smb-reconnect-manager.svelte'
 
 /** Drives the listener as if the backend emitted the event. */
-function emit(volumeId: string, state: 'direct' | 'disconnected' | 'needs_auth'): void {
+function emit(volumeId: string, state: VolumeConnection): void {
   if (!lastEventHandler) throw new Error("init() was not called or didn't install a listener")
   lastEventHandler({ volumeId, state })
 }
@@ -106,16 +106,16 @@ describe('smbReconnectManager', () => {
     unsub()
   })
 
-  it('stops the backoff and flips to needs-auth on a `needs_auth` event', async () => {
+  it('stops the backoff and flips to needs-auth on a `needs_credentials` event', async () => {
     await smbReconnectManager.init()
     const unsub = smbReconnectManager.subscribe('vol-auth')
     mockReconnect.mockRejectedValue(new Error('STATUS_LOGON_FAILURE'))
 
     smbReconnectManager.startCycle('vol-auth')
     // First attempt fires after the first delay and fails; the backend would emit
-    // needs_auth alongside that failure.
+    // needs_credentials alongside that failure.
     await vi.advanceTimersByTimeAsync(RECONNECT_DELAYS_MS[0])
-    emit('vol-auth', 'needs_auth')
+    emit('vol-auth', 'needs_credentials')
 
     expect(smbReconnectManager.getState('vol-auth')?.status).toBe('needs-auth')
 
@@ -127,22 +127,22 @@ describe('smbReconnectManager', () => {
     }
     expect(mockReconnect.mock.calls.length).toBe(callsAtFlip)
 
-    // A later successful sign-in (`direct`) clears the needs-auth state.
-    emit('vol-auth', 'direct')
+    // A later successful sign-in (`connected`) clears the needs-auth state.
+    emit('vol-auth', 'connected')
     expect(smbReconnectManager.getState('vol-auth')).toBeNull()
 
     smbReconnectManager.cancel('vol-auth')
     unsub()
   })
 
-  it('clears state and notifies subscribers on a `direct` event', async () => {
+  it('clears state and notifies subscribers on a `connected` event', async () => {
     await smbReconnectManager.init()
     const onSuccess = vi.fn()
     const unsub = smbReconnectManager.subscribe('vol-ok', onSuccess)
     emit('vol-ok', 'disconnected')
     expect(smbReconnectManager.getState('vol-ok')?.status).toBe('waiting')
 
-    emit('vol-ok', 'direct')
+    emit('vol-ok', 'connected')
     expect(smbReconnectManager.getState('vol-ok')).toBeNull()
     expect(onSuccess).toHaveBeenCalledTimes(1)
 
@@ -232,18 +232,18 @@ describe('smbReconnectManager', () => {
   })
 
   it('handleDirect is idempotent: onSuccess fires exactly once per cycle', async () => {
-    // Race scenario: both the `direct` event and the awaited `reconnectSmbVolume`
-    // success path could each trigger `handleDirect`. The idempotency guard
+    // Race scenario: both the `connected` event and the awaited `reconnectSmbVolume`
+    // success path could each trigger `handleConnected`. The idempotency guard
     // ensures `onSuccess` only fires once.
     await smbReconnectManager.init()
     const onSuccess = vi.fn()
     const unsub = smbReconnectManager.subscribe('vol-once', onSuccess)
     smbReconnectManager.startCycle('vol-once')
-    // Resolve `reconnectSmbVolume` AND emit the `direct` event (simulating both
+    // Resolve `reconnectSmbVolume` AND emit the `connected` event (simulating both
     // paths racing to clean up). Only one should win and notify.
     mockReconnect.mockResolvedValueOnce(undefined)
     await vi.advanceTimersByTimeAsync(RECONNECT_DELAYS_MS[0])
-    emit('vol-once', 'direct')
+    emit('vol-once', 'connected')
     expect(onSuccess).toHaveBeenCalledTimes(1)
 
     unsub()

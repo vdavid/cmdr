@@ -10,6 +10,7 @@ import {
   type Location,
   type LowDiskSpacePayload,
   type ResolveLocationResult,
+  type VolumeConnectionChanged,
   type VolumeContextAction,
   type VolumesBusyChanged,
   type VolumeSpaceChanged,
@@ -184,6 +185,19 @@ export function onVolumesChanged(handler: (payload: VolumesChangedPayload) => vo
  */
 export function onVolumeUnmounted(handler: (payload: VolumeUnmounted) => void): Promise<UnlistenFn> {
   return events.volumeUnmounted.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/**
+ * Subscribes to session-health changes on a connecting volume: it went `connected`,
+ * `disconnected`, or `needs_credentials` (a reconnect gave up on a stale password).
+ *
+ * Backend-neutral: direct-SMB volumes emit it today, and the next connecting backend
+ * (FTP, S3, SFTP) reuses the same channel. Call the returned `UnlistenFn` on destroy.
+ */
+export function onVolumeConnectionChanged(handler: (payload: VolumeConnectionChanged) => void): Promise<UnlistenFn> {
+  return events.volumeConnectionChanged.listen((event) => {
     handler(event.payload)
   })
 }

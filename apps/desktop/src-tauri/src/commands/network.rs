@@ -749,9 +749,9 @@ pub async fn reconnect_smb_volume(volume_id: String) -> Result<(), crate::comman
 /// Reconnects an SMB volume with freshly-entered credentials.
 ///
 /// Invoked by the "Sign in" affordance shown when an in-place reconnect gave up on an
-/// auth failure (a `needs_auth` `smb-connection-changed` event). The volume persists the
-/// new password (so future reconnects are silent) and runs the standard reconnect; on
-/// success the backend emits `smb-connection-changed { state: "direct" }`. On a non-SMB
+/// auth failure (a `needs_credentials` `volume-connection-changed` event). The volume persists
+/// the new password (so future reconnects are silent) and runs the standard reconnect; on
+/// success the backend emits `volume-connection-changed { state: "connected" }`. On a non-SMB
 /// volume this yields `NotSupported` (trait default); the FE only invokes it for SMB.
 #[tauri::command]
 #[specta::specta]

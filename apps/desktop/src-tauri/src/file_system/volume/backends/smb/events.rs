@@ -1,13 +1,14 @@
-//! App-handle registration and `smb-connection-changed` event plumbing.
+//! App-handle registration and `volume-connection-changed` event plumbing.
 //!
 //! Holds the global `AppHandle` set once from `lib.rs::setup` so SMB state
-//! transitions can emit `smb-connection-changed` events to the frontend.
+//! transitions can emit `volume-connection-changed` events to the frontend.
 
+use crate::network::VolumeConnection;
 use log::warn;
 use std::sync::{Mutex as StdMutex, OnceLock};
 use tauri::AppHandle;
 
-/// Global `AppHandle` for emitting `smb-connection-changed` events. Set once
+/// Global `AppHandle` for emitting `volume-connection-changed` events. Set once
 /// from `lib.rs::setup`. Same pattern as `network::mdns_discovery::APP_HANDLE`.
 static APP_HANDLE: OnceLock<StdMutex<Option<AppHandle>>> = OnceLock::new();
 
@@ -23,15 +24,15 @@ fn get_app_handle() -> Option<AppHandle> {
     APP_HANDLE.get().and_then(|m| m.lock().ok()).and_then(|g| g.clone())
 }
 
-pub(super) fn emit_state_change(volume_id: &str, state: &'static str) {
+pub(super) fn emit_state_change(volume_id: &str, state: VolumeConnection) {
     use tauri_specta::Event;
     if let Some(app) = get_app_handle()
-        && let Err(e) = (crate::network::SmbConnectionChanged {
+        && let Err(e) = (crate::network::VolumeConnectionChanged {
             volume_id: volume_id.to_string(),
-            state: state.to_string(),
+            state,
         })
         .emit(&app)
     {
-        warn!("Failed to emit smb-connection-changed: {}", e);
+        warn!("Failed to emit volume-connection-changed: {}", e);
     }
 }

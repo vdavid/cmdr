@@ -827,7 +827,7 @@ impl Volume for SmbVolume {
     ///
     /// What DOES retire is everything scoped to the volume ID, which the
     /// successor now owns: the watcher (see below), the scan pool, the
-    /// `smb-connection-changed` events, and the index-resume hook. Two watchers
+    /// `volume-connection-changed` events, and the index-resume hook. Two watchers
     /// on one id double-feed the index, and the retired one's death path
     /// (`spawn_watcher_death_reconnect`) resolves the id through the manager and
     /// would mark the SUCCESSOR disconnected.
@@ -848,7 +848,7 @@ impl Volume for SmbVolume {
         // Transition to Disconnected. We deliberately set the atomic directly
         // instead of going through `transition_to_disconnected()`, because the
         // volume is being unregistered: the FE will learn via `volumes-changed`
-        // and an extra `smb-connection-changed` event would race with that.
+        // and an extra `volume-connection-changed` event would race with that.
         self.state.store(ConnectionState::Disconnected as u8, Ordering::Relaxed);
 
         // Cancel the background watcher task. The task will call watcher.close()

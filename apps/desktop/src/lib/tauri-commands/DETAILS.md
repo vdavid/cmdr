@@ -26,8 +26,9 @@ commands, and notable non-obvious placements.
   `$lib/units`.)
 - **`rename.ts`**: `checkRenamePermission`, `checkRenameValidity`, `renameFile`, `moveToTrash`.
 - **`storage.ts`**: `listVolumes`, `getVolumeSpace`, `watchVolumeSpace` / `unwatchVolumeSpace`, `ejectVolume`,
-  `getBusyVolumeIds` (bootstrap for the eject-busy gate), `onVolumeContextAction`, `checkFullDiskAccess`,
-  `checkFullDiskAccessQuiet`, `getMacosMajorVersion`, `openPrivacySettings`, `openSystemSettingsUrl`.
+  `getBusyVolumeIds` (bootstrap for the eject-busy gate), `onVolumeContextAction`, `onVolumeConnectionChanged` (session
+  health of any connecting volume, not just SMB), `checkFullDiskAccess`, `checkFullDiskAccessQuiet`,
+  `getMacosMajorVersion`, `openPrivacySettings`, `openSystemSettingsUrl`.
 - **`networking.ts`**: SMB host discovery, share listing, Keychain credential ops, mounting, direct-connection upgrade,
   in-place `reconnectSmbVolume` and per-volume `disconnectSmbVolume`.
 - **`mtp.ts`**: Android MTP: device listing, connect/disconnect, file ops, transfer progress, volume copy.

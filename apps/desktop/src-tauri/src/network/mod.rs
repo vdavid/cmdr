@@ -176,23 +176,44 @@ pub struct NetworkHostContextAction {
     pub host_name: String,
 }
 
-/// Typed `smb-connection-changed` Tauri event. The frontend reconnect manager
-/// listens for this and runs the per-volume backoff cycle. Defined here (in the
-/// always-compiled `network` module rather than the macOS/Linux-only SMB backend)
-/// so `collect_events!` in `ipc.rs`, which can't cfg-gate inline, references it on
-/// every platform. The backend `SmbVolume` emit site builds and emits it.
+/// How a connecting volume's session looks to the frontend, as carried by
+/// `volume-connection-changed`.
+///
+/// Deliberately wider than any backend's internal state machine. SMB's
+/// `ConnectionState` (`file_system/volume/backends/smb/state.rs`) is binary,
+/// `Direct ⇄ Disconnected`, and widens into `Connected` / `Disconnected` through a
+/// `From` impl there. `NeedsCredentials` has no counterpart in it: no backend ever
+/// rests in that state, it rides alongside a failed reconnect attempt. The OS-mount
+/// fallback likewise lives only at the outer `SmbConnectionState` layer (driven by
+/// `enrich_smb_connection_state`), never here.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum VolumeConnection {
+    /// The backend holds a live session; operations take the fast path.
+    Connected,
+    /// The session dropped. The frontend runs the per-volume backoff cycle.
+    Disconnected,
+    /// A reconnect gave up because the saved credentials no longer work (the password
+    /// changed on the server), so the reconnect manager shows a "Sign in" prompt
+    /// instead of the generic "unreachable" banner. Transient: it accompanies a failed
+    /// attempt rather than describing a state the volume settles in.
+    NeedsCredentials,
+}
+
+/// Typed `volume-connection-changed` Tauri event. The frontend reconnect manager
+/// listens for this and runs the per-volume backoff cycle.
+///
+/// Backend-neutral on purpose: SMB is the only emitter today, and the next connecting
+/// backend (FTP, S3, SFTP) reuses this channel instead of adding a parallel one.
+///
+/// Defined here (in the always-compiled `network` module rather than the
+/// macOS/Linux-only SMB backend) so `collect_events!` in `ipc.rs`, which can't cfg-gate
+/// inline, references it on every platform. The backend emit site builds and emits it.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
-pub struct SmbConnectionChanged {
+pub struct VolumeConnectionChanged {
     pub volume_id: String,
-    /// `"direct"`, `"disconnected"`, or `"needs_auth"`. The internal connection state
-    /// machine is binary (Direct / Disconnected); `"needs_auth"` is a transient FE-only
-    /// signal emitted when an in-place reconnect gave up on an auth failure (password
-    /// changed on the server), so the reconnect manager shows a "Sign in" prompt instead
-    /// of the generic "unreachable" banner. It does not correspond to a backend
-    /// `ConnectionState` variant. The OS-mount fallback likewise only exists at the outer
-    /// `SmbConnectionState` layer (driven by `enrich_smb_connection_state`).
-    pub state: String,
+    pub state: VolumeConnection,
 }
 
 /// Current network discovery state, accessible globally.

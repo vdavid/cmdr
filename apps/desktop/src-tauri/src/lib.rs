@@ -484,7 +484,7 @@ pub fn run() {
             // executor. Disable/forget need no handle.
             commands::indexing::set_app_handle(app.handle().clone());
 
-            // Stash the AppHandle so SmbVolume can emit `smb-connection-changed`
+            // Stash the AppHandle so SmbVolume can emit `volume-connection-changed`
             // events when sessions die or come back. The frontend reconnect
             // manager listens for these to drive its per-volume backoff cycle.
             #[cfg(any(target_os = "macos", target_os = "linux"))]

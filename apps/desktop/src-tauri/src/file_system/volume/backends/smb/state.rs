@@ -2,6 +2,7 @@
 
 use super::SmbVolume;
 use super::events::emit_state_change;
+use crate::network::VolumeConnection;
 use std::sync::atomic::Ordering;
 
 /// Connection health states for an SmbVolume.
@@ -30,6 +31,20 @@ impl ConnectionState {
     }
 }
 
+/// Widens the internal state machine into the wire enum the frontend reads.
+///
+/// One-directional on purpose: `VolumeConnection::NeedsCredentials` has no
+/// `ConnectionState` counterpart. It's emitted straight from the reconnect
+/// give-up path (`reconnect.rs`), never from a state the volume rests in.
+impl From<ConnectionState> for VolumeConnection {
+    fn from(state: ConnectionState) -> Self {
+        match state {
+            ConnectionState::Direct => Self::Connected,
+            ConnectionState::Disconnected => Self::Disconnected,
+        }
+    }
+}
+
 impl SmbVolume {
     /// Returns the current connection state.
     pub fn connection_state(&self) -> ConnectionState {
@@ -41,14 +56,14 @@ impl SmbVolume {
     /// A retired instance keeps serving the holders that already have it, but
     /// it must stay silent about the id: the state the frontend, the index, and
     /// the reconnect machinery care about is the SUCCESSOR's. Emitting
-    /// `smb-connection-changed` from here would tell the app a healthy volume
+    /// `volume-connection-changed` from here would tell the app a healthy volume
     /// just disconnected.
     pub(super) fn is_superseded(&self) -> bool {
         self.superseded.load(Ordering::Relaxed)
     }
 
     /// `emit_state_change` for this volume, suppressed once superseded.
-    pub(super) fn emit_state_change_for_id(&self, state: &'static str) {
+    pub(super) fn emit_state_change_for_id(&self, state: VolumeConnection) {
         if self.is_superseded() {
             return;
         }
@@ -70,24 +85,24 @@ impl SmbVolume {
         guard.as_ref().map(|c| c.diagnostics())
     }
 
-    /// Flips state to `Disconnected` and emits `smb-connection-changed` if the
+    /// Flips state to `Disconnected` and emits `volume-connection-changed` if the
     /// previous state was something else (silent if we were already Disconnected,
     /// to avoid event spam when several in-flight ops all see the same broken
     /// session).
     pub(super) fn transition_to_disconnected(&self) {
         let prev = self.state.swap(ConnectionState::Disconnected as u8, Ordering::Relaxed);
         if prev != ConnectionState::Disconnected as u8 {
-            self.emit_state_change_for_id("disconnected");
+            self.emit_state_change_for_id(ConnectionState::Disconnected.into());
         }
     }
 
-    /// Flips state to `Direct` and emits `smb-connection-changed` if the previous
+    /// Flips state to `Direct` and emits `volume-connection-changed` if the previous
     /// state was something else. Called by `attempt_reconnect` after a successful
     /// session rebuild.
     pub(super) fn transition_to_direct(&self) {
         let prev = self.state.swap(ConnectionState::Direct as u8, Ordering::Relaxed);
         if prev != ConnectionState::Direct as u8 {
-            self.emit_state_change_for_id("direct");
+            self.emit_state_change_for_id(ConnectionState::Direct.into());
         }
     }
 }
