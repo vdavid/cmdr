@@ -11,7 +11,9 @@ Marketing site and blog for Cmdr. Astro + Tailwind v4 (CSS-first config in `src/
 - `src/content/blog/{slug}/index.md`: blog posts, colocated images (schema in `src/content.config.ts`). Add one:
   `docs/guides/writing-blog-posts.md`.
 - `src/lib/`: typed page content kept out of the templates. Roadmap milestones live in `src/lib/roadmap.ts` (edit items
-  there, never in `src/pages/roadmap.astro`); per-feature stability in `src/lib/feature-status.ts`.
+  there, never in `src/pages/roadmap.astro`); per-feature stability in `src/lib/feature-status.ts`;
+  `src/lib/changelog.ts` linkifies the bare commit hashes `CHANGELOG.md` stores (rule: `scripts/check/checks/DETAILS.md`
+  § "CHANGELOG commit refs").
 - `src/dev/blog-editor/`: dev-only Markdown editor at `/dev/blog` (Vite middleware, not an Astro page, absent from
   prod).
 - `src/pages/llms.txt.ts` / `llms-full.txt.ts`: agent-facing product descriptions; keep synced with product facts.

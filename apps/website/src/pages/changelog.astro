@@ -4,6 +4,7 @@ import Header from '../components/Header.astro'
 import Footer from '../components/Footer.astro'
 import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro'
 import { marked } from 'marked'
+import { linkifyCommitHashes } from '../lib/changelog'
 // Inline at build time. Astro 6 (Vite 7 internal) breaks the previous fs+path approach
 // because `import.meta.dirname` no longer points at the source file's directory after
 // bundling; `?raw` is the supported way to ship a file's contents into the bundle.
@@ -14,8 +15,8 @@ import changelogContent from '../../../../CHANGELOG.md?raw'
 const firstReleaseIndex = changelogContent.search(/^## /m)
 const releasesOnly = firstReleaseIndex >= 0 ? changelogContent.slice(firstReleaseIndex) : changelogContent
 
-// Parse markdown to HTML
-const htmlContent = await marked.parse(releasesOnly)
+// The changelog stores commit refs as bare hashes; the links are made here.
+const htmlContent = await marked.parse(linkifyCommitHashes(releasesOnly))
 ---
 
 <Layout title="Changelog - Cmdr" description="All notable changes to Cmdr, version by version.">
