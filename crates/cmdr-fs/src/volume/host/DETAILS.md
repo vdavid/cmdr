@@ -156,8 +156,9 @@ design: the user moves a slider and the next batch picks it up without remountin
 a constructor argument.
 
 The `backend` argument is a settings namespace (`"smb"`, `"ftp"`, `"s3"`), not a classification — ❌ nothing branches on
-it, on either side. Connection parameters (address, port, region, passive mode) go through the backend's own
-constructor, typed as that backend wants them.
+it, on either side; the app resolves it through a namespace-keyed table (§ "Where the app answers each seam").
+Connection parameters (address, port, region, passive mode) go through the backend's own constructor, typed as that
+backend wants them.
 
 ### `UserActivity`
 
@@ -245,7 +246,9 @@ surfaces at the end of a move: check every `[\`Type::method\`]` link for an app-
 5. If you have no watcher (S3 has none), leave `Volume::listing_is_watched` at its `false` default and never call
    `watched_listing`. Claiming freshness you can't keep is how a pre-flight scan reuses a stale cache.
 6. Spawn through `host.runtime()`, never `tokio::spawn`.
-7. Read `settings().max_concurrent_operations(BACKEND)` per batch dispatch, not once at construction.
+7. Read `settings().max_concurrent_operations(BACKEND)` per batch dispatch, not once at construction. Until your
+   namespace has a row in `file_system::backend_settings`, you get a conservative built-in rather than someone else's
+   number, so a forgotten row costs speed and nothing else.
 8. Report connection transitions through `events()`, comparing against your previous state so a server that's down
    doesn't emit one per failed operation.
 9. Write your tests against the fakes here. Assert on `change_count` as well as contents: that's what keeps a seam call
@@ -277,9 +280,11 @@ Three things the adapters found that aren't trait shape, and matter to whoever w
   are what the frontend's reconnect manager subscribes to, so every backend's transitions ride it today. A second
   connecting backend wants a generic payload, and that's a frontend-visible rename rather than something the adapter can
   absorb.
-- **There is ONE stored concurrency knob**, so `AppBackendSettings` ignores the namespace it's handed rather than
-  branching on it. When a second backend earns its own slider this becomes a lookup keyed by the namespace, never a
-  `match`.
+- **`AppBackendSettings` resolves through a table keyed by the namespace**, not a `match` on it. One row exists, `"smb"`
+  ⇒ the `network.smbConcurrency` setting, which is SMB's alone: label, help text, and table row all say so. A namespace
+  with no row gets a conservative built-in (2), because the day someone adds a backend and forgets its row is the day
+  that number ships, and an FTP server capped at four connections answers the fifth with a ban. Adding a backend's knob
+  is adding a row.
 - **`IndexNotifier` needs no platform fork.** `Index::on_watch_gap` compiles everywhere and cfg-gates its own MTP arm,
   so the adapter is unconditional; only the app's own call sites carry
   `#[cfg(any(target_os = "macos", target_os = "linux"))]`.

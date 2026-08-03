@@ -101,6 +101,10 @@ static DIRECT_SMB_ENABLED: AtomicBool = AtomicBool::new(true);
 /// Set from the `network.smbConcurrency` setting at startup. Default 10, clamped
 /// to `1..=32` (above 32 exceeds smb2's `MAX_PIPELINE_WINDOW`; below 1 is nonsense).
 ///
+/// ❌ SMB's alone, in name, in help text, and in scope: what one server sustains
+/// says nothing about another protocol's. Another backend gets its own setting
+/// and its own row in `backend_settings.rs`, never a second reader here.
+///
 /// `AtomicUsize` because `SmbVolume::max_concurrent_ops()` reads this on every
 /// batch-copy dispatch, so lock-free matters.
 static SMB_CONCURRENCY: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(10);

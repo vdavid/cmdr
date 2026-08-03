@@ -175,10 +175,13 @@ to inject and no narrower seam to invent.
 1. **The connection event is SMB-named end to end.** `network::SmbConnectionChanged` / `smb-connection-changed` is what
    the frontend reconnect manager subscribes to, so every backend's connection transitions currently ride an SMB-named
    channel. A second connecting backend needs a **frontend-visible rename**; no adapter can absorb this.
-2. **There is one stored concurrency knob.** `AppBackendSettings` ignores the backend namespace rather than branching on
-   it (the seam forbids branching), so an FTP volume would read the SMB slider until a second slider exists.
+2. **There is one stored concurrency knob, and it's SMB's.** `AppBackendSettings` resolves through a namespace-keyed
+   table with a single `"smb"` row; anything else gets a conservative built-in rather than the SMB slider. FTP's own
+   setting is undecided (global or per-server, likely defaulting to 1, possibly unexposed at first), so it stays a
+   product decision for whoever ships FTP: add a row.
 
-Neither blocks P2. Both block FTP shipping well, so they belong in P4's scope rather than being discovered there.
+Neither blocks P2. The first blocks FTP shipping well, so it belongs in P4's scope rather than being discovered there;
+the second is now only the FTP setting itself.
 
 ### What P2 changed, and the gate's answer
 
