@@ -28,6 +28,66 @@ async `flush()` let callers wait for all prior writes to commit.
 design. Rather than fight it with `BUSY_TIMEOUT` + retries, one thread owns the write connection and eliminates
 contention entirely.
 
+## Implicit write batching (`batch.rs`)
+
+In autocommit every message pays its own COMMIT plus a WAL frame write, and on the live path that IS most of the write
+cost: 31.1 µs per row in autocommit against 7.0 µs for the same rows inside one transaction
+(`../store/tests/insert_throughput_probe.rs`, debug, 2026-08-03), matching a production stack profile that put 628 of
+918 samples under `propagate_delta_by_id` in `sqlite3VdbeHalt` → `vdbeCommit` → `pagerWalFrames` → `walWriteOneFrame` →
+`pwrite`. End to end through a real `IndexWriter` the same change moves `UpsertEntryV2` from 84.3 µs to 33.4 µs per
+message (`batch/throughput_probe.rs`, debug, 20 K messages, 2026-08-04) — the rest is handler work, not commits.
+
+**The shape: coalesce only what is ALREADY QUEUED.** The first mutation opens `BEGIN IMMEDIATE`, everything behind it
+joins, and the batch closes the moment the queue runs dry. An empty queue therefore commits exactly as eagerly as
+autocommit did, so batching costs NO latency of its own and the crash window covers only work that was uncommitted
+anyway. A time-boxed transaction would instead hold uncommitted work while idle: strictly worse, for no gain. Two caps
+(`MAX_MESSAGES` 512, `MAX_DURATION` 250 ms) bound a sustained flood that never lets the queue drain; the 250 ms is
+deliberately far under the network scanner's 2 s `SCAN_COMMIT_INTERVAL`, because these are LIVE rows that stay invisible
+to every read connection until the commit.
+
+**Decision: three roles, matched exhaustively with no catch-all arm**, so a new `WriteMessage` variant is a deliberate
+decision rather than a default.
+
+- **`Mutation`** (opens or joins a batch): `UpsertEntryV2`, `MoveEntryV2`, `DeleteEntryById`, `DeleteSubtreeById`,
+  `DeleteDescendantsById`, `PropagateDeltaById`, `PropagateMinSubtreeEpoch`, `MarkDirsListed`, `UpdateLastEventId`,
+  `UpdateMeta`, `DeleteMeta`, `BumpCurrentEpoch`. These are the messages paying one COMMIT each today.
+- **`Barrier`** (commit BEFORE handling): `Flush` (the reply is a durability barrier for both reconcilers and both
+  scan-start funnels), `EmitDirUpdated` (the UI refetches on it, so it must name committed rows), `GetEntryCount` (it
+  replies with a value), `BeginTransaction` / `CommitTransaction` (SQLite has no nested transactions), `TruncateData` /
+  `IncrementalVacuum` / `WalCheckpoint` (a checkpoint fails `SQLITE_LOCKED` inside a transaction and
+  `incremental_vacuum` frees nothing), `Shutdown` (else a clean quit rolls the last batch back), the four bulk
+  recomputes (`ComputeAllAggregates`, `ComputePartialAggregates`, `ComputeSubtreeAggregates`, `BackfillMissingDirStats`)
+  plus `PayLedgerIfUnpaid` — already amortized, and each emits progress or `DirsUpdated` events whose job is to make
+  COMMITTED sizes visible — and `MarkLedgerUnpaid`.
+- **`Neutral`** (joins an open batch, never opens one): `InsertEntriesV2`, `SetDeltaPropagation`, `ArmLedgerHealLatch`.
+
+**Decision: `MarkLedgerUnpaid` is a barrier, not a mutation.** It records the ledger debt DURABLY before the first
+suppressed write, so a walk that dies leaves the next launch a marker to heal from. Batching it would make that marker's
+durability depend on a COMMIT that hasn't run yet, and the paid/unpaid invariant is the one thing here we don't trade
+for throughput (§ "The dir_stats ledger"). It's sent once per bulk walk, so autocommit costs nothing.
+
+**Decision: `InsertEntriesV2` never OPENS a batch.** `insert_entries_v2_batch` already savepoints ~2000 rows per
+message, so autocommit costs it one fsync per 2000 rows — the batch would buy ~nothing, while a full scan's stream would
+balloon a single transaction (and the WAL with it) to hundreds of thousands of rows. It still joins an open batch so a
+mixed live stream doesn't thrash.
+
+**Gotcha — batch state follows the CONNECTION, never a bare bool.** `is_open()` is `opened && !conn.is_autocommit()`: an
+error can roll the transaction back underneath us, and a stale `true` would make the next `COMMIT` fail. The flag is
+still needed alongside, to tell OUR transaction from an explicit `BeginTransaction` we must neither nest inside nor
+commit. Symmetrically, after a `COMMIT` the flag is re-derived from `is_autocommit()` rather than from the statement's
+`Result`: a COMMIT that failed with the transaction still open stays ours to retry, or every later write lands in a
+transaction nothing ever closes.
+
+**Ordering: the batch closes BEFORE the caught-up hooks**, so a cleared pending-size hourglass and a drained repair
+queue always sit on top of committed rows. The loop also `try_recv`s before parking, so no batch ever survives into a
+blocking wait, and the disconnect path commits rather than losing a clean quit's last writes. A commit here runs
+`run_deferred_wal_checkpoint`, the existing mechanism for a maintenance tick parked inside an open transaction.
+
+**Accepted:** live rows are invisible to read connections for up to the batch's life (bounded above by 250 ms, normally
+microseconds), and a hard crash loses at most one batch of recent live index work. Both are fine by design — the index
+is a disposable cache the reconciler resyncs (`../CLAUDE.md` § "Rebuild, don't migrate"), and search already tolerates
+far more (it serves a warm arena with a 30 s refresh floor).
+
 ## The caught-up point and the idle epoch
 
 Every `writer_loop` iteration ends with two hooks that run only when `queue_depth == 0`: the pending-size hourglass

@@ -22,6 +22,7 @@ use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::pluralize::{pluralize, pluralize_with};
 
 mod aggregation;
+mod batch;
 mod deferred_repair;
 mod delta;
 mod entries;
@@ -35,6 +36,7 @@ use aggregation::{
     handle_backfill_missing_dir_stats, handle_compute_all_aggregates, handle_compute_partial_aggregates,
     handle_compute_subtree_aggregates,
 };
+use batch::{BatchRole, ImplicitBatch};
 use deferred_repair::DeferredRepairs;
 use delta::{propagate_delta_by_id, propagate_min_subtree_epoch};
 use entries::{
@@ -1041,6 +1043,9 @@ fn writer_loop(
     // Chains a failed `dir_stats` read/write left drifted, drained below once the
     // writer is idle again. See `deferred_repair.rs`.
     let repairs = DeferredRepairs::new();
+    // Coalesces mutations that are ALREADY QUEUED into one transaction, so the live
+    // path stops paying a COMMIT + WAL frame write per message. See `batch.rs`.
+    let mut batch = ImplicitBatch::new();
 
     // Phase 1 instrumentation: time split between recv() (idle waiting),
     // processing (handlers), and commit (txn commits, tracked via wrapper).
@@ -1049,29 +1054,60 @@ fn writer_loop(
     const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 
     loop {
-        let recv_start = Instant::now();
-        // Use recv_timeout so we can emit heartbeats even when the channel
-        // is idle (the 163s smoking gun should make this visible).
-        let recv_result = receiver.recv_timeout(HEARTBEAT_INTERVAL);
-        let recv_elapsed = recv_start.elapsed();
-        probe.time_in_recv += recv_elapsed;
-
-        let msg = match recv_result {
+        // Take whatever is already queued without parking. An open batch must never
+        // survive into a blocking wait: what bounds it is "work that was already
+        // queued", so an empty channel closes it before we park. The end-of-iteration
+        // close below normally gets there first; this is the backstop for the window
+        // where `queue_depth` still counts a send that hasn't reached the channel yet.
+        let msg = match receiver.try_recv() {
             Ok(m) => {
                 // Decrement queue depth: the message has left the channel.
                 queue_depth.fetch_sub(1, Ordering::Relaxed);
-                m
+                Some(m)
             }
-            Err(mpsc::RecvTimeoutError::Timeout) => {
-                // No message in this window. Emit heartbeat and loop.
-                probe.maybe_emit_heartbeat(queue_depth.load(Ordering::Relaxed));
-                continue;
+            Err(mpsc::TryRecvError::Empty) => {
+                batch.close(&conn, &mut probe, &failure_signal, &mut deferred_checkpoint);
+                let recv_start = Instant::now();
+                // Use recv_timeout so we can emit heartbeats even when the channel
+                // is idle (the 163s smoking gun should make this visible).
+                let recv_result = receiver.recv_timeout(HEARTBEAT_INTERVAL);
+                probe.time_in_recv += recv_start.elapsed();
+                match recv_result {
+                    Ok(m) => {
+                        queue_depth.fetch_sub(1, Ordering::Relaxed);
+                        Some(m)
+                    }
+                    Err(mpsc::RecvTimeoutError::Timeout) => {
+                        // No message in this window. Emit heartbeat and loop.
+                        probe.maybe_emit_heartbeat(queue_depth.load(Ordering::Relaxed));
+                        continue;
+                    }
+                    Err(mpsc::RecvTimeoutError::Disconnected) => None,
+                }
             }
-            Err(mpsc::RecvTimeoutError::Disconnected) => break,
+            Err(mpsc::TryRecvError::Disconnected) => None,
+        };
+        // Every sender is gone. Commit what the batch holds rather than roll a clean
+        // quit's last writes back, then exit.
+        let Some(msg) = msg else {
+            batch.close(&conn, &mut probe, &failure_signal, &mut deferred_checkpoint);
+            break;
         };
 
         if !matches!(msg, WriteMessage::IncrementalVacuum | WriteMessage::WalCheckpoint) {
             stats.record(&msg);
+        }
+
+        // Place the message against the implicit batch BEFORE handling it: a barrier
+        // has to find its predecessors committed, and a mutation opens the batch the
+        // messages behind it will join.
+        match batch::role(&msg) {
+            BatchRole::Barrier => batch.close(&conn, &mut probe, &failure_signal, &mut deferred_checkpoint),
+            BatchRole::Mutation => batch.begin(&conn),
+            BatchRole::Neutral => {}
+        }
+        if batch.is_open(&conn) {
+            batch.note_message();
         }
 
         let proc_start = Instant::now();
@@ -1122,6 +1158,7 @@ fn writer_loop(
         maintenance::flush_busy_episode();
 
         if should_exit {
+            // `Shutdown` is a batch barrier, so the last batch already committed above.
             log::debug!("Writer: shutdown after processing {} messages", stats.current.total);
             return;
         }
@@ -1132,6 +1169,10 @@ fn writer_loop(
         // livelock). The supervisor, woken by the same signal, transitions the volume
         // to the `Failed` phase and tears the rest down. See `indexing::failure`.
         if failure_signal.is_tripped() {
+            // Best effort: a fatal error has usually rolled the batch back already
+            // (then this is a no-op), but whatever DID land shouldn't be thrown away
+            // just because a later message killed the DB.
+            batch.close(&conn, &mut probe, &failure_signal, &mut deferred_checkpoint);
             log::warn!(
                 "Writer: stopping for '{volume_id}' after a fatal storage error ({} messages processed)",
                 stats.current.total,
@@ -1140,6 +1181,15 @@ fn writer_loop(
         }
         stats.maybe_log_summary();
         probe.maybe_emit_heartbeat(queue_depth.load(Ordering::Relaxed));
+
+        // Close the implicit batch here, ahead of the caught-up hooks below, so a
+        // cleared hourglass and a drained repair queue always sit on top of COMMITTED
+        // rows. An empty queue closes it, which is the overwhelmingly common case and
+        // why batching costs no latency; the caps in `batch.rs` bound a flood that
+        // never lets the queue drain.
+        if batch.is_open(&conn) && batch.should_close(queue_depth.load(Ordering::Relaxed) == 0) {
+            batch.close(&conn, &mut probe, &failure_signal, &mut deferred_checkpoint);
+        }
 
         // Set by either caught-up hook below, and the trigger for the `idle_epoch` tick
         // that closes the iteration. Each hook samples `queue_depth` for itself, so a

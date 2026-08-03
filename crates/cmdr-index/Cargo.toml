@@ -176,6 +176,12 @@ cmdr-index = { path = ".", features = ["testing", "tooling"] }
 # targets only.
 cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
 tempfile = "3"
+# `hooks` (an empty feature — no extra crates) for `Connection::commit_hook`, which
+# is how the writer-batching test COUNTS SQLite's own commits instead of trusting our
+# bookkeeping. Declared here rather than in `[dependencies]` so the hook machinery
+# stays out of every shipped build; the resolver only unifies dev-dependency features
+# when a dev target is being built.
+rusqlite = { version = "0.40", features = ["hooks"] }
 # Property-based testing for the algorithmic cores: path resolution, aggregate
 # roll-up, and the importance scorer, where the input space is too large for
 # example tests to cover meaningfully.

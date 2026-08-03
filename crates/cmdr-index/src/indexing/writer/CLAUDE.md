@@ -8,6 +8,7 @@ search-generation bump. Other areas point here.
 
 - **mod.rs**: `WriteMessage` protocol, `IndexWriter` handle, `writer_loop` + `process_message` dispatch,
   `AccumulatorMaps`, `WRITER_GENERATION` + `MutationTracker`, SQLite busy handler, `ProbeStats` heartbeat.
+- **batch.rs**: the implicit transaction around queued mutations; each message's `BatchRole`.
 - **entries.rs** (insert/upsert/move/delete/truncate), **delta.rs** (`propagate_delta_by_id` +
   `propagate_min_subtree_epoch` + `propagate_recursive_has_symlinks`), **aggregation.rs** (`Compute*`/`Backfill` →
   `../aggregator/`), **repair.rs** (`repair_dir_stats_upward`), **deferred_repair.rs**, **maintenance.rs** (vacuum + WAL
@@ -42,6 +43,9 @@ search-generation bump. Other areas point here.
 - **Tests must never assert on process-global state (`WRITER_GENERATION`, the root tracker) across a before/after
   window**: every `IndexWriter::spawn()` is a ROOT writer that bumps and clears the root tracker, so a global read
   flakes under `cargo test`. Use `global_generation_bumps` or a `TestInstanceGuard`. DETAILS § "Test isolation".
+- **Live mutations batch, they don't autocommit** (`batch.rs`): queued work coalesces into one `BEGIN IMMEDIATE`, closed
+  on an empty queue (no added latency). Every new `WriteMessage` needs a `BatchRole`; a reply, emit, or pragma must be
+  `Barrier`.
 - **`flush_blocking` ≠ settled**: it replies from inside the handler, before the end-of-iteration hourglass clear and
   repair drain. Wait on `idle_epoch()`; ❌ never move the reply.
 

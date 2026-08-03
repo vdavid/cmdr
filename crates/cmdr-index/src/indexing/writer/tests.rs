@@ -20,7 +20,7 @@ const WRITER_SETTLES_WITHIN: Duration = Duration::from_secs(1);
 /// `writer.idle_epoch()` BEFORE sending the flush: the epoch only ticks on an empty queue, so an
 /// advance past it means every message sent before the flush is processed AND its hooks have run.
 #[track_caller]
-fn wait_for_writer_to_settle(writer: &IndexWriter, before: u64) {
+pub(super) fn wait_for_writer_to_settle(writer: &IndexWriter, before: u64) {
     wait_until(
         WRITER_SETTLES_WITHIN,
         "the writer to settle: its idle epoch ticks once the end-of-iteration hooks have run",
