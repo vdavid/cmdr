@@ -1,0 +1,647 @@
+//! Targeted unit tests covering survivors from `cargo mutants` on this
+//! module (state machine transitions, status-cache CRUD, and
+//! CopyTransaction commit/rollback/Drop). The `OperationIntent` /
+//! `PauseGate` state-machine tests live in `operation_intent.rs`; the
+//! `FileInfo` sort-key and scan-result TTL tests live in `scan_cache.rs`.
+//!
+//! Tests that touch the global `WRITE_OPERATION_STATE` /
+//! `OPERATION_STATUS_CACHE` caches key their entries per test, so they don't
+//! collide with concurrent test runs in the same process. `WRITE_OPERATION_STATE`
+//! entries go through `TestOperationGuard`, which also removes them on unwind.
+use super::*;
+use crate::file_system::write_operations::test_support::TestOperationGuard;
+use crate::file_system::write_operations::types::{ConflictResolution, WriteOperationType};
+use std::sync::atomic::Ordering;
+
+fn unique_id(label: &str) -> String {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static N: AtomicU64 = AtomicU64::new(0);
+    let n = N.fetch_add(1, Ordering::Relaxed);
+    format!("test-state-{label}-{n}-{:?}", std::thread::current().id())
+}
+
+// ---- cancel_write_operation state-machine transitions ----
+//
+// Helper: install a fresh state into the global cache under a unique op id,
+// run the cancellation, then read back the resulting intent. The guard removes
+// the entry when it drops, so a failing assertion can't leak it.
+
+fn install_state(label: &str, initial: OperationIntent) -> TestOperationGuard {
+    let op = TestOperationGuard::register(label);
+    op.state().intent.store(initial as u8, Ordering::Relaxed);
+    op
+}
+
+#[test]
+fn cancel_running_with_rollback_goes_to_rolling_back() {
+    let op = install_state("cancel-running-rollback", OperationIntent::Running);
+    cancel_write_operation(op.id(), true);
+    assert_eq!(load_intent(&op.state().intent), OperationIntent::RollingBack);
+}
+
+#[test]
+fn cancel_running_without_rollback_goes_to_stopped() {
+    let op = install_state("cancel-running-stop", OperationIntent::Running);
+    cancel_write_operation(op.id(), false);
+    assert_eq!(load_intent(&op.state().intent), OperationIntent::Stopped);
+}
+
+#[test]
+fn cancel_rolling_back_with_rollback_is_a_noop() {
+    // Only RollingBack → Stopped is valid; RollingBack → RollingBack is a no-op.
+    let op = install_state("cancel-rb-rb", OperationIntent::RollingBack);
+    cancel_write_operation(op.id(), true);
+    assert_eq!(
+        load_intent(&op.state().intent),
+        OperationIntent::RollingBack,
+        "RollingBack → RollingBack is not a valid transition; intent must not change"
+    );
+}
+
+#[test]
+fn cancel_rolling_back_without_rollback_goes_to_stopped() {
+    let op = install_state("cancel-rb-stop", OperationIntent::RollingBack);
+    cancel_write_operation(op.id(), false);
+    assert_eq!(load_intent(&op.state().intent), OperationIntent::Stopped);
+}
+
+#[test]
+fn cancel_stopped_is_terminal_for_any_target() {
+    // Stopped is terminal; no transition is valid from it.
+    let op = install_state("cancel-stopped", OperationIntent::Stopped);
+    cancel_write_operation(op.id(), true);
+    assert_eq!(load_intent(&op.state().intent), OperationIntent::Stopped);
+    cancel_write_operation(op.id(), false);
+    assert_eq!(load_intent(&op.state().intent), OperationIntent::Stopped);
+}
+
+#[test]
+fn cancel_drops_the_conflict_resolution_sender() {
+    // After cancel, any pending receiver should observe a closed channel.
+    let op = install_state("cancel-drops-tx", OperationIntent::Running);
+    let (tx, mut rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
+    *op.state().conflict_resolution_tx.lock().unwrap() = Some(tx);
+    cancel_write_operation(op.id(), false);
+    // The receiver should now be closed (sender dropped).
+    match rx.try_recv() {
+        Err(tokio::sync::oneshot::error::TryRecvError::Closed) => {} // good
+        other => panic!("expected sender to be dropped, got {other:?}"),
+    }
+}
+
+// ---- backend_cancel flag flipping ---------------------------------------
+
+#[test]
+fn backend_cancel_starts_unset_on_fresh_state() {
+    let state = WriteOperationState::new(Duration::from_millis(50));
+    assert!(!state.backend_cancel.is_cancelled());
+}
+
+#[test]
+fn cancel_write_operation_flips_backend_cancel_to_stopped() {
+    let op = install_state("cancel-flips-backend-stopped", OperationIntent::Running);
+    assert!(!op.state().backend_cancel.is_cancelled());
+    cancel_write_operation(op.id(), false);
+    assert!(
+        op.state().backend_cancel.is_cancelled(),
+        "cancel → Stopped must also flip backend_cancel so in-flight USB ops bail"
+    );
+}
+
+#[test]
+fn cancel_write_operation_flips_backend_cancel_to_rolling_back() {
+    let op = install_state("cancel-flips-backend-rb", OperationIntent::Running);
+    cancel_write_operation(op.id(), true);
+    assert!(
+        op.state().backend_cancel.is_cancelled(),
+        "cancel → RollingBack must also flip backend_cancel — the user wants the wire activity stopped, even though we're going to delete created files"
+    );
+}
+
+#[test]
+fn cancel_stopped_is_noop_for_backend_cancel_too() {
+    // Stopped → anything is terminal, so backend_cancel state must not
+    // change either. This guards against a subtle regression where the
+    // token gets cancelled before the validity check. A freshly registered
+    // op starts with an un-cancelled token, so this observes the flip alone.
+    let op = install_state("cancel-stopped-noop", OperationIntent::Stopped);
+    cancel_write_operation(op.id(), true);
+    assert!(
+        !op.state().backend_cancel.is_cancelled(),
+        "Stopped is terminal: invalid transition must not flip backend_cancel"
+    );
+}
+
+#[test]
+fn cancel_unknown_operation_is_a_silent_noop() {
+    // No installed state; must not panic, must not affect anything.
+    cancel_write_operation("does-not-exist-xyzzy", true);
+    cancel_write_operation("does-not-exist-xyzzy", false);
+}
+
+// ---- cancel_all: the frontend-teardown safety net -------------------------
+//
+// `cancel_all` is a WALK, so these drive a `WriteOperationRegistry` the test
+// OWNS. Calling the global `cancel_all_write_operations()` here would stop
+// every operation every OTHER concurrently-running test has in flight — the
+// defect these tests used to be. The code under test is the same either way:
+// the public function is a one-line delegation to this method, pinned by
+// `cancel_all_write_operations_walks_the_global_registry` below.
+
+/// A state registered in `registry` under a unique id, returned for direct
+/// inspection. The registry owns the entry, so there's nothing to clean up.
+fn registered_in(
+    registry: &WriteOperationRegistry,
+    label: &str,
+    initial: OperationIntent,
+) -> Arc<WriteOperationState> {
+    let state = Arc::new(WriteOperationState::new(Duration::from_millis(50)));
+    state.intent.store(initial as u8, Ordering::Relaxed);
+    registry.insert(unique_id(label), Arc::clone(&state));
+    state
+}
+
+#[test]
+fn cancel_all_stops_running_but_does_not_re_stop_already_stopped() {
+    // Pins the `current != OperationIntent::Stopped` guard. If the guard
+    // flips to `==`, running operations would NOT be stopped; they'd
+    // remain running.
+    let registry = WriteOperationRegistry::new();
+    let running = registered_in(&registry, "cancel-all-running", OperationIntent::Running);
+    let stopped = registered_in(&registry, "cancel-all-stopped", OperationIntent::Stopped);
+    let rb = registered_in(&registry, "cancel-all-rb", OperationIntent::RollingBack);
+
+    registry.cancel_all();
+
+    assert_eq!(load_intent(&running.intent), OperationIntent::Stopped);
+    assert_eq!(load_intent(&stopped.intent), OperationIntent::Stopped);
+    assert_eq!(
+        load_intent(&rb.intent),
+        OperationIntent::Stopped,
+        "RollingBack should also be force-stopped on teardown"
+    );
+    assert!(
+        !stopped.backend_cancel.is_cancelled(),
+        "an already-Stopped op is skipped entirely: the guard, not just the intent store"
+    );
+}
+
+#[test]
+fn cancel_all_flips_backend_cancel() {
+    let registry = WriteOperationRegistry::new();
+    let running = registered_in(&registry, "cancel-all-flips-backend", OperationIntent::Running);
+    assert!(!running.backend_cancel.is_cancelled());
+
+    registry.cancel_all();
+
+    assert!(
+        running.backend_cancel.is_cancelled(),
+        "cancel_all must flip backend_cancel so teardown also stops the wire activity"
+    );
+}
+
+#[test]
+fn cancel_all_drops_pending_conflict_senders() {
+    // Teardown must unblock an op parked on a Stop-mode conflict prompt:
+    // nobody is left to answer it.
+    let registry = WriteOperationRegistry::new();
+    let state = registered_in(&registry, "cancel-all-conflict", OperationIntent::Running);
+    let (tx, mut rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
+    *state.conflict_resolution_tx.lock().unwrap() = Some(tx);
+
+    registry.cancel_all();
+
+    match rx.try_recv() {
+        Err(tokio::sync::oneshot::error::TryRecvError::Closed) => {} // good
+        other => panic!("teardown must drop the pending conflict sender, got {other:?}"),
+    }
+}
+
+#[test]
+fn cancel_all_wakes_a_paused_parked_op() {
+    // Cancellation wins over pause on the teardown path too: without the
+    // `wake()`, an op parked on the condvar would sit there forever while the
+    // frontend that could resume it is being torn down.
+    let registry = WriteOperationRegistry::new();
+    let state = registered_in(&registry, "cancel-all-paused", OperationIntent::Running);
+    state.pause_gate.pause();
+
+    let woke = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let state_t = Arc::clone(&state);
+    let woke_t = Arc::clone(&woke);
+    let handle = std::thread::spawn(move || {
+        state_t.pause_gate.wait_while_paused_sync(&state_t.intent);
+        woke_t.store(true, Ordering::SeqCst);
+    });
+
+    // The condvar park has no "parked now" signal, so hold a window to prove
+    // the worker is really parked before the teardown lands. Otherwise a
+    // worker that never parked would pass this test.
+    // allowed-test-sleep: negative assertion over a window; the condvar park has nothing to await.
+    std::thread::sleep(Duration::from_millis(50));
+    assert!(!woke.load(Ordering::SeqCst), "still parked before teardown");
+
+    registry.cancel_all();
+
+    crate::test_support::wait_until(
+        Duration::from_secs(2),
+        "the parked worker to observe the teardown cancel",
+        || woke.load(Ordering::SeqCst),
+    );
+    handle.join().expect("worker joins");
+    assert!(
+        state.pause_gate.is_paused(),
+        "teardown wakes without resuming: the waiter returned because cancel won"
+    );
+}
+
+#[test]
+fn cancel_all_write_operations_walks_the_global_registry() {
+    // The public function's one job is to point at the process-global
+    // registry; everything it then does is pinned above against a private
+    // one. This is the only write-op test that drives a process-global
+    // mutator, so it runs ONLY when it has the process to itself — under
+    // plain `cargo test` it would stop every other test's operations, which
+    // is the defect this suite was restructured to remove.
+    if !crate::file_system::write_operations::test_support::one_test_per_process() {
+        return;
+    }
+    let op = install_state("cancel-all-global-wiring", OperationIntent::Running);
+
+    cancel_all_write_operations();
+
+    assert_eq!(
+        load_intent(&op.state().intent),
+        OperationIntent::Stopped,
+        "the public teardown entry point must reach ops in the global registry"
+    );
+}
+
+// Panic-safe cache + lane cleanup is now `manager::ManagedTaskGuard`; its
+// panic-unwind pin lives in `manager::tests`.
+
+// ---- resolve_write_conflict ----
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn resolve_write_conflict_delivers_response_to_waiter() {
+    let op = install_state("resolve-conflict", OperationIntent::Running);
+
+    let (tx, rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
+    *op.state().conflict_resolution_tx.lock().unwrap() = Some(tx);
+
+    resolve_write_conflict(op.id(), ConflictResolution::Overwrite, true);
+
+    let resp = rx.await.expect("sender should have delivered the response");
+    assert_eq!(resp.resolution, ConflictResolution::Overwrite);
+    assert!(resp.apply_to_all);
+}
+
+#[test]
+fn resolve_write_conflict_without_pending_sender_is_a_noop() {
+    let op = install_state("resolve-no-tx", OperationIntent::Running);
+    // No sender stashed; must not panic.
+    resolve_write_conflict(op.id(), ConflictResolution::Skip, false);
+}
+
+// ---- register / update / unregister + list / get ----
+
+#[test]
+fn register_then_get_status_roundtrip() {
+    let op = install_state("reg-get", OperationIntent::Running);
+    let id = op.id().to_string();
+    register_operation_status(&id, WriteOperationType::Copy, vec![]);
+
+    let status = get_operation_status(&id).expect("operation should be in cache");
+    assert_eq!(status.operation_id, id);
+    assert_eq!(status.operation_type, WriteOperationType::Copy);
+    assert_eq!(status.phase, WriteOperationPhase::Scanning);
+    assert!(
+        status.is_running,
+        "is_running must reflect WRITE_OPERATION_STATE presence"
+    );
+    assert_eq!(status.files_done, 0);
+    assert_eq!(status.files_total, 0);
+    assert_eq!(status.bytes_done, 0);
+    assert_eq!(status.bytes_total, 0);
+
+    // is_running flips when the WRITE_OPERATION_STATE entry is removed.
+    drop(op);
+    let status = get_operation_status(&id).expect("status cache still has it");
+    assert!(!status.is_running);
+
+    unregister_operation_status(&id);
+    assert!(get_operation_status(&id).is_none());
+}
+
+#[test]
+fn update_operation_status_overwrites_fields() {
+    let id = unique_id("update");
+    register_operation_status(&id, WriteOperationType::Move, vec![]);
+    update_operation_status(
+        &id,
+        WriteOperationPhase::Copying,
+        Some("a.txt".into()),
+        3,
+        10,
+        500,
+        1000,
+    );
+    let status = get_operation_status(&id).unwrap();
+    assert_eq!(status.phase, WriteOperationPhase::Copying);
+    assert_eq!(status.current_file.as_deref(), Some("a.txt"));
+    assert_eq!(status.files_done, 3);
+    assert_eq!(status.files_total, 10);
+    assert_eq!(status.bytes_done, 500);
+    assert_eq!(status.bytes_total, 1000);
+    unregister_operation_status(&id);
+}
+
+#[test]
+fn update_unknown_id_is_a_silent_noop() {
+    // Pins the `&& get_mut` short-circuit. If `&&` becomes `||`, this would
+    // dereference a None and panic.
+    update_operation_status("no-such-op-xyzzy", WriteOperationPhase::Copying, None, 0, 0, 0, 0);
+}
+
+#[test]
+fn list_active_operations_percent_uses_bytes_when_available() {
+    // bytes_total > 0 → percent comes from bytes axis, not files.
+    let id = unique_id("list-bytes");
+    register_operation_status(&id, WriteOperationType::Copy, vec![]);
+    update_operation_status(
+        &id,
+        WriteOperationPhase::Copying,
+        None,
+        1,    // files_done
+        100,  // files_total (would give 1% if used)
+        500,  // bytes_done
+        1000, // bytes_total → 50%
+    );
+    let summary = list_active_operations()
+        .into_iter()
+        .find(|s| s.operation_id == id)
+        .expect("operation present in summary");
+    assert_eq!(
+        summary.percent_complete, 50,
+        "percent must be derived from bytes axis when bytes_total > 0"
+    );
+    unregister_operation_status(&id);
+}
+
+#[test]
+fn list_active_operations_percent_falls_back_to_files() {
+    // bytes_total == 0, files_total > 0 → use files axis.
+    let id = unique_id("list-files");
+    register_operation_status(&id, WriteOperationType::Delete, vec![]);
+    update_operation_status(&id, WriteOperationPhase::Deleting, None, 3, 4, 0, 0);
+    let summary = list_active_operations()
+        .into_iter()
+        .find(|s| s.operation_id == id)
+        .unwrap();
+    assert_eq!(summary.percent_complete, 75);
+    unregister_operation_status(&id);
+}
+
+#[test]
+fn list_active_operations_percent_is_zero_when_nothing_known() {
+    // Both totals == 0 → percent_complete == 0 (not the files-axis path).
+    let id = unique_id("list-zero");
+    register_operation_status(&id, WriteOperationType::Copy, vec![]);
+    let summary = list_active_operations()
+        .into_iter()
+        .find(|s| s.operation_id == id)
+        .unwrap();
+    assert_eq!(summary.percent_complete, 0);
+    unregister_operation_status(&id);
+}
+
+#[test]
+fn list_active_operations_percent_clamps_to_100() {
+    // Pin the `.min(100.0)` clamp. If bytes_done > bytes_total (which can
+    // happen in flight due to over-counting), the UI must never see > 100.
+    let id = unique_id("list-clamp");
+    register_operation_status(&id, WriteOperationType::Copy, vec![]);
+    update_operation_status(&id, WriteOperationPhase::Copying, None, 0, 0, 1500, 1000);
+    let summary = list_active_operations()
+        .into_iter()
+        .find(|s| s.operation_id == id)
+        .unwrap();
+    assert_eq!(summary.percent_complete, 100);
+    unregister_operation_status(&id);
+}
+
+// ---- CopyTransaction ----
+
+#[test]
+fn copy_transaction_rollback_deletes_files_and_dirs_in_reverse() {
+    // Build a real on-disk transaction: nested dirs + a file, then roll
+    // back. Both removals must happen. The rollback must walk dirs in
+    // reverse-creation order so the leaf is removed before its parent.
+    let tmp = tempfile::tempdir().unwrap();
+    let outer = tmp.path().join("outer");
+    let inner = outer.join("inner");
+    std::fs::create_dir(&outer).unwrap();
+    std::fs::create_dir(&inner).unwrap();
+    let file = inner.join("data.bin");
+    std::fs::write(&file, b"hello").unwrap();
+
+    let mut tx = CopyTransaction::new();
+    tx.record_dir(outer.clone());
+    tx.record_dir(inner.clone());
+    tx.record_file(file.clone());
+
+    tx.rollback();
+
+    assert!(!file.exists(), "file must be removed on rollback");
+    assert!(!inner.exists(), "inner dir must be removed (leaf-first)");
+    assert!(!outer.exists(), "outer dir must be removed");
+}
+
+#[test]
+fn copy_transaction_commit_prevents_drop_rollback() {
+    // Kills: replace CopyTransaction::commit with (), and the `!self.committed`
+    // guard in Drop. After commit(), files must survive Drop.
+    let tmp = tempfile::tempdir().unwrap();
+    let file = tmp.path().join("kept.txt");
+    std::fs::write(&file, b"persist").unwrap();
+
+    {
+        let mut tx = CopyTransaction::new();
+        tx.record_file(file.clone());
+        tx.commit();
+    } // Drop runs here.
+
+    assert!(file.exists(), "commit() must prevent the Drop-based rollback");
+}
+
+#[test]
+fn copy_transaction_drop_rolls_back_when_not_committed() {
+    // Kills: replace <impl Drop>::drop with (), and `delete !` in Drop.
+    let tmp = tempfile::tempdir().unwrap();
+    let file = tmp.path().join("ephemeral.txt");
+    std::fs::write(&file, b"will be gone").unwrap();
+
+    {
+        let mut tx = CopyTransaction::new();
+        tx.record_file(file.clone());
+        // No commit; Drop should roll back.
+    }
+
+    assert!(!file.exists(), "Drop-on-uncommitted must remove recorded files");
+}
+
+#[test]
+fn copy_transaction_record_methods_push_in_order() {
+    // Kills: replace record_file/record_dir with ().
+    let mut tx = CopyTransaction::new();
+    tx.record_file(PathBuf::from("/a"));
+    tx.record_file(PathBuf::from("/b"));
+    tx.record_dir(PathBuf::from("/d1"));
+    assert_eq!(tx.created_files, vec![PathBuf::from("/a"), PathBuf::from("/b")]);
+    assert_eq!(tx.created_dirs, vec![PathBuf::from("/d1")]);
+    tx.commit(); // suppress Drop rollback (paths don't exist anyway, but be tidy)
+}
+
+// ── Busy-volumes set (drives "disable Eject while an op touches a device") ──
+// These assert membership of the test's own unique volume IDs (not the whole
+// set) and clean up, so they stay correct under nextest's in-process
+// parallelism where the global `OPERATION_STATUS_CACHE` is shared.
+
+#[test]
+fn busy_volume_ids_reflects_registered_volumes() {
+    let op = unique_id("busy-op");
+    let usb = unique_id("usb");
+    let mtp = unique_id("mtp");
+
+    register_operation_status(&op, WriteOperationType::Copy, vec![usb.clone(), mtp.clone()]);
+    let busy = busy_volume_ids();
+    assert!(busy.contains(&usb), "source volume should be busy");
+    assert!(busy.contains(&mtp), "dest volume should be busy");
+
+    unregister_operation_status(&op);
+    let after = busy_volume_ids();
+    assert!(!after.contains(&usb), "volume should clear once the op finishes");
+    assert!(!after.contains(&mtp), "volume should clear once the op finishes");
+}
+
+#[test]
+fn busy_volume_ids_excludes_root() {
+    let op = unique_id("busy-root-op");
+    let usb = unique_id("usb");
+
+    let root = crate::file_system::volume::DEFAULT_VOLUME_ID.to_string();
+    register_operation_status(&op, WriteOperationType::Move, vec![root.clone(), usb.clone()]);
+    let busy = busy_volume_ids();
+    assert!(busy.contains(&usb), "the ejectable volume should be busy");
+    assert!(
+        !busy.contains(&root),
+        "root is never ejectable, so it must not appear in the busy set"
+    );
+
+    unregister_operation_status(&op);
+}
+
+#[test]
+fn busy_volume_ids_stays_busy_until_all_overlapping_ops_finish() {
+    // Two concurrent transfers touch the same device; it must stay busy
+    // until BOTH finish (refcount-by-membership, no manual counter).
+    let op_a = unique_id("overlap-a");
+    let op_b = unique_id("overlap-b");
+    let dev = unique_id("device");
+
+    register_operation_status(&op_a, WriteOperationType::Copy, vec![dev.clone()]);
+    register_operation_status(&op_b, WriteOperationType::Copy, vec![dev.clone()]);
+    assert!(busy_volume_ids().contains(&dev));
+
+    unregister_operation_status(&op_a);
+    assert!(busy_volume_ids().contains(&dev), "still busy while the second op runs");
+
+    unregister_operation_status(&op_b);
+    assert!(
+        !busy_volume_ids().contains(&dev),
+        "clears only after the last op finishes"
+    );
+}
+
+#[test]
+fn busy_volume_ids_clears_on_panic_unwind_via_unregister() {
+    // A panicking op must not leave its volume stuck "busy" forever. In
+    // production `manager::ManagedTaskGuard` calls `unregister_operation_status`
+    // on unwind; this pins that `unregister_operation_status` itself clears
+    // the busy mark when invoked from a `Drop` during a panic.
+    struct UnregisterOnDrop(String);
+    impl Drop for UnregisterOnDrop {
+        fn drop(&mut self) {
+            unregister_operation_status(&self.0);
+        }
+    }
+
+    let op = unique_id("panic-op");
+    let dev = unique_id("panic-device");
+    let op_for_thread = op.clone();
+    let dev_for_thread = dev.clone();
+
+    let handle = std::thread::spawn(move || {
+        register_operation_status(&op_for_thread, WriteOperationType::Delete, vec![dev_for_thread]);
+        let _guard = UnregisterOnDrop(op_for_thread.clone());
+        panic!("simulated op panic while the device is busy");
+    });
+    assert!(handle.join().is_err(), "thread should have panicked");
+
+    assert!(
+        !busy_volume_ids().contains(&dev),
+        "unregister on unwind must clear the busy mark"
+    );
+}
+
+// ---- pause / resume on the live state ------------------------------------
+// The pure `PauseGate` mechanics (sync/async parking, cancel-wins) are
+// tested in `operation_intent.rs`; these pin the `WRITE_OPERATION_STATE`
+// lookup wiring of `pause_write_operation` / `resume_write_operation`.
+
+#[test]
+fn pause_resume_write_operation_flip_the_live_gate() {
+    let op = install_state("pause-live", OperationIntent::Running);
+    assert!(!op.state().pause_gate.is_paused());
+
+    assert!(pause_write_operation(op.id()), "should find the live state");
+    assert!(op.state().pause_gate.is_paused(), "pause must set the gate flag");
+
+    assert!(resume_write_operation(op.id()), "should find the live state");
+    assert!(!op.state().pause_gate.is_paused(), "resume must clear the gate flag");
+}
+
+#[test]
+fn pause_resume_unknown_operation_returns_false() {
+    assert!(!pause_write_operation("does-not-exist-pause"));
+    assert!(!resume_write_operation("does-not-exist-pause"));
+}
+
+// ---- TestOperationGuard's own contract -----------------------------------
+
+#[test]
+fn guard_unregisters_its_state_even_when_the_test_body_panics() {
+    // Pins the panic-safety the guard exists for: a hand-rolled `remove` placed
+    // after the assertions leaked the entry whenever an assertion failed first,
+    // and the corpse then showed up in the next test's
+    // `cancel_all_write_operations` / `list_active_operations`.
+    let payload = std::panic::catch_unwind(|| {
+        let op = TestOperationGuard::register("guard-panic-safety");
+        let id = op.id().to_string();
+        assert!(WRITE_OPERATION_STATE.contains(&id));
+        panic!("simulated assertion failure while the state is registered: {id}");
+    })
+    .expect_err("the closure should have panicked");
+    let id = payload
+        .downcast_ref::<String>()
+        .expect("panic payload is the formatted message")
+        .rsplit(": ")
+        .next()
+        .expect("message ends with the operation id")
+        .to_string();
+
+    assert!(
+        !WRITE_OPERATION_STATE.contains(&id),
+        "Drop must unregister on unwind, not only on the happy path"
+    );
+}
