@@ -114,8 +114,9 @@ spawned. Wrapping that in a trait would be rebuilding tokio's API, worse.
 ### `VolumeEventSink`
 
 ⇐ `smb/events.rs`, which today holds a `OnceLock<Mutex<Option<AppHandle>>>` set from `lib.rs::setup` and emits
-`network::SmbConnectionChanged` through `tauri_specta::Event`. The seam carries `VolumeConnection`, a three-variant
-enum; the payload struct, its derives, and the `"direct"` / `"disconnected"` / `"needs_auth"` wire values stay app-side.
+`network::VolumeConnectionChanged` through `tauri_specta::Event`. The seam carries `VolumeConnection`, a three-variant
+enum; the payload struct, its derives, and the wire enum it serializes stay app-side. The two enums meet in exactly one
+match, in `events/volume_mapping.rs`.
 
 `NeedsCredentials` is worth its own variant even though SMB's internal state machine is binary
 (`Direct ⇄ Disconnected`): it's the one transition the backend must NOT retry its way out of, and a string would let a
@@ -276,10 +277,10 @@ call, so an async variant would only wrap a blocking call in a future.
 
 Three things the adapters found that aren't trait shape, and matter to whoever wires a backend up:
 
-- **The connection event is named for SMB.** `network::SmbConnectionChanged` and its `smb-connection-changed` wire name
-  are what the frontend's reconnect manager subscribes to, so every backend's transitions ride it today. A second
-  connecting backend wants a generic payload, and that's a frontend-visible rename rather than something the adapter can
-  absorb.
+- **The connection event is backend-neutral.** `network::VolumeConnectionChanged` / `volume-connection-changed` is what
+  the frontend's reconnect manager subscribes to, and every backend's transitions ride it. A second connecting backend
+  reuses the channel and inherits the banner, the backoff, and the sign-in prompt; ❌ don't add a parallel backend-named
+  event.
 - **`AppBackendSettings` resolves through a table keyed by the namespace**, not a `match` on it. One row exists, `"smb"`
   ⇒ the `network.smbConcurrency` setting, which is SMB's alone: label, help text, and table row all say so. A namespace
   with no row gets a conservative built-in (2), because the day someone adds a backend and forgets its row is the day

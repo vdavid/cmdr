@@ -1,23 +1,23 @@
 //! The wire format for what a storage backend reports about its connection.
 //!
 //! A backend says `VolumeConnection::Disconnected`; this decides that the
-//! frontend hears `smb-connection-changed` with `"disconnected"` in it. Keeping
+//! frontend hears `volume-connection-changed` carrying that transition. Keeping
 //! the split here is what lets a backend crate carry no `tauri`, no
 //! `tauri_specta`, and no English: the payload struct
-//! (`network::SmbConnectionChanged`), its derives, and the three wire values are
-//! all on this side.
+//! (`network::VolumeConnectionChanged`), its derives, and the wire enum all live
+//! on this side.
 //!
-//! **The payload is named for the only backend that had one.** A second
-//! connecting backend wants a generic event, which is a frontend-visible rename
-//! (the reconnect manager subscribes by name) rather than something this adapter
-//! can paper over. Until then every connection transition rides the SMB event.
+//! **The event is backend-neutral on purpose.** SMB is the only emitter today;
+//! the next connecting backend (FTP, S3, SFTP) rides this same channel and
+//! inherits the reconnect cycle rather than adding a parallel, backend-named
+//! event. See `network/DETAILS.md`.
 
 use tauri::AppHandle;
 use tauri_specta::Event;
 
 use cmdr_fs::volume::host::events::{VolumeConnection, VolumeEventSink};
 
-use crate::network::SmbConnectionChanged;
+use crate::network::{VolumeConnection as WireConnection, VolumeConnectionChanged};
 
 /// Turns a backend's typed connection transitions into the frontend's event.
 pub struct TauriVolumeEvents {
@@ -31,22 +31,24 @@ impl TauriVolumeEvents {
     }
 }
 
-/// What the frontend's reconnect manager matches on. ❌ These three strings are a
-/// contract with `src/lib/network/`, not labels: changing one silently strands
-/// the banner and the sign-in prompt.
-fn wire_state(connection: VolumeConnection) -> &'static str {
+/// What the frontend's reconnect manager branches on. The two enums stay
+/// separate on purpose: the backend-facing one ships in `cmdr-fs` with no serde
+/// and no `specta`, the wire one in `network` with both. This match is the only
+/// place they meet, so widening either end is a compile error here rather than a
+/// silently stranded banner or sign-in prompt.
+fn wire_state(connection: VolumeConnection) -> WireConnection {
     match connection {
-        VolumeConnection::Connected => "direct",
-        VolumeConnection::Disconnected => "disconnected",
-        VolumeConnection::NeedsCredentials => "needs_auth",
+        VolumeConnection::Connected => WireConnection::Connected,
+        VolumeConnection::Disconnected => WireConnection::Disconnected,
+        VolumeConnection::NeedsCredentials => WireConnection::NeedsCredentials,
     }
 }
 
 impl VolumeEventSink for TauriVolumeEvents {
     fn connection_changed(&self, volume_id: &str, connection: VolumeConnection) {
-        if let Err(e) = (SmbConnectionChanged {
+        if let Err(e) = (VolumeConnectionChanged {
             volume_id: volume_id.to_string(),
-            state: wire_state(connection).to_string(),
+            state: wire_state(connection),
         })
         .emit(&self.app)
         {
@@ -59,12 +61,15 @@ impl VolumeEventSink for TauriVolumeEvents {
 mod tests {
     use super::*;
 
-    /// The mapping is the whole adapter, and the frontend's three cases depend on
-    /// these exact strings.
+    /// The mapping is the whole adapter: every backend-facing transition has to
+    /// reach the frontend as the matching wire variant, never a neighboring one.
     #[test]
-    fn every_transition_has_the_wire_value_the_frontend_matches_on() {
-        assert_eq!(wire_state(VolumeConnection::Connected), "direct");
-        assert_eq!(wire_state(VolumeConnection::Disconnected), "disconnected");
-        assert_eq!(wire_state(VolumeConnection::NeedsCredentials), "needs_auth");
+    fn every_transition_maps_to_the_wire_variant_the_frontend_branches_on() {
+        assert_eq!(wire_state(VolumeConnection::Connected), WireConnection::Connected);
+        assert_eq!(wire_state(VolumeConnection::Disconnected), WireConnection::Disconnected);
+        assert_eq!(
+            wire_state(VolumeConnection::NeedsCredentials),
+            WireConnection::NeedsCredentials
+        );
     }
 }
