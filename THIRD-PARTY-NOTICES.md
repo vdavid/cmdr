@@ -6,7 +6,7 @@ the app, with its license, and reproduces the license texts in full.
 Generated from `Cargo.lock` and `pnpm-lock.yaml` by `pnpm check third-party-notices`. Don't edit it
 by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices.go` instead.
 
-- Rust crates: 655
+- Rust crates: 652
 - npm packages: 125
 - Distinct license texts: 290
 
@@ -180,7 +180,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **flate2** 1.1.9, MIT OR Apache-2.0, <https://github.com/rust-lang/flate2-rs>
 - **flume** 0.12.0, Apache-2.0 OR MIT, <https://github.com/zesterer/flume>
 - **fnv** 1.0.7, Apache-2.0  OR  MIT, <https://github.com/servo/rust-fnv>
-- **foldhash** 0.1.5, Zlib, <https://github.com/orlp/foldhash>
 - **foldhash** 0.2.0, Zlib, <https://github.com/orlp/foldhash>
 - **foreign-types** 0.5.0, MIT OR Apache-2.0, <https://github.com/sfackler/foreign-types>
 - **foreign-types-macros** 0.2.3, MIT OR Apache-2.0, <https://github.com/sfackler/foreign-types>
@@ -269,7 +268,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **hash32** 0.3.1, MIT OR Apache-2.0, <https://github.com/japaric/hash32>
 - **hashbrown** 0.12.3, MIT OR Apache-2.0, <https://github.com/rust-lang/hashbrown>
 - **hashbrown** 0.14.5, MIT OR Apache-2.0, <https://github.com/rust-lang/hashbrown>
-- **hashbrown** 0.15.5, MIT OR Apache-2.0, <https://github.com/rust-lang/hashbrown>
 - **hashbrown** 0.16.1, MIT OR Apache-2.0, <https://github.com/rust-lang/hashbrown>
 - **hashbrown** 0.17.1, MIT OR Apache-2.0, <https://github.com/rust-lang/hashbrown>
 - **hashlink** 0.12.1, MIT OR Apache-2.0, <https://github.com/djc/hashlink>
@@ -439,7 +437,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **ppmd-rust** 1.4.0, CC0-1.0 OR MIT-0, <https://github.com/hasenbanck/ppmd-rust>
 - **ppv-lite86** 0.2.21, MIT OR Apache-2.0, <https://github.com/cryptocorrosion/cryptocorrosion>
 - **precomputed-hash** 0.1.1, MIT, <https://github.com/emilio/precomputed-hash>
-- **proc-macro-crate** 1.3.1, MIT OR Apache-2.0, <https://github.com/bkchr/proc-macro-crate>
+- **proc-macro-crate** 3.5.0, MIT OR Apache-2.0, <https://github.com/bkchr/proc-macro-crate>
 - **proc-macro2** 1.0.106, MIT OR Apache-2.0, <https://github.com/dtolnay/proc-macro2>
 - **prodash** 31.0.0, MIT, <https://github.com/GitoxideLabs/prodash>
 - **profiling** 1.0.18, MIT OR Apache-2.0, <https://github.com/aclysma/profiling>
@@ -519,7 +517,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **siphasher** 1.0.3, MIT OR Apache-2.0, <https://github.com/jedisct1/rust-siphash>
 - **slab** 0.4.12, MIT, <https://github.com/tokio-rs/slab>
 - **smallvec** 1.15.2, MIT OR Apache-2.0, <https://github.com/servo/rust-smallvec>
-- **smb2** 0.16.1, MIT OR Apache-2.0, <https://github.com/vdavid/smb2>
+- **smb2** 0.17.0, MIT OR Apache-2.0, <https://github.com/vdavid/smb2>
 - **socket-pktinfo** 0.4.0, MIT, <https://github.com/pixsper/socket-pktinfo>
 - **socket2** 0.6.4, MIT OR Apache-2.0, <https://github.com/rust-lang/socket2>
 - **specta** 2.0.0-rc.24, MIT, <https://github.com/specta-rs/specta>
@@ -588,10 +586,9 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **tokio-util** 0.7.19, MIT, <https://github.com/tokio-rs/tokio>
 - **toml** 0.9.12+spec-1.1.0, MIT OR Apache-2.0, <https://github.com/toml-rs/toml>
 - **toml** 1.1.2+spec-1.1.0, MIT OR Apache-2.0, <https://github.com/toml-rs/toml>
-- **toml_datetime** 0.6.3, MIT OR Apache-2.0, <https://github.com/toml-rs/toml>
 - **toml_datetime** 0.7.5+spec-1.1.0, MIT OR Apache-2.0, <https://github.com/toml-rs/toml>
 - **toml_datetime** 1.1.1+spec-1.1.0, MIT OR Apache-2.0, <https://github.com/toml-rs/toml>
-- **toml_edit** 0.19.15, MIT OR Apache-2.0, <https://github.com/toml-rs/toml>
+- **toml_edit** 0.25.12+spec-1.1.0, MIT OR Apache-2.0, <https://github.com/toml-rs/toml>
 - **toml_parser** 1.1.2+spec-1.1.0, MIT OR Apache-2.0, <https://github.com/toml-rs/toml>
 - **toml_writer** 1.1.1+spec-1.1.0, MIT OR Apache-2.0, <https://github.com/toml-rs/toml>
 - **tower** 0.5.3, MIT, <https://github.com/tower-rs/tower>
@@ -3373,7 +3370,7 @@ Text from: `LICENSE.txt`
 
 ### MIT
 
-Covers: adler2 2.0.1, anyhow 1.0.103, async-trait 0.1.89, atomic-waker 1.1.2, camino 1.2.4, cargo-platform 0.1.9, cargo_metadata 0.19.2, curve25519-dalek-derive 0.1.1, cxx 1.0.198, cxx-build 1.0.198, cxxbridge-flags 1.0.198, cxxbridge-macro 1.0.198, displaydoc 0.2.6, dtoa 1.0.11, dyn-clone 1.0.20, erased-serde 0.4.10, fastrand 2.4.1, itoa 1.0.18, link-cplusplus 1.0.12, minimal-lexical 0.2.1, num_enum 0.7.6, num_enum_derive 0.7.6, nusb 0.2.4, once_cell 1.21.4, paste 1.0.15, pastey 0.1.1, pin-project-lite 0.2.17, proc-macro-crate 1.3.1, proc-macro2 1.0.106, quote 1.0.46, rustix 1.1.4, rustversion 1.0.22, scratch 1.0.9, semver 1.0.28, serde 1.0.229, serde-untagged 0.1.9, serde_core 1.0.229, serde_derive 1.0.229, serde_derive_internals 0.29.1, serde_json 1.0.151, serde_path_to_error 0.1.20, serde_repr 0.1.20, servo_arc 0.4.3, syn 2.0.118, syn 3.0.3, thiserror 1.0.69, thiserror 2.0.18, thiserror-impl 1.0.69, thiserror-impl 2.0.18, typed-path 0.12.3, typeid 1.0.3, unicode-ident 1.0.24, utf-8 0.7.6, zmij 1.0.21
+Covers: adler2 2.0.1, anyhow 1.0.103, async-trait 0.1.89, atomic-waker 1.1.2, camino 1.2.4, cargo-platform 0.1.9, cargo_metadata 0.19.2, curve25519-dalek-derive 0.1.1, cxx 1.0.198, cxx-build 1.0.198, cxxbridge-flags 1.0.198, cxxbridge-macro 1.0.198, displaydoc 0.2.6, dtoa 1.0.11, dyn-clone 1.0.20, erased-serde 0.4.10, fastrand 2.4.1, itoa 1.0.18, link-cplusplus 1.0.12, minimal-lexical 0.2.1, num_enum 0.7.6, num_enum_derive 0.7.6, nusb 0.2.4, once_cell 1.21.4, paste 1.0.15, pastey 0.1.1, pin-project-lite 0.2.17, proc-macro-crate 3.5.0, proc-macro2 1.0.106, quote 1.0.46, rustix 1.1.4, rustversion 1.0.22, scratch 1.0.9, semver 1.0.28, serde 1.0.229, serde-untagged 0.1.9, serde_core 1.0.229, serde_derive 1.0.229, serde_derive_internals 0.29.1, serde_json 1.0.151, serde_path_to_error 0.1.20, serde_repr 0.1.20, servo_arc 0.4.3, syn 2.0.118, syn 3.0.3, thiserror 1.0.69, thiserror 2.0.18, thiserror-impl 1.0.69, thiserror-impl 2.0.18, typed-path 0.12.3, typeid 1.0.3, unicode-ident 1.0.24, utf-8 0.7.6, zmij 1.0.21
 
 Text from: `LICENSE-MIT`
 
@@ -4614,7 +4611,7 @@ DEALINGS IN THE SOFTWARE.
 
 ### MIT
 
-Covers: cc 1.2.65, cfg-if 1.0.4, cmake 0.1.58, filetime 0.2.29, find-msvc-tools 0.1.9, futures-timer 3.0.4, jobserver 0.1.34, pkg-config 0.3.33, socket2 0.6.4, toml_datetime 0.6.3
+Covers: cc 1.2.65, cfg-if 1.0.4, cmake 0.1.58, filetime 0.2.29, find-msvc-tools 0.1.9, futures-timer 3.0.4, jobserver 0.1.34, pkg-config 0.3.33, socket2 0.6.4
 
 Text from: `LICENSE-MIT`
 
@@ -6701,7 +6698,7 @@ SOFTWARE.
 
 ### MIT
 
-Covers: hashbrown 0.12.3, hashbrown 0.14.5, hashbrown 0.15.5, hashbrown 0.16.1, hashbrown 0.17.1
+Covers: hashbrown 0.12.3, hashbrown 0.14.5, hashbrown 0.16.1, hashbrown 0.17.1
 
 Text from: `LICENSE-MIT`
 
@@ -9280,7 +9277,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ### MIT
 
-Covers: serde_spanned 1.1.1, toml 0.9.12+spec-1.1.0, toml 1.1.2+spec-1.1.0, toml_datetime 0.7.5+spec-1.1.0, toml_datetime 1.1.1+spec-1.1.0, toml_edit 0.19.15, toml_parser 1.1.2+spec-1.1.0, toml_writer 1.1.1+spec-1.1.0
+Covers: serde_spanned 1.1.1, toml 0.9.12+spec-1.1.0, toml 1.1.2+spec-1.1.0, toml_datetime 0.7.5+spec-1.1.0, toml_datetime 1.1.1+spec-1.1.0, toml_edit 0.25.12+spec-1.1.0, toml_parser 1.1.2+spec-1.1.0, toml_writer 1.1.1+spec-1.1.0
 
 Text from: `LICENSE-MIT`
 
@@ -9638,7 +9635,7 @@ DEALINGS IN THE SOFTWARE.
 
 ### MIT
 
-Covers: smb2 0.16.1
+Covers: smb2 0.17.0
 
 Text from: `LICENSE-MIT`
 
@@ -12778,7 +12775,7 @@ authorization of the copyright holder.
 
 ### Zlib
 
-Covers: foldhash 0.1.5, foldhash 0.2.0
+Covers: foldhash 0.2.0
 
 Text from: `LICENSE`
 
