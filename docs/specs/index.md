@@ -6,6 +6,21 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
+- [ ] 2026-08-03 `resource-use-plan.md` - SPECCED, in progress. Cut idle CPU and RAM: prod v0.37.0 burned 93 min of CPU
+      over 7.6 h at 1.78 GB footprint while idle, writing 141,072 log lines in six hours. Five milestones. The headline
+      finding is that the per-subtree rescan throttle **works** (top anchors show 1–2 walks each) and is beaten by
+      CARDINALITY instead: cargo mints a fresh `target/debug/incremental/<crate>-<hash>/s-<hash>` path per build, so
+      3,704 distinct anchors in eight hours each take their leading edge exactly once and nothing bounds the aggregate.
+      Every existing gate keys on the anchor path; nothing is per-volume. `reconcile/DETAILS.md:483` already names this
+      shape for an Electron updater, and the settle delay answered it only because those dirs vanished before settling.
+      Denylisting build output is explicitly rejected: the app must throttle any unknown churning software. The design
+      pass must engage `cost_budget.rs:23`, which argues AGAINST charging cost up the ancestor chain and prefers one
+      accumulator at a fixed depth. Second finding: the 64 MiB SQLite page-cache slab does not bound what its docstring
+      claims, because `pcache1` overflows to plain malloc and no soft heap limit is set, leaving the real ceiling at
+      `connections × cache_size` (132 × 8 MiB); ~650 MB of `MALLOC_LARGE` stays unexplained and gets measured before
+      it gets fixed. Also: the media live tick walks thousands of dirs in SQL before applying the gates that reject
+      them, log volume needs to drop ~1000×, and the NAS gets an `fs_info` round trip every five seconds forever. The
+      SMB `ChangeNotify` long-poll liveness bound is out of scope here, owned by the `smb2` repo.
 - [ ] 2026-08-03 `unindexed-search-plan.md` - SPECCED, not started. A scoped search on a LOCAL drive returns the same
       files indexed or not, only slower, by walking the uncovered part live and writing what it finds into the drive
       index, so a drive converges toward instant through use. Unscoped search and network volumes are deliberately
