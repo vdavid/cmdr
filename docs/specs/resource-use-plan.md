@@ -71,8 +71,38 @@ window and zero in another.
 3. **Instruments Time Profiler** (`xctrace record --template 'Time Profiler'`) samples on-CPU threads natively rather
    than approximating with a frame list.
 
-**Prediction to falsify**: the re-measurement confirms M1 and shrinks M2. M1 goes first regardless; what is at risk is
-M2's placement ahead of M3.
+### The re-measurement was run, and it does not agree with the 20 s window
+
+A 180 s sample with three-bucket leaf attribution (userspace / file-IO syscall / parked), same process:
+
+- `cmdr-sync-status` ×4: 3.4% of busy, but **0.2% of userspace CPU**. 1,964 of 2,037 samples per thread are the `stat`
+  itself. **The prediction held: M2's "23% of CPU" was wrong.** It is syscall and provider-latency time, not CPU.
+- `index-writer` **does not appear in the top 12 at all** in this window. The `sqlite3RunParser` prepare path that
+  dominated the 20 s window is absent.
+- The tokio pool holds 95.7% of userspace CPU, and its hot leaves are SQLite b-tree traversal
+  (`sqlite3BtreeTableMoveto` 8.8%, `sqlite3VdbeExec` 5.8%, plus `getPageNormal`, `sqlite3GetVarint`, `pcache1Fetch`,
+  `pcache1Unpin`, `moveToRoot`, roughly 20% of userspace CPU together) and `DirTree::path_at_into` (6.3%), reached
+  through `indexing::watch::event_loop::live::process_live_batch` and `importance::scheduler`'s incremental rescore
+  walk.
+
+**So M0 is NOT settled, and this plan must not commit to a milestone order on it.** Two windows on the same idle process
+disagree about which thread dominates, which means the workload is bursty at a period longer than either window. What
+survives both:
+
+- **M1's defect is real independent of sampling**, because it was confirmed by reading the code: `conn.execute` with a
+  literal re-parses per row, and the same file uses `prepare_cached` 21 times. Its *share* is unknown; its *wrongness*
+  is not. Fix it on those grounds, not on a percentage.
+- **M2's CPU claim is refuted.** The 43 sync-status batches per minute are still real waste (syscalls, IO, and load on
+  `fileproviderd`), so M2a keeps its value, but M2 must be re-argued as an IO and provider-load win, **not** as ~23% of
+  CPU. It has no claim on being second.
+- **A third candidate appeared that no milestone covers**: the importance incremental rescore walking index folders
+  inside the live event batch, with SQLite b-tree traversal underneath. `idle-memory-profile-2026-07-28.md` § "Cause 2"
+  reports that treadmill as FIXED. Either the fix is incomplete or something re-armed it. **Investigate before
+  sequencing anything after M1.**
+
+**Still required before the order is trusted**: `ps -M <pid>` for cumulative per-thread CPU over the whole session (it
+integrates every burst instead of sampling one), or repeated samples across hours. Until then, treat every share in this
+section as provisional and the ordering below as a hypothesis.
 
 Two further caveats on the numbers here. The CPU baseline covers 9.1 hours, the log counts 6 hours, and the churn counts
 8 hours, so do not divide one by another. And this machine runs six Cmdr worktrees with active cargo builds: a heavy
@@ -314,7 +344,7 @@ that refuses it stops refreshing the folder David works in all day"*. `ANCHOR_DE
 Different metric (a fraction of slow reads versus a total cost), so it is not a contradiction, but the design pass owes
 one sentence on why the same anchor is safe to refuse on one axis and not the other.
 
-**Engage the prior deferral.** `docs/notes/idle-cpu-indexing-streamlining-2026-07.md` § "L2 — targeted subtree walk:
+**Engage the prior deferral.** `docs/notes/idle-cpu-indexing-streamlining-2026-07.md` § "L2 ,  targeted subtree walk:
 DEFERRED (measured, not worth it)" is a measured verdict on adjacent work. Say in a line why L2's deferral does not
 apply here.
 
