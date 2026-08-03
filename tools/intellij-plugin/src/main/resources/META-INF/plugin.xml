@@ -1,0 +1,30 @@
+<idea-plugin>
+    <id>com.getcmdr.idea</id>
+    <name>Cmdr dev tools</name>
+    <vendor email="veszelovszki@gmail.com" url="https://getcmdr.com">David Veszelovszki</vendor>
+
+    <description><![CDATA[
+        Reading aids for the Cmdr repository: commit-hash links in <code>CHANGELOG.md</code>, and i18n keys folded to
+        the English text they resolve to. Never published to the Marketplace; sideloaded from
+        <code>build/distributions/</code>.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>JavaScript</depends>
+    <depends>org.intellij.plugins.markdown</depends>
+    <!-- Svelte support is optional: without it `SvelteHTML` isn't a registered language, and a registration naming it
+         in the main descriptor would log a resolution warning on every start. -->
+    <depends optional="true" config-file="cmdr-svelte.xml">dev.blachut.svelte.lang</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- M0 probe. Two registrations, and the count is the finding: `JavaScript` does NOT reach `TypeScript`, so
+             every JS-family language needs naming. `SveltePsiSpikeTest` proves it. Delete once a real feature
+             replaces it. -->
+        <lang.foldingBuilder
+            language="JavaScript"
+            implementationClass="com.getcmdr.idea.m0.M0ProbeFoldingBuilder"/>
+        <lang.foldingBuilder
+            language="TypeScript"
+            implementationClass="com.getcmdr.idea.m0.M0ProbeFoldingBuilder"/>
+    </extensions>
+</idea-plugin>

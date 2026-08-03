@@ -1,0 +1,4 @@
+# Scoped to this directory on purpose: the root `.mise.toml` pins node/pnpm/go for everyone, and nobody should pull a
+# ~200 MB JDK for a tool only David runs. IntelliJ Platform 2026.2 (build 262) requires JDK 25.
+[tools]
+java = "temurin-25.0.4+7.0.LTS"

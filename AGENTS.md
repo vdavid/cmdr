@@ -69,8 +69,8 @@ Two colocated tiers per code area, enforced by checks:
 - **`D.md`** the rest. Read on demand. Architecture, data flows, decision rationale, edge-case catalogs. No length
   limit, but try to be concise to make it token-efficient. When writing, default to `D.md`; promote to `C.md`.
 - `claude-md-details-sibling` enforces all `C.md` and `D.md` to exist in pairs. Never `@`-import `D.md` from a `C.md`!
-- If you cut `C.md`, do it radically: 1. make its parts sound like tweets, 2. move stuff to `D.md` needed. 3. split the
-  module if genuinely too complex for `C.md` to fit in 600 words. Aim
+- Cut `C.md` radically: make each part sound like a tweet, move depth to `D.md`, and split the module if it can't fit in
+  600 words.
 - `docs-reachable` enforces the doc graph to be linked: (every doc reachable from this file by link-walking),
   `docs-dead-links` and `docs-link-text` (no broken or path-shaped reference), and `resident-doc-budget` (the
   always-resident bundle, this file plus its `@`-imports plus `.claude/rules/`, can't silently regrow). Keep this
@@ -97,6 +97,7 @@ may speak as David where deliberately personal (onboarding, About).
 - `docs/`: `docs/architecture.md` (the map), `docs/guides/` (how-tos), `tooling/` (service and workflow references),
   `docs/specs/index.md` (per-development plans, periodically wiped), `docs/notes/README.md` (benchmarks and analysis),
   `style-guide.md`, `design-principles.md`, `security.md`, `maintenance.md`.
+- `tools/`: dev tooling outside every workspace and check: `tools/intellij-plugin/`, `tools/privatesize-poc/README.md`.
 - `scripts/check/`: the Go check runner. `.github/workflows/`: CI.
 
 ## Checker script

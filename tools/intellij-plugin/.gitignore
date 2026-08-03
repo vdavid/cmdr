@@ -1,0 +1,4 @@
+build/
+.gradle/
+.intellijPlatform/
+sandbox-project/.idea/

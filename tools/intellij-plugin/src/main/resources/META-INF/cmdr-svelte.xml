@@ -1,0 +1,10 @@
+<idea-plugin>
+    <!-- Loaded only when `dev.blachut.svelte.lang` is present. A `.svelte` file has exactly one view-provider root,
+         `SvelteHTML`, so this is the only language the folding pass will ever hand us for those files. The JS PSI is
+         inside that same tree, so the builder still walks real call expressions. -->
+    <extensions defaultExtensionNs="com.intellij">
+        <lang.foldingBuilder
+            language="SvelteHTML"
+            implementationClass="com.getcmdr.idea.m0.M0ProbeFoldingBuilder"/>
+    </extensions>
+</idea-plugin>
