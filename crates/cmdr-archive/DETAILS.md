@@ -10,6 +10,9 @@ The reading engine, the zip write side, and the live content watch each carry th
 - Zip mutation (temp+rename, encrypted-entry refusal, metadata preservation): `src/mutation/DETAILS.md`.
 - Live content watch (parent-dir watch, notification identity, remote-no-watch): `src/watch/DETAILS.md`.
 
+Measured build-time effect of this extraction, and what it says about extracting another backend:
+`docs/notes/archive-extraction-baseline.md`.
+
 ## The pattern, for the next backend crate
 
 This crate exists partly to prove the shape a `cmdr-ftp` / `cmdr-s3` is written in. What generalizes, and what was
