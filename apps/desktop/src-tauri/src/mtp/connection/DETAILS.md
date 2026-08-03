@@ -5,6 +5,8 @@ Depth and rationale. `CLAUDE.md` holds the must-knows; the depth lives here.
 ## Conventions
 
 - **Event debounce**: `EventDebouncer` collapses MTP event bursts to one frontend emit per 500 ms; cleared on disconnect.
+  A suppressed event schedules a TRAILING re-emit so a burst's last change isn't lost, and it must `claim_trailing`
+  first so the burst gets one trailing emit rather than one per event. See § "Trailing emits must be claimed".
 - **Async recursion** (`bulk_ops.rs`, recursive `delete()`): `Box::pin(async move { ... })` breaks the infinite future.
 - **Event-loop shutdown**: biased `tokio::select!` so the shutdown signal always wins over the event poll.
 
@@ -370,6 +372,21 @@ the resolver can't recover a path. The index path resolves removals via the hand
 `listing_inner_mtp_path` reduces a listing's stored path (`mtp://<device>/<storage>/<inner…>` or a `/`-rooted inner
 path) to the leading-`/` inner form the resolver produces, so the affected-dir match compares apples to apples in both
 representations. Pinned by the `event_loop` tests.
+
+### Trailing emits must be claimed
+
+**Decision**: a suppressed event schedules its trailing re-emit only if it wins `EventDebouncer::claim_trailing`, and
+the woken task releases the claim before re-emitting. **Why**: without the claim, each suppressed event spawned its own
+sleeping task that re-entered `emit_directory_changed`, where all but one were suppressed again and each spawned
+another. The population then retires ONE event per debounce window instead of collapsing, so a burst of N device
+changes keeps a core busy for N × 500 ms while foreground listings go unserved. Reproduced with a 48k-object burst on
+the virtual device: 100% CPU, MTP pane listings unserved, no recovery. A 1,000-file copy onto a phone projects to ~9
+minutes of it, and a camera burst or Android's media scanner produces the same shape.
+
+The claim is keyed by the coalescing scope, not the device: the targeted path uses `EventDebouncer::targeted_key`
+(device + affected dir) so a pending emit for one folder can't swallow another folder's, and `clear` drops the device's
+own key plus every per-folder one so a stale claim can't survive a disconnect. Release happens BEFORE the re-emit, so
+an event arriving during the re-emit still claims the following window.
 
 ### Feeding the per-volume index (the second consumer)
 

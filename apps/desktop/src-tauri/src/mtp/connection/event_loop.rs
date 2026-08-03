@@ -12,7 +12,7 @@ use tokio::sync::{Mutex, broadcast};
 
 use mtp_rs::ObjectHandle;
 
-use super::cache::EVENT_DEBOUNCE_MS;
+use super::cache::{EVENT_DEBOUNCE_MS, EventDebouncer};
 use super::{MtpConnectionManager, connection_manager, normalize_mtp_path};
 use crate::file_system::compute_diff;
 use crate::file_system::listing::{get_listings_by_volume_prefix, update_listing_entries};
@@ -291,8 +291,20 @@ impl MtpConnectionManager {
         }
 
         if !connection_manager().event_debouncer.should_emit(device_id) {
-            // Within the debounce window: schedule a trailing targeted re-emit so
-            // the last event in a burst isn't dropped.
+            // Within the debounce window: schedule ONE trailing targeted re-emit
+            // so the last event in a burst isn't dropped. Claiming first is what
+            // keeps a burst from spawning a task per event (see
+            // `EventDebouncer::claim_trailing`).
+            let key = EventDebouncer::targeted_key(device_id, affected_dir);
+            if !connection_manager().event_debouncer.claim_trailing(&key) {
+                debug!(
+                    "MTP targeted refresh: DEBOUNCED for {}:{} dir={}, trailing emit already pending",
+                    device_id,
+                    storage_id,
+                    affected_dir.display()
+                );
+                return false;
+            }
             debug!(
                 "MTP targeted refresh: DEBOUNCED for {}:{} dir={}, scheduling trailing emit",
                 device_id,
@@ -304,6 +316,9 @@ impl MtpConnectionManager {
             let app = app.clone();
             tokio::spawn(async move {
                 tokio::time::sleep(Duration::from_millis(EVENT_DEBOUNCE_MS + 50)).await;
+                // Release BEFORE re-emitting, so an event arriving during the
+                // re-emit can still claim the following window.
+                connection_manager().event_debouncer.release_trailing(&key);
                 Self::emit_directory_changed_targeted(&device_id, storage_id, &affected_dir, &app);
             });
             return true;
@@ -333,6 +348,17 @@ impl MtpConnectionManager {
         // When suppressed, schedule a trailing emit after the debounce window
         // so the last event in a burst is never permanently dropped.
         if !connection_manager().event_debouncer.should_emit(device_id) {
+            // ONE trailing emit per burst. Without the claim, every suppressed
+            // event spawns its own task that re-enters here and re-spawns, so a
+            // burst retires one event per window instead of collapsing (see
+            // `EventDebouncer::claim_trailing`).
+            if !connection_manager().event_debouncer.claim_trailing(device_id) {
+                debug!(
+                    "MTP event loop: directory change DEBOUNCED for device={}, trailing emit already pending",
+                    device_id
+                );
+                return;
+            }
             debug!(
                 "MTP event loop: directory change DEBOUNCED for device={} (within {}ms window), scheduling trailing emit",
                 device_id, EVENT_DEBOUNCE_MS
@@ -341,6 +367,9 @@ impl MtpConnectionManager {
             let app_clone = app.clone();
             tokio::spawn(async move {
                 tokio::time::sleep(Duration::from_millis(EVENT_DEBOUNCE_MS + 50)).await;
+                // Release BEFORE re-emitting, so an event arriving during the
+                // re-emit can still claim the following window.
+                connection_manager().event_debouncer.release_trailing(&device_id_owned);
                 // Re-emit; this goes through the debouncer again (which will pass
                 // since the window has expired) to avoid duplicate processing.
                 Self::emit_directory_changed(&device_id_owned, &app_clone);

@@ -2,7 +2,7 @@
 //! plus event debouncing for directory change notifications.
 
 use mtp_rs::ObjectHandle;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::RwLock;
 use std::time::{Duration, Instant};
@@ -86,6 +86,9 @@ pub(super) const EVENT_DEBOUNCE_MS: u64 = 500;
 pub(super) struct EventDebouncer {
     /// Last emit time per device ID.
     last_emit: RwLock<HashMap<String, Instant>>,
+    /// Devices with a trailing re-emit already scheduled, so a burst coalesces
+    /// to one pending emit instead of one per suppressed event.
+    trailing_scheduled: RwLock<HashSet<String>>,
     /// Debounce duration.
     debounce_duration: Duration,
 }
@@ -95,6 +98,7 @@ impl EventDebouncer {
     pub(super) fn new(debounce_duration: Duration) -> Self {
         Self {
             last_emit: RwLock::new(HashMap::new()),
+            trailing_scheduled: RwLock::new(HashSet::new()),
             debounce_duration,
         }
     }
@@ -115,10 +119,57 @@ impl EventDebouncer {
         true
     }
 
+    /// Claims the right to schedule the trailing re-emit for `key`, so a burst
+    /// gets ONE trailing emit rather than one per suppressed event.
+    ///
+    /// `key` is the coalescing scope, not necessarily a device id: the targeted
+    /// refresh keys by device AND affected dir, so a pending emit for one folder
+    /// can't swallow another folder's. [`clear`](Self::clear) drops every key
+    /// belonging to a device.
+    ///
+    /// Returns `true` for the first caller after each [`release_trailing`], and
+    /// `false` while a trailing emit is already pending.
+    ///
+    /// **Without the claim this is a livelock, not just waste.** Each suppressed
+    /// event used to spawn its own sleeping task that re-entered
+    /// `emit_directory_changed`, where all but one were suppressed again and
+    /// spawned yet another. The population then retires one event per debounce
+    /// window instead of collapsing, so a burst of N changes on the device (a
+    /// bulk copy onto a phone, a camera burst, Android's media scanner) pegs a
+    /// core and starves foreground listings for N × the window. Measured: 48k
+    /// events left the app at 100% CPU with pane listings unserved, not
+    /// recovering.
+    pub(super) fn claim_trailing(&self, key: &str) -> bool {
+        // `insert` returns false when the key was already present, which is
+        // exactly "someone else already scheduled this one".
+        self.trailing_scheduled.write_ignore_poison().insert(key.to_string())
+    }
+
+    /// Releases the trailing-emit claim, letting the next burst schedule one.
+    /// Call this when the trailing task wakes, BEFORE re-emitting, so an event
+    /// arriving during the re-emit can still claim the following window.
+    pub(super) fn release_trailing(&self, key: &str) {
+        let mut scheduled = self.trailing_scheduled.write_ignore_poison();
+        scheduled.remove(key);
+    }
+
+    /// The coalescing key for a targeted (per-folder) refresh. A NUL can't occur
+    /// in a device id or a path, so the two parts can't run together.
+    pub(super) fn targeted_key(device_id: &str, affected_dir: &Path) -> String {
+        format!("{device_id}\0{}", affected_dir.display())
+    }
+
     /// Clears the debounce state for a device (called on disconnect).
     pub(super) fn clear(&self, device_id: &str) {
         let mut last_emit = self.last_emit.write_ignore_poison();
         last_emit.remove(device_id);
+        // Drop the device's own claim plus every per-folder one, else a stale
+        // claim survives the disconnect and blocks trailing emits after the
+        // next connect.
+        let targeted_prefix = format!("{device_id}\0");
+        self.trailing_scheduled
+            .write_ignore_poison()
+            .retain(|key| key != device_id && !key.starts_with(&targeted_prefix));
     }
 }
 
@@ -198,5 +249,58 @@ mod tests {
 
         // And rapid event for device-2 should be throttled independently
         assert!(!debouncer.should_emit("device-2"));
+    }
+
+    /// A burst must coalesce to ONE pending trailing emit.
+    ///
+    /// Pre-fix this would have passed wrongly: every suppressed event claimed
+    /// its own trailing emit, and since each of those re-enters the debouncer
+    /// and re-claims, the population retires one event per window instead of
+    /// collapsing. A 1,000-file copy onto a phone then keeps a core busy for
+    /// ~500 × 1,000 ms while foreground listings go unserved.
+    #[test]
+    fn a_burst_claims_only_one_trailing_emit() {
+        let debouncer = EventDebouncer::new(Duration::from_millis(500));
+        assert!(debouncer.should_emit("device-1"), "first event does the real emit");
+
+        let claims = (0..100)
+            .filter(|_| {
+                assert!(!debouncer.should_emit("device-1"), "burst events are suppressed");
+                debouncer.claim_trailing("device-1")
+            })
+            .count();
+
+        assert_eq!(claims, 1, "a burst must schedule one trailing emit, not one per event");
+    }
+
+    #[test]
+    fn releasing_the_claim_lets_the_next_burst_schedule_one() {
+        let debouncer = EventDebouncer::new(Duration::from_millis(500));
+        assert!(debouncer.claim_trailing("device-1"));
+        assert!(!debouncer.claim_trailing("device-1"), "still pending");
+
+        debouncer.release_trailing("device-1");
+        assert!(debouncer.claim_trailing("device-1"), "the next burst gets its own emit");
+    }
+
+    #[test]
+    fn trailing_claims_are_per_device() {
+        let debouncer = EventDebouncer::new(Duration::from_millis(500));
+        assert!(debouncer.claim_trailing("device-1"));
+        assert!(
+            debouncer.claim_trailing("device-2"),
+            "one device's pending emit must not suppress another's"
+        );
+    }
+
+    #[test]
+    fn clear_drops_a_pending_trailing_claim() {
+        // Disconnect wipes the device's state; a stale claim would otherwise
+        // block every trailing emit after the next connect.
+        let debouncer = EventDebouncer::new(Duration::from_millis(500));
+        assert!(debouncer.claim_trailing("device-1"));
+
+        debouncer.clear("device-1");
+        assert!(debouncer.claim_trailing("device-1"));
     }
 }
