@@ -522,6 +522,13 @@ else
 
     # Capture the test exit code so we can run a post-flight diagnostic
     # regardless of pass/fail, then re-propagate it as the script's status.
+    #
+    # RUST_LOG carries `cmdr_lib::mtp=debug` by default (override by exporting
+    # RUST_LOG). The MTP listing path logs each phase — listing-cache check,
+    # devices-registry lock, path resolve, device lock — at debug, and without
+    # them a stalled MTP listing leaves NOTHING in the log after `task started`:
+    # a run where every MTP listing stopped completing was undiagnosable for
+    # exactly this reason. The extra volume is a few lines per listing.
     set +e
     docker_test_status=0
     docker run --rm \
@@ -538,6 +545,7 @@ else
         -e CI=true \
         -e "E2E_GREP=${GREP_FILTER:-}" \
         -e "CMDR_E2E_JSON_REPORT=$CONTAINER_E2E_JSON_REPORT" \
+        -e "RUST_LOG=${RUST_LOG:-info,cmdr_lib::mtp=debug}" \
         $SMB_ENV_ARGS \
         "$IMAGE_NAME" \
         bash -c '
