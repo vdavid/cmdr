@@ -45,7 +45,13 @@ const entry: FileEntry = {
   extendedMetadataLoaded: true,
 }
 
-/** A keyboard event whose `preventDefault` / `stopPropagation` we can observe. */
+/**
+ * A keyboard event whose `preventDefault` / `stopPropagation` we can observe.
+ *
+ * The return type `Omit`s those two off `KeyboardEvent` before intersecting the spies in:
+ * leaving the real DOM signatures there makes `expect(e.preventDefault)` read as an
+ * unbound method to `@typescript-eslint/unbound-method`.
+ */
 function keyEvent(init: Partial<KeyboardEvent> = {}) {
   return {
     key: 'x',
@@ -53,7 +59,10 @@ function keyEvent(init: Partial<KeyboardEvent> = {}) {
     preventDefault: vi.fn(),
     stopPropagation: vi.fn(),
     ...init,
-  } as unknown as KeyboardEvent & { preventDefault: Mock; stopPropagation: Mock }
+  } as unknown as Omit<KeyboardEvent, 'preventDefault' | 'stopPropagation'> & {
+    preventDefault: Mock
+    stopPropagation: Mock
+  }
 }
 
 /** Route only the named command to `true`, everything else to `false`. */
