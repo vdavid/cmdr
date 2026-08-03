@@ -25,7 +25,10 @@ use cmdr_index::store::IndexStore;
 use cmdr_index::{ROOT_VOLUME_ID, ReadPool};
 
 use super::index::{SearchIndex, load_search_index, now_secs};
-use super::ranking::ImportanceWeights;
+
+mod weights;
+use weights::{load_weights, store_weights};
+pub(crate) use weights::{start_importance_weight_subscriber, weights_for};
 
 // ── App data dir (set once at startup) ───────────────────────────────
 
@@ -83,14 +86,6 @@ pub(crate) enum VolumeLoad {
 static SEARCH_INDICES: LazyLock<Mutex<HashMap<String, Arc<LoadedVolume>>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
-/// Per-volume importance weight snapshots (folder path → weight), blended into
-/// ranking. Kept separate from [`SEARCH_INDICES`] so the root recompute subscriber
-/// can refresh root's map live (subscribe-don't-poll) without touching the arena.
-/// A missing/empty entry degrades ranking to match-quality + recency — today's
-/// behavior. Held as `Arc` so a search clones a cheap handle and ranks against a
-/// stable snapshot even if a reload swaps it mid-search.
-static WEIGHTS: LazyLock<Mutex<HashMap<String, Arc<ImportanceWeights>>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
-
 /// In-flight load cancel flags, keyed by volume id, so `release_search_index` can
 /// abort a long root pre-load the moment the dialog closes.
 static LOADING: LazyLock<Mutex<HashMap<String, Arc<AtomicBool>>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
@@ -111,79 +106,6 @@ fn load_gate(volume_id: &str) -> Arc<Mutex<()>> {
         .entry(volume_id.to_string())
         .or_default()
         .clone()
-}
-
-// ── Importance weights ───────────────────────────────────────────────
-
-/// A cheap clone of a volume's importance weight snapshot, for the engine to rank
-/// against. Empty when none loaded (degrades to match-quality + recency).
-pub(crate) fn weights_for(volume_id: &str) -> Arc<ImportanceWeights> {
-    WEIGHTS
-        .lock_ignore_poison()
-        .get(volume_id)
-        .cloned()
-        .unwrap_or_else(|| Arc::new(ImportanceWeights::empty()))
-}
-
-fn store_weights(volume_id: &str, weights: ImportanceWeights) {
-    WEIGHTS
-        .lock_ignore_poison()
-        .insert(volume_id.to_string(), Arc::new(weights));
-}
-
-/// Load a volume's importance weights from its `importance-{volume_id}.db`. A
-/// missing/empty DB yields an empty map — ranking then degrades cleanly. Runs on a
-/// blocking thread (a SQLite read); never on the IPC thread.
-///
-/// Rows stream straight into the compact map, so the wide `path → weight` form never
-/// exists: on a big volume that's the difference between a load that transiently costs
-/// tens of MB and one that only ever holds what it keeps. It matters most for root,
-/// whose map reloads on EVERY recompute (the subscriber below) while the old one is
-/// still live.
-fn load_weights(data_dir: &Path, volume_id: &str) -> ImportanceWeights {
-    use cmdr_index::importance::{ImportanceIndex, SignalSet};
-    // `SignalSet::all()` matters only for `explain`, which the bulk weight read
-    // ignores; it's the correct default regardless.
-    let index = ImportanceIndex::open(data_dir, volume_id, SignalSet::all());
-    let mut weights = ImportanceWeights::empty();
-    match index.for_each_nonzero_weight(|path, score| weights.insert(path, score)) {
-        Ok(()) => {
-            log::debug!(target: "search", "importance weights loaded for '{volume_id}': {} scored folders", weights.len());
-            weights
-        }
-        Err(e) => {
-            log::debug!(target: "search", "importance weights not loaded for '{volume_id}': {e}");
-            ImportanceWeights::empty()
-        }
-    }
-}
-
-/// Start the root recompute subscriber that keeps root's importance weight map
-/// fresh, and record the app data dir for the search commands + MCP.
-///
-/// Subscribes to root's recompute-completed `watch` (subscribe-don't-poll) and
-/// reloads root's weights on each pass, plus once up front (the `watch` retains the
-/// last generation, so a recompute finished before this subscription is covered by
-/// the initial `borrow_and_update` reload). Non-root volumes take a load-time weight
-/// snapshot instead (they drop on idle and reload next session; their importance
-/// rarely recomputes mid-session). Called once from app setup.
-pub(crate) fn start_importance_weight_subscriber(data_dir: PathBuf) {
-    set_data_dir(data_dir.clone());
-    let mut rx = cmdr_index::importance::read::subscribe(ROOT_VOLUME_ID);
-    tauri::async_runtime::spawn(async move {
-        let reload = {
-            let dir = data_dir.clone();
-            move || store_weights(ROOT_VOLUME_ID, load_weights(&dir, ROOT_VOLUME_ID))
-        };
-        let r = reload.clone();
-        let _ = tauri::async_runtime::spawn_blocking(r).await;
-        rx.borrow_and_update();
-        while rx.changed().await.is_ok() {
-            let _generation = *rx.borrow_and_update();
-            let r = reload.clone();
-            let _ = tauri::async_runtime::spawn_blocking(r).await;
-        }
-    });
 }
 
 // ── Volume enumeration ───────────────────────────────────────────────

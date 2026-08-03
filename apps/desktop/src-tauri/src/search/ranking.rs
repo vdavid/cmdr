@@ -170,7 +170,30 @@ fn band_of(exact: bool, prefix: bool) -> MatchQuality {
 /// match-quality band, so a collision at worst gives one unrelated folder's files a
 /// spurious nudge among equally-good matches. It cannot corrupt a result, drop one, or
 /// lift a weaker match above a stronger one.
-#[derive(Debug, Default)]
+///
+/// [`remove`](Self::remove) widens that failure mode slightly, and deliberately: a
+/// removal keyed on a colliding hash DROPS the other folder's legitimate weight
+/// instead of nudging it. The result is still bounded (that folder ranks by pure
+/// recency within its band, which is the neutral no-importance behavior) and still
+/// self-healing (the next FULL pass rebuilds the map from scratch). At the collision
+/// probability above it's an event that essentially never happens; the point of naming
+/// it is that the delta path made "wrong weight" into "no weight", not that the risk
+/// changed size.
+///
+/// ## Patching
+///
+/// The map is rebuilt wholesale from a full pass and PATCHED from an incremental one
+/// (`cmdr_index::importance::read::WeightDelta`, applied in
+/// [`volumes`](super::volumes)). The invariant a patch must preserve: the map holds
+/// exactly the folders scoring ABOVE zero, matching what `for_each_nonzero_weight`
+/// streams. That's why the delta reports a rescored-to-zero folder as a removal
+/// rather than an [`insert`](Self::insert) of `0.0` — an absent key and a `0.0` entry
+/// rank identically, so keeping only one of the two shapes is what lets a patched map
+/// and a rebuilt one be compared for equality.
+#[derive(Debug, Default, Clone)]
+// A patched map and a rebuilt one must be the same map; comparing them directly is
+// how that's pinned (`a_patched_map_matches_one_rebuilt_from_the_store`).
+#[cfg_attr(test, derive(PartialEq))]
 pub(crate) struct ImportanceWeights {
     /// `hash_path(folder absolute path)` → importance scalar (`0.0..=1.0`). Keyed off
     /// the SAME absolute-path shape the search index reconstructs (`/Users/…`, no `~`),
@@ -190,6 +213,17 @@ impl ImportanceWeights {
     /// `path → weight` map never exists in memory at all.
     pub(crate) fn insert(&mut self, folder_path: &str, weight: f64) {
         self.map.insert(hash_path(folder_path), weight);
+    }
+
+    /// Drop one folder's weight, so it ranks as unscored (`0.0`, neutral) again. The
+    /// incremental-delta path calls this for a folder whose row left the store — it
+    /// was renamed away, deleted, became floored, or rescored to zero.
+    ///
+    /// Keyed by the path hash like everything else here, so on a hash collision this
+    /// drops the OTHER folder's weight; see the type's "Collisions" note for why
+    /// that's bounded and self-healing.
+    pub(crate) fn remove(&mut self, folder_path: &str) {
+        self.map.remove(&hash_path(folder_path));
     }
 
     /// Build from a path→weight map. A test convenience; production streams rows

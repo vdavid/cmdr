@@ -374,3 +374,78 @@ fn load_weights_from(path: &str) -> ImportanceWeights {
     }
     weights
 }
+
+/// Time the two ways root's importance weight map is kept current: the FULL reload
+/// (stream every row out of `importance-root.db` and rehash every path) against the
+/// in-place patch an incremental pass's delta allows.
+///
+/// This is the every-60s cost the incremental rescore pays, so the ratio is what
+/// decides whether the throttle window can come down. The delta is synthetic — a
+/// handful of upserts plus one removal, the shape a real listing change produces —
+/// and the patch is measured BOTH ways: with the `Arc` unshared (nobody searching,
+/// the overwhelmingly common case, where `Arc::make_mut` mutates in place) and with a
+/// reader holding it (a search in flight, where it clones the map first).
+#[test]
+#[ignore = "benchmark; needs CMDR_SEARCH_BENCH_IMPORTANCE_DB pointing at a real importance-*.db"]
+#[allow(
+    clippy::print_stderr,
+    reason = "an ignored measurement harness prints its table to stderr for `--nocapture`; it never runs in the app or CI"
+)]
+fn bench_weight_reload() {
+    use std::sync::Arc;
+
+    let Ok(db) = std::env::var("CMDR_SEARCH_BENCH_IMPORTANCE_DB") else {
+        eprintln!("set CMDR_SEARCH_BENCH_IMPORTANCE_DB to an importance-*.db path");
+        return;
+    };
+
+    // The full reload, three times: it's what every recompute notification cost.
+    let mut reload_runs = Vec::new();
+    let mut weights = ImportanceWeights::empty();
+    for _ in 0..3 {
+        let t = Instant::now();
+        weights = load_weights_from(&db);
+        reload_runs.push(t.elapsed());
+    }
+    eprintln!(
+        "\n{db}\n  {} scored folders\n  full reload: {:.2?} / {:.2?} / {:.2?}",
+        weights.len(),
+        reload_runs[0],
+        reload_runs[1],
+        reload_runs[2],
+    );
+
+    // A typical incremental delta: one changed folder plus a few descendants, and one
+    // folder that left (renamed away, deleted, or newly floored).
+    let upserted: Vec<(String, f64)> = (0..8)
+        .map(|i| (format!("/Users/bench/proj/sub{i}"), 0.4 + i as f64 / 100.0))
+        .collect();
+    let removed = vec!["/Users/bench/proj/gone".to_string()];
+
+    let patch = |shared: bool| {
+        let mut map = Arc::new(weights.clone());
+        // A search in flight holds a second handle, which makes `make_mut` clone.
+        let reader = shared.then(|| Arc::clone(&map));
+        let t = Instant::now();
+        let patched = Arc::make_mut(&mut map);
+        for path in &removed {
+            patched.remove(path);
+        }
+        for (path, score) in &upserted {
+            patched.insert(path, *score);
+        }
+        let elapsed = t.elapsed();
+        drop(reader);
+        elapsed
+    };
+
+    // Warm up (the first clone touches pages the timed runs then find resident).
+    patch(true);
+    eprintln!(
+        "  delta patch ({} upserts, {} removal): {:.2?} unshared, {:.2?} while a search holds the map\n",
+        upserted.len(),
+        removed.len(),
+        patch(false),
+        patch(true),
+    );
+}

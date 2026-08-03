@@ -44,7 +44,7 @@ fn make_index_db_scanned(data_dir: &Path, volume_id: &str, volume_path: &str, sc
 }
 
 /// Write a populated `importance-{volume_id}.db` via the real writer.
-fn make_importance_db(data_dir: &Path, volume_id: &str, rows: &[(&str, f64)]) {
+pub(crate) fn make_importance_db(data_dir: &Path, volume_id: &str, rows: &[(&str, f64)]) {
     use cmdr_index::importance::testing::importance_db_path;
     use cmdr_index::importance::testing::{ImportanceWriter, WeightRow};
     let db_path = importance_db_path(data_dir, volume_id);
@@ -231,38 +231,6 @@ fn volume_without_importance_db_degrades_to_empty_weights() {
     assert!(
         weights_for("smb-noweights").is_empty(),
         "no importance.db ⇒ empty weights"
-    );
-}
-
-// ── Recompute notification refreshes root weights ────────────────────
-
-/// A recompute completing fires the volume's `watch`, and the next weight reload
-/// picks up the freshly-written weights — the subscribe-don't-poll contract the
-/// root importance subscriber relies on. Uses `has_changed()` (no await) so it
-/// stays a plain sync test; the `watch` sender flips the flag on notify.
-#[test]
-fn recompute_notification_lets_the_next_reload_see_new_weights() {
-    let dir = tempfile::tempdir().expect("temp dir");
-    let vid = "smb-recompute";
-
-    // First pass: an early weight, loaded into the snapshot.
-    make_importance_db(dir.path(), vid, &[("/proj", 0.4)]);
-    store_weights(vid, load_weights(dir.path(), vid));
-    assert_eq!(weights_for(vid).weight_for("/proj"), 0.4);
-
-    // A subscriber observes the recompute notification, then reloads and sees the
-    // second pass's higher weight.
-    let mut rx = cmdr_index::importance::read::subscribe(vid);
-    rx.borrow_and_update();
-    make_importance_db(dir.path(), vid, &[("/proj", 0.95)]);
-    cmdr_index::importance::testing::notify_recompute_completed_for_test(vid, 2);
-    assert!(rx.has_changed().expect("sender alive"), "the notification fired");
-    rx.borrow_and_update();
-    store_weights(vid, load_weights(dir.path(), vid));
-    assert_eq!(
-        weights_for(vid).weight_for("/proj"),
-        0.95,
-        "the next reload after a recompute sees the new weights"
     );
 }
 

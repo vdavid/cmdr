@@ -290,9 +290,9 @@ home dir), so this pass — not the rayon scan — was the search's dominant cos
 Measurements and the before/after table: `docs/notes/search-latency-2026-07-28.md`. The harness is
 `bench.rs` (`#[ignore]`d; it can run against a real `index-*.db`).
 
-### The weight-map lifecycle (`volumes.rs`)
+### The weight-map lifecycle (`volumes/weights.rs`)
 
-Per-volume weight maps live in the `WEIGHTS` map (`volume_id → Arc<ImportanceWeights>`) in `volumes.rs`, built ONCE by
+Per-volume weight maps live in the `WEIGHTS` map (`volume_id → Arc<ImportanceWeights>`), built ONCE by
 streaming [`ImportanceIndex::for_each_nonzero_weight`](crates/cmdr-index/src/importance/read/mod.rs) and never queried per result (a search
 ranks tens of thousands of candidates):
 
@@ -301,10 +301,22 @@ ranks tens of thousands of candidates):
   mid-search. Kept SEPARATE from `LoadedVolume` so the root recompute subscriber can swap root's map without rebuilding
   the arena.
 - **Subscribe (root), snapshot (non-root).** `start_importance_weight_subscriber` (wired from `lib.rs` setup, which
-  also records the app data dir) subscribes to root's [`read::subscribe`](crates/cmdr-index/src/importance/read/mod.rs) recompute `watch`
-  and reloads root's weights on each pass, plus once up front. A non-root volume takes a load-time snapshot instead: it
-  drops on idle and reloads next session, and its importance rarely recomputes mid-session. A volume with no
-  `importance-{id}.db` degrades to match-quality + recency (empty map).
+  also records the app data dir) subscribes to root's
+  [`read::subscribe`](crates/cmdr-index/src/importance/read/mod.rs) recompute channel and keeps root's map current on
+  each pass, plus one full load up front. A non-root volume takes a load-time snapshot instead: it drops on idle and
+  reloads next session, and its importance rarely recomputes mid-session. A volume with no `importance-{id}.db`
+  degrades to match-quality + recency (empty map).
+- **A full pass reloads; an incremental PATCHES.** `weight_refresh_for` maps each notice to one of three actions, and
+  the rule that matters is that a lagged receiver reloads — see the contract in
+  `crates/cmdr-index/src/importance/read/DETAILS.md` § The reload contract, which is canonical for what the notices
+  mean. `apply_weight_delta` applies removals then upserts through `Arc::make_mut`, so the map mutates IN PLACE when
+  nobody is searching and clones only when a search holds the `Arc` — the lock-free reader below is untouched either
+  way, and no reader can see a half-applied delta. Holding the `WEIGHTS` mutex across the whole patch is what makes
+  that sound (`weights_for` takes the same mutex to hand the `Arc` out).
+  Measured 2026-08-03 over the real 160,302-folder `importance-root.db` (`bench::bench_weight_reload`, release, warm
+  cache): a full reload is 72–74 ms; patching a typical 8-upsert / 1-removal delta is 333 ns unshared, 72 µs while a
+  search holds the map. That every-60s reload was what pinned the incremental throttle window
+  (`crates/cmdr-index/src/importance/scheduler/DETAILS.md` § Throttle).
 - **Only non-zero weights enter the map.** Floored folders have NO row in `importance.db` (the store's compaction — see
   `crates/cmdr-index/src/importance/DETAILS.md` storage model), and `for_each_nonzero_weight` also filters `score > 0`, so the ~312k
   folders under `node_modules` on a 646k-folder home never enter the map (their lookup defaults to `0.0` anyway).
@@ -314,9 +326,9 @@ ranks tens of thousands of candidates):
   path keys (2026-07-27, `heap_bytes_held` over the real `importance-*.db` files). Rationale, the collision argument,
   and why an `f32` weight would buy nothing: the `ImportanceWeights` doc comment in `ranking.rs`. `memory_tests.rs`
   guards the per-folder cost.
-- **Rows stream straight into the compact map**, so the wide `path → weight` form never exists. That matters most for
-  root, which reloads on EVERY recompute while the old map is still live: the reload's transient is now a second copy
-  of ~4.5 MB rather than a ~27 MB intermediate on top of it.
+- **Rows stream straight into the compact map**, so the wide `path → weight` form never exists. That matters for the
+  full reload, which builds the new map while the old one is still live: its transient is a second copy of ~4.5 MB
+  rather than a ~27 MB intermediate on top of it.
 - **A missing DB is empty, not an error.** `for_each_nonzero_weight` short-circuits to visiting nothing when the file is
   absent (a read-only open would fail `CannotOpen`), so an unscored volume degrades cleanly.
 
