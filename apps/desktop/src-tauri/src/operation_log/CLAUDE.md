@@ -9,7 +9,8 @@ MCP tools live in `mcp/executor/operation_log.rs`; UI surfaces are frontend-only
 ## Module map
 
 - `store/` — the DB (connection factory, migration ladder, schema, `intern_dir`, `fold_name`, low-level reads).
-- `writer.rs` — the ONE writer thread + retention; `capture.rs` feeds it; `types.rs` holds the typed tokens.
+- `writer.rs` — the ONE writer thread (+ `writer/prune.rs`, the bounded retention sweep it runs); `capture.rs` feeds
+  it; `types.rs` holds the typed tokens.
 - `query.rs` — reads; `retention.rs` — startup + periodic prune; IPC in `commands/operation_log.rs`.
 - `rollback.rs` (+ `order.rs`, `skips.rs`) — the rollback engine; spawn glue and the multi-op driver live in
   `write_operations/rollback.rs`. `mod.rs::start` opens the DB, reconciles, spawns retention.
