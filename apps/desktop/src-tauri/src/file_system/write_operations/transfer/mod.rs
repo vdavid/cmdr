@@ -27,6 +27,7 @@ pub(super) mod volume_cleanup;
 pub(super) mod volume_conflict;
 pub(super) mod volume_copy;
 pub(super) mod volume_copy_concurrent;
+pub(super) mod volume_copy_serial;
 pub(super) mod volume_move;
 pub(super) mod volume_move_same;
 pub(super) mod volume_preflight;

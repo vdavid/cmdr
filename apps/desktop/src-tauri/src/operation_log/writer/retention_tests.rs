@@ -3,7 +3,10 @@
 //! Split out of `writer/tests.rs` (which keeps the open/record/finalize round-trip
 //! and the rollback reads) to keep each test file under the length budget.
 
-use super::prune::{VACUUM_BACKLOG_CAP, VACUUM_BACKLOG_THRESHOLD, VACUUM_MIN_FREELIST, VACUUM_STEADY_CAP, live_size_bytes, pick_vacuum_cap};
+use super::prune::{
+    VACUUM_BACKLOG_CAP, VACUUM_BACKLOG_THRESHOLD, VACUUM_MIN_FREELIST, VACUUM_STEADY_CAP, live_size_bytes,
+    pick_vacuum_cap,
+};
 use super::tests::fresh;
 use super::*;
 use crate::operation_log::store::{operation_log_db_path, read_operation, read_operation_items};

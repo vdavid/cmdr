@@ -1,8 +1,8 @@
 //! Coalescing coordinator tests: the pure `PassCoordinator`
 //! contract, unit-tested without an app, a runtime, or the index fixtures.
 
-use super::*;
 use super::wiring::incremental_debounce_wait;
+use super::*;
 use std::time::{Duration, Instant};
 
 // ── Coalescing coordinator ────────────────────────────────────────────────

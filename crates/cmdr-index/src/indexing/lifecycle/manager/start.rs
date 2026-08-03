@@ -406,4 +406,5 @@ impl IndexManager {
 
         self.scan_handle = Some(scan_handle);
         Ok(())
-    }}
+    }
+}

@@ -21,11 +21,10 @@ use futures_util::stream::FuturesUnordered;
 use cmdr_fs::volume::Volume;
 
 use super::scan_pace::ScanPacer;
-use super::{
-    CONSECUTIVE_FAILURE_ABORT, VolumeScanError, is_typed_disconnect, list_one_directory,
-    log_scan_progress, summary,
-};
 use super::system_dirs::is_recursion_excluded_dir;
+use super::{
+    CONSECUTIVE_FAILURE_ABORT, VolumeScanError, is_typed_disconnect, list_one_directory, log_scan_progress, summary,
+};
 use crate::indexing::reconcile::reconciler;
 use crate::indexing::scanner::{ScanProgress, ScanSummary};
 use crate::indexing::store::{EntryRow, IndexStore, ScanContext};

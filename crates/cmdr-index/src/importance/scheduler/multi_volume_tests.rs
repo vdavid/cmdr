@@ -3,8 +3,8 @@
 //! Spotlight degradation, offline-unmounted reads, and per-volume store isolation.
 
 use super::test_support::*;
-use super::*;
 use super::wiring::should_enqueue_initial_full_pass;
+use super::*;
 use crate::IndexVolumeKind;
 
 // ── Floored transitions on the incremental path (storage compaction) ───────

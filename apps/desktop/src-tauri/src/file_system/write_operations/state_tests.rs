@@ -150,11 +150,7 @@ fn cancel_unknown_operation_is_a_silent_noop() {
 
 /// A state registered in `registry` under a unique id, returned for direct
 /// inspection. The registry owns the entry, so there's nothing to clean up.
-fn registered_in(
-    registry: &WriteOperationRegistry,
-    label: &str,
-    initial: OperationIntent,
-) -> Arc<WriteOperationState> {
+fn registered_in(registry: &WriteOperationRegistry, label: &str, initial: OperationIntent) -> Arc<WriteOperationState> {
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(50)));
     state.intent.store(initial as u8, Ordering::Relaxed);
     registry.insert(unique_id(label), Arc::clone(&state));

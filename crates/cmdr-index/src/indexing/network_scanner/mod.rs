@@ -50,7 +50,6 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
 
-
 pub(crate) mod scan_pace;
 mod system_dirs;
 

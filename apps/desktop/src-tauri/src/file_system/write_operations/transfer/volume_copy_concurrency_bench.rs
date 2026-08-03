@@ -65,6 +65,8 @@
 //!   but it is a different code path, and a step between 1 and 2 is partly that
 //!   switch rather than the window alone.
 
+use std::collections::HashMap;
+
 use super::*;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::smb::{SmbConnectionParams, connect_smb_volume};
