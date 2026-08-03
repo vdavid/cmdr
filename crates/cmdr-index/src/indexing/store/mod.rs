@@ -632,6 +632,7 @@ fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), IndexStoreErro
          PRAGMA synchronous = NORMAL;",
     )?;
     cmdr_fs::sqlite_util::apply_page_cache(conn, readonly)?;
+    cmdr_fs::sqlite_util::apply_statement_cache(conn, readonly);
     if !readonly {
         conn.execute_batch(
             "PRAGMA auto_vacuum = INCREMENTAL;

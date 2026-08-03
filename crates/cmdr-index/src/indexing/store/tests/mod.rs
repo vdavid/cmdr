@@ -7,6 +7,7 @@ use super::*;
 mod dir_stats_and_epochs;
 mod entry_crud;
 mod error_classification;
+mod insert_throughput_probe;
 mod meta_and_calibration;
 mod open_and_recover;
 mod path_resolution;

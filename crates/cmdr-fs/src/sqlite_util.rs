@@ -288,6 +288,41 @@ pub fn apply_page_cache(conn: &Connection, readonly: bool) -> rusqlite::Result<(
     conn.execute_batch(&format!("PRAGMA cache_size = -{kib};"))
 }
 
+/// Prepared statements a WRITE connection may keep compiled.
+///
+/// `rusqlite`'s own default is 16 (`STATEMENT_CACHE_DEFAULT_CAPACITY`), an LRU keyed
+/// by SQL text. The index store alone holds **35** distinct `prepare_cached` sites
+/// (`entries.rs` 25, `dir_stats.rs` 6, `meta.rs` 2, `mod.rs` 1, `connection.rs` 1),
+/// so a writer working across them evicts and silently RE-COMPILES statements it is
+/// about to use again — the exact cost `prepare_cached` is there to remove, with no
+/// error and no failing test to show for it.
+///
+/// 64 leaves headroom for the store to grow without anyone noticing this ceiling.
+/// The cost is one compiled VDBE program per slot on the handful of write
+/// connections (one per DB), not per read connection, so it is a rounding error
+/// against [`WRITE_PAGE_CACHE_KIB`].
+///
+/// ⚠️ Raise this when the store's `prepare_cached` count approaches it. A statement
+/// cache smaller than the working set is worse than none: it pays the lookup and
+/// still re-compiles.
+pub const WRITE_STATEMENT_CACHE_CAPACITY: usize = 64;
+
+/// Size the connection's prepared-statement cache for its role.
+///
+/// READ connections keep `rusqlite`'s default: they are thread-local and there are
+/// many of them (132 open in a profiled prod session), so a large per-connection
+/// statement cache there multiplies by a number nothing controls — the same
+/// reasoning as [`READ_PAGE_CACHE_KIB`]. The single writer per DB gets
+/// [`WRITE_STATEMENT_CACHE_CAPACITY`].
+///
+/// Called from every store's `apply_pragmas`, beside [`apply_page_cache`], so the
+/// split is set in ONE place.
+pub fn apply_statement_cache(conn: &Connection, readonly: bool) {
+    if !readonly {
+        conn.set_prepared_statement_cache_capacity(WRITE_STATEMENT_CACHE_CAPACITY);
+    }
+}
+
 /// The connection's page-cache budget in KiB. `PRAGMA cache_size` echoes back the
 /// negative KiB form [`apply_page_cache`] sets, so flip the sign.
 #[cfg(any(test, feature = "testing"))]

@@ -412,21 +412,23 @@ impl IndexStore {
         inode: Option<u64>,
     ) -> Result<i64, IndexStoreError> {
         let name_folded = normalize_for_comparison(name);
-        conn.execute(
+        // `prepare_cached` for the same reason as `insert_entry_v2_with_id` below:
+        // `Connection::execute` re-prepares from SQL text per call.
+        let mut stmt = conn.prepare_cached(
             "INSERT INTO entries (parent_id, name, name_folded, is_directory, is_symlink, logical_size, physical_size, modified_at, inode)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
-            params![
-                parent_id,
-                name,
-                name_folded,
-                is_directory as i32,
-                is_symlink as i32,
-                logical_size,
-                physical_size,
-                modified_at,
-                inode,
-            ],
         )?;
+        stmt.execute(params![
+            parent_id,
+            name,
+            name_folded,
+            is_directory as i32,
+            is_symlink as i32,
+            logical_size,
+            physical_size,
+            modified_at,
+            inode,
+        ])?;
         Ok(conn.last_insert_rowid())
     }
 
@@ -450,22 +452,30 @@ impl IndexStore {
         inode: Option<u64>,
     ) -> Result<i64, IndexStoreError> {
         let name_folded = normalize_for_comparison(name);
-        conn.execute(
+        // `prepare_cached`, never `execute` with a literal: this is the LIVE reconcile
+        // write path, called once per file the watcher sees, and `Connection::execute`
+        // re-prepares from SQL TEXT on every call. Measured on a prod profile
+        // (2026-08-03): 1,828 of ~3,398 running samples on the writer thread sat in
+        // `sqlite3RunParser` → `sqlite3Insert` → `sqlite3GenerateConstraintChecks`,
+        // against 182 in `sqlite3_step`. Re-parsing cost 10x what executing did.
+        // The cache lives on the connection, which the writer opens once
+        // (`writer/mod.rs`), so the compile happens once per process.
+        let mut stmt = conn.prepare_cached(
             "INSERT INTO entries (id, parent_id, name, name_folded, is_directory, is_symlink, logical_size, physical_size, modified_at, inode)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
-            params![
-                id,
-                parent_id,
-                name,
-                name_folded,
-                is_directory as i32,
-                is_symlink as i32,
-                logical_size,
-                physical_size,
-                modified_at,
-                inode,
-            ],
         )?;
+        stmt.execute(params![
+            id,
+            parent_id,
+            name,
+            name_folded,
+            is_directory as i32,
+            is_symlink as i32,
+            logical_size,
+            physical_size,
+            modified_at,
+            inode,
+        ])?;
         Ok(id)
     }
 
