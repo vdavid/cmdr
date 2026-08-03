@@ -16,7 +16,7 @@ cost sits.
 
 They're a module inside `cmdr-fs`, not a `cmdr-volume-host` crate.
 
-Every backend already depends on `cmdr-fs`: it's where `Volume` lives, and where every type the seams exchange lives
+Every backend already depends on `cmdr-fs`: it's where `Volume` lives, and where every type a backend speaks in lives
 (`FileEntry`, `DirectoryChange`, `MutationEvent`, `CancellationToken`, `ArchiveFormat`). A separate crate would depend
 on `cmdr-fs` for all of them, so it would add a hop without adding independence, and it would create a recurring
 judgment call — "is this new type vocabulary or seam?" — with the answer split across two manifests. It would also need
