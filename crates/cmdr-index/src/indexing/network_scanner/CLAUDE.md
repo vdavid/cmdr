@@ -6,8 +6,12 @@ are discovered and stat'd differs from the local guarded walker.
 
 ## Module map
 
-- **mod.rs** — `scan_volume_via_trait` (fresh BFS) and `reconcile_volume_via_trait` (rescan-in-place BFS); the
-  round-trip disciplines, the terminal-disconnect partial-preserving finish, and the consecutive-failure backstop.
+- **mod.rs** — `VolumeScanError` plus the round-trip disciplines both walks share: the timed/cancelable/pooled
+  `list_one_directory`, the typed-disconnect test, the progress log, and the summary.
+- **full_scan.rs** — `scan_volume_via_trait` (fresh BFS after a `TruncateData`), plus its batch/transaction helpers and
+  the terminal-disconnect partial-preserving finish.
+- **reconcile_scan.rs** — `reconcile_volume_via_trait` (rescan-in-place BFS): same walk, but diffs each dir against the
+  DB and writes only changes, so the last-good index stays visible throughout.
 - **scan_pace.rs** — `ScanPacer`: the per-volume paced listing budget (`FULL_LISTING_BUDGET` 64 ↔
   `YIELDING_LISTING_BUDGET`
   1. that yields to navigation. `pace_tests.rs` is its test module.

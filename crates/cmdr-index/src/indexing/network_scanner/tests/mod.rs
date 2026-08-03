@@ -8,10 +8,13 @@ use std::sync::atomic::AtomicU64;
 use std::future::Future;
 use std::pin::Pin;
 
+use std::sync::atomic::Ordering;
+
 use super::*;
-use crate::indexing::network_scanner::scan_pace::FULL_LISTING_BUDGET;
-use crate::indexing::store::{ROOT_ID, resolve_path};
-use crate::indexing::writer::IndexWriter;
+use crate::indexing::network_scanner::scan_pace::{FULL_LISTING_BUDGET, ScanPacer};
+use crate::indexing::scanner::ScanProgress;
+use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID, resolve_path};
+use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::{InMemoryVolume, ListingProgress, VolumeError};
 use rusqlite::Connection;

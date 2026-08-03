@@ -18,7 +18,8 @@ use std::time::Duration;
 use tokio_util::sync::CancellationToken;
 
 use super::tests::{ConcurrencyTrackingVolume, entry, progress, wide_tree};
-use super::{ScanPacer, scan_volume_via_trait};
+use super::scan_pace::ScanPacer;
+use super::scan_volume_via_trait;
 use crate::indexing::host::policy::FakeHostPolicy;
 use crate::indexing::network_scanner::scan_pace::FULL_LISTING_BUDGET;
 use crate::indexing::scanner::ScanSummary;
