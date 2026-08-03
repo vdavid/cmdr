@@ -1,6 +1,6 @@
 # Cmdr IntelliJ plugin
 
-**Status**: specced, not started. **Owner**: David. **Date**: 2026-08-03.
+**Status**: M0 and M1 done, M2 next. **Owner**: David. **Date**: 2026-08-03.
 
 One JetBrains plugin that carries Cmdr-specific editor affordances, built so that feature number three is a new
 directory rather than a redesign. Two features at v1:
@@ -47,8 +47,8 @@ Decided. Don't relitigate while implementing.
    `tools/intellij-plugin/cmdr-plugin.json` under the project base dir. No project-name matching, no absolute paths, and
    a worktree checkout is recognized for free.
 7. **PSI, not text matching, and therefore IDEA Ultimate only.** Folding walks real JavaScript and TypeScript call
-   expressions, which costs nothing at runtime and buys precision. Svelte alone may fall back to text matching depending
-   on what M0 finds. Reasoning: § Language support.
+   expressions, which costs nothing at runtime and buys precision. M0 confirmed this holds for Svelte too, so there is
+   no text-matching path anywhere. Reasoning: § Language support.
 8. **No settings panel in v1.** `cmdr-plugin.json` is the only configuration surface. A panel means a
    `PersistentStateComponent`, a UI form, and defaults-versus-overrides merge logic, which is more machinery than the
    two features it would configure. Editing a JSON file and restarting is fine for a private tool. Add one when there's
@@ -194,45 +194,38 @@ compile error), any write path into the catalog, and non-English locales.
 **Tests.** `BasePlatformTestCase` folding fixtures over `.ts`, `.svelte`, and `.md` files, headless. Under the
 no-dependency design below they're all the same kind of test, because none of them need a language plugin present.
 
-## Language support: real PSI, with a regex fallback for Svelte only
+## Language support: real PSI everywhere, Svelte included
 
-**We depend on the JavaScript plugin and walk real PSI.** A `FoldingBuilder` registered for `JavaScript` and
-`TypeScript` matches actual call expressions with an actual string-literal first argument, so a key inside a comment or
-a nested string is never mistaken for a call site, and the key-property case (`labelKey: 'settings.…'`) is a property
-match rather than a hopeful regex.
+**We depend on the JavaScript plugin and walk real PSI.** A `FoldingBuilder` matches actual call expressions with an
+actual string-literal first argument, so a key inside a comment or a nested string is never mistaken for a call site,
+and the key-property case (`labelKey: 'settings.…'`) is a property match rather than a hopeful regex.
 
 **What this costs, precisely.** Nothing at runtime: the JavaScript plugin is already loaded in IDEA Ultimate whether or
 not we exist, and our artifact is a few hundred KB either way. The cost is build-side, an IDE artifact to compile
 against, and it disappears if the build targets David's local IDEA install rather than downloading Ultimate. The
 narrowing is that the plugin then only runs in Ultimate or WebStorm, which is where the code gets read anyway.
 
-**The Svelte question is the one real unknown, and it's now scoped to Svelte.** `.ts` and `.js` folding is ordinary JS
-PSI and can't surprise us. Whether `{tString(…)}` inside a `.svelte` template surfaces as JavaScript PSI depends on how
-`dev.blachut.svelte.lang` injects, which M0 answers before M4 starts.
-
-**If Svelte PSI is hostile, Svelte alone falls back to text matching.** A `FoldingBuilder` takes its language as a
-string in `plugin.xml` and returns plain `TextRange`s, so a regex implementation registered for the Svelte language ID
-still gets the platform's fold lifecycle, expansion state, and ⌘+ / ⌘⇧+ for free. It's less precise (a key in a template
-comment would fold), it's maybe 30 lines, and it keeps M4 unblockable. TypeScript and JavaScript stay on PSI either way;
-this is a per-language decision, not a plan B for the whole feature.
-
-**M0 answers two things**: the Svelte PSI shape, and what the Svelte language ID string is if we need the fallback.
+**The Svelte question is settled, and the answer is PSI.** M0 measured it on real repo files: `{tString(…)}` inside a
+`.svelte` template is an ordinary `JSCallExpression`, so **the regex fallback this section used to hold in reserve is
+dropped**. Two constraints came with the answer and both are load-bearing for M4: a `.svelte` file has a single
+`SvelteHTML` root that the builder must register for and walk down from, and a registration for one language does not
+reach its dialects. `tools/intellij-plugin/DETAILS.md` is the canonical record, including the `<Trans key="…">` case,
+which is XML rather than JavaScript.
 
 ## Milestones
 
-- **M0, spike.** Gradle scaffold that builds and loads against the local IDE install, the tier 1 and tier 2 loops proven
-  on a do-nothing feature, and the two questions from § Language support answered on a real `.svelte` file. Output is a
-  paragraph in `DETAILS.md`. Nothing else gets built first, because M4 assumes those answers. M0 also leaves
-  `untilBuild` open rather than pinned: targeting an EAP means a pinned upper bound silently disables the plugin at the
-  next IDE upgrade, and a plugin that stops working without saying so is worse than one that breaks loudly.
+- **M0, spike. Done.** The Gradle scaffold, both loops proven on a do-nothing folding probe, and § Language support
+  answered on real repo files. Findings and the tier-1 gotchas live in `tools/intellij-plugin/DETAILS.md`; the
+  registration rules there are not optional reading for M4. `untilBuild` is left open, since targeting an EAP means a
+  pinned upper bound silently disables the plugin at the next IDE upgrade.
 - **M1, changelog normalization.** The whole of § Normalizing the changelog to 8 characters, landing before the plugin
   reads the file. Independently useful and independently revertable; it touches the repo, not the plugin, and it's the
   one milestone worth doing even if the plugin never gets built.
 - **M2, core.** `CmdrProjectService`, `cmdr-plugin.json` loading, and the `plugin.xml` skeleton. Verified by a feature
   that does nothing except log that it's enabled in Cmdr and disabled in a scratch project.
 - **M3, commit-hash links.** The full feature plus its headless tests. First useful build.
-- **M4, i18n folding.** `.ts` call sites first, then key properties, then `.svelte` and `<Trans>` on whichever mechanism
-  M0 chose for Svelte.
+- **M4, i18n folding.** `.ts` call sites first, then key properties, then `.svelte` and `<Trans>`. All PSI; M0 settled
+  the mechanism.
 - **M5, ⌘-click key to catalog.** Reuses M4's index, and is plausibly the most useful thing here day to day.
 - **M6, wiring.** `README.md`, the `CLAUDE.md` + `DETAILS.md` pair, and the docs links from § Docs wiring.
 
@@ -283,10 +276,13 @@ and flakier than tier 2's one-shot screenshot. Only worth it if we end up with a
 regress, which two reading aids are not.
 
 **Which IDE the loop runs against.** Both tiers point at the local **IntelliJ IDEA 2026.2 EAP** install. That's the IDE
-David reads code in, so a tier 2 screenshot shows what he'd actually see; building against a local installation also
-means no multi-gigabyte IDE download and no licensing question. Since the plugin walks JavaScript PSI, Community can't
-host feature 2 anyway, so there's nothing to gain from a lighter target. The Svelte plugin comes in as a marketplace
-test dependency for the `.svelte` fixtures, which M0 confirms resolves.
+David reads code in, and building against a local installation means no multi-gigabyte IDE download. Since the plugin
+walks JavaScript PSI, Community can't host feature 2 anyway, so there's nothing to gain from a lighter target. The
+Svelte plugin is taken from that install's plugin directory rather than the marketplace, so its version can't drift.
+
+Two corrections M0 found. A local install removes the licensing question for the _build_, not for `runIde`: the sandbox
+IDE starts unlicensed, so Ultimate-only plugins including Svelte stay disabled there and `.svelte` behavior is not
+observable in tier 2. And tier 1 is not merely the primary loop but the only one that sees Svelte at all.
 
 ## Docs wiring
 
