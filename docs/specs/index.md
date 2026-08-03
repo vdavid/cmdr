@@ -6,25 +6,30 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
-- [ ] 2026-08-03 `resource-use-plan.md` - SPECCED, not started. Cut idle CPU and RAM: prod v0.37.0 burned 110 min of CPU
-      over 9.1 h (about 20% of a core, sustained) at a 1.78 GB footprint while idle, writing 141,072 log lines in six
-      hours. Eight milestones, reordered by an M0 that the first draft skipped. **M0 per-thread CPU attribution is the
-      whole story**: `index-writer` is 45% of busy CPU and the four `cmdr-sync-status` threads another 42%, so 87% sits
-      in two threads nobody was looking at, and the reconcile drain does not appear at all. Inside each, one avoidable
-      call dominates. The writer spends 54% of itself in `sqlite3RunParser`, because
-      `insert_entry_v2_with_id` uses `conn.execute` with a literal instead of `prepare_cached` (which the same file uses
-      21 times elsewhere), so the same INSERT is re-parsed per row. Sync status stats every path twice, once directly
-      and once inside `NSURL::fileURLWithPath`, whose single-argument form calls `_NSFileExists` to decide
-      directory-ness that the caller already knows. **Roughly half of all busy CPU is about 30 lines.** The rescan
-      governor survives as M3, demoted and restated: the per-anchor throttle **works** (top anchors show 1-2 walks), and
-      cargo's one-shot `target/debug/incremental/s-<hash>` anchors never consult a window at all, so the cost is
-      `arrival_rate x walk_cost` and the `30x` factor never enters. Denylisting build output is explicitly rejected. The
-      design must engage `cost_budget.rs:37` (against ancestor-chain charging), the external-volume blind window at
-      `rescan_route.rs:58`, the volume-wide hourglass flicker, and Spike B in `sealed-subtrees-plan.md`, which already
-      measured that churn share alone over-climbs and needs a content ratio. Also corrected: SQLite page-cache overflow
-      is individual ~4.1 KB allocations, so it can only be in `MALLOC_SMALL` (152 MB), never the 643 MB `MALLOC_LARGE`,
-      which makes that block the primary memory unknown and refutes the first draft's central claim (and the "~all
-      SQLite" line in `idle-memory-profile-2026-07-28.md`).
+- [ ] 2026-08-03 `resource-use-plan.md` - PARTLY SHIPPED. Cut idle CPU and RAM: prod v0.37.0 burned 110 min of CPU over
+      9.1 h (about 20% of a core, sustained) at a 1.78 GB footprint while idle, writing 141,072 log lines in six hours.
+      **The plan's value is mostly in what it got WRONG and how**, so read § M0 before trusting any number in it: four
+      successive hypotheses were refuted by measurement, and each refutation is recorded in place rather than edited
+      out. The reconcile drain was named the headline cost from LOG VOLUME, then found absent from a CPU profile
+      entirely. A 20 s sample then said `index-writer` 45% and `cmdr-sync-status` 42%; a 180 s three-bucket sample said
+      sync-status is 3.4% of busy but **0.2% of userspace CPU** (nearly all `stat` wait), and the writer did not appear
+      at all. The statement-cache fix was estimated at 10x from a stack profile and measured at **12%**. Raising
+      `SCOPED_WALK_MAX_DIRS` was reasoned to be an obvious win and measured as a **regression** (6.02 s scoped versus
+      4.9 s full walk for the origin that actually fires).
+      **The real finding, and it is one path**: `origin_dir` is the PARENT of the changed file, so any write directly in
+      `~` (in practice `~/.claude.json`, constantly) makes `$HOME` an origin, and `$HOME` covers 574,007 of the volume's
+      694,963 directories (83%). That blows the scoped-walk cap and falls back to a full-volume walk: 330 times in a
+      10.5-hour log, **17.6% of that log's wall clock**. Nothing diffed either, so each pass rewrote 51,081 rows of
+      which 99.88% had a byte-identical signals blob. Full evidence: `docs/notes/importance-treadmill-2026-08-04.md`.
+      **Shipped**: smb2 0.17.0 (self-healing directory watch, 5,911 WARNs/6 h gone, plus a latent AES-GMAC CANCEL bug);
+      writer statement caching with the capacity guard (rusqlite's cache is 16 entries and the store needs 35, so the
+      obvious fix alone would have thrashed silently); implicit write batching (**70.2 -> 34.1 us per row, 2.06x**, real
+      writer path, median of three runs each); importance passes writing only what moved; and the sync-status poll
+      skipping folders with no cloud files. **Open**: the origin bound and demotion, the M3 arrival-rate governor
+      (unchanged in substance: denylists rejected, must engage `cost_budget.rs:37`, the external-volume blind window,
+      the hourglass flicker, and Spike B's over-climb finding), log volume, and the 643 MB `MALLOC_LARGE`, which is the
+      primary memory unknown now that page-cache overflow is shown to land only in `MALLOC_SMALL` and the search arena
+      is shown to drop correctly.
 
 - [ ] 2026-08-03 `unindexed-search-plan.md` - SPECCED, not started. A scoped search on a LOCAL drive returns the same
       files indexed or not, only slower, by walking the uncovered part live and writing what it finds into the drive
@@ -65,7 +70,7 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       prerequisite for the per-filesystem backend crates, since a crate can't import the app facade. Records four
       `cargo-modules` traps that make raw output untrustworthy (`--acyclic` runs before the filters, `use super::*`
       fabricates edges with no symbol basis, `--no-traits` misses `From` impls, and an inherent-impl method is
-      attributed to the module defining its TYPE) — four apparent "tangles" are glob artifacts, not work. Deliberately
+      attributed to the module defining its TYPE). Four apparent "tangles" are glob artifacts, not work. Deliberately
       NOT chasing zero: ~16 of 44 groups are idiomatic parent/child. **M0–M6 shipped** (modules in some cycle 184 → 132;
       `cmdr` max component 17 → 10, `cmdr-index` 23 → 6); M7, the ratcheting check, is what's left.
 - [ ] 2026-08-01 `smb-transfer-resilience.md` - The cause of the transfer wedge, found on the second repro and now known
@@ -76,7 +81,7 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       M2 adds a session deadline plus **ECHO keepalive**, because the deadline has to sit on "is the session alive" and
       not "has this write finished" or a slow NAS gets aborted; M3 implements the `auto_reconnect` flag that today is
       stored and does nothing, with durable handles; M4 lets Cmdr retry the FILE rather than kill the transfer, and
-      revisits the concurrency guess — where measurement replaced it with a defect fix (a LOCAL cap must not bound a
+      revisits the concurrency guess, where measurement replaced it with a defect fix (a LOCAL cap must not bound a
       REMOTE peer) plus skipping the per-file destination probe, rather than the credit-budget replacement M4.3
       proposed. Carries the rule that correct credits are NOT a throughput compromise (lowering concurrency is the only
       option here that actually costs speed) and that a naive credit gate must not turn an over-spend hang into a

@@ -55,6 +55,7 @@ fn insert_entry_v2_with_id_throughput() {
     let elapsed = started.elapsed();
 
     let per_row = elapsed / ROWS as u32;
+    // allowed-pluralize-noun: ROWS is a 20,000 constant, never 1
     eprintln!("insert_entry_v2_with_id: {ROWS} rows in {elapsed:?} ({per_row:?} per row)");
 
     // The only real assertion: the rows landed. The number above is the point.
@@ -102,6 +103,7 @@ fn insert_entry_v2_with_id_throughput_in_one_transaction() {
     let elapsed = started.elapsed();
 
     let per_row = elapsed / ROWS as u32;
+    // allowed-pluralize-noun: ROWS is a 20,000 constant, never 1
     eprintln!("insert_entry_v2_with_id (ONE transaction): {ROWS} rows in {elapsed:?} ({per_row:?} per row)");
 
     let count: i64 = conn
