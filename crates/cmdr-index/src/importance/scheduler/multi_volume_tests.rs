@@ -4,6 +4,7 @@
 
 use super::test_support::*;
 use super::*;
+use super::wiring::should_enqueue_initial_full_pass;
 use crate::IndexVolumeKind;
 
 // ── Floored transitions on the incremental path (storage compaction) ───────

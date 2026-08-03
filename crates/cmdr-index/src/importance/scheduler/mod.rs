@@ -48,7 +48,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use super::scorer::{SignalSet, Weights};
 use super::writer::ImportanceWriter;
@@ -63,6 +63,8 @@ mod differential;
 mod recompute;
 mod scoped_walk;
 mod walk;
+/// Construction plus the lifecycle subscriptions that decide when a pass runs.
+mod wiring;
 use recompute::{
     IncrementalInputs, RecomputeInputs, dedupe_nested_origins, incremental_rescore, load_previous_markers, load_visits,
     recompute_folders, sanitize_incremental_batch, walk_for_incremental,
@@ -72,7 +74,6 @@ use recompute::{
 pub(crate) use walk::walk_index_folders;
 // The measurement/tuning entry point: walk a real index, score, write an
 // `importance.db` — the full-pass core without the registry or async driver.
-use crate::indexing::lifecycle::lifecycle_bus;
 #[cfg(any(test, feature = "tooling"))]
 pub use recompute::{MeasureOutcome, recompute_index_to_db};
 // The correctness harness: run the scoped walk and the full walk over the same real
@@ -276,7 +277,7 @@ impl ImportanceScheduler {
     /// applied its config yet. Never registers itself anywhere: the host owns the
     /// returned value, and `record_visit` resolves it from there.
     pub fn start() -> Option<Arc<Self>> {
-        build_and_wire()
+        wiring::build_and_wire()
     }
 }
 
@@ -497,315 +498,4 @@ impl ImportanceScheduler {
         );
         Ok(outcome.count)
     }
-}
-
-/// Build and wire the scheduler, behind [`ImportanceScheduler::start`], which carries
-/// the contract this fulfils. The registration bus catches a share mounted
-/// MID-SESSION; the startup sweep catches volumes already ready at launch —
-/// subscribing to the bus BEFORE the sweep closes the gap so no registration is
-/// missed.
-fn build_and_wire() -> Option<Arc<ImportanceScheduler>> {
-    let data_dir = match crate::indexing::host::config::data_dir() {
-        Ok(d) => d,
-        Err(e) => {
-            log::warn!(target: "importance", "importance scheduler not started: {e}");
-            return None;
-        }
-    };
-    let scheduler = Arc::new(ImportanceScheduler::new(data_dir));
-
-    // Subscribe to registrations FIRST (before the sweep), so a volume that
-    // registers during the sweep isn't dropped in the gap. Each registration
-    // wires that volume's per-volume subscriptions and scores it if it's
-    // already ready.
-    let reg_scheduler = Arc::clone(&scheduler);
-    let mut reg_rx = lifecycle_bus::subscribe_registrations();
-    crate::indexing::host::runtime::spawn(async move {
-        loop {
-            match reg_rx.recv().await {
-                Ok(reg) => wire_volume(Arc::clone(&reg_scheduler), reg.volume_id, reg.kind),
-                // A lag only skips a registration the next scan-completion covers
-                // anyway; keep listening. A closed bus (never, it's process-global)
-                // ends the task.
-                Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
-                Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
-            }
-        }
-    });
-
-    // Startup sweep: any volume already ready at launch (loaded from its persisted
-    // scan_completed_at) never re-fires ScanCompleted, so catch it here — WITH its
-    // typed kind so MTP is excluded and SMB degrades correctly. Wiring alone only
-    // sets up subscriptions (the retained bus value stays `Pending`); the
-    // initial-pass trigger is what actually scores a fresh / recreated store.
-    for (volume_id, kind) in crate::indexing::lifecycle::state::ready_volumes_with_kind() {
-        wire_volume(Arc::clone(&scheduler), volume_id.clone(), kind);
-        enqueue_initial_full_pass_if_unscored(Arc::clone(&scheduler), volume_id, kind);
-    }
-
-    // The caller owns the handle: the app keeps it in Tauri state so `record_visit`
-    // can route its write through the shared per-volume writer the scheduler owns
-    // (one writer thread per DB) rather than spawning one per navigation.
-    Some(scheduler)
-}
-
-/// For a volume READY at launch (Fresh, so no `ScanCompleted` will fire), enqueue a
-/// full recompute IFF its store has no generation yet — a fresh install, a
-/// schema-recreated store (the prod schema-3 upgrade), or one maintained only by
-/// incremental rescores (which never stamp a generation). An already-scored volume is
-/// left alone; an unconditional kick would rescore every volume on every launch
-/// (importance's policy differs from media's cheap unconditional kick).
-///
-/// The "unscored?" decision binds to the WRITE-path store open via
-/// [`super::store::needs_initial_full_pass`], which forces the lazy schema recreate
-/// BEFORE reading the generation — never a sweep-time read probe, which would read the
-/// outgoing schema's stamped generation and skip, only for the recreate to wipe it
-/// moments later (the prod-upgrade ordering trap). The probe (a DB open) runs on a
-/// blocking task; when unscored it hands off to the normal coordinated
-/// [`spawn_recompute`], so a concurrent `ScanCompleted` coalesces correctly.
-fn enqueue_initial_full_pass_if_unscored(
-    scheduler: Arc<ImportanceScheduler>,
-    volume_id: String,
-    kind: IndexVolumeKind,
-) {
-    let available = match ScoringPolicy::for_kind(kind) {
-        ScoringPolicy::Scored { available } => available,
-        // MTP: on-demand only, never background-scored.
-        ScoringPolicy::Excluded => return,
-    };
-    crate::indexing::host::runtime::spawn(async move {
-        let data_dir = scheduler.data_dir().to_path_buf();
-        let vid = volume_id.clone();
-        let needs = crate::indexing::host::runtime::spawn_blocking(move || {
-            should_enqueue_initial_full_pass(kind, &data_dir, &vid)
-        })
-        .await;
-        match needs {
-            Ok(Ok(true)) => {
-                log::info!(
-                    target: "importance",
-                    "volume '{volume_id}' ready at launch with no generation (fresh/recreated); enqueuing an initial full recompute"
-                );
-                spawn_recompute(scheduler, volume_id, available);
-            }
-            Ok(Ok(false)) => {} // already scored — leave it.
-            Ok(Err(e)) => log::warn!(target: "importance", "initial-pass probe for '{volume_id}' failed: {e}"),
-            Err(e) => log::warn!(target: "importance", "initial-pass probe task for '{volume_id}' panicked: {e}"),
-        }
-    });
-}
-
-/// Whether a volume ready at launch needs an initial full recompute enqueued: its kind
-/// is background-scored (not MTP) AND its store carries no generation yet (fresh /
-/// schema-recreated / incremental-only). Binds the "unscored?" check to the write-path
-/// store open ([`super::store::needs_initial_full_pass`]), which forces any lazy schema
-/// recreate before reading the generation. Extracted from
-/// [`enqueue_initial_full_pass_if_unscored`] so the combined kind + store-state decision
-/// is testable without spawning the recompute (which needs a read pool).
-fn should_enqueue_initial_full_pass(
-    kind: IndexVolumeKind,
-    data_dir: &std::path::Path,
-    volume_id: &str,
-) -> Result<bool, super::store::ImportanceStoreError> {
-    if matches!(ScoringPolicy::for_kind(kind), ScoringPolicy::Excluded) {
-        return Ok(false); // MTP: on-demand only, never background-scored.
-    }
-    super::store::needs_initial_full_pass(data_dir, volume_id)
-}
-
-/// Wire one volume into the scheduler by its typed kind: skip MTP (on-demand
-/// only), and for Local/SMB set up its scan-completion subscription (full
-/// recompute) and its dir-changed subscription (incremental rescore), then score
-/// it once if it's already ready.
-///
-/// Idempotent per volume in practice: the coalescing coordinator collapses a
-/// re-wire's duplicate recompute into the running one, and the underlying `watch`
-/// buses are per-volume, so re-subscribing spawns a second listener but each drives
-/// the same coalesced pass. A volume is wired from at most two places (the sweep
-/// and one registration), so no unbounded listener growth.
-fn wire_volume(scheduler: Arc<ImportanceScheduler>, volume_id: String, kind: IndexVolumeKind) {
-    let available = match ScoringPolicy::for_kind(kind) {
-        ScoringPolicy::Scored { available } => available,
-        // MTP: on-demand only, never background-scored (a typed exclusion).
-        ScoringPolicy::Excluded => {
-            log::debug!(target: "importance", "importance skips '{volume_id}' ({kind:?}): on-demand only");
-            return;
-        }
-    };
-
-    // Incremental recompute: rescore only the touched subtrees + capped ancestor
-    // chains as live listing changes land. Full-volume recompute
-    // stays the scan-completion default below.
-    start_incremental(Arc::clone(&scheduler), volume_id.clone(), available);
-
-    // Subscribe to the scan bus for this volume; a subscription retains the last
-    // state, so a ScanCompleted fired before this line is still observed
-    // (late-subscriber replay). Recompute on each completion.
-    let sub_scheduler = Arc::clone(&scheduler);
-    let sub_volume = volume_id.clone();
-    let mut rx = lifecycle_bus::subscribe(&volume_id);
-    crate::indexing::host::runtime::spawn(async move {
-        // Observe the retained value first (covers a completion before subscribe,
-        // and a sweep-ready volume that already loaded Completed).
-        if matches!(*rx.borrow_and_update(), lifecycle_bus::ScanState::Completed { .. }) {
-            spawn_recompute(Arc::clone(&sub_scheduler), sub_volume.clone(), available);
-        }
-        while rx.changed().await.is_ok() {
-            if matches!(*rx.borrow_and_update(), lifecycle_bus::ScanState::Completed { .. }) {
-                spawn_recompute(Arc::clone(&sub_scheduler), sub_volume.clone(), available);
-            }
-        }
-    });
-}
-
-/// Subscribe to a volume's dir-changed bus and run a bounded incremental rescore
-/// for each batch of live listing changes. Coalesces overlapping
-/// batches per volume (accumulating their paths) so a burst of FSEvents collapses
-/// to one pass plus at most one re-run, never a pass per event.
-fn start_incremental(scheduler: Arc<ImportanceScheduler>, volume_id: String, available: SignalSet) {
-    let mut rx = lifecycle_bus::subscribe_dirs_changed(&volume_id);
-    crate::indexing::host::runtime::spawn(async move {
-        // The retained initial value is the empty batch (nothing published yet);
-        // `borrow_and_update` marks it seen so the first real change triggers.
-        rx.borrow_and_update();
-        while rx.changed().await.is_ok() {
-            // The bus carries the ORIGIN dirs (those whose own listings changed), not
-            // their ancestor closure, so the rescore's downward subtree expansion
-            // stays proportional to what actually changed.
-            let origins = rx.borrow_and_update().origins.clone();
-            if origins.is_empty() {
-                continue;
-            }
-            spawn_incremental(Arc::clone(&scheduler), volume_id.clone(), available, origins);
-        }
-    });
-}
-
-/// Coalescing key for incremental passes: distinct from the full-pass key so an
-/// incremental rescore and a full recompute for the same volume don't block each
-/// other in the coordinator (they serialize at the writer thread anyway).
-fn incremental_key(volume_id: &str) -> String {
-    format!("{volume_id}#incremental")
-}
-
-/// The minimum spacing between two incremental rescores of the same volume under
-/// sustained change. A busy boot volume is never truly idle, so without a window
-/// the FSEvent firehose would drive back-to-back passes forever.
-///
-/// What the window paces is the store write plus its WAL checkpoint. It is NOT the
-/// walk (the scoped walk made a typical pass microseconds — `scoped_walk.rs`), and it
-/// is no longer the weight reload either: `notify_recompute_completed` now ships a
-/// DELTA, so `search::volumes` patches its map in O(changed) instead of rebuilding it.
-/// **So the window CAN come down — but that's David's call, not a side effect.**
-/// Rationale and the measured numbers: `DETAILS.md` § Throttle.
-///
-/// Importance is a background signal, so a lag of this order is invisible to its
-/// consumers.
-const INCREMENTAL_THROTTLE_WINDOW: Duration = Duration::from_secs(60);
-
-/// How long to wait before the next incremental rescore of a volume may start,
-/// given when the previous one for this run started. The FIRST pass of a burst
-/// (`last_started == None`) runs immediately (leading edge — a real edit scores
-/// promptly); each further pass while change keeps arriving waits out the window
-/// (trailing edge — at most one walk per window under sustained churn). Pure so the
-/// spacing is unit-testable without a runtime; the caller sleeps this long.
-fn incremental_debounce_wait(last_started: Option<Instant>, now: Instant, window: Duration) -> Duration {
-    match last_started {
-        // Leading edge: nothing ran yet this run, so go now.
-        None => Duration::ZERO,
-        // Trailing edge: wait out whatever remains of the window since the last
-        // pass started (zero once the window has fully elapsed).
-        Some(started) => window.saturating_sub(now.saturating_duration_since(started)),
-    }
-}
-
-/// Request a coalesced incremental rescore, accumulating `paths` into the pending
-/// set. If this request starts the pass, drive it (plus any coalesced re-run,
-/// draining whatever accumulated meanwhile) on a blocking background task.
-fn spawn_incremental(scheduler: Arc<ImportanceScheduler>, volume_id: String, available: SignalSet, paths: Vec<String>) {
-    let key = incremental_key(&volume_id);
-    scheduler.pending_incremental_paths(&volume_id, paths);
-    if scheduler.coordinator.request(&key) == BeginOutcome::Coalesced {
-        return; // a pass is running; it will drain the accumulated paths on re-run.
-    }
-    crate::indexing::host::runtime::spawn(async move {
-        let key = incremental_key(&volume_id);
-        // Debounce across this run's passes: the first runs immediately (leading
-        // edge), each further one waits out the window so sustained churn drives at
-        // most one index walk per window. Requests arriving during the wait coalesce
-        // (the coordinator slot stays running), so the next drain folds them all in.
-        let mut last_started: Option<Instant> = None;
-        loop {
-            let wait = incremental_debounce_wait(last_started, Instant::now(), INCREMENTAL_THROTTLE_WINDOW);
-            if !wait.is_zero() {
-                tokio::time::sleep(wait).await;
-            }
-            let batch = scheduler.take_incremental_paths(&volume_id);
-            if !batch.is_empty() {
-                last_started = Some(Instant::now());
-                let sched = Arc::clone(&scheduler);
-                let vid = volume_id.clone();
-                let result = crate::indexing::host::runtime::spawn_blocking(move || {
-                    let now = std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .map(|d| d.as_secs())
-                        .unwrap_or(0);
-                    sched.run_incremental_blocking(&vid, available, &batch, now)
-                })
-                .await;
-                match result {
-                    Ok(Ok(count)) => log::debug!(
-                        target: "importance",
-                        "incremental rescore of '{volume_id}' updated {}",
-                        cmdr_fs::pluralize::pluralize(count as u64, "folder")
-                    ),
-                    Ok(Err(e)) => log::warn!(target: "importance", "incremental rescore of '{volume_id}' failed: {e}"),
-                    Err(e) => log::warn!(target: "importance", "incremental task for '{volume_id}' panicked: {e}"),
-                }
-            }
-            if scheduler.coordinator.finish(&key) == FinishOutcome::Done {
-                break;
-            }
-            // RunAgain: more paths accumulated mid-pass; loop and drain them.
-        }
-    });
-}
-
-/// Request a coalesced recompute for a volume and, if this request starts the
-/// pass, drive it (plus any coalesced re-run) on a blocking background task.
-fn spawn_recompute(scheduler: Arc<ImportanceScheduler>, volume_id: String, available: SignalSet) {
-    if scheduler.coordinator.request(&volume_id) == BeginOutcome::Coalesced {
-        // A pass is already running for this volume; it will re-run once when it
-        // finishes (the coordinator set the flag). Nothing to spawn.
-        return;
-    }
-    crate::indexing::host::runtime::spawn(async move {
-        loop {
-            let sched = Arc::clone(&scheduler);
-            let vid = volume_id.clone();
-            // Recompute is blocking (SQLite + scoring); run it off the async
-            // worker so it never parks the runtime, and never on the IPC thread.
-            let result = crate::indexing::host::runtime::spawn_blocking(move || {
-                let now = std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .map(|d| d.as_secs())
-                    .unwrap_or(0);
-                sched.run_pass_blocking(&vid, available, now)
-            })
-            .await;
-            match result {
-                Ok(Ok(count)) => log::debug!(
-                    target: "importance",
-                    "recompute of '{volume_id}' scored {}",
-                    cmdr_fs::pluralize::pluralize(count as u64, "folder")
-                ),
-                Ok(Err(e)) => log::warn!(target: "importance", "recompute of '{volume_id}' failed: {e}"),
-                Err(e) => log::warn!(target: "importance", "recompute task for '{volume_id}' panicked: {e}"),
-            }
-            if scheduler.coordinator.finish(&volume_id) == FinishOutcome::Done {
-                break;
-            }
-            // RunAgain: a request arrived mid-pass; loop once more.
-        }
-    });
 }
