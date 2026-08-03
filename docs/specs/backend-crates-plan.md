@@ -125,6 +125,35 @@ veneer over `src/mtp/connection/` (~5,000 lines); extracting one without the oth
 
 ## Milestones
 
+### What P0 changed about this plan
+
+P0 is **shipped**. The seams live at `crates/cmdr-fs/src/volume/host/` (a module, not a `cmdr-volume-host` crate: every
+backend already depends on `cmdr-fs` for `Volume` and every type it speaks in, so a separate crate adds a hop without
+adding independence, and it inherits `index-crate-isolation`'s existing guard unchanged). Cost, accepted: `cmdr-fs` now
+carries `tokio` with `rt` + `rt-multi-thread`.
+
+Five findings that correct the design input above. They matter to P1b and P3:
+
+1. **Two of the five listing functions aren't seams.** `find_listings_for_path_on_volume` and
+   `patch_listing_after_local_mutation` have one caller between them: `local_posix.rs`, which is permanently
+   app-resident (Decision 3). The latter is *definitionally* local — it `std::fs`-stats the entry. SMB answers
+   `listing_is_watched` from its own connection state and watcher handle, never the listing cache. So `ListingHost` is
+   three methods, not five, and the two dropped ones would have been trait methods no extractable backend could call.
+2. **Neither registry reach-back needs a seam, so P3b's "one architecturally awkward site" is gone.** Both
+   `reconnect.rs::still_the_same_volume` and `smb_watcher.rs::stat_via_volume` are the backend asking about *itself*. A
+   `Weak` handle answers both: identity becomes a pointer instead of an id plus a counter plus a downcast, and the loop
+   already re-resolves every iteration for exactly the reason `Weak` gives free. **Residual gap**: a volume can be
+   removed from the registry without being superseded or unmounted, and nothing on the volume records that, so the host
+   still has to be able to tell a volume it's retired.
+3. **`crate::network::` isn't one thing.** `build_smb_addr` and `is_auth_error` look like host reaches but are pure
+   functions over SMB's own types; they move *into* `cmdr-smb`. So extracting SMB means splitting `network/`: protocol
+   helpers down, discovery/upgrade/UI wiring stays. Not in the original seam list.
+4. **`pub(in crate::file_system::volume)` has no cross-crate spelling.** `detach_session_for_test` (SMB) and MTP's
+   `test_hooks` each become `#[cfg(any(test, feature = "testing"))] pub` — a real surface widening — or their tests move
+   with them. Decide per site, don't default to widening.
+5. **`FullRefresh` re-enters the backend** via `Volume::list_directory`. It's spawned rather than inline, so reporting
+   under a lock happens to be safe today. Documented as a thing not to rely on.
+
 ### P0 — Design the seam set (no code)
 
 Deliverable: the trait set (`ListingHost`, `EventSink`, `CredentialStore`, `IndexNotifier`, runtime `Handle`, settings
