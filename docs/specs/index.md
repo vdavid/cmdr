@@ -56,14 +56,16 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       every i18next-shaped parser looks for `crashReporter:crashReporter.dialog.title`; the ARB `@key` metadata siblings
       read as real keys; and a chunk of our copy reaches the UI as a bare literal on a `labelKey` property, never inside
       a call. Everything is driven by `cmdr-plugin.json`, which doubles as the "this project is Cmdr" marker, so the
-      plugin is inert elsewhere and a worktree is recognized for free. **It depends on no language plugin**: a
-      `FoldingBuilder` takes its language as a STRING in `plugin.xml` and hands back plain text ranges, so a regex over
-      the document does the work while the platform keeps owning rebuild, expansion state, and ⌘+ / ⌘⇧+. That kills the
-      Svelte-PSI unknown, drops the ~2 GB Ultimate artifact from the build, and makes it run in any JetBrains IDE, at
-      the cost of no syntax awareness (a key inside a comment folds too). M1 first normalizes every `CHANGELOG.md`
-      commit ref to exactly 7 characters (909 are 8 today, 425 are 7, 93 are 6; all 1,383 verified to abbreviate
-      uniquely at 7) and pins `release.md` to `--abbrev=7`, so the plugin's exactly-7 rule has a file to match. The
-      shipped `whats_new` hash stripper deliberately stays permissive: a strict matcher there would leak raw hex into
+      plugin is inert elsewhere and a worktree is recognized for free. Folding walks real JavaScript PSI rather than
+      text, which costs nothing at runtime (the JS plugin is loaded in Ultimate regardless) and leaves exactly one
+      unknown, scoped to Svelte: whether `{tString(…)}` in a template surfaces as JS PSI. M0 answers it, and Svelte
+      alone falls back to a `FoldingBuilder` over text if not, since that extension point takes its language as a STRING
+      and returns plain ranges while the platform still owns rebuild, expansion state, and ⌘+ / ⌘⇧+. M1 first normalizes
+      every `CHANGELOG.md` commit ref to exactly 8 characters (895 already are, 488 are shorter; all 1,383 verified to
+      abbreviate uniquely at 8), which needs no release-flow change since `release.md` already says `--abbrev=8`. The
+      `changelog-links` check tightens to the 8-char convention as an added FINDING rather than a narrower recognition
+      pattern, so a stray 7-char ref fails loudly instead of being read as prose and skipping validation. The shipped
+      `whats_new` hash stripper deliberately stays permissive: a strict matcher there would leak raw hex into
       user-facing release notes when a new app version renders an older changelog. The agent loop is headless
       `BasePlatformTestCase` fixtures for iteration plus one `runIde`-and-screenshot pass to confirm.
 - [ ] 2026-08-03 `backend-crates-plan.md` - Make "a filesystem backend is its own crate" the shape FTP(S), S3, and SFTP
