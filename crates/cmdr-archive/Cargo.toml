@@ -74,6 +74,14 @@ zeroize = "1.9.0"
 # broken-down local-free UTC fields before `zip::DateTime` can take them.
 chrono = "0.4"
 
+# `preserve_archive_metadata` carries mode, mtime, and xattrs onto the rebuilt
+# archive. macOS does it in one `copyfile(COPYFILE_METADATA)` libc call, so these
+# two are needed ONLY off macOS — and target-scoping them is what keeps
+# `unused_crate_dependencies` quiet on the macOS build rather than warning there.
+[target.'cfg(not(target_os = "macos"))'.dependencies]
+filetime = "0.2"
+xattr = "1"
+
 [dev-dependencies]
 # Depending on ourselves turns the `testing` feature on for every DEV target and
 # leaves it off for the lib, so a shipped build carries no fixture builders and no
