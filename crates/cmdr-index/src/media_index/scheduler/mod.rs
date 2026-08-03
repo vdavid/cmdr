@@ -380,11 +380,14 @@ impl MediaScheduler {
     /// The folder importance scores for `volume_id` at `threshold`: `Some(map)` of
     /// `folder → score` for every folder scoring at or above `threshold`, or `None`
     /// when importance has NEVER scored this volume (fresh, offline, or importance
-    /// disabled). The `None` case is load-bearing: it tells the local pass to fall
-    /// back to "enrich all" and the network pass to fall back to "override only"
-    /// (plan Cross-cutting — the override stays load-bearing when importance is
-    /// unavailable). Reads through `ImportanceIndex` (the read API answers OFFLINE),
-    /// never a raw `rusqlite` dep.
+    /// disabled). The `None` case is load-bearing: it tells BOTH the local and the
+    /// network pass to fall back to "override only" (`lifecycle::local_should_enrich`
+    /// answers `config.covers(..)` alone), so the override stays load-bearing when
+    /// importance is unavailable. ❌ Never fall back to "enrich all": importance takes
+    /// seconds to land, the slider is forward-only, and an enrich-all pass
+    /// over-indexes the volume permanently (`CLAUDE.md` § `folder_scores` `None`).
+    /// Reads through `ImportanceIndex` (the read API answers OFFLINE), never a raw
+    /// `rusqlite` dep.
     pub(crate) fn folder_scores(&self, volume_id: &str, threshold: f64) -> Option<HashMap<String, f64>> {
         use crate::importance::{ImportanceIndex, SignalSet};
         let index = ImportanceIndex::open(&self.data_dir, volume_id, SignalSet::all());

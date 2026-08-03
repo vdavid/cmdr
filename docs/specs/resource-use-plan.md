@@ -38,12 +38,46 @@ looking at account for **87% of busy CPU**, and inside each one a single avoidab
   `stat` calls per probed path: 418 via `sync_status::probe::ubiquitous_bool` → `NSURL::fileURLWithPath` →
   `initFileURLWithPath` → `_NSFileExists` → `stat`, and 327 in `sync_status_for`'s own direct `stat`.
 
-Both are confirmed in code (M1 and M2). Roughly **half of all busy CPU is addressable by about 30 lines**, which is why
-the milestone order changed.
+Both are confirmed in code (M1 and M2).
 
-A caveat that qualifies every number here: this machine runs six Cmdr worktrees with active cargo builds. That is a
-heavy case, not an unrepresentative one, but the fixes need a quiet-machine sanity check so we do not tune for one
-workload. See § Definition of done.
+### What this method does and does not measure
+
+**The blocking-frame list above is a list of SCHEDULER waits. It does not include `stat`, `pread`, `pwrite`, `open`, or
+`read`.** So a sample parked in a file-IO syscall is scored as busy. That bias is not uniform, and it lands exactly on
+the milestones whose stacks cannot distinguish the two:
+
+- **M1's 1,828 samples are pure userspace codegen** (`sqlite3RunParser` and friends, zero syscalls). **Trustworthy as
+  CPU.**
+- **M2's 745 samples are `stat`.** On plain local paths that is mostly CPU; on iCloud, Dropbox, or FileProvider paths it
+  is provider latency. `probe.rs:6-11` and `apps/desktop/src-tauri/CLAUDE.md` both warn that these calls can wait 30 to
+  120 seconds. **Treat M2's share as an upper bound on CPU, not a measurement of it.**
+- **M1b's 628 samples are `walWriteOneFrame` → `pwrite`.** That is disk IO. It is still Principle 5, but it is a
+  different claim and must not be reported as a CPU share.
+
+`docs/notes/reanchor-cost-spike.md:62` already records this error class for this repo: *"The cost is IO wait, not
+syscalls. CPU time is 16–23% of wall on the big directories."* This plan applies that deflator to the reconcile drain
+and must apply it consistently to M2 and M1b.
+
+**The window is also short**: 20 seconds used to attribute 110 minutes over 9.1 hours. It cannot distinguish "45%
+sustained" from "one burst that happened to be running", which is exactly why the media tick reads 586/3,425 in one
+window and zero in another.
+
+**Before committing to the M1-then-M2 order, re-measure**, cheapest first:
+
+1. **`ps -M <pid>`** gives per-thread cumulative CPU since launch, integrating the whole 9.1 hours with no heuristic. It
+   reports no thread names, so correlate by taking it alongside a `sample`.
+2. **A longer `sample`** (180 s or more) classifying leaves into three buckets, not two: userspace, file-IO syscall, and
+   parked. Report the first two separately; the gap is the size of the correction.
+3. **Instruments Time Profiler** (`xctrace record --template 'Time Profiler'`) samples on-CPU threads natively rather
+   than approximating with a frame list.
+
+**Prediction to falsify**: the re-measurement confirms M1 and shrinks M2. M1 goes first regardless; what is at risk is
+M2's placement ahead of M3.
+
+Two further caveats on the numbers here. The CPU baseline covers 9.1 hours, the log counts 6 hours, and the churn counts
+8 hours, so do not divide one by another. And this machine runs six Cmdr worktrees with active cargo builds: a heavy
+case, not an unrepresentative one, but the fixes need a quiet-machine sanity check so we do not tune for one workload.
+See § Definition of done.
 
 ## The evidence for the rest
 
@@ -83,20 +117,61 @@ with a literal SQL string. `rusqlite`'s `execute` prepares a fresh statement eve
 inserted row. **The same file already uses `prepare_cached` in 21 other places**; this hot path is the exception, not a
 considered choice.
 
-`sqlite3GenerateConstraintChecks` → `sqlite3MPrintf` inside the parse is SQLite building constraint-violation message
-strings at prepare time. It is pure waste on the success path and it goes away with the statement cache.
+`sqlite3GenerateConstraintChecks` → `sqlite3MPrintf` inside the parse is SQLite materializing constraint-violation
+message strings ("UNIQUE constraint failed: entries.parent_id, entries.name_folded" and the NOT NULL equivalents) as P4
+operands in the VDBE program. `entries` has both a UNIQUE index and NOT NULLs, so there are several per prepare. **This
+is not waste**: it is the normal, correct cost of *preparing* an INSERT against a constrained table. The defect is
+paying it **once per row instead of once per statement**.
 
-**The change**: `prepare_cached` on this path, plus an audit of `writer/entries.rs` and `writer/delta.rs` (zero
-`prepare_cached` uses between them) for the same pattern.
+**The change**: `prepare_cached` on this path, plus `insert_entry_v2` at `entries.rs:403`, **which has the identical bug**
+(same `conn.execute` with a literal, no id) and must be fixed or explicitly excused. Then audit `writer/entries.rs` and
+`writer/delta.rs` (zero `prepare_cached` uses between them) for the same pattern.
 
-**Why it is safe**: `prepare_cached` changes no SQL and no semantics; it caches the compiled statement per connection.
-The writer is single-threaded per DB (`writer/CLAUDE.md`), so there is no cross-thread cache concern.
+### ⚠️ The trap that would silently undo this
+
+**rusqlite's statement cache holds 16 entries** (`rusqlite-0.40.1/src/lib.rs:168`,
+`STATEMENT_CACHE_DEFAULT_CAPACITY = 16`), a per-connection LRU keyed by SQL text. The writer connection already runs
+**31 distinct `prepare_cached` sites**: `store/entries.rs` 21, `store/dir_stats.rs` 6, `store/meta.rs` 2,
+`store/mod.rs` 1, `store/connection.rs` 1. That is nearly twice the cache, so the LRU evicts and `prepare_cached`
+silently re-prepares, **reintroducing exactly the cost being removed, with no error and no failing test**. Adding this
+milestone's new sites pushes it further past the ceiling.
+
+**So M1 is not one line.** It must also call `set_prepared_statement_cache_capacity` (`rusqlite-0.40.1/src/cache.rs:48`)
+on the writer connection, sized above the distinct-statement count, in the same place `apply_pragmas` runs so it holds by
+construction, with a comment tying the number to the count. Without this, M1 is a coin flip that looks like it worked in
+a microbenchmark (few distinct statements) and does nothing in production.
+
+**Why it is otherwise safe**: `prepare_cached` changes no SQL and no semantics, and the writer is single-threaded per DB
+(`writer/CLAUDE.md`), so there is no cross-thread cache concern. The connection is opened once at `writer/mod.rs:507`,
+outside the loop, so the cache persists for the process. Watch one path: `insert_with_allocated_id`
+(`writer/entries.rs:429-432`) calls the insert **twice** on a PRIMARY KEY conflict. That is fine with a
+`CachedStatement` (it returns to the cache on drop), but the retry must stay covered by existing tests.
+
+### What M1 actually optimizes, and what it compounds with
+
+`insert_entry_v2_with_id` has exactly two non-test callers: `writer/entries.rs:415` (via `insert_with_allocated_id`, the
+single-row `UpsertEntryV2` path) and `store/dir_tree.rs:201`, which is `#[cfg(test)]`. So **M1 optimizes the live
+reconcile write path specifically**; the scan path already batches through `insert_entries_v2_batch` (`entries.rs:485`),
+which gets `prepare_cached` *and* a savepoint. Two consequences: point the benchmark at the live path, and note that
+**M1 and M3 compound** (M1 makes each row cheaper, M3 reduces the rows).
+
+**A third option worth evaluating rather than assuming**: route the live path through `insert_entries_v2_batch` too. That
+removes the parse *and* the per-row transaction in one change, which subsumes M1b. Weigh it against the latency cost of
+batching a single-row live event.
 
 **M1b, land separately**: `propagate_delta_by_id` (`writer/delta.rs`) is 918 samples, of which 628 are `sqlite3VdbeHalt`
-→ `vdbeCommit` → `sqlite3BtreeCommitPhaseOne` → `pagerWalFrames` → `walWriteOneFrame` → `pwrite`. That is a **transaction
-commit and WAL write per delta**. Batching deltas into one transaction is the fix, but the `dir_stats` ledger's crash
-semantics are the writer's whole contract, so this is correctness-sensitive. Keep it out of the statement-cache commit so
-a regression stays bisectable.
+→ `vdbeCommit` → `sqlite3BtreeCommitPhaseOne` → `pagerWalFrames` → `walWriteOneFrame` → `pwrite`. `writer/delta.rs:6`
+says these run "inside whatever transaction the caller holds", and `vdbeCommit` appearing in the profile proves the live
+caller holds **none**: autocommit, one transaction and one WAL frame write per delta.
+
+**Measure M1b in WAL frames written per minute and fsyncs, not in CPU share.** Those 628 samples are disk IO, so M1b
+belongs under "minimize disk thrash"; inheriting M0's CPU framing would over-promise.
+
+**The precedent to copy, so this is not novel work**: the network scan path already made this exact trade.
+`network_scanner/DETAILS.md:108` describes a time-boxed transaction (`SCAN_COMMIT_INTERVAL`, 2 s) via `begin_scan_tx` /
+`commit_scan_tx`, with `insert_entries_v2_batch` savepointing inside it. That answers the crash-contract question by
+precedent and gives the design its shape: **a commit window bounded by time, not an unbounded batch.** Say why the live
+path's interval differs from the scan path's.
 
 **Tests**: a performance fix with no behavior change, so the honest instrument is a benchmark, not a unit assertion.
 `benches/index_benchmarks.rs` already covers the enrichment and dir-stats hot paths; add or extend an insert-throughput
@@ -110,31 +185,57 @@ re-parses per call), plus a Decision/Why in the nearest `DETAILS.md` for M1b's b
 
 ---
 
-## M2: stop stat-ing every path twice for sync status (~23% of busy CPU)
+## M2: stop re-probing paths that are not cloud files (up to ~23% of busy CPU)
 
-`ubiquitous_bool` (`apps/desktop/src-tauri/src/file_system/sync_status/probe.rs:56`) builds its URL with
-`NSURL::fileURLWithPath(&ns_path)`. The single-argument form has to determine whether the path is a directory, so
-Foundation calls `_NSFileExists` → `stat` internally. `fileURLWithPath:isDirectory:` takes that answer as a parameter and
-skips the syscall.
+**Read M0's method caveat first**: these samples are `stat` time, so the share is an upper bound on CPU, not a
+measurement. Re-measure before ordering this ahead of M3. The work is still right either way; only its rank is at stake.
 
-The caller `sync_status_for` already has directory-ness available (it does its own `stat`, 327 samples), so the
-information is on hand and is not passed down. Fix both halves together: pass `is_directory` into the URL
-construction, and stat the path once per probe rather than twice.
+### M2a: the TTL, which is the actual driver
 
-**Verify the premise before changing code.** `_NSFileExists` in the stack is strong evidence, but confirm that
-`fileURLWithPath:isDirectory:` actually removes the syscall on this macOS version rather than deferring it, and record
-the result with an evidence anchor (`(verified on macOS 26.5.2, sample, 2026-08-03)`) per `.claude/rules/docs.md`.
+Of the four sync-status threads' 745 running samples per thread, the `getResourceValue` XPC round trip is about **13**.
+The probed paths are therefore overwhelmingly **not cloud files**: the resource-value read returns immediately with
+nothing. The app is running a full NSURL construction plus resource-value read on plain local files, thousands of times a
+minute, to keep learning "not a cloud file".
 
-**The volume question this exposes.** 15,405 `sync_status` log lines in six hours, from a `log::debug!` that fires **once
-per batch** (`service.rs:172-177`), means roughly **43 sync-status batches per minute on an idle app**. That is its own
-finding. Before optimizing per-path cost, ask why an idle app probes sync status 43 times a minute at all, and whether
-the answer is a missing cache or a subscription. Halving a syscall that should not be happening is the smaller win.
+**Why it repeats forever**: `TTLS.stable = Duration::from_secs(60)` (`sync_status/mod.rs:64`). Every cached answer
+expires after 60 seconds and gets re-probed, **including the negative one**. Meanwhile `sync_status/CLAUDE.md` says
+invalidation is already explicit ("`listing::caching::notify_directory_changed` already calls `invalidate_dir`"), so the
+60 s TTL is belt-and-braces on top of a working invalidation path.
+
+A path that probed as not-a-cloud-file cannot become one without being moved, and a move invalidates. **Giving the
+negative case a much longer TTL, or no expiry until invalidated, is a one-constant change that plausibly removes most of
+the 43 sync-status batches per minute** an idle app currently runs (15,405 log lines in six hours from a `log::debug!`
+that fires once per batch, `service.rs:172-177`). That is strictly better than halving a syscall on probes that should
+not be happening at all.
+
+Do this first. An earlier draft told the implementer to go looking for "a missing cache or a subscription"; the answer is
+neither, it is a TTL.
+
+### M2b: the doubled stat
+
+`ubiquitous_bool` (`sync_status/probe.rs:56`) builds its URL with `NSURL::fileURLWithPath(&ns_path)`. The
+single-argument form consults the file system to determine directory-ness, so Foundation calls `_NSFileExists` → `stat`
+internally (418 samples). `sync_status_for` has already stat'd the path itself (327 samples) and holds the `metadata`
+(`probe.rs:24`), so `metadata.is_dir()` is free. `fileURLWithPath:isDirectory:` takes the answer as a parameter and skips
+the syscall.
+
+This **removes the second of two stats**; the first supplies `st_flags` and `is_dir` and stays.
+
+**Correctness constraint**: pass the value derived from that same `metadata` call, never a guess. A wrong `isDirectory:`
+changes the URL's trailing slash and therefore its canonical form, which the FileProvider resource-value path does look
+at.
+
+**Verify before changing code**: confirm `fileURLWithPath:isDirectory:` actually removes the syscall on this macOS
+version rather than deferring it to the first resource-value read, which would make M2b a no-op. Record with an evidence
+anchor (`(verified on macOS 26.5.2, sample, 2026-08-03)`) per `.claude/rules/docs.md`.
 
 **Tests**: test-first is awkward for a syscall count, so assert the observable contract (sync status still reported
-correctly for iCloud, Dropbox, and plain-local paths) and measure the syscall reduction with `sample` or `dtruss`,
-stating the number. The batch-rate question gets its own test once its cause is known.
+correctly for iCloud, Dropbox, and plain-local paths, and a moved file still re-probes) and measure the reduction with
+`sample` or `dtruss`, stating the number. M2a needs a real test that an invalidation still forces a re-probe, since the
+whole change is trusting invalidation over expiry.
 
-**Docs**: `sync_status/DETAILS.md`, a Decision/Why on the `isDirectory:` form with the evidence anchor.
+**Docs**: `sync_status/DETAILS.md`, a Decision/Why on both the negative-case TTL (with the invalidation argument) and the
+`isDirectory:` form (with the evidence anchor).
 
 **Checks**: `pnpm check rust desktop`.
 
@@ -167,9 +268,17 @@ completed spikes whose results this milestone must use:
 - **Spike B (`docs/notes/churn-observability-spike.md`) already answers the depth question, negatively.** A climb rule
   based on churn share **over-climbs on real data**: it selects `~/Library/Containers` and `~/Library/Caches` rather than
   the actual culprit, because *"churn share alone cannot distinguish 'this parent is entirely churny' from 'this parent's
-  churn is dominated by one child right now.'"* Its resolution, combining churn share with a **content ratio** (entries
-  or bytes below the candidate versus below its parent), is the attribution rule this milestone needs, and it is already
-  paid for. Spike B also measured that `target/` becomes classifiable within **~31 s**.
+  churn is dominated by one child right now.'"* Spike B also measured that `target/` becomes classifiable within
+  **~31 s**.
+
+  ⚠️ **Only half of Spike B's resolution is usable here, and the plan must not pretend otherwise.**
+  `churn-observability-spike.md:252-253` recommends combining churn share with a **content ratio** (entries or bytes
+  below the candidate versus below its parent) *"and the hard-stop list should include `~/Library/Containers` and
+  `~/Library/Caches` as belt-and-braces."* **That hard-stop list is a path-shaped denylist, which is exactly what David
+  rejected.** So: adopt the content ratio, drop the hard-stop list, and own the cost. The spike's own evidence is that
+  the ratio rule over-climbs to those two directories, and its authors thought it needed belt-and-braces to be safe.
+  Without the list, over-climb risk is unmitigated and **needs its own answer in the design pass**. Do not read "already
+  paid for" and reimplement the denylist.
 - **Spike A** established "schedule on a cost budget, not a fixed clock".
 - `watch/churn_monitor.rs` is the ancestor-rollup instrument built for this, gated behind `CMDR_CHURN_SPIKE`. Turning it
   on is cheaper than inventing a new measurement.
@@ -197,6 +306,17 @@ authoritative.
 2. **`cost_budget.rs:37` argues explicitly AGAINST charging cost up the whole ancestor chain**: *"per-directory fractions
    would be noise… the unit refused would become 'whichever depth tripped first', which is neither predictable nor
    explainable."* Its answer is one accumulator at a fixed depth. Any design must argue past this.
+
+**And a fixed depth of 5 collides with `cost_budget`'s own protected case.** `cost_budget.rs:359-369` has a test named
+`a_subtree_with_a_low_slow_read_fraction_is_never_refused_however_large_it_grows`, whose stated purpose is that *"a rule
+that refuses it stops refreshing the folder David works in all day"*. `ANCHOR_DEPTH = 5` anchors at
+`~/projects-git/vdavid/cmdr`, so a cost-in-window budget at that depth refuses precisely the subtree that test protects.
+Different metric (a fraction of slow reads versus a total cost), so it is not a contradiction, but the design pass owes
+one sentence on why the same anchor is safe to refuse on one axis and not the other.
+
+**Engage the prior deferral.** `docs/notes/idle-cpu-indexing-streamlining-2026-07.md` § "L2 — targeted subtree walk:
+DEFERRED (measured, not worth it)" is a measured verdict on adjacent work. Say in a line why L2's deferral does not
+apply here.
 
 ### Constraints the design must honor
 
@@ -291,6 +411,12 @@ pure function, and assert on the returned `images` plus the GC scope.
 
 **Tests**: test-first on the invariant (a filtered-out dir loses no rows), then on the pure filter, then that an eligible
 dir still enriches, so the gate cannot be trivially "correct" by gating everything out.
+
+**Already fixed while speccing this** (`scheduler/mod.rs:380-387`): `folder_scores`'s docstring claimed the `None` case
+*"tells the local pass to fall back to 'enrich all'"*. `local_should_enrich` (`lifecycle.rs:50-51`) does the opposite,
+`None` means override-only, and `scheduler/CLAUDE.md` forbids enrich-all emphatically ("❌ Never fall back to
+enrich-all: … an enrich-all pass over-indexes the volume permanently"). The docstring described the exact behavior the
+module bans. Corrected in place; no code change.
 
 **Docs**: `media_index/scheduler/DETAILS.md`, Decision/Why on gate-before-walk and the one-set invariant.
 
@@ -442,8 +568,10 @@ construction, reproduces the exact failure mode, and doubles as M3's integration
 
 Targets, to be sharpened once M1 and M2 land and the attribution is re-run:
 
-- **M1 and M2 together should remove roughly half of busy CPU.** Verify by re-running M0's per-thread attribution and
-  showing that `index-writer` and `cmdr-sync-status` shares dropped.
+- **M1 and M2 together should remove a large share of busy CPU.** M0's headline is "roughly half", but M2's portion is
+  `stat` time and therefore an upper bound on CPU (§ M0). Set the real target from the re-measurement, and verify by
+  re-running the per-thread attribution to show that `index-writer` and `cmdr-sync-status` shares dropped. M1b's win is
+  measured separately, in WAL frames and fsyncs, not CPU.
 - Idle CPU under a stated percent of one core on a quiet machine, and under a stated percent under the harness.
 - Footprint under a stated ceiling after eight hours, with M5's predicted contribution named separately.
 - Log lines per hour, stated before and after.
@@ -453,11 +581,14 @@ Targets, to be sharpened once M1 and M2 land and the attribution is re-run:
 
 ## Sequencing
 
-M1 and M2 first: they are the measured majority of the cost, the smallest changes in the plan, and independent of
-everything else and of each other.
+**Step zero: re-measure.** Run `ps -M` plus a longer, three-bucket `sample` (§ M0) before committing to this order. M1 is
+first regardless, because its samples are pure userspace codegen; what the re-measurement decides is whether M2 really
+outranks M3.
 
-1. **M1** (writer statement cache), then **M1b** (delta batching) separately.
-2. **M2** (sync-status double stat), including the batch-rate question.
+1. **M1** (writer statement cache **plus the cache-capacity guard**, which is the part that makes it work), then **M1b**
+   (time-boxed delta transaction, copying `network_scanner`'s `SCAN_COMMIT_INTERVAL` shape) separately.
+2. **M2a** (negative-case TTL) before **M2b** (the doubled stat). M2a is the larger and simpler win, and it shrinks the
+   population M2b operates on.
 3. **Re-run M0's attribution.** Everything below is sized against numbers M1 and M2 will have changed.
 4. **M5a** (identify the 643 MB) early if it needs hours of collection under load; it gates M5b.
 5. **M3** (arrival-rate governor): the design pass, then the integration red.
