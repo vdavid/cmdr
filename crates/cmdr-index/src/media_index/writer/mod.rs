@@ -57,12 +57,12 @@ use rusqlite::Connection;
 use ann_pending::AnnPending;
 use maintenance::{apply_purge, apply_rename, apply_vacuum, run_wal_checkpoint};
 use prune::{DeletedRow, apply_gc, apply_prune_all_clip, apply_prune_paths, apply_prune_prefix};
+pub use upsert::UpsertAnalysis;
 use upsert::{ClipWrite, apply_upsert, apply_upsert_clip};
 
 use super::ann;
-use super::backend::Tag;
 use super::coverage;
-use super::scheduler::enrich::parent_dir;
+use super::paths::parent_dir;
 use super::store::{EnrichmentState, MediaStatusRow, MediaStoreError, open_write_connection};
 use cmdr_fs::ignore_poison::IgnorePoison;
 
@@ -155,33 +155,6 @@ enum WriteMessage {
     Checkpoint(mpsc::Sender<()>),
     /// Shut the writer thread down.
     Shutdown,
-}
-
-/// The enrichment outputs one successful `upsert` persists for an image: the
-/// searchable OCR text, the scene/object tags, and the feature-print embedding.
-/// Assembled by the enrich core from a backend [`Analysis`](super::backend::Analysis).
-#[derive(Debug, Clone, Default)]
-pub struct UpsertAnalysis {
-    /// The recognized OCR text (empty for an image with no text). Stored as the
-    /// `source = 'ocr'` FTS row when non-empty.
-    pub ocr_text: String,
-    /// The scene/object tags (label + score). Stored structurally in `media_tags`
-    /// and their labels folded into the FTS as the `source = 'tag'` row.
-    pub tags: Vec<Tag>,
-    /// The image feature-print embedding, or `None` if the backend produced none.
-    pub embedding: Option<Vec<f32>>,
-}
-
-impl UpsertAnalysis {
-    /// An analysis carrying only OCR text (no tags, no embedding) — the shape the
-    /// store/writer round-trip tests use to assert the OCR path in isolation.
-    #[cfg(test)]
-    pub fn ocr_only(text: impl Into<String>) -> Self {
-        Self {
-            ocr_text: text.into(),
-            ..Default::default()
-        }
-    }
 }
 
 /// A cloneable handle to a volume's media writer thread.

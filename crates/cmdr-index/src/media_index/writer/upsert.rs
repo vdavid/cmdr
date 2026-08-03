@@ -4,8 +4,38 @@
 
 use rusqlite::Connection;
 
-use super::UpsertAnalysis;
+use crate::media_index::backend::Tag;
 use crate::media_index::store::{MediaStatusRow, MediaStoreError, encode_embedding};
+
+/// The enrichment outputs one successful upsert persists for an image: the
+/// searchable OCR text, the scene/object tags, and the feature-print embedding.
+/// Assembled by the enrich core from a backend
+/// [`Analysis`](crate::media_index::backend::Analysis), and consumed by
+/// [`apply_upsert`] below, which is why it lives here rather than in the thread
+/// that only forwards it.
+#[derive(Debug, Clone, Default)]
+pub struct UpsertAnalysis {
+    /// The recognized OCR text (empty for an image with no text). Stored as the
+    /// `source = 'ocr'` FTS row when non-empty.
+    pub ocr_text: String,
+    /// The scene/object tags (label + score). Stored structurally in `media_tags`
+    /// and their labels folded into the FTS as the `source = 'tag'` row.
+    pub tags: Vec<Tag>,
+    /// The image feature-print embedding, or `None` if the backend produced none.
+    pub embedding: Option<Vec<f32>>,
+}
+
+impl UpsertAnalysis {
+    /// An analysis carrying only OCR text (no tags, no embedding) — the shape the
+    /// store/writer round-trip tests use to assert the OCR path in isolation.
+    #[cfg(test)]
+    pub fn ocr_only(text: impl Into<String>) -> Self {
+        Self {
+            ocr_text: text.into(),
+            ..Default::default()
+        }
+    }
+}
 
 /// Upsert one status row and replace its searchable text, tags, and embedding in one
 /// transaction. The prior text/tags/embedding rows are always cleared first (a
