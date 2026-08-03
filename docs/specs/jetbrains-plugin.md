@@ -46,9 +46,10 @@ Decided. Don't relitigate while implementing.
 6. **Every feature is config-driven and inert outside Cmdr.** Detection is the presence of
    `tools/intellij-plugin/cmdr-plugin.json` under the project base dir. No project-name matching, no absolute paths, and
    a worktree checkout is recognized for free.
-7. **IDEA Ultimate only.** Feature 2 depends on the bundled JavaScript plugin, which Community doesn't have. RustRover
-   is out for the same reason; if the backlog ever grows a Rust-side feature, that's a separate plugin artifact from the
-   same source tree.
+7. **No dependency on any language plugin.** Folding and links are built on core-platform extension points that take a
+   language ID as a string and hand back plain text ranges, so the plugin never references JavaScript, TypeScript,
+   Svelte, or Markdown PSI and runs in any JetBrains IDE. Reasoning and the costs this accepts: § No language
+   dependencies.
 
 ## Architecture
 
@@ -95,25 +96,55 @@ window" is decided; the plugin doesn't get a say.
   close on `(~40x speed-up!)` or `(smb2 0.8.0)`, and a hex-looking word mid-sentence is never considered.
 - A logical entry is a bullet opened by `- ` / `* ` / `+ ` at column zero plus its indented continuation lines, joined
   before matching, so a group that wrapped across two source lines still matches.
-- Hashes are `[0-9a-f]{6,8}`, comma-separated. The website's `{6,40}` is deliberately loosened here, because a
-  40-character blob has no business in a changelog entry and the narrow bound is a second guard behind the anchor.
-
-**The length bound is 6–8, not exactly 7.** Counted on 2026-08-03 across the whole file: 909 refs are 8 characters, 425
-are 7, and 93 are 6. Git's auto-abbreviation grows with the object count, so old entries are shorter than new ones and
-tomorrow's could be 9. An exactly-7 rule would blank out 1,002 of 1,427 links, including `75121419` from the reported
-example. If the intent was "don't match loose hex", the trailing-group anchor already does that work.
+- Hashes are exactly `[0-9a-f]{7}`, comma-separated. This is only legal because M1 normalizes the file first; the
+  changelog carries three different lengths today.
 
 Drift against the website or `scripts/check/checks/changelog-commit-links.go` is fine and needs no guard: this is
 private dev tooling, and the failure mode is a link not showing up, which is visible the moment you look at the file.
 
-**Implementation.** A `PsiReferenceContributor` over Markdown PSI text elements, contributing a `WebReference` per hash
-range (that's what gives ⌘-click plus the standard tooltip), and an `Annotator` applying the hyperlink text attribute so
-the color shows without hovering. Verify the exact attribute key at implementation time; the platform has moved it
-between `CodeInsightColors` and `EditorColors` across versions.
+**Implementation.** A `PsiReferenceContributor` matching generic `PsiElement` text (no Markdown PSI classes, see § No
+language dependencies), contributing a `WebReference` per hash range (that's what gives ⌘-click plus the standard
+tooltip), and an `Annotator` applying the hyperlink text attribute so the color shows without hovering. Verify the exact
+attribute key at implementation time; the platform has moved it between `CodeInsightColors` and `EditorColors` across
+versions.
 
-**Tests.** `BasePlatformTestCase` over a markdown fixture, headless, no JS plugin needed. Cases: single hash; multi-hash
-group; a group wrapped across two source lines; a trailing `(~40x speed-up!)` that must NOT match; a hex-looking word
-mid-sentence that must NOT match; a nested/indented bullet.
+**Tests.** `BasePlatformTestCase` over a markdown fixture, headless. Cases: single hash; multi-hash group; a group
+wrapped across two source lines; a trailing `(~40x speed-up!)` that must NOT match; a hex-looking word mid-sentence that
+must NOT match; a nested/indented bullet.
+
+## Normalizing the changelog to 7 characters
+
+The exactly-7 rule needs the file to actually be uniformly 7. It isn't: of 1,383 unique refs, 909 are 8 characters, 425
+are 7, and 93 are 6 (counted 2026-08-03). Git's auto-abbreviation grows with the object count, which is why old entries
+are short and new ones long.
+
+**It's safe.** All 1,383 resolve, and every one abbreviates uniquely at 7 today (verified 2026-08-03 by resolving each
+to its full SHA and re-abbreviating with `git rev-parse --short=7`, which lengthens on ambiguity; none lengthened).
+
+**The rewrite.** A one-shot script: for each trailing group, resolve each hash to its full SHA, re-abbreviate at 7,
+refuse to continue if any comes back longer than 7, write in place. Then run the formatter, because 909 refs get one
+character shorter and 93 get one longer, so entry wrapping shifts.
+
+**Keeping it 7 going forward.** `.claude/commands/release.md` currently instructs `git log --format='%h' --abbrev=8` and
+states the convention is 8 characters. Both change to 7 in the same commit, or the next release quietly reintroduces
+8-character refs and those links stop rendering.
+
+**What tightens and what deliberately does not.** Only two places should learn the exactly-7 rule: the plugin, and
+`scripts/check/checks/changelog-commit-links.go` (plus its `DETAILS.md` rationale, which explains the 6-character floor
+that no longer applies). Tightening the check is what makes the convention enforced rather than aspirational.
+
+The three renderers stay permissive at `{6,40}`:
+
+- **`apps/desktop/src-tauri/src/whats_new/`, the shipped one, must not be touched.** It strips hash groups out of
+  user-facing release notes. A shipped app version renders whatever changelog it's given, including older ones, and a
+  stricter matcher there means a group it fails to recognize gets shown to users as raw hex. Its tests explicitly cover
+  six- and eight-character groups; that coverage is the point.
+- `apps/website/src/lib/changelog.ts` and its e2e spec: tightening buys nothing, since it renders the current file.
+
+**A future 7-character ref could become ambiguous.** Git judges uniqueness across all objects, and the repo has ~99,000
+of them in-pack at 4,559 commits, so a collision is a matter of time. It fails loudly (the `changelog-links` check
+resolves every ref) and the fix is to let that one ref be 8 characters, which costs exactly one unrendered link in the
+plugin. Not worth designing around.
 
 ## Feature 2: i18n key preview
 
@@ -135,9 +166,16 @@ mid-sentence that must NOT match; a nested/indented bullet.
 **Known miss, accepted.** Keys built by template (``getMessage(`errors.provider.${p}.appName` as MessageKey)``) can't
 fold. There are a handful, mostly in `error-messages/`. Not worth a resolver.
 
-**Rendering the value.** Unescape ICU's doubled apostrophes (`Here''s` → `Here's`), leave `{countText}`-style
-placeholders and `<tag>` markers as-is (seeing them is the point), collapse newlines to spaces, truncate past 80
-characters with `…`. Curly quotes wrap the fold so it reads as a fold and not as a string literal in the source.
+**Rendering the value.** The whole call folds, not just the argument. Unescape ICU's doubled apostrophes (`Here''s` →
+`Here's`), leave `{countText}`-style placeholders and `<tag>` markers as-is (seeing them is the point), collapse
+newlines to spaces, and **never truncate**: the full sentence is what makes the fold worth having, and a long line is
+what horizontal scrolling is for. Curly quotes wrap the fold so it reads as a fold and not as a string literal in the
+source.
+
+**Getting back to the real code** costs nothing to build: a fold region is a fold region, so the stock IntelliJ actions
+already do it. ⌘+ expands the one under the caret, ⌘⇧+ expands every fold in the file, ⌘− and ⌘⇧− collapse again, and
+the platform remembers per-file which regions you left open. The only choice we make is `isCollapsedByDefault = true`,
+so a freshly opened file shows text rather than keys.
 
 **The catalog index.** Parse `apps/desktop/src/lib/intl/messages/en/*.json`, dropping `@`-prefixed keys the way
 `stripMetadata` in `messages.svelte.ts` does. English only: this is a code-reading aid, and the other locale dirs plus
@@ -150,35 +188,65 @@ than the folding, since it also reaches the translator `@key` description sittin
 **Out of scope.** An unknown-key inspection (the generated `MessageKey` union plus `svelte-check` already make a typo a
 compile error), any write path into the catalog, and non-English locales.
 
-**The one real risk.** All of this assumes `{tString(…)}` inside a `.svelte` template exposes ordinary JavaScript PSI to
-a provider registered for `language="JavaScript"`. It probably does, since the Svelte plugin (`dev.blachut.svelte.lang`)
-injects JS, but if the expressions land in a Svelte-specific injected language we're reading a third-party plugin's PSI
-to find out. M0 settles it before anything is built on top.
+**Tests.** `BasePlatformTestCase` folding fixtures over `.ts`, `.svelte`, and `.md` files, headless. Under the
+no-dependency design below they're all the same kind of test, because none of them need a language plugin present.
 
-**Fallback if the PSI shape is hostile**: a `FoldingBuilder` registered on the Svelte file type that walks leaf elements
-and regex-matches their text. Folding regions only need `TextRange`s, so this always works; it's uglier and slightly
-more false-positive-prone, and it's why the risk can't sink the feature.
+## No language dependencies
 
-**Tests.** `BasePlatformTestCase` folding fixtures over `.ts` files cover the call-expression and key-property paths
-headlessly. The `.svelte` path depends on how M0 lands: if the Svelte plugin resolves as a test dependency it joins tier
-1, otherwise it's a tier-2 screenshot check (see § The feedback loop).
+**We do not depend on the JavaScript, TypeScript, or Svelte plugins, and we don't parse those languages either.**
+
+The trick is that `FoldingBuilder` never forces you to touch the target language's PSI. You register
+`<lang.foldingBuilder language="JavaScript">` (and `Svelte`, and `Markdown`) with the language ID as a **string** in
+`plugin.xml`; `buildFoldRegions` hands you a generic `PsiElement` root and the `Document`, and a fold region is just a
+`TextRange` plus a placeholder. So the implementation is a regex over the document text, and the platform still owns
+everything that's annoying to own: when to rebuild, what survives an edit, expansion state, ⌘+ / ⌘⇧+, persistence. Same
+for the changelog links: `PsiReferenceContributor` patterns can match on generic `PsiElement` text, and `WebReference`
+is core platform.
+
+What this buys:
+
+- **No heavy artifact.** The build compiles against the platform only, which for tier 2 is David's local IDEA install,
+  so there is no multi-gigabyte IDE download in the loop at all.
+- **The Svelte-PSI unknown disappears.** It was the one thing in this spec that could have cost a day.
+- **It runs in every JetBrains IDE**, Community and RustRover included, which also makes the headless test tier cheap
+  and complete.
+
+What it costs, and why that's fine here:
+
+- **No syntax awareness.** A `tString('x')` sitting inside a comment or a string literal folds too. In a codebase where
+  those keys only ever appear as real calls, this is theoretical.
+- **A regex, not a parser.** Nested quotes or a multi-line call spanning lines can be missed. Every real call site in
+  the repo is single-line and single-quoted, and a missed fold is a fold that just doesn't appear.
+
+**The precise, boring alternative** is the PSI route: depend on the JavaScript plugin, walk real call expressions, and
+let the Svelte plugin's injection do the work. It's more correct and it is NOT expensive at runtime (the JS plugin is
+already loaded in IDEA Ultimate whether or not we exist, and our own artifact is a few hundred KB either way; the real
+cost is a ~2 GB IDE artifact in the build, avoidable by building against the local install). Keep it in the back pocket
+for a feature that genuinely needs types or resolution. Nothing in v1 does.
+
+**M0 verifies three things about this design**, because they're cheap to check and expensive to assume: that a
+`lang.foldingBuilder` registered for a language whose plugin isn't installed degrades quietly rather than logging an
+error on every startup, what the Svelte language ID string actually is, and that our regions coexist with the language's
+own folding pass instead of fighting it.
 
 ## Milestones
 
-- **M0, spike (kill switch).** Gradle scaffold that builds and loads in the IDE, the tier 1 and tier 2 loops proven on a
-  do-nothing feature, and a PSI probe on a real `.svelte` file at a `tString` site: which language, which element type,
-  does a JavaScript-registered extension see it. Output is a paragraph in `DETAILS.md` and a go/no-go on the primary
-  approach for M3. Nothing else gets built first, because everything else assumes both answers.
-- **M1, core.** `CmdrProjectService`, `cmdr-plugin.json` loading, the settings panel with feature toggles, and the
+- **M0, spike.** Gradle scaffold that builds and loads, the tier 1 and tier 2 loops proven on a do-nothing feature, and
+  the three checks from § No language dependencies. Output is a paragraph in `DETAILS.md`. Nothing else gets built
+  first, because everything else assumes those answers.
+- **M1, changelog normalization.** The whole of § Normalizing the changelog to 7 characters, landing before the plugin
+  reads the file. Independently useful and independently revertable; it touches the repo, not the plugin.
+- **M2, core.** `CmdrProjectService`, `cmdr-plugin.json` loading, the settings panel with feature toggles, and the
   `plugin.xml` skeleton. Verified by a feature that does nothing except log that it's enabled in Cmdr and disabled in a
   scratch project.
-- **M2, commit-hash links.** The full feature plus its headless tests. First useful build.
-- **M3, i18n folding.** `.ts` call expressions first (headless-testable), then key properties, then `.svelte` and
-  `<Trans>` per M0's answer.
-- **M4, ⌘-click key to catalog.** Reuses M3's index.
-- **M5, wiring.** `README.md`, the `CLAUDE.md` + `DETAILS.md` pair, and the docs links from § Docs wiring.
+- **M3, commit-hash links.** The full feature plus its headless tests. First useful build.
+- **M4, i18n folding.** `.ts` call sites first, then key properties, then `.svelte` and `<Trans>`. All one mechanism
+  under the no-dependency design, so the split is about test coverage, not risk.
+- **M5, ⌘-click key to catalog.** Reuses M4's index.
+- **M6, wiring.** `README.md`, the `CLAUDE.md` + `DETAILS.md` pair, and the docs links from § Docs wiring.
 
-M0 through M2 is the standalone-valuable slice. M3 onward can wait if the spike says the Svelte path is a slog.
+M0 through M3 is the standalone-valuable slice: a normalized changelog plus working commit links, with the i18n half
+still ahead.
 
 ## `cmdr-plugin.json`
 
@@ -189,14 +257,14 @@ Doubles as the project marker and the feature config.
   "changelog": {
     "files": ["CHANGELOG.md"],
     "commitUrl": "https://github.com/vdavid/cmdr/commit/{hash}",
-    "trailingGroupPattern": "\\(([0-9a-f]{6,8}(?:,\\s*[0-9a-f]{6,8})*)\\)$"
+    "trailingGroupPattern": "\\(([0-9a-f]{7}(?:,\\s*[0-9a-f]{7})*)\\)$"
   },
   "i18n": {
     "catalogGlob": "apps/desktop/src/lib/intl/messages/en/*.json",
     "functions": ["t", "tString", "getMessage"],
     "componentAttributes": [{ "component": "Trans", "attribute": "key" }],
     "keyProperties": ["labelKey", "descriptionKey", "titleKey", "cardKey"],
-    "maxFoldLength": 80
+    "languages": ["JavaScript", "TypeScript", "Svelte"]
   }
 }
 ```
@@ -223,13 +291,11 @@ drives a real IDE from test code and collects output including screenshots. It e
 and flakier than tier 2's one-shot screenshot. Only worth it if we end up with a UI surface complicated enough to
 regress, which two reading aids are not.
 
-**Community Edition covers exactly half of this.** Markdown is bundled in Community, so the whole changelog feature
-builds, tests, and runs there. JavaScript and TypeScript are Ultimate-only, and the Svelte plugin depends on them, so
-feature 2 cannot be exercised on Community at all. Target the local **IntelliJ IDEA 2026.2 EAP** install instead (the
-Gradle plugin accepts a local IDE installation as the platform dependency): it's the IDE David actually reads code in,
-so what the loop sees is what he sees, and an EAP build sidesteps the licensing question that a downloaded Ultimate
-artifact would raise for tier 2. Verify at M0 that the platform artifact for tier 1 resolves without a license; if it
-somehow doesn't, tier 1 still covers the changelog feature on Community and feature 2 falls back to tier 2 only.
+**Which IDE the loop runs against.** The no-dependency design makes this a cheap question: tier 1 needs only the
+platform, so Community is a perfectly good and much smaller test target for both features, `.svelte` fixtures included
+(they're plain text to us). Tier 2 points at the local **IntelliJ IDEA 2026.2 EAP** install, because that's the IDE
+David actually reads code in, so the screenshot shows what he'd see, with the real Svelte plugin installed and syntax
+highlighting on. Building against a local installation also means no IDE artifact download and no licensing question.
 
 ## Docs wiring
 
@@ -249,18 +315,15 @@ somehow doesn't, tier 1 still covers the changelog feature on Community and feat
 - The installed IDE is **IntelliJ IDEA 2026.2 EAP** (`/Applications`, 2026-08-03). M0 pins `sinceBuild` off the real
   build number; an EAP target means a `sinceBuild` bump is likely at the 2026.3 upgrade.
 - The Svelte plugin is `dev.blachut.svelte.lang` ([marketplace](https://plugins.jetbrains.com/plugin/12375-svelte)).
-- Commit-ref lengths in `CHANGELOG.md`: 909 are 8 characters, 425 are 7, 93 are 6 (counted 2026-08-03 by matching
-  trailing groups per source line, so wrapped groups are undercounted; the ratio is what matters).
+- Commit-ref lengths in `CHANGELOG.md`: of 1,383 unique refs, 909 are 8 characters, 425 are 7, 93 are 6 (counted
+  2026-08-03 by matching trailing groups per source line, so wrapped groups are undercounted; the ratio is what
+  matters). All 1,383 resolve and all abbreviate uniquely at 7. The repo is 4,559 commits and ~99,000 in-pack objects.
 - The Starter UI testing framework is real and current (`TestFrameworkType.Starter`, driven by the `testIdeUi` task,
   JUnit 5 only), per the IntelliJ Platform Gradle Plugin docs, checked 2026-08-03.
 
-## Open questions for David
+## Answered (2026-08-03)
 
-1. **Fold the whole call or just the argument?** `{“It includes the app version…”}` reads best but hides which function
-   was used; `tString(“It includes…”)` keeps `t` vs `tString` vs `getMessage` visible, which matters when you're
-   scanning for the ICU-vs-raw distinction the intl docs care about. Spec assumes whole call.
-2. **80 characters before truncating**, or longer? Several catalog strings are two full sentences.
-3. **Hashes outside `CHANGELOG.md`?** Spec files and `docs/notes/` cite commits too. Easy to widen the glob, but every
-   added file is more surface for a false positive.
-4. **Anything else you'd want in v1?** The plugin exists to be enriched; if there's a third annoyance, M2 is the cheap
-   moment to add it.
+1. **Fold the whole call**, with stock ⌘+ / ⌘⇧+ as the escape hatch back to the real code.
+2. **No truncation.** The full message text, however long.
+3. **`CHANGELOG.md` only.** Specs and `docs/notes/` cite commits too; they don't get links.
+4. **Nothing else in v1.** Two features, then stop.

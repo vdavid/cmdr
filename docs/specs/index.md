@@ -56,14 +56,16 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       every i18next-shaped parser looks for `crashReporter:crashReporter.dialog.title`; the ARB `@key` metadata siblings
       read as real keys; and a chunk of our copy reaches the UI as a bare literal on a `labelKey` property, never inside
       a call. Everything is driven by `cmdr-plugin.json`, which doubles as the "this project is Cmdr" marker, so the
-      plugin is inert elsewhere and a worktree is recognized for free. The one real risk is whether a `.svelte`
-      template's `{tString(…)}` exposes ordinary JavaScript PSI, which M0 settles before anything is built on it (the
-      text-level `FoldingBuilder` fallback always works, so it can't sink the feature). The agent loop is headless
-      `BasePlatformTestCase` fixtures for iteration plus one `runIde`-and-screenshot pass to confirm, targeting the
-      local IDEA EAP because Community has no JavaScript support and so can't run the i18n feature at all. Drift against
-      the website's parse and the `changelog-commit-links` check is explicitly NOT guarded: it's private dev tooling.
-      Hashes are bounded `[0-9a-f]{6,8}` rather than fixed at 7, because the file holds 909 eight-character refs against
-      425 seven-character ones (git's abbreviation grows with the repo).
+      plugin is inert elsewhere and a worktree is recognized for free. **It depends on no language plugin**: a
+      `FoldingBuilder` takes its language as a STRING in `plugin.xml` and hands back plain text ranges, so a regex over
+      the document does the work while the platform keeps owning rebuild, expansion state, and ⌘+ / ⌘⇧+. That kills the
+      Svelte-PSI unknown, drops the ~2 GB Ultimate artifact from the build, and makes it run in any JetBrains IDE, at
+      the cost of no syntax awareness (a key inside a comment folds too). M1 first normalizes every `CHANGELOG.md`
+      commit ref to exactly 7 characters (909 are 8 today, 425 are 7, 93 are 6; all 1,383 verified to abbreviate
+      uniquely at 7) and pins `release.md` to `--abbrev=7`, so the plugin's exactly-7 rule has a file to match. The
+      shipped `whats_new` hash stripper deliberately stays permissive: a strict matcher there would leak raw hex into
+      user-facing release notes when a new app version renders an older changelog. The agent loop is headless
+      `BasePlatformTestCase` fixtures for iteration plus one `runIde`-and-screenshot pass to confirm.
 - [ ] 2026-08-03 `backend-crates-plan.md` - Make "a filesystem backend is its own crate" the shape FTP(S), S3, and SFTP
       get written in, validated first against one mature backend. The `Volume` trait is already the API and already
       lives in `cmdr-fs`, so a crate boundary adds enforcement, not design: `SmbVolume` reaches into the app at 23 sites
