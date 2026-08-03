@@ -203,7 +203,17 @@ All four couplings resolved as predicted, and the survey's count was right. Thre
    type whose methods are the API; a backend's API is the `Volume` trait, which belongs to `cmdr-fs`. The check now
    takes the handle type per crate and skips that bucket when there isn't one.
 
-**The gate's numbers, and what they mean for P3: `docs/notes/archive-extraction-baseline.md`.**
+**The gate is NOT settled: `docs/notes/archive-extraction-baseline.md`.** The machine was running several concurrent
+workspace builds on a near-full data volume throughout, so the timings taken there aren't worth acting on and the note
+says which are withdrawn. What survives is the scoped inner loop, as an order-of-magnitude reading (~10–15× cheaper to
+type-check and test-build the archive), which is safe because it's CPU seconds and because the structural reason —
+`cargo check -p cmdr-archive` compiles ~8k lines where it used to compile 332k — isn't a measurement.
+
+**P3's ordering doesn't depend on the re-take.** Archive's coupling was three seams; SMB's is 23 sites plus the four
+structural problems Decision 4 and P0's findings enumerate. A greenfield backend pays almost none of that and gets the
+same inner-loop win, since the win comes from not compiling the app rather than from how much code moved. So: P4
+unconditionally, `cmdr-smb` when someone is about to spend sustained time inside SMB. A clean re-take would have to
+INVERT the inner-loop result, not merely shrink it, to change that.
 
 ### P0 — Design the seam set (no code)
 

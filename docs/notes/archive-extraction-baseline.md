@@ -1,133 +1,115 @@
-# Archive-extraction: before and after
+# Archive-extraction: the measurement gate, and why it is still open
 
-The measured before and after for moving `backends/archive/**` (8,352 lines, 2.5% of `src-tauri/src`) into the
-standalone `cmdr-archive` crate. This is the gate the per-filesystem-backend plan (`docs/specs/backend-crates-plan.md`)
-ends at, so the answer it produces matters more than the numbers themselves.
+The build-time before-and-after for moving `backends/archive/**` (8,352 lines, 2.5% of `src-tauri/src`) into the
+standalone `cmdr-archive` crate. This is the gate `docs/specs/backend-crates-plan.md` ends at.
 
-Scenarios and commands match `docs/notes/index-extraction-baseline.md`, which is the only way the two extractions are
-comparable. Read that one first if you're checking whether this one drew the right conclusion.
+> **⚠️ The gate has NOT been measured cleanly, and nothing here should be acted on as if it had.** Every timing below
+> was taken on a machine running several concurrent workspace builds (load average 27–125) on a data volume that was
+> near-full and hit 100% shortly afterwards. A near-full APFS volume changes allocation behavior, so this isn't even a
+> constant-factor slowdown you could reason around. **The re-take procedure is at the bottom; run it before quoting a
+> number.**
+>
+> Two readings survive the contention as ORDER-OF-MAGNITUDE claims, because a 10–14× gap in CPU seconds can't be
+> manufactured by load, and because the structural reason for them isn't a measurement at all. They're marked below.
+> Everything else is withdrawn.
 
-## The short version
+Scenarios and commands match `docs/notes/index-extraction-baseline.md`, which was taken properly (idle machine, load ~8
+at worst) and is the model this one should be re-taken to.
 
-- **The scoped inner loop got 12–18× cheaper**, and by more than the index extraction managed: type-checking the archive
-  after an archive edit went **4.67 → 0.34 CPU seconds (−93%)** and building its unit tests went **27.6 → 2.7 CPU
-  seconds (−90%)**. The index's equivalents were −83% and −85%.
-- **A full app build after an archive edit is FLAT**, not the +11% the index extraction measured. Two `after` runs
-  straddle the `before` figure (16.3 and 19.2 CPU seconds against 18.1), so the honest reading is "no change", and the
-  reason is size: archive is 2.5% of the tree where the index was 28%, so what the app crate stops compiling roughly
-  cancels what it now has to relink.
-- **Release builds got 13% faster** (262.8 → 228.3 s wall) for +0.4% binary size, and this run shows the mechanism
-  rather than inferring it: CPU utilization rose from **695% to 812%**. Total CPU went UP 1.5%. More crates didn't
-  reduce the work, they gave cargo more of it to schedule at once.
-- **`pnpm check` did not get faster and cannot**, for the reason `docs/specs/backend-crates-plan.md` § "Reason 2" states
-  up front: every Rust check shares one `rustInputs` set and runs `--workspace`. Nothing here changes that.
+## What survives the contention
 
-## Read this before comparing
+**The scoped inner loop dropped by roughly an order of magnitude, and this is safe in direction and scale.** It's the
+one thing the crate boundary was built to buy.
 
-- **Both sides were measured on a BUSY machine**, and this is the note's main methodological caveat. Load average ranged
-  27–125 across the runs (several other agents were building the same workspace concurrently, plus a `nilaway` pass,
-  `eslint`, and Spotlight indexing). The index baseline was taken at load ~8 at worst.
-- **So every scenario reports CPU seconds (user + sys, children included) alongside wall clock, and the CPU column is
-  the one to trust.** Wall clock under a swinging load says more about the other agents than about cargo; CPU seconds
-  measure the work actually done. Where the two disagree, this note follows CPU and says so.
-- **The `before` side is `152d3fe79`, NOT `main`.** That's the commit immediately preceding the move, where the archive
-  backend already talks to its host through the seams but still lives in the app crate. Comparing against `main` would
-  have charged the seam work (P0, P1, and the seam rewiring) to the extraction, which measures the wrong thing: the
-  question is what the CRATE BOUNDARY costs and buys.
-- **Thin LTO is on** (`[profile.release] lto = "thin"` at the workspace root), on both sides, as it was for the index
-  measurement.
-- Measured 2026-08-03 on an Apple M3 Max (16 cores, 64 GB), macOS 26.5.2, rustc 1.97.1 (`8bab26f4f`, 2026-07-14), in the
-  `david-backend-crates` worktree.
+| scenario                                                      | before (CPU s) | after (CPU s) | reading           |
+| ------------------------------------------------------------- | -------------- | ------------- | ----------------- |
+| Archive edit, then `cargo check --lib` on what you're editing | ~4.7           | ~0.34         | ~14×, provisional |
+| Archive edit, then `cargo test --lib --no-run` on it          | ~27.6          | ~2.7          | ~10×, provisional |
 
-## Build times
+**Why these two survive when the others don't.** They're CPU seconds (user + sys, children included), not wall clock,
+so they measure work done rather than time spent waiting behind other agents. And the structural reason is independent
+of any measurement: `cargo check -p cmdr-archive` compiles ~8k lines plus `cmdr-fs`, where the same question used to
+compile the 332k-line app crate, because before the split there was no way to ask for less. A 14× gap is consistent
+with that; contention could plausibly move it to 10× or 20×, not to 1×.
 
-### The inner loop, and the full build
+**Treat the multipliers as "roughly ten to fifteen times", never as −93% / −90%.** The precision isn't there.
 
-Every edit is real (a changed log-message string in the archive content watch), not a `touch`, so incremental
-compilation has to redo codegen for the touched unit. Medians of five consecutive runs per side, after a warm-up build.
+**Two absolute facts about the extracted state that need no before-comparison and no quiet machine:**
 
-The scoped commands are what an agent working on the archive actually runs: `cargo check --lib` and
-`cargo test --lib --no-run` on the thing being edited. Before the split that meant the 332k-line app crate, because
-there was no way to ask for less; after, it's `cargo check -p cmdr-archive --lib`.
+- `cargo test -p cmdr-archive` builds and runs all 146 of the crate's tests in **0.8 s**.
+- The release binary grew from **79,792,240 to 80,100,336 bytes (+0.4%)**. Output size is deterministic — load and disk
+  pressure don't change the bytes — so this one is simply a fact, and it's the direction thin LTO already moved things.
 
-| scenario                                                      | before (wall / CPU s) | after (wall / CPU s) | CPU delta |
-| ------------------------------------------------------------- | --------------------- | -------------------- | --------- |
-| Archive edit, then `cargo check --lib` on what you're editing | 6.86 / 4.67           | **0.38 / 0.34**      | **−93%**  |
-| Archive edit, then `cargo test --lib --no-run` on it          | 48.93 / 27.61         | **1.55 / 2.74**      | **−90%**  |
-| Archive edit, then `cargo build` (the whole app)              | 46.93 / 18.07         | 14.42 / 16.27        | flat      |
+## What is withdrawn
 
-**The first two rows are the answer**, and they're the same answer the index extraction gave, only larger. They come
-from not compiling the app at all — which is why the win doesn't scale with the extracted subsystem's size, and why it
-transfers to any backend regardless of how small it is.
+- **"A full app build after an archive edit is flat."** The samples were 18.07 CPU s before against 16.27 and 19.21
+  after. That spread is smaller than the contention noise, so the honest statement is that this scenario is
+  **unmeasured**, not that it's flat. It's the row where the index extraction found its one regression (+11%), so it's
+  the row most worth re-taking properly.
+- **The entire release-build comparison** (a −13% wall-clock reading, and a CPU-utilization figure offered as its
+  mechanism). One run per side, load 78–125, on a nearly-full volume, during a build that writes gigabytes. A
+  utilization number under variable external load describes the competitors more than it describes cargo. Withdrawn in
+  full; only the binary size above survives.
 
-**The third row's wall-clock figures are not comparable** and are shown only for completeness: the `before` run's load
-was rising (29 → 65) while the `after` run's was falling (102 → 27). On CPU, two independent `after` runs gave 19.21 and
-16.27 seconds against `before`'s 18.07, so the honest reading is that a full app build after an archive edit didn't
-move.
+## What the gate's answer does NOT depend on
 
-**Reproducibility.** The `after` side was measured twice, 30 minutes apart under different loads. The scoped test build
-reproduced within 4% on CPU (2.84, then 2.74 seconds); the scoped type-check within 0.13 seconds absolute (0.47, then
-0.34) — small enough that the percentage is noisy but the ORDER OF MAGNITUDE is not, which is all a −90% claim needs.
-The `before` side's first sample of each scenario is a cold outlier (the warm-up doesn't cover `cargo check`'s own
-fingerprint set) and the median discards it, exactly as it would on either side.
+Worth stating plainly, because it means the plan isn't blocked on the re-take: **the recommendation to write new
+backends as crates and to hold `cmdr-smb` doesn't rest on any number here.** It rests on a cost asymmetry taken from
+the survey, not the stopwatch:
 
-**Running the tests is fast too, though it isn't in the table** because there's no `before` equivalent to compare
-against: `cargo test -p cmdr-archive` runs all 146 of the crate's tests in 1.7 seconds.
+- Archive's whole coupling was three seams, no `cfg(test)` behavior gates, no Docker, no Tauri types.
+- SMB's is 23 sites across all seven seams, an `AppHandle` in a `OnceLock` feeding `tauri_specta` emits, two registry
+  reach-backs, a `pub(in crate::…)` visibility with no cross-crate spelling, 5,343 lines of Docker-gated tests reached
+  through a `use super::*` prelude glob, and a `smb2 = { features = ["testing"] }` forward.
+- A backend written as a crate from day one pays almost none of that and gets the same inner-loop win, because that win
+  comes from not compiling the app rather than from how much code moved.
 
-### Release
+So: **P4 unconditionally; `cmdr-smb` only when someone is about to spend sustained time inside SMB.** A clean re-take
+could strengthen or weaken the SIZE of the benefit, but it would have to invert the inner-loop result entirely — not
+merely shrink it — to change that ordering.
 
-Full clean workspace build (`cargo clean --release && cargo build --release` from the repo root, so every member
-builds), one run per side, taken back to back so they saw the most similar load of any pair here.
+One measured argument in P3's favor that the plan didn't anticipate, and that no timing affects: the extraction
+surfaced two latent defects the app crate had been hiding (seven `.unwrap()`s legal only because their file was
+`cfg(test)`, and a rustdoc link to a function that no longer exists). Neither was caught by any check while the code
+lived in the app. SMB's test surface is 1.6× archive's.
 
-| measure         | before       | after        | delta   |
-| --------------- | ------------ | ------------ | ------- |
-| wall clock      | 262.8 s      | **228.3 s**  | −13.1%  |
-| total CPU       | 1,827.1 s    | 1,854.9 s    | +1.5%   |
-| CPU utilization | 695%         | **812%**     | +117 pp |
-| `Cmdr` binary   | 79,792,240 B | 80,100,336 B | +0.4%   |
+## Re-taking this properly
 
-**The release build got faster without doing less work**, and the utilization column is the proof. Four crates give
-cargo four independent codegen units to schedule where there were three, so the long pole shortened while total CPU went
-slightly UP. That's the same effect the index extraction saw (214 → 188 s, −12%) at nearly the same magnitude, despite
-archive being a tenth of the index's size — which suggests the release win comes from parallelism structure rather than
-from how much code moved, and shouldn't be expected to stack linearly with more extractions.
+**Preconditions, all of them.** The whole point of a gate is that it's a number worth acting on:
 
-The extra 308 KB of binary is more cross-crate inlining, the same direction thin LTO already moved it (+2.2 MB when it
-landed).
+- Load average under ~5, and no other agent building this workspace. Check `uptime` at the start AND end of each side,
+  record both, and discard the run if it moved much.
+- At least 40 GB free on the data volume (`df -h /`), so a release build never runs against a near-full APFS.
+- ❌ Don't take wall-clock-only numbers on a shared machine. Record CPU seconds alongside, and say which one a
+  conclusion rests on.
 
-## What this means for extracting SMB
+**The two sides.** `before` is `152d3fe79`, the commit immediately preceding the move, where the archive backend already
+talks to its host through the seams but still lives in the app crate. ❌ Not `main` — that would charge the seam work
+(P0, P1, and the seam rewiring) to the extraction and measure the wrong thing. Check the two out in the same worktree,
+minutes apart, and warm each side with a full build before timing anything.
 
-**The measurement gate passes, and it passes on the metric the plan said mattered.** But "the numbers justify P3" and
-"P3 is the best use of the next stretch of effort" are different questions, and the honest answer differs between them.
+**The edit** is a real one-line change (a changed log-message string in the archive content watch), never a `touch`, so
+incremental compilation has to redo codegen. Flip it back and forth between samples. Take five samples and use the
+median; the first sample of each scenario is a cold outlier the median discards.
 
-**The benefit is proven and it transfers.** The inner-loop win comes from not compiling the app, not from the size of
-what moved, so `cargo check -p cmdr-smb` would land in the same sub-second range. Archive is 2.5% of the tree and got
-−93%; there's no size threshold below which this stops working.
+```bash
+# --- after (on worktree-david-backend-crates) ---
+cargo check -p cmdr-archive --lib
+cargo test  -p cmdr-archive --lib --no-run
+(cd apps/desktop/src-tauri && cargo build)          # whole app, after an archive edit
 
-**The benefit does NOT grow with the extraction's difficulty, and SMB's is several times archive's.** Archive had three
-coupling points and no `cfg(test)` behavior gates; SMB has 23 sites across all seven seams, an `AppHandle` in a
-`OnceLock` feeding `tauri_specta` emits, two registry reach-backs, a `pub(in crate::…)` visibility with no cross-crate
-spelling, 5,343 lines of Docker-gated tests reached through a `use super::*` prelude glob, and a
-`smb2 = { features = ["testing"] }` forward. The payoff per unit of effort is therefore much lower than the pilot's,
-while the payoff for a backend written as a crate from day one (FTP, S3, SFTP) is the same as archive's and costs nearly
-nothing.
+# --- before (at 152d3fe79) ---
+(cd apps/desktop/src-tauri && cargo check --lib)
+(cd apps/desktop/src-tauri && cargo test --lib --no-run)
+(cd apps/desktop/src-tauri && cargo build)
 
-**One measured argument in P3's favor that the plan didn't anticipate.** The extraction surfaced two latent defects the
-app crate had been hiding: seven `.unwrap()`s that were legal only because their file was `cfg(test)`, and a rustdoc
-intra-doc link to a function that no longer exists. Neither was found by any check while the code lived in the app.
-SMB's test surface is 1.6× archive's, so a similar or larger crop should be expected — that's real quality, not just
-build time.
+# --- release, once per side, from the repo root ---
+cargo clean --release && cargo build --release
+ls -l target/release/Cmdr
+```
 
-**The recommendation, and it's a judgment call rather than a number:** do P4 unconditionally (a new backend written as a
-crate is nearly free and gets the full win), and treat P3 as optional — worth doing when someone is about to spend
-sustained time inside SMB, not worth doing for its own sake. Nothing measured here argues against P3; what argues
-against it is that the same effort spent on P4 buys more.
+Time each with bash's `time` keyword under `TIMEFORMAT='%3R %3U %3S'` (wall, user, sys) rather than `/usr/bin/time -p`:
+the latter writes its report to the same stderr you want to discard from the build, and silently yields nothing.
 
-## Redoing this
-
-Re-run it if a backend's build cost is ever questioned. The harness is three scenarios and a release build, all
-reproducible from the table above; the only thing that needs care is the pairing. Take both sides in the same worktree
-minutes apart, record the load average at the start and end of each side, and report CPU seconds if the machine isn't
-idle. An unpaired wall-clock number on a shared machine is worth nothing here — the `before` and `after` full-build wall
-times in this note differ by 3× purely from other agents' load, in the direction that would have flattered the
-extraction.
+**Thin LTO must be on for both sides** (`[profile.release] lto = "thin"` at the workspace root), as it was for the
+index measurement. It already is; just don't toggle it while comparing.
