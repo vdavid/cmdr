@@ -256,11 +256,25 @@ require that the entry ENDS with a parenthetical whose every comma-separated ite
 to the end of the entry is what keeps prose safe: entries routinely close on `(~40x speed-up!)`, `(smb2 0.8.0)`, or
 `(photo.JPG to photo.jpg)`, and a hex-looking word mid-sentence is never even considered.
 
-**Why the floor is 6 and not lower:** the oldest entries abbreviate to 6, so 6 has to be legal, and it's also where the
-false-positive risk turns real. Plenty of short English words are hex-only ("added", "faced", "beaded"), so a 5-char
-group is read as prose and ignored rather than flagged. The trade: a genuine 5-char hash silently escapes validation.
-That's the right side to err on, and the release flow produces 8 anyway. A 6-char hex WORD in a trailing parenthetical
-("decade") would be read as a hash and fail to resolve, which is loud and one rephrase away from fixed.
+**Every ref must be exactly 8 characters**, which is what `.claude/commands/release.md` produces
+(`git log --format='%h' --abbrev=8`) and what the whole file is normalized to. A wrong length is a finding at every site
+it appears, not once per unique hash, so one pass fixes them all.
+
+**Recognize loosely, enforce the length strictly.** The recognition pattern deliberately stays `{6,40}` rather than
+becoming `{8}`. Narrowing it would make a stray 7-character ref stop being a ref at all: it'd be read as prose, silently
+skip SHA validation, and quietly fail to render in anything matching the convention. Recognizing wide and then failing
+on the length is the loud version of the same rule.
+
+**Why the recognition floor is 6 and not lower:** 6 is where the false-positive risk turns real. Plenty of short English
+words are hex-only ("added", "faced", "beaded"), so a 5-char group is read as prose and ignored rather than flagged. The
+trade: a genuine 5-char hash silently escapes validation. That's the right side to err on. A 6-char hex WORD in a
+trailing parenthetical ("decade") is read as a hash and fails the length rule, which is loud and one rephrase away from
+fixed.
+
+**The two renderers stay permissive at `{6,40}` on purpose.** `apps/desktop/src-tauri/src/whats_new/` strips hash groups
+out of user-facing release notes, and a shipped app version renders whatever changelog it's handed, including older
+ones; a group a stricter matcher failed to recognize would reach users as raw hex. The website's linkifier renders only
+the current file, so tightening it buys nothing.
 
 Each unique SHA is then resolved through one `git cat-file --batch-check` process and required to be **reachable from
 HEAD**, not merely present in the object DB: an abbreviated SHA of a rebased-away commit still resolves locally via the

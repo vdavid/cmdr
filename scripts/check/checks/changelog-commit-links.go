@@ -21,7 +21,16 @@ import (
 // Anchoring to the end is what keeps ordinary prose safe: plenty of entries close on
 // a parenthetical like `(~40x speed-up!)` or `(smb2 0.8.0)`, and a hex-looking word
 // mid-sentence is never even considered.
+//
+// Recognition stays deliberately wider than the changelogRefLength rule the check
+// enforces. Narrowing it to {8} would make a stray 7-character ref stop being a ref:
+// it'd be read as prose, silently skip SHA validation, and quietly fail to render in
+// anything matching the convention. Recognize loosely, then fail loudly on the length.
 var changelogTrailingRefsPattern = regexp.MustCompile(`\(([0-9a-f]{6,40}(?:,\s*[0-9a-f]{6,40})*)\)$`)
+
+// changelogRefLength is the exact length every commit ref must have. `release.md`
+// produces it with `git log --abbrev=8`, and the whole file is normalized to it.
+const changelogRefLength = 8
 
 // changelogCommitURLPattern matches the deprecated `…/commit/<sha>` URL form in any
 // shape (bare, or wrapped in a markdown link). The changelog stores bare hashes and
@@ -45,9 +54,10 @@ type changelogScanResult struct {
 }
 
 // RunChangelogCommitLinks validates that every commit hash referenced in
-// CHANGELOG.md resolves to a real commit reachable from HEAD, and that nobody has
-// reintroduced the deprecated `[sha](url)` link form. If CHANGELOG.md is missing,
-// the check succeeds with 0 SHAs validated; no CHANGELOG means no risk of bad refs.
+// CHANGELOG.md is exactly changelogRefLength characters and resolves to a real
+// commit reachable from HEAD, and that nobody has reintroduced the deprecated
+// `[sha](url)` link form. If CHANGELOG.md is missing, the check succeeds with 0 SHAs
+// validated; no CHANGELOG means no risk of bad refs.
 func RunChangelogCommitLinks(ctx *CheckContext) (CheckResult, error) {
 	path := filepath.Join(ctx.RootDir, "CHANGELOG.md")
 	file, err := os.Open(path)
@@ -200,8 +210,18 @@ func (result *changelogScanResult) collectEntryRefs(entry []changelogSourceLine)
 	for _, sha := range strings.Split(match[1], ",") {
 		sha = strings.TrimSpace(sha)
 		result.totalRefs++
+		line := lineOfSHA(entry, sha)
+		if len(sha) != changelogRefLength {
+			// Flagged per occurrence, not per unique ref: a wrong-length hash usually
+			// repeats, and one finding per site means one pass fixes them all.
+			result.findings = append(result.findings, changelogCommitLinkFinding{
+				line: line,
+				message: fmt.Sprintf("commit ref must be exactly %d characters, this one is %d: %s",
+					changelogRefLength, len(sha), sha),
+			})
+		}
 		if _, exists := result.uniqueSHAs[sha]; !exists {
-			result.uniqueSHAs[sha] = lineOfSHA(entry, sha)
+			result.uniqueSHAs[sha] = line
 		}
 	}
 }

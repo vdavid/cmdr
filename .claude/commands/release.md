@@ -11,7 +11,7 @@ Prepare a release based on docs/guides/releasing.md.
      `changelog-links` check rejects a `…/commit/<sha>` URL.
    - **Get commit SHAs via `git log --format='%h' --abbrev=8`**. Never extend a 7-char prefix from `git log --oneline`
      by guessing the next character. The committed changelog convention is 8 chars; let git produce them. The
-     `changelog-links` check will reject fabricated SHAs and abort the release.
+     `changelog-links` check enforces that length exactly, and rejects fabricated SHAs, aborting the release either way.
    - **Add a `## [Unreleased]` heading** right after the format preamble (before the first versioned section), then put
      entries under it. The release script replaces this heading with the versioned one. The committed changelog has no
      `[Unreleased]` section between releases. You're creating it fresh each time.
