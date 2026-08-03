@@ -3,12 +3,12 @@
 Pull-tier docs for the live content watch. Must-know invariants live in `CLAUDE.md`. Read this before any non-trivial
 work here: editing, planning, reorganizing, or advising.
 
-An external edit to the backing `.zip` (an editor rewriting it, a `cp` over it, this app's mutation's final rename)
+An external edit to the backing `.zip` (an editor rewriting it, a `cp` over it, the host's own mutation's final rename)
 refreshes any open listing inside the archive. The watch lives on the [`ArchiveVolume`](../volume.rs).
 
 ## Watch the parent directory, not the file
 
-macOS editors and every safe-overwrite (including this app's own temp+rename mutation) replace the file's inode: write
+macOS editors and every safe-overwrite (including this crate's own temp+rename mutation) replace the file's inode: write
 `foo.zip.tmp`, then atomically rename over `foo.zip`. A `notify` watch pinned to the OLD inode goes silent after such a
 swap. So `start_watch` watches the archive's PARENT DIRECTORY (`RecursiveMode::NonRecursive`) — the directory inode is
 stable across the swap, so no re-arming is needed — and filters the directory's child events down to the archive file

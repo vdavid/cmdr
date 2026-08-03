@@ -15,7 +15,7 @@ sink, pause gate, cancel intent via the `MutationHooks` seam, and the remote pul
 
 - **Temp+rename, not append-in-place.** `zip`'s `ZipWriter::new_append` overwrites the old central directory, so a
   cancel mid-edit corrupts the archive (verified: truncating before the new EOCD yields "Could not find EOCD"; the
-  original does NOT survive). Building fresh into a temp and renaming is the app's mandated safe-overwrite and the only
+  original does NOT survive). Building fresh into a temp and renaming is Cmdr's mandated safe-overwrite and the only
   shape where cancel is genuinely free (abandon the temp, no rollback ledger). The original is byte-for-byte untouched
   until the final rename; a cancel or crash at any earlier point leaves it fully readable.
 - **Retained entries copy verbatim** via `raw_copy_file_rename` (no decompress/recompress); only added files

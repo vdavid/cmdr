@@ -7,14 +7,14 @@
 //! the temp abandoned (reaped on the next edit). It is deliberately decoupled
 //! from the `Volume` trait and the operation manager: it takes a plain
 //! [`Changeset`] plus a [`MutationHooks`] control seam, so it's fully
-//! unit-testable without Tauri or the write-ops machinery. The `ArchiveEditOperation`
+//! unit-testable without a host or its write-ops machinery. The host's archive-edit
 //! driver wraps it with the real event sink, pause gate, and cancel intent.
 //!
 //! ## Why temp+rename, not append-in-place
 //!
 //! `zip`'s `ZipWriter::new_append` overwrites the old central directory, so a
 //! cancel mid-edit corrupts the archive (the original does NOT survive). Building
-//! a fresh archive to a temp and renaming is the app's mandated safe-overwrite
+//! a fresh archive to a temp and renaming is Cmdr's mandated safe-overwrite
 //! (AGENTS.md principle 4) and the only shape where cancel is genuinely free
 //! (abandon the temp, no rollback ledger). Retained entries copy verbatim via
 //! `raw_copy_file_rename` (no decompress/recompress — byte-for-byte); only newly

@@ -4,7 +4,7 @@ Pull-tier docs for the read-only reading engine. Must-know invariants live in `C
 non-trivial work here: editing, planning, reorganizing, or advising.
 
 This module is decoupled from the `Volume` trait on purpose — it deals in archive-native types and the
-[volume layer](../volume.rs) maps them — so it's fully unit-testable without Tauri or volume machinery. The
+[volume layer](../volume.rs) maps them — so it's fully unit-testable without a host or any volume machinery. The
 `ArchiveVolume` layer, routing, remote-backed byte source, and the `ArchiveError → VolumeError` mapping live in the
 parent `../../DETAILS.md`.
 

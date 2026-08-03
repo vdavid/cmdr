@@ -8,7 +8,7 @@
 //! archive-native types ([`ArchiveIndex`], [`ArchiveNode`], [`ArchiveError`]),
 //! and the volume layer ([`super::volume`]) maps those onto `FileEntry` /
 //! `VolumeError` / a `VolumeReadStream`. That keeps the reader unit-testable
-//! without any Tauri or volume machinery.
+//! without any host or volume machinery.
 //!
 //! ## Shape
 //!

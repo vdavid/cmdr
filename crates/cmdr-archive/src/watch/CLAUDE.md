@@ -1,7 +1,7 @@
 # Archive live content watch
 
 Refreshes any open listing inside an archive when the backing `.zip` changes on disk (an editor rewriting it, a `cp`
-over it, this app's own mutation's final rename). The watch handle lives on the [`ArchiveVolume`](../volume.rs); this
+over it, the host's own mutation's final rename). The watch handle lives on the [`ArchiveVolume`](../volume.rs); this
 module is the OS watch + event filter behind it.
 
 Depth, the remote-no-watch decision, and the test list: `DETAILS.md`. Read it before any non-trivial work here: editing,
@@ -9,7 +9,7 @@ planning, reorganizing, or advising.
 
 ## Must-knows
 
-- **Watch the parent DIRECTORY, not the file.** A safe-overwrite (editor, `cp`, or this app's temp+rename) replaces the
+- **Watch the parent DIRECTORY, not the file.** A safe-overwrite (editor, `cp`, or this crate's own temp+rename) replaces the
   file's inode, so a `notify` watch pinned to the file goes silent after the swap. The directory inode is stable; filter
   the child events down to the archive file (`event_path_targets_archive`, on firmlink-normalized paths).
 - **Refresh via the host's `refresh_archive_listings` seam with the PARENT DRIVE id + full `/…/foo.zip/inner` path,
