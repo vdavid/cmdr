@@ -1,7 +1,13 @@
 # Untangle the module dependency cycles
 
-Status: planned, 2026-08-02. Not started. Every number below is measured with `cargo-modules` against `main` at
-`1441e0c49`, not estimated.
+**Status: M0–M6 shipped. M7 (the ratcheting check) is the only milestone left.**
+
+Measured result, `cargo-modules` before and after:
+
+- Modules trapped in some cycle, all three crates: **184 → 132**.
+- `cmdr` maximum component: **17 → 10** (the survivor is `file_viewer::*`, a cohesive cluster the Non-goals exclude).
+- `cmdr-index` maximum component: **23 → 6** (the plan estimated 7).
+- `cmdr-fs`: unchanged at 8, never in scope.
 
 Six milestones cut the two large strongly-connected components in the Rust crates down to nothing, plus three small
 cross-subsystem cycles, and then install a check so they can't regrow. The two biggest cuts are prerequisites for work
@@ -43,9 +49,23 @@ Non-test glob files that inflate SCCs today: `volumes/{cloud,fs_type,mounts,nsur
 `reconciler::rescan*` 3-module, and most of the `volumes` 8-module groups are glob noise. Neither of the two large
 components below contains a non-test glob file, so both are real.
 
+**Half-right, as M0 measured it.** `indexing::store::*` and `reconciler::rescan*` were pure glob noise and vanished
+outright. `smb::*` (10 → 5) and `volumes` (8 → 4) shrank but survived, and the survivors are real: in both, the parent
+module defines a type (`SmbVolume`; `LocationInfo` / `LocationCategory`) that several children build against via
+inherent `impl` blocks while the parent re-exports from those same children. That's the idiomatic parent ↔ child shape
+the Non-goals already exclude, merged into one hub because it's one parent with several children rather than isolated
+pairs. Not fixable by importing more precisely: `LocationCategory` has no other home to import from.
+
 **Trap 3, smaller: `--no-traits` doesn't filter `From` impls.** `archive_edit::engine ↔ archive_remote_edit` is not a
 real edge; `archive_remote_edit.rs` never imports `engine` and defines its own `to_write_error` at line 348. The reverse
 edge comes from the two `From` impls at `engine.rs:29,38`.
+
+**Trap 4: an inherent-impl method is attributed to the module where its TYPE is defined, not where the `impl` block
+sits.** Found the expensive way during M6: putting a `RescanDrain` struct in `rescan.rs` while
+`EventReconciler::rescan_drain() -> RescanDrain` lived in `reconciler.rs` fabricated a `reconciler → rescan` edge, which
+closed a loop and left the component at 10 instead of 6. Simulation said 6 and the code said 10 until the attribution
+rule turned up. So: **when a cut doesn't produce the simulated number, suspect where a returned type is defined before
+suspecting the analysis.**
 
 ## Non-goals
 
@@ -89,6 +109,28 @@ backends should copy.
 ## Milestones
 
 Ordered by return per unit of risk. M0 gates everything. M1 is the highest-value single change in the plan.
+
+**What each one actually did** (M0–M6 are shipped; the milestone bodies below are kept as written, so read them as the
+intent, not as remaining work):
+
+- **M0** — 22 files de-globbed. `indexing::store::*` and `reconciler::rescan*` vanished; `smb::*` and `volumes` shrank
+  to real parent ↔ child hubs (see above).
+- **M1** — `file_system` 17 → 3. `get_volume_manager` is `pub(crate)` at its new home, 75 files repointed, no shim. A
+  ninth back-edge turned up in `write_operations/rollback.rs` that the eight-edge count had missed (it wasn't in the
+  cycle, so the count was right about the cycle and short about the churn).
+- **M2** — the `commands::search` 3-cycle is gone; `cmdr-index` 23 → 20. `bindings.ts` byte-identical, as predicted.
+- **M3** — the `events ↔ sink ↔ media_index::events` 3-group is gone and no module under `events/` is in any cycle.
+  **It did not move the 20**: the progress pump sits on `manager → reporter → writer → … → manager` whichever parent
+  owns it, so moving it to `lifecycle/` renamed a node rather than removing one. The payload enums live in
+  `events/payload.rs`, not the `kinds.rs` this plan named — "kind", "type", and "category" are names to avoid.
+- **M4** — `media_index` 5 → 0, plus the `writer ↔ upsert` pair, landing exactly the DAG below. Needed one thing the
+  plan didn't foresee: `accounted`'s items had to drop their `accounted_` prefix, because while the writer still wrote
+  `use super::coverage;` the edge landed on the facade and the cycle survived the split.
+- **M5** — `backends::mtp` is out of every cycle; `mtp::connection ↔ file_ops` stays, as intended. The registrar lives
+  in `mtp/volume_wiring.rs`, the structural twin of `network/smb_upgrade.rs`, so the two backends read as one pattern.
+- **M6** — `cmdr-index` 20 → 6, better than the 7 estimated. Both invariants survive and the DB-delete one got
+  *stronger*: withdrawal now actually un-routes a volume, closing a window where a reader could open a fresh connection
+  to a database about to be unlinked. `state::volume_cancel_token` is gone entirely (three sites, not the one named).
 
 ### M0 — Replace the non-test `use super::*` globs
 
@@ -269,8 +311,12 @@ above, parses the DOT, computes SCCs, and compares the maximum SCC size per crat
 - ~19 s on the app crate, so it belongs in the slow group, not `--fast`.
 - Go unit tests with fixture DOT: a graph that grows its max SCC must fail; one that shrinks must pass.
 
-**Record the three tooling traps** (`--acyclic`, globs, `From` impls) in `scripts/check/checks/DETAILS.md`, or the next
-person re-derives them.
+**Record the four tooling traps** (`--acyclic`, globs, `From` impls, inherent-impl attribution) in
+`scripts/check/checks/DETAILS.md`, or the next person re-derives them.
+
+The ratchet numbers to seed it with, measured after M6: `cmdr` 10, `cmdr-index` 6, `cmdr-fs` 8. All three survivors are
+declared non-goals (a cohesive feature cluster, `IndexPhase::Running(Box<IndexManager>)` plus the manager ↔ event-loop
+pair, and a parent ↔ child hub), so the check can go straight to error rather than warning first.
 
 **Docs:** `scripts/check/checks/DETAILS.md`. **Checks:** `pnpm check go`, `pnpm check -q`.
 
@@ -311,6 +357,23 @@ M0 gates everything. After that:
   `volume_broadcast.rs:81-88`. `volumes/CLAUDE.md:47` already documents `append_mtp_volumes` as duplicated across the
   macOS/Linux twins with a "set a new field in BOTH" warning. That's a real footgun and a genuine prize, but it's a
   separate effort and not needed to break any cycle.
+
+## Found along the way, not fixed
+
+Each of these turned up while cutting a cycle and is out of scope for this plan. Listed so they don't get lost.
+
+- **The per-navigation verifier is a silent no-op on every non-root volume.** `reconcile/verifier.rs::verify_and_correct`
+  reads the ROOT pool via `get_read_pool()` but writes through the *caller's* writer, which `trigger_verification` takes
+  from whichever volume the app named. `Index::verify_directory` runs per navigation for every volume, so on SMB, MTP,
+  and external drives it reads a path that can't resolve in root's index, gets nothing, and does nothing. Fixing it
+  means routing through `get_read_pool_for(volume_id)` plus `routing::index_read_path` and publishing under the right
+  volume: a behavior change, and the one item here worth real attention.
+- **`backends/mtp.rs` is 1,194 lines against a 1,095 allowlist entry.** Pre-existing, and inside the growth buffer, so
+  it doesn't warn. Splitting it is its own job.
+- **A test-isolation gap that only bare `cargo test` sees.** `indexing::host::volumes::tests::an_uninstalled_provider_reports_nothing_mounted`
+  doesn't take `handle::test_lock()` the way its siblings do, and `handle/tests.rs`'s `.install_for_test()` call doesn't
+  hold it either, despite the method's own doc saying to. In-process runs fail it roughly 2 of 3 times on `main` as
+  well. nextest (one process per test, and the project's runner) is unaffected, which is why it has stayed hidden.
 
 ## Related
 
