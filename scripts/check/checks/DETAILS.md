@@ -597,8 +597,9 @@ Checks by app and tech:
   tree, plus a per-bucket public-surface ceiling on `cmdr-index` and `cmdr-archive`. `cmdr-fs` is deliberately uncapped:
   it's shared vocabulary whose job is to be named from everywhere. See
   `crates/cmdr-index/src/indexing/handle/DETAILS.md` for what each index number means, the crate's own entry in
-  `index-crate-isolation.go` for the archive ones, and why raising either needs David's say-so). The crates' code is also covered by the desktop Rust lanes above, which all
-  run workspace-wide; this scope is for checks about the crate boundary itself.
+  `index-crate-isolation.go` for the archive ones, and why raising either needs David's say-so). The crates' code is
+  also covered by the desktop Rust lanes above, which all run workspace-wide; this scope is for checks about the crate
+  boundary itself.
 - **Desktop / Svelte**: prettier, eslint, svelte-kit-sync, eslint-typecheck-svelte, eslint-typecheck-typescript,
   stylelint, css-unused, a11y-contrast, a11y-coverage (every primitive has a tier-3 a11y test), ui-primitive-coverage
   (every top-level `lib/ui/*.svelte` primitive has a Debug > Components catalog section), dialog-gallery-coverage (every

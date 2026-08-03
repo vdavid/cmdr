@@ -9,6 +9,12 @@
     unused_imports,
     reason = "mod.rs holds the backend shared prelude and re-exports submodule internals so the sibling #[cfg(test)] modules resolve them through `super::*`"
 )]
+// Scaffolding only the sibling `#[cfg(test)] mod smb_*` modules call (`volume_id`,
+// `PoolSlots::any_alive`, `with_smb_sync`), which `deny(unused)` flags against a
+// non-test build. Scoped to this backend on purpose: every other backend under
+// `backends/` compiles clean without it, so a new dead item here is a real finding
+// rather than something the umbrella swallows.
+#![allow(dead_code, reason = "reached only from the sibling #[cfg(test)] SMB modules")]
 
 use super::{
     BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SmbConnectionState, SourceItemInfo,

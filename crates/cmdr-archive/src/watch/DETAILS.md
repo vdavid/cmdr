@@ -71,8 +71,9 @@ has no local path for `notify` to watch, so `start_watch` returns `None` and a r
 
 - **The write-op fresh-listing oracle never serves a remote archive listing from cache.** `listing_is_watched == false`
   means every pre-flight scan of a remote archive re-reads it honestly (and `try_get_watched_listing` also guards a
-  remote archive-inner path explicitly — see `apps/desktop/src-tauri/src/file_system/volume/CLAUDE.md` on `VolumeManager::resolve`). So
-  a copy/delete inside a remote archive always sizes against a fresh parse, never a stale cache.
+  remote archive-inner path explicitly — see `apps/desktop/src-tauri/src/file_system/volume/CLAUDE.md` on
+  `VolumeManager::resolve`). So a copy/delete inside a remote archive always sizes against a fresh parse, never a stale
+  cache.
 - **Push-refresh for an EXTERNAL edit of a remote `.zip`: SMB yes, MTP no.** SMB: the recursive share watcher
   (`smb_watcher.rs`) already receives a `CHANGE_NOTIFY` for any changed `.zip` on the share, so its Modified/Renamed
   handlers ALSO call `caching::refresh_archive_listings` for a supported-archive path, pushing an out-of-band edit to

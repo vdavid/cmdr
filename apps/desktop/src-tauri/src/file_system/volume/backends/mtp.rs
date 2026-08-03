@@ -1176,6 +1176,10 @@ fn map_mtp_error(e: MtpConnectionError) -> VolumeError {
 // tests live one level up (in `volume`), so they need this wider scope rather
 // than a `pub(super)` that would only reach `backends`.
 pub(in crate::file_system::volume) mod test_hooks {
+    // The two readers below are called from the oracle tests one level up, which a
+    // partial test build may not compile; `deny(unused)` flags them either way.
+    #![allow(dead_code, reason = "read by the `mtp_scan_oracle_tests` module one level up")]
+
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     static LIST_DIRECTORY_CALL_COUNT: AtomicUsize = AtomicUsize::new(0);

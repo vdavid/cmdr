@@ -9,9 +9,9 @@ planning, reorganizing, or advising.
 
 ## Must-knows
 
-- **Watch the parent DIRECTORY, not the file.** A safe-overwrite (editor, `cp`, or this crate's own temp+rename) replaces the
-  file's inode, so a `notify` watch pinned to the file goes silent after the swap. The directory inode is stable; filter
-  the child events down to the archive file (`event_path_targets_archive`, on firmlink-normalized paths).
+- **Watch the parent DIRECTORY, not the file.** A safe-overwrite (editor, `cp`, or this crate's own temp+rename)
+  replaces the file's inode, so a `notify` watch pinned to the file goes silent after the swap. The directory inode is
+  stable; filter the child events down to the archive file (`event_path_targets_archive`, on firmlink-normalized paths).
 - **Refresh via the host's `refresh_archive_listings` seam with the PARENT DRIVE id + full `/…/foo.zip/inner` path,
   never the archive id or `directory_changed`.** The listing cache keys archive listings on the parent drive id; feeding
   an archive-inner path (not a real FS path) to `directory_changed` would run a meaningless drive-index sync.

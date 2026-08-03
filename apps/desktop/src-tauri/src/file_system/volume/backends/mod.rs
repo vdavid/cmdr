@@ -9,12 +9,6 @@
 //! matrix, and `backends/CLAUDE.md` for the per-backend decisions and gotchas
 //! that drive each implementation here.
 
-// Each backend keeps a little scaffolding only its own tests call. `#![deny(unused)]` at the
-// crate root would flag it against a non-test build. Scoped to `backends`: the manager and
-// eject are fully live, and the trait and its types now live in `cmdr-fs`, so don't widen
-// this back up the tree.
-#![allow(dead_code, reason = "Per-backend test scaffolding")]
-
 // A re-export of the `cmdr-archive` crate under its original path, plus the
 // app-side half of its watch tests. See `archive.rs`.
 pub mod archive;

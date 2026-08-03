@@ -194,14 +194,14 @@ All four couplings resolved as predicted, and the survey's count was right. Thre
    no longer exists, which `desktop-rust-rustdoc` never saw while the item was buried in the app. **Expect a
    proportionally larger crop from SMB**, whose test surface is 5,343 lines against archive's 3,376.
 2. **The move's real cost was app-side test re-homing, not path rewriting.** The mechanical rewrite was minutes; what
-   took judgment was that `watch_integration_test.rs` had grown to test BOTH the backend (does an on-disk edit reach
-   the refresh?) and the app (does a refresh update the pane?). It split into a crate-side seam test and an app-side
-   cache test, which is strictly better — the FSEvents-timing-sensitive half left the app's test binary. SMB's
-   `#[cfg(test)] mod smb_*` children are the same shape at 10× the size, and P3d should budget for splitting rather
-   than moving them.
-3. **A public-surface ceiling on a BACKEND crate needs a different shape from the index's.** `cmdr-index` has one
-   handle type whose methods are the API; a backend's API is the `Volume` trait, which belongs to `cmdr-fs`. The check
-   now takes the handle type per crate and skips that bucket when there isn't one.
+   took judgment was that `watch_integration_test.rs` had grown to test BOTH the backend (does an on-disk edit reach the
+   refresh?) and the app (does a refresh update the pane?). It split into a crate-side seam test and an app-side cache
+   test, which is strictly better — the FSEvents-timing-sensitive half left the app's test binary. SMB's
+   `#[cfg(test)] mod smb_*` children are the same shape at 10× the size, and P3d should budget for splitting rather than
+   moving them.
+3. **A public-surface ceiling on a BACKEND crate needs a different shape from the index's.** `cmdr-index` has one handle
+   type whose methods are the API; a backend's API is the `Volume` trait, which belongs to `cmdr-fs`. The check now
+   takes the handle type per crate and skips that bucket when there isn't one.
 
 **The gate's numbers, and what they mean for P3: `docs/notes/archive-extraction-baseline.md`.**
 
