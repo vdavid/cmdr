@@ -279,6 +279,34 @@ describe('createRowOverlays', () => {
       expect(ipc.getSyncStatus).toHaveBeenCalledWith(['/a'])
     })
 
+    it('skips the poll when the folder holds no cloud files', async () => {
+      // `unknown` is what a plain local file reports, and it cannot change without
+      // the file being moved (which re-lists and re-fetches). Polling a folder of
+      // them re-asks the provider forever for an answer that cannot move: two
+      // batches every three seconds, per pane, measured on an idle prod session.
+      ipc.getSyncStatus.mockResolvedValue({ data: { '/a': 'unknown', '/b': 'unknown' }, timedOut: false })
+      const { overlays } = create()
+      overlays.start()
+      await overlays.fetchSyncStatusForPaths(['/a', '/b'])
+      ipc.getSyncStatus.mockClear()
+
+      await vi.advanceTimersByTimeAsync(3000)
+      expect(ipc.getSyncStatus).not.toHaveBeenCalled()
+    })
+
+    it('keeps polling when even one path is a cloud file', async () => {
+      // One cloud file keeps the whole folder polled: its neighbours are cheap to
+      // include and a per-path split would re-ask the provider just as often.
+      ipc.getSyncStatus.mockResolvedValue({ data: { '/a': 'unknown', '/b': 'synced' }, timedOut: false })
+      const { overlays } = create()
+      overlays.start()
+      await overlays.fetchSyncStatusForPaths(['/a', '/b'])
+      ipc.getSyncStatus.mockClear()
+
+      await vi.advanceTimersByTimeAsync(3000)
+      expect(ipc.getSyncStatus).toHaveBeenCalledWith(['/a', '/b'])
+    })
+
     it('skips the poll while the pane has no listing', async () => {
       ipc.getSyncStatus.mockResolvedValue({ data: { '/a': 'synced' }, timedOut: false })
       const created = create()

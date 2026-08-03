@@ -38,6 +38,19 @@ import { createDebounce } from '$lib/utils/timing'
 
 /** How often the idle poll re-reads the sync status of the visible paths. */
 const SYNC_POLL_INTERVAL_MS = 3000
+
+/**
+ * Whether any visible row is a cloud file, and so whether the idle poll has
+ * anything it could learn.
+ *
+ * `unknown` covers both "not a cloud file" and "the provider could not say", and
+ * neither becomes a live cloud status without something the pane already reacts
+ * to: a move re-lists, and a fresh listing re-fetches. One cloud file keeps the
+ * whole folder polled, since its neighbours ride the same batch.
+ */
+function hasCloudFile(statuses: Record<string, SyncStatus>): boolean {
+  return Object.values(statuses).some((status) => status !== 'unknown')
+}
 /** Delay before the single retry a timed-out sync-status fetch schedules. */
 const SYNC_RETRY_DELAY_MS = 5000
 /**
@@ -209,6 +222,13 @@ export function createRowOverlays(deps: RowOverlaysDeps): RowOverlays {
       syncPollInterval = setInterval(() => {
         const paths = Object.keys(syncStatusMap)
         if (!deps.getListingId() || paths.length === 0) return
+        // A folder with no cloud files has nothing that can change: `unknown` is
+        // what a plain local file reports, and it only moves if the file itself
+        // does, which re-lists and re-fetches anyway. Polling one re-asked the
+        // provider for every visible row every three seconds forever; on an idle
+        // prod session that was two batches of 267 and 377 paths every 3 s, per
+        // pane, for answers that could not move.
+        if (!hasCloudFile(syncStatusMap)) return
         void fetchSyncStatusForPaths(paths)
       }, SYNC_POLL_INTERVAL_MS)
 
