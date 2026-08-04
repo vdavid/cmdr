@@ -241,8 +241,17 @@ impl IndexManager {
         // blank the index); the `BumpCurrentEpoch` above and the flush below stay
         // unconditional, so the walker reads the bumped `current_epoch` on its own
         // read connection (else it stamps the stale epoch).
-        if !reconcile && let Err(e) = self.writer.send(WriteMessage::TruncateData) {
-            log::warn!("Failed to send TruncateData: {e}");
+        if !reconcile {
+            if let Err(e) = self.writer.send(WriteMessage::TruncateData) {
+                log::warn!("Failed to send TruncateData: {e}");
+            }
+            // Right after the truncate is the ONE moment this DB provably holds no
+            // row beneath a directory today's policy excludes, so it's where the
+            // index records the exclusion policy it's built against. A reconcile
+            // must never claim it: it doesn't re-list the volume, so it can't clear
+            // what an older policy let in. Coverage answers are worthless without
+            // this stamp — see `store::EXCLUSION_POLICY_KEY`.
+            let _ = self.writer.send(scanner::exclusion_policy_stamp_message());
         }
         if let Err(e) = tokio::task::block_in_place(|| self.writer.flush_blocking()) {
             log::warn!("Failed to flush before scan: {e}");

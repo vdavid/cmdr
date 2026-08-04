@@ -18,12 +18,10 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
 
 // Bump to invalidate on-disk indexes (the cache is disposable: a mismatch deletes
-// the DB file + recreates it fresh, no migration). v14 is a forced rebuild, not a schema change: earlier
-// builds' reconcile could falsely mark a partial network scan `scan_completed_at`,
-// stranding SMB/MTP indexes as "complete" so they'd never rescan. Dropping every
-// index on upgrade heals testers to a clean, fully-scanned state with no manual
-// Forget.
-const SCHEMA_VERSION: &str = "14";
+// the DB file + recreates it fresh, no migration). v15 adds `entries.known_unreadable`,
+// the marker that keeps a permission-denied directory out of the search frontier
+// instead of re-offering it on every search.
+const SCHEMA_VERSION: &str = "15";
 
 /// Meta key for the per-volume epoch counter (TEXT, like all meta values).
 ///
@@ -50,6 +48,21 @@ pub(crate) const LEDGER_HEAL_KEY: &str = "aggregates_rebuilt_for_ledger";
 /// the list re-arm every existing index. See
 /// `indexing/network_scanner/DETAILS.md` § "NAS snapshot/system dirs aren't recursed".
 pub(crate) const SYSTEM_DIR_EXCLUSIONS_KEY: &str = "system_dir_exclusions_built_for";
+
+/// Meta key recording WHICH scan-exclusion policy this DB was BUILT against (the
+/// value is the policy's fingerprint), written right after a truncating full walk.
+///
+/// A policy-excluded directory gets no `entries` row at all, so it drives nothing
+/// to `0` and its parents read as fully covered. That is correct only while the
+/// policy is the one the rows were written under: if a release REMOVES an entry,
+/// the subtrees it used to skip stay row-less, their parents still read as
+/// covered, and they become permanently invisible to search with nothing to
+/// re-walk them. Absent or stale ⇒ every coverage claim in this DB is unknown, so
+/// [`crate::indexing::read::coverage`] hands the whole scope to the walk. Storing
+/// the fingerprint rather than a bare flag is what makes CHANGING the policy
+/// re-arm every existing index. Same shape as [`SYSTEM_DIR_EXCLUSIONS_KEY`], which
+/// covers the NAS list; this one covers the local tiers.
+pub(crate) const EXCLUSION_POLICY_KEY: &str = "exclusion_policy_built_for";
 
 /// Root entry sentinel ID. All top-level entries have `parent_id = ROOT_ID`.
 pub const ROOT_ID: i64 = 1;
@@ -580,7 +593,8 @@ const CREATE_TABLES_SQL: &str = "
         physical_size INTEGER,
         modified_at   INTEGER,
         inode         INTEGER,
-        listed_epoch  INTEGER NOT NULL DEFAULT 0
+        listed_epoch  INTEGER NOT NULL DEFAULT 0,
+        known_unreadable INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE UNIQUE INDEX IF NOT EXISTS idx_parent_name_folded ON entries (parent_id, name_folded);

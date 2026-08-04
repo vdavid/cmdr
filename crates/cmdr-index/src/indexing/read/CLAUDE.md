@@ -1,7 +1,7 @@
 # Indexing read side
 
-Serve recursive sizes and index status back to the app. Everything here reads via the per-volume `ReadPool` (lock-free
-thread-local connections), NEVER the lifecycle registry lock.
+Serve recursive sizes, index status, and coverage back to the app. Everything here reads via the per-volume `ReadPool`
+(lock-free thread-local connections), NEVER the lifecycle registry lock.
 
 ## Must-knows
 
@@ -29,6 +29,10 @@ thread-local connections), NEVER the lifecycle registry lock.
   thread alternating between two volumes (an ordinary two-pane setup) reopen on every alternation, losing the
   connection's `prepare_cached` statements on the hot path. ❌ Don't add a mutex here, and ❌ don't shrink it back to
   one slot. DETAILS § Enrichment.
+- **The coverage frontier needs BOTH epoch fields; ❌ never `min_subtree_epoch` alone** (it 0-absorbs upward, so the cut
+  is always the scope root and the answer is "walk everything"). `min > 0` covered, `min == 0 && listed > 0` descend,
+  `listed == 0 && known_unreadable` skip, else frontier. Rests on `min > 0` ⇒ `listed > 0`, and on the
+  `EXCLUSION_POLICY_KEY` stamp: absent or stale ⇒ no coverage claim is trusted. DETAILS § The coverage frontier.
 - **Enrichment logs once per changed result, via `EnrichResultMemo`** (fires only when `(dir_count, enriched)` differs).
   Don't add a per-pass line; an idle pane triggers this ~2/s per pane.
 
@@ -36,6 +40,7 @@ thread-local connections), NEVER the lifecycle registry lock.
 
 - `enrichment.rs` — the `ReadPool` type + `enrich_entries_with_index[_on_volume]` (integer-keyed fast path, per-path
   fallback).
+- `coverage.rs` — the search frontier (`Index::coverage`), the descent rule, and `CoverageToken`.
 - `queries.rs` — the IPC read surface (`get_status`, `get_volume_index_status*`, `get_dir_stats*`); no registry
   mutation.
 - `expected_totals.rs` — index-derived copy/move/delete progress denominators.

@@ -80,10 +80,25 @@ var surfaceGuardedCrates = []struct {
 		// landed rather than where the code happened to be. `HandleMethods` is 35
 		// rather than the audit's headline 34 because this count includes
 		// `Index::builder`, the constructor.
+		//
+		// Raised once on 2026-08-05, with David's say-so, for ONE new concept:
+		// COVERAGE — what the index can't answer for yet, and walking the rest.
+		// He asked for the whole surface to be designed together and the ceilings
+		// raised to match, rather than a bump per method, so both numbers below
+		// carry the full concept:
+		//
+		//   - `RootPromises` 44 → 47: `CoverageMap` (the answer), `CoverageToken`
+		//     (which state of the index it describes), `CoverageDimension` (the
+		//     forward-compat axis content search will add itself to).
+		//   - `HandleMethods` 35 → 38: `Index::coverage` and
+		//     `Index::coverage_token`, both landed, plus ONE reserved slot for
+		//     `Index::cover`, the walk half — it takes the frontier a coverage
+		//     answer named and fills it in. That slot is spoken for; anything else
+		//     arriving in it still has to be argued the same way these were.
 		HandleType: "Index",
 		Ceilings: surfaceCeilings{
-			RootPromises:   44,
-			HandleMethods:  35,
+			RootPromises:   47,
+			HandleMethods:  38,
 			PublicModules:  17,
 			SubsystemItems: 156,
 		},

@@ -3,9 +3,9 @@
 Read this before any non-trivial work in `indexing/read/`: editing, planning, reorganizing, or advising. Must-know
 invariants are in `CLAUDE.md`.
 
-This area serves recursive sizes and index status back to the app. Four concerns: enrichment (the hot path), the IPC
-query surface, write-op expected totals, and the "size updating" hourglass. All read via the per-volume `ReadPool`; none
-takes the lifecycle registry lock, and nothing here imports `lifecycle::state` at all.
+This area serves recursive sizes, index status, and coverage back to the app. Five concerns: enrichment (the hot path),
+the IPC query surface, write-op expected totals, the "size updating" hourglass, and the coverage frontier. All read via
+the per-volume `ReadPool`; none takes the lifecycle registry lock, and nothing here imports `lifecycle::state` at all.
 
 ## Where the handles come from (`handles.rs`)
 
@@ -162,3 +162,78 @@ Holding roots (not expanded ancestors) with a query-time prefix test keeps relea
 `release(root)` FIRST, then emit `index-dir-updated` for the root + ancestors via `WriteMessage::EmitDirUpdated`:
 release before emit, else the triggered refetch re-reads `pending = true`. The mark/clear mechanics that feed this from
 the writer side (the `dir_stats` ledger, the drain point) are owned by `../writer/DETAILS.md`.
+
+## The coverage frontier (`coverage.rs`)
+
+`Index::coverage(volume_id, scope_path, dimension)` answers **what a scope still needs walked before the index alone can
+answer for it**: the shallowest directories nothing has listed, the ones a walk has tried and can't read, and a token
+saying which state of the index the answer describes. The covered half is never returned — the two are complementary
+over the same subtree, so a caller runs its own query over the scope unfiltered and gets exactly the covered rows.
+That's the whole reason there's no deduplication anywhere in the search path.
+
+Read `docs/specs/unindexed-search-plan.md` § "The core mechanism" for the product intent this serves.
+
+### The descent rule
+
+Both epoch fields plus `entries.known_unreadable`. Descending from the scope root, each directory is exactly one of:
+
+- `min_subtree_epoch > 0` ⇒ **covered**. Cut; serve from the index.
+- `min_subtree_epoch == 0 && listed_epoch > 0` ⇒ **listed**. The directory itself is covered ground; descend into its
+  child directories and classify each.
+- `listed_epoch == 0 && known_unreadable` ⇒ **unreadable**. Cut; reported rather than dropped.
+- `listed_epoch == 0` ⇒ **frontier**. Cut; the subtree goes to the walk.
+- No `entries` row at all (a cold volume, or a path this index has never seen) ⇒ the scope root is the whole frontier.
+
+❌ **Never collapse this to `min_subtree_epoch` alone.** The min is 0-absorbing upward, so one uncovered directory
+anywhere forces `0` on every ancestor including the scope root: "the shallowest node at zero" is always the scope root
+and the frontier degenerates to "walk everything". Two review rounds of the plan caught exactly that.
+
+**The premise the rule rests on**: `min_subtree_epoch > 0` implies `listed_epoch > 0`, so the four cases are disjoint
+and exhaustive. It holds because both writers of the column seed from the directory's own `listed_epoch` and 0-absorb
+from there (`store::recompute_min_subtree_epoch`'s `own == 0` early return, `aggregator::compute_bottom_up`'s seed).
+`min_subtree_epoch_implies_listed` pins it against the real aggregator rather than against a hand-written fixture. If it
+ever breaks, the descent starts skipping ground nobody has read, with no signal.
+
+### What the tests hold it to
+
+- `coverage_partitions_the_subtree` — every directory in the scope is accounted for exactly once, by exactly one
+  verdict. A cut owns its whole subtree; a listed interior node owns only itself.
+- `every_verdict_matches_its_directory` — the partition alone is NOT enough, and this is the load-bearing half: "the
+  scope root is the whole frontier" partitions perfectly and is the degenerate answer. A frontier cut has to be a
+  directory nothing listed, and a covered cut has to have every directory under it listed.
+
+Both run over trees generated with random listed / unreadable flags whose `dir_stats` are built by the real aggregator,
+so the premise holds by construction from the canonical code.
+
+### Exclusions, and the stamp that makes coverage trustworthy
+
+A policy-excluded directory gets no `entries` row, so it drives nothing to zero and needs no case in the descent. What
+it DOES need is a guarantee the rows were written under the policy this build applies: `store::EXCLUSION_POLICY_KEY`, a
+content fingerprint of the exclusion constants stamped right after a truncating full walk. **An absent or mismatched
+stamp means every coverage claim in that database is unknown, and the whole scope goes to the walk.** Without it,
+removing a name from the policy would leave the subtrees it used to skip row-less while their parents keep claiming
+coverage — permanently invisible to search, with nothing to trigger a re-walk.
+
+### The freshness token
+
+`CoverageToken` is the volume's `current_epoch` paired with the highest entry id the database has handed out. Ids come
+from one monotonic per-volume counter, so any walk that writes rows moves the pair, and both halves are an index seek
+rather than a scan. It's opaque and equality-only on purpose: the only question worth asking is "is the snapshot I'm
+serving the covered half from still the one this answer describes?". `Index::coverage_token(volume_id)` reads it without
+doing a descent, which is what a caller takes when it loads that snapshot.
+
+Rejected as the token: `Index::search_generation`, which is process-global, fed only by root's writer, stamped `0` for
+every non-root volume, and ticks about 5.7 times a second on an idle boot disk. And `current_epoch` alone, which a walk
+never bumps.
+
+The whole read runs in one deferred transaction, so the frontier and the token describe the same database state rather
+than two states either side of a committing writer.
+
+### Cost
+
+Measured 5.4 ms warm (release) over a real 658 188-folder root index, against a 50 ms budget, considering 7 762
+directories — 1.2% of them. The cost tracks directories on the paths to the gaps, never the size of the index, because a
+covered subtree is one row lookup and the descent stops. No new database index was needed; the numbers, the method, and
+when to revisit that call are in `docs/notes/coverage-frontier-query-2026-08-05.md`. Re-measure with
+`coverage::tests::measure_frontier_query_on_a_real_index` (`#[ignore]`d; it WRITES to the DB you point it at, so use a
+copy).

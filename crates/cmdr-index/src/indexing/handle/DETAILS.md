@@ -18,8 +18,11 @@ quietly abandons the encapsulation. So every item got one of four dispositions, 
 
 ## Where it landed
 
-**34 public items on `Index`**, against a target of about 25. Over, and worth saying plainly rather than redefining what
-counts. What justifies the nine:
+**36 public items on `Index`**, against a target of about 25. Over, and worth saying plainly rather than redefining what
+counts. What justifies the eleven:
+
+- **Two are the coverage pair** (`coverage`, `coverage_token`), added 2026-08-05. See § "Coverage: the one concept added
+  since the audit" below.
 
 - **Four are the direct-database read side** (`read_pool`, `read_path`, `volume_id_for_path`, `search_generation`). They
   exist because `search/` and the operation log's coverage check run their OWN SQL over an index database. They're
@@ -34,6 +37,44 @@ counts. What justifies the nine:
   common-parent batch — different queries, and the single one is on the write-operation durability path).
 
 Everything else on the handle is one of the folds below.
+
+## Coverage: the one concept added since the audit
+
+Added 2026-08-05 for `docs/specs/unindexed-search-plan.md`, which makes search return the same files on an unindexed
+drive as on an indexed one. That needs the index to answer a question it never had a shape for: **what can't I answer
+for yet?** David approved the ceiling raise with one instruction — design the whole surface as one concept and raise the
+ceilings to match, rather than a bump per method — so the shape below is the whole thing, including the half that hasn't
+landed.
+
+Two calls, one question:
+
+- **`coverage(volume_id, scope_path, dimension)`** — the frontier (the shallowest directories nothing has listed), the
+  directories a walk has tried and can't read, and the token saying which state of the index the answer describes.
+- **`coverage_token(volume_id)`** — that token without doing a descent, so a caller can take one when it loads a
+  snapshot of the index and re-ask when the two stop matching. This is what absorbed the plan's "an epoch read is
+  needed": `IndexStore::read_current_epoch` never reaches the handle, because a bare epoch isn't the question. A walk
+  stamps `listed_epoch` and never bumps `current_epoch`, so the epoch alone can't move when rows appear; the token pairs
+  it with the id high-water mark, which does.
+- **Reserved, not built: `cover(...)`**, the walk half — it takes the frontier a coverage answer named and fills it in.
+  Its ceiling slot is claimed so the next milestone doesn't re-argue a decision already made; its TYPES are not
+  pre-approved and will need their own argument.
+
+**Why the covered half is not in the answer.** It's tempting to return "these subtrees are covered, those aren't", and
+it would be a second, weaker copy of something the index already has. The two halves are complementary over the same
+subtree, so a caller runs its own query over the scope unfiltered and gets exactly the covered rows. That's what makes
+deduplication unnecessary anywhere in the search path, rather than a hash set nobody can size correctly.
+
+**Why `CoverageDimension` exists with one variant.** Content search will ask the same question in a second dimension (a
+`content_epoch` sibling to `listed_epoch`, propagated with the same 0-absorbing min). The walk stages that fall out of
+it only work if callers were never written against a single implied dimension, and adding the parameter later means
+touching every one of them.
+
+**Three root promises** came with it: `CoverageMap`, `CoverageToken`, `CoverageDimension`. `CoverageToken`'s fields stay
+private and it's `PartialEq` only — the sole question worth asking of it is whether two answers describe the same rows,
+and exposing the epoch would invite callers to reason about a scheme the read side deliberately keeps inside
+(`../read/CLAUDE.md`: "never ship raw epochs").
+
+The mechanism, the descent rule, and the tests that hold it: `../read/DETAILS.md` § "The coverage frontier".
 
 ## The mapping
 
@@ -105,13 +146,17 @@ is supposed to BE the surface.
 ## The ceiling that keeps this honest
 
 `index-crate-isolation` (error-level) counts the surface on every run and fails when a bucket grows. It caps
-`cmdr-archive` the same way, from its own entry in the check. Four buckets here, measured 2026-07-31:
+`cmdr-archive` the same way, from its own entry in the check. Four buckets here, measured 2026-07-31 and raised once on
+2026-08-05 for the coverage concept above:
 
-- **44 root promises** — the names `lib.rs` exports, `pub mod` included.
-- **35 methods on `Index`** — the 34 above plus `Index::builder`, which the headline number treats as the constructor
-  rather than a call.
+- **47 root promises** — the names `lib.rs` exports, `pub mod` included. 44 at the audit, plus coverage's three types.
+- **38 methods on `Index`** — the 36 above plus `Index::builder`, which the headline number treats as the constructor
+  rather than a call, plus one slot reserved for `cover`. That reservation is deliberate: David asked for the whole
+  concept to be designed and the ceiling raised once, not a bump per method. It is spoken for by name; anything else
+  arriving in it has to be argued the way these were.
 - **17 public modules** and **156 public items inside them** — the surface the root re-exports don't capture, which is
-  where `media_index` and `importance` live.
+  where `media_index` and `importance` live. Unchanged: the coverage module is `pub(crate)`, reaching a host only
+  through the handle and the root re-exports.
 - **10 gated items**, counted apart: the `testing` / `tooling` doors aren't the API.
 
 It counts source, not rustdoc JSON, because that output is nightly-only and a check needing a second toolchain is a

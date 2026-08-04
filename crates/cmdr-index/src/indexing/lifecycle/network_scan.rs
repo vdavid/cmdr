@@ -269,6 +269,13 @@ impl IndexManager {
             let _ = self
                 .writer
                 .send(crate::indexing::network_scanner::exclusion_stamp_message());
+            // Same moment, same reasoning, for the local tiers a network scan also
+            // applies (junk basenames, pseudo-filesystems at the volume root).
+            // Coverage answers over this volume are worthless without it — see
+            // `store::EXCLUSION_POLICY_KEY`.
+            let _ = self
+                .writer
+                .send(crate::indexing::scanner::exclusion_policy_stamp_message());
         }
         if let Err(e) = tokio::task::block_in_place(|| self.writer.flush_blocking()) {
             log::warn!("network scan: flush after scan-start meta/truncate failed: {e}");

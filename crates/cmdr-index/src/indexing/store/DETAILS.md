@@ -36,11 +36,11 @@ pulling shared items via `use super::*`):
   The shape every whole-index walk (`media_index`'s image walk, `importance`'s recompute walk) reconstructs paths from;
   measurements and the alternatives weighed live in `crates/cmdr-index/src/media_index/scheduler/DETAILS.md`.
 - `dir_stats.rs`: `dir_stats` reads and writes plus `recompute_min_subtree_epoch`.
-- `meta.rs`: meta-table + epoch helpers, `mark_dirs_listed`, `get_all_directory_paths`, `clear_all`, and the
-  aggregates-are-known-good marker (`ledger_heal_done` / `mark_ledger_heal_done` / `clear_ledger_heal_done`, keyed on
-  `LEDGER_HEAL_KEY`). Its absence means the aggregates are UNPAID and the next launch rebuilds them: a never-healed
-  pre-ledger DB, or a bulk walk that suppressed ancestor propagation and hasn't run its terminal aggregate yet. See the
-  `../writer/DETAILS.md` § "The dir_stats ledger".
+- `meta.rs`: meta-table + epoch helpers, `mark_dirs_listed`, `mark_dirs_unreadable`, `read_high_water_id`,
+  `get_all_directory_paths`, `clear_all`, and the aggregates-are-known-good marker (`ledger_heal_done` /
+  `mark_ledger_heal_done` / `clear_ledger_heal_done`, keyed on `LEDGER_HEAL_KEY`). Its absence means the aggregates are
+  UNPAID and the next launch rebuilds them: a never-healed pre-ledger DB, or a bulk walk that suppressed ancestor
+  propagation and hasn't run its terminal aggregate yet. See the `../writer/DETAILS.md` § "The dir_stats ledger".
 
 `resolve_component` always queries by `(parent_id, name_folded)` using the `idx_parent_name_folded` composite **UNIQUE**
 index. On Linux/Windows `normalize_for_comparison()` is the identity function, so `name_folded = name` and the index
@@ -57,6 +57,40 @@ transaction it opened — in place, so a single failed `upsert_dir_stats_by_id` 
 `mark_dirs_listed` would park the writer's connection in an open transaction holding the write lock: every other
 connection then sees `database is locked` indefinitely, and the writer's own later writes never commit. Regression:
 `store::tests::open_and_recover::a_failed_savepoint_call_leaves_the_connection_in_autocommit`.
+
+## What coverage needs
+
+Two additions serve the search frontier (`../read/DETAILS.md` § "The coverage frontier"), and neither is optional for
+it: the descent rule reads one and refuses to answer without the other.
+
+**`entries.known_unreadable`** (schema v15) marks a directory a walk has tried and cannot read — permission denied, or
+the walker's give-up prune after repeated failures. Deliberately NOT folded into `listed_epoch`: an unreadable directory
+was never listed, so it stays at `0` and keeps absorbing its ancestors' `min_subtree_epoch` to `0`, which is what keeps
+sizes honest. What the marker buys is that the frontier can SKIP it instead of handing it to the walk again on every
+single search — without it, a permission-denied subtree is a permanent repeating slow path with no user signal.
+`mark_dirs_unreadable(conn, ids, false)` clears it, which is what a later successful listing does, so granting Full Disk
+Access heals it with no rebuild. The column has no production writer yet; the walker stamps it when the unreadable
+signal ships.
+
+**`meta.exclusion_policy_built_for`** (`EXCLUSION_POLICY_KEY`) records WHICH scan-exclusion policy the DB's rows were
+written under: an FNV-1a fingerprint of `EXCLUDED_PREFIXES`, `JUNK_BASENAMES`, `PSEUDO_FS_BASENAMES`, and (macOS)
+`FIRMLINKED_SYSTEM_PREFIXES`, content-derived so editing any list re-arms every existing index with no version constant
+for anyone to forget to bump. Why it exists: an excluded directory gets no `entries` row at all, so it drives nothing to
+zero and its parents read as fully covered — true only while the policy is the one the rows were written under. REMOVE a
+name and the subtrees it used to skip stay row-less while their parents keep claiming coverage: permanently invisible to
+search, with nothing to trigger a re-walk. So an absent or stale stamp means **no coverage claim in that database is
+trusted** and the whole scope goes to the walk.
+
+❌ **Stamp it ONLY right after a `TruncateData`** — the one moment the DB provably holds no row beneath a directory
+today's policy excludes. A reconcile or a scoped fill never re-lists the volume, so it can't clear what an older policy
+let in. Both sites do it: `lifecycle/manager/start.rs` (local) and `lifecycle/network_scan.rs` (SMB/MTP, alongside the
+NAS list's own `SYSTEM_DIR_EXCLUSIONS_KEY` stamp, which is the same pattern for a different list). `CMDR_E2E_START_PATH`
+is deliberately outside the fingerprint: it narrows the effective policy at runtime but it's a per-run fixture path, and
+folding it in would write a machine-specific value into every E2E index.
+
+**`read_high_water_id`** is `MAX(id)` on `entries`, the cheap write watermark half of `CoverageToken`. A watermark, not
+a count: ids come from one monotonic per-volume counter, so any walk that inserts rows raises it, at the cost of a seek
+to the end of the primary-key index instead of the `O(n)` a `COUNT(*)` would pay.
 
 ## Scan calibration is stored PER WALK KIND
 

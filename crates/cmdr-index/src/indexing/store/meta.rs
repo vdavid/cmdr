@@ -118,6 +118,66 @@ impl IndexStore {
         })
     }
 
+    /// Mark a batch of directories as ones the walk has tried and cannot read
+    /// (permission denied, or a give-up prune after repeated failures), or clear
+    /// the mark when `unreadable` is `false`.
+    ///
+    /// Deliberately separate from `listed_epoch`: an unreadable directory was
+    /// never listed, so it stays at `0` and its subtree keeps absorbing every
+    /// ancestor's `min_subtree_epoch` to `0` — the sizes stay honest. What the
+    /// mark buys is that the coverage frontier can SKIP it instead of handing it
+    /// to the walk again on every single search. Clearing it is what a later
+    /// successful listing does, so granting Full Disk Access heals the mark
+    /// without a rebuild.
+    pub fn mark_dirs_unreadable(conn: &Connection, ids: &[i64], unreadable: bool) -> Result<(), IndexStoreError> {
+        if ids.is_empty() {
+            return Ok(());
+        }
+        // Stay well under SQLite's default 999-parameter ceiling (+1 for the flag).
+        const CHUNK: usize = 900;
+        with_savepoint(conn, "mark_dirs_unreadable", |conn| {
+            for chunk in ids.chunks(CHUNK) {
+                let placeholders: String = (0..chunk.len())
+                    .map(|i| format!("?{}", i + 2))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                let sql = format!("UPDATE entries SET known_unreadable = ?1 WHERE id IN ({placeholders})");
+                let mut stmt = conn.prepare_cached(&sql)?;
+                let flag = i64::from(unreadable);
+                let mut values: Vec<&dyn rusqlite::types::ToSql> = Vec::with_capacity(chunk.len() + 1);
+                values.push(&flag as &dyn rusqlite::types::ToSql);
+                for id in chunk {
+                    values.push(id as &dyn rusqlite::types::ToSql);
+                }
+                stmt.execute(&*values)?;
+            }
+            Ok(())
+        })
+    }
+
+    /// Whether an entry carries the [`mark_dirs_unreadable`](Self::mark_dirs_unreadable)
+    /// marker. `None` if the entry doesn't exist.
+    pub fn get_known_unreadable_by_id(conn: &Connection, id: i64) -> Result<Option<bool>, IndexStoreError> {
+        let mut stmt = conn.prepare_cached("SELECT known_unreadable FROM entries WHERE id = ?1")?;
+        let result = stmt.query_row(params![id], |row| row.get::<_, i64>(0)).optional()?;
+        Ok(result.map(|v| v != 0))
+    }
+
+    /// The highest entry id this DB has ever handed out, or `0` for an empty one.
+    ///
+    /// A write watermark, not a count: ids come from one monotonic per-volume
+    /// counter, so any walk that inserts rows raises this, and it costs an
+    /// `O(log n)` seek to the end of the primary-key index rather than the
+    /// `O(n)` a `COUNT(*)` would. Paired with `current_epoch` it identifies which
+    /// state of the index an answer was computed against
+    /// (`read/coverage.rs`'s `CoverageToken`).
+    pub fn read_high_water_id(conn: &Connection) -> Result<i64, IndexStoreError> {
+        let max: Option<i64> = conn
+            .prepare_cached("SELECT MAX(id) FROM entries")?
+            .query_row([], |row| row.get::<_, Option<i64>>(0))?;
+        Ok(max.unwrap_or(0))
+    }
+
     /// Read an entry's `listed_epoch` by id. `None` if the entry doesn't exist.
     pub fn get_listed_epoch_by_id(conn: &Connection, id: i64) -> Result<Option<u64>, IndexStoreError> {
         let mut stmt = conn.prepare_cached("SELECT listed_epoch FROM entries WHERE id = ?1")?;

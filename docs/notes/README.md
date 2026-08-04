@@ -13,6 +13,11 @@ A third is load-bearing for a decision that hasn't been made yet:
   `SCOPED_WALK_MAX_DIRS` is refuted, and the measurement (99.88% against 0.03%) behind the signals-not-score equality
   key. Keep it until the open batch-width question in it is settled.
 
+A fourth is load-bearing as a regression anchor:
+
+- `coverage-frontier-query-2026-08-05.md` — the search frontier query measured against its 50 ms warm budget on a real
+  658 188-folder root index, plus what it actually scales with and when to revisit the "no new index" call.
+
 - `index-extraction-baseline.md` — the `cmdr-index` extraction.
 - `archive-extraction-baseline.md` — the `cmdr-archive` extraction, the measurement gate
   `docs/specs/backend-crates-plan.md` ends at. **Its numbers are provisional**: the machine was contended and the volume

@@ -1,7 +1,7 @@
 # Search that covers the folder you picked, indexed or not
 
-**Status**: IN EXECUTION, PAUSED after M1 at David's request on 2026-08-04. M0 and M1 have landed; M2 is next. See §
-Execution status before resuming. **Owner**: David. **Date**: 2026-08-03.
+**Status**: IN EXECUTION. M0, M1, and M2 have landed; M3a is next. See § Execution status before resuming. **Owner**:
+David. **Date**: 2026-08-03.
 
 Indexing stays optional. A search that runs to completion returns the same files with or without an index, only slower,
 on every volume kind: local, SMB, MTP, and whatever comes next. The walk that fills the gap writes what it finds into
@@ -213,10 +213,11 @@ exactly as a volume-root scan does, or a scoped search of `/` walks `/private/va
 
 Two limits on that, both real:
 
-- **Policy drift.** `EXCLUDED_PREFIXES` and `JUNK_BASENAMES` are compile-time constants, and nothing stamps a policy
-  version in `meta` (`store/mod.rs:598-602`). If a release _removes_ an entry, the previously excluded subtrees still
-  have no rows, their parents still read as covered, and they become permanently invisible to search with no re-walk
-  trigger. Stamp an exclusion-policy version alongside `current_epoch` and treat a mismatch as coverage unknown. M2.
+- **Policy drift.** `EXCLUDED_PREFIXES` and `JUNK_BASENAMES` are compile-time constants. If a release _removes_ an
+  entry, the previously excluded subtrees still have no rows, their parents still read as covered, and they become
+  permanently invisible to search with no re-walk trigger. **Closed in M2**: `meta.exclusion_policy_built_for` carries a
+  content fingerprint of the policy, stamped right after every truncating full walk, and a mismatch (or an absent stamp)
+  makes the coverage query treat the whole scope as uncovered.
 - **E2E.** Under `ExclusionTier::BootDisk`, `should_exclude` returns `true` for everything outside `CMDR_E2E_START_PATH`
   when it is set (`exclusions.rs:434-436`), so the E2E root index contains only the fixture subtree and
   `min_subtree_epoch("/")` reads as fully covered. M6's and M7's live-search E2Es need a fixture rooted so a frontier is
@@ -246,7 +247,7 @@ coverage API must not assume a single dimension.
 
 ## Execution status
 
-Paused after M1 on 2026-08-04. Branch `worktree-david+unindexed-search-exec`, nothing merged to `main` yet.
+Through M2. Branch `worktree-david+unindexed-search-exec`, nothing merged to `main` yet.
 
 **Landed.**
 
@@ -258,6 +259,12 @@ Paused after M1 on 2026-08-04. Branch `worktree-david+unindexed-search-exec`, no
   `loading: false, ready: false` is the terminal "no index to wait for"; `SearchResult` gained `target_volume_id`; the
   readiness gate is per target (`coverage-note.ts::isTargetIndexReady`); `CoverageNote.svelte` renders both typed fields
   through a new `config.resultsNotice` slot.
+- **M2**: the coverage frontier (`crates/cmdr-index/src/indexing/read/coverage.rs`) behind `Index::coverage` and
+  `Index::coverage_token`, schema v15's `entries.known_unreadable`, and `meta.exclusion_policy_built_for` stamped after
+  every truncating full walk. Measured at 5.4 ms warm on a real 658 188-folder root index against the 50 ms budget, with
+  no new database index (`docs/notes/coverage-frontier-query-2026-08-05.md`). `index-crate-isolation` ceilings raised
+  once, per David's instruction: root promises 44 → 47, handle methods 35 → 38, the last slot reserved by name for M3b's
+  `cover`.
 
 **Decisions taken during execution that the spec did not pre-empt.**
 
@@ -306,11 +313,11 @@ Run sequentially. Ordering that matters:
 `pnpm check -q --fast` while iterating, the scoped checks named per milestone at each milestone's end,
 `pnpm check --include-slow` before wrapping.
 
-**Copy rule for every milestone**: write the user-facing strings in the house voice and move on. David waived the
-review gate for this effort specifically on 2026-08-04 ("I don't want to review the strings and translations in this
-effort"), so ❌ don't stop to escalate copy. His standing rule that human-facing text is his (`AGENTS.md` principle 6)
-still applies everywhere else. Every new key still needs its `@key` translator description, and the translation pass
-still follows `docs/guides/i18n-translation.md`; no milestone is done with untranslated keys shipped.
+**Copy rule for every milestone**: write the user-facing strings in the house voice and move on. David waived the review
+gate for this effort specifically on 2026-08-04 ("I don't want to review the strings and translations in this effort"),
+so ❌ don't stop to escalate copy. His standing rule that human-facing text is his (`AGENTS.md` principle 6) still
+applies everywhere else. Every new key still needs its `@key` translator description, and the translation pass still
+follows `docs/guides/i18n-translation.md`; no milestone is done with untranslated keys shipped.
 
 **File length**: `file-length` is warn-only and David does not want it acted on in this effort. Leave warnings standing;
 ❌ don't raise an allowlist entry, and don't split a file just to silence one.
@@ -391,8 +398,10 @@ Read-side plus schema. The most testable unit and the performance hinge.
 
 - The coverage query: given a scope path, return **the frontier only**, plus the arena identity it was computed against
   (Decision 12). By the descent rule above. No exclusion logic.
-- **Three schema additions, all here**: `known_unreadable` on directories, `listed_at` for Decision 4's expiry, and an
-  exclusion-policy version in `meta`.
+- **Two schema additions, both here**: `known_unreadable` on directories, and an exclusion-policy version in `meta`. (An
+  earlier draft listed a third, `listed_at` "for Decision 4's expiry". There is no expiry: Decision 9 settled that
+  search-written coverage is watched rather than aged out, and Decision 4 is now the one-volume ceiling. Nothing needs
+  the column, so it isn't built.)
 - Exposed on the `Index` handle. Adding a `pub` there is a design act (`handle/CLAUDE.md`); record it in
   `handle/DETAILS.md` § "The public surface".
 - **Precondition, approved by David on 2026-08-04**: `index-crate-isolation` ceilings are set with no headroom by design
@@ -414,11 +423,17 @@ Read-side plus schema. The most testable unit and the performance hinge.
 Tests, **test-first**: a proptest that the frontier partitions the subtree (every path produced exactly once by exactly
 one of covered, frontier, or known-unreadable). Confirm first that every listed directory gets a `dir_stats` row, or the
 partition premise is false. Written after: a single uncovered leaf yields the leaf, not the root; a cold volume yields
-the scope root; an honest-stale gap on an otherwise complete boot index yields only that gap; an expired search-written
-subtree returns to the frontier; a fully covered scope returns an empty frontier **with a coverage assertion that every
-directory was considered**, or it passes on a no-op (`docs/testing.md`). `cargo mutants` over the new module before the
-milestone closes. Docs: `indexing/read/DETAILS.md`, `store/DETAILS.md` (the three schema additions),
-`handle/DETAILS.md`, the benchmark note. Checks: `pnpm check rust`, `pnpm check rust-tests`.
+the scope root; an honest-stale gap on an otherwise complete boot index yields only that gap; a fully covered scope
+returns an empty frontier **with a coverage assertion that every directory was considered**, or it passes on a no-op
+(`docs/testing.md`). `cargo mutants` over the new module before the milestone closes. Docs: `indexing/read/DETAILS.md`,
+`store/DETAILS.md` (the schema additions), `handle/DETAILS.md`, the benchmark note. Checks: `pnpm check rust`,
+`pnpm check rust-tests`.
+
+**Landed 2026-08-05.** One thing the plan got wrong, worth carrying forward: **the partition property alone does not
+catch the degenerate rule.** "The scope root is the whole frontier" partitions the subtree perfectly and is exactly the
+useless answer the `min_subtree_epoch`-only descent produces, so the proptest as specified passes on it (verified: it
+did). What catches it is a second property — every verdict has to match its directory, so a frontier cut must be a
+directory nothing has listed. Both proptests are in `read/coverage/tests.rs`.
 
 ### M3a. A scoped scan that survives cancellation
 

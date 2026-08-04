@@ -13,6 +13,9 @@
 
 use std::sync::OnceLock;
 
+use crate::indexing::store::IndexStore;
+use crate::indexing::writer::WriteMessage;
+
 // ── System directory exclusions ──────────────────────────────────────
 
 /// Common system, build, and cache directory names: machine output nobody searches
@@ -323,6 +326,75 @@ pub(in crate::indexing) const FIRMLINKED_SYSTEM_PREFIXES: &[&str] = &[
     "/System/Library/CoreServices/CoreTypes.bundle/Contents/Library",
     "/System/Library/Speech",
 ];
+
+// ── The policy version an index was built against ────────────────────
+
+/// Whether this index's coverage claims predate the exclusion policy this build
+/// applies, so nothing in it may be trusted as covered.
+///
+/// An excluded directory gets no `entries` row, so it drives no ancestor's
+/// `min_subtree_epoch` to `0` and its parents read as fully covered. That answer
+/// is only as true as the policy the rows were written under. REMOVE a name from
+/// [`EXCLUDED_PREFIXES`], [`JUNK_BASENAMES`], or [`PSEUDO_FS_BASENAMES`] and the
+/// subtrees it used to skip stay row-less while their parents keep claiming
+/// coverage: permanently invisible to search, with nothing to trigger a re-walk.
+/// A mismatch answers "yes", and so does an absent stamp or a read failure — a
+/// redundant walk costs time, a skipped one loses files.
+pub(in crate::indexing) fn index_predates_exclusion_policy(conn: &rusqlite::Connection) -> bool {
+    let stored = IndexStore::get_meta(conn, crate::indexing::store::EXCLUSION_POLICY_KEY);
+    !matches!(stored, Ok(Some(ref v)) if *v == exclusion_policy_fingerprint())
+}
+
+/// The message that stamps an index as built against the current exclusion policy.
+///
+/// ❌ Send it ONLY right after a `TruncateData`. That's the one moment the DB
+/// provably holds no row beneath a directory today's scanner refuses to walk; a
+/// reconcile or a scoped fill never re-lists the rest of the volume, so it can't
+/// clear what an older policy let in.
+pub(in crate::indexing) fn exclusion_policy_stamp_message() -> WriteMessage {
+    WriteMessage::UpdateMeta {
+        key: crate::indexing::store::EXCLUSION_POLICY_KEY.to_string(),
+        value: exclusion_policy_fingerprint(),
+    }
+}
+
+/// A stable fingerprint of the compile-time exclusion constants, persisted per
+/// index under `store::EXCLUSION_POLICY_KEY`.
+///
+/// Content-derived, so editing any of the lists re-arms every existing index with
+/// no version constant for anyone to forget to bump. FNV-1a rather than
+/// `DefaultHasher` because the value goes to disk and must not shift with a
+/// toolchain upgrade. Platform-specific by construction (the constants are), which
+/// is fine: an index DB never moves between platforms.
+///
+/// `CMDR_E2E_START_PATH` is deliberately NOT folded in. It narrows the effective
+/// policy at runtime, but it's a per-run fixture path rather than a shipped rule,
+/// and folding it in would write a machine-specific value into every E2E index.
+pub(in crate::indexing) fn exclusion_policy_fingerprint() -> String {
+    const FNV_OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
+    const FNV_PRIME: u64 = 0x0000_0100_0000_01b3;
+    let mut hash = FNV_OFFSET;
+    let mut absorb = |value: &str| {
+        for byte in value.bytes().chain(std::iter::once(b'\n')) {
+            hash ^= u64::from(byte);
+            hash = hash.wrapping_mul(FNV_PRIME);
+        }
+    };
+    // Each list is separated by its own name, so moving a name from one list to
+    // another changes the fingerprint even though the flat set of names didn't.
+    absorb("prefixes");
+    EXCLUDED_PREFIXES.iter().for_each(|v| absorb(v));
+    absorb("junk");
+    JUNK_BASENAMES.iter().for_each(|v| absorb(v));
+    absorb("pseudo_fs");
+    PSEUDO_FS_BASENAMES.iter().for_each(|v| absorb(v));
+    #[cfg(target_os = "macos")]
+    {
+        absorb("firmlinked");
+        FIRMLINKED_SYSTEM_PREFIXES.iter().for_each(|v| absorb(v));
+    }
+    format!("{hash:016x}")
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────
 

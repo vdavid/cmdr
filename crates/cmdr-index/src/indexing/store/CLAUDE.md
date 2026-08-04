@@ -31,6 +31,10 @@ reconstruct paths from), `dir_stats.rs`, `meta.rs`; tests in `tests/`, one theme
   code) returns an error. Never widen `indicates_corruption()`; rebuilding a real index costs tens of minutes. Bump
   `SCHEMA_VERSION` (in `mod.rs`) for any schema change; there's no migration path by design.
 
+- **❌ Stamp `EXCLUSION_POLICY_KEY` ONLY right after a `TruncateData`.** It says which exclusion policy this DB's rows
+  were written under; absent or stale ⇒ no coverage claim is trusted and every search walks its whole scope. A reconcile
+  or scoped fill never re-lists the volume, so it can't claim the current policy. DETAILS § "What coverage needs".
+
 - **Every SQLite connection opens through `crate::sqlite_util::{open, open_read_only, open_in_memory}`**, which install
   the process-wide 64 MiB page-cache slab first. ❌ Never `rusqlite::Connection::open*` directly (enforced by
   `desktop-rust-sqlite-open-direct`): the first open initializes SQLite and locks the slab out for good, restoring a

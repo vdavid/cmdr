@@ -8,8 +8,9 @@ front door.
 
 - **A `pub` here is a promise. Adding one is a design act, not a compile fix.** Before you add a method, check the four
   dispositions in `DETAILS.md` § "The public surface": name it for what the caller wants (never for the internal behind
-  it), fold it into a call that already exists, delete it, or put it behind the `testing` feature. The surface is 34
-  items and each one is justified in that table; a 35th needs the same.
+  it), fold it into a call that already exists, delete it, or put it behind the `testing` feature. The surface is 36
+  items and each one is justified in that table; a 37th needs the same. One ceiling slot is already spoken for (`cover`,
+  the coverage concept's walk half) — ❌ don't spend it on something else.
 - **❌ The app never calls into `indexing::` internals.** It holds the handle (`crate::index_host::index()`) and calls
   methods. A `crate::indexing::<area>::…` from app code is a back-edge that stops compiling at the extraction, so it's a
   bug now, not later.
@@ -29,7 +30,7 @@ front door.
 ## Module map
 
 - `mod.rs` — `Index` and its methods, grouped: turning volumes on and off, what it knows about a volume, serving what it
-  indexed, reading the database directly, and corrections from the host.
+  indexed, coverage (what it can't answer for yet), reading the database directly, and corrections from the host.
 - `builder.rs` — `IndexBuilder`, the process claim, and the test install path.
 - `error.rs` — `IndexError`. `ingest.rs` — the designed-not-implemented write side plus its types.
 - `tests.rs` — the single-instance contract, and the acceptance scan that drives a real walk over an `InMemoryVolume`

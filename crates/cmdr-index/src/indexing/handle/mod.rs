@@ -4,7 +4,7 @@
 //! internal. Every method is named for what the caller wants, not for the
 //! machinery behind it, and the machinery is not reachable from outside.
 //!
-//! ## The three things it does
+//! ## The four things it does
 //!
 //! - **Indexes volumes.** [`Index::start_volume`] and friends turn a drive's
 //!   index on, off, or over again; the index decides how (a local walk, a
@@ -13,6 +13,9 @@
 //! - **Answers what's on them.** [`Index::enrich`] fills recursive sizes into a
 //!   listing (the hot path), and [`Index::dir_stats`] / [`Index::list_children`]
 //!   answer for one path.
+//! - **Says what it can't answer for yet.** [`Index::coverage`] hands back the
+//!   frontier — the shallowest folders under a scope that nothing has listed — so
+//!   a caller can walk exactly the gap and serve the rest from the index.
 //! - **Takes corrections from the host.** The app sees changes the index can't
 //!   (a share's change notification, a phone's PTP event, a watcher that died),
 //!   and hands them back through [`Index::apply_directory_change`],
@@ -48,6 +51,7 @@ use crate::indexing::events::EventSink;
 use crate::indexing::host::policy::HostPolicy;
 use crate::indexing::host::volumes::VolumeProvider;
 use crate::indexing::lifecycle::state;
+use crate::indexing::read::coverage::{CoverageDimension, CoverageMap, CoverageToken};
 use crate::indexing::read::enrichment::ReadPool;
 use crate::indexing::read::expected_totals::ExpectedTotals;
 use crate::indexing::store::{DirStats, EntryRow};
@@ -370,6 +374,43 @@ impl Index {
     /// show an honest "counting…" rather than a number it would have to correct.
     pub fn expected_totals(&self, sources: &[PathBuf]) -> Option<ExpectedTotals> {
         crate::indexing::read::expected_totals::expected_totals_for_sources(sources)
+    }
+
+    // ── Coverage: what the index can't answer for yet ────────────────
+    //
+    // Two calls, one question. A caller that wants a complete answer over a scope
+    // asks what the index doesn't cover, serves the rest from the index, and
+    // walks the difference. The covered half is never enumerated: the two are
+    // complementary over the same subtree, so running a query over the scope
+    // unfiltered already yields exactly the covered rows.
+
+    /// What a scope still needs walked before the index alone can answer for it.
+    ///
+    /// The shallowest directories nothing has listed, plus the ones a walk has
+    /// already tried and can't read, plus the token saying which state of the
+    /// index the answer describes. A volume with no index reports the scope
+    /// itself, which is what a cold drive needs.
+    ///
+    /// Cheap by design: the descent stops at every covered subtree instead of
+    /// walking into it, so a fully indexed drive answers in one row lookup.
+    pub fn coverage(
+        &self,
+        volume_id: &str,
+        scope_path: &str,
+        dimension: CoverageDimension,
+    ) -> Result<CoverageMap, IndexError> {
+        crate::indexing::read::coverage::coverage_on_volume(volume_id, scope_path, dimension).map_err(Into::into)
+    }
+
+    /// Which state of a volume's index is current right now.
+    ///
+    /// Take one when you load a snapshot of the index, and compare it against the
+    /// token a [`coverage`](Self::coverage) answer carries: while they match, the
+    /// snapshot holds every row that answer called covered. When they stop
+    /// matching, something wrote rows, and the two halves have to be re-asked
+    /// together or the second query silently returns fewer results than the first.
+    pub fn coverage_token(&self, volume_id: &str) -> CoverageToken {
+        crate::indexing::read::coverage::coverage_token_on_volume(volume_id)
     }
 
     /// The user is looking at this directory; check that the index still matches

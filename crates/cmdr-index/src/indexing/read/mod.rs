@@ -4,6 +4,8 @@
 //!
 //! - [`enrichment`]: `ReadPool` + `enrich_entries_with_index[_on_volume]`, the
 //!   hot path that populates a listing's recursive sizes.
+//! - [`coverage`]: what a scope still needs walked before the index alone can
+//!   answer for it — the search frontier and the token it was computed against.
 //! - [`queries`]: the IPC read surface (status + dir-stats); no registry
 //!   mutation.
 //! - [`expected_totals`]: index-derived write-op progress-bar denominators.
@@ -11,6 +13,7 @@
 //! - [`handles`]: the volume-keyed tables the two handles above live in, and the
 //!   leaf-lock discipline that keeps this side underneath lifecycle.
 
+pub(crate) mod coverage;
 pub(crate) mod enrichment;
 pub mod expected_totals;
 mod handles;
