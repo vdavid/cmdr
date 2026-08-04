@@ -378,19 +378,24 @@ fn test_copy_preserves_xattrs() {
     let src_file = src_dir.join("file.txt");
     fs::write(&src_file, "content").unwrap();
 
-    // Set an extended attribute using xattr command
-    let xattr_result = std::process::Command::new("xattr")
-        .args(["-w", "com.test.attr", "test_value", src_file.to_str().unwrap()])
-        .output();
-
-    if xattr_result.is_err() || !xattr_result.as_ref().unwrap().status.success() {
-        // Skip test if xattr command not available
-        return;
-    }
-
+    // ❌ Keep the skip-guard INSIDE the `cfg` block, never before it. The block is this
+    // test's whole body on macOS, so a `return` above it is the function's last
+    // statement on Linux and `clippy::needless_return` fails that lane, which a macOS
+    // run cannot see. Inside, the `return` disappears with the block it guards.
     #[cfg(target_os = "macos")]
     {
         use super::macos_copy::copy_single_file_native;
+
+        // Set the extended attribute the copy is supposed to preserve. `xattr` ships
+        // with macOS but can be missing in a stripped sandbox, so a failure to SET one
+        // skips the assertions rather than failing the test.
+        let xattr_set = std::process::Command::new("xattr")
+            .args(["-w", "com.test.attr", "test_value", src_file.to_str().unwrap()])
+            .output()
+            .is_ok_and(|out| out.status.success());
+        if !xattr_set {
+            return;
+        }
 
         let dst_file = dst_dir.join("file.txt");
         let result = copy_single_file_native(&src_file, &dst_file, false, None);

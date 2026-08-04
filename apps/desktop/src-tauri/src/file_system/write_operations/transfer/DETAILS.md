@@ -713,3 +713,21 @@ Our chunked copy (1 MB read/write chunks) provides: identical speed for non-clon
 **Why**: A type swap can't temp-rename across backends, so `apply_volume_conflict_resolution` deletes the dest first (`delete_volume_path_recursive` for a folder dest, `Volume::delete` for a file dest) before the source materializes. These are rare and lower-stakes (a type mismatch already means wholesale content replacement). Same-type dir-vs-dir never reaches `apply_volume_conflict_resolution` for the folder — it short-circuits to merge in `resolve_volume_conflict` before any policy dispatch.
 
 **Test harness: the conflict responder is an event sink, prompt counts come from the sink.** The folder-merge suites (`volume_merge_tests.rs`, `volume_rename_merge_tests.rs`) drive Stop-mode prompts with `ConflictResponderSink` (`conflict_responder_test_support.rs`): it wraps a `CollectorEventSink`, forwards every event, and the instant it observes a `write-conflict` it `take()`s `state.conflict_resolution_tx` and synchronously sends the scripted answer. This works because the Stop branch stores the sender BEFORE emitting the event (`volume_conflict.rs`), so the take can't miss. Assertions derive the prompt count from the recorded conflicts via the shared counters in `conflict_responder_test_support.rs` — `file_conflict_count`, plus `folder_conflict_count_both_dirs` (source AND dest are dirs; pins the copy-side "dirs never prompt" contract) and `folder_conflict_count_any_dir` (source OR dest is a dir; pins the rename-merge contract) — race-free once the op future returns, never from a side-channel counter. The pattern is order-independent by design, so there's no polling loop and no answer-accounting race to defend.
+
+## Gotcha: a skip-guard `return` above a macOS-only block breaks the Linux lane
+
+`copy_integration_test.rs`'s macOS tests are shaped as setup followed by one
+`#[cfg(target_os = "macos")] { … }` block holding every assertion. A `return` placed
+ABOVE that block (the usual "skip if the tool isn't available" guard) is a normal early
+exit on macOS, but on Linux the block vanishes and the `return` becomes the function's
+last statement, so `clippy::needless_return` fails the `Desktop (Rust)` CI job. **A
+local macOS run cannot see it**, which is what makes it worth writing down.
+
+Keep the guard INSIDE the `cfg` block, where it disappears along with the code it
+guards (`test_copy_preserves_xattrs`). Verified by reproduction rather than by reading
+the lint docs: compiling the old shape with the macOS block stripped reproduces the
+exact CI error, and the new shape is clean.
+
+This is the same class as `3d4c9816f`, where two `use` statements sat above their
+macOS-only use sites. Any code whose only consumer is behind `cfg(target_os = "macos")`
+needs the same `cfg` on the thing above it.
