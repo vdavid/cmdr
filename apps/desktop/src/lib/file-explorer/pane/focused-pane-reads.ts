@@ -14,7 +14,7 @@
  * `ExplorerAPI` for the write-coupled call sites (navigation) that retire later.
  */
 
-import { resolveSearchScope } from '$lib/search/searchable-folder'
+import { resolveSearchScope, volumeRootsFrom } from '$lib/search/searchable-folder'
 import type { ScopePresets } from '$lib/query-ui/query-dialog-config'
 import { resolveImageSearchVolume, type ImageSearchVolume } from '$lib/search/active-media-volume'
 import { getVolumes } from '$lib/stores/volume-store.svelte'
@@ -45,7 +45,7 @@ export function getFocusedPaneSearchScope(): ScopePresets {
   return resolveSearchScope({
     currentPath: tab.path,
     history: tab.history.stack.map((e) => e.path),
-    volumeRoots: getVolumes().map((v) => v.path),
+    volumeRoots: volumeRootsFrom(getVolumes()),
   })
 }
 

@@ -13,6 +13,7 @@
  */
 import { tString } from '$lib/intl/messages.svelte'
 import type { ScopePresets } from '$lib/query-ui/query-dialog-config'
+import type { LocationCategory, VolumeInfo } from '$lib/file-explorer/types'
 
 const SEARCH_RESULTS_PREFIX = 'search-results://'
 
@@ -65,6 +66,31 @@ function resolveCurrentFolder(currentPath: string, history: string[]): string | 
     if (!entry.startsWith(SEARCH_RESULTS_PREFIX)) return entry
   }
   return null
+}
+
+/**
+ * The categories in the switcher's volume list that OWN an index, and so can be the
+ * target of a search. The two that are left out are left out on purpose:
+ *
+ * - **`favorite`** entries are plain folders wearing a volume's clothes (`Downloads`,
+ *   `Documents`). Counting one as a volume root makes "this volume" resolve to
+ *   `~/Downloads` while searching inside it, so the maximum rung collapses onto the
+ *   default one and a user asking for the whole drive quietly gets one folder.
+ * - **`cloud_drive`** entries (Dropbox, iCloud Drive, Google Drive) live inside the boot
+ *   volume's index and route to `root` in the backend
+ *   (`crates/cmdr-index/.../paths/routing.rs`, and the plan's Decision 16). Treating one
+ *   as its own volume would disagree with the routing that answers the search.
+ */
+const INDEX_OWNING_CATEGORIES: readonly LocationCategory[] = [
+  'main_volume',
+  'attached_volume',
+  'network',
+  'mobile_device',
+]
+
+/** The mount roots a search can target, out of the live volume list. */
+export function volumeRootsFrom(volumes: VolumeInfo[]): string[] {
+  return volumes.filter((v) => v.path && INDEX_OWNING_CATEGORIES.includes(v.category)).map((v) => v.path)
 }
 
 /**

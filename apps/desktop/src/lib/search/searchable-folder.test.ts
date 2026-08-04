@@ -3,7 +3,8 @@
  * rung above it, and which of the two an unset scope defaults to.
  */
 import { describe, it, expect } from 'vitest'
-import { resolveSearchScope, resolveDefaultScope, volumeRootFor } from './searchable-folder'
+import { resolveSearchScope, resolveDefaultScope, volumeRootFor, volumeRootsFrom } from './searchable-folder'
+import type { VolumeInfo } from '$lib/file-explorer/types'
 
 const LOCAL_ONLY = ['/']
 const WITH_NAS = ['/', '/Volumes/naspi']
@@ -95,6 +96,43 @@ describe('volumeRootFor', () => {
   it('falls back to the boot volume when nothing contains the path or there is no path', () => {
     expect(volumeRootFor(['/Volumes/gone'], '/Users/me')).toBe('/')
     expect(volumeRootFor(WITH_NAS, null)).toBe('/')
+  })
+})
+
+describe('volumeRootsFrom', () => {
+  function vol(id: string, path: string, category: VolumeInfo['category']): VolumeInfo {
+    return { id, name: id, path, category, isEjectable: false }
+  }
+
+  it('drops favorites, which are folders wearing a volume\'s clothes', () => {
+    // The switcher lists Downloads / Documents as "volumes". Counting one as a volume
+    // root collapses "This volume" onto "Current folder" while searching inside it, so a
+    // user asking for the whole drive quietly gets one folder.
+    const volumes = [
+      vol('root', '/', 'main_volume'),
+      vol('fav-downloads', '/Users/me/Downloads', 'favorite'),
+    ]
+    expect(volumeRootsFrom(volumes)).toEqual(['/'])
+    expect(volumeRootFor(volumeRootsFrom(volumes), '/Users/me/Downloads/report.pdf')).toBe('/')
+  })
+
+  it('drops cloud drives, which the backend routes to the boot volume', () => {
+    const volumes = [
+      vol('root', '/', 'main_volume'),
+      vol('cloud-dropbox', '/Users/me/Library/CloudStorage/Dropbox', 'cloud_drive'),
+    ]
+    expect(volumeRootsFrom(volumes)).toEqual(['/'])
+  })
+
+  it('keeps the disks, external mounts, shares, and devices that own an index', () => {
+    const volumes = [
+      vol('root', '/', 'main_volume'),
+      vol('volumesbackup', '/Volumes/Backup', 'attached_volume'),
+      vol('smb-nas', '/Volumes/naspi', 'network'),
+      vol('phone-1:65537', 'mtp://phone-1/65537', 'mobile_device'),
+      vol('network', '', 'network'),
+    ]
+    expect(volumeRootsFrom(volumes)).toEqual(['/', '/Volumes/Backup', '/Volumes/naspi', 'mtp://phone-1/65537'])
   })
 })
 
