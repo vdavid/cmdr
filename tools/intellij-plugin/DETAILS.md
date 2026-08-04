@@ -11,8 +11,10 @@ on.
   features read through their own `FeatureConfig`.
 - **Commit-hash links.** In the files `changelog.files` names, the hashes closing an entry render link-colored and
   ⌘-click opens the commit on GitHub.
+- **i18n key preview.** A message key the English catalog resolves folds to its text, collapsed by default, in `.ts`,
+  `.js`, and `.svelte`.
 
-Nothing else. `cmdr-plugin.json` also carries an `i18n` section that no code reads yet.
+Nothing else.
 
 ## The core seam
 
@@ -33,7 +35,12 @@ Adding a feature is three things and no core changes:
    section means the feature is off**; that's the whole toggle story.
 3. Registrations in `plugin.xml` (or `cmdr-svelte.xml` for anything `SvelteHTML`).
 
-Core never learns what a section means, which is why an `i18n` section it doesn't understand loads fine today.
+Core never learns what a section means, which is why a section written for a later build loads fine today.
+
+**Registration is the one thing config can't drive.** `<lang.foldingBuilder>` and friends are static XML read at plugin
+load, so a `languages` list in `cmdr-plugin.json` could only ever be decoration; it was in the plan and isn't in the
+file. The languages live in `plugin.xml` and `cmdr-svelte.xml`, and `LanguageCoverageSpikeTest.FOLDING_LANGUAGES` is
+what fails when one goes missing.
 
 ## Commit-hash links
 
@@ -78,6 +85,60 @@ headless fixture: **4.5 ms** for `commitLinksIn` over every paragraph, of which 
 rest the regex. Highlighting the whole file goes from 348 ms to 864 ms with the plugin active, so the ~500 ms is the
 platform materializing a thousand annotations, not our lookup. Nothing here is worth caching harder;
 `testTheRealChangelogGetsItsLinks` keeps the real file in the loop.
+
+## i18n key preview
+
+`MessageCatalogService` is the index: the JSON files `catalogGlob` matches, flattened into one key-to-text map with
+`@key` metadata dropped the way `stripMetadata` in `apps/desktop/src/lib/intl/messages.svelte.ts` drops it. English
+only, cached per project, keyed by the glob it came from. **It's the reusable half**: anything that needs "what does
+this key say" asks `catalog()`, and `keySitesIn` is the matching PSI walk, which hands back both the element to fold and
+the literal the key is written in, so a navigation feature can use the same list.
+
+`I18nKeyFoldingBuilder` turns a site plus a resolved message into a `FoldingDescriptor`. Three shapes, all from config:
+
+- A call to a `functions` name whose first argument is a **quoted** literal. A template literal is excluded explicitly,
+  because `JSLiteralExpression.isQuotedLiteral` counts backticks and a substitution-free template still has a
+  `stringValue`. Keys built by template are the accepted miss.
+- A `keyProperties` property with a string-literal value.
+- A `componentAttributes` attribute, matched as an ordinary `XmlAttribute` by tag and attribute name.
+
+A call folds whole; a property and an attribute fold their value only, so `labelKey:` stays visible to say which slot of
+a settings definition the copy fills. `FoldedMessage` decides how the text reads: curly quotes, ICU's doubled
+apostrophes collapsed, `{placeholder}` and `<tag>` markers verbatim, newlines to spaces, and never truncated.
+
+### Keeping an open editor honest
+
+The catalog cache is dropped by a `BulkFileListener` on any VFS event under the catalog directory. **That isn't enough
+on its own**: a fold region that already exists keeps the placeholder it was built with, so an editor open when the copy
+changed goes on showing the old sentence. Measured 2026-08-04 on IDEA 2026.2 build 262.8665.176, with the index proven
+fresh and the builder returning the new text:
+
+- `CodeFoldingManager.updateFoldRegions(editor)` → old text.
+- `releaseFoldings(editor)` then `updateFoldRegions` → old text.
+- `PsiManager.dropPsiCaches()`, and `DaemonCodeAnalyzer.restart()` → old text.
+- Removing every region by hand then `updateFoldRegions` → **no regions at all**.
+- Touching the `.ts` document → new text, which is why the staleness is invisible while you're typing in the file.
+- `CodeFoldingManager.scheduleAsyncFoldingUpdate(editor)` → **new text**, and it's public API.
+
+So `MessageCatalogService.refoldOpenEditors` schedules that for every editor of the project.
+`I18nKeyFoldingTest.testTheCatalogReloadsAfterTheJsonChangesOnDisk` asserts both halves, so an IDE upgrade that changes
+this goes red rather than quietly serving yesterday's copy.
+
+### What it costs
+
+Measured 2026-08-04 in a headless fixture, against the repo's real files. The catalog is 31 files and 2,700 keys: **7–11
+ms** to parse from text, **~20 ms** including the VFS reads on the first fold of the first file, then free.
+
+Folding one file, warm (five runs, mean):
+
+- `settings/definitions/advanced.ts`, 406 lines, 74 folds: **1 ms** (23–28 ms on the first pass, catalog build
+  included).
+- `ipc/bindings.ts`, 9,001 lines, no keys at all, so pure walk cost: **3–4 ms** (~39 ms cold).
+- `file-explorer/pane/FilePane.svelte`, 1,972 lines, 5 folds: **1 ms** (60–66 ms cold, which is the lazy-parsed script
+  blocks being expanded once).
+
+The cold numbers are one-time per file and overlap work highlighting does anyway. `testFoldingTheRealRepoIsCheap` keeps
+all three in the loop with a 50 ms budget, well above the numbers and well below anything that would be felt.
 
 ## Versions, and where each was checked
 
@@ -147,22 +208,24 @@ Consequence: **registering for `JavaScript` silently does nothing for `.ts` file
 language, and add it to `LanguageCoverageSpikeTest.FOLDING_LANGUAGES` so a missing registration fails a test rather than
 quietly folding nothing.
 
-### What i18n folding should therefore do
+### What i18n folding does with all that
 
 - **`.ts` and `.js`**: one Kotlin `FoldingBuilder`, registered twice in `plugin.xml`, for `JavaScript` and `TypeScript`.
-  Match `JSCallExpression` (for `t` / `tString` / `getMessage`) and `JSProperty` (for `labelKey` and friends).
+  It matches `JSCallExpression` (for `t` / `tString` / `getMessage`) and `JSProperty` (for `labelKey` and friends).
 - **`.svelte`**: the same Kotlin class, registered for `SvelteHTML` in `cmdr-svelte.xml`. No regex, no second code path.
+  Registering there joins the Svelte plugin's own `SvelteFoldingBuilder` rather than shadowing anything, confirmed by
+  the list `LanguageCoverageSpikeTest` prints.
 - **`<Trans key="…">` is the exception, and it is not JavaScript.** On the real
   `apps/desktop/src/lib/ui/LoadingIcon.svelte`, the key sits in
   `XmlAttributeValueImpl[SvelteHTML] < SvelteHtmlAttribute[SvelteHTML]`, with leaf type `XML_ATTRIBUTE_VALUE_TOKEN` in
   language `XML`. It's reachable as an ordinary `XmlAttribute` (`name == "key"`, `parent.name == "Trans"`) from the same
-  `SvelteHTML` root, so it's still PSI, just a second walk in the same builder rather than a JS match.
+  `SvelteHTML` root, so it's still PSI, just another branch of the same walk rather than a JS match.
 
 ## The feedback loop, as actually built
 
 ### Tier 1: headless fixtures. Works, and it's the loop.
 
-`mise exec -- ./gradlew test`. 39 tests, ~8 s cold, ~2 s warm. No window, no display, no license. Everything the
+`mise exec -- ./gradlew test`. 54 tests, ~10 s cold, ~2 s warm. No window, no display, no license. Everything the
 features need to assert is assertable here, **including the ⌘-click**: replace the application's `BrowserLauncher` with
 a recorder, run `IdeActions.ACTION_GOTO_DECLARATION`, and assert the URL it was asked to open.
 
@@ -187,6 +250,11 @@ Four things cost real time to discover; none of them are guessable:
 Confirmed 2026-08-04: `CHANGELOG.md` opens with every eight-character trailing hash link-colored, the seven-character
 one and the `(~40x speed-up!)` and mid-sentence `(deadbeef)` asides left as plain prose, and ⌘-hover over a hash showing
 the platform's own "Open in browser" affordance.
+
+Confirmed 2026-08-04 for the folding too: `sample.ts` opens with every resolvable key already collapsed to its sentence
+in curly quotes, `labelKey:` and `descriptionKey:` still showing their names in front of the folded value, `Here''s`
+rendering as `Here's`, `{countText}` intact, and the unknown key, the bare string, and the template-built key left as
+source. `runIde` opens both fixture files; the last one in the list is the focused tab.
 
 ```sh
 cd tools/intellij-plugin
@@ -240,8 +308,8 @@ Not built. Two reading aids don't have a UI surface worth a Starter-framework ha
   clone on another machine still builds green.
 - **`cmdr-svelte.xml` is an optional `<depends>` config file**, not part of the main descriptor. A
   `language="SvelteHTML"` registration in `plugin.xml` would log a resolution warning on every start of an IDE without
-  the Svelte plugin. It's empty today and exists for i18n folding to fill in.
-- **Both bundled plugins are dependencies**: JavaScript for the coming i18n folding, Markdown for the commit links.
+  the Svelte plugin, so everything naming a Svelte language lives there.
+- **Both bundled plugins are dependencies**: JavaScript for the i18n folding, Markdown for the commit links.
 - **The configuration cache stays on.** It's why a warm `test` is ~2 s. `seedIdeSandbox` opts out of up-to-date checks
   because it writes into the sandbox, which other tasks own.
 
@@ -251,8 +319,11 @@ Not built. Two reading aids don't have a UI surface worth a Starter-framework ha
   opt-out.
 - `src/main/resources/META-INF/plugin.xml` — the descriptor. `cmdr-svelte.xml` — the Svelte-only half.
 - `src/main/kotlin/com/getcmdr/idea/core/` — `CmdrProjectService`, `CmdrPluginConfig`, `FeatureConfig`.
-  `features/changelog/` — the commit links. New features get sibling packages under `features/`.
+  `features/changelog/` — the commit links. `features/i18n/` — the catalog index and the key folding. New features get
+  sibling packages under `features/`.
 - `src/test/kotlin/com/getcmdr/idea/` — `RepoFiles` (reads real repo files through the `cmdr.repo.root` system
-  property), `core/`, `features/changelog/`, and `platform/` (`FoldingTestSupport.kt` with the `updateFoldRegions`
-  gotcha and its harness test, plus the two spikes).
-- `sandbox-project/` — the tier 2 fixture. Its `.idea/` and the copied marker are generated and ignored.
+  property), `core/`, `features/changelog/`, `features/i18n/`, and `platform/` (`FoldingTestSupport.kt` with the
+  `updateFoldRegions` gotcha and its harness test, plus the two spikes).
+- `sandbox-project/` — the tier 2 fixture: `CHANGELOG.md` for the links, `sample.ts` plus
+  `apps/desktop/src/lib/intl/messages/en/sandbox.json` for the folding. Its `.idea/` and the copied marker are generated
+  and ignored.

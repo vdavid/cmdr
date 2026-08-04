@@ -4,8 +4,17 @@ A small IntelliJ IDEA plugin that makes this repo nicer to read. It's private to
 Marketplace, never part of a build, and never a dependency of anything Cmdr ships. Uninstall it and the app, the
 website, and every check behave exactly the same.
 
-Today it does one thing: in `CHANGELOG.md`, the commit hashes an entry closes on render link-colored, and ⌘-click opens
-the commit on GitHub. Folding i18n keys to their English text comes next.
+It does two things. In `CHANGELOG.md`, the commit hashes an entry closes on render link-colored, and ⌘-click opens the
+commit on GitHub. And in `.ts`, `.js`, and `.svelte` files, a message key folds to the English text it resolves to, so
+reading a screen's code reads like the screen:
+
+```
+const note = tString('crashReporter.dialog.privacyNote')
+const note = “It includes the app version, macOS version, and which part of the code crashed. No file names…”
+```
+
+Folds open with the stock shortcuts: ⌘+ expands the one under the caret, ⌘⇧+ expands the whole file, ⌘− and ⌘⇧− collapse
+again. A key built from a template can't fold, since there's nothing to look up until the code runs.
 
 Everything is off unless the open project carries `tools/intellij-plugin/cmdr-plugin.json`, which is both the marker
 that says "this is a Cmdr checkout" and the config for what the features do. Open any other project and the plugin does
@@ -36,9 +45,9 @@ choose "Install Plugin from Disk…", pick the zip, and restart when asked.
 mise exec -- ./gradlew runIde
 ```
 
-This starts a second, sandboxed IDE with its own settings and plugins, opened on `sandbox-project/CHANGELOG.md`, where
-the eight-character trailing hashes show up link-colored. It can't touch the IDE you already have running, and closing
-it leaves no trace.
+This starts a second, sandboxed IDE with its own settings and plugins, opened on two files from `sandbox-project/`:
+`sample.ts`, where the message keys show up folded to their English text, and `CHANGELOG.md`, where the eight-character
+trailing hashes show up link-colored. It can't touch the IDE you already have running, and closing it leaves no trace.
 
 Two things it can't show you. The sandbox IDE starts without a license, so Ultimate-only plugins stay disabled, Svelte
 among them. And it resolves the browser launcher to the remote-development one, so ⌘-click on a hash lights up but never
