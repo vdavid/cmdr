@@ -209,3 +209,34 @@ Reads never commit or checkpoint, so nothing here touches the WAL.
 `read_connections_get_a_smaller_page_cache_than_write_connections`, one per store (`tests/open_and_recover.rs` here and
 in `importance/store`, `media_index/store`, `agent/store`, `operation_log/store`), asserts the exact KiB each role opens
 with.
+
+## Prepared statements on the hot write path
+
+`insert_entry_v2_with_id` is the LIVE reconcile write path, called once per file the watcher sees. The scan path takes
+`insert_entries_v2_batch` instead, which already batches and savepoints, so the single-row call is where per-call cost
+lands.
+
+**Why `execute` with a literal was wrong.** `rusqlite::Connection::execute` prepares from SQL TEXT on every call, so
+SQLite re-ran its parser per inserted row. A prod stack profile (v0.37.0, 2026-08-03) put **1,828 of ~3,398 running
+writer samples** in `sqlite3RunParser` → `yy_reduce` → `sqlite3Insert` → `sqlite3GenerateConstraintChecks` →
+`sqlite3MPrintf`, against **182** in `sqlite3_step`. The `sqlite3MPrintf` calls materialize constraint-violation message
+strings ("UNIQUE constraint failed: entries.parent_id, entries.name_folded" and the NOT NULL equivalents) as P4 operands
+in the VDBE program. That is not waste, it is the normal cost of PREPARING an insert against a constrained table; the
+defect was paying it once per row instead of once per statement.
+
+**Why the cache capacity is load-bearing, not a tuning knob.** `rusqlite`'s statement cache is an LRU keyed by SQL text
+with `STATEMENT_CACHE_DEFAULT_CAPACITY = 16`, and this store alone holds **35** `prepare_cached` sites (`entries.rs` 25,
+`dir_stats.rs` 6, `meta.rs` 2, `mod.rs` 1, `connection.rs` 1). A writer working across them would evict and re-compile
+statements it was about to reuse, reintroducing exactly the cost `prepare_cached` removes, **with no error and no
+failing test to show for it**. `sqlite_util::apply_statement_cache` sets 64 on write connections beside
+`apply_page_cache`, so the two role-splits are set in one place. ⚠️ Raise it when the `prepare_cached` count approaches
+it; a cache smaller than the working set is worse than none, since it pays the lookup and still re-compiles.
+
+Read connections keep the small default deliberately: they are thread-local and their count tracks tokio's blocking
+pool rather than anything semantic (132 were open in a profiled session), so a large per-connection statement cache
+there would multiply by a number nothing controls. Same reasoning as `READ_PAGE_CACHE_KIB`.
+
+**Measured**, `tests/insert_throughput_probe.rs` (debug build, 2026-08-03): 34.1 → 30.2 µs per row, **12%**. The probe's
+second variant is the more useful number and motivated the writer's implicit batching: the same rows inside ONE
+transaction run at **7.2 µs**, so the per-row COMMIT plus WAL frame write is ~76% of the cost. See
+`../writer/DETAILS.md` § "Implicit write batching".
