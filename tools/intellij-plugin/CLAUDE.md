@@ -31,12 +31,12 @@ on GitHub. In `.ts`, `.js`, and `.svelte`, a resolvable message key folds to its
 - **A `psi.referenceContributor` never reaches Markdown**: the reference gets built and no Markdown element ever asks
   the registry for it. Use a `gotoDeclarationHandler` there. JS literals and XML attribute values do ask, so key
   navigation is a contributor, registered once with no `language` attribute for every language at once.
-- **The catalog index carries no offsets.** An entry says which file a key is in; `messageDeclaration` finds the line
-  through that file's JSON PSI at click time, so nothing positional can go stale.
+- **The catalog index carries no offsets**: `messageDeclaration` finds the line through the file's own JSON PSI at click
+  time, so nothing positional goes stale.
 - **A `build.gradle.kts` task action may only capture locals**, never a script-level `val`: the configuration cache
   can't serialize a script reference, and `runIde` then won't configure.
-- **Tier 2 can't confirm either ⌘-click**: no page ever opens (the sandbox resolves `BrowserLauncher` to the
-  remote-development one) and putting the caret on a key needs input. Assert both headless.
+- **Tier 2 can't confirm either ⌘-click**: no page opens (the sandbox's `BrowserLauncher` is the remote-development
+  one), and the caret needs input. Assert both headless.
 - **Raising the sandbox window takes the keyboard from whoever is at the machine**, and their typing lands in the
   fixture. Raise it briefly, `git diff sandbox-project/` after, and shoot `screencapture -l <window-id>`.
 - **One `<lang.foldingBuilder>` per language**: registrations don't merge down the base-language chain, so
@@ -46,6 +46,7 @@ on GitHub. In `.ts`, `.js`, and `.svelte`, a resolvable message key folds to its
   leave the model empty, which reads as a passing test that asserts nothing. `FoldingHarnessTest` pins it.
 - **Leave `untilBuild` open.** We target an EAP; a pinned upper bound makes the plugin vanish at the next IDE upgrade.
 - **Not wired into `pnpm check`**, and the runner must never learn about this directory. Renaming `tString` or moving
-  `messages/en/` means editing `cmdr-plugin.json`; the tests read the real repo, so they fail loudly.
+  `messages/en/` means editing `cmdr-plugin.json`; the tests read the real repo, so a `test --rerun` fails loudly. A
+  plain `test` may not re-run at all: Gradle doesn't track the repo as an input.
 
 Human-facing build and sideload instructions: `tools/intellij-plugin/README.md`.

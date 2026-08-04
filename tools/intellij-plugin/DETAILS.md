@@ -310,6 +310,12 @@ features need to assert is assertable here, **including both ⌘-clicks**: for t
 `BrowserLauncher` with a recorder, run `IdeActions.ACTION_GOTO_DECLARATION`, and assert the URL it was asked to open;
 for a message key, `GotoDeclarationAction.findAllTargetElements` returns the catalog entry itself.
 
+**The repo is an input Gradle can't see.** A dozen tests read real repo files through the `cmdr.repo.root` system
+property: the real `CHANGELOG.md`, the real `messages/en/`, `settings/definitions/advanced.ts`, `ipc/bindings.ts`,
+`FilePane.svelte`, and `cmdr-plugin.json` itself. None of them are declared task inputs, so after a pull or a rebase
+that changed any of them, `test` is still up to date and prints `BUILD SUCCESSFUL` in under a second without running a
+thing. **Use `test --rerun` whenever the repo moved under you**, which is exactly when those tests are worth something.
+
 Four things cost real time to discover; none of them are guessable:
 
 - **`CodeFoldingManager.updateFoldRegions(editor)` is the only call that populates the folding model.**
