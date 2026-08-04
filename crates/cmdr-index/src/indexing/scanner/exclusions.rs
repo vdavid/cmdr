@@ -371,27 +371,40 @@ pub(in crate::indexing) fn exclusion_policy_stamp_message() -> WriteMessage {
 /// policy at runtime, but it's a per-run fixture path rather than a shipped rule,
 /// and folding it in would write a machine-specific value into every E2E index.
 pub(in crate::indexing) fn exclusion_policy_fingerprint() -> String {
+    // Each list is preceded by its own name, so moving a name from one list to
+    // another changes the fingerprint even though the flat set of names didn't.
+    let mut parts: Vec<&str> = vec!["prefixes"];
+    parts.extend_from_slice(EXCLUDED_PREFIXES);
+    parts.push("junk");
+    parts.extend_from_slice(JUNK_BASENAMES);
+    parts.push("pseudo_fs");
+    parts.extend_from_slice(PSEUDO_FS_BASENAMES);
+    #[cfg(target_os = "macos")]
+    {
+        parts.push("firmlinked");
+        parts.extend_from_slice(FIRMLINKED_SYSTEM_PREFIXES);
+    }
+    fingerprint_of(&parts)
+}
+
+/// FNV-1a over newline-separated parts, as 16 hex digits.
+///
+/// Split out from [`exclusion_policy_fingerprint`] so the mixing is testable
+/// against a fixed input. A fingerprint the caller feeds its own constants to can
+/// only be tested symmetrically — stamp with it, read with it, agree — and that
+/// agrees just as happily with a broken hash that collides two different policies
+/// into one value, which would silently skip the re-walk the whole mechanism
+/// exists for. `the_policy_fingerprint_mixes_its_input` pins this against a golden
+/// over a test-only input, so it needs no maintenance when the real lists change.
+fn fingerprint_of(parts: &[&str]) -> String {
     const FNV_OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
     const FNV_PRIME: u64 = 0x0000_0100_0000_01b3;
     let mut hash = FNV_OFFSET;
-    let mut absorb = |value: &str| {
-        for byte in value.bytes().chain(std::iter::once(b'\n')) {
+    for part in parts {
+        for byte in part.bytes().chain(std::iter::once(b'\n')) {
             hash ^= u64::from(byte);
             hash = hash.wrapping_mul(FNV_PRIME);
         }
-    };
-    // Each list is separated by its own name, so moving a name from one list to
-    // another changes the fingerprint even though the flat set of names didn't.
-    absorb("prefixes");
-    EXCLUDED_PREFIXES.iter().for_each(|v| absorb(v));
-    absorb("junk");
-    JUNK_BASENAMES.iter().for_each(|v| absorb(v));
-    absorb("pseudo_fs");
-    PSEUDO_FS_BASENAMES.iter().for_each(|v| absorb(v));
-    #[cfg(target_os = "macos")]
-    {
-        absorb("firmlinked");
-        FIRMLINKED_SYSTEM_PREFIXES.iter().for_each(|v| absorb(v));
     }
     format!("{hash:016x}")
 }
@@ -861,5 +874,27 @@ mod tests {
     fn the_policy_fingerprint_is_stable() {
         assert_eq!(exclusion_policy_fingerprint(), exclusion_policy_fingerprint());
         assert_eq!(exclusion_policy_fingerprint().len(), 16, "a 64-bit FNV-1a in hex");
+    }
+
+    /// The hash actually MIXES, pinned against a golden over a fixed input.
+    ///
+    /// Everything else about the stamp is symmetric — write it, read it, compare —
+    /// and a hash that collided two different policies into one value would pass
+    /// every one of those tests while silently skipping the re-walk a policy change
+    /// is supposed to trigger. The input here is test-only, so the golden never
+    /// needs touching when the real lists change.
+    #[test]
+    fn the_policy_fingerprint_mixes_its_input() {
+        assert_eq!(fingerprint_of(&["a", "b"]), "78ed6781f136a14e");
+        assert_ne!(
+            fingerprint_of(&["a", "b"]),
+            fingerprint_of(&["b", "a"]),
+            "order has to matter, or moving a name between lists reads as no change"
+        );
+        assert_ne!(
+            fingerprint_of(&["a", "b"]),
+            fingerprint_of(&["ab"]),
+            "the separator has to matter, or two lists concatenate ambiguously"
+        );
     }
 }

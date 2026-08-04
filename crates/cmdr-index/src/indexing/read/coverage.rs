@@ -120,7 +120,9 @@ pub struct CoverageMap {
     /// The shallowest directories nothing has listed, as absolute paths in the
     /// same space as the scope that was asked about. Their subtrees are uncovered
     /// ground in full; nothing under one is covered, so a walk takes each whole.
-    /// Empty means the scope is covered end to end.
+    /// Empty means the scope is covered end to end. **Unordered** — the descent
+    /// emits them as it finds them, and no caller should read the order as meaning
+    /// anything.
     pub frontier: Vec<String>,
     /// Directories a walk has already tried and can't read, so they're not offered
     /// again. Reported rather than dropped: a search over them is honestly narrow,
@@ -234,6 +236,9 @@ pub(crate) fn coverage_for_scope(
     scope_path: &str,
     dimension: CoverageDimension,
 ) -> Result<CoverageMap, IndexStoreError> {
+    // Deliberately an irrefutable `let` rather than an ignored parameter: adding a
+    // second dimension makes this a compile error at every place that has to grow a
+    // case, which is the whole reason the parameter exists this early.
     let CoverageDimension::Listing = dimension;
     let mut frontier = Vec::new();
     let mut unreadable = Vec::new();
