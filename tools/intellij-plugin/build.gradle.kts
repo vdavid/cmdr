@@ -80,15 +80,30 @@ intellijPlatform {
 
 val sandboxProject = layout.projectDirectory.dir("sandbox-project").asFile
 
+/** Where the marker lands inside the fixture project. Must match `CmdrProjectService.CONFIG_PATH`. */
+val markerRelativePath = "tools/intellij-plugin/cmdr-plugin.json"
+val markerFile = layout.projectDirectory.file("cmdr-plugin.json").asFile
+
 /**
- * Marks `sandbox-project/` trusted before the sandbox IDE starts. Without it, a modal "Trust and Open Project?" dialog
- * is the only thing the tier 2 screenshot ever captures.
+ * Marks `sandbox-project/` trusted before the sandbox IDE starts, and copies the real `cmdr-plugin.json` into it so
+ * the plugin recognizes it as a Cmdr checkout.
+ *
+ * Without the trust seeding, a modal "Trust and Open Project?" dialog is the only thing the tier 2 screenshot ever
+ * captures. Without the marker, every feature correctly does nothing, which looks exactly like a broken plugin. The
+ * marker is copied rather than committed so the fixture can't drift from the config the repo actually ships.
  */
 val seedIdeSandbox = tasks.register("seedIdeSandbox") {
+    // Every value the action touches is captured into a local first. A task action that reaches a script-level `val`
+    // holds a reference to the build script itself, which Gradle's configuration cache refuses to serialize, and the
+    // whole of `runIde` fails to configure.
     val configDirectory = tasks.prepareSandbox.flatMap { it.sandboxConfigDirectory }
     val projectPath = sandboxProject.absolutePath
+    val markerSource = markerFile
+    val markerTarget = sandboxProject.resolve(markerRelativePath)
     outputs.upToDateWhen { false }
     doLast {
+        markerTarget.apply { parentFile.mkdirs() }.writeText(markerSource.readText())
+
         val options = configDirectory.get().asFile.resolve("options").apply { mkdirs() }
         options.resolve("trusted-paths.xml").writeText(
             """
@@ -120,11 +135,10 @@ tasks.runIde {
     // The second argument is what opens the file. Seeding the project's `.idea/workspace.xml` looks like the tidier
     // way and does not work: 2026.2 leaves the seeded file untouched on disk and still opens an empty editor.
     dependsOn(seedIdeSandbox)
-    argumentProviders.add(
-        CommandLineArgumentProvider {
-            listOf(sandboxProject.absolutePath, sandboxProject.resolve("probe.ts").absolutePath)
-        },
-    )
+    // Locals again, for the same configuration-cache reason as `seedIdeSandbox`.
+    val projectPath = sandboxProject.absolutePath
+    val filePath = sandboxProject.resolve("CHANGELOG.md").absolutePath
+    argumentProviders.add(CommandLineArgumentProvider { listOf(projectPath, filePath) })
 }
 
 tasks.test {
