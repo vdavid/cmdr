@@ -50,17 +50,17 @@ class MessageCatalogService(private val project: Project) : Disposable {
         val glob = CmdrProjectService.getInstance(project).config?.get(I18nConfig)?.catalogGlob ?: return null
         cached.get()?.let { if (it.glob == glob) return it.catalog }
 
-        val directory = project.guessProjectDir()?.findFileByRelativePath(CatalogGlob.parse(glob).directory)
-        if (directory == null || !directory.isDirectory) {
+        val rule = CatalogGlob.parse(glob)
+        val directory = project.guessProjectDir()?.findFileByRelativePath(rule.directory)?.takeIf { it.isDirectory }
+        if (directory == null) {
             log.warn("no catalog directory at `$glob`, so no key can resolve")
             return null
         }
-        val parsed = CatalogGlob.parse(glob).let { rule ->
+        val catalog = MessageCatalog.of(
             directory.children
                 .filter { !it.isDirectory && rule.files.matches(it.name) }
-                .mapNotNull { runCatching { VfsUtilCore.loadText(it) }.getOrNull() }
-        }
-        val catalog = MessageCatalog.of(parsed)
+                .mapNotNull { runCatching { VfsUtilCore.loadText(it) }.getOrNull() },
+        )
         cached.set(Snapshot(glob, directory.path, catalog))
         return catalog
     }

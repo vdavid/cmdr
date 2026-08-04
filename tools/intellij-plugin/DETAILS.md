@@ -126,19 +126,21 @@ this goes red rather than quietly serving yesterday's copy.
 
 ### What it costs
 
-Measured 2026-08-04 in a headless fixture, against the repo's real files. The catalog is 31 files and 2,700 keys: **7–11
-ms** to parse from text, **~20 ms** including the VFS reads on the first fold of the first file, then free.
+Measured 2026-08-04 in a headless fixture, against the repo's real files. Ranges are across runs: the low end is a warm
+JVM mid-suite, the high end a cold one, so the warm number is what an editor session feels.
 
-Folding one file, warm (five runs, mean):
+The catalog is 31 files and 2,700 keys: **7–52 ms** to parse from text, once per project, then free until it changes.
 
-- `settings/definitions/advanced.ts`, 406 lines, 74 folds: **1 ms** (23–28 ms on the first pass, catalog build
-  included).
-- `ipc/bindings.ts`, 9,001 lines, no keys at all, so pure walk cost: **3–4 ms** (~39 ms cold).
-- `file-explorer/pane/FilePane.svelte`, 1,972 lines, 5 folds: **1 ms** (60–66 ms cold, which is the lazy-parsed script
-  blocks being expanded once).
+Folding one file, warm (five runs, mean), with the first pass in parentheses:
 
-The cold numbers are one-time per file and overlap work highlighting does anyway. `testFoldingTheRealRepoIsCheap` keeps
-all three in the loop with a 50 ms budget, well above the numbers and well below anything that would be felt.
+- `settings/definitions/advanced.ts`, 406 lines, 74 folds: **1–3 ms** (23–125 ms, catalog build included).
+- `ipc/bindings.ts`, 9,001 lines, no keys at all, so pure walk cost: **3–5 ms** (39–87 ms).
+- `file-explorer/pane/FilePane.svelte`, 1,972 lines, 5 folds: **1 ms** (60–167 ms, the high figure being the
+  lazy-parsed script blocks expanded once).
+
+The first-pass numbers are one-time per file and overlap work highlighting does anyway. `testFoldingTheRealRepoIsCheap`
+keeps all three in the loop with a 50 ms warm budget, well above the numbers and well below anything that would be
+felt.
 
 ## Versions, and where each was checked
 

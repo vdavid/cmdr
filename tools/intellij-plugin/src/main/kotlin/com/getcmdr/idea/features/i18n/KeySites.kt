@@ -49,7 +49,8 @@ private fun I18nConfig.callSite(call: JSCallExpression): KeySite? {
     val name = (call.methodExpression as? JSReferenceExpression)?.referenceName ?: return null
     if (name !in functions) return null
     val literal = call.arguments.firstOrNull() as? JSLiteralExpression ?: return null
-    return KeySite(folded = call, keyElement = literal, key = literal.keyText() ?: return null)
+    val key = literal.keyText() ?: return null
+    return KeySite(folded = call, keyElement = literal, key = key)
 }
 
 /**
@@ -59,7 +60,8 @@ private fun I18nConfig.callSite(call: JSCallExpression): KeySite? {
 private fun I18nConfig.propertySite(property: JSProperty): KeySite? {
     if (property.name !in keyProperties) return null
     val literal = property.value as? JSLiteralExpression ?: return null
-    return KeySite(folded = literal, keyElement = literal, key = literal.keyText() ?: return null)
+    val key = literal.keyText() ?: return null
+    return KeySite(folded = literal, keyElement = literal, key = key)
 }
 
 /** `<Trans key="a.key">`: the quoted value folds, for the same reason a key property's does. */
