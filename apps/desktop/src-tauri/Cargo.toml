@@ -141,11 +141,11 @@ tauri-plugin-playwright = { version = "0.4.1", optional = true }
 # `cmdr-archive`; `aes-crypto` is declared there and unifies here, so the feature set is a
 # superset of both. `aes 0.9.1` (stable) unifies with `smb2`'s SMB3 AEAD stack.
 zip = { version = "8.6", default-features = false, features = ["deflate", "aes-crypto"] }
-# The macOS custom updater unpacks its release tarball with these two, and
 # `write_operations/compress_estimate.rs` sizes a deflate stream with `flate2`. The archive
 # backend declares its own copies (plus the other tar codecs and 7z) in `cmdr-archive`.
+# `tar` is NOT here: its only production caller is the macOS updater, so it's declared
+# per-target below plus as a dev-dependency for the cross-platform test that builds one.
 flate2 = "1"
-tar = "0.4"
 # Error reporter: short-ID generation (`ERR-XXXXX`) using rejection sampling.
 rand = "0.10"
 # Pure-Rust git library for the git browser (M1: discover, repo info, status).
@@ -223,6 +223,12 @@ urlencoding = "2.1.3"
 semver = "1"
 
 [target.'cfg(target_os = "macos")'.dependencies]
+# The custom updater unpacks its release tarball with this. `mod updater` is
+# macOS-only, so on Linux the lib never touches `tar` and a plain `[dependencies]`
+# entry tripped `unused_crate_dependencies` there (CI red on the `Desktop (Rust)`
+# lane). The cross-platform test that BUILDS a tarball gets it from
+# `[dev-dependencies]` instead.
+tar = "0.4"
 file_icon_provider = "1.0.0"
 core-foundation = "0.10.1"
 core-services = "1.0.0"
@@ -267,6 +273,10 @@ objc2-core-foundation = { version = "0.3.2", features = ["CFData", "CFDictionary
 
 
 [dev-dependencies]
+# `volume_strategy_sequential_tests.rs` builds a tarball fixture and is NOT
+# platform-gated, so `tar` has to be reachable from tests on every target. The
+# production side is macOS-only (see the per-target section above).
+tar = "0.4"
 # Depending on ourselves turns the `testing` feature on for every DEV target
 # (tests, benches, examples) and leaves it off for the lib and the `Cmdr` bin, so
 # the shipped binary carries no test scaffolding. Verified both ways: `cargo check

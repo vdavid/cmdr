@@ -7,10 +7,11 @@ Fills each volume's store: `mod.rs` (the `ImportanceScheduler` handle, `ScoringP
 
 ## Must-knows
 
-- **Drive full recompute off the bus `ScanCompleted` plus the startup sweep, NEVER phase events** (network volumes never
-  emit them). A volume Fresh at launch never re-fires it, so the sweep ALSO runs
-  `enqueue_initial_full_pass_if_unscored`, gated on `store::needs_initial_full_pass`. Subscribe to registrations BEFORE
-  the sweep, or a share mounted in the gap is never wired.
+- **Drive full recompute off the bus `ScanCompleted`, the startup sweep, and the hourly `FULL_REFRESH_INTERVAL` tick,
+  NEVER phase events** (network volumes never emit them). A volume Fresh at launch never re-fires it, so the sweep ALSO
+  runs `enqueue_initial_full_pass_if_unscored`, gated on `store::needs_initial_full_pass`. Subscribe to registrations
+  BEFORE the sweep, or a share mounted in the gap is never wired. The hourly tick bounds the write-skip and demotion
+  stalenesses; `periodic_refresh_tests` stops anyone shortening it back into the treadmill.
 - **Coalesce per volume through `PassCoordinator`**: one pass at a time plus one re-run. Incremental has its OWN key, so
   a rescore and a full pass never block each other.
 

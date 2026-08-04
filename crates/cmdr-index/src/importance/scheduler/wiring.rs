@@ -154,6 +154,10 @@ fn wire_volume(scheduler: Arc<ImportanceScheduler>, volume_id: String, kind: Ind
     // stays the scan-completion default below.
     start_incremental(Arc::clone(&scheduler), volume_id.clone(), available);
 
+    // And a slow full pass, which is what BOUNDS the staleness the incremental path
+    // deliberately accepts (see below).
+    start_periodic_full_refresh(Arc::clone(&scheduler), volume_id.clone(), available);
+
     // Subscribe to the scan bus for this volume; a subscription retains the last
     // state, so a ScanCompleted fired before this line is still observed
     // (late-subscriber replay). Recompute on each completion.
@@ -170,6 +174,49 @@ fn wire_volume(scheduler: Arc<ImportanceScheduler>, volume_id: String, kind: Ind
             if matches!(*rx.borrow_and_update(), lifecycle_bus::ScanState::Completed { .. }) {
                 spawn_recompute(Arc::clone(&sub_scheduler), sub_volume.clone(), available);
             }
+        }
+    });
+}
+
+/// How often a volume gets a full recompute regardless of what changed.
+///
+/// The incremental path accepts two bounded stalenesses on purpose, and this is the
+/// thing that bounds them:
+///
+/// - A row whose SIGNALS didn't move isn't rewritten, so its score keeps the
+///   `now_secs` it was last written at and its recency decay pauses
+///   (`../writer.rs`, `fate_of_stored_row`).
+/// - A demoted origin seeds `has_marker_below` from its stored row, which can only
+///   ADD marker presence, so the last marker LEAVING a big subtree reads stale
+///   (`scoped_walk.rs`, § "The accepted lossiness").
+///
+/// Both correct themselves here. One hour is David's call over the daily cadence
+/// this was first sized for, and it is affordable: measured against the real indexes
+/// on 2026-08-04 (release build, `importance-measure`), a full pass costs **5.8 s CPU
+/// for the 694,963-directory boot volume** and **1.6 s for the 71,365-directory NAS**,
+/// so hourly is ~0.2% of one core. The walk reads the per-volume index DB, never the
+/// volume, so a network volume costs no traffic and doesn't need to be awake.
+///
+/// ⚠️ The real cost is the transient allocation, not CPU: the boot-volume walk grows
+/// `phys_footprint` by ~166 MB while it runs. Shortening this interval multiplies
+/// that spike, not the CPU. ❌ Don't take it anywhere near
+/// [`INCREMENTAL_THROTTLE_WINDOW`]: a full pass per minute is exactly the treadmill
+/// `docs/notes/importance-treadmill-2026-08-04.md` exists to document, which cost
+/// 17.6% of a 10.5-hour session's wall clock.
+const FULL_REFRESH_INTERVAL: Duration = Duration::from_secs(60 * 60);
+
+/// Run a full recompute every [`FULL_REFRESH_INTERVAL`], forever.
+///
+/// Deliberately fires on the interval rather than at once: the scan-completion
+/// subscription in [`wire_volume`] already covers startup, so an immediate tick would
+/// only duplicate it. [`spawn_recompute`] coalesces on the full-pass key, so a tick
+/// landing inside a running pass is absorbed rather than queued.
+fn start_periodic_full_refresh(scheduler: Arc<ImportanceScheduler>, volume_id: String, available: SignalSet) {
+    crate::indexing::host::runtime::spawn(async move {
+        loop {
+            tokio::time::sleep(FULL_REFRESH_INTERVAL).await;
+            log::debug!(target: "importance", "periodic full refresh for '{volume_id}'");
+            spawn_recompute(Arc::clone(&scheduler), volume_id.clone(), available);
         }
     });
 }
@@ -328,4 +375,26 @@ fn spawn_recompute(scheduler: Arc<ImportanceScheduler>, volume_id: String, avail
             // RunAgain: a request arrived mid-pass; loop once more.
         }
     });
+}
+
+#[cfg(test)]
+mod periodic_refresh_tests {
+    use super::{FULL_REFRESH_INTERVAL, INCREMENTAL_THROTTLE_WINDOW};
+
+    /// The full refresh has to stay FAR slower than the incremental throttle.
+    ///
+    /// Pre-fix, a full walk ran roughly once a minute and burned 17.6% of a 10.5-hour
+    /// session's wall clock (`docs/notes/importance-treadmill-2026-08-04.md`). Nothing
+    /// in the types stops someone "making importance fresher" by dropping this to the
+    /// incremental cadence and rebuilding that treadmill, so the ordering is pinned
+    /// here rather than left to a comment.
+    #[test]
+    fn the_full_refresh_is_far_slower_than_the_incremental_throttle() {
+        assert!(
+            FULL_REFRESH_INTERVAL >= INCREMENTAL_THROTTLE_WINDOW * 30,
+            "a full pass costs ~5.8 s CPU and a ~166 MB transient allocation on a big volume, \
+             so it must stay orders of magnitude rarer than an incremental one: \
+             full={FULL_REFRESH_INTERVAL:?}, incremental={INCREMENTAL_THROTTLE_WINDOW:?}"
+        );
+    }
 }
