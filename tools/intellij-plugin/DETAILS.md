@@ -20,8 +20,8 @@ Nothing else.
 
 ## Why it's ours, and why it lives here
 
-**Why not a marketplace plugin.** [Easy I18n](https://plugins.jetbrains.com/plugin/16316-easy-i18n) does key folding
-and covers Svelte, so it's the obvious thing to try first. Three properties of our catalog fight it:
+**Why not a marketplace plugin.** [Easy I18n](https://plugins.jetbrains.com/plugin/16316-easy-i18n) does key folding and
+covers Svelte, so it's the obvious thing to try first. Three properties of our catalog fight it:
 
 - One locale is a **directory** of per-area files (`messages/en/crashReporter.json`, …) while the keys inside are
   already fully qualified (`crashReporter.dialog.title` lives inside `crashReporter.json`). Every i18next-shaped parser
