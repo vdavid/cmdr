@@ -19,9 +19,9 @@ class CmdrPluginConfigTest : TestCase() {
     }
 
     fun testASectionThisBuildDoesNotKnowIsIgnored() {
-        // The whole point: M4's `i18n` section, and anything a later build adds, must not break what's here today.
+        // The whole point: a section a later build adds must not break the features that are here today.
         val config = CmdrPluginConfig.parse(
-            """{"changelog": {"files": ["CHANGELOG.md"]}, "i18n": {"functions": ["t"]}, "somethingNew": [1, 2]}""",
+            """{"changelog": {"files": ["CHANGELOG.md"]}, "somethingNew": [1, 2]}""",
         )
 
         assertEquals(listOf("CHANGELOG.md"), config.get(ChangelogConfig)!!.files)

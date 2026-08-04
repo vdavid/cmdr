@@ -71,4 +71,10 @@ class ConfigSection internal constructor(private val json: JsonObject) {
 
     fun stringList(name: String): List<String> =
         runCatching { json.getAsJsonArray(name)?.mapNotNull { it.asString } }.getOrNull().orEmpty()
+
+    /** An array of objects, each read as its own section. Anything that isn't an object is skipped, not an error. */
+    fun objects(name: String): List<ConfigSection> =
+        runCatching { json.getAsJsonArray(name)?.mapNotNull { (it as? JsonObject)?.let(::ConfigSection) } }
+            .getOrNull()
+            .orEmpty()
 }
