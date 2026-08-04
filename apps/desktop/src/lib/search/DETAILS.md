@@ -98,8 +98,14 @@ pure `resolveSearchTargetVolume` (`search-target-volume.ts`). It feeds three con
 - the **image-OCR grid**, whose media-index volume id IS the pane's volume id (`root` for the local disk, `smb-…` for an
   SMB share), so browsing the NAS surfaces the NAS's photos and browsing local surfaces local;
 - the **mount root** that volume's `VolumeInfo.path` gives (`/` for root, `/Volumes/<share>` for SMB), which
-  `ImageSearchResults` prepends to index-relative OCR hits via `resolveMediaHitPath`, plus `isNetwork`
-  (`category === 'network'`) for the network coverage voice.
+  `ImageSearchResults` prepends to index-relative OCR hits via `resolveMediaHitPath`, plus `isNetwork` for the network
+  coverage voice.
+
+`isNetwork` comes from the typed `volumeKindOf(...) === 'smb'` (`file-explorer/pane/volume-capabilities.ts`), NOT from
+`category === 'network'`. Verified live on 2026-08-04: an SMB share Cmdr couldn't upgrade to a direct connection stays
+an OS mount and the volume list reports it as `attached_volume` with `fsType: 'smbfs'`, so the category test alone told
+a NAS user their boot disk wasn't indexed. `volumeKindOf` is the single frontend classifier (invariant A6) and sees both
+shapes.
 
 A focused pane whose volume isn't a real filesystem volume in the list (a `search-results://` snapshot) falls back to
 the local root, as does the prop when unset — the same fallback `resolveDefaultScope` makes for the scope.

@@ -28,8 +28,8 @@ Primitives shared by Search (`lib/search/`) and Selection (`lib/selection-dialog
 - **All chrome is `ModalDialog`'s; never re-add it here.** Opt-ins: `align="top"`, `fillBody`, `padded={false}`,
   `ownsKeyboard` (Enter + popover-aware Escape), `closeOnOverlayClick`, `overlayClass="search-overlay"`. Strips pad
   themselves at `--spacing-dialog`.
-- **Two silent-failure traps.** Count-only OFF re-runs via `runFromButton()`, not `scheduleSearch()` (else a stale
-  count stays); and never swallow a `runQuery` rejection (it reads as "nothing matched").
+- **Two silent-failure traps.** Count-only OFF re-runs via `runFromButton()`, not `scheduleSearch()` (else a stale count
+  stays); and never swallow a `runQuery` rejection (it reads as "nothing matched").
 - **Never wipe state from a lifecycle hook.** State survives unmount by design; `⌘N` is the ONLY sanctioned reset.
 - **Reopen re-derives results, not the empty state.** A restored NON-AI session sets `runOnMount`; AI must NOT (cloud
   cost). Don't loosen `mode !== 'ai'`.

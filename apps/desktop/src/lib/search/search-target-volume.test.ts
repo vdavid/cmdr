@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { VolumeInfo } from '$lib/file-explorer/types'
-import { resolveSearchTargetVolume } from './search-target-volume'
+import { describeVolume, resolveSearchTargetVolume } from './search-target-volume'
 
 function vol(overrides: Partial<VolumeInfo> & Pick<VolumeInfo, 'id' | 'path' | 'category'>): VolumeInfo {
   return {
@@ -13,6 +13,13 @@ function vol(overrides: Partial<VolumeInfo> & Pick<VolumeInfo, 'id' | 'path' | '
 const ROOT = vol({ id: 'root', path: '/', category: 'main_volume' })
 const NAS = vol({ id: 'smb-naspi', path: '/Volumes/naspi', category: 'network' })
 const USB = vol({ id: 'volumesusb', path: '/Volumes/USB', category: 'attached_volume' })
+
+describe('describeVolume', () => {
+  it('names a drive and voices it, and stays quiet about one that is gone', () => {
+    expect(describeVolume([ROOT, NAS], 'smb-naspi')).toEqual({ name: 'smb-naspi', isNetwork: true })
+    expect(describeVolume([ROOT, NAS], 'volumesusb')).toEqual({ name: '', isNetwork: false })
+  })
+})
 
 describe('resolveSearchTargetVolume', () => {
   it('targets the local root volume with mount root "/" and no network voice', () => {
@@ -31,6 +38,19 @@ describe('resolveSearchTargetVolume', () => {
       mountRoot: '/Volumes/naspi',
       isNetwork: true,
     })
+  })
+
+  it('gives an SMB share that stayed an OS mount the network voice too', () => {
+    // Verified live: a share Cmdr couldn't upgrade to a direct connection comes back as
+    // `attached_volume` with `fsType: 'smbfs'`, so a category test alone called the NAS a
+    // local drive. The typed `volumeKindOf` classifier sees both shapes.
+    const OS_MOUNTED_NAS = vol({
+      id: 'smb-192-168-1-111-445-naspi',
+      path: '/Volumes/naspi',
+      category: 'attached_volume',
+      fsType: 'smbfs',
+    })
+    expect(resolveSearchTargetVolume([ROOT, OS_MOUNTED_NAS], OS_MOUNTED_NAS.id).isNetwork).toBe(true)
   })
 
   it('targets a local attached (USB) volume with its mount root but the local voice', () => {

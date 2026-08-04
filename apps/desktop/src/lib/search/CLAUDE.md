@@ -10,20 +10,21 @@ structured filters. First consumer of `../query-ui/CLAUDE.md`. Backend: `src-tau
 - `search-state.svelte.ts` (façade over core `query-filter-state` + `search-extras-state`), plus `snapshot-store`,
   `searchable-folder`, `SearchResultsView.svelte` (in `lib/file-explorer/pane/`), and helpers. Footer buttons render
   from `QueryDialog`'s `config.*Action`.
-- Two Search-only snippets bracket QueryDialog's results: `CoverageNote.svelte` + pure `coverage-note.ts` above (why an
-  answer is short, plus the indexing offer), `ImageSearchResults.svelte` + `ocr-snippet.ts` below (the "text in images"
-  OCR grid over `media_index`). `search-target-volume.ts` resolves the session's one volume, shared by both.
+- Two Search-only snippets bracket QueryDialog's results: `CoverageNote.svelte` (+ `coverage-note.ts`,
+  `coverage-actions.ts`) above — why an answer is short, plus the indexing offer — and `ImageSearchResults.svelte` +
+  `ocr-snippet.ts` below (the "text in images" OCR grid over `media_index`). `search-target-volume.ts` resolves the
+  session's one volume, shared by both.
 
 ## Must-knows
 
-- **No `aiPrompt` / `namePattern` state. Read `query`**, and derive `patternType` from `mode` (`regex` else `glob`).
-  After an AI run `query` holds the translated pattern; the user's input is `getLastAiPrompt()`.
+- **No `aiPrompt` / `namePattern` state. Read `query`**; derive `patternType` from `mode` (`regex` else `glob`). After
+  an AI run `query` holds the translated pattern; the user's input is `getLastAiPrompt()`.
 - **State split across two factories**: cross-consumer fields in core `createQueryFilterState()` (`lib/query-ui/`),
   Search-only ones (`scope`, `excludeSystemDirs`, index readiness, the coverage note, `lastAi*`) in
   `createSearchExtrasState()`. `recordAiTranslation` splits too: core writes `handTyped[mode]`, extras the Pattern chip
-  + label.
-- **Recent-search entries persist when the user ACTS on a result** ("Show all in main window", "Go to file"), not on
-  every run. AI entries carry the prompt, not the translated pattern.
+  - label.
+- **Recent-search entries persist when the user ACTS on a result** ("Show all in main window", "Go to file"), not every
+  run. AI entries carry the prompt, not the translated pattern.
 - **"Open in pane" promotes to the `search-results://` virtual volume**, not a special FilePane mode. Refcount is the
   ONLY lifetime authority (no cap), from pane-history refs + `setLastAttemptId`; `navigation-history.ts` stays pure.
 - **Snapshot mutations are invisible to Svelte unless you bump `mutationTick`.** Snapshots aren't `$state` by design;
@@ -41,8 +42,8 @@ structured filters. First consumer of `../query-ui/CLAUDE.md`. Backend: `src-tau
 - **Destination write ops are blocked on `search-results` panes** (`SEARCH_RESULTS_NOT_A_FOLDER_TOAST`) at three sites:
   F-bar disablement, menu-item omission, `blockedByCapabilities`; `openTransferDialog` also blocks F5/F6 when the
   OPPOSITE pane is one. Source ops (Cmd+C/X, F5/F6, drag-out) run.
-- **AI mode never auto-applies** (cost); only Enter / `⌘Enter` / the ⏎ button / example chips fire it. ❌ No
-  per-consumer catch swallowing AI errors: QueryDialog surfaces them once.
+- **AI mode never auto-applies** (cost); only Enter / `⌘Enter` / the ⏎ button / chips fire it. ❌ No per-consumer catch
+  swallowing AI errors: QueryDialog surfaces them once.
 - **One volume per search, and ONE prop names it**: `searchVolume` drives the readiness gate, the coverage voice, and
   the image grid; only index-BUILD progress stays `ROOT_VOLUME_ID`. The gate asks about the TARGET: ❌ never gate on
   root or let ⌘N clear readiness, or search goes silently inert on a machine with no root index. Every run rewrites the

@@ -40,7 +40,6 @@
         onSearchIndexReady,
         showFileContextMenu,
         trackEvent,
-        enableDriveIndex,
         getRecentSearches as fetchRecentSearches,
         removeRecentSearch as removeRecentSearchIpc,
         addRecentSearch as addRecentSearchIpc,
@@ -52,7 +51,6 @@
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
     import { isDriveSilenced, silenceDrive } from '$lib/indexing/drive-index-prefs'
-    import { addToast } from '$lib/ui/toast'
     import { resolveDefaultScope, defaultScopeLabel } from './searchable-folder'
     import type { ScopePresets } from '$lib/query-ui/query-dialog-config'
     import { tString } from '$lib/intl/messages.svelte'
@@ -97,6 +95,7 @@
     import ImageSearchResults from './ImageSearchResults.svelte'
     import CoverageNote from './CoverageNote.svelte'
     import { coverageNoteFrom, isTargetIndexReady } from './coverage-note'
+    import { indexUncoveredDrive } from './coverage-actions'
     import { describeVolume, type SearchTargetVolume } from './search-target-volume'
     import { getBadgeStatus } from '$lib/feature-status'
     import type {
@@ -253,30 +252,6 @@
             ? coverageNote.volumeId
             : null,
     )
-
-    /** Turn on indexing for the drive the gap belongs to, and say what happened. */
-    async function indexUncoveredDrive(volumeId: string): Promise<void> {
-        const drive = coverageDrive.name || tString('search.coverage.unnamedDrive')
-        try {
-            const res = await enableDriveIndex(volumeId)
-            if (res.status === 'error') {
-                addToast(tString('search.coverage.toast.notStarted', { drive }), { level: 'warn' })
-                return
-            }
-            // Typed outcomes, never a message match: the master switch outranks every
-            // per-drive gate, so "off globally" needs its own answer or the user clicks a
-            // button that quietly does nothing.
-            if (res.data.status === 'started') {
-                addToast(tString('search.coverage.toast.started', { drive }), { level: 'info' })
-            } else if (res.data.status === 'indexing_disabled') {
-                addToast(tString('search.coverage.toast.indexingOff'), { level: 'info' })
-            } else {
-                addToast(tString('search.coverage.toast.notStarted', { drive }), { level: 'warn' })
-            }
-        } catch {
-            addToast(tString('search.coverage.toast.notStarted', { drive }), { level: 'warn' })
-        }
-    }
 
     /** "Don't ask again" for this drive: the same persisted silence the first-connect prompt honors. */
     function silenceUncoveredDrive(): void {
@@ -798,7 +773,7 @@
         onIndexDrive={coverageCtaVolumeId === null
             ? null
             : () => {
-                  void indexUncoveredDrive(coverageCtaVolumeId)
+                  void indexUncoveredDrive(coverageCtaVolumeId, coverageDrive.name)
               }}
         onSilenceDrive={silenceUncoveredDrive}
     />

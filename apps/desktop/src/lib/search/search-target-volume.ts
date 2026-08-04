@@ -13,7 +13,22 @@
 //     to the network voice.
 
 import type { VolumeInfo } from '$lib/file-explorer/types'
+import { volumeKindOf } from '$lib/file-explorer/pane/volume-capabilities'
 import { ROOT_VOLUME_ID } from '$lib/indexing'
+
+/**
+ * Whether a volume is a network share, by its TYPED kind rather than its category.
+ *
+ * A `category === 'network'` test alone misses the common case: an SMB share Cmdr
+ * couldn't upgrade to a direct connection stays an OS mount under `/Volumes`, and the
+ * volume list hands it back as `attached_volume` with `fsType: 'smbfs'`. Voicing that
+ * as a local drive tells a NAS user their boot disk isn't indexed. `volumeKindOf` is
+ * the single frontend classifier (`file-explorer/pane/CLAUDE.md`, invariant A6) and
+ * covers both shapes.
+ */
+function isNetworkVolume(info: VolumeInfo): boolean {
+  return volumeKindOf(info.id, info.fsType, info.category) === 'smb'
+}
 
 /** The volume a Search session covers, plus what the dialog needs to voice it. */
 export interface SearchTargetVolume {
@@ -43,7 +58,7 @@ export function resolveSearchTargetVolume(volumes: VolumeInfo[], focusedVolumeId
   return {
     volumeId: info.id,
     mountRoot: info.path,
-    isNetwork: info.category === 'network',
+    isNetwork: isNetworkVolume(info),
   }
 }
 
@@ -59,5 +74,5 @@ export function resolveSearchTargetVolume(volumes: VolumeInfo[], focusedVolumeId
  */
 export function describeVolume(volumes: VolumeInfo[], volumeId: string): { name: string; isNetwork: boolean } {
   const info = volumes.find((v) => v.id === volumeId)
-  return { name: info?.name ?? '', isNetwork: info?.category === 'network' }
+  return { name: info?.name ?? '', isNetwork: info ? isNetworkVolume(info) : false }
 }
