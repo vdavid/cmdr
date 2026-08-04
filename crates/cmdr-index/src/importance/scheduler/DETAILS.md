@@ -234,6 +234,13 @@ cost, set by how wide the changed subtrees are) and `written`. `written` alone w
 the batch still drags in most of the volume, which is the cost that remains. ❌ Don't drop `considered` from the log
 line; it is what names a too-wide batch.
 
+The ONE pass that doesn't get its own line is `considered == 0`: its whole batch was filtered out by
+`sanitize_incremental_batch` before the read pool, so it walked nothing and wrote nothing. On a machine running cargo
+that's nearly every pass (measured 2026-08-04: 908 of 972 rescore lines in half an hour read
+`updated 0 folders (of 0 rescored)`, 38% of the entire log file). Those roll up through `EMPTY_RESCORES` to one line a
+minute per volume. Any pass with `considered > 0` still logs both numbers every time, so the too-wide-batch signal is
+untouched. Policy: `docs/tooling/logging.md` § "Keeping the file readable".
+
 ### Generation semantics on the incremental path
 
 An incremental pass writes its rows at the CURRENT generation and does NOT bump it, so every untouched folder keeps its

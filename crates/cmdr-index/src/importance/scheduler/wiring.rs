@@ -266,6 +266,11 @@ fn incremental_key(volume_id: &str) -> String {
 /// consumers.
 const INCREMENTAL_THROTTLE_WINDOW: Duration = Duration::from_secs(60);
 
+/// Rescores whose whole batch was filtered out before the walk, rolled up to one
+/// line a minute per volume. On a machine running cargo that's nearly every pass:
+/// the churn is all under floored build trees. Policy: `docs/tooling/logging.md`.
+static EMPTY_RESCORES: cmdr_fs::log_rollup::LogRollup = cmdr_fs::log_rollup::LogRollup::new(Duration::from_secs(60));
+
 /// How long to wait before the next incremental rescore of a volume may start,
 /// given when the previous one for this run started. The FIRST pass of a burst
 /// (`last_started == None`) runs immediately (leading edge — a real edit scores
@@ -320,6 +325,28 @@ fn spawn_incremental(scheduler: Arc<ImportanceScheduler>, volume_id: String, ava
                     // BOTH numbers: `written` alone would read as "this pass was
                     // free" while the batch still covers most of the volume, which is
                     // the cost that remains once the writes are gone.
+                    //
+                    // A pass that CONSIDERED nothing is the one exception. Its whole
+                    // batch was filtered out before the walk (`sanitize_incremental_batch`
+                    // drops floored paths, and a build tree is all floored), so it read
+                    // nothing, wrote nothing, and cost nothing. Measured on a machine
+                    // running cargo: 908 of 972 rescore lines in half an hour said
+                    // `updated 0 folders (of 0 rescored)`. Those roll up to one line a
+                    // minute per volume; `considered > 0` always logs, so the too-wide
+                    // batch signal this line exists for is untouched.
+                    Ok(Ok(report)) if report.considered == 0 => {
+                        if let Some(batch) = EMPTY_RESCORES.record(&volume_id) {
+                            let rolled_up = if batch.is_rolled_up() {
+                                format!(" ×{} in {}s", batch.count, batch.elapsed.as_secs())
+                            } else {
+                                String::new()
+                            };
+                            log::debug!(
+                                target: "importance",
+                                "incremental rescore of '{volume_id}': nothing to rescore{rolled_up}",
+                            );
+                        }
+                    }
                     Ok(Ok(report)) => log::debug!(
                         target: "importance",
                         "incremental rescore of '{volume_id}' updated {} (of {} rescored)",

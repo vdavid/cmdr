@@ -67,7 +67,8 @@ reader already looks:
   count.
 - Or roll the line up with `cmdr_fs::log_rollup::LogRollup`: the first occurrence logs immediately, then sustained
   repetition collapses to one line per window carrying `×N in Ys`. Keyed per volume or share, so a busy one can't
-  swallow a quiet one's first line. Used by the space poller, the SMB space poll, and the media live tick.
+  swallow a quiet one's first line. Used by the space poller, the SMB space poll, the media live tick, and the
+  importance rescore. Roll up only the case that says nothing: a pass that DID something keeps its own line.
 
 **A heartbeat speaks when it has something to say.** The writer and reconciler stall probes keep full 5 s resolution
 whenever there's work in flight (a queue with no progress is the stall they exist to show) and drop to one line a minute
