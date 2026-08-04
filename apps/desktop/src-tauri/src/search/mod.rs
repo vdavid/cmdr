@@ -1,10 +1,10 @@
-//! Multi-volume in-memory filename search.
+//! In-memory filename search, one volume per search.
 //!
 //! Each volume's index DB loads into a per-volume `Vec<SearchEntry>` arena for fast
 //! parallel scanning with rayon. Arenas load lazily (root when the dialog opens, a
 //! scoped volume on first query) and all drop together after an idle timeout. A
-//! scope routes to the owning volume(s); an unscoped query fans out across every
-//! volume with a persisted index and merges the ranked results.
+//! scope routes to the ONE volume that owns it; an unscoped query means the boot
+//! volume.
 
 pub mod ai;
 #[cfg(test)]
@@ -29,11 +29,11 @@ pub use index::{SearchEntry, SearchIndex};
 // volumes.rs (per-volume registry + dialog lifecycle)
 pub(crate) use volumes::{
     DIALOG_OPEN, VolumeLoad, cancel_active_loads, cancel_idle_timer, ensure_volume, get_loaded, reset_backstop_timer,
-    start_idle_timer, start_importance_weight_subscriber, touch_activity, warm_in_background,
+    start_idle_timer, start_importance_weight_subscriber, touch_activity,
 };
 
-// execute.rs (multi-volume orchestration)
-pub(crate) use execute::{ColdVolumePolicy, run_blocking};
+// execute.rs (single-volume orchestration)
+pub(crate) use execute::run_blocking;
 
 // query.rs
 pub use query::SYSTEM_DIR_EXCLUDES;

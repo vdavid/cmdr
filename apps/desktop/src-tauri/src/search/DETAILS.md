@@ -40,82 +40,74 @@ Depth for the search backend. `CLAUDE.md` holds the must-knows; this file holds 
   `resolve_include_paths` is sync — the sync analog of `blocking_with_timeout`); a non-existent / timed-out path keeps
   its literal so an offline-index scope still gets a best-effort match. Applies to `search`, `ai_search`, and the FE
   search dialog — all route through the one `resolve_include_paths`.
-- **Count-only mode (`SearchQuery.count_only`) trades rows for an exact total, cheaply, across volumes**: when set,
-  `engine::search_ranked` computes each volume's `total_count` from the filtered matches but skips ranking, truncation,
-  and per-row path materialization (the expensive parts) and returns no rows; `execute.rs::run_blocking` sums the
-  per-volume totals and skips the k-way merge, returning an empty `entries`. The one wrinkle is directory size filters:
-  directory sizes live in `dir_stats` (the per-volume DB), not the in-memory index, so the pure engine can't size-filter
+- **Count-only mode (`SearchQuery.count_only`) trades rows for an exact total, cheaply**: when set,
+  `engine::search_ranked` computes `total_count` from the filtered matches but skips ranking, truncation, and per-row
+  path materialization (the expensive parts) and returns no rows. The one wrinkle is directory size filters: directory
+  sizes live in `dir_stats` (the volume's DB), not the in-memory index, so the pure engine can't size-filter
   directories. So when a size filter is set AND directories aren't excluded (`is_directory != Some(false)`),
-  `search_ranked` hands that volume's matching directories back in its ranked slice (with the volume total still counting
-  every match, files already size-filtered), and `run_blocking` fills their sizes via `fill_ranked_dir_sizes` then calls
-  `count_only_volume_total`, which subtracts the directories outside the filter from that volume's total. Net: an exact
-  count in every case, materializing only the matching directories per volume (never the -- usually far larger -- file
-  set), and never merging or building rows. The MCP `search` tool formats the result as a bare line (`format_match_count`,
-  e.g. `1,234 files match`) with any `uncovered_scopes` coverage note appended; the dialog shows it as a prominent count
-  instead of the list (`QueryResults` count-only branch).
+  `search_ranked` hands the matching directories back in its ranked slice (with the total still counting every match,
+  files already size-filtered), and `run_blocking` fills their sizes via `fill_dir_sizes` then calls
+  `count_only_volume_total`, which subtracts the directories outside the filter. Net: an exact count in every case,
+  materializing only the matching directories (never the -- usually far larger -- file set), and never building rows.
+  The MCP `search` tool formats the result as a bare line (`format_match_count`, e.g. `1,234 files match`) with any
+  `uncovered_scopes` coverage note appended; the dialog shows it as a prominent count instead of the list
+  (`QueryResults` count-only branch).
 - **`_schemaVersion` mismatch quarantines instead of migrating in place**: there's only schema v1, so a migrator would
   be speculative. When v2 lands, replace the quarantine branch with a `match` on the version calling a
   `migrate_v1_to_v2` helper.
 
-## Multi-volume search
+## Single-volume search
 
-Search spans every volume with a persisted `index-{volumeId}.db`, not just root. `execute.rs::run_blocking` owns the
-orchestration; `engine.rs` stays per-index and pure.
+A search covers at most ONE volume. `execute.rs::run_blocking` owns the orchestration; `engine.rs` stays per-index and
+pure.
 
-### Routing
+### Routing, and the ceiling
+
+`execute.rs::resolve_target` returns exactly one `Target` or a typed `ScopeError`:
 
 - **Scoped** (`include_paths` non-empty): each path routes to its owning volume via
-  [`volume_id_for_local_path`](crates/cmdr-index/src/indexing/paths/routing.rs) (SMB mount → `smb_volume_id`, `mtp://` → `{device}:{storage}`,
-  registered external mount → its id, everything else → `root`). Paths group by volume; each target is `from_scope`.
-- **Unscoped**: `volumes::all_indexed_volume_ids` enumerates every `index-*.db` in the data dir (root first), collapsed
-  to one index per mounted location (below). Whole-volume each.
+  [`volume_id_for_local_path`](crates/cmdr-index/src/indexing/paths/routing.rs) (SMB mount → `smb_volume_id`, `mtp://` →
+  `{device}:{storage}`, registered external mount → its id, everything else → `root`). Every path must agree on the
+  volume; two or more yields `ScopeError::SpansMultipleVolumes`, which `run_blocking` turns into the message the dialog
+  toasts and MCP returns. The target is `from_scope`.
+- **Unscoped**: the boot volume, whole-volume, not `from_scope`. It's the MCP default (the dialog always sends a scope);
+  an agent that wants a different volume names it.
 
-### One index per mounted location
+**Why one volume** (`docs/specs/unindexed-search-plan.md` Decision 4): a fan-out is the only way a search can quietly
+omit a drive, or report a 2%-walked drive as covered. The ceiling has to hold at the API rather than in the dialog,
+because MCP and the AI translator both build queries the UI never sees. What it costs: searching the boot disk and a NAS
+in one action is no longer possible, and a search of a cold volume waits for that volume's arena instead of deferring
+it.
 
-`volumes::distinct_mount_roots_in` drops any index whose mount root another index already covers. It has to, because an
-SMB volume id is `smb_volume_id(server, port, share)` — keyed on the ADDRESS the share happened to be mounted from. One
-NAS reached over Tailscale and over the LAN therefore gets two ids, two full index DBs (David's box: 2.6 M entries and
-~525 MB EACH, both stamping `volume_path = /Volumes/naspi`), and an unscoped search that scanned both, merged duplicate
-hits, doubled the reported match count, and held two arenas resident.
+Deleted with the fan-out (❌ don't reintroduce): the k-way merge, `ColdVolumePolicy` / `RunOutcome::deferred_volumes` /
+`volumes::warm_in_background` (the "answer now, fold the NAS in on `search-index-ready`" path), and
+`volumes::all_indexed_volume_ids` with its `distinct_mount_roots_in` dedupe.
 
-The rule is about PLACES, not boxes: a mount root is a unique path, only one volume can be mounted there at a time, and
-search reports ABSOLUTE paths, so two indexes claiming the same root necessarily describe the same paths. At most one of
-them is what's actually there, so reporting both is never right. The keeper is the volume currently registered in
-`VolumeManager` (that IS what's mounted there); failing that, the highest `scan_completed_at`, the more recent picture.
-An index with NO known mount root (root itself, or an offline DB predating the `volume_path` meta) never enters a group,
-so it's always kept — an unknown location can't be shown to collide.
+### Two SMB indexes for one NAS: routing picks, nothing dedupes
 
-Mount roots are read via `peek_index_identity`: a warm arena's cached value, else a read-only open of `index-{id}.db`
-plus two `meta` lookups. That's a file open and two b-tree hits (sub-millisecond), NOT an arena load.
+An SMB volume id is `smb_volume_id(server, port, share)`, keyed on the ADDRESS the share was mounted from, so one NAS
+reached over Tailscale and over the LAN gets two ids and two full index DBs (David's box: 2.6 M entries and ~525 MB
+EACH, both stamping `volume_path = /Volumes/naspi`). Under the fan-out both were scanned, hits were merged twice, and
+two arenas stayed resident, which is why a read-time dedupe existed.
 
-Nothing on disk is deleted or rewritten — this is a read-time choice, so the skipped DB wins straight back the moment
-it's the one mounted, and no user index is ever lost. Fixing the ROOT cause (keying the index on a stable server
-identity instead of `host:port`) was deliberately NOT attempted: see "Why the index isn't keyed on a stable server
-identity" below.
+With one volume per search there's nothing to dedupe: a `/Volumes/naspi` scope routes through the live `VolumeManager`
+to the id that IS mounted there, and the other DB is never opened. The stale DB still occupies disk (the `resources/`
+retention cap's problem, not search's) and wins straight back the moment it's the one mounted. Fixing the ROOT cause
+(keying the index on a stable server identity instead of `host:port`) was deliberately NOT attempted: see "Why the index
+isn't keyed on a stable server identity" below.
 
-### Who waits for a cold arena
+### Waiting for a cold arena
 
 Loading a volume's arena is a multi-second, multi-hundred-MB read (2.4 s warm page cache for a 2.6 M-entry NAS index,
-10.9 s observed cold in prod). `ColdVolumePolicy` decides who pays:
+10.9 s observed cold in prod), and every caller now pays it: there's one target, and answering "nothing found" for the
+one place someone asked about would be a lie, not a fast path. M6 of the plan voices that wait honestly instead of
+hiding it.
 
-- **`DeferColdVolumes`** (the search dialog): a cold, unscoped, non-root target is dropped from this run and returned in
-  `RunOutcome::deferred_volumes`. `commands::search::search_files` warms each one via `volumes::warm_in_background` and
-  emits `SearchIndexReadyEvent` as it lands; the dialog's existing ready listener re-runs the query, so the volume's
-  matches fold into results that already came back. Converges: once warm, nothing defers and nothing re-emits. A warm-up
-  that hasn't started when the dialog closes declines (nobody's waiting, and the idle timer would drop the arena
-  straight away); one already in flight is stopped by `cancel_active_loads`.
-- **`Wait`** (MCP `search` / `ai_search`): a tool call gets ONE shot at an answer with no dialog to re-run it, so it
-  waits for everything and stays complete.
-
-Root and any `from_scope` target are never deferred under either policy: answering "nothing found" for the one place the
-user asked about would be a lie, not a fast path, and the dialog's readiness and entry count are root's.
-
-Whatever a run does wait for loads in PARALLEL (`into_par_iter` over the targets), because each target is a separate DB
-file and they don't contend. And every arena load is SINGLE-FLIGHTED per volume through `LOAD_GATES`: a second caller
-waits for the first's arena instead of reading the same DB again, which used to cost both a duplicate multi-second load
-and a transient second copy of the arena whenever a search arrived while the dialog's root pre-load was still running.
-`cancel_active_loads` bumps `CANCEL_EPOCH` alongside the per-load cancel flags, so cancelling doesn't just hand the load
-to the next thread queued on the gate.
+Every arena load is SINGLE-FLIGHTED per volume through `LOAD_GATES`: a second caller waits for the first's arena instead
+of reading the same DB again, which used to cost both a duplicate multi-second load and a transient second copy of the
+arena whenever a search arrived while the dialog's root pre-load was still running. `cancel_active_loads` bumps
+`CANCEL_EPOCH` alongside the per-load cancel flags, so cancelling doesn't just hand the load to the next thread queued
+on the gate.
 
 Measurements: `docs/notes/search-latency-2026-07-28.md`.
 
@@ -183,26 +175,28 @@ A non-root volume's index `ROOT_ID` is its MOUNT ROOT, so it stores mount-relati
 
 Without the strip, an indexed NAS folder would show bare paths that don't open, or a scope would match zero entries.
 
-### Merge
+### The result slice
 
-Each volume's `search_ranked` returns entries already ranked best-first WITH their [`RankKey`](ranking.rs) (band +
-importance-boosted recency + id). The keys are volume-independent scalars, so `run_blocking` concatenates the
-per-volume slices and does ONE global `sort_by(RankKey::cmp_best_first)`, then truncates to the limit — a correct top-k
-merge because each slice is already its volume's top-k. `total_count` sums the per-volume match totals. Directory sizes
-are filled per volume (each from its own pool) BEFORE the merge, so the size post-filter runs against the right
-`dir_stats`.
+`search_ranked` returns entries already ranked best-first (band + importance-boosted recency + id, see
+[`RankKey`](ranking.rs)), so `run_blocking` never sorts: it fills directory sizes from the volume's `dir_stats`, applies
+the size post-filter, and truncates the engine's dir over-fetch back to the caller's limit. `total_count` is the
+engine's own match total, adjusted by that post-filter.
 
 ### Honesty: `uncovered_scopes` and `unresolved_scopes`
 
 Two TYPED sibling fields on `SearchResult` (callers branch on emptiness, never string-match), for the two ways a scoped
 search returns nothing for a STRUCTURAL reason rather than a genuine "no matches":
 
-- **`uncovered_scopes`** — a `from_scope` target whose volume has no persisted index (`VolumeLoad::NotIndexed`). The
-  dialog and MCP render "Cmdr hasn't indexed X yet". An unscoped unindexed volume is skipped silently (no user intent).
+- **`uncovered_scopes`** — a `from_scope` target whose volume has no persisted index (`VolumeLoad::NotIndexed`). **MCP
+  renders it** ("Cmdr hasn't indexed X yet", `mcp/executor/search.rs::coverage_note`); **the dialog does not render it
+  at all yet** — the fields sit in `ipc-types.ts` with zero frontend readers, so an unindexed drive reads as a plain "no
+  results". That's what M1 of `docs/specs/unindexed-search-plan.md` fixes. An unscoped search never fills this: nobody
+  named the boot volume, so there's no user intent to report against.
 - **`unresolved_scopes`** — the volume IS indexed but the specific path isn't in it (a typo, a deleted folder, or a
-  path outside the mount root). Rendered as "couldn't find that path". Distinct copy, distinct field.
+  path outside the mount root). Rendered as "couldn't find that path" by MCP. Distinct copy, distinct field.
 
-Partial coverage works: covered volumes still return results alongside the note(s).
+A scope that spans two volumes is NOT one of these: it's a hard `Err` from `resolve_target`, because there's no volume
+to return partial results from.
 
 ## History store (`history.rs`)
 

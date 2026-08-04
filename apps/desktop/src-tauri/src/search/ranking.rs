@@ -369,11 +369,8 @@ impl std::hash::Hasher for PrehashedHasher {
 /// A matched entry's full sort key: its match-quality band, its importance-boosted
 /// recency, and its entry id (the final deterministic tiebreak).
 ///
-/// Carried out of ranking so a multi-volume search can merge each volume's ranked
-/// slice into one global order with the SAME comparator the single-volume sort uses
-/// (`cmp_best_first`) — the key is computed per volume against that volume's own
-/// index and weights, but it compares across volumes because band and
-/// boosted-recency are volume-independent scalars.
+/// Internal to ranking: it decorates each match once so the sort compares scalars
+/// instead of recomputing bands, and is dropped as soon as the order is fixed.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct RankKey {
     band: MatchQuality,
@@ -413,9 +410,8 @@ pub(crate) fn boosted_recency_key(recency: u64, weight: f64) -> f64 {
 /// importance. The sort is deterministic (a stable final tiebreak on entry id) so
 /// equal keys don't reorder run to run.
 ///
-/// Pure: no I/O. Production ranks via [`rank_decorated`] (it keeps the keys for the
-/// cross-volume merge); this index-rewriting form is what the ranking tests assert
-/// against, hence `#[cfg(test)]`.
+/// Pure: no I/O. Production calls [`rank_indices`]; this in-place form is what the
+/// ranking tests assert against, hence `#[cfg(test)]`.
 #[cfg(test)]
 pub(crate) fn rank(
     index: &SearchIndex,
@@ -424,21 +420,13 @@ pub(crate) fn rank(
     case_insensitive: bool,
     weights: &ImportanceWeights,
 ) {
-    let decorated = rank_decorated(index, matching, stem, case_insensitive, weights, usize::MAX);
-    for (slot, (_, idx)) in matching.iter_mut().zip(decorated.iter()) {
-        *slot = *idx;
-    }
+    let ranked = rank_indices(index, matching, stem, case_insensitive, weights, usize::MAX);
+    matching.copy_from_slice(&ranked);
 }
 
-/// Rank matched entry indices and return the best `keep` of them with their
-/// [`RankKey`]s, best-first.
-///
-/// The same policy as [`rank`], but it hands back the sort keys so a multi-volume
-/// search can k-way-merge each volume's ranked slice into one global order
-/// (`RankKey::cmp_best_first`) without recomputing bands or reconstructing paths.
-/// Single-volume callers use [`rank`]; the engine calls this and drops the keys
-/// after the merge, except on the multi-volume path where the keys travel with the
-/// results up to it.
+/// Rank matched entry indices and return the best `keep` of them, best-first. THE
+/// production entry point: the returned order is the result order, so nothing
+/// downstream sorts again.
 ///
 /// `keep` is how many results the caller can actually use (`usize::MAX` for "all of
 /// them", which the count-only directory pass needs). Everything below it is
@@ -454,14 +442,14 @@ pub(crate) fn rank(
 /// folder→weight memo: matches cluster heavily by folder, and hashing a folder's path
 /// means walking its parent chain. The empty-map fast path skips that entirely,
 /// preserving today's pure-recency order (the degradation contract).
-pub(crate) fn rank_decorated(
+pub(crate) fn rank_indices(
     index: &SearchIndex,
     matching: &[usize],
     stem: &str,
     case_insensitive: bool,
     weights: &ImportanceWeights,
     keep: usize,
-) -> Vec<(RankKey, usize)> {
+) -> Vec<usize> {
     let no_weights = weights.is_empty();
     let key_for = |memo: &mut std::collections::HashMap<i64, f64>, idx: usize| {
         let entry = &index.entries[idx];
@@ -504,7 +492,7 @@ pub(crate) fn rank_decorated(
         decorated.truncate(keep);
     }
     decorated.sort_unstable_by(|a, b| a.0.cmp_best_first(&b.0));
-    decorated
+    decorated.into_iter().map(|(_, idx)| idx).collect()
 }
 
 #[cfg(test)]

@@ -1,6 +1,6 @@
-//! Per-volume registry tests: DB-filename parsing, indexed-volume enumeration,
-//! loading a non-root volume straight from its persisted DB (mount root from meta),
-//! the missing-DB honesty signal, and per-volume importance weight loading.
+//! Per-volume registry tests: loading a non-root volume straight from its persisted
+//! DB (mount root from meta), the missing-DB honesty signal, and per-volume
+//! importance weight loading.
 
 use std::path::Path;
 use std::sync::atomic::AtomicBool;
@@ -34,15 +34,6 @@ fn make_index_db(data_dir: &Path, volume_id: &str, volume_path: &str) {
     .unwrap();
 }
 
-/// `make_index_db` plus the `scan_completed_at` marker, the "which of two indexes for
-/// one location is the more recent picture" tiebreak.
-fn make_index_db_scanned(data_dir: &Path, volume_id: &str, volume_path: &str, scan_completed_at: u64) {
-    make_index_db(data_dir, volume_id, volume_path);
-    let db_path = data_dir.join(format!("index-{volume_id}.db"));
-    let conn = IndexStore::open_write_connection(&db_path).expect("write conn");
-    IndexStore::update_meta(&conn, "scan_completed_at", &scan_completed_at.to_string()).expect("meta");
-}
-
 /// Write a populated `importance-{volume_id}.db` via the real writer.
 pub(crate) fn make_importance_db(data_dir: &Path, volume_id: &str, rows: &[(&str, f64)]) {
     use cmdr_index::importance::testing::importance_db_path;
@@ -60,112 +51,6 @@ pub(crate) fn make_importance_db(data_dir: &Path, volume_id: &str, rows: &[(&str
     writer.write_weights(1, weight_rows).expect("write");
     writer.flush_blocking().expect("flush");
     writer.shutdown();
-}
-
-// ── Filename parsing ─────────────────────────────────────────────────
-
-#[test]
-fn parses_volume_id_from_index_db_filename() {
-    assert_eq!(volume_id_from_index_db("index-root.db"), Some("root"));
-    assert_eq!(volume_id_from_index_db("index-smb-nas.db"), Some("smb-nas"));
-    // A volume id containing '-' (an MTP serial) survives the prefix/suffix strip.
-    assert_eq!(volume_id_from_index_db("index-mtp-AABB-1.db"), Some("mtp-AABB-1"));
-    // Sidecars and unrelated files aren't index DBs.
-    assert_eq!(volume_id_from_index_db("index-root.db-wal"), None);
-    assert_eq!(volume_id_from_index_db("history.db"), None);
-}
-
-// ── Indexed-volume enumeration ───────────────────────────────────────
-
-#[test]
-fn enumerates_indexed_volumes_root_first() {
-    let dir = tempfile::tempdir().expect("temp dir");
-    // Two external index DBs plus root, a sidecar, and a non-index file.
-    make_index_db(dir.path(), ROOT_VOLUME_ID, "/");
-    make_index_db(dir.path(), "smb-nas", "/Volumes/nas");
-    make_index_db(dir.path(), "mtp-phone-1", "mtp://phone/1");
-    std::fs::write(dir.path().join("index-root.db-wal"), b"x").ok();
-    std::fs::write(dir.path().join("notes.txt"), b"x").ok();
-
-    let ids = indexed_volume_ids_in(dir.path());
-    assert_eq!(ids[0], ROOT_VOLUME_ID, "root is always first");
-    assert!(ids.contains(&"smb-nas".to_string()));
-    assert!(ids.contains(&"mtp-phone-1".to_string()));
-    assert_eq!(
-        ids.iter().filter(|id| *id == ROOT_VOLUME_ID).count(),
-        1,
-        "root listed once"
-    );
-    assert_eq!(ids.len(), 3, "root + two externals, sidecar/non-index ignored");
-}
-
-#[test]
-fn enumeration_of_empty_dir_is_just_root() {
-    let dir = tempfile::tempdir().expect("temp dir");
-    assert_eq!(indexed_volume_ids_in(dir.path()), vec![ROOT_VOLUME_ID.to_string()]);
-}
-
-// ── One index per mounted location ───────────────────────────────────
-
-/// Two index DBs for the SAME box, keyed on the two addresses it was mounted from
-/// (Tailscale and LAN) — David's real case: 2.6 M entries and ~525 MB EACH, both
-/// claiming `/Volumes/naspi`. An unscoped search must use one of them, or it reports
-/// every hit twice and doubles the match count.
-#[test]
-fn two_indexes_of_one_mounted_location_collapse_to_the_newer_scan() {
-    let dir = tempfile::tempdir().expect("temp dir");
-    make_index_db(dir.path(), ROOT_VOLUME_ID, "/");
-    make_index_db_scanned(dir.path(), "smb-100-127-48-122-445-naspi", "/Volumes/naspi", 1_000);
-    make_index_db_scanned(dir.path(), "smb-192-168-1-111-445-naspi", "/Volumes/naspi", 2_000);
-
-    // Pre-fix, the enumeration handed both NAS indexes to the search.
-    assert_eq!(indexed_volume_ids_in(dir.path()).len(), 3);
-
-    let ids = distinct_mount_roots_in(indexed_volume_ids_in(dir.path()), dir.path());
-
-    assert!(ids.contains(&ROOT_VOLUME_ID.to_string()), "root always searched");
-    assert_eq!(ids.len(), 2, "the NAS is searched once, not twice: {ids:?}");
-    assert!(
-        ids.contains(&"smb-192-168-1-111-445-naspi".to_string()),
-        "the more recently scanned index wins: {ids:?}"
-    );
-}
-
-#[test]
-fn distinct_mount_roots_keeps_genuinely_different_locations() {
-    let dir = tempfile::tempdir().expect("temp dir");
-    make_index_db(dir.path(), ROOT_VOLUME_ID, "/");
-    make_index_db_scanned(dir.path(), "smb-nas", "/Volumes/nas", 1_000);
-    make_index_db_scanned(dir.path(), "smb-other", "/Volumes/other", 1_000);
-    // No `volume_path` meta and not mounted ⇒ unknown location, can't be shown to
-    // collide with anything, so it stays in.
-    make_index_db_without_volume_path(dir.path(), "smb-unknown");
-
-    let ids = distinct_mount_roots_in(indexed_volume_ids_in(dir.path()), dir.path());
-    assert_eq!(ids.len(), 4, "nothing collapses when the roots differ: {ids:?}");
-}
-
-/// A live-registered volume beats a more recently scanned one: whatever is mounted at
-/// that root right now IS what the user's paths resolve to.
-#[test]
-fn a_mounted_volume_wins_over_a_newer_offline_index() {
-    use crate::file_system::volume::LocalPosixVolume;
-    use crate::file_system::volume::manager::get_volume_manager;
-
-    let dir = tempfile::tempdir().expect("temp dir");
-    let root = "/Volumes/cmdr-dedupe-nas";
-    make_index_db_scanned(dir.path(), "smb-mounted", root, 1_000);
-    make_index_db_scanned(dir.path(), "smb-stale-but-newer", root, 9_000);
-
-    let manager = get_volume_manager();
-    manager.register("smb-mounted", Arc::new(LocalPosixVolume::new("Mounted", root)));
-    let ids = distinct_mount_roots_in(
-        vec!["smb-mounted".to_string(), "smb-stale-but-newer".to_string()],
-        dir.path(),
-    );
-    manager.unregister("smb-mounted");
-
-    assert_eq!(ids, vec!["smb-mounted".to_string()]);
 }
 
 // ── Loading a non-root volume from its persisted DB ──────────────────

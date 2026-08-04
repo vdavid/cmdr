@@ -1,7 +1,8 @@
 //! Per-volume search index registry, lifecycle timers, and importance weights.
 //!
-//! Search is multi-volume: the root drive, plus any SMB share or MTP storage that
-//! has a persisted `index-{volume_id}.db`. Each volume's arena loads lazily into
+//! Any volume with a persisted `index-{volume_id}.db` is searchable — the root
+//! drive, an SMB share, an MTP storage — though ONE search covers exactly one of
+//! them (`execute.rs`). Each volume's arena loads lazily into
 //! [`SEARCH_INDICES`] on first use and all of them drop together when the dialog
 //! goes idle (RAM reclaim). The DB FILE on disk is the source of truth — a volume
 //! need NOT be registered in `INDEX_REGISTRY` to be searched (an ejected drive's
@@ -106,169 +107,6 @@ fn load_gate(volume_id: &str) -> Arc<Mutex<()>> {
         .entry(volume_id.to_string())
         .or_default()
         .clone()
-}
-
-// ── Volume enumeration ───────────────────────────────────────────────
-
-/// Parse the volume id out of an `index-{volume_id}.db` filename, or `None` for a
-/// non-index file / sidecar. A volume id may itself contain `-` (MTP serials), so
-/// strip the fixed prefix/suffix rather than splitting.
-fn volume_id_from_index_db(file_name: &str) -> Option<&str> {
-    file_name.strip_prefix("index-")?.strip_suffix(".db")
-}
-
-/// Every volume with a persisted index DB on disk, `root` first, one per mounted
-/// LOCATION. The target set for an unscoped search (search all indexed volumes). A
-/// missing data dir yields just `root` optimistically (its pool lives in the
-/// registry, not a file this enumerates).
-pub(crate) fn all_indexed_volume_ids() -> Vec<String> {
-    match data_dir() {
-        Some(dir) => distinct_mount_roots_in(indexed_volume_ids_in(&dir), &dir),
-        None => vec![ROOT_VOLUME_ID.to_string()],
-    }
-}
-
-/// `all_indexed_volume_ids` over an explicit dir (pure enough to unit-test).
-fn indexed_volume_ids_in(dir: &Path) -> Vec<String> {
-    let mut ids = vec![ROOT_VOLUME_ID.to_string()];
-    let Ok(read_dir) = std::fs::read_dir(dir) else {
-        return ids;
-    };
-    for entry in read_dir.flatten() {
-        let path = entry.path();
-        let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
-            continue;
-        };
-        let Some(volume_id) = volume_id_from_index_db(name) else {
-            continue;
-        };
-        if volume_id != ROOT_VOLUME_ID && !volume_id.is_empty() {
-            ids.push(volume_id.to_string());
-        }
-    }
-    ids
-}
-
-/// What an index DB says about the place it describes, read WITHOUT loading its
-/// arena (a file open plus two meta lookups, not the hundreds of MB the arena costs).
-struct IndexIdentity {
-    /// The mount root the index's paths hang off, `None` for root and for a DB whose
-    /// `volume_path` meta is absent while the volume is offline.
-    mount_root: Option<String>,
-    /// The `scan_completed_at` marker: which of two indexes for one location is the
-    /// more recent picture. `0` when the DB has never finished a scan.
-    scan_completed_at: u64,
-}
-
-fn peek_index_identity(volume_id: &str, data_dir: &Path) -> Option<IndexIdentity> {
-    if let Some(v) = get_loaded_raw(volume_id) {
-        return Some(IndexIdentity {
-            mount_root: v.mount_root.clone(),
-            scan_completed_at: read_scan_completed_at(&v.pool),
-        });
-    }
-    let db_path = data_dir.join(format!("index-{volume_id}.db"));
-    let pool = ReadPool::new(db_path).ok()?;
-    Some(IndexIdentity {
-        mount_root: read_mount_root(&pool, volume_id),
-        scan_completed_at: read_scan_completed_at(&pool),
-    })
-}
-
-fn read_scan_completed_at(pool: &ReadPool) -> u64 {
-    pool.with_conn(|conn| IndexStore::get_meta(conn, "scan_completed_at").ok().flatten())
-        .ok()
-        .flatten()
-        .and_then(|s| s.parse::<u64>().ok())
-        .unwrap_or(0)
-}
-
-/// Collapse volume ids that describe the SAME mounted location down to one keeper.
-///
-/// A mount root is a unique place in the filesystem: only one volume can be mounted
-/// at `/Volumes/naspi` at a time, and search reports ABSOLUTE paths, so two indexes
-/// both claiming that root would report the same paths twice and double the match
-/// count. That happens for real, because an SMB volume id is keyed on the ADDRESS the
-/// share was mounted from (`smb_volume_id(server, port, share)`): one NAS reached over
-/// Tailscale and over the LAN gets two ids, two full index DBs, and two arenas
-/// resident during an unscoped search.
-///
-/// The keeper is the volume currently registered in `VolumeManager` (that IS what's
-/// mounted there); failing that, the one whose scan finished most recently, which is
-/// the truer picture of what's on disk. Nothing is deleted or rewritten: the loser's
-/// DB stays put and wins the moment it's the one mounted.
-///
-/// Order is preserved (root stays first) and volumes with no known mount root are all
-/// kept — an unknown location can't be proven to collide with anything.
-fn distinct_mount_roots_in(ids: Vec<String>, data_dir: &Path) -> Vec<String> {
-    if ids.len() < 2 {
-        return ids;
-    }
-    // Rank each id once: higher is a better keeper (live-registered beats offline,
-    // then the more recent scan, then the earlier enumeration position so an exact
-    // tie is still deterministic).
-    let ranked: Vec<Candidate> = ids
-        .iter()
-        .enumerate()
-        .map(|(i, id)| {
-            let identity = peek_index_identity(id, data_dir);
-            Candidate {
-                mount_root: identity.as_ref().and_then(|it| it.mount_root.clone()),
-                rank: (
-                    registered_rank(id),
-                    identity.map_or(0, |it| it.scan_completed_at),
-                    std::cmp::Reverse(i),
-                ),
-            }
-        })
-        .collect();
-
-    // Best keeper per mount root. An id with NO known mount root (root itself, or an
-    // offline DB predating the `volume_path` meta) can't be shown to collide with
-    // anything, so it never enters a group and is always kept.
-    let mut best: HashMap<&str, usize> = HashMap::new();
-    for (i, candidate) in ranked.iter().enumerate() {
-        let Some(root) = candidate.mount_root.as_deref() else {
-            continue;
-        };
-        match best.get(root) {
-            Some(&b) if ranked[b].rank >= candidate.rank => {}
-            _ => {
-                best.insert(root, i);
-            }
-        }
-    }
-
-    let mut kept: Vec<String> = Vec::with_capacity(ids.len());
-    for (i, id) in ids.iter().enumerate() {
-        match ranked[i].mount_root.as_deref() {
-            None => kept.push(id.clone()),
-            Some(root) if best.get(root) == Some(&i) => kept.push(id.clone()),
-            Some(root) => log::debug!(
-                target: "search",
-                "skipping index '{id}': '{}' already covers {root} (same mounted location)",
-                best.get(root).map_or("?", |&b| ids[b].as_str()),
-            ),
-        }
-    }
-    kept
-}
-
-/// One index DB in the running for a mount root, with the tuple that picks the keeper:
-/// live-registered, then the most recent scan, then the earliest enumeration position.
-struct Candidate {
-    mount_root: Option<String>,
-    rank: (usize, u64, std::cmp::Reverse<usize>),
-}
-
-/// `1` when the volume is registered in the live `VolumeManager` (it IS what's
-/// mounted at that root right now), `0` otherwise. The primary dedupe tiebreak.
-fn registered_rank(volume_id: &str) -> usize {
-    usize::from(
-        crate::file_system::volume::manager::get_volume_manager()
-            .get(volume_id)
-            .is_some(),
-    )
 }
 
 // ── Loading ──────────────────────────────────────────────────────────
@@ -430,37 +268,6 @@ fn load_volume_blocking(volume_id: &str, data_dir: &Path, cancel: &AtomicBool) -
         mount_root,
         generation,
     }))
-}
-
-/// Whether a volume's arena is already in memory, without touching staleness or
-/// kicking a refresh. The readiness test for "can this volume answer right now, or
-/// does it need a multi-second load first?".
-pub(crate) fn is_warm(volume_id: &str) -> bool {
-    SEARCH_INDICES.lock_ignore_poison().contains_key(volume_id)
-}
-
-/// Load a volume's arena off the caller's thread, invoking `on_loaded` with the
-/// volume's entry count once it lands. The way a search hands a cold volume to the
-/// background instead of waiting seconds for it (see `execute.rs`'s cold policy).
-/// Single-flighted like every other load, so a warm-up already in progress is joined,
-/// not duplicated.
-///
-/// Declines once the dialog has closed: nobody is waiting on the result, and pulling
-/// in hundreds of MB the idle timer would immediately drop is exactly the resource
-/// waste the timers exist to prevent. (A load already in flight is stopped instead by
-/// `cancel_active_loads`; this covers the one that hadn't started yet.)
-pub(crate) fn warm_in_background(volume_id: String, on_loaded: impl FnOnce(u64) + Send + 'static) {
-    tauri::async_runtime::spawn_blocking(move || {
-        if !DIALOG_OPEN.load(Ordering::Relaxed) {
-            log::debug!(target: "search", "background warm of '{volume_id}' skipped, the dialog closed");
-            return;
-        }
-        match ensure_volume(&volume_id) {
-            VolumeLoad::Loaded(v) => on_loaded(v.index.entries.len() as u64),
-            VolumeLoad::NotIndexed => log::debug!(target: "search", "background warm: '{volume_id}' has no index"),
-            VolumeLoad::Failed(e) => log::debug!(target: "search", "background warm of '{volume_id}' stopped: {e}"),
-        }
-    });
 }
 
 /// Ensure a volume's index is loaded and return it (cache-aware). A warm entry

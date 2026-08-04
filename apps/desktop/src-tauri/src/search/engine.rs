@@ -194,29 +194,21 @@ fn prepare_scope_filter(query: &SearchQuery) -> ScopeFilter {
 
 // ── Search execution ─────────────────────────────────────────────────
 
-/// One ranked result: its cross-volume-comparable [`RankKey`] plus the built
-/// result entry. Single-volume callers drop the key immediately; the multi-volume
-/// orchestrator keeps it to k-way-merge each volume's slice into one global order.
-pub(crate) struct RankedEntry {
-    pub(crate) key: ranking::RankKey,
-    pub(crate) entry: SearchResultEntry,
-}
-
 /// Execute a search query against ONE in-memory index, returning a `SearchResult`.
 ///
-/// A thin wrapper over [`search_ranked`] (no path prefix, keys dropped, no coverage
-/// gaps) that the pure-engine tests assert against. Production runs
-/// [`search_ranked`] directly so it can k-way-merge across volumes and prefix mount
-/// paths; this wrapper isn't on any production path, hence `#[cfg(test)]`.
+/// A thin wrapper over [`search_ranked`] (no path prefix, no coverage gaps) that the
+/// pure-engine tests assert against. Production runs [`search_ranked`] directly so it
+/// can prefix mount paths; this wrapper isn't on any production path, hence
+/// `#[cfg(test)]`.
 #[cfg(test)]
 pub(crate) fn search(
     index: &SearchIndex,
     query: &SearchQuery,
     weights: &ImportanceWeights,
 ) -> Result<super::types::SearchResult, String> {
-    let (ranked, total_count) = search_ranked(index, query, weights, "")?;
+    let (entries, total_count) = search_ranked(index, query, weights, "")?;
     Ok(super::types::SearchResult {
-        entries: ranked.into_iter().map(|r| r.entry).collect(),
+        entries,
         total_count,
         uncovered_scopes: Vec::new(),
         unresolved_scopes: Vec::new(),
@@ -224,7 +216,7 @@ pub(crate) fn search(
 }
 
 /// Execute a search against ONE volume's index and return the ranked, path-built
-/// results (best-first) with their sort keys, plus the total match count.
+/// results (best-first) plus the total match count.
 ///
 /// `path_prefix` is prepended to every reconstructed path: empty for the `root`
 /// volume (its index is `/`-rooted, paths are already absolute), the mount root
@@ -238,7 +230,7 @@ pub(crate) fn search_ranked(
     query: &SearchQuery,
     weights: &ImportanceWeights,
     path_prefix: &str,
-) -> Result<(Vec<RankedEntry>, u32), String> {
+) -> Result<(Vec<SearchResultEntry>, u32), String> {
     let t = std::time::Instant::now();
 
     // Case-folding rule (shared by pattern matching and ranking): platform default
@@ -388,7 +380,7 @@ pub(crate) fn search_ranked(
         // execute.rs), so hand the matching directories back — ranked, so they reuse the
         // same materialization — for the caller to size-check and subtract. Files are
         // already size-filtered above.
-        let entries: Vec<RankedEntry> = if has_size_filter && dirs_included {
+        let entries: Vec<SearchResultEntry> = if has_size_filter && dirs_included {
             let home_dir = dirs::home_dir().map(|p| p.to_string_lossy().to_string());
             let dir_indices: Vec<usize> = matching_indices
                 .iter()
@@ -398,9 +390,9 @@ pub(crate) fn search_ranked(
             let stem = ranking::stem_for(query);
             // `usize::MAX`: the caller subtracts the out-of-range directories from the
             // volume total, so it needs every matching directory, not a top-k slice.
-            ranking::rank_decorated(index, &dir_indices, &stem, case_insensitive, weights, usize::MAX)
+            ranking::rank_indices(index, &dir_indices, &stem, case_insensitive, weights, usize::MAX)
                 .into_iter()
-                .map(|(key, idx)| build_ranked_entry(index, key, idx, path_prefix, home_dir.as_deref()))
+                .map(|idx| build_result_entry(index, idx, path_prefix, home_dir.as_deref()))
                 .collect()
         } else {
             Vec::new()
@@ -426,17 +418,17 @@ pub(crate) fn search_ranked(
     };
 
     // Rank by match-quality band first, then importance-boosted recency within a
-    // band (empty weights ⇒ pure recency, today's order). See `ranking.rs`. Keep the
-    // keys: the multi-volume merge k-way-merges each volume's slice on them.
+    // band (empty weights ⇒ pure recency, today's order). See `ranking.rs`. The
+    // returned order IS the result order; the caller only truncates it.
     let stem = ranking::stem_for(query);
-    let ranked = ranking::rank_decorated(index, &matching_indices, &stem, case_insensitive, weights, limit);
+    let ranked = ranking::rank_indices(index, &matching_indices, &stem, case_insensitive, weights, limit);
 
     // Reconstruct paths and build result entries (prefixed into the volume's mount
     // space, so a non-root volume's mount-relative index paths become absolute).
     let home_dir = dirs::home_dir().map(|p| p.to_string_lossy().to_string());
-    let entries: Vec<RankedEntry> = ranked
+    let entries: Vec<SearchResultEntry> = ranked
         .iter()
-        .map(|&(key, idx)| build_ranked_entry(index, key, idx, path_prefix, home_dir.as_deref()))
+        .map(|&idx| build_result_entry(index, idx, path_prefix, home_dir.as_deref()))
         .collect();
 
     log::debug!(
@@ -464,18 +456,12 @@ fn apply_path_prefix(prefix: &str, path: &str) -> String {
     }
 }
 
-/// Materialize one ranked hit into a `RankedEntry`: reconstruct its full path
+/// Materialize one ranked hit into a `SearchResultEntry`: reconstruct its full path
 /// (prefixed into the volume's mount space, so a non-root volume's mount-relative
 /// index paths become absolute), derive the `~`-relative parent path, and pick an
 /// icon. `home_dir` is the absolute home directory (for the `~` substitution), passed
 /// in so a batch reconstructs it once.
-fn build_ranked_entry(
-    index: &SearchIndex,
-    key: ranking::RankKey,
-    idx: usize,
-    path_prefix: &str,
-    home_dir: Option<&str>,
-) -> RankedEntry {
+fn build_result_entry(index: &SearchIndex, idx: usize, path_prefix: &str, home_dir: Option<&str>) -> SearchResultEntry {
     let entry = &index.entries[idx];
     let path = apply_path_prefix(path_prefix, &reconstruct_path_from_index(index, entry.id));
     let parent_path = match path.rfind('/') {
@@ -498,18 +484,15 @@ fn build_ranked_entry(
     };
     let entry_name = index.name(entry);
     let icon_id = derive_icon_id(entry_name, entry.is_directory);
-    RankedEntry {
-        key,
-        entry: SearchResultEntry {
-            name: entry_name.to_string(),
-            path,
-            parent_path,
-            is_directory: entry.is_directory,
-            size: entry.size,
-            modified_at: entry.modified_at,
-            icon_id,
-            entry_id: entry.id,
-        },
+    SearchResultEntry {
+        name: entry_name.to_string(),
+        path,
+        parent_path,
+        is_directory: entry.is_directory,
+        size: entry.size,
+        modified_at: entry.modified_at,
+        icon_id,
+        entry_id: entry.id,
     }
 }
 

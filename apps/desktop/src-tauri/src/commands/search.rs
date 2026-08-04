@@ -25,19 +25,21 @@ pub struct PrepareResult {
     pub entry_count: u64,
 }
 
-/// Emitted once an in-memory search index finishes loading, so the dialog can flip
-/// from "loading" to ready, show the indexed entry count, and re-run whatever the
-/// user has typed.
+/// Emitted once a volume's in-memory search index finishes loading, so the dialog
+/// can flip from "loading" to ready, show the indexed entry count, and re-run
+/// whatever the user has typed.
 ///
-/// Fires for ROOT's pre-load, and again for each extra volume an unscoped search
-/// deferred to a background warm-up: the re-run is how a NAS's matches fold into
-/// results that already came back from the volumes that were ready. `entryCount`
-/// always reports ROOT's arena (the count the dialog shows), not the volume that
-/// just landed.
+/// The event NAMES its volume rather than implying root: a search targets one volume
+/// (`search/execute.rs`), so "ready" is only ever true of a particular one. Today
+/// only root's dialog pre-load emits; the per-target readiness gate that consumes
+/// `volumeId` is the next milestone (`docs/specs/unindexed-search-plan.md` M1).
 #[derive(Debug, Clone, serde::Deserialize, Serialize, specta::Type, tauri_specta::Event)]
 #[tauri_specta(event_name = "search-index-ready")]
 #[serde(rename_all = "camelCase")]
 pub struct SearchIndexReadyEvent {
+    /// The volume whose arena just landed.
+    pub volume_id: String,
+    /// That volume's indexed entry count.
     pub entry_count: u64,
 }
 
@@ -69,7 +71,7 @@ pub async fn prepare_search_index(app: tauri::AppHandle) -> Result<PrepareResult
     let app_clone = app.clone();
     tauri::async_runtime::spawn(async move {
         match tokio::task::spawn_blocking(|| search::ensure_volume(ROOT_VOLUME_ID)).await {
-            Ok(VolumeLoad::Loaded(_)) => emit_index_ready(&app_clone),
+            Ok(VolumeLoad::Loaded(v)) => emit_index_ready(&app_clone, ROOT_VOLUME_ID, v.index.entries.len() as u64),
             Ok(VolumeLoad::NotIndexed) => log::debug!("prepare_search_index: root index not available yet"),
             Ok(VolumeLoad::Failed(e)) => log::warn!("prepare_search_index: root load failed: {e}"),
             Err(e) => log::warn!("prepare_search_index: load task panicked: {e}"),
@@ -82,41 +84,33 @@ pub async fn prepare_search_index(app: tauri::AppHandle) -> Result<PrepareResult
     })
 }
 
-/// Search across the scoped volume(s), or every indexed volume when unscoped.
-/// Returns empty (no coverage gaps) when nothing is indexed yet.
+/// Search the scope's volume, or the boot volume when the query has no scope.
+/// Returns empty (with an honest coverage gap) when that volume has no index yet.
 ///
-/// An unscoped search answers from the volumes whose arenas are already in memory and
-/// warms the rest behind the reply, emitting `search-index-ready` as each lands so the
-/// dialog re-runs and their matches fold in. Root and any explicitly-scoped volume are
-/// still waited for.
+/// A search covers at most ONE volume, so a scope naming paths on two of them is
+/// refused rather than answered for one (`search/execute.rs`).
 #[tauri::command]
 #[specta::specta]
-pub async fn search_files(app: tauri::AppHandle, query: SearchQuery) -> Result<SearchResult, String> {
+pub async fn search_files(query: SearchQuery) -> Result<SearchResult, String> {
     search::touch_activity();
     search::cancel_idle_timer();
 
-    // Route + load + scan + merge on a blocking thread (opens DBs, rayon scan).
-    let outcome =
-        tokio::task::spawn_blocking(move || search::run_blocking(query, search::ColdVolumePolicy::DeferColdVolumes))
-            .await
-            .map_err(|e| format!("Search task failed: {e}"))??;
-
-    for volume_id in outcome.deferred_volumes {
-        let app = app.clone();
-        search::warm_in_background(volume_id, move |_| emit_index_ready(&app));
-    }
-
-    Ok(outcome.result)
+    // Route + load + scan on a blocking thread (opens a DB, rayon scan).
+    tokio::task::spawn_blocking(move || search::run_blocking(query))
+        .await
+        .map_err(|e| format!("Search task failed: {e}"))?
 }
 
-/// Nudge the dialog that another volume's index is now searchable. Reports ROOT's
-/// entry count so the displayed number keeps meaning the same thing.
-fn emit_index_ready(app: &tauri::AppHandle) {
-    use cmdr_index::ROOT_VOLUME_ID;
+/// Nudge the dialog that a volume's index is now searchable, naming the volume and
+/// its entry count.
+fn emit_index_ready(app: &tauri::AppHandle, volume_id: &str, entry_count: u64) {
     use tauri_specta::Event;
 
-    let entry_count = search::get_loaded(ROOT_VOLUME_ID).map_or(0, |v| v.index.entries.len() as u64);
-    let _ = SearchIndexReadyEvent { entry_count }.emit(app);
+    let _ = SearchIndexReadyEvent {
+        volume_id: volume_id.to_string(),
+        entry_count,
+    }
+    .emit(app);
 }
 
 /// Called when the search dialog closes. Starts the idle timer and cancels any

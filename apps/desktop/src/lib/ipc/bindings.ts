@@ -2140,13 +2140,11 @@ export const commands = {
    */
   prepareSearchIndex: () => typedError<PrepareResult, string>(__TAURI_INVOKE('prepare_search_index')),
   /**
-   *  Search across the scoped volume(s), or every indexed volume when unscoped.
-   *  Returns empty (no coverage gaps) when nothing is indexed yet.
+   *  Search the scope's volume, or the boot volume when the query has no scope.
+   *  Returns empty (with an honest coverage gap) when that volume has no index yet.
    *
-   *  An unscoped search answers from the volumes whose arenas are already in memory and
-   *  warms the rest behind the reply, emitting `search-index-ready` as each lands so the
-   *  dialog re-runs and their matches fold in. Root and any explicitly-scoped volume are
-   *  still waited for.
+   *  A search covers at most ONE volume, so a scope naming paths on two of them is
+   *  refused rather than answered for one (`search/execute.rs`).
    */
   searchFiles: (query: SearchQuery) => typedError<SearchResult, string>(__TAURI_INVOKE('search_files', { query })),
   /**
@@ -7425,17 +7423,19 @@ export type SearchCoverageReason =
   | 'searchRowIncomplete'
 
 /**
- *  Emitted once an in-memory search index finishes loading, so the dialog can flip
- *  from "loading" to ready, show the indexed entry count, and re-run whatever the
- *  user has typed.
+ *  Emitted once a volume's in-memory search index finishes loading, so the dialog
+ *  can flip from "loading" to ready, show the indexed entry count, and re-run
+ *  whatever the user has typed.
  *
- *  Fires for ROOT's pre-load, and again for each extra volume an unscoped search
- *  deferred to a background warm-up: the re-run is how a NAS's matches fold into
- *  results that already came back from the volumes that were ready. `entryCount`
- *  always reports ROOT's arena (the count the dialog shows), not the volume that
- *  just landed.
+ *  The event NAMES its volume rather than implying root: a search targets one volume
+ *  (`search/execute.rs`), so "ready" is only ever true of a particular one. Today
+ *  only root's dialog pre-load emits; the per-target readiness gate that consumes
+ *  `volumeId` is the next milestone (`docs/specs/unindexed-search-plan.md` M1).
  */
 export type SearchIndexReadyEvent = {
+  // The volume whose arena just landed.
+  volumeId: string
+  // That volume's indexed entry count.
   entryCount: number
 }
 
