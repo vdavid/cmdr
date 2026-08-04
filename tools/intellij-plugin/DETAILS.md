@@ -18,6 +18,33 @@ on.
 
 Nothing else.
 
+## Why it's ours, and why it lives here
+
+**Why not a marketplace plugin.** [Easy I18n](https://plugins.jetbrains.com/plugin/16316-easy-i18n) does key folding
+and covers Svelte, so it's the obvious thing to try first. Three properties of our catalog fight it:
+
+- One locale is a **directory** of per-area files (`messages/en/crashReporter.json`, …) while the keys inside are
+  already fully qualified (`crashReporter.dialog.title` lives inside `crashReporter.json`). Every i18next-shaped parser
+  reads the file name as a namespace and goes looking for `crashReporter:crashReporter.dialog.title`.
+- The catalogs carry ARB-style `@key` metadata siblings, which a generic parser reads as real keys.
+- Our keys also reach the UI as bare literals on `labelKey` / `descriptionKey` properties, not only inside a call.
+
+The changelog feature has no marketplace equivalent at all, because the hash convention is ours. Once we're writing one
+plugin, the second feature is cheap.
+
+**Why in-repo, and why `tools/`.** The plugin hardcodes catalog paths and function names, so it has to move when they
+move; that coupling is the argument for keeping it in the repo rather than in one of its own. `scripts/` is for things
+the repo runs and this runs inside an editor, `apps/*` is a pnpm workspace glob so a Gradle project there would confuse
+`pnpm install`, and `crates/` is Rust. `tools/privatesize-poc/` is the precedent.
+
+**Why never published.** Sideloading from `build/distributions/*.zip` keeps the BSL license out of the discussion
+entirely. If we ever want to publish, that's an extraction rather than a config flag.
+
+**Why no settings panel.** `cmdr-plugin.json` is the only configuration surface. A panel means a
+`PersistentStateComponent`, a UI form, and defaults-versus-overrides merge logic, which is more machinery than the two
+features it would configure. Editing a JSON file and restarting is fine for a private tool. Add one when there's a
+setting worth toggling mid-session.
+
 ## The core seam
 
 `CmdrProjectService.config` is `null` outside a Cmdr checkout, which is what keeps the plugin inert everywhere else.
@@ -201,8 +228,10 @@ index build: it still measures 1–3 ms warm per file.
   stdlib API the IDE's runtime doesn't have.
 - **JDK 25** (`temurin-25.0.4+7.0.LTS`), pinned in the scoped `tools/intellij-plugin/.mise.toml`. Platform 2026.2
   requires Java 25, up from 21 in 2026.1 (JetBrains build-number-ranges doc, checked 2026-08-03).
-- **The local IDE**: IntelliJ IDEA 2026.2, build `262.8665.176`, product code `IU`
-  (`Contents/Resources/product-info.json`, 2026-08-03). `sinceBuild` is `262`; `untilBuild` is deliberately unset.
+- **The local IDE**: IntelliJ IDEA 2026.2.1 RC, build `262.9437.65`, product code `IU`
+  (`Contents/Resources/product-info.json`, 2026-08-05). `sinceBuild` is `262`; `untilBuild` is deliberately unset, and
+  the suite stays green as that build moves under it. Each measurement below carries the build it was taken on, so an
+  IDE upgrade doesn't quietly rewrite them; re-run the tests that print them rather than editing the numbers.
 
 ## How `.svelte` really parses
 
