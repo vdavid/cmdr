@@ -3,3 +3,4 @@ build/
 .intellijPlatform/
 .kotlin/
 sandbox-project/.idea/
+sandbox-project/tools/

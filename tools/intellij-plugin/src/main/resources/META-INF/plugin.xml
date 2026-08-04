@@ -4,10 +4,10 @@
     <vendor email="veszelovszki@gmail.com" url="https://getcmdr.com">David Veszelovszki</vendor>
 
     <description><![CDATA[
-        Reading aids for the Cmdr repository. Scaffold so far: the only thing it does today is fold the literal
-        <code>'CMDR_M0_PROBE'</code>. Commit-hash links in <code>CHANGELOG.md</code> and i18n keys folded to their
-        English text come next. Never published to the Marketplace; sideloaded from
-        <code>build/distributions/</code>.
+        Reading aids for the Cmdr repository. Today it turns the trailing commit hashes on a <code>CHANGELOG.md</code>
+        entry into links to their GitHub commits; i18n keys folded to their English text come next. Every feature is
+        off unless the open project carries <code>tools/intellij-plugin/cmdr-plugin.json</code>. Never published to the
+        Marketplace; sideloaded from <code>build/distributions/</code>.
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
@@ -18,14 +18,13 @@
     <depends optional="true" config-file="cmdr-svelte.xml">dev.blachut.svelte.lang</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <!-- M0 probe. Two registrations, and the count is the finding: a registration for `JavaScript` is shadowed at
-             the `TypeScript` level and never reaches `.ts`, so every language needs naming.
-             `LanguageCoverageSpikeTest` pins that. Delete once a real feature replaces it. -->
-        <lang.foldingBuilder
-            language="JavaScript"
-            implementationClass="com.getcmdr.idea.m0.M0ProbeFoldingBuilder"/>
-        <lang.foldingBuilder
-            language="TypeScript"
-            implementationClass="com.getcmdr.idea.m0.M0ProbeFoldingBuilder"/>
+        <!-- Commit-hash links. The handler gives ⌘-click, the annotator gives the color. Both return immediately
+             outside a Cmdr checkout and outside the files `cmdr-plugin.json` names. A `psi.referenceContributor`
+             would be the obvious shape for the click and doesn't work on Markdown; see `DETAILS.md`. -->
+        <gotoDeclarationHandler
+            implementation="com.getcmdr.idea.features.changelog.ChangelogRefGotoDeclarationHandler"/>
+        <annotator
+            language="Markdown"
+            implementationClass="com.getcmdr.idea.features.changelog.ChangelogRefAnnotator"/>
     </extensions>
 </idea-plugin>

@@ -1,0 +1,14 @@
+{
+  "changelog": {
+    "files": ["CHANGELOG.md"],
+    "commitUrl": "https://github.com/vdavid/cmdr/commit/{hash}",
+    "trailingGroupPattern": "\\(([0-9a-f]{8}(?:,\\s*[0-9a-f]{8})*)\\)$"
+  },
+  "i18n": {
+    "catalogGlob": "apps/desktop/src/lib/intl/messages/en/*.json",
+    "functions": ["t", "tString", "getMessage"],
+    "componentAttributes": [{ "component": "Trans", "attribute": "key" }],
+    "keyProperties": ["labelKey", "descriptionKey", "titleKey", "cardKey"],
+    "languages": ["JavaScript", "TypeScript", "Svelte"]
+  }
+}

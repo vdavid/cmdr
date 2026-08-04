@@ -1,4 +1,4 @@
-package com.getcmdr.idea.m0
+package com.getcmdr.idea.platform
 
 import com.intellij.lang.Language
 import com.intellij.lang.folding.LanguageFolding
@@ -49,8 +49,12 @@ class LanguageCoverageSpikeTest : BasePlatformTestCase() {
         assertTrue("SvelteTS should be a TypeScript dialect", svelteTs.contains("TypeScript"))
     }
 
-    fun testEveryLanguageWeRegisterForSeesOurBuilder() {
-        REGISTERED_LANGUAGES.forEach { id ->
+    fun testEveryLanguageWeRegisterAFoldingBuilderForSeesIt() {
+        if (FOLDING_LANGUAGES.isEmpty()) {
+            println("[spike] no Cmdr folding builders are registered yet, so there's nothing to cover.")
+            return
+        }
+        FOLDING_LANGUAGES.forEach { id ->
             if (Language.findLanguageByID(id) == null) {
                 println("[spike] $id: not registered in this IDE, skipping")
                 return@forEach
@@ -59,21 +63,9 @@ class LanguageCoverageSpikeTest : BasePlatformTestCase() {
             println("[spike] folding builders for $id: ${builders.joinToString()}")
             assertTrue(
                 "$id has no Cmdr folding builder; the `plugin.xml` registration is missing or misspelled",
-                builders.contains(M0ProbeFoldingBuilder::class.java.name),
+                builders.any { it.startsWith(CMDR_PACKAGE) },
             )
         }
-    }
-
-    fun testTheProbeCollapsesByDefault() {
-        myFixture.configureByText("probe.ts", "const marker = '${M0ProbeFoldingBuilder.PROBE_TOKEN}'\n")
-        val builder = M0ProbeFoldingBuilder()
-        val descriptors = builder.buildFoldRegions(myFixture.file, myFixture.editor.document, false)
-
-        // Asserted on the descriptor, not on the live region: `updateFoldRegions` deliberately preserves whatever
-        // expansion state the editor already has and never applies defaults, so a region's `isExpanded` in tier 1
-        // says nothing. Whether a freshly opened file really shows the placeholder is a tier 2 observation.
-        assertEquals(1, descriptors.size)
-        assertTrue(builder.isCollapsedByDefault(descriptors.single().element))
     }
 
     private fun baseLanguageChain(id: String): List<String> {
@@ -87,8 +79,12 @@ class LanguageCoverageSpikeTest : BasePlatformTestCase() {
     }
 
     private companion object {
-        /** Must mirror every `<lang.foldingBuilder>` in `plugin.xml` and `cmdr-svelte.xml`. */
-        val REGISTERED_LANGUAGES = listOf("JavaScript", "TypeScript", "SvelteHTML")
+        /**
+         * Must mirror every `<lang.foldingBuilder>` in `plugin.xml` and `cmdr-svelte.xml`. Empty today: nothing folds
+         * yet. Adding a folding registration means adding its language here, or losing the coverage silently.
+         */
+        val FOLDING_LANGUAGES = emptyList<String>()
+        const val CMDR_PACKAGE = "com.getcmdr.idea."
         const val JS_FOLDING_BUILDER = "com.intellij.lang.javascript.folding.JavaScriptFoldingBuilder"
     }
 }

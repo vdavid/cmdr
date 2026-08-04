@@ -1,5 +1,6 @@
-package com.getcmdr.idea.m0
+package com.getcmdr.idea.platform
 
+import com.getcmdr.idea.RepoFiles
 import com.intellij.lang.Language
 import com.intellij.lang.javascript.psi.JSCallExpression
 import com.intellij.lang.javascript.psi.JSLiteralExpression
@@ -7,8 +8,8 @@ import com.intellij.lang.javascript.psi.JSReferenceExpression
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.util.PsiTreeUtil
+import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.psi.xml.XmlAttribute
-import java.io.File
 
 /**
  * The M0 spike, and the answer it found: `{tString(…)}` inside a `.svelte` template is ordinary JavaScript PSI, so
@@ -19,7 +20,7 @@ import java.io.File
  * Every test prints its observation, so `./gradlew test --tests '*SveltePsiSpike*'` is a re-runnable evidence dump.
  * Findings are written up in `DETAILS.md`; this file is what regenerates them after an IDE upgrade.
  */
-class SveltePsiSpikeTest : FoldingTestCase() {
+class SveltePsiSpikeTest : BasePlatformTestCase() {
     private val sveltePluginPresent: Boolean
         get() = Language.findLanguageByID(SVELTE_FILE_LANGUAGE_ID) != null
 
@@ -47,50 +48,37 @@ class SveltePsiSpikeTest : FoldingTestCase() {
         val source = """
             <script lang="ts">
                 import { tString } from '${'$'}lib/intl/messages.svelte'
-                const marker = '${M0ProbeFoldingBuilder.PROBE_TOKEN}'
+                const marker = tString('spike.inScript')
             </script>
 
-            <p>{tString('${M0ProbeFoldingBuilder.PROBE_TOKEN}')}</p>
+            <p>{tString('spike.inTemplate')}</p>
         """.trimIndent()
-        myFixture.configureByText("Probe.svelte", source)
+        myFixture.configureByText("Spike.svelte", source)
 
-        describeFile(myFixture.file, "Probe.svelte")
+        describeFile(myFixture.file, "Spike.svelte")
 
-        val templateOffset = source.indexOf("{tString(") + "{tString('".length
-        val elementInTemplate = elementAt(templateOffset)
-        println(
-            "[spike] element inside the template expression: language=${elementInTemplate?.language?.id} " +
-                "elementType=${elementInTemplate?.node?.elementType} class=${elementInTemplate?.javaClass?.name}",
-        )
-
-        val scriptOffset = source.indexOf("const marker = '") + "const marker = '".length
-        val elementInScript = elementAt(scriptOffset)
-        println(
-            "[spike] element inside <script lang=\"ts\">: language=${elementInScript?.language?.id} " +
-                "elementType=${elementInScript?.node?.elementType} class=${elementInScript?.javaClass?.name}",
-        )
+        describeElementAt("the template expression", source.indexOf("'spike.inTemplate'") + 1)
+        describeElementAt("the <script> block", source.indexOf("'spike.inScript'") + 1)
 
         // The structural fact everything else follows from: one root, language SvelteHTML. There is no second
         // JavaScript root and no language injection, so the folding pass only ever hands us the HTML root.
         assertEquals(listOf(SVELTE_FILE_LANGUAGE_ID), myFixture.file.viewProvider.languages.map { it.id })
 
-        val placeholders = probePlaceholders()
-        println("[spike] fold regions our SvelteHTML-registered builder contributed: ${placeholders.size}")
+        // Two `tString(…)` calls in the file: one in the <script> block, one inside a template expression. Reaching
+        // both by walking down from that single SvelteHTML root is the answer to question 1, and it's what lets an
+        // extension registered for `SvelteHTML` match real call expressions rather than text.
+        val keys = PsiTreeUtil.findChildrenOfType(myFixture.file, JSCallExpression::class.java)
+            .mapNotNull { (it.arguments.firstOrNull() as? JSLiteralExpression)?.stringValue }
+        println("[spike] keys reachable from the SvelteHTML root: ${keys.joinToString()}")
 
-        // Two probe tokens in the file: one in the <script> block, one inside a template expression. Both folding is
-        // the answer to question 1 — a builder registered for the single SvelteHTML root reaches real JS PSI in both.
-        assertEquals(
-            "a builder registered for language=\"SvelteHTML\" should reach both the <script> block and the template",
-            2,
-            placeholders.size,
-        )
+        assertEquals(listOf("spike.inScript", "spike.inTemplate"), keys)
     }
 
     /** Question 1 again, on the real repo file the spec names, so the answer isn't an artifact of a tidy fixture. */
     fun testRealCrashReportDialogExposesTheSameShape() {
         if (skipWithoutSveltePlugin()) return
 
-        val real = repoFile(REAL_SVELTE_FILE)
+        val real = RepoFiles.find(REAL_SVELTE_FILE)
         if (real == null) {
             println("[spike] SKIPPED: $REAL_SVELTE_FILE not found under cmdr.repo.root; the file moved.")
             return
@@ -135,7 +123,7 @@ class SveltePsiSpikeTest : FoldingTestCase() {
     fun testTransAttributeIsXmlPsiRatherThanJavaScript() {
         if (skipWithoutSveltePlugin()) return
 
-        val real = repoFile(REAL_TRANS_FILE)
+        val real = RepoFiles.find(REAL_TRANS_FILE)
         if (real == null) {
             println("[spike] SKIPPED: $REAL_TRANS_FILE not found under cmdr.repo.root; the file moved.")
             return
@@ -175,6 +163,14 @@ class SveltePsiSpikeTest : FoldingTestCase() {
     private fun elementAt(offset: Int): PsiElement? =
         myFixture.file.viewProvider.findElementAt(offset) ?: myFixture.file.findElementAt(offset)
 
+    private fun describeElementAt(label: String, offset: Int) {
+        val element = elementAt(offset)
+        println(
+            "[spike] element inside $label: language=${element?.language?.id} " +
+                "elementType=${element?.node?.elementType} class=${element?.javaClass?.name}",
+        )
+    }
+
     private fun describeFile(file: PsiFile, label: String) {
         val provider = file.viewProvider
         println("[spike] $label view provider: ${provider.javaClass.name}")
@@ -203,11 +199,6 @@ class SveltePsiSpikeTest : FoldingTestCase() {
 
     private fun Language.isKindOf(id: String): Boolean =
         generateSequence(this) { it.baseLanguage }.any { it.id == id }
-
-    private fun repoFile(relative: String): File? {
-        val root = System.getProperty("cmdr.repo.root") ?: return null
-        return File(root, relative).takeIf { it.isFile }
-    }
 
     private companion object {
         const val SVELTE_FILE_LANGUAGE_ID = "SvelteHTML"
