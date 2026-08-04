@@ -151,11 +151,7 @@ export function derivePatternChip(input: {
  * which the chip shows UNCONFIGURED: the search really is scoped there, so hiding it would
  * read as "everywhere", but the user didn't choose it, so there's nothing to clear.
  */
-export function deriveScopeChip(
-  scope: string,
-  excludeSystemDirs: boolean,
-  defaultScopeLabel: string,
-): FilterChipState {
+export function deriveScopeChip(scope: string, excludeSystemDirs: boolean, defaultScopeLabel: string): FilterChipState {
   const trimmed = scope.trim()
   if (!trimmed) {
     // Even with no scope text, the chip is "configured" if the user disabled the system-dirs

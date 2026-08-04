@@ -104,7 +104,7 @@ describe('resolveDefaultScope', () => {
     expect(resolveDefaultScope(presets)).toEqual({ path: '/Users/me/projects', kind: 'currentFolder' })
   })
 
-  it("falls back to this volume when the pane has no real folder, so a search still runs", () => {
+  it('falls back to this volume when the pane has no real folder, so a search still runs', () => {
     // A snapshot pane with nothing but search results behind it: there's no folder to
     // default to, and refusing to search would be worse than searching one rung wider.
     const presets = { currentFolder: null, currentFolderUnavailableReason: 'nope', volumeRoot: '/Volumes/naspi' }

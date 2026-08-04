@@ -47,10 +47,10 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       log volume, and the 643 MB `MALLOC_LARGE`, which is the primary memory unknown now that page-cache overflow is
       shown to land only in `MALLOC_SMALL` and the search arena is shown to drop correctly.
 
-- [ ] 2026-08-04 `unindexed-search-plan.md` - IN EXECUTION. A search returns the same files indexed or not, only
-      slower, on every volume kind (local, SMB, MTP, and whatever comes next), by walking the uncovered part live and
-      writing what it finds into the drive index. Made reachable by capping a search at ONE volume: fan-out was the only
-      way a search could quietly omit a drive, so removing it deletes machinery (k-way merge, cold-volume deferral,
+- [ ] 2026-08-04 `unindexed-search-plan.md` - IN EXECUTION. A search returns the same files indexed or not, only slower,
+      on every volume kind (local, SMB, MTP, and whatever comes next), by walking the uncovered part live and writing
+      what it finds into the drive index. Made reachable by capping a search at ONE volume: fan-out was the only way a
+      search could quietly omit a drive, so removing it deletes machinery (k-way merge, cold-volume deferral,
       re-run-on-ready) rather than adding any, and the MCP tools collapse to a thin wrapper on the same path. Three
       findings shape the mechanism. The descent rule needs BOTH epoch fields: `min_subtree_epoch` alone degenerates to
       "walk everything", since its zero-absorbing min forces zero on every ancestor of any gap. Exclusions are a
