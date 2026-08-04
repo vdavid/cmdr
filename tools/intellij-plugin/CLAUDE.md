@@ -23,9 +23,8 @@ on GitHub. In `.ts`, `.js`, and `.svelte`, a resolvable message key folds to its
 
 - **Run everything through mise**: `mise exec -- ./gradlew …`. The JDK is pinned in this directory's scoped
   `.mise.toml`, never the root one, and a bare `./gradlew` takes whatever JDK is on `PATH`.
-- **Config-driven, or it silently dies.** Every extension point opens by asking `CmdrProjectService`; a feature is off
-  when its `cmdr-plugin.json` section is absent. That file is both marker and config: no settings panel, no
-  `PersistentStateComponent`.
+- **Config-driven, or it silently dies.** Every extension point opens by asking `CmdrProjectService`; an absent
+  `cmdr-plugin.json` section means the feature is off. That file is both marker and config: no settings panel.
 - **A fold region keeps the placeholder it was built with**, so dropping the index isn't enough when copy changes under
   an open editor. `MessageCatalogService.refoldOpenEditors` gets past it, and only via `scheduleAsyncFoldingUpdate`;
   don't "simplify" that to `updateFoldRegions`.
@@ -36,14 +35,13 @@ on GitHub. In `.ts`, `.js`, and `.svelte`, a resolvable message key folds to its
   through that file's JSON PSI at click time, so nothing positional can go stale.
 - **A `build.gradle.kts` task action may only capture locals**, never a script-level `val`: the configuration cache
   can't serialize a script reference, and `runIde` then won't configure.
-- **Tier 2 can't confirm the changelog ⌘-click**: the sandbox IDE resolves `BrowserLauncher` to the remote-development
-  one, so no page opens however well it works. Assert that headless with a replaced `BrowserLauncher`. Key navigation
-  stays inside the IDE, so tier 2 does see that one.
-- **Synthetic input into the sandbox IDE can edit the fixture.** `git diff sandbox-project/` after a tier 2 run.
-- **One `<lang.foldingBuilder>` per language**: `LanguageExtension` returns the _nearest_ non-empty level of the
-  base-language chain, not the union, so `JavaScript`'s is invisible to `TypeScript`. Adding one means a line in
-  `LanguageCoverageSpikeTest.FOLDING_LANGUAGES` too. `.svelte` is one `SvelteHTML` root, never a JS root: register there
-  and walk down.
+- **Tier 2 can't confirm either ⌘-click**: no page ever opens (the sandbox resolves `BrowserLauncher` to the
+  remote-development one) and putting the caret on a key needs input. Assert both headless.
+- **Raising the sandbox window takes the keyboard from whoever is at the machine**, and their typing lands in the
+  fixture. Raise it briefly, `git diff sandbox-project/` after, and shoot `screencapture -l <window-id>`.
+- **One `<lang.foldingBuilder>` per language**: registrations don't merge down the base-language chain, so
+  `JavaScript`'s is invisible to `TypeScript`. Adding a language means a line in
+  `LanguageCoverageSpikeTest.FOLDING_LANGUAGES` too. `.svelte` is one `SvelteHTML` root: register there and walk down.
 - **Folding assertions need `CodeFoldingManager.updateFoldRegions`**: `buildInitialFoldings` and `doHighlighting()`
   leave the model empty, which reads as a passing test that asserts nothing. `FoldingHarnessTest` pins it.
 - **Leave `untilBuild` open.** We target an EAP; a pinned upper bound makes the plugin vanish at the next IDE upgrade.

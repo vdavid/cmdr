@@ -308,6 +308,13 @@ in curly quotes, `labelKey:` and `descriptionKey:` still showing their names in 
 rendering as `Here's`, `{countText}` intact, and the unknown key, the bare string, and the template-built key left as
 source. `runIde` opens both fixture files; the last one in the list is the focused tab.
 
+Confirmed 2026-08-04 for key navigation, one half of it: with the caret inside a key the catalog doesn't have,
+Navigate → Declaration or Usages says "Cannot find declaration to go to" and nothing else happens, which is the
+must-not-throw case. **The positive half was not confirmed in tier 2**, because getting the caret into a resolvable key
+needs input, and driving input turned out to be the wrong thing to do on this machine; see the focus-stealing gotcha
+below. Tier 1 asserts the same platform call the menu item runs
+(`GotoDeclarationAction.findAllTargetElements` → the `JsonProperty`), including against the repo's real catalog.
+
 ```sh
 cd tools/intellij-plugin
 mise exec -- ./gradlew runIde &                       # ~40 s to a usable window
@@ -317,13 +324,32 @@ screencapture -x -o /tmp/tier2.png
 kill $PID
 ```
 
+**Capture the window, not the screen.** `screencapture -x -o -l <window-id>` grabs the sandbox IDE alone even when it's
+buried, so a screenshot can't pick up whatever David has open. There's no CLI that prints window IDs and the system
+Python has no `Quartz`, so get one from a four-line Swift script over `CGWindowListCopyWindowInfo` filtered by window
+name (`sandbox-project – …`); `swift <file>.swift` runs it with no project. Raising the window first is then only about
+keyboard focus, never about the picture.
+
 - **Check for a sandbox IDE that's already running before launching one.** A stale instance from a previous session
   keeps its old plugin build, logs `Failed to unload modified plugins`, and every screenshot then shows code that isn't
   yours. `ps` for `cmdr-idea-plugin` first, and read `.intellijPlatform/sandbox/…/log/idea.log` if anything looks off.
 - **A ⌘-hover only fires if the mouse moves while the modifier is already down.** Pressing ⌘ with the pointer already
   parked on the target does nothing, which reads exactly like a broken feature.
+- **Raising the sandbox IDE steals the keyboard from whoever is at the machine**, and their typing lands in the fixture
+  file. A 2026-08-04 session watched `a.`, `e.g`, and `hours.` appear inside `sample.ts` seconds apart while the sandbox
+  window held focus, one of them saved to disk. So: don't raise the window unless you need to, do it for as few seconds
+  as possible, `git diff sandbox-project/` afterwards, and treat a confirmation you can only get by holding focus as one
+  to leave to tier 1. Undo through the menu (Edit → Undo Typing) rather than ⌘Z; sending more keystrokes into a window
+  that's already collecting someone else's is how a one-character mess becomes a five-character one.
 - **Synthetic input can edit the fixture.** A tier 2 session left a stray `****` inside a hash in
   `sandbox-project/CHANGELOG.md` and it got committed. `git diff sandbox-project/` when you're done.
+- **`System Events`' `click at {x, y}` does nothing to the IDE**, silently, which reads as a click that missed. A real
+  click needs a posted `CGEvent` (`.leftMouseDown` / `.leftMouseUp` at `.cghidEventTap`), again a few lines of Swift.
+  Calibrate before trusting the coordinates: the window's AX `position` and the `-l` screenshot don't share an origin,
+  and the first measured offset was three editor lines.
+- **`runIde` arguments don't place the caret.** `--line` / `--column` ahead of the file path (the `idea` launcher's own
+  options) left the caret at the position the previous session had remembered, so there's no input-free way to put it
+  inside a key. Folding state is remembered per file the same way, so a second run doesn't open collapsed.
 - **Screen Recording permission is already granted**, so `screencapture` runs without a TCC prompt (verified
   2026-08-03). No workaround needed.
 - **Target the process by PID, never by name.** David's real IDE is also called `idea`;
