@@ -14,20 +14,20 @@ Fills each volume's store: `mod.rs` (the `ImportanceScheduler` handle, `ScoringP
 - **Coalesce per volume through `PassCoordinator`**: one pass at a time plus one re-run. Incremental has its OWN key, so
   a rescore and a full pass never block each other.
 
-- **The walk is O(dirs) in a SMALL CONSTANT, every part of that shape measured.** Dirs live in the shared `DirTree`
-  (24 B/dir); a folder is one `Copy` `IndexFolder`. ❌ No `EntryRow`, no `IndexStore::all_directories`, no stored path
+- **The walk is O(dirs) in a SMALL CONSTANT, every part of that shape measured.** Dirs live in the shared `DirTree` (24
+  B/dir); a folder is one `Copy` `IndexFolder`. ❌ No `EntryRow`, no `IndexStore::all_directories`, no stored path
   (`for_each` reconstructs into ONE reused buffer), no per-folder extension set, and ❌ never drop
   `for_each_file_child_by_parent`'s `ORDER BY parent_id`. `walk_memory_tests.rs` guards it.
 - **Incremental writes at the CURRENT generation, does NOT bump it, and NEVER escalates to a full pass.** ❌ Never
   narrow `is_in_changed_subtree` or widen the clear list on their own: both must stay on the SAME `changed_paths` slice,
   or the clear deletes rows nothing re-adds. `sanitize_incremental_batch` gates the batch BEFORE the read pool and the
   walk, dropping the bare `/`, empties, and every FLOORED path (the idle floor — ❌ don't remove it). ❌ Don't
-  reintroduce a `/` ⇒ full-pass escalation, which pegged a core. Throttled to ≤1 pass per
-  `INCREMENTAL_THROTTLE_WINDOW` (60 s), leading edge first; ancestors capped at `ANCESTOR_WALK_CAP` (32).
-- **An incremental reads only the CHANGED SUBTREES** (`scoped_walk.rs`): ~100–165 µs per origin, exact. ❌ Don't
-  prune floored subtrees from the descent (a marker inside a `node_modules` still raises the folders above it), ❌ don't
-  add a `folders.is_empty()` early return to `run_incremental_blocking` (an all-deleted batch is exactly the one whose
-  rows must be CLEARED), and ❌ don't raise `SCOPED_WALK_MAX_ORIGINS` / `SCOPED_WALK_MAX_DIRS`. The full walk stays the
+  reintroduce a `/` ⇒ full-pass escalation, which pegged a core. Throttled to ≤1 pass per `INCREMENTAL_THROTTLE_WINDOW`
+  (60 s), leading edge first; ancestors capped at `ANCESTOR_WALK_CAP` (32).
+- **An incremental reads only the CHANGED SUBTREES** (`scoped_walk.rs`): ~100–165 µs per origin, exact. ❌ Don't prune
+  floored subtrees from the descent (a marker inside a `node_modules` still raises the folders above it), ❌ don't add a
+  `folders.is_empty()` early return to `run_incremental_blocking` (an all-deleted batch is exactly the one whose rows
+  must be CLEARED), and ❌ don't raise `SCOPED_WALK_MAX_ORIGINS` / `SCOPED_WALK_MAX_DIRS`. The full walk stays the
   fallback AND the differential oracle.
 - **An origin past `SCOPED_WALK_MAX_DIRS` is DEMOTED to rescoring itself alone** (`plan_incremental_batch`, keyed on
   `dir_stats.recursive_dir_count` — one PK lookup, never a path shape). Two ❌s carry it: a demoted origin is NEVER in
@@ -40,9 +40,9 @@ Fills each volume's store: `mod.rs` (the `ImportanceScheduler` handle, `ScoringP
 - **`dir-changed` carries ORIGIN dirs, never their ancestors** (`../../indexing/lifecycle/CLAUDE.md`): feed it an
   ancestor and it rescores that whole subtree. A floor transition reaches a renamed folder through its PARENT origin, so
   the downward expansion stays load-bearing.
-- **Spotlight sampling runs ONLY when the mask says `last_used_available`**, on a dedicated 8 MB-stack OS thread with
-  an autoreleasepool — ❌ never rayon, ❌ never against an SMB mount.
+- **Spotlight sampling runs ONLY when the mask says `last_used_available`**, on a dedicated 8 MB-stack OS thread with an
+  autoreleasepool — ❌ never rayon, ❌ never against an SMB mount.
 
 Trigger wiring, the initial-full-pass trap, the walk's measurements, rescoping's lossiness, the demotion's marker
-reasoning, and the kind policy: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
-reorganizing, or advising.
+reasoning, and the kind policy: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing,
+or advising.

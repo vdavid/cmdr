@@ -113,14 +113,14 @@ cardinality, never a path shape.
 Measured 2026-08-04 against this same read-only index copy and a fresh copy of the real `importance-root.db`, one
 `$HOME`-origin pass end to end:
 
-- **Before** (full walk plus `WithAncestors`, which is the path this origin took): walk **4.31 s**, whole pass
-  **5.25 s**, **51,082** folders rescored, 61 rows written.
+- **Before** (full walk plus `WithAncestors`, which is the path this origin took): walk **4.31 s**, whole pass **5.25
+  s**, **51,082** folders rescored, 61 rows written.
 - **After** (demoted): plan-plus-walk **0.76–1.03 ms**, whole pass **1.6–2.1 ms**, **1** folder rescored, 1 row written.
 
-Fallback frequency, `importance-diff` over the five widest real origins: **4 of 5 fell back to the full walk before,
-0 after** (the four demote instead), and the abandoned descent probe those four used to pay was median 30 ms, max
-305 ms. Over 385 sampled origins nothing demotes, nothing falls back, and nothing disagrees with the full-walk oracle —
-this is one path, not a broad cliff, exactly as the cardinality survey above said.
+Fallback frequency, `importance-diff` over the five widest real origins: **4 of 5 fell back to the full walk before, 0
+after** (the four demote instead), and the abandoned descent probe those four used to pay was median 30 ms, max 305 ms.
+Over 385 sampled origins nothing demotes, nothing falls back, and nothing disagrees with the full-walk oracle — this is
+one path, not a broad cliff, exactly as the cardinality survey above said.
 
 **The delta reload was already applying**, contrary to the expectation that the width had to come down first: the
 signals-blob skip cut `written` to 61 for a `$HOME` pass, well under `MAX_DELTA_ROWS` (10,000), so the pass already

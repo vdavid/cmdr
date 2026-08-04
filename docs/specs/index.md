@@ -15,21 +15,20 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       sync-status is 3.4% of busy but **0.2% of userspace CPU** (nearly all `stat` wait), and the writer did not appear
       at all. The statement-cache fix was estimated at 10x from a stack profile and measured at **12%**. Raising
       `SCOPED_WALK_MAX_DIRS` was reasoned to be an obvious win and measured as a **regression** (6.02 s scoped versus
-      4.9 s full walk for the origin that actually fires).
-      **The real finding, and it is one path**: `origin_dir` is the PARENT of the changed file, so any write directly in
-      `~` (in practice `~/.claude.json`, constantly) makes `$HOME` an origin, and `$HOME` covers 574,007 of the volume's
-      694,963 directories (83%). That blows the scoped-walk cap and falls back to a full-volume walk: 330 times in a
-      10.5-hour log, **17.6% of that log's wall clock**. Nothing diffed either, so each pass rewrote 51,081 rows of
-      which 99.88% had a byte-identical signals blob. Full evidence: `docs/notes/importance-treadmill-2026-08-04.md`.
-      **Shipped**: smb2 0.17.0 (self-healing directory watch, 5,911 WARNs/6 h gone, plus a latent AES-GMAC CANCEL bug);
-      writer statement caching with the capacity guard (rusqlite's cache is 16 entries and the store needs 35, so the
-      obvious fix alone would have thrashed silently); implicit write batching (**70.2 -> 34.1 us per row, 2.06x**, real
-      writer path, median of three runs each); importance passes writing only what moved; and the sync-status poll
-      skipping folders with no cloud files. **Open**: the origin bound and demotion, the M3 arrival-rate governor
-      (unchanged in substance: denylists rejected, must engage `cost_budget.rs:37`, the external-volume blind window,
-      the hourglass flicker, and Spike B's over-climb finding), log volume, and the 643 MB `MALLOC_LARGE`, which is the
-      primary memory unknown now that page-cache overflow is shown to land only in `MALLOC_SMALL` and the search arena
-      is shown to drop correctly.
+      4.9 s full walk for the origin that actually fires). **The real finding, and it is one path**: `origin_dir` is the
+      PARENT of the changed file, so any write directly in `~` (in practice `~/.claude.json`, constantly) makes `$HOME`
+      an origin, and `$HOME` covers 574,007 of the volume's 694,963 directories (83%). That blows the scoped-walk cap
+      and falls back to a full-volume walk: 330 times in a 10.5-hour log, **17.6% of that log's wall clock**. Nothing
+      diffed either, so each pass rewrote 51,081 rows of which 99.88% had a byte-identical signals blob. Full evidence:
+      `docs/notes/importance-treadmill-2026-08-04.md`. **Shipped**: smb2 0.17.0 (self-healing directory watch, 5,911
+      WARNs/6 h gone, plus a latent AES-GMAC CANCEL bug); writer statement caching with the capacity guard (rusqlite's
+      cache is 16 entries and the store needs 35, so the obvious fix alone would have thrashed silently); implicit write
+      batching (**70.2 -> 34.1 us per row, 2.06x**, real writer path, median of three runs each); importance passes
+      writing only what moved; and the sync-status poll skipping folders with no cloud files. **Open**: the origin bound
+      and demotion, the M3 arrival-rate governor (unchanged in substance: denylists rejected, must engage
+      `cost_budget.rs:37`, the external-volume blind window, the hourglass flicker, and Spike B's over-climb finding),
+      log volume, and the 643 MB `MALLOC_LARGE`, which is the primary memory unknown now that page-cache overflow is
+      shown to land only in `MALLOC_SMALL` and the search arena is shown to drop correctly.
 
 - [ ] 2026-08-03 `unindexed-search-plan.md` - SPECCED, not started. A scoped search on a LOCAL drive returns the same
       files indexed or not, only slower, by walking the uncovered part live and writing what it finds into the drive
