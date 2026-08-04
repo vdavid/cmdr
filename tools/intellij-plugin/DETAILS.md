@@ -399,7 +399,7 @@ Not built. Two reading aids don't have a UI surface worth a Starter-framework ha
 - `src/main/resources/META-INF/plugin.xml` — the descriptor. `cmdr-svelte.xml` — the Svelte-only half.
 - `src/main/kotlin/com/getcmdr/idea/core/` — `CmdrProjectService`, `CmdrPluginConfig`, `FeatureConfig`.
   `features/changelog/` — the commit links. `features/i18n/` — `MessageCatalog` and its service (the index), `KeySites`
-  (the PSI shapes), `I18nKeyFoldingBuilder` plus `FoldedMessage` (the fold), and `MessageKeyReference` plus
+  (the PSI shapes), `I18nKeyFoldingBuilder` plus `FoldedMessage` (the fold), and `I18nKeyReferenceContributor` plus
   `MessageDeclaration` (the ⌘-click). New features get sibling packages under `features/`.
 - `src/test/kotlin/com/getcmdr/idea/` — `RepoFiles` (reads real repo files through the `cmdr.repo.root` system
   property), `core/`, `features/changelog/`, `features/i18n/` (with `CatalogFixture.kt`, the fixture project both i18n

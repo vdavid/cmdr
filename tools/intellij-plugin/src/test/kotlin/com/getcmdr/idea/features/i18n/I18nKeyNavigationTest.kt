@@ -169,12 +169,17 @@ class I18nKeyNavigationTest : BasePlatformTestCase() {
         val element = checkNotNull(myFixture.file.findElementAt(offset)?.parent)
         val fromRegistry = ReferenceProvidersRegistry.getReferencesFromProviders(element).size
         val fromElement = element.references.size
-        val resolved = myFixture.file.findReferenceAt(offset)?.resolve()
+        val reference = myFixture.file.findReferenceAt(offset)
 
         println("[spike] $fileName ${element.javaClass.simpleName}: registry $fromRegistry, element $fromElement")
         assertEquals("the registry didn't build a reference at all", 1, fromRegistry)
         assertEquals("the host PSI doesn't ask the registry, so a reference can't be the mechanism", 1, fromElement)
-        assertTrue("the reference resolved to $resolved rather than a catalog entry", resolved is JsonProperty)
+        assertTrue("the reference resolved to nothing rather than a catalog entry", reference?.resolve() is JsonProperty)
+        assertEquals(
+            "the ⌘-hover underline should cover the key and not the quotes around it",
+            literal.trim('\'', '"'),
+            reference?.rangeInElement?.substring(element.text),
+        )
     }
 
     /** Opens [text] as [fileName] and returns an offset inside the key written in [literal]. */

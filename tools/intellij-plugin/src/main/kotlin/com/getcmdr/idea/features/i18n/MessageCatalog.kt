@@ -28,8 +28,6 @@ class MessageCatalog private constructor(private val messages: Map<String, Messa
     val size: Int get() = messages.size
 
     companion object {
-        val EMPTY: MessageCatalog = MessageCatalog(emptyMap())
-
         /**
          * Parses catalog files into one index. A file that isn't valid JSON contributes nothing rather than sinking
          * the whole catalog, because a `pnpm dev` session can catch one mid-write.
