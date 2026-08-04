@@ -33,15 +33,40 @@ internal data class KeySite(
 internal fun keySitesIn(root: PsiElement, config: I18nConfig): List<KeySite> {
     val sites = mutableListOf<KeySite>()
     PsiTreeUtil.processElements(root) { element ->
-        when (element) {
-            is JSCallExpression -> config.callSite(element)
-            is JSProperty -> config.propertySite(element)
-            is XmlAttribute -> config.attributeSite(element)
-            else -> null
-        }?.let(sites::add)
+        config.keySiteOf(element)?.let(sites::add)
         true
     }
     return sites
+}
+
+/**
+ * The key site [keyElement] spells the key of, or `null` when it isn't one.
+ *
+ * The same three matchers [keySitesIn] walks a whole file with, asked about one element instead, which is what a
+ * gesture on a single literal needs. A key is always written in a literal or an attribute value, and its site is
+ * either that element's parent (a key property, a component attribute) or the call two levels up, past the argument
+ * list. Insisting the site's own [KeySite.keyElement] be the element asked about is what stops a click on a call's
+ * *second* argument from resolving the first one's key.
+ */
+internal fun keySiteFor(keyElement: PsiElement, config: I18nConfig): KeySite? {
+    var candidate = keyElement.parent
+    repeat(KEY_SITE_DEPTH) {
+        val site = candidate?.let(config::keySiteOf)
+        if (site != null) return site.takeIf { it.keyElement == keyElement }
+        candidate = candidate?.parent
+    }
+    return null
+}
+
+/** How far above a key its site can sit: `tString(` plus the argument list holding the literal. */
+private const val KEY_SITE_DEPTH = 2
+
+/** The three shapes [I18nConfig] describes, matched against one element. */
+private fun I18nConfig.keySiteOf(element: PsiElement): KeySite? = when (element) {
+    is JSCallExpression -> callSite(element)
+    is JSProperty -> propertySite(element)
+    is XmlAttribute -> attributeSite(element)
+    else -> null
 }
 
 /** `tString('a.key')`: the whole call folds, since the function name says nothing the resolved sentence doesn't. */

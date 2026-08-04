@@ -14,6 +14,8 @@
     <depends>com.intellij.modules.platform</depends>
     <depends>JavaScript</depends>
     <depends>org.intellij.plugins.markdown</depends>
+    <!-- The English catalog is JSON, and a message key navigates into its PSI. -->
+    <depends>com.intellij.modules.json</depends>
     <!-- Svelte support is optional: without it `SvelteHTML` isn't a registered language, and a registration naming it
          in the main descriptor would log a resolution warning on every start. -->
     <depends optional="true" config-file="cmdr-svelte.xml">dev.blachut.svelte.lang</depends>
@@ -38,5 +40,12 @@
         <lang.foldingBuilder
             language="TypeScript"
             implementationClass="com.getcmdr.idea.features.i18n.I18nKeyFoldingBuilder"/>
+
+        <!-- ⌘-click from a key to its catalog entry. One registration covers every language: with no `language`
+             attribute this contributes to `Language.ANY`, which the reference registry merges into each language's
+             registrar, and the patterns inside are what narrow it. Nothing like the folding builder's
+             one-per-language rule applies here. -->
+        <psi.referenceContributor
+            implementation="com.getcmdr.idea.features.i18n.I18nKeyReferenceContributor"/>
     </extensions>
 </idea-plugin>

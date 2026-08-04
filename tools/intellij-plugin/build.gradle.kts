@@ -34,10 +34,11 @@ dependencies {
         // A local install: no IDE download, and tier 2 shows exactly what David sees when he reads code.
         local(homePath("cmdrIdePath"))
 
-        // Both features walk real PSI. JavaScript backs feature 2 (i18n folding), Markdown backs feature 1
-        // (changelog commit links). Both are bundled in IDEA Ultimate, so they cost nothing at runtime.
+        // Every feature walks real PSI. JavaScript backs the i18n features, Markdown backs the commit links, and
+        // JSON is what a message key navigates *into*. All three are bundled, so they cost nothing at runtime.
         bundledPlugin("JavaScript")
         bundledPlugin("org.intellij.plugins.markdown")
+        bundledPlugin("com.intellij.modules.json")
 
         // Optional: only present when the IDE has the Svelte plugin installed. The Svelte tests skip themselves
         // when it's absent, so a fresh clone still builds green.

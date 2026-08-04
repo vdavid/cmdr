@@ -13,6 +13,8 @@ on.
   ⌘-click opens the commit on GitHub.
 - **i18n key preview.** A message key the English catalog resolves folds to its text, collapsed by default, in `.ts`,
   `.js`, and `.svelte`.
+- **i18n key navigation.** ⌘-click on that key opens `messages/en/<area>.json` at the line it's defined on, which is
+  also the line above its translator description.
 
 Nothing else.
 
@@ -69,6 +71,10 @@ IDEA 2026.2 build 262.8665.176, 2026-08-04, with a throwaway contributor registe
 PSI doesn't take it. So the references exist and nothing ever looks at them. To re-measure after an IDE upgrade, add a
 `PsiReferenceContributor` over `MarkdownParagraph`, register it for `language="Markdown"`, and print those three values.
 
+**This is a fact about Markdown, not about references.** JavaScript literals and XML attribute values do take the
+opt-in, which is why i18n key navigation is a contributor rather than a second handler; § i18n key navigation has the
+same three numbers for those hosts.
+
 `ChangelogRefGotoDeclarationHandler` is what reaches the editor instead. The `WebReference` is still the platform's own
 machinery, used directly for the navigation target it builds, and `ChangelogRefLinkTest` asserts the platform's own
 goto-declaration lookup finds it.
@@ -88,11 +94,12 @@ platform materializing a thousand annotations, not our lookup. Nothing here is w
 
 ## i18n key preview
 
-`MessageCatalogService` is the index: the JSON files `catalogGlob` matches, flattened into one key-to-text map with
-`@key` metadata dropped the way `stripMetadata` in `apps/desktop/src/lib/intl/messages.svelte.ts` drops it. English
-only, cached per project, keyed by the glob it came from. **It's the reusable half**: anything that needs "what does
-this key say" asks `catalog()`, and `keySitesIn` is the matching PSI walk, which hands back both the element to fold and
-the literal the key is written in, so a navigation feature can use the same list.
+`MessageCatalogService` is the index: the JSON files `catalogGlob` matches, flattened into one map of key to
+`Message(text, fileName)`, with `@key` metadata dropped the way `stripMetadata` in
+`apps/desktop/src/lib/intl/messages.svelte.ts` drops it. English only, cached per project, keyed by the glob it came
+from. **It's the reusable half**: `catalog()` answers "what does this key say", `sourceOf(key)` answers "which file is
+it written in", and `keySitesIn` / `keySiteFor` are the matching PSI walk, which hands back both the element to fold and
+the literal the key is written in.
 
 `I18nKeyFoldingBuilder` turns a site plus a resolved message into a `FoldingDescriptor`. Three shapes, all from config:
 
@@ -140,6 +147,49 @@ Folding one file, warm (five runs, mean), with the first pass in parentheses:
 
 The first-pass numbers are one-time per file and overlap work highlighting does anyway. `testFoldingTheRealRepoIsCheap`
 keeps all three in the loop with a 50 ms warm budget, well above the numbers and well below anything that would be felt.
+
+## i18n key navigation
+
+⌘-click on a key opens the catalog file at the entry, which puts the translator's `@key` description one line below the
+caret. It reuses the folding feature's index and its key-site matchers whole; the only new question is where in a file a
+key sits.
+
+**The index answers which file, the file's own PSI answers where in it.** A catalog entry carries
+`Message(text, fileName)` and no offset. `messageDeclaration` turns that into the exact line at click time:
+`PsiManager.findFile(…) as JsonFile`, then `JsonObject.findProperty(key)`. Two properties fall out of that split. The
+index stays one Gson parse of text, with nothing positional in it to keep in step with a file that's being edited; and
+the line that reaches the editor is the file as it is now, not as it was when the index was built. It costs a JSON PSI
+parse of one file per click, which the platform then caches.
+
+**A `psi.referenceContributor`, not a `gotoDeclarationHandler`.** A contributed reference is the platform's own shape
+for "this text points at that declaration", and it carries the ⌘-hover underline, ⌘B, quick definition, and Find Usages
+along with the click. The changelog feature has a handler only because Markdown never asks the reference registry;
+that's a fact about Markdown, and it doesn't hold here. Measured 2026-08-04 on IDEA 2026.2 build 262.8665.176 by
+`I18nKeyNavigationTest.testTheHostPsiReallyAsksTheReferenceRegistry`, which prints both numbers for every host:
+
+- `.ts` and `.svelte`, `JSLiteralExpressionImpl`: registry **1**, `element.references` **1**.
+- `.svelte`, `XmlAttributeValueImpl` (`<Trans key="…">`): registry **1**, `element.references` **1**.
+- Markdown, for contrast: registry 1, `element.references` **0**, and `findReferenceAt` null.
+
+**One registration covers every language**, unlike the folding builder. A contributor with no `language` attribute
+registers for `Language.ANY`, and `ReferenceProvidersRegistryImpl` builds each language's registrar from
+`allForLanguageOrAny`, so the ANY registrations are merged in everywhere rather than shadowed. The `.svelte` half needs
+nothing in `cmdr-svelte.xml`; the patterns (`JSLiteralExpression`, `XmlAttributeValue`) are what narrow it.
+
+**A key that doesn't resolve gets no reference at all**, rather than an unresolved one. So a renamed key reads as
+ordinary text: no underline promising a jump that can't happen. That's also why the provider asks `catalog()` before
+building anything. The reference is soft on top of that, so nothing paints it red.
+
+`keySiteFor` is the walk-up counterpart to `keySitesIn`'s walk-down, over the same three matchers, because a gesture
+knows one element rather than a file. It insists the site's own `keyElement` be the element asked about, which is what
+keeps a click on a call's second argument from resolving the first one's key.
+
+### What it costs
+
+Measured 2026-08-04 in a headless fixture, resolving a real key against the repo's real catalog: **18–22 ms** for the
+first click, which builds the 31-file index and parses the JSON file it lands in, and **under 1 ms** for every later
+one. `testNavigatingTheRealCatalogIsCheap` keeps that in the loop. Folding is unaffected, since nothing was added to the
+index build: it still measures 1–3 ms warm per file.
 
 ## Versions, and where each was checked
 
@@ -226,9 +276,10 @@ quietly folding nothing.
 
 ### Tier 1: headless fixtures. Works, and it's the loop.
 
-`mise exec -- ./gradlew test`. 54 tests, ~10 s cold, ~2 s warm. No window, no display, no license. Everything the
-features need to assert is assertable here, **including the ⌘-click**: replace the application's `BrowserLauncher` with
-a recorder, run `IdeActions.ACTION_GOTO_DECLARATION`, and assert the URL it was asked to open.
+`mise exec -- ./gradlew test`. 80 tests, ~10 s cold, ~2 s warm. No window, no display, no license. Everything the
+features need to assert is assertable here, **including both ⌘-clicks**: for the changelog, replace the application's
+`BrowserLauncher` with a recorder, run `IdeActions.ACTION_GOTO_DECLARATION`, and assert the URL it was asked to open;
+for a message key, `GotoDeclarationAction.findAllTargetElements` returns the catalog entry itself.
 
 Four things cost real time to discover; none of them are guessable:
 
@@ -310,7 +361,8 @@ Not built. Two reading aids don't have a UI surface worth a Starter-framework ha
 - **`cmdr-svelte.xml` is an optional `<depends>` config file**, not part of the main descriptor. A
   `language="SvelteHTML"` registration in `plugin.xml` would log a resolution warning on every start of an IDE without
   the Svelte plugin, so everything naming a Svelte language lives there.
-- **Both bundled plugins are dependencies**: JavaScript for the i18n folding, Markdown for the commit links.
+- **Three bundled plugins are dependencies**: JavaScript for the i18n features, Markdown for the commit links, and JSON
+  for the catalog entries a key navigates into. All three ship with the IDE, so none is a download or a runtime cost.
 - **The configuration cache stays on.** It's why a warm `test` is ~2 s. `seedIdeSandbox` opts out of up-to-date checks
   because it writes into the sandbox, which other tasks own.
 
@@ -320,11 +372,13 @@ Not built. Two reading aids don't have a UI surface worth a Starter-framework ha
   opt-out.
 - `src/main/resources/META-INF/plugin.xml` — the descriptor. `cmdr-svelte.xml` — the Svelte-only half.
 - `src/main/kotlin/com/getcmdr/idea/core/` — `CmdrProjectService`, `CmdrPluginConfig`, `FeatureConfig`.
-  `features/changelog/` — the commit links. `features/i18n/` — the catalog index and the key folding. New features get
-  sibling packages under `features/`.
+  `features/changelog/` — the commit links. `features/i18n/` — `MessageCatalog` and its service (the index), `KeySites`
+  (the PSI shapes), `I18nKeyFoldingBuilder` plus `FoldedMessage` (the fold), and `MessageKeyReference` plus
+  `MessageDeclaration` (the ⌘-click). New features get sibling packages under `features/`.
 - `src/test/kotlin/com/getcmdr/idea/` — `RepoFiles` (reads real repo files through the `cmdr.repo.root` system
-  property), `core/`, `features/changelog/`, `features/i18n/`, and `platform/` (`FoldingTestSupport.kt` with the
-  `updateFoldRegions` gotcha and its harness test, plus the two spikes).
+  property), `core/`, `features/changelog/`, `features/i18n/` (with `CatalogFixture.kt`, the fixture project both i18n
+  tests set up), and `platform/` (`FoldingTestSupport.kt` with the `updateFoldRegions` gotcha and its harness test, plus
+  the two spikes).
 - `sandbox-project/` — the tier 2 fixture: `CHANGELOG.md` for the links, `sample.ts` plus
   `apps/desktop/src/lib/intl/messages/en/sandbox.json` for the folding. Its `.idea/` and the copied marker are generated
   and ignored.
