@@ -4,10 +4,11 @@
     <vendor email="veszelovszki@gmail.com" url="https://getcmdr.com">David Veszelovszki</vendor>
 
     <description><![CDATA[
-        Reading aids for the Cmdr repository. Today it turns the trailing commit hashes on a <code>CHANGELOG.md</code>
-        entry into links to their GitHub commits; i18n keys folded to their English text come next. Every feature is
-        off unless the open project carries <code>tools/intellij-plugin/cmdr-plugin.json</code>. Never published to the
-        Marketplace; sideloaded from <code>build/distributions/</code>.
+        Reading aids for the Cmdr repository. It turns the trailing commit hashes on a <code>CHANGELOG.md</code> entry
+        into links to their GitHub commits, and folds a message key to the English text it resolves to, so a screen's
+        code reads like the screen. Every feature is off unless the open project carries
+        <code>tools/intellij-plugin/cmdr-plugin.json</code>. Never published to the Marketplace; sideloaded from
+        <code>build/distributions/</code>.
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
@@ -26,5 +27,16 @@
         <annotator
             language="Markdown"
             implementationClass="com.getcmdr.idea.features.changelog.ChangelogRefAnnotator"/>
+
+        <!-- i18n key preview. One registration per language, never one for a base language: folding registrations
+             don't merge down the base-language chain, so `TypeScript` would silently see nothing through
+             `JavaScript`. `SvelteHTML` is registered in `cmdr-svelte.xml`. Every language named here also belongs in
+             `LanguageCoverageSpikeTest.FOLDING_LANGUAGES`. -->
+        <lang.foldingBuilder
+            language="JavaScript"
+            implementationClass="com.getcmdr.idea.features.i18n.I18nKeyFoldingBuilder"/>
+        <lang.foldingBuilder
+            language="TypeScript"
+            implementationClass="com.getcmdr.idea.features.i18n.I18nKeyFoldingBuilder"/>
     </extensions>
 </idea-plugin>

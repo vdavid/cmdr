@@ -248,11 +248,14 @@ Doubles as the project marker and the feature config.
     "catalogGlob": "apps/desktop/src/lib/intl/messages/en/*.json",
     "functions": ["t", "tString", "getMessage"],
     "componentAttributes": [{ "component": "Trans", "attribute": "key" }],
-    "keyProperties": ["labelKey", "descriptionKey", "titleKey", "cardKey"],
-    "languages": ["JavaScript", "TypeScript", "Svelte"]
+    "keyProperties": ["labelKey", "descriptionKey", "titleKey", "cardKey"]
   }
 }
 ```
+
+The plan also had the `i18n` section list its languages. It doesn't: `<lang.foldingBuilder>` registrations are static
+XML, so nothing at runtime could act on the list, and a config field that quietly does nothing is worse than no field.
+The languages live in `plugin.xml` and `cmdr-svelte.xml`, mirrored by `LanguageCoverageSpikeTest.FOLDING_LANGUAGES`.
 
 ## The feedback loop
 

@@ -8,7 +8,6 @@
     "catalogGlob": "apps/desktop/src/lib/intl/messages/en/*.json",
     "functions": ["t", "tString", "getMessage"],
     "componentAttributes": [{ "component": "Trans", "attribute": "key" }],
-    "keyProperties": ["labelKey", "descriptionKey", "titleKey", "cardKey"],
-    "languages": ["JavaScript", "TypeScript", "Svelte"]
+    "keyProperties": ["labelKey", "descriptionKey", "titleKey", "cardKey"]
   }
 }

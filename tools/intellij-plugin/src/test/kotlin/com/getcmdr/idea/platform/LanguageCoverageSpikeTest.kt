@@ -80,10 +80,10 @@ class LanguageCoverageSpikeTest : BasePlatformTestCase() {
 
     private companion object {
         /**
-         * Must mirror every `<lang.foldingBuilder>` in `plugin.xml` and `cmdr-svelte.xml`. Empty today: nothing folds
-         * yet. Adding a folding registration means adding its language here, or losing the coverage silently.
+         * Must mirror every `<lang.foldingBuilder>` in `plugin.xml` and `cmdr-svelte.xml`. Adding a folding
+         * registration means adding its language here, or losing the coverage silently.
          */
-        val FOLDING_LANGUAGES = emptyList<String>()
+        val FOLDING_LANGUAGES = listOf("JavaScript", "TypeScript", "SvelteHTML")
         const val CMDR_PACKAGE = "com.getcmdr.idea."
         const val JS_FOLDING_BUILDER = "com.intellij.lang.javascript.folding.JavaScriptFoldingBuilder"
     }

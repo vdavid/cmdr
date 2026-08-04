@@ -137,8 +137,9 @@ tasks.runIde {
     dependsOn(seedIdeSandbox)
     // Locals again, for the same configuration-cache reason as `seedIdeSandbox`.
     val projectPath = sandboxProject.absolutePath
-    val filePath = sandboxProject.resolve("CHANGELOG.md").absolutePath
-    argumentProviders.add(CommandLineArgumentProvider { listOf(projectPath, filePath) })
+    // One file per feature, the last one focused: `sample.ts` for i18n folding, `CHANGELOG.md` for the commit links.
+    val filePaths = listOf("CHANGELOG.md", "sample.ts").map { sandboxProject.resolve(it).absolutePath }
+    argumentProviders.add(CommandLineArgumentProvider { listOf(projectPath) + filePaths })
 }
 
 tasks.test {

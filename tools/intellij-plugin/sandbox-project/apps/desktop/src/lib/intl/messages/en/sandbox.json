@@ -1,0 +1,15 @@
+{
+  "crashReporter.dialog.title": "Send crash report?",
+  "@crashReporter.dialog.title": {
+    "description": "Metadata entries like this one are the translator's, never the app's, so nothing here folds."
+  },
+
+  "crashReporter.dialog.body": "Cmdr quit unexpectedly last time. Here''s a crash report with details that can help fix this.",
+
+  "settings.ai.provider.label": "AI provider",
+  "settings.ai.provider.description": "Which service answers your questions. Local models never leave your Mac.",
+
+  "transfer.progress.copying": "Copying {countText} to {target}",
+
+  "ui.loadingIcon.cancelHint": "Press {key} to cancel"
+}

@@ -1,9 +1,13 @@
 <idea-plugin>
     <!-- The Svelte-only half of the descriptor, loaded only when `dev.blachut.svelte.lang` is present. A
          `language="SvelteHTML"` registration in `plugin.xml` would log a resolution warning on every start of an IDE
-         that doesn't have the Svelte plugin, which is why it lives in its own config file.
-
-         Empty today: nothing registers per language yet. A `.svelte` file has exactly one view-provider root,
-         `SvelteHTML`, so anything walking its JavaScript PSI registers for that language, here, and walks down. -->
-    <extensions defaultExtensionNs="com.intellij"/>
+         that doesn't have the Svelte plugin, which is why it lives in its own config file. -->
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- A `.svelte` file has exactly one view-provider root, `SvelteHTML`, with its JavaScript inlined behind a
+             lazy-parse node, so the folding builder registers here and walks down to reach both the JS calls and the
+             `<Trans key="…">` attribute. A registration for `SvelteJS` or `SvelteTS` would never fire. -->
+        <lang.foldingBuilder
+            language="SvelteHTML"
+            implementationClass="com.getcmdr.idea.features.i18n.I18nKeyFoldingBuilder"/>
+    </extensions>
 </idea-plugin>
