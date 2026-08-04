@@ -71,6 +71,14 @@ goto-declaration lookup finds it.
 `CodeInsightColors.HYPERLINK_ATTRIBUTES` via a silent `INFORMATION` annotation, so a commit ref looks like every other
 link in the editor and follows the theme. Confirmed rendering in tier 2.
 
+### What it costs
+
+Measured 2026-08-04 on the real 2,054-line `CHANGELOG.md` (1,134 paragraphs, ~1,000 of them ending on a group), in a
+headless fixture: **4.5 ms** for `commitLinksIn` over every paragraph, of which 2.5 ms is `changelogConfigFor` and the
+rest the regex. Highlighting the whole file goes from 348 ms to 864 ms with the plugin active, so the ~500 ms is the
+platform materializing a thousand annotations, not our lookup. Nothing here is worth caching harder;
+`testTheRealChangelogGetsItsLinks` keeps the real file in the loop.
+
 ## Versions, and where each was checked
 
 - **IntelliJ Platform Gradle Plugin 2.18.1**, published 2026-07-10 (Gradle Plugin Portal, checked 2026-08-03). Its own

@@ -106,6 +106,24 @@ class ChangelogRefLinkTest : BasePlatformTestCase() {
         assertEmpty(paintedAsLinks(text))
     }
 
+    /**
+     * The repo's real `CHANGELOG.md`, because a rule that only works on hand-written fixtures isn't worth having. The
+     * printed time is the platform's whole highlighting pass, not ours: see `DETAILS.md` for the split.
+     */
+    fun testTheRealChangelogGetsItsLinks() {
+        markProjectAsCmdrCheckout()
+        val text = RepoFiles.read(CHANGELOG)
+        myFixture.configureByText(CHANGELOG, text)
+
+        val started = System.nanoTime()
+        val painted = paintedAsLinks(text)
+        println("[perf] highlighted ${text.lines().size} lines in ${(System.nanoTime() - started) / 1_000_000} ms")
+
+        assertTrue("the real changelog should be nearly all links, got ${painted.size}", painted.size > 900)
+        val eightHex = Regex("[0-9a-f]{8}")
+        assertEmpty("painted something that isn't an eight-character hash", painted.filterNot(eightHex::matches))
+    }
+
     fun testAMarkdownFileThatIsNotAConfiguredChangelogIsLeftAlone() {
         markProjectAsCmdrCheckout()
         val text = "- Add a setting (75121419)\n"
