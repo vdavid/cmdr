@@ -27,13 +27,18 @@ import java.util.concurrent.atomic.AtomicReference
 class MessageCatalogService(private val project: Project) : Disposable {
     private val cached = AtomicReference<Snapshot?>(null)
 
+    /** The glob a missing catalog directory was last reported for, so the warning lands once rather than per pass. */
+    private val missingDirectoryReported = AtomicReference<String?>(null)
+
     init {
         project.messageBus.connect(this).subscribe(
             VirtualFileManager.VFS_CHANGES,
             object : BulkFileListener {
                 override fun after(events: List<VFileEvent>) {
                     val watched = cached.get()?.directory?.path ?: return
-                    if (events.none { it.path.startsWith("$watched/") }) return
+                    // The directory itself counts, not just what's under it: deleting or renaming `messages/en`
+                    // is exactly the event that must drop the cache, and it carries the directory's own path.
+                    if (events.none { it.path == watched || it.path.startsWith("$watched/") }) return
                     cached.set(null)
                     refoldOpenEditors()
                 }
@@ -68,7 +73,11 @@ class MessageCatalogService(private val project: Project) : Disposable {
         val rule = CatalogGlob.parse(glob)
         val directory = project.guessProjectDir()?.findFileByRelativePath(rule.directory)?.takeIf { it.isDirectory }
         if (directory == null) {
-            log.warn("no catalog directory at `$glob`, so no key can resolve")
+            // Once per glob, not once per call: this runs on every folding pass, and a Cmdr checkout whose
+            // `messages/en/` has gone away would otherwise fill the log with the same line.
+            if (missingDirectoryReported.getAndSet(glob) != glob) {
+                log.warn("no catalog directory at `$glob`, so no key can resolve")
+            }
             return null
         }
         val catalog = MessageCatalog.of(
