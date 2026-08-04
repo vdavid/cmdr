@@ -331,11 +331,63 @@ must be CLEARED. An early return there leaves every deleted folder's weight behi
 (`notify_recompute_completed`) whether or not it wrote a row: it cleared either way.
 
 **Bounded, by named constants rather than optimism.** `SCOPED_WALK_MAX_ORIGINS` (64) caps the batch width;
-`SCOPED_WALK_MAX_DIRS` (20,000) caps the descent and is checked DURING it, so an origin sitting above most of the volume
-costs a bounded probe (15–390 ms measured on the root index, 2026-07-29) and then takes the full walk, against that
-walk's own 5.5 s. Origins nested under another origin are dropped first (`dedupe_nested_origins`), which also spares the
-common brand-new-folder case from the marker fallback: creating a folder changes its PARENT's listing, so the parent is
-an origin too and it has a stored row.
+`SCOPED_WALK_MAX_DIRS` (20,000) caps one origin's subtree and is checked twice — against the index's own
+`recursive_dir_count` before anything is read (`plan_incremental_batch`), and again as a running count during the
+descent, which catches a missing or stale `dir_stats` row. Origins nested under a DESCENDED origin are dropped
+(`dedupe_nested_origins`), which also spares the common brand-new-folder case from the marker fallback: creating a
+folder changes its PARENT's listing, so the parent is an origin too and it has a stored row.
+
+### An over-budget origin is DEMOTED, not descended
+
+**Decision/Why an origin bigger than the budget is rescored alone.** `origin_dir` is the PARENT of the changed file, so
+any file written directly in `~` makes `$HOME` an origin — and `$HOME` covers 574,006 of the root volume's 694,963
+directories (83%, read straight off `dir_stats`, 2026-08-04). A change to a file sitting directly inside an origin can
+move that origin's own signals and propagate UP its ancestors, but it cannot move any DESCENDANT's, so the old descent
+read 574,006 rows to discover that 574,005 of them were unchanged. An over-budget origin is now rescored ALONE:
+`read_origin_alone` reads the directory itself plus one level of child directories (a marker is often a directory), and
+nothing below.
+
+**The load-bearing half is that a demoted origin is NOT in the clear list.** `BatchPlan::lists_for` hands back two
+slices: `cleared` (subtrees the writer clears and re-inserts) and `demoted` (origins rescored alone, added to the
+rescore subset through `rescore_subset`'s `touched` set). ❌ Never fold them together — a demoted origin in the clear
+list deletes its whole subtree's weights and re-inserts one row. Its own row is still written, through
+`apply_incremental`'s outside-the-subtree PK probe, which never REMOVES.
+
+**Decision/Why a demoted origin's `has_marker_below` comes from its stored row.** Nothing below it was read, so the
+propagation can't produce the flag, and `carry_marker_below_for_demoted` seeds the stored `has_project_marker` instead.
+Three cases, and how each resolves:
+
+- **A direct child that IS a marker appears.** `read_origin_alone` reads the direct children, so `has_direct_marker`
+  moves, the origin's marker presence flips against its stored value, and the guard takes the FULL walk — exactly what
+  an unbounded origin does. Pinned by `a_marker_appearing_in_a_demoted_origin_takes_the_full_walk`.
+- **A direct child DIRECTORY's own marker-below changes.** That child is its own origin, in this batch or a later one
+  (the `dir-changed` contract carries the dirs whose listings changed), where it is descended or demoted in its own
+  right. De-duplication is what makes this hold, which is why a demoted origin absorbs nothing (below).
+- **The origin has no stored row yet.** `FullWalkReason::MarkerPresenceUnknown` still fires: the guard runs over every
+  planned origin, demoted or not. Pinned by `a_demoted_origin_with_no_stored_row_takes_the_full_walk`.
+
+**The accepted lossiness, and it is one-directional.** The seed can only ADD marker presence, so the last marker
+disappearing from deep inside a demoted origin's subtree leaves the origin (and its ancestors) reading project-adjacent
+until the next full pass. That is the same bounded staleness the batch gate already accepts for a marker inside a
+floored subtree, in the same advisory, derived signal — and the marker-APPEARS direction, the one that changes a
+ranking, stays exact.
+
+**A demoted origin absorbs nothing during de-duplication.** `dedupe_nested_origins` takes the demoted set and only lets
+a DESCENDED origin swallow the origins nested under it. Without that, `$HOME` (an origin on essentially every batch)
+would absorb every real change the same batch carried and the pass would silently drop it —
+`a_change_under_a_demoted_origin_still_rescores_its_own_subtree` fails loudly if the demoted set is ignored.
+
+**Measured 2026-08-04, real `index-root.db` (694,963 dirs) against a copy of the real `importance-root.db`,** one
+`$HOME`-origin pass end to end:
+
+- **Full walk plus `WithAncestors`** (what this origin used to take): walk 4.31 s, whole pass 5.25 s, 51,082 folders
+  rescored, 61 rows written, a 61-upsert delta.
+- **Demoted**: plan-plus-walk 0.76–1.03 ms, whole pass 1.6–2.1 ms, 1 folder rescored, 1 row written, a 1-upsert delta.
+
+The differential agrees: over the five widest real origins, four demote and all five produce byte-identical rows to the
+full walk's (`importance-diff`, 8 rows each side, zero disagreements); over 385 sampled origins none demotes, none falls
+back, and none disagrees. Before the bound, those same four cost an abandoned descent probe of median 30 ms (max 305 ms)
+and then a full walk each.
 
 **The differential.** `differential.rs` runs both walks over one real index and compares the rows each WOULD write for
 the same subtree — path, score, and signal blob — at a fixed `now_secs` (the recency signal moves scores with the wall

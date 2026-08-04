@@ -5,7 +5,7 @@
 `importance-root.db` (160,719 weight rows). `docs/notes/idle-memory-profile-2026-07-28.md` § "Cause 2" had reported this
 fixed; it was not, and this note is what makes the remaining half decidable.
 
-Keep this one until the batch-width question below is settled. Everything else here has landed.
+Everything here has landed, including the batch-width fix at the end.
 
 ## What the log actually showed (three claims that were wrong)
 
@@ -60,7 +60,8 @@ throughout:
 
 The scoped walk costs ~11 µs/dir, so it beats the full walk up to roughly **440,000 dirs (63% of the volume)** and loses
 above that. `$HOME` is past the crossover: **6.02 s scoped against 4.9 s full**. The cap's own rationale
-(`scoped_walk.rs`) holds for the origin that actually fires. The abandoned probe costs **31 ms**, which is noise.
+(`scoped_walk.rs`) holds for the origin that actually fires, and an origin past it is demoted rather than descended
+(below), so it now costs one PK lookup instead of an abandoned probe.
 
 ❌ Don't raise the cap. The general reasoning ("a 20 k subtree is small next to a 600 k volume") is sound but doesn't
 apply here, because `$HOME` _is_ most of the volume.
@@ -100,20 +101,34 @@ Not cost drivers, checked and cleared: the importance `wal_checkpoint TRUNCATE` 
 occurrences, and Spotlight sampling is capped at 500 paths (`last_used.rs`) with no measurable difference between
 `local` and `listing-only` full passes.
 
-**Still open: the batch's WIDTH.** The writes are gone, but a `$HOME`-origin pass still walks 574,007 dirs and rescores
-51,081 folders to discover that nothing moved. The cheap fix is available and unbuilt: `dir_stats.recursive_dir_count`
-is already populated and exact (it reads **574,006** for `$HOME` against the 574,007 counted here) and is a single
-indexed PK lookup, so a pass could ask "how much of the volume does this origin cover?" **before** choosing a walk,
-replacing the 31 ms probe entirely.
+## The batch's WIDTH: the origin is now bounded, and an over-budget one is demoted
 
-What to do with an over-budget origin is David's call, and it is a semantic change that must be run against
-`importance/evals/`:
+The writes were gone but a `$HOME`-origin pass still walked 574,007 dirs and rescored 51,081 folders to discover that
+nothing moved. Landed as `plan_incremental_batch` in `importance/scheduler/scoped_walk.rs`:
+`dir_stats.recursive_dir_count` answers "how much of the volume does this origin cover?" in one indexed PK lookup
+**before** any of it is read (it reads **574,006** for `$HOME` against the 574,007 counted here — itself excluded), and
+an origin past `SCOPED_WALK_MAX_DIRS` is rescored ALONE rather than descended. ❌ Not a denylist: it keys on measured
+cardinality, never a path shape.
 
-- **Drop it** — a staleness the next full pass heals, the same trade `sanitize_incremental_batch` already makes.
-- **Demote it** to "rescore the origin and its ancestors, not its subtree" — more honest, since a dotfile write in `~`
-  genuinely cannot change any descendant's signals. This is the recommendation.
+Measured 2026-08-04 against this same read-only index copy and a fresh copy of the real `importance-root.db`, one
+`$HOME`-origin pass end to end:
 
-❌ Neither is a denylist: both key on measured cardinality, never on a path shape.
+- **Before** (full walk plus `WithAncestors`, which is the path this origin took): walk **4.31 s**, whole pass
+  **5.25 s**, **51,082** folders rescored, 61 rows written.
+- **After** (demoted): plan-plus-walk **0.76–1.03 ms**, whole pass **1.6–2.1 ms**, **1** folder rescored, 1 row written.
 
-Until it lands, the `incremental rescore of '<volume>' updated N (of M rescored)` log line is the thing to watch — `M`
-is the width, and it is why both numbers are logged.
+Fallback frequency, `importance-diff` over the five widest real origins: **4 of 5 fell back to the full walk before,
+0 after** (the four demote instead), and the abandoned descent probe those four used to pay was median 30 ms, max
+305 ms. Over 385 sampled origins nothing demotes, nothing falls back, and nothing disagrees with the full-walk oracle —
+this is one path, not a broad cliff, exactly as the cardinality survey above said.
+
+**The delta reload was already applying**, contrary to the expectation that the width had to come down first: the
+signals-blob skip cut `written` to 61 for a `$HOME` pass, well under `MAX_DELTA_ROWS` (10,000), so the pass already
+described itself row by row. The demotion takes it from 61 upserts to 1.
+
+Correctness: the marker reasoning, the two ❌s the design rests on (a demoted origin is never in the clear list and
+absorbs nothing during de-duplication), and the one-directional staleness it accepts are canonical in
+`crates/cmdr-index/src/importance/scheduler/DETAILS.md` § An over-budget origin is demoted.
+
+The `incremental rescore of '<volume>' updated N (of M rescored)` log line stays the thing to watch — `M` is the width,
+and it is why both numbers are logged.

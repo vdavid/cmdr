@@ -12,6 +12,7 @@
 
 use std::collections::HashMap;
 
+use super::scoped_walk::{BatchPlan, plan_incremental_batch};
 use super::walk::{IndexFolder, WalkedFolders, walk_index_folders};
 use crate::importance::scorer::{SignalSet, Weights, explain};
 use crate::importance::signals::{OptionalSignals, signals_for_dir};
@@ -286,22 +287,29 @@ pub(super) enum RescoreScope {
 /// ([`super::scoped_walk`]), which reads only the changed subtrees, and falls back to
 /// the full O(dirs) [`walk_index_folders`] whenever the scoped one can't stand in for
 /// it — which is also what keeps the full walk exercised as the fallback path.
+///
+/// Returns the [`BatchPlan`] alongside the walk because the two are one decision: the
+/// plan says which origins were too big to descend, and the caller needs that to keep
+/// the clear list off them.
 pub(super) fn walk_for_incremental(
     conn: &rusqlite::Connection,
     home: &str,
     origins: &[String],
     previous_markers: &HashMap<String, bool>,
-) -> Result<(WalkedFolders, RescoreScope), String> {
-    match super::scoped_walk::try_scoped_walk(conn, home, origins, previous_markers)? {
-        super::scoped_walk::ScopedWalkOutcome::Scoped(folders) => Ok((folders, RescoreScope::ChangedSubtreesOnly)),
+) -> Result<(WalkedFolders, RescoreScope, BatchPlan), String> {
+    let plan = plan_incremental_batch(conn, origins)?;
+    match super::scoped_walk::try_scoped_walk(conn, home, &plan, previous_markers)? {
+        super::scoped_walk::ScopedWalkOutcome::Scoped(folders) => {
+            Ok((folders, RescoreScope::ChangedSubtreesOnly, plan))
+        }
         super::scoped_walk::ScopedWalkOutcome::FullWalkNeeded(reason) => {
             log::debug!(target: "importance", "incremental rescore takes the full walk: {reason}");
-            Ok((walk_index_folders(conn, home)?, RescoreScope::WithAncestors))
+            Ok((walk_index_folders(conn, home)?, RescoreScope::WithAncestors, plan))
         }
     }
 }
 
-/// Drop every origin that sits under another origin in the same batch.
+/// Drop every origin that sits under another DESCENDED origin in the same batch.
 ///
 /// `subtree(P/x) ⊆ subtree(P)`, so a nested origin adds no folder and clears no extra
 /// row — it only makes the pass read the same rows twice. Dropping it BEFORE the walk
@@ -309,19 +317,33 @@ pub(super) fn walk_for_incremental(
 /// what usually spares a brand-new folder from the marker-comparison fallback: the
 /// folder's creation changed its PARENT's listing, so the parent is an origin too,
 /// and the parent has a stored row where the new child doesn't.
-pub(super) fn dedupe_nested_origins(origins: &[String]) -> Vec<String> {
+///
+/// ❌ A DEMOTED origin absorbs nothing. It never reads or clears its subtree, so an
+/// origin nested under it still has all of its own work to do — and since `$HOME` is
+/// demoted on essentially every batch (a dotfile write makes it an origin), letting it
+/// absorb would silently drop every real change the same batch carried.
+pub(super) fn dedupe_nested_origins(origins: &[String], demoted: &std::collections::HashSet<String>) -> Vec<String> {
     let mut sorted: Vec<&String> = origins.iter().collect();
     // Shortest first, so an ancestor is always considered before its descendants.
     sorted.sort_unstable_by_key(|p| p.len());
     let mut kept: Vec<String> = Vec::new();
+    let mut absorbing: Vec<String> = Vec::new();
     for origin in sorted {
-        if !is_in_changed_subtree(origin, &kept) {
-            kept.push(origin.clone());
+        if kept.contains(origin) || is_in_changed_subtree(origin, &absorbing) {
+            continue;
+        }
+        kept.push(origin.clone());
+        if !demoted.contains(origin) {
+            absorbing.push(origin.clone());
         }
     }
     // Back to the batch's own order, so the clear list stays stable across passes.
-    let mut out: Vec<String> = origins.iter().filter(|p| kept.contains(p)).cloned().collect();
-    out.dedup();
+    let mut out: Vec<String> = Vec::new();
+    for origin in origins {
+        if kept.contains(origin) && !out.contains(origin) {
+            out.push(origin.clone());
+        }
+    }
     out
 }
 
@@ -401,6 +423,12 @@ impl<'a> IncrementalInputs<'a> {
 /// - a folder that STOPPED being floored: cleared (it had no row anyway), then
 ///   inserted because it now scores.
 ///
+/// `demoted` names the origins too big to descend: each is rescored ALONE, and — the
+/// load-bearing half — is deliberately absent from `changed_paths`, so the writer
+/// never clears the subtree the pass didn't read. ❌ Don't fold the two lists
+/// together; a demoted origin in the clear list deletes its whole subtree's weights
+/// and re-inserts one row.
+///
 /// Split from the pool/registry resolution so a test drives it with a synthetic
 /// walk and a directly-built writer (no registry, no FFI). Samples
 /// `kMDItemLastUsedDate` only for the touched subset (bounded work).
@@ -409,14 +437,15 @@ pub(super) fn incremental_rescore(
     folders: &mut WalkedFolders,
     changed_paths: &[String],
     scope: RescoreScope,
+    demoted: &[String],
 ) -> Result<IncrementalOutcome, String> {
     // The set of folders to (re)insert: every walked folder in a changed path's
-    // subtree (downward floor propagation), plus — on a full walk only — each
-    // changed path's capped ancestor chain (upward marker propagation). The
-    // ancestor cap bounds the upward walk; the downward side is bounded by the
-    // subtree that actually changed. Only THIS subset materializes a path, so the
-    // memory stays proportional to what changed.
-    let subset = rescore_subset(folders, changed_paths, scope);
+    // subtree (downward floor propagation), plus each demoted origin on its own, plus
+    // — on a full walk only — each changed path's capped ancestor chain (upward marker
+    // propagation). The ancestor cap bounds the upward walk; the downward side is
+    // bounded by the subtree that actually changed. Only THIS subset materializes a
+    // path, so the memory stays proportional to what changed.
+    let subset = rescore_subset(folders, changed_paths, scope, demoted);
     if subset.is_empty() && changed_paths.is_empty() {
         return Ok(IncrementalOutcome::default());
     }
@@ -498,13 +527,16 @@ pub(super) fn rescore_subset(
     folders: &mut WalkedFolders,
     changed_paths: &[String],
     scope: RescoreScope,
+    demoted: &[String],
 ) -> Vec<(IndexFolder, String)> {
     let touched = match scope {
         RescoreScope::WithAncestors => touched_folder_set(changed_paths),
         // A scoped walk never read the ancestors, and doesn't need to: the only
         // signal that can move for them is `has_project_marker`, and the scoped
-        // walk falls back to the full one whenever that could have happened.
-        RescoreScope::ChangedSubtreesOnly => std::collections::HashSet::new(),
+        // walk falls back to the full one whenever that could have happened. What it
+        // DOES add here is each demoted origin, whose subtree it deliberately skipped
+        // — the origin's own row still has to move with its own listing.
+        RescoreScope::ChangedSubtreesOnly => demoted.iter().cloned().collect(),
     };
     let mut subset = Vec::new();
     folders.for_each(|f, path| {

@@ -13,12 +13,13 @@
 //! scenarios then assert the semantics on top, so a bug that both walks share still
 //! gets caught. See `docs/specs/scoped-incremental-walk.md`.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use super::recompute::{RescoreScope, dedupe_nested_origins, load_previous_markers, walk_for_incremental};
+use super::scoped_walk::plan_incremental_batch;
 use super::test_support::*;
 use super::*;
-use crate::indexing::store::{IndexStore, ROOT_ID};
+use crate::indexing::store::{DirStatsById, IndexStore, ROOT_ID};
 
 /// A fixed clock for every pass, so a score difference can only come from a signal
 /// difference and never from the recency term moving between two runs.
@@ -54,6 +55,9 @@ struct TestVolume {
     next_id: i64,
     /// How many passes took the full walk, so a scenario can assert WHICH path ran.
     full_walk_passes: usize,
+    /// What the most recent incremental pass reported, so a scenario can assert how
+    /// WIDE it was (`considered`), not only what it wrote.
+    last_report: IncrementalReport,
 }
 
 impl TestVolume {
@@ -69,7 +73,28 @@ impl TestVolume {
             ids: HashMap::new(),
             next_id: ROOT_ID + 1,
             full_walk_passes: 0,
+            last_report: IncrementalReport::default(),
         }
+    }
+
+    /// Tell the index that `path`'s subtree holds `count` directories — the cheap
+    /// exact measure a pass reads to decide whether an origin is too big to descend.
+    /// A test sets the number directly rather than building 20,000 real directories.
+    fn set_recursive_dir_count(&mut self, path: &str, count: u64) {
+        let entry_id = *self.ids.get(path).expect("path was created");
+        IndexStore::upsert_dir_stats_by_id(
+            self.index.read_conn(),
+            &[DirStatsById {
+                entry_id,
+                recursive_logical_size: 0,
+                recursive_physical_size: 0,
+                recursive_file_count: 0,
+                recursive_dir_count: count,
+                recursive_has_symlinks: false,
+                min_subtree_epoch: 0,
+            }],
+        )
+        .expect("dir stats");
     }
 
     /// Create `path` (and any missing ancestor) as a directory, returning its id.
@@ -177,23 +202,26 @@ impl TestVolume {
     /// pinned by `incremental_tests.rs` instead).
     fn incremental(&mut self, origins: &[&str]) -> usize {
         let batch: Vec<String> = origins.iter().map(|p| (*p).to_string()).collect();
-        let changed = dedupe_nested_origins(&sanitize_incremental_batch(&batch, HOME));
-        if changed.is_empty() {
+        let sanitized = sanitize_incremental_batch(&batch, HOME);
+        self.last_report = IncrementalReport::default();
+        if sanitized.is_empty() {
             return 0;
         }
-        let previous = load_previous_markers(self.dir.path(), ROOT_VOLUME_ID, &changed);
+        let previous = load_previous_markers(self.dir.path(), ROOT_VOLUME_ID, &sanitized);
         let conn = self.index.read_conn();
-        let (mut folders, scope) = match self.strategy {
-            WalkStrategy::Scoped => walk_for_incremental(conn, HOME, &changed, &previous).expect("scoped walk"),
+        let (mut folders, scope, plan) = match self.strategy {
+            WalkStrategy::Scoped => walk_for_incremental(conn, HOME, &sanitized, &previous).expect("scoped walk"),
             WalkStrategy::FullOnly => (
                 walk_index_folders(conn, HOME).expect("full walk"),
                 RescoreScope::WithAncestors,
+                plan_incremental_batch(conn, &sanitized).expect("plan"),
             ),
         };
         if scope == RescoreScope::WithAncestors {
             self.full_walk_passes += 1;
         }
-        let count = incremental_rescore(
+        let (cleared, demoted) = plan.lists_for(scope);
+        self.last_report = incremental_rescore(
             &IncrementalInputs {
                 writer: &self.writer,
                 weights: &Weights::default(),
@@ -203,14 +231,14 @@ impl TestVolume {
                 visits: &HashMap::new(),
             },
             &mut folders,
-            &changed,
+            &cleared,
             scope,
+            &demoted,
         )
         .expect("incremental")
-        .report
-        .written;
+        .report;
         self.writer.flush_blocking().expect("flush");
-        count
+        self.last_report.written
     }
 
     /// Every stored weight, read back off disk.
@@ -254,13 +282,30 @@ fn differential(scenario: impl Fn(&mut TestVolume)) -> StoredWeights {
     outcomes.remove(0).1
 }
 
-/// How many of a scoped-strategy run's passes fell back to the full walk.
-fn full_walk_passes(scenario: impl Fn(&mut TestVolume)) -> usize {
+/// What a scoped-strategy run DID, for an assertion about how a pass ran rather than
+/// what the store ended up holding.
+struct PassTrace {
+    /// How many of the run's passes fell back to the full walk.
+    full_walk_passes: usize,
+    /// What the run's last incremental pass reported.
+    last_report: IncrementalReport,
+}
+
+/// Run `scenario` under the SCOPED walk alone and report how its passes ran.
+fn scoped_trace(scenario: impl Fn(&mut TestVolume)) -> PassTrace {
     let mut volume = TestVolume::new(WalkStrategy::Scoped);
     scenario(&mut volume);
-    let count = volume.full_walk_passes;
+    let trace = PassTrace {
+        full_walk_passes: volume.full_walk_passes,
+        last_report: volume.last_report,
+    };
     volume.writer.shutdown();
-    count
+    trace
+}
+
+/// How many of a scoped-strategy run's passes fell back to the full walk.
+fn full_walk_passes(scenario: impl Fn(&mut TestVolume)) -> usize {
+    scoped_trace(scenario).full_walk_passes
 }
 
 /// Split an absolute path into `(parent, name)`; the parent of a top-level path is
@@ -688,8 +733,24 @@ fn nested_origins_collapse_to_their_outermost() {
         .map(|p| p.to_string())
         .collect();
     assert_eq!(
-        dedupe_nested_origins(&batch),
+        dedupe_nested_origins(&batch, &HashSet::new()),
         vec!["/a/b".to_string(), "/x".to_string(), "/a/bc".to_string()],
         "`/a/b/c` is inside `/a/b`; `/a/bc` only shares a prefix, so it stays"
     );
 }
+
+/// A DEMOTED origin absorbs nothing: it never reads (or clears) its subtree, so an
+/// origin nested under it still has its own work to do.
+#[test]
+fn a_demoted_origin_does_not_absorb_the_origins_nested_under_it() {
+    let batch: Vec<String> = ["/a/b", "/a/b/c", "/a/b/c/d"].iter().map(|p| p.to_string()).collect();
+    let demoted: HashSet<String> = ["/a/b".to_string()].into_iter().collect();
+    assert_eq!(
+        dedupe_nested_origins(&batch, &demoted),
+        vec!["/a/b".to_string(), "/a/b/c".to_string()],
+        "`/a/b` is demoted so `/a/b/c` survives, and `/a/b/c` then absorbs `/a/b/c/d`"
+    );
+}
+
+/// The over-budget-origin half, split out for length (`demotion_tests.rs`).
+mod demotion_tests;

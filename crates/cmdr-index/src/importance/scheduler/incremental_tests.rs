@@ -220,6 +220,7 @@ fn rescore(writer: &ImportanceWriter, home: &str, folders: &mut WalkedFolders, c
         // These drive a whole-volume `WalkedFolders::synthetic`, so they exercise
         // the full walk's scope (the incremental fallback path).
         RescoreScope::WithAncestors,
+        &[],
     )
     .expect("incremental")
     .report
@@ -420,6 +421,7 @@ fn incremental_rescore_rescopes_and_preserves_untouched_generation() {
         &mut folders,
         &changed,
         RescoreScope::WithAncestors,
+        &[],
     )
     .expect("incremental")
     .report

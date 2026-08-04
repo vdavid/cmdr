@@ -83,6 +83,12 @@ fn main() {
         compared.iter().map(|c| c.score_mismatches).sum::<usize>(),
         compared.iter().map(|c| c.signal_mismatches).sum::<usize>()
     );
+    // The over-budget origins: each is rescored ALONE, and each is one the pass would
+    // have paid a full walk for before the bound existed.
+    println!(
+        "  demoted (subtree past the budget): {} origins",
+        comparisons.iter().filter(|c| c.demoted).count()
+    );
 
     let mut walks: Vec<_> = compared.iter().map(|c| c.scoped_walk).collect();
     walks.sort_unstable();

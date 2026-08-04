@@ -66,8 +66,8 @@ mod walk;
 /// Construction plus the lifecycle subscriptions that decide when a pass runs.
 mod wiring;
 use recompute::{
-    IncrementalInputs, IncrementalReport, RecomputeInputs, dedupe_nested_origins, incremental_rescore,
-    load_previous_markers, load_visits, recompute_folders, sanitize_incremental_batch, walk_for_incremental,
+    IncrementalInputs, IncrementalReport, RecomputeInputs, incremental_rescore, load_previous_markers, load_visits,
+    recompute_folders, sanitize_incremental_batch, walk_for_incremental,
 };
 // Re-exported for the eval corpus tool, which walks a real index the SAME way a
 // recompute does (so dumped signals match production exactly).
@@ -437,10 +437,6 @@ impl ImportanceScheduler {
         // churn from driving a pass a minute forever. See `sanitize_incremental_batch`.
         let home = Self::home_dir();
         let changed_paths = sanitize_incremental_batch(changed_paths, &home);
-        // One origin per changed subtree: a nested origin adds nothing and costs a
-        // second read of the same rows. Both the clear and the insert take THIS
-        // slice, so they can't disagree about the region.
-        let changed_paths = dedupe_nested_origins(&changed_paths);
         if changed_paths.is_empty() {
             return Ok(IncrementalReport::default());
         }
@@ -449,12 +445,19 @@ impl ImportanceScheduler {
             return Ok(IncrementalReport::default());
         };
 
-        // The "before" side of the scoped walk's guard, read before the walk so the
-        // whole decision fits in one read-pool checkout.
+        // The "before" side of the scoped walk's guard, read for the whole sanitized
+        // batch (a superset of what survives de-duplication) so the plan and the walk
+        // still fit in ONE read-pool checkout — de-duplication needs the index, since
+        // it turns on which origins are too big to descend.
         let previous_markers = load_previous_markers(&self.data_dir, volume_id, &changed_paths);
-        let (mut folders, scope) = pool
+        let (mut folders, scope, plan) = pool
             .with_conn(|conn| walk_for_incremental(conn, &home, &changed_paths, &previous_markers))
             .map_err(|e| format!("read pool error: {e}"))??;
+        // One origin per changed subtree, and the two lists kept apart: `cleared` is
+        // what the writer clears and re-inserts, `demoted` is the over-budget origins
+        // rescored alone. Both the clear and the insert take the SAME `cleared` slice,
+        // so they can't disagree about the region.
+        let (changed_paths, demoted) = plan.lists_for(scope);
 
         // ❌ No `folders.is_empty()` early return here. A scoped walk over a batch
         // whose origins were ALL deleted between the publish and this pass finds no
@@ -477,6 +480,7 @@ impl ImportanceScheduler {
             &mut folders,
             &changed_paths,
             scope,
+            &demoted,
         )?;
 
         // Announce the pass whether or not it wrote a row: it CLEARED each changed

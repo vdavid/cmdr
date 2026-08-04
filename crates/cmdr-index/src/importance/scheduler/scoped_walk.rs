@@ -21,10 +21,19 @@
 //!   the stored value against the fresh one says whether any ancestor outside could
 //!   have moved. If it did, the pass takes the full walk instead.
 //!
+//! **An origin bigger than the budget is DEMOTED, not descended.** A change to a file
+//! sitting directly inside an origin can move that origin's own signals and propagate
+//! up its ancestors, but it cannot move any DESCENDANT's, so reading the subtree only
+//! to rewrite it identically is waste. [`plan_incremental_batch`] asks the index's own
+//! `recursive_dir_count` how much of the volume an origin covers — one indexed
+//! primary-key lookup, before any of it is read — and an over-budget origin is
+//! rescored ALONE, with its subtree's stored rows left untouched.
+//!
 //! Depth and the accepted lossiness: `DETAILS.md` § The scoped incremental walk.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
+use super::recompute::{RescoreScope, dedupe_nested_origins};
 use super::walk::{
     ExtensionGroup, IndexFolder, WalkedFolders, folded_is_project_marker, lowercased_extension_into,
     propagate_marker_to_ancestors,
@@ -41,15 +50,18 @@ use crate::indexing::store::{ARENA_FULL, DirTree, IndexStore, ROOT_ID};
 /// simpler and cheaper.
 pub(super) const SCOPED_WALK_MAX_ORIGINS: usize = 64;
 
-/// The most directories a scoped walk may read before it gives up and lets the full
-/// walk run instead.
+/// The most directories one origin's subtree may hold and still be worth descending.
 ///
-/// Checked DURING the descent, so an origin that turns out to sit above most of the
-/// volume costs a bounded probe rather than a slower-than-full-walk crawl. Sized so
-/// the probe stays a small fraction of a full walk's cost on a real index: the full
-/// walk is ~9 µs per folder (5.5 s over 611,699 folders, measured 2026-07-27), and a
-/// level-batched descent runs at a comparable per-directory cost, so 20,000
-/// directories is a few hundred milliseconds at worst.
+/// Checked TWICE, cheaply then honestly. [`plan_incremental_batch`] compares it
+/// against the index's own `recursive_dir_count` before reading anything, so an origin
+/// sitting above most of the volume is demoted for one primary-key lookup rather than
+/// a 31 ms abandoned probe. The descent then counts against the same number as it
+/// goes, which is what catches an origin whose `dir_stats` row is missing or stale.
+///
+/// Sized so a descent stays a small fraction of a full walk's cost on a real index:
+/// the full walk is ~9 µs per folder (5.5 s over 611,699 folders, measured
+/// 2026-07-27), and a level-batched descent runs at a comparable per-directory cost,
+/// so 20,000 directories is a few hundred milliseconds at worst.
 pub(super) const SCOPED_WALK_MAX_DIRS: usize = 20_000;
 
 /// Parent ids per batched child query. Well under SQLite's default 999-parameter
@@ -100,37 +112,128 @@ impl std::fmt::Display for FullWalkReason {
     }
 }
 
-/// Read the folders of `origins`' subtrees out of `conn`, or say why the pass has to
+/// One origin of a sanitized batch, and how the pass will read it.
+struct PlannedOrigin {
+    /// The origin's absolute path, exactly as the batch spelled it (which is the key
+    /// the clear list and the marker map use).
+    path: String,
+    /// The directory id it resolved to, or `None` when the index has no such directory
+    /// — deleted between the publish and this pass, whose rows still have to be
+    /// cleared.
+    id: Option<i64>,
+    /// `true` when the origin's subtree is past [`SCOPED_WALK_MAX_DIRS`], so the pass
+    /// rescores the origin ALONE and leaves every row beneath it untouched.
+    demoted: bool,
+}
+
+/// The origins one incremental pass acts on, each with how the pass will read it.
+///
+/// Built before the walk because the two decisions are entangled: an origin's size
+/// decides whether it's descended, and THAT decides whether it absorbs the origins
+/// nested under it (a demoted origin doesn't read or clear its subtree, so it can't
+/// stand in for them).
+pub(super) struct BatchPlan {
+    origins: Vec<PlannedOrigin>,
+}
+
+impl BatchPlan {
+    /// The two path lists a pass acts on, given the walk it ended up taking: the
+    /// origins whose subtree it CLEARS and re-inserts, and the demoted ones it
+    /// rescores alone.
+    ///
+    /// A full walk read the whole volume, so demotion is moot there and every origin
+    /// is cleared exactly as it was before the bound existed.
+    pub(super) fn lists_for(&self, scope: RescoreScope) -> (Vec<String>, Vec<String>) {
+        match scope {
+            RescoreScope::WithAncestors => (self.origins.iter().map(|o| o.path.clone()).collect(), Vec::new()),
+            RescoreScope::ChangedSubtreesOnly => (
+                self.origins
+                    .iter()
+                    .filter(|o| !o.demoted)
+                    .map(|o| o.path.clone())
+                    .collect(),
+                self.origins
+                    .iter()
+                    .filter(|o| o.demoted)
+                    .map(|o| o.path.clone())
+                    .collect(),
+            ),
+        }
+    }
+}
+
+/// Resolve each sanitized origin, decide which are too big to descend, and drop the
+/// ones another origin still covers.
+///
+/// The size question is answered by the index's own `recursive_dir_count`: one indexed
+/// primary-key lookup per origin, before a single directory of the subtree is read.
+/// It replaces the descend-until-the-cap probe entirely for the case that actually
+/// fires — a dotfile write in `$HOME`, whose subtree is 83% of a real root volume.
+pub(super) fn plan_incremental_batch(conn: &rusqlite::Connection, origins: &[String]) -> Result<BatchPlan, String> {
+    let mut ids: HashMap<&str, Option<i64>> = HashMap::new();
+    let mut demoted: HashSet<String> = HashSet::new();
+    for origin in origins {
+        if ids.contains_key(origin.as_str()) {
+            continue;
+        }
+        let id = resolve_directory(conn, origin)?;
+        if let Some(id) = id
+            && subtree_is_over_budget(conn, id)?
+        {
+            demoted.insert(origin.clone());
+        }
+        ids.insert(origin, id);
+    }
+
+    let kept = dedupe_nested_origins(origins, &demoted);
+    Ok(BatchPlan {
+        origins: kept
+            .into_iter()
+            .map(|path| PlannedOrigin {
+                id: ids.get(path.as_str()).copied().flatten(),
+                demoted: demoted.contains(&path),
+                path,
+            })
+            .collect(),
+    })
+}
+
+/// Whether `id`'s subtree holds more directories than a scoped descent may read.
+///
+/// Reads `dir_stats.recursive_dir_count`, which the aggregator already maintains
+/// exactly (it read 574,006 for a real `$HOME` against the 574,007 a full walk
+/// counted, itself excluded). A directory with no `dir_stats` row yet reads as within
+/// budget; the running count inside [`descend_subtree`] is the backstop for that and
+/// for a stale one.
+fn subtree_is_over_budget(conn: &rusqlite::Connection, id: i64) -> Result<bool, String> {
+    let stats = IndexStore::get_dir_stats_by_id(conn, id).map_err(|e| e.to_string())?;
+    Ok(stats.is_some_and(|s| s.recursive_dir_count > SCOPED_WALK_MAX_DIRS as u64))
+}
+
+/// Read the folders of `plan`'s subtrees out of `conn`, or say why the pass has to
 /// take the full walk instead.
 ///
-/// `origins` must already be sanitized and de-duplicated
-/// ([`super::recompute::sanitize_incremental_batch`] then
-/// [`super::recompute::dedupe_nested_origins`]), so no origin floors and none is
-/// under another. `previous_markers` maps an origin's path to the
+/// `plan` comes from [`plan_incremental_batch`] over an already-sanitized batch
+/// ([`super::recompute::sanitize_incremental_batch`]), so no origin floors and none is
+/// under a DESCENDED one. `previous_markers` maps an origin's path to the
 /// `has_project_marker` its stored row carries; a missing entry means it has no row.
 pub(super) fn try_scoped_walk(
     conn: &rusqlite::Connection,
     home: &str,
-    origins: &[String],
+    plan: &BatchPlan,
     previous_markers: &HashMap<String, bool>,
 ) -> Result<ScopedWalkOutcome, String> {
-    if origins.len() > SCOPED_WALK_MAX_ORIGINS {
+    if plan.origins.len() > SCOPED_WALK_MAX_ORIGINS {
         return Ok(ScopedWalkOutcome::FullWalkNeeded(FullWalkReason::TooManyOrigins));
     }
 
     let mut rows = ScopedRows::default();
-    // Origin path → its resolved directory id, for the marker comparison below. An
-    // origin that doesn't resolve was deleted between the publish and this pass.
-    let mut resolved: Vec<(&str, Option<i64>)> = Vec::new();
-
-    for origin in origins {
-        let Some(id) = resolve_directory(conn, origin)? else {
-            resolved.push((origin, None));
-            continue;
-        };
-        resolved.push((origin, Some(id)));
+    for origin in &plan.origins {
+        let Some(id) = origin.id else { continue };
         collect_ancestor_chain(conn, id, &mut rows)?;
-        if !descend_subtree(conn, id, &mut rows)? {
+        if origin.demoted {
+            read_origin_alone(conn, id, &mut rows)?;
+        } else if !descend_subtree(conn, id, &mut rows)? {
             return Ok(ScopedWalkOutcome::FullWalkNeeded(FullWalkReason::SubtreesTooLarge));
         }
     }
@@ -147,21 +250,23 @@ pub(super) fn try_scoped_walk(
         folder.under_floored_ancestor = under_floored_ancestor(path, home);
     });
     propagate_marker_to_ancestors(&mut folders);
+    carry_marker_below_for_demoted(&mut folders, plan, previous_markers);
 
     // The guard: an ancestor outside every subtree can only have moved if some
     // subtree's marker presence did.
-    for (origin, id) in resolved {
-        let fresh = id
+    for origin in &plan.origins {
+        let fresh = origin
+            .id
             .and_then(|id| folders.folder_of_dir_id(id))
             .is_some_and(|index| folders.marker_presence_at(index));
-        match previous_markers.get(origin) {
+        match previous_markers.get(&origin.path) {
             Some(&stored) if stored == fresh => {}
             Some(_) => {
                 return Ok(ScopedWalkOutcome::FullWalkNeeded(FullWalkReason::MarkerPresenceFlipped));
             }
             // No stored row and nothing in the index either: the folder never scored
             // and still doesn't, so no ancestor above it can have moved.
-            None if id.is_none() => {}
+            None if origin.id.is_none() => {}
             None => {
                 return Ok(ScopedWalkOutcome::FullWalkNeeded(FullWalkReason::MarkerPresenceUnknown));
             }
@@ -169,6 +274,40 @@ pub(super) fn try_scoped_walk(
     }
 
     Ok(ScopedWalkOutcome::Scoped(folders))
+}
+
+/// Give each demoted origin back the `has_marker_below` its stored row carries.
+///
+/// **Decision/Why the stored value is the honest source.** Nothing under a demoted
+/// origin was read, so the propagation above can't produce its marker-below flag — and
+/// nothing under it CHANGED either: a change deeper in the tree makes that directory
+/// its own origin (the `dir-changed` contract in
+/// `../../indexing/lifecycle/CLAUDE.md`), where it is either descended or demoted in
+/// its own right. Its own direct children ARE read, so a marker landing directly in
+/// the origin still shows up in `has_direct_marker` and flips the guard above.
+///
+/// `has_project_marker` is `has_direct_marker || has_marker_below`, so seeding the
+/// stored value here is exactly "the origin keeps the marker presence it had unless
+/// its own listing gained one". ❌ It is deliberately ONE-directional: the last marker
+/// disappearing from deep inside a demoted origin's subtree leaves the origin reading
+/// project-adjacent until the next full pass. That is the same bounded staleness the
+/// batch gate already accepts for a marker inside a floored subtree
+/// (`DETAILS.md` § The batch gate), in the same advisory signal.
+fn carry_marker_below_for_demoted(
+    folders: &mut WalkedFolders,
+    plan: &BatchPlan,
+    previous_markers: &HashMap<String, bool>,
+) {
+    for origin in plan.origins.iter().filter(|o| o.demoted) {
+        if previous_markers.get(&origin.path) != Some(&true) {
+            continue;
+        }
+        if let Some(id) = origin.id
+            && let Some(index) = folders.folder_of_dir_id(id)
+        {
+            folders.folder_at_mut(index).has_marker_below = true;
+        }
+    }
 }
 
 impl WalkedFolders {
@@ -371,6 +510,26 @@ fn collect_ancestor_chain(conn: &rusqlite::Connection, id: i64, rows: &mut Scope
         }
         cursor = entry.parent_id;
     }
+}
+
+/// Read a DEMOTED origin: the directory itself, in scope, plus its direct child
+/// directories, which are not.
+///
+/// The child directories are read because a project marker is often one
+/// (`.git`/`.hg`/`.svn`), and [`fold_direct_children`] derives the origin's
+/// `has_direct_marker` from the rows the walk holds. They are not in scope, so nothing
+/// rescores them and nothing under them is read: one origin costs one level of
+/// listing instead of its whole subtree.
+fn read_origin_alone(conn: &rusqlite::Connection, root_id: i64, rows: &mut ScopedRows) -> Result<(), String> {
+    let Some(root) = IndexStore::get_entry_by_id(conn, root_id).map_err(|e| e.to_string())? else {
+        return Ok(());
+    };
+    rows.insert(root.id, root.parent_id, &root.name, root.modified_at, true);
+    rows.scored_dirs += 1;
+    IndexStore::for_each_child_directory_of(conn, &[root_id], |id, parent_id, name, modified_at| {
+        rows.insert(id, parent_id, name, modified_at, false);
+    })
+    .map_err(|e| e.to_string())
 }
 
 /// Read every directory at or under `root_id` into `rows`, level by level.

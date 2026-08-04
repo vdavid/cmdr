@@ -8,6 +8,7 @@
 use std::collections::HashMap;
 
 use super::recompute::{RescoreScope, ScoringInputs, rescore_rows, rescore_subset, sanitize_incremental_batch};
+use super::scoped_walk::plan_incremental_batch;
 use super::walk::walk_index_folders;
 use crate::importance::scorer::{SignalSet, Weights};
 use crate::importance::writer::WeightRow;
@@ -32,6 +33,10 @@ pub struct OriginComparison {
     /// `true` when the scoped walk declined (too big, or the marker guard fired), so
     /// this origin exercised the full-walk fallback instead of a comparison.
     pub fell_back: bool,
+    /// `true` when the origin's subtree was past the budget, so the pass rescored it
+    /// ALONE. The oracle is narrowed to match: the full walk's row for that one
+    /// folder, since every row beneath it is left untouched by design.
+    pub demoted: bool,
     /// Wall clock for the scoped walk alone.
     pub scoped_walk: std::time::Duration,
 }
@@ -93,7 +98,11 @@ pub fn compare_walks_for_incremental(
     for origin in origins {
         let one = std::slice::from_ref(origin);
         let started = std::time::Instant::now();
-        let outcome = crate::importance::scheduler::scoped_walk::try_scoped_walk(&conn, home, one, &markers)?;
+        let plan = plan_incremental_batch(&conn, one)?;
+        // What the pass will act on: an over-budget origin is rescored alone, so both
+        // sides of the comparison have to be narrowed to that one folder.
+        let (cleared, demoted) = plan.lists_for(RescoreScope::ChangedSubtreesOnly);
+        let outcome = crate::importance::scheduler::scoped_walk::try_scoped_walk(&conn, home, &plan, &markers)?;
         let scoped_walk = started.elapsed();
         let mut scoped = match outcome {
             crate::importance::scheduler::scoped_walk::ScopedWalkOutcome::Scoped(folders) => folders,
@@ -106,6 +115,7 @@ pub fn compare_walks_for_incremental(
                     score_mismatches: 0,
                     signal_mismatches: 0,
                     fell_back: true,
+                    demoted: !demoted.is_empty(),
                     scoped_walk,
                 });
                 continue;
@@ -115,15 +125,17 @@ pub fn compare_walks_for_incremental(
         let scoped_folders = scoped.len();
         let scoped_rows = rescore_rows(
             &inputs,
-            &rescore_subset(&mut scoped, one, RescoreScope::ChangedSubtreesOnly),
+            &rescore_subset(&mut scoped, &cleared, RescoreScope::ChangedSubtreesOnly, &demoted),
             &HashMap::new(),
         );
         let oracle_rows = rescore_rows(
             &inputs,
-            &rescore_subset(&mut full, one, RescoreScope::ChangedSubtreesOnly),
+            &rescore_subset(&mut full, &cleared, RescoreScope::ChangedSubtreesOnly, &demoted),
             &HashMap::new(),
         );
-        out.push(diff_rows(scoped_folders, scoped_rows, oracle_rows, scoped_walk));
+        let mut comparison = diff_rows(scoped_folders, scoped_rows, oracle_rows, scoped_walk);
+        comparison.demoted = !demoted.is_empty();
+        out.push(comparison);
     }
     Ok(out)
 }
@@ -161,6 +173,7 @@ fn diff_rows(
         score_mismatches,
         signal_mismatches,
         fell_back: false,
+        demoted: false,
         scoped_walk,
     }
 }
