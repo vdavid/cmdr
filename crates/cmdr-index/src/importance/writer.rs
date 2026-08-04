@@ -675,6 +675,9 @@ fn run_wal_checkpoint(conn: &Connection) {
     });
     let _ = conn.busy_timeout(Duration::from_millis(5000));
     match result {
+        // An empty WAL with nothing copied: the checkpoint had no work, so it says
+        // nothing (same rule as `indexing/writer/maintenance.rs`).
+        Ok((0, 0, 0)) => {}
         Ok((0, log_size, checkpointed)) => {
             log::debug!(target: "importance", "wal_checkpoint TRUNCATE done ({checkpointed} of {})", pluralize(log_size as u64, "frame"));
         }

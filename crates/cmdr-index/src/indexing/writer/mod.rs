@@ -1117,7 +1117,6 @@ fn writer_loop(
             process_message(
                 &conn,
                 msg,
-                &stats,
                 &mut accumulator,
                 events.as_ref(),
                 &volume_id,
@@ -1136,7 +1135,6 @@ fn writer_loop(
         let should_exit = process_message(
             &conn,
             msg,
-            &stats,
             &mut accumulator,
             events.as_ref(),
             &volume_id,
@@ -1246,6 +1244,11 @@ fn writer_loop(
     );
 }
 
+/// How often an IDLE writer still says so. Long enough that a quiet machine
+/// costs a line a minute instead of one every five seconds, short enough that a
+/// bundle can still tell "idle" from "the thread died".
+const IDLE_HEARTBEAT: Duration = Duration::from_secs(60);
+
 /// Phase 1 instrumentation: rolling diagnostics for the writer thread.
 struct ProbeStats {
     last_heartbeat: Instant,
@@ -1268,14 +1271,38 @@ impl ProbeStats {
         }
     }
 
+    /// Whether a heartbeat is worth a line right now.
+    ///
+    /// The probe exists to show a STALL: a writer that has work and isn't
+    /// draining it. An idle writer beating every 5 s proves the thread is alive
+    /// and says nothing else, and it was ~870 lines an hour. So a beat with
+    /// nothing queued and nothing processed since the last one is skipped, unless
+    /// [`IDLE_HEARTBEAT`] has passed — the periodic "still alive, still idle"
+    /// line a bundle needs to distinguish idle from dead.
+    ///
+    /// A stall always logs: `queue_depth > 0` with no progress is exactly the
+    /// case this keeps at full 5 s resolution.
+    fn heartbeat_is_worth_logging(&self, queue_depth: usize, since_last: Duration) -> bool {
+        let idle = queue_depth == 0 && self.messages_processed == 0 && self.transaction_commits == 0;
+        !idle || since_last >= IDLE_HEARTBEAT
+    }
+
     fn maybe_emit_heartbeat(&mut self, queue_depth: usize) {
-        if self.last_heartbeat.elapsed() < Duration::from_secs(5) {
+        let since_last = self.last_heartbeat.elapsed();
+        if since_last < Duration::from_secs(5) {
+            return;
+        }
+        if !self.heartbeat_is_worth_logging(queue_depth, since_last) {
             return;
         }
         log::debug!(
             target: "stall_probe::writer",
-            "heartbeat queue_depth={} messages_processed_since_last_heartbeat={} transaction_commits_since_last_heartbeat={} time_in_recv_ms={} time_in_processing_ms={} time_in_commit_ms={}",
+            // The window is on the line because it's no longer always 5 s: an idle
+            // stretch stretches it to `IDLE_HEARTBEAT`, and every other number here
+            // is only readable against it.
+            "heartbeat queue_depth={} since_last_heartbeat_ms={} messages_processed_since_last_heartbeat={} transaction_commits_since_last_heartbeat={} time_in_recv_ms={} time_in_processing_ms={} time_in_commit_ms={}",
             queue_depth,
+            since_last.as_millis(),
             self.messages_processed,
             self.transaction_commits,
             self.time_in_recv.as_millis(),
@@ -1296,7 +1323,6 @@ impl ProbeStats {
 fn process_message(
     conn: &rusqlite::Connection,
     msg: WriteMessage,
-    stats: &WriterStats,
     accumulator: &mut AccumulatorMaps,
     events: &dyn EventSink,
     volume_id: &str,
@@ -1472,11 +1498,11 @@ fn process_message(
             let _ = reply.send(result);
         }
         WriteMessage::Flush(reply) => {
-            log::debug!(
-                "Writer: processing flush (total msgs processed so far: {})",
-                stats.current.total,
-            );
-            // All prior messages have been processed; signal the caller
+            // No line here. Flushes are frequent (~2,600 an hour on an ordinary
+            // build machine, the second-biggest source in the whole log) and both
+            // things this used to say already ride the 5 s summary above, which
+            // counts flushes in its breakdown and carries the running total.
+            // All prior messages have been processed; signal the caller.
             let _ = reply.send(());
         }
         WriteMessage::SetDeltaPropagation(enabled) => {

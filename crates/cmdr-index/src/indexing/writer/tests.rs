@@ -833,3 +833,43 @@ fn a_fatal_storage_error_stops_the_writer_and_trips_the_signal() {
         queue_depth.load(Ordering::Relaxed),
     );
 }
+
+/// The stall probe's whole job is showing a writer that HAS work and isn't
+/// draining it. A beat with an empty queue and nothing processed proves the
+/// thread is alive and nothing else, and at 5 s spacing it was ~870 lines an
+/// hour; it now speaks once a minute instead.
+#[test]
+fn an_idle_writer_heartbeat_stays_quiet_until_the_idle_interval() {
+    let probe = ProbeStats::new();
+    assert!(
+        !probe.heartbeat_is_worth_logging(0, Duration::from_secs(5)),
+        "an empty queue with no work done says nothing worth a line"
+    );
+    assert!(
+        probe.heartbeat_is_worth_logging(0, IDLE_HEARTBEAT),
+        "but a bundle still needs the periodic proof that the thread is alive"
+    );
+}
+
+/// A stall is the case the probe exists for, so it keeps full 5 s resolution:
+/// queued work with nothing draining is exactly what a reader is hunting for.
+#[test]
+fn a_stalled_writer_heartbeat_always_logs() {
+    let probe = ProbeStats::new();
+    assert!(
+        probe.heartbeat_is_worth_logging(1, Duration::from_secs(5)),
+        "a non-empty queue with zero progress is the stall this probe reports"
+    );
+}
+
+/// A working writer is never suppressed either: the throughput numbers are the
+/// other half of what the probe is read for.
+#[test]
+fn a_working_writer_heartbeat_always_logs() {
+    let mut probe = ProbeStats::new();
+    probe.messages_processed = 4;
+    assert!(
+        probe.heartbeat_is_worth_logging(0, Duration::from_secs(5)),
+        "an emptied queue that processed 4 messages is progress worth reporting"
+    );
+}

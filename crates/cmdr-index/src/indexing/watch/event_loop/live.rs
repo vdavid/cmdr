@@ -34,6 +34,12 @@ use crate::indexing::store::{self, IndexStore};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 use cmdr_fs::pluralize::pluralize;
 
+/// How many consecutive silent 5 s beats a quiet loop absorbs before it says
+/// "still alive, still idle" anyway. Twelve is a minute, which keeps the
+/// distinction between an idle loop and a dead one in an error-report bundle
+/// without paying a line every five seconds for it.
+const IDLE_HEARTBEAT_BEATS: u64 = 12;
+
 /// A drained batch of live changes, split into the two facts the pending set used
 /// to conflate.
 ///
@@ -146,6 +152,9 @@ pub(in crate::indexing) async fn run_live_event_loop(
     let mut batches_since_heartbeat: u64 = 0;
     let mut events_since_heartbeat: u64 = 0;
     let mut last_batch_duration_ms: u128 = 0;
+    // Consecutive beats that saw nothing, so a quiet loop says "still alive" once a
+    // minute instead of twelve times (see the heartbeat arm).
+    let mut idle_beats: u64 = 0;
 
     // Tripped by the writer on a fatal storage error. Polled each flush tick below
     // so a dead index stops this loop promptly, bounding the reconciler's
@@ -314,10 +323,21 @@ pub(in crate::indexing) async fn run_live_event_loop(
                 reconciler.sweep_rescan_throttle(&writer);
             }
             _ = heartbeat_interval.tick() => {
-                log::info!(
-                    target: "stall_probe::reconciler",
-                    "live_heartbeat batches={batches_since_heartbeat} events={events_since_heartbeat} last_batch_ms={last_batch_duration_ms} total_events={event_count}",
-                );
+                // DEBUG, not INFO: a heartbeat is not a noteworthy lifecycle event,
+                // and the file sink is Debug, so a bundle keeps it either way.
+                // A beat with no batches and no events proves the loop is alive and
+                // says nothing else, so it only speaks once per
+                // `IDLE_HEARTBEAT_BEATS` beats. Any beat that SAW work still logs at
+                // full 5 s resolution, which is what the stall probe is for.
+                let idle = batches_since_heartbeat == 0 && events_since_heartbeat == 0;
+                idle_beats = if idle { idle_beats + 1 } else { 0 };
+                if !idle || idle_beats >= IDLE_HEARTBEAT_BEATS {
+                    log::debug!(
+                        target: "stall_probe::reconciler",
+                        "live_heartbeat batches={batches_since_heartbeat} events={events_since_heartbeat} last_batch_ms={last_batch_duration_ms} total_events={event_count} idle_beats={idle_beats}",
+                    );
+                    idle_beats = 0;
+                }
                 batches_since_heartbeat = 0;
                 events_since_heartbeat = 0;
             }

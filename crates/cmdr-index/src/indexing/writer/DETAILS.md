@@ -515,6 +515,20 @@ write volume was highest). `request_wal_checkpoint` now checks `conn.is_autocomm
 handler's COMMIT and re-checks `is_autocommit` first. A real SQLite error from a checkpoint that DID run still routes to
 `signal.note`.
 
+**A checkpoint with nothing to do says nothing.** `handle_wal_checkpoint`'s `(busy, log_size, checkpointed) = (0, 0, 0)`
+row means the WAL was already empty, which on a quiet machine is every 30 s tick (~160 lines an hour across the three
+DBs saying the last checkpoint worked). That arm is silent; a checkpoint that MOVED pages, one blocked by readers, and
+every error all still log. The media index and importance writers follow the same rule.
+
+**The stall-probe heartbeat is gated on having something to say.** `ProbeStats::heartbeat_is_worth_logging` keeps the 5
+s cadence whenever the queue is non-empty or the writer processed anything — the stall case (`queue_depth > 0` with no
+progress) is exactly what the probe exists to show, at full resolution. A genuinely idle writer beats once per
+`IDLE_HEARTBEAT` (60 s) instead, enough for a bundle to tell idle from dead, and the line carries
+`since_last_heartbeat_ms` because the window is no longer always 5 s. That's ~870 lines an hour on an idle machine
+turned into ~60. The same rule runs in the reconciler's live loop (`../watch/event_loop/live.rs`,
+`IDLE_HEARTBEAT_BEATS`), which also dropped from INFO to DEBUG: a heartbeat is not a noteworthy lifecycle event, and the
+file sink is Debug either way.
+
 **The busy handler logs per episode.** The writer's SQLite busy handler (`mod.rs::spawn`) emits ONE
 `stall_probe::sqlite_busy` line per contention episode, not per retry: "writer waited 340 ms over 27 attempts…", or
 "writer gave up… after 260 ms over 52 attempts" once it passes `BUSY_GIVE_UP_ATTEMPT` (50, ~255 ms at 5 ms a retry).

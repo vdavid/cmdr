@@ -43,6 +43,11 @@ static WATCHED: OnceLock<Mutex<HashMap<String, WatchEntry>>> = OnceLock::new();
 /// Last emitted space per volume, for change detection.
 static LAST_SPACE: OnceLock<Mutex<HashMap<String, CachedSpace>>> = OnceLock::new();
 
+/// Rate limit for the per-emission debug line (the events themselves are never
+/// throttled; only the logging is). Per volume, so a churning boot disk can't
+/// swallow a NAS's first line.
+static SPACE_EMIT_LOG: cmdr_fs::log_rollup::LogRollup = cmdr_fs::log_rollup::LogRollup::new(Duration::from_secs(60));
+
 /// Change threshold in bytes. Updated at runtime from settings.
 static THRESHOLD_BYTES: AtomicU64 = AtomicU64::new(1_048_576); // 1 MB default
 
@@ -430,7 +435,25 @@ fn emit(volume_id: &str, space: &CachedSpace) {
         total_bytes: space.total_bytes,
         available_bytes: space.available_bytes,
     };
-    debug!("volume-space-changed: {} ({} avail)", volume_id, space.available_bytes);
+    // A machine that's building writes past the 1 MB threshold on most 2 s ticks,
+    // so this was ~1,000 lines an hour of "the number moved again". Rolled up per
+    // volume: the first emission logs at once, then one line a minute carrying how
+    // many emissions it stands for and the latest value. What a reader needs from
+    // this line is that the stream is flowing and roughly how fast, and the rolled
+    // up form says both.
+    if let Some(batch) = SPACE_EMIT_LOG.record(volume_id) {
+        if batch.is_rolled_up() {
+            debug!(
+                "volume-space-changed: {} ×{} in {}s (now {} avail)",
+                volume_id,
+                batch.count,
+                batch.elapsed.as_secs(),
+                space.available_bytes
+            );
+        } else {
+            debug!("volume-space-changed: {} ({} avail)", volume_id, space.available_bytes);
+        }
+    }
     if let Err(e) = payload.emit(app) {
         warn!("Failed to emit volume-space-changed: {}", e);
     }

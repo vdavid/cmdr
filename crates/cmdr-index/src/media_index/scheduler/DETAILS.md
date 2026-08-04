@@ -197,6 +197,13 @@ row-clearing terminal on a silent tick would clear a visible full-pass row). A t
 `mark_deferred_for_importance` on an unscored volume — the full-pass bridge covers that, and marking would trigger a
 full re-walk on the next importance bump.
 
+**Logging.** One line per tick, from `run_live_tick_blocking` (the caller's own "enriched N images" line was a strictly
+less informative duplicate of it and is gone). A tick that enriched or GC'd anything always logs; a tick that did
+neither is the normal case on a machine whose churn is builds, so it rolls up through `IDLE_TICKS`
+(`cmdr_fs::log_rollup`) to one line a minute per volume carrying how many ticks it stands for. That keeps the "ticks
+fire and nothing qualifies" evidence in an error-report bundle — the answer to "why aren't my photos indexed?" — at
+~1/20th the volume. Policy: `docs/tooling/logging.md` § "Keeping the file readable".
+
 ## Reclaim space (`reclaim.rs`)
 
 Lowering the importance slider is forward-only: it never deletes rows, so a drive indexed at a broad setting keeps that

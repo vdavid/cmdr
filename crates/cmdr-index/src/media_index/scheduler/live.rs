@@ -66,6 +66,12 @@ const LIVE_INDICATOR_THRESHOLD: u64 = 25;
 /// `INCREMENTAL_THROTTLE_WINDOW`.
 const LIVE_THROTTLE_WINDOW: Duration = Duration::from_secs(60);
 
+/// Ticks that enriched and GC'd nothing, rolled up to one line a minute per
+/// volume. Most ticks on a developer's machine are these: the churn is build
+/// output, not photos. The count keeps the "ticks fire, nothing qualifies"
+/// evidence in an error-report bundle without a line per tick.
+static IDLE_TICKS: cmdr_fs::log_rollup::LogRollup = cmdr_fs::log_rollup::LogRollup::new(Duration::from_secs(60));
+
 /// Coalescing key for live ticks: distinct from the full-pass key (the bare volume id) so
 /// a scoped tick and a full recompute for the same volume don't share a coordinator slot
 /// — a `ScanCompleted` full pass must NEVER coalesce into a tick's slot and silently
@@ -223,13 +229,32 @@ impl MediaScheduler {
             // `touched_dirs`; a no-op if no counts are cached yet.
             super::super::coverage::patch_touched_dirs(volume_id, touched_dirs, &images);
         }
-        log::debug!(
-            target: "media_index",
-            "live tick '{volume_id}': {} enriched, {} GC'd across {} touched dir(s)",
-            summary.enriched,
-            summary.gc_count,
-            touched_dirs.len(),
-        );
+        // A tick that changed something always says so. A tick that found nothing
+        // to do is the normal case on a machine whose churn is builds, not photos,
+        // and it was ~1,500 lines an hour; it rolls up into one line a minute per
+        // volume instead. The zero case still reaches the bundle (that ticks fire
+        // and enrich nothing is exactly the "why aren't my photos indexed?"
+        // evidence), just once per window rather than once per tick.
+        if summary.enriched > 0 || summary.gc_count > 0 {
+            log::debug!(
+                target: "media_index",
+                "live tick '{volume_id}': {} enriched, {} GC'd across {} touched dir(s)",
+                summary.enriched,
+                summary.gc_count,
+                touched_dirs.len(),
+            );
+        } else if let Some(batch) = IDLE_TICKS.record(volume_id) {
+            let rolled_up = if batch.is_rolled_up() {
+                format!(" ×{} in {}s", batch.count, batch.elapsed.as_secs())
+            } else {
+                String::new()
+            };
+            log::debug!(
+                target: "media_index",
+                "live tick of '{volume_id}': nothing to enrich or GC{rolled_up} ({} touched dir(s))",
+                touched_dirs.len(),
+            );
+        }
         Ok(summary.enriched)
     }
 }
@@ -289,11 +314,10 @@ fn spawn_live_tick(scheduler: Arc<MediaScheduler>, volume_id: String, dirs: Vec<
                     crate::indexing::host::runtime::spawn_blocking(move || sched.run_live_tick_blocking(&vid, &dirs))
                         .await;
                 match result {
-                    Ok(Ok(count)) => log::debug!(
-                        target: "media_index",
-                        "live tick of '{volume_id}' enriched {}",
-                        cmdr_fs::pluralize::pluralize(count as u64, "image")
-                    ),
+                    // No line on success: `run_live_tick_blocking` already logged the
+                    // outcome with the counts AND the touched-dir count, so this was a
+                    // strictly-less-informative duplicate of every tick.
+                    Ok(Ok(_)) => {}
                     Ok(Err(e)) => log::warn!(target: "media_index", "live tick of '{volume_id}' failed: {e}"),
                     Err(e) => log::warn!(target: "media_index", "live tick task for '{volume_id}' panicked: {e}"),
                 }

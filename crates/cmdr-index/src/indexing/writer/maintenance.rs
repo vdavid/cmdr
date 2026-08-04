@@ -252,6 +252,11 @@ fn handle_wal_checkpoint(conn: &rusqlite::Connection, signal: &IndexFailureSigna
         Ok((row.get(0)?, row.get(1)?, row.get(2)?))
     });
     match result {
+        // Nothing in the WAL, nothing copied: the checkpoint ran and had no work.
+        // Silent, because "done (0 of 0 pages)" was ~160 lines an hour saying that
+        // the last one already did the job. A checkpoint that MOVED something is
+        // still on the line, and so is every busy or failing one.
+        Ok((0, 0, 0)) => {}
         Ok((0, log_size, checkpointed)) => {
             log::debug!(
                 "Writer: wal_checkpoint TRUNCATE done ({checkpointed} of {})",

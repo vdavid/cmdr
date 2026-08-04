@@ -19,6 +19,11 @@ use std::pin::Pin;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
+/// Rate limit for the per-poll `get_space_info` debug line, keyed by share so a
+/// busy share can't swallow another's first line. The POLLS are untouched; only
+/// the logging is.
+static SPACE_INFO_LOG: cmdr_fs::log_rollup::LogRollup = cmdr_fs::log_rollup::LogRollup::new(Duration::from_secs(60));
+
 impl SmbVolume {
     /// Converts a volume-relative path to the SMB relative path string.
     ///
@@ -378,7 +383,23 @@ impl Volume for SmbVolume {
 
     fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            debug!("SmbVolume::get_space_info: share={}", self.share_name);
+            // Polled every 5 s per share for as long as a pane shows it (~480 lines
+            // an hour), and each one says only "we asked again". Rolled up per share
+            // so the bundle still shows the polls flowing, and at what rate, without
+            // one line per round trip. A failure is never rolled up: it goes through
+            // `handle_smb_result` below.
+            if let Some(batch) = SPACE_INFO_LOG.record(&self.share_name) {
+                if batch.is_rolled_up() {
+                    debug!(
+                        "SmbVolume::get_space_info: share={} ×{} in {}s",
+                        self.share_name,
+                        batch.count,
+                        batch.elapsed.as_secs()
+                    );
+                } else {
+                    debug!("SmbVolume::get_space_info: share={}", self.share_name);
+                }
+            }
 
             let info = {
                 let (tree, mut conn) = self.clone_session().await?;
