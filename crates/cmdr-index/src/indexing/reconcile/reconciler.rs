@@ -113,7 +113,7 @@ const MAX_BUFFER_CAPACITY: usize = 500_000;
 
 /// Aggregator for high-volume reconciler skip/escalation events. Each per-event line
 /// is at TRACE (off by default; file chain captures Debug+ only); this aggregator emits
-/// a single DEBUG summary every ~5 s, so error report bundles still carry the
+/// a single DEBUG summary every ~60 s, so error report bundles still carry the
 /// existence-of-drift signal without the per-event noise. Two instances cover the two
 /// classes that dominate normal log volume: [`UNKNOWN_PATH_SKIPS`] (removal for a path
 /// not in the DB) and [`ESCALATED_MISSING_PARENTS`] (create/modify whose parent dir
@@ -128,7 +128,11 @@ mod skip_aggregator {
 
     use cmdr_fs::pluralize::pluralize;
 
-    const FLUSH_INTERVAL_SECS: u64 = 5;
+    /// One summary a minute, not one every five seconds. Both numbers on the line
+    /// are rates over the window, so a wider window loses nothing and drops ~490
+    /// lines an hour to ~40 on a build machine. The running `total` means a window
+    /// that ends mid-count is picked up by the next one rather than lost.
+    const FLUSH_INTERVAL_SECS: u64 = 60;
     const SAMPLE_LEN: usize = 80;
 
     struct State {
@@ -564,6 +568,12 @@ pub(crate) struct ReconcileSummary {
     pub added: u64,
     pub removed: u64,
     pub updated: u64,
+    /// Directories the walk reached but couldn't list, almost always because
+    /// they were deleted between the event and the read (a compiler emptying its
+    /// target dir). One line each was ~750 an hour on a build machine and none of
+    /// them was a diagnosis, so the walk counts them and the summary line
+    /// reports the number; the paths stay one `RUST_LOG=…reconcile=trace` away.
+    pub unreadable_dirs: u64,
     pub duration: Duration,
     /// How much of `duration` was spent parked on the writer queue (a full channel,
     /// or a `flush_blocking` waiting for the writer to catch up), from
@@ -937,6 +947,7 @@ pub(crate) fn reconcile_subtree(
                             added: 0,
                             removed: 0,
                             updated: 0,
+                            unreadable_dirs: 0,
                             duration: start.elapsed(),
                             writer_wait: writer_wait(),
                             escalation: resolve_escalation_anchor(space, conn, &root_str),
@@ -954,6 +965,7 @@ pub(crate) fn reconcile_subtree(
                         added: 0,
                         removed: 0,
                         updated: 0,
+                        unreadable_dirs: 0,
                         duration: start.elapsed(),
                         writer_wait: writer_wait(),
                         escalation: resolve_escalation_anchor(space, conn, &root_str),
@@ -974,6 +986,7 @@ pub(crate) fn reconcile_subtree(
                         added: 0,
                         removed: 0,
                         updated: 0,
+                        unreadable_dirs: 0,
                         duration: start.elapsed(),
                         writer_wait: writer_wait(),
                         escalation: None,
@@ -1016,6 +1029,7 @@ pub(crate) fn reconcile_subtree(
                         added,
                         removed: 0,
                         updated: 0,
+                        unreadable_dirs: 0,
                         duration: start.elapsed(),
                         writer_wait: writer_wait(),
                         escalation: None,
@@ -1033,6 +1047,9 @@ pub(crate) fn reconcile_subtree(
     // Collect newly-created directories so we can flush the writer, resolve their IDs,
     // and then queue them for recursive processing.
     let mut new_dir_paths: Vec<PathBuf> = Vec::new();
+    // Dirs this walk reached but couldn't list. Counted, not logged per path:
+    // see the field's doc on `ReconcileSummary`.
+    let mut unreadable_dirs: u64 = 0;
 
     while let Some((dir_path, dir_id)) = queue.pop_front() {
         if cancel.is_cancelled() {
@@ -1041,7 +1058,10 @@ pub(crate) fn reconcile_subtree(
 
         let fs_children = match read_fs_children(&dir_path, space) {
             Some(c) => c,
-            None => continue,
+            None => {
+                unreadable_dirs += 1;
+                continue;
+            }
         };
         // We successfully listed this dir's direct contents (an empty listing
         // still counts). Stamp it at the current epoch after the walk.
@@ -1121,6 +1141,7 @@ pub(crate) fn reconcile_subtree(
         added,
         removed,
         updated,
+        unreadable_dirs,
         duration: start.elapsed(),
         writer_wait: writer_wait(),
         escalation: None,
@@ -1190,7 +1211,12 @@ pub(crate) fn read_fs_children(dir_path: &Path, space: &IndexPathSpace) -> Optio
             ),
             Ok(read) => return Some(bulk_children(dir_path, space, read)),
             Err(e) => {
-                log::debug!("reconcile: can't read {}: {e}", dir_path.display());
+                // TRACE: this is the EXPECTED race with whatever is writing the
+                // tree (a compiler deleting its target dir mid-walk), not a
+                // diagnosis, and it fired ~750 times an hour. The caller counts
+                // it into `ReconcileSummary::unreadable_dirs`, which is what
+                // reaches the bundle.
+                log::trace!("reconcile: can't read {}: {e}", dir_path.display());
                 return None;
             }
         }
@@ -1262,7 +1288,8 @@ fn read_fs_children_via_read_dir(dir_path: &Path, space: &IndexPathSpace) -> Opt
     let read_dir = match std::fs::read_dir(dir_path) {
         Ok(rd) => rd,
         Err(e) => {
-            log::debug!("reconcile: can't read {}: {e}", dir_path.display());
+            // TRACE for the same reason as the bulk read's arm above.
+            log::trace!("reconcile: can't read {}: {e}", dir_path.display());
             return None;
         }
     };

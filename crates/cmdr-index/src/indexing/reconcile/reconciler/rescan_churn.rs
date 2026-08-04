@@ -76,6 +76,12 @@ pub(in crate::indexing) struct ChurnReport {
     /// `MustScanSubDirs` signals the throttle or the settle delay held back. Zero
     /// while the window churns is the first sign one of them regressed.
     pub(in crate::indexing) held_back: u64,
+    /// `MustScanSubDirs` signals that landed while the single-flight drain was
+    /// already walking something. This is the aggregate that stands in for the
+    /// per-path "queued (rescan already active)" line: a compiler churning
+    /// through unique paths produced tens of thousands of those an hour and the
+    /// count is the whole diagnostic (queue pressure), not the paths.
+    pub(in crate::indexing) queued_while_active: u64,
     pub(in crate::indexing) top: Vec<TopAnchor>,
 }
 
@@ -91,6 +97,7 @@ pub(in crate::indexing) struct RescanChurnWindow {
     walked: Duration,
     rows: u64,
     held_back: u64,
+    queued_while_active: u64,
     anchors: HashMap<PathBuf, AnchorTally>,
     anchors_capped: bool,
 }
@@ -108,6 +115,7 @@ impl RescanChurnWindow {
             walked: Duration::ZERO,
             rows: 0,
             held_back: 0,
+            queued_while_active: 0,
             anchors: HashMap::new(),
             anchors_capped: false,
         }
@@ -165,6 +173,13 @@ impl RescanChurnWindow {
         self.held_back = self.held_back.saturating_add(1);
     }
 
+    /// Note one `MustScanSubDirs` signal that had to queue because the drain was
+    /// already walking. Single-flight is by design, so this is a rate, not a
+    /// fault: it only matters when the window is already busy enough to report.
+    pub(in crate::indexing) fn record_queued_while_active(&mut self) {
+        self.queued_while_active = self.queued_while_active.saturating_add(1);
+    }
+
     /// Close the window if `now` reached its end, returning a report only when a
     /// budget was crossed. Resets either way, so a window reports at most once and
     /// a quiet stretch can't accumulate its way to a line hours later.
@@ -183,6 +198,7 @@ impl RescanChurnWindow {
             anchors: self.anchors.len(),
             anchors_capped: self.anchors_capped,
             held_back: self.held_back,
+            queued_while_active: self.queued_while_active,
             top: self.rank_anchors(),
         });
         self.reset(now);
@@ -213,6 +229,7 @@ impl RescanChurnWindow {
         self.walked = Duration::ZERO;
         self.rows = 0;
         self.held_back = 0;
+        self.queued_while_active = 0;
         self.anchors.clear();
         self.anchors.shrink_to_fit();
         self.anchors_capped = false;
@@ -234,8 +251,19 @@ impl ChurnReport {
             pluralize_grouped(self.anchors as u64, "anchor")
         };
         let held_back = pluralize_grouped(self.held_back, "signal");
+        // Held-back always prints, zero included: zero during a churning window is
+        // how a broken throttle shows up. Queued-behind prints only when it
+        // happened, because a window with none says nothing is wrong.
+        let queued = if self.queued_while_active == 0 {
+            String::new()
+        } else {
+            format!(
+                ", {} queued behind a running rescan",
+                pluralize_grouped(self.queued_while_active, "signal")
+            )
+        };
         let mut line = format!(
-            "Reconciler: heavy churn in the last {minutes} min: {reconciles}, {walked} of walking, {rows}, {anchors}, {held_back} held back."
+            "Reconciler: heavy churn in the last {minutes} min: {reconciles}, {walked} of walking, {rows}, {anchors}, {held_back} held back{queued}."
         );
         if !self.top.is_empty() {
             let top: Vec<String> = self
@@ -287,6 +315,11 @@ pub(super) fn record_reconcile(anchor: &Path, walk_cost: Duration, rows: u64) {
 /// Record one held-back `MustScanSubDirs` signal.
 pub(super) fn record_held_back() {
     WINDOW.lock_ignore_poison().record_held_back();
+}
+
+/// Record one `MustScanSubDirs` signal that queued behind a running rescan.
+pub(super) fn record_queued_while_active() {
+    WINDOW.lock_ignore_poison().record_queued_while_active();
 }
 
 /// Close the window if it's due, from the ~1 s sweep tick. Without this a burst
@@ -489,6 +522,35 @@ mod tests {
             report.message().contains("64+ anchors"),
             "a capped count reads as a floor: {}",
             report.message()
+        );
+    }
+
+    /// Signals that arrived while a rescan was already running. This is the
+    /// number that replaced a per-path DEBUG line, so the line has to carry it
+    /// or the queue-pressure signal is simply gone.
+    #[test]
+    fn signals_queued_behind_an_active_rescan_are_counted() {
+        let t0 = Instant::now();
+        let mut window = RescanChurnWindow::new(t0);
+        window.record_reconcile(Path::new("/a"), Duration::from_secs(90), 10);
+        for _ in 0..412 {
+            window.record_queued_while_active();
+        }
+        let report = window.poll(t0 + CHURN_WINDOW).expect("a busy window");
+        assert_eq!(report.queued_while_active, 412);
+        assert!(
+            report.message().contains("412 signals queued behind a running rescan"),
+            "{}",
+            report.message()
+        );
+
+        window.record_reconcile(Path::new("/a"), Duration::from_secs(90), 10);
+        let next = window.poll(t0 + CHURN_WINDOW * 2).expect("another busy window");
+        assert_eq!(next.queued_while_active, 0, "the count is per window, not cumulative");
+        assert!(
+            !next.message().contains("queued behind"),
+            "a window with none says nothing about them: {}",
+            next.message()
         );
     }
 

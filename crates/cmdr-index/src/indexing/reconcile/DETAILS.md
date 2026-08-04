@@ -604,7 +604,7 @@ changes (`ROW_BUDGET`). Under both, the window resets silently, so a quiet machi
 stretch can't accumulate its way to one hours later.
 
 ```
-Reconciler: heavy churn in the last 15 min: 1,621 subtree reconciles, 507s of walking, 120,190 row changes, 64+ anchors, 37 signals held back. Top: /Users/me/Library/Caches/… (18 walks, 96s), …
+Reconciler: heavy churn in the last 15 min: 1,621 subtree reconciles, 507s of walking, 120,190 row changes, 64+ anchors, 37 signals held back, 8,142 signals queued behind a running rescan. Top: /Users/me/Library/Caches/… (18 walks, 96s), …
 ```
 
 **The top anchors are the point.** "Which folder" is the entire diagnostic value, so the line ranks anchors by
@@ -616,6 +616,20 @@ thousands of times per removal storm for one scope and would drown the number. A
 reads zero means an eligibility gate stopped engaging, which is the regression that would otherwise be silent. It's
 deliberately one number, not one per gate: telling settle from throttle needs a new eligibility-reason API on the pure
 throttle, and the top-anchor list already tells you which kind of churn you're looking at.
+
+**`queued behind a running rescan` is what a per-path DEBUG line used to say.** Every signal arriving while the
+single-flight drain was already walking used to get its own `MustScanSubDirs for {path} queued (rescan already active)`
+line. On a machine running cargo that was ~4,000 lines an hour, a quarter of the entire log, and the existing
+consecutive-line dedup never fired because the paths are unique (fingerprint dirs). The rate is the diagnostic, not the
+paths, so the count rides this line and the per-path form dropped to TRACE. Counted at the same call site as
+`held_back`, and for the same reason. It prints only when non-zero: unlike `held_back`, a zero here isn't a regression
+signal.
+
+**The per-walk `unreadable dirs` count is the same trade one level down.** A reconcile that races a compiler emptying
+its target dir hits directories that vanish between the event and the read; each one used to log
+`reconcile: can't read {path}` at Debug (~750 lines an hour). That's the EXPECTED race, not a diagnosis, so
+`reconcile_subtree` counts them into `ReconcileSummary::unreadable_dirs` and the completion line carries the number
+(omitted at zero). The per-path lines are TRACE.
 
 **Bounded memory, explicitly.** The machine produces thousands of distinct anchors a day (5,876 across the sampled log,
 5,587 of them one-shot), so per-anchor tallies are capped at `MAX_TRACKED_ANCHORS` (64) and nothing survives a window.

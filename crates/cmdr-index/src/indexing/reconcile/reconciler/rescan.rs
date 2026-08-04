@@ -154,6 +154,13 @@ impl EventReconciler {
         {
             rescan_churn::record_held_back();
         }
+        // A signal that lands mid-walk waits for the single-flight drain. Counted
+        // here and not in `enqueue_rescan` for the same reason as `held_back`: a
+        // removal storm re-queues one scope thousands of times, and folding those
+        // in would turn a queue-pressure number into a storm detector.
+        if self.rescan_active.load(Ordering::Relaxed) {
+            rescan_churn::record_queued_while_active();
+        }
         self.enqueue_rescan(path, writer);
     }
 
@@ -180,7 +187,15 @@ impl EventReconciler {
         hold_if_eligible(&self.volume_id, &path, &self.rescan_throttle, Instant::now());
 
         if self.rescan_active.load(Ordering::Relaxed) {
-            log::debug!(
+            // TRACE, not DEBUG: the paths are unique (a compiler's fingerprint
+            // dirs), so consecutive-line dedup never fires and this was ~4,000
+            // lines an hour on an ordinary build machine, a quarter of the whole
+            // log. What a reader needs from it is the RATE, and that rides
+            // `rescan_churn`'s 15-minute line as `queued behind a running rescan`,
+            // which is in the bundle. The paths themselves are still one
+            // `RUST_LOG=cmdr_lib::indexing::reconcile=trace` away, and
+            // `DEBUG_STATS.record_must_scan` keeps the recent ones in memory.
+            log::trace!(
                 "Reconciler: MustScanSubDirs for {} queued (rescan already active)",
                 path.display()
             );
@@ -556,11 +571,22 @@ const RECONCILE_SLOW_SECS: u64 = 10;
 /// worse than not repeating it at all.
 fn reconcile_report(path: &Path, summary: &ReconcileSummary) -> (log::Level, String) {
     let changes = format!("+{} -{} ~{}", summary.added, summary.removed, summary.updated);
+    // The one aggregate that replaced a per-path DEBUG line. Printed only when it
+    // happened: on a healthy walk it's zero, and "0 unreadable dirs" on every line
+    // is the noise this change removed.
+    let unreadable = if summary.unreadable_dirs == 0 {
+        String::new()
+    } else {
+        format!(
+            ", {}",
+            cmdr_fs::pluralize::pluralize_grouped(summary.unreadable_dirs, "unreadable dir")
+        )
+    };
     if summary.duration.as_secs() <= RECONCILE_SLOW_SECS {
         return (
             log::Level::Debug,
             format!(
-                "MustScanSubDirs: reconcile complete for {} ({changes}, {}ms)",
+                "MustScanSubDirs: reconcile complete for {} ({changes}{unreadable}, {}ms)",
                 path.display(),
                 summary.duration.as_millis(),
             ),
@@ -587,7 +613,7 @@ fn reconcile_report(path: &Path, summary: &ReconcileSummary) -> (log::Level, Str
     (
         level,
         format!(
-            "MustScanSubDirs: {what} for {} ({changes}, {}s{attribution})",
+            "MustScanSubDirs: {what} for {} ({changes}{unreadable}, {}s{attribution})",
             path.display(),
             summary.duration.as_secs(),
         ),
