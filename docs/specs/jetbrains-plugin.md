@@ -1,6 +1,6 @@
 # Cmdr IntelliJ plugin
 
-**Status**: M0 and M1 done, M2 next. **Owner**: David. **Date**: 2026-08-03.
+**Status**: M0 through M3 done, M4 next. **Owner**: David. **Date**: 2026-08-04.
 
 One JetBrains plugin that carries Cmdr-specific editor affordances, built so that feature number three is a new
 directory rather than a redesign. Two features at v1:
@@ -103,10 +103,11 @@ window" is decided; the plugin doesn't get a say.
 Drift against the website or `scripts/check/checks/changelog-commit-links.go` is fine and needs no guard: this is
 private dev tooling, and the failure mode is a link not showing up, which is visible the moment you look at the file.
 
-**Implementation.** A `PsiReferenceContributor` over Markdown PSI text elements, contributing a `WebReference` per hash
-range (that's what gives ⌘-click plus the standard tooltip), and an `Annotator` applying the hyperlink text attribute so
-the color shows without hovering. Verify the exact attribute key at implementation time; the platform has moved it
-between `CodeInsightColors` and `EditorColors` across versions.
+**Implementation.** A `GotoDeclarationHandler` returning the `WebReference` target per hash (that's what gives ⌘-click)
+and an `Annotator` applying `CodeInsightColors.HYPERLINK_ATTRIBUTES` so the color shows without hovering. This section
+originally called for a `PsiReferenceContributor`, which turned out not to reach Markdown at all: the contributor runs
+and the reference is built, but no Markdown PSI element asks the reference registry for it. Evidence and the
+re-measurement recipe: `tools/intellij-plugin/DETAILS.md`.
 
 **Tests.** `BasePlatformTestCase` over a markdown fixture, headless. Cases: single hash; multi-hash group; a group
 wrapped across two source lines; a trailing `(~40x speed-up!)` that must NOT match; a hex-looking word mid-sentence that

@@ -4,9 +4,12 @@ A small IntelliJ IDEA plugin that makes this repo nicer to read. It's private to
 Marketplace, never part of a build, and never a dependency of anything Cmdr ships. Uninstall it and the app, the
 website, and every check behave exactly the same.
 
-Right now it's a scaffold. The only thing it does is fold the literal `'CMDR_M0_PROBE'` to `«m0»`, which exists to prove
-the build, the tests, and the sandbox IDE all work. The two real features (commit-hash links in `CHANGELOG.md`, and i18n
-keys folded to their English text) come next.
+Today it does one thing: in `CHANGELOG.md`, the commit hashes an entry closes on render link-colored, and ⌘-click opens
+the commit on GitHub. Folding i18n keys to their English text comes next.
+
+Everything is off unless the open project carries `tools/intellij-plugin/cmdr-plugin.json`, which is both the marker
+that says "this is a Cmdr checkout" and the config for what the features do. Open any other project and the plugin does
+nothing at all.
 
 ## What you need
 
@@ -33,13 +36,13 @@ choose "Install Plugin from Disk…", pick the zip, and restart when asked.
 mise exec -- ./gradlew runIde
 ```
 
-This starts a second, sandboxed IDE with its own settings and plugins, opened on `sandbox-project/probe.ts`, where the
-`'CMDR_M0_PROBE'` literal shows up folded as `«m0»`. It can't touch the IDE you already have running, and closing it
-leaves no trace.
+This starts a second, sandboxed IDE with its own settings and plugins, opened on `sandbox-project/CHANGELOG.md`, where
+the eight-character trailing hashes show up link-colored. It can't touch the IDE you already have running, and closing
+it leaves no trace.
 
-One thing it can't show you: the sandbox IDE starts without a license, so Ultimate-only plugins stay disabled. Svelte is
-one of them, which means `sandbox-project/Probe.svelte` opens there with no Svelte support at all. To see `.svelte`
-behavior, sideload the plugin into your own IDE as above. The headless tests cover Svelte either way.
+Two things it can't show you. The sandbox IDE starts without a license, so Ultimate-only plugins stay disabled, Svelte
+among them. And it resolves the browser launcher to the remote-development one, so ⌘-click on a hash lights up but never
+opens a page. Sideload into your own IDE for the real thing; the headless tests cover both either way.
 
 ## Run the tests
 
