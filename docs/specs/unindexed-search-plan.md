@@ -1,6 +1,7 @@
 # Search that covers the folder you picked, indexed or not
 
-**Status**: IN EXECUTION — M0 and M1 have landed, M2 is next. **Owner**: David. **Date**: 2026-08-03.
+**Status**: IN EXECUTION, PAUSED after M1 at David's request on 2026-08-04. M0 and M1 have landed; M2 is next. See §
+Execution status before resuming. **Owner**: David. **Date**: 2026-08-03.
 
 Indexing stays optional. A search that runs to completion returns the same files with or without an index, only slower,
 on every volume kind: local, SMB, MTP, and whatever comes next. The walk that fills the gap writes what it finds into
@@ -242,6 +243,44 @@ content indexing lands, give it a `content_epoch` sibling to `listed_epoch`, pro
 min. The walk stages then fall out without redesign: path-covered and content-covered lands first, path-covered but
 content-uncovered needs a read pass only, path-uncovered needs a walk then a read. Not implemented here, but M2's
 coverage API must not assume a single dimension.
+
+## Execution status
+
+Paused after M1 on 2026-08-04. Branch `worktree-david+unindexed-search-exec`, nothing merged to `main` yet.
+
+**Landed.**
+
+- **M0** (`2d17845cd`, `d711ebc7c`, `0b60a3f05`, `d4d433b1d`): the one-volume ceiling as a typed
+  `ScopeError::SpansMultipleVolumes` at the API, the fan-out deleted (k-way merge, `ColdVolumePolicy`,
+  `warm_in_background`, `all_indexed_volume_ids`, `RankKey`'s escape from `ranking.rs`), and the two-rung scope chip. A
+  defaulted scope is NOT persisted into recent searches, so replaying re-resolves against the pane you are in.
+- **M1** (`3e53f3d2e`, `14ff59821`, `f35fb18e2`): `prepare_search_index` gained a `loading` flag so
+  `loading: false, ready: false` is the terminal "no index to wait for"; `SearchResult` gained `target_volume_id`; the
+  readiness gate is per target (`coverage-note.ts::isTargetIndexReady`); `CoverageNote.svelte` renders both typed fields
+  through a new `config.resultsNotice` slot.
+
+**Decisions taken during execution that the spec did not pre-empt.**
+
+- **`unresolvedScopes` copy says what Cmdr knows, never that a folder is missing.** Telling "not walked yet" from
+  "genuinely not found" needs a filesystem probe inside search routing, which is a network-hang hazard and M5's job.
+  Until then the copy is true for a typo and for a real folder on a partly covered volume alike.
+- **`VolumeLoad::Failed` rides back as `uncovered_scopes`,** so a DB that will not open reads as "not indexed". Left
+  as-is (for the user, search has no usable index either way and re-indexing is the same fix); **M5 splits it**.
+- **`category === 'network'` is not a reliable network test** anywhere on the frontend: an SMB share whose direct
+  connection was refused stays an OS mount and reports `attached_volume` with `fsType: 'smbfs'`. Use
+  `volumeKindOf(...) === 'smb'` (invariant A6). Two sites fixed; **a sweep of the rest is still owed**.
+
+**Open, needing David.**
+
+- The drafted copy from M0 and M1 (11 keys, translated into all nine locales) has not been reviewed. An edit means
+  retranslating.
+- `SearchDialog.svelte.test.ts` is 1,406 lines against a 1,179 `file-length` allowlist entry, already over before this
+  effort. Warn-only. Raise, split, or leave.
+- Whether the network CTA variant should still offer "Index this drive" at all.
+
+**Before resuming**: rebase onto current local `main`, and note the ~1 GB dev data dir at
+`~/Library/Application Support/com.veszelovszki.cmdr-dev-unindexsearch` (a full index from live verification, worth
+keeping while the effort runs, worth deleting when it ends).
 
 ## Sequencing
 
