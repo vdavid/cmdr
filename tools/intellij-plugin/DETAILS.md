@@ -308,12 +308,12 @@ in curly quotes, `labelKey:` and `descriptionKey:` still showing their names in 
 rendering as `Here's`, `{countText}` intact, and the unknown key, the bare string, and the template-built key left as
 source. `runIde` opens both fixture files; the last one in the list is the focused tab.
 
-Confirmed 2026-08-04 for key navigation, one half of it: with the caret inside a key the catalog doesn't have,
-Navigate → Declaration or Usages says "Cannot find declaration to go to" and nothing else happens, which is the
-must-not-throw case. **The positive half was not confirmed in tier 2**, because getting the caret into a resolvable key
-needs input, and driving input turned out to be the wrong thing to do on this machine; see the focus-stealing gotcha
-below. Tier 1 asserts the same platform call the menu item runs
-(`GotoDeclarationAction.findAllTargetElements` → the `JsonProperty`), including against the repo's real catalog.
+Confirmed 2026-08-04 for key navigation, one half of it: with the caret inside a key the catalog doesn't have, Navigate
+→ Declaration or Usages says "Cannot find declaration to go to" and nothing else happens, which is the must-not-throw
+case. **The positive half was not confirmed in tier 2**, because getting the caret into a resolvable key needs input,
+and driving input turned out to be the wrong thing to do on this machine; see the focus-stealing gotcha below. Tier 1
+asserts the same platform call the menu item runs (`GotoDeclarationAction.findAllTargetElements` → the `JsonProperty`),
+including against the repo's real catalog.
 
 ```sh
 cd tools/intellij-plugin

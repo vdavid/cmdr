@@ -16,6 +16,10 @@ const note = “It includes the app version, macOS version, and which part of th
 Folds open with the stock shortcuts: ⌘+ expands the one under the caret, ⌘⇧+ expands the whole file, ⌘− and ⌘⇧− collapse
 again. A key built from a template can't fold, since there's nothing to look up until the code runs.
 
+⌘-click on the key itself (once it's unfolded) opens `messages/en/<area>.json` on the line the key is defined, which is
+also the line above the translator description explaining what the copy is for. It works from a `t` / `tString` /
+`getMessage` call, from a `labelKey`-style property, and from `<Trans key="…">`.
+
 Everything is off unless the open project carries `tools/intellij-plugin/cmdr-plugin.json`, which is both the marker
 that says "this is a Cmdr checkout" and the config for what the features do. Open any other project and the plugin does
 nothing at all.
@@ -36,8 +40,8 @@ cd tools/intellij-plugin
 mise exec -- ./gradlew buildPlugin
 ```
 
-That writes `build/distributions/cmdr-idea-plugin-<version>.zip`. In the IDE, go to Settings > Plugins, click the gear,
-choose "Install Plugin from Disk…", pick the zip, and restart when asked.
+That writes `build/distributions/cmdr-idea-plugin-0.1.0.zip` (the version comes from `build.gradle.kts`). In the IDE, go
+to Settings > Plugins, click the gear, choose "Install Plugin from Disk…", pick the zip, and restart when asked.
 
 ## Try it without installing anything
 
@@ -48,6 +52,8 @@ mise exec -- ./gradlew runIde
 This starts a second, sandboxed IDE with its own settings and plugins, opened on two files from `sandbox-project/`:
 `sample.ts`, where the message keys show up folded to their English text, and `CHANGELOG.md`, where the eight-character
 trailing hashes show up link-colored. It can't touch the IDE you already have running, and closing it leaves no trace.
+The sandbox does remember which folds you opened, so a second run opens `sample.ts` the way you left it rather than
+freshly collapsed.
 
 Two things it can't show you. The sandbox IDE starts without a license, so Ultimate-only plugins stay disabled, Svelte
 among them. And it resolves the browser launcher to the remote-development one, so ⌘-click on a hash lights up but never

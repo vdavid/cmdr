@@ -1,6 +1,6 @@
 # Cmdr IntelliJ plugin
 
-**Status**: M0 through M3 done, M4 next. **Owner**: David. **Date**: 2026-08-04.
+**Status**: shipped, M0 through M6. **Owner**: David. **Date**: 2026-08-04.
 
 One JetBrains plugin that carries Cmdr-specific editor affordances, built so that feature number three is a new
 directory rather than a redesign. Two features at v1:
@@ -97,8 +97,8 @@ window" is decided; the plugin doesn't get a say.
   close on `(~40x speed-up!)` or `(smb2 0.8.0)`, and a hex-looking word mid-sentence is never considered.
 - A logical entry is a bullet opened by `- ` / `* ` / `+ ` at column zero plus its indented continuation lines, joined
   before matching, so a group that wrapped across two source lines still matches.
-- Hashes are exactly `[0-9a-f]{8}`, comma-separated. This is only legal because M1 normalizes the file first; 488 of
-  1,383 refs are shorter today.
+- Hashes are exactly `[0-9a-f]{8}`, comma-separated. This is only legal because M1 normalizes the file first; 591 of
+  1,754 unique refs were shorter before that.
 
 Drift against the website or `scripts/check/checks/changelog-commit-links.go` is fine and needs no guard: this is
 private dev tooling, and the failure mode is a link not showing up, which is visible the moment you look at the file.
@@ -115,16 +115,16 @@ must NOT match; a nested/indented bullet.
 
 ## Normalizing the changelog to 8 characters
 
-The exactly-8 rule needs the file to actually be uniformly 8. It nearly is: of 1,383 unique refs, 895 are already 8, and
-488 are shorter (425 sevens, 93 sixes) because git's auto-abbreviation grows with the object count and the old entries
-predate the growth.
+The exactly-8 rule needs the file to actually be uniformly 8. It nearly is: of 1,754 unique refs, 1,163 are already 8,
+and 591 are shorter (488 sevens, 103 sixes) because git's auto-abbreviation grows with the object count and the old
+entries predate the growth. Those 591 uniques are 622 occurrences in the file, which is what the rewrite touches.
 
-**It's safe.** All 1,383 resolve, and every one abbreviates uniquely at 8 (verified 2026-08-03 by resolving each to its
+**It's safe.** All 1,754 resolve, and every one abbreviates uniquely at 8 (verified 2026-08-03 by resolving each to its
 full SHA and re-abbreviating with `git rev-parse --short=8`, which lengthens on ambiguity; none lengthened). Collisions
 stay unlikely at this scale: 8 hex characters is a 4.3-billion space against ~99,000 objects.
 
 **The rewrite.** A one-shot script: for each trailing group, resolve each hash to its full SHA, re-abbreviate at 8,
-refuse to continue if any comes back longer than 8, write in place. Then run the formatter, because 488 refs get one or
+refuse to continue if any comes back longer than 8, write in place. Then run the formatter, because 622 refs get one or
 two characters longer and entry wrapping shifts.
 
 **Nothing has to change to keep it 8.** `.claude/commands/release.md` already instructs
@@ -231,7 +231,8 @@ which is XML rather than JavaScript.
 - **M6, wiring.** `README.md`, the `CLAUDE.md` + `DETAILS.md` pair, and the docs links from § Docs wiring.
 
 M0 through M3 is the standalone-valuable slice: a normalized changelog plus working commit links, with the i18n half
-still ahead.
+still ahead. All six shipped; what the plugin actually does, and everything measured on the way, is in
+`tools/intellij-plugin/DETAILS.md`.
 
 ## `cmdr-plugin.json`
 
@@ -294,8 +295,8 @@ observable in tier 2. And tier 1 is not merely the primary loop but the only one
 - `tools/intellij-plugin/CLAUDE.md` + `DETAILS.md`: required as a pair by `claude-md-details-sibling`. `CLAUDE.md` gets
   the module map and the two guardrails (scoped `.mise.toml`, config-driven or it silently dies); `DETAILS.md` gets the
   M0 PSI findings and the decisions here.
-- `AGENTS.md` § File structure has no `tools/` line today, and `tools/privatesize-poc/README.md` looks unreferenced by
-  anything. M5 adds the `tools/` line and links both, which is also what `docs-reachable` needs. Do not reach for the
+- `AGENTS.md` § File structure now carries a `tools/` line naming both `tools/intellij-plugin/` and
+  `tools/privatesize-poc/README.md`, which is also what `docs-reachable` needs. Do not reach for the
   intentionally-unreachable allowlist; connect them.
 - `docs/architecture.md` needs no entry: it maps the product, and this ships to nobody.
 
@@ -306,9 +307,12 @@ observable in tier 2. And tier 1 is not merely the primary loop but the only one
 - The installed IDE is **IntelliJ IDEA 2026.2 EAP** (`/Applications`, 2026-08-03). M0 pins `sinceBuild` off the real
   build number; an EAP target means a `sinceBuild` bump is likely at the 2026.3 upgrade.
 - The Svelte plugin is `dev.blachut.svelte.lang` ([marketplace](https://plugins.jetbrains.com/plugin/12375-svelte)).
-- Commit-ref lengths in `CHANGELOG.md`: of 1,383 unique refs, 895 are 8 characters and 488 are shorter (425 sevens, 93
-  sixes), counted 2026-08-03. All 1,383 resolve, and all abbreviate uniquely at 8 (and, as it happens, at 7 too). The
-  repo is 4,559 commits and ~99,000 in-pack objects.
+- Commit-ref lengths in `CHANGELOG.md` before the normalization: of 1,754 unique refs, 1,163 are 8 characters and 591
+  are shorter (488 sevens, 103 sixes), which is 622 occurrences in the file. All 1,754 resolve and abbreviate uniquely
+  at 8. The repo is 4,559 commits and ~99,000 in-pack objects. Counted 2026-08-04 by joining each bullet with its
+  indented continuation lines before matching the trailing group, and confirmed against the normalized file with
+  `git cat-file --batch-check`, which fails on an ambiguous prefix. A per-line grep undercounts: it misses every group
+  that wrapped across two source lines, which is where an earlier count of 1,383 came from.
 - The Starter UI testing framework is real and current (`TestFrameworkType.Starter`, driven by the `testIdeUi` task,
   JUnit 5 only), per the IntelliJ Platform Gradle Plugin docs, checked 2026-08-03.
 

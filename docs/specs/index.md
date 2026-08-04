@@ -48,25 +48,26 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       master-switch carve-out for user-initiated scans, a 24-hour expiry standing in for the branch watching that
       belongs to Space, a default scope narrowing to the current folder (deliberately sequenced last, and the change
       with an open question against it), and seven open product questions.
-- [ ] 2026-08-03 `jetbrains-plugin.md` - One sideloaded IntelliJ plugin at `tools/intellij-plugin/` carrying
+- [x] 2026-08-03 `jetbrains-plugin.md` - SHIPPED. One sideloaded IntelliJ plugin at `tools/intellij-plugin/` carrying
       Cmdr-specific reading aids, built so feature three is a directory rather than a redesign. v1 is two: bare commit
       hashes in a `CHANGELOG.md` trailing group render link-colored and ⌘-click to GitHub, and a resolvable message key
-      folds to its English text (`tString('crashReporter.dialog.privacyNote')` → the sentence). A marketplace plugin
-      can't cover the second: our locale is a DIRECTORY of per-area files whose keys are already fully qualified, so
-      every i18next-shaped parser looks for `crashReporter:crashReporter.dialog.title`; the ARB `@key` metadata siblings
-      read as real keys; and a chunk of our copy reaches the UI as a bare literal on a `labelKey` property, never inside
-      a call. Everything is driven by `cmdr-plugin.json`, which doubles as the "this project is Cmdr" marker, so the
+      folds to its English text (`tString('crashReporter.dialog.privacyNote')` → the sentence) and ⌘-clicks through to
+      its line in `messages/en/<area>.json`, next to the translator description. A marketplace plugin can't cover the
+      second: our locale is a DIRECTORY of per-area files whose keys are already fully qualified, so every
+      i18next-shaped parser looks for `crashReporter:crashReporter.dialog.title`; the ARB `@key` metadata siblings read
+      as real keys; and a chunk of our copy reaches the UI as a bare literal on a `labelKey` property, never inside a
+      call. Everything is driven by `cmdr-plugin.json`, which doubles as the "this project is Cmdr" marker, so the
       plugin is inert elsewhere and a worktree is recognized for free. Folding walks real JavaScript PSI rather than
       text, which costs nothing at runtime (the JS plugin is loaded in Ultimate regardless) and leaves exactly one
-      unknown, scoped to Svelte: whether `{tString(…)}` in a template surfaces as JS PSI. M0 measured it and the answer
-      is yes, so the text-matching fallback is dropped; `tools/intellij-plugin/DETAILS.md` carries the shape and the
-      registration rules that come with it. M1 first normalizes every `CHANGELOG.md` commit ref to exactly 8 characters
-      (895 already are, 488 are shorter; all 1,383 verified to abbreviate uniquely at 8), which needs no release-flow
-      change since `release.md` already says `--abbrev=8`. The `changelog-links` check tightens to the 8-char convention
-      as an added FINDING rather than a narrower recognition pattern, so a stray 7-char ref fails loudly instead of
-      being read as prose and skipping validation. The shipped `whats_new` hash stripper deliberately stays permissive:
-      a strict matcher there would leak raw hex into user-facing release notes when a new app version renders an older
-      changelog. The agent loop is headless `BasePlatformTestCase` fixtures for iteration plus one
+      unknown, scoped to Svelte: whether `{tString(…)}` in a template surfaces as JS PSI. The spike measured it and the
+      answer is yes, so the text-matching fallback is dropped; `tools/intellij-plugin/DETAILS.md` carries the shape and
+      the registration rules that come with it. The changelog normalization landed first, taking every commit ref to
+      exactly 8 characters (1,163 already were, 591 were shorter; all 1,754 verified to abbreviate uniquely at 8), which
+      needs no release-flow change since `release.md` already says `--abbrev=8`. The `changelog-links` check tightens to
+      the 8-char convention as an added FINDING rather than a narrower recognition pattern, so a stray 7-char ref fails
+      loudly instead of being read as prose and skipping validation. The shipped `whats_new` hash stripper deliberately
+      stays permissive: a strict matcher there would leak raw hex into user-facing release notes when a new app version
+      renders an older changelog. The agent loop is headless `BasePlatformTestCase` fixtures for iteration plus one
       `runIde`-and-screenshot pass to confirm.
 - [ ] 2026-08-03 `backend-crates-plan.md` - Make "a filesystem backend is its own crate" the shape FTP(S), S3, and SFTP
       get written in, validated first against one mature backend. The `Volume` trait is already the API and already

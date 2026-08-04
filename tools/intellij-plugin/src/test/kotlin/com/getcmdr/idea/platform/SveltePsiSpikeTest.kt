@@ -12,7 +12,7 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.psi.xml.XmlAttribute
 
 /**
- * The M0 spike, and the answer it found: `{tString(…)}` inside a `.svelte` template is ordinary JavaScript PSI, so
+ * The Svelte PSI spike, and the answer it found: `{tString(…)}` in a `.svelte` template is ordinary JavaScript PSI, so
  * **the text-matching fallback the spec kept in reserve for Svelte is not needed**. The catch is that a `.svelte` file
  * has a single `SvelteHTML` view-provider root with the JS inlined behind a lazy-parse node, so an extension has to be
  * registered for `SvelteHTML` and walk down; registering for `SvelteJS` or `SvelteTS` would never fire.
