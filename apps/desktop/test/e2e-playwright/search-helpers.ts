@@ -9,7 +9,7 @@
  */
 
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
-import { dispatchMenuCommand, pollUntil, pressKey } from './helpers.js'
+import { dismissOverlay, dispatchMenuCommand, pollUntil, pressKey } from './helpers.js'
 
 export type PageLike = TauriPage | BrowserPageAdapter
 
@@ -28,6 +28,10 @@ export const SEARCH_INPUT = '.search-overlay .query-bar input.text-field-control
 export const ACTIVE_MODE_CHIP = '.search-overlay .tg-item[aria-selected="true"]'
 /** All mode chips in the dialog. Used to confirm the chip set (and indirectly, whether AI is on). */
 export const MODE_CHIPS = '.search-overlay .tg-item'
+/** The "Search in" filter chip, which opens the scope popover. Matches configured and default states. */
+export const SCOPE_CHIP = '.search-overlay .chip[aria-label^="Search in"]'
+/** The scope popover's body (`FilterPopover` renders the section class). */
+export const SCOPE_POPOVER = '.scope-popover'
 
 /** Opens the search dialog via the `search.open` registry command and waits for it to mount. */
 export async function openSearchDialog(tauriPage: PageLike): Promise<void> {
@@ -58,6 +62,25 @@ export async function setSearchInputValue(tauriPage: PageLike, value: string): P
         el.value = ${json};
         el.dispatchEvent(new Event('input', { bubbles: true }));
     })()`)
+}
+
+/**
+ * Widens the dialog's scope to the whole volume — the ⌥V rung, the most a single
+ * search can cover.
+ *
+ * A search covers one volume at most, and an unset scope means the FOCUSED PANE's
+ * current folder, so a spec whose fixtures live outside that folder has to say so.
+ * Clicking the footer button (rather than the ⌥V key combo) keeps the test off the
+ * macOS Option-key glyph remapping.
+ */
+export async function scopeSearchToThisVolume(tauriPage: PageLike): Promise<void> {
+  await tauriPage.click(SCOPE_CHIP)
+  await tauriPage.waitForSelector(SCOPE_POPOVER, 3000)
+  // Footer buttons in order: "Use current folder" (⌥C), "This volume" (⌥V).
+  await tauriPage.click(`${SCOPE_POPOVER} .popover-footer .footer-button:nth-of-type(2)`)
+  // `dismissOverlay` finds `.ui-popover` before `.search-overlay`, so it closes the
+  // popover and leaves the dialog mounted (the chip-popover focus contract).
+  await dismissOverlay(tauriPage)
 }
 
 /** Returns the current value of the dialog's search input. Empty string if absent. */

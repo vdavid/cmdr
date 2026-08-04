@@ -31,8 +31,8 @@ second). Backend: `src-tauri/src/search/`.
   `removeEntryFromAllSnapshots` bumps a module tick `SearchResultsView` reads in its `$derived`, else cross-snapshot
   delete sync won't re-render.
 - **Closed-tab reopen must not double-count refs.** Tab close transfers snapshot-ref ownership to the `ClosedTab`
-  (`transferSnapshotRefs`); refs release on closed-tab eviction (non-recording `closeTab` releases at once). `{#key
-  activeTabId}` pane recreation is safe (history lives on `TabState`).
+  (`transferSnapshotRefs`); refs release on closed-tab eviction (non-recording `closeTab` releases at once).
+  `{#key activeTabId}` pane recreation is safe (history lives on `TabState`).
 - **An EMPTY scope box means the CURRENT FOLDER**, not everywhere (the volume root when the pane has none behind it);
   `runSearch()` resolves it per run. ❌ Never write that path into `scope` state: a defaulted scope stays unpersisted,
   else every recent search bakes in a machine-specific path nobody chose.

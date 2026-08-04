@@ -104,14 +104,11 @@ describe('volumeRootsFrom', () => {
     return { id, name: id, path, category, isEjectable: false }
   }
 
-  it('drops favorites, which are folders wearing a volume\'s clothes', () => {
+  it("drops favorites, which are folders wearing a volume's clothes", () => {
     // The switcher lists Downloads / Documents as "volumes". Counting one as a volume
     // root collapses "This volume" onto "Current folder" while searching inside it, so a
     // user asking for the whole drive quietly gets one folder.
-    const volumes = [
-      vol('root', '/', 'main_volume'),
-      vol('fav-downloads', '/Users/me/Downloads', 'favorite'),
-    ]
+    const volumes = [vol('root', '/', 'main_volume'), vol('fav-downloads', '/Users/me/Downloads', 'favorite')]
     expect(volumeRootsFrom(volumes)).toEqual(['/'])
     expect(volumeRootFor(volumeRootsFrom(volumes), '/Users/me/Downloads/report.pdf')).toBe('/')
   })

@@ -205,13 +205,13 @@ folder, or the volume root when the pane has no real folder behind it. Three con
   non-snapshot path. If none is reachable, `currentFolder` is `null`: the ⌥C button renders disabled with the canonical
   tooltip ("Current folder is search results, which isn't searchable. Open a real folder first.") and the default drops
   a rung to the volume, so a search still runs.
-- `volumeRootsFrom` filters the switcher's volume list down to the entries that actually OWN an index
-  (`main_volume`, `attached_volume`, `network`, `mobile_device`). **Favorites and cloud drives must stay out.** A
-  favorite is a plain folder wearing a volume's clothes, so counting `~/Downloads` as a root made "This volume"
-  resolve to `~/Downloads` while searching inside it: the maximum rung collapsed onto the default one, and asking for
-  the whole drive silently returned one folder (caught by running the app, not by a test). Cloud drives route to
-  `root` in the backend (`paths/routing.rs`, plan Decision 16), so treating one as its own volume would disagree with
-  the routing that answers the search.
+- `volumeRootsFrom` filters the switcher's volume list down to the entries that actually OWN an index (`main_volume`,
+  `attached_volume`, `network`, `mobile_device`). **Favorites and cloud drives must stay out.** A favorite is a plain
+  folder wearing a volume's clothes, so counting `~/Downloads` as a root made "This volume" resolve to `~/Downloads`
+  while searching inside it: the maximum rung collapsed onto the default one, and asking for the whole drive silently
+  returned one folder (caught by running the app, not by a test). Cloud drives route to `root` in the backend
+  (`paths/routing.rs`, plan Decision 16), so treating one as its own volume would disagree with the routing that answers
+  the search.
 - `volumeRootFor` picks the LONGEST volume root containing the folder, matching whole segments — every path is under
   `/`, so a first-match scan would call a NAS folder a boot-disk one, and a `/Volumes/nas` root must not swallow
   `/Volumes/nas-backup`.

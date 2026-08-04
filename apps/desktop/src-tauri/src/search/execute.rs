@@ -103,29 +103,23 @@ pub(crate) fn run_blocking(query: SearchQuery) -> Result<SearchResult, String> {
     let target = resolve_target(&query).map_err(|e| e.to_string())?;
     let limit = query.limit.min(1000) as usize;
 
-    let mut unresolved_scopes: Vec<String> = Vec::new();
-
     let loaded = match volumes::ensure_volume(&target.volume_id) {
         VolumeLoad::Loaded(v) => v,
-        VolumeLoad::NotIndexed => {
-            // A scope pointing here can't be searched — surface it honestly. An
-            // unscoped target simply has no index yet, so skip it silently.
-            return Ok(uncovered_result(target));
-        }
+        VolumeLoad::NotIndexed => return Ok(uncovered_result(target)),
         VolumeLoad::Failed(e) => {
-            log::warn!("search: skipping volume '{}': {e}", target.volume_id);
+            log::warn!("search: volume '{}' isn't searchable: {e}", target.volume_id);
             return Ok(uncovered_result(target));
         }
     };
 
     let mut vq = query.clone();
-    if target.include_paths.is_empty() {
+    let unresolved_scopes = if target.include_paths.is_empty() {
         vq.include_paths = None;
         vq.include_path_ids = None;
+        Vec::new()
     } else {
         let resolution =
             query::resolve_include_scope(&target.include_paths, &loaded.pool, loaded.mount_root.as_deref());
-        unresolved_scopes.extend(resolution.unresolved);
         // Empty ids ⇒ a mount-root ("whole volume") scope: drop the restriction
         // entirely (routing already scoped to this volume). Otherwise apply it.
         if resolution.include_ids.is_empty() {
@@ -135,7 +129,8 @@ pub(crate) fn run_blocking(query: SearchQuery) -> Result<SearchResult, String> {
             vq.include_paths = Some(target.include_paths.clone());
             vq.include_path_ids = Some(resolution.include_ids);
         }
-    }
+        resolution.unresolved
+    };
 
     let weights = volumes::weights_for(&target.volume_id);
     let prefix = loaded.mount_root.as_deref().unwrap_or("");
@@ -170,8 +165,9 @@ pub(crate) fn run_blocking(query: SearchQuery) -> Result<SearchResult, String> {
     })
 }
 
-/// An empty result whose scope paths (if the user named any) ride back as an honest
-/// coverage gap: the volume they point at has no searchable index.
+/// An empty result for a volume with no searchable index. The scope paths ride back as
+/// an honest coverage gap when the user named them; an unscoped search reports nothing,
+/// because nobody asked for the boot volume by name.
 fn uncovered_result(target: Target) -> SearchResult {
     SearchResult {
         entries: Vec::new(),

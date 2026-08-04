@@ -9,7 +9,13 @@
 import { test, expect } from './fixtures.js'
 import { ensureAppReady, pollUntil, dispatchMenuCommand, LOCAL_VOLUME_NAME, getFixtureRoot } from './helpers.js'
 import { ensureMcpClient, mcpReadResource } from '../e2e-shared/mcp-client.js'
-import { SEARCH_OVERLAY, SEARCH_INPUT, openSearchDialog, type PageLike } from './search-helpers.js'
+import {
+  SEARCH_OVERLAY,
+  SEARCH_INPUT,
+  openSearchDialog,
+  scopeSearchToThisVolume,
+  type PageLike,
+} from './search-helpers.js'
 
 /**
  * The query bar's Run button (`QueryBar.svelte` renders the house `Button`, so `.btn`).
@@ -218,6 +224,11 @@ async function resetRightPaneToLocalIfNeeded(
  * Vitest suite, so nothing is lost by not exercising it here.)
  */
 async function typeAndRunSearch(tauriPage: PageLike, query: string): Promise<void> {
+  // The fixtures this spec matches (`file-a.txt`, …) live under `<root>/left`, but the
+  // spec focuses the RIGHT pane so "Open in pane" targets it — and an unset scope now
+  // means the focused pane's current folder. Widen to the volume, or the search runs in
+  // the empty `<root>/right` and the Open-in-pane button never enables.
+  await scopeSearchToThisVolume(tauriPage)
   await tauriPage.evaluate(`(function(){
         var el = document.querySelector(${JSON.stringify(SEARCH_INPUT)});
         if (!el) return;
