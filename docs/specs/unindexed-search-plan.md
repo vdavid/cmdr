@@ -2,10 +2,12 @@
 
 **Status**: SPECCED, not started. **Owner**: David. **Date**: 2026-08-03.
 
-Indexing stays optional. On a **local** drive, a scoped search that runs to completion returns the same files with or
-without an index, only slower. Network volumes, unscoped search, and interrupted walks are deliberate exceptions, all
-listed in § Accepted differences. The walk that fills the gap writes what it finds into the drive index, so a drive
-converges toward instant through use.
+Indexing stays optional. A search that runs to completion returns the same files with or without an index, only slower,
+on every volume kind: local, SMB, MTP, and whatever comes next. The walk that fills the gap writes what it finds into
+the drive index and watches the branches it covered, so a drive converges toward instant through use and stays there.
+
+The broadest scope a search can have is **one volume** (Decision 4), which is what makes the guarantee reachable: there
+is no fan-out, so there is no case where a search quietly omits a drive.
 
 Area docs to read first: `apps/desktop/src-tauri/src/search/CLAUDE.md` and `DETAILS.md`,
 `crates/cmdr-index/src/indexing/CLAUDE.md`, `crates/cmdr-index/src/indexing/writer/CLAUDE.md` (coverage epochs,
@@ -41,52 +43,44 @@ David's governing principle: **the drive being indexed or not must not produce a
 difference.** This is the register of where this plan does not reach that, so the deferrals are visible rather than
 buried. It is meant to be complete; anything found later belongs here.
 
-1. **Unscoped search omits unindexed drives**, because `execute.rs:105` builds its target set from
-   `all_indexed_volume_ids()`. Not fixed here; Open question 1. **And it degrades once this plan ships**: the first
-   scoped live search of a USB drive creates `index-usb.db`, so every later unscoped search loads that arena, searches
-   the 2% that was walked, and reports it as covered with no note, because an unscoped target carries
-   `from_scope: false` and a non-`Loaded` one is skipped silently by design (`execute.rs:150-158`). M5 must therefore
-   report a partially covered volume on an unscoped search rather than letting it pass as covered.
-2. **Network volumes (SMB, MTP) get no live walk.** `network_scanner` has no subtree scan, and a live walk over the wire
-   is minutes to hours. Open question 2. The walk cuts at the boundary rather than relying on the user's scope choice,
-   see M3c.
-3. **An interrupted walk is narrower.** Cancel, drive disconnect, app quit, and M9's MCP timeout all end a walk early,
-   and each yields a strictly smaller result set than the indexed run. This is the difference users meet most often, so
-   M6 labels the result list incomplete rather than letting it read as exhaustive.
-4. **Unreadable subtrees are narrower.** The 32-failure give-up prune and M2's `known_unreadable` marker mean a walk
+1. **An interrupted walk is narrower.** Cancel, drive disconnect, and app quit each end a walk early and yield a
+   strictly smaller result set than the indexed run. This is the difference people meet most often, so M6 labels the
+   result list incomplete rather than letting it read as exhaustive.
+2. **Unreadable subtrees are narrower.** The 32-failure give-up prune and M2's `known_unreadable` marker mean a walk
    without Full Disk Access covers less than an index built when it was granted. Honestly signalled, still a difference.
-5. **Auto-apply works on indexed drives and not on uncovered ground** (Decision 7). Crossing into a frontier needs
+3. **Auto-apply works on indexed drives and not on uncovered ground** (Decision 7). Crossing into a frontier needs
    Enter.
-6. **Ranking is not preserved.** Importance weights come from the index, so live-walked results rank by match quality
+4. **Ranking is not preserved.** Importance weights come from the index, so live-walked results rank by match quality
    and recency only. Results are capped, so at the boundary a different order is a different visible set; the completion
    re-rank (Decision 8) reorders what survived and does not recover what the cap dropped.
-7. **Directory size filters behave differently.** A directory's size is overwritten after ranking from
+5. **Directory size filters behave differently.** A directory's size is overwritten after ranking from
    `dir_stats.recursive_logical_size` (`execute.rs:198`, `:207`, `:234-254`), outside the engine, so M4's factoring does
    not cover it. Over live-walked ground `dir_stats` is absent or a lower bound by construction, so a "folders over 100
    MB" filter returns a different set than the indexed run.
-8. **A covered-but-stale subtree is trusted, not re-walked** (Decision 5). After a reconnect, an indexed drive can
-   return a deleted file where an unindexed drive would be exact.
-9. **The walk indexes what the user will never see in results.** `excludeSystemDirs` is match-time only (Decision 6), so
+6. **A covered-but-stale subtree is trusted, not re-walked** (Decision 5). A volume that was disconnected while its
+   watcher was down can return a deleted file until `reconcile/` catches up. This applies equally to indexed and
+   walk-covered volumes now that both are watched (Decision 9), so it is a property of the index rather than a gap
+   between the two.
+7. **The walk indexes what the user will never see in results.** `excludeSystemDirs` is match-time only (Decision 6), so
    a live search of `~/projects` walks and writes every `node_modules` and `.git` under it. That is the multiplier on "a
    search on an unindexed drive can take minutes".
-10. **Search-written coverage expires on a 24-hour clock** (Decision 4), so a folder covered by yesterday's search is
-    re-walked today.
-11. **Media, OCR, and semantic search stay empty.** The walk writes the drive index only, never `media_index`, so photo
-    and OCR search on a walked-but-unindexed drive returns nothing. Signalled by the existing
-    `search.imageResults.notIndexed` copy, so no new work, but it is a difference.
-12. **MCP and agents never trigger a walk** (Decision 10) unless they opt in explicitly.
-13. **With the live-walk setting off** (Decision 9), unindexed drives revert to today's behavior wholesale.
-14. **A walk that ran to completion can still be short.** The parallel walker abandons a directory that stops producing
-    at `LOCAL_LIST_TIMEOUT`, and under rayon contention that left an index about 10% short on a measured run, skipping
-    exactly the large directories people care about (`reconcile/DETAILS.md:25-31`,
-    `docs/notes/indexing-benchmarks-2026-07-21.md`). Coverage stays honest, since an abandoned directory is never marked
-    listed, so the frontier re-offers it next search. But the result list of that run is short without being labelled
-    so, which is why M6 labels it alongside the interrupted states.
+8. **Media, OCR, and semantic search stay empty.** The walk writes the drive index only, never `media_index`, so photo
+   and OCR search on a walked-but-unindexed drive returns nothing. Signalled by the existing
+   `search.imageResults.notIndexed` copy, so no new work, but it is a difference.
+9. **A walk that ran to completion can still be short.** The parallel walker abandons a directory that stops producing
+   at `LOCAL_LIST_TIMEOUT`, and under rayon contention that left an index about 10% short on a measured run, skipping
+   exactly the large directories people care about (`reconcile/DETAILS.md:25-31`,
+   `docs/notes/indexing-benchmarks-2026-07-21.md`). Coverage stays honest, since an abandoned directory is never marked
+   listed, so the frontier re-offers it next search. But the result list of that run is short without being labelled so,
+   which is why M6 labels it alongside the interrupted states.
+10. **The master-switch settings note becomes inaccurate, deliberately.** `settings.indexing.masterOffNote` says "no
+    drive is indexed and folder sizes stay hidden"; once a search writes coverage, folder sizes appear for walked
+    branches. David reviewed this and chose to leave the copy as-is. ❌ Don't "fix" it without asking him.
 
 ## Decisions
 
-Each records the intent, so an implementer can adapt without re-litigating. Decisions 4, 9, and 13 need David's
-sign-off; the rest record a choice or an existing invariant.
+Each records the intent, so an implementer can adapt without re-litigating. All of them are settled; David signed off on
+4, 9, 10, 13, 15, 16, and 17 on 2026-08-04.
 
 1. **Live walking is strictly the fallback for uncovered ground.** Covered subtrees are served from the index, always.
 2. **The walk writes into `index-{volumeId}.db` through the normal writer.** Rejected alternative: an ephemeral
@@ -99,15 +93,17 @@ sign-off; the rest record a choice or an existing invariant.
    emits **batches** of discovered entries over a bounded channel and search matches them on its side: one crossing per
    batch, not per entry, and no matcher inside `cmdr-index`. The scan has two callers, search (this plan) and
    Space-to-size (next).
-4. **Search-written coverage expires after 24 hours.** _(Needs David.)_ This closes a hole the plan otherwise creates: a
-   walk stamps coverage on a volume that never went through the indexing lifecycle, so no watcher and no reconciler owns
-   its freshness, and Decision 5 forbids re-walking stale coverage. Without an expiry, every later search of that folder
-   is served from a snapshot that can never update, forever. `listed_epoch` is a monotonic counter, not a clock, and no
-   timestamp column exists (`store/mod.rs:571-603`), so this needs a persisted `listed_at`, added in M2 with the rest of
-   the schema.
+4. **One volume is the broadest scope a search can have.** The scope chip offers "current folder" (the default) and
+   "this volume" (the maximum); today's "All folders" goes away and `⌥V` rebinds to "this volume". This is what makes
+   the guarantee reachable rather than aspirational: multi-volume fan-out is the only reason a search could quietly omit
+   a drive, or report a 2%-walked drive as covered. It also **deletes** machinery rather than adding it, see M0.
+   Accepted cost: searching the boot disk and a NAS in one action stops being possible, and a search of a cold volume
+   now waits for that volume's arena (measured at about 10.9 seconds for a 13.5 million-entry NAS index) instead of
+   deferring it, which M6's phase states voice honestly.
 5. **A covered-but-stale subtree is trusted, not re-walked.** `0 < min_subtree_epoch < current_epoch` means exact but
-   computed at an older epoch, typically after a reconnect. `reconcile/` owns freshness for volumes that have a
-   lifecycle; Decision 4 covers the ones that do not.
+   computed at an older epoch, typically after a reconnect. `reconcile/` owns freshness, and Decision 9 gives
+   walk-covered branches the same watcher that indexed volumes have, so there is no longer a class of coverage nothing
+   maintains.
 6. **The walk indexes everything the normal scanner would; `excludeSystemDirs` is a match-time filter only.** The
    scanner is **not** a consumer of `SYSTEM_DIR_EXCLUDES`: `should_exclude` (`scanner/exclusions.rs:428-490`) uses
    `JUNK_BASENAMES`, `PSEUDO_FS_BASENAMES`, and `EXCLUDED_PREFIXES` only. The real consumers are `search/engine.rs:176`,
@@ -123,10 +119,15 @@ sign-off; the rest record a choice or an existing invariant.
    auto-apply.
 8. **Live results append in arrival order and re-rank once on completion**, with the cursor kept on its row by path
    identity, and the re-rank suppressed once the user has moved the cursor.
-9. **A live walk is a setting, default on.** _(Needs David.)_ Someone who does not want a search to spin a disk gets to
-   turn it off, and it is the kill switch if this changes search's cost profile in a way people dislike.
-10. **MCP and agent searches never trigger a walk by default.** They get index-backed results plus the typed coverage
-    signal, with an explicit opt-in argument for an agent that wants one.
+9. **A walk watches the branches it covered, and nothing expires.** A rejected earlier draft gave search-written
+   coverage a 24-hour TTL, because a walk on a volume with indexing off started no watcher, so its rows were a snapshot
+   nothing would ever update. The right fix is the watcher, not a clock: the walk registers a watch on the highest
+   branch covering any walk-covered folder and discards events outside those branches. Then a walked branch is genuinely
+   equal to an indexed one, with no re-walking and no TTL. See M11 for the mechanism and its Linux caveat.
+10. **The MCP tools are a thin wrapper on the same path, and an agent search walks exactly like a person's.** No
+    walk-versus-no-walk parameter, no separate policy. `run_blocking` is already the single funnel both callers use
+    (`execute.rs` module doc), and Decision 4 removes the one policy that differed between them (`ColdVolumePolicy`,
+    which only ever applied to unscoped extra volumes).
 11. **A superseded query does not cancel the walk, and its in-flight batches are dropped.** Walking is coverage work;
     matching is query work, and Decision 3 separates them. Refining a query keeps the walk running and drops the batches
     already in flight for the old query; the ground the walk had already covered is recovered from the **index**, not
@@ -142,14 +143,28 @@ sign-off; the rest record a choice or an existing invariant.
     which is process-global, fed only by root's writer, stamped `0` for every non-root volume, and hardcoded root-only
     in `is_stale()` (`volumes.rs:283`), while ticking about 5.7 times a second on an idle boot disk
     (`volumes.rs:289-293`).
-13. **A user-initiated scan passes through the master switch.** _(Needs David.)_ `lifecycle/master.rs:6` documents that
-    with the master switch off, "nothing indexes, anywhere", which is about _background_ work; a scan someone asked for
-    by searching is not background work. It genuinely blocks today at three code sites (`handle/mod.rs:163-167`,
-    `lifecycle/state.rs:555-558`, `transports/smb/index.rs:220` via `drive_index_should_run`) and is restated as an
-    invariant in four docs (`lifecycle/CLAUDE.md`, `lifecycle/DETAILS.md:383`, `transports/CLAUDE.md:23`, `master.rs`).
-    The per-drive `user_disabled` veto is a separate consent: Open question 4.
+13. **Both indexing switches govern background work only, never a user-initiated read.** The master switch
+    (`lifecycle/master.rs:6`, "nothing indexes, anywhere") and the sticky per-drive `user_disabled` veto both stop
+    background scanning and watching; neither stops a scan someone asked for by searching. The master switch genuinely
+    blocks today at three code sites (`handle/mod.rs:163-167`, `lifecycle/state.rs:555-558`,
+    `transports/smb/index.rs:220` via `drive_index_should_run`) and is restated as an invariant in four docs
+    (`lifecycle/CLAUDE.md`, `lifecycle/DETAILS.md:383`, `transports/CLAUDE.md:23`, `master.rs`), so all of those need
+    the carve-out or the invariant becomes a lie in four places. The veto keeps real teeth under Decision 9: a vetoed
+    drive gets no watcher, so its walked branches re-walk instead of staying live. The settings copy stays as written,
+    see Accepted difference 10.
 14. **Progress is directories scanned plus the current path. No percentage, no ETA.** The total is unknown by
     definition, and a fabricated ETA violates honest progress (`docs/design-principles.md`).
+15. **There is no way to turn live walking off.** Search is a deliberate action and a walk is what it means; a
+    half-answer behind a preference would put the product back where this plan started. ❌ Don't add a setting, a
+    per-drive opt-out, or a "search index only" mode.
+16. **File Provider domains (Dropbox, iCloud Drive, Google Drive) belong to the boot volume's scope.** They report the
+    same device id as `$HOME` and never appear in `mount` (`scanner/file_provider.rs:7-9`), so a device check alone
+    cannot see them; that is fine, because they are in scope rather than a boundary to cut at. The guarded walker
+    already exists to survive a hung `readdir` on a disconnected provider mount, which is exactly this case.
+17. **A full rescan evicts the DB rather than refilling it.** Whenever coverage has to be rebuilt from scratch (a schema
+    change, a journal gap too wide to replay, a corrupt store), drop the index DB and let the next search re-walk. This
+    matches the crate's standing "rebuild, don't migrate" policy (`indexing/CLAUDE.md`) and keeps a half-migrated store
+    from ever claiming coverage it does not have.
 
 ## The core mechanism: a coverage-pruned walk
 
@@ -163,14 +178,13 @@ sign-off; the rest record a choice or an existing invariant.
 
 ### The descent rule
 
-The frontier needs **both** epoch fields plus two new columns. Using `min_subtree_epoch` alone degenerates: because the
+The frontier needs **both** epoch fields plus one new column. Using `min_subtree_epoch` alone degenerates: because the
 min absorbs zero upward, one uncovered directory anywhere forces zero on every ancestor including the scope root, so
 "the shallowest node at zero" is always the scope root and the frontier becomes "walk everything".
 
 Descending from the scope root:
 
-- `min_subtree_epoch > 0` and not search-written-and-expired → **covered**. Serve from the index, do not descend.
-- `min_subtree_epoch > 0`, search-written, `listed_at` older than the TTL → **frontier** (Decision 4).
+- `min_subtree_epoch > 0` → **covered**. Serve from the index, do not descend.
 - `min_subtree_epoch == 0 && listed_epoch > 0` → **partially covered**. This directory was read, something below it was
   not. Descend.
 - `listed_epoch == 0 && known_unreadable` → **skip**. A directory the walk has tried and cannot read. Not frontier, and
@@ -182,10 +196,9 @@ Descending from the scope root:
 Because `recompute_min_subtree_epoch` coalesces a missing `dir_stats` row to zero, `min_subtree_epoch > 0` implies
 `listed_epoch > 0`, so the cases are disjoint and exhaustive. M2's proptest checks that premise before relying on it.
 
-The `known_unreadable` marker and the `listed_at` timestamp are both schema additions and both belong in M2 with the
-rest of the data model. Without the marker, a permission-denied subtree stays `listed_epoch = 0` forever and re-enters
-the frontier on **every** subsequent search, a permanent repeating slow path with no user signal. Without the timestamp,
-M3d would have to change M2's query and its proptest after the fact.
+The `known_unreadable` marker is a schema addition and belongs in M2 with the rest of the data model. Without it, a
+permission-denied subtree stays `listed_epoch = 0` forever and re-enters the frontier on **every** subsequent search, a
+permanent repeating slow path with no user signal.
 
 ### Exclusions are a live-walk concern only
 
@@ -232,18 +245,22 @@ coverage API must not assume a single dimension.
 
 ## Sequencing
 
-- **M1 is the head** and is valuable alone: it converts today's silent wrong answer into an honest one and unblocks
-  search on an index-less machine.
-- **M2 is independent of M1** and can run in parallel. It is the performance hinge, owns all three schema additions
-  (`known_unreadable`, `listed_at`, the exclusion-policy version), and carries a measured exit criterion.
-- **M4 is independent of everything before it** (a pure refactor) and can run any time before M5.
-- **M3a → M3b → M3c → M3d** are sequential among themselves and all depend on M2's data model. M3d additionally depends
-  on M2 having added `listed_at`; it must not need a schema change of its own.
-- **M5 depends on M2, M3a-c, and M4.** M6 depends on M5, and inherits M2's `known_unreadable` marker for the unreadable
-  signal it ships. **M7 depends on M6. M8 depends on M2's marker and M5's signal. M9 depends on M5. M10 depends on
-  everything it measures.**
-- **M0 is deliberately last among the user-visible changes** and is blocked on Open question 3. Shipped early it is
-  net-negative: it narrows the default scope for indexed users while giving nothing back.
+Run sequentially. Ordering that matters:
+
+- **M0 is the head.** It sets the one-volume ceiling and deletes the fan-out, so nothing after it has to keep
+  multi-volume routing working. Doing it later means writing code twice.
+- **M1 next**, and valuable alone: it converts today's silent wrong answer into an honest one, and it unblocks search on
+  a machine with no root index, without which every later milestone is unreachable in the running app.
+- **M2 is independent of M1.** It is the performance hinge, owns both schema additions (`known_unreadable` and the
+  exclusion-policy version), and carries a measured exit criterion. Its `index-crate-isolation` ceiling bump is approved
+  (David, 2026-08-04), so it is not blocked.
+- **M3a → M3b → M3c → M3d** are sequential among themselves and all depend on M2's data model.
+- **M4 is independent of everything before it** (a pure refactor) and can land any time before M5.
+- **M5 depends on M0, M2, M3a-d, and M4.** M6 depends on M5 and inherits M2's `known_unreadable` marker.
+- **M7 depends on M6. M8 depends on M2's marker and M5's signal. M9 depends on M5.**
+- **M11 depends on M3a-d** (there is nothing to watch until a walk covers something) and should land before M10, so
+  M10's "Clear index" work drops the branch set M11 persists.
+- **M10 is last**, because it measures and documents what everything else built.
 
 ## Milestones
 
@@ -254,10 +271,43 @@ coverage API must not assume a single dimension.
 (`AGENTS.md` principle 6). Every new key needs its `@key` translator description, and the translation pass follows
 `docs/guides/i18n-translation.md`. No milestone is done with untranslated keys shipped.
 
-**Definition of done for the whole effort**: on a local drive with no index, a scoped search that runs to completion
-returns the same result set as the same search on the same drive fully indexed, excepting order, Accepted difference 7
-(directory size filters), and Accepted difference 14 (directories the walker abandoned, which stay in the frontier and
+**Definition of done for the whole effort**: on any volume kind with no index, a search that runs to completion returns
+the same result set as the same search on the same volume fully indexed, excepting order, Accepted difference 5
+(directory size filters), and Accepted difference 9 (directories the walker abandoned, which stay in the frontier and
 are labelled), with the first batch painted within two seconds.
+
+### M0. One volume is the ceiling, and the current folder is the default
+
+The head of the whole effort, because it deletes the machinery every later milestone would otherwise have to keep
+working around. Its own DoD: `execute.rs` never routes a search to more than one volume.
+
+- **Scope options become "current folder" (default) and "this volume" (maximum).** `ScopeFilterPopover.svelte` today
+  offers the free-text field plus `queryUi.scope.useCurrentFolder` (`:146`) and `queryUi.scope.allFolders` (`:157`).
+  "All folders" goes away and `⌥V` rebinds to "this volume". Draft the copy for David.
+- **Default to the focused pane's current folder, on every drive.** `searchable-folder.ts` already walks pane history
+  back to the most recent real folder; when it returns `disabled` (`searchable-folder.ts:60`, a snapshot pane with no
+  real-folder history), fall back to "this volume".
+- **Delete the fan-out.** With one target the k-way merge across volumes, `ColdVolumePolicy` and its `DeferColdVolumes`
+  arm, `RunOutcome::deferred_volumes`, `warm_in_background`, and the re-run-on-`search-index-ready` path all lose their
+  reason to exist. Remove them rather than leaving them dormant; `deadcode` and `knip` will not catch
+  dormant-but-reachable code, and a future reader cannot tell it is unused. Keep `all_indexed_volume_ids` only if
+  something outside search still needs it.
+- **Recents side effect**: scope is a free-text expression persisted into every recent search
+  (`SearchDialog.svelte:366`, `:398`), so a defaulted scope means every saved recent search carries a machine-specific
+  absolute path. Decide whether the default scope is persisted at all; the answer is probably no.
+- **Onboarding and website copy** sell "Instant search of your whole drive. Think Spotlight, but even faster."
+  (`onboarding.stepOptional.indexing.benefit1`). "This volume" keeps that promise true, but the default is narrower now,
+  so re-read those strings and draft any change for David.
+- `search-index-ready` currently means "root's arena loaded". With one target it should name its volume, which M1 also
+  needs.
+
+Tests, **test-first**: a search with a scope spanning two volumes is impossible to express (the ceiling holds at the
+API, not only in the UI). Written after: `searchable-folder.test.ts` and `SearchDialog.svelte.test.ts` scope cases
+including the `disabled` fallback, the new chip, the `⌥V` rebind, and the recents behavior; the engine still returns
+identical results for a single-volume query after the fan-out removal (the existing multi-volume tests are the oracle
+for what is being deleted, so read them before deleting). Docs: `search/CLAUDE.md` (the multi-volume must-know goes
+away), `search/DETAILS.md` § Merge, `query-ui/CLAUDE.md` (the scope shortcuts must-know), `lib/search/CLAUDE.md` +
+`DETAILS.md`. Checks: `pnpm check rust`, `pnpm check svelte`, `pnpm check desktop`.
 
 ### M1. Search asks the question, and answers it honestly
 
@@ -301,14 +351,15 @@ Read-side plus schema. The most testable unit and the performance hinge.
   exclusion-policy version in `meta`.
 - Exposed on the `Index` handle. Adding a `pub` there is a design act (`handle/CLAUDE.md`); record it in
   `handle/DETAILS.md` § "The public surface".
-- **Precondition, Open question 5**: `index-crate-isolation` ceilings are set with no headroom by design
+- **Precondition, approved by David on 2026-08-04**: `index-crate-isolation` ceilings are set with no headroom by design
   (`RootPromises: 44`, `HandleMethods: 35`, `scripts/check/checks/index-crate-isolation.go:85-86`). There is no spare
   slot: `handle/CLAUDE.md:11` describes the surface as 34 items, and `index-crate-isolation.go:80-82` explains the gap,
   "`HandleMethods` is 35 rather than the audit's headline 34 because this count includes `Index::builder`, the
   constructor". So the count already sits at its ceiling. This plan adds at least three handle methods (the coverage
   query, M3b's scoped scan, and an epoch read: `IndexStore::read_current_epoch` at `store/meta.rs:62` is not on the
-  handle), plus the coverage-answer type and any new error enum as `RootPromises` items if re-exported from `lib.rs`. So
-  **two ceilings** need David's OK, not one.
+  handle), plus the coverage-answer type and any new error enum as `RootPromises` items if re-exported from `lib.rs`, so
+  **both ceilings** move. David approved the bumps with one instruction: design the resulting surface to be cohesive,
+  then raise the ceilings to match. ❌ Don't bump per method as you go.
 - **Exit criterion, measured**: a recorded note in `docs/notes/` over a real 611,699-folder root index, budget under 50
   ms warm for the frontier query. `dir_stats` has `entry_id INTEGER PRIMARY KEY` and no other index
   (`store/mod.rs:588-597`); `idx_parent_name_folded ON entries (parent_id, name_folded)` (`:586`) gives the descent a
@@ -353,7 +404,7 @@ it returns an escalation anchor with zero work (`reconciler.rs:952-960`).
 with "Before trusting that speed comparison, read `docs/notes/indexing-benchmarks-2026-07-21.md`": on an idle machine
 the numbers are 52.7 s against 476.9 s, about 9× rather than 19×, and the parallel scan buys part of its speed by
 abandoning directories under rayon contention, leaving that run about 10% short (6,001,637 rows against 6,663,048) in
-exactly the large subtrees whose sizes matter most. That is Accepted difference 14, not a reason to reject the parallel
+exactly the large subtrees whose sizes matter most. That is Accepted difference 9, not a reason to reject the parallel
 walker, but M3a must decide with its own measurement on a representative frontier rather than either published number.
 
 **So the expected answer is the parallel walker with the two defects fixed**, confirmed by that measurement.
@@ -417,18 +468,15 @@ coverage it does not have. Written after. Docs: `lifecycle/CLAUDE.md` + `DETAILS
   `reconcile/verifier.rs:412-415` and `watch/event_loop/verification.rs:105-108` both apply `should_exclude` to the scan
   root themselves. What they do not filter is children discovered inside, so enabling descendant exclusions makes them
   consistent with their own root gate.
-- **Cut at foreign volumes, by two different probes.** Local-only is not a property of the scope the user picked: a
-  scoped walk of `/`, `/Volumes`, or a home folder with a NAS mounted under it crosses into a network volume. Real
-  mounts need a device check, and the batched macOS read does not carry one today (it requests
-  `ATTR_CMN_RETURNED_ATTRS | NAME | OBJTYPE | MODTIME | FILEID` plus file attrs, no `ATTR_CMN_DEVID`,
-  `scanner/walker/bulk_read.rs:126-129`), so this needs a per-directory `stat` or a new attribute. File Provider domains
-  need a different probe entirely: "A File Provider domain (Dropbox, Google Drive, iCloud Drive, MacDroid, …) is **NOT**
-  a mount point: its root reports the same `st_dev` as `$HOME` and never appears in `mount`, so the usual
-  volume-boundary detectors are blind to it" (`scanner/file_provider.rs:7-9`). The answer already exists as
-  `file_provider::domain_id_for_dir`, wired as `RootProbes::is_domain_root` (`scanner/exclusions.rs:140`, `:152-155`)
-  but used today only to decide whether a `proc`/`sys`/`dev` child sits at a volume root (`exclusions.rs:382-390`). Name
-  both probes and what the walk does when it hits either: cut, and report the subtree as uncovered so Accepted
-  difference 2 stays true.
+- **Cut at volume boundaries, and only there.** With Decision 4 a search targets one volume, so a walk that crosses into
+  another one has left its scope. Real mounts need a device check, and the batched macOS read does not carry one today
+  (it requests `ATTR_CMN_RETURNED_ATTRS | NAME | OBJTYPE | MODTIME | FILEID` plus file attrs, no `ATTR_CMN_DEVID`,
+  `scanner/walker/bulk_read.rs:126-129`), so this needs a per-directory `stat` or a new attribute. **File Provider
+  domains are NOT a boundary** (Decision 16): Dropbox, iCloud Drive, and Google Drive report the same `st_dev` as
+  `$HOME` and never appear in `mount` (`scanner/file_provider.rs:7-9`), and they belong to the boot volume's scope, so
+  the walk descends into them. `file_provider::domain_id_for_dir` (wired as `RootProbes::is_domain_root`,
+  `scanner/exclusions.rs:140`, `:152-155`) stays used only for what it does today; do not repurpose it as a cut. The
+  guarded walker's stall detection is what makes descending into a disconnected provider mount safe.
 - **Master-switch carve-out** (Decision 13) at the three code sites and the four docs that restate the invariant.
 - **One writer per DB.** `lifecycle/state.rs:565-571` spells out the hazard: two writers race on id counters and
   accumulator maps, "producing PK collisions and inflated `dir_stats`". The scoped scan reuses the volume's existing
@@ -441,25 +489,26 @@ will "fix" as a bug). Written after: both boundary probes; exclusion mode; write
 overlapping walks coalesce. Docs: the four master-switch docs, `scanner/CLAUDE.md` + `DETAILS.md`, `exclusions.rs:21-24`
 comment fix. Checks: `pnpm check rust`, `pnpm check rust-tests`.
 
-### M3d. Expiry and retention
+### M3d. The scoped walk on SMB, MTP, and every future volume kind
 
-- **Expiry.** Decision 4's 24-hour TTL on search-written coverage, over M2's `listed_at`: a subtree past it re-enters
-  the frontier. The descent rule already carries the case, so this is enforcement, not a query change.
-- **Retention, corrected on three counts.** The existing cap is 32 external index DBs (`MAX_EXTERNAL_INDEX_DBS`,
-  `resources/retention.rs:42`), evicting **oldest-by-mtime**, and the module states that choice deliberately: "This is
-  deliberately not a size budget or an access-time LRU" (`retention.rs:27-30`). Do not silently redefine it. More
-  importantly the cap **excludes root** ("Never evict `root`… it's excluded from candidates regardless of mtime",
-  `retention.rs:16-18`), and this plan's headline population is a machine with no root index whose walks write
-  `index-root.db`. So nothing caps the data this feature mainly produces. Decide and record: either bring search-written
-  root coverage under a size budget, or accept it and say so in `resources/DETAILS.md`. Also,
-  `enforce_external_index_cap()` is called only from the three transports' index-start paths
-  (`transports/local_external/index.rs:139`, `transports/smb/index.rs:198`, `transports/mtp/index.rs:55`), so a walk
-  that reserves a writer directly (M3c) never triggers it and must call it.
-- Per-drive "Clear index" drops search-written coverage.
+Local-only was never the intent; it was a deferral this milestone closes. `network_scanner` has no scoped walk today:
+its entry points are `network_scanner/full_scan.rs:126 scan_volume_via_trait` (whole volume, maps the scan root to
+`ROOT_ID`) and `reconcile_scan.rs`, which diffs against an already-populated index. So this builds a scoped BFS over the
+`Volume` trait, which is what makes it work for every future backend for free.
 
-Tests: expiry returns a stale subtree to the frontier; a walk-created DB is counted by the cap. Written after. Docs:
-`resources/DETAILS.md`, `lib/settings/sections/DriveIndexingSection.svelte` docs. Checks: `pnpm check rust`,
-`pnpm check desktop`.
+- Reuse what exists: `begin_scan_session` / `end_scan_session` bracket bulk work so SMB's refcounted extra-session pool
+  is used rather than re-invented, and `network_scanner` already carries scan pacing and NAS system-dir skips.
+- A full walk of a 10 TB NAS measured about 11 minutes on David's hardware, and cancel works throughout, so this needs
+  no gate or confirmation step.
+- MTP is the slow end and the one with sharp edges (same-name siblings, an easily wedged transport), so the cancel path
+  and the IPC deadline rules in `commands/CLAUDE.md` matter more here than anywhere else.
+- Every volume kind uses the same coverage epochs and the same writer, so the frontier query and the descent rule need
+  no per-kind branches.
+
+Tests, **test-first**: a scoped walk over an `InMemoryVolume` reaching only its subtree, and a cancelled network walk
+leaving durable partial coverage exactly as the local one does. Written after: session bracketing is paired even on the
+cancel path; pacing is honored. Docs: `network_scanner/CLAUDE.md` + `DETAILS.md`, `scanner/DETAILS.md`. Checks:
+`pnpm check rust`, `pnpm check rust-tests`.
 
 ### M4. Compiled query: one matcher, two evaluators
 
@@ -468,7 +517,7 @@ verifiable. **It stays app-side in `search/`** per Decision 3; the walk delivers
 
 - Factor the pattern compile plus the size, date, and type predicates out of `engine::search_ranked` into a compiled
   query value that both the arena scan and a batch of walked entries can evaluate. `engine.rs` stays pure and I/O-free.
-- **Directory size filters stay outside this**, per Accepted difference 7: a directory's size is overwritten after
+- **Directory size filters stay outside this**, per Accepted difference 5: a directory's size is overwritten after
   ranking from `dir_stats` (`execute.rs:198`, `:207`, `:234-254`). Say so in the module docs so nobody later assumes one
   matcher covers it.
 - Add an unconditional broad-query guard for the live path. The existing one cannot be reused: `engine.rs:258` keys on
@@ -487,9 +536,6 @@ the oracle. Written after, except the guard, which is **test-first**. Checks: `p
   was computed for; a walk that wrote rows marks the arena dirty, and the next query reloads or treats the subtree as
   uncovered until the reload lands. Without this, the second keystroke after a walk returns fewer results than the
   first, with no signal.
-- **An unscoped search must not launder a partially walked volume as covered** (Accepted difference 1). Once a walk has
-  created `index-{id}.db`, `all_indexed_volume_ids()` picks it up and `from_scope: false` makes the silent-skip path
-  inapplicable, so the volume needs a partial-coverage signal of its own rather than passing as complete.
 - Streaming events follow `file_system/listing/streaming.rs` (`-progress` / `-complete` / `-error` / `-cancelled`), with
   a run id so batches from a superseded query are dropped while the walk continues (Decision 11). **Batch at 100 rows or
   100 ms, whichever comes first.**
@@ -510,11 +556,10 @@ the oracle. Written after, except the guard, which is **test-first**. Checks: `p
 Tests, **test-first**: a search across a half-covered scope returns the union exactly once; a query refined mid-walk
 drops the old batches, keeps the walk, and recovers the already-walked ground from the index (Decisions 11 and 12
 together, and the case that silently loses results if either is wrong). Written after: unreadable folders reported
-rather than swallowed; a partially walked volume is not laundered as covered in an unscoped search; `excludeSystemDirs`
-absent by default and present when off; cancellation stops the walk promptly; the disconnect terminal state. Plus a
-contract test for the new IPC event family (`docs/testing.md` § "When you add X, also add Y"). Docs: `search/CLAUDE.md`
-(the one-way-consumer must-know needs its nuance), `search/DETAILS.md`, `indexing/CLAUDE.md`. Checks: `pnpm check rust`,
-`pnpm check rust-tests`.
+rather than swallowed; `excludeSystemDirs` absent by default and present when off; cancellation stops the walk promptly;
+the disconnect terminal state. Plus a contract test for the new IPC event family (`docs/testing.md` § "When you add X,
+also add Y"). Docs: `search/CLAUDE.md` (the one-way-consumer must-know needs its nuance), `search/DETAILS.md`,
+`indexing/CLAUDE.md`. Checks: `pnpm check rust`, `pnpm check rust-tests`.
 
 ### M6. Streaming results in the query UI
 
@@ -529,8 +574,8 @@ contract test for the new IPC event family (`docs/testing.md` § "When you add X
   live match count **and** directories scanned plus current path (Decision 14).
 - **Cancel's end state is defined**: partial results stay on screen, the list is labeled incomplete, the count resolves
   to what was found before stopping, and the coverage note says the walk was cancelled rather than exhausted. The same
-  labelling covers a walk that finished but abandoned directories (Accepted difference 14). Same labelling for the
-  disconnect and quit terminal states (Accepted difference 3).
+  labelling covers a walk that finished but abandoned directories (Accepted difference 9). Same labelling for the
+  disconnect and quit terminal states (Accepted difference 1).
 - Cancel is visible with its shortcut shown (`docs/design-principles.md`). **Escape means two things**: the first
   cancels a running walk, the second closes the dialog. QueryDialog already owns Escape via `ownsKeyboard`.
 - **Count-only becomes honest here**, not in a docs milestone: `count_only` renders "This search yields N results"
@@ -570,82 +615,83 @@ Full Disk Access, route into the existing prompt rather than leaving someone wit
 Tests: the FDA route appears when the denial pattern matches and not otherwise. Written after. Docs:
 `lib/onboarding/CLAUDE.md`. Checks: `pnpm check desktop`.
 
-### M9. MCP coverage signal and opt-in walk
+### M9. MCP stays a thin wrapper
 
-- Per Decision 10, agent searches do not walk. They return index-backed results plus the typed coverage signal.
-- An explicit opt-in argument enables a walk, with a timeout defaulting to 20 seconds and `0` meaning unlimited. On
-  expiry, return what was covered plus the coverage signal, never a silent partial.
+Per Decision 10 there is no agent-specific policy left to add, so this milestone is mostly deletion and verification.
 
-Tests: executor unit tests for no-walk default, opt-in, and the three timeout values. Written after. Docs: the MCP tool
-docs, `search/DETAILS.md`. Checks: `pnpm check rust`.
+- Drop the `ColdVolumePolicy::Wait` versus `DeferColdVolumes` split at the MCP boundary. Decision 4 removes the only
+  situation it applied to (unscoped extra volumes), so both callers now take the same path with the same arguments.
+- An agent search walks exactly like a person's, including streaming and cancellation semantics where the transport can
+  carry them.
+- Keep the typed coverage signal in the MCP reply, which is the one thing MCP already rendered and the dialog did not.
 
-### M0. Default scope becomes the current folder
+Tests: an agent search over a partially covered volume walks and returns the union, same as the dialog. Written after.
+Docs: the MCP tool docs, `search/DETAILS.md`. Checks: `pnpm check rust`.
 
-Last among the user-visible changes, and blocked on Open question 3.
+### M11. Watch what the walk covered
 
-- Change the default scope from every-indexed-volume to the focused pane's current folder, on all drives.
-  `searchable-folder.ts` already walks pane history back to the most recent real folder; when it returns `disabled`
-  (`searchable-folder.ts:60`, a snapshot pane with no real-folder history), fall back to today's all-folders behavior.
-- **Add a "This drive" scope option.** `ScopeFilterPopover.svelte` offers only the free-text field,
-  `queryUi.scope.useCurrentFolder` (`:146`), and `queryUi.scope.allFolders` (`:157`). Without a drive-level option, M0
-  makes whole-drive search harder for everyone.
-- **Watch the recents side effect**: scope is a free-text expression persisted into every recent search
-  (`SearchDialog.svelte:366`, `:398`), so a defaulted scope means every saved recent search carries a machine-specific
-  absolute path. Decide whether the default scope is persisted at all.
-- Update the onboarding and website copy this contradicts, per Open question 3.
+What makes Decision 9 real, and what lets the plan carry no expiry.
 
-Tests: `searchable-folder.test.ts` and `SearchDialog.svelte.test.ts` scope cases, including the `disabled` fallback, the
-new option, and the recents behavior. Written after. Docs: `lib/search/CLAUDE.md` + `DETAILS.md`. Checks:
-`pnpm check svelte`, `pnpm check desktop`.
+- Register a watch on the highest branch covering any walk-covered folder, and discard events outside those branches. On
+  macOS this is a path-prefix test over the drive-root FSEvents stream the watcher already runs (`watch/watcher.rs`).
+  Restart persistence comes free from `supports_event_replay()` plus the FSEvents `sinceWhen` replay already in place.
+- **On Linux, do not copy the macOS shape.** `notify`'s recursive mode registers an inotify watch per directory against
+  `max_user_watches`, so watch only the covered branches there rather than the drive root.
+- **The boundary case that silently corrupts sizes**: when a walk adds a new branch, events arriving for it _while the
+  walk runs_ must not be discarded, or the branch's aggregate drifts with no signal. The scan-completion handshake and
+  `BulkReconcileGuard` are the existing hooks.
+- A drive with the per-drive veto set gets no watch (Decision 13), so its walked branches re-walk instead of staying
+  live.
+- The branch set is persisted, so it survives restart, and per-drive "Clear index" drops it along with the coverage.
 
-### M10. Analytics, status, and the doc sweep
+Tests, **test-first**: an event inside a covered branch updates the index and one outside it is discarded; a walk that
+adds a branch does not lose events that arrive mid-walk. Written after: restart restores the branch set; a vetoed drive
+registers no watch. Docs: `watch/CLAUDE.md` + `DETAILS.md`, `lifecycle/DETAILS.md`. Checks: `pnpm check rust`,
+`pnpm check rust-tests`.
 
-- **Analytics.** The premise is that indexing becomes optional and nothing today reports whether that worked. Extend
-  `search_used` with categorical properties: coverage (covered, live, mixed), walk duration bucket, cancel rate, whether
-  the walk was superseded, CTA conversion. Property shapes per `apps/desktop/src-tauri/src/analytics/DETAILS.md`, which
-  documents `search_used` today.
+### M10. Settings, analytics, status, and the doc sweep
+
+- **The Clear button and the size indicator must work with drive indexing off.** That is the whole of David's answer on
+  disk usage: no cap for now, but someone who declined indexing and then searched must be able to see how much the index
+  holds and clear it. Check `DriveIndexingSection.svelte`'s disabled states, since today they assume no data exists when
+  the master switch is off.
+- **A full rescan evicts rather than refills** (Decision 17). Wire it wherever coverage is rebuilt from scratch, and
+  state it in `resources/DETAILS.md` alongside the existing retention cap, which is untouched by this plan (32 external
+  index DBs, oldest-by-mtime, never evicting root).
+- **Analytics.** Extend `search_used` with categorical properties: coverage (covered, live, mixed), walk duration
+  bucket, cancel rate, whether the walk was superseded, CTA conversion. Property shapes per
+  `apps/desktop/src-tauri/src/analytics/DETAILS.md`, which documents `search_used` today.
 - **`feature-status.json`**: the `search` note says "finds files across every indexed drive". Rewrite once true.
-- Sweep the area docs named per milestone; confirm `docs-reachable`, `docs-dead-links`, `claude-md-length` are clean.
+- Sweep the area docs named per milestone; confirm `docs-reachable`, `dead-links`, `claude-md-length` are clean.
 - Record the `content_epoch` forward-compat note in `writer/DETAILS.md`, where the propagation lives.
 
-Tests: the analytics events fire with the right properties per coverage kind. Written after. Checks: full
-`pnpm check --include-slow`.
+Tests: the Clear button and size indicator work with the master switch off; the analytics events fire with the right
+properties per coverage kind. Written after. Checks: full `pnpm check --include-slow`.
 
-## Open questions for David
+## Settled with David, 2026-08-04
 
-1. **The unscoped case.** "All folders" (⌥V) still omits unindexed drives after this plan, and degrades further per
-   Accepted difference 1. Full parity means live-walking every unindexed volume at once, which on a machine with a NAS
-   plus two externals is hours. Recommendation: surface them as uncovered with a per-drive "search this one live"
-   action.
-2. **Network volumes.** SMB and MTP are the drives that are essentially never indexed, and a live walk there is minutes
-   to hours over the wire. The product precedent is opt-in per drive with dedicated copy
-   (`settings.mediaIndex.networkVolumes.*`). Recommendation: gate the first live walk of a network volume behind a
-   confirm, then remember the answer per drive.
-3. **M0 narrows the default for indexed users too**, and the onboarding copy sells the opposite ("Instant search of your
-   whole drive. Think Spotlight, but even faster.", `onboarding.stepOptional.indexing.benefit1`). Accept the tradeoff
-   and rewrite the onboarding and website copy, or keep whole-drive default for indexed volumes and accept the split?
-4. **The per-drive veto and the master-switch copy.** `settings.indexing.masterOffNote` says "no drive is indexed and
-   folder sizes stay hidden", which stops being true once a search writes coverage. And `user_disabled` is a consent
-   given about one specific drive, unlike the global switch. Two calls: does searching a `user_disabled` drive write
-   coverage, and does the note get rewritten?
-5. **Two `index-crate-isolation` ceiling bumps** (`HandleMethods` and `RootPromises`), needed before M2 starts, per
-   `.claude/rules/file-length-allowlist.md`.
-6. **Three cost and trust tradeoffs**: Decision 4's 24-hour expiry, Decision 9's live-walk setting, and Decision 13's
-   master-switch carve-out.
-7. **What caps `index-root.db`** on a machine that declined indexing, given the existing retention cap never evicts root
-   (M3d).
+Recorded so nobody reopens them. Every one of these was an open question in an earlier draft.
+
+- **One volume is the broadest scope**, which removes the unscoped case rather than deferring it (Decision 4).
+- **Live walks on SMB and MTP, and every future volume kind.** A full walk of a 10 TB NAS is about 11 minutes and cancel
+  works throughout, so no confirm step and no per-drive gate (M3d).
+- **The default scope narrows for indexed drives too.** David confirmed he wants this knowing it changes behavior for
+  people whose drives are fully indexed (M0).
+- **No expiry on search-written coverage; watch the branches instead** (Decision 9, M11).
+- **The master-switch settings copy stays as written**, even though folder sizes will appear for walked branches
+  (Accepted difference 10).
+- **Both indexing switches govern background work only**, so a search walks a `user_disabled` drive but leaves no
+  watcher on it (Decision 13).
+- **`index-crate-isolation` ceiling bumps are approved**, with the instruction that the resulting API stay cohesive.
+  Design the surface, then raise the ceiling to match; don't raise it per method as you go.
+- **No off switch for live walking**, in any form (Decision 15).
+- **No index size cap for now.** The Clear button and the size indicator must work with drive indexing off, and a full
+  rescan evicts rather than refills (Decision 17, M10). If people complain about disk use, a cap can come later.
 
 ## Out of scope
 
-- **Space-to-size on a folder.** It reuses M3a-c directly and lands right after, per David.
-- **Branch-scoped watching.** Keeping search-written sizes live belongs to the Space feature; Decision 4's expiry stands
-  in for it here, and M3d implements no watch bookkeeping. Design note so it is not relitigated: on macOS, subscribe to
-  the drive root's FSEvents and discard events outside the covered branches (already what `watch/watcher.rs` does, and
-  filtering is a path-prefix test). On **Linux this is not cheap**: `notify`'s recursive mode registers an inotify watch
-  per directory against `max_user_watches`, so register watches only for the covered branches there. Restart persistence
-  comes free from `supports_event_replay()` plus the FSEvents `sinceWhen` replay. One correctness detail: when a scan
-  adds a new branch, events arriving for it _while the scan runs_ must not be discarded, or the size silently drifts;
-  the scan-completion handshake and `BulkReconcileGuard` are the existing hooks.
+- **Space-to-size on a folder.** It reuses M3a-d and M11 directly and lands right after, per David. By then it is mostly
+  a trigger: pressing Space on a folder runs the same scoped scan a search runs over a frontier.
 - **Content search.** Only the forward-compat shape is in scope.
 - **The Selection dialog.** Investigated and cleared; its folder-size gap is fixed incidentally by M3a.
 
