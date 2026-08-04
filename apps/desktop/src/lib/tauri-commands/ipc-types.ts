@@ -94,6 +94,8 @@ export interface SearchResult {
   uncoveredScopes?: string[]
   /** Scope paths that routed to an indexed volume but weren't found in its index (a typo, a since-deleted folder). Empty when every scope path resolved. */
   unresolvedScopes?: string[]
+  /** The one volume this search covered, as the backend's routing resolved it. Lets a caller act on a coverage gap against the right drive instead of re-deriving it from the path. */
+  targetVolumeId?: string
 }
 
 export interface SearchResultEntry {
@@ -109,6 +111,12 @@ export interface SearchResultEntry {
 export interface PrepareResult {
   ready: boolean
   entryCount: number
+  /**
+   * Whether a background load is in flight, so a `search-index-ready` naming this volume is
+   * coming. `false` alongside `ready: false` is the terminal "there is no index to load here":
+   * the dialog stops waiting and runs the search, which answers with its coverage gap named.
+   */
+  loading: boolean
 }
 
 export interface TranslatedQuery {

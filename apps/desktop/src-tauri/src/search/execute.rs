@@ -162,6 +162,7 @@ pub(crate) fn run_blocking(query: SearchQuery) -> Result<SearchResult, String> {
         total_count: total,
         uncovered_scopes: Vec::new(),
         unresolved_scopes,
+        target_volume_id: target.volume_id,
     })
 }
 
@@ -178,6 +179,7 @@ fn uncovered_result(target: Target) -> SearchResult {
             Vec::new()
         },
         unresolved_scopes: Vec::new(),
+        target_volume_id: target.volume_id,
     }
 }
 

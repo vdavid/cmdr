@@ -56,10 +56,14 @@ export async function getSystemDirExcludes(): Promise<string[]> {
   return commands.getSystemDirExcludes()
 }
 
-/** Listens for the search index ready event (emitted after prepare completes loading). */
-export function onSearchIndexReady(handler: (entryCount: number) => void): Promise<UnlistenFn> {
+/**
+ * Listens for a volume's search arena landing (emitted after a background load completes).
+ * The event NAMES its volume: a search covers one volume, so readiness is only ever true of
+ * a particular one.
+ */
+export function onSearchIndexReady(handler: (volumeId: string, entryCount: number) => void): Promise<UnlistenFn> {
   return events.searchIndexReady.listen((event) => {
-    handler(event.payload.entryCount)
+    handler(event.payload.volumeId, event.payload.entryCount)
   })
 }
 

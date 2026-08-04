@@ -23,6 +23,11 @@ pub use crate::search::ai::types::{TranslateDisplay, TranslatedQuery};
 pub struct PrepareResult {
     pub ready: bool,
     pub entry_count: u64,
+    /// Whether a background load is in flight, so a `search-index-ready` naming this
+    /// volume is coming. `false` alongside `ready: false` is the terminal answer
+    /// "there is no index to load here": the dialog must NOT wait on it, or a machine
+    /// that declined indexing never searches at all.
+    pub loading: bool,
 }
 
 /// Emitted once a volume's in-memory search index finishes loading, so the dialog
@@ -45,8 +50,13 @@ pub struct SearchIndexReadyEvent {
 
 /// Called when the search dialog opens. Pre-loads the ROOT index in the background
 /// (the common case; scoped volumes load lazily on their first query). Returns
-/// immediately with `{ ready, entryCount }`; the dialog flips to ready on the
-/// emitted `search-index-ready` event.
+/// immediately with `{ ready, entryCount, loading }`; the dialog flips to ready on the
+/// emitted `search-index-ready` event when `loading` says one is coming.
+///
+/// `loading: false` with `ready: false` means root has no index to load, so no event
+/// will follow. Saying so is what lets a search still run on a machine that declined
+/// indexing: the dialog stops waiting and asks the question, and the answer comes back
+/// with its coverage gap named.
 #[tauri::command]
 #[specta::specta]
 pub async fn prepare_search_index(app: tauri::AppHandle) -> Result<PrepareResult, String> {
@@ -64,6 +74,18 @@ pub async fn prepare_search_index(app: tauri::AppHandle) -> Result<PrepareResult
         return Ok(PrepareResult {
             ready: true,
             entry_count: v.index.entries.len() as u64,
+            loading: false,
+        });
+    }
+
+    // Nothing to load: indexing declined, or the first scan hasn't produced a
+    // searchable index yet. Say so instead of spawning a load whose event never
+    // arrives, which would leave the dialog waiting on an index that isn't coming.
+    if !search::has_searchable_index(ROOT_VOLUME_ID) {
+        return Ok(PrepareResult {
+            ready: false,
+            entry_count: 0,
+            loading: false,
         });
     }
 
@@ -81,6 +103,7 @@ pub async fn prepare_search_index(app: tauri::AppHandle) -> Result<PrepareResult
     Ok(PrepareResult {
         ready: false,
         entry_count: 0,
+        loading: true,
     })
 }
 

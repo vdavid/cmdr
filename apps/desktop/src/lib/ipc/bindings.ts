@@ -2135,8 +2135,13 @@ export const commands = {
   /**
    *  Called when the search dialog opens. Pre-loads the ROOT index in the background
    *  (the common case; scoped volumes load lazily on their first query). Returns
-   *  immediately with `{ ready, entryCount }`; the dialog flips to ready on the
-   *  emitted `search-index-ready` event.
+   *  immediately with `{ ready, entryCount, loading }`; the dialog flips to ready on the
+   *  emitted `search-index-ready` event when `loading` says one is coming.
+   *
+   *  `loading: false` with `ready: false` means root has no index to load, so no event
+   *  will follow. Saying so is what lets a search still run on a machine that declined
+   *  indexing: the dialog stops waiting and asks the question, and the answer comes back
+   *  with its coverage gap named.
    */
   prepareSearchIndex: () => typedError<PrepareResult, string>(__TAURI_INVOKE('prepare_search_index')),
   /**
@@ -6820,6 +6825,13 @@ export type PhaseRecord = {
 export type PrepareResult = {
   ready: boolean
   entryCount: number
+  /**
+   *  Whether a background load is in flight, so a `search-index-ready` naming this
+   *  volume is coming. `false` alongside `ready: false` is the terminal answer
+   *  "there is no index to load here": the dialog must NOT wait on it, or a machine
+   *  that declined indexing never searches at all.
+   */
+  loading: boolean
 }
 
 /**
@@ -7534,6 +7546,15 @@ export type SearchResult = {
    *  "no files found". Empty when every scope path resolved.
    */
   unresolvedScopes?: string[]
+  /**
+   *  The ONE volume this search covered, as routing resolved it. Sent so a caller
+   *  acting on a coverage gap acts on the right drive: a scope typed into the box
+   *  can point at a volume the focused pane isn't on, and re-deriving that from the
+   *  path frontend-side would fork routing (an SMB id keys on the ADDRESS, cloud
+   *  drives route to `root`). Empty only on a result nothing routed (the test-only
+   *  pure-engine wrapper).
+   */
+  targetVolumeId?: string
 }
 
 export type SearchResultEntry = {

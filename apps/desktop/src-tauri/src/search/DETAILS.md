@@ -185,15 +185,27 @@ engine's own match total, adjusted by that post-filter.
 ### Honesty: `uncovered_scopes` and `unresolved_scopes`
 
 Two TYPED sibling fields on `SearchResult` (callers branch on emptiness, never string-match), for the two ways a scoped
-search returns nothing for a STRUCTURAL reason rather than a genuine "no matches":
+search returns nothing for a STRUCTURAL reason rather than a genuine "no matches". Both the dialog
+(`apps/desktop/src/lib/search/CoverageNote.svelte`) and MCP (`mcp/executor/search.rs::coverage_note`) render them, with distinct copy per
+field:
 
-- **`uncovered_scopes`** — a `from_scope` target whose volume has no persisted index (`VolumeLoad::NotIndexed`). **MCP
-  renders it** ("Cmdr hasn't indexed X yet", `mcp/executor/search.rs::coverage_note`); **the dialog does not render it
-  at all yet** — the fields sit in `ipc-types.ts` with zero frontend readers, so an unindexed drive reads as a plain "no
-  results". That's what M1 of `docs/specs/unindexed-search-plan.md` fixes. An unscoped search never fills this: nobody
-  named the boot volume, so there's no user intent to report against.
-- **`unresolved_scopes`** — the volume IS indexed but the specific path isn't in it (a typo, a deleted folder, or a
-  path outside the mount root). Rendered as "couldn't find that path" by MCP. Distinct copy, distinct field.
+- **`uncovered_scopes`** — a `from_scope` target whose volume has no persisted index (`VolumeLoad::NotIndexed`). An
+  unscoped search never fills this: nobody named the boot volume, so there's no user intent to report against. The
+  dialog also offers to index that drive, which is why the result names the volume it routed to.
+- **`unresolved_scopes`** — the volume IS indexed but the specific path isn't in it. **The two causes are
+  indistinguishable here**: a typo or deleted folder, and a real folder the user is standing in on a partially indexed
+  volume, both land in this bucket. So the copy says what the index knows ("Cmdr's index doesn't cover this folder
+  yet") and never that the folder doesn't exist. M5 of `docs/specs/unindexed-search-plan.md` splits them, once a walk
+  can tell "not walked yet" from "genuinely not found".
+
+`target_volume_id` rides alongside: the ONE volume routing picked. The dialog acts on it rather than re-deriving a
+volume from the scope path, which would fork routing (an SMB id keys on the ADDRESS; cloud drives route to `root`) and
+could offer to index the wrong drive when the user typed a scope on another one.
+
+A `VolumeLoad::Failed` volume (a DB that won't open, or a load cancelled by the dialog closing) also returns
+`uncovered_result`, so it reads as "not indexed" rather than getting its own signal. That's deliberate for now: for the
+user, search has no usable index for that drive either way, and re-indexing is the same fix. M5 owns terminal states and
+can split it.
 
 A scope that spans two volumes is NOT one of these: it's a hard `Err` from `resolve_target`, because there's no volume
 to return partial results from.

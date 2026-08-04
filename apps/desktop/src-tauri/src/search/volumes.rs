@@ -203,6 +203,24 @@ fn spawn_background_refresh(volume_id: &str) {
     });
 }
 
+/// Whether a volume has an index to load at all, without loading it: root's live
+/// read pool, or a persisted `index-{volume_id}.db` on disk. Mirrors the two branches
+/// [`load_volume_blocking`] takes before it reads anything.
+///
+/// The dialog asks this so it can tell "an arena is on its way, wait for the
+/// `search-index-ready` event" from "there is nothing to wait for". Without the
+/// distinction a machine that declined indexing waits forever and never searches
+/// (`docs/specs/unindexed-search-plan.md` M1).
+pub(crate) fn has_searchable_index(volume_id: &str) -> bool {
+    if get_loaded_raw(volume_id).is_some() {
+        return true;
+    }
+    if volume_id == ROOT_VOLUME_ID {
+        return index().read_pool(ROOT_VOLUME_ID).is_some();
+    }
+    data_dir().is_some_and(|dir| dir.join(format!("index-{volume_id}.db")).exists())
+}
+
 /// A non-root volume's mount root, needed to prefix its mount-relative index paths.
 ///
 /// Prefers the persisted `volume_path` meta; falls back to the LIVE volume registry

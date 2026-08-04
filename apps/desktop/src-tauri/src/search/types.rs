@@ -74,6 +74,14 @@ pub struct SearchResult {
     /// "no files found". Empty when every scope path resolved.
     #[serde(default)]
     pub unresolved_scopes: Vec<String>,
+    /// The ONE volume this search covered, as routing resolved it. Sent so a caller
+    /// acting on a coverage gap acts on the right drive: a scope typed into the box
+    /// can point at a volume the focused pane isn't on, and re-deriving that from the
+    /// path frontend-side would fork routing (an SMB id keys on the ADDRESS, cloud
+    /// drives route to `root`). Empty only on a result nothing routed (the test-only
+    /// pure-engine wrapper).
+    #[serde(default)]
+    pub target_volume_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
@@ -152,6 +160,7 @@ mod tests {
             total_count: 1,
             uncovered_scopes: Vec::new(),
             unresolved_scopes: Vec::new(),
+            target_volume_id: "root".to_string(),
         };
         let json = serde_json::to_string(&result).unwrap();
         assert!(json.contains("totalCount"));

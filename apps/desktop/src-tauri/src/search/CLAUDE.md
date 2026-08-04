@@ -23,8 +23,11 @@ owns it; unscoped means the boot volume. Flat API: `use crate::search::{SearchQu
 - **`execute.rs` routes; the engine stays per-index and pure.** Non-root indices are mount-relative: PREFIX the mount
   root onto read paths, STRIP it from scope paths (a mount-root scope means the WHOLE volume). Mount root = the
   `volume_path` meta OR the live registry, so ❌ don't assume the meta is set.
-- **Honesty is TYPED**: branch on `uncovered_scopes` (unindexed volume) / `unresolved_scopes` (path not found), ❌ never
-  a string match.
+- **Honesty is TYPED**: branch on `uncovered_scopes` (unindexed volume) / `unresolved_scopes` (path not in the index),
+  ❌ never a string match. `target_volume_id` names the volume routing picked, so a caller acts on the right drive.
+  `unresolved_scopes` can't tell a typo from a not-yet-walked folder: ❌ don't word it "doesn't exist".
+- **`prepare_search_index`'s `loading` says whether an event is COMING.** `loading: false, ready: false` is the terminal
+  "no index here"; without it a machine that declined indexing waits forever and never searches.
 - **An SMB id keys on the ADDRESS**, so one NAS reached over both Tailscale and LAN has two index DBs both claiming
   `/Volumes/naspi`. Routing resolves that scope to the LIVE-registered id, so only one is ever read; ❌ don't add a
   read-time dedupe back.

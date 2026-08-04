@@ -212,6 +212,7 @@ pub(crate) fn search(
         total_count,
         uncovered_scopes: Vec::new(),
         unresolved_scopes: Vec::new(),
+        target_volume_id: String::new(),
     })
 }
 
