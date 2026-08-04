@@ -135,12 +135,11 @@ Folding one file, warm (five runs, mean), with the first pass in parentheses:
 
 - `settings/definitions/advanced.ts`, 406 lines, 74 folds: **1–3 ms** (23–125 ms, catalog build included).
 - `ipc/bindings.ts`, 9,001 lines, no keys at all, so pure walk cost: **3–5 ms** (39–87 ms).
-- `file-explorer/pane/FilePane.svelte`, 1,972 lines, 5 folds: **1 ms** (60–167 ms, the high figure being the
-  lazy-parsed script blocks expanded once).
+- `file-explorer/pane/FilePane.svelte`, 1,972 lines, 5 folds: **1 ms** (60–167 ms, the high figure being the lazy-parsed
+  script blocks expanded once).
 
 The first-pass numbers are one-time per file and overlap work highlighting does anyway. `testFoldingTheRealRepoIsCheap`
-keeps all three in the loop with a 50 ms warm budget, well above the numbers and well below anything that would be
-felt.
+keeps all three in the loop with a 50 ms warm budget, well above the numbers and well below anything that would be felt.
 
 ## Versions, and where each was checked
 
