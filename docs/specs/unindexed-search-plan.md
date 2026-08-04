@@ -306,9 +306,14 @@ Run sequentially. Ordering that matters:
 `pnpm check -q --fast` while iterating, the scoped checks named per milestone at each milestone's end,
 `pnpm check --include-slow` before wrapping.
 
-**Copy rule for every milestone**: user-facing strings are drafted in the milestone and reviewed by David before merge
-(`AGENTS.md` principle 6). Every new key needs its `@key` translator description, and the translation pass follows
-`docs/guides/i18n-translation.md`. No milestone is done with untranslated keys shipped.
+**Copy rule for every milestone**: write the user-facing strings in the house voice and move on. David waived the
+review gate for this effort specifically on 2026-08-04 ("I don't want to review the strings and translations in this
+effort"), so ❌ don't stop to escalate copy. His standing rule that human-facing text is his (`AGENTS.md` principle 6)
+still applies everywhere else. Every new key still needs its `@key` translator description, and the translation pass
+still follows `docs/guides/i18n-translation.md`; no milestone is done with untranslated keys shipped.
+
+**File length**: `file-length` is warn-only and David does not want it acted on in this effort. Leave warnings standing;
+❌ don't raise an allowlist entry, and don't split a file just to silence one.
 
 **Definition of done for the whole effort**: on any volume kind with no index, a search that runs to completion returns
 the same result set as the same search on the same volume fully indexed, excepting order, Accepted difference 5
