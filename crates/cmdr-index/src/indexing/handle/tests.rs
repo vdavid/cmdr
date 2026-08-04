@@ -11,6 +11,7 @@ use cmdr_fs::volume::{InMemoryVolume, SmbConnectionState, Volume};
 use crate::indexing::events::{EventSink, IndexEventKind, RecordingSink};
 use crate::indexing::handle::{Index, IndexBuildError, StartOutcome};
 use crate::indexing::host::volumes::FakeVolumeProvider;
+use crate::indexing::read::coverage::{CoverageDimension, CoverageToken};
 
 /// Building twice is not two indexes. The statics behind the seams are
 /// process-wide, so a second `build()` reports [`IndexBuildError::AlreadyBuilt`]
@@ -131,6 +132,29 @@ async fn a_handle_scans_an_in_memory_volume_and_reports_to_its_own_sink() {
     let mut names: Vec<&str> = children.iter().map(|row| row.name.as_str()).collect();
     names.sort_unstable();
     assert_eq!(names, ["a.txt", "b.txt", "sub"], "the walk found the share's entries");
+
+    // And it knows there is nothing left to walk. This is the end-to-end proof for
+    // coverage: a real scan-start sequence stamped the exclusion policy (without it
+    // NOTHING reads as covered), a real walk marked its directories listed, and the
+    // descent rule reads both back. A frontier here would mean a search over this
+    // freshly indexed share would re-walk it.
+    let coverage = index
+        .coverage(volume_id, root, CoverageDimension::Listing)
+        .expect("the scanned share answers for its own coverage");
+    assert!(
+        coverage.frontier.is_empty() && coverage.unreadable.is_empty(),
+        "a completed walk leaves nothing to cover: {coverage:?}"
+    );
+    assert_eq!(
+        coverage.token,
+        index.coverage_token(volume_id),
+        "the token a coverage answer carries is the one the volume reports"
+    );
+    assert_ne!(
+        coverage.token,
+        CoverageToken::UNINDEXED,
+        "an indexed volume must not report the no-index token"
+    );
 
     index.forget_volume(volume_id).expect("tear the test index down");
 }

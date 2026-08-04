@@ -520,6 +520,39 @@ fn a_scoped_query_answers_for_its_subtree_only() {
     assert_ne!(cmdr, 0);
 }
 
+/// A parent chain deeper than the descent will follow is cut rather than walked
+/// forever. Only corruption can produce one (the tree is built from a filesystem),
+/// and a user-triggered query must not hang on it, so the node at the cap is
+/// reported as frontier: worst case somebody re-walks covered ground.
+#[test]
+fn a_pathologically_deep_chain_is_cut_at_the_depth_cap() {
+    let (conn, _dir) = open_temp_index();
+    // A chain deeper than the cap, listed the whole way, with one unlisted leaf at
+    // the bottom so every level has a reason to descend.
+    let depth = MAX_DESCENT_DEPTH + 8;
+    let mut parent = ROOT_ID;
+    let mut listed = vec![ROOT_ID];
+    let mut expected_cut = String::new();
+    for level in 1..=depth {
+        parent = insert_dir(&conn, parent, &format!("d{level}"));
+        listed.push(parent);
+        if level <= MAX_DESCENT_DEPTH {
+            expected_cut.push_str(&format!("/d{level}"));
+        }
+    }
+    // The unlisted leaf: without it the whole chain rolls up covered and the
+    // descent stops at the root, which would pass this test for the wrong reason.
+    insert_dir(&conn, parent, "unlisted");
+    list_and_aggregate(&conn, &listed, 1);
+
+    let map = coverage(&conn, "/");
+    assert_eq!(
+        map.frontier,
+        vec![expected_cut],
+        "the descent stops at the cap and hands that node to the walk"
+    );
+}
+
 // ── The freshness token ──────────────────────────────────────────────
 
 /// A walk that writes rows moves the token, so an answer computed before it can't

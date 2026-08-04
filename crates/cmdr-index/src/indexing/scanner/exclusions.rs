@@ -794,4 +794,72 @@ mod tests {
         ));
         assert!(!is_on_mounted_external_volume("/"));
     }
+
+    // ── The exclusion-policy stamp ───────────────────────────────────
+
+    /// A fresh temp DB carrying the index schema, for the stamp tests.
+    fn temp_index() -> (tempfile::TempDir, std::path::PathBuf) {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let db_path = dir.path().join("index.db");
+        IndexStore::open(&db_path).expect("create index schema");
+        (dir, db_path)
+    }
+
+    /// An index with no stamp was built under unknown rules, so nothing in it may
+    /// be trusted as covered. The alternative — assuming the current policy —
+    /// would quietly hide every subtree an older policy excluded.
+    #[test]
+    fn an_unstamped_index_predates_the_exclusion_policy() {
+        let (_dir, db_path) = temp_index();
+        let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+        assert!(index_predates_exclusion_policy(&conn));
+    }
+
+    /// The scan-start sequence stamps the index for real, through the writer. What
+    /// this pins is the wiring: a message that never reaches the DB would leave
+    /// every search walking its whole scope forever, with nothing failing.
+    #[test]
+    fn a_truncating_walk_stamps_the_policy_through_the_writer() {
+        let (_dir, db_path) = temp_index();
+        {
+            let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+            assert!(index_predates_exclusion_policy(&conn), "test setup: an unstamped index");
+        }
+
+        // What `lifecycle/manager/start.rs` and `lifecycle/network_scan.rs` send
+        // before a fresh walk.
+        let writer = crate::indexing::writer::IndexWriter::spawn(&db_path, crate::NoopEventSink::shared())
+            .expect("spawn writer");
+        writer.send(WriteMessage::TruncateData).expect("truncate");
+        writer.send(exclusion_policy_stamp_message()).expect("stamp");
+        writer.flush_blocking().expect("flush");
+        writer.shutdown();
+
+        let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+        assert!(
+            !index_predates_exclusion_policy(&conn),
+            "a walk under the current policy leaves the index trustworthy"
+        );
+    }
+
+    /// Editing any of the lists re-arms every existing index, because the stamp
+    /// records the policy's CONTENTS rather than a bare "done" flag. That's what
+    /// makes REMOVING a name safe: the subtrees it used to hide can't stay
+    /// invisible behind a stale claim of coverage.
+    #[test]
+    fn a_stamp_from_a_different_policy_re_arms_the_walk() {
+        let (_dir, db_path) = temp_index();
+        let conn = IndexStore::open_write_connection(&db_path).expect("write conn");
+        IndexStore::update_meta(&conn, crate::indexing::store::EXCLUSION_POLICY_KEY, "0123456789abcdef")
+            .expect("stamp an older policy");
+        assert!(index_predates_exclusion_policy(&conn));
+    }
+
+    /// The fingerprint is a pure function of compile-time constants, so it can't
+    /// drift between the read that decides and the write that stamps.
+    #[test]
+    fn the_policy_fingerprint_is_stable() {
+        assert_eq!(exclusion_policy_fingerprint(), exclusion_policy_fingerprint());
+        assert_eq!(exclusion_policy_fingerprint().len(), 16, "a 64-bit FNV-1a in hex");
+    }
 }
