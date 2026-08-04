@@ -99,14 +99,14 @@ class SveltePsiSpikeTest : BasePlatformTestCase() {
         )
         println("[spike] real file, ancestors: ${ancestry(onKey)}")
 
-        // The literal has to be reachable as a JS literal for M4's PSI approach to work at all.
+        // The literal has to be reachable as a JS literal, or the key folding's PSI approach can't work at all.
         assertNotNull("no PSI at the key literal offset", onKey)
         assertTrue(
             "the key literal should live in a JavaScript-family language, got ${onKey?.language?.id}",
             onKey!!.language.isKindOf(JAVASCRIPT_LANGUAGE_ID),
         )
 
-        // What M4 actually needs: the key is the first argument of a real `JSCallExpression`, so matching is a PSI
+        // What the key folding rests on: the key is the first argument of a real `JSCallExpression`, so matching is a PSI
         // shape check, not a regex. `getParentOfType` has to cross the Svelte lazy-parse boundary to find it.
         val literal = PsiTreeUtil.getParentOfType(onKey, JSLiteralExpression::class.java)
         val call = PsiTreeUtil.getParentOfType(onKey, JSCallExpression::class.java)
@@ -117,8 +117,8 @@ class SveltePsiSpikeTest : BasePlatformTestCase() {
     }
 
     /**
-     * The third key-site shape M4 has to handle, and the one that is NOT JavaScript: `<Trans key="…">`. Recorded here
-     * because "it's a Svelte file, so it's JS PSI" is exactly the wrong generalization to carry into M4.
+     * The third key-site shape, and the one that is NOT JavaScript: `<Trans key="…">`. Recorded here because
+     * "it's a Svelte file, so it's JS PSI" is exactly the wrong generalization to carry into a folding builder.
      */
     fun testTransAttributeIsXmlPsiRatherThanJavaScript() {
         if (skipWithoutSveltePlugin()) return
@@ -149,7 +149,7 @@ class SveltePsiSpikeTest : BasePlatformTestCase() {
         assertEquals("ui.loadingIcon.cancelHint", attribute.value)
         assertEquals("Trans", attribute.parent.name)
         assertFalse(
-            "the attribute value is XML, not JavaScript; M4 needs a separate walk for it",
+            "the attribute value is XML, not JavaScript; matching it takes its own branch of the walk",
             onKey!!.language.isKindOf(JAVASCRIPT_LANGUAGE_ID),
         )
     }
