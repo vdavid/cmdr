@@ -55,9 +55,9 @@ suite:
   setting gates, idle poll, enrich-driven refresh).
   - **The 3 s sync poll skips a folder holding no cloud files.** `unknown` is what a plain local file reports and it
     cannot become a live cloud status without the file moving, which re-lists and re-fetches anyway. Without the skip
-    every pane re-asked the provider about every visible row every three seconds forever: measured at two batches of
-    267 and 377 paths every 3 s on an idle prod session, each path costing two `stat`s plus a synchronous XPC round
-    trip into `fileproviderd`. One cloud file keeps the whole folder polled, since its neighbours ride the same batch.
+    every pane re-asked the provider about every visible row every three seconds forever: measured at two batches of 267
+    and 377 paths every 3 s on an idle prod session, each path costing two `stat`s plus a synchronous XPC round trip
+    into `fileproviderd`. One cloud file keeps the whole folder polled, since its neighbours ride the same batch.
 - `selection-info-feed.svelte.ts`: the entry under the cursor and the listing stats, with their debounce/throttle and
   the search-results snapshot mirror. `parent-entry.ts` builds the synthetic `..` row it and `entries-snapshot.ts`
   share.

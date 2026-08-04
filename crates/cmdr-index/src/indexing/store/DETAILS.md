@@ -232,9 +232,9 @@ failing test to show for it**. `sqlite_util::apply_statement_cache` sets 64 on w
 `apply_page_cache`, so the two role-splits are set in one place. ⚠️ Raise it when the `prepare_cached` count approaches
 it; a cache smaller than the working set is worse than none, since it pays the lookup and still re-compiles.
 
-Read connections keep the small default deliberately: they are thread-local and their count tracks tokio's blocking
-pool rather than anything semantic (132 were open in a profiled session), so a large per-connection statement cache
-there would multiply by a number nothing controls. Same reasoning as `READ_PAGE_CACHE_KIB`.
+Read connections keep the small default deliberately: they are thread-local and their count tracks tokio's blocking pool
+rather than anything semantic (132 were open in a profiled session), so a large per-connection statement cache there
+would multiply by a number nothing controls. Same reasoning as `READ_PAGE_CACHE_KIB`.
 
 **Measured**, `tests/insert_throughput_probe.rs` (debug build, 2026-08-03): 34.1 → 30.2 µs per row, **12%**. The probe's
 second variant is the more useful number and motivated the writer's implicit batching: the same rows inside ONE

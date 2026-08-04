@@ -21,9 +21,9 @@ editing app code; use `cmdr_fs::…` from another crate.
 - `firmlinks.rs`: `normalize_path`, the macOS firmlink canonicalization (`/System/Volumes/Data/x` ⇒ `/x`). Pure path
   work with no host or index behind it, and the index and the app's watchers have to agree on it.
 - `sqlite_util.rs`: the ONE process-wide SQLite page-cache slab, the connection factories that install it, the
-  role-split per-connection budgets (`apply_page_cache`, `apply_statement_cache`), the
-  per-connection budgets, the per-thread read-connection cache, and freelist reclamation. Shared by all five stores
-  (three index DBs, the agent's, the operation log's), which is why it can't live in either end.
+  role-split per-connection budgets (`apply_page_cache`, `apply_statement_cache`), the per-thread read-connection cache,
+  and freelist reclamation. Shared by all five stores (three index DBs, the agent's,
+  the operation log's), which is why it can't live in either end.
 - `staging.rs`: `StagingTemp`, the ONLY way to name a scratch file, plus the markers every one carries and the in-flight
   registry that says whether a live operation still owns one. Whether the user SEES one is the app's
   (`file_system::staging`).
