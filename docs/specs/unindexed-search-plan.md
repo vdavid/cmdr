@@ -1,6 +1,6 @@
 # Search that covers the folder you picked, indexed or not
 
-**Status**: SPECCED, not started. **Owner**: David. **Date**: 2026-08-03.
+**Status**: IN EXECUTION — M0 and M1 have landed, M2 is next. **Owner**: David. **Date**: 2026-08-03.
 
 Indexing stays optional. A search that runs to completion returns the same files with or without an index, only slower,
 on every volume kind: local, SMB, MTP, and whatever comes next. The walk that fills the gap writes what it finds into
