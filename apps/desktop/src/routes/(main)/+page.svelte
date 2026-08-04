@@ -27,7 +27,7 @@
     import {
         getFocusedPanePath,
         getFocusedPaneSearchScope,
-        getFocusedPaneImageSearchVolume,
+        getFocusedPaneSearchTargetVolume,
     } from '$lib/file-explorer/pane/focused-pane-reads'
     import type { FileEntry } from '$lib/file-explorer/types'
     import IndexingStatusIndicator from '$lib/indexing/IndexingStatusIndicator.svelte'
@@ -661,7 +661,7 @@
                 onNavigate={handleSearchNavigate}
                 onClose={handleSearchDialogClose}
                 scopePresets={getFocusedPaneSearchScope()}
-                imageSearchVolume={getFocusedPaneImageSearchVolume()}
+                searchVolume={getFocusedPaneSearchTargetVolume()}
                 onShowAllInMainWindow={handleOpenSearchInPane}
             />
         {/if}

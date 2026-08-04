@@ -599,6 +599,10 @@
             onFocusBar={focusInput}
         />
 
+        {#if config.resultsNotice}
+            {@render config.resultsNotice()}
+        {/if}
+
         <!-- Zone 3: the results. `.results-container` inside is the only `flex: 1 1 auto`
              child of the body, so it absorbs whatever room the strips leave. -->
         <QueryResults

@@ -253,6 +253,15 @@ export interface QueryDialogConfig<E = unknown> {
   noticeBanner?: string
 
   /**
+   * Optional consumer-owned banner rendered directly ABOVE the results table, where a
+   * caveat about the answer belongs. Search uses it for the coverage note (which
+   * scopes the run couldn't cover, and what to do about it); other consumers pass
+   * `undefined` and the row doesn't render. The mirror of `resultsExtra`: the snippet
+   * owns its own state, and QueryDialog only gives it a slot.
+   */
+  resultsNotice?: import('svelte').Snippet
+
+  /**
    * Optional consumer-owned section rendered directly BELOW the main results table
    * (and above the footer). Search uses it for the "text in images" OCR results grid
    * (a distinct result type with its own thumbnails + coverage-honesty states); other

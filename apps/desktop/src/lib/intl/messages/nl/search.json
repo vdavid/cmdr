@@ -95,6 +95,42 @@
   "@search.imageResults.similarEmpty": {
     "sourceHash": "d3ef9f7"
   },
+  "search.coverage.uncovered.local": "Cmdr heeft {drive} nog niet geïndexeerd, dus deze zoekopdracht sloeg dit over:",
+  "@search.coverage.uncovered.local": {
+    "sourceHash": "3b75a63"
+  },
+  "search.coverage.uncovered.network": "Cmdr indexeert netwerkschijven alleen als je erom vraagt, dus deze zoekopdracht sloeg dit over:",
+  "@search.coverage.uncovered.network": {
+    "sourceHash": "5a2794a"
+  },
+  "search.coverage.unresolved": "{count, plural, one {De index van Cmdr bevat deze map nog niet, dus de zoekopdracht sloeg hem over:} other {De index van Cmdr bevat deze mappen nog niet, dus de zoekopdracht sloeg ze over:}}",
+  "@search.coverage.unresolved": {
+    "sourceHash": "8d9517e"
+  },
+  "search.coverage.unnamedDrive": "deze schijf",
+  "@search.coverage.unnamedDrive": {
+    "sourceHash": "5092f21"
+  },
+  "search.coverage.indexDrive": "Deze schijf indexeren",
+  "@search.coverage.indexDrive": {
+    "sourceHash": "dce1f3a"
+  },
+  "search.coverage.dontAskAgain": "Niet meer vragen",
+  "@search.coverage.dontAskAgain": {
+    "sourceHash": "9c9f7b6"
+  },
+  "search.coverage.toast.started": "{drive} wordt nu geïndexeerd. Zodra dat klaar is, is zoeken hier direct.",
+  "@search.coverage.toast.started": {
+    "sourceHash": "fb6978e"
+  },
+  "search.coverage.toast.indexingOff": "Het indexeren van schijven staat uit in Instellingen, dus er wordt niets geïndexeerd. Zet het aan bij Indexeren > Schijf indexeren.",
+  "@search.coverage.toast.indexingOff": {
+    "sourceHash": "abfe24b"
+  },
+  "search.coverage.toast.notStarted": "Cmdr kan {drive} nu niet indexeren. Je kunt het opnieuw proberen via het schijfmenu.",
+  "@search.coverage.toast.notStarted": {
+    "sourceHash": "a08fe4a"
+  },
   "search.snapshot.defaultLabel": "Zoeken",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

@@ -10,7 +10,10 @@
      *     filter chips extras, primary "Show all in main window" + secondary "Go to file"
      *     actions, AI translation IPC + filter writes, snapshot promotion).
      *   - Wires the whole-drive index lifecycle (`prepareSearchIndex` on mount,
-     *     `releaseSearchIndex` on destroy, plus the `search-index-ready` listener).
+     *     `releaseSearchIndex` on destroy, plus the `search-index-ready` listener) and
+     *     the PER-TARGET readiness gate built on it.
+     *   - Owns the coverage note: what the last run couldn't cover, and the per-drive
+     *     indexing offer that answers it.
      *   - Owns the "Open in pane" snapshot promotion path: minting an id, populating the
      *     snapshot store, pinning the last-attempt ref, persisting to recent searches,
      *     handing the id to the host.
@@ -37,6 +40,7 @@
         onSearchIndexReady,
         showFileContextMenu,
         trackEvent,
+        enableDriveIndex,
         getRecentSearches as fetchRecentSearches,
         removeRecentSearch as removeRecentSearchIpc,
         addRecentSearch as addRecentSearchIpc,
@@ -46,6 +50,9 @@
         type UnlistenFn,
     } from '$lib/tauri-commands'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
+    import { getVolumes } from '$lib/stores/volume-store.svelte'
+    import { isDriveSilenced, silenceDrive } from '$lib/indexing/drive-index-prefs'
+    import { addToast } from '$lib/ui/toast'
     import { resolveDefaultScope, defaultScopeLabel } from './searchable-folder'
     import type { ScopePresets } from '$lib/query-ui/query-dialog-config'
     import { tString } from '$lib/intl/messages.svelte'
@@ -76,16 +83,21 @@
         getSizeFilter,
         getDateFilter,
         recordAiTranslation,
-        getIsIndexReady,
-        setIsIndexReady,
-        getIndexEntryCount,
-        setIndexEntryCount,
+        isVolumeIndexReady,
+        markVolumeIndexReady,
+        getVolumeEntryCount,
+        getPendingIndexVolumeId,
+        setPendingIndexVolumeId,
         getIsIndexAvailable,
         setIsIndexAvailable,
+        getCoverageNote,
+        setCoverageNote,
     } from './search-state.svelte'
     import QueryDialog from '$lib/query-ui/QueryDialog.svelte'
     import ImageSearchResults from './ImageSearchResults.svelte'
-    import type { ImageSearchVolume } from './active-media-volume'
+    import CoverageNote from './CoverageNote.svelte'
+    import { coverageNoteFrom, isTargetIndexReady } from './coverage-note'
+    import { describeVolume, type SearchTargetVolume } from './search-target-volume'
     import { getBadgeStatus } from '$lib/feature-status'
     import type {
         QueryDialogConfig,
@@ -138,13 +150,14 @@
          */
         onShowAllInMainWindow?: (snapshotId: string) => void
         /**
-         * The volume the image-OCR grid searches: the focused pane's current volume, so
-         * browsing a NAS surfaces its photos and browsing local surfaces local. Carries
-         * the media-index volume id, its mount root (to reconstruct openable OS paths from
-         * index-relative hits), and whether it's a network volume (for the coverage voice).
-         * Defaults to the local root, matching the filename search's local-index scope.
+         * The ONE volume this session covers: the focused pane's current volume. It names
+         * the arena the readiness gate waits for, the drive the coverage note speaks
+         * about, and the media index the image-OCR grid queries (so browsing a NAS
+         * surfaces its photos and browsing local surfaces local), plus the mount root that
+         * turns index-relative hits back into openable OS paths. Defaults to the local
+         * root, the same fallback the scope makes.
          */
-        imageSearchVolume?: ImageSearchVolume
+        searchVolume?: SearchTargetVolume
     }
 
     const {
@@ -152,7 +165,7 @@
         onClose,
         scopePresets,
         onShowAllInMainWindow,
-        imageSearchVolume = { volumeId: ROOT_VOLUME_ID, mountRoot: '/', isNetwork: false },
+        searchVolume = { volumeId: ROOT_VOLUME_ID, mountRoot: '/', isNetwork: false },
     }: Props = $props()
 
     // Index-readiness listener cleanup. Lives on the wrapper because the listener is
@@ -175,9 +188,33 @@
      */
     const defaultScope = $derived(resolveDefaultScope(scopePresets))
 
+    /**
+     * The volume this run will land on, or `null` when only the backend can say.
+     *
+     * An unset scope resolves to the focused pane's folder, which is on the pane's own
+     * volume — that's the default and the common case. A scope the user typed or clicked
+     * in can point anywhere, and routing a path to a volume is the backend's job (an SMB
+     * id keys on the address; cloud drives route to `root`), so the honest answer here is
+     * "unknown", which `isTargetIndexReady` reads as "run it".
+     */
+    const targetVolumeId = $derived(getScope().trim() === '' ? searchVolume.volumeId : null)
+
     // Reactive readers off the Search state instance. Used by the derived config below.
-    const isIndexReady = $derived(getIsIndexReady())
-    const indexEntryCount = $derived(getIndexEntryCount())
+    /**
+     * Whether a search may run now. PER TARGET: waiting is only right while a pre-load
+     * for THIS volume is in flight. Gating on root instead left a machine with no root
+     * index unable to search at all, since no `search-index-ready` was ever coming
+     * (`docs/specs/unindexed-search-plan.md` M1).
+     */
+    const isIndexReady = $derived(
+        isTargetIndexReady({
+            targetVolumeId,
+            isVolumeReady: isVolumeIndexReady,
+            pendingVolumeId: getPendingIndexVolumeId(),
+        }),
+    )
+    /** The target's own indexed entry count: 0 (so the empty state stays quiet) until its arena lands. */
+    const indexEntryCount = $derived(targetVolumeId === null ? 0 : getVolumeEntryCount(targetVolumeId))
     const isIndexAvailable = $derived(getIsIndexAvailable())
     // Search reads the LOCAL index, so its "building index" state keys on `root`
     // only — a network (SMB/MTP) scan must not flip the label while root's
@@ -187,6 +224,64 @@
     const aiEnabled = $derived(aiProvider !== 'off' && isIndexAvailable)
     const inputsDisabled = $derived(!isIndexAvailable)
     const lastAiPattern = $derived(getLastAiPattern())
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Coverage honesty: what the last run couldn't cover, and the offer that
+    // answers it. `runSearch` writes the note; everything below reads it.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    const coverageNote = $derived(getCoverageNote())
+    /**
+     * How to name the drive a gap belongs to. Looked up by the volume the BACKEND
+     * routed to, not the pane's: a typed scope can point at another drive, and offering
+     * to index the wrong one would be worse than saying nothing.
+     */
+    const coverageDrive = $derived(describeVolume(getVolumes(), coverageNote?.volumeId ?? ''))
+    /**
+     * Whether to offer indexing. Only for an UNCOVERED gap (an unresolved path sits on a
+     * drive that's already indexed, so there's nothing to turn on), only for a drive we
+     * can name in the live volume list, and never for one the user silenced — the
+     * per-drive silence is exactly the "stop offering me this" they already gave, and
+     * without honoring it the dialog nags on every search of that drive forever. The
+     * NOTE still renders: silencing the offer doesn't make the gap untrue.
+     */
+    const coverageCtaVolumeId = $derived(
+        coverageNote &&
+            coverageNote.uncoveredScopes.length > 0 &&
+            coverageNote.volumeId !== '' &&
+            !isDriveSilenced(coverageNote.volumeId)
+            ? coverageNote.volumeId
+            : null,
+    )
+
+    /** Turn on indexing for the drive the gap belongs to, and say what happened. */
+    async function indexUncoveredDrive(volumeId: string): Promise<void> {
+        const drive = coverageDrive.name || tString('search.coverage.unnamedDrive')
+        try {
+            const res = await enableDriveIndex(volumeId)
+            if (res.status === 'error') {
+                addToast(tString('search.coverage.toast.notStarted', { drive }), { level: 'warn' })
+                return
+            }
+            // Typed outcomes, never a message match: the master switch outranks every
+            // per-drive gate, so "off globally" needs its own answer or the user clicks a
+            // button that quietly does nothing.
+            if (res.data.status === 'started') {
+                addToast(tString('search.coverage.toast.started', { drive }), { level: 'info' })
+            } else if (res.data.status === 'indexing_disabled') {
+                addToast(tString('search.coverage.toast.indexingOff'), { level: 'info' })
+            } else {
+                addToast(tString('search.coverage.toast.notStarted', { drive }), { level: 'warn' })
+            }
+        } catch {
+            addToast(tString('search.coverage.toast.notStarted', { drive }), { level: 'warn' })
+        }
+    }
+
+    /** "Don't ask again" for this drive: the same persisted silence the first-connect prompt honors. */
+    function silenceUncoveredDrive(): void {
+        if (coverageNote?.volumeId) silenceDrive(coverageNote.volumeId)
+    }
 
     /**
      * Adapter from Search's `HistoryEntry` shape into the generic `RecentItemView` the
@@ -305,6 +400,10 @@
      * writes.
      */
     async function runSearch(): Promise<{ entries: SearchResultEntry[]; totalCount: number }> {
+        // The note belongs to the run that produced it. Dropping it up front (rather than
+        // only on the way out) means a run that throws can't leave the previous run's
+        // caveat sitting under a fresh answer.
+        setCoverageNote(null)
         const query = buildSearchQuery()
         // After an AI translation, the bar still shows the user's natural-language
         // prompt. The actual search must run against the AI's produced pattern, not
@@ -328,6 +427,9 @@
             query.includePaths = [defaultScope.path]
         }
         const result = await searchFiles(query)
+        // Coverage honesty: an empty answer with a structural reason says so, instead of
+        // reading as "nothing matched" (`search/DETAILS.md` § Honesty).
+        setCoverageNote(coverageNoteFrom(result))
         // PII-free analytics: a search ran. Only the mode enum crosses; never the query/pattern.
         void trackEvent('search_used', { mode: getMode() })
         return { entries: result.entries, totalCount: result.totalCount }
@@ -487,14 +589,17 @@
     // ─────────────────────────────────────────────────────────────────────────
 
     async function setupSearchLifecycle(): Promise<void> {
-        // Listen for index ready event.
-        unlistenReady = await onSearchIndexReady((entryCount: number) => {
-            setIsIndexReady(true)
-            setIndexEntryCount(entryCount)
-            // Auto-run pending search if user already typed something (filename/regex
-            // only; AI mode always waits for explicit Enter / ⌘Enter).
+        // Listen for a volume's arena landing. The event NAMES its volume, so readiness
+        // is recorded per volume and only the search that targets that one un-gates.
+        unlistenReady = await onSearchIndexReady((volumeId: string, entryCount: number) => {
+            markVolumeIndexReady(volumeId, entryCount)
+            if (getPendingIndexVolumeId() === volumeId) setPendingIndexVolumeId(null)
+            // Auto-run the pending search if the user already typed something AND this is
+            // the volume they're searching (filename/regex only; AI mode always waits for
+            // an explicit Enter / ⌘Enter).
             const pendingMode = getMode()
             if (
+                volumeId === targetVolumeId &&
                 pendingMode !== 'ai' &&
                 (getQuery().trim() || getSizeFilter() !== 'any' || getDateFilter() !== 'any')
             ) {
@@ -505,13 +610,19 @@
         })
 
         try {
+            // Root is the one volume that gets pre-loaded when the dialog opens. `loading`
+            // is the backend's promise that an event is coming; without it, a machine with
+            // no root index would wait for one that never arrives and never search at all.
             const result = await prepareSearchIndex()
             if (result.ready) {
-                setIsIndexReady(true)
-                setIndexEntryCount(result.entryCount)
+                markVolumeIndexReady(ROOT_VOLUME_ID, result.entryCount)
+                setPendingIndexVolumeId(null)
+            } else {
+                setPendingIndexVolumeId(result.loading ? ROOT_VOLUME_ID : null)
             }
         } catch {
             // Index not available: indexing disabled, not started, or backend unavailable.
+            setPendingIndexVolumeId(null)
             setIsIndexAvailable(false)
         }
 
@@ -623,6 +734,10 @@
             indexEntryCount,
         },
 
+        // Why this answer is short, rendered right above the results it qualifies.
+        // Search-only: Selection matches a pane listing, so it has no coverage question.
+        resultsNotice: coverageNotice,
+
         // The "text in images" OCR grid, rendered below the filename results. Search-only
         // (Selection passes no `resultsExtra`); the snippet owns its own data + lifecycle.
         resultsExtra: imageResults,
@@ -675,12 +790,26 @@
     }
 </script>
 
+{#snippet coverageNotice()}
+    <CoverageNote
+        note={coverageNote}
+        driveName={coverageDrive.name}
+        isNetwork={coverageDrive.isNetwork}
+        onIndexDrive={coverageCtaVolumeId === null
+            ? null
+            : () => {
+                  void indexUncoveredDrive(coverageCtaVolumeId)
+              }}
+        onSilenceDrive={silenceUncoveredDrive}
+    />
+{/snippet}
+
 {#snippet imageResults()}
     <ImageSearchResults
         query={getQuery()}
-        volumeId={imageSearchVolume.volumeId}
-        mountRoot={imageSearchVolume.mountRoot}
-        isNetwork={imageSearchVolume.isNetwork}
+        volumeId={searchVolume.volumeId}
+        mountRoot={searchVolume.mountRoot}
+        isNetwork={searchVolume.isNetwork}
         active={true}
         onOpen={openImage}
     />

@@ -95,6 +95,42 @@
   "@search.imageResults.similarEmpty": {
     "sourceHash": "d3ef9f7"
   },
+  "search.coverage.uncovered.local": "Cmdr n''a pas encore indexé {drive}, cette recherche a donc ignoré :",
+  "@search.coverage.uncovered.local": {
+    "sourceHash": "3b75a63"
+  },
+  "search.coverage.uncovered.network": "Cmdr n''indexe les disques réseau que si vous le demandez, cette recherche a donc ignoré :",
+  "@search.coverage.uncovered.network": {
+    "sourceHash": "5a2794a"
+  },
+  "search.coverage.unresolved": "{count, plural, one {L''index de Cmdr ne couvre pas encore ce dossier, la recherche l''a donc ignoré :} many {L''index de Cmdr ne couvre pas encore ces dossiers, la recherche les a donc ignorés :} other {L''index de Cmdr ne couvre pas encore ces dossiers, la recherche les a donc ignorés :}}",
+  "@search.coverage.unresolved": {
+    "sourceHash": "8d9517e"
+  },
+  "search.coverage.unnamedDrive": "ce disque",
+  "@search.coverage.unnamedDrive": {
+    "sourceHash": "5092f21"
+  },
+  "search.coverage.indexDrive": "Indexer ce disque",
+  "@search.coverage.indexDrive": {
+    "sourceHash": "dce1f3a"
+  },
+  "search.coverage.dontAskAgain": "Ne plus demander",
+  "@search.coverage.dontAskAgain": {
+    "sourceHash": "9c9f7b6"
+  },
+  "search.coverage.toast.started": "Indexation de {drive} en cours. Les recherches ici seront instantanées une fois qu''elle sera terminée.",
+  "@search.coverage.toast.started": {
+    "sourceHash": "fb6978e"
+  },
+  "search.coverage.toast.indexingOff": "L''indexation est désactivée dans les Réglages, donc rien n''est indexé. Activez-la dans Indexation > Indexation du disque.",
+  "@search.coverage.toast.indexingOff": {
+    "sourceHash": "abfe24b"
+  },
+  "search.coverage.toast.notStarted": "Cmdr ne peut pas indexer {drive} pour le moment. Vous pouvez réessayer depuis le menu du disque.",
+  "@search.coverage.toast.notStarted": {
+    "sourceHash": "a08fe4a"
+  },
   "search.snapshot.defaultLabel": "Rechercher",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

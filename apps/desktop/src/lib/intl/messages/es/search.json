@@ -95,6 +95,42 @@
   "@search.imageResults.similarEmpty": {
     "sourceHash": "d3ef9f7"
   },
+  "search.coverage.uncovered.local": "Cmdr aún no ha indexado {drive}, así que esta búsqueda omitió:",
+  "@search.coverage.uncovered.local": {
+    "sourceHash": "3b75a63"
+  },
+  "search.coverage.uncovered.network": "Cmdr no indexa las unidades de red a menos que se lo pidas, así que esta búsqueda omitió:",
+  "@search.coverage.uncovered.network": {
+    "sourceHash": "5a2794a"
+  },
+  "search.coverage.unresolved": "{count, plural, one {El índice de Cmdr aún no cubre esta carpeta, así que la búsqueda la omitió:} many {El índice de Cmdr aún no cubre estas carpetas, así que la búsqueda las omitió:} other {El índice de Cmdr aún no cubre estas carpetas, así que la búsqueda las omitió:}}",
+  "@search.coverage.unresolved": {
+    "sourceHash": "8d9517e"
+  },
+  "search.coverage.unnamedDrive": "esta unidad",
+  "@search.coverage.unnamedDrive": {
+    "sourceHash": "5092f21"
+  },
+  "search.coverage.indexDrive": "Indexar esta unidad",
+  "@search.coverage.indexDrive": {
+    "sourceHash": "dce1f3a"
+  },
+  "search.coverage.dontAskAgain": "No volver a preguntar",
+  "@search.coverage.dontAskAgain": {
+    "sourceHash": "9c9f7b6"
+  },
+  "search.coverage.toast.started": "Indexando {drive}. Cuando termine, las búsquedas aquí serán instantáneas.",
+  "@search.coverage.toast.started": {
+    "sourceHash": "fb6978e"
+  },
+  "search.coverage.toast.indexingOff": "La indexación de unidades está desactivada en Ajustes, así que no se indexa nada. Actívala en Indexación > Indexación de unidades.",
+  "@search.coverage.toast.indexingOff": {
+    "sourceHash": "abfe24b"
+  },
+  "search.coverage.toast.notStarted": "Cmdr no puede indexar {drive} ahora mismo. Puedes intentarlo de nuevo desde el menú de la unidad.",
+  "@search.coverage.toast.notStarted": {
+    "sourceHash": "a08fe4a"
+  },
   "search.snapshot.defaultLabel": "Buscar",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

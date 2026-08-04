@@ -62,6 +62,47 @@ describe('search toast and tooltip parity (en)', () => {
   })
 })
 
+describe('coverage note parity (en)', () => {
+  it('says a local drive has no index, and names the drive', () => {
+    expect(tString('search.coverage.uncovered.local', { drive: 'Macintosh HD' })).toBe(
+      "Cmdr hasn't indexed Macintosh HD yet, so this search skipped:",
+    )
+  })
+
+  it('gives a network drive its own voice, with no nudge to index it', () => {
+    expect(tString('search.coverage.uncovered.network', { drive: 'Naspolya' })).toBe(
+      "Cmdr doesn't index network drives unless you ask, so this search skipped:",
+    )
+  })
+
+  it('says what the index knows about an unresolved path, never that the folder is gone', () => {
+    expect(tString('search.coverage.unresolved', { count: 1 })).toBe(
+      "Cmdr's index doesn't cover this folder yet, so this search skipped it:",
+    )
+    expect(tString('search.coverage.unresolved', { count: 2 })).toBe(
+      "Cmdr's index doesn't cover these folders yet, so this search skipped them:",
+    )
+  })
+
+  it('resolves the offer, its dismissal, and the unnamed-drive stand-in', () => {
+    expect(tString('search.coverage.indexDrive')).toBe('Index this drive')
+    expect(tString('search.coverage.dontAskAgain')).toBe("Don't ask again")
+    expect(tString('search.coverage.unnamedDrive')).toBe('this drive')
+  })
+
+  it('resolves the three outcomes of pressing the offer', () => {
+    expect(tString('search.coverage.toast.started', { drive: 'Backups' })).toBe(
+      'Indexing Backups now. Searches here will be instant once it finishes.',
+    )
+    expect(tString('search.coverage.toast.indexingOff')).toBe(
+      'Drive indexing is off in Settings, so nothing indexes. Turn it on under Indexing > Drive indexing.',
+    )
+    expect(tString('search.coverage.toast.notStarted', { drive: 'Backups' })).toBe(
+      "Cmdr can't index Backups right now. You can try again from the drive menu.",
+    )
+  })
+})
+
 describe('snapshot label parity (en)', () => {
   it('falls back to the default label when there is no query', () => {
     expect(buildSnapshotLabel({ mode: 'ai', query: '', aiPrompt: null, aiLabel: null })).toBe('Search')

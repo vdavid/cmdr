@@ -158,7 +158,7 @@ interface MountDialogOptions {
   onClose?: () => void
   onShowAllInMainWindow?: (snapshotId: string) => void
   onNavigate?: (path: string) => void
-  imageSearchVolume?: { volumeId: string; mountRoot: string; isNetwork: boolean }
+  searchVolume?: { volumeId: string; mountRoot: string; isNetwork: boolean }
   scopePresets?: { currentFolder: string | null; currentFolderUnavailableReason: string; volumeRoot: string }
 }
 
@@ -199,7 +199,7 @@ async function mountDialog(opts: MountDialogOptions = {}): Promise<{ overlay: El
         volumeRoot: '/',
       },
       onShowAllInMainWindow: opts.onShowAllInMainWindow,
-      ...(opts.imageSearchVolume ? { imageSearchVolume: opts.imageSearchVolume } : {}),
+      ...(opts.searchVolume ? { searchVolume: opts.searchVolume } : {}),
     },
   })
   const entry = { component, target }
@@ -1246,7 +1246,7 @@ describe('SearchDialog image-OCR grid targets the active volume', () => {
     // to an openable OS path under the volume's mount root.
     let navigatedTo: string | null = null
     const { cleanup } = await mountDialog({
-      imageSearchVolume: { volumeId: 'smb-naspi', mountRoot: '/Volumes/naspi', isNetwork: true },
+      searchVolume: { volumeId: 'smb-naspi', mountRoot: '/Volumes/naspi', isNetwork: true },
       onNavigate: (path) => {
         navigatedTo = path
       },
@@ -1275,7 +1275,7 @@ describe('SearchDialog image-OCR grid targets the active volume', () => {
     cleanup()
   })
 
-  it('defaults to the local root volume when no imageSearchVolume prop is passed', async () => {
+  it('defaults to the local root volume when no searchVolume prop is passed', async () => {
     // Back-compat: the filename search stays local-index-scoped, and an unspecified
     // image volume must keep the previous local-root behavior (mount root "/").
     const { cleanup } = await mountDialog()

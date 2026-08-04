@@ -16,7 +16,7 @@
 
 import { resolveSearchScope, volumeRootsFrom } from '$lib/search/searchable-folder'
 import type { ScopePresets } from '$lib/query-ui/query-dialog-config'
-import { resolveImageSearchVolume, type ImageSearchVolume } from '$lib/search/active-media-volume'
+import { resolveSearchTargetVolume, type SearchTargetVolume } from '$lib/search/search-target-volume'
 import { getVolumes } from '$lib/stores/volume-store.svelte'
 import { getActiveTab } from '../tabs/tab-state-manager.svelte'
 import { explorerState } from './explorer-state.svelte'
@@ -50,11 +50,12 @@ export function getFocusedPaneSearchScope(): ScopePresets {
 }
 
 /**
- * The volume the Search dialog's image-OCR grid should search: the focused
- * pane's current volume, resolved against the live volume list for its mount
- * root + network flag. So browsing the NAS surfaces its photos, browsing local
- * surfaces local. Delegates to the pure `resolveImageSearchVolume`. Reactive.
+ * The ONE volume a Search session covers: the focused pane's current volume,
+ * resolved against the live volume list for its mount root + network flag. It
+ * drives the dialog's index-readiness gate, its coverage-honesty voice, and the
+ * image-OCR grid (browsing the NAS surfaces its photos, browsing local surfaces
+ * local). Delegates to the pure `resolveSearchTargetVolume`. Reactive.
  */
-export function getFocusedPaneImageSearchVolume(): ImageSearchVolume {
-  return resolveImageSearchVolume(getVolumes(), getFocusedPaneVolumeId())
+export function getFocusedPaneSearchTargetVolume(): SearchTargetVolume {
+  return resolveSearchTargetVolume(getVolumes(), getFocusedPaneVolumeId())
 }

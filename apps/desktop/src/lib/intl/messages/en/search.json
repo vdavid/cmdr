@@ -126,6 +126,61 @@
   "@search.imageResults.similarEmpty": {
     "description": "Shown in the \"similar images\" view when this drive has no images close enough to the chosen one (for example the chosen image isn't indexed yet)."
   },
+  "search.coverage.uncovered.local": "Cmdr hasn''t indexed {drive} yet, so this search skipped:",
+  "@search.coverage.uncovered.local": {
+    "description": "Note above the search results when the search covered a local drive that has no index, so it had nothing to look through. A list of the skipped folder paths follows the colon, which is why the sentence ends open. Conversational; avoid the words 'error' and 'failed'.",
+    "placeholders": {
+      "drive": "the drive's display name (e.g. Macintosh HD), or the generic phrase from search.coverage.unnamedDrive when the drive isn't mounted any more"
+    }
+  },
+  "search.coverage.uncovered.network": "Cmdr doesn''t index network drives unless you ask, so this search skipped:",
+  "@search.coverage.uncovered.network": {
+    "description": "The network-drive version of search.coverage.uncovered.local, shown when the search covered a network share with no index. It explains that this is by design rather than nudging the user to index, because indexing a network drive is deliberately opt-in. A list of the skipped folder paths follows the colon.",
+    "placeholders": {
+      "drive": "unused here, but available so both variants take the same parameters"
+    }
+  },
+  "search.coverage.unresolved": "{count, plural, one {Cmdr''s index doesn''t cover this folder yet, so this search skipped it:} other {Cmdr''s index doesn''t cover these folders yet, so this search skipped them:}}",
+  "@search.coverage.unresolved": {
+    "description": "Note above the search results when the drive IS indexed but the folder searched in isn't in that index yet (a partly indexed drive, or a path that no longer exists). It deliberately says what Cmdr knows rather than claiming the folder doesn't exist, because both cases look the same from the index. A list of the skipped folder paths follows the colon.",
+    "placeholders": {
+      "count": "how many folder paths were skipped, driving the singular/plural choice"
+    }
+  },
+  "search.coverage.unnamedDrive": "this drive",
+  "@search.coverage.unnamedDrive": {
+    "description": "Stands in for a drive's name in the coverage note when the drive isn't in the live volume list any more (ejected, or a network share that disconnected). Reads inside a sentence: 'Cmdr hasn't indexed this drive yet'.",
+    "placeholders": {}
+  },
+  "search.coverage.indexDrive": "Index this drive",
+  "@search.coverage.indexDrive": {
+    "description": "Button in the coverage note that turns on indexing for the drive the search couldn't cover, so future searches there are instant. Short: it renders as a small button.",
+    "placeholders": {}
+  },
+  "search.coverage.dontAskAgain": "Don''t ask again",
+  "@search.coverage.dontAskAgain": {
+    "description": "Button in the coverage note that stops offering to index this drive. The note itself keeps appearing (the gap is still true); only the offer goes away. Same per-drive choice the first-connect prompt writes. Short: it renders as a small button.",
+    "placeholders": {}
+  },
+  "search.coverage.toast.started": "Indexing {drive} now. Searches here will be instant once it finishes.",
+  "@search.coverage.toast.started": {
+    "description": "Toast confirming that indexing started after the user pressed the coverage note's Index this drive button.",
+    "placeholders": {
+      "drive": "the drive's display name (e.g. Backups)"
+    }
+  },
+  "search.coverage.toast.indexingOff": "Drive indexing is off in Settings, so nothing indexes. Turn it on under Indexing > Drive indexing.",
+  "@search.coverage.toast.indexingOff": {
+    "description": "Toast shown when the coverage note's Index this drive button can't act because the master drive-indexing switch is off. Points at the settings page that owns the switch. Sentence case; avoid the words 'error' and 'failed'.",
+    "placeholders": {}
+  },
+  "search.coverage.toast.notStarted": "Cmdr can''t index {drive} right now. You can try again from the drive menu.",
+  "@search.coverage.toast.notStarted": {
+    "description": "Toast shown when the coverage note's Index this drive button doesn't go through (the share needs reconnecting or credentials). Points at the drive menu in the breadcrumb, which offers the same action with fuller guidance. Avoid the words 'error' and 'failed'.",
+    "placeholders": {
+      "drive": "the drive's display name (e.g. Backups)"
+    }
+  },
   "search.snapshot.defaultLabel": "Search",
   "@search.snapshot.defaultLabel": {
     "description": "Fallback breadcrumb and tab title for a saved search-results view when there's no query text to name it. Same word as the dialog title."

@@ -12,6 +12,9 @@
  * from Selection (no Pattern chip, no AI label breadcrumb).
  */
 
+import { SvelteMap } from 'svelte/reactivity'
+import type { CoverageNote } from './coverage-note'
+
 export interface SearchExtrasState {
   getScope(): string
   setScope(value: string): void
@@ -22,12 +25,23 @@ export interface SearchExtrasState {
   setCountOnly(value: boolean): void
 
   // Index lifecycle. Lives here (Search-only) because Selection has no whole-drive index.
-  getIsIndexReady(): boolean
-  setIsIndexReady(value: boolean): void
-  getIndexEntryCount(): number
-  setIndexEntryCount(value: number): void
+  // Readiness is PER VOLUME: a search covers one volume, so "ready" is only ever true
+  // of a particular one, and the dialog waits for its target rather than for root.
+  /** Whether that volume's search arena has landed. Reactive per volume id. */
+  isVolumeReady(volumeId: string): boolean
+  /** That volume's indexed entry count, or 0 when its arena hasn't landed. */
+  getVolumeEntryCount(volumeId: string): number
+  /** Records a landed arena (the `search-index-ready` event, or a warm pre-load). */
+  markVolumeReady(volumeId: string, entryCount: number): void
+  /** The volume a background pre-load is in flight for; `null` when nothing is coming. */
+  getPendingVolumeId(): string | null
+  setPendingVolumeId(volumeId: string | null): void
   getIsIndexAvailable(): boolean
   setIsIndexAvailable(value: boolean): void
+
+  /** What the last run couldn't cover, or `null` when it covered everything asked of it. */
+  getCoverageNote(): CoverageNote | null
+  setCoverageNote(value: CoverageNote | null): void
 
   getLastAiLabel(): string | null
   getLastAiPattern(): string | null
@@ -41,7 +55,16 @@ export interface SearchExtrasState {
    * surfaces an AI pattern or an AI label.
    */
   recordAiPatternAndLabel(input: { pattern: string | null; kind: 'glob' | 'regex' | null; label: string | null }): void
-  /** Resets every extras field to defaults. Paired with `clearCore()` on the core. */
+  /**
+   * Resets what the USER typed, back to defaults. Paired with `clearCore()` on the
+   * core; ⌘N is the one sanctioned caller.
+   *
+   * ❌ It deliberately leaves what the MACHINE reported (which arenas have landed,
+   * whether the backend is available) alone: those describe this dialog session, not
+   * the query. Wiping readiness here meant the next search silently did nothing,
+   * because the gate went back to "waiting" and no second `search-index-ready` was
+   * ever coming.
+   */
   clearExtras(): void
 }
 
@@ -49,9 +72,16 @@ export function createSearchExtrasState(): SearchExtrasState {
   let scope = $state('')
   let excludeSystemDirs = $state(true)
   let countOnly = $state(false)
-  let isIndexReady = $state(false)
-  let indexEntryCount = $state(0)
+  /**
+   * Volume id → indexed entry count for every arena that has landed. One mutated
+   * `SvelteMap` for the instance's whole life: it's reactive per key, so a reader
+   * asking about one volume doesn't re-run when another lands, and swapping in a
+   * fresh map would leave every reader subscribed to the old one.
+   */
+  const readyVolumes = new SvelteMap<string, number>()
+  let pendingVolumeId = $state<string | null>(null)
   let isIndexAvailable = $state(true)
+  let coverageNote = $state<CoverageNote | null>(null)
   let lastAiLabel = $state<string | null>(null)
   let lastAiPattern = $state<string | null>(null)
   let lastAiPatternKind = $state<'glob' | 'regex' | null>(null)
@@ -70,17 +100,23 @@ export function createSearchExtrasState(): SearchExtrasState {
       countOnly = v
     },
 
-    getIsIndexReady: () => isIndexReady,
-    setIsIndexReady: (v) => {
-      isIndexReady = v
+    isVolumeReady: (volumeId) => readyVolumes.has(volumeId),
+    getVolumeEntryCount: (volumeId) => readyVolumes.get(volumeId) ?? 0,
+    markVolumeReady: (volumeId, entryCount) => {
+      readyVolumes.set(volumeId, entryCount)
     },
-    getIndexEntryCount: () => indexEntryCount,
-    setIndexEntryCount: (v) => {
-      indexEntryCount = v
+    getPendingVolumeId: () => pendingVolumeId,
+    setPendingVolumeId: (v) => {
+      pendingVolumeId = v
     },
     getIsIndexAvailable: () => isIndexAvailable,
     setIsIndexAvailable: (v) => {
       isIndexAvailable = v
+    },
+
+    getCoverageNote: () => coverageNote,
+    setCoverageNote: (v) => {
+      coverageNote = v
     },
 
     getLastAiLabel: () => lastAiLabel,
@@ -102,9 +138,7 @@ export function createSearchExtrasState(): SearchExtrasState {
       scope = ''
       excludeSystemDirs = true
       countOnly = false
-      isIndexReady = false
-      indexEntryCount = 0
-      isIndexAvailable = true
+      coverageNote = null
       lastAiLabel = null
       lastAiPattern = null
       lastAiPatternKind = null

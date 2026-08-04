@@ -57,7 +57,9 @@ builds a [`QueryDialogConfig`](../query-ui/query-dialog-config.ts) for Search an
 What the wrapper still owns (Search-specific glue):
 
 - `prepareSearchIndex` on mount, `releaseSearchIndex` on destroy, the `search-index-ready` listener (and the
-  auto-run-after-index-ready hook).
+  auto-run-after-index-ready hook, which fires only when the volume that landed is the one being searched).
+- The coverage note: clearing it per run, writing the answer's typed gaps into it, and the per-drive indexing offer that
+  answers an uncovered one.
 - `translateAi` callback: calls `translate_search_query` IPC and applies the AI's filter writes (`size`, `date`, scope,
   `caseSensitive`, `excludeSystemDirs`, Pattern chip + label). Returns `{ caveat, highlightedFields }` to QueryDialog.
 - `runQuery` callback: calls `buildSearchQuery()` from the helper, layers the AI pattern when in AI mode, calls
@@ -76,8 +78,8 @@ What the wrapper still owns (Search-specific glue):
 The wrapper has no line-count target; its size is what Search-specific glue costs. It does not own the overlay element,
 the keyboard handler, the IME guard, the auto-apply debounce, the popover toggle, or any other orchestration concern.
 
-The route (`+page.svelte`) mounts SearchDialog with its props: `onNavigate`, `onClose`, `scopePresets`,
-`imageSearchVolume`, `onShowAllInMainWindow`.
+The route (`+page.svelte`) mounts SearchDialog with its props: `onNavigate`, `onClose`, `scopePresets`, `searchVolume`,
+`onShowAllInMainWindow`.
 
 ### Which volumes each search covers
 
@@ -85,23 +87,63 @@ Both searches now cover ONE volume, and each picks it differently.
 
 **Filename search covers the scope's volume**, at most one (`src-tauri/src/search/CLAUDE.md`). The frontend's job is to
 make sure a scope always exists: an empty box means the focused pane's current folder, resolved at run time in
-`runSearch()` from `defaultScope`, so it follows the pane rather than freezing at dialog-open time. `SearchDialog` still
-keys its index lifecycle (`prepareSearchIndex` / `releaseSearchIndex`) and the QueryDialog scanning indicator on
-`ROOT_VOLUME_ID`, because root is the arena the dialog WAITS for — making that gate per-target is M1 of
-`docs/specs/unindexed-search-plan.md`.
+`runSearch()` from `defaultScope`, so it follows the pane rather than freezing at dialog-open time.
 
-**The image-OCR grid follows the active pane instead**: it targets whatever volume the user is contextually searching,
-that is, the focused pane's current volume, so browsing the NAS surfaces the NAS's photos and browsing local surfaces
-local.
+**One volume answers every "which drive?" question the dialog has**, so there's one prop for it: `searchVolume`, the
+focused pane's current volume. `+page.svelte` passes `searchVolume={getFocusedPaneSearchTargetVolume()}` (in
+`focused-pane-reads.ts`), which reads the focused pane's volume id and resolves it against the live volume store via the
+pure `resolveSearchTargetVolume` (`search-target-volume.ts`). It feeds three consumers:
 
-`+page.svelte` passes `imageSearchVolume={getFocusedPaneImageSearchVolume()}` (in `focused-pane-reads.ts`), which reads
-the focused pane's volume id and resolves it against the live volume store via the pure `resolveImageSearchVolume`
-(`active-media-volume.ts`). The pane's volume id IS the media-index volume id (`root` for the local disk, `smb-…` for an
-SMB share), so no mapping is needed; the mount root is that volume's `VolumeInfo.path` (`/` for root, `/Volumes/<share>`
-for SMB), which `ImageSearchResults` prepends to index-relative OCR hits via `resolveMediaHitPath`. `isNetwork`
-(`category === 'network'`) switches the grid's coverage-honesty copy to the network voice. A focused pane whose volume
-isn't a real filesystem volume in the list (a `search-results://` snapshot) falls back to the local root, as does the
-`SearchDialog` prop when unset.
+- the **readiness gate** (below), which waits only for that volume's arena;
+- the **image-OCR grid**, whose media-index volume id IS the pane's volume id (`root` for the local disk, `smb-…` for an
+  SMB share), so browsing the NAS surfaces the NAS's photos and browsing local surfaces local;
+- the **mount root** that volume's `VolumeInfo.path` gives (`/` for root, `/Volumes/<share>` for SMB), which
+  `ImageSearchResults` prepends to index-relative OCR hits via `resolveMediaHitPath`, plus `isNetwork`
+  (`category === 'network'`) for the network coverage voice.
+
+A focused pane whose volume isn't a real filesystem volume in the list (a `search-results://` snapshot) falls back to
+the local root, as does the prop when unset — the same fallback `resolveDefaultScope` makes for the scope.
+
+### The readiness gate is per target
+
+`config.isIndexReady` gates `executeQuery`, and its question is **"is the volume this run will land on worth waiting
+for?"**, not "is root loaded". The pure `isTargetIndexReady` (`coverage-note.ts`) answers it from three inputs:
+
+- **`targetVolumeId`** — `searchVolume.volumeId` when the scope box is empty (the default, so the run lands on the
+  pane's volume), `null` when the user typed or clicked a scope. `null` means "only the backend can route this path to a
+  volume", and reads as run-it: an SMB id keys on the address and cloud drives route to `root`, so a frontend guess
+  would fork routing, and waiting on a wrong guess is how a search stops happening.
+- **which arenas have landed** — recorded per volume from the `search-index-ready` event, which names its volume.
+- **`pendingVolumeId`** — the one volume a pre-load is in flight for. `prepare_search_index` pre-loads root only, and
+  its `loading` field is the backend's promise that an event is coming. `loading: false` with `ready: false` is the
+  terminal "root has no index to load", which is what makes search work on a machine that declined indexing.
+
+Waiting when an event IS coming is still worth it: each ungated keystroke would otherwise issue an IPC that blocks on
+the same arena load, burning a blocking-pool thread per keystroke for no earlier answer.
+
+**Known gap**: if root's pre-load starts and then fails to read its DB (corruption), no event follows and the dialog
+stays on "Loading index…" for the session. Reopening the dialog re-asks `prepare_search_index` and recovers. M5 of
+`docs/specs/unindexed-search-plan.md` owns terminal states and closes it properly.
+
+**⌘N doesn't touch readiness.** `clearExtras()` resets what the user typed and leaves what the machine reported alone.
+Wiping the readiness flag there meant the gate went back to "waiting" with no second event ever coming, so every later
+search in that session silently did nothing.
+
+### The coverage note
+
+`runSearch()` clears the note before the IPC and writes the answer's `uncoveredScopes` / `unresolvedScopes` /
+`targetVolumeId` into it after (`coverageNoteFrom`), so the note always belongs to the run on screen and a run that
+throws can't leave a stale caveat under a fresh answer. `CoverageNote.svelte` renders it through QueryDialog's
+`resultsNotice` slot, directly above the results it qualifies. Both lists are checked independently rather than as an
+either/or: they're mutually exclusive today by construction, and a reader that assumed so would go silent if that
+changed.
+
+The per-drive offer ("Index this drive") shows only for an **uncovered** gap (an unresolved path is on a drive that's
+already indexed, so there's nothing to turn on), only for a drive the live volume list can name, and never for a drive
+the user silenced (`indexing.silencedDrives`, the same persisted choice the first-connect prompt writes; "Don't ask
+again" writes it here). The note itself always renders: silencing the offer doesn't make the gap untrue. The offer acts
+on `SearchResult.targetVolumeId` — the volume the BACKEND routed to — because a typed scope can point at a drive the
+pane isn't on, and offering to index the wrong one would be worse than saying nothing.
 
 ## State shape
 
@@ -133,7 +175,8 @@ The state is split into two factories so Search and Selection can each own an in
   `results`, `totalCount`, `cursorIndex`, `isSearching`, `lastDialogEvent`, `runOnMount`, `lastRunQuery`. See
   `../query-ui/CLAUDE.md`.
 - **Search-only extras**: `search-extras-state.svelte.ts` — factory `createSearchExtrasState()`. Owns `scope`,
-  `excludeSystemDirs`, `isIndexReady`, `indexEntryCount`, `isIndexAvailable`, `lastAiLabel`, `lastAiPattern`,
+  `excludeSystemDirs`, `countOnly`, per-volume index readiness (which arenas landed + their entry counts, plus the one
+  volume a pre-load is pending for), `isIndexAvailable`, the `coverageNote`, `lastAiLabel`, `lastAiPattern`,
   `lastAiPatternKind`. Selection doesn't carry these (no whole-drive index, no Search-style scope row, no snapshot
   breadcrumb, no Pattern chip).
 - **`buildSearchQuery()`** lives in `build-search-query.ts` and layers `excludeSystemDirs` onto
@@ -230,7 +273,7 @@ popover is open. They're wired via a top-level `<svelte:window>` in `FilterChips
 User presses ⌘F
   -> +page.svelte sets showSearchDialog = true
   -> SearchDialog mounts, calls prepareSearchIndex() IPC
-  -> Backend starts async index load (2-3s), emits "search-index-ready" when done
+  -> Backend pre-loads root's arena (2-3s) and says whether one is coming; emits "search-index-ready {volumeId}" when it lands
   -> User types in the bar -> 1s debounce -> searchFiles(query) IPC (filename/regex modes only)
   -> User presses Enter in AI mode -> translateSearchQuery -> populates filters -> searchFiles
   -> Results displayed, keyboard nav with ↑/↓, Enter navigates to file
@@ -242,8 +285,10 @@ The shared parts of this flow (debounce / IME guard / cursor model / Press-Enter
 
 ## Search-specific patterns
 
-**Index not available state**: When indexing is disabled or not started, `prepareSearchIndex()` errors. The dialog shows
-a message ("Drive index not ready...") with scan progress if available. Inputs and filters are disabled.
+**Index not available state**: when the backend can't answer at all, `prepareSearchIndex()` throws and the dialog shows
+"Drive index not ready…" with scan progress if available, inputs and filters disabled. It is NOT the "this drive has no
+index" state: a `prepare` that returns `{ ready: false, loading: false }` is a fine, answerable session — the search
+runs and comes back with its coverage gap named.
 
 **AI single-pass flow**: `executeAiSearch()` calls `translateSearchQuery()` once (LLM classifies intent into enums +
 extracts keywords, Rust builds the query deterministically), then runs `executeSearch()`. No preflight, no refinement

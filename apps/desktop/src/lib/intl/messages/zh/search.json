@@ -95,6 +95,42 @@
   "@search.imageResults.similarEmpty": {
     "sourceHash": "d3ef9f7"
   },
+  "search.coverage.uncovered.local": "Cmdr 尚未为 {drive} 建立索引，因此本次搜索跳过了：",
+  "@search.coverage.uncovered.local": {
+    "sourceHash": "3b75a63"
+  },
+  "search.coverage.uncovered.network": "Cmdr 只在你要求时才为网络驱动器建立索引，因此本次搜索跳过了：",
+  "@search.coverage.uncovered.network": {
+    "sourceHash": "5a2794a"
+  },
+  "search.coverage.unresolved": "{count, plural, other {Cmdr 的索引尚未覆盖以下文件夹，因此本次搜索跳过了：}}",
+  "@search.coverage.unresolved": {
+    "sourceHash": "8d9517e"
+  },
+  "search.coverage.unnamedDrive": "此驱动器",
+  "@search.coverage.unnamedDrive": {
+    "sourceHash": "5092f21"
+  },
+  "search.coverage.indexDrive": "为此驱动器建立索引",
+  "@search.coverage.indexDrive": {
+    "sourceHash": "dce1f3a"
+  },
+  "search.coverage.dontAskAgain": "不再询问",
+  "@search.coverage.dontAskAgain": {
+    "sourceHash": "9c9f7b6"
+  },
+  "search.coverage.toast.started": "正在为 {drive} 建立索引。完成后，这里的搜索将即时完成。",
+  "@search.coverage.toast.started": {
+    "sourceHash": "fb6978e"
+  },
+  "search.coverage.toast.indexingOff": "驱动器索引已在设置中关闭，因此不会建立任何索引。可在“索引 > 驱动器索引”中开启。",
+  "@search.coverage.toast.indexingOff": {
+    "sourceHash": "abfe24b"
+  },
+  "search.coverage.toast.notStarted": "Cmdr 目前无法为 {drive} 建立索引。你可以从驱动器菜单再试一次。",
+  "@search.coverage.toast.notStarted": {
+    "sourceHash": "a08fe4a"
+  },
   "search.snapshot.defaultLabel": "搜索",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

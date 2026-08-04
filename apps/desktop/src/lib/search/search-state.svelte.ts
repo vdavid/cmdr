@@ -20,6 +20,7 @@
 import type { SearchResultEntry, SearchQuery, HistoryEntry, HistoryFilters } from '$lib/tauri-commands'
 import { createQueryFilterState } from '$lib/query-ui/query-filter-state.svelte'
 import { createSearchExtrasState } from './search-extras-state.svelte'
+import type { CoverageNote } from './coverage-note'
 import { buildSearchQuery as buildSearchQueryImpl } from './build-search-query'
 
 // Re-export the core's pure helpers + types so the call sites stay stable.
@@ -132,18 +133,27 @@ export const setCursorIndex = (v: number): void => {
   core.setCursorIndex(v)
 }
 
-// Index availability (extras; Selection has no index)
-export const getIsIndexReady = (): boolean => extras.getIsIndexReady()
-export const setIsIndexReady = (v: boolean): void => {
-  extras.setIsIndexReady(v)
+// Index availability (extras; Selection has no index). Readiness is per volume: a
+// search covers one volume, so the dialog asks about its target, not about root.
+export const isVolumeIndexReady = (volumeId: string): boolean => extras.isVolumeReady(volumeId)
+export const getVolumeEntryCount = (volumeId: string): number => extras.getVolumeEntryCount(volumeId)
+export const markVolumeIndexReady = (volumeId: string, entryCount: number): void => {
+  extras.markVolumeReady(volumeId, entryCount)
 }
-export const getIndexEntryCount = (): number => extras.getIndexEntryCount()
-export const setIndexEntryCount = (v: number): void => {
-  extras.setIndexEntryCount(v)
+export const getPendingIndexVolumeId = (): string | null => extras.getPendingVolumeId()
+export const setPendingIndexVolumeId = (v: string | null): void => {
+  extras.setPendingVolumeId(v)
 }
 export const getIsIndexAvailable = (): boolean => extras.getIsIndexAvailable()
 export const setIsIndexAvailable = (v: boolean): void => {
   extras.setIsIndexAvailable(v)
+}
+
+// Coverage honesty: what the last run couldn't cover (extras; Selection reads a pane
+// listing, so it has no coverage question to answer).
+export const getCoverageNote = (): CoverageNote | null => extras.getCoverageNote()
+export const setCoverageNote = (v: CoverageNote | null): void => {
+  extras.setCoverageNote(v)
 }
 
 // Scope + system-dirs (extras)

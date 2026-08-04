@@ -95,6 +95,42 @@
   "@search.imageResults.similarEmpty": {
     "sourceHash": "d3ef9f7"
   },
+  "search.coverage.uncovered.local": "Cmdr chưa lập chỉ mục {drive}, nên lần tìm kiếm này đã bỏ qua:",
+  "@search.coverage.uncovered.local": {
+    "sourceHash": "3b75a63"
+  },
+  "search.coverage.uncovered.network": "Cmdr chỉ lập chỉ mục ổ đĩa mạng khi bạn yêu cầu, nên lần tìm kiếm này đã bỏ qua:",
+  "@search.coverage.uncovered.network": {
+    "sourceHash": "5a2794a"
+  },
+  "search.coverage.unresolved": "{count, plural, other {Chỉ mục của Cmdr chưa bao gồm các thư mục sau, nên lần tìm kiếm này đã bỏ qua:}}",
+  "@search.coverage.unresolved": {
+    "sourceHash": "8d9517e"
+  },
+  "search.coverage.unnamedDrive": "ổ đĩa này",
+  "@search.coverage.unnamedDrive": {
+    "sourceHash": "5092f21"
+  },
+  "search.coverage.indexDrive": "Lập chỉ mục ổ đĩa này",
+  "@search.coverage.indexDrive": {
+    "sourceHash": "dce1f3a"
+  },
+  "search.coverage.dontAskAgain": "Đừng hỏi lại",
+  "@search.coverage.dontAskAgain": {
+    "sourceHash": "9c9f7b6"
+  },
+  "search.coverage.toast.started": "Đang lập chỉ mục {drive}. Xong rồi thì tìm kiếm ở đây sẽ tức thì.",
+  "@search.coverage.toast.started": {
+    "sourceHash": "fb6978e"
+  },
+  "search.coverage.toast.indexingOff": "Lập chỉ mục ổ đĩa đang tắt trong Cài đặt, nên không có gì được lập chỉ mục. Hãy bật trong Lập chỉ mục > Lập chỉ mục ổ đĩa.",
+  "@search.coverage.toast.indexingOff": {
+    "sourceHash": "abfe24b"
+  },
+  "search.coverage.toast.notStarted": "Cmdr không thể lập chỉ mục {drive} lúc này. Bạn có thể thử lại từ menu ổ đĩa.",
+  "@search.coverage.toast.notStarted": {
+    "sourceHash": "a08fe4a"
+  },
   "search.snapshot.defaultLabel": "Tìm kiếm",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

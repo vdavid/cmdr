@@ -1,5 +1,5 @@
 // Which shape of indexing checklist a volume's run takes, keyed on the volume's
-// `category` from the shared volume store (the same source `active-media-volume.ts`
+// `category` from the shared volume store (the same source `search-target-volume.ts`
 // reads). This is the FE half of the run-kind decision: `deriveSteps` picks the
 // ordered step list off `IndexRunKind`, and this predicate decides local vs network.
 

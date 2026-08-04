@@ -95,6 +95,42 @@
   "@search.imageResults.similarEmpty": {
     "sourceHash": "d3ef9f7"
   },
+  "search.coverage.uncovered.local": "Cmdr har inte indexerat {drive} än, så den här sökningen hoppade över:",
+  "@search.coverage.uncovered.local": {
+    "sourceHash": "3b75a63"
+  },
+  "search.coverage.uncovered.network": "Cmdr indexerar bara nätverksenheter när du ber om det, så den här sökningen hoppade över:",
+  "@search.coverage.uncovered.network": {
+    "sourceHash": "5a2794a"
+  },
+  "search.coverage.unresolved": "{count, plural, one {Cmdrs index täcker inte den här mappen än, så sökningen hoppade över den:} other {Cmdrs index täcker inte de här mapparna än, så sökningen hoppade över dem:}}",
+  "@search.coverage.unresolved": {
+    "sourceHash": "8d9517e"
+  },
+  "search.coverage.unnamedDrive": "den här enheten",
+  "@search.coverage.unnamedDrive": {
+    "sourceHash": "5092f21"
+  },
+  "search.coverage.indexDrive": "Indexera den här enheten",
+  "@search.coverage.indexDrive": {
+    "sourceHash": "dce1f3a"
+  },
+  "search.coverage.dontAskAgain": "Fråga inte igen",
+  "@search.coverage.dontAskAgain": {
+    "sourceHash": "9c9f7b6"
+  },
+  "search.coverage.toast.started": "Indexerar {drive} nu. När det är klart går sökningar här direkt.",
+  "@search.coverage.toast.started": {
+    "sourceHash": "fb6978e"
+  },
+  "search.coverage.toast.indexingOff": "Enhetsindexering är avstängd i Inställningar, så inget indexeras. Slå på den under Indexering > Enhetsindexering.",
+  "@search.coverage.toast.indexingOff": {
+    "sourceHash": "abfe24b"
+  },
+  "search.coverage.toast.notStarted": "Cmdr kan inte indexera {drive} just nu. Du kan försöka igen från enhetsmenyn.",
+  "@search.coverage.toast.notStarted": {
+    "sourceHash": "a08fe4a"
+  },
   "search.snapshot.defaultLabel": "Sök",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

@@ -95,6 +95,42 @@
   "@search.imageResults.similarEmpty": {
     "sourceHash": "d3ef9f7"
   },
+  "search.coverage.uncovered.local": "O Cmdr ainda não indexou {drive}, então esta busca ignorou:",
+  "@search.coverage.uncovered.local": {
+    "sourceHash": "3b75a63"
+  },
+  "search.coverage.uncovered.network": "O Cmdr só indexa discos de rede quando você pede, então esta busca ignorou:",
+  "@search.coverage.uncovered.network": {
+    "sourceHash": "5a2794a"
+  },
+  "search.coverage.unresolved": "{count, plural, one {O índice do Cmdr ainda não cobre esta pasta, então a busca a ignorou:} many {O índice do Cmdr ainda não cobre estas pastas, então a busca as ignorou:} other {O índice do Cmdr ainda não cobre estas pastas, então a busca as ignorou:}}",
+  "@search.coverage.unresolved": {
+    "sourceHash": "8d9517e"
+  },
+  "search.coverage.unnamedDrive": "este disco",
+  "@search.coverage.unnamedDrive": {
+    "sourceHash": "5092f21"
+  },
+  "search.coverage.indexDrive": "Indexar este disco",
+  "@search.coverage.indexDrive": {
+    "sourceHash": "dce1f3a"
+  },
+  "search.coverage.dontAskAgain": "Não perguntar de novo",
+  "@search.coverage.dontAskAgain": {
+    "sourceHash": "9c9f7b6"
+  },
+  "search.coverage.toast.started": "Indexando {drive} agora. Quando terminar, as buscas aqui serão instantâneas.",
+  "@search.coverage.toast.started": {
+    "sourceHash": "fb6978e"
+  },
+  "search.coverage.toast.indexingOff": "A indexação de disco está desativada nos Ajustes, então nada é indexado. Ative-a em Indexação > Indexação de disco.",
+  "@search.coverage.toast.indexingOff": {
+    "sourceHash": "abfe24b"
+  },
+  "search.coverage.toast.notStarted": "O Cmdr não consegue indexar {drive} agora. Você pode tentar de novo pelo menu do disco.",
+  "@search.coverage.toast.notStarted": {
+    "sourceHash": "a08fe4a"
+  },
   "search.snapshot.defaultLabel": "Buscar",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

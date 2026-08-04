@@ -95,6 +95,42 @@
   "@search.imageResults.similarEmpty": {
     "sourceHash": "d3ef9f7"
   },
+  "search.coverage.uncovered.local": "A Cmdr még nem indexelte ezt: {drive}. Ezért a keresés kihagyta:",
+  "@search.coverage.uncovered.local": {
+    "sourceHash": "3b75a63"
+  },
+  "search.coverage.uncovered.network": "A Cmdr csak külön kérésre indexeli a hálózati meghajtókat, ezért a keresés kihagyta ezt:",
+  "@search.coverage.uncovered.network": {
+    "sourceHash": "5a2794a"
+  },
+  "search.coverage.unresolved": "{count, plural, one {A Cmdr indexe még nem fedi le ezt a mappát, ezért a keresés kihagyta:} other {A Cmdr indexe még nem fedi le ezeket a mappákat, ezért a keresés kihagyta őket:}}",
+  "@search.coverage.unresolved": {
+    "sourceHash": "8d9517e"
+  },
+  "search.coverage.unnamedDrive": "ez a meghajtó",
+  "@search.coverage.unnamedDrive": {
+    "sourceHash": "5092f21"
+  },
+  "search.coverage.indexDrive": "Meghajtó indexelése",
+  "@search.coverage.indexDrive": {
+    "sourceHash": "dce1f3a"
+  },
+  "search.coverage.dontAskAgain": "Ne kérdezd újra",
+  "@search.coverage.dontAskAgain": {
+    "sourceHash": "9c9f7b6"
+  },
+  "search.coverage.toast.started": "Indexelés folyamatban: {drive}. Ha kész, itt azonnali lesz a keresés.",
+  "@search.coverage.toast.started": {
+    "sourceHash": "fb6978e"
+  },
+  "search.coverage.toast.indexingOff": "A meghajtó indexelése ki van kapcsolva a Beállításokban, ezért semmi sem indexelődik. Kapcsold be itt: Indexelés > Meghajtó indexelése.",
+  "@search.coverage.toast.indexingOff": {
+    "sourceHash": "abfe24b"
+  },
+  "search.coverage.toast.notStarted": "A Cmdr most nem tudja indexelni ezt: {drive}. Újra megpróbálhatod a meghajtó menüjéből.",
+  "@search.coverage.toast.notStarted": {
+    "sourceHash": "a08fe4a"
+  },
   "search.snapshot.defaultLabel": "Keresés",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

@@ -39,8 +39,9 @@ factory output), an `aiEnabled` flag, the per-chip visibility set, a `showPathCo
 history store + adapter + key, the empty-state hints, the filter-chips extras, the index lifecycle flags, an optional
 `noticeBanner`, the async `runQuery` + optional `translateAi` callbacks, primary + secondary action descriptors,
 callbacks for path-pill / example / row-menu / recent-activate / recent-remove / close events, optional `onMount` /
-`onDestroy` / `onClearState` hooks, and an optional `resultsExtra` snippet (a consumer-owned section rendered below the
-results table, owning its own data + lifecycle — Search's "text in images" OCR grid; other consumers omit it).
+`onDestroy` / `onClearState` hooks, and two optional consumer-owned snippets bracketing the results table, each owning
+its own data + lifecycle: `resultsNotice` above it (a caveat about the answer — Search's coverage note) and
+`resultsExtra` below it (a second result kind — Search's "text in images" OCR grid). Other consumers omit both.
 
 ### The controller split
 
