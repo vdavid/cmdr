@@ -1,42 +1,50 @@
 package com.getcmdr.idea.features.i18n
 
-import com.getcmdr.idea.RepoFiles
-import com.getcmdr.idea.core.CmdrPluginConfig
-import com.getcmdr.idea.core.CmdrProjectService
 import junit.framework.TestCase
 import java.io.File
 
 /** Turning the repo's catalog JSON into a key index, including over the real files the app ships. */
 class MessageCatalogTest : TestCase() {
     fun testAKeyResolvesToItsMessage() {
-        val catalog = MessageCatalog.of(listOf("""{"a.title": "Send crash report?"}"""))
+        val catalog = catalogOf("a.json" to """{"a.title": "Send crash report?"}""")
 
-        assertEquals("Send crash report?", catalog["a.title"])
+        assertEquals("Send crash report?", catalog["a.title"]?.text)
         assertNull(catalog["a.missing"])
     }
 
+    /** Navigation's half of an entry: which file to open. Where in it comes from that file's own JSON PSI. */
+    fun testAKeyRemembersTheCatalogFileItIsWrittenIn() {
+        val catalog = catalogOf(
+            "crashReporter.json" to """{"a.title": "Send crash report?"}""",
+            "settings.json" to """{"b.label": "Provider"}""",
+        )
+
+        assertEquals("crashReporter.json", catalog["a.title"]?.fileName)
+        assertEquals("settings.json", catalog["b.label"]?.fileName)
+    }
+
     fun testTranslatorMetadataIsDroppedTheWayTheAppDropsIt() {
-        val catalog = MessageCatalog.of(
-            listOf("""{"a.title": "Title", "@a.title": {"description": "Says what the dialog is for."}}"""),
+        val catalog = catalogOf(
+            "a.json" to """{"a.title": "Title", "@a.title": {"description": "Says what the dialog is for."}}""",
         )
 
         assertEquals(1, catalog.size)
-        assertEquals("Title", catalog["a.title"])
+        assertEquals("Title", catalog["a.title"]?.text)
         assertNull("an `@key` entry is translator metadata, never a message", catalog["@a.title"])
     }
 
     fun testEveryFileContributesToOneIndex() {
-        val catalog = MessageCatalog.of(listOf("""{"a.one": "One"}""", """{"b.two": "Two"}"""))
+        val catalog = catalogOf("a.json" to """{"a.one": "One"}""", "b.json" to """{"b.two": "Two"}""")
 
-        assertEquals("One", catalog["a.one"])
-        assertEquals("Two", catalog["b.two"])
+        assertEquals("One", catalog["a.one"]?.text)
+        assertEquals("Two", catalog["b.two"]?.text)
     }
 
     /** A `pnpm dev` run can catch a catalog file mid-write; one broken file must not blank the whole index. */
     fun testAMalformedFileContributesNothingRatherThanSinkingTheCatalog() {
-        val catalog = MessageCatalog.of(listOf("{ not json at all", """{"a.one": "One"}"""))
+        val catalog = catalogOf("broken.json" to "{ not json at all", "a.json" to """{"a.one": "One"}""")
 
-        assertEquals("One", catalog["a.one"])
+        assertEquals("One", catalog["a.one"]?.text)
     }
 
     fun testTheRealCatalogParsesAndCarriesTheKeysTheAppUses() {
@@ -45,7 +53,7 @@ class MessageCatalogTest : TestCase() {
         assertTrue("the catalog glob matched nothing; did `messages/en/` move?", files.size > 20)
 
         val started = System.nanoTime()
-        val catalog = MessageCatalog.of(files.map { it.readText() })
+        val catalog = MessageCatalog.of(files.map { CatalogSource(it.name, it.readText()) })
         val millis = (System.nanoTime() - started) / 1_000_000
 
         println("[perf] parsed ${files.size} catalog files into ${catalog.size} keys in $millis ms")
@@ -53,8 +61,9 @@ class MessageCatalogTest : TestCase() {
         assertEquals(
             "It includes the app version, macOS version, and which part of the code crashed. " +
                 "No file names or personal data.",
-            catalog["crashReporter.dialog.privacyNote"],
+            catalog["crashReporter.dialog.privacyNote"]?.text,
         )
+        assertEquals("crashReporter.json", catalog["crashReporter.dialog.privacyNote"]?.fileName)
     }
 
     fun testTheGlobSplitsIntoADirectoryAndAFileRule() {
@@ -75,9 +84,6 @@ class MessageCatalogTest : TestCase() {
         assertFalse(i18n.isKeyAttribute("div", "key"))
     }
 
-    private fun repoI18nConfig(): I18nConfig =
-        CmdrPluginConfig.parse(RepoFiles.read(CmdrProjectService.CONFIG_PATH)).get(I18nConfig)
-            ?: error("the shipped config no longer has an i18n section")
-
-    private fun repoRoot(): String = System.getProperty("cmdr.repo.root") ?: error("cmdr.repo.root isn't set")
+    private fun catalogOf(vararg files: Pair<String, String>): MessageCatalog =
+        MessageCatalog.of(files.map { (name, text) -> CatalogSource(name, text) })
 }

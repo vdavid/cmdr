@@ -10,6 +10,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.vfs.VfsUtilCore
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
@@ -31,7 +32,7 @@ class MessageCatalogService(private val project: Project) : Disposable {
             VirtualFileManager.VFS_CHANGES,
             object : BulkFileListener {
                 override fun after(events: List<VFileEvent>) {
-                    val watched = cached.get()?.directoryPath ?: return
+                    val watched = cached.get()?.directory?.path ?: return
                     if (events.none { it.path.startsWith("$watched/") }) return
                     cached.set(null)
                     refoldOpenEditors()
@@ -46,9 +47,23 @@ class MessageCatalogService(private val project: Project) : Disposable {
      *
      * Callers get a snapshot they can hold for the length of a folding pass; a rewrite mid-pass shows up on the next.
      */
-    fun catalog(): MessageCatalog? {
+    fun catalog(): MessageCatalog? = snapshot()?.catalog
+
+    /**
+     * The catalog file [key] is written in, or `null` when nothing resolves it.
+     *
+     * This is the whole of what navigation needs from the index. Finding the key's **line** inside the file is the
+     * JSON PSI's job at click time, so the index never carries offsets that could go stale against the file.
+     */
+    fun sourceOf(key: String): VirtualFile? {
+        val snapshot = snapshot() ?: return null
+        val message = snapshot.catalog[key] ?: return null
+        return snapshot.directory.findChild(message.fileName)
+    }
+
+    private fun snapshot(): Snapshot? {
         val glob = CmdrProjectService.getInstance(project).config?.get(I18nConfig)?.catalogGlob ?: return null
-        cached.get()?.let { if (it.glob == glob) return it.catalog }
+        cached.get()?.let { if (it.glob == glob) return it }
 
         val rule = CatalogGlob.parse(glob)
         val directory = project.guessProjectDir()?.findFileByRelativePath(rule.directory)?.takeIf { it.isDirectory }
@@ -59,10 +74,11 @@ class MessageCatalogService(private val project: Project) : Disposable {
         val catalog = MessageCatalog.of(
             directory.children
                 .filter { !it.isDirectory && rule.files.matches(it.name) }
-                .mapNotNull { runCatching { VfsUtilCore.loadText(it) }.getOrNull() },
+                .mapNotNull { file ->
+                    runCatching { VfsUtilCore.loadText(file) }.getOrNull()?.let { CatalogSource(file.name, it) }
+                },
         )
-        cached.set(Snapshot(glob, directory.path, catalog))
-        return catalog
+        return Snapshot(glob, directory, catalog).also(cached::set)
     }
 
     /**
@@ -84,7 +100,7 @@ class MessageCatalogService(private val project: Project) : Disposable {
     override fun dispose() = Unit
 
     /** What was parsed, and what invalidates it: the glob it came from and the directory to watch. */
-    private class Snapshot(val glob: String, val directoryPath: String, val catalog: MessageCatalog)
+    private class Snapshot(val glob: String, val directory: VirtualFile, val catalog: MessageCatalog)
 
     companion object {
         private val log = logger<MessageCatalogService>()

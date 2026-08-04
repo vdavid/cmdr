@@ -1,15 +1,9 @@
 package com.getcmdr.idea.features.i18n
 
 import com.getcmdr.idea.RepoFiles
-import com.getcmdr.idea.core.CmdrPluginConfig
 import com.getcmdr.idea.core.CmdrProjectService
 import com.getcmdr.idea.platform.FoldingTestCase
-import com.google.gson.GsonBuilder
-import com.google.gson.JsonObject
-import com.intellij.lang.Language
-import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.util.TextRange
-import com.intellij.openapi.vfs.VfsUtil
 import java.io.File
 
 /**
@@ -20,7 +14,7 @@ import java.io.File
  */
 class I18nKeyFoldingTest : FoldingTestCase() {
     fun testACallToEveryConfiguredFunctionFolds() {
-        cmdrProjectWith("a.title" to "Send crash report?")
+        myFixture.cmdrProjectWith("a.title" to "Send crash report?")
         myFixture.configureByText(
             "sample.ts",
             """
@@ -42,7 +36,7 @@ class I18nKeyFoldingTest : FoldingTestCase() {
 
     /** The whole call folds, not just the argument: `tString(` around a sentence is noise once the sentence is there. */
     fun testACallFoldsWholeRatherThanJustItsArgument() {
-        cmdrProjectWith("a.title" to "Send crash report?")
+        myFixture.cmdrProjectWith("a.title" to "Send crash report?")
         myFixture.configureByText("sample.ts", "const title = tString('a.title')")
 
         assertEquals(listOf("tString('a.title')" to TITLE), folds())
@@ -53,7 +47,7 @@ class I18nKeyFoldingTest : FoldingTestCase() {
      * copy fills, so hiding it would lose more than it saves.
      */
     fun testAKeyPropertyFoldsItsValueAndKeepsItsName() {
-        cmdrProjectWith("settings.ai.provider.label" to "Provider")
+        myFixture.cmdrProjectWith("settings.ai.provider.label" to "Provider")
         myFixture.configureByText(
             "definition.ts",
             """
@@ -75,7 +69,7 @@ class I18nKeyFoldingTest : FoldingTestCase() {
     }
 
     fun testAKeyOnlyFoldsWhereTheCodeReallyUsesItAsOne() {
-        cmdrProjectWith("a.title" to "Send crash report?")
+        myFixture.cmdrProjectWith("a.title" to "Send crash report?")
         myFixture.configureByText(
             "sample.ts",
             """
@@ -90,14 +84,14 @@ class I18nKeyFoldingTest : FoldingTestCase() {
     }
 
     fun testAKeyTheCatalogDoesNotHaveIsLeftAlone() {
-        cmdrProjectWith("a.title" to "Send crash report?")
+        myFixture.cmdrProjectWith("a.title" to "Send crash report?")
         myFixture.configureByText("sample.ts", "const gone = tString('a.keyThatWasRenamed')")
 
         assertEmpty(folds())
     }
 
     fun testIcuDoubledApostrophesAreUnescapedInTheEditor() {
-        cmdrProjectWith("a.body" to "Cmdr quit unexpectedly. Here''s a crash report.")
+        myFixture.cmdrProjectWith("a.body" to "Cmdr quit unexpectedly. Here''s a crash report.")
         myFixture.configureByText("sample.ts", "const body = tString('a.body')")
 
         assertEquals(listOf("“Cmdr quit unexpectedly. Here's a crash report.”"), placeholders())
@@ -106,14 +100,14 @@ class I18nKeyFoldingTest : FoldingTestCase() {
     fun testAMultiSentenceMessageFoldsInFull() {
         val long = "It includes the app version, macOS version, and which part of the code crashed. " +
             "No file names or personal data. You can read the whole report before it's sent, and you can say no."
-        cmdrProjectWith("a.privacyNote" to long)
+        myFixture.cmdrProjectWith("a.privacyNote" to long)
         myFixture.configureByText("sample.ts", "const note = tString('a.privacyNote')")
 
         assertEquals(listOf("“$long”"), placeholders())
     }
 
     fun testAPlaceholderSurvivesVerbatim() {
-        cmdrProjectWith("a.copying" to "Copying {countText} to {target}")
+        myFixture.cmdrProjectWith("a.copying" to "Copying {countText} to {target}")
         myFixture.configureByText("sample.ts", "const label = tString('a.copying')")
 
         assertEquals(listOf("“Copying {countText} to {target}”"), placeholders())
@@ -127,16 +121,16 @@ class I18nKeyFoldingTest : FoldingTestCase() {
      * existing fold region keeps its placeholder text. See `DETAILS.md` for what does and doesn't refresh it.
      */
     fun testTheCatalogReloadsAfterTheJsonChangesOnDisk() {
-        cmdrProjectWith("a.title" to "Send crash report?")
+        myFixture.cmdrProjectWith("a.title" to "Send crash report?")
         myFixture.configureByText("sample.ts", "const title = tString('a.title')")
         assertEquals(listOf(TITLE), placeholders())
 
-        rewriteCatalog("a.title" to "Send this crash report?")
+        myFixture.rewriteCatalog("a.title" to "Send this crash report?")
 
         assertEquals(
             "the index kept the old copy, so the VFS invalidation didn't fire",
             "Send this crash report?",
-            MessageCatalogService.getInstance(project).catalog()?.get("a.title"),
+            MessageCatalogService.getInstance(project).catalog()?.get("a.title")?.text,
         )
         assertEquals("the open editor kept the copy it was opened with", listOf(RETITLED), placeholders())
     }
@@ -147,7 +141,7 @@ class I18nKeyFoldingTest : FoldingTestCase() {
      * is what confirms a freshly opened file really shows the text.
      */
     fun testAFoldIsCollapsedByDefault() {
-        cmdrProjectWith("a.title" to "Send crash report?")
+        myFixture.cmdrProjectWith("a.title" to "Send crash report?")
         myFixture.configureByText("sample.ts", "const title = tString('a.title')")
 
         val builder = I18nKeyFoldingBuilder()
@@ -170,7 +164,7 @@ class I18nKeyFoldingTest : FoldingTestCase() {
 
     fun testASvelteTemplateAndScriptBothFold() {
         if (skipWithoutSveltePlugin()) return
-        cmdrProjectWith("a.title" to "Send crash report?")
+        myFixture.cmdrProjectWith("a.title" to "Send crash report?")
         myFixture.configureByText(
             "Sample.svelte",
             """
@@ -188,7 +182,7 @@ class I18nKeyFoldingTest : FoldingTestCase() {
     /** The one key site that isn't JavaScript: an ordinary XML attribute in the same `SvelteHTML` root. */
     fun testATransKeyAttributeFolds() {
         if (skipWithoutSveltePlugin()) return
-        cmdrProjectWith("ui.loadingIcon.cancelHint" to "Press {key} to cancel")
+        myFixture.cmdrProjectWith("ui.loadingIcon.cancelHint" to "Press {key} to cancel")
         myFixture.configureByText(
             "Sample.svelte",
             """
@@ -210,13 +204,15 @@ class I18nKeyFoldingTest : FoldingTestCase() {
      * down from the `SvelteHTML` root has to expand every lazy-parsed script. Numbers are in `DETAILS.md`.
      */
     fun testFoldingTheRealRepoIsCheap() {
-        markProjectAsCmdrCheckout()
-        val catalogFiles = copyRealCatalogIntoFixture()
+        myFixture.markProjectAsCmdrCheckout()
+        val catalogFiles = myFixture.copyRealCatalogIntoFixture()
 
         val dense = measureFoldingCost("settings definitions", DENSE_FILE)
         assertTrue("a settings-definition file should be dense with keys, folded ${dense.folds}", dense.folds > 40)
         assertTrue("folding a dense real file took ${dense.warmMillis} ms", dense.warmMillis < BUDGET_MILLIS)
-        println("[perf] catalog: $catalogFiles files, first build included in the ${dense.coldMillis} ms cold run")
+        println(
+            "[perf] catalog: ${catalogFiles.size} files, first build included in the ${dense.coldMillis} ms cold run",
+        )
 
         val generated = measureFoldingCost("generated bindings", SPARSE_FILE)
         assertEquals("the generated IPC bindings carry no user copy", 0, generated.folds)
@@ -261,56 +257,10 @@ class I18nKeyFoldingTest : FoldingTestCase() {
 
     private fun placeholders(): List<String> = folds().map { it.second }
 
-    /** Marks the fixture a Cmdr checkout and gives it a catalog holding exactly [messages]. */
-    private fun cmdrProjectWith(vararg messages: Pair<String, String>) {
-        markProjectAsCmdrCheckout()
-        myFixture.addFileToProject("${catalogGlob().directory}/$CATALOG_FILE", catalogJson(messages))
-    }
-
-    /** Writes the marker with the repo's real config, so these tests fail if the shipped file stops saying this. */
-    private fun markProjectAsCmdrCheckout() {
-        myFixture.addFileToProject(CmdrProjectService.CONFIG_PATH, RepoFiles.read(CmdrProjectService.CONFIG_PATH))
-    }
-
-    private fun rewriteCatalog(vararg messages: Pair<String, String>) {
-        val file = myFixture.findFileInTempDir("${catalogGlob().directory}/$CATALOG_FILE")
-        WriteCommandAction.runWriteCommandAction(project) { VfsUtil.saveText(file, catalogJson(messages)) }
-    }
-
-    /** The repo's own `messages/en/` files, so the cost measurement is the real index and not a toy one. */
-    private fun copyRealCatalogIntoFixture(): Int {
-        val glob = catalogGlob()
-        val files = File(repoRoot(), glob.directory).listFiles().orEmpty().filter { glob.files.matches(it.name) }
-        assertTrue("the catalog glob matched nothing; did `messages/en/` move?", files.size > 20)
-        files.forEach { myFixture.addFileToProject("${glob.directory}/${it.name}", it.readText()) }
-        return files.size
-    }
-
-    private fun catalogJson(messages: Array<out Pair<String, String>>): String {
-        val root = JsonObject()
-        messages.forEach { (key, value) -> root.addProperty(key, value) }
-        return GsonBuilder().setPrettyPrinting().create().toJson(root)
-    }
-
-    private fun catalogGlob(): CatalogGlob {
-        val config = CmdrPluginConfig.parse(RepoFiles.read(CmdrProjectService.CONFIG_PATH)).get(I18nConfig)
-            ?: error("the shipped config no longer has an i18n section")
-        return CatalogGlob.parse(config.catalogGlob)
-    }
-
-    private fun repoRoot(): String = System.getProperty("cmdr.repo.root") ?: error("cmdr.repo.root isn't set")
-
-    private fun skipWithoutSveltePlugin(): Boolean {
-        if (Language.findLanguageByID("SvelteHTML") != null) return false
-        println("[test] SKIPPED: the Svelte plugin isn't on the test classpath (see `cmdrSveltePluginPath`).")
-        return true
-    }
-
     private companion object {
         const val OPEN_QUOTE = "“"
         const val TITLE = "“Send crash report?”"
         const val RETITLED = "“Send this crash report?”"
-        const val CATALOG_FILE = "fixture.json"
         const val DENSE_FILE = "apps/desktop/src/lib/settings/definitions/advanced.ts"
         const val SPARSE_FILE = "apps/desktop/src/lib/ipc/bindings.ts"
         const val SVELTE_FILE = "apps/desktop/src/lib/file-explorer/pane/FilePane.svelte"

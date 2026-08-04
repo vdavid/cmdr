@@ -23,7 +23,7 @@ class I18nKeyFoldingBuilder : FoldingBuilderEx(), DumbAware {
 
         return keySitesIn(root, config).mapNotNull { site ->
             val message = catalog[site.key] ?: return@mapNotNull null
-            FoldingDescriptor(site.folded.node, site.folded.textRange, null, foldedMessage(message))
+            FoldingDescriptor(site.folded.node, site.folded.textRange, null, foldedMessage(message.text))
         }.toTypedArray()
     }
 
