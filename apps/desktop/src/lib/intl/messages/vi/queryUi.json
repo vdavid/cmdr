@@ -593,10 +593,6 @@
   "@queryUi.scope.popover.aria": {
     "sourceHash": "989db5d"
   },
-  "queryUi.scope.placeholder": "Tất cả thư mục",
-  "@queryUi.scope.placeholder": {
-    "sourceHash": "226fd0e"
-  },
   "queryUi.scope.hint": "Các đường dẫn ngăn cách bằng dấu phẩy. Thêm tiền tố <bang>!</bang> để loại trừ. Ký tự đại diện <star>*</star> và <question>?</question> đều dùng được.",
   "@queryUi.scope.hint": {
     "sourceHash": "3335512"
@@ -621,8 +617,12 @@
   "@queryUi.scope.useCurrentFolder": {
     "sourceHash": "3df292c"
   },
-  "queryUi.scope.allFolders": "Tất cả thư mục",
-  "@queryUi.scope.allFolders": {
-    "sourceHash": "226fd0e"
+  "queryUi.scope.thisVolume": "Ổ đĩa này",
+  "@queryUi.scope.thisVolume": {
+    "sourceHash": "fd56065"
+  },
+  "queryUi.scope.currentFolder": "Thư mục hiện tại",
+  "@queryUi.scope.currentFolder": {
+    "sourceHash": "1a5db52"
   }
 }

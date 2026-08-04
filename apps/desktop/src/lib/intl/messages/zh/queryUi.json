@@ -589,10 +589,6 @@
   "@queryUi.scope.popover.aria": {
     "sourceHash": "989db5d"
   },
-  "queryUi.scope.placeholder": "所有文件夹",
-  "@queryUi.scope.placeholder": {
-    "sourceHash": "226fd0e"
-  },
   "queryUi.scope.hint": "用逗号分隔的路径。前面加 <bang>!</bang> 表示排除。通配符 <star>*</star> 和 <question>?</question> 可用。",
   "@queryUi.scope.hint": {
     "sourceHash": "3335512"
@@ -617,8 +613,12 @@
   "@queryUi.scope.useCurrentFolder": {
     "sourceHash": "3df292c"
   },
-  "queryUi.scope.allFolders": "所有文件夹",
-  "@queryUi.scope.allFolders": {
-    "sourceHash": "226fd0e"
+  "queryUi.scope.thisVolume": "本宗卷",
+  "@queryUi.scope.thisVolume": {
+    "sourceHash": "fd56065"
+  },
+  "queryUi.scope.currentFolder": "当前文件夹",
+  "@queryUi.scope.currentFolder": {
+    "sourceHash": "1a5db52"
   }
 }

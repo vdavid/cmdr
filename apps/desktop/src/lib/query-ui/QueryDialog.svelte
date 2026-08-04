@@ -571,7 +571,8 @@
             caseSensitive={config.filterChipsExtras.caseSensitive}
             scope={config.filterChipsExtras.scope}
             excludeSystemDirs={config.filterChipsExtras.excludeSystemDirs}
-            searchableFolder={config.filterChipsExtras.searchableFolder}
+            scopePresets={config.filterChipsExtras.scopePresets}
+            defaultScope={config.filterChipsExtras.defaultScope}
             sizeFilter={config.state.getSizeFilter()}
             sizeValue={config.state.getSizeValue()}
             sizeUnit={config.state.getSizeUnit()}

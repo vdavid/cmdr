@@ -14,7 +14,8 @@
  * `ExplorerAPI` for the write-coupled call sites (navigation) that retire later.
  */
 
-import { resolveSearchableFolder } from '$lib/search/searchable-folder'
+import { resolveSearchScope } from '$lib/search/searchable-folder'
+import type { ScopePresets } from '$lib/query-ui/query-dialog-config'
 import { resolveImageSearchVolume, type ImageSearchVolume } from '$lib/search/active-media-volume'
 import { getVolumes } from '$lib/stores/volume-store.svelte'
 import { getActiveTab } from '../tabs/tab-state-manager.svelte'
@@ -31,21 +32,20 @@ export function getFocusedPaneVolumeId(): string {
 }
 
 /**
- * The "current folder" the Search dialog's `Search in → Use current folder`
- * action should act on. When the focused pane is a `search-results://` snapshot
- * its path isn't a real folder, so this walks the pane's history back for the
- * most recent real folder; when none is reachable it surfaces a disabled state
- * with a tooltip. Delegates to the pure `resolveSearchableFolder`. Reactive.
+ * The Search dialog's two scope presets for the focused pane: its current folder
+ * (`Search in → Use current folder`, and the default an unset scope resolves to)
+ * and the volume that folder lives on (`This volume`). When the focused pane is a
+ * `search-results://` snapshot its path isn't a real folder, so this walks the
+ * pane's history back for the most recent real folder; when none is reachable the
+ * current folder is unavailable and the volume takes over. Delegates to the pure
+ * `resolveSearchScope`. Reactive.
  */
-export function getFocusedPaneSearchableFolder(): {
-  path: string | null
-  disabled: boolean
-  disabledReason: string
-} {
+export function getFocusedPaneSearchScope(): ScopePresets {
   const tab = getActiveTab(explorerState.getTabMgr(explorerState.getFocusedPane()))
-  return resolveSearchableFolder({
+  return resolveSearchScope({
     currentPath: tab.path,
     history: tab.history.stack.map((e) => e.path),
+    volumeRoots: getVolumes().map((v) => v.path),
   })
 }
 

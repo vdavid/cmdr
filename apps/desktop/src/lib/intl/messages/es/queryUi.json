@@ -593,10 +593,6 @@
   "@queryUi.scope.popover.aria": {
     "sourceHash": "989db5d"
   },
-  "queryUi.scope.placeholder": "Todas las carpetas",
-  "@queryUi.scope.placeholder": {
-    "sourceHash": "226fd0e"
-  },
   "queryUi.scope.hint": "Rutas separadas por comas. Antepón <bang>!</bang> para excluir. Funcionan los comodines <star>*</star> y <question>?</question>.",
   "@queryUi.scope.hint": {
     "sourceHash": "3335512"
@@ -621,8 +617,12 @@
   "@queryUi.scope.useCurrentFolder": {
     "sourceHash": "3df292c"
   },
-  "queryUi.scope.allFolders": "Todas las carpetas",
-  "@queryUi.scope.allFolders": {
-    "sourceHash": "226fd0e"
+  "queryUi.scope.thisVolume": "Este volumen",
+  "@queryUi.scope.thisVolume": {
+    "sourceHash": "fd56065"
+  },
+  "queryUi.scope.currentFolder": "Carpeta actual",
+  "@queryUi.scope.currentFolder": {
+    "sourceHash": "1a5db52"
   }
 }

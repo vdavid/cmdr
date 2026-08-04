@@ -592,10 +592,6 @@
   "@queryUi.scope.popover.aria": {
     "sourceHash": "989db5d"
   },
-  "queryUi.scope.placeholder": "Tous les dossiers",
-  "@queryUi.scope.placeholder": {
-    "sourceHash": "226fd0e"
-  },
   "queryUi.scope.hint": "Chemins séparés par des virgules. Préfixez avec <bang>!</bang> pour exclure. Les caractères génériques <star>*</star> et <question>?</question> fonctionnent.",
   "@queryUi.scope.hint": {
     "sourceHash": "3335512"
@@ -620,8 +616,12 @@
   "@queryUi.scope.useCurrentFolder": {
     "sourceHash": "3df292c"
   },
-  "queryUi.scope.allFolders": "Tous les dossiers",
-  "@queryUi.scope.allFolders": {
-    "sourceHash": "226fd0e"
+  "queryUi.scope.thisVolume": "Ce volume",
+  "@queryUi.scope.thisVolume": {
+    "sourceHash": "fd56065"
+  },
+  "queryUi.scope.currentFolder": "Dossier actuel",
+  "@queryUi.scope.currentFolder": {
+    "sourceHash": "1a5db52"
   }
 }

@@ -483,7 +483,10 @@
         caseSensitive: selectionQueryState.getCaseSensitive(),
         scope: '',
         excludeSystemDirs: true,
-        searchableFolder: { path: null, disabled: true, disabledReason: '' },
+        // Selection hides the scope chip entirely (`visibleChips.scope: false`), so these
+        // are inert placeholders, never rendered.
+        scopePresets: { currentFolder: null, currentFolderUnavailableReason: '', volumeRoot: '/' },
+        defaultScope: { path: '', label: '' },
         systemDirExcludeTooltip: '',
         aiPattern: null,
         aiPatternKind: null,

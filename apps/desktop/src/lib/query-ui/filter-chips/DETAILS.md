@@ -21,7 +21,8 @@ cross-consumer state factory.
 - **`DateFilterPopover.svelte`**: Modified popover body: the comparator + dynamic-preset grid, the
   `buildDatePresets`-derived list + first-match selection keys, custom-input flags, `pickDate*` handlers
 - **`ScopeFilterPopover.svelte`**: Search-in popover body: the scope field (the house `$lib/ui/TextArea`, `radius="sm"`
-  to sit in a dense popover), "Hide boring folders" / "Case-sensitive" toggles, and the ⌥C / ⌥V footer buttons
+  to sit in a dense popover, placeholder = `defaultScopePath`, the path an empty box actually searches), "Hide boring folders" /
+  "Case-sensitive" toggles, and the ⌥C "Use current folder" / ⌥V "This volume" footer buttons
 - **`filter-popover.css`**: Shared global styles for the popover bodies: `.popover-section`, `.popover-label`, the
   `.list-grid` / `.list-cell` / `.list-col` grid, `.popover-input`, plus the `.size-grid-section` / `.scope-popover`
   section widths (`FilterPopover` renders those wrapper elements). Imported by all three popover bodies and

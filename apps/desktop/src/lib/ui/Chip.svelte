@@ -22,11 +22,15 @@
         chipElement?: HTMLButtonElement
         /** `filter` (popover trigger) or `recent` (history pill). Drives semantics + density. */
         variant?: 'filter' | 'recent'
-        /** Static label shown when no value is configured ("Size"), or the pill's primary text. */
+        /** Static label shown when there's no value ("Size"), or the pill's primary text. */
         label: string
-        /** Summary shown when configured. When set, the chip switches to its filled style. */
+        /**
+         * Summary rendered as "label: value" whenever it's set. Independent of `configured`:
+         * a chip can voice a DEFAULT it didn't get from the user (the scope chip's "Current
+         * folder") without offering to clear it.
+         */
         value?: string
-        /** Whether the chip is in its "configured" state. Drives style and the × affordance. */
+        /** Whether the USER configured this filter. Drives the filled style and the × affordance. */
         configured?: boolean
         /** True when the popover this chip controls is open. Drives the active-style ring. */
         isOpen?: boolean
@@ -67,7 +71,7 @@
     }: Props = $props()
     /* eslint-enable prefer-const */
 
-    const computedAriaLabel = $derived(ariaLabel ?? (configured ? `${label}: ${value}` : label))
+    const computedAriaLabel = $derived(ariaLabel ?? (value ? `${label}: ${value}` : label))
     const haspopup = $derived(variant === 'filter')
 
     function handleKeyDown(e: KeyboardEvent): void {
@@ -120,7 +124,7 @@
 >
     {#if leading}<span class="chip-leading">{@render leading()}</span>{/if}
     <span class="chip-label">
-        {#if configured}{label}: {value}{:else}{label}{/if}
+        {#if value}{label}: {value}{:else}{label}{/if}
     </span>
     {#if configured && onClear}
         <!--

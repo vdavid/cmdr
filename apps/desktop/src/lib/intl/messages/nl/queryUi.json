@@ -595,10 +595,6 @@
   "@queryUi.scope.popover.aria": {
     "sourceHash": "989db5d"
   },
-  "queryUi.scope.placeholder": "Alle mappen",
-  "@queryUi.scope.placeholder": {
-    "sourceHash": "226fd0e"
-  },
   "queryUi.scope.hint": "Door komma''s gescheiden paden. Begin met <bang>!</bang> om uit te sluiten. Jokertekens <star>*</star> en <question>?</question> werken.",
   "@queryUi.scope.hint": {
     "sourceHash": "3335512"
@@ -623,8 +619,12 @@
   "@queryUi.scope.useCurrentFolder": {
     "sourceHash": "3df292c"
   },
-  "queryUi.scope.allFolders": "Alle mappen",
-  "@queryUi.scope.allFolders": {
-    "sourceHash": "226fd0e"
+  "queryUi.scope.thisVolume": "Dit volume",
+  "@queryUi.scope.thisVolume": {
+    "sourceHash": "fd56065"
+  },
+  "queryUi.scope.currentFolder": "Huidige map",
+  "@queryUi.scope.currentFolder": {
+    "sourceHash": "1a5db52"
   }
 }

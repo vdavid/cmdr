@@ -144,32 +144,34 @@ describe('deriveDateChip', () => {
 })
 
 describe('deriveScopeChip', () => {
-  it('default state: no scope text and system dirs hidden', () => {
-    expect(deriveScopeChip('', true)).toEqual({ configured: false, summary: '' })
+  it('voices the default scope, unconfigured: it is where the search runs, but nobody picked it', () => {
+    // An empty box is NOT "everywhere" any more, so the chip has to say where the search
+    // actually goes. `configured: false` keeps the × off — there's nothing to clear.
+    expect(deriveScopeChip('', true, 'Current folder')).toEqual({ configured: false, summary: 'Current folder' })
   })
 
   it('is configured when scope is set', () => {
-    const result = deriveScopeChip('~/Documents', true)
+    const result = deriveScopeChip('~/Documents', true, 'Current folder')
     expect(result.configured).toBe(true)
     expect(result.summary).toBe('~/Documents')
   })
 
   it('is configured even with empty scope when system dirs are included', () => {
-    const result = deriveScopeChip('', false)
+    const result = deriveScopeChip('', false, 'Current folder')
     expect(result.configured).toBe(true)
     expect(result.summary).toBe('includes system folders')
   })
 
   it('truncates very long scope strings for the chip display', () => {
     const longScope = '/Users/me/very/very/long/path/that/exceeds/the/chip/limit/several/times/over'
-    const result = deriveScopeChip(longScope, true)
+    const result = deriveScopeChip(longScope, true, 'Current folder')
     expect(result.configured).toBe(true)
     expect(result.summary.length).toBeLessThanOrEqual(40)
     expect(result.summary.endsWith('…')).toBe(true)
   })
 
   it('trims surrounding whitespace before deciding configured', () => {
-    expect(deriveScopeChip('   ', true)).toEqual({ configured: false, summary: '' })
+    expect(deriveScopeChip('   ', true, 'This volume')).toEqual({ configured: false, summary: 'This volume' })
   })
 })
 

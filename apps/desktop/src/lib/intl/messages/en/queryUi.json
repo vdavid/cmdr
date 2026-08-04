@@ -789,10 +789,6 @@
   "@queryUi.scope.popover.aria": {
     "description": "Accessibility label for the scope filter popover, read by screen readers."
   },
-  "queryUi.scope.placeholder": "All folders",
-  "@queryUi.scope.placeholder": {
-    "description": "Placeholder in the scope popover's folder textarea, shown when no folders are entered (so the search covers everything)."
-  },
   "queryUi.scope.hint": "Comma-separated paths. Prefix with <bang>!</bang> to exclude. Wildcards <star>*</star> and <question>?</question> work.",
   "@queryUi.scope.hint": {
     "description": "Help text under the folder textarea in the scope popover, explaining the syntax for limiting search to folders. The <bang>, <star>, and <question> tags wrap literal characters ('!', '*', '?') shown in a code style; keep those characters as-is and keep the tags around them. 'Comma-separated' means the user separates multiple paths with commas."
@@ -818,8 +814,12 @@
   "@queryUi.scope.useCurrentFolder": {
     "description": "Footer button in the scope popover that sets the search scope to the folder currently open in the active pane. A keyboard-shortcut glyph appears next to it."
   },
-  "queryUi.scope.allFolders": "All folders",
-  "@queryUi.scope.allFolders": {
-    "description": "Footer button in the scope popover that clears the scope so search covers all folders. A keyboard-shortcut glyph appears next to it."
+  "queryUi.scope.thisVolume": "This volume",
+  "@queryUi.scope.thisVolume": {
+    "description": "Footer button in the scope popover that widens the search to the whole volume (disk, drive, or network share) the current folder sits on -- the most a single search can cover. Also names that scope on the 'Search in' chip when the active pane has no real folder to default to. A keyboard-shortcut glyph appears next to the button. Short: it renders in a tight button and a tight chip."
+  },
+  "queryUi.scope.currentFolder": "Current folder",
+  "@queryUi.scope.currentFolder": {
+    "description": "Name of the default search scope on the 'Search in' chip, shown when the user hasn't picked a scope: the search covers the folder open in the active pane. Distinct from queryUi.scope.useCurrentFolder, which is the button that sets it. Short: it renders as a chip value."
   }
 }

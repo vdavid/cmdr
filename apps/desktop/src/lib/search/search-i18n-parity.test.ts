@@ -12,7 +12,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { _setLocaleForTests } from '$lib/intl/locale'
 import { tString } from '$lib/intl/messages.svelte'
 import { SEARCH_RESULTS_NOT_A_FOLDER_TOAST } from './capabilities'
-import { resolveSearchableFolder } from './searchable-folder'
+import { resolveSearchScope } from './searchable-folder'
 import { buildSnapshotLabel } from './snapshot-label'
 
 beforeAll(() => {
@@ -49,10 +49,14 @@ describe('search toast and tooltip parity (en)', () => {
     expect(SEARCH_RESULTS_NOT_A_FOLDER_TOAST).toBe("Search results aren't a folder. Paste into a real folder instead.")
   })
 
-  it('preserves the searchable-folder disabled tooltip', () => {
-    const result = resolveSearchableFolder({ currentPath: 'search-results://sr-1', history: ['search-results://sr-1'] })
-    expect(result.disabled).toBe(true)
-    expect(result.disabledReason).toBe(
+  it('preserves the unavailable-current-folder tooltip', () => {
+    const result = resolveSearchScope({
+      currentPath: 'search-results://sr-1',
+      history: ['search-results://sr-1'],
+      volumeRoots: ['/'],
+    })
+    expect(result.currentFolder).toBeNull()
+    expect(result.currentFolderUnavailableReason).toBe(
       "Current folder is search results, which isn't searchable. Open a real folder first.",
     )
   })

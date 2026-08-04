@@ -42,6 +42,7 @@ const {
   translateSearchQueryMock,
   searchFilesMock,
   addRecentSearchMock,
+  parseSearchScopeMock,
   mediaSearchOcrMock,
   mediaSearchSemanticMock,
   mediaVolumeStateMock,
@@ -52,6 +53,9 @@ const {
       Promise.resolve({ entries: [], totalCount: 0 }),
   ),
   addRecentSearchMock: vi.fn(() => Promise.resolve()),
+  parseSearchScopeMock: vi.fn((_scope: string) =>
+    Promise.resolve({ includePaths: [] as string[], excludePatterns: [] as string[] }),
+  ),
   // The image-OCR grid's IPC. Defaults: enrichment on, one hit, so the grid actually
   // queries the passed volume (its state gates all work). Path is index-relative.
   mediaSearchOcrMock: vi.fn((_v: string, _q: string, _l: number | null) =>
@@ -81,7 +85,7 @@ vi.mock('$lib/tauri-commands', () => ({
   searchFiles: searchFilesMock,
   releaseSearchIndex: vi.fn(() => Promise.resolve()),
   translateSearchQuery: translateSearchQueryMock,
-  parseSearchScope: vi.fn(() => Promise.resolve({ includePaths: [], excludePatterns: [] })),
+  parseSearchScope: parseSearchScopeMock,
   getSystemDirExcludes: vi.fn(() => Promise.resolve([])),
   onSearchIndexReady: vi.fn(() => Promise.resolve(() => {})),
   getRecentSearches: vi.fn(() => Promise.resolve([])),
@@ -155,6 +159,7 @@ interface MountDialogOptions {
   onShowAllInMainWindow?: (snapshotId: string) => void
   onNavigate?: (path: string) => void
   imageSearchVolume?: { volumeId: string; mountRoot: string; isNetwork: boolean }
+  scopePresets?: { currentFolder: string | null; currentFolderUnavailableReason: string; volumeRoot: string }
 }
 
 /**
@@ -188,7 +193,11 @@ async function mountDialog(opts: MountDialogOptions = {}): Promise<{ overlay: El
     props: {
       onNavigate: opts.onNavigate ?? (() => {}),
       onClose: opts.onClose ?? (() => {}),
-      searchableFolder: { path: '/Users/test', disabled: false, disabledReason: '' },
+      scopePresets: opts.scopePresets ?? {
+        currentFolder: '/Users/test',
+        currentFolderUnavailableReason: '',
+        volumeRoot: '/',
+      },
       onShowAllInMainWindow: opts.onShowAllInMainWindow,
       ...(opts.imageSearchVolume ? { imageSearchVolume: opts.imageSearchVolume } : {}),
     },
@@ -999,7 +1008,7 @@ describe('SearchDialog ⌥← / ⌥→ pass through to the text field', () => {
           navigated.push(path)
         },
         onClose: () => {},
-        searchableFolder: { path: '/Users/test', disabled: false, disabledReason: '' },
+        scopePresets: { currentFolder: '/Users/test', currentFolderUnavailableReason: '', volumeRoot: '/' },
       },
     })
     await tick()
@@ -1279,6 +1288,119 @@ describe('SearchDialog image-OCR grid targets the active volume', () => {
     } finally {
       vi.useRealTimers()
     }
+    cleanup()
+  })
+})
+
+describe('SearchDialog scope ladder (one volume is the ceiling)', () => {
+  beforeEach(() => {
+    clearSearchState()
+    aiProvider = 'off'
+    autoApplySetting = false // run only on explicit Enter, so each run is countable
+    autoApplyListeners.clear()
+    searchFilesMock.mockClear()
+    addRecentSearchMock.mockClear()
+    parseSearchScopeMock.mockClear()
+  })
+
+  /** Types a query and runs it, returning the `SearchQuery` that reached the backend. */
+  async function runAndCaptureQuery(overlay: Element): Promise<{ includePaths?: string[] | null }> {
+    setQuery('*.pdf')
+    dispatchKey(overlay, 'Enter')
+    await tick()
+    await new Promise((r) => setTimeout(r, 0))
+    await tick()
+    expect(searchFilesMock).toHaveBeenCalledTimes(1)
+    const call = searchFilesMock.mock.calls[0] as unknown[]
+    return call[0] as { includePaths?: string[] | null }
+  }
+
+  it('an empty scope box searches the current folder, not everywhere', async () => {
+    // The behavior change M0 makes: "no scope" used to fan out across every indexed
+    // volume. It now means the one folder the user is standing in.
+    const { overlay, cleanup } = await mountDialog()
+    const query = await runAndCaptureQuery(overlay)
+    expect(query.includePaths).toEqual(['/Users/test'])
+    cleanup()
+  })
+
+  it('falls back to the volume when the focused pane has no real folder', async () => {
+    const { overlay, cleanup } = await mountDialog({
+      scopePresets: { currentFolder: null, currentFolderUnavailableReason: 'snapshot', volumeRoot: '/Volumes/naspi' },
+    })
+    const query = await runAndCaptureQuery(overlay)
+    expect(query.includePaths).toEqual(['/Volumes/naspi'])
+    cleanup()
+  })
+
+  it('a scope the user typed wins over the default', async () => {
+    parseSearchScopeMock.mockResolvedValueOnce({ includePaths: ['/Users/test/docs'], excludePatterns: [] })
+    const { overlay, cleanup } = await mountDialog()
+    setScope('~/docs')
+    const query = await runAndCaptureQuery(overlay)
+    expect(query.includePaths).toEqual(['/Users/test/docs'])
+    cleanup()
+  })
+
+  it('does NOT persist a defaulted scope into recent searches', async () => {
+    // The default follows whichever pane you're in, so writing its resolved path into
+    // saved history would bake a machine-specific folder nobody chose into every entry,
+    // and split one search into a separate recent per folder visited.
+    const { cleanup } = await mountDialog()
+    setQuery('*.pdf')
+    setMode('filename')
+    const { setResults, setTotalCount } = await import('./search-state.svelte')
+    setResults([
+      {
+        name: 'doc.pdf',
+        path: '/Users/test/docs/doc.pdf',
+        parentPath: '/Users/test/docs',
+        isDirectory: false,
+        size: 1024,
+        modifiedAt: 1_700_000_000,
+        iconId: 'ext:pdf',
+      },
+    ])
+    setTotalCount(1)
+    await tick()
+
+    const btn = document.body.querySelector('button[aria-label="Go to file"]') as HTMLButtonElement
+    btn.click()
+    await tick()
+    await Promise.resolve()
+
+    const entry = (addRecentSearchMock.mock.calls[0] as unknown[])[0] as { scope: string }
+    expect(entry.scope).toBe('')
+    cleanup()
+  })
+
+  it('persists a scope the user actually chose', async () => {
+    const { cleanup } = await mountDialog()
+    setQuery('*.pdf')
+    setMode('filename')
+    setScope('~/docs')
+    const { setResults, setTotalCount } = await import('./search-state.svelte')
+    setResults([
+      {
+        name: 'doc.pdf',
+        path: '/Users/test/docs/doc.pdf',
+        parentPath: '/Users/test/docs',
+        isDirectory: false,
+        size: 1024,
+        modifiedAt: 1_700_000_000,
+        iconId: 'ext:pdf',
+      },
+    ])
+    setTotalCount(1)
+    await tick()
+
+    const btn = document.body.querySelector('button[aria-label="Go to file"]') as HTMLButtonElement
+    btn.click()
+    await tick()
+    await Promise.resolve()
+
+    const entry = (addRecentSearchMock.mock.calls[0] as unknown[])[0] as { scope: string }
+    expect(entry.scope).toBe('~/docs')
     cleanup()
   })
 })

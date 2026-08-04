@@ -43,7 +43,8 @@ function baseProps(overrides: Partial<Props> = {}): Props {
     caseSensitive: false,
     scope: '',
     excludeSystemDirs: true,
-    searchableFolder: { path: '/Users/test', disabled: false, disabledReason: '' },
+    scopePresets: { currentFolder: '/Users/test', currentFolderUnavailableReason: '', volumeRoot: '/' },
+    defaultScope: { path: '/Users/test', label: 'Current folder' },
     sizeFilter: 'any',
     sizeValue: '',
     sizeUnit: 'MB',
@@ -339,7 +340,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     // Filename mode chip elsewhere).
     expect(footerButtons?.[0].textContent).toContain('Use current folder')
     expect(footerButtons?.[0].textContent).toContain('⌥C')
-    expect(footerButtons?.[1].textContent).toContain('All folders')
+    expect(footerButtons?.[1].textContent).toContain('This volume')
     expect(footerButtons?.[1].textContent).toContain('⌥V')
     cleanup()
     document.querySelectorAll('.ui-popover').forEach((el) => {
@@ -373,7 +374,8 @@ describe('SearchFilterChips: scope popover behavior', () => {
     const onScheduleSearch = vi.fn()
     const { target, cleanup } = mountChips(
       baseProps({
-        searchableFolder: { path: '/Users/test/work', disabled: false, disabledReason: '' },
+        scopePresets: { currentFolder: '/Users/test/work', currentFolderUnavailableReason: '', volumeRoot: '/' },
+        defaultScope: { path: '/Users/test/work', label: 'Current folder' },
         onSetScope,
         scheduleSearch: onScheduleSearch,
       }),
@@ -654,15 +656,18 @@ describe('SearchFilterChips: scope popover behavior', () => {
     })
   })
 
-  it('D12: Use current folder is disabled with tooltip when searchableFolder.disabled is true', async () => {
+  it('D12: Use current folder is disabled with tooltip when there is no current folder', async () => {
     const onSetScope = vi.fn()
     const { target, cleanup } = mountChips(
       baseProps({
-        searchableFolder: {
-          path: null,
-          disabled: true,
-          disabledReason: "Current folder is search results, which isn't searchable. Open a real folder first.",
+        scopePresets: {
+          currentFolder: null,
+          currentFolderUnavailableReason:
+            "Current folder is search results, which isn't searchable. Open a real folder first.",
+          volumeRoot: '/',
         },
+        // With no current folder the default falls back a rung, to the volume.
+        defaultScope: { path: '/', label: 'This volume' },
         onSetScope,
       }),
     )
@@ -686,7 +691,8 @@ describe('SearchFilterChips: scope popover behavior', () => {
     const { target, cleanup } = mountChips(
       baseProps({
         // The dialog's parent passes the most-recent real-folder history path here.
-        searchableFolder: { path: '/Users/me/projects', disabled: false, disabledReason: '' },
+        scopePresets: { currentFolder: '/Users/me/projects', currentFolderUnavailableReason: '', volumeRoot: '/' },
+        defaultScope: { path: '/Users/me/projects', label: 'Current folder' },
         onSetScope,
       }),
     )
@@ -704,19 +710,72 @@ describe('SearchFilterChips: scope popover behavior', () => {
     })
   })
 
-  it('All folders button clears the scope', async () => {
+  it('This volume button widens the scope to the volume root, the most a search can cover', async () => {
     const onSetScope = vi.fn()
-    const { target, cleanup } = mountChips(baseProps({ scope: '~/Documents', onSetScope }))
+    const { target, cleanup } = mountChips(
+      baseProps({
+        scope: '~/Documents',
+        scopePresets: {
+          currentFolder: '/Volumes/naspi/photos',
+          currentFolderUnavailableReason: '',
+          volumeRoot: '/Volumes/naspi',
+        },
+        defaultScope: { path: '/Volumes/naspi/photos', label: 'Current folder' },
+        onSetScope,
+      }),
+    )
     await tick()
     const scopeChip = findChip(target, 'Search in')
     scopeChip?.click()
     await tick()
     const buttons = document.querySelectorAll<HTMLButtonElement>('.footer-button')
     buttons[1].click()
-    expect(onSetScope).toHaveBeenCalledWith('')
+    // NOT '' (which used to mean "all folders"): the widest rung is one volume.
+    expect(onSetScope).toHaveBeenCalledWith('/Volumes/naspi')
     cleanup()
     document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
+  })
+
+  it('⌥V sets the scope to this volume while the popover is open', async () => {
+    const onSetScope = vi.fn()
+    const { target, cleanup } = mountChips(
+      baseProps({
+        scopePresets: {
+          currentFolder: '/Volumes/naspi/photos',
+          currentFolderUnavailableReason: '',
+          volumeRoot: '/Volumes/naspi',
+        },
+        defaultScope: { path: '/Volumes/naspi/photos', label: 'Current folder' },
+        onSetScope,
+      }),
+    )
+    await tick()
+    // The shortcut is popover-only: nothing happens before the popover opens.
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyV', altKey: true }))
+    expect(onSetScope).not.toHaveBeenCalled()
+
+    findChip(target, 'Search in')?.click()
+    await tick()
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyV', altKey: true }))
+    expect(onSetScope).toHaveBeenCalledWith('/Volumes/naspi')
+    cleanup()
+    document.querySelectorAll('.ui-popover').forEach((el) => {
+      el.remove()
+    })
+  })
+
+  it('the Search-in chip names the default scope, with no × to clear it', async () => {
+    // An unset scope isn't "everywhere": it's the current folder, and the chip has to
+    // say so or the narrower default reads as a silent behavior change.
+    const { target, cleanup } = mountChips(
+      baseProps({ scope: '', defaultScope: { path: '/Users/test/work', label: 'Current folder' } }),
+    )
+    await tick()
+    const scopeChip = findChip(target, 'Search in')
+    expect(scopeChip?.textContent).toContain('Current folder')
+    expect(scopeChip?.querySelector('.chip-clear')).toBeNull()
+    cleanup()
   })
 })

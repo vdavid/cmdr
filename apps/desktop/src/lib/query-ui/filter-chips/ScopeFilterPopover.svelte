@@ -1,7 +1,11 @@
 <script lang="ts">
     /**
      * Scope ("Search in") popover body: a paths textarea plus the "Hide boring folders" /
-     * "Case-sensitive" toggles and the ⌥C "Use current folder" / ⌥V "All folders" footer buttons.
+     * "Case-sensitive" toggles and the ⌥C "Use current folder" / ⌥V "This volume" footer buttons.
+     *
+     * A search covers at most one volume, so those two buttons are the whole ladder: the
+     * current folder (also what an EMPTY box means, shown as the placeholder) and the volume
+     * it lives on. There is no "all folders" rung any more.
      *
      * Extracted from `FilterChips.svelte`. The parent owns the chip strip, the `openChip` state,
      * the ⌥I opener, and the ⌥C / ⌥V keyboard router (active only while this popover is open). The
@@ -15,6 +19,7 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import { tString } from '$lib/intl/messages.svelte'
     import Trans from '$lib/intl/Trans.svelte'
+    import type { ScopePresets } from '../query-dialog-config'
     import './filter-popover.css'
 
     interface Props {
@@ -28,15 +33,13 @@
         excludeSystemDirs: boolean
         caseSensitive: boolean
         /**
-         * D12: smart "current folder" the "Use current folder" button acts on. When the focused
-         * pane is a search-results snapshot, this walks back to the most recent real folder; when
-         * none exists, the button renders disabled with `disabledReason` as its tooltip.
+         * The two scope presets the footer buttons set. `currentFolder` is `null` when the
+         * focused pane is a search-results snapshot with no real folder behind it; the button
+         * then renders disabled with `currentFolderUnavailableReason` as its tooltip.
          */
-        searchableFolder: {
-            path: string | null
-            disabled: boolean
-            disabledReason: string
-        }
+        scopePresets: ScopePresets
+        /** What an empty box means: the path a defaulted search actually runs against. */
+        defaultScopePath: string
         systemDirExcludeTooltip: string
         onInput: (setter: (v: string) => void, search?: boolean) => (e: Event) => void
         onSetScope: (path: string) => void
@@ -52,7 +55,8 @@
         scope,
         excludeSystemDirs,
         caseSensitive,
-        searchableFolder,
+        scopePresets,
+        defaultScopePath,
         systemDirExcludeTooltip,
         onInput,
         onSetScope,
@@ -85,7 +89,7 @@
         <TextArea
             id="popover-scope"
             radius="sm"
-            placeholder={tString('queryUi.scope.placeholder')}
+            placeholder={defaultScopePath}
             value={scope}
             oninput={onInput(onSetScope)}
             ariaLabel={tString('queryUi.scope.textareaAria')}
@@ -123,23 +127,23 @@
                 {tString('queryUi.scope.toggle.caseSensitive')}
             </Checkbox>
         </div>
-        <!-- D9: scope shortcuts moved inside the popover. ⌥C "Use current
-             folder", ⌥V "All folders". Only active while the popover is open
+        <!-- D9: scope shortcuts live inside the popover. ⌥C "Use current
+             folder", ⌥V "This volume". Only active while the popover is open
              (matching the round-2 resolved shortcut allocation: the global
              ⌥F now drives the Filename mode chip instead). -->
         <div class="popover-footer">
-            <!-- D12: "Use current folder" renders disabled when the focused
-                 pane is a search-results snapshot AND no real-folder history
-                 entry is reachable. The button still shows so the user sees
-                 the option exists; the tooltip explains why it's off. -->
+            <!-- "Use current folder" renders disabled when the focused pane is
+                 a search-results snapshot AND no real-folder history entry is
+                 reachable. The button still shows so the user sees the option
+                 exists; the tooltip explains why it's off. -->
             <button
                 type="button"
                 class="footer-button"
-                disabled={searchableFolder.disabled}
-                use:tooltip={searchableFolder.disabled ? searchableFolder.disabledReason : ''}
+                disabled={scopePresets.currentFolder === null}
+                use:tooltip={scopePresets.currentFolder === null ? scopePresets.currentFolderUnavailableReason : ''}
                 onclick={() => {
-                    if (searchableFolder.disabled || !searchableFolder.path) return
-                    onSetScope(searchableFolder.path)
+                    if (!scopePresets.currentFolder) return
+                    onSetScope(scopePresets.currentFolder)
                     scheduleSearch()
                 }}
             >
@@ -149,12 +153,13 @@
             <button
                 type="button"
                 class="footer-button"
+                use:tooltip={scopePresets.volumeRoot}
                 onclick={() => {
-                    onSetScope('')
+                    onSetScope(scopePresets.volumeRoot)
                     scheduleSearch()
                 }}
             >
-                {tString('queryUi.scope.allFolders')}
+                {tString('queryUi.scope.thisVolume')}
                 <ShortcutChip key="⌥V" size="sm" />
             </button>
         </div>

@@ -77,6 +77,21 @@ export interface AiTranslateResult {
 }
 
 /**
+ * The two rungs of the scope ladder the Search-in popover offers. A search covers at
+ * most one volume, so there are exactly two: the focused pane's current folder (the
+ * default) and the volume it lives on (the maximum). Resolved by
+ * `$lib/search/searchable-folder`.
+ */
+export interface ScopePresets {
+  /** "Use current folder" (⌥C), or `null` when the focused pane is a snapshot with no real folder behind it. */
+  currentFolder: string | null
+  /** Why the current folder is unavailable, for the disabled button's tooltip. `''` when it is available. */
+  currentFolderUnavailableReason: string
+  /** "This volume" (⌥V): the mount root of the volume the current folder lives on. */
+  volumeRoot: string
+}
+
+/**
  * Search-specific filter-chips state that QueryDialog forwards to `FilterChips.svelte`.
  *
  * Selection passes empty/no-op values for the Search-only fields with
@@ -88,7 +103,18 @@ export interface QueryDialogFilterChipsExtras {
   caseSensitive: boolean
   scope: string
   excludeSystemDirs: boolean
-  searchableFolder: { path: string | null; disabled: boolean; disabledReason: string }
+  /**
+   * The two scope presets the Search-in popover offers ("Use current folder" / "This
+   * volume") plus the default an unset scope resolves to. Built by the dialog's host
+   * from the focused pane; see `$lib/search/searchable-folder`.
+   */
+  scopePresets: ScopePresets
+  /**
+   * What an EMPTY scope box means: the path the search actually runs against, and the
+   * name the chip and placeholder show for it. Search derives it from `scopePresets`
+   * (`resolveDefaultScope`); Selection, which hides the scope chip, passes blanks.
+   */
+  defaultScope: { path: string; label: string }
   systemDirExcludeTooltip: string
   aiPattern: string | null
   /**

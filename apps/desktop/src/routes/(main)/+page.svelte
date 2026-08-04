@@ -26,7 +26,7 @@
     import { goToPath } from '$lib/go-to-path/go-to-path'
     import {
         getFocusedPanePath,
-        getFocusedPaneSearchableFolder,
+        getFocusedPaneSearchScope,
         getFocusedPaneImageSearchVolume,
     } from '$lib/file-explorer/pane/focused-pane-reads'
     import type { FileEntry } from '$lib/file-explorer/types'
@@ -660,7 +660,7 @@
             <SearchDialog
                 onNavigate={handleSearchNavigate}
                 onClose={handleSearchDialogClose}
-                searchableFolder={getFocusedPaneSearchableFolder()}
+                scopePresets={getFocusedPaneSearchScope()}
                 imageSearchVolume={getFocusedPaneImageSearchVolume()}
                 onShowAllInMainWindow={handleOpenSearchInPane}
             />

@@ -1,6 +1,6 @@
 # Search (frontend)
 
-Whole-drive file search dialog: filename (glob/regex), size, date, and scope. Optional AI mode translates
+File search dialog: filename (glob/regex), size, date, and scope. Optional AI mode translates
 natural-language queries into structured filters. First consumer of the shared Query UI primitives in
 `../query-ui/CLAUDE.md` (Selection is the second). Backend: `src-tauri/src/search/`.
 
@@ -34,19 +34,23 @@ natural-language queries into structured filters. First consumer of the shared Q
 - **Closed-tab reopen must not double-count refs.** Tab close transfers snapshot-ref ownership to the `ClosedTab` entry
   (`transferSnapshotRefs`); refs release only on closed-tab eviction (non-recording `closeTab` releases immediately).
   `{#key activeTabId}` pane recreation is safe (history lives on `TabState`).
-- **Scope shortcuts `⌥C` / `⌥V` are popover-only; don't promote to global** (collides with the mode chips). Search-only;
-  suppressed when `scopeChipVisible=false` (Selection).
+- **An EMPTY scope box means the CURRENT FOLDER, not everywhere** (the volume root when the pane has no real folder).
+  `runSearch()` resolves it per run so it follows the pane. ❌ Never write the resolved path into `scope` state: a
+  defaulted scope must stay unpersisted, or every recent search bakes in a machine-specific path nobody chose.
+- **Two scope rungs, because a search covers one volume: `⌥C` current folder, `⌥V` this volume.** Popover-only, ❌ don't
+  promote to global (collides with the mode chips); suppressed when `scopeChipVisible=false` (Selection).
 - **"Use current folder" never seeds a `search-results://` URL into scope.** `searchable-folder.ts` walks pane history
-  back to the most recent real folder; if none, surfaces a disabled result with the canonical tooltip.
+  back to the most recent real folder; if none, `currentFolder` is `null` (button disabled + tooltip) and the default
+  drops to the volume.
 - **Destination write ops are blocked on `search-results` panes** (`SEARCH_RESULTS_NOT_A_FOLDER_TOAST`) via three sites:
   F-bar disablement, menu-item omission, `blockedByCapabilities`. `openTransferDialog` also blocks F5/F6 when the
   OPPOSITE pane is a snapshot. Source ops (Cmd+C/X, F5/F6, drag-out) run (`canBeSource: true`).
 - **AI mode never auto-applies** (cost); only Enter / `⌘Enter` / the ⏎ button / example chips fire it. Don't add a
   per-consumer catch that swallows AI errors: QueryDialog surfaces them once for both.
-- **Two volume scopes: filename search covers EVERY indexed volume; the image grid follows the active pane.** The
-  backend fans out (`src-tauri/src/search/CLAUDE.md`); `SearchDialog` keys lifecycle + scanning indicator on
-  `ROOT_VOLUME_ID` because root is what it WAITS for, not the coverage. The grid follows `imageSearchVolume`, the
-  focused pane's volume (a NAS search finds NAS photos), whose id IS the media-index id. DETAILS § Which volumes.
+- **One volume per search; the image grid follows the active pane.** The backend enforces the ceiling
+  (`src-tauri/src/search/CLAUDE.md`); `SearchDialog` still keys lifecycle + scanning indicator on `ROOT_VOLUME_ID`
+  because root is what it WAITS for (M1 makes that per-target). The grid follows `imageSearchVolume`, the focused pane's
+  volume (a NAS search finds NAS photos), whose id IS the media-index id. DETAILS § Which volumes.
 - **`ImageSearchResults` OWNS every `cmdr-media://` thumbnail token it mints** (no viewer-session close): drop the prior
   set before minting the next, and all on unmount (`mediaIndexDropThumbnailTokens`), or the backend token map leaks.
   With `mediaIndex.enabled` OFF the section renders nothing, fires no IPC; ON, it voices coverage and renders the

@@ -46,6 +46,8 @@
         type UnlistenFn,
     } from '$lib/tauri-commands'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
+    import { resolveDefaultScope, defaultScopeLabel } from './searchable-folder'
+    import type { ScopePresets } from '$lib/query-ui/query-dialog-config'
     import { tString } from '$lib/intl/messages.svelte'
     import { isVolumeScanning, getEntriesScanned, ROOT_VOLUME_ID } from '$lib/indexing'
     import {
@@ -120,17 +122,14 @@
         /** Called when dialog is closed. */
         onClose: () => void
         /**
-         * Smart "current folder" for the Search-in popover's `Use current folder` button.
-         * Round-2 D12: when the focused pane is a `search-results://` snapshot, the host
-         * walks the pane's history back to the most recent real folder; when none is
-         * available, this surfaces `disabled: true` plus a tooltip so the dialog can
-         * render the button visibly disabled. See `lib/search/searchable-folder.ts`.
+         * The focused pane's two scope presets: its current folder (the Search-in popover's
+         * `Use current folder` button, AND what an empty scope box means) and the volume that
+         * folder lives on (`This volume`, the widest a search can go). When the pane is a
+         * `search-results://` snapshot with no real folder behind it, `currentFolder` is
+         * `null`, the button renders disabled with its tooltip, and the default falls back to
+         * the volume. See `lib/search/searchable-folder.ts`.
          */
-        searchableFolder: {
-            path: string | null
-            disabled: boolean
-            disabledReason: string
-        }
+        scopePresets: ScopePresets
         /**
          * Called when the user activates "Show all in main window" (⌥⏎ or footer click).
          * Receives the freshly-created snapshot id; the host
@@ -151,7 +150,7 @@
     const {
         onNavigate,
         onClose,
-        searchableFolder,
+        scopePresets,
         onShowAllInMainWindow,
         imageSearchVolume = { volumeId: ROOT_VOLUME_ID, mountRoot: '/', isNetwork: false },
     }: Props = $props()
@@ -167,6 +166,14 @@
     // in the settings window flips the AI chip in real time without reopening the dialog.
     let aiProvider = $state<string>(getSetting('ai.provider'))
     let unlistenAiProvider: (() => void) | undefined
+
+    /**
+     * Where a search runs when the user hasn't set a scope: the focused pane's current
+     * folder, or its volume when there's no real folder behind the pane. Derived, never
+     * written into `scope` state — which is what keeps a defaulted scope out of saved
+     * recent searches (see `persistRecentSearch`).
+     */
+    const defaultScope = $derived(resolveDefaultScope(scopePresets))
 
     // Reactive readers off the Search state instance. Used by the derived config below.
     const isIndexReady = $derived(getIsIndexReady())
@@ -308,13 +315,17 @@
             query.namePattern = aiPattern && aiPattern.trim() ? aiPattern : null
             query.patternType = aiKind === 'regex' ? 'regex' : 'glob'
         }
-        // Parse scope and merge into query if non-empty.
+        // Parse the scope and merge it in. An EMPTY box isn't "everywhere" any more: a
+        // search covers one volume at most, and the default rung of that ladder is the
+        // focused pane's current folder, resolved here at run time so it follows the pane.
         const scopeStr = getScope().trim()
         if (scopeStr) {
             const parsed = await parseSearchScope(scopeStr)
             if (parsed.includePaths.length > 0) query.includePaths = parsed.includePaths
             if (parsed.excludePatterns.length > 0)
                 query.excludeDirNames = parsed.excludePatterns
+        } else {
+            query.includePaths = [defaultScope.path]
         }
         const result = await searchFiles(query)
         // PII-free analytics: a search ran. Only the mode enum crosses; never the query/pattern.
@@ -387,6 +398,12 @@
      * don't persist (they'd be keystroke noise). For AI mode the entry carries the
      * original natural-language prompt, not the translated pattern. Best-effort: a
      * persistence failure never blocks the open.
+     *
+     * A DEFAULTED scope is deliberately not persisted: `scope` is `''` until the user sets
+     * one, so the entry records "wherever I was" rather than baking in a machine-specific
+     * absolute path nobody chose. Replaying it later re-resolves against the pane you're
+     * standing in then, which is what "search here" meant in the first place. It also keeps
+     * the history dedupe key meaningful (one "report" entry, not one per folder visited).
      */
     function persistRecentSearch(): void {
         const historyEntry: HistoryEntry = {
@@ -556,7 +573,8 @@
         scope: getScope(),
         excludeSystemDirs: getExcludeSystemDirs(),
         countOnly: getCountOnly(),
-        searchableFolder,
+        scopePresets,
+        defaultScope: { path: defaultScope.path, label: defaultScopeLabel(defaultScope.kind) },
         systemDirExcludeTooltip,
         aiPattern: lastAiPattern,
         aiPatternKind: getLastAiPatternKind(),

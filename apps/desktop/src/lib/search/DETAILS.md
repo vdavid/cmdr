@@ -76,24 +76,19 @@ What the wrapper still owns (Search-specific glue):
 The wrapper has no line-count target; its size is what Search-specific glue costs. It does not own the overlay element,
 the keyboard handler, the IME guard, the auto-apply debounce, the popover toggle, or any other orchestration concern.
 
-The route (`+page.svelte`) mounts SearchDialog with its props: `onNavigate`, `onClose`, `searchableFolder`,
+The route (`+page.svelte`) mounts SearchDialog with its props: `onNavigate`, `onClose`, `scopePresets`,
 `imageSearchVolume`, `onShowAllInMainWindow`.
 
 ### Which volumes each search covers
 
-The two searches have different coverage, and the difference is deliberate.
+Both searches now cover ONE volume, and each picks it differently.
 
-**Filename search covers every indexed volume.** An unscoped query fans out across each persisted `index-{volumeId}.db`
-in the backend (`src-tauri/src/search/CLAUDE.md`); the frontend never narrows it. `SearchDialog` keys its index
-lifecycle (`prepareSearchIndex` / `releaseSearchIndex`) and the QueryDialog scanning indicator on `ROOT_VOLUME_ID`
-because root is the arena the dialog WAITS for, not because root is the coverage. Two backend behaviors show through
-here:
-
-- A cold non-root volume doesn't block the dialog's first search. The run answers from the arenas already resident and
-  warms the rest behind the reply, then emits `search-index-ready`; the wrapper's listener re-runs the query so the late
-  volume's matches fold in a couple of seconds later. That listener is load-bearing for coverage, not a nicety.
-- Two index DBs claiming the same mount root (one NAS reached over both Tailscale and the LAN) collapse to one at read
-  time, so a fan-out result carries no duplicate rows and no doubled counts. Frontend does nothing for this.
+**Filename search covers the scope's volume**, at most one (`src-tauri/src/search/CLAUDE.md`). The frontend's job is to
+make sure a scope always exists: an empty box means the focused pane's current folder, resolved at run time in
+`runSearch()` from `defaultScope`, so it follows the pane rather than freezing at dialog-open time. `SearchDialog` still
+keys its index lifecycle (`prepareSearchIndex` / `releaseSearchIndex`) and the QueryDialog scanning indicator on
+`ROOT_VOLUME_ID`, because root is the arena the dialog WAITS for — making that gate per-target is M1 of
+`docs/specs/unindexed-search-plan.md`.
 
 **The image-OCR grid follows the active pane instead**: it targets whatever volume the user is contextually searching,
 that is, the focused pane's current volume, so browsing the NAS surfaces the NAS's photos and browsing local surfaces
@@ -173,38 +168,54 @@ Search-only contracts (cross-consumer ones live in `../query-ui/CLAUDE.md`):
 - `pane/has-parent.ts` owns the `hasParent` derivation; `pane/has-parent.test.ts` pins that `selectAll` in a snapshot
   pane covers index 0, not 1.
 
-## Scope row & shortcuts (Search-only)
+## Scope: a two-rung ladder (Search-only)
 
-Below the chips. Comma-separated folder paths with `!` prefix for exclusions. Parsed via `parseSearchScope()` IPC call
-in `executeSearch()` (async, so not part of `buildSearchQuery()`). ⌥F sets scope to the focused pane's current
-directory; ⌥D clears it. Info button `(i)` shows syntax help tooltip. Selection has no scope row (a selection runs
+The scope box takes comma-separated folder paths with a `!` prefix for exclusions, parsed via the `parseSearchScope()`
+IPC call in `runSearch()` (async, so not part of `buildSearchQuery()`). Selection has no scope row (a selection runs
 against a single in-memory folder), so `FilterChips.svelte` accepts a `scopeChipVisible` prop that Selection passes as
-`false`; the underlying `⌥I` (open scope popover) and `⌥C` / `⌥V` (inside the scope popover) shortcuts are suppressed in
-that case.
+`false`; the `⌥I` (open scope popover) and `⌥C` / `⌥V` (inside the popover) shortcuts are suppressed in that case.
+
+A search covers at most one volume, so the popover offers exactly two rungs, both writing a literal path into the box:
+
+- **"Use current folder" (⌥C)** — the focused pane's folder.
+- **"This volume" (⌥V)** — the mount root of the volume that folder is on. The widest a search can go; there is no "all
+  folders" rung any more.
+
+### The empty box means the current folder
+
+An empty box is NOT "everywhere": `runSearch()` sends `defaultScope.path` as the sole include path, which is the current
+folder, or the volume root when the pane has no real folder behind it. Three consequences worth knowing:
+
+- The Search-in chip renders the default's NAME ("Current folder" / "This volume") with `configured: false`, so it shows
+  where the search goes without offering an × to clear something the user never set. `Chip` renders `value` whenever
+  it's set, independently of `configured`, precisely for this.
+- The scope textarea's placeholder is the resolved default PATH, so the popover says exactly what will be searched.
+- **A defaulted scope is never persisted.** `scope` state stays `''`, so recent searches and snapshots record "wherever
+  I was" instead of baking in a machine-specific absolute path nobody chose; replaying one re-resolves against the pane
+  you're standing in then. It also keeps the history dedupe key meaningful — one "report" entry, not one per folder
+  visited. A scope the user typed or clicked in IS persisted, because that was a choice.
+
+### Where the presets come from
+
+- `getFocusedPaneSearchScope()` in `lib/file-explorer/pane/focused-pane-reads.ts` reads the focused pane's path,
+  history, and the live volume roots from the stores, and delegates to the pure `resolveSearchScope`.
+- `+page.svelte` passes the result as the `scopePresets` prop; `SearchDialog` derives `defaultScope` from it.
+- When the focused pane's path starts with `search-results://`, reusing it would produce an unsearchable
+  `search-results://sr-N` scope, so `searchable-folder.ts` walks the pane's history backward for the most recent
+  non-snapshot path. If none is reachable, `currentFolder` is `null`: the ⌥C button renders disabled with the canonical
+  tooltip ("Current folder is search results, which isn't searchable. Open a real folder first.") and the default drops
+  a rung to the volume, so a search still runs.
+- `volumeRootFor` picks the LONGEST volume root containing the folder, matching whole segments — every path is under
+  `/`, so a first-match scan would call a NAS folder a boot-disk one, and a `/Volumes/nas` root must not swallow
+  `/Volumes/nas-backup`.
+
+The pure helpers are unit-tested in `searchable-folder.test.ts`.
 
 ### Scope shortcuts inside the popover
 
-`⌥F` is the Filename mode chip globally. The scope actions live as `⌥C` (Use current folder) and `⌥V` (All folders),
-active ONLY while the Search-in popover is open. They're wired via a top-level `<svelte:window>` in `FilterChips.svelte`
-that gates on `openChip === 'scope'`. Don't promote them back to global shortcuts — that collides with the mode chips.
-
-### "Use current folder" smart fallback
-
-When the focused pane's path starts with `search-results://`, naively reusing it as the scope seed produces an
-unsearchable `search-results://sr-N` URL. `searchable-folder.ts` walks the pane's history backward for the most recent
-non-snapshot path; if none is reachable, the dialog surfaces a `disabled: true` result with the canonical tooltip
-("Current folder is search results, which isn't searchable. Open a real folder first.").
-
-The plumbing:
-
-- `getFocusedPaneSearchableFolder()` in `lib/file-explorer/pane/focused-pane-reads.ts` reads the focused pane's path +
-  history from the explorer store and delegates to `resolveSearchableFolder`.
-- `+page.svelte` calls it once per dialog mount and passes the result as the `searchableFolder` prop.
-- `FilterChips.svelte` renders the "Use current folder" footer button disabled (with tooltip) when
-  `searchableFolder.disabled === true`; otherwise it uses `searchableFolder.path`.
-- `⌥C` inside the popover honors the same fallback so the keyboard shortcut never seeds a snapshot URL into the scope.
-
-The pure helper (`resolveSearchableFolder`) is unit-tested in `searchable-folder.test.ts`.
+`⌥F` is the Filename mode chip globally. The scope actions live as `⌥C` and `⌥V`, active ONLY while the Search-in
+popover is open. They're wired via a top-level `<svelte:window>` in `FilterChips.svelte` that gates on
+`openChip === 'scope'`. Don't promote them back to global shortcuts — that collides with the mode chips.
 
 ## Data flow
 

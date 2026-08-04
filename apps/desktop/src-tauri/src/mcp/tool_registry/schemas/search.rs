@@ -38,7 +38,7 @@ pub fn search_schema() -> Value {
             },
             "scope": {
                 "type": "string",
-                "description": "Scope string: comma-separated paths, ! for excludes (for example, \"~/projects, !node_modules\")"
+                "description": "Scope string: comma-separated paths, ! for excludes (for example, \"~/projects, !node_modules\"). A search covers ONE volume, so every include path must be on the same drive; omit to search the boot volume."
             },
             "caseSensitive": {
                 "type": "boolean",
@@ -71,7 +71,7 @@ pub fn ai_search_schema() -> Value {
             },
             "scope": {
                 "type": "string",
-                "description": "Scope string: comma-separated paths, ! for excludes (for example, \"~/projects, !node_modules\"). Merged with AI-inferred scope."
+                "description": "Scope string: comma-separated paths, ! for excludes (for example, \"~/projects, !node_modules\"). Merged with AI-inferred scope. A search covers ONE volume, so every include path must be on the same drive; omit to search the boot volume."
             },
             "limit": {
                 "type": "integer",

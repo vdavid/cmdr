@@ -20,8 +20,9 @@
      * keyboard-shortcut routers (the ⌥S / ⌥M / ⌥I openers and the scope-only ⌥C / ⌥V); it threads
      * `anchor` / `open` / `onClose` plus typed callbacks into each popover.
      *
-     * Keyboard contract: ⌥C and ⌥V set / clear the scope while the scope popover is open. The
-     * popover's footer also exposes them as buttons so mouse users have first-class access.
+     * Keyboard contract, while the scope popover is open: ⌥C sets the scope to the current
+     * folder, ⌥V to the whole volume (the widest a search can go). The popover's footer also
+     * exposes both as buttons so mouse users have first-class access.
      */
     import { SvelteSet } from 'svelte/reactivity'
     import Chip from '$lib/ui/Chip.svelte'
@@ -32,6 +33,7 @@
     import { tString } from '$lib/intl/messages.svelte'
     import { deriveSizeChip, deriveDateChip, deriveScopeChip, derivePatternChip } from './filter-chip-state'
     import type { QueryFilterState, SizeFilter, SizeUnit, DateFilter, TypeFilter } from '../query-filter-state.svelte'
+    import type { ScopePresets } from '../query-dialog-config'
     import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
 
     type FilterKey = 'size' | 'date' | 'scope'
@@ -48,20 +50,17 @@
         scope: string
         excludeSystemDirs: boolean
         /**
-         * D12: smart "current folder" the Search-in popover's "Use current folder"
-         * button acts on. When the focused pane is a search-results snapshot, this
-         * walks back to the most recent real folder; when none exists, the button
-         * renders disabled with `disabledReason` as its tooltip.
-         *
-         * Replaces the round-1 `currentFolderPath` prop entirely: the dialog's host
-         * already computes the smart fallback (`getFocusedPaneSearchableFolder()`),
-         * and there's no reason to also pass the raw path through.
+         * The two scope presets the Search-in popover offers: the focused pane's current
+         * folder (⌥C, disabled when the pane is a snapshot with no real folder behind it)
+         * and the volume it lives on (⌥V). The host computes both
+         * (`getFocusedPaneSearchScope()`); nothing here re-derives them.
          */
-        searchableFolder: {
-            path: string | null
-            disabled: boolean
-            disabledReason: string
-        }
+        scopePresets: ScopePresets
+        /**
+         * What an EMPTY scope box means, named for the chip and the box's placeholder
+         * (Search resolves it from `scopePresets`; Selection passes an empty default).
+         */
+        defaultScope: { path: string; label: string }
         sizeFilter: SizeFilter
         sizeValue: string
         sizeUnit: SizeUnit
@@ -117,7 +116,8 @@
         caseSensitive,
         scope,
         excludeSystemDirs,
-        searchableFolder,
+        scopePresets,
+        defaultScope,
         sizeFilter,
         sizeValue,
         sizeUnit,
@@ -222,17 +222,18 @@
     function handleScopePopoverShortcut(e: KeyboardEvent): boolean {
         if (altLetter(e, 'c')) {
             e.preventDefault()
-            // D12: respect the dialog's smart current-folder fallback so ⌥C does NOT seed an
+            // Respect the host's smart current-folder fallback so ⌥C does NOT seed an
             // unsearchable `search-results://...` URL into the scope.
-            if (!searchableFolder.disabled && searchableFolder.path) {
-                onSetScope(searchableFolder.path)
+            if (scopePresets.currentFolder) {
+                onSetScope(scopePresets.currentFolder)
                 scheduleSearch()
             }
             return true
         }
         if (altLetter(e, 'v')) {
             e.preventDefault()
-            onSetScope('')
+            // The widest a search can go: one volume.
+            onSetScope(scopePresets.volumeRoot)
             scheduleSearch()
             return true
         }
@@ -250,7 +251,7 @@
         deriveSizeChip(sizeFilter, sizeValue, sizeUnit, sizeValueMax, sizeUnitMax, getFileSizeFormat()),
     )
     const dateState = $derived(deriveDateChip(dateFilter, dateValue, dateValueMax))
-    const scopeState = $derived(deriveScopeChip(scope, excludeSystemDirs))
+    const scopeState = $derived(deriveScopeChip(scope, excludeSystemDirs, defaultScope.label))
     const patternState = $derived(derivePatternChip({ mode, query, aiPattern }))
 
     /**
@@ -427,7 +428,7 @@
      window listener so we keep the dialog-level keymap close to where the
      popovers it targets are defined.
      - ⌥C / ⌥V (only while the Scope popover is open) — Use current folder /
-       All folders. D9 contract.
+       This volume. D9 contract.
      - ⌥S / ⌥M / ⌥I (any time, while the dialog is mounted) — open the Size /
        Modified / Search-in popover. D10 / D11 brief calls for these as global
        (in-dialog) shortcuts that focus the first column. -->
@@ -449,7 +450,8 @@
         {scope}
         {excludeSystemDirs}
         {caseSensitive}
-        {searchableFolder}
+        {scopePresets}
+        defaultScopePath={defaultScope.path}
         {systemDirExcludeTooltip}
         {onInput}
         {onSetScope}

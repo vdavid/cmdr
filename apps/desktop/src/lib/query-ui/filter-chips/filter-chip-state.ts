@@ -144,14 +144,24 @@ export function derivePatternChip(input: {
   return { configured: true, summary: display }
 }
 
-/** Returns the chip state for the Search in (scope) filter. */
-export function deriveScopeChip(scope: string, excludeSystemDirs: boolean): FilterChipState {
+/**
+ * Returns the chip state for the Search in (scope) filter.
+ *
+ * `defaultScopeLabel` names where an EMPTY box searches ("Current folder" / "This volume"),
+ * which the chip shows UNCONFIGURED: the search really is scoped there, so hiding it would
+ * read as "everywhere", but the user didn't choose it, so there's nothing to clear.
+ */
+export function deriveScopeChip(
+  scope: string,
+  excludeSystemDirs: boolean,
+  defaultScopeLabel: string,
+): FilterChipState {
   const trimmed = scope.trim()
   if (!trimmed) {
     // Even with no scope text, the chip is "configured" if the user disabled the system-dirs
     // hide toggle, because that's a non-default state worth visualizing.
     if (!excludeSystemDirs) return { configured: true, summary: tString('queryUi.filters.scope.includesSystemFolders') }
-    return { configured: false, summary: '' }
+    return { configured: false, summary: defaultScopeLabel }
   }
   // Truncate long scope text for chip display. Keep the rest reachable via the popover.
   const MAX_LEN = 40

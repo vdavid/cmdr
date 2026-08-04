@@ -48,8 +48,9 @@ describe('query-ui static-string parity (en)', () => {
     expect(tString('queryUi.scope.toggle.hideBoring')).toBe('Hide boring folders')
     expect(tString('queryUi.scope.toggle.caseSensitive')).toBe('Case-sensitive')
     expect(tString('queryUi.scope.useCurrentFolder')).toBe('Use current folder')
-    expect(tString('queryUi.scope.allFolders')).toBe('All folders')
-    expect(tString('queryUi.scope.placeholder')).toBe('All folders')
+    // One volume is the ceiling, so the widest rung is "This volume", not "All folders".
+    expect(tString('queryUi.scope.thisVolume')).toBe('This volume')
+    expect(tString('queryUi.scope.currentFolder')).toBe('Current folder')
   })
 
   it('resolves the AI transparency strip copy', () => {
@@ -89,7 +90,7 @@ describe('query-ui filter-chip summary parity (en)', () => {
   })
 
   it('renders the includes-system-folders scope summary', () => {
-    expect(deriveScopeChip('', false).summary).toBe('includes system folders')
+    expect(deriveScopeChip('', false, 'Current folder').summary).toBe('includes system folders')
   })
 
   it('renders byte/bytes unit labels', () => {
