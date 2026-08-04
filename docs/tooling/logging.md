@@ -53,6 +53,29 @@ From lowest to highest: `debug` < `info` < `warning` < `error` < `fatal`
   by default. Enable per scope with `RUST_LOG=module=debug` when investigating.
 - **TRACE**: Protocol-level internals, full data structures, per-iteration details
 
+### Keeping the file readable
+
+The file target is always Debug so a bundle carries full context, which makes Debug volume a real cost: excessive
+logging makes a log harder to read, not more informative. Two rules keep it honest.
+
+**A repetitive line gets an aggregate, not a demotion.** Demoting a per-event line to Trace removes it from every
+bundle, so the information is gone rather than compressed. Instead, count the events and put the number somewhere a
+reader already looks:
+
+- Fold the count into a summary line that already exists. `reconcile_subtree` counts the directories that vanished
+  mid-walk and reports `143 unreadable dirs` on its own completion line; the churn line above carries the queued-signal
+  count.
+- Or roll the line up with `cmdr_fs::log_rollup::LogRollup`: the first occurrence logs immediately, then sustained
+  repetition collapses to one line per window carrying `×N in Ys`. Keyed per volume or share, so a busy one can't
+  swallow a quiet one's first line. Used by the space poller, the SMB space poll, and the media live tick.
+
+**A heartbeat speaks when it has something to say.** The writer and reconciler stall probes keep full 5 s resolution
+whenever there's work in flight (a queue with no progress is the stall they exist to show) and drop to one line a minute
+while genuinely idle, which is enough to tell "idle" from "dead".
+
+When you do demote a line to Trace, say in a comment why a bundle doesn't need it, and leave the per-path detail
+reachable through a `RUST_LOG` recipe below.
+
 ### Enabling debug logs for a feature
 
 Use `RUST_LOG` to enable FE debug logs in the terminal (no code changes needed):
@@ -120,7 +143,7 @@ RUST_LOG=trace pnpm dev
 ## Log format
 
 ```
-10:19:34.908 DEBUG indexing::writer  Starting flush
+10:19:34.908 DEBUG indexing::writer  Writer: +412 msgs (390 upserts, 18 deletes, 4 flushes) in 5.0s [98,204 total]
 10:19:34.912 INFO  FE:fileExplorer   Loaded 1,204 files
 ```
 
@@ -137,6 +160,8 @@ Copy-paste commands for common debugging scenarios. All include `info` as the ba
 - **Indexing FSEvents**: `RUST_LOG=cmdr_lib::indexing::watch::watcher=debug,info pnpm dev`
 - **Reconcile, per subtree walk** (the detail behind the churn line below):
   `RUST_LOG=cmdr_lib::indexing::reconcile=debug,info pnpm dev`
+- **Reconcile, per PATH** (the queued anchors and the dirs that couldn't be read, both Trace):
+  `RUST_LOG=cmdr_lib::indexing::reconcile=trace,info pnpm dev`
 - **Per-subtree churn** (needs `CMDR_CHURN_SPIKE`, see below): `RUST_LOG=cmdr_lib::indexing::churn=debug,info pnpm dev`
 - **File operations (copy/move/delete)**: `RUST_LOG=cmdr_lib::file_system::write_operations=debug,info pnpm dev`
 - **Directory listing**: `RUST_LOG=cmdr_lib::file_system::listing=debug,info pnpm dev`
@@ -201,13 +226,15 @@ minutes, and only when the window crossed a budget: more than 60 s of cumulative
 cumulative row changes.
 
 ```
-Reconciler: heavy churn in the last 15 min: 120 subtree reconciles, 169s of walking, 102,229 row changes, 64+ anchors, 37 signals held back. Top: /Users/me/Library/Caches/… (18 walks, 96s), …
+Reconciler: heavy churn in the last 15 min: 120 subtree reconciles, 169s of walking, 102,229 row changes, 64+ anchors, 37 signals held back, 8,142 signals queued behind a running rescan. Top: /Users/me/Library/Caches/… (18 walks, 96s), …
 ```
 
 Read it as "this machine is spending real CPU staying in sync, and here is where". The top anchors are ranked by
 accumulated walk cost, so the first one named is the folder to look at. `64+ anchors` means the per-window anchor list
 hit its cap, so the count is a floor. `signals held back` counts the change signals the per-subtree throttle and the
 new-subtree settle delay absorbed; a window that churns hard while that reads zero means one of those stopped working.
+`signals queued behind a running rescan` counts the ones that arrived while the single-flight drain was already walking,
+so it reads as queue pressure; it's omitted when it's zero, and it replaces what used to be a Debug line per signal.
 
 **Silence is the expected state.** On a healthy machine the line never appears. Seeing it repeatedly is the signal
 itself, not a fault in the logging.

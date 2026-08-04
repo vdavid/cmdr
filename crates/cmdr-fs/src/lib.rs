@@ -24,6 +24,7 @@ pub mod filesystem_kind;
 pub mod firmlinks;
 pub mod icons;
 pub mod ignore_poison;
+pub mod log_rollup;
 pub mod pluralize;
 pub mod process_memory;
 pub mod sqlite_util;

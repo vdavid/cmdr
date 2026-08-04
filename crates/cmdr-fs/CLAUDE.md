@@ -27,7 +27,8 @@ editing app code; use `cmdr_fs::…` from another crate.
 - `staging.rs`: `StagingTemp`, the ONLY way to name a scratch file, plus the markers every one carries and the in-flight
   registry that says whether a live operation still owns one. Whether the user SEES one is the app's
   (`file_system::staging`).
-- `tcc_paths.rs`, `ignore_poison.rs`, `pluralize.rs`, `thread_qos.rs`, `process_memory.rs`, `testing.rs`.
+- `log_rollup.rs` (repetitive-log-line rate limiter), `tcc_paths.rs`, `ignore_poison.rs`, `pluralize.rs`,
+  `thread_qos.rs`, `process_memory.rs`, `testing.rs`.
 
 ## Must-knows
 
