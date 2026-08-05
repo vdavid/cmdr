@@ -10,9 +10,11 @@
 //! into the SQLite index, and — when a search is listening — to that search over a
 //! second channel, as [`CoveredEntry`] batches.
 //!
-//! Scan exclusions (macOS system directories, virtual filesystems) are applied per
-//! child in the visitor via `should_exclude`, so excluded subtrees are never
-//! descended into.
+//! What a walk refuses to descend into is one value, [`WalkPolicy`], resolved
+//! before the walk starts and applied per child in the visitor: the structural
+//! exclusions (macOS system directories, virtual filesystems, junk) with an
+//! on/off switch, and the device a search walk must not leave. Either verdict
+//! means no row at all, not just no descent.
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -72,6 +74,8 @@ const WATCHDOG_INTERVAL: Duration = Duration::from_secs(1);
 #[cfg(test)]
 mod convergence_tests;
 #[cfg(test)]
+mod policy_tests;
+#[cfg(test)]
 mod test_fixtures;
 #[cfg(test)]
 mod tests;
@@ -119,11 +123,137 @@ pub(in crate::indexing) enum ScanRoot {
 }
 
 impl ScanRoot {
-    /// Whether this is the volume-root scan, which is what selects `ROOT_ID`, the
-    /// seeded epoch, and the per-child exclusion gate.
+    /// Whether this is the volume-root scan, which is what selects `ROOT_ID` and
+    /// the seeded epoch.
     fn is_volume(self) -> bool {
         self == ScanRoot::Volume
     }
+
+    /// Whether this walk runs the structural exclusion policy over the children
+    /// it finds.
+    ///
+    /// A `Rebuild` is pointed at ONE directory that its caller already gated
+    /// (`reconcile/verifier.rs` and `watch/event_loop/verification.rs` both ask
+    /// `should_exclude` about the new directory before handing it over), so the
+    /// walk is a re-read of ground somebody chose. A `Virgin` walk is the
+    /// opposite: a search names a scope, the coverage answer turns it into
+    /// frontier roots, and nothing between them has looked at what's underneath.
+    /// Without the gate, a scoped search of `/` walks `/private/var` and `/proc`.
+    fn exclusions(self) -> ExclusionMode {
+        match self {
+            ScanRoot::Volume | ScanRoot::Virgin => ExclusionMode::Apply,
+            ScanRoot::Rebuild => ExclusionMode::Off,
+        }
+    }
+
+    /// Whether this walk must stay on the device it started on.
+    ///
+    /// Only the search walk does. A search targets ONE volume (Decision 4), so
+    /// crossing into another one has left its scope, and the other volume's rows
+    /// belong to the other volume's index. A full scan keeps today's behavior: it
+    /// bounds itself by path prefix (`/Volumes/` on the boot disk) rather than by
+    /// device, and pinning it would silently change what a boot index contains.
+    fn stays_on_one_device(self) -> bool {
+        self == ScanRoot::Virgin
+    }
+}
+
+/// What one walk refuses to descend into, resolved before the walk starts.
+///
+/// Two rules, both about staying on the ground this walk owns, and neither one a
+/// second source of scope:
+///
+/// - the **structural exclusion policy**, whose rules come from the volume KIND
+///   ([`ExclusionScope`], never from `is_volume_root`) and whose on/off comes
+///   from what the walk IS ([`ScanRoot::exclusions`]);
+/// - the **device** the walk started on, so a filesystem mounted inside the tree
+///   is left to its own volume's index ([`ScanRoot::stays_on_one_device`]).
+///
+/// ⚠️ File Provider domains (Dropbox, iCloud Drive, Google Drive) are NOT a
+/// boundary and must never become one: they report the same device as `$HOME`
+/// and belong to the boot volume's scope. The guarded walker's stall detection is
+/// what makes descending into a disconnected one safe, which is why this needs no
+/// help from `file_provider::domain_id_for_dir` — that probe answers a different
+/// question (where a volume ROOT sits, for the pseudo-filesystem rule).
+#[derive(Debug, Clone)]
+struct WalkPolicy {
+    /// What the scan root is, which decides what the walk may do to the ground
+    /// under it.
+    root: ScanRoot,
+    /// Which structural rules this volume kind gets.
+    scope: ExclusionScope,
+    /// Whether they run at all for this walk.
+    exclusions: ExclusionMode,
+    /// The device the walk's own root sits on, or `None` when this walk doesn't
+    /// pin one (and so descends wherever the tree leads).
+    ///
+    /// The WALK's root, deliberately, not the volume's: a walk whose root is
+    /// itself on a foreign device would otherwise cut away every one of its own
+    /// children, list the root, and read as fully covered while holding nothing —
+    /// the silent false-complete [`ExclusionTier`] exists to prevent.
+    device: Option<u64>,
+    /// How a path's device is read. Injected so a test can simulate a mount
+    /// without one, the same way [`RootProbes`] injects its two.
+    device_of: fn(&Path) -> Option<u64>,
+}
+
+impl WalkPolicy {
+    /// The policy a walk of `mode` over `root` runs under.
+    fn for_walk(mode: ScanRoot, space: &IndexPathSpace, root: &Path) -> Self {
+        Self::with_device_probe(mode, space, root, device_of)
+    }
+
+    fn with_device_probe(
+        mode: ScanRoot,
+        space: &IndexPathSpace,
+        root: &Path,
+        device_of: fn(&Path) -> Option<u64>,
+    ) -> Self {
+        Self {
+            root: mode,
+            scope: space.exclusion_scope().clone(),
+            exclusions: mode.exclusions(),
+            // A root whose device can't be read pins nothing: the walk is about to
+            // fail to list it anyway, and a `None` pin that cut every child would
+            // turn an unreadable root into a false-complete.
+            device: mode.stays_on_one_device().then(|| device_of(root)).flatten(),
+            device_of,
+        }
+    }
+
+    /// Whether the structural policy excludes this child. Pure string work plus,
+    /// for a directory actually named `proc` / `sys` / `dev`, the root probes.
+    fn excludes(&self, path_str: &str) -> bool {
+        self.exclusions == ExclusionMode::Apply && should_exclude(path_str, &self.scope)
+    }
+
+    /// Whether descending into this DIRECTORY would leave the volume the walk is
+    /// covering: it sits on a different device, so something is mounted there.
+    ///
+    /// One `lstat` per directory the walk discovers, and only while a device is
+    /// pinned — a full scan pays nothing. A device that can't be read is NOT a
+    /// boundary: the walk descends, its read fails, and `visit_read_error` reports
+    /// that honestly instead of this guessing.
+    fn leaves_the_volume(&self, path: &Path) -> bool {
+        let Some(pinned) = self.device else { return false };
+        (self.device_of)(path).is_some_and(|device| device != pinned)
+    }
+}
+
+/// The device a path sits on. On a mount point this is the MOUNTED filesystem's,
+/// which is what makes the difference from its parent's the boundary signal.
+#[cfg(unix)]
+fn device_of(path: &Path) -> Option<u64> {
+    use std::os::unix::fs::MetadataExt;
+    std::fs::symlink_metadata(path).ok().map(|meta| meta.dev())
+}
+
+/// No device identity to compare, so no walk ever cuts at a boundary here. The
+/// LOCAL guarded walker is macOS / Linux only, so nothing reaches this in
+/// practice.
+#[cfg(not(unix))]
+fn device_of(_path: &Path) -> Option<u64> {
+    None
 }
 
 /// One entry a walk discovered, in the shape a live consumer needs it.
@@ -398,6 +528,7 @@ pub fn scan_volume(
             // Yield CPU to the UI: the whole scan runs on this thread and its walker pool.
             cmdr_fs::thread_qos::set_current_thread_qos(cmdr_fs::thread_qos::QosClass::Utility);
             let reader: ReadDirFn = default_reader();
+            let policy = WalkPolicy::for_walk(ScanRoot::Volume, &config.space, &config.root);
             let result = run_scan(
                 &config.root,
                 &cancel,
@@ -405,7 +536,7 @@ pub fn scan_volume(
                 &writer,
                 config.batch_size,
                 config.num_threads,
-                ScanRoot::Volume,
+                policy,
                 &config.space,
                 reader,
                 LOCAL_LIST_TIMEOUT,
@@ -458,7 +589,7 @@ pub fn scan_subtree(
         space,
         writer,
         cancel,
-        ScanRoot::Rebuild,
+        WalkPolicy::for_walk(ScanRoot::Rebuild, space, root),
         None,
         default_reader(),
         0,
@@ -492,7 +623,16 @@ pub(in crate::indexing) fn cover_subtree(
     emit: Option<EntrySender>,
     cancel: &CancellationToken,
 ) -> Result<ScanSummary, ScanError> {
-    walk_subtree(root, space, writer, cancel, ScanRoot::Virgin, emit, default_reader(), 0)
+    walk_subtree(
+        root,
+        space,
+        writer,
+        cancel,
+        WalkPolicy::for_walk(ScanRoot::Virgin, space, root),
+        emit,
+        default_reader(),
+        0,
+    )
 }
 
 /// The shared body of [`scan_subtree`] and [`cover_subtree`]: walk, then stamp
@@ -513,7 +653,7 @@ fn walk_subtree(
     space: &IndexPathSpace,
     writer: &IndexWriter,
     cancel: &CancellationToken,
-    mode: ScanRoot,
+    policy: WalkPolicy,
     emit: Option<EntrySender>,
     reader: ReadDirFn,
     num_threads: usize,
@@ -526,7 +666,7 @@ fn walk_subtree(
         writer,
         2000,
         num_threads,
-        mode,
+        policy,
         space,
         reader,
         LOCAL_LIST_TIMEOUT,
@@ -564,13 +704,14 @@ fn run_scan(
     writer: &IndexWriter,
     batch_size: usize,
     num_threads: usize,
-    mode: ScanRoot,
+    policy: WalkPolicy,
     space: &IndexPathSpace,
     reader: ReadDirFn,
     stall_timeout: Duration,
     emit: Option<EntrySender>,
 ) -> Result<ScanOutcome, ScanError> {
     let start = Instant::now();
+    let mode = policy.root;
     let is_volume_root = mode.is_volume();
 
     // Resolve the scan root id and read the epoch every listed dir is stamped with
@@ -632,8 +773,7 @@ fn run_scan(
     let walk_cancel = cancel.child_token();
     let visitor = Arc::new(InsertVisitor::new(
         writer.clone(),
-        is_volume_root,
-        space.exclusion_scope().clone(),
+        policy,
         space.inodes_trustworthy(),
         batch_size,
         progress,
@@ -730,5 +870,20 @@ pub(in crate::indexing) fn cover_subtree_with_reader(
     cancel: &CancellationToken,
     reader: ReadDirFn,
 ) -> Result<ScanSummary, ScanError> {
-    walk_subtree(root, space, writer, cancel, ScanRoot::Virgin, emit, reader, 1)
+    let policy = WalkPolicy::for_walk(ScanRoot::Virgin, space, root);
+    walk_subtree(root, space, writer, cancel, policy, emit, reader, 1)
+}
+
+/// [`cover_subtree_with_reader`] with the device probe injected too, so a test
+/// can put a "mount" anywhere in a temp tree without one.
+#[cfg(test)]
+pub(in crate::indexing) fn cover_subtree_with_device_probe(
+    root: &Path,
+    space: &IndexPathSpace,
+    writer: &IndexWriter,
+    cancel: &CancellationToken,
+    device_of: fn(&Path) -> Option<u64>,
+) -> Result<ScanSummary, ScanError> {
+    let policy = WalkPolicy::with_device_probe(ScanRoot::Virgin, space, root, device_of);
+    walk_subtree(root, space, writer, cancel, policy, None, default_reader(), 1)
 }

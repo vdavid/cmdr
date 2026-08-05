@@ -10,9 +10,9 @@ use std::sync::{Arc, Mutex};
 
 use tokio_util::sync::CancellationToken;
 
-use super::exclusions::{ExclusionScope, is_canonicalization_alias, should_exclude};
+use super::exclusions::is_canonicalization_alias;
 use super::walker::{DirTask, DirVisitor, RawDirEntry, RawFileType, WalkReadError};
-use super::{CoveredEntry, EntrySender, MARK_CHUNK, ScanError, ScanProgress};
+use super::{CoveredEntry, EntrySender, MARK_CHUNK, ScanError, ScanProgress, WalkPolicy};
 use crate::indexing::events::{Diagnostic, IndexErrorReport, IndexEvent};
 use crate::indexing::metadata;
 use crate::indexing::store::EntryRow;
@@ -56,9 +56,9 @@ pub(super) struct InsertVisitor {
     writer: IndexWriter,
     /// Shared id counter from `IndexWriter` (the single allocation source).
     next_id: Arc<AtomicI64>,
-    is_volume_root: bool,
-    /// Exclusion scope for the per-child gate (see `ScanConfig::scope`).
-    scope: ExclusionScope,
+    /// What this walk refuses to descend into: the structural exclusion policy
+    /// (with its on/off), and the device it must not leave.
+    policy: WalkPolicy,
     /// Whether the scanned volume's inode is a trustworthy identity (see
     /// `ScanConfig::inodes_trustworthy`). `false` on FAT/exFAT ⇒ every stored
     /// `inode` is nulled and hardlink dedup is skipped.
@@ -96,8 +96,7 @@ impl InsertVisitor {
     )]
     pub(super) fn new(
         writer: IndexWriter,
-        is_volume_root: bool,
-        scope: ExclusionScope,
+        policy: WalkPolicy,
         inodes_trustworthy: bool,
         batch_size: usize,
         progress: &ScanProgress,
@@ -109,8 +108,7 @@ impl InsertVisitor {
         Self {
             writer,
             next_id,
-            is_volume_root,
-            scope,
+            policy,
             inodes_trustworthy,
             batch_size,
             entries_scanned: Arc::clone(&progress.entries_scanned),
@@ -227,12 +225,11 @@ impl DirVisitor for InsertVisitor {
         for child in children {
             let path_str = child.path.to_string_lossy();
 
-            // Volume-root scans apply the exclusion policy; subtree scans were
-            // explicitly chosen, so global exclusions don't apply. The scope comes
-            // from the volume kind: `BootDisk` for the `/`-rooted boot scan,
-            // `MountRooted` for an external drive rooted at `/Volumes/X` (which must
-            // index its own subtree, skipping only junk basenames).
-            if self.is_volume_root && should_exclude(&path_str, &self.scope) {
+            // The structural exclusion policy, when this walk runs it: which rules
+            // apply comes from the volume KIND (`BootDisk` for the `/`-rooted boot
+            // scan, `MountRooted` for a drive at `/Volumes/X`, which must index its
+            // own subtree), whether they run at all comes from what the walk is.
+            if self.policy.excludes(&path_str) {
                 continue;
             }
             // Skip canonicalization aliases (/tmp, /var, /etc, Data-volume
@@ -245,6 +242,22 @@ impl DirVisitor for InsertVisitor {
 
             let is_dir = child.file_type == RawFileType::Dir;
             let is_symlink = child.file_type == RawFileType::Symlink;
+
+            // Something is mounted here, so this directory is another volume's
+            // ground. Cut exactly as an exclusion does — no row, not just no
+            // descent: a row nothing ever lists would sit in the frontier forever
+            // and hand itself to every later search, and the bytes under it belong
+            // in the other volume's `dir_stats`, not this one's. Only for a walk
+            // that pins a device, and only for directories, so it costs one `lstat`
+            // per discovered directory on the search walk and nothing at all on a
+            // full scan.
+            if is_dir && self.policy.leaves_the_volume(&child.path) {
+                log::debug!(
+                    "Scanner: not descending into {}, it's on another volume",
+                    child.path.display()
+                );
+                continue;
+            }
 
             // Prefer the reader's inline stat (macOS `getattrlistbulk` supplies it,
             // avoiding a per-entry `lstat` — the dominant local-walk cost). When the

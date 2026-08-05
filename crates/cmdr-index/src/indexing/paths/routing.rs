@@ -286,6 +286,15 @@ impl IndexPathSpace {
         self
     }
 
+    /// Swap the exclusion scope (tests only), so a walk can run against injected
+    /// root probes without a real File Provider domain or Unix root on the
+    /// machine. See `ExclusionScope::with_probes`.
+    #[cfg(test)]
+    pub(crate) fn with_exclusion_scope(mut self, scope: ExclusionScope) -> Self {
+        self.scope = scope;
+        self
+    }
+
     /// Derive the space from a volume's kind + root path + inode trust: a
     /// `mount_rooted()` kind strips its mount, the boot disk passes through.
     /// `inodes_trustworthy` is resolved once per scan from the volume's

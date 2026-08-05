@@ -23,9 +23,16 @@ use crate::indexing::writer::WriteMessage;
 ///
 /// The indexer's policy, read by three consumers so they can't drift: search
 /// applies it when `SearchQuery::exclude_system_dirs` isn't `Some(false)`, the
-/// importance scorer treats a match as known-unimportant, and the walk uses it for
-/// scope decisions. ❌ Match on NAME EQUALITY, never a substring
-/// (`no-string-matching`): a folder called `my-build-notes` is not build output.
+/// importance scorer treats a match as known-unimportant, and the folder-size
+/// tooltip command skips a match when it sums a directory. ❌ Match on NAME
+/// EQUALITY, never a substring (`no-string-matching`): a folder called
+/// `my-build-notes` is not build output.
+///
+/// ❌ The SCANNER is not one of them, and never should be (Decision 6 of
+/// `docs/specs/unindexed-search-plan.md`): this tier is large and sits under
+/// folders people search, so skipping it at walk time would stamp coverage on
+/// parents whose `dir_stats` are badly short. `should_exclude` below is the
+/// structural policy the walk does apply, and it shares no names with this list.
 pub const SYSTEM_DIR_EXCLUDES: &[&str] = &[
     // Package managers & build tools
     "node_modules",
@@ -94,6 +101,22 @@ pub(crate) enum ExclusionTier {
     /// A scan rooted at a mount point (`/Volumes/X`, an SMB share, an MTP store):
     /// apply only the per-volume tier, so the mount's own subtree is fully indexed.
     MountRooted,
+}
+
+/// Whether a walk runs the structural exclusion policy over the children it
+/// finds.
+///
+/// Layered OVER an [`ExclusionScope`], never a second source of one: the scope
+/// says WHICH rules this volume kind gets (derived from the kind, never from
+/// `is_volume_root`), and this says whether they run at all. Which one a walk
+/// takes is decided by what the walk IS — see `ScanRoot::exclusions`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ExclusionMode {
+    /// Gate every discovered child through `should_exclude`.
+    Apply,
+    /// Index whatever the walk finds. For a walk pointed at a directory
+    /// something else already gated.
+    Off,
 }
 
 /// A `should_exclude` check's scope: which [`ExclusionTier`] applies AND where the

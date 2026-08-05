@@ -84,3 +84,29 @@ window. Same tree: **3.92 ms**. Pinned by
   another way, the serial path leaves the cover story entirely.
 - **On network volumes (M3d).** Neither number here transfers: SMB and MTP walk over the `Volume` trait, where the wire
   is the bottleneck, and the parallelism question is a different one.
+
+## What the volume-boundary probe costs (added 2026-08-05, M3c)
+
+The search walk stays on the device it started on (Decision 4: a search targets one volume), and the batched macOS read
+carries no `ATTR_CMN_DEVID`, so the check is one `symlink_metadata` per directory the walk discovers. Measured by
+`scanner::policy_tests::measure_boundary_probe`, which walks the same real tree twice into a fresh index each time —
+once with the pin on, once with a probe that reports no device at all — so the difference IS the syscall:
+
+| Tree                                | Dirs   | No pin  | Pinned  | Delta |
+| ----------------------------------- | ------ | ------- | ------- | ----- |
+| `/Applications`                     | 50 501 | 3.11 s  | 3.20 s  | +2.9% |
+| `/Applications` (rerun)             | 50 501 | 3.08 s  | 3.25 s  | +5.6% |
+| the `cmdr` repo, worktrees included | 69 303 | 35.59 s | 36.68 s | +3.1% |
+
+**About 2–3 µs per directory, and 3–6% of wall clock.** It runs on the walker's worker threads alongside the directory
+read that follows it, which is why the amortized cost is far below a serialized `lstat`. Files are never probed, so the
+cost scales with directory count rather than entry count (~7% of entries here).
+
+Rejected alternative: **adding `ATTR_CMN_DEVID` to the batched `getattrlistbulk` read**, which would make the check free
+on the hot path. It changes a hand-written packed-record parser for every walk in the app (a full boot scan included) to
+buy back 3-6% on the one walk that needs it, and the attribute packing order is bit-ordered, so the new field lands in
+the middle of the existing parse. Worth revisiting only if the probe ever shows up in a profile.
+
+Also rejected: **reading the mount table** (`getmntinfo`) once per walk and cutting at any path in it. Cheaper still,
+but it's a snapshot — a drive mounted mid-walk would be walked into this volume's index — and it answers a different
+question from the one that matters ("is this a mount point _right now_").

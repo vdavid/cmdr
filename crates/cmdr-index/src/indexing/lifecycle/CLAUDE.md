@@ -47,8 +47,8 @@ How a per-volume index is born, lives, transitions, and dies. Every invariant he
 - **TWO switches, master wins, and both gate BACKGROUND work only.** `indexing.enabled` hard-gates
   `Activation::IndexTheVolume` in `start_indexing_for`, the choke point all four transports share — ❌ no background
   start around it. Master-off stops via `stop_indexing`, which must ❌ never write per-drive intent. ⚠️ A search walk
-  (`WriterOnly`) is carved out of both switches AND `user_disabled`: it's a read someone asked for and starts no scan
-  or watcher, so refusing only makes their search silently wrong. ❌ Don't "fix" that back into a refusal.
+  (`WriterOnly`) is carved out of both switches AND `user_disabled`: it's a read someone asked for and starts no scan or
+  watcher, so refusing only makes their search silently wrong. ❌ Don't "fix" that back into a refusal.
 - **Defer `root` auto-start** (`should_auto_start_indexing`): scanning `/` stacks TCC popups, so FDA gates ONLY `root`.
   A narrow deferral, NOT the master switch; ❌ never feed it to `set_master_enabled`.
 - **The lifecycle bus is neutral and one-way** (consumer → indexing): `watch` not `broadcast`, `send_replace` so a

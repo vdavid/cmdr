@@ -882,7 +882,7 @@ fn timed_out_dir_is_not_marked_listed() {
         &writer,
         100,
         4,
-        ScanRoot::Volume,
+        WalkPolicy::for_walk(ScanRoot::Volume, &IndexPathSpace::root(), &root),
         &IndexPathSpace::root(), // boot-disk scope, trustworthy inodes
         reader,
         Duration::from_millis(50), // short timeout so the hang is abandoned fast
@@ -964,7 +964,7 @@ fn volume_root_that_never_lists_surfaces_root_unlistable() {
         &writer,
         100,
         4,
-        ScanRoot::Volume,
+        WalkPolicy::for_walk(ScanRoot::Volume, &IndexPathSpace::root(), &root),
         &IndexPathSpace::root(),
         reader,
         Duration::from_millis(50),

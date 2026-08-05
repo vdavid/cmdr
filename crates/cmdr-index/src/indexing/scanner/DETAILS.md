@@ -64,6 +64,52 @@ children, and ancestors (critical for Docker E2E performance).
   want: they've just decided the index's picture of that subtree is wrong.
 - **`Virgin`** — a coverage frontier node, walked by `cover_subtree` for a search. ❌ Deletes NOTHING.
 
+Each root also picks the walk's `WalkPolicy` — what it refuses to descend into — described below.
+
+## `WalkPolicy`: what a walk refuses to descend into
+
+Two rules, both about staying on the ground this walk owns, resolved once before the walk starts and carried by the
+visitor. Neither is a second source of scope.
+
+**The structural exclusion policy, with an on/off switch.** WHICH rules apply comes from the volume KIND, via
+`ExclusionScope` (below); WHETHER they run comes from `ScanRoot::exclusions`. `Volume` and `Virgin` apply them,
+`Rebuild` doesn't.
+
+- A `Virgin` walk MUST: its roots come from a coverage answer that looked at nothing under them, so without the gate a
+  scoped search of `/` walks `/private/var` and `/proc`, and the walk-written index stops matching what a full scan
+  would have produced.
+- A `Rebuild` is pointed at one directory its caller already gated — `../reconcile/verifier.rs` and
+  `../watch/event_loop/verification.rs` each ask `should_exclude` about the new directory before handing it over — so
+  it's a re-read of ground somebody chose.
+- ⚠️ That leaves one real divergence standing: a `Rebuild` of a directory whose CHILDREN are excluded (a newly
+  discovered `/Library`, whose `/Library/Caches` no boot scan indexes) writes rows the scan wouldn't. Flipping `Rebuild`
+  to `Apply` closes it and costs one test, but it changes behavior in two areas that own their own docs, so it wants its
+  own change rather than riding along with the search walk.
+- ❌ The `SYSTEM_DIR_EXCLUDES` tier is NOT part of this and never should be (Decision 6 of the unindexed-search plan):
+  it's large, it sits under folders people search, and skipping it at walk time would stamp coverage on parents whose
+  `dir_stats` are badly short. It's a MATCH-time filter, applied by search, importance, and the folder-size tooltip.
+
+**The volume boundary.** A search targets ONE volume (Decision 4), so `Virgin` pins the device its root sits on and cuts
+where another filesystem is mounted. Cut means NO ROW, exactly like an exclusion: a row nothing ever lists would sit in
+the coverage frontier forever and re-offer itself to every later search, and the bytes under it belong in the other
+volume's `dir_stats`.
+
+- **The pin comes from the WALK's root, not the volume's.** A walk whose root is itself inside a mount would otherwise
+  cut away every one of its own children, list the root, and read as fully covered while holding nothing — the same
+  silent false-complete `ExclusionTier` exists to prevent one rule over.
+- **A device that can't be read is not a boundary.** The walk descends, the read fails, and `visit_read_error` reports
+  that honestly rather than this rule guessing.
+- **⚠️ File Provider domains are NOT a boundary** (Decision 16). Dropbox, iCloud Drive, and Google Drive report the same
+  device as `$HOME` and belong to the boot volume's scope; the guarded walker's stall detection is what makes descending
+  into a disconnected one safe. ❌ Never repurpose `file_provider::domain_id_for_dir` (wired as
+  `RootProbes::is_domain_root`) as a cut — it answers where a volume ROOT sits, for the pseudo-filesystem rule.
+- **A full scan pins nothing**, deliberately: it bounds itself by path prefix (`/Volumes/` under `BootDisk`) and pinning
+  it would silently change what a boot index contains for anyone with a disk image mounted in their home dir.
+- Cost: one `symlink_metadata` per discovered DIRECTORY, about 2–3 µs and 3–6% of a walk's wall clock
+  (`docs/notes/cover-walk-primitive-2026-08-05.md`, which also records why `ATTR_CMN_DEVID` on the batched read and a
+  `getmntinfo` snapshot were both rejected). The probe is a `fn` pointer so a test can put a mount anywhere in a temp
+  tree without one, the same way `RootProbes` injects its two.
+
 **Why `Virgin` can't just reuse `Rebuild`.** A frontier node is one nothing has listed, which does NOT mean nothing is
 known below it: FSEvents verification upserts newly-seen children under a directory without ever marking that directory
 listed (`../watch/event_loop/verification.rs` sends `UpsertEntryV2`, never `MarkDirsListed`) and then scans each new
