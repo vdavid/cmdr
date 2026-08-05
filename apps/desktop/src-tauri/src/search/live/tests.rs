@@ -331,12 +331,29 @@ fn rows_go_out_in_batches_of_at_most_a_hundred() {
     });
 
     assert_eq!(driven.sink.rows().len(), 250);
-    let sizes = driven.sink.batch_sizes();
-    assert!(
-        sizes.iter().all(|size| *size <= 100),
-        "no event carries more than a hundred rows: {sizes:?}"
+    let sizes: Vec<usize> = driven.sink.batch_sizes().into_iter().filter(|size| *size > 0).collect();
+    assert_eq!(
+        sizes,
+        vec![100, 100, 50],
+        "full batches while they fill, then the remainder — not 250 events of one row"
     );
-    assert!(sizes.iter().filter(|size| **size > 0).count() >= 3, "{sizes:?}");
+}
+
+#[test]
+fn the_index_half_goes_out_in_batches_too() {
+    // Same rule on the other half: an arena that answered with 250 rows sends
+    // three events, not 250. The frontend appends per event, so a row-per-event
+    // stream is 250 renders of a growing list.
+    let run = run_for_test("indexed-batching");
+    let q = SearchQuery { limit: 1000, ..query("f") };
+    let sink = CollectorSearchEventSink::default();
+    let mut stream = ResultStream::new(&run, &sink, &q);
+
+    let rows: Vec<SearchResultEntry> = (0..250).map(|i| indexed_row(&format!("/covered/f{i:04}.txt"))).collect();
+    stream.add_indexed(rows, 250);
+
+    let sizes: Vec<usize> = sink.batch_sizes().into_iter().filter(|size| *size > 0).collect();
+    assert_eq!(sizes, vec![100, 100, 50]);
 }
 
 #[test]
