@@ -234,10 +234,22 @@ app. That constraint is also why `Index::cover` hands back `CoveredEntry` batche
   against a walked entry's own path instead.
 
 **A glob's `.` crosses a newline; a user's regex keeps standard semantics.** Filenames may contain newlines, and a
-glob's `*` and `?` mean "any characters" and "one character", so `compile_pattern` builds the glob path with
-`dot_matches_new_line(true)`. The regex path deliberately does not: someone writing a regex expects `.` to stop at a
-newline and `(?s)` to be how they ask for more, and quietly overriding that would make Cmdr's regex mode a dialect.
-❌ Don't "unify" the two flags — the asymmetry is the decision.
+glob's `*` and `?` mean "any characters" and "one character", so `glob_to_regex` prefixes its output with `(?s)`. It
+lives in the translation rather than at each `RegexBuilder` — a property of what a glob MEANS, not of one caller — so a
+new call site can't get it wrong; two of them disagreeing is how newline-named files went unfindable in the first place.
+It composes with `RegexBuilder::case_insensitive` (an inline `(?s)` sets that one flag and leaves the builder's alone),
+pinned by `matcher::tests::a_case_insensitive_accented_glob_still_crosses_a_newline`.
+
+A user-typed regex never goes through `glob_to_regex` and deliberately keeps the standard rule: someone writing one
+expects `.` to stop at a newline and `(?s)` to be their own call. ❌ Don't "unify" the two — the asymmetry is the
+decision. Two neighbours to know about:
+
+- **The AI mappings emit `PatternType::Regex` patterns matched against FILENAMES**, so they get the strict rule too, and
+  the `.*` in `keyword_mapping`'s merged pattern (and `type_mapping`'s `screenshots`) won't cross a newline. Nobody
+  authored those, so `(?is)` would be defensible there; left strict deliberately, commented at both sites.
+- **The file viewer takes the third position: it REFUSES.** `file_viewer/search_matcher.rs` rejects a pattern that would
+  need to cross a newline with a typed `MultilineNotSupported`, because its streaming model is line-at-a-time. Different
+  problem, already explicit in its own code.
 
 **The broad-query guard is per evaluator.** An arena's cost is known before the scan, so a query with no narrowing
 predicate is refused only above `ARENA_BROAD_QUERY_CEILING` rows; below it, "show me everything, by recency" is a fair

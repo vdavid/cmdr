@@ -109,9 +109,24 @@ pub(crate) fn format_timestamp(ts: u64) -> String {
 ///
 /// Escapes regex metacharacters, converts `*` to `.*` and `?` to `.`,
 /// wraps in `^...$` for full-match semantics.
+///
+/// The output is prefixed with `(?s)` so `.` matches a newline: `*` means "any
+/// characters" and `?` means "one character", and a filename may legally contain a
+/// newline, so both have to reach one. It lives HERE rather than as a
+/// `RegexBuilder::dot_matches_new_line` at each call site because it's a property of
+/// this translation, not of any one caller — two call sites disagreeing about it is
+/// how filenames with newlines went unfindable in the first place. It composes with
+/// `RegexBuilder::case_insensitive`: an inline `(?s)` sets that one flag and leaves
+/// the builder's alone (pinned by
+/// `matcher::tests::a_case_insensitive_accented_glob_still_crosses_a_newline`).
+///
+/// ❌ This does NOT apply to a user-typed REGEX pattern, which never comes through
+/// here: a regex author expects `.` to stop at a newline and `(?s)` to be their own
+/// call to make.
 pub(crate) fn glob_to_regex(glob: &str) -> String {
-    let mut regex = String::with_capacity(glob.len() * 2 + 2);
-    regex.push('^');
+    // `+ 6`: the flag prefix and the two anchors.
+    let mut regex = String::with_capacity(glob.len() * 2 + 6);
+    regex.push_str("(?s)^");
     for c in glob.chars() {
         match c {
             '*' => regex.push_str(".*"),

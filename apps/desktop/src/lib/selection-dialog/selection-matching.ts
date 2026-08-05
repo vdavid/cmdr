@@ -71,10 +71,16 @@ export interface MatchAccessors {
  * everything else literal (regex metacharacters escaped). Anchored with `^…$`
  * for full-name matching.
  *
- * The `s` (dotAll) flag mirrors the Rust side's `dot_matches_new_line`: `*` means
- * "any characters" and `?` means "one character", and a newline in a filename is
- * legal and is one of them. Regex mode below deliberately does NOT get it, so `.`
- * keeps the meaning a regex author expects.
+ * The `s` (dotAll) flag mirrors the Rust side, where the same rule is carried by a
+ * `(?s)` prefix that `glob_to_regex` emits into the pattern itself: `*` means "any
+ * characters" and `?` means "one character", and a newline in a filename is legal and
+ * is one of them. It can't be shared from there — that's a Rust function producing a
+ * Rust regex source, and JavaScript has no inline `(?s)` to receive it — so this is a
+ * deliberate second copy, and a change to either belongs in both.
+ *
+ * Regex mode below deliberately does NOT get the flag, so `.` keeps the meaning a
+ * regex author expects. With no inline `(?s)` in JavaScript, their escape hatch here
+ * is `[\s\S]`.
  */
 function globToRegex(glob: string, caseSensitive: boolean): RegExp {
   let pattern = '^'

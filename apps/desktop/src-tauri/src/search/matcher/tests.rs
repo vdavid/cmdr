@@ -159,6 +159,23 @@ fn a_newline_in_a_name_doesnt_hide_it_from_a_glob() {
 }
 
 #[test]
+fn a_case_insensitive_accented_glob_still_crosses_a_newline() {
+    // Three rules at once, because they're carried by three different mechanisms:
+    // the dot-matches-newline flag `glob_to_regex` emits inline, the case-insensitivity
+    // the builder sets, and the decomposed form the candidate is matched raw against.
+    // Inline flags and builder flags interacting is the kind of thing that looks
+    // obviously fine and isn't, so this pins all three at once.
+    let mut q = query();
+    q.case_sensitive = Some(false); // explicit, so Linux and macOS agree
+    q.name_pattern = Some("cafe\u{301}*".to_string()); // already NFD, likewise
+    let compiled = CompiledQuery::compile(&q, SMALL_ARENA).unwrap();
+
+    assert!(compiled.matches(&file("CAFE\u{301}\nX.TXT")));
+    // Still anchored at the start: case folding and the newline flag don't loosen it.
+    assert!(!compiled.matches(&file("XCAFE\u{301}\nX.TXT")));
+}
+
+#[test]
 fn a_regex_query_keeps_standard_dot_semantics() {
     // The opposite call from the glob one, deliberately: someone writing a regex
     // expects `.` not to cross a newline, and `(?s)` when they want it to. Changing

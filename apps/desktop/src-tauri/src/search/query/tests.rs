@@ -1,25 +1,28 @@
 use super::*;
 
 // ── glob_to_regex ────────────────────────────────────────────────
+//
+// The `(?s)` prefix is part of the contract, not decoration: `*` and `?` have to
+// reach a filename containing a newline. See `glob_to_regex`'s own docs.
 
 #[test]
 fn glob_to_regex_star() {
-    assert_eq!(glob_to_regex("*.pdf"), r"^.*\.pdf$");
+    assert_eq!(glob_to_regex("*.pdf"), r"(?s)^.*\.pdf$");
 }
 
 #[test]
 fn glob_to_regex_question() {
-    assert_eq!(glob_to_regex("file?.txt"), r"^file.\.txt$");
+    assert_eq!(glob_to_regex("file?.txt"), r"(?s)^file.\.txt$");
 }
 
 #[test]
 fn glob_to_regex_escapes_metacharacters() {
-    assert_eq!(glob_to_regex("a+b(c)"), r"^a\+b\(c\)$");
+    assert_eq!(glob_to_regex("a+b(c)"), r"(?s)^a\+b\(c\)$");
 }
 
 #[test]
 fn glob_to_regex_literal() {
-    assert_eq!(glob_to_regex("readme"), "^readme$");
+    assert_eq!(glob_to_regex("readme"), "(?s)^readme$");
 }
 
 // ── glob_to_regex (property-based) ───────────────────────────────
@@ -37,11 +40,11 @@ mod glob_proptests {
 
     proptest! {
         /// For any glob string, the produced regex compiles successfully
-        /// and is anchored end-to-end.
+        /// and is anchored end-to-end, behind the dot-matches-newline flag.
         #[test]
         fn output_is_valid_anchored_regex(glob in ".*") {
             let pattern = glob_to_regex(&glob);
-            prop_assert!(pattern.starts_with('^'), "regex must start with ^: {}", pattern);
+            prop_assert!(pattern.starts_with("(?s)^"), "regex must start with (?s)^: {}", pattern);
             prop_assert!(pattern.ends_with('$'), "regex must end with $: {}", pattern);
             let compiled = regex::Regex::new(&pattern);
             prop_assert!(
@@ -84,11 +87,12 @@ mod glob_proptests {
         /// For globs containing only `*` wildcards interleaved with
         /// literal segments, the compiled regex matches any string
         /// produced by replacing each `*` with the empty string OR an
-        /// arbitrary literal segment.
+        /// arbitrary literal segment — a newline included, since filenames
+        /// may contain one and `*` means "any characters".
         #[test]
         fn star_matches_arbitrary_content(
             prefix in "[A-Za-z0-9_]{0,5}",
-            middle in "[A-Za-z0-9_]{0,10}",
+            middle in "[A-Za-z0-9_\n]{0,10}",
             suffix in "[A-Za-z0-9_]{0,5}"
         ) {
             let glob = format!("{prefix}*{suffix}");

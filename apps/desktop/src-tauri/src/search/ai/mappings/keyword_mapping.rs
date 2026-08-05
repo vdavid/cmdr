@@ -143,7 +143,12 @@ pub fn merge_keyword_and_type(
             }
             // Extract the core keyword from the pattern
             let keyword_core = extract_keyword_core(&kw_pattern);
-            // Combine: keyword must appear, then type extension must match
+            // Combine: keyword must appear, then type extension must match.
+            // These are `PatternType::Regex`, so `search::matcher` compiles them with
+            // standard `.` semantics and this `.*` won't cross a newline — a filename
+            // may contain one. Nobody AUTHORED this pattern, so `(?is)` would be a fair
+            // choice here where it wouldn't be for a user's own regex; left alone
+            // deliberately rather than overlooked.
             let merged = format!("(?i){keyword_core}.*{}", strip_anchors(tf.pattern));
             (Some(merged), PatternType::Regex)
         }

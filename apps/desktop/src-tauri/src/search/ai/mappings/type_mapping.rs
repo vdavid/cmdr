@@ -1,6 +1,13 @@
 // ── Type mapping ─────────────────────────────────────────────────────
 
 /// A file type filter: regex pattern to match filenames, plus optional flags.
+///
+/// These reach the arena as `PatternType::Regex`, so `search::matcher` compiles them
+/// with standard `.` semantics — no `dot_matches_new_line`, unlike a glob. Almost all
+/// of them are anchored literals plus an alternation, where that can't matter; the
+/// exception is any pattern using `.*` (`screenshots`), which won't match a filename
+/// containing a newline. Prefix `(?s)` on such a pattern if that ever matters, the way
+/// `keyword_mapping` already prefixes `(?i)`.
 pub struct TypeFilter {
     pub pattern: &'static str,
     pub include_system_dirs: bool,
