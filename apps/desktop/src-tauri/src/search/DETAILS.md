@@ -210,6 +210,46 @@ can split it.
 A scope that spans two volumes is NOT one of these: it's a hard `Err` from `resolve_target`, because there's no volume
 to return partial results from.
 
+## The compiled query (`matcher.rs`)
+
+The per-entry predicates (name pattern, type, size, date) are a `CompiledQuery`, not part of the arena scan. The reason
+is the second evaluator: a search over ground the index doesn't cover walks it live and matches the entries the walk
+emits (`docs/specs/unindexed-search-plan.md` Decision 3, M4). If those entries were judged by a second copy of the
+rules, the same query would answer differently depending on whether the drive happened to be indexed, which is the one
+thing that plan forbids. So both paths call `CompiledQuery::matches`, and the module owns the rules that break
+silently when duplicated: the case-folding resolution (the scope filter and the ranker read it back rather than
+deriving it again) and the NFD normalization of the pattern.
+
+It sits app-side rather than in `cmdr-index` because `index-crate-isolation` forbids the crate from depending on the
+app. That constraint is also why `Index::cover` hands back `CoveredEntry` batches instead of taking a match callback.
+
+**What stays outside, and why:**
+
+- **Directory size filters.** A directory's size isn't in the entries table; it's written over the ranked results from
+  `dir_stats` afterwards (`execute.rs::fill_dir_sizes`, then `filter_dirs_by_size`). So the matcher's size predicate is
+  files-only on both paths, and a directory passes a size filter untouched. Dropping directories in the matcher would
+  drop them before the only place that knows their size.
+- **The scope filter.** Include roots are arena entry ids and the exclusion check is an ancestor walk through
+  `id_to_index`, so neither means anything for an entry that isn't in the arena. The live path applies the same policy
+  against a walked entry's own path instead.
+
+**The broad-query guard is per evaluator.** An arena's cost is known before the scan, so a query with no narrowing
+predicate is refused only above `ARENA_BROAD_QUERY_CEILING` rows; below it, "show me everything, by recency" is a fair
+ask. A live walk has no such bound (an unknown filesystem, over a network in the worst case), so it refuses outright.
+❌ Don't collapse the two back into one row-count rule: an unindexed volume's arena holds zero rows, so a count-based
+ceiling is precisely the guard that can't fire on the path that needs it.
+
+**Two asymmetries survive the shared matcher**, both bounded and both deliberate:
+
+- A `CoveredEntry` carries the entry's OWN size, before hardlink dedup, because that's what a listing shows. The index
+  stores the deduplicated size, so a 2nd+ hardlink to one file is sizeless there. A size bound therefore keeps it in a
+  live result and drops it from an indexed one. The live answer is the truthful one, so it stays.
+- A walked entry's name is derived from its path (`covered_name`), byte-identically to how `insert_visitor` derives the
+  row name it writes. For the trait walk (`network_scanner/cover_scan.rs`) the row name is the listing's own `name`
+  field while the path is its `path`, so the two agree only as long as a `Volume` backend reports a path whose last
+  component IS that name. ⚠️ A backend that broke that would make live and indexed results disagree on the affected
+  names with nothing failing loudly.
+
 ## History store (`history.rs`)
 
 - **Persistence**: `{app_data_dir}/search-history.json`, schema-versioned via `_schemaVersion` (currently 1). On parse

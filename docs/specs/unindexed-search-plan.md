@@ -77,7 +77,12 @@ buried. It is meant to be complete; anything found later belongs here.
    either way, since an abandoned directory is never marked listed, so the frontier re-offers it next search. But the
    result list of that run is short without being labelled so, which is why M6 labels it alongside the interrupted
    states.
-10. **The master-switch settings note becomes inaccurate, deliberately.** `settings.indexing.masterOffNote` says "no
+10. **A size filter treats hardlinks differently live than indexed.** A walk emits each entry's OWN size, before
+    hardlink dedup, because that's what a listing shows; the index stores the deduplicated size, which is `NULL` for the
+    2nd+ link to one file. So "files over 1 MB" keeps a hardlinked duplicate in a live result and drops it from an
+    indexed one. Found in M4. Bounded (only multiply-linked files, only under a size bound), and the live answer is the
+    truthful one, so it's registered rather than fixed.
+11. **The master-switch settings note becomes inaccurate, deliberately.** `settings.indexing.masterOffNote` says "no
     drive is indexed and folder sizes stay hidden"; once a search writes coverage, folder sizes appear for walked
     branches. David reviewed this and chose to leave the copy as-is. ❌ Don't "fix" it without asking him.
 
@@ -155,7 +160,7 @@ Each records the intent, so an implementer can adapt without re-litigating. All 
     (`lifecycle/CLAUDE.md`, `lifecycle/DETAILS.md:383`, `transports/CLAUDE.md:23`, `master.rs`), so all of those need
     the carve-out or the invariant becomes a lie in four places. The veto keeps real teeth under Decision 9: a vetoed
     drive gets no watcher, so its walked branches re-walk instead of staying live. The settings copy stays as written,
-    see Accepted difference 10.
+    see Accepted difference 11.
 14. **Progress is directories scanned plus the current path. No percentage, no ETA.** The total is unknown by
     definition, and a fabricated ETA violates honest progress (`docs/design-principles.md`).
 15. **There is no way to turn live walking off.** Search is a deliberate action and a walk is what it means; a
@@ -250,7 +255,7 @@ coverage API must not assume a single dimension.
 
 ## Execution status
 
-Through M3d. Branch `worktree-david+unindexed-search-exec`, nothing merged to `main` yet.
+Through M3d, plus M4. Branch `worktree-david+unindexed-search-exec`, nothing merged to `main` yet.
 
 **Landed.**
 
@@ -301,7 +306,31 @@ Through M3d. Branch `worktree-david+unindexed-search-exec`, nothing merged to `m
   M3b classifier is open — shares, phones, and network mounts route to the trait walk instead of `NotIndexed`, and only
   an unmounted id is refused. No gate and no confirmation step, per David.
 
+- **M4**: the compiled query. `search/matcher.rs` holds a `CompiledQuery` (the pattern compile plus the type, size, and
+  date predicates) and a borrowed `Candidate` both evaluators produce; `engine.rs` builds one per arena row and
+  `matches_covered` builds one per `CoveredEntry`, so the walk's entries are judged by the arena's rules and nothing
+  else. The refactor is behavior-preserving against the engine's own test suite, unchanged. `CompileError` replaces two
+  bare `String`s, with `Display` reproducing both sentences verbatim. The broad-query guard is now per evaluator: the
+  arena keeps its row-count ceiling, a live walk refuses outright.
+
 **Decisions taken during execution that the spec did not pre-empt.**
+
+- **Case folding was derived in three places, not one, and that's a fork the plan didn't name.** M4 was written as "the
+  pattern compile plus the size, date, and type predicates". But `prepare_scope_filter` computed the case-sensitivity
+  rule a second time and the ranking call took a third copy, so a change to the rule could have made a search exclude
+  under one alphabet and match under another. The scope filter now takes it from the compiled query.
+- **A walked entry's SIZE can't match an indexed one's, and it shouldn't.** `CoveredEntry` carries pre-hardlink-dedup
+  sizes (deliberately, so a listing doesn't show a hardlinked file as 0 bytes) while the index stores the deduplicated
+  size, which is `NULL` for a 2nd+ hardlink. So a size bound keeps that file in a live result and drops it from an
+  indexed one. It belongs in the accepted-differences register next to difference 5; the live answer is the truthful
+  one, so the fix is the register, not the code.
+- **The name a walked entry matches under is derived, not carried.** `CoveredEntry` has a path and no name, so the
+  matcher takes the path's last component, byte-identically to how `insert_visitor` derives the row name. That holds by
+  construction for the local walker (same expression, same input) but only by agreement for the trait walk, whose row
+  name is the listing's `name` field while its path is the listing's `path`. A `Volume` backend reporting a path whose
+  last component isn't that name would desynchronize live and indexed results silently. Recorded in
+  `search/DETAILS.md`; not worth a `name` field on `CoveredEntry` (a `String` per entry per batch) unless a backend
+  ever needs one.
 
 - **The trait walk is add-only PER DIRECTORY, so it needs no virgin-root refusal and no repair path.** M3a's
   `ScanError::NotVirgin` exists because the parallel local walker can't afford a DB lookup per directory across eight
@@ -870,7 +899,7 @@ Recorded so nobody reopens them. Every one of these was an open question in an e
   people whose drives are fully indexed (M0).
 - **No expiry on search-written coverage; watch the branches instead** (Decision 9, M11).
 - **The master-switch settings copy stays as written**, even though folder sizes will appear for walked branches
-  (Accepted difference 10).
+  (Accepted difference 11).
 - **Both indexing switches govern background work only**, so a search walks a `user_disabled` drive but leaves no
   watcher on it (Decision 13).
 - **`index-crate-isolation` ceiling bumps are approved**, with the instruction that the resulting API stay cohesive.
