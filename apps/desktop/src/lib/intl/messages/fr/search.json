@@ -99,7 +99,7 @@
   "@search.walkHandoff.running": {
     "sourceHash": "79a7339"
   },
-  "search.walkHandoff.counts": "{matchCount, plural, one {# résultat} many {# résultats} other {# résultats}} pour l'instant, {folderCount, plural, one {# dossier parcouru} many {# dossiers parcourus} other {# dossiers parcourus}}",
+  "search.walkHandoff.counts": "{matchCount, plural, one {# résultat} many {# résultats} other {# résultats}} pour l''instant, {folderCount, plural, one {# dossier parcouru} many {# dossiers parcourus} other {# dossiers parcourus}}",
   "@search.walkHandoff.counts": {
     "sourceHash": "8e68f3f"
   },
@@ -119,7 +119,7 @@
   "@search.walkHandoff.finished": {
     "sourceHash": "0cbc210"
   },
-  "search.walkHandoff.stoppedShort": "Les résultats pour {label} sont peut-être incomplets : Cmdr n'a pas tout parcouru.",
+  "search.walkHandoff.stoppedShort": "Les résultats pour {label} sont peut-être incomplets : Cmdr n''a pas tout parcouru.",
   "@search.walkHandoff.stoppedShort": {
     "sourceHash": "3a2a5dd"
   },

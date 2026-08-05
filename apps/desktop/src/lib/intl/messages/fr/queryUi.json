@@ -251,7 +251,7 @@
   "@queryUi.results.live.walking": {
     "sourceHash": "b2dbe67"
   },
-  "queryUi.results.live.matchesSoFar": "{countText} {count, plural, one {résultat} many {résultats} other {résultats}} pour linstant",
+  "queryUi.results.live.matchesSoFar": "{countText} {count, plural, one {résultat} many {résultats} other {résultats}} pour l''instant",
   "@queryUi.results.live.matchesSoFar": {
     "sourceHash": "5c09eb4"
   },
@@ -259,7 +259,7 @@
   "@queryUi.results.live.foldersScanned": {
     "sourceHash": "5a3247d"
   },
-  "queryUi.results.live.incomplete": "{shownText} sur {totalText} résultats. Cmdr na pas fini de chercher.",
+  "queryUi.results.live.incomplete": "{shownText} sur {totalText} résultats. Cmdr n''a pas fini de chercher.",
   "@queryUi.results.live.incomplete": {
     "sourceHash": "7dccf6e"
   },
@@ -283,7 +283,7 @@
   "@queryUi.results.live.scanningAria": {
     "sourceHash": "0071028"
   },
-  "queryUi.results.countOnly.soFar": "{count, plural, one {Cette recherche donne <total>{countText}</total> résultat pour linstant} many {Cette recherche donne <total>{countText}</total> résultats pour linstant} other {Cette recherche donne <total>{countText}</total> résultats pour linstant}}",
+  "queryUi.results.countOnly.soFar": "{count, plural, one {Cette recherche donne <total>{countText}</total> résultat pour l''instant} many {Cette recherche donne <total>{countText}</total> résultats pour l''instant} other {Cette recherche donne <total>{countText}</total> résultats pour l''instant}}",
   "@queryUi.results.countOnly.soFar": {
     "sourceHash": "dbdb208"
   },
