@@ -11,7 +11,7 @@
       "id": "search",
       "name": "Search",
       "status": "beta",
-      "note": "Finds files on an indexed drive in well under a second, with filters, regex, and recent searches; one search covers one drive, and the AI query translation still misreads some prompts."
+      "note": "Filters, regex, and recent searches over any folder: an indexed one answers in well under a second, an unindexed one gets walked live with results arriving as they are found; one search covers one drive, and the AI query translation still misreads some prompts."
     },
     {
       "id": "select-files",

@@ -282,6 +282,24 @@ coverage must stay honest under every live mutation. Three rules, all in `writer
   for scanned subtrees (the old off-writer send also double-counted sizes — Leak A). Full detail in
   `../reconcile/DETAILS.md`.
 
+**Forward compatibility: a second dimension (`content_epoch`) drops in beside `listed_epoch`, and nothing above has to
+change.** Content search asks the same question the frontier does, in another dimension: not "has this directory's
+listing been read?" but "has each file's CONTENT been read?". The shape it will take, decided now so the propagation
+here doesn't have to be redesigned then (`docs/specs/unindexed-search-plan.md` § "Forward compatibility with content
+search"):
+
+- **`entries.content_epoch`, a sibling column to `listed_epoch`**, and `dir_stats.min_subtree_content_epoch` rolled up
+  by the SAME zero-absorbing min. Every rule in this section holds verbatim for it — the mark-before-aggregate ordering,
+  the preserve-on-size-delta rule, the propagate-on-tree-shape-change rule, and its own `MarkDirsContentRead` setter.
+- **The read side already speaks dimensions.** `Index::coverage` takes a `CoverageDimension` (`Listing` today), so a
+  content frontier is a second variant reading a second pair of columns, not a second query
+  (`../read/DETAILS.md` § "The coverage frontier").
+- **The walk stages then fall out**: path-covered AND content-covered needs nothing, path-covered but
+  content-uncovered needs a read pass only, path-uncovered needs a walk and then a read.
+
+❌ Don't collapse the two into one flag or one epoch when content indexing lands. A single epoch would make a content
+pass invalidate listing coverage (and the reverse), which is the convergence property search depends on.
+
 **Read side — derive booleans, never ship raw epochs.** The frontend renders from `{recursive_size, complete, stale}`
 only. The backend derives two booleans from `min_subtree_epoch` vs the volume's `current_epoch` (read ONCE per read pass
 via `read_current_epoch`, absent ⇒ 1) on both read surfaces — the `FileEntry` enrichment path and the path-keyed
