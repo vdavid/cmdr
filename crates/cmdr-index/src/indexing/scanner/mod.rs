@@ -23,7 +23,7 @@ use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
 
 use crate::indexing::IndexPathSpace;
-use crate::indexing::store::{IndexStore, resolve_scan_root};
+use crate::indexing::store::{IndexStore, UnreadableCause, resolve_scan_root};
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 use cmdr_fs::pluralize::{pluralize, pluralize_with};
 
@@ -94,11 +94,17 @@ mod tests;
 /// (mirrors `network_scanner`).
 const MARK_CHUNK: usize = 10_000;
 
-/// Stamp the directories this walk found it can't read, so the coverage frontier
-/// stops offering them to every later search. A no-op when empty.
+/// Stamp the directories this walk was refused, so the coverage frontier stops
+/// offering them to every later search. A no-op when empty.
+///
+/// Always [`UnreadableCause::Denied`]: the local walker only ever marks a
+/// permission-denied read (`insert_visitor.rs`), and a timeout stays retriable.
 fn send_unreadable_marks(ids: &[i64], writer: &IndexWriter) {
     for chunk in ids.chunks(MARK_CHUNK) {
-        if let Err(e) = writer.send(WriteMessage::MarkDirsUnreadable { ids: chunk.to_vec() }) {
+        if let Err(e) = writer.send(WriteMessage::MarkDirsUnreadable {
+            ids: chunk.to_vec(),
+            cause: UnreadableCause::Denied,
+        }) {
             log::warn!("Scanner: failed to send MarkDirsUnreadable: {e}");
         }
     }

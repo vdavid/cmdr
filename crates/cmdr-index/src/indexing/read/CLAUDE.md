@@ -31,8 +31,9 @@ Serve recursive sizes, index status, and coverage back to the app. Everything he
   one slot. DETAILS § Enrichment.
 - **The coverage frontier needs BOTH epoch fields; ❌ never `min_subtree_epoch` alone** (it 0-absorbs upward, so the cut
   is always the scope root and the answer is "walk everything"). `min > 0` covered, `min == 0 && listed > 0` descend,
-  `listed == 0 && known_unreadable` skip, else frontier. Rests on `min > 0` ⇒ `listed > 0`, and on the
-  `EXCLUSION_POLICY_KEY` stamp: absent or stale ⇒ no coverage claim is trusted. DETAILS § The coverage frontier.
+  `listed == 0 && unreadable_cause` skip (into `permission_denied` or `declined`, ❌ never merged), else frontier.
+  Rests on `min > 0` ⇒ `listed > 0` and the `EXCLUSION_POLICY_KEY` stamp: absent or stale ⇒ nothing is trusted.
+  DETAILS § The coverage frontier.
 - **Enrichment logs once per changed result, via `EnrichResultMemo`** (fires only when `(dir_count, enriched)` differs).
   Don't add a per-pass line; an idle pane triggers this ~2/s per pane.
 

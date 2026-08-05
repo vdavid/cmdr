@@ -36,9 +36,24 @@
         onIndexDrive: (() => void) | null
         /** "Don't ask again" for this drive. Present exactly when `onIndexDrive` is. */
         onSilenceDrive: () => void
+        /**
+         * Routes into the Full Disk Access setup. `null` hides the offer, which is
+         * every case where granting it would change nothing: no folder was actually
+         * refused, Cmdr already has the permission, or this isn't macOS. The refusal
+         * itself is still stated — a gap with no way out is still a gap
+         * (`coverage-note.ts::offersFullDiskAccess`).
+         */
+        onGrantFullDiskAccess?: (() => void) | null
     }
 
-    const { note, driveName, isNetwork, onIndexDrive, onSilenceDrive }: Props = $props()
+    const {
+        note,
+        driveName,
+        isNetwork,
+        onIndexDrive,
+        onSilenceDrive,
+        onGrantFullDiskAccess = null,
+    }: Props = $props()
 
     /** The drive's name, or a generic stand-in when it isn't in the live volume list. */
     const drive = $derived(driveName || tString('search.coverage.unnamedDrive'))
@@ -74,20 +89,38 @@
                  disconnect rather than instead of one. -->
             <p class="message">{tString('search.coverage.walk.abandoned')}</p>
         {/if}
-        {#if note.live && note.live.unreadable.length > 0}
-            <!-- ONE sentence for two causes, because the wire carries one list and no
-                 way to tell them apart: a folder Cmdr was refused, and a snapshot tree
-                 it declines on purpose. Naming both is honest; picking one would be a
-                 guess rendered as fact. -->
+        {#if note.live && note.live.permissionDenied.length > 0}
+            <!-- A folder somebody refused us. Its own sentence, and the only one of
+                 the two with a way out: on macOS that's Full Disk Access, offered
+                 only when Cmdr doesn't already have it. -->
             <p class="message">
-                {tString('search.coverage.unreadable', { count: note.live.unreadable.length })}
+                {tString('search.coverage.denied', { count: note.live.permissionDenied.length })}
             </p>
             <ul class="scopes">
-                {#each note.live.unreadable as path (path)}
+                {#each note.live.permissionDenied as path (path)}
                     <li>{path}</li>
                 {/each}
             </ul>
-            <p class="message secondary">{tString('search.coverage.unreadableWhy')}</p>
+            {#if onGrantFullDiskAccess}
+                <p class="message secondary">{tString('search.coverage.deniedFullDiskAccess')}</p>
+                <div class="actions">
+                    <Button variant="primary" size="mini" onclick={onGrantFullDiskAccess}>
+                        {tString('search.coverage.setUpFullDiskAccess')}
+                    </Button>
+                </div>
+            {/if}
+        {/if}
+        {#if note.live && note.live.declined.length > 0}
+            <!-- Ground Cmdr won't read on purpose. ❌ Never offer a permission here:
+                 nothing the user can grant opens a snapshot tree. -->
+            <p class="message">
+                {tString('search.coverage.declined', { count: note.live.declined.length })}
+            </p>
+            <ul class="scopes">
+                {#each note.live.declined as path (path)}
+                    <li>{path}</li>
+                {/each}
+            </ul>
         {/if}
         {#if note.live && note.live.stillCovering.length > 0}
             <p class="message">
@@ -161,8 +194,7 @@
         line-height: 1.4;
     }
 
-    /* The follow-up that names the two reasons a folder can be unreadable: true, useful,
-       and not the headline. */
+    /* The follow-up under a refused folder: what would open it, and not the headline. */
     .message.secondary {
         color: var(--color-text-tertiary);
         font-size: var(--font-size-xs);

@@ -151,13 +151,21 @@
   "@search.coverage.walk.abandoned": {
     "sourceHash": "4a6a2af"
   },
-  "search.coverage.unreadable": "{count, plural, one {Cmdr kon niet in deze map kijken, dus er staat niets uit deze map in de resultaten:} other {Cmdr kon niet in deze mappen kijken, dus er staat niets uit deze mappen in de resultaten:}}",
-  "@search.coverage.unreadable": {
-    "sourceHash": "32dadf5"
+  "search.coverage.denied": "{count, plural, one {Cmdr mocht niet in deze map kijken, dus er staat niets uit deze map in de resultaten:} other {Cmdr mocht niet in deze mappen kijken, dus er staat niets uit deze mappen in de resultaten:}}",
+  "@search.coverage.denied": {
+    "sourceHash": "2c0eb72"
   },
-  "search.coverage.unreadableWhy": "Dat is een rechtenkwestie die Cmdr nog niet heeft, of een snapshotmap die het bewust met rust laat.",
-  "@search.coverage.unreadableWhy": {
-    "sourceHash": "373e661"
+  "search.coverage.deniedFullDiskAccess": "Met volledige schijftoegang kan Cmdr ook in zulke mappen zoeken.",
+  "@search.coverage.deniedFullDiskAccess": {
+    "sourceHash": "8de9168"
+  },
+  "search.coverage.setUpFullDiskAccess": "Volledige schijftoegang instellen",
+  "@search.coverage.setUpFullDiskAccess": {
+    "sourceHash": "98226cc"
+  },
+  "search.coverage.declined": "{count, plural, one {Cmdr kijkt met opzet niet in snapshotmappen, dus er staat niets uit deze map in de resultaten:} other {Cmdr kijkt met opzet niet in snapshotmappen, dus er staat niets uit deze mappen in de resultaten:}}",
+  "@search.coverage.declined": {
+    "sourceHash": "ea5be72"
   },
   "search.coverage.stillCovering": "{count, plural, one {Een andere zoekopdracht loopt deze map nu door, dus de bestanden verschijnen zo:} other {Een andere zoekopdracht loopt deze mappen nu door, dus de bestanden verschijnen zo:}}",
   "@search.coverage.stillCovering": {

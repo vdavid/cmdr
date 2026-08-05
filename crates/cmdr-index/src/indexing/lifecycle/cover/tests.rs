@@ -684,7 +684,7 @@ impl ColdDrive {
             "the walked scope to read as covered",
             || {
                 let covered = self.coverage(scope);
-                covered.frontier.is_empty() && covered.unreadable.is_empty()
+                covered.frontier.is_empty() && covered.permission_denied.is_empty() && covered.declined.is_empty()
             },
         );
         outcome

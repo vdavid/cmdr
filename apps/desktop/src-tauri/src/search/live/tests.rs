@@ -142,7 +142,8 @@ fn drive(
     let walked = pump(&rx, 1, &judged.judge(), &mut stream, &WalkPulse::default());
     let coverage = SearchRunCoverage {
         walk: walked.ending,
-        unreadable: Vec::new(),
+        permission_denied: Vec::new(),
+        declined: Vec::new(),
         still_covering: Vec::new(),
         unresolved_scopes: Vec::new(),
         abandoned_ground: walked.abandoned_ground,
@@ -283,7 +284,8 @@ fn a_query_refined_mid_walk_drops_the_batches_and_keeps_the_walk() {
     );
     stream.finish(SearchRunCoverage {
         walk: ending,
-        unreadable: Vec::new(),
+        permission_denied: Vec::new(),
+        declined: Vec::new(),
         still_covering: Vec::new(),
         unresolved_scopes: Vec::new(),
         abandoned_ground: false,
@@ -498,7 +500,8 @@ fn progress_follows_the_walk_rather_than_the_batches_it_emits() {
     pump(&rx, 1, &judged.judge(), &mut stream, &pulse);
     stream.finish(SearchRunCoverage {
         walk: WalkEnding::Completed,
-        unreadable: Vec::new(),
+        permission_denied: Vec::new(),
+        declined: Vec::new(),
         still_covering: Vec::new(),
         unresolved_scopes: Vec::new(),
         abandoned_ground: false,
@@ -555,7 +558,8 @@ fn cancelling_stops_the_run_promptly_and_ends_it_as_cancelled() {
     let elapsed = started.elapsed();
     stream.finish(SearchRunCoverage {
         walk: ending,
-        unreadable: Vec::new(),
+        permission_denied: Vec::new(),
+        declined: Vec::new(),
         still_covering: Vec::new(),
         unresolved_scopes: Vec::new(),
         abandoned_ground: false,

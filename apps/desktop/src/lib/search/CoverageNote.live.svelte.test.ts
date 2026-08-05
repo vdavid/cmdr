@@ -20,17 +20,31 @@ function liveNote(live: Partial<LiveCoverage>): Note {
     uncoveredScopes: [],
     unresolvedScopes: [],
     volumeId: 'root',
-    live: { walk: 'completed', unreadable: [], stillCovering: [], abandonedGround: false, ...live },
+    live: {
+      walk: 'completed',
+      permissionDenied: [],
+      declined: [],
+      stillCovering: [],
+      abandonedGround: false,
+      ...live,
+    },
   }
 }
 
 /** Mounts the strip and hands back its text with the markup's whitespace collapsed. */
-function noteText(note: Note | null): string {
+function noteText(note: Note | null, onGrantFullDiskAccess: (() => void) | null = null): string {
   const target = document.createElement('div')
   document.body.appendChild(target)
   mount(CoverageNote, {
     target,
-    props: { note, driveName: 'Backups', isNetwork: false, onIndexDrive: null, onSilenceDrive: () => {} },
+    props: {
+      note,
+      driveName: 'Backups',
+      isNetwork: false,
+      onIndexDrive: null,
+      onSilenceDrive: () => {},
+      onGrantFullDiskAccess,
+    },
   })
   flushSync()
   const text = (target.querySelector('.coverage-note')?.textContent ?? '').replace(/\s+/g, ' ').trim()
@@ -68,11 +82,35 @@ describe('a live run that came back short', () => {
 })
 
 describe('ground the run did not read', () => {
-  it('lists unreadable folders and names both possible reasons, never one', () => {
-    const text = noteText(liveNote({ unreadable: ['/Users/me/Documents', '/Volumes/naspi/@eaDir'] }))
-    expect(text).toContain('/Users/me/Documents')
+  it('says a refused folder was refused, and offers the way out when there is one', () => {
+    const note = liveNote({ permissionDenied: ['/Users/me/Documents'] })
+    const withoutRoute = noteText(note)
+    expect(withoutRoute).toContain('/Users/me/Documents')
+    expect(withoutRoute).toContain(tString('search.coverage.denied', { count: 1 }))
+    // No route: the fact is still stated, the offer isn't. A gap with no way out
+    // is still a gap.
+    expect(withoutRoute).not.toContain(tString('search.coverage.setUpFullDiskAccess'))
+
+    const withRoute = noteText(note, () => {})
+    expect(withRoute).toContain(tString('search.coverage.deniedFullDiskAccess'))
+    expect(withRoute).toContain(tString('search.coverage.setUpFullDiskAccess'))
+  })
+
+  it('says a snapshot folder is one Cmdr skips, and NEVER offers a permission for it', () => {
+    // The whole point of the typed cause: no permission opens a snapshot tree, so
+    // offering one here would be advice that does nothing.
+    const text = noteText(liveNote({ declined: ['/Volumes/naspi/@eaDir'] }), () => {})
     expect(text).toContain('/Volumes/naspi/@eaDir')
-    expect(text).toContain(tString('search.coverage.unreadableWhy'))
+    expect(text).toContain(tString('search.coverage.declined', { count: 1 }))
+    expect(text).not.toContain(tString('search.coverage.setUpFullDiskAccess'))
+  })
+
+  it('keeps the two apart when a run met both', () => {
+    const text = noteText(
+      liveNote({ permissionDenied: ['/Users/me/Documents'], declined: ['/Volumes/naspi/@eaDir'] }),
+    )
+    expect(text).toContain(tString('search.coverage.denied', { count: 1 }))
+    expect(text).toContain(tString('search.coverage.declined', { count: 1 }))
   })
 
   it('says another search is covering the rest, never that it is lost', () => {

@@ -5,7 +5,13 @@
 
 import { describe, it, expect } from 'vitest'
 import type { SearchResult, SearchRunCoverage } from '$lib/tauri-commands'
-import { coverageNoteFrom, coverageNoteFromRun, isTargetIndexReady } from './coverage-note'
+import type { CoverageNote } from './coverage-note'
+import {
+  coverageNoteFrom,
+  coverageNoteFromRun,
+  isTargetIndexReady,
+  offersFullDiskAccess,
+} from './coverage-note'
 
 function result(overrides: Partial<SearchResult> = {}): SearchResult {
   return { entries: [], totalCount: 0, ...overrides }
@@ -14,7 +20,8 @@ function result(overrides: Partial<SearchResult> = {}): SearchResult {
 function runCoverage(overrides: Partial<SearchRunCoverage> = {}): SearchRunCoverage {
   return {
     walk: 'completed',
-    unreadable: [],
+    permissionDenied: [],
+    declined: [],
     stillCovering: [],
     unresolvedScopes: [],
     abandonedGround: false,
@@ -40,7 +47,13 @@ describe('coverageNoteFromRun', () => {
 
   it('carries the flag alongside a cancel, which is a second reason to be short', () => {
     const note = coverageNoteFromRun(runCoverage({ walk: 'cancelled', abandonedGround: true }))
-    expect(note?.live).toEqual({ walk: 'cancelled', unreadable: [], stillCovering: [], abandonedGround: true })
+    expect(note?.live).toEqual({
+      walk: 'cancelled',
+      permissionDenied: [],
+      declined: [],
+      stillCovering: [],
+      abandonedGround: true,
+    })
   })
 })
 
@@ -110,5 +123,65 @@ describe('isTargetIndexReady', () => {
 
   it('runs when the target is unknown, because waiting on a guess is how a search stops happening', () => {
     expect(isTargetIndexReady({ targetVolumeId: null, isVolumeReady: ready(), pendingVolumeId: 'root' })).toBe(true)
+  })
+})
+
+describe('offersFullDiskAccess', () => {
+  /** A note from a live run that met the ground `live` describes. */
+  function note(live: Partial<NonNullable<CoverageNote['live']>>): CoverageNote {
+    return {
+      uncoveredScopes: [],
+      unresolvedScopes: [],
+      volumeId: 'root',
+      live: {
+        walk: 'completed',
+        permissionDenied: [],
+        declined: [],
+        stillCovering: [],
+        abandonedGround: false,
+        ...live,
+      },
+    }
+  }
+
+  const onMacWithout = { isMac: true, hasFullDiskAccess: false }
+
+  it('offers the route when a folder was refused and Cmdr lacks the permission', () => {
+    expect(offersFullDiskAccess({ note: note({ permissionDenied: ['/Users/me/Documents'] }), ...onMacWithout })).toBe(
+      true,
+    )
+  })
+
+  it('offers NOTHING for a snapshot folder, however many there are', () => {
+    // The silent-failure case the typed cause exists for: these two are the same
+    // shape on the wire and only one of them is a permission problem. Offering
+    // Full Disk Access here sends the user to System Settings to fix nothing.
+    expect(offersFullDiskAccess({ note: note({ declined: ['/Volumes/naspi/@eaDir'] }), ...onMacWithout })).toBe(false)
+  })
+
+  it('offers nothing once Cmdr already has full disk access', () => {
+    // A refusal WITH the permission is a folder that belongs to someone else on
+    // the machine, and the setup is already done.
+    expect(
+      offersFullDiskAccess({
+        note: note({ permissionDenied: ['/Users/other/Documents'] }),
+        isMac: true,
+        hasFullDiskAccess: true,
+      }),
+    ).toBe(false)
+  })
+
+  it('offers nothing off macOS, where the permission does not exist', () => {
+    expect(
+      offersFullDiskAccess({
+        note: note({ permissionDenied: ['/home/other'] }),
+        isMac: false,
+        hasFullDiskAccess: false,
+      }),
+    ).toBe(false)
+  })
+
+  it('offers nothing when there is no note at all', () => {
+    expect(offersFullDiskAccess({ note: null, ...onMacWithout })).toBe(false)
   })
 })

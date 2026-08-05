@@ -24,13 +24,19 @@ export interface LiveCoverage {
    */
   walk: WalkEnding
   /**
-   * Folders nothing is going to read, absolute. TWO causes in ONE list, with nothing
-   * on the wire to tell them apart: a folder the walk was refused (no Full Disk
-   * Access), and a NAS snapshot tree the scanner declines on purpose (hardlinked per
-   * snapshot, 44 TB reported on a 10 TB volume). ❌ Don't write copy that claims it's
-   * one of them.
+   * Folders a walk tried to read and was REFUSED, absolute. The half a user can act
+   * on: on macOS it's usually Full Disk Access, and granting it heals the mark on
+   * the next search.
    */
-  unreadable: string[]
+  permissionDenied: string[]
+  /**
+   * Folders no walk will read at all, by Cmdr's own choice: a NAS snapshot tree,
+   * hardlinked per snapshot (44 TB reported on a 10 TB volume). Nothing for the
+   * user to fix, so the copy explains rather than offers. ❌ Don't merge it into
+   * `permissionDenied`: offering Full Disk Access over a snapshot folder is advice
+   * that does nothing.
+   */
+  declined: string[]
   /**
    * Ground another search's walk is covering right now, so this run left it alone.
    * Those rows reach the same index, so this is "these arrive a bit later", ❌ never
@@ -97,7 +103,8 @@ export function coverageNoteFromRun(coverage: SearchRunCoverage): CoverageNote |
   const short = coverage.walk === 'interrupted' || coverage.walk === 'cancelled' || coverage.abandonedGround
   if (
     !short &&
-    coverage.unreadable.length === 0 &&
+    coverage.permissionDenied.length === 0 &&
+    coverage.declined.length === 0 &&
     coverage.stillCovering.length === 0 &&
     coverage.unresolvedScopes.length === 0
   ) {
@@ -109,7 +116,8 @@ export function coverageNoteFromRun(coverage: SearchRunCoverage): CoverageNote |
     volumeId: coverage.targetVolumeId,
     live: {
       walk: coverage.walk,
-      unreadable: coverage.unreadable,
+      permissionDenied: coverage.permissionDenied,
+      declined: coverage.declined,
       stillCovering: coverage.stillCovering,
       abandonedGround: coverage.abandonedGround,
     },
@@ -140,4 +148,35 @@ export function isTargetIndexReady(input: {
   if (input.targetVolumeId === null) return true
   if (input.isVolumeReady(input.targetVolumeId)) return true
   return input.pendingVolumeId !== input.targetVolumeId
+}
+
+/**
+ * Whether the note should offer the Full Disk Access route.
+ *
+ * Three conditions, and dropping any one of them turns a helpful offer into a
+ * misleading one:
+ *
+ * 1. **A folder was actually refused.** A run whose only unreadable ground is
+ *    `declined` (a NAS snapshot tree) gets nothing: no permission on earth opens
+ *    a folder Cmdr declines to read on purpose. This is what the typed cause on
+ *    the wire buys — the paths alone can't tell the two apart, and matching folder
+ *    names to guess is what `.claude/rules/no-string-matching.md` forbids.
+ * 2. **macOS.** Full Disk Access doesn't exist anywhere else; a Linux refusal is
+ *    ordinary file permissions, which Cmdr can't grant itself either.
+ * 3. **Cmdr doesn't already have it.** With Full Disk Access on, a refusal is a
+ *    folder that belongs to someone else on the machine, and offering the setup
+ *    that is already done would send the user somewhere that fixes nothing.
+ *
+ * The note still renders in every case: not offering a way out doesn't make the
+ * gap untrue.
+ */
+export function offersFullDiskAccess(input: {
+  note: CoverageNote | null
+  /** `false` on Linux, where there is no such permission. */
+  isMac: boolean
+  /** What the side-effect-free TCC probe last said. */
+  hasFullDiskAccess: boolean
+}): boolean {
+  if (!input.isMac || input.hasFullDiskAccess) return false
+  return (input.note?.live?.permissionDenied.length ?? 0) > 0
 }

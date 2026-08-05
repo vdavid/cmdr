@@ -338,11 +338,13 @@ describe('adopting a run that outlived the last dialog', () => {
     // Search's "Open in pane" leaves a walk feeding that pane. Reopening the dialog
     // has to show THAT search: starting a fresh one would supersede it, and the pane
     // would quietly stop growing.
-    let resumedCallbacks: QueryStreamCallbacks | null = null
+    // Collected rather than assigned to a `let`: the compiler can't see a callback
+    // run, so a nullable local would narrow to `null` at every later read.
+    const resumed: QueryStreamCallbacks[] = []
     let stops = 0
     const h = makeStreamRunner({
       resume: (callbacks) => {
-        resumedCallbacks = callbacks
+        resumed.push(callbacks)
         return {
           runId: 'handed-over',
           view: {
@@ -373,7 +375,9 @@ describe('adopting a run that outlived the last dialog', () => {
     expect(h.runner.hasSearched).toBe(true)
 
     // And it's a real adoption, not a copy: later batches land, and Escape can stop it.
-    resumedCallbacks!.onProgress(progress({ entries: entriesNamed('later.txt'), matchCount: 13 }))
+    const adopted = resumed.at(-1)
+    if (!adopted) throw new Error('resume was never handed the callbacks')
+    adopted.onProgress(progress({ entries: entriesNamed('later.txt'), matchCount: 13 }))
     expect(h.config.state.getResults().map((e) => e.name)).toEqual(['found-while-closed.txt', 'later.txt'])
     expect(h.runner.cancelLive()).toBe(true)
     expect(h.cancelled).toEqual(['handed-over'])

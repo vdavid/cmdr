@@ -250,7 +250,7 @@ the aggregate would leave a dir at epoch 0 → the whole subtree rolls to `min_s
 volume renders incomplete forever). `MarkDirsListed` does NOT bump the writer generation. The aggregator's rollup math
 is in `../aggregator/DETAILS.md`.
 
-**`MarkDirsListed` also CLEARS `known_unreadable`.** A directory we just listed is by definition readable again (Full
+**`MarkDirsListed` also CLEARS `unreadable_cause`.** A directory we just listed is by definition readable again (Full
 Disk Access granted, a permission fixed, a mount back), so the flag heals itself with no rebuild and no separate pass.
 `MarkDirsUnreadable` is the setter, sent by the local walk after its marks for the dirs whose read failed with
 permission denied. It touches only that column: the dir stays `listed_epoch = 0` so sizes stay honest, and all the flag

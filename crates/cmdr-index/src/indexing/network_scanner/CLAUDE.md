@@ -39,7 +39,8 @@ and stat'ing differ from the local guarded walker. No walk here names a backend.
   never per entry.
 - **NAS system/snapshot dirs aren't recursed** (`system_dirs.rs`, all three walks): the dir's own row IS indexed, its
   subtree never walked (rolls up honestly-unknown). ❌ Don't remove it to "fill in" sizes — it re-triggers the stall.
-  The cover walk also stamps them `known_unreadable`, or the frontier would hand that exact tree to every search.
+  The cover walk also stamps them `unreadable_cause = Declined` (❌ never `Denied`: no permission opens one), or the
+  frontier would hand that exact tree to every search.
 - **Adding a name REBUILDS every network index** (each stamps the list it was built against; `lifecycle/network_scan.rs`
   truncate-rescans on a mismatch), and a false positive costs a user their indexed folder. ❌ No name without a vendor
   citation; ❌ stamp only right after a `TruncateData`; ❌ never migrate.

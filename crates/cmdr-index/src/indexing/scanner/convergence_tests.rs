@@ -18,7 +18,7 @@ use super::test_fixtures::{self, MockChild, MockTree, dir, file, setup_writer};
 use super::*;
 use crate::indexing::IndexPathSpace;
 use crate::indexing::read::coverage::{CoverageDimension, coverage_for_scope};
-use crate::indexing::store::{EXCLUSION_POLICY_KEY, IndexStore};
+use crate::indexing::store::{EXCLUSION_POLICY_KEY, IndexStore, UnreadableCause};
 
 // ── Fixture ──────────────────────────────────────────────────────────
 
@@ -178,7 +178,7 @@ fn a_cancelled_walk_leaves_durable_partial_coverage() {
 /// the walk CAN'T READ stays `listed_epoch = 0` forever, so it re-enters the
 /// frontier on every single search and that part of the scope never converges.
 ///
-/// M2 added `entries.known_unreadable` for exactly this and left it with no
+/// M2 added the column for exactly this and left it with no
 /// writer. The walk stamps it, but only for PERMISSION DENIED — the durable,
 /// user-fixable case. Any other read error might be transient (a dead mount
 /// coming back, a storm passing), and pinning those would stop the retry that
@@ -209,13 +209,18 @@ fn a_folder_the_walk_cannot_read_stops_re_entering_the_frontier() {
         let id = crate::indexing::store::resolve_path(&conn, &path.to_string_lossy())
             .expect("resolve")
             .expect("row");
-        IndexStore::get_known_unreadable_by_id(&conn, id)
-            .expect("known_unreadable")
+        IndexStore::get_unreadable_cause_by_id(&conn, id)
+            .expect("the unreadable cause")
             .expect("row")
     };
-    assert!(unreadable_flag(&denied), "permission denied is durable, so mark it");
-    assert!(
-        !unreadable_flag(&flaky),
+    assert_eq!(
+        unreadable_flag(&denied),
+        Some(UnreadableCause::Denied),
+        "permission denied is durable, so mark it — and as a refusal, which is the half a user can act on"
+    );
+    assert_eq!(
+        unreadable_flag(&flaky),
+        None,
         "any other read error might heal, so leave it retriable"
     );
 
@@ -227,14 +232,14 @@ fn a_folder_the_walk_cannot_read_stops_re_entering_the_frontier() {
     )
     .expect("coverage");
     map.frontier.sort();
-    map.unreadable.sort();
+    map.permission_denied.sort();
     assert_eq!(
         map.frontier,
         vec![flaky.to_string_lossy().to_string()],
         "only the retriable folder is offered to the next walk"
     );
     assert_eq!(
-        map.unreadable,
+        map.permission_denied,
         vec![denied.to_string_lossy().to_string()],
         "and the unreadable one is reported to the user instead of walked again"
     );

@@ -701,9 +701,13 @@ fn a_nas_system_dir_is_indexed_but_never_walked_into() {
         "and the frontier does NOT hand the snapshot tree back to the next search: {covered:?}"
     );
     assert_eq!(
-        covered.unreadable,
+        covered.declined,
         [snapshot],
         "it's reported as ground Cmdr won't read, which is what it is"
+    );
+    assert!(
+        covered.permission_denied.is_empty(),
+        "and never as a permission the user could grant: nobody refused us, we declined"
     );
 }
 

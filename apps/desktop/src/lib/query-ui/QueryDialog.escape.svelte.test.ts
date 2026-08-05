@@ -75,7 +75,7 @@ function mountDialog(): Harness {
     closes: () => closes,
     cancelled,
     callbacks: () => {
-      const last = started[started.length - 1]
+      const last = started.at(-1)
       if (!last) throw new Error('no run started')
       return last.callbacks
     },

@@ -44,6 +44,9 @@ Flow: FDA (1) → AI (2) → Open beta (3) → Optional (4). Linux skips step 1 
 - **`StepBeta` and `StepOptional` reuse existing Settings wiring** (`UpdatesSection`'s `betaSignup`/email path,
   `<SettingSwitch>` writing via `setSetting()`). The email path POSTs only the email, never an install id. Don't fork
   it.
+- **Search's coverage note routes INTO step 1** when a walk was refused a folder and Cmdr lacks FDA
+  (`lib/search/coverage-note.ts::offersFullDiskAccess`). ❌ No second FDA prompt, ❌ never over a snapshot folder.
+  `DETAILS.md` § The search route in.
 - **`CMDR_FORCE_ONBOARDING=1`** forces the wizard regardless of persisted state;
   `CMDR_MOCK_FDA=granted|denied|notgranted` overrides the TCC probe for testing all banner branches.
 

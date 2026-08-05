@@ -151,13 +151,21 @@
   "@search.coverage.walk.abandoned": {
     "sourceHash": "4a6a2af"
   },
-  "search.coverage.unreadable": "{count, plural, one {O Cmdr não conseguiu olhar dentro desta pasta, então nada dela está nos resultados:} many {O Cmdr não conseguiu olhar dentro destas pastas, então nada delas está nos resultados:} other {O Cmdr não conseguiu olhar dentro destas pastas, então nada delas está nos resultados:}}",
-  "@search.coverage.unreadable": {
-    "sourceHash": "32dadf5"
+  "search.coverage.denied": "{count, plural, one {O Cmdr não teve permissão para olhar dentro desta pasta, então nada dela está nos resultados:} many {O Cmdr não teve permissão para olhar dentro destas pastas, então nada delas está nos resultados:} other {O Cmdr não teve permissão para olhar dentro destas pastas, então nada delas está nos resultados:}}",
+  "@search.coverage.denied": {
+    "sourceHash": "2c0eb72"
   },
-  "search.coverage.unreadableWhy": "É uma permissão que o Cmdr ainda não tem, ou uma pasta de snapshots que ele deixa de lado de propósito.",
-  "@search.coverage.unreadableWhy": {
-    "sourceHash": "373e661"
+  "search.coverage.deniedFullDiskAccess": "Com acesso total ao disco, o Cmdr consegue buscar em pastas como estas.",
+  "@search.coverage.deniedFullDiskAccess": {
+    "sourceHash": "8de9168"
+  },
+  "search.coverage.setUpFullDiskAccess": "Configurar o acesso total ao disco",
+  "@search.coverage.setUpFullDiskAccess": {
+    "sourceHash": "98226cc"
+  },
+  "search.coverage.declined": "{count, plural, one {O Cmdr não olha dentro de pastas de snapshot, de propósito, então nada dela está nos resultados:} many {O Cmdr não olha dentro de pastas de snapshot, de propósito, então nada delas está nos resultados:} other {O Cmdr não olha dentro de pastas de snapshot, de propósito, então nada delas está nos resultados:}}",
+  "@search.coverage.declined": {
+    "sourceHash": "ea5be72"
   },
   "search.coverage.stillCovering": "{count, plural, one {Outra busca está percorrendo esta pasta agora, então os arquivos dela aparecem já já:} many {Outra busca está percorrendo estas pastas agora, então os arquivos delas aparecem já já:} other {Outra busca está percorrendo estas pastas agora, então os arquivos delas aparecem já já:}}",
   "@search.coverage.stillCovering": {

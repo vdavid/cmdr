@@ -666,6 +666,9 @@
                 onReopen={() => {
                     showSearchDialog = true
                 }}
+                onGrantFullDiskAccess={() => {
+                    void openOnboardingFromMenuOrPalette(startupGatesCtx, 'palette')
+                }}
             />
         {/if}
 

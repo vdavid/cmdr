@@ -9,18 +9,20 @@
 //!
 //! ## The descent rule
 //!
-//! Both epoch fields are load-bearing, plus the `known_unreadable` marker.
+//! Both epoch fields are load-bearing, plus the `unreadable_cause` marker.
 //! Descending from the scope root, each directory is exactly one of:
 //!
 //! - `min_subtree_epoch > 0` ⇒ **covered**. Serve from the index; don't descend.
 //! - `min_subtree_epoch == 0 && listed_epoch > 0` ⇒ **listed**. This directory was
 //!   read, something below it wasn't. It is itself covered ground; descend into
 //!   its child directories and classify each.
-//! - `listed_epoch == 0 && known_unreadable` ⇒ **unreadable**. Nothing is coming
-//!   for this subtree: a walk tried and can't read it (permission denied), or
-//!   won't read it at all (a NAS snapshot directory, whose per-snapshot tree is
-//!   the one thing the network scanner refuses on purpose). Not frontier, and
-//!   reported rather than silently dropped.
+//! - `listed_epoch == 0 && unreadable_cause != 0` ⇒ **unreadable**. Nothing is
+//!   coming for this subtree, and the cause says which kind of nothing: a walk
+//!   tried and was refused (permission denied), or no walk will read it at all (a
+//!   NAS snapshot directory, whose per-snapshot tree is the one thing the network
+//!   scanner refuses on purpose). Not frontier, reported rather than silently
+//!   dropped, and reported in two lists rather than one — they reach the user as
+//!   different sentences, and only the first is something they can act on.
 //! - `listed_epoch == 0` ⇒ **frontier**. Cut here and hand the subtree to the walk.
 //!
 //! ❌ **Don't simplify this to `min_subtree_epoch` alone.** The min absorbs zero
@@ -54,7 +56,7 @@ use rusqlite::{Connection, OptionalExtension, params};
 use super::enrichment::get_read_pool_for;
 use crate::indexing::paths::routing::index_read_path;
 use crate::indexing::scanner::index_predates_exclusion_policy;
-use crate::indexing::store::{IndexStore, IndexStoreError, resolve_path};
+use crate::indexing::store::{IndexStore, IndexStoreError, UnreadableCause, resolve_path};
 
 /// How deep the descent will follow the tree before it stops trusting it.
 ///
@@ -133,12 +135,19 @@ pub struct CoverageMap {
     /// emits them as it finds them, and no caller should read the order as meaning
     /// anything.
     pub frontier: Vec<String>,
-    /// Directories no walk is going to fill in, so they're not offered again:
-    /// either a walk tried and couldn't read one, or it won't read one (a NAS
-    /// snapshot tree). Reported rather than dropped: a search over them is
-    /// honestly narrow, and the user is the one who can act on it (by granting
-    /// Full Disk Access, or by looking elsewhere).
-    pub unreadable: Vec<String>,
+    /// Directories a walk tried to read and was REFUSED (permission denied), as
+    /// absolute paths. Not offered again, and reported rather than dropped: a
+    /// search over them is honestly narrow, and this is the half the user can act
+    /// on — on macOS, granting Full Disk Access and searching again heals it,
+    /// because the successful listing clears the mark.
+    pub permission_denied: Vec<String>,
+    /// Directories no walk is going to read at all, by Cmdr's own choice: a NAS
+    /// snapshot tree, whose per-snapshot hardlinked copies both whole-volume
+    /// scanners refuse on purpose. Nothing for the user to fix; it's here so a
+    /// short answer can say why it's short. ❌ Don't merge it into
+    /// [`permission_denied`](Self::permission_denied): "grant Full Disk Access"
+    /// over a snapshot folder is advice that does nothing.
+    pub declined: Vec<String>,
     /// Which state of the index this answer describes. Honor the answer only while
     /// the snapshot you're serving the covered half from still matches.
     pub token: CoverageToken,
@@ -160,16 +169,16 @@ pub(crate) enum Verdict {
     Listed,
     /// Nothing has listed this directory. The whole subtree goes to the walk.
     Frontier,
-    /// Nothing is coming for this directory: a walk tried and couldn't read it,
-    /// or won't read it at all.
-    Unreadable,
+    /// Nothing is coming for this directory, and the cause says which kind of
+    /// nothing: a walk was refused, or no walk will read it at all.
+    Unreadable(UnreadableCause),
 }
 
 /// One directory's coverage state, as the descent reads it.
 struct DirCoverage {
     id: i64,
     listed_epoch: u64,
-    known_unreadable: bool,
+    unreadable_cause: Option<UnreadableCause>,
     min_subtree_epoch: u64,
 }
 
@@ -182,8 +191,8 @@ impl DirCoverage {
         if self.listed_epoch > 0 {
             return Verdict::Listed;
         }
-        if self.known_unreadable {
-            return Verdict::Unreadable;
+        if let Some(cause) = self.unreadable_cause {
+            return Verdict::Unreadable(cause);
         }
         Verdict::Frontier
     }
@@ -206,7 +215,8 @@ pub(crate) fn coverage_on_volume(
     let normalized = firmlinks::normalize_path(scope_path);
     let uncovered = || CoverageMap {
         frontier: vec![normalized.clone()],
-        unreadable: Vec::new(),
+        permission_denied: Vec::new(),
+        declined: Vec::new(),
         token: CoverageToken::UNINDEXED,
     };
 
@@ -252,15 +262,18 @@ pub(crate) fn coverage_for_scope(
     // case, which is the whole reason the parameter exists this early.
     let CoverageDimension::Listing = dimension;
     let mut frontier = Vec::new();
-    let mut unreadable = Vec::new();
+    let mut permission_denied = Vec::new();
+    let mut declined = Vec::new();
     let token = walk_coverage(conn, scope_index_path, scope_path, &mut |verdict, path| match verdict {
         Verdict::Frontier => frontier.push(path.to_string()),
-        Verdict::Unreadable => unreadable.push(path.to_string()),
+        Verdict::Unreadable(UnreadableCause::Denied) => permission_denied.push(path.to_string()),
+        Verdict::Unreadable(UnreadableCause::Declined) => declined.push(path.to_string()),
         Verdict::Covered | Verdict::Listed => {}
     })?;
     Ok(CoverageMap {
         frontier,
-        unreadable,
+        permission_denied,
+        declined,
         token,
     })
 }
@@ -328,7 +341,7 @@ fn read_dir_coverage(conn: &Connection, index_path: &str) -> Result<Option<DirCo
         return Ok(None);
     };
     let mut stmt = conn.prepare_cached(
-        "SELECT e.listed_epoch, e.known_unreadable, COALESCE(ds.min_subtree_epoch, 0)
+        "SELECT e.listed_epoch, e.unreadable_cause, COALESCE(ds.min_subtree_epoch, 0)
          FROM entries e LEFT JOIN dir_stats ds ON ds.entry_id = e.id
          WHERE e.id = ?1 AND e.is_directory = 1",
     )?;
@@ -337,7 +350,7 @@ fn read_dir_coverage(conn: &Connection, index_path: &str) -> Result<Option<DirCo
             Ok(DirCoverage {
                 id,
                 listed_epoch: row.get(0)?,
-                known_unreadable: row.get::<_, i64>(1)? != 0,
+                unreadable_cause: UnreadableCause::from_stored(row.get::<_, i64>(1)?),
                 min_subtree_epoch: row.get(2)?,
             })
         })
@@ -352,7 +365,7 @@ fn read_dir_coverage(conn: &Connection, index_path: &str) -> Result<Option<DirCo
 /// leading `parent_id`.
 fn read_child_dir_coverage(conn: &Connection, parent_id: i64) -> Result<Vec<(DirCoverage, String)>, IndexStoreError> {
     let mut stmt = conn.prepare_cached(
-        "SELECT c.id, c.name, c.listed_epoch, c.known_unreadable, COALESCE(ds.min_subtree_epoch, 0)
+        "SELECT c.id, c.name, c.listed_epoch, c.unreadable_cause, COALESCE(ds.min_subtree_epoch, 0)
          FROM entries c LEFT JOIN dir_stats ds ON ds.entry_id = c.id
          WHERE c.parent_id = ?1 AND c.is_directory = 1",
     )?;
@@ -361,7 +374,7 @@ fn read_child_dir_coverage(conn: &Connection, parent_id: i64) -> Result<Vec<(Dir
             DirCoverage {
                 id: row.get(0)?,
                 listed_epoch: row.get(2)?,
-                known_unreadable: row.get::<_, i64>(3)? != 0,
+                unreadable_cause: UnreadableCause::from_stored(row.get::<_, i64>(3)?),
                 min_subtree_epoch: row.get(4)?,
             },
             row.get::<_, String>(1)?,

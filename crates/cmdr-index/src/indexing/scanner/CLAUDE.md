@@ -31,7 +31,7 @@ File Provider mount, plus the scope-aware exclusion policy every local path shar
   channel bound stops per-entry chatter), ❌ no third cadence.
 - **Honest-stale, never false-complete.** An abandoned or give-up-pruned dir is NEVER marked listed, so it stays
   `listed_epoch = 0` (unknown size, `EntryRow` intact); never zeroed, never `scan_completed_at`-marked. PERMISSION
-  DENIED also gets `known_unreadable`; a TIMEOUT doesn't, since dead mounts heal. `mark_dirs_listed` clears it.
+  DENIED also gets `unreadable_cause = Denied`; a TIMEOUT doesn't, since dead mounts heal. `mark_dirs_listed` clears it.
 - **Marks ride WITH their rows, inside `Pending`'s lock.** A mark is a PK `UPDATE` and a dir's row is written by its
   PARENT, so an overtaking mark means `listed_epoch = 0` forever. ❌ Don't split that mutex, ❌ don't send outside it,
   ❌ don't stop `finish()` flushing marks on CANCEL. DETAILS § "Marks ride".

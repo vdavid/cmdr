@@ -67,7 +67,8 @@ fn verdicts(conn: &Connection, scope: &str) -> Vec<(Verdict, String)> {
 fn coverage(conn: &Connection, scope: &str) -> CoverageMap {
     let mut map = coverage_for_scope(conn, scope, scope, CoverageDimension::Listing).expect("coverage for scope");
     map.frontier.sort();
-    map.unreadable.sort();
+    map.permission_denied.sort();
+    map.declined.sort();
     map
 }
 
@@ -216,7 +217,7 @@ fn materialize(conn: &Connection, tree: &GeneratedTree) -> Materialized {
         }
         if is_unreadable {
             out.unreadable.insert(id);
-            IndexStore::mark_dirs_unreadable(conn, &[id], true).expect("mark unreadable");
+            IndexStore::mark_dirs_unreadable(conn, &[id], Some(UnreadableCause::Denied)).expect("mark unreadable");
         }
     }
     let listed: Vec<i64> = out.listed.iter().copied().collect();
@@ -258,7 +259,7 @@ proptest! {
         let mut produced: Vec<i64> = Vec::new();
         for (verdict, id) in descend(&conn, &model) {
             match verdict {
-                Verdict::Covered | Verdict::Frontier | Verdict::Unreadable => produced.extend(model.subtree(id)),
+                Verdict::Covered | Verdict::Frontier | Verdict::Unreadable(_) => produced.extend(model.subtree(id)),
                 Verdict::Listed => produced.push(id),
             }
         }
@@ -315,7 +316,7 @@ proptest! {
                     !model.listed.contains(&id),
                     "\"{path}\" is already listed, so handing it to the walk wastes the walk"
                 ),
-                Verdict::Unreadable => {
+                Verdict::Unreadable(_) => {
                     prop_assert!(!model.listed.contains(&id), "\"{path}\" was listed, so it is readable");
                     prop_assert!(model.unreadable.contains(&id), "\"{path}\" carries no unreadable marker");
                 }
@@ -346,7 +347,7 @@ fn a_single_uncovered_leaf_yields_the_leaf_not_the_root() {
 
     let map = coverage(&conn, "/");
     assert_eq!(map.frontier, vec!["/projects/cmdr/notes".to_string()]);
-    assert!(map.unreadable.is_empty());
+    assert!(map.permission_denied.is_empty() && map.declined.is_empty());
 }
 
 /// A volume the index has never seen hands back the scope root itself.
@@ -415,7 +416,7 @@ fn a_fully_covered_scope_yields_an_empty_frontier() {
 
     let map = coverage(&conn, "/");
     assert!(map.frontier.is_empty(), "nothing to walk: {map:?}");
-    assert!(map.unreadable.is_empty());
+    assert!(map.permission_denied.is_empty() && map.declined.is_empty());
 
     // Every directory was accounted for: the single covered cut is the scope root,
     // so its subtree IS the whole scope. Without the count below this passes on a
@@ -447,10 +448,14 @@ fn a_known_unreadable_dir_is_reported_rather_than_walked_again() {
     let _downloads = insert_dir(&conn, dave, "Downloads");
 
     list_and_aggregate(&conn, &[ROOT_ID, users, dave], 2);
-    IndexStore::mark_dirs_unreadable(&conn, &[documents], true).expect("mark unreadable");
+    IndexStore::mark_dirs_unreadable(&conn, &[documents], Some(UnreadableCause::Denied)).expect("mark unreadable");
 
     let map = coverage(&conn, "/");
-    assert_eq!(map.unreadable, vec!["/Users/dave/Documents".to_string()]);
+    assert_eq!(map.permission_denied, vec!["/Users/dave/Documents".to_string()]);
+    assert!(
+        map.declined.is_empty(),
+        "a refusal is not a folder Cmdr declines to read"
+    );
     assert_eq!(
         map.frontier,
         vec!["/Users/dave/Downloads".to_string()],
@@ -459,12 +464,42 @@ fn a_known_unreadable_dir_is_reported_rather_than_walked_again() {
 
     // Clearing the mark (what a later successful listing does) puts it back in the
     // frontier without a rebuild.
-    IndexStore::mark_dirs_unreadable(&conn, &[documents], false).expect("clear mark");
+    IndexStore::mark_dirs_unreadable(&conn, &[documents], None).expect("clear mark");
     let healed = coverage(&conn, "/");
-    assert!(healed.unreadable.is_empty());
+    assert!(healed.permission_denied.is_empty());
     assert_eq!(
         healed.frontier,
         vec!["/Users/dave/Documents".to_string(), "/Users/dave/Downloads".to_string()]
+    );
+}
+
+/// A directory Cmdr declines to read is reported APART from one it was refused.
+///
+/// The two are the same shape in the index and different sentences on screen: one
+/// is a permission the user can grant, the other is a NAS snapshot tree nobody
+/// walks on purpose. Telling them apart by folder name is what
+/// `.claude/rules/no-string-matching.md` forbids, so the cause is stored.
+#[test]
+fn a_declined_dir_is_reported_apart_from_a_refused_one() {
+    let (conn, _dir) = open_temp_index();
+    let share = insert_dir(&conn, ROOT_ID, "share");
+    let snapshots = insert_dir(&conn, share, "@eaDir");
+    let locked = insert_dir(&conn, share, "private");
+
+    list_and_aggregate(&conn, &[ROOT_ID, share], 2);
+    IndexStore::mark_dirs_unreadable(&conn, &[snapshots], Some(UnreadableCause::Declined)).expect("mark declined");
+    IndexStore::mark_dirs_unreadable(&conn, &[locked], Some(UnreadableCause::Denied)).expect("mark denied");
+
+    let map = coverage(&conn, "/");
+    assert_eq!(
+        map.declined,
+        vec!["/share/@eaDir".to_string()],
+        "a snapshot tree is ground Cmdr won't read, not ground it was refused"
+    );
+    assert_eq!(
+        map.permission_denied,
+        vec!["/share/private".to_string()],
+        "and the refusal stays the half the user can act on"
     );
 }
 
@@ -654,7 +689,7 @@ fn measure_frontier_query_on_a_real_index() {
          warm timings (5 runs, sorted): {timings:?}\n\
          median: {:?}",
         warm.frontier.len(),
-        warm.unreadable.len(),
+        warm.permission_denied.len() + warm.declined.len(),
         timings[timings.len() / 2],
     );
     assert!(

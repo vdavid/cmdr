@@ -84,7 +84,8 @@ const {
         matchCount: answer.totalCount,
         coverage: {
           walk: 'nothingToWalk',
-          unreadable: [],
+          permissionDenied: [],
+          declined: [],
           stillCovering: [],
           unresolvedScopes: [],
           capped: false,

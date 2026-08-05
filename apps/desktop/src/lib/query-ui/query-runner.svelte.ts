@@ -195,7 +195,10 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
    * cursor mid-list is how a growing list becomes unreadable.
    */
   function setResultsHoldingCursor(state: QueryFilterState, entries: SearchResultEntry[]): void {
-    const cursorPath = state.getResults()[state.getCursorIndex()]?.path
+    // `.at()` rather than `[i]`: the index type claims a row is always there, and an
+    // empty list says otherwise. The cursor is never negative (it starts at 0 and
+    // resets to 0), so `.at()`'s from-the-end reading can't apply.
+    const cursorPath = state.getResults().at(state.getCursorIndex())?.path
     state.setResults(entries)
     if (cursorPath === undefined) return
     const next = entries.findIndex((entry) => entry.path === cursorPath)

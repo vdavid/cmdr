@@ -43,7 +43,7 @@ use super::{
 use crate::indexing::IndexPathSpace;
 use crate::indexing::reconcile::reconciler;
 use crate::indexing::scanner::{CoveredEntry, EmitPacer, EntrySender, ScanSummary, WalkHeartbeat};
-use crate::indexing::store::{EntryRow, IndexStore, normalize_for_comparison, resolve_scan_root};
+use crate::indexing::store::{EntryRow, IndexStore, UnreadableCause, normalize_for_comparison, resolve_scan_root};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 
 /// Walk one coverage-frontier node on a volume the index reaches only through the
@@ -490,7 +490,14 @@ impl<'a> CoverWrites<'a> {
         self.emit = None;
         for chunk in std::mem::take(&mut self.unreadable).chunks(MARK_CHUNK) {
             self.writer
-                .send(WriteMessage::MarkDirsUnreadable { ids: chunk.to_vec() })
+                .send(WriteMessage::MarkDirsUnreadable {
+                    ids: chunk.to_vec(),
+                    // Always `Declined` here: the trait walk marks exactly one
+                    // thing, a NAS system directory it won't descend into. A read
+                    // the SHARE refuses fails the listing instead, which leaves
+                    // the directory unlisted and retriable.
+                    cause: UnreadableCause::Declined,
+                })
                 .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
         }
         if self.listed.is_empty() {

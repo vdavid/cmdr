@@ -47,8 +47,9 @@ buried. It is meant to be complete; anything found later belongs here.
 1. **An interrupted walk is narrower.** Cancel, drive disconnect, and app quit each end a walk early and yield a
    strictly smaller result set than the indexed run. This is the difference people meet most often, so M6 labels the
    result list incomplete rather than letting it read as exhaustive.
-2. **Unreadable subtrees are narrower.** The 32-failure give-up prune and M2's `known_unreadable` marker mean a walk
-   without Full Disk Access covers less than an index built when it was granted. Honestly signalled, still a difference.
+2. **Unreadable subtrees are narrower.** The 32-failure give-up prune and M2's marker (now
+   `entries.unreadable_cause`) mean a walk without Full Disk Access covers less than an index built when it was
+   granted. Honestly signalled, and M8 offers the way out where there is one, but still a difference.
 3. **Auto-apply works on indexed drives and not on uncovered ground** (Decision 7). Crossing into a frontier needs
    Enter.
 4. **Ranking is not preserved.** Importance weights come from the index, so live-walked results rank by match quality
@@ -264,7 +265,7 @@ coverage API must not assume a single dimension.
 
 ## Execution status
 
-Through M7. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local `main`.
+Through M8. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local `main`.
 
 **Landed.**
 
@@ -340,6 +341,15 @@ Through M7. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local 
   progress strip (count, folders scanned, current path, Stop with its shortcut), a throttled `aria-live` region on an
   inner span, count-only's "N so far", the Escape two-step, and the coverage note's live half. Verified in the running
   app against a real unindexed NAS and an unindexed disk image.
+
+- **M8**: the Full Disk Access route, and the typed cause it needed. `entries.unreadable_cause` (schema v16) splits
+  "a walk was refused" from "no walk will read this", all the way to two lists on `SearchRunCoverage` and two sentences
+  in `CoverageNote.svelte`. The refusal half offers `search.coverage.setUpFullDiskAccess`, which routes into the
+  onboarding wizard's step 1 (the existing prompt, not a second one) through the host's `onGrantFullDiskAccess`. Three
+  conditions gate it (`coverage-note.ts::offersFullDiskAccess`): a folder was actually refused, this is macOS, and
+  `checkFullDiskAccessQuiet` says Cmdr doesn't already have it. ❌ Never offered over `declined`: no permission opens a
+  snapshot tree. It also carried the M7 leftover — rows now reach the dialog 100 ms after they're found rather than
+  when a 2 000-entry batch fills (`scanner/live_emit.rs`).
 
 - **M7**: the walk that outlives its dialog. `walk-handoff.svelte.ts` keeps listening after "Open in pane", appends each
   batch to the snapshot (through `appendSnapshotEntries`, which bumps `mutationTick`), drives the toast, and hands the
@@ -509,11 +519,15 @@ Through M7. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local 
   (index-only) run. That reads well — the debounce says what it couldn't cover and offers the fuller search for one key
   (`search.coverage.pressEnter`) — but it is a real narrowing of M1's surface that M10's settings/analytics sweep should
   know about.
-- **`unreadable`'s two causes have one list and no discriminator.** `SearchRunCoverage::unreadable`'s own doc says "two
-  causes, two different sentences — ❌ don't render one", but the wire carries bare paths: permission-denied and NAS
-  snapshot trees are indistinguishable frontend-side (short of matching `@eaDir` by name, which the no-string-matching
-  rule forbids). M6 renders ONE sentence stating the fact plus a second naming both possibilities; the Rust doc comment
-  was corrected to say so. Giving the list a typed cause is the fix if M8's Full Disk Access route wants to act on one.
+- **`unreadable`'s two causes had one list and no discriminator, and M8 gave them a typed cause end to end.** The wire
+  carried bare paths, so permission-denied and NAS snapshot trees were indistinguishable frontend-side (short of
+  matching `@eaDir` by name, which the no-string-matching rule forbids) and M6 could only state the fact and name both
+  possibilities. M8 needed to ACT on one, so `entries.known_unreadable` became `entries.unreadable_cause` (schema v16,
+  free: v15 never shipped) with an internal `UnreadableCause::{Denied, Declined}`; the local walker stamps `Denied` on
+  a permission-denied read and the trait walk stamps `Declined` on a NAS system dir; `CoverageMap` and
+  `SearchRunCoverage` carry `permission_denied` / `declined` as two lists, and the note renders two sentences. ❌ The
+  enum itself does NOT cross into `lib.rs`: two `Vec<String>` fields on an existing struct cost no root promise, and
+  the ceiling is David's to raise. The consumer partitions by cause anyway, so two lists is also the simpler render.
 - **A live walk's progress used to be only as live as its batches**, and the batch size is what made that visible: a
   `CoveredEntry` batch fills at 2 000 entries, so a walk over a sparse tree (one matching file per directory) reports
   `0 folders scanned` and no path for hundreds of directories. M6 saw it on a `~/Library` walk; M7 fixed it with

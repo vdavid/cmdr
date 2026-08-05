@@ -118,7 +118,8 @@ describe('the live-search event family', () => {
       matchCount: 7,
       coverage: {
         walk: 'completed',
-        unreadable: [],
+        permissionDenied: [],
+        declined: [],
         stillCovering: [],
         unresolvedScopes: [],
         abandonedGround: false,

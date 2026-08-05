@@ -123,7 +123,7 @@
   "@search.walkHandoff.stoppedShort": {
     "sourceHash": "3a2a5dd"
   },
-  "search.walkHandoff.superseded": "Cmdr n'ajoute plus rien aux résultats pour {label}, ta nouvelle recherche a pris le relais.",
+  "search.walkHandoff.superseded": "Cmdr n''ajoute plus rien aux résultats pour {label}, votre nouvelle recherche a pris le relais.",
   "@search.walkHandoff.superseded": {
     "sourceHash": "83aa5a2"
   },
@@ -139,11 +139,11 @@
   "@search.coverage.unresolved": {
     "sourceHash": "8d9517e"
   },
-  "search.coverage.walk.cancelled": "Tu as arrêté cette recherche, tu vois donc ce que Cmdr avait trouvé jusque-là. Tout ce quil a lu en chemin est conservé, et une nouvelle recherche repart de là.",
+  "search.coverage.walk.cancelled": "Vous avez arrêté cette recherche, vous voyez donc ce que Cmdr avait trouvé jusque-là. Tout ce qu''il a lu en chemin est conservé, et une nouvelle recherche repart de là.",
   "@search.coverage.walk.cancelled": {
     "sourceHash": "ea9caa1"
   },
-  "search.coverage.walk.interrupted": "Cette recherche sest arrêtée en cours de route, il peut donc y avoir plus sur {drive}. Relancer la recherche reprend là où elle sest arrêtée.",
+  "search.coverage.walk.interrupted": "Cette recherche s''est arrêtée en cours de route, il peut donc y avoir plus sur {drive}. Relancer la recherche reprend là où elle s''est arrêtée.",
   "@search.coverage.walk.interrupted": {
     "sourceHash": "4c6a0a4"
   },
@@ -151,13 +151,21 @@
   "@search.coverage.walk.abandoned": {
     "sourceHash": "4a6a2af"
   },
-  "search.coverage.unreadable": "{count, plural, one {Cmdr na pas pu regarder dans ce dossier, rien de son contenu nest donc dans les résultats :} many {Cmdr na pas pu regarder dans ces dossiers, rien de leur contenu nest donc dans les résultats :} other {Cmdr na pas pu regarder dans ces dossiers, rien de leur contenu nest donc dans les résultats :}}",
-  "@search.coverage.unreadable": {
-    "sourceHash": "32dadf5"
+  "search.coverage.denied": "{count, plural, one {Cmdr n''a pas eu l''autorisation de regarder dans ce dossier, rien de son contenu n''est donc dans les résultats :} many {Cmdr n''a pas eu l''autorisation de regarder dans ces dossiers, rien de leur contenu n''est donc dans les résultats :} other {Cmdr n''a pas eu l''autorisation de regarder dans ces dossiers, rien de leur contenu n''est donc dans les résultats :}}",
+  "@search.coverage.denied": {
+    "sourceHash": "2c0eb72"
   },
-  "search.coverage.unreadableWhy": "Cest soit une permission que Cmdr na pas encore, soit un dossier dinstantanés quil laisse de côté exprès.",
-  "@search.coverage.unreadableWhy": {
-    "sourceHash": "373e661"
+  "search.coverage.deniedFullDiskAccess": "Avec l''accès complet au disque, Cmdr peut chercher dans des dossiers comme ceux-ci.",
+  "@search.coverage.deniedFullDiskAccess": {
+    "sourceHash": "8de9168"
+  },
+  "search.coverage.setUpFullDiskAccess": "Configurer l''accès complet au disque",
+  "@search.coverage.setUpFullDiskAccess": {
+    "sourceHash": "98226cc"
+  },
+  "search.coverage.declined": "{count, plural, one {Cmdr ne regarde pas dans les dossiers d''instantanés, exprès, rien de son contenu n''est donc dans les résultats :} many {Cmdr ne regarde pas dans les dossiers d''instantanés, exprès, rien de leur contenu n''est donc dans les résultats :} other {Cmdr ne regarde pas dans les dossiers d''instantanés, exprès, rien de leur contenu n''est donc dans les résultats :}}",
+  "@search.coverage.declined": {
+    "sourceHash": "ea5be72"
   },
   "search.coverage.stillCovering": "{count, plural, one {Une autre recherche parcourt ce dossier en ce moment, ses fichiers arriveront donc dans un instant :} many {Une autre recherche parcourt ces dossiers en ce moment, leurs fichiers arriveront donc dans un instant :} other {Une autre recherche parcourt ces dossiers en ce moment, leurs fichiers arriveront donc dans un instant :}}",
   "@search.coverage.stillCovering": {
@@ -199,7 +207,7 @@
   "@search.runTitle": {
     "sourceHash": "859abd4"
   },
-  "search.coverage.pressEnter": "Appuie sur Entrée et Cmdr va les parcourir maintenant.",
+  "search.coverage.pressEnter": "Appuyez sur Entrée et Cmdr va les parcourir maintenant.",
   "@search.coverage.pressEnter": {
     "sourceHash": "f340335"
   }

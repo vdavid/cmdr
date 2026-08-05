@@ -211,17 +211,29 @@
     "description": "Note above the search results, shown when the live walk finished but gave up on one or more folders on the way (a folder that stopped responding, or a subtree it pruned after too many failed reads). It exists so a short list isn't read as an exhaustive one. Cmdr doesn't know which folders, so none are listed. Avoid the words 'error' and 'failed'.",
     "placeholders": {}
   },
-  "search.coverage.unreadable": "{count, plural, one {Cmdr couldn''t look inside this folder, so nothing from it is in the results:} other {Cmdr couldn''t look inside these folders, so nothing from them is in the results:}}",
-  "@search.coverage.unreadable": {
-    "description": "Note above the search results listing folders the app can't read at all, so their contents are missing from the results. A list of the folder paths follows the colon, and the sentence after it (search.coverage.unreadableWhy) explains the two possible reasons. Avoid the words 'error' and 'failed'.",
+  "search.coverage.denied": "{count, plural, one {Cmdr wasn''t allowed to look inside this folder, so nothing from it is in the results:} other {Cmdr wasn''t allowed to look inside these folders, so nothing from them is in the results:}}",
+  "@search.coverage.denied": {
+    "description": "Note above the search results listing folders the app was refused access to, so their contents are missing from the results. A list of the folder paths follows the colon. On macOS this is usually the Full Disk Access permission, and when the app doesn't have it the offer below (search.coverage.deniedFullDiskAccess) follows. Avoid the words 'error' and 'failed'.",
     "placeholders": {
-      "count": "how many folders couldn't be read, driving the singular/plural choice"
+      "count": "how many folders were refused, driving the singular/plural choice"
     }
   },
-  "search.coverage.unreadableWhy": "That's either a permission Cmdr doesn't have yet, or a snapshot folder it leaves alone on purpose.",
-  "@search.coverage.unreadableWhy": {
-    "description": "Follow-up line under the list of folders the app couldn't read, naming both reasons because the app genuinely can't tell which one applies to a given folder. The second is a backup-snapshot folder on a network drive, which the app skips deliberately because its contents are copies of files it has already seen.",
+  "search.coverage.deniedFullDiskAccess": "With full disk access, Cmdr can search folders like these.",
+  "@search.coverage.deniedFullDiskAccess": {
+    "description": "Line under the list of refused folders, shown only on macOS and only when Cmdr doesn't have Full Disk Access yet. It says what would open them, and the button below it (search.coverage.setUpFullDiskAccess) goes to the setup. 'Full disk access' is the macOS permission; use the system's own wording for it in your language.",
     "placeholders": {}
+  },
+  "search.coverage.setUpFullDiskAccess": "Set up full disk access",
+  "@search.coverage.setUpFullDiskAccess": {
+    "description": "Button under the refused folders that opens Cmdr's Full Disk Access setup (the same page the first-run setup shows). Short: it renders as a small button. 'Full disk access' is the macOS permission; use the system's own wording for it in your language.",
+    "placeholders": {}
+  },
+  "search.coverage.declined": "{count, plural, one {Cmdr doesn''t look inside snapshot folders, so nothing from this one is in the results:} other {Cmdr doesn''t look inside snapshot folders, so nothing from these is in the results:}}",
+  "@search.coverage.declined": {
+    "description": "Note above the search results listing snapshot folders on a network drive, which Cmdr never looks inside on purpose: their contents are copies of files it has already seen, and one such folder can report several times the drive's real size. A list of the folder paths follows the colon. There is nothing for the user to fix, so this one explains rather than offers. Avoid the words 'error' and 'failed'.",
+    "placeholders": {
+      "count": "how many snapshot folders were skipped, driving the singular/plural choice"
+    }
   },
   "search.coverage.stillCovering": "{count, plural, one {Another search is going through this folder right now, so its files will turn up in a moment:} other {Another search is going through these folders right now, so their files will turn up in a moment:}}",
   "@search.coverage.stillCovering": {

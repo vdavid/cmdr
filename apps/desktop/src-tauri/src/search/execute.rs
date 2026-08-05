@@ -318,7 +318,7 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
     let walked_scopes: std::collections::HashSet<&String> =
         question.frontier.iter().filter(|root| scopes.contains(root)).collect();
     let report = |walk: WalkEnding,
-                  unreadable: Vec<String>,
+                  unreadable: UnreadableGround,
                   still_covering: Vec<String>,
                   capped: bool,
                   abandoned_ground: bool| SearchRunCoverage {
@@ -337,7 +337,8 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
             _ => unresolved_scopes.clone(),
         },
         walk,
-        unreadable,
+        permission_denied: unreadable.permission_denied,
+        declined: unreadable.declined,
         still_covering,
         abandoned_ground,
         capped,
@@ -418,9 +419,9 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
     let walked = live::drive_walk(walk, attempted_roots, &judge, &mut stream);
 
     // What nothing is going to walk, re-read now the walk has stamped what it
-    // found: a folder it was refused (no Full Disk Access) is `known_unreadable`
-    // only once something has tried, so the answer from before the walk would be
-    // silent on exactly the case the user can act on.
+    // found: a folder it was refused (no Full Disk Access) carries its cause only
+    // once something has tried, so the answer from before the walk would be silent
+    // on exactly the case the user can act on.
     let unreadable = match walked.ending {
         WalkEnding::Cancelled => question.unreadable,
         _ => coverage_of(&target.volume_id, &scopes).unreadable,
@@ -435,12 +436,39 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
     stream.finish(coverage);
 }
 
+/// Directories nothing is going to walk, split by WHOSE refusal it was: the two
+/// are different sentences on screen, and only the first is one the user can act
+/// on (`crates/cmdr-index`'s `UnreadableCause`).
+#[derive(Default)]
+struct UnreadableGround {
+    /// A walk tried and the OS refused.
+    permission_denied: Vec<String>,
+    /// No walk will read it: a NAS snapshot tree.
+    declined: Vec<String>,
+}
+
+impl UnreadableGround {
+    /// Fold one scope's answer in.
+    fn extend(&mut self, map: &cmdr_index::CoverageMap) {
+        self.permission_denied.extend(map.permission_denied.iter().cloned());
+        self.declined.extend(map.declined.iter().cloned());
+    }
+
+    /// One order, no duplicates, however many scopes contributed.
+    fn settle(&mut self) {
+        for list in [&mut self.permission_denied, &mut self.declined] {
+            list.sort_unstable();
+            list.dedup();
+        }
+    }
+}
+
 /// A coverage answer over a query's scopes, merged.
 struct CoverageQuestion {
     /// Every frontier root, across every scope path.
     frontier: Vec<String>,
     /// Every directory nothing will walk, across every scope path.
-    unreadable: Vec<String>,
+    unreadable: UnreadableGround,
     /// The token each answer carried. All of them have to match the arena's for
     /// the covered half to be trustworthy (Decision 12).
     tokens: Vec<CoverageToken>,
@@ -450,14 +478,14 @@ struct CoverageQuestion {
 fn coverage_of(volume_id: &str, scopes: &[String]) -> CoverageQuestion {
     let mut question = CoverageQuestion {
         frontier: Vec::new(),
-        unreadable: Vec::new(),
+        unreadable: UnreadableGround::default(),
         tokens: Vec::new(),
     };
     for scope in scopes {
         match index().coverage(volume_id, scope, CoverageDimension::Listing) {
             Ok(map) => {
+                question.unreadable.extend(&map);
                 question.frontier.extend(map.frontier);
-                question.unreadable.extend(map.unreadable);
                 question.tokens.push(map.token);
             }
             Err(e) => {
@@ -472,8 +500,7 @@ fn coverage_of(volume_id: &str, scopes: &[String]) -> CoverageQuestion {
     }
     question.frontier.sort_unstable();
     question.frontier.dedup();
-    question.unreadable.sort_unstable();
-    question.unreadable.dedup();
+    question.unreadable.settle();
     question
 }
 

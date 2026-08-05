@@ -45,8 +45,9 @@ File search dialog: filename (glob/regex), size, date, scope, plus an AI mode. F
 - **AI mode never auto-applies** (cost). ❌ No per-consumer catch swallowing AI errors: QueryDialog surfaces them once.
 - **Enter walks; auto-apply doesn't** (Decision 7). `streamingSource` (`live-search-source.ts`) takes every
   user-triggered run; the debounce takes `runQuery`, the ONLY path left that can report a drive with no index, so the
-  uncovered note + offer live there. A live run's coverage fills the note's `live` half; its unreadable list has TWO
-  causes and ONE sentence, because nothing on the wire tells them apart. `walk: completed` ≠ exhaustive:
+  uncovered note + offer live there. A live run's coverage fills the note's `live` half; ground
+  nothing will read arrives as TWO typed lists — `permissionDenied` offers the FDA route (macOS, and only when Cmdr
+  lacks it), `declined` (a snapshot tree) ❌ never offers a permission. `walk: completed` ≠ exhaustive:
   `abandonedGround` is the third way short, ❌ never folded into `interrupted` (that one says the drive went away).
   `rankLiveResults` is ORDERING, ❌ never membership.
 - **One volume per search, and ONE prop names it**: `searchVolume` drives the readiness gate, the coverage voice, and

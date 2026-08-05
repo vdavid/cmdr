@@ -7723,18 +7723,22 @@ export type SearchRunCoverage = {
    */
   walk: WalkEnding
   /**
-   *  Directories nothing is going to walk, as absolute paths: either a walk
-   *  tried and can't read one (permission denied), or it won't read one at all
-   *  (a NAS snapshot tree, whose per-snapshot copies the scanner refuses on
-   *  purpose).
+   *  Directories a walk tried to read and was REFUSED, as absolute paths.
    *
-   *  Two causes, ONE list, and nothing here tells them apart — so the UI states
-   *  the fact and names both possibilities rather than guessing
-   *  (`lib/search/DETAILS.md` § The live search). ❌ Don't write copy that
-   *  claims it's one of them. Add a typed cause here if a caller ever needs to
-   *  ACT on one (M8's Full Disk Access route is the candidate).
+   *  The half a user can act on: on macOS this is usually Full Disk Access, and
+   *  granting it heals the mark on the next search (the successful listing
+   *  clears it). ❌ Keep it apart from [`declined`](Self::declined) — offering
+   *  Full Disk Access over a snapshot folder is advice that does nothing.
    */
-  unreadable: string[]
+  permissionDenied: string[]
+  /**
+   *  Directories no walk will read at all, by Cmdr's own choice: a NAS snapshot
+   *  tree, whose per-snapshot hardlinked copies the scanner refuses on purpose
+   *  (44 TB reported on a 10 TB volume).
+   *
+   *  Nothing for the user to fix, so the copy explains rather than offers.
+   */
+  declined: string[]
   /**
    *  Ground another walk on this volume is covering right now, so this run left
    *  it alone. Its rows reach the same index, so this is "these arrive a bit

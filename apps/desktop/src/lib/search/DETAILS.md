@@ -172,10 +172,17 @@ still (`runTitleOverride`).
 **The coverage note gained a `live` half** (`coverageNoteFromRun`): how the walk ended, folders nothing will read, and
 ground another walk already holds. Three notes on the copy:
 
-- **`unreadable` has two causes and one sentence.** A folder Cmdr was refused (no Full Disk Access) and a NAS snapshot
-  tree the scanner declines on purpose land in the SAME list, and nothing on the wire tells them apart. So the note
-  states the fact and then names both possibilities. ❌ Don't write copy that claims it's one of them, and ❌ don't
-  infer the cause from the path's basename. (M8 owns routing the Full Disk Access case into its prompt.)
+- **Ground nothing will read arrives as TWO lists, and stays two.** `permissionDenied` is a folder somebody refused
+  Cmdr; `declined` is a NAS snapshot tree Cmdr won't read on purpose. Two sentences, and only the first has a way out:
+  when the run met a refusal, this is macOS, and Cmdr doesn't have Full Disk Access yet
+  (`coverage-note.ts::offersFullDiskAccess`), the note offers the setup and `SearchDialog` routes into the onboarding
+  wizard's FDA step — the same page first launch shows, never a second one. ❌ Never offer it over `declined`: no
+  permission opens a snapshot tree, so it would send someone to System Settings to fix nothing. ❌ Don't infer the
+  cause from a path's basename either; that's what the typed cause on the wire is for
+  (`.claude/rules/no-string-matching.md`).
+- **The probe is `checkFullDiskAccessQuiet`, and only when a refusal is on screen.** The loud `checkFullDiskAccess`
+  fires a TCC-registration storm per denial, and this runs per search. `hasFullDiskAccess` starts at `true`, so nothing
+  is offered before the probe answers: an offer that appears and then vanishes is worse than one a moment late.
 - **`interrupted` is not an error.** The drive went away, or a root couldn't be read. It means the list is a lower
   bound, and the status bar says that much while the note says which kind of short it was.
 - **`stillCovering` is "these arrive a bit later", never "these are lost".** Another walk on the same volume holds that

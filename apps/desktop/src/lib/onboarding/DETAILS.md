@@ -43,15 +43,30 @@ regardless of persisted state for dev / E2E iteration.
 
 ## Re-entry points
 
-Three surfaces open the wizard after first launch:
+Four surfaces open the wizard after first launch:
 
 | Surface         | macOS                                             | Linux                          | Internal command id   |
 | --------------- | ------------------------------------------------- | ------------------------------ | --------------------- |
 | Menu item       | `Cmdr > Onboarding…` (under "Check for updates…") | (none; palette-only by design) | `cmdr.openOnboarding` |
 | Command palette | "Onboarding…" (both platforms)                    | "Onboarding…"                  | `cmdr.openOnboarding` |
 | MCP             | `dialog` tool with `type: "onboarding"`           | same                           | (none; direct event)  |
+| Search coverage | "Set up full disk access" in the coverage note    | (never offered)                | (host callback)       |
 
-All three surfaces route through the same handler (`routes/(main)/startup-gates.ts::openOnboardingFromMenuOrPalette`),
+### The search route in
+
+A search that walks folders the index doesn't cover can be REFUSED one, and a refusal is the one coverage gap with a
+way out. So the coverage note offers it, and the offer lands here rather than in a second permission screen: step 1 is
+already the page that explains Full Disk Access, opens System Settings, polls for a live grant, and handles the restart
+(`SearchDialog.svelte` → `+page.svelte`'s `onGrantFullDiskAccess` → `openOnboardingFromMenuOrPalette(..., 'palette')`).
+
+Three conditions gate the offer, and the search side owns all three
+(`lib/search/coverage-note.ts::offersFullDiskAccess`): a folder was actually REFUSED (a NAS snapshot tree Cmdr declines
+to read on purpose is a different typed list, and no permission opens one), this is macOS, and Cmdr doesn't already
+have the permission — probed with `checkFullDiskAccessQuiet`, never the loud `checkFullDiskAccess`, since a search runs
+often and the loud one fires a TCC-registration storm per denial. The dialog closes on the way in, because the wizard
+is the app's modal and the user pressing this is heading for System Settings and a restart.
+
+All three of the original surfaces route through the same handler (`routes/(main)/startup-gates.ts::openOnboardingFromMenuOrPalette`),
 which opens the wizard at the first reachable step (step 1 on macOS, step 2 on Linux) regardless of `isOnboarded`. The
 plan's round-3 #1 codifies "menu re-entry always opens at step 1"; `openWizard()` enforces this by checking the `source`
 argument.

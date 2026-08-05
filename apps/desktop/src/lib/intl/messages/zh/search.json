@@ -151,13 +151,21 @@
   "@search.coverage.walk.abandoned": {
     "sourceHash": "4a6a2af"
   },
-  "search.coverage.unreadable": "{count, plural, other {Cmdr 无法查看以下文件夹的内容，因此结果中没有其中的文件：}}",
-  "@search.coverage.unreadable": {
-    "sourceHash": "32dadf5"
+  "search.coverage.denied": "{count, plural, other {Cmdr 没有权限查看以下文件夹的内容，因此结果中没有其中的文件：}}",
+  "@search.coverage.denied": {
+    "sourceHash": "2c0eb72"
   },
-  "search.coverage.unreadableWhy": "要么是 Cmdr 还没有的权限，要么是它有意跳过的快照文件夹。",
-  "@search.coverage.unreadableWhy": {
-    "sourceHash": "373e661"
+  "search.coverage.deniedFullDiskAccess": "开启完全磁盘访问权限后，Cmdr 就能搜索这类文件夹。",
+  "@search.coverage.deniedFullDiskAccess": {
+    "sourceHash": "8de9168"
+  },
+  "search.coverage.setUpFullDiskAccess": "设置完全磁盘访问权限",
+  "@search.coverage.setUpFullDiskAccess": {
+    "sourceHash": "98226cc"
+  },
+  "search.coverage.declined": "{count, plural, other {Cmdr 有意不查看快照文件夹的内容，因此结果中没有其中的文件：}}",
+  "@search.coverage.declined": {
+    "sourceHash": "ea5be72"
   },
   "search.coverage.stillCovering": "{count, plural, other {另一次搜索正在查看以下文件夹，其中的文件稍后就会出现：}}",
   "@search.coverage.stillCovering": {

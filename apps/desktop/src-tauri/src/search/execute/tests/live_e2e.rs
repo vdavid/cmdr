@@ -73,7 +73,8 @@ struct Answer {
     match_count: u32,
     walk: WalkEnding,
     phases: Vec<SearchPhase>,
-    unreadable: Vec<String>,
+    permission_denied: Vec<String>,
+    declined: Vec<String>,
     unresolved: Vec<String>,
 }
 
@@ -124,7 +125,8 @@ fn search(run_id: &str, scope: &str) -> Answer {
         match_count: terminal.match_count,
         walk: terminal.coverage.walk,
         phases: progress.iter().map(|event| event.phase).collect(),
-        unreadable: terminal.coverage.unreadable.clone(),
+        permission_denied: terminal.coverage.permission_denied.clone(),
+        declined: terminal.coverage.declined.clone(),
         unresolved: terminal.coverage.unresolved_scopes.clone(),
     }
 }
@@ -191,9 +193,14 @@ fn a_drive_with_no_index_is_walked_live_then_read_back_from_what_the_walk_wrote(
     // finished: the snapshot tree it just stamped, not silence. Read back AFTER
     // the walk, because nothing had tried before it.
     assert_eq!(
-        third.unreadable,
+        third.declined,
         vec![format!("{root}/b/@eaDir")],
         "a directory nothing is coming for is reported, never swallowed"
+    );
+    assert!(
+        third.permission_denied.is_empty(),
+        "and as ground Cmdr declines to read, never as a permission the user could grant: {:?}",
+        third.permission_denied
     );
 
     // 4. THE anchor. `b` now reads as covered, so nothing walks it — and the

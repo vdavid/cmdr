@@ -37,6 +37,7 @@
         translateSearchQuery,
         parseSearchScope,
         getSystemDirExcludes,
+        checkFullDiskAccessQuiet,
         onSearchIndexReady,
         showFileContextMenu,
         trackEvent,
@@ -49,6 +50,7 @@
         type UnlistenFn,
     } from '$lib/tauri-commands'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
+    import { isMacOS } from '$lib/shortcuts/key-capture'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
     import { isDriveSilenced, silenceDrive } from '$lib/indexing/drive-index-prefs'
     import { resolveDefaultScope, defaultScopeLabel } from './searchable-folder'
@@ -94,7 +96,12 @@
     import QueryDialog from '$lib/query-ui/QueryDialog.svelte'
     import ImageSearchResults from './ImageSearchResults.svelte'
     import CoverageNote from './CoverageNote.svelte'
-    import { coverageNoteFrom, coverageNoteFromRun, isTargetIndexReady } from './coverage-note'
+    import {
+        coverageNoteFrom,
+        coverageNoteFromRun,
+        isTargetIndexReady,
+        offersFullDiskAccess,
+    } from './coverage-note'
     import { createLiveSearchSource } from './live-search-source'
     import { rankLiveResults } from './live-ranking'
     import { indexUncoveredDrive } from './coverage-actions'
@@ -161,6 +168,14 @@
          */
         onReopen?: () => void
         /**
+         * Routes into the Full Disk Access setup (the onboarding wizard's step 1,
+         * reused rather than duplicated). Offered from the coverage note when a walk
+         * was REFUSED a folder and Cmdr doesn't have the permission yet; the host
+         * owns it because the wizard lives above this dialog and this dialog is on
+         * its way out when it fires.
+         */
+        onGrantFullDiskAccess?: () => void
+        /**
          * The ONE volume this session covers: the focused pane's current volume. It names
          * the arena the readiness gate waits for, the drive the coverage note speaks
          * about, and the media index the image-OCR grid queries (so browsing a NAS
@@ -177,6 +192,7 @@
         scopePresets,
         onShowAllInMainWindow,
         onReopen,
+        onGrantFullDiskAccess,
         searchVolume = { volumeId: ROOT_VOLUME_ID, mountRoot: '/', isNetwork: false },
     }: Props = $props()
 
@@ -270,6 +286,44 @@
     function silenceUncoveredDrive(): void {
         if (coverageNote?.volumeId) silenceDrive(coverageNote.volumeId)
     }
+
+    /**
+     * Whether Cmdr currently has Full Disk Access. Starts at `true` so nothing is
+     * offered before the probe answers: an offer that arrives and then vanishes is
+     * worse than one that arrives a moment late, and "already granted" is the state
+     * in which the offer would be useless anyway.
+     */
+    let hasFullDiskAccess = $state(true)
+
+    /**
+     * Ask the OS, but only when the answer could change what's on screen: a run that
+     * was refused a folder. `checkFullDiskAccessQuiet` and NOT `checkFullDiskAccess`
+     * — the loud one fires a TCC-registration storm on every denial, and this runs
+     * per search (`lib/onboarding/CLAUDE.md`).
+     */
+    $effect(() => {
+        if ((coverageNote?.live?.permissionDenied.length ?? 0) === 0) return
+        if (!isMacOS()) return
+        void checkFullDiskAccessQuiet().then((granted) => {
+            hasFullDiskAccess = granted
+        })
+    })
+
+    /**
+     * The Full Disk Access route, or `null` when granting it would change nothing
+     * (`coverage-note.ts::offersFullDiskAccess`). Closing first is deliberate: the
+     * wizard is the app's modal and this dialog is a modal over it, and the user who
+     * presses this is going to System Settings and then restarting.
+     */
+    const grantFullDiskAccess = $derived(
+        onGrantFullDiskAccess &&
+            offersFullDiskAccess({ note: coverageNote, isMac: isMacOS(), hasFullDiskAccess })
+            ? () => {
+                  onClose()
+                  onGrantFullDiskAccess()
+              }
+            : null,
+    )
 
     /**
      * Adapter from Search's `HistoryEntry` shape into the generic `RecentItemView` the
@@ -852,6 +906,7 @@
                   void indexUncoveredDrive(coverageCtaVolumeId, coverageDrive.name)
               }}
         onSilenceDrive={silenceUncoveredDrive}
+        onGrantFullDiskAccess={grantFullDiskAccess}
     />
 {/snippet}
 

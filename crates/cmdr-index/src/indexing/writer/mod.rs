@@ -16,7 +16,7 @@ use tokio::sync::oneshot;
 
 use crate::indexing::IndexFailureSignal;
 use crate::indexing::events::EventSink;
-use crate::indexing::store::{EntryRow, IndexStore, IndexStoreError};
+use crate::indexing::store::{EntryRow, IndexStore, IndexStoreError, UnreadableCause};
 #[cfg(test)]
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::pluralize::{pluralize, pluralize_with};
@@ -324,16 +324,17 @@ pub enum WriteMessage {
     /// must not thrash a root-search reload each scan. See the "Honest sizes"
     /// model in `indexing/DETAILS.md`.
     MarkDirsListed { ids: Vec<i64>, epoch: u64 },
-    /// Stamp the given directories as ones a walk has tried and cannot read, so
-    /// the coverage frontier stops handing them to every later search.
+    /// Stamp the given directories as ones nothing is going to read into, so the
+    /// coverage frontier stops handing them to every later search — and say WHY,
+    /// because the two causes reach the user as different sentences.
     ///
-    /// Sent by the walk that hit the permission error, after its marks. It does
-    /// NOT touch `listed_epoch`, so the directory stays honestly unlisted and its
-    /// ancestors' sizes stay a lower bound; all it buys is that the frontier can
-    /// report it instead of re-offering it forever. `MarkDirsListed` clears the
-    /// flag, so a later successful listing (Full Disk Access granted) heals it
-    /// with no rebuild. Like `MarkDirsListed`, no generation bump.
-    MarkDirsUnreadable { ids: Vec<i64> },
+    /// Sent by the walk that met the refusal, after its marks. It does NOT touch
+    /// `listed_epoch`, so the directory stays honestly unlisted and its ancestors'
+    /// sizes stay a lower bound; all it buys is that the frontier can report it
+    /// instead of re-offering it forever. `MarkDirsListed` clears the cause, so a
+    /// later successful listing (Full Disk Access granted) heals it with no
+    /// rebuild. Like `MarkDirsListed`, no generation bump.
+    MarkDirsUnreadable { ids: Vec<i64>, cause: UnreadableCause },
     /// Bump the volume's `current_epoch` by one and persist it (a continuity
     /// break: reconnect/rescan, watcher death, overflow, disconnect, or a
     /// launch-loading-Stale). A scan/reconcile only STAMPS `listed_epoch` with
@@ -1491,9 +1492,9 @@ fn process_message(
                 signal.note(&e, &format!("mark_dirs_listed (count={}, epoch={epoch})", ids.len()));
             }
         }
-        WriteMessage::MarkDirsUnreadable { ids } => {
+        WriteMessage::MarkDirsUnreadable { ids, cause } => {
             // No MutationTracker::bump(), same reasoning as MarkDirsListed.
-            if let Err(e) = IndexStore::mark_dirs_unreadable(conn, &ids, true) {
+            if let Err(e) = IndexStore::mark_dirs_unreadable(conn, &ids, Some(cause)) {
                 signal.note(&e, &format!("mark_dirs_unreadable (count={})", ids.len()));
             }
         }

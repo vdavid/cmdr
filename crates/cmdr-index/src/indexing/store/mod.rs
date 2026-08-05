@@ -18,10 +18,12 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
 
 // Bump to invalidate on-disk indexes (the cache is disposable: a mismatch deletes
-// the DB file + recreates it fresh, no migration). v15 adds `entries.known_unreadable`,
-// the marker that keeps a permission-denied directory out of the search frontier
-// instead of re-offering it on every search.
-const SCHEMA_VERSION: &str = "15";
+// the DB file + recreates it fresh, no migration). v16 makes that marker a
+// `entries.unreadable_cause`, so a directory nothing will read says WHY: the OS
+// refused us (which granting Full Disk Access fixes) or we refuse it on purpose (a
+// NAS snapshot tree). The two are different sentences, and a boolean couldn't tell
+// them apart.
+const SCHEMA_VERSION: &str = "16";
 
 /// Meta key for the per-volume epoch counter (TEXT, like all meta values).
 ///
@@ -71,6 +73,54 @@ pub const ROOT_ID: i64 = 1;
 const ROOT_PARENT_ID: i64 = 0;
 
 // ── Types ────────────────────────────────────────────────────────────
+
+/// Why nothing is going to read into a directory: the domain of
+/// `entries.unreadable_cause`.
+///
+/// The absence of a cause is `None`, so the column's `0` means "something may yet
+/// read this" — which is what every ordinary row carries and what a successful
+/// listing restores (`mark_dirs_listed` clears the column).
+///
+/// It's a CAUSE rather than a flag because the two reach the user as different
+/// sentences: one is a permission they can grant, the other is a decision Cmdr
+/// made for them. Telling them apart from the paths alone would mean matching
+/// folder names, which `.claude/rules/no-string-matching.md` forbids and which
+/// would break the moment a NAS vendor renamed a directory.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UnreadableCause {
+    /// A walk tried to read it and the OS refused (permission denied). The
+    /// durable, user-fixable case: on macOS, granting Full Disk Access and
+    /// searching again heals it, because the successful listing clears the mark.
+    Denied,
+    /// No walk will read it at all, by Cmdr's own choice: a NAS snapshot
+    /// directory, whose per-snapshot hardlinked copies both whole-volume scanners
+    /// refuse on purpose (44 TB reported on a 10 TB volume). Nothing for the user
+    /// to fix; it's recorded so a short answer can say why it's short.
+    Declined,
+}
+
+impl UnreadableCause {
+    /// The stored integer, with `0` for "no cause".
+    fn to_stored(cause: Option<Self>) -> i64 {
+        match cause {
+            None => 0,
+            Some(Self::Denied) => 1,
+            Some(Self::Declined) => 2,
+        }
+    }
+
+    /// The cause a stored integer names. An unknown value reads as
+    /// [`Denied`](Self::Denied): it can only come from a future schema this build
+    /// doesn't know, and "a folder Cmdr can't read" is the truthful half of every
+    /// cause there could be.
+    pub fn from_stored(stored: i64) -> Option<Self> {
+        match stored {
+            0 => None,
+            2 => Some(Self::Declined),
+            _ => Some(Self::Denied),
+        }
+    }
+}
 
 /// Dir stats keyed by path string. Used at the IPC boundary and by
 /// the IPC boundary (frontend expects path-keyed dir stats).
@@ -594,7 +644,7 @@ const CREATE_TABLES_SQL: &str = "
         modified_at   INTEGER,
         inode         INTEGER,
         listed_epoch  INTEGER NOT NULL DEFAULT 0,
-        known_unreadable INTEGER NOT NULL DEFAULT 0
+        unreadable_cause INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE UNIQUE INDEX IF NOT EXISTS idx_parent_name_folded ON entries (parent_id, name_folded);

@@ -268,7 +268,8 @@ function installLiveBackend(): void {
         matchCount: answer.totalCount,
         coverage: {
           walk: 'nothingToWalk',
-          unreadable: [],
+          permissionDenied: [],
+          declined: [],
           stillCovering: [],
           unresolvedScopes: answer.unresolvedScopes ?? [],
           capped: false,

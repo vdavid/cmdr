@@ -176,15 +176,18 @@ what actually fills a frontier in, and why it may never delete — is `../lifecy
 
 ### The descent rule
 
-Both epoch fields plus `entries.known_unreadable`. Descending from the scope root, each directory is exactly one of:
+Both epoch fields plus `entries.unreadable_cause`. Descending from the scope root, each directory is exactly one of:
 
 - `min_subtree_epoch > 0` ⇒ **covered**. Cut; serve from the index.
 - `min_subtree_epoch == 0 && listed_epoch > 0` ⇒ **listed**. The directory itself is covered ground; descend into its
   child directories and classify each.
-- `listed_epoch == 0 && known_unreadable` ⇒ **unreadable**. Cut; reported rather than dropped. Two walks write the
-  column, for the same reason from opposite directions: the local walker marks a permission-denied read (tried, can't),
-  and the trait cover walk marks a NAS snapshot directory (won't, ever — `../network_scanner/DETAILS.md`). Either way
-  nothing is coming for that subtree, so offering it as frontier would be a promise no walk keeps.
+- `listed_epoch == 0 && unreadable_cause != 0` ⇒ **unreadable**. Cut; reported rather than dropped, in the list its
+  CAUSE names. Two walks write the column, for the same reason from opposite directions: the local walker stamps
+  `Denied` on a permission-denied read (tried, can't), and the trait cover walk stamps `Declined` on a NAS snapshot
+  directory (won't, ever — `../network_scanner/DETAILS.md`). Either way nothing is coming for that subtree, so offering
+  it as frontier would be a promise no walk keeps. The two answers stay APART all the way to the screen
+  (`CoverageMap::permission_denied` / `::declined`): only the first is something a user can act on, and "grant Full
+  Disk Access" over a snapshot folder is advice that does nothing.
 - `listed_epoch == 0` ⇒ **frontier**. Cut; the subtree goes to the walk.
 - No `entries` row at all (a cold volume, or a path this index has never seen) ⇒ the scope root is the whole frontier.
 

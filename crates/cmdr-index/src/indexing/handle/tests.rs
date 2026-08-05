@@ -148,7 +148,7 @@ async fn a_handle_scans_an_in_memory_volume_and_reports_to_its_own_sink() {
         .coverage(volume_id, root, CoverageDimension::Listing)
         .expect("the scanned share answers for its own coverage");
     assert!(
-        coverage.frontier.is_empty() && coverage.unreadable.is_empty(),
+        coverage.frontier.is_empty() && coverage.permission_denied.is_empty() && coverage.declined.is_empty(),
         "a completed walk leaves nothing to cover: {coverage:?}"
     );
     assert_eq!(

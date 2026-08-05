@@ -1,7 +1,7 @@
 //! `IndexStore` meta-table and epoch helpers, plus whole-index counts and
 //! `clear_all`. Pure code movement from the former monolithic `store.rs`.
 
-use super::{CURRENT_EPOCH_KEY, IndexStore, IndexStoreError, LEDGER_HEAL_KEY, with_savepoint};
+use super::{CURRENT_EPOCH_KEY, IndexStore, IndexStoreError, LEDGER_HEAL_KEY, UnreadableCause, with_savepoint};
 use rusqlite::{Connection, OptionalExtension, params};
 
 #[cfg(test)]
@@ -104,11 +104,11 @@ impl IndexStore {
                     .map(|i| format!("?{}", i + 2))
                     .collect::<Vec<_>>()
                     .join(", ");
-                // Clearing `known_unreadable` here is what heals the mark: a
+                // Clearing `unreadable_cause` here is what heals the mark: a
                 // directory we just listed is, by definition, readable again
                 // (Full Disk Access granted, a permission fixed, a mount back).
                 let sql =
-                    format!("UPDATE entries SET listed_epoch = ?1, known_unreadable = 0 WHERE id IN ({placeholders})");
+                    format!("UPDATE entries SET listed_epoch = ?1, unreadable_cause = 0 WHERE id IN ({placeholders})");
                 let mut stmt = conn.prepare_cached(&sql)?;
                 let mut values: Vec<&dyn rusqlite::types::ToSql> = Vec::with_capacity(chunk.len() + 1);
                 let epoch_i = epoch as i64;
@@ -122,9 +122,8 @@ impl IndexStore {
         })
     }
 
-    /// Mark a batch of directories as ones the walk has tried and cannot read
-    /// (permission denied, or a give-up prune after repeated failures), or clear
-    /// the mark when `unreadable` is `false`.
+    /// Mark a batch of directories as ones nothing is going to read into, with
+    /// the reason; `None` clears the mark.
     ///
     /// Deliberately separate from `listed_epoch`: an unreadable directory was
     /// never listed, so it stays at `0` and its subtree keeps absorbing every
@@ -133,11 +132,15 @@ impl IndexStore {
     /// to the walk again on every single search. Clearing it is what a later
     /// successful listing does, so granting Full Disk Access heals the mark
     /// without a rebuild.
-    pub fn mark_dirs_unreadable(conn: &Connection, ids: &[i64], unreadable: bool) -> Result<(), IndexStoreError> {
+    pub fn mark_dirs_unreadable(
+        conn: &Connection,
+        ids: &[i64],
+        cause: Option<UnreadableCause>,
+    ) -> Result<(), IndexStoreError> {
         if ids.is_empty() {
             return Ok(());
         }
-        // Stay well under SQLite's default 999-parameter ceiling (+1 for the flag).
+        // Stay well under SQLite's default 999-parameter ceiling (+1 for the cause).
         const CHUNK: usize = 900;
         with_savepoint(conn, "mark_dirs_unreadable", |conn| {
             for chunk in ids.chunks(CHUNK) {
@@ -145,11 +148,11 @@ impl IndexStore {
                     .map(|i| format!("?{}", i + 2))
                     .collect::<Vec<_>>()
                     .join(", ");
-                let sql = format!("UPDATE entries SET known_unreadable = ?1 WHERE id IN ({placeholders})");
+                let sql = format!("UPDATE entries SET unreadable_cause = ?1 WHERE id IN ({placeholders})");
                 let mut stmt = conn.prepare_cached(&sql)?;
-                let flag = i64::from(unreadable);
+                let stored = UnreadableCause::to_stored(cause);
                 let mut values: Vec<&dyn rusqlite::types::ToSql> = Vec::with_capacity(chunk.len() + 1);
-                values.push(&flag as &dyn rusqlite::types::ToSql);
+                values.push(&stored as &dyn rusqlite::types::ToSql);
                 for id in chunk {
                     values.push(id as &dyn rusqlite::types::ToSql);
                 }
@@ -159,12 +162,15 @@ impl IndexStore {
         })
     }
 
-    /// Whether an entry carries the [`mark_dirs_unreadable`](Self::mark_dirs_unreadable)
-    /// marker. `None` if the entry doesn't exist.
-    pub fn get_known_unreadable_by_id(conn: &Connection, id: i64) -> Result<Option<bool>, IndexStoreError> {
-        let mut stmt = conn.prepare_cached("SELECT known_unreadable FROM entries WHERE id = ?1")?;
+    /// Why nothing is coming for this entry's contents, or `None` when something
+    /// still might. The outer `None` means the entry doesn't exist.
+    pub fn get_unreadable_cause_by_id(
+        conn: &Connection,
+        id: i64,
+    ) -> Result<Option<Option<UnreadableCause>>, IndexStoreError> {
+        let mut stmt = conn.prepare_cached("SELECT unreadable_cause FROM entries WHERE id = ?1")?;
         let result = stmt.query_row(params![id], |row| row.get::<_, i64>(0)).optional()?;
-        Ok(result.map(|v| v != 0))
+        Ok(result.map(UnreadableCause::from_stored))
     }
 
     /// The highest entry id this DB has ever handed out, or `0` for an empty one.
