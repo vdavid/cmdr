@@ -403,6 +403,8 @@ project. Raise the window only when a gesture needs keyboard focus, never for a 
 - **Check for a sandbox IDE that's already running before launching one.** A stale instance from a previous session
   keeps its old plugin build, logs `Failed to unload modified plugins`, and every screenshot then shows code that isn't
   yours. `ps` for `cmdr-idea-plugin` first, and read `.intellijPlatform/sandbox/…/log/idea.log` if anything looks off.
+  Narrow that `ps` with `grep "/bin/java"`: the Code Provenance plugin leaves a `chatter observe` child holding the same
+  sandbox path, and it outlives the IDE, so an unfiltered grep reads as "still running" forever. Stop it separately.
 - **A ⌘-hover only fires if the mouse moves while the modifier is already down.** Pressing ⌘ with the pointer already
   parked on the target does nothing, which reads exactly like a broken feature.
 - **Raising the sandbox IDE steals the keyboard from whoever is at the machine**, and their typing lands in the fixture
