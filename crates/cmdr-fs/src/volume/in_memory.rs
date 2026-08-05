@@ -255,10 +255,15 @@ impl InMemoryVolume {
     }
 
     /// Normalizes a path relative to the volume root.
+    ///
+    /// A SCHEME-shaped path (`mtp://device/1/DCIM`) counts as absolute even though
+    /// `Path::is_absolute` says otherwise: that's the whole path vocabulary of an
+    /// MTP volume, and rooting it under `/` would make every lookup miss while the
+    /// entries it was built with keep their real keys.
     fn normalize(&self, path: &Path) -> PathBuf {
         if path.as_os_str().is_empty() || path == Path::new(".") {
             PathBuf::from("/")
-        } else if path.is_absolute() {
+        } else if path.is_absolute() || path.to_string_lossy().contains("://") {
             path.to_path_buf()
         } else {
             PathBuf::from("/").join(path)

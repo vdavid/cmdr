@@ -907,3 +907,79 @@ fn a_big_directory_arrives_in_bounded_batches() {
         "and none of them unbounded (got {sizes:?})"
     );
 }
+
+// ── A phone ──────────────────────────────────────────────────────────
+
+/// The same walk over an MTP-rooted volume, whose paths are `mtp://…` and whose
+/// files exist only over PTP.
+///
+/// Worth its own test rather than trusting the share's: a phone has no mount to
+/// probe and no path any `statfs` can answer for, so it takes a different arm of
+/// the classifier, and its index is rooted at a URL rather than a directory. If
+/// the path space were wrong anywhere along the way, the walk would write rows
+/// nothing could ever resolve.
+#[test]
+fn a_walk_over_a_phone_covers_the_folder_it_was_pointed_at() {
+    let volume_id = "mtp-COVERTEST:1";
+    let root = "mtp://mtp-COVERTEST/1";
+    let serialized = crate::indexing::handle::test_lock();
+    let data = tempfile::tempdir().expect("index data dir");
+
+    let tree = Tree(root.to_string());
+    let volumes = crate::indexing::host::volumes::FakeVolumeProvider::shared();
+    volumes.register(
+        volume_id,
+        Arc::new(
+            InMemoryVolume::with_entries(
+                "Phone",
+                vec![
+                    tree.dir("DCIM"),
+                    tree.dir("DCIM/Camera"),
+                    tree.file("DCIM/Camera/IMG_0001.jpg", 2_048),
+                    tree.dir("Music"),
+                ],
+            )
+            .with_root(root),
+        ) as Arc<dyn Volume>,
+    );
+
+    let (index, _installed) = crate::indexing::handle::Index::builder()
+        .data_dir(data.path())
+        .volumes(Arc::clone(&volumes) as Arc<_>)
+        .events(Arc::new(crate::indexing::events::RecordingSink::new()) as Arc<dyn crate::indexing::events::EventSink>)
+        .install_for_test();
+
+    let scope = tree.path("DCIM");
+    let coverage = |path: &str| {
+        index
+            .coverage(volume_id, path, CoverageDimension::Listing)
+            .expect("the phone answers for its own coverage")
+    };
+    assert_eq!(coverage(&scope).frontier, [scope.clone()], "nothing is covered yet");
+
+    let (entries, outcome) = drain(
+        index
+            .cover(volume_id, vec![scope.clone()], CoverageDimension::Listing)
+            .expect("a phone is walkable"),
+    );
+
+    assert!(!outcome.cancelled);
+    assert_eq!(outcome.entries_found, 2, "Camera/ and the photo in it");
+    let mut emitted: Vec<String> = entries.iter().map(|e| e.path.to_string_lossy().to_string()).collect();
+    emitted.sort();
+    assert_eq!(emitted, [tree.path("DCIM/Camera"), tree.path("DCIM/Camera/IMG_0001.jpg")]);
+
+    cmdr_fs::testing::wait_until(
+        std::time::Duration::from_secs(10),
+        "the walked folder to read as covered",
+        || coverage(&scope).frontier.is_empty(),
+    );
+    assert_eq!(
+        coverage(root).frontier,
+        [root.to_string()],
+        "and the rest of the phone is untouched"
+    );
+
+    let _ = index.forget_volume(volume_id);
+    drop(serialized);
+}
