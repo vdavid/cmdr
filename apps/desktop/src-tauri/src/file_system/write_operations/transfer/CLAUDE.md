@@ -18,6 +18,13 @@ state, intent, cancel/rollback, ETA, the conflict mutex, settle: `../CLAUDE.md`.
 - **Dir-vs-dir is NEVER a conflict**; only files prompt. **Overwrite means merge for dirs, replace for files**, enforced
   at the `apply_volume_conflict_resolution` call site, ❌ not by `Volume::delete`'s contract. ❌ Overwrite is NOT
   reversible: no unbounded backup.
+- **A MOVE's source sweep spares every child the merge skipped**
+  (`delete_volume_path_recursive_preserving`, fed by `CreatedPaths::skipped_source_paths`). A skipped child never
+  reached the dest, so its source is the ONLY copy; ❌ never sweep a merged source folder unconditionally. The
+  conditional policies reduce to Skip per file, so "Overwrite all smaller / older" hits this on ordinary use.
+- **❌ Never fabricate a destination size for the conflict dialog.** `resolve_volume_conflict` takes the caller's hint
+  or the stat it already does for the mtime, and reports `None` ("unknown") otherwise. A fabricated `0` both lies in the
+  dialog and makes every dest look smaller, silently turning "Overwrite all smaller" into an unconditional overwrite.
 - **Skip the top-level dest pre-check ONLY for a dest dir THIS op created** (`DirectoryCreation::Created`), ❌ never one
   that merely looks empty. A merge answers it from `dest_name_index.rs`, a deliberate snapshot; whatever that can't
   disprove falls through to the real probe. `DETAILS.md` § "Answering the pre-check from one listing".

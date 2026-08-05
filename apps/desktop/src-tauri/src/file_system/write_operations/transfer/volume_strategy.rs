@@ -156,6 +156,11 @@ pub(super) struct CreatedPaths {
     // archive (see `skipped_file_count`).
     pub skipped_files: std::sync::atomic::AtomicUsize,
     pub skipped_bytes: std::sync::atomic::AtomicU64,
+    // The SOURCE path of each skipped child. A skipped child never landed at
+    // the destination, so the source copy is the only one: a MOVE sweeps its
+    // source folder while preserving exactly these (see
+    // `skipped_source_paths`).
+    pub skipped_sources: Mutex<Vec<PathBuf>>,
     // Deep-merge children that REPLACED an existing dest file. The operation-log
     // capture reads this per source (`overwrote_count`) so a copy / move whose
     // subtree overwrote anything finalizes `not_rollbackable` — deleting the
@@ -172,11 +177,13 @@ impl CreatedPaths {
         self.dirs.lock_ignore_poison().push(path);
     }
 
-    /// Tally one child a deep merge skipped (conflict resolved to Skip).
-    fn record_skip(&self, size: u64) {
+    /// Tally one child a deep merge skipped (conflict resolved to Skip), and
+    /// remember its SOURCE path so a move's source sweep can spare it.
+    fn record_skip(&self, source: PathBuf, size: u64) {
         use std::sync::atomic::Ordering;
         self.skipped_files.fetch_add(1, Ordering::Relaxed);
         self.skipped_bytes.fetch_add(size, Ordering::Relaxed);
+        self.skipped_sources.lock_ignore_poison().push(source);
     }
 
     /// Tally one child a deep merge overwrote (replaced an existing dest file).
@@ -202,6 +209,14 @@ impl CreatedPaths {
     /// skipped-bytes tally.
     pub(super) fn skipped_byte_count(&self) -> u64 {
         self.skipped_bytes.load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    /// The source paths a deep merge skipped. A MOVE passes these to
+    /// `delete_volume_path_recursive_preserving` so its source sweep spares the
+    /// children that never landed at the destination — deleting them would
+    /// destroy the user's only copy.
+    pub(super) fn skipped_source_paths(&self) -> std::collections::HashSet<PathBuf> {
+        self.skipped_sources.lock_ignore_poison().iter().cloned().collect()
     }
 }
 
@@ -767,10 +782,10 @@ pub(super) async fn copy_directory_streaming(
         // have merge context, route it through the file-policy resolver.
         let mut write_dest = child_dest.clone();
         let mut replace_after_write: Option<PathBuf> = None;
-        if dest_hit.is_some()
+        if let Some(hit) = dest_hit
             && let Some(ctx) = merge
         {
-            match resolve_merge_child(ctx, source_volume, &child_source, entry, dest_volume, &child_dest)
+            match resolve_merge_child(ctx, source_volume, &child_source, entry, dest_volume, &child_dest, hit)
                 .await
                 .at(&child_source)?
             {
@@ -778,7 +793,7 @@ pub(super) async fn copy_directory_streaming(
                     // A DEEP skip: record it so the caller knows this subtree did
                     // not extract in full (the move-out op must keep the source in
                     // the archive; deleting it would drop this un-landed child).
-                    created.record_skip(entry.size.unwrap_or(0));
+                    created.record_skip(child_source.clone(), entry.size.unwrap_or(0));
                     continue;
                 }
                 MergeChildDecision::Proceed { write_path, replace } => {
@@ -900,14 +915,21 @@ async fn resolve_merge_child(
     entry: &FileEntry,
     dest_volume: &Arc<dyn Volume>,
     child_dest: &Path,
+    dest_hit: &FileEntry,
 ) -> Result<MergeChildDecision, VolumeError> {
     // Deep children aren't top-level sources, so no preflight hint exists for
-    // them; the resolver falls back to trait calls. We DO know the source type
-    // and size from the source listing entry we already have in hand, which
-    // saves the resolver a redundant `is_directory` probe and seeds the dialog's
-    // size annotation.
+    // them; the resolver falls back to trait calls. We DO know both sides' type
+    // and size from the listing entries already in hand — the source's from this
+    // level's source listing, the destination's from the `dest_by_name` map the
+    // caller built for the same level. That saves the resolver a redundant
+    // `is_directory` probe and seeds the dialog's size annotations.
+    //
+    // ❗ The dest size matters beyond display: it's what `OverwriteSmaller`
+    // compares against. Passing `None` here used to leave the resolver
+    // fabricating a `0`, which made every destination look smaller.
     let source_is_directory_hint = Some(entry.is_directory);
     let source_size_hint = if entry.is_directory { None } else { entry.size };
+    let dest_size_hint = if dest_hit.is_directory { None } else { dest_hit.size };
     let _ = ctx.source_hints; // hints are keyed by top-level source path; deep children never match
 
     let mut latched = *ctx.apply_to_all.lock_ignore_poison();
@@ -922,7 +944,7 @@ async fn resolve_merge_child(
         ctx.state,
         &mut latched,
         source_size_hint,
-        None, // dest size hint: unknown here; the resolver stats only on the Stop path
+        dest_size_hint,
         source_is_directory_hint,
     )
     .await;

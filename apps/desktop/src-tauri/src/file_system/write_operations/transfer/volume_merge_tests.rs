@@ -954,3 +954,110 @@ async fn fresh_dest_level_streams_without_listing_or_prompting() {
     assert_eq!(read_all(&dest, "/brand-new/a.txt").await, b"A");
     assert_eq!(read_all(&dest, "/brand-new/sub/b.txt").await, b"B");
 }
+
+// ============================================================================
+// The destination size a deep clash reports
+// ============================================================================
+
+/// Builds a one-deep-clash merge where the DESTINATION file is much bigger than
+/// the source's. Both the size the dialog reports and the `OverwriteSmaller`
+/// comparison hang off that difference.
+async fn make_deep_clash_with_bigger_dest() -> (Arc<dyn Volume>, Arc<dyn Volume>) {
+    let (source, dest) = make_volumes();
+    source.create_directory(Path::new("/album")).await.unwrap();
+    source.create_directory(Path::new("/album/sub")).await.unwrap();
+    source
+        .create_file(Path::new("/album/sub/clash.txt"), b"SRC")
+        .await
+        .unwrap();
+    dest.create_directory(Path::new("/album")).await.unwrap();
+    dest.create_directory(Path::new("/album/sub")).await.unwrap();
+    dest.create_file(Path::new("/album/sub/clash.txt"), b"DEST-is-much-bigger")
+        .await
+        .unwrap();
+    (source, dest)
+}
+
+/// A deep-merge clash must report the destination's REAL size in its
+/// `write-conflict`, not a fabricated `0`.
+///
+/// The merge walker already holds the dest `FileEntry` (it listed the level to
+/// build `dest_by_name`), so the size costs nothing. Reporting `0` makes the
+/// dialog claim "Existing: 0 bytes" about a file that has content — and feeds
+/// that `0` into the conditional reduction the sibling test pins.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn deep_merge_clash_reports_the_real_destination_size() {
+    let (source, dest) = make_deep_clash_with_bigger_dest().await;
+    let state = make_state();
+    let events = Arc::new(ConflictResponderSink::new(&state, ConflictResolution::Skip, false));
+    let config = VolumeCopyConfig {
+        conflict_resolution: ConflictResolution::Stop,
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+
+    let result = copy_volumes_with_progress(
+        events.clone(),
+        "op-deep-dest-size",
+        &state,
+        Arc::clone(&source),
+        &[PathBuf::from("/album")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await;
+    assert!(result.is_ok(), "expected Ok, got {result:?}");
+
+    let (dest_size, source_size) = {
+        let conflicts = events.inner.conflicts.lock().unwrap();
+        let c = conflicts.first().expect("one deep file conflict");
+        (c.destination_size, c.source_size)
+    };
+    assert_eq!(
+        dest_size,
+        Some("DEST-is-much-bigger".len() as u64),
+        "the deep clash must report the destination's real size, not 0"
+    );
+    assert_eq!(source_size, Some(3), "the deep clash must report the source's real size");
+}
+
+/// "Overwrite all smaller" answered on the FIRST clash inside a merge must
+/// still compare against the destination's real size. A fabricated `0` makes
+/// every destination look smaller than the incoming file, so the answer
+/// silently degrades to an unconditional overwrite — on exactly the file the
+/// user was looking at when they clicked.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn overwrite_all_smaller_keeps_a_larger_destination_on_the_first_deep_clash() {
+    let (source, dest) = make_deep_clash_with_bigger_dest().await;
+    let state = make_state();
+    let events = Arc::new(ConflictResponderSink::new(
+        &state,
+        ConflictResolution::OverwriteSmaller,
+        true,
+    ));
+    let config = VolumeCopyConfig {
+        conflict_resolution: ConflictResolution::Stop,
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+
+    let result = copy_volumes_with_progress(
+        events.clone(),
+        "op-deep-overwrite-smaller",
+        &state,
+        Arc::clone(&source),
+        &[PathBuf::from("/album")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await;
+    assert!(result.is_ok(), "expected Ok, got {result:?}");
+
+    assert_eq!(
+        read_all(&dest, "/album/sub/clash.txt").await,
+        b"DEST-is-much-bigger",
+        "a LARGER destination must survive OverwriteSmaller, even on the first prompted clash"
+    );
+}

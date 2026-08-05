@@ -10,7 +10,7 @@ use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
-use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 use uuid::Uuid;
 
@@ -26,7 +26,7 @@ use super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, SerialLeafProgress, TransferContext,
     TransferOutcome, build_pre_skip_set, drive_transfer_serial_async,
 };
-use super::volume_cleanup::delete_volume_path_recursive;
+use super::volume_cleanup::delete_volume_path_recursive_preserving;
 use super::volume_conflict::resolve_volume_conflict;
 // The same-volume rename path lives in `volume_move_same`; the dispatcher below
 // routes to its entry point.
@@ -347,6 +347,12 @@ pub(crate) async fn move_volumes_with_progress(
     // file. Seeded with the bulk-skipped leaves the driver credits up front.
     let leaf_files_done = Arc::new(AtomicUsize::new(bulk_skip_files));
 
+    // Children a deep merge skipped. The driver only sees TOP-LEVEL sources, so
+    // without this fold a folder move that skipped half its children would
+    // report "0 skipped" — and the completion toast would read as if everything
+    // moved. Mirrors `volume_copy_serial.rs`'s `deep_skipped_files`.
+    let deep_skipped_files = Arc::new(AtomicUsize::new(0));
+
     let outcome = drive_transfer_serial_async(
         &*events,
         state,
@@ -457,6 +463,7 @@ pub(crate) async fn move_volumes_with_progress(
             let merge_apply_to_all = Arc::clone(&apply_to_all_cell);
             let last_progress_time: Arc<std::sync::Mutex<Instant>> = Arc::new(std::sync::Mutex::new(Instant::now()));
             let leaf_files_done = Arc::clone(&leaf_files_done);
+            let deep_skipped_files = Arc::clone(&deep_skipped_files);
             let journal_volumes = journal_volumes.clone();
             move |ctx: TransferContext<'_>| -> TransferFut<'_> {
                 let source_volume = Arc::clone(&source_volume);
@@ -469,6 +476,7 @@ pub(crate) async fn move_volumes_with_progress(
                 let merge_apply_to_all = Arc::clone(&merge_apply_to_all);
                 let last_progress_time = Arc::clone(&last_progress_time);
                 let leaf_files_done = Arc::clone(&leaf_files_done);
+                let deep_skipped_files = Arc::clone(&deep_skipped_files);
                 let journal_volumes = journal_volumes.clone();
                 let source_path = ctx.source_path.to_path_buf();
                 let dest_item_path = ctx
@@ -604,8 +612,18 @@ pub(crate) async fn move_volumes_with_progress(
                     // `std::fs::remove_dir`, which fails ENOTEMPTY), so
                     // directory sources need a recursive sweep. Cross-volume
                     // copy doesn't touch the source, so its tree is intact.
+                    //
+                    // ❗ The sweep SPARES every child the merge skipped. A
+                    // skipped child never landed at the destination, so its
+                    // source is the only copy in existence and deleting it
+                    // destroys exactly the data the user declined to move — and
+                    // the conditional policies reduce to Skip per file, so
+                    // "Overwrite all smaller / older" hits this constantly.
+                    // Their ancestor directories survive with them.
                     let delete_result = if source_is_dir {
-                        delete_volume_path_recursive(&source_volume, &source_path).await
+                        let skipped = created.skipped_source_paths();
+                        deep_skipped_files.fetch_add(skipped.len(), Ordering::Relaxed);
+                        delete_volume_path_recursive_preserving(&source_volume, &source_path, &skipped).await
                     } else {
                         source_volume.delete(&source_path).await.at(&source_path)
                     };
@@ -664,7 +682,9 @@ pub(crate) async fn move_volumes_with_progress(
 
     let files_done = outcome.files_done;
     let bytes_done = outcome.bytes_done;
-    let files_skipped = outcome.files_skipped;
+    // Top-level skips the driver counted, PLUS the deep-merge children skipped
+    // inside folder sources (invisible to the driver).
+    let files_skipped = outcome.files_skipped + deep_skipped_files.load(Ordering::Relaxed);
 
     // Remove any staged `.cmdr-tmp-*` partial whose write didn't finish. The
     // serial driver's own error path usually cleans up as it goes; this covers

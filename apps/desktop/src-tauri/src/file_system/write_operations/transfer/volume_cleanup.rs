@@ -5,6 +5,7 @@
 //! or directory tree off a volume. Both are shared by `volume_copy` and
 //! `volume_move`, so they live here rather than inside either operation module.
 
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
@@ -285,52 +286,103 @@ pub(in crate::file_system::write_operations) async fn delete_volume_path_recursi
     volume: &Arc<dyn Volume>,
     path: &Path,
 ) -> Result<(), PathedVolumeError> {
+    delete_volume_path_recursive_preserving(volume, path, &HashSet::new()).await
+}
+
+/// [`delete_volume_path_recursive`], except every path in `preserve` — and every
+/// ancestor directory still holding one — survives.
+///
+/// This is what a MOVE sweeps its source folder with. A merge can resolve some
+/// deep children to Skip (the user chose Skip, or a conditional policy reduced
+/// to it), and a skipped child never landed at the destination: the source copy
+/// is the ONLY copy. An unconditional recursive sweep of the source folder
+/// therefore destroys exactly the data the user declined to move. Pinned by
+/// `volume_move_tests.rs::move_folder_merge_never_loses_a_byte_under_every_policy`.
+///
+/// A directory is deleted only once its whole subtree is gone, so preserving one
+/// leaf keeps its entire ancestor spine. A child that FAILS to delete counts as
+/// preserved too — its parent still holds content, so attempting the parent
+/// would only add a misleading `ENOTEMPTY` on top of the real leaf error.
+pub(in crate::file_system::write_operations) async fn delete_volume_path_recursive_preserving(
+    volume: &Arc<dyn Volume>,
+    path: &Path,
+    preserve: &HashSet<PathBuf>,
+) -> Result<(), PathedVolumeError> {
+    delete_preserving_inner(volume, path, preserve).await.map(|_| ())
+}
+
+/// Recursion body. `Ok(true)` means "content remains under here", so the caller
+/// must keep this directory.
+async fn delete_preserving_inner(
+    volume: &Arc<dyn Volume>,
+    path: &Path,
+    preserve: &HashSet<PathBuf>,
+) -> Result<bool, PathedVolumeError> {
+    if preserve.contains(path) {
+        return Ok(true);
+    }
+
     let is_dir = match volume.is_directory(path).await {
         Ok(true) => true,
         Ok(false) => false,
         Err(_) => {
             // Path may not exist (already deleted or never fully created). Nothing to do.
-            return Ok(());
+            return Ok(false);
         }
     };
 
     if !is_dir {
-        return volume.delete(path).await.at(path);
+        volume.delete(path).await.at(path)?;
+        return Ok(false);
     }
 
     // List directory contents and delete children first
     let children = volume.list_directory(path, None).await.at(path)?;
 
     let mut first_child_failure: Option<PathedVolumeError> = None;
+    let mut content_remains = false;
     for child in &children {
         let child_path = PathBuf::from(&child.path);
         // `.at(&child_path)` at the frame that knows the child: one level up and
         // every leaf failure would answer with this directory's name instead.
         let outcome = if child.is_directory {
-            Box::pin(delete_volume_path_recursive(volume, &child_path)).await
+            Box::pin(delete_preserving_inner(volume, &child_path, preserve)).await
+        } else if preserve.contains(&child_path) {
+            Ok(true)
         } else {
-            volume.delete(&child_path).await.at(&child_path)
+            volume.delete(&child_path).await.at(&child_path).map(|()| false)
         };
-        if let Err(e) = outcome {
-            log::warn!(
-                target: "delete",
-                "delete_volume_path_recursive: couldn't delete {}: {:?}",
-                e.path.display(),
-                e.error
-            );
-            first_child_failure.get_or_insert(e);
+        match outcome {
+            Ok(remains) => content_remains |= remains,
+            Err(e) => {
+                log::warn!(
+                    target: "delete",
+                    "delete_volume_path_recursive: couldn't delete {}: {:?}",
+                    e.path.display(),
+                    e.error
+                );
+                // The child is still there, so this directory isn't empty either.
+                content_remains = true;
+                first_child_failure.get_or_insert(e);
+            }
         }
+    }
+
+    // Something under here survives on purpose (or refused to go): keep this
+    // directory, and report the leaf that refused if there was one.
+    if content_remains {
+        return match first_child_failure {
+            Some(child) => Err(child),
+            None => Ok(true),
+        };
     }
 
     // Delete the now-empty directory
     match volume.delete(path).await {
-        Ok(()) => Ok(()),
-        Err(e) => Err(match first_child_failure {
-            Some(child) => child,
-            None => PathedVolumeError {
-                path: path.to_path_buf(),
-                error: e,
-            },
+        Ok(()) => Ok(false),
+        Err(e) => Err(PathedVolumeError {
+            path: path.to_path_buf(),
+            error: e,
         }),
     }
 }

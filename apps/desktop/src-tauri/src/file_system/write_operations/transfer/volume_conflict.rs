@@ -157,16 +157,6 @@ pub(super) async fn resolve_volume_conflict(
             // `(unknown)`, mirroring the destination side.
             let source_size: Option<u64> = source_size_hint;
 
-            // Destination size: prefer the hint (already populated from the
-            // caller's stat for file destinations). For folder destinations
-            // the hint is `None` because the volume layer never walks the
-            // remote tree — leave it `None` so the FE renders "(unknown)".
-            let dest_size: Option<u64> = if destination_is_directory {
-                dest_size_hint
-            } else {
-                Some(dest_size_hint.unwrap_or(0))
-            };
-
             // Pull mtimes via `get_metadata` so the per-file conflict dialog
             // can render its "(newer)" / "(older)" annotations on volume copies
             // (MTP, SMB) the same way it does on local-FS. Both sides may
@@ -183,12 +173,29 @@ pub(super) async fn resolve_volume_conflict(
                 .ok()
                 .and_then(|m| m.modified_at)
                 .map(|s| s as i64);
-            let destination_modified: Option<i64> = dest_volume
-                .get_metadata(dest_path)
-                .await
-                .ok()
+            let destination_meta = dest_volume.get_metadata(dest_path).await.ok();
+            let destination_modified: Option<i64> = destination_meta
+                .as_ref()
                 .and_then(|m| m.modified_at)
                 .map(|s| s as i64);
+
+            // Destination size: the caller's hint when it has one, else the
+            // stat just above (free — it's the same round-trip the mtime needs).
+            // A folder destination has no meaningful size, so it stays `None`
+            // and the FE renders "(unknown)", mirroring the source side.
+            //
+            // ❗ NEVER fabricate a `0` for a missing hint. A deep-merge child
+            // carries no dest hint, so a fabricated `0` told the user "Existing:
+            // 0 bytes" about a file with content — and, because the answer below
+            // feeds `reduce_volume_conditional_resolution`, made every
+            // destination look smaller than the incoming file, silently turning
+            // "Overwrite all smaller" into an unconditional overwrite. `None` is
+            // the honest unknown, and it reduces to Skip.
+            let dest_size: Option<u64> = if destination_is_directory {
+                None
+            } else {
+                dest_size_hint.or_else(|| destination_meta.as_ref().and_then(|m| m.size))
+            };
             let destination_is_newer = matches!((source_modified, destination_modified), (Some(s), Some(d)) if d > s);
             // Collapse to `None` when either side is unknown.
             let size_difference = match (dest_size, source_size) {

@@ -8,6 +8,7 @@
 //! call, skipped conflicts bump `files_done` so the bar doesn't stall, and
 //! cancel between sources stops further transfers.
 
+use super::super::conflict_responder_test_support::{ConflictResponderSink, folder_conflict_count_both_dirs};
 use super::super::volume_strategy::test_support::{FlakyDest, UndeletableSource};
 use super::*;
 use crate::file_system::volume::{InMemoryVolume, LocalPosixVolume, VolumeError};
@@ -1583,4 +1584,349 @@ async fn cross_volume_move_delete_error_names_the_child_that_failed_not_the_sele
     // file that refused to go is still at the source.
     assert!(dest.exists(Path::new("/tree/nested/doomed.txt")).await);
     assert!(source.exists(Path::new("/tree/nested/doomed.txt")).await);
+}
+
+// ============================================================================
+// Folder merge on the MOVE path
+// ============================================================================
+
+/// A folder move that MERGES must keep the source of every child it skipped.
+///
+/// A skipped child never landed at the destination, so its only copy is the
+/// source one. Sweeping the source folder recursively because "the copy phase
+/// returned Ok" destroys data the user explicitly chose not to move — the
+/// move-path counterpart of the top-level rule that a skipped conflict
+/// preserves its source
+/// (`cross_volume_move_conflict_skip_preserves_source_and_dest`).
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn cross_volume_move_folder_merge_keeps_the_source_of_a_skipped_deep_child() {
+    let (source, dest) = make_volumes();
+
+    source.create_directory(Path::new("/album")).await.unwrap();
+    source
+        .create_file(Path::new("/album/clash.txt"), b"SRC-clash")
+        .await
+        .unwrap();
+    source
+        .create_file(Path::new("/album/fresh.txt"), b"SRC-fresh")
+        .await
+        .unwrap();
+    dest.create_directory(Path::new("/album")).await.unwrap();
+    dest.create_file(Path::new("/album/clash.txt"), b"DEST-clash")
+        .await
+        .unwrap();
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state_with_interval_ms(0);
+    let config = VolumeCopyConfig {
+        conflict_resolution: ConflictResolution::Skip,
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+
+    let result = move_volumes_with_progress(
+        events.clone(),
+        "op-move-merge-deep-skip",
+        &state,
+        Arc::clone(&source),
+        &[PathBuf::from("/album")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await;
+    assert!(result.is_ok(), "expected Ok, got {result:?}");
+
+    // The dest keeps its own version of the clashing child (Skip honored).
+    let mut kept = dest.open_read_stream(Path::new("/album/clash.txt")).await.unwrap();
+    assert_eq!(kept.next_chunk().await.unwrap().unwrap(), b"DEST-clash");
+
+    // The non-clashing child moved through: at the dest, gone from the source.
+    assert!(dest.exists(Path::new("/album/fresh.txt")).await);
+    assert!(!source.exists(Path::new("/album/fresh.txt")).await);
+
+    // ❗ THE INVARIANT: the skipped child never landed anywhere, so its source
+    // must survive. Deleting it loses the only copy of the user's data.
+    assert!(
+        source.exists(Path::new("/album/clash.txt")).await,
+        "a deep child skipped by the conflict policy must keep its source — it never landed at the dest"
+    );
+}
+
+/// Reads a whole file off a volume, or `None` when it isn't there.
+async fn try_read_all(vol: &Arc<dyn Volume>, path: &str) -> Option<Vec<u8>> {
+    let mut stream = vol.open_read_stream(Path::new(path)).await.ok()?;
+    let mut out = Vec::new();
+    while let Some(Ok(chunk)) = stream.next_chunk().await {
+        out.extend_from_slice(&chunk);
+    }
+    Some(out)
+}
+
+/// A folder-merge fixture for the move matrix: a source tree and a same-named
+/// dest tree overlapping at two depths, with a dest-only file per level and a
+/// clashing file per level whose DEST copy is deliberately larger and newer.
+/// That makes the conditional policies (`OverwriteSmaller` / `OverwriteOlder`)
+/// resolve to Skip, which is exactly the case where a move must not sweep the
+/// source.
+async fn make_move_merge_fixture() -> (Arc<dyn Volume>, Arc<dyn Volume>) {
+    let (source, dest) = make_volumes();
+
+    source.create_directory(Path::new("/album")).await.unwrap();
+    source
+        .create_file(Path::new("/album/fresh.txt"), b"SRC-fresh")
+        .await
+        .unwrap();
+    source
+        .create_file(Path::new("/album/clash.txt"), b"SRC-c")
+        .await
+        .unwrap();
+    source.create_directory(Path::new("/album/sub")).await.unwrap();
+    source
+        .create_file(Path::new("/album/sub/fresh2.txt"), b"SRC-fresh2")
+        .await
+        .unwrap();
+    source
+        .create_file(Path::new("/album/sub/clash2.txt"), b"SRC-c2")
+        .await
+        .unwrap();
+
+    dest.create_directory(Path::new("/album")).await.unwrap();
+    dest.create_file(Path::new("/album/keep.txt"), b"DEST-keep")
+        .await
+        .unwrap();
+    dest.create_file(Path::new("/album/clash.txt"), b"DEST-clash-is-bigger")
+        .await
+        .unwrap();
+    dest.create_directory(Path::new("/album/sub")).await.unwrap();
+    dest.create_file(Path::new("/album/sub/keep2.txt"), b"DEST-keep2")
+        .await
+        .unwrap();
+    dest.create_file(Path::new("/album/sub/clash2.txt"), b"DEST-clash2-is-bigger")
+        .await
+        .unwrap();
+
+    (source, dest)
+}
+
+/// Every file policy, paired with the answer a Stop-mode prompt gets scripted.
+const MOVE_MERGE_POLICIES: &[(ConflictResolution, Option<ConflictResolution>)] = &[
+    (ConflictResolution::Skip, None),
+    (ConflictResolution::Overwrite, None),
+    (ConflictResolution::Rename, None),
+    (ConflictResolution::OverwriteSmaller, None),
+    (ConflictResolution::OverwriteOlder, None),
+    (ConflictResolution::Stop, Some(ConflictResolution::Skip)),
+    (ConflictResolution::Stop, Some(ConflictResolution::Overwrite)),
+    (ConflictResolution::Stop, Some(ConflictResolution::Rename)),
+    (ConflictResolution::Stop, Some(ConflictResolution::OverwriteSmaller)),
+    (ConflictResolution::Stop, Some(ConflictResolution::OverwriteOlder)),
+];
+
+/// Every source file the merge fixtures create, with its content.
+const MOVE_MERGE_SOURCE_FILES: &[(&str, &[u8])] = &[
+    ("/album/fresh.txt", b"SRC-fresh"),
+    ("/album/clash.txt", b"SRC-c"),
+    ("/album/sub/fresh2.txt", b"SRC-fresh2"),
+    ("/album/sub/clash2.txt", b"SRC-c2"),
+];
+
+/// Asserts the no-byte-lost invariant plus the merge invariant over a finished
+/// move: every source file readable from one side or the other, and both
+/// dest-only files untouched.
+async fn assert_move_merge_preserved_everything(
+    source: &Arc<dyn Volume>,
+    dest: &Arc<dyn Volume>,
+    label: &str,
+) {
+    for (path, content) in MOVE_MERGE_SOURCE_FILES {
+        let mut found = try_read_all(source, path).await.as_deref() == Some(*content);
+        if !found {
+            // The dest side: same path, or the Rename policy's " (1)" variant.
+            for candidate in [path.to_string(), path.replace(".txt", " (1).txt")] {
+                if try_read_all(dest, &candidate).await.as_deref() == Some(*content) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+        assert!(
+            found,
+            "{label}: source file {path} is gone from BOTH sides — data destroyed"
+        );
+    }
+
+    assert_eq!(
+        try_read_all(dest, "/album/keep.txt").await.as_deref(),
+        Some(&b"DEST-keep"[..]),
+        "{label}: dest-only /album/keep.txt was clobbered"
+    );
+    assert_eq!(
+        try_read_all(dest, "/album/sub/keep2.txt").await.as_deref(),
+        Some(&b"DEST-keep2"[..]),
+        "{label}: dest-only /album/sub/keep2.txt was clobbered"
+    );
+}
+
+/// THE MOVE INVARIANT, over every file policy: **no byte is ever lost**.
+///
+/// A move is copy-then-delete-source, so every source file must end up readable
+/// from EITHER the destination (it moved) OR the source (it didn't). A file that
+/// is gone from both is destroyed data. The merge invariant rides along: every
+/// dest-only file must survive untouched.
+///
+/// The copy pipeline has this matrix
+/// (`volume_merge_tests.rs::merge_never_deletes_unshadowed_dest_files_under_every_policy`);
+/// the move pipeline had no folder-merge coverage at all, which is how the
+/// source-sweep hole survived.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn move_folder_merge_never_loses_a_byte_under_every_policy() {
+    for (policy, scripted) in MOVE_MERGE_POLICIES {
+        let (source, dest) = make_move_merge_fixture().await;
+        let state = make_state_with_interval_ms(0);
+        let events = Arc::new(ConflictResponderSink::new(
+            &state,
+            scripted.unwrap_or(ConflictResolution::Skip),
+            true,
+        ));
+        let config = VolumeCopyConfig {
+            conflict_resolution: *policy,
+            progress_interval_ms: 0,
+            ..VolumeCopyConfig::default()
+        };
+
+        let result = move_volumes_with_progress(
+            events.clone(),
+            &format!("op-move-merge-{policy:?}-{scripted:?}"),
+            &state,
+            Arc::clone(&source),
+            &[PathBuf::from("/album")],
+            Arc::clone(&dest),
+            Path::new("/"),
+            &config,
+        )
+        .await;
+        assert!(
+            result.is_ok(),
+            "policy {policy:?}/{scripted:?} should complete, got {result:?}"
+        );
+
+        // ❗ NO BYTE LOST, and the dest-only files survive untouched.
+        assert_move_merge_preserved_everything(&source, &dest, &format!("policy {policy:?}/{scripted:?}")).await;
+
+        // A dir-vs-dir clash never prompts, on the move path too.
+        assert_eq!(
+            folder_conflict_count_both_dirs(&events.inner),
+            0,
+            "policy {policy:?}/{scripted:?}: a dir-vs-dir merge wrongly emitted a folder conflict"
+        );
+    }
+}
+
+/// The same no-byte-lost matrix for the SAME-volume move, which is a recursive
+/// rename-merge rather than copy+delete — a completely separate implementation
+/// (`volume_rename_merge.rs`) with the same promises to keep.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn same_volume_move_folder_merge_never_loses_a_byte_under_every_policy() {
+    for (policy, scripted) in MOVE_MERGE_POLICIES {
+        // One volume holding both trees: `/album` merges onto `/dest/album`.
+        let volume: Arc<dyn Volume> =
+            Arc::new(InMemoryVolume::new("One").with_space_info(10_000_000, 10_000_000));
+        volume.create_directory(Path::new("/album")).await.unwrap();
+        volume
+            .create_file(Path::new("/album/fresh.txt"), b"SRC-fresh")
+            .await
+            .unwrap();
+        volume.create_file(Path::new("/album/clash.txt"), b"SRC-c").await.unwrap();
+        volume.create_directory(Path::new("/album/sub")).await.unwrap();
+        volume
+            .create_file(Path::new("/album/sub/fresh2.txt"), b"SRC-fresh2")
+            .await
+            .unwrap();
+        volume
+            .create_file(Path::new("/album/sub/clash2.txt"), b"SRC-c2")
+            .await
+            .unwrap();
+
+        volume.create_directory(Path::new("/dest")).await.unwrap();
+        volume.create_directory(Path::new("/dest/album")).await.unwrap();
+        volume
+            .create_file(Path::new("/dest/album/keep.txt"), b"DEST-keep")
+            .await
+            .unwrap();
+        volume
+            .create_file(Path::new("/dest/album/clash.txt"), b"DEST-clash-is-bigger")
+            .await
+            .unwrap();
+        volume.create_directory(Path::new("/dest/album/sub")).await.unwrap();
+        volume
+            .create_file(Path::new("/dest/album/sub/keep2.txt"), b"DEST-keep2")
+            .await
+            .unwrap();
+        volume
+            .create_file(Path::new("/dest/album/sub/clash2.txt"), b"DEST-clash2-is-bigger")
+            .await
+            .unwrap();
+
+        let state = make_state_with_interval_ms(0);
+        let events = Arc::new(ConflictResponderSink::new(
+            &state,
+            scripted.unwrap_or(ConflictResolution::Skip),
+            true,
+        ));
+        let config = VolumeCopyConfig {
+            conflict_resolution: *policy,
+            progress_interval_ms: 0,
+            ..VolumeCopyConfig::default()
+        };
+
+        let result = move_within_same_volume_with_progress(
+            events.clone(),
+            &format!("op-same-merge-{policy:?}-{scripted:?}"),
+            &state,
+            Arc::clone(&volume),
+            &[PathBuf::from("/album")],
+            Path::new("/dest"),
+            &config,
+        )
+        .await;
+        assert!(
+            result.is_ok(),
+            "policy {policy:?}/{scripted:?} should complete, got {result:?}"
+        );
+
+        // Same invariants, with `/dest` prefixed onto the destination side.
+        let label = format!("same-volume policy {policy:?}/{scripted:?}");
+        for (path, content) in MOVE_MERGE_SOURCE_FILES {
+            let mut found = try_read_all(&volume, path).await.as_deref() == Some(*content);
+            if !found {
+                let landed = format!("/dest{path}");
+                for candidate in [landed.clone(), landed.replace(".txt", " (1).txt")] {
+                    if try_read_all(&volume, &candidate).await.as_deref() == Some(*content) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            assert!(
+                found,
+                "{label}: source file {path} is gone from BOTH sides — data destroyed"
+            );
+        }
+        assert_eq!(
+            try_read_all(&volume, "/dest/album/keep.txt").await.as_deref(),
+            Some(&b"DEST-keep"[..]),
+            "{label}: dest-only keep.txt was clobbered"
+        );
+        assert_eq!(
+            try_read_all(&volume, "/dest/album/sub/keep2.txt").await.as_deref(),
+            Some(&b"DEST-keep2"[..]),
+            "{label}: dest-only sub/keep2.txt was clobbered"
+        );
+        assert_eq!(
+            folder_conflict_count_both_dirs(&events.inner),
+            0,
+            "{label}: a dir-vs-dir merge wrongly emitted a folder conflict"
+        );
+    }
 }
