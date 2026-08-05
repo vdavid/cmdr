@@ -290,8 +290,11 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
     };
 
     // 3. The covered half, from the arena, exactly as a non-live search reads it.
+    //    Skipped outright for a run somebody stopped while that arena was loading:
+    //    the wait is seconds on a big drive, and a scan nobody will see is the
+    //    cheapest work there is to not do.
     let mut unresolved_scopes = Vec::new();
-    if let Some(loaded) = loaded.as_deref() {
+    if let Some(loaded) = loaded.as_deref().filter(|_| !run.is_cancelled()) {
         let limit = query.limit.min(1000) as usize;
         match search_covered_half(&query, &target, loaded, limit) {
             Ok(half) => {
@@ -340,7 +343,11 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
             target_volume_id: target.volume_id.clone(),
         };
 
-    if question.frontier.is_empty() {
+    // Nothing left to walk, or nobody left waiting for it. The stopped case ends
+    // here rather than starting a walk that would be cancelled on its first check
+    // — and, on a drive with no index, would have stood one up on the way.
+    // `finish` relabels the ending when the run was stopped.
+    if question.frontier.is_empty() || run.is_cancelled() {
         let coverage = report(
             WalkEnding::NothingToWalk,
             question.unreadable,
