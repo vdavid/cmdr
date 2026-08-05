@@ -7,22 +7,22 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 ## In progress
 
 - [ ] 2026-08-04 `size-only-subtrees-plan.md` - SPECCED, not started. Store a folder's TOTALS instead of a row per file,
-      for subtrees where nobody wants the files. Cmdr indexes folders; files are an input to a folder's totals.
-      Measured on David's index: `target/` holds **982,486 files (13.9% of the whole 7.09 M-row index)** and produced
-      **93% of an eight-hour window's rescan anchors**, while importance already scores **0** rows there (the `.claude`
+      for subtrees where nobody wants the files. Cmdr indexes folders; files are an input to a folder's totals. Measured
+      on David's index: `target/` holds **982,486 files (13.9% of the whole 7.09 M-row index)** and produced **93% of an
+      eight-hour window's rescan anchors**, while importance already scores **0** rows there (the `.claude`
       dot-directory floors the subtree, not a denylist). So the drive index is the entire cost. The design's first
       problem is that **FSEvents carries no old size**: per-file rows ARE the memory a delete or modify diffs against,
       so dropping them naively drifts the aggregate silently. The fix moves the memory up one level, adding DIRECT
       totals to `dir_stats` (which today is entirely recursive), so any event resolves as
       `delta = fresh_direct - stored_direct` off the directory's own row, with create/modify/delete/rename collapsing
       into one subtraction. The second problem is fan-out: naive re-listing turns an O(1) update into O(children).
-      Measured, that bites **9 directories** out of 13,771 (mean fan-out 16.4, max 95,143), and coalescing per
-      directory beats today's path hardest on exactly the pathological one. Two facts from the size distribution shape
-      it: **2,219 files (1%) hold 71% of the bytes** while 42,974 sub-1-KB files hold 8 MB, and **41% of files are
-      hardlink-deduped**, which makes the dedup rule load-bearing for any direct sum. Marking is a `SizeOnlyPolicy`
-      seam shipping ONE rule, `CACHEDIR.TAG` (cargo writes one into every `target/`), which reads a declaration the
-      owning tool publishes rather than a path denylist; later rules (low importance, all-binary, measured churn) are
-      designed for but not built.
+      Measured, that bites **9 directories** out of 13,771 (mean fan-out 16.4, max 95,143), and coalescing per directory
+      beats today's path hardest on exactly the pathological one. Two facts from the size distribution shape it: **2,219
+      files (1%) hold 71% of the bytes** while 42,974 sub-1-KB files hold 8 MB, and **41% of files are
+      hardlink-deduped**, which makes the dedup rule load-bearing for any direct sum. Marking is a `SizeOnlyPolicy` seam
+      shipping ONE rule, `CACHEDIR.TAG` (cargo writes one into every `target/`), which reads a declaration the owning
+      tool publishes rather than a path denylist; later rules (low importance, all-binary, measured churn) are designed
+      for but not built.
 - [ ] 2026-08-03 `resource-use-plan.md` - PARTLY SHIPPED. Cut idle CPU and RAM: prod v0.37.0 burned 110 min of CPU over
       9.1 h (about 20% of a core, sustained) at a 1.78 GB footprint while idle, writing 141,072 log lines in six hours.
       **The plan's value is mostly in what it got WRONG and how**, so read § M0 before trusting any number in it: four
