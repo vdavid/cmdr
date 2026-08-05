@@ -11,8 +11,8 @@ on.
   features read through their own `FeatureConfig`.
 - **Commit-hash links.** In the files `changelog.files` names, the hashes closing an entry render link-colored and
   ⌘-click opens the commit on GitHub.
-- **i18n key preview.** A message key the English catalog resolves folds to its text, collapsed by default, in `.ts`,
-  `.js`, and `.svelte`.
+- **i18n key preview.** A message key the English catalog resolves folds to its text, collapsed by default, in `.ts` and
+  `.svelte`.
 - **i18n key navigation.** ⌘-click on that key opens `messages/en/<area>.json` at the line it's defined on, which is
   also the line above its translator description.
 
@@ -321,8 +321,10 @@ broken in a real IDE.
 
 ### What i18n folding does with all that
 
-- **`.ts` and `.js`**: one Kotlin `FoldingBuilder`, registered twice in `plugin.xml`, for `JavaScript` and `TypeScript`.
-  It matches `JSCallExpression` (for `t` / `tString` / `getMessage`) and `JSProperty` (for `labelKey` and friends).
+- **`.ts`**: one Kotlin `FoldingBuilder`, registered in `plugin.xml` for both `JavaScript` and `TypeScript`, because
+  neither language's registrations reach the other. It matches `JSCallExpression` (for `t` / `tString` / `getMessage`)
+  and `JSProperty` (for `labelKey` and friends). The `JavaScript` half is what a `.js` file would use; no frontend `.js`
+  file carries a message key today, so nothing exercises it.
 - **`.svelte`**: the same Kotlin class, registered for `SvelteHTML` in `cmdr-svelte.xml`. No regex, no second code path.
   Registering there joins the Svelte plugin's own `SvelteFoldingBuilder` rather than shadowing anything, confirmed by
   the list `LanguageCoverageSpikeTest` prints.

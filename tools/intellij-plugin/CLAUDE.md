@@ -5,8 +5,8 @@ dependency. Uninstall it and nothing about Cmdr changes. Spec: `docs/specs/jetbr
 `tools/intellij-plugin/DETAILS.md`.
 
 Two features. In `CHANGELOG.md`, the hashes an entry closes on render link-colored, and ⌘-click opens that GitHub
-commit. In `.ts`, `.js`, and `.svelte`, a resolvable message key folds to its English text, collapsed by default, and
-⌘-click opens its catalog entry.
+commit. In `.ts` and `.svelte`, a resolvable message key folds to its English text, collapsed by default, and ⌘-click
+opens its catalog entry.
 
 ## Module map
 

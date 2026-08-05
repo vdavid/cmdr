@@ -5,8 +5,8 @@ Marketplace, never part of a build, and never a dependency of anything Cmdr ship
 website, and every check behave exactly the same.
 
 It does two things. In `CHANGELOG.md`, the commit hashes an entry closes on render link-colored, and ⌘-click opens the
-commit on GitHub. And in `.ts`, `.js`, and `.svelte` files, a message key folds to the English text it resolves to, so
-reading a screen's code reads like the screen:
+commit on GitHub. And in `.ts` and `.svelte` files, a message key folds to the English text it resolves to, so reading a
+screen's code reads like the screen:
 
 ```
 const note = tString('crashReporter.dialog.privacyNote')
