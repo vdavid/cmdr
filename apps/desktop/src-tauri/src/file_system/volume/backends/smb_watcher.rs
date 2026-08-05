@@ -286,8 +286,11 @@ pub(super) async fn run_smb_watcher(
                 let mut events_by_dir: HashMap<PathBuf, Vec<(FileNotifyAction, String)>> = HashMap::new();
 
                 for event in &events {
-                    // SMB watcher filenames use backslashes; normalize to forward slashes
-                    let normalized_filename = event.filename.replace('\\', "/");
+                    // smb2 >= 0.18 decodes `FileNotifyEvent::filename` to `/`
+                    // separators, so a `\` left in one is a real character in a
+                    // file's NAME. ❌ Don't re-normalize it away: that renames the
+                    // file into a path and the cache lookup misses forever.
+                    let normalized_filename = event.filename.clone();
                     let parent = Path::new(&normalized_filename)
                         .parent()
                         .map(|p| p.to_string_lossy().to_string())
@@ -328,7 +331,7 @@ pub(super) async fn run_smb_watcher(
                     match more {
                         Some(more_events) => {
                             for event in &more_events {
-                                let normalized_filename = event.filename.replace('\\', "/");
+                                let normalized_filename = event.filename.clone();
                                 let parent = Path::new(&normalized_filename)
                                     .parent()
                                     .map(|p| p.to_string_lossy().to_string())

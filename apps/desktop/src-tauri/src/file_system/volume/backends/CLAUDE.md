@@ -33,7 +33,9 @@ checklist live in `../CLAUDE.md` + `../DETAILS.md`.
   on an ECHO-proven-alive link, so nothing slow-but-alive is cut). Both tear the connection down. Read `sent_age`
   first: `None` means we never asked the server. The watcher's session is probed too, so a dead one ends its long poll
   instead of parking forever. The deadlines, and why the keepalive still can't declare a death: `DETAILS.md`.
-- **Watcher filenames need normalizing** (backslash→slash, NFC→NFD) before cache lookups.
+- **Watcher filenames need NFC→NFD normalizing** before cache lookups, and ❌ nothing else: smb2 ≥ 0.18 hands back `/`
+  separators with illegal characters already decoded, so a `\` in one is part of a file's NAME. Re-normalizing it to `/`
+  turns that name into a path and the lookup misses forever.
 - **Auto-upgrade is gated on `network.directSmbConnection`** and no-ops with no SMB mounts (so no macOS Local Network
   prompt). Drive INDEXING lives in `src/indexing/`, not here.
 
