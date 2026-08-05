@@ -95,9 +95,24 @@ var surfaceGuardedCrates = []struct {
 		//     `Index::cover`, the walk half — it takes the frontier a coverage
 		//     answer named and fills it in. That slot is spoken for; anything else
 		//     arriving in it still has to be argued the same way these were.
+		//
+		// `Index::cover` landed on 2026-08-05 into its reserved slot, and brought
+		// the three types its answer is made of. `RootPromises` 47 → 50:
+		//
+		//   - `CoverWalk` — the running walk: take batches off it, cancel it,
+		//     finish it. A host can't drive a walk without a handle to it.
+		//   - `CoveredEntry` — one entry the walk found, in the shape a result row
+		//     needs. Decision 3 puts the matching host-side, so this type crossing
+		//     the boundary is the whole point: it's what keeps a matcher out of
+		//     this crate.
+		//   - `CoverOutcome` — what the walk covered, and whether it was cancelled.
+		//     The terminal state a search's UI phase reads.
+		//
+		// Nothing else is owed to the coverage concept. A fourth type here needs
+		// the same argument these three did.
 		HandleType: "Index",
 		Ceilings: surfaceCeilings{
-			RootPromises:   47,
+			RootPromises:   50,
 			HandleMethods:  38,
 			PublicModules:  17,
 			SubsystemItems: 156,

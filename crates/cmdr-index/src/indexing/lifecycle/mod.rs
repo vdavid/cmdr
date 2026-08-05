@@ -15,6 +15,7 @@
 //!   both scan paths spawn alongside their scan. [`partial_agg`]: its pure
 //!   send-decision and hot-path collection.
 
+pub(crate) mod cover;
 pub(crate) mod failure;
 pub mod freshness;
 pub(crate) mod lifecycle_bus;

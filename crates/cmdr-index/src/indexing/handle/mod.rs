@@ -35,6 +35,7 @@ use std::sync::Arc;
 
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::DirectoryChange;
+use tokio_util::sync::CancellationToken;
 
 mod builder;
 mod error;
@@ -47,9 +48,10 @@ pub use ingest::{
     SizeRequest, SizeStream, SizeVerdict,
 };
 
-use crate::indexing::events::EventSink;
+use crate::indexing::events::{Diagnostic, EventSink};
 use crate::indexing::host::policy::HostPolicy;
 use crate::indexing::host::volumes::VolumeProvider;
+use crate::indexing::lifecycle::cover::{self, CoverWalk};
 use crate::indexing::lifecycle::state;
 use crate::indexing::read::coverage::{CoverageDimension, CoverageMap, CoverageToken};
 use crate::indexing::read::enrichment::ReadPool;
@@ -411,6 +413,31 @@ impl Index {
     /// together or the second query silently returns fewer results than the first.
     pub fn coverage_token(&self, volume_id: &str) -> CoverageToken {
         crate::indexing::read::coverage::coverage_token_on_volume(volume_id)
+    }
+
+    /// Walk the frontier a [`coverage`](Self::coverage) answer named, filling it
+    /// into the index and handing back what it finds as it goes.
+    ///
+    /// The other half of the same question: `coverage` says what the index can't
+    /// answer for, this makes it able to. Every row goes into the volume's real
+    /// index through its one writer, so the work is durable — a walk that gets
+    /// cancelled still leaves every directory it read covered, and the next walk
+    /// over the same scope has that much less to do.
+    ///
+    /// Cancel it through the returned handle. Dropping the handle does NOT stop
+    /// it: a superseded query keeps its walk, because walking is coverage work
+    /// and matching is query work.
+    ///
+    /// `Err` when the volume has no running index to write into.
+    pub fn cover(
+        &self,
+        volume_id: &str,
+        frontier: Vec<String>,
+        dimension: CoverageDimension,
+    ) -> Result<CoverWalk, IndexError> {
+        let context = state::cover_context_for(volume_id)
+            .ok_or_else(|| IndexError::Internal(Diagnostic(format!("no running index to cover '{volume_id}' into"))))?;
+        Ok(cover::start(context, frontier, dimension, CancellationToken::new()))
     }
 
     /// The user is looking at this directory; check that the index still matches

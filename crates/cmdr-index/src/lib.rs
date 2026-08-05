@@ -92,10 +92,12 @@ pub use indexing::events::{
 
 /// The vocabulary the handle's own signatures are written in.
 pub use indexing::aggregator::AggregationPhase;
+pub use indexing::lifecycle::cover::{CoverOutcome, CoverWalk};
 pub use indexing::lifecycle::freshness::Freshness;
 pub use indexing::read::coverage::{CoverageDimension, CoverageMap, CoverageToken};
 pub use indexing::read::enrichment::ReadPool;
 pub use indexing::read::expected_totals::ExpectedTotals;
+pub use indexing::scanner::CoveredEntry;
 pub use indexing::scanner::SYSTEM_DIR_EXCLUDES;
 pub use indexing::store::IndexFailure;
 pub use indexing::transports::smb::index::SmbIndexGateReason;

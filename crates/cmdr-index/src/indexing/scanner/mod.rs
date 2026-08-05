@@ -65,26 +65,93 @@ pub(in crate::indexing) const LOCAL_LIST_TIMEOUT: Duration = Duration::from_secs
 const WATCHDOG_INTERVAL: Duration = Duration::from_secs(1);
 
 #[cfg(test)]
+mod convergence_tests;
+#[cfg(test)]
+mod test_fixtures;
+#[cfg(test)]
 mod tests;
 
-/// Number of dir ids per `MarkDirsListed` message (mirrors `network_scanner`).
-const MARK_CHUNK: usize = 10_000;
+/// Number of dir ids per `MarkDirsListed` / `MarkDirsUnreadable` message
+/// (mirrors `network_scanner`).
+pub(super) const MARK_CHUNK: usize = 10_000;
 
-/// Emit `MarkDirsListed` for the accumulated dir ids, chunked. A no-op when empty.
-/// Sent by the completion paths (`scan_volume`/`scan_subtree`) after the final
-/// `flush_batch` and before the final aggregate, so the ordering invariant holds.
-fn send_marks(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) {
-    for chunk in listed_ids.chunks(MARK_CHUNK) {
-        if let Err(e) = writer.send(WriteMessage::MarkDirsListed {
-            ids: chunk.to_vec(),
-            epoch,
-        }) {
-            log::warn!("Scanner: failed to send MarkDirsListed: {e}");
+/// Stamp the directories this walk found it can't read, so the coverage frontier
+/// stops offering them to every later search. A no-op when empty.
+fn send_unreadable_marks(ids: &[i64], writer: &IndexWriter) {
+    for chunk in ids.chunks(MARK_CHUNK) {
+        if let Err(e) = writer.send(WriteMessage::MarkDirsUnreadable { ids: chunk.to_vec() }) {
+            log::warn!("Scanner: failed to send MarkDirsUnreadable: {e}");
         }
     }
 }
 
 // ── Types ────────────────────────────────────────────────────────────
+
+/// What the scan root IS, which decides what the scan may do to the ground under
+/// it. Replaces an `is_volume_root` boolean, because the third case is exactly
+/// the one a boolean couldn't say.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::indexing) enum ScanRoot {
+    /// The whole volume. The root maps to `ROOT_ID` whatever its path is, the
+    /// epoch is seeded rather than read, and the per-child exclusion policy
+    /// applies.
+    Volume,
+    /// A subtree the index already holds, rebuilt from scratch: descendants are
+    /// deleted first and the walk re-inserts them under fresh ids.
+    Rebuild,
+    /// Ground the index has no claim on — a coverage frontier node. ❌ NOTHING is
+    /// deleted: a search picked this directory precisely because nothing had
+    /// listed it, and deleting under it would throw away whatever an earlier
+    /// interrupted walk or a verification pass had already learned. The walk may
+    /// only ADD.
+    ///
+    /// It rests on the root being genuinely empty in the index, which
+    /// [`cover_subtree`] checks before it walks: the walk allocates fresh ids for
+    /// every name it finds, and `INSERT OR IGNORE` would silently drop a fresh row
+    /// that collided with a pre-existing sibling, orphaning everything the walk
+    /// then attributed to the id it dropped.
+    Virgin,
+}
+
+impl ScanRoot {
+    /// Whether this is the volume-root scan, which is what selects `ROOT_ID`, the
+    /// seeded epoch, and the per-child exclusion gate.
+    fn is_volume(self) -> bool {
+        self == ScanRoot::Volume
+    }
+}
+
+/// One entry a walk discovered, in the shape a live consumer needs it.
+///
+/// Search matches on these while the walk is still running, which is the whole
+/// point of Decision 3: the scan is owned by `indexing/` and the matching stays
+/// in `search/`, connected by a batched channel, so no matcher ever has to live
+/// inside this crate.
+///
+/// Sizes are the entry's OWN, before hardlink dedup: dedup exists to keep the
+/// stored recursive sums honest, and a result row showing a hardlinked file as
+/// 0 bytes would just be wrong.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CoveredEntry {
+    /// Absolute path, in the same space the walk was asked about.
+    pub path: PathBuf,
+    /// Whether it's a directory.
+    pub is_directory: bool,
+    /// Whether it's a symlink (never followed).
+    pub is_symlink: bool,
+    /// Apparent size in bytes, or `None` when it couldn't be read.
+    pub logical_size: Option<u64>,
+    /// Bytes actually occupied on disk, or `None` when it couldn't be read.
+    pub physical_size: Option<u64>,
+    /// Last-modified time, seconds since the Unix epoch.
+    pub modified_at: Option<u64>,
+}
+
+/// Where a walk sends the entries it discovers, one crossing per batch.
+///
+/// Bounded on purpose: a consumer that falls behind slows the walk down instead
+/// of letting an unbounded queue grow to the size of the subtree.
+pub(in crate::indexing) type EntrySender = std::sync::mpsc::SyncSender<Vec<CoveredEntry>>;
 
 /// Configuration for a scan operation.
 pub struct ScanConfig {
@@ -207,10 +274,6 @@ struct ScanOutcome {
     summary: ScanSummary,
     /// True when the scan's token fired before the walk ended.
     cancelled: bool,
-    /// Ids of the directories whose read succeeded. Empty on a cancel (honest
-    /// partial coverage), so stamping them is a no-op there.
-    listed_ids: Vec<i64>,
-    epoch: u64,
     root_id: i64,
 }
 
@@ -259,6 +322,13 @@ pub enum ScanError {
     /// which keeps the prior freshness and fires no abort. See
     /// `lifecycle/scan_completion.rs`.
     Cancelled(ScanSummary),
+    /// A [`ScanRoot::Virgin`] walk was pointed at a directory the index already
+    /// holds children for, so the add-only walk it wanted to run isn't safe: its
+    /// fresh ids would collide with the existing rows, `INSERT OR IGNORE` would
+    /// drop them silently, and everything below a dropped id would be orphaned.
+    /// NOT a failure — the caller repairs the directory with the serial
+    /// reconcile, which compares by name and writes only differences.
+    NotVirgin,
     /// The reconcile walk panicked. `local_reconcile::start_local_reconcile`
     /// wraps the walk in `catch_unwind` and converts the panic payload into this
     /// typed variant (carrying the panic message), so the thread's `JoinHandle`
@@ -280,6 +350,7 @@ impl std::fmt::Display for ScanError {
                 "scan cancelled after {} entries in {} dirs",
                 s.total_entries, s.total_dirs
             ),
+            ScanError::NotVirgin => write!(f, "the scan root already has children, so an add-only walk isn't safe"),
             ScanError::Panicked(msg) => write!(f, "reconcile walk panicked: {msg}"),
         }
     }
@@ -329,24 +400,23 @@ pub fn scan_volume(
                 &writer,
                 config.batch_size,
                 config.num_threads,
-                true, // volume scan: root always maps to ROOT_ID
+                ScanRoot::Volume,
                 &config.space,
                 reader,
                 LOCAL_LIST_TIMEOUT,
+                None,
             );
 
-            // On a clean finish: stamp the listed dirs FIRST, then aggregate,
-            // then trim the WAL. The mark→aggregate order is the ordering
-            // invariant (a mark queued behind the final aggregate would leave
-            // that dir at epoch 0 and roll the whole tree to incomplete). The
-            // single in-order writer enforces it. The WAL checkpoint trims the
-            // GB-scale post-scan spike now instead of waiting for the ticker.
-            // A cancelled walk sends none of it: the caller discards or heals
-            // the partial, and a truncate already ran.
+            // Every listed dir was already stamped, in step with the rows that
+            // made it stampable, so the ordering invariant (mark before the
+            // final aggregate) holds by construction — including on the cancel
+            // path, where the coverage a stopped walk earned stays durable
+            // instead of being thrown away. What's left here is the CLEAN
+            // finish's aggregate, plus a WAL checkpoint that trims the GB-scale
+            // post-scan spike now instead of waiting for the ticker.
             if let Ok(outcome) = &result
                 && !outcome.cancelled
             {
-                send_marks(&outcome.listed_ids, outcome.epoch, &writer);
                 if let Err(e) = writer.send(WriteMessage::ComputeAllAggregates {
                     source: AggSource::Maps,
                 }) {
@@ -378,28 +448,86 @@ pub fn scan_subtree(
     writer: &IndexWriter,
     cancel: &CancellationToken,
 ) -> Result<ScanSummary, ScanError> {
+    walk_subtree(
+        root,
+        space,
+        writer,
+        cancel,
+        ScanRoot::Rebuild,
+        None,
+        default_reader(),
+        0,
+    )
+}
+
+/// Walk a coverage frontier node: ground the index has no claim on.
+///
+/// The search-driven half of the coverage concept. It differs from
+/// [`scan_subtree`] in exactly one way that matters, and it's a data-safety one:
+/// ❌ it DELETES NOTHING. A frontier node was chosen because nothing had listed
+/// it, but "nothing listed it" does not mean "nothing is known below it" — an
+/// FSEvents verification pass upserts children under a directory without marking
+/// that directory listed, so a frontier node can sit above rows the index
+/// genuinely knows (`convergence_tests::a_frontier_node_can_hold_a_listed_descendant`).
+///
+/// That safety rests on the root being empty in the index, which is checked here
+/// rather than assumed: the walk allocates fresh ids for every name it finds, and
+/// `INSERT OR IGNORE` would silently drop a fresh row colliding with a
+/// pre-existing sibling, orphaning everything below the id it dropped. A root
+/// that ISN'T empty is [`ScanError::NotVirgin`], and the caller repairs it with
+/// the serial reconcile instead, which compares by name and only writes
+/// differences.
+///
+/// `emit` is where a live consumer receives the entries as they're found; pass
+/// `None` to fill the index and nothing else.
+pub(in crate::indexing) fn cover_subtree(
+    root: &Path,
+    space: &IndexPathSpace,
+    writer: &IndexWriter,
+    emit: Option<EntrySender>,
+    cancel: &CancellationToken,
+) -> Result<ScanSummary, ScanError> {
+    walk_subtree(root, space, writer, cancel, ScanRoot::Virgin, emit, default_reader(), 0)
+}
+
+/// The shared body of [`scan_subtree`] and [`cover_subtree`]: walk, then stamp
+/// what the walk learned and repair the ancestors it changed.
+///
+/// ❌ The post-walk sequence runs on the CANCEL path too, which is why the
+/// outcome only becomes a `Result` afterwards. A `Rebuild` has already sent the
+/// destructive `DeleteDescendantsById`, so bailing early would strand a
+/// half-rebuilt subtree with stale ancestors; a `Virgin` walk has partial
+/// coverage worth keeping, and an aggregate is what turns it into the honest
+/// "≥" sizes a listing shows.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the two entry points above are the API; this is their shared body"
+)]
+fn walk_subtree(
+    root: &Path,
+    space: &IndexPathSpace,
+    writer: &IndexWriter,
+    cancel: &CancellationToken,
+    mode: ScanRoot,
+    emit: Option<EntrySender>,
+    reader: ReadDirFn,
+    num_threads: usize,
+) -> Result<ScanSummary, ScanError> {
     let progress = Arc::new(ScanProgress::new());
-    let reader: ReadDirFn = default_reader();
     let outcome = run_scan(
         root,
         cancel,
         &progress,
         writer,
         2000,
-        0,
-        false,
+        num_threads,
+        mode,
         space,
         reader,
         LOCAL_LIST_TIMEOUT,
+        emit,
     )?;
 
-    // Stamp the listed dirs before the subtree aggregate (the ordering invariant).
-    // ❌ Both run on the CANCEL path too, which is why the outcome is unwrapped
-    // to a `Result` only afterwards: `run_scan` already sent the destructive
-    // `DeleteDescendantsById(root_id)`, so bailing early on cancel would strand a
-    // half-rebuilt subtree with stale ancestors. A cancelled scan has no listed
-    // ids (honest partial coverage), so the marks no-op and only the repair runs.
-    send_marks(&outcome.listed_ids, outcome.epoch, writer);
     if let Err(e) = writer.send(WriteMessage::ComputeSubtreeAggregates {
         root_id: outcome.root_id,
     }) {
@@ -431,12 +559,14 @@ fn run_scan(
     writer: &IndexWriter,
     batch_size: usize,
     num_threads: usize,
-    is_volume_root: bool,
+    mode: ScanRoot,
     space: &IndexPathSpace,
     reader: ReadDirFn,
     stall_timeout: Duration,
+    emit: Option<EntrySender>,
 ) -> Result<ScanOutcome, ScanError> {
     let start = Instant::now();
+    let is_volume_root = mode.is_volume();
 
     // Resolve the scan root id and read the epoch every listed dir is stamped with
     // (a first scan seeds epoch 1). Volume-root scans need a write connection (to
@@ -470,12 +600,22 @@ fn run_scan(
                 .ok_or_else(|| ScanError::WriterSend(format!("{} is outside the volume's index", root.display())))?;
             resolve_scan_root(&conn, Path::new(&index_root), false).map_err(|e| ScanError::WriterSend(e.to_string()))?
         };
+        // An add-only walk is safe only over ground the index holds nothing for.
+        // Asked in the same breath as the resolve, on the same connection, because
+        // the answer decides whether the walk may run at all.
+        if mode == ScanRoot::Virgin
+            && IndexStore::count_children_capped(root_id, &conn, 1).map_err(|e| ScanError::WriterSend(e.to_string()))?
+                > 0
+        {
+            return Err(ScanError::NotVirgin);
+        }
         (root_id, epoch)
     };
 
-    // Subtree rescans delete existing descendants first (the scan re-inserts fresh
-    // children); the subtree root entry itself is preserved.
-    if !is_volume_root {
+    // A REBUILD deletes existing descendants first (it re-inserts fresh children);
+    // the subtree root entry itself is preserved. ❌ A `Virgin` walk deletes
+    // nothing — see [`ScanRoot::Virgin`], it may only add.
+    if mode == ScanRoot::Rebuild {
         writer
             .send(WriteMessage::DeleteDescendantsById(root_id))
             .map_err(|e| ScanError::WriterSend(e.to_string()))?;
@@ -493,6 +633,8 @@ fn run_scan(
         batch_size,
         progress,
         walk_cancel.clone(),
+        epoch,
+        emit,
     ));
 
     // Watchdog ticks faster than the timeout (production 15s → 1s; a short test
@@ -544,19 +686,18 @@ fn run_scan(
         return Err(ScanError::RootUnlistable);
     }
 
-    // A cancelled scan emits no marks (the caller discards/heals the partial).
-    let listed_ids = if was_cancelled {
-        Vec::new()
-    } else {
-        visitor.take_listed_ids()
-    };
+    // Directories the walk found it can't read stop re-entering the frontier.
+    // After the marks, so a directory that failed once and then succeeded on a
+    // retry within the same walk ends up listed rather than pinned unreadable —
+    // and `mark_dirs_listed` clears the flag anyway, whichever order they land in.
+    send_unreadable_marks(&visitor.take_unreadable_ids(), writer);
+
     let snap = progress.snapshot();
 
     log::debug!(
-        "Scanner: walk complete: {}, {} ({} listed) in {}ms",
+        "Scanner: walk complete: {}, {} in {}ms",
         pluralize_with(snap.entries_scanned, "entry", "entries"),
         pluralize(snap.dirs_found, "dir"),
-        listed_ids.len(),
         start.elapsed().as_millis()
     );
 
@@ -568,8 +709,21 @@ fn run_scan(
             duration_ms: start.elapsed().as_millis() as u64,
         },
         cancelled: was_cancelled,
-        listed_ids,
-        epoch,
         root_id,
     })
+}
+
+/// [`cover_subtree`] with the reader and the worker count injected, for tests
+/// that need to decide exactly which directory reads succeed and when the walk
+/// gets cancelled.
+#[cfg(test)]
+pub(in crate::indexing) fn cover_subtree_with_reader(
+    root: &Path,
+    space: &IndexPathSpace,
+    writer: &IndexWriter,
+    emit: Option<EntrySender>,
+    cancel: &CancellationToken,
+    reader: ReadDirFn,
+) -> Result<ScanSummary, ScanError> {
+    walk_subtree(root, space, writer, cancel, ScanRoot::Virgin, emit, reader, 1)
 }

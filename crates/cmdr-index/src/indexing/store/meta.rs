@@ -104,7 +104,11 @@ impl IndexStore {
                     .map(|i| format!("?{}", i + 2))
                     .collect::<Vec<_>>()
                     .join(", ");
-                let sql = format!("UPDATE entries SET listed_epoch = ?1 WHERE id IN ({placeholders})");
+                // Clearing `known_unreadable` here is what heals the mark: a
+                // directory we just listed is, by definition, readable again
+                // (Full Disk Access granted, a permission fixed, a mount back).
+                let sql =
+                    format!("UPDATE entries SET listed_epoch = ?1, known_unreadable = 0 WHERE id IN ({placeholders})");
                 let mut stmt = conn.prepare_cached(&sql)?;
                 let mut values: Vec<&dyn rusqlite::types::ToSql> = Vec::with_capacity(chunk.len() + 1);
                 let epoch_i = epoch as i64;

@@ -12,7 +12,7 @@ use tokio_util::sync::CancellationToken;
 
 use super::exclusions::{ExclusionScope, is_canonicalization_alias, should_exclude};
 use super::walker::{DirTask, DirVisitor, RawDirEntry, RawFileType, WalkReadError};
-use super::{ScanError, ScanProgress};
+use super::{CoveredEntry, EntrySender, MARK_CHUNK, ScanError, ScanProgress};
 use crate::indexing::events::{Diagnostic, IndexErrorReport, IndexEvent};
 use crate::indexing::metadata;
 use crate::indexing::store::EntryRow;
@@ -20,12 +20,37 @@ use crate::indexing::writer::{IndexWriter, WriteMessage};
 use cmdr_fs::firmlinks;
 use cmdr_fs::ignore_poison::IgnorePoison;
 
+/// Everything one flush hands to the writer, accumulated under ONE lock.
+///
+/// The three live together because their ORDER is the whole point. A directory's
+/// own row is written by its PARENT's `visit_dir`, so it can still be sitting in
+/// `rows` when the directory's own read succeeds; `mark_dirs_listed` is a
+/// PK `UPDATE` that silently updates zero rows, so a mark that overtakes its row
+/// leaves that directory at `listed_epoch = 0` forever. Accumulating both under
+/// the same lock and sending rows-then-marks inside that critical section makes
+/// the overtake unrepresentable: every id in `listed` was appended AFTER its own
+/// row went into `rows`, so it rides the same flush or a later one.
+///
+/// ❌ Don't split these into separate mutexes, and ❌ don't send outside the
+/// lock: two workers flushing concurrently could then hand the writer batch 2
+/// before batch 1, and batch 2's marks would land ahead of batch 1's rows.
+#[derive(Default)]
+struct Pending {
+    /// Rows waiting to be inserted.
+    rows: Vec<EntryRow>,
+    /// Directories whose read succeeded since the last flush.
+    listed: Vec<i64>,
+    /// The same entries in the shape a live search consumes. Populated only when
+    /// somebody is listening.
+    discovered: Vec<CoveredEntry>,
+}
+
 /// Fresh-scan [`DirVisitor`]: inserts every discovered entry as a new row,
 /// attributing children to the directory being read via the carried `parent_id`.
 ///
-/// A directory whose read SUCCEEDS is recorded in `listed_ids` (marked listed at
-/// the current epoch after the walk); a timed-out or errored dir is never
-/// recorded, so it stays `listed_epoch = 0` (honest "unknown"). Runs concurrently
+/// A directory whose read SUCCEEDS is marked listed at the current epoch, right
+/// after the flush that carries its own row; a timed-out or errored dir is never
+/// marked, so it stays `listed_epoch = 0` (honest "unknown"). Runs concurrently
 /// on the walker's worker threads, so shared state is behind mutexes / atomics.
 pub(super) struct InsertVisitor {
     writer: IndexWriter,
@@ -47,17 +72,28 @@ pub(super) struct InsertVisitor {
     /// A child of the scan's token, cancelled when a writer send fails so the
     /// walk stops promptly. Cancelling it does NOT mark the scan user-cancelled.
     walk_cancel: CancellationToken,
-    /// Accumulating insert batch, flushed at `batch_size`.
-    batch: Mutex<Vec<EntryRow>>,
+    /// The epoch every successfully-listed directory is stamped with.
+    epoch: u64,
+    /// Where a live consumer (a search walking its frontier) receives the
+    /// entries as they're discovered, or `None` for a plain indexing scan.
+    /// Dropped by the visitor once the consumer goes away.
+    emit: Mutex<Option<EntrySender>>,
+    /// Everything the next flush will hand the writer, in order.
+    pending: Mutex<Pending>,
     /// Inodes seen with nlink > 1, so each hardlink's size counts once.
     seen_inodes: Mutex<HashSet<u64>>,
-    /// Ids of directories whose read succeeded (marked listed after the walk).
-    listed_ids: Mutex<Vec<i64>>,
     /// First writer-send error, surfaced as the scan result.
     send_error: Mutex<Option<String>>,
+    /// Directories whose read failed with permission denied, so the frontier
+    /// stops offering them on every later search.
+    unreadable_ids: Mutex<Vec<i64>>,
 }
 
 impl InsertVisitor {
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "one visitor per scan, built in one place; a config struct would only move the list"
+    )]
     pub(super) fn new(
         writer: IndexWriter,
         is_volume_root: bool,
@@ -66,6 +102,8 @@ impl InsertVisitor {
         batch_size: usize,
         progress: &ScanProgress,
         walk_cancel: CancellationToken,
+        epoch: u64,
+        emit: Option<EntrySender>,
     ) -> Self {
         let next_id = Arc::clone(writer.next_id());
         Self {
@@ -79,18 +117,29 @@ impl InsertVisitor {
             dirs_found: Arc::clone(&progress.dirs_found),
             bytes_scanned: Arc::clone(&progress.bytes_scanned),
             walk_cancel,
-            batch: Mutex::new(Vec::with_capacity(batch_size)),
+            epoch,
+            emit: Mutex::new(emit),
+            pending: Mutex::new(Pending {
+                rows: Vec::with_capacity(batch_size),
+                ..Pending::default()
+            }),
             seen_inodes: Mutex::new(HashSet::new()),
-            listed_ids: Mutex::new(Vec::new()),
             send_error: Mutex::new(None),
+            unreadable_ids: Mutex::new(Vec::new()),
         }
     }
 
-    fn send_entries(&self, entries: Vec<EntryRow>) {
-        if entries.is_empty() {
-            return;
-        }
-        if let Err(e) = self.writer.send(WriteMessage::InsertEntriesV2(entries)) {
+    /// Hand one flush's worth of work to the writer, ROWS FIRST and marks second,
+    /// with the caller still holding `pending`'s lock. See [`Pending`] for why the
+    /// order and the lock are both load-bearing.
+    fn flush(&self, pending: &mut Pending) {
+        let rows = std::mem::take(&mut pending.rows);
+        let listed = std::mem::take(&mut pending.listed);
+        let discovered = std::mem::take(&mut pending.discovered);
+
+        if !rows.is_empty()
+            && let Err(e) = self.writer.send(WriteMessage::InsertEntriesV2(rows))
+        {
             // A send failure means the writer is gone — abort the walk and keep the
             // first error to return from the scan.
             self.walk_cancel.cancel();
@@ -98,41 +147,81 @@ impl InsertVisitor {
             if slot.is_none() {
                 *slot = Some(e.to_string());
             }
+            return;
+        }
+        for chunk in listed.chunks(MARK_CHUNK) {
+            if let Err(e) = self.writer.send(WriteMessage::MarkDirsListed {
+                ids: chunk.to_vec(),
+                epoch: self.epoch,
+            }) {
+                log::warn!("Scanner: failed to send MarkDirsListed: {e}");
+            }
+        }
+        self.emit(discovered);
+    }
+
+    /// Hand one batch to whoever is consuming the walk live. A consumer that has
+    /// gone away (a closed search dialog) just stops being fed: the walk keeps
+    /// running, because walking is coverage work and its rows are already in the
+    /// index for the next query to find.
+    fn emit(&self, discovered: Vec<CoveredEntry>) {
+        if discovered.is_empty() {
+            return;
+        }
+        let mut slot = self.emit.lock_ignore_poison();
+        if let Some(sender) = slot.as_ref()
+            && sender.send(discovered).is_err()
+        {
+            *slot = None;
         }
     }
 
-    fn push_row(&self, row: EntryRow) {
-        let full = {
-            let mut batch = self.batch.lock_ignore_poison();
-            batch.push(row);
-            if batch.len() >= self.batch_size {
-                std::mem::take(&mut *batch)
-            } else {
-                Vec::new()
-            }
-        };
-        self.send_entries(full);
+    fn push_row(&self, row: EntryRow, discovered: Option<CoveredEntry>) {
+        let mut pending = self.pending.lock_ignore_poison();
+        pending.rows.push(row);
+        if let Some(entry) = discovered {
+            pending.discovered.push(entry);
+        }
+        if pending.rows.len() >= self.batch_size {
+            self.flush(&mut pending);
+        }
     }
 
-    /// Flush the final partial batch and surface any captured send error.
+    /// Flush the final partial batch — rows, marks, and entries alike — and
+    /// surface any captured send error.
+    ///
+    /// Runs on the CANCEL path too: dropping the queued marks would throw away
+    /// coverage the walk genuinely earned, and then no amount of searching would
+    /// ever shrink the frontier.
     pub(super) fn finish(&self) -> Result<(), ScanError> {
-        let remaining = std::mem::take(&mut *self.batch.lock_ignore_poison());
-        self.send_entries(remaining);
+        {
+            let mut pending = self.pending.lock_ignore_poison();
+            self.flush(&mut pending);
+        }
+        // Let the consumer see the end of the walk rather than waiting on a
+        // channel nothing will ever write to again.
+        *self.emit.lock_ignore_poison() = None;
         match self.send_error.lock_ignore_poison().take() {
             Some(msg) => Err(ScanError::WriterSend(msg)),
             None => Ok(()),
         }
     }
 
-    pub(super) fn take_listed_ids(&self) -> Vec<i64> {
-        std::mem::take(&mut *self.listed_ids.lock_ignore_poison())
+    /// The directories this walk found it can't read, for the caller to stamp
+    /// once the walk is over.
+    pub(super) fn take_unreadable_ids(&self) -> Vec<i64> {
+        std::mem::take(&mut *self.unreadable_ids.lock_ignore_poison())
     }
 }
 
 impl DirVisitor for InsertVisitor {
     fn visit_dir(&self, dir: &DirTask, children: Vec<RawDirEntry>) -> Vec<DirTask> {
-        // This directory's read succeeded → mark it listed at scan end.
-        self.listed_ids.lock_ignore_poison().push(dir.id);
+        // This directory's read succeeded → mark it listed, with the next flush.
+        // Its own row was written by its PARENT's `visit_dir`, so it is already in
+        // `rows` or in a batch the writer has: appending here can never overtake
+        // it. See `Pending`.
+        self.pending.lock_ignore_poison().listed.push(dir.id);
+        let emitting = self.emit.lock_ignore_poison().is_some();
 
         let mut subdirs = Vec::new();
         for child in children {
@@ -224,17 +313,33 @@ impl DirVisitor for InsertVisitor {
             let entry_physical = physical_size.unwrap_or(0);
             self.bytes_scanned.fetch_add(entry_physical, Ordering::Relaxed);
 
-            self.push_row(EntryRow {
-                id,
-                parent_id: dir.id,
-                name,
+            // What a live consumer gets is the entry as a LISTING shows it, so
+            // the sizes are the pre-dedup ones: hardlink dedup exists to keep
+            // the stored recursive sums honest, and a search result showing a
+            // hardlinked file as 0 bytes would just be wrong.
+            let discovered = emitting.then(|| CoveredEntry {
+                path: child.path.clone(),
                 is_directory: is_dir,
                 is_symlink,
-                logical_size,
-                physical_size,
-                modified_at,
-                inode,
+                logical_size: snap.logical_size,
+                physical_size: snap.physical_size,
+                modified_at: snap.modified_at,
             });
+
+            self.push_row(
+                EntryRow {
+                    id,
+                    parent_id: dir.id,
+                    name,
+                    is_directory: is_dir,
+                    is_symlink,
+                    logical_size,
+                    physical_size,
+                    modified_at,
+                    inode,
+                },
+                discovered,
+            );
         }
         subdirs
     }
@@ -258,10 +363,17 @@ impl DirVisitor for InsertVisitor {
                     self.writer
                         .events()
                         .emit(IndexEvent::PathAccessDenied { path: dir.path.clone() });
+                    // Remember it, so the coverage frontier stops handing this
+                    // directory to every later search. Permission denied is the
+                    // durable, user-fixable case; any other I/O error might be
+                    // transient, so those stay plain unlisted and get retried.
+                    self.unreadable_ids.lock_ignore_poison().push(dir.id);
                 }
                 log::debug!("Scanner: skipping errored dir {}: {e}", dir.path.display());
             }
             // Timeouts are already logged by the walker watchdog; left unmarked.
+            // NOT unreadable: a stalled read is a dead mount or a storm, both of
+            // which heal, and pinning them would make the walk stop retrying.
             WalkReadError::TimedOut => {}
         }
     }

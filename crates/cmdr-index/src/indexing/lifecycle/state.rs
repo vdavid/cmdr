@@ -234,6 +234,23 @@ pub(crate) fn get_writer_and_scanning_for(volume_id: &str) -> Option<(crate::ind
     }
 }
 
+/// Everything a coverage walk needs to run on a volume: its writer (the one
+/// writer per DB) and its path space.
+///
+/// `None` while the volume is `Initializing` — its own scan owns the writer, and
+/// that scan already covers whatever a search would want walked — or when the
+/// volume has no index at all, which is M3b's cold-bootstrap case.
+pub(crate) fn cover_context_for(volume_id: &str) -> Option<crate::indexing::lifecycle::cover::CoverContext> {
+    let reg = INDEX_REGISTRY.lock().ok()?;
+    match reg.get(volume_id).map(|i| &i.phase) {
+        Some(IndexPhase::Running(mgr)) => Some(crate::indexing::lifecycle::cover::CoverContext {
+            writer: mgr.writer.clone(),
+            space: mgr.path_space(),
+        }),
+        _ => None,
+    }
+}
+
 /// Trigger background verification of a directory against the volume's index DB.
 /// Called after enrichment on each navigation. No-op if the volume's index is
 /// not running. Fully fire-and-forget: the registry lock is acquired on a

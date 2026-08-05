@@ -324,6 +324,16 @@ pub enum WriteMessage {
     /// must not thrash a root-search reload each scan. See the "Honest sizes"
     /// model in `indexing/DETAILS.md`.
     MarkDirsListed { ids: Vec<i64>, epoch: u64 },
+    /// Stamp the given directories as ones a walk has tried and cannot read, so
+    /// the coverage frontier stops handing them to every later search.
+    ///
+    /// Sent by the walk that hit the permission error, after its marks. It does
+    /// NOT touch `listed_epoch`, so the directory stays honestly unlisted and its
+    /// ancestors' sizes stay a lower bound; all it buys is that the frontier can
+    /// report it instead of re-offering it forever. `MarkDirsListed` clears the
+    /// flag, so a later successful listing (Full Disk Access granted) heals it
+    /// with no rebuild. Like `MarkDirsListed`, no generation bump.
+    MarkDirsUnreadable { ids: Vec<i64> },
     /// Bump the volume's `current_epoch` by one and persist it (a continuity
     /// break: reconnect/rescan, watcher death, overflow, disconnect, or a
     /// launch-loading-Stale). A scan/reconcile only STAMPS `listed_epoch` with
@@ -1479,6 +1489,12 @@ fn process_message(
             // search indexes, so it must not trigger a root-search reload.
             if let Err(e) = IndexStore::mark_dirs_listed(conn, &ids, epoch) {
                 signal.note(&e, &format!("mark_dirs_listed (count={}, epoch={epoch})", ids.len()));
+            }
+        }
+        WriteMessage::MarkDirsUnreadable { ids } => {
+            // No MutationTracker::bump(), same reasoning as MarkDirsListed.
+            if let Err(e) = IndexStore::mark_dirs_unreadable(conn, &ids, true) {
+                signal.note(&e, &format!("mark_dirs_unreadable (count={})", ids.len()));
             }
         }
         WriteMessage::BumpCurrentEpoch => {

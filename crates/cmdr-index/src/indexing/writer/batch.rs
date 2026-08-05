@@ -78,6 +78,7 @@ pub(super) fn role(msg: &WriteMessage) -> BatchRole {
         | WriteMessage::PropagateDeltaById { .. }
         | WriteMessage::PropagateMinSubtreeEpoch(_)
         | WriteMessage::MarkDirsListed { .. }
+        | WriteMessage::MarkDirsUnreadable { .. }
         | WriteMessage::UpdateLastEventId(_)
         | WriteMessage::UpdateMeta { .. }
         | WriteMessage::DeleteMeta(_)

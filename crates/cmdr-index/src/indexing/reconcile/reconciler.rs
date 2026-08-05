@@ -586,6 +586,11 @@ pub(crate) struct ReconcileSummary {
     /// resolves to a file). Carries the escalation anchor — a rescan root strictly
     /// closer to the volume root — for the caller to re-queue. `None` on success.
     pub escalation: Option<PathBuf>,
+    /// Whether the walk stopped early because its token fired. A reconcile is
+    /// safe to interrupt — every directory it listed is still marked — but a
+    /// caller deciding whether a scope is now covered has to be able to tell a
+    /// finished walk from a stopped one.
+    pub cancelled: bool,
 }
 
 impl ReconcileSummary {
@@ -951,6 +956,7 @@ pub(crate) fn reconcile_subtree(
                             duration: start.elapsed(),
                             writer_wait: writer_wait(),
                             escalation: resolve_escalation_anchor(space, conn, &root_str),
+                            cancelled: cancel.is_cancelled(),
                         });
                     }
                 }
@@ -969,6 +975,7 @@ pub(crate) fn reconcile_subtree(
                         duration: start.elapsed(),
                         writer_wait: writer_wait(),
                         escalation: resolve_escalation_anchor(space, conn, &root_str),
+                        cancelled: cancel.is_cancelled(),
                     });
                 }
                 Err(e) => return Err(format!("resolve_path for parent: {e}")),
@@ -990,6 +997,7 @@ pub(crate) fn reconcile_subtree(
                         duration: start.elapsed(),
                         writer_wait: writer_wait(),
                         escalation: None,
+                        cancelled: cancel.is_cancelled(),
                     });
                 }
             };
@@ -1033,6 +1041,7 @@ pub(crate) fn reconcile_subtree(
                         duration: start.elapsed(),
                         writer_wait: writer_wait(),
                         escalation: None,
+                        cancelled: cancel.is_cancelled(),
                     });
                 }
                 Err(e) => return Err(format!("resolve_path for root after upsert: {e}")),
@@ -1145,6 +1154,7 @@ pub(crate) fn reconcile_subtree(
         duration: start.elapsed(),
         writer_wait: writer_wait(),
         escalation: None,
+        cancelled: cancel.is_cancelled(),
     })
 }
 

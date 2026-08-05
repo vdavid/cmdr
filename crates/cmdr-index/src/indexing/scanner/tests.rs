@@ -1,62 +1,11 @@
 //! Tests for the drive scanner: path-component handling, exclusion gating, the
 //! canonicalization-alias check, and end-to-end scan behavior. Extracted verbatim
 //! from the former `scanner.rs` `mod tests`; pure code movement.
+use super::test_fixtures::{create_test_tree, ensure_path_in_db, scan_test_tempdir, setup_writer};
 use super::*;
 use crate::indexing::store::{self, IndexStore, ROOT_ID, ScanContext};
-use crate::indexing::writer::IndexWriter;
 use cmdr_fs::firmlinks;
 use std::fs;
-
-/// Create a temp dir for volume-scan tests. On Linux, `/tmp/` is in the exclusion list,
-/// so we use the current directory to avoid false rejections.
-fn scan_test_tempdir() -> tempfile::TempDir {
-    // Create in CWD instead of /tmp/ to avoid:
-    // - Linux: /tmp/ is in EXCLUDED_PREFIXES
-    // - macOS: /tmp is a symlink to /private/tmp, causing path mismatches with normalize_path() which
-    //   resolves /tmp → /private/tmp
-    tempfile::Builder::new()
-        .prefix("cmdr-scan-test-")
-        .tempdir_in(std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
-        .expect("failed to create temp dir in cwd")
-}
-
-/// Create a temp directory with a known file tree and return the root path.
-fn create_test_tree(dir: &Path) {
-    let sub = dir.join("subdir");
-    fs::create_dir_all(&sub).unwrap();
-    fs::write(dir.join("file1.txt"), "hello world").unwrap();
-    fs::write(dir.join("file2.txt"), "more content here").unwrap();
-    fs::write(sub.join("nested.txt"), "nested file").unwrap();
-    fs::create_dir_all(sub.join("deep")).unwrap();
-    fs::write(sub.join("deep").join("leaf.txt"), "leaf").unwrap();
-}
-
-fn setup_writer() -> (IndexWriter, PathBuf, tempfile::TempDir) {
-    let dir = tempfile::tempdir().expect("failed to create temp dir");
-    let db_path = dir.path().join("test-index.db");
-    let _store = IndexStore::open(&db_path).expect("failed to open store");
-    let writer = IndexWriter::spawn(&db_path, crate::NoopEventSink::shared()).expect("failed to spawn writer");
-    (writer, db_path, dir)
-}
-
-/// Insert the full parent directory chain for a path into the DB so that
-/// `ScanContext::new` can resolve the subtree root for subtree scans.
-/// Also syncs the writer's shared `next_id` counter with the DB.
-fn ensure_path_in_db(db_path: &Path, path: &Path, writer: &IndexWriter) {
-    let conn = IndexStore::open_write_connection(db_path).unwrap();
-    let path_str = path.to_string_lossy();
-    let components: Vec<&str> = path_str.split('/').filter(|c| !c.is_empty()).collect();
-    let mut parent_id = ROOT_ID;
-    for component in components {
-        parent_id = match IndexStore::resolve_component(&conn, parent_id, component) {
-            Ok(Some(id)) => id,
-            _ => IndexStore::insert_entry_v2(&conn, parent_id, component, true, false, None, None, None, None).unwrap(),
-        };
-    }
-    // Sync the writer's next_id counter with what we just inserted
-    let db_next_id = IndexStore::get_next_id(&conn).unwrap();
-    writer.next_id().fetch_max(db_next_id, Ordering::Relaxed);
-}
 
 #[test]
 #[cfg(target_os = "macos")]
@@ -933,10 +882,11 @@ fn timed_out_dir_is_not_marked_listed() {
         &writer,
         100,
         4,
-        true,
+        ScanRoot::Volume,
         &IndexPathSpace::root(), // boot-disk scope, trustworthy inodes
         reader,
         Duration::from_millis(50), // short timeout so the hang is abandoned fast
+        None,
     )
     .expect("run_scan");
     assert!(
@@ -944,8 +894,9 @@ fn timed_out_dir_is_not_marked_listed() {
         "must abandon the hang, not wait it out"
     );
 
-    // Emit the marks exactly as scan_volume does, then flush.
-    send_marks(&outcome.listed_ids, outcome.epoch, &writer);
+    // The marks already rode along with the rows; all `scan_volume` adds on a
+    // clean finish is the aggregate.
+    let _ = &outcome;
     writer
         .send(WriteMessage::ComputeAllAggregates {
             source: AggSource::Maps,
@@ -1013,10 +964,11 @@ fn volume_root_that_never_lists_surfaces_root_unlistable() {
         &writer,
         100,
         4,
-        true, // volume-root scan
+        ScanRoot::Volume,
         &IndexPathSpace::root(),
         reader,
         Duration::from_millis(50),
+        None,
     );
     writer.shutdown();
 

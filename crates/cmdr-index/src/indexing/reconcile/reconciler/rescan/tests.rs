@@ -11,6 +11,7 @@ fn summary(duration: Duration, writer_wait: Duration) -> ReconcileSummary {
         duration,
         writer_wait,
         escalation: None,
+        cancelled: false,
     }
 }
 
