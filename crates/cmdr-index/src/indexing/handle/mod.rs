@@ -436,7 +436,10 @@ impl Index {
     ///
     /// Cancel it through the returned handle. Dropping the handle does NOT stop
     /// it: a superseded query keeps its walk, because walking is coverage work
-    /// and matching is query work.
+    /// and matching is query work. Ground another walk on the same volume is
+    /// already covering is left to that walk and reported as
+    /// [`covered_by_another_walk`](CoverWalk::covered_by_another_walk); its rows
+    /// reach the same index either way.
     ///
     /// A volume with no index gets one, built for exactly this and nothing more:
     /// no full scan of the drive, no watcher, just somewhere for the walk to
