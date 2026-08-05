@@ -36,7 +36,7 @@ use crate::ignore_poison::IgnorePoison;
 
 use super::engine::{derive_icon_id, home_relative_parent};
 use super::excludes::ExcludeRules;
-use super::matcher::CompiledQuery;
+use super::matcher::{CompiledQuery, covered_name};
 use super::ranking::hash_path;
 use super::types::{SearchQuery, SearchResultEntry};
 use super::volumes;
@@ -409,11 +409,10 @@ impl WalkJudge<'_> {
 /// shows), and a directory arrives without a recursive size — `dir_stats` doesn't
 /// exist for ground that was walked a moment ago (Accepted difference 5).
 fn live_result_entry(entry: &CoveredEntry, path: &str, home_dir: Option<&str>) -> SearchResultEntry {
-    let name = entry
-        .path
-        .file_name()
-        .map(|name| name.to_string_lossy().into_owned())
-        .unwrap_or_default();
+    // The name the matcher judged it under, not a second derivation of it: a row
+    // shown under a different name than it matched by is the same silent fork
+    // `matcher.rs` exists to prevent.
+    let name = covered_name(&entry.path).into_owned();
     SearchResultEntry {
         icon_id: derive_icon_id(&name, entry.is_directory),
         name,

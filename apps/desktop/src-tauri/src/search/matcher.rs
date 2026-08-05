@@ -8,7 +8,7 @@
 //!   volume's index, and
 //! - a **live walk**, over the entries `Index::cover` discovers while it runs.
 //!
-//! (`search/execute.rs` is what will drive the second one.)
+//! (`search/execute.rs` drives the second one; `search/live.rs` feeds it.)
 //!
 //! They MUST NOT fork. A drive being indexed or not is allowed to be a speed
 //! difference, never a behavioral one, so both go through [`CompiledQuery::matches`]
@@ -70,10 +70,6 @@ pub(crate) enum Evaluator {
     /// ❌ Don't key this on an entry count the way [`Self::Arena`] does. An unindexed
     /// volume's arena holds zero rows, so a count-based ceiling is exactly the guard
     /// that never fires on the path that needs it most.
-    #[allow(
-        dead_code,
-        reason = "M5 is what feeds a walk's batches into `execute.rs`; the matcher lands first so the no-fork invariant and the guard are verifiable before anything depends on them"
-    )]
     LiveWalk,
 }
 
@@ -284,10 +280,6 @@ fn compile_pattern(pattern: &str, pattern_type: &PatternType, case_insensitive: 
 
 // ── The live-walk evaluator ──────────────────────────────────────────
 
-#[allow(
-    dead_code,
-    reason = "M5 is what feeds a walk's batches into `execute.rs`; the matcher lands first so the no-fork invariant and the guard are verifiable before anything depends on them"
-)]
 impl CompiledQuery {
     /// Whether one entry a walk discovered satisfies every predicate.
     ///
@@ -313,12 +305,10 @@ impl CompiledQuery {
 /// row name from the same path the same way (`indexing/scanner/insert_visitor.rs`),
 /// and the trait walk's row name is the listing's `name`, which is that path's last
 /// component. ❌ Don't "improve" this alone — a name derived two ways is the fork
-/// this module exists to prevent.
-#[allow(
-    dead_code,
-    reason = "M5 is what feeds a walk's batches into `execute.rs`; the matcher lands first so the no-fork invariant and the guard are verifiable before anything depends on them"
-)]
-fn covered_name(path: &Path) -> Cow<'_, str> {
+/// this module exists to prevent, and the RESULT ROW takes its name from here too
+/// (`live.rs::live_result_entry`), so a row can't be named differently from the
+/// name it matched under.
+pub(crate) fn covered_name(path: &Path) -> Cow<'_, str> {
     path.file_name()
         .map_or(Cow::Borrowed(""), |name| name.to_string_lossy())
 }
