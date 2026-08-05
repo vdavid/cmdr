@@ -70,7 +70,7 @@ impl Fixture {
             volume_id: self.volume_id.clone(),
             writer: self.writer.clone(),
             space: IndexPathSpace::root(),
-            kind: crate::indexing::volume::IndexVolumeKind::Local,
+            kind: IndexVolumeKind::Local,
         }
     }
 
@@ -755,7 +755,7 @@ fn a_walk_on_a_left_over_index_reads_it_as_stale() {
     crate::indexing::lifecycle::state::start_indexing_for(
         drive.volume_id,
         drive.tree.path().to_path_buf(),
-        crate::indexing::volume::IndexVolumeKind::Local,
+        IndexVolumeKind::Local,
         true,
         crate::indexing::lifecycle::state::Activation::WriterOnly,
     )
@@ -967,7 +967,7 @@ fn a_share_or_a_phone_walks_over_the_trait_and_never_locally() {
     let phone = ColdDrive::with_volume("mtp-serial:1", |volume| volume.with_local_fs_access());
     assert_eq!(
         bootstrap::walkable_volume(phone.volume_id).expect("a phone is walkable").kind,
-        crate::indexing::volume::IndexVolumeKind::Mtp,
+        IndexVolumeKind::Mtp,
     );
 }
 
@@ -988,7 +988,7 @@ fn a_volume_mid_full_scan_is_not_walked() {
     crate::indexing::lifecycle::state::start_indexing_for(
         drive.volume_id,
         drive.tree.path().to_path_buf(),
-        crate::indexing::volume::IndexVolumeKind::Local,
+        IndexVolumeKind::Local,
         true,
         crate::indexing::lifecycle::state::Activation::WriterOnly,
     )
