@@ -67,6 +67,13 @@ pub(super) fn map_smb_error(err: smb2::Error) -> VolumeError {
             message: err.to_string(),
         },
         ErrorKind::Cancelled => VolumeError::Cancelled("Operation cancelled by user".to_string()),
+        // The server refused the NAME, not the operation, so it never looked for
+        // the file and retrying the same name can only fail again. smb2 already
+        // maps the characters SMB2 forbids outright into the private-use area, so
+        // what lands here is a reserved device name, a name past the server's
+        // length limit, or a character its filesystem can't store — all of which
+        // the user fixes by renaming, and none of which a retry helps.
+        ErrorKind::InvalidName => VolumeError::InvalidName(err.to_string()),
         _ => VolumeError::IoError {
             message: err.to_string(),
             raw_os_error: None,

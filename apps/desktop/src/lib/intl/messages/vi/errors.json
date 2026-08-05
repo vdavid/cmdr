@@ -611,6 +611,18 @@
   "@errors.listing.deletePending.suggestion": {
     "sourceHash": "6dbe760"
   },
+  "errors.listing.invalidName.title": "Tên này không dùng được ở đây",
+  "@errors.listing.invalidName.title": {
+    "sourceHash": "69b2aa4"
+  },
+  "errors.listing.invalidName.explanation": "`{path}` có tên mà đích không lưu được, nên máy chủ đã từ chối nó mà không hề tìm tệp.",
+  "@errors.listing.invalidName.explanation": {
+    "sourceHash": "a44a65f"
+  },
+  "errors.listing.invalidName.suggestion": "Đây là những cách để thử:\n- Đổi tên mục đó thành tên ngắn hơn và đơn giản hơn\n- Một số máy chủ từ chối các tên dành riêng như `CON`, `NUL` hoặc `LPT1`\n- Tên quá dài có thể vượt giới hạn của chính máy chủ, ngay cả khi mọi ký tự trong đó đều ổn",
+  "@errors.listing.invalidName.suggestion": {
+    "sourceHash": "cc133da"
+  },
   "errors.listing.ioSerious.title": "Không đọc được thư mục này",
   "@errors.listing.ioSerious.title": {
     "sourceHash": "1334729"
@@ -1273,13 +1285,13 @@
   "@errors.write.invalidName.title": {
     "sourceHash": "1fb1e45"
   },
-  "errors.write.invalidName.message": "Tên tệp chứa các ký tự không được cho phép tại đích.",
+  "errors.write.invalidName.message": "{path} có tên mà đích không lưu được, nên máy chủ đã từ chối nó mà không hề tìm tệp.",
   "@errors.write.invalidName.message": {
-    "sourceHash": "6a95bb8"
+    "sourceHash": "ae2537a"
   },
-  "errors.write.invalidName.suggestion": "Thử đổi tên tệp để bỏ các ký tự đặc biệt.",
+  "errors.write.invalidName.suggestion": "Hãy đổi tên nó thành tên ngắn hơn và đơn giản hơn, rồi thử lại. Một số máy chủ cũng từ chối các tên dành riêng như CON, NUL hoặc LPT1.",
   "@errors.write.invalidName.suggestion": {
-    "sourceHash": "bdac1ea"
+    "sourceHash": "7cfa12e"
   },
   "errors.write.ioError.title.copy": "Không thể sao chép",
   "@errors.write.ioError.title.copy": {

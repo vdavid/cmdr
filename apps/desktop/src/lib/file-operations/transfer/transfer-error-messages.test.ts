@@ -242,7 +242,8 @@ describe('getUserFriendlyMessage', () => {
       const result = getUserFriendlyMessage(error)
 
       expect(result.title).toBe('Invalid file name')
-      expect(result.message).toContain('characters not allowed')
+      // The message's job is naming the file to rename, so the path has to reach it.
+      expect(result.message).toContain('/path/bad:name')
     })
 
     it('handles delete_pending with a dedicated message', () => {
@@ -295,6 +296,26 @@ describe('getTechnicalDetails', () => {
 
     expect(result).toContain('Path: /protected/dir')
     expect(result).toContain('Details: Operation not permitted')
+  })
+
+  it('shows the real file and the named NTSTATUS for invalid_name', () => {
+    // The whole panel, pinned: this is what the user copies into a bug report.
+    // The failing SMB copy used to render `Protocol error: 0xC0000033 during
+    // Create` under `Error type: io_error` on the enclosing FOLDER's path; smb2
+    // has the status in its table now and the typed variant carries the item
+    // that actually failed. The friendly prose says what to do about it, so
+    // these lines stay purely diagnostic and don't restate it.
+    const error: WriteOperationError = {
+      type: 'invalid_name',
+      path: '/Volumes/naspi/export/how_are_you_feeling.json',
+      message: 'Protocol error: STATUS_OBJECT_NAME_INVALID during Create',
+    }
+
+    expect(getTechnicalDetails(error)).toBe(
+      'Path: /Volumes/naspi/export/how_are_you_feeling.json\n' +
+        'Error: Protocol error: STATUS_OBJECT_NAME_INVALID during Create\n' +
+        'Error type: invalid_name',
+    )
   })
 
   it('includes space info for insufficient_space error', () => {

@@ -111,6 +111,27 @@ fn map_smb_error_delete_pending() {
 }
 
 #[test]
+fn map_smb_error_invalid_name() {
+    // STATUS_OBJECT_NAME_INVALID means the server can't hold this name at all, so
+    // the copy can only succeed under a different one. smb2 ≥ 0.18 maps the
+    // characters SMB2 forbids outright into the private-use area, so what's left
+    // here is a reserved device name, a name past the server's length limit, or a
+    // character its filesystem can't store. It has to reach the FE as its own
+    // typed variant: as a generic IoError the dialog offers a pointless retry and
+    // never tells the user that renaming is the fix.
+    let err = smb2::Error::Protocol {
+        status: smb2::types::status::NtStatus::OBJECT_NAME_INVALID,
+        command: smb2::types::Command::Create,
+    };
+    let ve = map_smb_error(err);
+    assert!(
+        matches!(ve, VolumeError::InvalidName(_)),
+        "STATUS_OBJECT_NAME_INVALID should map to VolumeError::InvalidName, got: {:?}",
+        ve,
+    );
+}
+
+#[test]
 fn map_smb_error_access_denied() {
     let err = smb2::Error::Protocol {
         status: smb2::types::status::NtStatus::ACCESS_DENIED,

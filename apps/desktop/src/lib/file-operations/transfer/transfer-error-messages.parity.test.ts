@@ -200,8 +200,25 @@ const cases: Case[] = [
     error: { type: 'invalid_name', path: '/p', message: 'm' },
     expected: {
       title: 'Invalid file name',
-      message: 'The file name contains characters not allowed at the destination.',
-      suggestion: 'Try renaming the file to remove special characters.',
+      message:
+        "/p has a name the destination can't store, so the server turned it away without ever looking for the file.",
+      suggestion:
+        'Rename it to something shorter and plainer, then try again. Some servers also refuse reserved names like CON, NUL, or LPT1.',
+    },
+  },
+  {
+    // The path is interpolated into `{@html}`-rendered markup, so a name
+    // carrying `<`, `&`, or a quote has to arrive escaped. SMB names are exactly
+    // where such characters show up (smb2 maps them through the private-use
+    // area), so this is the realistic case, not a contrived one.
+    name: 'invalid_name (escapes HTML in the path)',
+    error: { type: 'invalid_name', path: '/share/<b>"a&b"</b>.json', message: 'm' },
+    expected: {
+      title: 'Invalid file name',
+      message:
+        '/share/&lt;b&gt;"a&amp;b"&lt;/b&gt;.json has a name the destination can\'t store, so the server turned it away without ever looking for the file.',
+      suggestion:
+        'Rename it to something shorter and plainer, then try again. Some servers also refuse reserved names like CON, NUL, or LPT1.',
     },
   },
   {

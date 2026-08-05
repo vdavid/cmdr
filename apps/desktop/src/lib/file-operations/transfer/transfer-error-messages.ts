@@ -124,11 +124,6 @@ const simpleMessageFactories: Partial<
     message: w('nameTooLong.message'),
     suggestion: w('nameTooLong.suggestion'),
   }),
-  invalid_name: () => ({
-    title: w('invalidName.title'),
-    message: w('invalidName.message'),
-    suggestion: w('invalidName.suggestion'),
-  }),
   io_error: (op) => ({
     title: w(`ioError.title.${op}`),
     message: w(`ioError.message.${op}`),
@@ -263,6 +258,16 @@ export function getUserFriendlyMessage(
         title: w('fileLocked.title'),
         message: w('fileLocked.message'),
         suggestion: isMacOS() ? w('fileLocked.suggestion.mac') : w('fileLocked.suggestion.other'),
+      }
+    case 'invalid_name':
+      // The destination refused the NAME, so it never looked the file up and a
+      // retry re-sends the same impossible request. One transfer can descend a
+      // whole subtree, so naming the offending file is the message's whole job:
+      // `error.path` is the item the walker was on, not the top-level source.
+      return {
+        title: w('invalidName.title'),
+        message: w('invalidName.message', { path: escapeHtml(error.path) }),
+        suggestion: w('invalidName.suggestion'),
       }
     case 'delete_pending':
       // STATUS_DELETE_PENDING: the file is marked for deletion on the server but

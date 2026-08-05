@@ -611,6 +611,18 @@
   "@errors.listing.deletePending.suggestion": {
     "sourceHash": "6dbe760"
   },
+  "errors.listing.invalidName.title": "Det här namnet fungerar inte här",
+  "@errors.listing.invalidName.title": {
+    "sourceHash": "69b2aa4"
+  },
+  "errors.listing.invalidName.explanation": "`{path}` har ett namn som målet inte kan lagra, så servern avvisade det utan att ens leta efter filen.",
+  "@errors.listing.invalidName.explanation": {
+    "sourceHash": "a44a65f"
+  },
+  "errors.listing.invalidName.suggestion": "Så här kan du prova:\n- Byt namn på objektet till något kortare och enklare\n- Vissa servrar avvisar reserverade namn som `CON`, `NUL` eller `LPT1`\n- Ett väldigt långt namn kan gå över serverns egen gräns, även om varje tecken i det är okej",
+  "@errors.listing.invalidName.suggestion": {
+    "sourceHash": "cc133da"
+  },
   "errors.listing.ioSerious.title": "Det gick inte att läsa den här mappen",
   "@errors.listing.ioSerious.title": {
     "sourceHash": "1334729"
@@ -1273,13 +1285,13 @@
   "@errors.write.invalidName.title": {
     "sourceHash": "1fb1e45"
   },
-  "errors.write.invalidName.message": "Filnamnet innehåller tecken som inte är tillåtna på målet.",
+  "errors.write.invalidName.message": "{path} har ett namn som målet inte kan lagra, så servern avvisade det utan att ens leta efter filen.",
   "@errors.write.invalidName.message": {
-    "sourceHash": "6a95bb8"
+    "sourceHash": "ae2537a"
   },
-  "errors.write.invalidName.suggestion": "Prova att byta namn på filen för att ta bort specialtecken.",
+  "errors.write.invalidName.suggestion": "Byt namn på den till något kortare och enklare och försök igen. Vissa servrar avvisar också reserverade namn som CON, NUL eller LPT1.",
   "@errors.write.invalidName.suggestion": {
-    "sourceHash": "bdac1ea"
+    "sourceHash": "7cfa12e"
   },
   "errors.write.ioError.title.copy": "Det gick inte att kopiera",
   "@errors.write.ioError.title.copy": {

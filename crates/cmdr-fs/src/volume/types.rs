@@ -325,6 +325,21 @@ pub enum VolumeError {
     Cancelled(String),
     /// The path is a directory, not a file (for example, SMB STATUS_FILE_IS_A_DIRECTORY).
     IsADirectory(String),
+    /// The destination can't hold this name, whatever it's asked to do with it.
+    ///
+    /// Distinct from [`NotFound`](Self::NotFound): the backend never got as far as
+    /// looking, so retrying the same name can only fail the same way. The only fix
+    /// is a different name, which is why it can't ride as a generic
+    /// [`IoError`](Self::IoError) — that one offers a retry.
+    ///
+    /// SMB raises it from `STATUS_OBJECT_NAME_INVALID`. smb2 maps the characters
+    /// SMB2 forbids outright (`"`, `*`, `:`, `<`, `>`, `?`, `\`, `|`, the control
+    /// characters, and a trailing space or period) into the Unicode private-use
+    /// area, so those copy through fine and what reaches here is a reserved Windows
+    /// device name (`CON`, `NUL`, `LPT1`), a name past the server's own length
+    /// limit, or a character the server's filesystem can't store. Carries what the
+    /// backend reported, for the technical-details panel.
+    InvalidName(String),
     /// The file is in `STATUS_DELETE_PENDING`: a delete has been requested on the server
     /// but at least one open handle is keeping the file alive. The file will disappear
     /// once the last handle closes; any new `Create` (stat, open, write) on the path
@@ -382,6 +397,7 @@ impl std::fmt::Display for VolumeError {
             Self::ConnectionTimeout(msg) => write!(f, "Connection timed out: {}", msg),
             Self::Cancelled(msg) => write!(f, "Cancelled: {}", msg),
             Self::IsADirectory(path) => write!(f, "Is a directory: {}", path),
+            Self::InvalidName(msg) => write!(f, "Name not usable at the destination: {}", msg),
             Self::DeletePending(path) => write!(f, "Delete pending: {}", path),
             Self::StaleDestinationHandle(path) => write!(f, "Destination folder handle was stale: {}", path),
             Self::IoError { message, .. } => write!(f, "I/O error: {}", message),

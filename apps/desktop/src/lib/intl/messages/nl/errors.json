@@ -611,6 +611,18 @@
   "@errors.listing.deletePending.suggestion": {
     "sourceHash": "6dbe760"
   },
+  "errors.listing.invalidName.title": "Deze naam werkt hier niet",
+  "@errors.listing.invalidName.title": {
+    "sourceHash": "69b2aa4"
+  },
+  "errors.listing.invalidName.explanation": "`{path}` heeft een naam die de bestemming niet kan opslaan, dus heeft de server hem afgewezen zonder ooit naar het bestand te zoeken.",
+  "@errors.listing.invalidName.explanation": {
+    "sourceHash": "a44a65f"
+  },
+  "errors.listing.invalidName.suggestion": "Dit kun je proberen:\n- Geef het item een kortere, eenvoudigere naam\n- Sommige servers weigeren gereserveerde namen zoals `CON`, `NUL` of `LPT1`\n- Een heel lange naam kan over de limiet van de server heen gaan, ook als elk teken erin prima is",
+  "@errors.listing.invalidName.suggestion": {
+    "sourceHash": "cc133da"
+  },
   "errors.listing.ioSerious.title": "Kon deze map niet lezen",
   "@errors.listing.ioSerious.title": {
     "sourceHash": "1334729"
@@ -1273,13 +1285,13 @@
   "@errors.write.invalidName.title": {
     "sourceHash": "1fb1e45"
   },
-  "errors.write.invalidName.message": "De bestandsnaam bevat tekens die niet zijn toegestaan op de bestemming.",
+  "errors.write.invalidName.message": "{path} heeft een naam die de bestemming niet kan opslaan, dus heeft de server hem afgewezen zonder ooit naar het bestand te zoeken.",
   "@errors.write.invalidName.message": {
-    "sourceHash": "6a95bb8"
+    "sourceHash": "ae2537a"
   },
-  "errors.write.invalidName.suggestion": "Probeer het bestand te hernoemen om speciale tekens te verwijderen.",
+  "errors.write.invalidName.suggestion": "Geef het een kortere, eenvoudigere naam en probeer het opnieuw. Sommige servers weigeren ook gereserveerde namen zoals CON, NUL of LPT1.",
   "@errors.write.invalidName.suggestion": {
-    "sourceHash": "bdac1ea"
+    "sourceHash": "7cfa12e"
   },
   "errors.write.ioError.title.copy": "Kopiëren lukte niet",
   "@errors.write.ioError.title.copy": {

@@ -611,6 +611,18 @@
   "@errors.listing.deletePending.suggestion": {
     "sourceHash": "6dbe760"
   },
+  "errors.listing.invalidName.title": "Ce nom ne passe pas ici",
+  "@errors.listing.invalidName.title": {
+    "sourceHash": "69b2aa4"
+  },
+  "errors.listing.invalidName.explanation": "`{path}` porte un nom que la destination ne peut pas stocker : le serveur l'a refusé sans même chercher le fichier.",
+  "@errors.listing.invalidName.explanation": {
+    "sourceHash": "a44a65f"
+  },
+  "errors.listing.invalidName.suggestion": "Voici ce que vous pouvez essayer :\n- Renommez l'élément avec quelque chose de plus court et de plus simple\n- Certains serveurs refusent les noms réservés comme `CON`, `NUL` ou `LPT1`\n- Un nom très long peut dépasser la limite du serveur, même si chaque caractère est valide",
+  "@errors.listing.invalidName.suggestion": {
+    "sourceHash": "cc133da"
+  },
   "errors.listing.ioSerious.title": "Lecture du dossier impossible",
   "@errors.listing.ioSerious.title": {
     "sourceHash": "1334729"
@@ -1273,13 +1285,13 @@
   "@errors.write.invalidName.title": {
     "sourceHash": "1fb1e45"
   },
-  "errors.write.invalidName.message": "Le nom du fichier contient des caractères non autorisés à la destination.",
+  "errors.write.invalidName.message": "{path} porte un nom que la destination ne peut pas stocker : le serveur l'a refusé sans même chercher le fichier.",
   "@errors.write.invalidName.message": {
-    "sourceHash": "6a95bb8"
+    "sourceHash": "ae2537a"
   },
-  "errors.write.invalidName.suggestion": "Essayez de renommer le fichier pour retirer les caractères spéciaux.",
+  "errors.write.invalidName.suggestion": "Renommez-le avec quelque chose de plus court et de plus simple, puis réessayez. Certains serveurs refusent aussi les noms réservés comme CON, NUL ou LPT1.",
   "@errors.write.invalidName.suggestion": {
-    "sourceHash": "bdac1ea"
+    "sourceHash": "7cfa12e"
   },
   "errors.write.ioError.title.copy": "Copie impossible",
   "@errors.write.ioError.title.copy": {

@@ -272,6 +272,14 @@ fn volume_error_variants_map_correctly() {
             |r| matches!(r, ListingErrorReason::IsADirectory { .. }),
         ),
         (
+            // The destination can't hold this name, so retrying it can only fail
+            // again: NeedsAction with ❌ no retry hint. Renaming is the only fix.
+            VolumeError::InvalidName("x".into()),
+            ErrorCategory::NeedsAction,
+            false,
+            |r| matches!(r, ListingErrorReason::InvalidName { .. }),
+        ),
+        (
             VolumeError::IoError {
                 message: "x".into(),
                 raw_os_error: None,
@@ -330,6 +338,12 @@ fn typed_variants_populate_path_param() {
     match listing_error_from_volume_error(&VolumeError::DeletePending("x".into()), path).reason {
         ListingErrorReason::DeletePending { path } => assert_eq!(path, want),
         other => panic!("DeletePending should carry a path, got {other:?}"),
+    }
+    // The whole point of this message is naming the file the user has to rename,
+    // so the path param is load-bearing rather than decorative.
+    match listing_error_from_volume_error(&VolumeError::InvalidName("x".into()), path).reason {
+        ListingErrorReason::InvalidName { path } => assert_eq!(path, want),
+        other => panic!("InvalidName should carry a path, got {other:?}"),
     }
 }
 

@@ -611,6 +611,18 @@
   "@errors.listing.deletePending.suggestion": {
     "sourceHash": "6dbe760"
   },
+  "errors.listing.invalidName.title": "这个名称在这里用不了",
+  "@errors.listing.invalidName.title": {
+    "sourceHash": "69b2aa4"
+  },
+  "errors.listing.invalidName.explanation": "`{path}` 的名称是目标位置存不下的，所以服务器直接回绝了它，压根没去找这个文件。",
+  "@errors.listing.invalidName.explanation": {
+    "sourceHash": "a44a65f"
+  },
+  "errors.listing.invalidName.suggestion": "可以这样试试：\n- 把这一项改成更短、更朴素的名称\n- 有些服务器会拒绝 `CON`、`NUL`、`LPT1` 这类保留名称\n- 名称太长也可能超出服务器自己的限制，哪怕每个字符都没问题",
+  "@errors.listing.invalidName.suggestion": {
+    "sourceHash": "cc133da"
+  },
   "errors.listing.ioSerious.title": "无法读取这个文件夹",
   "@errors.listing.ioSerious.title": {
     "sourceHash": "1334729"
@@ -1273,13 +1285,13 @@
   "@errors.write.invalidName.title": {
     "sourceHash": "1fb1e45"
   },
-  "errors.write.invalidName.message": "这个文件名含有目标位置不允许的字符。",
+  "errors.write.invalidName.message": "{path} 的名称是目标位置存不下的，所以服务器直接回绝了它，压根没去找这个文件。",
   "@errors.write.invalidName.message": {
-    "sourceHash": "6a95bb8"
+    "sourceHash": "ae2537a"
   },
-  "errors.write.invalidName.suggestion": "试着重命名文件，去掉特殊字符。",
+  "errors.write.invalidName.suggestion": "把它改成更短、更朴素的名称再试一次。有些服务器还会拒绝 CON、NUL、LPT1 这类保留名称。",
   "@errors.write.invalidName.suggestion": {
-    "sourceHash": "bdac1ea"
+    "sourceHash": "7cfa12e"
   },
   "errors.write.ioError.title.copy": "无法拷贝",
   "@errors.write.ioError.title.copy": {

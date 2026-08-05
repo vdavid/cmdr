@@ -111,6 +111,7 @@ export type ListingErrorReason =
   | { reason: 'connectionTimedOut' }
   | { reason: 'notSupported' }
   | { reason: 'deletePending'; path: string }
+  | { reason: 'invalidName'; path: string }
   | { reason: 'ioSerious'; path: string; osMessage: string }
   | { reason: 'isADirectory'; path: string }
   // ── archive (browsing a `.zip` that can't be read) ──

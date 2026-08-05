@@ -611,6 +611,18 @@
   "@errors.listing.deletePending.suggestion": {
     "sourceHash": "6dbe760"
   },
+  "errors.listing.invalidName.title": "Dieser Name funktioniert hier nicht",
+  "@errors.listing.invalidName.title": {
+    "sourceHash": "69b2aa4"
+  },
+  "errors.listing.invalidName.explanation": "`{path}` hat einen Namen, den das Ziel nicht speichern kann, also hat der Server ihn abgewiesen, ohne überhaupt nach der Datei zu suchen.",
+  "@errors.listing.invalidName.explanation": {
+    "sourceHash": "a44a65f"
+  },
+  "errors.listing.invalidName.suggestion": "Das kannst du versuchen:\n- Benenne das Element kürzer und schlichter um\n- Manche Server lehnen reservierte Namen wie `CON`, `NUL` oder `LPT1` ab\n- Ein sehr langer Name kann das Limit des Servers überschreiten, auch wenn jedes einzelne Zeichen darin in Ordnung ist",
+  "@errors.listing.invalidName.suggestion": {
+    "sourceHash": "cc133da"
+  },
   "errors.listing.ioSerious.title": "Dieser Ordner ließ sich nicht lesen",
   "@errors.listing.ioSerious.title": {
     "sourceHash": "1334729"
@@ -1273,13 +1285,13 @@
   "@errors.write.invalidName.title": {
     "sourceHash": "1fb1e45"
   },
-  "errors.write.invalidName.message": "Der Dateiname enthält Zeichen, die am Ziel nicht erlaubt sind.",
+  "errors.write.invalidName.message": "{path} hat einen Namen, den das Ziel nicht speichern kann, also hat der Server ihn abgewiesen, ohne überhaupt nach der Datei zu suchen.",
   "@errors.write.invalidName.message": {
-    "sourceHash": "6a95bb8"
+    "sourceHash": "ae2537a"
   },
-  "errors.write.invalidName.suggestion": "Versuche, die Datei umzubenennen, um Sonderzeichen zu entfernen.",
+  "errors.write.invalidName.suggestion": "Benenne die Datei kürzer und schlichter um und versuche es noch einmal. Manche Server lehnen außerdem reservierte Namen wie CON, NUL oder LPT1 ab.",
   "@errors.write.invalidName.suggestion": {
-    "sourceHash": "bdac1ea"
+    "sourceHash": "7cfa12e"
   },
   "errors.write.ioError.title.copy": "Kopieren nicht möglich",
   "@errors.write.ioError.title.copy": {

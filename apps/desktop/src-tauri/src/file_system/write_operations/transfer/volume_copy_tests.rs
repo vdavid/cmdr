@@ -200,6 +200,26 @@ fn test_map_volume_error_delete_pending() {
 }
 
 #[test]
+fn test_map_volume_error_invalid_name() {
+    // A name the destination can't store (an SMB server answering
+    // STATUS_OBJECT_NAME_INVALID) MUST become the typed
+    // `WriteOperationError::InvalidName`, carrying the file that failed. As a
+    // generic IoError the dialog says "couldn't copy the file" and offers a
+    // retry, which can only fail again: renaming is the one thing that works.
+    let err = map_volume_error(
+        "/Volumes/naspi/export/report:2026.json",
+        VolumeError::InvalidName("Protocol error: STATUS_OBJECT_NAME_INVALID during Create".to_string()),
+    );
+    assert!(
+        matches!(
+            &err,
+            WriteOperationError::InvalidName { path, .. } if path == "/Volumes/naspi/export/report:2026.json"
+        ),
+        "expected a typed InvalidName naming the failing file, got: {err:?}"
+    );
+}
+
+#[test]
 fn test_map_volume_error_needs_password() {
     // Extracting from a password-protected archive must become the typed
     // `ArchiveNeedsPassword` (carrying the wrong-attempt flag) so the FE prompts

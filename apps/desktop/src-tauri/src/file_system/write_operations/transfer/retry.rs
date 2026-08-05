@@ -102,6 +102,7 @@ pub(super) fn is_retryable(err: &VolumeError) -> bool {
         | VolumeError::ReadOnly(_)
         | VolumeError::StorageFull { .. }
         | VolumeError::IsADirectory(_)
+        | VolumeError::InvalidName(_) // the destination can't hold this name; a rename is the only fix
         | VolumeError::DeletePending(_)
         | VolumeError::IoError { raw_os_error: None, .. }
         | VolumeError::NeedsPassword { .. }

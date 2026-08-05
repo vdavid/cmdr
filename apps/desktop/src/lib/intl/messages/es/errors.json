@@ -611,6 +611,18 @@
   "@errors.listing.deletePending.suggestion": {
     "sourceHash": "6dbe760"
   },
+  "errors.listing.invalidName.title": "Este nombre no funciona aquí",
+  "@errors.listing.invalidName.title": {
+    "sourceHash": "69b2aa4"
+  },
+  "errors.listing.invalidName.explanation": "`{path}` tiene un nombre que el destino no puede guardar, así que el servidor lo rechazó sin llegar a buscar el archivo.",
+  "@errors.listing.invalidName.explanation": {
+    "sourceHash": "a44a65f"
+  },
+  "errors.listing.invalidName.suggestion": "Esto es lo que puedes probar:\n- Renombra el elemento con algo más corto y sencillo\n- Algunos servidores rechazan nombres reservados como `CON`, `NUL` o `LPT1`\n- Un nombre muy largo puede superar el límite del propio servidor, aunque cada carácter esté bien",
+  "@errors.listing.invalidName.suggestion": {
+    "sourceHash": "cc133da"
+  },
   "errors.listing.ioSerious.title": "No se pudo leer esta carpeta",
   "@errors.listing.ioSerious.title": {
     "sourceHash": "1334729"
@@ -1273,13 +1285,13 @@
   "@errors.write.invalidName.title": {
     "sourceHash": "1fb1e45"
   },
-  "errors.write.invalidName.message": "El nombre del archivo contiene caracteres que no se permiten en el destino.",
+  "errors.write.invalidName.message": "{path} tiene un nombre que el destino no puede guardar, así que el servidor lo rechazó sin llegar a buscar el archivo.",
   "@errors.write.invalidName.message": {
-    "sourceHash": "6a95bb8"
+    "sourceHash": "ae2537a"
   },
-  "errors.write.invalidName.suggestion": "Prueba a renombrar el archivo para quitar los caracteres especiales.",
+  "errors.write.invalidName.suggestion": "Renómbralo con algo más corto y sencillo y vuelve a intentarlo. Algunos servidores también rechazan nombres reservados como CON, NUL o LPT1.",
   "@errors.write.invalidName.suggestion": {
-    "sourceHash": "bdac1ea"
+    "sourceHash": "7cfa12e"
   },
   "errors.write.ioError.title.copy": "No se pudo copiar",
   "@errors.write.ioError.title.copy": {

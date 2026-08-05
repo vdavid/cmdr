@@ -5662,6 +5662,16 @@ export type ListingErrorReason =
   | { reason: 'connectionTimedOut' }
   // The backend doesn't implement this operation.
   | { reason: 'notSupported' }
+  /**
+   *  `VolumeError::InvalidName`: the destination can't hold this name, so the
+   *  only way forward is a different one. No retry hint — the same name fails
+   *  the same way every time.
+   */
+  | {
+      reason: 'invalidName'
+      // The path the failure was about.
+      path: string
+    }
   // A delete is pending on the path and an open handle is keeping it alive.
   | {
       reason: 'deletePending'

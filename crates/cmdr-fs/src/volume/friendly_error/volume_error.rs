@@ -106,6 +106,7 @@ pub fn listing_error_from_volume_error(err: &VolumeError, path: &Path) -> Listin
         VolumeError::StorageFull { .. } => kinds::storage_full(raw),
         VolumeError::ConnectionTimeout(_) => kinds::connection_timeout(raw),
         VolumeError::Cancelled(_) => kinds::cancelled(raw),
+        VolumeError::InvalidName(_) => kinds::invalid_name(&path_display, raw),
         VolumeError::DeletePending(_) => kinds::delete_pending(&path_display, raw),
         // Write-only error (the MTP upload path's stale-handle signal); it never
         // reaches the listing pipeline. Mapped defensively to a not-found on the

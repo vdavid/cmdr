@@ -964,6 +964,25 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
 
+  "errors.listing.invalidName.title": "This name won't work here",
+  "errors.listing.invalidName.explanation": "`{path}` has a name the destination can't store, so the server turned it away without ever looking for the file.",
+  "errors.listing.invalidName.suggestion": "Here's what to try:\n- Rename the item to something shorter and plainer\n- Some servers refuse reserved names like `CON`, `NUL`, or `LPT1`\n- A very long name can go over the server's own limit, even when every character in it is fine",
+  "@errors.listing.invalidName.title": {
+    "description": "Title of the listing error panel when the destination (usually a network server) rejects a file name outright and never looks the file up. Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.listing.invalidName.explanation": {
+    "description": "Body of the listing error panel for a name the destination can't store. Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path; here it leads the sentence inside backticks. \"the server turned it away\" means the server rejected the name itself rather than reporting that the file is missing.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.listing.invalidName.suggestion": {
+    "description": "Recovery suggestion for a name the destination can't store. Markdown bullet list. CON, NUL, and LPT1 are reserved Windows device names; keep them as-is, do NOT translate them.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+
   "errors.listing.ioSerious.title": "Couldn't read this folder",
   "errors.listing.ioSerious.explanation": "Cmdr ran into a problem with `{path}`: {osMessage}. This could be a temporary glitch or a sign that the disk or device needs attention.",
   "errors.listing.ioSerious.suggestion": "Here's what to try:\n- Check that the disk or device is still connected\n- Try again\n- If this keeps happening, try running **Disk Utility > First Aid** on this volume",
@@ -1946,20 +1965,25 @@
   },
 
   "errors.write.invalidName.title": "Invalid file name",
-  "errors.write.invalidName.message": "The file name contains characters not allowed at the destination.",
-  "errors.write.invalidName.suggestion": "Try renaming the file to remove special characters.",
+  "errors.write.invalidName.message": "{path} has a name the destination can't store, so the server turned it away without ever looking for the file.",
+  "errors.write.invalidName.suggestion": "Rename it to something shorter and plainer, then try again. Some servers also refuse reserved names like CON, NUL, or LPT1.",
   "@errors.write.invalidName.title": {
     "description": "Title of the copy/move error dialog when the file name has characters the destination file system rejects. Plain text.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.write.invalidName.message": {
-    "description": "Body of the copy/move error dialog when the file name has disallowed characters. Plain text.",
+    "description": "Body of the copy/move error dialog when the destination can't store the file's name. Plain text. \"the server turned it away\" means the server rejected the name itself rather than reporting that the file is missing.",
+    "placeholders": {
+      "path": {
+        "description": "The full path of the file that couldn't be written, inserted verbatim. Do not translate or reformat it."
+      }
+    },
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.write.invalidName.suggestion": {
-    "description": "Recovery suggestion when the file name has disallowed characters. Plain text.",
+    "description": "Recovery suggestion when the destination can't store the file's name. Plain text. CON, NUL, and LPT1 are reserved Windows device names; keep them as-is, do NOT translate them.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },

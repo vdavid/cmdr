@@ -611,6 +611,18 @@
   "@errors.listing.deletePending.suggestion": {
     "sourceHash": "6dbe760"
   },
+  "errors.listing.invalidName.title": "Ez a név itt nem működik",
+  "@errors.listing.invalidName.title": {
+    "sourceHash": "69b2aa4"
+  },
+  "errors.listing.invalidName.explanation": "A `{path}` elem neve olyan, amit a célhely nem tud tárolni, ezért a szerver visszautasította, anélkül hogy egyáltalán megkereste volna a fájlt.",
+  "@errors.listing.invalidName.explanation": {
+    "sourceHash": "a44a65f"
+  },
+  "errors.listing.invalidName.suggestion": "Ezeket próbálhatod:\n- Nevezd át az elemet valami rövidebbre és egyszerűbbre\n- Néhány szerver visszautasítja a fenntartott neveket, például a `CON`, `NUL` vagy `LPT1` nevet\n- Egy nagyon hosszú név a szerver saját korlátjába is ütközhet, akkor is, ha minden karakter rendben van benne",
+  "@errors.listing.invalidName.suggestion": {
+    "sourceHash": "cc133da"
+  },
   "errors.listing.ioSerious.title": "Nem sikerült beolvasni ezt a mappát",
   "@errors.listing.ioSerious.title": {
     "sourceHash": "1334729"
@@ -1273,13 +1285,13 @@
   "@errors.write.invalidName.title": {
     "sourceHash": "1fb1e45"
   },
-  "errors.write.invalidName.message": "A fájlnév olyan karaktereket tartalmaz, amelyek a célhelyen nem engedélyezettek.",
+  "errors.write.invalidName.message": "A(z) {path} elem neve olyan, amit a célhely nem tud tárolni, ezért a szerver visszautasította, anélkül hogy egyáltalán megkereste volna a fájlt.",
   "@errors.write.invalidName.message": {
-    "sourceHash": "6a95bb8"
+    "sourceHash": "ae2537a"
   },
-  "errors.write.invalidName.suggestion": "Próbáld átnevezni a fájlt a speciális karakterek eltávolításával.",
+  "errors.write.invalidName.suggestion": "Nevezd át valami rövidebbre és egyszerűbbre, majd próbáld újra. Néhány szerver a fenntartott neveket is visszautasítja, például a CON, NUL vagy LPT1 nevet.",
   "@errors.write.invalidName.suggestion": {
-    "sourceHash": "bdac1ea"
+    "sourceHash": "7cfa12e"
   },
   "errors.write.ioError.title.copy": "Nem sikerült a másolás",
   "@errors.write.ioError.title.copy": {

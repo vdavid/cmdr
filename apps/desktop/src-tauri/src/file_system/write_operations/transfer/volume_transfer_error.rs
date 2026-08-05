@@ -164,6 +164,16 @@ pub(in crate::file_system::write_operations) fn map_volume_error(
             path,
             message: "Is a directory".to_string(),
         },
+        // The destination refused the name itself, so the transfer can only
+        // succeed under a different one. It must stay typed all the way to the
+        // dialog: as an `IoError` the user gets "couldn't copy the file" plus a
+        // Retry button that re-runs the identical, still-impossible request.
+        // `context_path` is the item the walker was on, so the message names the
+        // file to rename rather than the folder it lives in.
+        VolumeError::InvalidName(message) => WriteOperationError::InvalidName {
+            path: context_path.to_string(),
+            message,
+        },
         VolumeError::DeletePending(_) => WriteOperationError::DeletePending {
             path: context_path.to_string(),
         },

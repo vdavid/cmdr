@@ -272,6 +272,13 @@ pub enum ListingErrorReason {
     ConnectionTimedOut,
     /// The backend doesn't implement this operation.
     NotSupported,
+    /// `VolumeError::InvalidName`: the destination can't hold this name, so the
+    /// only way forward is a different one. No retry hint — the same name fails
+    /// the same way every time.
+    InvalidName {
+        /// The path the failure was about.
+        path: String,
+    },
     /// A delete is pending on the path and an open handle is keeping it alive.
     DeletePending {
         /// The path the failure was about.

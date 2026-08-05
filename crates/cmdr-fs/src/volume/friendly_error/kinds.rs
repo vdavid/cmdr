@@ -177,6 +177,23 @@ pub(super) fn not_supported(raw_detail: String) -> ListingError {
     }
 }
 
+/// The destination refused the NAME rather than the operation: it never looked
+/// for the file, so the same name can only fail the same way. ❌ No retry hint,
+/// deliberately — a Try-again button here promises something that cannot work.
+/// Renaming is the fix, so the FE copy names the offending path.
+pub(super) fn invalid_name(path_display: &str, raw_detail: String) -> ListingError {
+    ListingError {
+        category: ErrorCategory::NeedsAction,
+        reason: ListingErrorReason::InvalidName {
+            path: path_display.to_string(),
+        },
+        provider: None,
+        action_kind: None,
+        retry_hint: false,
+        raw_detail,
+    }
+}
+
 /// `STATUS_DELETE_PENDING`: the file has been marked for deletion on the server
 /// but at least one open handle is keeping it alive. The file disappears the
 /// moment the last handle closes, so retry-after-a-moment is the right hint.
