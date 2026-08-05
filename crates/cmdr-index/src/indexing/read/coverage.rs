@@ -87,6 +87,12 @@ pub enum CoverageDimension {
 /// handed out. Ids come from one monotonic per-volume counter, so any walk that
 /// writes rows moves the pair, and both halves cost an index seek rather than a
 /// scan. A volume with no index at all reports [`CoverageToken::UNINDEXED`].
+///
+/// **It's a watermark, not a version.** Deleting the highest-id row lowers it, so
+/// an unequal token means "something changed", never "this one is newer", and a
+/// delete-then-refill back to the same id at the same epoch reads as unchanged.
+/// The narrow window that reaches is written up in `read/DETAILS.md`
+/// § "The freshness token"; ❌ don't order two tokens or treat one as a clock.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CoverageToken {
     epoch: u64,

@@ -236,6 +236,12 @@ fn descend(conn: &Connection, model: &Materialized) -> Vec<(Verdict, i64)> {
 }
 
 proptest! {
+    // Each case opens a temp-file SQLite index and runs the real aggregator over
+    // it, so a case is milliseconds rather than microseconds. 96 over a space of
+    // ≤24-node trees still explores it thoroughly; the default 256 made these two
+    // the slowest tests in the crate and starved them under the Linux lane's load.
+    #![proptest_config(ProptestConfig::with_cases(96))]
+
     /// The verdicts partition the scope: every directory in it is accounted for
     /// exactly once, by exactly one of covered, listed, frontier, or unreadable.
     ///
@@ -599,6 +605,7 @@ fn an_unchanged_index_reports_an_unchanged_token() {
 /// The recorded run and what it means: `docs/notes/coverage-frontier-query-2026-08-05.md`.
 #[test]
 #[ignore = "needs a real multi-hundred-thousand-folder index; see the doc comment"]
+#[allow(clippy::print_stdout, reason = "a benchmark prints its measurements")]
 fn measure_frontier_query_on_a_real_index() {
     let Ok(db_path) = std::env::var("CMDR_COVERAGE_BENCH_DB") else {
         panic!("set CMDR_COVERAGE_BENCH_DB to a COPY of a real index-root.db");
@@ -606,7 +613,7 @@ fn measure_frontier_query_on_a_real_index() {
     let conn = IndexStore::open_write_connection(std::path::Path::new(&db_path)).expect("open the corpus");
     let has_column = conn
         .prepare("SELECT known_unreadable FROM entries LIMIT 1")
-        .and_then(|mut s| s.query_row([], |_| Ok(())).map(|()| ()).or(Ok(())))
+        .and_then(|mut s| s.query_row([], |_| Ok(())).or(Ok(())))
         .is_ok();
     if !has_column {
         conn.execute_batch("ALTER TABLE entries ADD COLUMN known_unreadable INTEGER NOT NULL DEFAULT 0")

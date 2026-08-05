@@ -226,6 +226,14 @@ Rejected as the token: `Index::search_generation`, which is process-global, fed 
 every non-root volume, and ticks about 5.7 times a second on an idle boot disk. And `current_epoch` alone, which a walk
 never bumps.
 
+**It's a watermark, not a version, and the difference has one real edge.** Deleting the highest-id row lowers the mark,
+so an unequal token means "something changed", never "this one is newer" — ❌ don't order two tokens or treat one as a
+clock. The edge is ABA: a delete followed by inserts that climb back to the same id at the same epoch reads as
+unchanged. In one process it can't happen, because the writer's id counter only ever climbs (it resyncs downward from
+`MAX(id)` only on a primary-key conflict); across a restart the counter reseeds from `MAX(id)`, so freed ids can be
+handed out again — and a restart also drops every arena, which is the snapshot the token exists to validate. If that
+stops being true (an arena that survives a restart, say), this needs a monotonic per-volume write counter instead.
+
 The whole read runs in one deferred transaction, so the frontier and the token describe the same database state rather
 than two states either side of a committing writer.
 
