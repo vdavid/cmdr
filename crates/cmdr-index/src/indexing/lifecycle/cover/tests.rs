@@ -788,12 +788,20 @@ async fn turning_indexing_on_after_a_walk_still_scans_the_drive() {
         .await
         .expect("the drive starts indexing");
 
+    // Waited on the DURABLE completion marker, not on the coverage answer: a walk
+    // marks its directories listed well before `scan_completed_at` reaches the
+    // database, so "the drive reads as covered" would let the second enable below
+    // find a scan that hasn't finished recording itself yet (it did, on Linux).
     cmdr_fs::testing::wait_until_async(
         std::time::Duration::from_secs(20),
-        "the full scan to cover the whole drive",
-        || drive.coverage(&volume_root).frontier.is_empty(),
+        "the full scan to finish and record itself",
+        || drive.index.volume_status(drive.volume_id).scan_completed_at.is_some(),
     )
     .await;
+    assert!(
+        drive.coverage(&volume_root).frontier.is_empty(),
+        "and the whole drive is covered now"
+    );
     assert_eq!(drive.scans_started(), 1, "exactly one scan, not one per call");
 
     // And the other side of the same gate: a drive that HAS been indexed must not
