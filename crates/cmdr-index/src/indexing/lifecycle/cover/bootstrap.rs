@@ -14,10 +14,9 @@
 
 use std::path::{Path, PathBuf};
 
-use super::CoverContext;
+use super::{CoverContext, Ground};
 use crate::indexing::host::volumes::MountFacts;
 use crate::indexing::lifecycle::state::{self, Activation};
-use crate::indexing::metadata::extract_metadata;
 use crate::indexing::store::{IndexStore, ROOT_ID, resolve_path};
 use crate::indexing::volume::{IndexVolumeKind, ROOT_VOLUME_ID};
 use crate::indexing::writer::WriteMessage;
@@ -29,12 +28,10 @@ use crate::indexing::writer::WriteMessage;
 #[derive(Debug)]
 pub(crate) enum NoCoverContext {
     /// Nothing is mounted under this id, so there's no drive to walk and no root
-    /// to index it against.
+    /// to index it against. Also what a platform with no external transport
+    /// compiled in reports for every non-boot volume, which is the same thing from
+    /// the caller's side: nothing here can reach it.
     NotMounted,
-    /// A share or a phone. Its scoped walk is the `Volume`-trait one M3d builds;
-    /// pointing the LOCAL guarded walker at a network mount would traverse a
-    /// share over syscalls that block for minutes.
-    NotLocallyWalkable,
     /// The volume's own scan owns the writer right now. Nothing to do: that scan
     /// already covers everything a search would want walked, and a second writer
     /// on one database races the id counter.
@@ -47,7 +44,6 @@ impl std::fmt::Display for NoCoverContext {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::NotMounted => f.write_str("nothing is mounted under that id"),
-            Self::NotLocallyWalkable => f.write_str("a share or a phone can't be walked locally"),
             Self::ScanInProgress => f.write_str("the volume's own scan is running"),
             Self::Failed(e) => write!(f, "the index wouldn't start: {e}"),
         }
@@ -80,10 +76,11 @@ pub(crate) fn context_for_walk(volume_id: &str) -> Result<CoverContext, NoCoverC
         return Err(NoCoverContext::ScanInProgress);
     }
 
-    let volume = locally_walkable_volume(volume_id)?;
+    let volume = walkable_volume(volume_id)?;
     log::info!(
-        "Cover: '{volume_id}' has no index; standing one up at {} for the walk to fill in",
-        volume.root.display()
+        "Cover: '{volume_id}' has no index; standing one up at {} ({:?}) for the walk to fill in",
+        volume.root.display(),
+        volume.kind,
     );
     state::start_indexing_for(
         volume_id,
@@ -94,7 +91,7 @@ pub(crate) fn context_for_walk(volume_id: &str) -> Result<CoverContext, NoCoverC
     )
     .map_err(NoCoverContext::Failed)?;
 
-    if volume.kind == IndexVolumeKind::LocalExternal {
+    if volume_id != ROOT_VOLUME_ID {
         // A new external index database just came online, so cap accumulation the
         // same way turning indexing on for the drive would have. Never touches a
         // registered volume, and this one is registered now.
@@ -109,20 +106,27 @@ pub(crate) fn context_for_walk(volume_id: &str) -> Result<CoverContext, NoCoverC
 }
 
 /// What the bootstrap needs to know about a volume before it can index it.
-struct WalkableVolume {
+pub(super) struct WalkableVolume {
     root: PathBuf,
-    kind: IndexVolumeKind,
+    pub(super) kind: IndexVolumeKind,
     inodes_trustworthy: bool,
 }
 
-/// Classify a volume the LOCAL guarded walker may walk, or say why it can't.
+/// Classify a volume by how its ground gets read, or say why nothing can read it.
 ///
 /// The boot disk is known without asking anyone. Everything else is the same
-/// question `local_external::classify` answers at the enable command, decided by
-/// the same typed facts (a live smb2 session, a network filesystem) through the
-/// same predicate — never a volume-id or path substring
+/// question the enable command answers, decided by the same typed facts (a phone's
+/// volume-id vocabulary, a live smb2 session, a network filesystem) through the
+/// same predicates — never a path substring
 /// (`.claude/rules/no-string-matching.md`).
-fn locally_walkable_volume(volume_id: &str) -> Result<WalkableVolume, NoCoverContext> {
+///
+/// ⚠️ The kind names the SCAN PATH, not the protocol: everything that isn't the
+/// boot disk, a phone, or a plain local mount is `Smb`, which is what every
+/// trait-scanned, mount-rooted, journal-less volume needs. An NFS or WebDAV mount
+/// classified that way walks correctly over the `Volume` trait; classifying it as
+/// local instead would point the guarded walker at syscalls that block for
+/// minutes, and refusing it outright would make a search of it silently wrong.
+pub(super) fn walkable_volume(volume_id: &str) -> Result<WalkableVolume, NoCoverContext> {
     if volume_id == ROOT_VOLUME_ID {
         // The boot disk is APFS, so its inodes are trustworthy.
         return Ok(WalkableVolume {
@@ -140,14 +144,31 @@ fn classify_external(volume_id: &str) -> Result<WalkableVolume, NoCoverContext> 
 
     let volumes = crate::indexing::host::volumes::current();
     let volume = volumes.get(volume_id).ok_or(NoCoverContext::NotMounted)?;
-    // A phone's files exist only over PTP, so there is no path to walk at all.
-    if !volume.supports_local_fs_access() {
-        return Err(NoCoverContext::NotLocallyWalkable);
-    }
     let root = volume.root().to_path_buf();
+    // Trait-scanned volumes store trait-provided values in the `inode` column (MTP
+    // puts PTP object handles there) and never run the local inode-keyed rename
+    // pre-pass, so their inode identity counts as trustworthy.
+    let via_trait = |kind| WalkableVolume {
+        root: root.clone(),
+        kind,
+        inodes_trustworthy: true,
+    };
+
+    // A phone, by the id vocabulary the whole app routes MTP with. Asked first
+    // because its files exist only over PTP: there is no mount to probe, and
+    // `mtp://…` is not a path any `statfs` can answer for.
+    if cmdr_fs::volume::mtp_ids::is_mtp_volume_id(volume_id) {
+        return Ok(via_trait(IndexVolumeKind::Mtp));
+    }
+    // Anything else with no local filesystem behind it is reachable only through
+    // its `Volume`, which is exactly what the trait walk needs. A probe would have
+    // nothing to probe.
+    if !volume.supports_local_fs_access() {
+        return Ok(via_trait(IndexVolumeKind::Smb));
+    }
     let facts = probe_mount(&root);
     if !routes_to_local_external(volume.smb_connection_state().is_some(), facts.is_network) {
-        return Err(NoCoverContext::NotLocallyWalkable);
+        return Ok(via_trait(IndexVolumeKind::Smb));
     }
     Ok(WalkableVolume {
         root,
@@ -158,9 +179,9 @@ fn classify_external(volume_id: &str) -> Result<WalkableVolume, NoCoverContext> 
 
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 fn classify_external(_volume_id: &str) -> Result<WalkableVolume, NoCoverContext> {
-    // No external-drive transport is compiled here, so the boot disk is the only
-    // volume with anywhere to run.
-    Err(NoCoverContext::NotLocallyWalkable)
+    // No external-drive transport is compiled here, so nothing registers a volume
+    // under that id and the boot disk is the only one with anywhere to run.
+    Err(NoCoverContext::NotMounted)
 }
 
 /// The mount's filesystem facts, under a hard deadline, on a thread of its own.
@@ -168,9 +189,11 @@ fn classify_external(_volume_id: &str) -> Result<WalkableVolume, NoCoverContext>
 /// The probe is a `statfs`: microseconds on a local mount, and minutes on a
 /// wedged network one. This runs on the thread a search is waiting on, so it
 /// can't afford to wait — and a probe that won't answer IS the answer, because
-/// [`MountFacts::UNPROBEABLE`] reads as network and a network volume is refused
-/// here anyway. The probe thread is left to finish on its own; it holds nothing
-/// but its own syscall.
+/// [`MountFacts::UNPROBEABLE`] reads as network, which routes the volume to the
+/// `Volume`-trait walk. That's the right walk for a mount whose `statfs` won't
+/// return: every round trip is deadline-bounded there, where the local guarded
+/// walker would issue syscalls that block for minutes. The probe thread is left to
+/// finish on its own; it holds nothing but its own syscall.
 ///
 /// A dedicated thread rather than the async timeout `local_external::classify`
 /// uses, because this path has no runtime to borrow and must not become async
@@ -240,7 +263,7 @@ impl std::fmt::Display for NotWalkable {
 /// only for ground the index has never seen, and it goes through the volume's
 /// one writer (never a direct insert), so the ids stay the writer's to allocate
 /// and a row that already exists is upserted rather than duplicated.
-pub(super) fn ensure_walkable(context: &CoverContext, root: &Path) -> Result<(), NotWalkable> {
+pub(super) fn ensure_walkable(context: &CoverContext, ground: &Ground, root: &Path) -> Result<(), NotWalkable> {
     let absolute = context.space.absolute(&root.to_string_lossy());
     let index_relative = context
         .space
@@ -273,7 +296,7 @@ pub(super) fn ensure_walkable(context: &CoverContext, root: &Path) -> Result<(),
                 }
                 id
             }
-            None => create_directory_row(context, &conn, parent_id, component, &on_disk)?,
+            None => create_directory_row(context, ground, &conn, parent_id, component, &on_disk)?,
         };
     }
     Ok(())
@@ -296,20 +319,15 @@ fn is_directory_row(conn: &rusqlite::Connection, id: i64) -> Result<bool, NotWal
 /// of a path is what bounds how many of them one walk pays for.
 fn create_directory_row(
     context: &CoverContext,
+    ground: &Ground,
     conn: &rusqlite::Connection,
     parent_id: i64,
     name: &str,
     on_disk: &Path,
 ) -> Result<i64, NotWalkable> {
-    let metadata =
-        std::fs::symlink_metadata(on_disk).map_err(|_| NotWalkable::NotADirectoryOnDisk(on_disk.to_path_buf()))?;
-    // A symlink reports `is_dir() == false` here, which is the answer we want: the
-    // index stores symlinks without descending into them, so a walk rooted below
-    // one would attribute another directory's contents to this path.
-    if !metadata.is_dir() {
-        return Err(NotWalkable::NotADirectoryOnDisk(on_disk.to_path_buf()));
-    }
-    let snapshot = extract_metadata(&metadata, true, false);
+    let snapshot = ground
+        .stat_directory(on_disk)
+        .ok_or_else(|| NotWalkable::NotADirectoryOnDisk(on_disk.to_path_buf()))?;
     context
         .writer
         .send(WriteMessage::UpsertEntryV2 {

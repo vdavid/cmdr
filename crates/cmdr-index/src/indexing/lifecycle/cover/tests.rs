@@ -70,6 +70,7 @@ impl Fixture {
             volume_id: self.volume_id.clone(),
             writer: self.writer.clone(),
             space: IndexPathSpace::root(),
+            kind: crate::indexing::volume::IndexVolumeKind::Local,
         }
     }
 
@@ -516,7 +517,7 @@ fn a_chain_running_through_a_file_row_is_declined() {
     assert!(entries.is_empty());
     assert!(
         matches!(
-            bootstrap::ensure_walkable(&f.context(), &root.join("mixed/inner")),
+            bootstrap::ensure_walkable(&f.context(), &Ground::Local, &root.join("mixed/inner")),
             Err(bootstrap::NotWalkable::FileRowInTheChain(_))
         ),
         "and says which kind of broken"
@@ -535,7 +536,7 @@ fn a_frontier_path_that_is_not_a_directory_on_disk_is_declined() {
 
     assert!(
         matches!(
-            bootstrap::ensure_walkable(&f.context(), &root.join("gone")),
+            bootstrap::ensure_walkable(&f.context(), &Ground::Local, &root.join("gone")),
             Err(bootstrap::NotWalkable::NotADirectoryOnDisk(_))
         ),
         "a path that isn't there can't be walked"
@@ -545,7 +546,7 @@ fn a_frontier_path_that_is_not_a_directory_on_disk_is_declined() {
         std::os::unix::fs::symlink(root.join("real"), root.join("link")).expect("symlink");
         assert!(
             matches!(
-                bootstrap::ensure_walkable(&f.context(), &root.join("link")),
+                bootstrap::ensure_walkable(&f.context(), &Ground::Local, &root.join("link")),
                 Err(bootstrap::NotWalkable::NotADirectoryOnDisk(_))
             ),
             "a symlink is not a directory to descend into"
@@ -927,41 +928,46 @@ fn an_unmounted_volume_is_not_walkable() {
     );
 }
 
-/// A share and a phone are refused rather than walked locally.
+/// A share and a phone are walked over the `Volume` trait, and the LOCAL guarded
+/// walker is never pointed at one.
 ///
-/// The LOCAL guarded walker must never be pointed at a network mount — it would
-/// traverse the share over syscalls that block for minutes, and the rows it wrote
-/// would fight the trait scanner's. Their scoped walk is the `Volume`-trait one
-/// (M3d); until it exists, a search over them is honestly index-only. Classified
-/// by typed facts, never by the volume id.
+/// That half is the data-safety rule: walking a network mount locally traverses a
+/// share over syscalls that block for minutes, and the rows it wrote would fight
+/// the trait scanner's. What decides it is typed facts — a live smb2 session, a
+/// network filesystem, MTP's own id vocabulary — never a path substring. The walk
+/// itself is `network_tests.rs`.
 #[test]
-fn a_share_or_a_phone_is_not_walked_locally() {
+fn a_share_or_a_phone_walks_over_the_trait_and_never_locally() {
+    let walks_over_the_trait = |drive: &ColdDrive| {
+        bootstrap::walkable_volume(drive.volume_id)
+            .expect("a registered volume is walkable")
+            .kind
+            .is_trait_scanned()
+    };
+
     {
         let share = ColdDrive::with_volume("cover-cold-share-test", |volume| {
             volume
                 .with_local_fs_access()
                 .with_smb_connection_state(cmdr_fs::volume::SmbConnectionState::Direct)
         });
+        assert!(walks_over_the_trait(&share), "a live smb2 session is not local ground");
+    }
+    {
+        // A phone's files exist only over PTP: no local path to walk at all.
+        let phone = ColdDrive::with_volume("cover-cold-phone-test", |volume| volume);
         assert!(
-            matches!(
-                share
-                    .index
-                    .cover(share.volume_id, vec![share.path("x")], CoverageDimension::Listing),
-                Err(crate::indexing::handle::IndexError::NotIndexed { .. })
-            ),
-            "a share is not local ground"
+            walks_over_the_trait(&phone),
+            "a volume with no local filesystem access is not local ground"
         );
     }
-    // A phone's files exist only over PTP: no local path to walk at all.
-    let phone = ColdDrive::with_volume("cover-cold-phone-test", |volume| volume);
-    assert!(
-        matches!(
-            phone
-                .index
-                .cover(phone.volume_id, vec![phone.path("x")], CoverageDimension::Listing),
-            Err(crate::indexing::handle::IndexError::NotIndexed { .. })
-        ),
-        "a volume with no local filesystem access is not local ground"
+    // And a phone by its own id vocabulary, which is what routes MTP everywhere
+    // else. It's asked FIRST, before any mount probe: `mtp://…` is not a path a
+    // `statfs` can answer for.
+    let phone = ColdDrive::with_volume("mtp-serial:1", |volume| volume.with_local_fs_access());
+    assert_eq!(
+        bootstrap::walkable_volume(phone.volume_id).expect("a phone is walkable").kind,
+        crate::indexing::volume::IndexVolumeKind::Mtp,
     );
 }
 

@@ -28,9 +28,11 @@ use std::thread::JoinHandle;
 use tokio_util::sync::CancellationToken;
 
 use crate::indexing::IndexPathSpace;
+use crate::indexing::network_scanner::VolumeScanError;
 use crate::indexing::read::coverage::CoverageDimension;
-use crate::indexing::scanner::{CoveredEntry, ScanError, cover_subtree};
+use crate::indexing::scanner::{CoveredEntry, ScanError, ScanSummary, cover_subtree};
 use crate::indexing::store::IndexStore;
+use crate::indexing::volume::IndexVolumeKind;
 use crate::indexing::writer::IndexWriter;
 use cmdr_fs::pluralize::pluralize;
 
@@ -124,6 +126,10 @@ pub(crate) struct CoverContext {
     pub volume_id: String,
     pub writer: IndexWriter,
     pub space: IndexPathSpace,
+    /// Which half of [`Ground`] this volume's rows come from. The ONE thing the
+    /// walk branches on per kind; everything downstream of a discovered entry is
+    /// identical.
+    pub kind: IndexVolumeKind,
 }
 
 /// Start walking `frontier` on the volume `context` describes.
@@ -184,8 +190,45 @@ pub(crate) fn start(
 }
 
 /// Walk every frontier root in turn, on the walk thread.
+///
+/// The backend's scan session brackets the WHOLE frontier, not each root: over SMB
+/// that's a pool of extra connections, and opening one per frontier root would pay
+/// the setup repeatedly for the same walk. ❌ Nothing between the two calls may
+/// return early — the pairing is what keeps a cancelled walk from leaving the pool
+/// standing.
 fn walk_frontier(
     context: &CoverContext,
+    frontier: &[String],
+    sender: &SyncSender<Vec<CoveredEntry>>,
+    cancel: &CancellationToken,
+) -> CoverOutcome {
+    let Some(ground) = Ground::under(context) else {
+        log::warn!("Cover: '{}' isn't reachable right now, so nothing is walked", context.volume_id);
+        return CoverOutcome {
+            entries_found: 0,
+            dirs_found: 0,
+            roots_covered: 0,
+            cancelled: true,
+        };
+    };
+
+    ground.open_session();
+    let outcome = walk_roots(context, &ground, frontier, sender, cancel);
+    ground.close_session();
+
+    log::debug!(
+        "Cover: {} over {}{}",
+        pluralize(outcome.entries_found, "entry"),
+        pluralize(outcome.roots_covered as u64, "frontier root"),
+        if outcome.cancelled { " (cancelled)" } else { "" },
+    );
+    outcome
+}
+
+/// The frontier loop itself, one root at a time, whatever kind of ground it is.
+fn walk_roots(
+    context: &CoverContext,
+    ground: &Ground,
     frontier: &[String],
     sender: &SyncSender<Vec<CoveredEntry>>,
     cancel: &CancellationToken,
@@ -207,7 +250,7 @@ fn walk_frontier(
         // that isn't only a cold volume's problem: a folder created since its
         // parent was last listed has no row on a fully indexed drive either. Give
         // the walk the chain it needs, without claiming a listing for any of it.
-        if let Err(e) = bootstrap::ensure_walkable(context, root) {
+        if let Err(e) = bootstrap::ensure_walkable(context, ground, root) {
             log::warn!("Cover: can't walk {path}: {e}");
             continue;
         }
@@ -215,18 +258,7 @@ fn walk_frontier(
         // both arms hand the same summary to the same accumulation and only the
         // VERDICT differs. Keeping one `+=` pair is what stops the cancel path
         // drifting from the completion path.
-        let (summary, verdict) =
-            match cover_subtree(root, &context.space, &context.writer, Some(sender.clone()), cancel) {
-                Ok(summary) => (Some(summary), RootOutcome::Covered),
-                Err(ScanError::Cancelled(summary)) => (Some(summary), RootOutcome::Cancelled),
-                Err(ScanError::NotVirgin) => (None, repair_non_virgin(context, root, cancel)),
-                Err(e) => {
-                    // One unwalkable root doesn't stop the others: it simply stays
-                    // frontier, and the next search asks for it again.
-                    log::warn!("Cover: couldn't walk {path}: {e}");
-                    (None, RootOutcome::Failed)
-                }
-            };
+        let (summary, verdict) = ground.cover(context, root, sender, cancel);
         if let Some(summary) = summary {
             outcome.entries_found += summary.total_entries;
             outcome.dirs_found += summary.total_dirs;
@@ -240,14 +272,141 @@ fn walk_frontier(
             RootOutcome::Failed => {}
         }
     }
-
-    log::debug!(
-        "Cover: {} over {}{}",
-        pluralize(outcome.entries_found, "entry"),
-        pluralize(outcome.roots_covered as u64, "frontier root"),
-        if outcome.cancelled { " (cancelled)" } else { "" },
-    );
     outcome
+}
+
+/// How a volume's ground gets read.
+///
+/// Two halves, and every volume kind falls in one of them: the LOCAL guarded
+/// walker reads the disk directly, and everything else is reached only through its
+/// [`Volume`]. That's the whole per-kind branch in the coverage concept — the
+/// frontier query, the descent rule, the epochs, and the writer are identical on
+/// both sides, so a new backend needs no coverage code of its own.
+pub(super) enum Ground {
+    /// A local filesystem: the boot disk or a plain external mount.
+    Local,
+    /// A share, a phone, or whatever backend comes next.
+    ViaTrait {
+        volume: std::sync::Arc<dyn cmdr_fs::volume::Volume>,
+        /// The same per-volume listing budget the background scan yields with, so
+        /// browsing the share while it walks drops it to one listing in flight.
+        pacer: crate::indexing::network_scanner::scan_pace::ScanPacer,
+    },
+}
+
+impl Ground {
+    /// Which half this volume falls in, or `None` when a trait-scanned volume
+    /// isn't registered any more (ejected, or a share that dropped between the
+    /// coverage answer and the walk).
+    fn under(context: &CoverContext) -> Option<Self> {
+        if !context.kind.is_trait_scanned() {
+            return Some(Ground::Local);
+        }
+        let volume = crate::indexing::host::volumes::current().get(&context.volume_id)?;
+        Some(Ground::ViaTrait {
+            volume,
+            pacer: crate::indexing::network_scanner::scan_pace::ScanPacer::for_volume(context.volume_id.clone()),
+        })
+    }
+
+    /// Let the backend open whatever a walk's worth of listings needs (SMB spins up
+    /// a small pool of extra connections). Default no-op everywhere else.
+    fn open_session(&self) {
+        if let Ground::ViaTrait { volume, .. } = self {
+            crate::indexing::host::runtime::block_on(volume.begin_scan_session());
+        }
+    }
+
+    /// Tear it back down, on every outcome. Paired with
+    /// [`open_session`](Self::open_session) by the shape of `walk_frontier`.
+    fn close_session(&self) {
+        if let Ground::ViaTrait { volume, .. } = self {
+            crate::indexing::host::runtime::block_on(volume.end_scan_session());
+        }
+    }
+
+    /// Whether `path` is a directory this walk may descend into, and what to record
+    /// for it. `None` for anything else: gone, unreadable, or a symlink.
+    pub(super) fn stat_directory(&self, path: &Path) -> Option<crate::indexing::metadata::MetadataSnapshot> {
+        match self {
+            Ground::Local => {
+                let metadata = std::fs::symlink_metadata(path).ok()?;
+                // A symlink reports `is_dir() == false` here, which is the answer we
+                // want: the index stores symlinks without descending into them.
+                metadata
+                    .is_dir()
+                    .then(|| crate::indexing::metadata::extract_metadata(&metadata, true, false))
+            }
+            Ground::ViaTrait { volume, .. } => {
+                let entry = crate::indexing::host::runtime::block_on(
+                    crate::indexing::network_scanner::stat_one_directory(
+                        std::sync::Arc::clone(volume),
+                        path.to_path_buf(),
+                    ),
+                )?;
+                Some(crate::indexing::metadata::MetadataSnapshot {
+                    // A directory's own row carries no size, on every walk here.
+                    logical_size: None,
+                    physical_size: None,
+                    modified_at: entry.modified_at,
+                    inode: entry.inode,
+                    nlink: None,
+                })
+            }
+        }
+    }
+
+    /// Cover one frontier root, and say how it went.
+    fn cover(
+        &self,
+        context: &CoverContext,
+        root: &Path,
+        sender: &SyncSender<Vec<CoveredEntry>>,
+        cancel: &CancellationToken,
+    ) -> (Option<ScanSummary>, RootOutcome) {
+        match self {
+            Ground::Local => {
+                match cover_subtree(root, &context.space, &context.writer, Some(sender.clone()), cancel) {
+                    Ok(summary) => (Some(summary), RootOutcome::Covered),
+                    Err(ScanError::Cancelled(summary)) => (Some(summary), RootOutcome::Cancelled),
+                    Err(ScanError::NotVirgin) => (None, repair_non_virgin(context, root, cancel)),
+                    Err(e) => {
+                        // One unwalkable root doesn't stop the others: it simply stays
+                        // frontier, and the next search asks for it again.
+                        log::warn!("Cover: couldn't walk {}: {e}", root.display());
+                        (None, RootOutcome::Failed)
+                    }
+                }
+            }
+            Ground::ViaTrait { volume, pacer } => {
+                // ❌ There is no `NotVirgin` arm here, and no repair path to route
+                // one to: the trait walk is add-only per directory (it keeps the
+                // rows a name already has), so ground an earlier walk touched is
+                // simply walked. Over a network round trip the per-directory name
+                // check is free; over a local `readdir` it wouldn't be, which is why
+                // the two halves differ here and nowhere else.
+                let result = crate::indexing::host::runtime::block_on(
+                    crate::indexing::network_scanner::cover_volume_subtree(
+                        std::sync::Arc::clone(volume),
+                        root.to_path_buf(),
+                        &context.space,
+                        &context.writer,
+                        Some(sender.clone()),
+                        cancel,
+                        pacer,
+                    ),
+                );
+                match result {
+                    Ok(summary) => (Some(summary), RootOutcome::Covered),
+                    Err(VolumeScanError::Cancelled(summary)) => (Some(summary), RootOutcome::Cancelled),
+                    Err(e) => {
+                        log::warn!("Cover: couldn't walk {}: {e}", root.display());
+                        (None, RootOutcome::Failed)
+                    }
+                }
+            }
+        }
+    }
 }
 
 /// The repair path for a frontier node the index already holds rows under.
@@ -311,5 +470,7 @@ mod live;
 pub(crate) use bootstrap::{NoCoverContext, context_for_walk};
 use live::Claim;
 
+#[cfg(test)]
+mod network_tests;
 #[cfg(test)]
 mod tests;

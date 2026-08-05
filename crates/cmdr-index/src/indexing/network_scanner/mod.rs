@@ -53,11 +53,14 @@ use tokio_util::sync::CancellationToken;
 pub(crate) mod scan_pace;
 mod system_dirs;
 
+/// The scoped, add-only walk a search drives.
+mod cover_scan;
 /// The destructive rebuild.
 mod full_scan;
 /// The non-destructive diff-and-patch.
 mod reconcile_scan;
 
+pub(crate) use cover_scan::cover_volume_subtree;
 pub use full_scan::scan_volume_via_trait;
 pub(crate) use reconcile_scan::reconcile_volume_via_trait;
 
@@ -66,6 +69,55 @@ pub(crate) use system_dirs::{exclusion_stamp_message, index_predates_exclusion_l
 use cmdr_fs::volume::Volume;
 
 use super::scanner::ScanSummary;
+use super::writer::IndexWriter;
+
+/// Batch size for `InsertEntriesV2` sends — matches the local guarded walker's default.
+const BATCH_SIZE: usize = 2000;
+
+/// How often a walk here commits its open insert transaction, so the single
+/// writer fsyncs once per interval instead of once per 2000-entry batch (the
+/// lever that keeps the writer up with the connection pool's ~4x listing
+/// throughput). Short on purpose: mid-scan "growing sizes" stay visible within
+/// one interval, and a crash loses at most one interval (heals to a rescan).
+/// Rationale + crash-safety: `DETAILS.md` § "Two levers past 64 in-flight:
+/// connections, and the writer".
+const SCAN_COMMIT_INTERVAL: Duration = Duration::from_secs(2);
+
+/// Hand the accumulated rows to the writer, leaving the batch empty. A no-op on
+/// an empty batch, so every exit path can call it unconditionally.
+fn flush_batch(batch: &mut Vec<crate::indexing::store::EntryRow>, writer: &IndexWriter) -> Result<(), VolumeScanError> {
+    if batch.is_empty() {
+        return Ok(());
+    }
+    let entries = std::mem::take(batch);
+    writer
+        .send(crate::indexing::writer::WriteMessage::InsertEntriesV2(entries))
+        .map_err(|e| VolumeScanError::WriterSend(e.to_string()))
+}
+
+/// Open a walk's explicit insert transaction (see [`SCAN_COMMIT_INTERVAL`]).
+fn begin_scan_tx(writer: &IndexWriter, tx_open: &mut bool) -> Result<(), VolumeScanError> {
+    writer
+        .send(crate::indexing::writer::WriteMessage::BeginTransaction)
+        .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
+    *tx_open = true;
+    Ok(())
+}
+
+/// Commit a walk's open insert transaction if one is open (idempotent). Called at
+/// each commit interval AND before EVERY exit (clean finish, cancel, root-fatal,
+/// empty-root, disconnect, consecutive-failure) so the writer connection never
+/// returns mid-transaction, and so the marks + aggregate that follow run in
+/// autocommit.
+fn commit_scan_tx(writer: &IndexWriter, tx_open: &mut bool) -> Result<(), VolumeScanError> {
+    if *tx_open {
+        writer
+            .send(crate::indexing::writer::WriteMessage::CommitTransaction)
+            .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
+        *tx_open = false;
+    }
+    Ok(())
+}
 
 /// Per-directory listing timeout. Network/USB `list_directory` blocks 30–120 s
 /// on a hung mount; we cap a single round trip so a wedged share fails the walk
@@ -207,6 +259,43 @@ async fn list_one_directory(
             raw_os_error: None,
         })),
         Err(_elapsed) => Err(VolumeScanError::Timeout(dir_path)),
+    }
+}
+
+/// Stat ONE path over the `Volume` trait under the same disciplines as a listing,
+/// for the chain a scoped walk has to materialize before it can start
+/// (`lifecycle/cover/bootstrap.rs`).
+///
+/// `None` means "not a directory this walk may descend into": the path is gone,
+/// the backend wouldn't answer in time, or it's a symlink — the index stores
+/// symlinks without descending into them, so a walk rooted below one would
+/// attribute another directory's contents to this path.
+///
+/// ❌ Same detach rule as [`list_one_directory`]: the timeout races the task's JOIN
+/// HANDLE, never the future itself. Dropping a `get_metadata` future mid-round-trip
+/// abandons an in-flight PTP transaction and wedges the phone.
+pub(crate) async fn stat_one_directory(volume: Arc<dyn Volume>, path: PathBuf) -> Option<cmdr_fs::entry::FileEntry> {
+    let stat_path = path.clone();
+    let stat = tokio::spawn(async move {
+        let result = volume.get_metadata(&stat_path).await;
+        drain_autorelease_pool();
+        result
+    });
+    match tokio::time::timeout(LIST_TIMEOUT, stat).await {
+        Ok(Ok(Ok(entry))) if entry.is_directory && !entry.is_symlink => Some(entry),
+        Ok(Ok(Ok(_))) => None,
+        Ok(Ok(Err(e))) => {
+            log::debug!("network_scanner: can't stat {}: {e}", path.display());
+            None
+        }
+        Ok(Err(join_err)) => {
+            log::debug!("network_scanner: stat task for {} failed: {join_err}", path.display());
+            None
+        }
+        Err(_elapsed) => {
+            log::warn!("network_scanner: stat of {} timed out", path.display());
+            None
+        }
     }
 }
 

@@ -12,7 +12,7 @@ use std::collections::VecDeque;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use tokio_util::sync::CancellationToken;
 
 use futures_util::StreamExt;
@@ -23,7 +23,8 @@ use cmdr_fs::volume::Volume;
 use super::scan_pace::ScanPacer;
 use super::system_dirs::is_recursion_excluded_dir;
 use super::{
-    CONSECUTIVE_FAILURE_ABORT, VolumeScanError, is_typed_disconnect, list_one_directory, log_scan_progress, summary,
+    BATCH_SIZE, CONSECUTIVE_FAILURE_ABORT, SCAN_COMMIT_INTERVAL, VolumeScanError, begin_scan_tx, commit_scan_tx,
+    flush_batch, is_typed_disconnect, list_one_directory, log_scan_progress, summary,
 };
 use crate::indexing::reconcile::reconciler;
 use crate::indexing::scanner::{ScanProgress, ScanSummary};
@@ -66,51 +67,6 @@ fn finish_partial_scan(
     Ok(())
 }
 
-fn flush_batch(batch: &mut Vec<EntryRow>, writer: &IndexWriter) -> Result<(), VolumeScanError> {
-    if batch.is_empty() {
-        return Ok(());
-    }
-    let entries = std::mem::take(batch);
-    writer
-        .send(WriteMessage::InsertEntriesV2(entries))
-        .map_err(|e| VolumeScanError::WriterSend(e.to_string()))
-}
-
-/// Open the fresh scan's explicit insert transaction (see `SCAN_COMMIT_INTERVAL`).
-fn begin_scan_tx(writer: &IndexWriter, tx_open: &mut bool) -> Result<(), VolumeScanError> {
-    writer
-        .send(WriteMessage::BeginTransaction)
-        .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
-    *tx_open = true;
-    Ok(())
-}
-
-/// Commit the fresh scan's open insert transaction if one is open (idempotent).
-/// Called at each commit interval AND before EVERY exit (clean finish, cancel,
-/// root-fatal, empty-root, disconnect, consecutive-failure) so the writer
-/// connection never returns mid-transaction, and so `finish_partial_scan`'s marks
-/// + aggregate run in autocommit exactly as they did before M2.
-fn commit_scan_tx(writer: &IndexWriter, tx_open: &mut bool) -> Result<(), VolumeScanError> {
-    if *tx_open {
-        writer
-            .send(WriteMessage::CommitTransaction)
-            .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
-        *tx_open = false;
-    }
-    Ok(())
-}
-
-/// Batch size for `InsertEntriesV2` sends — matches the local guarded walker's default.
-const BATCH_SIZE: usize = 2000;
-
-/// How often a FRESH `scan_volume_via_trait` commits its open insert transaction,
-/// so the single writer fsyncs once per interval instead of once per 2000-entry
-/// batch (the lever that keeps the writer up with the connection pool's ~4x
-/// listing throughput). Short on purpose: mid-scan "growing sizes" stay visible
-/// within one interval, and a crash loses at most one interval (heals to a
-/// rescan). Rationale + crash-safety: `DETAILS.md` § "Two levers past 64
-/// in-flight: connections, and the writer".
-const SCAN_COMMIT_INTERVAL: Duration = Duration::from_secs(2);
 /// Recursively scan `volume` from its `root`, streaming `EntryRow`s into
 /// `writer`. Async (the `Volume` API is async); the caller runs it on a tokio
 /// task. On clean completion, fires `ComputeAllAggregates` so the existing

@@ -443,9 +443,10 @@ impl Index {
     ///
     /// A volume with no index gets one, built for exactly this and nothing more:
     /// no full scan of the drive, no watcher, just somewhere for the walk to
-    /// write. [`NotIndexed`](IndexError::NotIndexed) means there was nothing to
-    /// build one for — the drive isn't mounted, or it's a share or a phone, whose
-    /// scoped walk isn't here yet.
+    /// write. Every kind is walkable — a local disk through the guarded walker, a
+    /// share or a phone (or whatever backend comes next) through its `Volume` —
+    /// so [`NotIndexed`](IndexError::NotIndexed) means only that nothing is
+    /// mounted under that id to build one for.
     pub fn cover(
         &self,
         volume_id: &str,
@@ -455,7 +456,7 @@ impl Index {
         let context = cover::context_for_walk(volume_id).map_err(|e| match e {
             // Nothing to walk into and nothing built: from out here that reads
             // exactly like a drive that was never indexed, which is what it is.
-            cover::NoCoverContext::NotMounted | cover::NoCoverContext::NotLocallyWalkable => IndexError::NotIndexed {
+            cover::NoCoverContext::NotMounted => IndexError::NotIndexed {
                 volume_id: volume_id.to_string(),
             },
             // The volume IS being indexed, so `NotIndexed` would be a lie. No

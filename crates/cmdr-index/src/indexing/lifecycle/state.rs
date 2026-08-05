@@ -257,6 +257,10 @@ pub(crate) fn cover_context_for(volume_id: &str) -> Option<crate::indexing::life
                 volume_id: volume_id.to_string(),
                 writer: mgr.writer.clone(),
                 space: mgr.path_space(),
+                // Taken off the SAME instance the writer came from: it decides
+                // whether the walk reads a disk or a `Volume`, and a kind resolved
+                // anywhere else could name a different volume than the writer does.
+                kind: mgr.kind,
             })
         }
         _ => None,
