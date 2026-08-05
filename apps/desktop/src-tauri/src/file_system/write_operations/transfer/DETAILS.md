@@ -767,6 +767,14 @@ The three best-effort callers (rollback, partial cleanup, cross-type Overwrite i
 `archive_edit/copy_into.rs`) only log, and they now log `e.path` alongside the root they asked for, so the log names
 the leaf too.
 
+**That `Ok` rests entirely on `Volume::delete` REFUSING a non-empty directory**, which is the trait's contract but was
+not what SMB did until smb2 0.18.0: `delete_directory` used `FILE_DELETE_ON_CLOSE`, and Samba answers that with
+`STATUS_SUCCESS` on a non-empty directory and then deletes nothing. Under the old behavior this sweep would have
+returned `Ok` with the whole subtree still on disk, and a cross-volume move would have reported success on a source it
+never touched. ❌ A backend whose `delete` can silently succeed on a non-empty directory must not use this walker until
+it can't. Verify the contract holds when adding a backend (`volume/DETAILS.md` § "Trait capability model"), and treat
+an smb2 downgrade below 0.18.0 as breaking this specific carve-out.
+
 **Don't** re-collapse this to `VolumeError` for tidiness, and don't `.at()` one frame up from the failure — a path
 attached by the parent names the parent, which is exactly the bug.
 
