@@ -310,12 +310,32 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
         .as_deref()
         .and_then(|loaded| loaded.mount_root.clone())
         .or_else(|| volumes::registry_mount_root(&target.volume_id));
+    // The scope paths the walk is about to answer for itself, in the canonical
+    // form both halves speak.
+    let walked_scopes: std::collections::HashSet<&String> = question
+        .frontier
+        .iter()
+        .filter(|root| scopes.contains(root))
+        .collect();
     let report =
         |walk: WalkEnding, unreadable: Vec<String>, still_covering: Vec<String>, capped: bool| SearchRunCoverage {
+            // A scope the INDEX couldn't resolve isn't a gap once the walk has been
+            // to it: the walk is the probe, and it just answered. Only a walk that
+            // ran to the end proves it, so anything short leaves the signal
+            // standing. Without this, the very case this milestone exists for — a
+            // folder too new to be indexed — would show "Cmdr doesn't cover this
+            // folder" over a complete list of its files.
+            unresolved_scopes: match walk {
+                WalkEnding::Completed => unresolved_scopes
+                    .iter()
+                    .filter(|scope| !walked_scopes.contains(&query::canonicalize_scope_path(scope)))
+                    .cloned()
+                    .collect(),
+                _ => unresolved_scopes.clone(),
+            },
             walk,
             unreadable,
             still_covering,
-            unresolved_scopes: unresolved_scopes.clone(),
             capped,
             target_volume_id: target.volume_id.clone(),
         };

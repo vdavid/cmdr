@@ -74,6 +74,7 @@ struct Answer {
     walk: WalkEnding,
     phases: Vec<SearchPhase>,
     unreadable: Vec<String>,
+    unresolved: Vec<String>,
 }
 
 /// Run one live search over `scope`, to completion, and report what the frontend
@@ -124,6 +125,7 @@ fn search(run_id: &str, scope: &str) -> Answer {
         walk: terminal.coverage.walk,
         phases: progress.iter().map(|event| event.phase).collect(),
         unreadable: terminal.coverage.unreadable.clone(),
+        unresolved: terminal.coverage.unresolved_scopes.clone(),
     }
 }
 
@@ -176,6 +178,15 @@ fn a_drive_with_no_index_is_walked_live_then_read_back_from_what_the_walk_wrote(
     let third = search("e2e-3", &format!("{root}/b"));
     assert_eq!(third.paths, vec![format!("{root}/b/three.txt")]);
     assert_eq!(third.walk, WalkEnding::Completed);
+    // The scope had no row at all — the index couldn't resolve it — and the walk
+    // has now been there. ❌ Not reported as "Cmdr doesn't cover this folder": the
+    // walk IS the probe, and it just answered, which is the whole point of the
+    // milestone.
+    assert!(
+        third.unresolved.is_empty(),
+        "a folder the walk covered is not an unresolved scope: {:?}",
+        third.unresolved
+    );
     // And the walk says what it won't read, in the same breath it says it
     // finished: the snapshot tree it just stamped, not silence. Read back AFTER
     // the walk, because nothing had tried before it.
