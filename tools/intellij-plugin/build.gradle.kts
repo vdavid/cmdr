@@ -25,6 +25,18 @@ fun homePath(property: String): java.io.File {
 
 val sveltePlugin = homePath("cmdrSveltePluginPath")
 
+/**
+ * The config directory of the IDE we build against, `~/Library/Application Support/JetBrains/<dataDirectoryName>`.
+ * Read from the install's own `product-info.json` rather than hardcoded, so an IDE upgrade moves it for free.
+ */
+val localIdeConfigDirectory: java.io.File? = run {
+    val productInfo = homePath("cmdrIdePath").resolve("Contents/Resources/product-info.json")
+    if (!productInfo.isFile) return@run null
+    val dataDirectory = Regex("\"dataDirectoryName\"\\s*:\\s*\"([^\"]+)\"")
+        .find(productInfo.readText())?.groupValues?.get(1) ?: return@run null
+    file("${System.getProperty("user.home")}/Library/Application Support/JetBrains/$dataDirectory")
+}
+
 dependencies {
     // `BasePlatformTestCase` is a `junit.framework.TestCase`, and the platform test framework doesn't put JUnit on the
     // compile classpath itself. Without this, every test class fails with "Cannot access 'junit.framework.TestCase'".
@@ -86,12 +98,17 @@ val markerRelativePath = "tools/intellij-plugin/cmdr-plugin.json"
 val markerFile = layout.projectDirectory.file("cmdr-plugin.json").asFile
 
 /**
- * Marks `sandbox-project/` trusted before the sandbox IDE starts, and copies the real `cmdr-plugin.json` into it so
- * the plugin recognizes it as a Cmdr checkout.
+ * Marks `sandbox-project/` trusted before the sandbox IDE starts, copies the real `cmdr-plugin.json` into it so the
+ * plugin recognizes it as a Cmdr checkout, and hands the sandbox the local IDE's license so Ultimate-only plugins
+ * load there.
  *
  * Without the trust seeding, a modal "Trust and Open Project?" dialog is the only thing the tier 2 screenshot ever
  * captures. Without the marker, every feature correctly does nothing, which looks exactly like a broken plugin. The
  * marker is copied rather than committed so the fixture can't drift from the config the repo actually ships.
+ *
+ * Without the license, the sandbox runs unlicensed, `com.intellij.modules.ultimate` is absent, and the Svelte plugin
+ * refuses to load along with our `cmdr-svelte.xml`. That is exactly how a `.svelte` regression once reached David's
+ * IDE unseen. The key is copied, never moved or written back, so the real IDE is untouched.
  */
 val seedIdeSandbox = tasks.register("seedIdeSandbox") {
     // Every value the action touches is captured into a local first. A task action that reaches a script-level `val`
@@ -101,11 +118,24 @@ val seedIdeSandbox = tasks.register("seedIdeSandbox") {
     val projectPath = sandboxProject.absolutePath
     val markerSource = markerFile
     val markerTarget = sandboxProject.resolve(markerRelativePath)
+    val licenseSources = localIdeConfigDirectory
+        ?.listFiles { file -> file.isFile && (file.name.endsWith(".key") || file.name.endsWith(".license")) }
+        ?.toList()
+        .orEmpty()
     outputs.upToDateWhen { false }
     doLast {
         markerTarget.apply { parentFile.mkdirs() }.writeText(markerSource.readText())
 
-        val options = configDirectory.get().asFile.resolve("options").apply { mkdirs() }
+        val sandboxConfig = configDirectory.get().asFile.apply { mkdirs() }
+        if (licenseSources.isEmpty()) {
+            logger.warn(
+                "seedIdeSandbox: no license file in the local IDE config. The sandbox will run unlicensed and the " +
+                    "Svelte plugin will not load, so `.svelte` behavior is not observable in tier 2.",
+            )
+        }
+        licenseSources.forEach { it.copyTo(sandboxConfig.resolve(it.name), overwrite = true) }
+
+        val options = sandboxConfig.resolve("options").apply { mkdirs() }
         options.resolve("trusted-paths.xml").writeText(
             """
             <application>
@@ -138,8 +168,10 @@ tasks.runIde {
     dependsOn(seedIdeSandbox)
     // Locals again, for the same configuration-cache reason as `seedIdeSandbox`.
     val projectPath = sandboxProject.absolutePath
-    // One file per feature, the last one focused: `sample.ts` for i18n folding, `CHANGELOG.md` for the commit links.
-    val filePaths = listOf("CHANGELOG.md", "sample.ts").map { sandboxProject.resolve(it).absolutePath }
+    // One file per feature, the last one focused: `CHANGELOG.md` for the commit links, then i18n folding in both the
+    // languages it has to reach. `Sample.svelte` is last because it's the one with a real IDE's Svelte plugin behind
+    // it, which only the licensed sandbox can show.
+    val filePaths = listOf("CHANGELOG.md", "sample.ts", "Sample.svelte").map { sandboxProject.resolve(it).absolutePath }
     argumentProviders.add(CommandLineArgumentProvider { listOf(projectPath) + filePaths })
 }
 

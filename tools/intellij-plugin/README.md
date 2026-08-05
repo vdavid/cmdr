@@ -49,15 +49,17 @@ to Settings > Plugins, click the gear, choose "Install Plugin from Disk…", pic
 mise exec -- ./gradlew runIde
 ```
 
-This starts a second, sandboxed IDE with its own settings and plugins, opened on two files from `sandbox-project/`:
-`sample.ts`, where the message keys show up folded to their English text, and `CHANGELOG.md`, where the eight-character
-trailing hashes show up link-colored. It can't touch the IDE you already have running, and closing it leaves no trace.
-The sandbox does remember which folds you opened, so a second run opens `sample.ts` the way you left it rather than
-freshly collapsed.
+This starts a second, sandboxed IDE with its own settings and plugins, opened on three files from `sandbox-project/`:
+`sample.ts` and `Sample.svelte`, where the message keys show up folded to their English text, and `CHANGELOG.md`, where
+the eight-character trailing hashes show up link-colored. It can't touch the IDE you already have running, and closing
+it leaves no trace. The sandbox does remember which folds you opened, so a second run opens the files the way you left
+them rather than freshly collapsed.
 
-Two things it can't show you. The sandbox IDE starts without a license, so Ultimate-only plugins stay disabled, Svelte
-among them. And it resolves the browser launcher to the remote-development one, so ⌘-click on a hash lights up but never
-opens a page. Sideload into your own IDE for the real thing; the headless tests cover both either way.
+The sandbox copies your IDE's license file in on the way up, so Ultimate-only plugins load there too, Svelte among them.
+That's what makes `.svelte` folding visible without sideloading, and it's a read: your own IDE never notices.
+
+One thing it can't show you: it resolves the browser launcher to the remote-development one, so ⌘-click on a hash lights
+up but never opens a page. Sideload into your own IDE for that; the headless tests cover it either way.
 
 ## Run the tests
 
