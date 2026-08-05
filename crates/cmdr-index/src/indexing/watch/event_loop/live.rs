@@ -121,7 +121,7 @@ pub(in crate::indexing) fn drain_promoted(
 ) {
     let promoted = scope.branches().take_promoted();
     if !promoted.events.is_empty() || !promoted.relist.is_empty() {
-            log::info!(
+        log::info!(
             "Branch watch: releasing {} held by a walk that just ended{}",
             pluralize(promoted.events.len() as u64, "event"),
             if promoted.relist.is_empty() {

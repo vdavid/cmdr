@@ -324,7 +324,6 @@ fn the_journal_position_never_advances_past_a_held_event() {
     assert_eq!(watch.safe_event_id(), Some(41));
 }
 
-
 /// Two searches can walk overlapping frontiers, so a branch counts its walks:
 /// the first one finishing must not un-buffer the second's ground.
 #[test]
@@ -349,7 +348,11 @@ fn a_branch_two_walks_are_covering_stays_held_until_the_last_one_ends() {
     );
 
     watch.finish_covering(&branch, AfterWalk::Watch);
-    assert_eq!(watch.take_promoted().events.len(), 2, "released when the last walk ends");
+    assert_eq!(
+        watch.take_promoted().events.len(),
+        2,
+        "released when the last walk ends"
+    );
 }
 
 /// On a scanned volume the branch set does one job — hold events for a walk's
@@ -366,7 +369,10 @@ fn a_whole_watched_volume_holds_only_the_ground_its_walk_is_covering() {
         "the walk's ground waits for it, on an indexed drive exactly as on a walked one"
     );
     assert!(
-        matches!(scope.admit(created_file("/vol/elsewhere.txt", 2)), Admission::Process(_)),
+        matches!(
+            scope.admit(created_file("/vol/elsewhere.txt", 2)),
+            Admission::Process(_)
+        ),
         "and everything else is still this loop's business"
     );
 
