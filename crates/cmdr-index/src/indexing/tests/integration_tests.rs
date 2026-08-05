@@ -827,30 +827,66 @@ fn read_pool_generation_invalidation() {
     let (db_path, _dir) = setup_db_for_pool();
     let pool = ReadPool::new(db_path.clone()).expect("create pool");
 
-    // Warm up the thread-local connection
+    // Warm up the thread-local connection. Its generation is whatever this pool
+    // was issued (each pool starts past every generation ever handed out), so the
+    // assertions below are relative to it rather than to a literal.
     pool.with_conn(|_| ()).expect("before invalidation");
 
-    // Verify the cached generation is 0
-    let gen_before = THREAD_CONNS.with(|cell| cell.borrow().generation_for(&db_path));
-    assert_eq!(gen_before, Some(0));
+    let gen_before = THREAD_CONNS
+        .with(|cell| cell.borrow().generation_for(&db_path))
+        .expect("the warm-up cached a connection");
 
     pool.invalidate();
 
-    // After invalidation, the pool generation is 1 but the cached
-    // thread-local still holds generation 0. The next with_conn must
-    // detect the mismatch and reopen.
+    // After invalidation the pool's generation has moved on while the cached
+    // thread-local still holds the old one. The next with_conn must detect the
+    // mismatch and reopen.
     pool.with_conn(|_| ()).expect("after invalidation");
 
     let gen_after = THREAD_CONNS.with(|cell| cell.borrow().generation_for(&db_path));
     assert_eq!(
         gen_after,
-        Some(1),
+        Some(gen_before + 1),
         "invalidation should force a new connection with bumped generation"
     );
     assert_eq!(
         THREAD_CONNS.with(|cell| cell.borrow().len()),
         1,
         "the invalidated connection must not linger beside the fresh one"
+    );
+}
+
+/// A pool over a database that was DELETED and recreated must never answer from
+/// the old one.
+///
+/// The thread-local cache is keyed by `(db_path, generation)`, so a second pool
+/// starting at a fixed generation would hit the first pool's cached connection —
+/// which is still open on the unlinked inode and still answers, with the old
+/// index's contents. Reachable two ways: "Forget this drive" followed by turning
+/// indexing back on, and a search's walk evicting an index whose coverage claims
+/// this build refuses (`docs/specs/unindexed-search-plan.md` Decision 17).
+#[test]
+fn read_pool_over_a_recreated_database_never_serves_the_old_one() {
+    let _serialized = READ_POOL_TEST_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
+    let (db_path, _dir) = setup_db_for_pool();
+    let first = ReadPool::new(db_path.clone()).expect("create pool");
+    // Warm this thread's connection against the original file.
+    let rows_before = first
+        .with_conn(|conn| IndexStore::get_entry_count(conn).unwrap_or(0))
+        .expect("read the original");
+    assert!(rows_before > 1, "test setup: the original index holds rows");
+
+    // The file goes, and a fresh one takes its place.
+    std::fs::remove_file(&db_path).expect("delete the database");
+    drop(IndexStore::open(&db_path).expect("recreate the database"));
+
+    let second = ReadPool::new(db_path.clone()).expect("create the successor pool");
+    let rows_after = second
+        .with_conn(|conn| IndexStore::get_entry_count(conn).unwrap_or(0))
+        .expect("read the replacement");
+    assert_eq!(
+        rows_after, 1,
+        "the successor pool must read the NEW database (just its ROOT sentinel), not the deleted one"
     );
 }
 

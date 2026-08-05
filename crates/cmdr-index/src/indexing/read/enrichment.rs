@@ -34,6 +34,18 @@ pub struct ReadPool {
     generation: AtomicU64,
 }
 
+/// Hands every `ReadPool` a generation no other pool has used.
+///
+/// The thread-local cache is keyed by `(db_path, generation)`, so a pool that
+/// started at a fixed `0` would inherit the cached connections of the PREVIOUS
+/// pool over the same path — including one opened before the database file was
+/// deleted and recreated (forget then re-enable, or a walk evicting an index it
+/// can't trust). That connection still answers, from the unlinked inode, so the
+/// new index reads as the old one for as long as the slot survives. Starting
+/// each pool past every generation ever issued makes a new pool a guaranteed
+/// cache miss.
+static NEXT_POOL_GENERATION: AtomicU64 = AtomicU64::new(1);
+
 thread_local! {
     /// This thread's open read connections, most recently used first. A bounded
     /// LRU rather than one slot: a thread alternating between two volumes (the
@@ -52,7 +64,7 @@ impl ReadPool {
         let _ = IndexStore::open_read_connection(&db_path)?; // Validate openable
         Ok(Self {
             db_path,
-            generation: AtomicU64::new(0),
+            generation: AtomicU64::new(NEXT_POOL_GENERATION.fetch_add(1, Ordering::Relaxed)),
         })
     }
 

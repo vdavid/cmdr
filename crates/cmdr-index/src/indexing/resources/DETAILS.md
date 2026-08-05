@@ -115,3 +115,25 @@ bytes a person is entitled to see and reclaim, so the settings row and its Clear
 There is **no size cap** on any of it, by decision (`docs/specs/unindexed-search-plan.md` Decision 17): the answer to
 disk use is that the size and the Clear button work with drive indexing off, not a byte budget. If people complain about
 disk use, a cap can come later — which is the `TODO(retention)` above, one policy for both concerns.
+
+### Rebuilt-from-scratch coverage is EVICTED, not refilled (Decision 17)
+
+Three things invalidate a whole index rather than part of one, and all three now drop the database instead of writing
+over it:
+
+- **A schema change** — `IndexStore::open` deletes and recreates the file (`../store/connection.rs`), rather than
+  `DROP`-ing tables and stranding the freed pages.
+- **A store that won't open or read** — the volume goes `Failed`, and the next start forgets it before rebuilding
+  (`Index::start_volume`).
+- **An exclusion policy the index predates** — the one this effort had to wire. The stamp says which policy the rows
+  were written under, and a mismatch means NOTHING in the index may be trusted as covered
+  (`../scanner/exclusions.rs::index_predates_exclusion_policy`), so every search re-walks the whole scope forever while
+  the untrusted rows sit underneath, each frontier root landing on the slow non-virgin repair path. A full scan would
+  fix it by truncating and re-stamping — but a walk-built index is precisely the one no scan is coming for. So a
+  writer-only start (a search's walk, `Activation::WriterOnly`) evicts a database that predates the policy and lets the
+  walk fill a clean one, which `prepare_database_for_a_walk` can then stamp.
+
+The cost, stated plainly: a drive with a real scanned index that nobody is indexing right now loses it the first time
+someone searches that drive after a release edits the exclusion lists. That index was already worthless to search (its
+coverage claims were all refused), and folder sizes come back as the walk covers ground. The alternative was a drive
+that never converges again.

@@ -56,6 +56,15 @@ that path drops the stale entry before opening the replacement, so the two never
 `read_pool_alternating_volumes_does_not_reopen` (integration) and `sqlite_util::tests`, both asserting on a real reopen
 counter rather than timing.
 
+**Every pool starts at a generation no pool has used** (`NEXT_POOL_GENERATION`), and that is load-bearing rather than
+tidy. Because the cache key is `(db_path, generation)`, a successor pool starting at a fixed `0` inherits its
+predecessor's cached connections — including one opened before the database file was DELETED and recreated, which still
+answers from the unlinked inode. That reads the old index as if it were the new one, for as long as the slot survives,
+on whichever threads had read that volume. Two live routes into it: "Forget this drive" followed by turning indexing
+back on, and a search's walk evicting an index whose coverage this build refuses (`../resources/DETAILS.md` §
+"Rebuilt-from-scratch coverage is EVICTED"). ❌ Don't reset the starting generation to a constant. Pinned by
+`read_pool_over_a_recreated_database_never_serves_the_old_one`.
+
 `enrich_entries_with_index(entries)` is the root-defaulting wrapper;
 `enrich_entries_with_index_on_volume(volume_id, entries)` is the volume-routed form. Called when entries land in the
 listing cache (streaming, watcher update, re-sort), NOT on `get_file_range`; live freshness flows separately via

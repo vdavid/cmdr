@@ -707,6 +707,9 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
     // `Arc<AtomicI64>` ID counter and `AccumulatorMaps`), producing PK
     // collisions and inflated `dir_stats`.
     let db_path = resolved_index_db_path(volume_id)?;
+    if activation == Activation::WriterOnly {
+        evict_an_index_no_walk_can_trust(volume_id, &db_path);
+    }
     let init_store = IndexStore::open(&db_path).map_err(|e| format!("Failed to open init store: {e}"))?;
     let pool = Arc::new(ReadPool::new(db_path.clone()).map_err(|e| format!("Failed to create read pool: {e}"))?);
     let pending = Arc::new(PendingSizes::new());
@@ -886,6 +889,61 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
     }
 
     Ok(())
+}
+
+/// Drop a database whose coverage claims this build refuses to trust, so the walk
+/// about to run fills a clean one instead of walking on top of it forever
+/// (`docs/specs/unindexed-search-plan.md` Decision 17).
+///
+/// The exclusion-policy stamp records which policy an index's rows were written
+/// under, and a mismatch means NOTHING in it counts as covered
+/// (`scanner::index_predates_exclusion_policy`): an excluded directory gets no
+/// row, so its parents keep claiming coverage they no longer have. A full scan
+/// repairs that by truncating and re-stamping — but this is a WRITER-ONLY start,
+/// which is by definition a volume no scan is coming for. Left alone, every
+/// search of that drive re-walks the whole scope, each frontier root landing on
+/// the slow non-virgin repair path, and the stamp is never rewritten: it never
+/// converges again. Evicting costs one walk and restores convergence, because
+/// `prepare_database_for_a_walk` stamps a database that provably holds nothing.
+///
+/// ❌ Not for an `IndexTheVolume` start: a full scan truncates and re-stamps by
+/// itself, and throwing its database away would cost a resumable index for
+/// nothing.
+///
+/// Eviction goes through [`clear_index`] rather than unlinking the file: that's
+/// what withdraws the volume's read handles, invalidates their connections, and
+/// drops the walked-branch set, which describes rows that are about to stop
+/// existing.
+///
+/// Best-effort: a database it can't read, or can't delete, is left standing and
+/// behaves exactly as it did before this existed.
+fn evict_an_index_no_walk_can_trust(volume_id: &str, db_path: &Path) {
+    if !db_path.exists() {
+        return;
+    }
+    let predates = match IndexStore::open_read_connection(db_path) {
+        Ok(conn) => {
+            // An empty database satisfies any policy trivially, and the walk's own
+            // bootstrap is about to stamp it. Only rows written under a policy this
+            // build no longer applies are worth deleting a file over.
+            let holds_rows = IndexStore::get_entry_count(&conn).unwrap_or(0) > 1;
+            holds_rows && crate::indexing::scanner::index_predates_exclusion_policy(&conn)
+        }
+        Err(e) => {
+            log::warn!("start_indexing_for('{volume_id}'): couldn't check the index's exclusion policy: {e}");
+            return;
+        }
+    };
+    if !predates {
+        return;
+    }
+    log::info!(
+        "start_indexing_for('{volume_id}'): the index predates this build's exclusion policy, so nothing in it counts \
+         as covered; dropping it for the walk to rebuild"
+    );
+    if let Err(e) = clear_index(volume_id) {
+        log::warn!("start_indexing_for('{volume_id}'): dropping the untrusted index failed: {e}");
+    }
 }
 
 /// Give a database a search-driven walk is about to write into the three things a

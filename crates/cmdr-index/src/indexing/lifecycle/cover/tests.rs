@@ -1400,3 +1400,53 @@ fn a_walk_cancelled_up_front_covers_nothing_and_admits_it() {
         "nothing may claim coverage it didn't earn"
     );
 }
+
+/// An index whose rows predate this build's exclusion policy is DROPPED before
+/// the next walk, not walked on top of (`docs/specs/unindexed-search-plan.md`
+/// Decision 17).
+///
+/// A stamp mismatch means nothing in the index counts as covered, so every
+/// search hands the whole scope back to the walk. On a scanned drive the next
+/// full scan truncates and re-stamps; on a walk-built one no scan is coming, and
+/// the walk can't re-stamp a database that already holds rows — so without the
+/// eviction that drive re-walks its whole scope on every search, forever, each
+/// root landing on the slow repair path. Evicting costs one walk and gets
+/// convergence back.
+#[test]
+fn an_index_that_predates_the_exclusion_policy_is_dropped_before_the_next_walk() {
+    let drive = ColdDrive::new("cover-stale-policy-test");
+    std::fs::create_dir_all(drive.tree.path().join("scope/inner")).expect("dirs");
+    std::fs::write(drive.tree.path().join("scope/inner/found.txt"), "x").expect("file");
+    let scope = drive.path("scope");
+
+    drive.cover(&scope);
+    assert!(
+        drive.is_indexed(&drive.path("scope/inner/found.txt")),
+        "the walk landed"
+    );
+
+    // The drive stops being indexed (the user turned it off, or the app simply
+    // restarted and nothing registered a drive nobody indexes), and a release
+    // edits the exclusion lists behind its back.
+    drive.index.disable_volume(drive.volume_id).expect("disable");
+    {
+        let conn = IndexStore::open_write_connection(&drive.db_path()).expect("write conn");
+        IndexStore::update_meta(&conn, crate::indexing::store::EXCLUSION_POLICY_KEY, "0000000000000000")
+            .expect("stamp a policy this build doesn't apply");
+    }
+
+    // The next search's walk converges again, which it can only do on a database
+    // it was allowed to stamp — an empty one.
+    let outcome = drive.cover(&scope);
+    assert!(!outcome.cancelled);
+    assert!(
+        outcome.entries_found >= 2,
+        "the walk rebuilt what the dropped index held, {} entries",
+        outcome.entries_found
+    );
+    let conn = IndexStore::open_read_connection(&drive.db_path()).expect("read conn");
+    assert!(
+        !crate::indexing::scanner::index_predates_exclusion_policy(&conn),
+        "the rebuilt index carries this build's policy, so its coverage counts"
+    );
+}

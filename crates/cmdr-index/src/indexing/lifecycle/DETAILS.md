@@ -424,6 +424,10 @@ maintenance timer can't drift between the two. What that start does differently:
   search re-walks the same ground and a cold drive never converges.
 - **Never inherits the Fresh a journal replay earns.** It doesn't replay, so a persisted index it didn't verify loads
   Stale exactly like a non-journaled one (and bumps the epoch on the way, as any launch-as-Stale does).
+- **Evicts a database whose coverage claims this build refuses** (`evict_an_index_no_walk_can_trust`), before the store
+  is opened. An index that predates the current exclusion policy counts as covering nothing, and only a full scan can
+  re-stamp it — which a writer-only start is by definition not getting. The rationale, the cost, and the two cases that
+  already evicted: `../resources/DETAILS.md` § "Rebuilt-from-scratch coverage is EVICTED, not refilled".
 - **Classifies the volume by how its ground is read**, so the only thing it refuses is a volume nothing has mounted.
   Same typed facts and the same predicates the enable command uses (MTP's id vocabulary first — `mtp://…` is not a path
   a `statfs` can answer for — then `routes_to_local_external` over a live smb2 session and the network-filesystem flag),
