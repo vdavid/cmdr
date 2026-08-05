@@ -92,10 +92,6 @@ pub(crate) fn live_for(volume_id: &str) -> Arc<BranchWatch> {
 /// answers neither sizes nor coverage questions. `conn` is a read connection on
 /// the volume's own database.
 pub(crate) fn resumed_for(volume_id: &str, space: &IndexPathSpace, conn: &rusqlite::Connection) -> Arc<BranchWatch> {
-    let mut all = watches().lock_ignore_poison();
-    if let Some(existing) = all.get(volume_id) {
-        return Arc::clone(existing);
-    }
     let persisted = load_branches(space, conn);
     if !persisted.is_empty() {
         log::info!(
@@ -103,8 +99,12 @@ pub(crate) fn resumed_for(volume_id: &str, space: &IndexPathSpace, conn: &rusqli
             persisted.len()
         );
     }
-    let watch = Arc::new(BranchWatch::with_branches(persisted));
-    all.insert(volume_id.to_string(), Arc::clone(&watch));
+    // Restored INTO whatever this session already holds rather than replacing it.
+    // The two can both be non-empty — a walk that registered a branch a moment ago
+    // is not on the database yet — and a resume that dropped either half would
+    // leave ground the volume claims to watch with nothing watching it.
+    let watch = live_for(volume_id);
+    watch.restore(persisted);
     watch
 }
 
@@ -315,6 +315,18 @@ impl BranchWatch {
                 ..State::default()
             }),
         }
+    }
+
+    /// Add branches read back from the database, keeping whatever this session
+    /// already knows about.
+    fn restore(&self, restored: Vec<Branch>) {
+        let mut state = self.state.lock_ignore_poison();
+        for branch in restored {
+            if !state.branches.iter().any(|held| held.contains(&branch.path)) {
+                state.branches.push(branch);
+            }
+        }
+        state.branches.sort_by(|a, b| a.path.cmp(&b.path));
     }
 
     /// A walk is about to cover `paths`. Their events buffer from this moment,

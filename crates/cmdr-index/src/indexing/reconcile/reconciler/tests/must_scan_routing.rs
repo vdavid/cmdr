@@ -318,3 +318,58 @@ async fn queued_rescans_start_after_active_completes() {
 
     writer.shutdown();
 }
+
+/// A volume watched branch by branch never routes an anchor to the visible
+/// scanner, whatever its depth.
+///
+/// That route rescans the WHOLE volume (`perform_registry_rescan`), which on a
+/// search-built index is the full drive walk `Activation::WriterOnly` exists to
+/// not do — and on a drive whose owner turned indexing off, work both switches
+/// exist to stop. The throttled drain walks the anchor and nothing above it.
+#[tokio::test]
+async fn a_branch_watched_volume_never_routes_an_anchor_to_the_whole_volume_scanner() {
+    let volume_id = "smb://reconciler-test-branch-confined";
+    let (writer, _dir, conn, _instance) = setup_private_writer(volume_id);
+    let mut reconciler =
+        EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root(), CancellationToken::new());
+    reconciler.switch_to_live();
+    let sink = Arc::new(Mutex::new(Vec::<String>::new()));
+    reconciler.set_recording_scan_trigger(Arc::clone(&sink));
+
+    let watch = crate::indexing::watch::branches::live_for(volume_id);
+    let covered = vec!["/covered".to_string()];
+    watch.begin_covering(&covered);
+    watch.finish_covering(&covered, crate::indexing::watch::branches::AfterWalk::Watch);
+    reconciler.within(crate::indexing::watch::branches::WatchScope::Branches(watch));
+
+    let mut pending = HashSet::new();
+    // Shallow enough that a whole-volume loop would hand it to the scanner.
+    reconciler.process_live_event(
+        &make_event("/covered", 1, must_scan_dir_flags()),
+        &conn,
+        &writer,
+        &mut pending,
+    );
+
+    assert!(
+        sink.lock().unwrap().is_empty(),
+        "no whole-volume rescan: the covered branch is all this volume answers for"
+    );
+    assert_eq!(
+        reconciler.rescan_scopes(),
+        vec![std::path::PathBuf::from("/covered")],
+        "the anchor walks on the throttled drain instead"
+    );
+
+    // And an anchor outside every branch is left to the next search, which is
+    // where growing coverage belongs.
+    reconciler.queue_must_scan_sub_dirs(std::path::PathBuf::from("/elsewhere"), &writer);
+    assert_eq!(
+        reconciler.rescan_scopes(),
+        vec![std::path::PathBuf::from("/covered")],
+        "the watcher never indexes ground nobody asked it to walk"
+    );
+
+    crate::indexing::watch::branches::forget(volume_id);
+    writer.shutdown();
+}

@@ -661,6 +661,15 @@ impl ColdDrive {
             .count()
     }
 
+    /// What the drive's own database says it walked, as stored (index-relative).
+    fn persisted_branches(&self) -> Option<String> {
+        let conn = IndexStore::open_read_connection(&self.db_path()).ok()?;
+        IndexStore::get_meta(&conn, crate::indexing::watch::branches::COVERED_BRANCHES_KEY)
+            .ok()
+            .flatten()
+            .filter(|stored| !stored.is_empty())
+    }
+
     fn coverage(&self, path: &str) -> crate::indexing::read::coverage::CoverageMap {
         self.index
             .coverage(self.volume_id, path, CoverageDimension::Listing)
@@ -913,6 +922,106 @@ fn a_search_walks_a_drive_the_user_turned_indexing_off_for() {
     assert_eq!(outcome.roots_covered, 1, "the search still got its answer");
     assert_eq!(outcome.entries_found, 1);
     assert_eq!(drive.scans_started(), 0, "with no scan of the drive behind it");
+}
+
+// ── What the walk leaves watched ─────────────────────────────────────
+
+/// The walk's other half of Decision 9: it writes down the ground it covered, on
+/// the volume's own database, so the branch survives the app.
+///
+/// Without this the plan needs the expiry it replaced — a walked branch nothing
+/// watches is a snapshot of a folder taken once, and the next session would have
+/// to either re-walk it or serve rows it can't vouch for.
+#[test]
+fn a_walk_leaves_the_ground_it_covered_watched_and_written_down() {
+    let drive = ColdDrive::new("cover-branch-watch-test");
+    std::fs::create_dir_all(drive.tree.path().join("scope/inner")).expect("dirs");
+    std::fs::write(drive.tree.path().join("scope/inner/found.txt"), "x").expect("file");
+    let scope = drive.path("scope");
+
+    drive.cover(&scope);
+
+    assert_eq!(
+        crate::indexing::watch::branches::live_for(drive.volume_id).branch_paths(),
+        [scope.clone()],
+        "the walked branch is the volume's to keep current now"
+    );
+    assert_eq!(
+        drive.persisted_branches(),
+        Some("/scope".to_string()),
+        "and it's on the drive's own database, index-relative so a remount still finds it"
+    );
+}
+
+/// The per-drive veto's teeth, and the whole of them: a drive the user turned
+/// indexing off for is still walked for a search (Decision 13), and is left
+/// unwatched afterwards.
+///
+/// So its walked ground stays covered and served, and stops being kept current
+/// the moment the app stops. ❌ Not "re-walked" — the walk marked those
+/// directories listed, so the frontier never offers them again; they are
+/// covered-but-stale, which Decision 5 trusts.
+#[test]
+fn a_vetoed_drive_is_walked_and_left_unwatched() {
+    let drive = ColdDrive::new("cover-branch-veto-test");
+    std::fs::create_dir_all(drive.tree.path().join("scope")).expect("dirs");
+    std::fs::write(drive.tree.path().join("scope/found.txt"), "x").expect("file");
+    drop(IndexStore::open(&drive.db_path()).expect("open store"));
+    IndexStore::set_user_disabled(&drive.db_path(), true).expect("mark user_disabled");
+
+    let outcome = drive.cover(&drive.path("scope"));
+    assert_eq!(outcome.roots_covered, 1, "the search still got its answer");
+
+    assert!(
+        crate::indexing::watch::branches::live_for(drive.volume_id)
+            .branch_paths()
+            .is_empty(),
+        "and nothing is watching it: the veto stops everything that runs uninvited"
+    );
+    assert_eq!(
+        drive.persisted_branches(),
+        None,
+        "with nothing written down for a later session to resume either"
+    );
+}
+
+/// A branch survives the volume going away and coming back, which is what
+/// "persisted" has to mean.
+///
+/// Nothing at LAUNCH resumes it, deliberately: an unregistered volume answers
+/// neither sizes nor coverage questions, so the first moment that coverage can be
+/// read is the moment its index comes up — and that's the moment the watch
+/// returns.
+#[test]
+fn a_branch_comes_back_when_the_volume_does() {
+    let drive = ColdDrive::new("cover-branch-resume-test");
+    std::fs::create_dir_all(drive.tree.path().join("scope")).expect("dirs");
+    std::fs::write(drive.tree.path().join("scope/found.txt"), "x").expect("file");
+    let scope = drive.path("scope");
+
+    drive.cover(&scope);
+    crate::indexing::lifecycle::state::stop_indexing(drive.volume_id).expect("stop the volume");
+    assert!(
+        crate::indexing::watch::branches::live_for(drive.volume_id)
+            .branch_paths()
+            .is_empty(),
+        "precondition: the set goes with the instance that watched it"
+    );
+
+    crate::indexing::lifecycle::state::start_indexing_for(
+        drive.volume_id,
+        drive.tree.path().to_path_buf(),
+        IndexVolumeKind::LocalExternal,
+        true,
+        crate::indexing::lifecycle::state::Activation::WriterOnly,
+    )
+    .expect("stand the index back up");
+
+    assert_eq!(
+        crate::indexing::watch::branches::live_for(drive.volume_id).branch_paths(),
+        [scope],
+        "and the volume comes back watching what it walked last time"
+    );
 }
 
 /// A drive that isn't mounted has nothing to walk and nothing to root an index
