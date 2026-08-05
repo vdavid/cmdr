@@ -735,8 +735,9 @@ needs the same `cfg` on the thing above it.
 ## Naming the item that failed
 
 **Decision**: a transfer failure travels as `PathedVolumeError { path, error }` (`volume_transfer_error.rs`), not a
-bare `VolumeError`, from `copy_single_path` / `copy_directory_streaming` / `extract_sequential_subtree` out to the
-three drivers. The `AtPath::at()` helper attaches the path at the frame that knows it.
+bare `VolumeError`, from `copy_single_path` / `copy_directory_streaming` / `extract_sequential_subtree` /
+`delete_volume_path_recursive` out to the three drivers. The `AtPath::at()` helper attaches the path at the frame that
+knows it. Both phases of a cross-volume move are covered: the copy AND the source delete.
 
 **Why**: one `copy_single_path` call can walk an entire subtree, so the error a driver receives may come from a file
 thousands of entries below the top-level item the user selected. With a bare `VolumeError` the driver's only available
@@ -756,7 +757,21 @@ be reconstructed.
 - `pull_path_to_local` deliberately drops back to a bare `VolumeError`: it materializes into a scratch dir that is
   discarded wholesale on failure, so no consumer reads a per-item path.
 
+**The source-delete phase, and what a directory sweep reports**: `delete_volume_path_recursive` (`volume_cleanup.rs`)
+keeps sweeping after a child fails, so it clears everything it can, and it remembers the FIRST child failure with that
+child's own path. When the directory's own `delete` then fails, that remembered child comes out instead of the
+directory's `ENOTEMPTY` — the surviving child is the diagnosis and the parent's refusal is only its symptom, named
+after the folder the user selected. When the directory DOES go, the sweep returns `Ok`: nothing survived to report, and
+promoting a child failure there (a race with another deleter, say) would turn a finished move into a reported failure.
+The three best-effort callers (rollback, partial cleanup, cross-type Overwrite in `volume_conflict.rs`, and
+`archive_edit/copy_into.rs`) only log, and they now log `e.path` alongside the root they asked for, so the log names
+the leaf too.
+
 **Don't** re-collapse this to `VolumeError` for tidiness, and don't `.at()` one frame up from the failure — a path
 attached by the parent names the parent, which is exactly the bug.
 
-Pinned by `volume_move_tests.rs::cross_volume_move_error_names_the_child_that_failed_not_the_selected_folder`.
+Pinned by `volume_move_tests.rs::cross_volume_move_error_names_the_child_that_failed_not_the_selected_folder` (copy
+phase), `volume_move_tests.rs::cross_volume_move_delete_error_names_the_child_that_failed_not_the_selected_folder`
+(delete phase), and `volume_copy_tests.rs::delete_volume_path_recursive_reports_the_leaf_that_refused` (the walker
+itself). The `UndeletableSource` double (`volume_strategy_test_support.rs`) stages it: `InMemoryVolume` alone can't,
+because its `delete` drops a directory entry whether or not the directory still holds children.

@@ -33,7 +33,7 @@ use super::volume_conflict::resolve_volume_conflict;
 use super::volume_move_same::move_within_same_volume;
 use super::volume_preflight::{SourceHint, scan_volume_sources};
 use super::volume_strategy::copy_single_path;
-use super::volume_transfer_error::{WriteFailure, map_volume_error, write_error_event_from};
+use super::volume_transfer_error::{AtPath, WriteFailure, map_volume_error, write_error_event_from};
 use crate::file_system::volume::Volume;
 use crate::ignore_poison::IgnorePoison;
 use crate::operation_log::types::OpKind;
@@ -607,16 +607,21 @@ pub(crate) async fn move_volumes_with_progress(
                     let delete_result = if source_is_dir {
                         delete_volume_path_recursive(&source_volume, &source_path).await
                     } else {
-                        source_volume.delete(&source_path).await
+                        source_volume.delete(&source_path).await.at(&source_path)
                     };
                     if let Err(e) = delete_result {
+                        // Same rule as the copy phase: name the file that
+                        // actually refused to go, which for a directory source
+                        // is a leaf inside it — ❌ never `source_path`, whose
+                        // own `ENOTEMPTY` is just the symptom.
                         log::warn!(
                             target: "move",
-                            "move_between_volumes: source delete failed for {} after successful copy: {}",
+                            "move_between_volumes: source delete failed for {} (under {}) after successful copy: {}",
+                            e.path.display(),
                             source_path.display(),
-                            e
+                            e.error
                         );
-                        return Err(map_volume_error(&source_path.display().to_string(), e));
+                        return Err(map_volume_error(&e.path.display().to_string(), e.error));
                     }
 
                     // Journal the moved leaves under the REAL volume ids: a file

@@ -433,9 +433,10 @@ async fn apply_volume_conflict_resolution(
                     // File→folder overwrite: recursively delete the dest folder.
                     if let Err(e) = super::volume_copy::delete_volume_path_recursive(dest_volume, dest_path).await {
                         log::warn!(
-                            "apply_volume_conflict_resolution(Overwrite): recursive delete of folder {} failed: {}",
+                            "apply_volume_conflict_resolution(Overwrite): recursive delete of folder {} stopped at {}: {}",
                             dest_path.display(),
-                            e
+                            e.path.display(),
+                            e.error
                         );
                     }
                 } else if let Err(e) = dest_volume.delete(dest_path).await {

@@ -1897,6 +1897,43 @@ async fn delete_volume_path_recursive_removes_single_file() {
     assert!(!vol.exists(Path::new("/file.txt")).await);
 }
 
+/// The whole tree can't come down because ONE leaf refuses. What comes back is
+/// that leaf, not the root's own "directory not empty" — which names the folder
+/// the user selected and tells them nothing they can act on.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn delete_volume_path_recursive_reports_the_leaf_that_refused() {
+    use super::super::volume_strategy::test_support::UndeletableSource;
+
+    let vol = UndeletableSource::new(
+        "doomed.txt",
+        VolumeError::IoError {
+            message: "Resource busy".to_string(),
+            raw_os_error: None,
+        },
+    );
+    let volume: Arc<dyn Volume> = Arc::clone(&vol) as Arc<dyn Volume>;
+    volume.create_directory(Path::new("/tree")).await.unwrap();
+    volume.create_directory(Path::new("/tree/nested")).await.unwrap();
+    volume.create_file(Path::new("/tree/fine.txt"), b"fine").await.unwrap();
+    volume
+        .create_file(Path::new("/tree/nested/doomed.txt"), b"doomed")
+        .await
+        .unwrap();
+
+    let failure = delete_volume_path_recursive(&volume, Path::new("/tree"))
+        .await
+        .expect_err("the leaf never deletes, so the sweep can't finish");
+    assert_eq!(
+        failure.path,
+        Path::new("/tree/nested/doomed.txt"),
+        "the failure must carry the leaf that refused, not the tree root"
+    );
+
+    // Best-effort still applies: everything that COULD go, went.
+    assert!(!volume.exists(Path::new("/tree/fine.txt")).await);
+    assert!(volume.exists(Path::new("/tree/nested/doomed.txt")).await);
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn delete_volume_path_recursive_missing_path_is_ok() {
     // Used during move cleanup where the path may already be gone (cancelled mid-op,

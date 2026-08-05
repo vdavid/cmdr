@@ -8,7 +8,7 @@
 //! call, skipped conflicts bump `files_done` so the bar doesn't stall, and
 //! cancel between sources stops further transfers.
 
-use super::super::volume_strategy::test_support::FlakyDest;
+use super::super::volume_strategy::test_support::{FlakyDest, UndeletableSource};
 use super::*;
 use crate::file_system::volume::{InMemoryVolume, LocalPosixVolume, VolumeError};
 use crate::file_system::write_operations::state::ConflictResolutionResponse;
@@ -1525,5 +1525,62 @@ async fn cross_volume_move_error_names_the_child_that_failed_not_the_selected_fo
 
     // The move must not have deleted anything: the copy phase never completed.
     assert!(source.exists(Path::new("/tree/fine.txt")).await);
+    assert!(source.exists(Path::new("/tree/nested/doomed.txt")).await);
+}
+
+/// Same bug, second phase: a cross-volume move whose SOURCE DELETE trips on one
+/// file deep inside the folder must report that file, not the folder.
+///
+/// The delete phase walks the source subtree via `delete_volume_path_recursive`,
+/// and the only thing that reaches the caller from a real backend is the parent
+/// directory's `ENOTEMPTY` — the symptom of a child that survived, named after
+/// the folder the user selected. The child's path is the diagnosis and it exists
+/// only inside the walker.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn cross_volume_move_delete_error_names_the_child_that_failed_not_the_selected_folder() {
+    let src = UndeletableSource::new(
+        "doomed.txt",
+        VolumeError::IoError {
+            message: "Resource busy".to_string(),
+            raw_os_error: None,
+        },
+    );
+    let source: Arc<dyn Volume> = Arc::clone(&src) as Arc<dyn Volume>;
+    source.create_directory(Path::new("/tree")).await.unwrap();
+    source.create_directory(Path::new("/tree/nested")).await.unwrap();
+    source.create_file(Path::new("/tree/fine.txt"), b"fine").await.unwrap();
+    source
+        .create_file(Path::new("/tree/nested/doomed.txt"), b"doomed")
+        .await
+        .unwrap();
+
+    let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest").with_space_info(10_000_000, 10_000_000));
+
+    let events = Arc::new(CollectorEventSink::new());
+    let result = move_volumes_with_progress(
+        events.clone(),
+        "op-move-deep-child-delete-error",
+        &make_state(),
+        Arc::clone(&source),
+        &[PathBuf::from("/tree")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config_default(),
+    )
+    .await;
+
+    let failure = result.expect_err("the source delete can't finish, so the move must fail");
+    let WriteOperationError::IoError { path, .. } = &failure.error else {
+        panic!("expected an IoError, got {:?}", failure.error);
+    };
+    assert_eq!(
+        path, "/tree/nested/doomed.txt",
+        "the error must name the file that wouldn't delete, not the selected folder: {:?}",
+        failure.error
+    );
+
+    // The copy phase completed, so the data is safe at the destination, and the
+    // file that refused to go is still at the source.
+    assert!(dest.exists(Path::new("/tree/nested/doomed.txt")).await);
     assert!(source.exists(Path::new("/tree/nested/doomed.txt")).await);
 }

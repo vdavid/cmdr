@@ -185,7 +185,15 @@ impl MaterializedSources {
             SourceOrigin::Remote { volume, paths } => {
                 for path in paths {
                     if let Err(e) = delete_volume_path_recursive(volume, path).await {
-                        log::warn!(target: "archive_edit", "couldn't remove moved remote source {}: {e}", path.display());
+                        // `e.path` is the item that actually refused (a leaf
+                        // inside `path` when the source is a tree).
+                        log::warn!(
+                            target: "archive_edit",
+                            "couldn't remove {} of moved remote source {}: {}",
+                            e.path.display(),
+                            path.display(),
+                            e.error
+                        );
                     }
                 }
             }

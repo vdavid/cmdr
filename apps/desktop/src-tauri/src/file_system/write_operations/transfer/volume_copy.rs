@@ -1003,9 +1003,10 @@ pub(crate) async fn copy_volumes_with_progress(
             );
             if let Err(e) = delete_volume_path_recursive(&dest_volume, partial_path).await {
                 log::warn!(
-                    "copy_volumes_with_progress: failed to clean up partial file {}: {:?}",
+                    "copy_volumes_with_progress: couldn't clean up {} of partial {}: {:?}",
+                    e.path.display(),
                     partial_path.display(),
-                    e
+                    e.error
                 );
             }
         }

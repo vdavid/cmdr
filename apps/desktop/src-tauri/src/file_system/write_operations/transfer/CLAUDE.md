@@ -42,9 +42,11 @@ state, intent, cancel/rollback, ETA, the conflict mutex, settle: `../CLAUDE.md`.
 - **Every phase announces itself to `transfer_probe.rs`, on BOTH drivers**: ❌ no `.await` on a transfer path without a
   phase, and ❌ never derive a stall from FE timing (a wedge emits nothing).
 - **A failure carries the path it happened ON** (`PathedVolumeError`): the walker descends a whole subtree per
-  `copy_single_path`, so ❌ never re-label an error with the top-level source, and ❌ never `.at()` a frame above the one
-  that knows the item. The concurrent driver keeps `failed_path` (dest partial to clean) separate from `reported_path`
-  (the source item to name) — ❌ don't collapse them. `DETAILS.md` § "Naming the item that failed".
+  `copy_single_path` and per `delete_volume_path_recursive`, so ❌ never re-label an error with the top-level source,
+  and ❌ never `.at()` a frame above the one that knows the item. A directory sweep reports the first child that
+  refused, ❌ never the parent's own `ENOTEMPTY` (the symptom, named after the folder the user picked). The concurrent
+  driver keeps `failed_path` (dest partial to clean) separate from `reported_path` (the source item to name) — ❌ don't
+  collapse them. `DETAILS.md` § "Naming the item that failed".
 - **Retry is per-FILE, ONLY inside `stream_pipe_file`** (`retry.rs`): ❌ never higher (conflicts, the ledger, the
   journal, and the milestone sit above it and happen once), ❌ never on a `Cancelled`. **The stall watchdog is GATED and
   inert**: `connection_liveness() == Dead` AND `STALL_ABORT_AFTER`, and nothing answers `Dead` today, so ❌ never

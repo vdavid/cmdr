@@ -11,8 +11,9 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use super::super::state::{OperationIntent, WriteOperationState, load_intent, update_operation_status};
 use super::super::types::{OperationEventSink, WriteOperationPhase, WriteOperationType, WriteProgressEvent};
+use super::volume_transfer_error::{AtPath, PathedVolumeError};
 use crate::file_system::listing::FileEntry;
-use crate::file_system::volume::{Volume, VolumeError};
+use crate::file_system::volume::Volume;
 use crate::ignore_poison::IgnorePoison;
 
 use cmdr_fs::staging::STAGING_TEMP_MARKER as TEMP_INFIX;
@@ -97,9 +98,10 @@ pub(super) async fn volume_rollback_with_progress(
         // Each copied path may be a file or a directory tree, so delete recursively
         if let Err(e) = delete_volume_path_recursive(volume, path).await {
             log::warn!(
-                "volume_rollback_with_progress: failed to delete {}: {:?}",
+                "volume_rollback_with_progress: couldn't delete {} (under {}): {:?}",
+                e.path.display(),
                 path.display(),
-                e
+                e.error
             );
         }
         paths_deleted += 1;
@@ -264,15 +266,25 @@ pub(super) async fn reap_stale_transfer_temps(volume: &Arc<dyn Volume>, dir: &Pa
     Some(survivors)
 }
 
-/// Recursively deletes a file or directory on a volume.
+/// Recursively deletes a file or directory on a volume, reporting the path that
+/// actually refused to go.
 ///
 /// For files: calls `volume.delete()` directly.
-/// For directories: lists contents, deletes children (files first, then subdirs),
-/// then deletes the directory itself. Best-effort: logs errors but continues.
+/// For directories: lists contents, deletes children (recursing into subdirs),
+/// then deletes the directory itself. The sweep keeps going after a child fails
+/// so it clears everything it can, and it remembers the FIRST child failure with
+/// that child's own path.
+///
+/// What comes out of a directory that couldn't be emptied is that remembered
+/// child failure, ❌ never the directory's own `ENOTEMPTY`: the surviving child
+/// is the diagnosis and the parent's refusal is only its symptom, named after
+/// the folder the user selected. A directory that DID go leaves nothing behind
+/// to tell anyone about, so a child failure that raced with another deleter
+/// stays `Ok` rather than turning a finished move into a reported failure.
 pub(in crate::file_system::write_operations) async fn delete_volume_path_recursive(
     volume: &Arc<dyn Volume>,
     path: &Path,
-) -> Result<(), VolumeError> {
+) -> Result<(), PathedVolumeError> {
     let is_dir = match volume.is_directory(path).await {
         Ok(true) => true,
         Ok(false) => false,
@@ -283,32 +295,42 @@ pub(in crate::file_system::write_operations) async fn delete_volume_path_recursi
     };
 
     if !is_dir {
-        return volume.delete(path).await;
+        return volume.delete(path).await.at(path);
     }
 
     // List directory contents and delete children first
-    let children = volume.list_directory(path, None).await?;
+    let children = volume.list_directory(path, None).await.at(path)?;
 
-    // Delete files first, then recurse into subdirectories
+    let mut first_child_failure: Option<PathedVolumeError> = None;
     for child in &children {
         let child_path = PathBuf::from(&child.path);
-        if child.is_directory {
-            if let Err(e) = Box::pin(delete_volume_path_recursive(volume, &child_path)).await {
-                log::warn!(
-                    "delete_volume_path_recursive: failed to delete subdirectory {}: {:?}",
-                    child_path.display(),
-                    e
-                );
-            }
-        } else if let Err(e) = volume.delete(&child_path).await {
+        // `.at(&child_path)` at the frame that knows the child: one level up and
+        // every leaf failure would answer with this directory's name instead.
+        let outcome = if child.is_directory {
+            Box::pin(delete_volume_path_recursive(volume, &child_path)).await
+        } else {
+            volume.delete(&child_path).await.at(&child_path)
+        };
+        if let Err(e) = outcome {
             log::warn!(
-                "delete_volume_path_recursive: failed to delete file {}: {:?}",
-                child_path.display(),
-                e
+                target: "delete",
+                "delete_volume_path_recursive: couldn't delete {}: {:?}",
+                e.path.display(),
+                e.error
             );
+            first_child_failure.get_or_insert(e);
         }
     }
 
     // Delete the now-empty directory
-    volume.delete(path).await
+    match volume.delete(path).await {
+        Ok(()) => Ok(()),
+        Err(e) => Err(match first_child_failure {
+            Some(child) => child,
+            None => PathedVolumeError {
+                path: path.to_path_buf(),
+                error: e,
+            },
+        }),
+    }
 }
