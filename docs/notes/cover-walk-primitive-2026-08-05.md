@@ -29,8 +29,8 @@ Machine: Apple M3 Max, 16 cores, macOS 26.5.2, otherwise idle. Branch `worktree-
 
 ## Results
 
-| tree                                    | entries   | parallel walker | serial reconcile | speedup | rows written |
-| --------------------------------------- | --------- | --------------- | ---------------- | ------- | ------------ |
+| tree                                     | entries   | parallel walker | serial reconcile | speedup | rows written |
+| ---------------------------------------- | --------- | --------------- | ---------------- | ------- | ------------ |
 | `apps/desktop/node_modules` (small)      | 368       | 3.92 ms         | 12.40 ms         | 3.2x    | identical    |
 | `~/Library/Application Support`          | 220,038   | 1.84 s          | 9.90 s           | 5.4x    | identical    |
 | `/Applications`                          | 300,656   | 2.56 s          | 14.72 s          | 5.8x    | identical    |
@@ -46,11 +46,11 @@ came out ~10% short (6,001,637 rows against 6,663,048), and attributes the loss 
 
 Two things are wrong with leaning on that here:
 
-- **The walker doesn't use rayon.** Its workers are dedicated 8 MB-stack OS threads, and `scanner/CLAUDE.md`'s
-  "Never rayon" must-know says why (File Provider reads descend deep XPC override chains that overflow rayon's 2 MB
-  stack). Reading `docs/notes/indexing-benchmarks-2026-07-21.md` itself, the abandonment was the walker's stall timeout
-  and 32-consecutive-failure give-up budget firing inside a MacDroid phone's File Provider mount — a genuinely
-  unresponsive mount, not thread contention. `reconcile/DETAILS.md` has been corrected.
+- **The walker doesn't use rayon.** Its workers are dedicated 8 MB-stack OS threads, and `scanner/CLAUDE.md`'s "Never
+  rayon" must-know says why (File Provider reads descend deep XPC override chains that overflow rayon's 2 MB stack).
+  Reading `docs/notes/indexing-benchmarks-2026-07-21.md` itself, the abandonment was the walker's stall timeout and
+  32-consecutive-failure give-up budget firing inside a MacDroid phone's File Provider mount — a genuinely unresponsive
+  mount, not thread contention. `reconcile/DETAILS.md` has been corrected.
 - **A frontier walk is scoped, so the pathology is out of scope by construction.** The shortfall came from walking `/`
   whole, which drags in every File Provider mount on the machine. A search walks the folders a coverage answer named.
 

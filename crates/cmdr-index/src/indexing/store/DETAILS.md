@@ -67,10 +67,13 @@ it: the descent rule reads one and refuses to answer without the other.
 the walker's give-up prune after repeated failures. Deliberately NOT folded into `listed_epoch`: an unreadable directory
 was never listed, so it stays at `0` and keeps absorbing its ancestors' `min_subtree_epoch` to `0`, which is what keeps
 sizes honest. What the marker buys is that the frontier can SKIP it instead of handing it to the walk again on every
-single search — without it, a permission-denied subtree is a permanent repeating slow path with no user signal.
-`mark_dirs_unreadable(conn, ids, false)` clears it, which is what a later successful listing does, so granting Full Disk
-Access heals it with no rebuild. The column has no production writer yet; the walker stamps it when the unreadable
-signal ships.
+single search — without it, a permission-denied subtree is a permanent repeating slow path with no user signal. The
+local walk stamps it (`MarkDirsUnreadable`, sent after its marks) for a read that failed with PERMISSION DENIED only: a
+stall timeout means a dead mount or a storm, both of which heal, and pinning those would stop the retry.
+`mark_dirs_listed` CLEARS the column in the same `UPDATE` that stamps `listed_epoch` — a directory we just listed is by
+definition readable again — so granting Full Disk Access heals it with no rebuild and no separate pass.
+`mark_dirs_unreadable(conn, ids, false)` is the explicit clear, for a caller that has a reason to reset it without a
+listing.
 
 **`meta.exclusion_policy_built_for`** (`EXCLUSION_POLICY_KEY`) records WHICH scan-exclusion policy the DB's rows were
 written under: an FNV-1a fingerprint of `EXCLUDED_PREFIXES`, `JUNK_BASENAMES`, `PSEUDO_FS_BASENAMES`, and (macOS)

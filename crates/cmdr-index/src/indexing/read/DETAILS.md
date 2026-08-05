@@ -171,7 +171,8 @@ saying which state of the index the answer describes. The covered half is never 
 over the same subtree, so a caller runs its own query over the scope unfiltered and gets exactly the covered rows.
 That's the whole reason there's no deduplication anywhere in the search path.
 
-Read `docs/specs/unindexed-search-plan.md` § "The core mechanism" for the product intent this serves.
+Read `docs/specs/unindexed-search-plan.md` § "The core mechanism" for the product intent this serves. The WALK half —
+what actually fills a frontier in, and why it may never delete — is `../lifecycle/DETAILS.md` § "The cover walk".
 
 ### The descent rule
 

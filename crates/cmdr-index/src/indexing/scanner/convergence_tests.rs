@@ -174,6 +174,72 @@ fn a_cancelled_walk_leaves_durable_partial_coverage() {
     );
 }
 
+/// Convergence has a second failure mode, and it needs no cancellation: a folder
+/// the walk CAN'T READ stays `listed_epoch = 0` forever, so it re-enters the
+/// frontier on every single search and that part of the scope never converges.
+///
+/// M2 added `entries.known_unreadable` for exactly this and left it with no
+/// writer. The walk stamps it, but only for PERMISSION DENIED — the durable,
+/// user-fixable case. Any other read error might be transient (a dead mount
+/// coming back, a storm passing), and pinning those would stop the retry that
+/// heals them.
+#[test]
+fn a_folder_the_walk_cannot_read_stops_re_entering_the_frontier() {
+    let (writer, db_path, _db_dir) = setup_writer();
+    let root = PathBuf::from(TREE_ROOT);
+    let a = root.join("A");
+    let denied = a.join("denied");
+    let flaky = a.join("flaky");
+    seed_chain(&db_path, &a, &writer);
+
+    let cancel = CancellationToken::new();
+    let reader = MockTree::new()
+        // `flaky` is declared as a child but has no listing, so its read fails
+        // with a plain not-found — the transient shape.
+        .dir_at(a.clone(), vec![dir("denied"), dir("flaky")])
+        .denied_at(denied.clone())
+        .reader(&cancel);
+
+    cover_subtree_with_reader(&a, &IndexPathSpace::root(), &writer, None, &cancel, reader).expect("walk A");
+    writer.flush_blocking().expect("flush");
+    writer.shutdown();
+
+    let conn = IndexStore::open_read_connection(&db_path).expect("read connection");
+    let unreadable_flag = |path: &Path| {
+        let id = crate::indexing::store::resolve_path(&conn, &path.to_string_lossy())
+            .expect("resolve")
+            .expect("row");
+        IndexStore::get_known_unreadable_by_id(&conn, id)
+            .expect("known_unreadable")
+            .expect("row")
+    };
+    assert!(unreadable_flag(&denied), "permission denied is durable, so mark it");
+    assert!(
+        !unreadable_flag(&flaky),
+        "any other read error might heal, so leave it retriable"
+    );
+
+    let mut map = coverage_for_scope(
+        &conn,
+        &a.to_string_lossy(),
+        &a.to_string_lossy(),
+        CoverageDimension::Listing,
+    )
+    .expect("coverage");
+    map.frontier.sort();
+    map.unreadable.sort();
+    assert_eq!(
+        map.frontier,
+        vec![flaky.to_string_lossy().to_string()],
+        "only the retriable folder is offered to the next walk"
+    );
+    assert_eq!(
+        map.unreadable,
+        vec![denied.to_string_lossy().to_string()],
+        "and the unreadable one is reported to the user instead of walked again"
+    );
+}
+
 // ── 2. A walk never removes a row it did not write ───────────────────
 
 /// A frontier node CAN hold a listed descendant, so the destructive delete that

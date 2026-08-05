@@ -44,7 +44,8 @@ read it before non-trivial work there.
   epochs** (canonical). **`aggregator/CLAUDE.md`** — bottom-up dir-stats computation. **`store/CLAUDE.md`** — the
   `IndexStore` handle + SQLite schema.
 - **`read/CLAUDE.md`** — serve sizes back: enrichment (the hot path), IPC queries, write-op expected totals, the "size
-  updating" hourglass. **`paths/CLAUDE.md`** — path->volume routing, `IndexPathSpace`, firmlink normalization.
+  updating" hourglass, and the search COVERAGE frontier (what the index can't answer for yet; the walk that fills it in
+  is `lifecycle/cover.rs`). **`paths/CLAUDE.md`** — path->volume routing, `IndexPathSpace`, firmlink normalization.
   **`events/CLAUDE.md`** — the `EventSink` seam + typed `IndexEvent` + the scan-progress loop + partial aggregation. The
   frontend payloads live app-side in `events/index_mapping.rs`.
 - **`transports/CLAUDE.md`** — per-transport enable + live watch: `smb/`, `mtp/`, `local_external/`.

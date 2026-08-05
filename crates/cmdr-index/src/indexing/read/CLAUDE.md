@@ -40,7 +40,8 @@ Serve recursive sizes, index status, and coverage back to the app. Everything he
 
 - `enrichment.rs` — the `ReadPool` type + `enrich_entries_with_index[_on_volume]` (integer-keyed fast path, per-path
   fallback).
-- `coverage.rs` — the search frontier (`Index::coverage`), the descent rule, and `CoverageToken`.
+- `coverage.rs` — the search frontier (`Index::coverage`), the descent rule, `CoverageToken`. Read-only; the WALK is
+  `../lifecycle/cover.rs`.
 - `queries.rs` — the IPC read surface (`get_status`, `get_volume_index_status*`, `get_dir_stats*`); no registry
   mutation.
 - `expected_totals.rs` — index-derived copy/move/delete progress denominators.

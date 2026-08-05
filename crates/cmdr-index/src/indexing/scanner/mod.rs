@@ -1,9 +1,14 @@
 //! Parallel directory walker for drive indexing.
 //!
 //! Drives the hang-tolerant [`walker`] engine with an [`InsertVisitor`] to run
-//! both a full-volume scan (`scan_volume`) and a targeted subtree scan
-//! (`scan_subtree`). Discovered entries are sent in batches to the [`IndexWriter`]
-//! for insertion into the SQLite index.
+//! three walks over one body: a full-volume scan ([`scan_volume`]), a targeted
+//! subtree REBUILD ([`scan_subtree`]), and the search-driven walk over ground the
+//! index has no claim on ([`cover_subtree`]). [`ScanRoot`] is what separates them,
+//! and the difference that matters is whether the walk may delete.
+//!
+//! Discovered entries are sent in batches to the [`IndexWriter`] for insertion
+//! into the SQLite index, and — when a search is listening — to that search over a
+//! second channel, as [`CoveredEntry`] batches.
 //!
 //! Scan exclusions (macOS system directories, virtual filesystems) are applied per
 //! child in the visitor via `should_exclude`, so excluded subtrees are never
@@ -73,7 +78,7 @@ mod tests;
 
 /// Number of dir ids per `MarkDirsListed` / `MarkDirsUnreadable` message
 /// (mirrors `network_scanner`).
-pub(super) const MARK_CHUNK: usize = 10_000;
+const MARK_CHUNK: usize = 10_000;
 
 /// Stamp the directories this walk found it can't read, so the coverage frontier
 /// stops offering them to every later search. A no-op when empty.

@@ -7,6 +7,7 @@ use std::sync::atomic::Ordering;
 use super::*;
 use crate::indexing::store::ROOT_ID;
 use crate::indexing::writer::WriteMessage;
+use cmdr_fs::pluralize::{pluralize, pluralize_with};
 
 // ── Fixture ──────────────────────────────────────────────────────────
 
@@ -138,6 +139,7 @@ fn a_walk_emits_what_it_writes() {
     assert!(!outcome.cancelled, "the walk ran to the end");
     assert_eq!(outcome.roots_covered, 1);
     assert_eq!(outcome.entries_found, 3, "one.txt, deep/, deep/two.txt");
+    assert_eq!(outcome.dirs_found, 1, "deep/ is the only directory among them");
     assert_eq!(entries.len(), 3, "every written entry reaches the consumer");
 
     let mut emitted: Vec<String> = entries.iter().map(|e| e.path.to_string_lossy().to_string()).collect();
@@ -288,11 +290,18 @@ fn measure_cover_primitives() {
     );
     assert!(root.is_dir(), "{} isn't a directory", root.display());
 
+    // Emit via a stderr handle rather than `println!` (crate-banned), same as the
+    // `bulk_read` bench next door.
+    use std::io::Write;
+    let mut out = std::io::stderr();
+
     // Warm the page cache so the first primitive doesn't pay for the second.
     let warm = std::time::Instant::now();
     let warmed = walkdir_count(&root);
-    println!(
-        "warm-up: {warmed} entries under {} in {:?}",
+    let _ = writeln!(
+        out,
+        "warm-up: {} under {} in {:?}",
+        pluralize_with(warmed, "entry", "entries"),
         root.display(),
         warm.elapsed()
     );
@@ -300,13 +309,19 @@ fn measure_cover_primitives() {
     let parallel = measure_one(&root, Primitive::Parallel);
     let serial = measure_one(&root, Primitive::Serial);
 
-    println!("\n── {} ──", root.display());
+    let _ = writeln!(out, "\n── {} ──", root.display());
     for (name, (elapsed, rows, dirs)) in [("parallel walker", parallel), ("serial reconcile", serial)] {
-        println!("{name:>17}: {elapsed:>10.2?}  {rows} rows, {dirs} dirs listed");
+        let _ = writeln!(
+            out,
+            "{name:>17}: {elapsed:>10.2?}  {}, {} listed",
+            pluralize(rows, "row"),
+            pluralize(dirs, "dir"),
+        );
     }
     let (p_elapsed, p_rows, _) = parallel;
     let (s_elapsed, s_rows, _) = serial;
-    println!(
+    let _ = writeln!(
+        out,
         "{:>17}: {:.1}x, and the parallel walk wrote {:.2}% of the serial walk's rows",
         "verdict",
         s_elapsed.as_secs_f64() / p_elapsed.as_secs_f64(),
@@ -391,6 +406,74 @@ fn walkdir_count(root: &Path) -> u64 {
 }
 
 // ── Cancellation ─────────────────────────────────────────────────────
+
+/// A walk stopped partway reports what it DID cover, not zero.
+///
+/// The totals are what M5's "walked 40,000 folders" line reads, and a cancelled
+/// walk that reported nothing would tell the user their eight minutes bought
+/// them nothing — when in fact every folder it read is now in the index.
+#[test]
+fn a_walk_cancelled_partway_reports_the_ground_it_covered() {
+    let f = Fixture::new();
+    let root = f.tree.path();
+    // Several roots, so cancelling between them is deterministic: the first is
+    // walked in full, then the token fires, then the loop stops at the second.
+    for name in ["one", "two"] {
+        std::fs::create_dir_all(root.join(name).join("inner")).expect("dirs");
+        std::fs::write(root.join(name).join("f.txt"), "xx").expect("file");
+        f.seed_chain(&root.join(name));
+    }
+
+    let cancel = CancellationToken::new();
+    let walk = start(
+        f.context(),
+        vec![f.path("one"), f.path("two")],
+        CoverageDimension::Listing,
+        cancel.clone(),
+    );
+    // The first root's batch is in hand, so its walk is over; stop before the second.
+    let first = walk.next_batch().expect("the first root's entries");
+    cancel.cancel();
+    let (mut entries, outcome) = drain(walk);
+    entries.extend(first);
+    f.writer.flush_blocking().expect("flush");
+
+    assert!(outcome.cancelled, "it was stopped, and says so");
+    assert!(
+        outcome.entries_found >= 2,
+        "the totals carry what it read, not zero (got {outcome:?})"
+    );
+    assert!(
+        outcome.dirs_found >= 1,
+        "including the directories among them (got {outcome:?})"
+    );
+    assert!(!entries.is_empty(), "and the consumer got them");
+    assert!(
+        f.listed_epoch(&f.path("one")) > 0,
+        "the coverage the walk earned is durable"
+    );
+}
+
+/// The repair path reports a cancellation as one, rather than as a covered node.
+///
+/// `reconcile_subtree` breaks out of its walk on cancel and returns `Ok`, so
+/// without `ReconcileSummary.cancelled` this arm would count a stopped repair as
+/// a finished one and the frontier would look smaller than it is.
+#[test]
+fn a_cancelled_repair_is_reported_as_cancelled_not_covered() {
+    let f = Fixture::new();
+    let root = f.tree.path();
+    std::fs::create_dir_all(root.join("F/G")).expect("dirs");
+    f.seed_chain(&root.join("F/G"));
+
+    let cancel = CancellationToken::new();
+    cancel.cancel();
+    assert_eq!(
+        repair_non_virgin(&f.context(), &root.join("F"), &cancel),
+        RootOutcome::Cancelled,
+        "a repair whose token had already fired covered nothing"
+    );
+}
 
 /// Cancelling before the walk starts leaves the frontier where it was, and says
 /// so.

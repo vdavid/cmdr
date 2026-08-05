@@ -96,7 +96,7 @@ impl CoverWalk {
     pub fn finish(self) -> CoverOutcome {
         let CoverWalk { batches, thread, .. } = self;
         drop(batches);
-        thread.join().unwrap_or_else(|_| CoverOutcome {
+        thread.join().unwrap_or(CoverOutcome {
             entries_found: 0,
             dirs_found: 0,
             roots_covered: 0,
@@ -176,29 +176,33 @@ fn walk_frontier(
             break;
         }
         let root = Path::new(path);
-        match cover_subtree(root, &context.space, &context.writer, Some(sender.clone()), cancel) {
-            Ok(summary) => {
-                outcome.entries_found += summary.total_entries;
-                outcome.dirs_found += summary.total_dirs;
-                outcome.roots_covered += 1;
-            }
-            Err(ScanError::Cancelled(summary)) => {
-                outcome.entries_found += summary.total_entries;
-                outcome.dirs_found += summary.total_dirs;
+        // A partial walk's totals count exactly as much as a complete one's, so
+        // both arms hand the same summary to the same accumulation and only the
+        // VERDICT differs. Keeping one `+=` pair is what stops the cancel path
+        // drifting from the completion path.
+        let (summary, verdict) =
+            match cover_subtree(root, &context.space, &context.writer, Some(sender.clone()), cancel) {
+                Ok(summary) => (Some(summary), RootOutcome::Covered),
+                Err(ScanError::Cancelled(summary)) => (Some(summary), RootOutcome::Cancelled),
+                Err(ScanError::NotVirgin) => (None, repair_non_virgin(context, root, cancel)),
+                Err(e) => {
+                    // One unwalkable root doesn't stop the others: it simply stays
+                    // frontier, and the next search asks for it again.
+                    log::warn!("Cover: couldn't walk {path}: {e}");
+                    (None, RootOutcome::Failed)
+                }
+            };
+        if let Some(summary) = summary {
+            outcome.entries_found += summary.total_entries;
+            outcome.dirs_found += summary.total_dirs;
+        }
+        match verdict {
+            RootOutcome::Covered => outcome.roots_covered += 1,
+            RootOutcome::Cancelled => {
                 outcome.cancelled = true;
                 break;
             }
-            Err(ScanError::NotVirgin) => {
-                if repair_non_virgin(context, root, cancel) {
-                    outcome.roots_covered += 1;
-                }
-                outcome.cancelled |= cancel.is_cancelled();
-            }
-            Err(e) => {
-                // One unwalkable root doesn't stop the others: it simply stays
-                // frontier, and the next search asks for it again.
-                log::warn!("Cover: couldn't walk {path}: {e}");
-            }
+            RootOutcome::Failed => {}
         }
     }
 
@@ -216,14 +220,14 @@ fn walk_frontier(
 /// Rare — it takes a verification pass writing children under a directory nothing
 /// listed — and unsafe for the parallel walker, whose fresh ids would collide.
 /// The serial reconcile compares by name and writes only differences, so it can
-/// take the case without deleting anything. Returns whether it covered the node.
-fn repair_non_virgin(context: &CoverContext, root: &Path, cancel: &CancellationToken) -> bool {
+/// take the case without deleting anything.
+fn repair_non_virgin(context: &CoverContext, root: &Path, cancel: &CancellationToken) -> RootOutcome {
     let db_path = context.writer.db_path();
     let conn = match IndexStore::open_read_connection(&db_path) {
         Ok(conn) => conn,
         Err(e) => {
             log::warn!("Cover: couldn't open a connection to repair {}: {e}", root.display());
-            return false;
+            return RootOutcome::Failed;
         }
     };
     match crate::indexing::reconcile::reconciler::reconcile_subtree(
@@ -241,13 +245,29 @@ fn repair_non_virgin(context: &CoverContext, root: &Path, cancel: &CancellationT
                 summary.removed,
                 summary.updated,
             );
-            !summary.cancelled
+            if summary.cancelled {
+                RootOutcome::Cancelled
+            } else {
+                RootOutcome::Covered
+            }
         }
         Err(e) => {
             log::warn!("Cover: couldn't repair {}: {e}", root.display());
-            false
+            RootOutcome::Failed
         }
     }
+}
+
+/// How one frontier root's walk ended, whichever primitive took it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum RootOutcome {
+    /// The node is covered now.
+    Covered,
+    /// Someone stopped the walk partway. Whatever it listed is still marked, and
+    /// the rest of the frontier is left for the next search.
+    Cancelled,
+    /// It couldn't run. The node stays frontier and the next search asks again.
+    Failed,
 }
 
 #[cfg(test)]

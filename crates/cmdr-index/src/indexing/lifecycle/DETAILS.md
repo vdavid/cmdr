@@ -40,6 +40,9 @@ concurrently without corrupting each other. Every invariant below holds independ
   heal latch. If the rebuild can't start (share unmounted, scan already running) we log and keep serving the existing
   index; nothing stamps the DB until a rebuild actually truncates, so the next load re-arms. Triggers, name list, and
   the stamp are canonical in `../network_scanner/DETAILS.md` § "NAS snapshot/system dirs aren't recursed".
+- **cover.rs** (+ `cover/tests.rs`) — the SEARCH-driven walk, the write half of the coverage concept whose read half is
+  `../read/coverage.rs`. `Index::cover` resolves a `CoverContext` (the volume's running writer + its path space) here,
+  spawns one Utility-QoS thread, and walks each frontier root the coverage answer named. Detail below.
 - **scan_completion.rs** — the post-scan handler: the vanished-volume abort and the LOCAL failure→Stale arm (below).
 - **freshness.rs** — the `Fresh`/`Stale`/`Scanning`/`Failed` transition table (`Freshness::on`) +
   `initial_freshness_on_launch`.
@@ -308,6 +311,33 @@ falls through to a fresh start. `clear_index`/`stop_indexing` each grew a `Faile
 reconciler's failing-resolve churn is bounded to at most one batch after the trip. A pure read-only flood (the event
 loop's `resolve_path` failing fatally while the writer never writes) is still not independently detected — in practice
 live processing always writes, so the writer trips.
+
+## The cover walk (`cover.rs`) — filling in what a search can't answer for
+
+`../read/coverage.rs` says which folders under a scope nothing has listed; this walks them. Every row goes into the
+volume's real index through its ONE writer (Decision 2 of `docs/specs/unindexed-search-plan.md`), so the work outlives
+the search that paid for it and the next search over the same ground walks less.
+
+**Two primitives, and which one runs.** A frontier node is virgin ground by definition, so this is a bulk add and the
+parallel guarded walker wins outright — 3.2–5.8x over the serial reconcile with identical row counts on four real trees
+(`docs/notes/cover-walk-primitive-2026-08-05.md`). The serial reconcile is kept as the REPAIR path, for the one case the
+parallel walker can't take: a frontier node the index already holds rows under (`ScanError::NotVirgin`, see
+`../scanner/DETAILS.md` § "Three scan roots"). It compares by name and writes only differences, which is exactly that
+case's shape. ❌ Neither path ever deletes: covering is add-only work.
+
+**Terminal states.** `CoverOutcome.cancelled` separates "the index answers for this scope now" from "somebody stopped
+us", which are different phases in the UI. Neither is a failure: a cancelled walk still left every directory it read
+marked, so the next walk resumes rather than restarts. One frontier root that can't be walked doesn't stop the others —
+it stays frontier, and the next `coverage` call names it again.
+
+**Ownership and cancellation.** `cover_context_for` matches `IndexPhase::Running` only, so a walk reuses the volume's
+existing writer and never stands a second one up (two writers on one DB race the id counter and the accumulator maps).
+Cancel through `CoverWalk::cancel`; DROPPING the handle does not stop the walk (Decision 11 — walking is coverage work,
+matching is query work, so a superseded query keeps its walk). `finish` drops the batch channel BEFORE joining, so a
+caller that stopped reading can't deadlock against a walk parked on a full one.
+
+**The channel is bounded at eight batches.** A consumer that falls behind slows the walk rather than growing a queue to
+the size of the subtree; each batch already carries up to 2 000 entries.
 
 ## Vanished-volume scan abort (`scan_completion.rs`)
 

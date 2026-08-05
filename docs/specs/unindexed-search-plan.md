@@ -247,7 +247,7 @@ coverage API must not assume a single dimension.
 
 ## Execution status
 
-Through M2. Branch `worktree-david+unindexed-search-exec`, nothing merged to `main` yet.
+Through M3a. Branch `worktree-david+unindexed-search-exec`, nothing merged to `main` yet.
 
 **Landed.**
 
@@ -263,8 +263,16 @@ Through M2. Branch `worktree-david+unindexed-search-exec`, nothing merged to `ma
   `Index::coverage_token`, schema v15's `entries.known_unreadable`, and `meta.exclusion_policy_built_for` stamped after
   every truncating full walk. Measured at 5.4 ms warm on a real 658 188-folder root index against the 50 ms budget, with
   no new database index (`docs/notes/coverage-frontier-query-2026-08-05.md`). `index-crate-isolation` ceilings raised
-  once, per David's instruction: root promises 44 → 47, handle methods 35 → 38, the last slot reserved by name for M3b's
+  once, per David's instruction: root promises 44 → 47, handle methods 35 → 38, the last slot reserved by name for
   `cover`.
+- **M3a**: convergence. Marks now ride WITH the rows that make them stampable (one `Pending` lock in `InsertVisitor`,
+  rows-then-marks inside the critical section), so a cancelled walk keeps every directory it read instead of stamping
+  zero. `Index::cover(volume, frontier, dimension)` walks a frontier into the volume's real index and emits
+  `CoveredEntry` batches over a bounded channel while it runs; `CoverOutcome` carries the cancelled/completed split. ❌
+  It deletes nothing: `ScanRoot::Virgin` refuses a root that already has children (`ScanError::NotVirgin`) and the
+  serial reconcile takes that case. The walk also stamps `known_unreadable` for permission-denied reads, which M2's
+  column had no writer for. Primitive chosen by measurement — parallel walker, 3.2–5.8x over the serial reconcile with
+  identical row counts on four real trees (`docs/notes/cover-walk-primitive-2026-08-05.md`). Root promises 47 → 50.
 
 **Decisions taken during execution that the spec did not pre-empt.**
 
@@ -276,6 +284,22 @@ Through M2. Branch `worktree-david+unindexed-search-exec`, nothing merged to `ma
 - **`category === 'network'` is not a reliable network test** anywhere on the frontend: an SMB share whose direct
   connection was refused stays an OS mount and reports `attached_volume` with `fsType: 'smbfs'`. Use
   `volumeKindOf(...) === 'smb'` (invariant A6). Two sites fixed; **a sweep of the rest is still owed**.
+- **A frontier node CAN hold a listed descendant, and it takes no cancellation to get there.** M3a set out to check
+  whether the destructive delete was reachable and found a shorter route than the one this plan named: FSEvents
+  verification upserts children under a directory without marking that directory listed, then scans each new child,
+  which does mark it. So the plan's premise ("a scan root is a frontier node, so it can't carry a listed descendant") is
+  false on the live path, not just after a crash.
+- **A re-scan without the delete does NOT violate uniqueness** (this plan said it would). `insert_entries_v2_batch` is
+  `INSERT OR IGNORE`, so the colliding row is silently skipped and everything the walk then attributes to the id it lost
+  is orphaned — the same conclusion (an add-only walk over existing rows is unsafe) by a quieter and worse mechanism.
+  M3a resolves it by refusing non-virgin ground rather than by deleting.
+- **`known_unreadable` needed a writer, and M3a is where it belongs.** M2 added the column; without something setting
+  it, a permission-denied folder re-enters the frontier on every search forever, which is the same convergence failure
+  M3a exists to fix. The walk stamps it for `PermissionDenied` only (a timeout is transient), and `mark_dirs_listed`
+  clears it.
+- **Every walk paid a full watchdog interval of dead time.** Found while measuring the primitive choice: `walk` joins
+  its watchdog, which slept a flat interval before checking whether the walk was done. A 368-entry tree took 1.01 s.
+  Fixed (condvar, woken by `signal_done`); same tree now 3.92 ms. It affected `scan_subtree` on the verifier path too.
 
 **Open, needing David.**
 

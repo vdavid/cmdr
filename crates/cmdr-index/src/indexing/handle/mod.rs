@@ -13,9 +13,11 @@
 //! - **Answers what's on them.** [`Index::enrich`] fills recursive sizes into a
 //!   listing (the hot path), and [`Index::dir_stats`] / [`Index::list_children`]
 //!   answer for one path.
-//! - **Says what it can't answer for yet.** [`Index::coverage`] hands back the
-//!   frontier — the shallowest folders under a scope that nothing has listed — so
-//!   a caller can walk exactly the gap and serve the rest from the index.
+//! - **Says what it can't answer for yet, and fills it in.** [`Index::coverage`]
+//!   hands back the frontier — the shallowest folders under a scope that nothing
+//!   has listed — so a caller can walk exactly the gap and serve the rest from
+//!   the index; [`Index::cover`] is the walk that closes it, streaming what it
+//!   finds while it runs.
 //! - **Takes corrections from the host.** The app sees changes the index can't
 //!   (a share's change notification, a phone's PTP event, a watcher that died),
 //!   and hands them back through [`Index::apply_directory_change`],

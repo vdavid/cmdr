@@ -31,9 +31,9 @@ machine, the fresh parallel scan takes 52.7 s and the reconcile 476.9 s — but 
 (6,001,637 rows, versus 6,663,048 after the reconcile filled in the five subtrees it had skipped). The parallel walk
 buys part of its speed by giving up. What it gives up on is a genuinely unresponsive mount, not a busy machine: the
 abandonments were `LOCAL_LIST_TIMEOUT` and the 32-consecutive-failure give-up budget firing inside a phone's File
-Provider mount. (❌ Not "rayon contention" — the walker has never used rayon, see `../scanner/CLAUDE.md`
-§ "Never rayon".) A SCOPED walk doesn't meet that shape unless the scope contains such a mount: measured over four real
-trees up to 1.2M entries, the parallel walker wrote exactly the reconcile's row count and abandoned nothing
+Provider mount. (❌ Not "rayon contention" — the walker has never used rayon, see `../scanner/CLAUDE.md` § "Never
+rayon".) A SCOPED walk doesn't meet that shape unless the scope contains such a mount: measured over four real trees up
+to 1.2M entries, the parallel walker wrote exactly the reconcile's row count and abandoned nothing
 (`docs/notes/cover-walk-primitive-2026-08-05.md`).
 
 **Mode predicate.** Both scan entry points pick reconcile vs truncate from the entry count read off the live read
@@ -386,6 +386,26 @@ Measured on David's production index (7,325,641 rows, 2026-07-21): 29 such direc
 `LOCAL_LIST_TIMEOUT` skips the subtree, so `fetch_temp` reads 955,724 rows against ~1.4M on disk) — treat every number
 as a lower bound. The guard's own activations are NOT answerable this way, so they stay counted: `verifyDeclinedDirs`
 (tooth 1) and `verifyTruncatedDirs` (tooth 2).
+
+## Where the serial walk was chosen, and where it wasn't (the search cover walk)
+
+`../lifecycle/cover.rs` had this exact choice to make for a search-driven walk over a coverage frontier, and it went
+both ways:
+
+- **NOT chosen for the frontier itself.** A frontier node is virgin ground by definition, so this is a bulk add — the
+  workload the parallel walker is for. Measured on four real trees from 368 to 1,202,613 entries: 3.2–5.8x faster,
+  identical row counts, nothing abandoned (`docs/notes/cover-walk-primitive-2026-08-05.md`). The comment on
+  `reconcile_subtree` calling itself "the LIVE small-scope fill path" is exactly right, and a frontier is not that.
+- **Chosen for the repair case, which the parallel walker cannot take.** A frontier node that ALREADY holds rows (an
+  FSEvents verification pass writes children under a directory without marking that directory listed) is unsafe for the
+  parallel walker in both directions: deleting first would drop rows the walk did not write, and walking add-only over
+  them would collide fresh ids with existing siblings, get silently skipped by `INSERT OR IGNORE`, and orphan the
+  subtree. Comparing by name and writing only differences is precisely what this walk does, so `ScanError::NotVirgin`
+  routes here. See `../scanner/DETAILS.md` § "Three scan roots".
+
+`ReconcileSummary.cancelled` exists for that caller: the walk is safe to interrupt (every directory it listed is still
+marked), but "the scope is covered now" and "somebody stopped us" are different answers and a summary that reported them
+identically was quietly lying.
 
 ## The per-navigation verifier (`verifier.rs`)
 

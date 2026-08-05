@@ -14,16 +14,20 @@ the shared `extract_metadata` primitive at `../metadata.rs` (documented in the [
 ## Module structure
 
 - **mod.rs** — the scan driver: `scan_volume()` (full scan) / `scan_subtree()` (targeted subtree rescan, used by
-  post-replay background verification and the per-navigation verifier), `run_scan`, the `InsertVisitor` fresh-scan
-  visitor, the `ScanConfig` / `ScanProgress` / `ScanHandle` / `ScanSummary` / `ScanError` types, the `send_marks`
-  helper, and `LOCAL_LIST_TIMEOUT` (15 s). No path→id map: the walker carries each directory's id to its own read, so
-  the visitor attributes children to their parent via the carried `parent_id` (`dir.id`) directly, allocating fresh
-  child ids from the shared `Arc<AtomicI64>` counter owned by `IndexWriter`. The scan root resolves via
-  `resolve_scan_root` (`ROOT_ID` = 1 for a volume scan, the existing entry id for a subtree scan). Sizes come from a
-  per-child `symlink_metadata` (lstat); physical sizes are `st_blocks * 512`. Hardlink dedup: files with `nlink > 1` are
-  tracked in a mutex-guarded `HashSet<u64>` by inode (workers run concurrently); only the first link's size counts,
-  later links get `size = None`. `nlink == 1` files skip the set. All files store `inode`; directories and symlinks get
-  `inode: None`.
+  post-replay background verification and the per-navigation verifier) / `cover_subtree()` (the search-driven walk over
+  a coverage frontier node), `run_scan`, the `ScanRoot` mode, the `ScanConfig` / `ScanProgress` / `ScanHandle` /
+  `ScanSummary` / `ScanError` / `CoveredEntry` types, and `LOCAL_LIST_TIMEOUT` (15 s). No path→id map: the walker
+  carries each directory's id to its own read, so the visitor attributes children to their parent via the carried
+  `parent_id` (`dir.id`) directly, allocating fresh child ids from the shared `Arc<AtomicI64>` counter owned by
+  `IndexWriter`. The scan root resolves via `resolve_scan_root` (`ROOT_ID` = 1 for a volume scan, the existing entry id
+  for a subtree scan). Sizes come from a per-child `symlink_metadata` (lstat); physical sizes are `st_blocks * 512`.
+  Hardlink dedup: files with `nlink > 1` are tracked in a mutex-guarded `HashSet<u64>` by inode (workers run
+  concurrently); only the first link's size counts, later links get `size = None`. `nlink == 1` files skip the set. All
+  files store `inode`; directories and symlinks get `inode: None`.
+- **insert_visitor.rs** — the fresh-scan `DirVisitor`, and the ordering rules its one `Pending` lock enforces (see
+  "Marks ride with their rows" below).
+- **convergence_tests.rs** — what a walk leaves behind when it doesn't finish. `test_fixtures.rs` holds the writer /
+  temp-tree / mock-reader fixtures both test modules build on.
 - **walker/** — the hang-tolerant engine (`walk`, `std_read_dir`, the `DirVisitor` trait, `DirTask` / `RawDirEntry` /
   `WalkReadError` / `WalkConfig` types, the watchdog, the progress-timeout verdict, the `SubtreeBudget` give-up budget)
   plus `bulk_read` (the `getattrlistbulk`-batched `bulk_read_dir` used in production on macOS). Tests are in
@@ -48,6 +52,65 @@ the shared `extract_metadata` primitive at `../metadata.rs` (documented in the [
 
 E2E scan restriction: when `CMDR_E2E_START_PATH` is set, `should_exclude` restricts scanning to the fixture path, its
 children, and ancestors (critical for Docker E2E performance).
+
+## Three scan roots, and what each may do to the ground under it
+
+`ScanRoot` replaced an `is_volume_root` boolean, because the third case is exactly the one a boolean couldn't express.
+
+- **`Volume`** — the whole volume. The root maps to `ROOT_ID` whatever its path is, `seed_current_epoch` runs on a WRITE
+  connection, and the per-child exclusion gate applies.
+- **`Rebuild`** — a subtree the index already holds, rebuilt from scratch. Sends `DeleteDescendantsById(root_id)` first,
+  then re-inserts every child under fresh ids. What `scan_subtree` is, and what the verifier and FSEvents verification
+  want: they've just decided the index's picture of that subtree is wrong.
+- **`Virgin`** — a coverage frontier node, walked by `cover_subtree` for a search. ❌ Deletes NOTHING.
+
+**Why `Virgin` can't just reuse `Rebuild`.** A frontier node is one nothing has listed, which does NOT mean nothing is
+known below it: FSEvents verification upserts newly-seen children under a directory without ever marking that directory
+listed (`../watch/event_loop/verification.rs` sends `UpsertEntryV2`, never `MarkDirsListed`) and then scans each new
+child directory, which does mark it. So a frontier node can sit above genuinely-covered ground, and
+`DeleteDescendantsById` there throws away rows the walk did not write —
+`convergence_tests::a_frontier_node_can_hold_a_listed_descendant` builds exactly that state.
+
+**Why `Virgin` can't just drop the delete either.** The walk allocates a FRESH id for every name it finds, and
+`insert_entries_v2_batch` is `INSERT OR IGNORE` against `UNIQUE (parent_id, name_folded)`. Over a pre-existing sibling
+the fresh row is silently skipped, the walk keeps attributing that directory's children to the id it just lost, and the
+whole subtree below it is orphaned — quieter and worse than a constraint error. So `run_scan` checks
+`count_children_capped(root_id, .., 1)` on the same connection it resolves the root with, and a non-empty root is
+`ScanError::NotVirgin` rather than a walk. `lifecycle/cover.rs` takes that case to the serial reconcile, which compares
+by name and writes only differences.
+
+## Marks ride with their rows
+
+A directory's `listed_epoch` is stamped by `MarkDirsListed`, a PK `UPDATE` that silently updates zero rows. The
+directory's own row is written by its PARENT's `visit_dir`, so at the moment its own read succeeds that row may still be
+sitting in an unflushed batch — and a mark that overtakes it leaves the directory at `listed_epoch = 0` forever, which
+in the coverage model means "walk this again on every search".
+
+`InsertVisitor` accumulates rows, listed ids, and discovered entries in ONE `Pending` behind ONE mutex, and sends
+rows-then-marks **inside** that critical section. That makes both overtakes unrepresentable: an id can only be appended
+after its own row was (same lock), and two workers can't hand the writer batch 2 before batch 1 (the send is under the
+lock, so sends happen in take order). ❌ Don't split `Pending` into separate mutexes, and ❌ don't move the send outside
+the lock.
+
+The consequence that matters is convergence: `finish()` flushes rows AND marks on the **cancel** path too, so a walk
+someone stopped keeps every directory it read. Before this, `run_scan` returned `Vec::new()` for `listed_ids` on a
+cancel and the whole subtree re-entered the frontier on the next search.
+
+Two things fall out for free: the mark-before-final-aggregate ordering invariant now holds by construction rather than
+by the caller remembering it, and a long walk's coverage becomes queryable as it goes rather than only at the end.
+
+## What a walk emits, and to whom
+
+`cover_subtree` takes an optional `EntrySender` (`SyncSender<Vec<CoveredEntry>>`). When one is present the visitor
+builds a `CoveredEntry` alongside each `EntryRow` and flushes both on the same boundary, so a search sees results while
+the walk is still running (Decision 3 of `docs/specs/unindexed-search-plan.md`: the scan stays in `indexing/`, the
+matching stays in `search/`, one channel crossing per batch and no matcher in this crate).
+
+A `CoveredEntry` carries the entry's OWN sizes, before hardlink dedup. Dedup exists so the stored recursive sums don't
+count a file twice; a search result row showing a hardlinked file as 0 bytes would just be wrong.
+
+A send failure means the consumer went away (the search dialog closed, the query was superseded). The visitor drops the
+sender and **keeps walking**: walking is coverage work, and its rows are in the index for the next query either way.
 
 ## The guarded local walker (`scanner/walker/`)
 

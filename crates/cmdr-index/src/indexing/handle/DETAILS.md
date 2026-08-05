@@ -55,9 +55,9 @@ Two calls, one question:
   needed": `IndexStore::read_current_epoch` never reaches the handle, because a bare epoch isn't the question. A walk
   stamps `listed_epoch` and never bumps `current_epoch`, so the epoch alone can't move when rows appear; the token pairs
   it with the id high-water mark, which does.
-- **Reserved, not built: `cover(...)`**, the walk half — it takes the frontier a coverage answer named and fills it in.
-  Its ceiling slot is claimed so the next milestone doesn't re-argue a decision already made; its TYPES are not
-  pre-approved and will need their own argument.
+- **`cover(volume_id, frontier, dimension)`** — the walk half: it takes the frontier a coverage answer named and fills
+  it in, handing back each batch of entries it finds while it's still running. It landed 2026-08-05 into the slot
+  reserved for it, and brought the three types its answer is made of (below).
 
 **Why the covered half is not in the answer.** It's tempting to return "these subtrees are covered, those aren't", and
 it would be a second, weaker copy of something the index already has. The two halves are complementary over the same
@@ -69,9 +69,21 @@ deduplication unnecessary anywhere in the search path, rather than a hash set no
 it only work if callers were never written against a single implied dimension, and adding the parameter later means
 touching every one of them.
 
-**Three root promises** came with it: `CoverageMap`, `CoverageToken`, `CoverageDimension`. `CoverageToken`'s fields stay
-private and it's `PartialEq` only — the sole question worth asking of it is whether two answers describe the same rows,
-and exposing the epoch would invite callers to reason about a scheme the read side deliberately keeps inside
+**Six root promises** came with it. `CoverageMap`, `CoverageToken`, and `CoverageDimension` are the read half's;
+`CoverWalk`, `CoveredEntry`, and `CoverOutcome` are the walk's, and each earns its place by being something a host
+genuinely can't do without:
+
+- **`CoverWalk`** — the running walk. There is no way to take batches off it, cancel it, or wait for it without a handle
+  to it, and it can't be a plain `Receiver` because cancelling and finishing are part of the contract.
+- **`CoveredEntry`** — one entry the walk found. This type crossing the boundary IS the design: Decision 3 keeps the
+  matcher in `search/` and the scan in `indexing/`, so what crosses is data, not a predicate. It carries the entry's own
+  pre-dedup sizes, because a result row showing a hardlinked file as 0 bytes would be wrong.
+- **`CoverOutcome`** — what the walk covered, and whether somebody stopped it. M5's terminal UI states are exactly that
+  distinction, and neither of them is a failure.
+
+Nothing further is owed to the concept; a fourth type here needs the same argument these did. `CoverageToken`'s fields
+stay private and it's `PartialEq` only — the sole question worth asking of it is whether two answers describe the same
+rows, and exposing the epoch would invite callers to reason about a scheme the read side deliberately keeps inside
 (`../read/CLAUDE.md`: "never ship raw epochs").
 
 The mechanism, the descent rule, and the tests that hold it: `../read/DETAILS.md` § "The coverage frontier".
@@ -149,11 +161,11 @@ is supposed to BE the surface.
 `cmdr-archive` the same way, from its own entry in the check. Four buckets here, measured 2026-07-31 and raised once on
 2026-08-05 for the coverage concept above:
 
-- **47 root promises** — the names `lib.rs` exports, `pub mod` included. 44 at the audit, plus coverage's three types.
+- **50 root promises** — the names `lib.rs` exports, `pub mod` included. 44 at the audit, plus coverage's six types (the
+  read half's three on 2026-08-05, the walk half's three the same day).
 - **38 methods on `Index`** — the 36 above plus `Index::builder`, which the headline number treats as the constructor
-  rather than a call, plus one slot reserved for `cover`. That reservation is deliberate: David asked for the whole
-  concept to be designed and the ceiling raised once, not a bump per method. It is spoken for by name; anything else
-  arriving in it has to be argued the way these were.
+  rather than a call, plus `cover`, which took the slot reserved for it by name. That reservation is now spent; the
+  ceiling is at its number, so the next method has to be argued the way these were.
 - **17 public modules** and **156 public items inside them** — the surface the root re-exports don't capture, which is
   where `media_index` and `importance` live. Unchanged: the coverage module is `pub(crate)`, reaching a host only
   through the handle and the root re-exports.

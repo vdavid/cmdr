@@ -234,13 +234,27 @@ This holds BY CONSTRUCTION because the same events drive both — a clean `ScanC
 `state::tests::disconnect_keeps_instance_stale_user_cancel_resets_to_gray` (enum layer).
 
 **Scanner stamp mechanism (the mark-before-aggregate ordering invariant).** A dir's `entries` row is inserted as part of
-its PARENT's `InsertEntriesV2` batch, so a per-dir `MarkDirsListed` could run its `UPDATE` before that row flushed and
-match nothing. So both scanners ACCUMULATE the ids of every SUCCESSFULLY-listed dir and emit `MarkDirsListed` (chunked)
-ONCE after the final batch flush and BEFORE the final aggregate. On the single in-order writer this guarantees the marks
-land before aggregation reads `listed_epoch` (a mark queued behind the aggregate would leave a dir at epoch 0 → the
-whole subtree rolls to `min_subtree_epoch = 0` → a cleanly-scanned volume renders incomplete forever). `MarkDirsListed`
-does NOT bump the writer generation. The two scanners' accumulate rules are in `../scanner/DETAILS.md` (local walker)
-and the network scanner docs; the aggregator's rollup math is in `../aggregator/DETAILS.md`.
+its PARENT's `InsertEntriesV2` batch, so a `MarkDirsListed` that overtakes that batch runs its PK `UPDATE` against a row
+that isn't there yet and matches nothing — silently, leaving the dir at `listed_epoch = 0` forever. Two shapes satisfy
+the ordering, and the local walker moved from the first to the second:
+
+- The NETWORK scanner accumulates every successfully-listed dir id and emits `MarkDirsListed` (chunked) ONCE after the
+  final batch flush and BEFORE the final aggregate.
+- The LOCAL walker accumulates rows and ids under ONE lock and sends **rows first, marks second, inside that critical
+  section** (`../scanner/DETAILS.md` § "Marks ride with their rows"). Same guarantee, held per batch instead of once at
+  the end, which is what lets a CANCELLED walk keep the coverage it earned — the convergence property search depends on.
+  ❌ Don't "simplify" it back to a post-walk emit: a walk that never reaches its end would stamp nothing.
+
+Either way, on the single in-order writer the marks land before aggregation reads `listed_epoch` (a mark queued behind
+the aggregate would leave a dir at epoch 0 → the whole subtree rolls to `min_subtree_epoch = 0` → a cleanly-scanned
+volume renders incomplete forever). `MarkDirsListed` does NOT bump the writer generation. The aggregator's rollup math
+is in `../aggregator/DETAILS.md`.
+
+**`MarkDirsListed` also CLEARS `known_unreadable`.** A directory we just listed is by definition readable again (Full
+Disk Access granted, a permission fixed, a mount back), so the flag heals itself with no rebuild and no separate pass.
+`MarkDirsUnreadable` is the setter, sent by the local walk after its marks for the dirs whose read failed with
+permission denied. It touches only that column: the dir stays `listed_epoch = 0` so sizes stay honest, and all the flag
+buys is that `read/coverage.rs`'s frontier reports it instead of re-offering it on every search.
 
 **Live-path discipline (the path local lives on).** After a scan the local index spends ~all its life in live mode, so
 coverage must stay honest under every live mutation. Three rules, all in `writer/` + `../reconcile/`:
