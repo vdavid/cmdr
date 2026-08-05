@@ -2153,8 +2153,29 @@ export const commands = {
    */
   searchFiles: (query: SearchQuery) => typedError<SearchResult, string>(__TAURI_INVOKE('search_files', { query })),
   /**
-   *  Called when the search dialog closes. Starts the idle timer and cancels any
-   *  in-progress index load.
+   *  Search the scope's volume, walking whatever its index can't answer for yet.
+   *
+   *  Returns as soon as routing has picked a volume; everything else arrives as
+   *  `search-progress` / `search-complete` / `search-cancelled` / `search-error`
+   *  events stamped with `run_id`. Starting a run supersedes the previous one (its
+   *  events stop, its walk carries on), and `cancel_search` stops one outright.
+   *
+   *  `run_id` comes from the caller so no event can arrive against an id the
+   *  frontend hasn't seen yet, exactly as `listing_id` does for a streaming
+   *  listing.
+   */
+  searchFilesStreaming: (query: SearchQuery, runId: string) =>
+    typedError<LiveSearchStart, string>(__TAURI_INVOKE('search_files_streaming', { query, runId })),
+  // Stop a live search and the walk behind it. Returns whether there was one.
+  cancelSearch: (runId: string) => typedError<boolean, string>(__TAURI_INVOKE('cancel_search', { runId })),
+  /**
+   *  Called when the search dialog closes. Starts the idle timer, cancels any
+   *  in-progress index load, and stops every live search.
+   *
+   *  A walk outlives its dialog only through "Open in pane"
+   *  (`docs/specs/unindexed-search-plan.md` M7); closing the dialog otherwise means
+   *  nobody is waiting for it. What it already read stays in the index, so the next
+   *  search over that ground starts from where this one stopped.
    */
   releaseSearchIndex: () => typedError<null, string>(__TAURI_INVOKE('release_search_index')),
   /**
@@ -3319,7 +3340,11 @@ export const events = {
   scanPreviewError: makeEvent<ScanPreviewErrorEvent>('scan-preview-error'),
   scanPreviewProgress: makeEvent<ScanPreviewProgressEvent>('scan-preview-progress'),
   scanProgress: makeEvent<ScanProgressEvent>('scan-progress'),
+  searchCancelled: makeEvent<SearchCancelledEvent>('search-cancelled'),
+  searchComplete: makeEvent<SearchCompleteEvent>('search-complete'),
+  searchError: makeEvent<SearchErrorEvent>('search-error'),
   searchIndexReady: makeEvent<SearchIndexReadyEvent>('search-index-ready'),
+  searchProgress: makeEvent<SearchProgressEvent>('search-progress'),
   settingsChanged: makeEvent<SettingsChanged>('settings-changed'),
   systemTextSizeChanged: makeEvent<SystemTextSizeChanged>('system-text-size-changed'),
   tabContextAction: makeEvent<TabContextAction>('tab-context-action'),
@@ -5738,6 +5763,17 @@ export type ListingStatus =
   | { status: 'cancelled' }
   | { status: 'error'; message: string }
 
+// What starting a live search hands back before any of it has happened.
+export type LiveSearchStart = {
+  // Echoed from the request. Every event this run emits carries it.
+  runId: string
+  /**
+   *  The ONE volume routing picked, known before the search has read anything,
+   *  so the UI can name the drive it's about to search.
+   */
+  targetVolumeId: string
+}
+
 /**
  *  Live, per-moment machine state. Only meaningful when collected in a healthy running context, so
  *  it rides error reports but not crash reports.
@@ -7411,6 +7447,27 @@ export type ScanRunKind =
   | 'change_check'
 
 /**
+ *  Somebody stopped the run. Its results stay on screen: everything already
+ *  found is real, and everything the walk read is in the index for next time.
+ */
+export type SearchCancelledEvent = {
+  runId: string
+  matchCount: number
+  coverage: SearchRunCoverage
+}
+
+/**
+ *  The run finished on its own terms — which is not the same as "the answer is
+ *  complete"; [`SearchRunCoverage::walk`] says which.
+ */
+export type SearchCompleteEvent = {
+  runId: string
+  // The exact total for everything this run covered.
+  matchCount: number
+  coverage: SearchRunCoverage
+}
+
+/**
  *  Whether the journal holds every leaf of the operation (search honesty,
  *  D-granularity). `Full` requires the drive index to have been present AND
  *  current for the whole subtree.
@@ -7433,6 +7490,18 @@ export type SearchCoverageReason =
   | 'volumeNotLive'
   // A `search_only` leaf row was dropped/errored (D4 completeness).
   | 'searchRowIncomplete'
+
+// The run couldn't run.
+export type SearchErrorEvent = {
+  runId: string
+  // Typed, word-free classification. Branch on this.
+  error: SearchRunError
+  /**
+   *  The sentence to show. Rendered backend-side for the same reason the
+   *  engine's "Query too broad" is.
+   */
+  message: string
+}
 
 /**
  *  Emitted once a volume's in-memory search index finishes loading, so the dialog
@@ -7476,6 +7545,20 @@ export type SearchMode = {
   caseSensitive: boolean
 }
 
+/**
+ *  Which part of a live search produced an event.
+ *
+ *  Three honest waits rather than one spinner: resolving coverage can mean a
+ *  multi-second arena load, reading the index is fast, and the walk is unbounded.
+ */
+export type SearchPhase =
+  // Asking the index what it can't answer for yet, and loading its arena.
+  | 'resolvingCoverage'
+  // Scanning the arena: the half the index already covers.
+  | 'readingIndex'
+  // Walking the ground the index doesn't cover, live.
+  | 'walking'
+
 // Result from polling search progress.
 export type SearchPollResult = {
   status: SearchStatus
@@ -7493,6 +7576,42 @@ export type SearchPollResult = {
    *  (for progress) but stopped storing new matches.
    */
   matchLimitReached: boolean
+}
+
+// A batch of results, plus where the run has got to.
+export type SearchProgressEvent = {
+  /**
+   *  The run these results belong to. Drop anything naming a run you've
+   *  superseded.
+   */
+  runId: string
+  phase: SearchPhase
+  /**
+   *  Rows found since the last event, in arrival order. Empty on a
+   *  progress-only event (a walk grinding through folders that match nothing,
+   *  or a count-only search).
+   */
+  entries: SearchResultEntry[]
+  /**
+   *  Matches so far, counting the ones past the result cap. "N so far" while
+   *  walking, exact once the terminal event lands.
+   */
+  matchCount: number
+  /**
+   *  Directories the walk has turned up so far. FOUND, not finished: a
+   *  directory is counted when the walk discovers it, some way before it reads
+   *  what's inside. Progress with no denominator, on purpose — the total is
+   *  unknown by definition, and a fabricated percentage or ETA would be a lie
+   *  (Decision 14).
+   */
+  dirsFound: number
+  /**
+   *  Where the walk was as of this batch. Indicative, not a cursor: the local
+   *  walker reads many directories at once.
+   */
+  currentPath: string | null
+  // Whether the cap is reached, so no further rows will arrive.
+  capped: boolean
 }
 
 export type SearchQuery = {
@@ -7566,6 +7685,65 @@ export type SearchResultEntry = {
   modifiedAt: number | null
   iconId: string
 }
+
+/**
+ *  What a live run could NOT answer for, gathered in one place so a terminal
+ *  event says it once.
+ *
+ *  `Run` in the name because the operation log has a `SearchCoverage` of its own
+ *  (how much of a copy's source tree a journal search covered), and two types of
+ *  one name can't both cross specta.
+ */
+export type SearchRunCoverage = {
+  /**
+   *  How the walk ended. Anything but [`WalkEnding::Completed`] /
+   *  [`WalkEnding::NothingToWalk`] means the list is a lower bound.
+   */
+  walk: WalkEnding
+  /**
+   *  Directories nothing is going to walk, as absolute paths: either a walk
+   *  tried and can't read one (permission denied), or it won't read one at all
+   *  (a NAS snapshot tree, whose per-snapshot copies the scanner refuses on
+   *  purpose). Two causes, two different sentences — ❌ don't render one.
+   */
+  unreadable: string[]
+  /**
+   *  Ground another walk on this volume is covering right now, so this run left
+   *  it alone. Its rows reach the same index, so this is "these arrive a bit
+   *  later", never "these are lost".
+   */
+  stillCovering: string[]
+  /**
+   *  Scope paths that routed to this volume but aren't in its index and
+   *  couldn't be walked either. The typed "Cmdr can't speak for this folder"
+   *  signal; ❌ never worded as "that folder doesn't exist".
+   */
+  unresolvedScopes: string[]
+  /**
+   *  Whether the result cap was reached. The walk carries on past it (the count
+   *  keeps rising), only the rows stop.
+   */
+  capped: boolean
+  // The ONE volume this run covered, as routing resolved it.
+  targetVolumeId: string
+}
+
+/**
+ *  Why a run couldn't answer at all. Typed for the branch, with the sentence
+ *  alongside for display (the bare-message contract search results already have).
+ */
+export type SearchRunError =
+  /**
+   *  The query can't be run: an invalid pattern, or one that narrows nothing
+   *  while ground still needs walking (a walk over an unknown filesystem can't
+   *  afford "show me everything").
+   */
+  | 'query'
+  /**
+   *  The volume's index file exists but won't open or read. Distinct from
+   *  "never indexed", which is not an error — that volume gets walked.
+   */
+  | 'indexUnreadable'
 
 /**
  *  Status of an ongoing search.
@@ -8635,6 +8813,26 @@ export type VolumesChanged = {
   // Whether the local volume listing timed out (some volumes may be missing).
   timedOut: boolean
 }
+
+/**
+ *  How a live search's walk ended. Typed, because three of the four leave the
+ *  result list INCOMPLETE and the copy differs
+ *  (`.claude/rules/no-string-matching.md`).
+ */
+export type WalkEnding =
+  // The index already covered the whole scope, so nothing had to be walked.
+  | 'nothingToWalk'
+  // Every frontier root this run took was covered end to end.
+  | 'completed'
+  /**
+   *  It stopped before covering its frontier: the drive went away mid-walk, a
+   *  root couldn't be read, or the volume couldn't be walked at all. Whatever
+   *  it did read is in the index; the rest is still frontier and the next
+   *  search asks for it again.
+   */
+  | 'interrupted'
+  // Somebody stopped it (Escape, or the dialog closing).
+  | 'cancelled'
 
 /**
  *  Typed error returned by [`recheck_downloads_watcher_gate`]. Only one

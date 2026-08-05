@@ -137,7 +137,7 @@ fn drive(
     let mut stream = ResultStream::new(run, sink.as_ref(), query);
     stream.add_indexed(indexed, indexed_total);
     let ending = pump(&rx, 1, &judged.judge(), &mut stream);
-    let coverage = SearchCoverage {
+    let coverage = SearchRunCoverage {
         walk: ending,
         unreadable: Vec::new(),
         still_covering: Vec::new(),
@@ -161,22 +161,16 @@ fn the_two_halves_make_one_answer_with_nothing_shown_twice() {
     // insures against.
     let run = run_for_test("union");
     let q = query("report");
-    let driven = drive(
-        &run,
-        &q,
-        vec![indexed_row("/covered/report-1.pdf")],
-        1,
-        |tx| {
-            tx.send(WalkMsg::Batch(vec![
-                covered_file("/walked/report-2.pdf"),
-                // The same file the index already answered for.
-                covered_file("/covered/report-1.pdf"),
-                covered_file("/walked/notes.txt"),
-            ]))
-            .expect("send");
-            tx.send(WalkMsg::Ended(covered_everything(1))).expect("send");
-        },
-    );
+    let driven = drive(&run, &q, vec![indexed_row("/covered/report-1.pdf")], 1, |tx| {
+        tx.send(WalkMsg::Batch(vec![
+            covered_file("/walked/report-2.pdf"),
+            // The same file the index already answered for.
+            covered_file("/covered/report-1.pdf"),
+            covered_file("/walked/notes.txt"),
+        ]))
+        .expect("send");
+        tx.send(WalkMsg::Ended(covered_everything(1))).expect("send");
+    });
 
     assert_eq!(driven.ending, WalkEnding::Completed);
     let paths: Vec<String> = driven.sink.rows().into_iter().map(|row| row.path).collect();
@@ -276,7 +270,10 @@ fn a_walk_that_wrote_rows_marks_its_volume_for_the_next_query() {
 #[test]
 fn rows_go_out_in_batches_of_at_most_a_hundred() {
     let run = run_for_test("batching");
-    let q = SearchQuery { limit: 1000, ..query("f") };
+    let q = SearchQuery {
+        limit: 1000,
+        ..query("f")
+    };
     let driven = drive(&run, &q, Vec::new(), 0, |tx| {
         let batch: Vec<CoveredEntry> = (0..250).map(|i| covered_file(&format!("/w/f{i:04}.txt"))).collect();
         tx.send(WalkMsg::Batch(batch)).expect("send");
@@ -304,6 +301,7 @@ fn a_lone_row_does_not_wait_for_company() {
         tx.send(WalkMsg::Batch(vec![covered_file("/w/report.pdf")]))
             .expect("send");
         // Long enough that a flush waiting on the next message would be visible.
+        // allowed-test-sleep: the silence IS the subject — a walk that says nothing for a while
         std::thread::sleep(Duration::from_millis(400));
         tx.send(WalkMsg::Ended(covered_everything(1))).expect("send");
     });
@@ -316,7 +314,10 @@ fn a_lone_row_does_not_wait_for_company() {
         .position(|event| !event.entries.is_empty())
         .expect("the row went out");
     assert!(first_row_at < driven.sink.batch_sizes().len() - 1, "before the end");
-    assert!(started.elapsed() >= Duration::from_millis(400), "the walk really ran on");
+    assert!(
+        started.elapsed() >= Duration::from_millis(400),
+        "the walk really ran on"
+    );
 }
 
 // ── The cap ──────────────────────────────────────────────────────────
@@ -352,8 +353,11 @@ fn a_count_only_run_counts_without_building_a_single_row() {
         ..query("f")
     };
     let driven = drive(&run, &q, Vec::new(), 0, |tx| {
-        tx.send(WalkMsg::Batch(vec![covered_file("/w/f1.txt"), covered_file("/w/f2.txt")]))
-            .expect("send");
+        tx.send(WalkMsg::Batch(vec![
+            covered_file("/w/f1.txt"),
+            covered_file("/w/f2.txt"),
+        ]))
+        .expect("send");
         tx.send(WalkMsg::Ended(covered_everything(1))).expect("send");
     });
 
@@ -412,11 +416,13 @@ fn cancelling_stops_the_run_promptly_and_ends_it_as_cancelled() {
     // the cancel gets this run out, so the sender is deliberately never joined.
     let (tx, rx) = sync_channel::<WalkMsg>(1);
     std::thread::spawn(move || {
+        // allowed-test-sleep: fake latency — a walk parked on a slow read, which only the cancel gets out of
         std::thread::sleep(Duration::from_secs(5));
         let _ = tx.send(WalkMsg::Ended(covered_everything(1)));
     });
     let cancel_at = run.cancel_token();
     std::thread::spawn(move || {
+        // allowed-test-sleep: the canceller's head start, so the pump is waiting when it fires
         std::thread::sleep(Duration::from_millis(20));
         cancel_at.cancel();
     });
@@ -425,7 +431,7 @@ fn cancelling_stops_the_run_promptly_and_ends_it_as_cancelled() {
     let mut stream = ResultStream::new(&run, sink.as_ref(), &q);
     let ending = pump(&rx, 1, &judged.judge(), &mut stream);
     let elapsed = started.elapsed();
-    stream.finish(SearchCoverage {
+    stream.finish(SearchRunCoverage {
         walk: ending,
         unreadable: Vec::new(),
         still_covering: Vec::new(),
@@ -453,7 +459,8 @@ fn a_walk_that_stopped_without_being_asked_reads_as_interrupted() {
     let run = run_for_test("disconnect");
     let q = query("report");
     let driven = drive(&run, &q, Vec::new(), 0, |tx| {
-        tx.send(WalkMsg::Batch(vec![covered_file("/w/report.pdf")])).expect("send");
+        tx.send(WalkMsg::Batch(vec![covered_file("/w/report.pdf")]))
+            .expect("send");
         tx.send(WalkMsg::Ended(CoverOutcome {
             entries_found: 1,
             dirs_found: 0,

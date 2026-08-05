@@ -33,7 +33,7 @@ use cmdr_index::{CoverageDimension, CoverageToken, ROOT_VOLUME_ID, ReadPool};
 use super::engine;
 use super::excludes::ExcludeRules;
 use super::live::{
-    self, LiveRun, ResultStream, SearchCoverage, SearchEventSink, SearchPhase, SearchRunError, WalkEnding, WalkJudge,
+    self, LiveRun, ResultStream, SearchEventSink, SearchPhase, SearchRunCoverage, SearchRunError, WalkEnding, WalkJudge,
 };
 use super::matcher::{CompiledQuery, Evaluator};
 use super::query;
@@ -237,11 +237,7 @@ pub struct LiveSearchStart {
 ///
 /// Starting a run SUPERSEDES every other one: the dialog asks one question at a
 /// time. ❌ That is not a cancel — their walks keep going (Decision 11).
-pub(crate) fn start_live(
-    app: tauri::AppHandle,
-    query: SearchQuery,
-    run_id: String,
-) -> Result<LiveSearchStart, String> {
+pub(crate) fn start_live(app: tauri::AppHandle, query: SearchQuery, run_id: String) -> Result<LiveSearchStart, String> {
     volumes::touch_activity();
     volumes::cancel_idle_timer();
 
@@ -252,13 +248,11 @@ pub(crate) fn start_live(
     };
     let run = live::register(&run_id, &target.volume_id);
 
-    let spawned = std::thread::Builder::new()
-        .name("search-live".into())
-        .spawn(move || {
-            let sink = live::TauriSearchEventSink::new(app);
-            run_live_blocking(query, target, &run, &sink);
-            live::deregister(&run.run_id);
-        });
+    let spawned = std::thread::Builder::new().name("search-live".into()).spawn(move || {
+        let sink = live::TauriSearchEventSink::new(app);
+        run_live_blocking(query, target, &run, &sink);
+        live::deregister(&run.run_id);
+    });
     if let Err(e) = spawned {
         live::deregister(&run_id);
         return Err(format!("Search couldn't start: {e}"));
@@ -316,17 +310,23 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
         .as_deref()
         .and_then(|loaded| loaded.mount_root.clone())
         .or_else(|| volumes::registry_mount_root(&target.volume_id));
-    let report = |walk: WalkEnding, unreadable: Vec<String>, still_covering: Vec<String>, capped: bool| SearchCoverage {
-        walk,
-        unreadable,
-        still_covering,
-        unresolved_scopes: unresolved_scopes.clone(),
-        capped,
-        target_volume_id: target.volume_id.clone(),
-    };
+    let report =
+        |walk: WalkEnding, unreadable: Vec<String>, still_covering: Vec<String>, capped: bool| SearchRunCoverage {
+            walk,
+            unreadable,
+            still_covering,
+            unresolved_scopes: unresolved_scopes.clone(),
+            capped,
+            target_volume_id: target.volume_id.clone(),
+        };
 
     if question.frontier.is_empty() {
-        let coverage = report(WalkEnding::NothingToWalk, question.unreadable, Vec::new(), stream.capped());
+        let coverage = report(
+            WalkEnding::NothingToWalk,
+            question.unreadable,
+            Vec::new(),
+            stream.capped(),
+        );
         stream.finish(coverage);
         return;
     }
@@ -357,7 +357,12 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
             // which case the scan is covering that ground anyway). Either way this
             // run's answer is a lower bound and says so.
             log::warn!("Live search: can't walk '{}': {e}", target.volume_id);
-            let coverage = report(WalkEnding::Interrupted, question.unreadable, Vec::new(), stream.capped());
+            let coverage = report(
+                WalkEnding::Interrupted,
+                question.unreadable,
+                Vec::new(),
+                stream.capped(),
+            );
             stream.finish(coverage);
             return;
         }
@@ -442,9 +447,7 @@ fn coverage_of(volume_id: &str, scopes: &[String]) -> CoverageQuestion {
 /// when the query has no scope.
 fn coverage_scopes(target: &Target) -> Vec<String> {
     if target.include_paths.is_empty() {
-        return vec![
-            volumes::registry_mount_root(&target.volume_id).unwrap_or_else(|| "/".to_string()),
-        ];
+        return vec![volumes::registry_mount_root(&target.volume_id).unwrap_or_else(|| "/".to_string())];
     }
     target
         .include_paths

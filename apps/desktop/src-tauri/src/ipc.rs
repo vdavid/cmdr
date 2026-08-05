@@ -49,7 +49,6 @@ use specta_typescript::Typescript;
 use tauri_specta::{Builder, collect_events};
 
 use crate::commands::search::SearchIndexReadyEvent;
-use crate::search::live::events::{SearchCancelledEvent, SearchCompleteEvent, SearchErrorEvent, SearchProgressEvent};
 use crate::events::index_mapping::{
     AggregationProgressEvent, IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexFreshnessChangedEvent,
     IndexMemoryWarningEvent, IndexPhaseChangedEvent, IndexReplayCompleteEvent, IndexReplayProgressEvent,
@@ -76,6 +75,7 @@ use crate::network::{
     NetworkDiscoveryStateChanged, NetworkHostContextAction, NetworkHostFound, NetworkHostLost, NetworkHostResolved,
     VolumeConnectionChanged,
 };
+use crate::search::live::events::{SearchCancelledEvent, SearchCompleteEvent, SearchErrorEvent, SearchProgressEvent};
 use crate::space_poller::{LowDiskSpacePayload, VolumeSpaceChanged};
 use crate::volume_broadcast::{VolumeContextAction, VolumeMounted, VolumeUnmounted, VolumesChanged};
 // Window-management events: emit_to-targeted window lifecycle.

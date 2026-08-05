@@ -119,7 +119,9 @@ impl ExcludeRules {
 
     /// Whether an absolute path sits under an excluded path prefix.
     pub(crate) fn excludes_path(&self, path: &str) -> bool {
-        self.path_prefixes.iter().any(|prefix| path.starts_with(prefix.as_str()))
+        self.path_prefixes
+            .iter()
+            .any(|prefix| path.starts_with(prefix.as_str()))
     }
 
     /// Whether a walked entry is excluded, judged by its own path.

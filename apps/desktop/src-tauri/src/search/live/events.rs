@@ -49,11 +49,15 @@ pub enum WalkEnding {
     Cancelled,
 }
 
-/// What a run could NOT answer for, gathered in one place so a terminal event
-/// says it once.
+/// What a live run could NOT answer for, gathered in one place so a terminal
+/// event says it once.
+///
+/// `Run` in the name because the operation log has a `SearchCoverage` of its own
+/// (how much of a copy's source tree a journal search covered), and two types of
+/// one name can't both cross specta.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-pub struct SearchCoverage {
+pub struct SearchRunCoverage {
     /// How the walk ended. Anything but [`WalkEnding::Completed`] /
     /// [`WalkEnding::NothingToWalk`] means the list is a lower bound.
     pub walk: WalkEnding,
@@ -107,7 +111,7 @@ pub struct SearchProgressEvent {
 }
 
 /// The run finished on its own terms — which is not the same as "the answer is
-/// complete"; [`SearchCoverage::walk`] says which.
+/// complete"; [`SearchRunCoverage::walk`] says which.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
 #[tauri_specta(event_name = "search-complete")]
@@ -115,7 +119,7 @@ pub struct SearchCompleteEvent {
     pub run_id: String,
     /// The exact total for everything this run covered.
     pub match_count: u32,
-    pub coverage: SearchCoverage,
+    pub coverage: SearchRunCoverage,
 }
 
 /// Somebody stopped the run. Its results stay on screen: everything already
@@ -126,7 +130,7 @@ pub struct SearchCompleteEvent {
 pub struct SearchCancelledEvent {
     pub run_id: String,
     pub match_count: u32,
-    pub coverage: SearchCoverage,
+    pub coverage: SearchRunCoverage,
 }
 
 /// Why a run couldn't answer at all. Typed for the branch, with the sentence

@@ -44,8 +44,8 @@ use super::volumes;
 pub(crate) mod events;
 
 pub(crate) use events::{
-    SearchCancelledEvent, SearchCompleteEvent, SearchCoverage, SearchErrorEvent, SearchEventSink, SearchPhase,
-    SearchProgressEvent, SearchRunError, TauriSearchEventSink, WalkEnding,
+    SearchCancelledEvent, SearchCompleteEvent, SearchErrorEvent, SearchEventSink, SearchPhase, SearchProgressEvent,
+    SearchRunCoverage, SearchRunError, TauriSearchEventSink, WalkEnding,
 };
 
 /// The most rows one event carries.
@@ -303,7 +303,7 @@ impl<'a> ResultStream<'a> {
     /// A cancelled run ends as cancelled whatever the walk was doing when it
     /// stopped — including a run stopped before its walk ever started. Deciding
     /// that HERE is what keeps every terminal path from having to remember it.
-    pub(crate) fn finish(mut self, mut coverage: SearchCoverage) {
+    pub(crate) fn finish(mut self, mut coverage: SearchRunCoverage) {
         if self.run.is_cancelled() {
             coverage.walk = WalkEnding::Cancelled;
         }

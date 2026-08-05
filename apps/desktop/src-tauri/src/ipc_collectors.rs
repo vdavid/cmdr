@@ -248,6 +248,8 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::media_index::media_index_folder_coverage,
         crate::commands::search::prepare_search_index,
         crate::commands::search::search_files,
+        crate::commands::search::search_files_streaming,
+        crate::commands::search::cancel_search,
         crate::commands::search::release_search_index,
         crate::commands::search::translate_search_query,
         crate::commands::search::parse_search_scope,
