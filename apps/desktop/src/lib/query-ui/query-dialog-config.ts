@@ -38,6 +38,7 @@ import type { BadgeStatus } from '$lib/feature-status'
 import type { SearchResultEntry } from '$lib/tauri-commands'
 import type { SoftDialogId } from '$lib/ui/dialog-registry'
 import type { QueryFilterState, SearchMode } from './query-filter-state.svelte'
+import type { QueryStreamSource } from './query-stream'
 import type { RecentItemAdapter, RecentItemKey } from './recent-items/recent-items-types'
 import type { RecentItemsStore } from './recent-items/recent-items-state.svelte'
 
@@ -279,6 +280,19 @@ export interface QueryDialogConfig<E = unknown> {
    * inside `runQuery`.
    */
   runQuery: () => Promise<{ entries: SearchResultEntry[]; totalCount: number }>
+
+  /**
+   * Optional transport for a query that answers over TIME rather than in one promise.
+   * Search wires it (a search of ground the index doesn't cover walks it, so rows
+   * arrive in batches over seconds or minutes); Selection matches a pane listing it
+   * already holds, so it leaves this undefined and nothing about streaming reaches it.
+   *
+   * The runner owns the run — the id, the generation guard, appending, the cursor,
+   * the completion re-rank — and this owns only the wire. Contract and vocabulary:
+   * `query-stream.ts`. Runs the USER asked for take this path; auto-applied ones take
+   * `runQuery` (Decision 7).
+   */
+  streamingSource?: QueryStreamSource
 
   /**
    * Optional AI translation. The consumer's callback applies AI-returned filter

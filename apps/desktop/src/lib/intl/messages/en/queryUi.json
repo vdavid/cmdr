@@ -288,6 +288,74 @@
     "description": "Heading shown when a search returns no results, above a bulleted list of the active search criteria. Ends with a colon."
   },
 
+  "queryUi.results.live.resolvingCoverage": "Working out what's already indexed...",
+  "@queryUi.results.live.resolvingCoverage": {
+    "description": "Label under a spinner at the start of a search that may have to look through folders the app hasn't indexed. The app is checking which parts of the folder it already knows about, which can take a few seconds on a big drive. Ends with '...' (three dots)."
+  },
+  "queryUi.results.live.readingIndex": "Reading what's already indexed...",
+  "@queryUi.results.live.readingIndex": {
+    "description": "Label under a spinner while a search reads the part of the folder the app has already indexed, before it starts looking through the rest. Ends with '...' (three dots)."
+  },
+  "queryUi.results.live.walking": "Looking through folders that aren't indexed yet...",
+  "@queryUi.results.live.walking": {
+    "description": "Label under a spinner while a search reads folders the app has no index for, going through them one by one. This is the slow part and can run for minutes. Ends with '...' (three dots)."
+  },
+  "queryUi.results.live.matchesSoFar": "{countText} {count, plural, one {match} other {matches}} so far",
+  "@queryUi.results.live.matchesSoFar": {
+    "description": "Status-bar text while a search is still running, reporting how many matches it has found up to now. 'So far' is load-bearing: the number is still rising and must never read as a final total.",
+    "placeholders": {
+      "countText": "the number of matches so far, already formatted for display (for example 1,234)",
+      "count": "the same number (drives the singular/plural form of the noun)"
+    }
+  },
+  "queryUi.results.live.foldersScanned": "{countText} {count, plural, one {folder} other {folders}} scanned",
+  "@queryUi.results.live.foldersScanned": {
+    "description": "Status-bar text beside the match count while a search reads folders that aren't indexed, reporting how many folders it has turned up. There is deliberately no percentage or time estimate: the total is unknowable while the search runs.",
+    "placeholders": {
+      "countText": "the number of folders found so far, already formatted for display (for example 4,312)",
+      "count": "the same number (drives the singular/plural form of the noun)"
+    }
+  },
+  "queryUi.results.live.incomplete": "{shownText} of {totalText} results. Cmdr didn't finish looking.",
+  "@queryUi.results.live.incomplete": {
+    "description": "Status-bar text after a search ended without covering everything it set out to, because the user stopped it or the drive went away. Says plainly that the list is a lower bound; the note above the results explains why. 'Cmdr' is the product name and stays as-is. Avoid the words 'error' and 'failed'.",
+    "placeholders": {
+      "shownText": "the number of results currently shown, already formatted for display",
+      "totalText": "the total number of matches found before the search stopped, already formatted for display"
+    }
+  },
+  "queryUi.results.live.capped": "Showing the first {shownText} of {totalText} matches.",
+  "@queryUi.results.live.capped": {
+    "description": "Status-bar text after a search found more matches than the list can hold, so only the first batch is listed while the total counts them all.",
+    "placeholders": {
+      "shownText": "how many results are listed, already formatted for display (for example 1,000)",
+      "totalText": "the total number of matches found, already formatted for display (for example 5,432)"
+    }
+  },
+  "queryUi.results.live.stop": "Stop",
+  "@queryUi.results.live.stop": {
+    "description": "Button in the status bar that stops a running search. Short: it renders as a small button with a keyboard-shortcut glyph next to it."
+  },
+  "queryUi.results.live.stopTooltip": "Stop searching. Everything found so far stays on screen.",
+  "@queryUi.results.live.stopTooltip": {
+    "description": "Tooltip on the button that stops a running search, reassuring the user that stopping doesn't throw away the results already found."
+  },
+  "queryUi.results.live.scanningAria": "Currently looking in {path}",
+  "@queryUi.results.live.scanningAria": {
+    "description": "Accessibility label for the folder path shown in the status bar while a search reads folders that aren't indexed. Names where the search has got to.",
+    "placeholders": {
+      "path": "the folder path the search is currently reading, shown verbatim and not translated"
+    }
+  },
+  "queryUi.results.countOnly.soFar": "{count, plural, one {This search has found <total>{countText}</total> result so far} other {This search has found <total>{countText}</total> results so far}}",
+  "@queryUi.results.countOnly.soFar": {
+    "description": "Shown in place of the results list in count-only search mode while the search is still running, or after it ended without covering everything. 'So far' is load-bearing: the number is still a lower bound and must never read as a final total. The <total> tag wraps the number and renders it in bold, so put the tag where your language wants the number.",
+    "placeholders": {
+      "count": "the number of matches so far, passed only to choose the plural form",
+      "countText": "the same number, already formatted with the locale's digit grouping (for example 12,345)"
+    }
+  },
+
   "queryUi.pathPills.hiddenAria": "Hidden path segments: {segments}",
   "@queryUi.pathPills.hiddenAria": {
     "description": "Accessibility label for the '…' collapse pill in a result row's path, listing the folder names hidden behind it.",

@@ -11,7 +11,33 @@
  * Pure: no state, no IPC. `SearchDialog.svelte` owns the state and the actions.
  */
 
-import type { SearchResult } from '$lib/tauri-commands'
+import type { SearchResult, SearchRunCoverage, WalkEnding } from '$lib/tauri-commands'
+
+/**
+ * What a LIVE run couldn't cover: the extra half of the answer, once a search walks
+ * what the index can't speak for instead of only reporting the gap.
+ */
+export interface LiveCoverage {
+  /**
+   * How the walk ended. `interrupted` and `cancelled` mean the list is a lower bound;
+   * the status bar says that much, and the note says which of the two it was.
+   */
+  walk: WalkEnding
+  /**
+   * Folders nothing is going to read, absolute. TWO causes in ONE list, with nothing
+   * on the wire to tell them apart: a folder the walk was refused (no Full Disk
+   * Access), and a NAS snapshot tree the scanner declines on purpose (hardlinked per
+   * snapshot, 44 TB reported on a 10 TB volume). ❌ Don't write copy that claims it's
+   * one of them.
+   */
+  unreadable: string[]
+  /**
+   * Ground another search's walk is covering right now, so this run left it alone.
+   * Those rows reach the same index, so this is "these arrive a bit later", ❌ never
+   * "these are lost".
+   */
+  stillCovering: string[]
+}
 
 /** What one run couldn't cover, ready to render. Absent when coverage was complete. */
 export interface CoverageNote {
@@ -31,6 +57,12 @@ export interface CoverageNote {
   unresolvedScopes: string[]
   /** The volume the search covered, per the backend's routing. */
   volumeId: string
+  /**
+   * Present only for a live run. Its absence is what tells the note whether it's
+   * speaking about an index-only answer (where an unindexed drive is a gap to offer to
+   * fix) or a walked one (where the walk IS the fix, already applied).
+   */
+  live?: LiveCoverage
 }
 
 /**
@@ -43,6 +75,36 @@ export function coverageNoteFrom(result: SearchResult): CoverageNote | null {
   const unresolvedScopes = result.unresolvedScopes ?? []
   if (uncoveredScopes.length === 0 && unresolvedScopes.length === 0) return null
   return { uncoveredScopes, unresolvedScopes, volumeId: result.targetVolumeId ?? '' }
+}
+
+/**
+ * The coverage note for a finished LIVE run, or `null` when it covered everything it
+ * was asked to and finished doing so.
+ *
+ * There's no `uncoveredScopes` half here on purpose: a volume with no index used to be
+ * the biggest gap a search could report, and a live run walks it instead. What's left
+ * is what a walk genuinely can't answer for.
+ */
+export function coverageNoteFromRun(coverage: SearchRunCoverage): CoverageNote | null {
+  const short = coverage.walk === 'interrupted' || coverage.walk === 'cancelled'
+  if (
+    !short &&
+    coverage.unreadable.length === 0 &&
+    coverage.stillCovering.length === 0 &&
+    coverage.unresolvedScopes.length === 0
+  ) {
+    return null
+  }
+  return {
+    uncoveredScopes: [],
+    unresolvedScopes: coverage.unresolvedScopes,
+    volumeId: coverage.targetVolumeId,
+    live: {
+      walk: coverage.walk,
+      unreadable: coverage.unreadable,
+      stillCovering: coverage.stillCovering,
+    },
+  }
 }
 
 /**

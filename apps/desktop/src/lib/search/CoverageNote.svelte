@@ -48,10 +48,50 @@
             ? tString('search.coverage.uncovered.network', { drive })
             : tString('search.coverage.uncovered.local', { drive }),
     )
+
+    /**
+     * Why a live run's list is a lower bound, in the run's own words. `''` for a walk
+     * that finished, which is the only ending that leaves nothing to explain (the
+     * status bar has already said the list is short; this says which kind of short).
+     */
+    const walkMessage = $derived.by(() => {
+        const walk = note?.live?.walk
+        if (walk === 'cancelled') return tString('search.coverage.walk.cancelled')
+        if (walk === 'interrupted') return tString('search.coverage.walk.interrupted', { drive })
+        return ''
+    })
 </script>
 
 <div class="coverage-note" class:is-empty={!note} role="status">
     {#if note}
+        {#if walkMessage}
+            <p class="message">{walkMessage}</p>
+        {/if}
+        {#if note.live && note.live.unreadable.length > 0}
+            <!-- ONE sentence for two causes, because the wire carries one list and no
+                 way to tell them apart: a folder Cmdr was refused, and a snapshot tree
+                 it declines on purpose. Naming both is honest; picking one would be a
+                 guess rendered as fact. -->
+            <p class="message">
+                {tString('search.coverage.unreadable', { count: note.live.unreadable.length })}
+            </p>
+            <ul class="scopes">
+                {#each note.live.unreadable as path (path)}
+                    <li>{path}</li>
+                {/each}
+            </ul>
+            <p class="message secondary">{tString('search.coverage.unreadableWhy')}</p>
+        {/if}
+        {#if note.live && note.live.stillCovering.length > 0}
+            <p class="message">
+                {tString('search.coverage.stillCovering', { count: note.live.stillCovering.length })}
+            </p>
+            <ul class="scopes">
+                {#each note.live.stillCovering as path (path)}
+                    <li>{path}</li>
+                {/each}
+            </ul>
+        {/if}
         {#if note.uncoveredScopes.length > 0}
             <p class="message">{uncoveredMessage}</p>
             <ul class="scopes">
@@ -107,6 +147,13 @@
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
         line-height: 1.4;
+    }
+
+    /* The follow-up that names the two reasons a folder can be unreadable: true, useful,
+       and not the headline. */
+    .message.secondary {
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-xs);
     }
 
     .scopes {

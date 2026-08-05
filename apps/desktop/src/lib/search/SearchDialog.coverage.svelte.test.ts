@@ -22,12 +22,17 @@ import SearchDialog from './SearchDialog.svelte'
 import type { SearchResult, SearchResultEntry } from '$lib/ipc/bindings'
 import { tString } from '$lib/intl/messages.svelte'
 import { clearSearchState, setQuery } from './search-state.svelte'
+import { SEARCH_AUTO_APPLY_DEBOUNCE_MS } from '$lib/query-ui/query-filter-state.svelte'
 
 const NAS: SearchResultEntry[] = []
 
 const {
   prepareSearchIndexMock,
   searchFilesMock,
+  searchFilesStreamingMock,
+  cancelSearchMock,
+  liveListeners,
+  autoApply,
   readyListeners,
   enableDriveIndexMock,
   silencedDrives,
@@ -45,6 +50,13 @@ const {
       targetVolumeId?: string
     }> => Promise.resolve({ entries: [], totalCount: 0 }),
   ),
+  searchFilesStreamingMock: vi.fn(),
+  cancelSearchMock: vi.fn(() => Promise.resolve(true)),
+  liveListeners: {
+    progress: new Set<(event: unknown) => void>(),
+    complete: new Set<(event: unknown) => void>(),
+  },
+  autoApply: { value: false },
   readyListeners: new Set<(volumeId: string, entryCount: number) => void>(),
   enableDriveIndexMock: vi.fn(() => Promise.resolve({ status: 'ok', data: { status: 'started' } })),
   silencedDrives: { value: '[]' },
@@ -58,6 +70,18 @@ vi.mock('$lib/tauri-commands', () => ({
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
   prepareSearchIndex: prepareSearchIndexMock,
   searchFiles: searchFilesMock,
+  searchFilesStreaming: searchFilesStreamingMock,
+  cancelSearch: cancelSearchMock,
+  onSearchProgress: vi.fn((handler: (event: unknown) => void) => {
+    liveListeners.progress.add(handler)
+    return Promise.resolve(() => liveListeners.progress.delete(handler))
+  }),
+  onSearchComplete: vi.fn((handler: (event: unknown) => void) => {
+    liveListeners.complete.add(handler)
+    return Promise.resolve(() => liveListeners.complete.delete(handler))
+  }),
+  onSearchCancelled: vi.fn(() => Promise.resolve(() => {})),
+  onSearchError: vi.fn(() => Promise.resolve(() => {})),
   releaseSearchIndex: vi.fn(() => Promise.resolve()),
   translateSearchQuery: vi.fn(() => Promise.resolve({ display: {}, query: {} })),
   parseSearchScope: vi.fn(() => Promise.resolve({ includePaths: [], excludePatterns: [] })),
@@ -90,8 +114,10 @@ vi.mock('../../routes/viewer/media-view', () => ({
 vi.mock('$lib/settings', () => ({
   getSetting: vi.fn((key: string) => {
     if (key === 'ai.provider') return 'off'
-    // Auto-apply off: every run in this file is an explicit Enter, so run counts are exact.
-    if (key === 'search.autoApply') return false
+    // Auto-apply off by default: an explicit Enter is what most of this file drives, so
+    // run counts stay exact. `runAutoApplied` flips it for the tests that need the
+    // index-only path (an auto-applied run never walks, Decision 7).
+    if (key === 'search.autoApply') return autoApply.value
     if (key === 'mediaIndex.enabled') return false
     if (key === 'indexing.silencedDrives') return silencedDrives.value
     return undefined
@@ -138,9 +164,16 @@ afterEach(() => {
 
 interface MountOptions {
   searchVolume?: { volumeId: string; mountRoot: string; isNetwork: boolean }
+  /**
+   * Turns auto-apply on for this dialog. Has to be set BEFORE mounting: the dialog
+   * reads the setting once at init and then live-mirrors it through a subscription this
+   * file stubs out.
+   */
+  autoApply?: boolean
 }
 
 async function mountDialog(opts: MountOptions = {}): Promise<{ overlay: Element; target: HTMLElement }> {
+  autoApply.value = opts.autoApply ?? false
   const target = document.createElement('div')
   document.body.appendChild(target)
   const component = mount(SearchDialog, {
@@ -168,8 +201,33 @@ async function settle(): Promise<void> {
   await tick()
 }
 
+/**
+ * Enter, which since M6 takes the LIVE path: a run that walks whatever the index can't
+ * answer for. The fake backend answers it from `searchFilesMock` (the one spy for "a
+ * search asked this query", shared with the index-only path) and reports a run that had
+ * nothing to walk, which is what an index-covered scope produces.
+ */
 async function runSearch(overlay: Element): Promise<void> {
   overlay.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+  await settle()
+}
+
+/**
+ * A run the DEBOUNCE fired rather than the user, which never walks (Decision 7) and so
+ * still answers from the index alone. That's the only path left that can report a
+ * volume with no index at all, which is what the coverage note's uncovered half is for.
+ */
+async function runAutoApplied(overlay: Element, query: string): Promise<void> {
+  const input = overlay.querySelector<HTMLInputElement>('.query-bar input')
+  if (!input) throw new Error('query input not found')
+  vi.useFakeTimers()
+  try {
+    input.value = query
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    await vi.advanceTimersByTimeAsync(SEARCH_AUTO_APPLY_DEBOUNCE_MS)
+  } finally {
+    vi.useRealTimers()
+  }
   await settle()
 }
 
@@ -182,10 +240,55 @@ function result(overrides: Partial<SearchResult>): SearchResult {
   return { entries: NAS, totalCount: 0, ...overrides }
 }
 
+/**
+ * The backend's side of one live run: the same answer `searchFilesMock` is configured
+ * with, delivered as a batch plus a terminal event. Emitting inside the start call is
+ * faithful — the real source installs its listeners before invoking, exactly so a run
+ * that finishes immediately isn't missed.
+ */
+function installLiveBackend(): void {
+  searchFilesStreamingMock.mockImplementation(async (query: unknown, runId: string) => {
+    const answer = await searchFilesMock(query as never)
+    for (const listener of liveListeners.progress) {
+      listener({
+        runId,
+        phase: 'readingIndex',
+        entries: answer.entries,
+        matchCount: answer.totalCount,
+        dirsFound: 0,
+        currentPath: null,
+        capped: false,
+      })
+    }
+    for (const listener of liveListeners.complete) {
+      listener({
+        runId,
+        matchCount: answer.totalCount,
+        coverage: {
+          walk: 'nothingToWalk',
+          unreadable: [],
+          stillCovering: [],
+          unresolvedScopes: answer.unresolvedScopes ?? [],
+          capped: false,
+          targetVolumeId: answer.targetVolumeId ?? '',
+        },
+      })
+    }
+    return { runId, targetVolumeId: answer.targetVolumeId ?? 'root' }
+  })
+}
+
 beforeEach(() => {
   clearSearchState()
+  autoApply.value = false
+  liveListeners.progress.clear()
+  liveListeners.complete.clear()
+  searchFilesStreamingMock.mockReset()
+  cancelSearchMock.mockReset()
+  cancelSearchMock.mockResolvedValue(true)
   searchFilesMock.mockReset()
   searchFilesMock.mockResolvedValue({ entries: [], totalCount: 0 })
+  installLiveBackend()
   prepareSearchIndexMock.mockReset()
   prepareSearchIndexMock.mockResolvedValue({ ready: true, entryCount: 1234, loading: false })
   enableDriveIndexMock.mockReset()
@@ -261,15 +364,13 @@ describe('the coverage note answers "why is this empty?"', () => {
     searchFilesMock.mockResolvedValueOnce(
       result({ uncoveredScopes: ['/Volumes/naspi/photos'], targetVolumeId: 'smb-naspi' }),
     )
-    const { overlay, target } = await mountDialog()
+    const { overlay, target } = await mountDialog({ autoApply: true })
 
-    setQuery('*.pdf')
-    await runSearch(overlay)
+    await runAutoApplied(overlay, '*.pdf')
     expect(noteText(target)).toContain('/Volumes/naspi/photos')
 
     searchFilesMock.mockResolvedValueOnce(result({ entries: [], totalCount: 0 }))
-    setQuery('*.png')
-    await runSearch(overlay)
+    await runAutoApplied(overlay, '*.png')
     expect(noteText(target)).toBe('')
   })
 
@@ -280,16 +381,14 @@ describe('the coverage note answers "why is this empty?"', () => {
     searchFilesMock.mockResolvedValueOnce(
       result({ uncoveredScopes: ['/Volumes/naspi/photos'], targetVolumeId: 'smb-naspi' }),
     )
-    const { overlay, target } = await mountDialog()
+    const { overlay, target } = await mountDialog({ autoApply: true })
 
-    setQuery('*.pdf')
-    await runSearch(overlay)
+    await runAutoApplied(overlay, '*.pdf')
     const uncovered = noteText(target)
     expect(uncovered).toContain(tString('search.coverage.uncovered.network', { drive: 'Naspolya' }))
 
     searchFilesMock.mockResolvedValueOnce(result({ unresolvedScopes: ['/Users/test/gone'], targetVolumeId: 'root' }))
-    setQuery('*.png')
-    await runSearch(overlay)
+    await runAutoApplied(overlay, '*.png')
     const unresolved = noteText(target)
     expect(unresolved).toContain(tString('search.coverage.unresolved', { count: 1 }))
     expect(unresolved).not.toBe(uncovered)
@@ -298,10 +397,9 @@ describe('the coverage note answers "why is this empty?"', () => {
   it('says a local drive isn’t indexed in the local voice', async () => {
     volumesMock.mockReturnValue([{ id: 'root', name: 'Macintosh HD', path: '/', category: 'main_volume' }])
     searchFilesMock.mockResolvedValueOnce(result({ uncoveredScopes: ['/Users/test'], targetVolumeId: 'root' }))
-    const { overlay, target } = await mountDialog()
+    const { overlay, target } = await mountDialog({ autoApply: true })
 
-    setQuery('*.pdf')
-    await runSearch(overlay)
+    await runAutoApplied(overlay, '*.pdf')
 
     expect(noteText(target)).toContain(tString('search.coverage.uncovered.local', { drive: 'Macintosh HD' }))
   })
@@ -319,9 +417,8 @@ describe('the per-drive indexing offer', () => {
     searchFilesMock.mockResolvedValue(
       result({ uncoveredScopes: ['/Volumes/naspi/photos'], targetVolumeId: 'smb-naspi' }),
     )
-    const mounted = await mountDialog()
-    setQuery('*.pdf')
-    await runSearch(mounted.overlay)
+    const mounted = await mountDialog({ autoApply: true })
+    await runAutoApplied(mounted.overlay, '*.pdf')
     return mounted
   }
 
@@ -362,10 +459,9 @@ describe('the per-drive indexing offer', () => {
   it('offers nothing for an unresolved path, whose drive is already indexed', async () => {
     volumesMock.mockReturnValue([{ id: 'root', name: 'Macintosh HD', path: '/', category: 'main_volume' }])
     searchFilesMock.mockResolvedValue(result({ unresolvedScopes: ['/Users/test/gone'], targetVolumeId: 'root' }))
-    const { overlay, target } = await mountDialog()
+    const { overlay, target } = await mountDialog({ autoApply: true })
 
-    setQuery('*.pdf')
-    await runSearch(overlay)
+    await runAutoApplied(overlay, '*.pdf')
 
     expect(offerButton(target)).toBeNull()
   })

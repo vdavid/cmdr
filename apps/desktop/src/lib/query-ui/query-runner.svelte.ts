@@ -16,12 +16,30 @@ import { tick } from 'svelte'
 import { SvelteSet } from 'svelte/reactivity'
 import { showAiTranslateErrorToast } from '$lib/ai/translate-error-toast'
 import { tString } from '$lib/intl/messages.svelte'
+import type { SearchResultEntry } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast/toast-store.svelte'
 import type { QueryDialogConfig } from './query-dialog-config'
 import { SEARCH_AUTO_APPLY_DEBOUNCE_MS, type QueryFilterState, type SearchMode } from './query-filter-state.svelte'
+import type { LiveRunView, QueryStreamEnd, QueryStreamProgress, QueryStreamSource } from './query-stream'
 
 /** How long the fields the AI touched stay flashed, so the user sees what changed. */
 export const AI_HIGHLIGHT_FLASH_MS = 1500
+
+/** Why a run is happening, for the two rules that care. */
+export interface RunOptions {
+  /**
+   * True only from `runAiSearch`, after the translation has populated state: that
+   * branch keeps `lastAiPrompt` / `lastAiCaveat`, every other one clears them.
+   */
+  fromAiTranslation?: boolean
+  /**
+   * True when the debounce fired this run rather than the user. An auto-applied run
+   * NEVER streams: streaming means walking ground the index doesn't cover, and a user
+   * typing six characters would start and abandon five multi-minute walks
+   * (`docs/specs/unindexed-search-plan.md` Decision 7).
+   */
+  fromAutoApply?: boolean
+}
 
 export interface QueryRunnerDeps<E> {
   /** Reads the consumer's live config. Called fresh on every access; never cached. */
@@ -43,9 +61,19 @@ export interface QueryRunner {
   setHasSearched: (value: boolean) => void
   /** Filter-chip names the AI just touched, flashed for `AI_HIGHLIGHT_FLASH_MS`. */
   readonly highlightedFields: SvelteSet<string>
+  /**
+   * The live run's phase, counters, and end state, or `null` when the last run wasn't
+   * a streaming one. Survives the run's end so the list can stay labelled.
+   */
+  readonly live: LiveRunView | null
+  /**
+   * Stops a running live search and the work behind it. Returns whether there was one
+   * to stop, which is what makes Escape a two-step (first stops, then closes).
+   */
+  cancelLive: () => boolean
   /** Debounced auto-apply, behind the AI / setting / IME gates. */
   scheduleSearch: () => void
-  executeQuery: (fromAiTranslation?: boolean) => Promise<void>
+  executeQuery: (options?: RunOptions) => Promise<void>
   runAiSearch: (prompt: string) => Promise<void>
   /** Runs the active mode's query. The `⏎` path, which has no disabled-inputs guard. */
   run: () => void
@@ -116,10 +144,164 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
    */
   let imeComposing = false
 
+  /**
+   * The streaming run in flight, and what the dialog renders off it. Kept after the
+   * run ends (with `running: false`) so the list stays labelled as short when it is.
+   */
+  let live = $state<LiveRunView | null>(null)
+  /**
+   * The run every update is measured against. An update naming anything else belongs
+   * to a query the user has moved on from and is DROPPED — superseding a run doesn't
+   * cancel the work behind it, so its batches keep arriving.
+   */
+  let liveRunId: string | null = null
+  /** Teardown for the current run's subscription. */
+  let stopLiveUpdates: (() => void) | null = null
+
   /** The backend's own message when there is one; a generic fallback otherwise. */
   function describeRunFailure(err: unknown): string {
     const message = err instanceof Error ? err.message : typeof err === 'string' ? err : ''
     return message.trim() || tString('queryUi.dialog.runQueryUnknownReason')
+  }
+
+  /** Warns with the run's own reason, the one place every run failure surfaces. */
+  function toastRunFailure(message: string): void {
+    addToast(tString('queryUi.dialog.runQueryToast', { message }), { level: 'warn', dismissal: 'transient' })
+  }
+
+  /**
+   * Stops listening to the current run and forgets its id. NOT a cancellation: the
+   * walk behind a superseded run carries on, and the ground it covers reaches the
+   * index for the very next query (Decision 11).
+   */
+  function dropLiveSubscription(): void {
+    stopLiveUpdates?.()
+    stopLiveUpdates = null
+    liveRunId = null
+  }
+
+  /**
+   * Writes `entries` while keeping the cursor on the row it was on, found by PATH.
+   * Appending doesn't move an index, but the completion re-rank does, and losing the
+   * cursor mid-list is how a growing list becomes unreadable.
+   */
+  function setResultsHoldingCursor(state: QueryFilterState, entries: SearchResultEntry[]): void {
+    const cursorPath = state.getResults()[state.getCursorIndex()]?.path
+    state.setResults(entries)
+    if (cursorPath === undefined) return
+    const next = entries.findIndex((entry) => entry.path === cursorPath)
+    state.setCursorIndex(next === -1 ? 0 : next)
+  }
+
+  function applyLiveProgress(config: QueryDialogConfig<E>, update: QueryStreamProgress): void {
+    live = {
+      phase: update.phase,
+      matchCount: update.matchCount,
+      dirsFound: update.dirsFound,
+      currentPath: update.currentPath,
+      capped: update.capped,
+      running: true,
+      incomplete: false,
+    }
+    config.state.setTotalCount(update.matchCount)
+    if (update.entries.length === 0) return
+    const hadRows = config.state.getResults().length > 0
+    setResultsHoldingCursor(config.state, [...config.state.getResults(), ...update.entries])
+    // D8: the first rows are what hands ⏎ to "go-to-file". Only the first batch, or
+    // every later one would overwrite the 'cursor-moved' the user just caused — which
+    // is also what tells us to leave the order alone on completion.
+    if (!hadRows) config.state.setLastDialogEvent('results-arrived')
+  }
+
+  function finishLiveRun(config: QueryDialogConfig<E>, source: QueryStreamSource, end: QueryStreamEnd): void {
+    dropLiveSubscription()
+    live = {
+      phase: live?.phase ?? 'walking',
+      matchCount: end.matchCount,
+      dirsFound: live?.dirsFound ?? 0,
+      currentPath: null,
+      capped: end.capped,
+      running: false,
+      incomplete: end.incomplete,
+    }
+    config.state.setTotalCount(end.matchCount)
+    config.state.setIsSearching(false)
+    // Arrival order is what a growing list has to be; one order for the finished list
+    // is what it deserves. Skipped when the index answered everything (its rows came
+    // ranked, and re-ranking would throw that away) and skipped once the user has
+    // moved the cursor, because reordering under someone reading is worse than
+    // arrival order (Decision 8).
+    if (!end.walked || !source.rankOnCompletion) return
+    if (config.state.getLastDialogEvent() === 'cursor-moved') return
+    setResultsHoldingCursor(config.state, source.rankOnCompletion(config.state.getResults()))
+  }
+
+  function failLiveRun(config: QueryDialogConfig<E>, message: string): void {
+    dropLiveSubscription()
+    live = null
+    config.state.setIsSearching(false)
+    toastRunFailure(message)
+  }
+
+  /**
+   * Runs the query as a stream: rows land as they're found and the run says which of
+   * its three phases it's in. The run id is minted HERE, so no update can arrive
+   * against an id this side hasn't seen.
+   */
+  async function startLiveRun(
+    config: QueryDialogConfig<E>,
+    source: QueryStreamSource,
+    fromAiTranslation: boolean,
+  ): Promise<void> {
+    dropLiveSubscription()
+    const runId = crypto.randomUUID()
+    liveRunId = runId
+    const mine = (): boolean => liveRunId === runId
+
+    // The previous run's rows answered a different question, and this one appends to
+    // what's on screen, so they go before the first batch rather than after it.
+    config.state.setResults([])
+    config.state.setTotalCount(0)
+    config.state.setCursorIndex(0)
+    config.state.setLastRunQuery(config.state.getQuery())
+    if (!fromAiTranslation) {
+      config.state.setLastAiPrompt(null)
+      config.state.setLastAiCaveat(null)
+    }
+    live = {
+      phase: 'resolvingCoverage',
+      matchCount: 0,
+      dirsFound: 0,
+      currentPath: null,
+      capped: false,
+      running: true,
+      incomplete: false,
+    }
+    config.state.setIsSearching(true)
+
+    try {
+      const stop = await source.start(runId, {
+        onProgress: (update) => {
+          if (mine()) applyLiveProgress(config, update)
+        },
+        onEnd: (end) => {
+          if (mine()) finishLiveRun(config, source, end)
+        },
+        onFailed: (message) => {
+          if (mine()) failLiveRun(config, message)
+        },
+      })
+      // The run was superseded (or stopped) while `start` was in flight: tear its
+      // subscription down rather than leaving it feeding a run nobody reads.
+      if (!mine()) {
+        stop()
+        return
+      }
+      stopLiveUpdates = stop
+    } catch (err) {
+      if (!mine()) return
+      failLiveRun(config, describeRunFailure(err))
+    }
   }
 
   /**
@@ -128,6 +310,8 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
    * Called when the user empties the query with no filter left standing.
    */
   function resetToEmptyState(): void {
+    dropLiveSubscription()
+    live = null
     const state = deps.getConfig().state
     state.setResults([])
     state.setTotalCount(0)
@@ -144,8 +328,12 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
    * has populated state; in that branch we keep `lastAiPrompt` / `lastAiCaveat` intact
    * (they were just set). Every other branch clears them so the strip doesn't outlive its
    * AI run.
+   *
+   * A consumer with a `streamingSource` takes it for every run the USER asked for, and
+   * the one-shot `runQuery` for the auto-applied ones (Decision 7).
    */
-  async function executeQuery(fromAiTranslation = false): Promise<void> {
+  async function executeQuery(options: RunOptions = {}): Promise<void> {
+    const { fromAiTranslation = false, fromAutoApply = false } = options
     const config = deps.getConfig()
     if (debounceTimer) clearTimeout(debounceTimer)
     // Nothing to run: an empty bar with every filter at its default isn't a query, and the
@@ -165,6 +353,15 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
       config.state.setIsSearching(false)
       return
     }
+
+    if (config.streamingSource && !fromAutoApply) {
+      await startLiveRun(config, config.streamingSource, fromAiTranslation)
+      return
+    }
+    // A one-shot answer replaces a streaming one: stop reading the run it supersedes
+    // (without stopping its work) and drop the live labels with it.
+    dropLiveSubscription()
+    live = null
 
     config.state.setIsSearching(true)
     try {
@@ -189,10 +386,7 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
       // matched". No typed variant crosses this IPC boundary, so we pass the message
       // through verbatim instead of classifying it by its text
       // (`.claude/rules/no-string-matching.md`).
-      addToast(tString('queryUi.dialog.runQueryToast', { message: describeRunFailure(err) }), {
-        level: 'warn',
-        dismissal: 'transient',
-      })
+      toastRunFailure(describeRunFailure(err))
     } finally {
       config.state.setIsSearching(false)
     }
@@ -255,7 +449,7 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
     config.state.setLastAiCaveat(result.caveat)
 
     // `executeQuery` sets `isSearching` true again (idempotent) and clears it in `finally`.
-    await executeQuery(true)
+    await executeQuery({ fromAiTranslation: true })
     await tick()
     deps.scrollCursorIntoView()
   }
@@ -294,7 +488,7 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
     if (!deps.isAutoApplyEnabled()) return
     if (imeComposing) return
     debounceTimer = setTimeout(() => {
-      void executeQuery()
+      void executeQuery({ fromAutoApply: true })
     }, SEARCH_AUTO_APPLY_DEBOUNCE_MS)
   }
 
@@ -307,6 +501,16 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
     },
     get highlightedFields() {
       return highlightedFields
+    },
+    get live() {
+      return live
+    },
+    cancelLive: () => {
+      if (liveRunId === null || live === null || !live.running) return false
+      deps.getConfig().streamingSource?.cancel(liveRunId)
+      // The end state is the run's own word (the terminal update relabels it), so
+      // nothing flips here. What this promises the caller is only "there was one".
+      return true
     },
     scheduleSearch,
     executeQuery,
@@ -327,6 +531,9 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
     },
     dispose: () => {
       if (debounceTimer) clearTimeout(debounceTimer)
+      // Stop LISTENING, don't cancel: the consumer's own teardown decides whether the
+      // work outlives the dialog (Search's `releaseSearchIndex` stops every live run).
+      dropLiveSubscription()
     },
   }
 }

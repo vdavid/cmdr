@@ -118,8 +118,10 @@ describe('SearchResults round 2 states', () => {
     const bar = target.querySelector('.status-bar')
     expect(bar).toBeTruthy()
     expect(bar?.classList.contains('is-empty')).toBe(true)
-    // Still announceable: the live region is present, just collapsed.
-    expect(bar?.getAttribute('aria-live')).toBe('polite')
+    // Still announceable: the live region is present, just collapsed. It's the INNER
+    // span, because a live run's counters move ten times a second and only a throttled
+    // copy of them may reach a screen reader (`query-stream.ts`).
+    expect(bar?.querySelector('[aria-live="polite"]')).toBeTruthy()
   })
 
   it('clears the spinner and restores the status text once isSearching flips off', async () => {

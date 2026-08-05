@@ -599,6 +599,12 @@ export type { ClipboardReadResult, PastedClipboardFile } from './clipboard-files
 export {
   prepareSearchIndex,
   searchFiles,
+  searchFilesStreaming,
+  cancelSearch,
+  onSearchProgress,
+  onSearchComplete,
+  onSearchCancelled,
+  onSearchError,
   releaseSearchIndex,
   translateSearchQuery,
   parseSearchScope,
@@ -619,6 +625,13 @@ export type {
   HistoryEntry,
   HistoryFilters,
   HistoryMode,
+  LiveSearchStart,
+  SearchProgressEvent,
+  SearchCompleteEvent,
+  SearchCancelledEvent,
+  SearchErrorEvent,
+  SearchRunCoverage,
+  WalkEnding,
 } from '$lib/ipc/bindings'
 export {
   translateSelectionQuery,

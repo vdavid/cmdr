@@ -147,6 +147,37 @@
       "count": "how many folder paths were skipped, driving the singular/plural choice"
     }
   },
+  "search.coverage.walk.cancelled": "You stopped this search, so it shows what Cmdr had found by then. Everything it read on the way is saved, so searching again picks up from there.",
+  "@search.coverage.walk.cancelled": {
+    "description": "Note above the search results after the user stopped a search that was reading folders the app hasn't indexed. Reassures them that stopping cost nothing: the results are real and the work already done is kept. 'Cmdr' is the product name and stays as-is. Avoid the words 'error' and 'failed'.",
+    "placeholders": {}
+  },
+  "search.coverage.walk.interrupted": "This search stopped early, so there may be more on {drive}. Searching again picks up where it left off.",
+  "@search.coverage.walk.interrupted": {
+    "description": "Note above the search results when a search that was reading folders the app hasn't indexed stopped on its own: the drive was unplugged or disconnected partway through, or a folder couldn't be opened. Not the user's doing, and not presented as a failure. Avoid the words 'error' and 'failed'.",
+    "placeholders": {
+      "drive": "the drive's display name (e.g. Backups), or the generic phrase from search.coverage.unnamedDrive when the drive isn't mounted any more"
+    }
+  },
+  "search.coverage.unreadable": "{count, plural, one {Cmdr couldn''t look inside this folder, so nothing from it is in the results:} other {Cmdr couldn''t look inside these folders, so nothing from them is in the results:}}",
+  "@search.coverage.unreadable": {
+    "description": "Note above the search results listing folders the app can't read at all, so their contents are missing from the results. A list of the folder paths follows the colon, and the sentence after it (search.coverage.unreadableWhy) explains the two possible reasons. Avoid the words 'error' and 'failed'.",
+    "placeholders": {
+      "count": "how many folders couldn't be read, driving the singular/plural choice"
+    }
+  },
+  "search.coverage.unreadableWhy": "That's either a permission Cmdr doesn't have yet, or a snapshot folder it leaves alone on purpose.",
+  "@search.coverage.unreadableWhy": {
+    "description": "Follow-up line under the list of folders the app couldn't read, naming both reasons because the app genuinely can't tell which one applies to a given folder. The second is a backup-snapshot folder on a network drive, which the app skips deliberately because its contents are copies of files it has already seen.",
+    "placeholders": {}
+  },
+  "search.coverage.stillCovering": "{count, plural, one {Another search is going through this folder right now, so its files will turn up in a moment:} other {Another search is going through these folders right now, so their files will turn up in a moment:}}",
+  "@search.coverage.stillCovering": {
+    "description": "Note above the search results when a second search is already reading the same folders, so this one left them to it. The files aren't lost: the other search saves what it reads, so a repeat search a moment later includes them. A list of the folder paths follows the colon.",
+    "placeholders": {
+      "count": "how many folders another search is already reading, driving the singular/plural choice"
+    }
+  },
   "search.coverage.unnamedDrive": "this drive",
   "@search.coverage.unnamedDrive": {
     "description": "Stands in for a drive's name in the coverage note when the drive isn't in the live volume list any more (ejected, or a network share that disconnected). Reads inside a sentence: 'Cmdr hasn't indexed this drive yet'.",

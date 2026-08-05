@@ -238,7 +238,7 @@ describe('executeQuery', () => {
     const { runner, config } = makeRunner()
     config.state.setLastAiPrompt('big photos')
     config.state.setLastAiCaveat('Guessed the size')
-    await runner.executeQuery(true)
+    await runner.executeQuery({ fromAiTranslation: true })
     expect(config.state.getLastAiPrompt()).toBe('big photos')
     await runner.executeQuery()
     expect(config.state.getLastAiPrompt()).toBeNull()

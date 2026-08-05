@@ -94,7 +94,9 @@
     import QueryDialog from '$lib/query-ui/QueryDialog.svelte'
     import ImageSearchResults from './ImageSearchResults.svelte'
     import CoverageNote from './CoverageNote.svelte'
-    import { coverageNoteFrom, isTargetIndexReady } from './coverage-note'
+    import { coverageNoteFrom, coverageNoteFromRun, isTargetIndexReady } from './coverage-note'
+    import { createLiveSearchSource } from './live-search-source'
+    import { rankLiveResults } from './live-ranking'
     import { indexUncoveredDrive } from './coverage-actions'
     import { describeVolume, type SearchTargetVolume } from './search-target-volume'
     import { getBadgeStatus } from '$lib/feature-status'
@@ -368,17 +370,13 @@
     }
 
     /**
-     * Runs the Search query against the backend index. Reads the bar + filters + AI
-     * pattern off the Search state; builds the payload via `buildSearchQuery()`; parses
-     * the scope expression via `parseSearchScope` (async, so not part of buildSearchQuery);
-     * and returns the result. QueryDialog owns the `results` / `totalCount` / `cursorIndex`
-     * writes.
+     * Builds the run's payload: the bar + filters + AI pattern off the Search state via
+     * `buildSearchQuery()`, plus the scope, whose parse is async and so can't live in
+     * there. Shared by the one-shot path (`runSearch`) and the live one, which have to
+     * ask the same question or an auto-applied answer and an Enter-run one would differ
+     * for reasons nobody could see.
      */
-    async function runSearch(): Promise<{ entries: SearchResultEntry[]; totalCount: number }> {
-        // The note belongs to the run that produced it. Dropping it up front (rather than
-        // only on the way out) means a run that throws can't leave the previous run's
-        // caveat sitting under a fresh answer.
-        setCoverageNote(null)
+    async function buildRunQuery(): Promise<ReturnType<typeof buildSearchQuery>> {
         const query = buildSearchQuery()
         // After an AI translation, the bar still shows the user's natural-language
         // prompt. The actual search must run against the AI's produced pattern, not
@@ -401,14 +399,51 @@
         } else {
             query.includePaths = [defaultScope.path]
         }
+        return query
+    }
+
+    /** PII-free analytics: a search ran. Only the mode enum crosses; never the query/pattern. */
+    function trackSearchRun(): void {
+        void trackEvent('search_used', { mode: getMode() })
+    }
+
+    /**
+     * The one-shot path: the index's answer, in one promise. Auto-apply takes this
+     * (Decision 7 — a debounced live walk would start and abandon a walk per keystroke);
+     * every run the user asked for takes `liveSearchSource` instead.
+     */
+    async function runSearch(): Promise<{ entries: SearchResultEntry[]; totalCount: number }> {
+        // The note belongs to the run that produced it. Dropping it up front (rather than
+        // only on the way out) means a run that throws can't leave the previous run's
+        // caveat sitting under a fresh answer.
+        setCoverageNote(null)
+        const query = await buildRunQuery()
         const result = await searchFiles(query)
         // Coverage honesty: an empty answer with a structural reason says so, instead of
         // reading as "nothing matched" (`search/DETAILS.md` § Honesty).
         setCoverageNote(coverageNoteFrom(result))
-        // PII-free analytics: a search ran. Only the mode enum crosses; never the query/pattern.
-        void trackEvent('search_used', { mode: getMode() })
+        trackSearchRun()
         return { entries: result.entries, totalCount: result.totalCount }
     }
+
+    /**
+     * The live path: the index's half, then a walk over what the index can't answer for,
+     * arriving in batches. Its coverage answer lands in the same note the one-shot path
+     * writes, so a caveat still can't outlive the run that earned it.
+     */
+    const liveSearchSource = createLiveSearchSource({
+        buildQuery: buildRunQuery,
+        onCoverage: (coverage) => {
+            setCoverageNote(coverage === null ? null : coverageNoteFromRun(coverage))
+        },
+        rank: (entries) =>
+            rankLiveResults(entries, {
+                query: getMode() === 'ai' ? (getLastAiPattern() ?? getQuery()) : getQuery(),
+                mode: getMode(),
+                caseSensitive: getCaseSensitive(),
+            }),
+        onStarted: trackSearchRun,
+    })
 
     /**
      * "Show all in main window" (⌥⏎).
@@ -726,6 +761,7 @@
         isIndexReady,
 
         runQuery: runSearch,
+        streamingSource: liveSearchSource,
         translateAi,
 
         primaryAction: {

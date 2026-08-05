@@ -41,48 +41,108 @@ const autoApplyListeners = new Set<(id: string, value: boolean) => void>()
 const {
   translateSearchQueryMock,
   searchFilesMock,
+  searchFilesStreamingMock,
+  liveListeners,
   addRecentSearchMock,
   parseSearchScopeMock,
   mediaSearchOcrMock,
   mediaSearchSemanticMock,
   mediaVolumeStateMock,
-} = vi.hoisted(() => ({
-  translateSearchQueryMock: vi.fn(() => Promise.resolve({ display: {}, query: {} } as TranslateResult)),
-  searchFilesMock: vi.fn(
+} = vi.hoisted(() => {
+  const searchFilesMock = vi.fn(
     (): Promise<{ entries: SearchResultEntry[]; totalCount: number }> =>
       Promise.resolve({ entries: [], totalCount: 0 }),
-  ),
-  addRecentSearchMock: vi.fn(() => Promise.resolve()),
-  parseSearchScopeMock: vi.fn((_scope: string) =>
-    Promise.resolve({ includePaths: [] as string[], excludePatterns: [] as string[] }),
-  ),
-  // The image-OCR grid's IPC. Defaults: enrichment on, one hit, so the grid actually
-  // queries the passed volume (its state gates all work). Path is index-relative.
-  mediaSearchOcrMock: vi.fn((_v: string, _q: string, _l: number | null) =>
-    Promise.resolve([{ path: '/DCIM/photo.png', snippet: 'an [invoice] scan' }]),
-  ),
-  // No CLIP model in these tests: semantic search returns nothing, so the grid runs
-  // OCR-only (the degraded path).
-  mediaSearchSemanticMock: vi.fn((_v: string, _q: string, _l: number | null) =>
-    Promise.resolve([] as { path: string; score: number }[]),
-  ),
-  mediaVolumeStateMock: vi.fn((_v: string) =>
-    Promise.resolve({
-      enabled: true,
-      indexing: false,
-      enrichedCount: 3,
-      networkOptIn: true,
-      alwaysIndexed: false,
-      paused: false,
-    }),
-  ),
-}))
+  )
+  const liveListeners = {
+    progress: new Set<(event: unknown) => void>(),
+    complete: new Set<(event: unknown) => void>(),
+  }
+  /**
+   * The backend's side of a live run (the path Enter and the ⏎ button take since M6).
+   * It answers from `searchFilesMock`, which stays the one spy for "a search asked this
+   * query", and reports a run that had nothing to walk. Emitting inside the start call
+   * is faithful: the real source installs its listeners before invoking, precisely so a
+   * run that finishes at once isn't missed. Sibling fake:
+   * `SearchDialog.coverage.svelte.test.ts`.
+   */
+  const searchFilesStreamingMock = vi.fn(async (query: unknown, runId: string) => {
+    const answer = await searchFilesMock(query as never)
+    for (const listener of liveListeners.progress) {
+      listener({
+        runId,
+        phase: 'readingIndex',
+        entries: answer.entries,
+        matchCount: answer.totalCount,
+        dirsFound: 0,
+        currentPath: null,
+        capped: false,
+      })
+    }
+    for (const listener of liveListeners.complete) {
+      listener({
+        runId,
+        matchCount: answer.totalCount,
+        coverage: {
+          walk: 'nothingToWalk',
+          unreadable: [],
+          stillCovering: [],
+          unresolvedScopes: [],
+          capped: false,
+          targetVolumeId: 'root',
+        },
+      })
+    }
+    return { runId, targetVolumeId: 'root' }
+  })
+  return {
+    searchFilesMock,
+    searchFilesStreamingMock,
+    liveListeners,
+    translateSearchQueryMock: vi.fn(() => Promise.resolve({ display: {}, query: {} } as TranslateResult)),
+    addRecentSearchMock: vi.fn(() => Promise.resolve()),
+    parseSearchScopeMock: vi.fn((_scope: string) =>
+      Promise.resolve({ includePaths: [] as string[], excludePatterns: [] as string[] }),
+    ),
+    // The image-OCR grid's IPC. Defaults: enrichment on, one hit, so the grid actually
+    // queries the passed volume (its state gates all work). Path is index-relative.
+    mediaSearchOcrMock: vi.fn((_v: string, _q: string, _l: number | null) =>
+      Promise.resolve([{ path: '/DCIM/photo.png', snippet: 'an [invoice] scan' }]),
+    ),
+    // No CLIP model in these tests: semantic search returns nothing, so the grid runs
+    // OCR-only (the degraded path).
+    mediaSearchSemanticMock: vi.fn((_v: string, _q: string, _l: number | null) =>
+      Promise.resolve([] as { path: string; score: number }[]),
+    ),
+    mediaVolumeStateMock: vi.fn((_v: string) =>
+      Promise.resolve({
+        enabled: true,
+        indexing: false,
+        enrichedCount: 3,
+        networkOptIn: true,
+        alwaysIndexed: false,
+        paused: false,
+      }),
+    ),
+  }
+})
 
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
   prepareSearchIndex: vi.fn(() => Promise.resolve({ ready: true, entryCount: 1234 })),
   searchFiles: searchFilesMock,
+  searchFilesStreaming: searchFilesStreamingMock,
+  cancelSearch: vi.fn(() => Promise.resolve(true)),
+  onSearchProgress: vi.fn((handler: (event: unknown) => void) => {
+    liveListeners.progress.add(handler)
+    return Promise.resolve(() => liveListeners.progress.delete(handler))
+  }),
+  onSearchComplete: vi.fn((handler: (event: unknown) => void) => {
+    liveListeners.complete.add(handler)
+    return Promise.resolve(() => liveListeners.complete.delete(handler))
+  }),
+  onSearchCancelled: vi.fn(() => Promise.resolve(() => {})),
+  onSearchError: vi.fn(() => Promise.resolve(() => {})),
   releaseSearchIndex: vi.fn(() => Promise.resolve()),
   translateSearchQuery: translateSearchQueryMock,
   parseSearchScope: parseSearchScopeMock,
@@ -514,6 +574,10 @@ describe('SearchDialog mode shortcuts (AI on)', () => {
     setMode('filename')
     setQuery('foo')
     dispatchKey(overlay, 'Enter')
+    // Enter takes the live path, which installs its event listeners before asking, so
+    // the ask lands a few microtasks later than the one-shot path's did.
+    await tick()
+    await new Promise((r) => setTimeout(r, 0))
     await tick()
     expect(searchFilesMock).toHaveBeenCalled()
     cleanup()

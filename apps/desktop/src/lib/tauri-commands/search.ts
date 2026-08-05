@@ -4,7 +4,16 @@ import { type UnlistenFn } from '@tauri-apps/api/event'
 import { commands, events } from '$lib/ipc/bindings'
 import type { ParsedScope, PrepareResult, SearchResult } from './ipc-types'
 import { throwIpcError } from './ipc-types'
-import type { HistoryEntry, SearchQuery, TranslateResult } from '$lib/ipc/bindings'
+import type {
+  HistoryEntry,
+  LiveSearchStart,
+  SearchCancelledEvent,
+  SearchCompleteEvent,
+  SearchErrorEvent,
+  SearchProgressEvent,
+  SearchQuery,
+  TranslateResult,
+} from '$lib/ipc/bindings'
 
 /**
  * Starts loading the search index in the background.
@@ -22,6 +31,57 @@ export async function searchFiles(query: SearchQuery): Promise<SearchResult> {
   const res = await commands.searchFiles(query)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
+}
+
+/**
+ * Starts a search that answers over TIME: the index's half first, then whatever the
+ * index can't answer for, walked live.
+ *
+ * Resolves as soon as routing has picked its one volume; everything else arrives as
+ * `search-progress` / `search-complete` / `search-cancelled` / `search-error`, each
+ * stamped with `runId`. The CALLER mints the id (as it does a listing id), so no event
+ * can arrive against one the frontend hasn't seen. Starting a run supersedes the
+ * previous one: its events stop, its walk carries on.
+ */
+export async function searchFilesStreaming(query: SearchQuery, runId: string): Promise<LiveSearchStart> {
+  const res = await commands.searchFilesStreaming(query, runId)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/** Stops a live search and the walk behind it. Resolves to whether there was one. */
+export async function cancelSearch(runId: string): Promise<boolean> {
+  const res = await commands.cancelSearch(runId)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/** A live search's batches, and where the run has got to. */
+export function onSearchProgress(handler: (event: SearchProgressEvent) => void): Promise<UnlistenFn> {
+  return events.searchProgress.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/** A live search finished on its own terms. ❌ Not the same as "the answer is complete". */
+export function onSearchComplete(handler: (event: SearchCompleteEvent) => void): Promise<UnlistenFn> {
+  return events.searchComplete.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/** Somebody stopped a live search. Its results stay on screen; they're all real. */
+export function onSearchCancelled(handler: (event: SearchCancelledEvent) => void): Promise<UnlistenFn> {
+  return events.searchCancelled.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/** A live search couldn't run at all. Typed reason plus the sentence to show. */
+export function onSearchError(handler: (event: SearchErrorEvent) => void): Promise<UnlistenFn> {
+  return events.searchError.listen((event) => {
+    handler(event.payload)
+  })
 }
 
 /** Signals that the search dialog closed. Starts the idle timer for index eviction. */

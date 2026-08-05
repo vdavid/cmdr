@@ -36,6 +36,15 @@
     import { computeNameColumnWidth, visibleRowRange } from './name-column-width'
     import EmptyState from './EmptyState.svelte'
     import PathPills from './PathPills.svelte'
+    import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
+    import {
+        createAnnouncementThrottle,
+        livePhaseLabel,
+        liveStatusLine,
+        liveWalkProgress,
+        type LiveRunView,
+    } from './query-stream'
     import type { SearchMode } from './query-filter-state.svelte'
 
     interface Props {
@@ -65,6 +74,15 @@
          * screen (the count-only run returned no rows), so the handler MUST re-run too.
          */
         onShowResults?: () => void
+        /**
+         * The live run's phase, counters, and end state, or `null` when the last run
+         * wasn't a streaming one. Rows arrive over time under a live run, so it also
+         * decides whether `isSearching` replaces the list with a spinner (it must not,
+         * once there are rows to look at). Search wires it; Selection never streams.
+         */
+        live?: LiveRunView | null
+        /** Stops the running live search. Absent when there's nothing to stop. */
+        onStopLive?: () => void
         iconCacheVersion: number
         /** True when AI mode is available (provider on + index ready). Drives the empty-state chip set. */
         aiEnabled: boolean
@@ -110,6 +128,8 @@
         indexEntryCount,
         countOnly = false,
         onShowResults,
+        live = null,
+        onStopLive,
         iconCacheVersion: _iconVersionProp,
         aiEnabled,
         showPathColumn = true,
@@ -153,6 +173,14 @@
             return tString('queryUi.results.indexUnavailable')
         }
         if (isIndexReady) {
+            // A live run counts in the status bar rather than the content area: its rows
+            // are already there and the content area is theirs. `''` means the run
+            // covered its ground with nothing left to qualify, so the ordinary result
+            // line below is the honest one.
+            if (live) {
+                const liveLine = liveStatusLine(live, results.length)
+                if (liveLine) return liveLine
+            }
             // D3: status bar stays empty while the content area shows the spinner.
             // D4: status bar stays empty while the content area shows the criteria list.
             // Both states surface their info in the content; no duplication here.
@@ -188,12 +216,26 @@
         return out
     }
 
+    /** A live run is still going, so rows and counts are still arriving. */
+    const streaming = $derived(live !== null && live.running)
+
+    /**
+     * A live run with nothing to render yet, which is when the content area belongs to
+     * the phase spinner: no rows for a list search, and the first phase for a
+     * count-only one (its "0 so far" is meaningless until coverage is resolved).
+     */
+    const liveWaiting = $derived(
+        live !== null && streaming && (countOnly ? live.phase === 'resolvingCoverage' : results.length === 0),
+    )
+
     // True only when the `{:else}` branch below actually renders option rows. `role="listbox"`
     // requires `option` children, so it must NOT be set during the searching / loading / empty
     // states (which replace the rows with a spinner or message) even when `results` still holds
     // a stale set. Gating on `results.length > 0` alone tripped axe's `aria-required-children`.
+    // `isSearching` is TRUE for a live run's whole life, and its rows are the point, so the
+    // spinner only owns the area while nothing has arrived (`liveWaiting`).
     const showingRows = $derived(
-        isIndexAvailable && isIndexReady && !isSearching && !countOnly && results.length > 0,
+        isIndexAvailable && isIndexReady && (!isSearching || streaming) && !countOnly && results.length > 0,
     )
 
     // Count-only shows a bare total instead of rows. Renders once a search has run (including a
@@ -202,13 +244,35 @@
     const showingCount = $derived(
         isIndexAvailable &&
             isIndexReady &&
-            !isSearching &&
+            (!isSearching || streaming) &&
+            !liveWaiting &&
             countOnly &&
             hasSearched &&
             (query.trim() !== '' || sizeFilter !== 'any' || dateFilter !== 'any'),
     )
 
+    /**
+     * Count-only over a live walk is a LOWER BOUND: the walk is still counting, and a
+     * run that ended short stopped counting where it stopped. Either way the exact
+     * sentence would be a confident lie, so the "so far" one takes over.
+     */
+    const countIsProvisional = $derived(live !== null && (live.running || live.incomplete))
+
     const statusText = $derived(getStatusText())
+    /** The walk's own progress, beside the count. Empty unless a walk is what's running. */
+    const walkProgress = $derived(live === null ? '' : liveWalkProgress(live))
+
+    /**
+     * What the status bar's live region actually says. A live run emits a batch every
+     * 100 ms; announcing each one floods a screen reader with numbers, and an axe audit
+     * sees nothing wrong with it. So the region gets a throttled copy while the visible
+     * text updates freely, plus one guaranteed announcement when the run ends.
+     */
+    const announcer = createAnnouncementThrottle()
+    let announcement = $state('')
+    $effect(() => {
+        if (announcer.offer(statusText, !streaming)) announcement = announcer.text
+    })
 
     // ── Name column shrink-wrap ────────────────────────────────────────────────
     //
@@ -408,7 +472,18 @@
             <Spinner size="md" />
             <div class="loading-label">{tString('queryUi.results.loadingIndex')}</div>
         </div>
-    {:else if isSearching}
+    {:else if liveWaiting && live}
+        <!-- Three honest waits, not one spinner: working out what's already covered can
+             mean a multi-second index load on a big drive, reading the index is quick,
+             and walking what isn't indexed is unbounded. Saying which one you're in is
+             the difference between "slow" and "stuck". The counters and the way out
+             live in the status bar, so they don't move between here and there once the
+             first rows land. -->
+        <div class="loading-state">
+            <Spinner size="md" />
+            <div class="loading-label">{livePhaseLabel(live.phase)}</div>
+        </div>
+    {:else if isSearching && !streaming}
         <!-- D1/D2: full result list area is replaced by the standard spinner +
              "Searching..." label. No rows render while the fetch is in-flight,
              since the previous result set is now stale relative to the new
@@ -424,7 +499,9 @@
         <div class="count-only-summary" aria-live="polite">
             <p class="count-only-sentence">
                 <Trans
-                    key="queryUi.results.countOnly.sentence"
+                    key={countIsProvisional
+                        ? 'queryUi.results.countOnly.soFar'
+                        : 'queryUi.results.countOnly.sentence'}
                     params={{ count: totalCount, countText: formatInteger(totalCount) }}
                     snippets={{ total: countTotal }}
                 />
@@ -509,9 +586,32 @@
      announces the next status; it collapses to nothing (no border, no padding, no height)
      whenever it has nothing to say, which keeps the results well from ending in an empty
      bordered strip while a search runs. Collapsing rather than unmounting also means the
-     dialog's height doesn't jump when the bar has something to report again. -->
-<div class="status-bar" class:is-empty={!statusText} aria-live="polite">
+     dialog's height doesn't jump when the bar has something to report again.
+
+     While a live run streams, the bar is also its progress strip: the count, the walk's
+     own progress, where it has got to, and the way to stop it. The `aria-live` region is
+     the INNER span, carrying a throttled copy, because the visible numbers move ten times
+     a second and a screen reader can't be asked to read that. -->
+<div class="status-bar" class:is-empty={!statusText && !streaming}>
     <span class="status-text">{statusText}</span>
+    {#if walkProgress}
+        <span class="status-progress">{walkProgress}</span>
+    {/if}
+    {#if streaming && live?.currentPath}
+        <span
+            class="status-path"
+            aria-label={tString('queryUi.results.live.scanningAria', { path: live.currentPath })}
+            use:useShortenMiddle={{ text: live.currentPath, preferBreakAt: '/', startRatio: 0.3 }}
+        ></span>
+    {/if}
+    {#if streaming && onStopLive}
+        <span class="status-stop" use:tooltip={tString('queryUi.results.live.stopTooltip')}>
+            <Button variant="secondary" size="mini" onclick={onStopLive}>
+                {tString('queryUi.results.live.stop')}<ShortcutChip key="Esc" size="sm" />
+            </Button>
+        </span>
+    {/if}
+    <span class="sr-only" aria-live="polite">{announcement}</span>
 </div>
 
 <style>
@@ -751,6 +851,9 @@
     /* Status bar closes the results zone: same surface as the list, separated by a
        hairline rather than a surface change (it reports ON the list, it isn't chrome). */
     .status-bar {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
         padding: var(--spacing-xs) var(--spacing-dialog);
         background: var(--color-bg-primary);
         border-top: 1px solid var(--color-border-subtle);
@@ -771,6 +874,34 @@
 
     .status-text {
         user-select: none;
+        white-space: nowrap;
+    }
+
+    /* The walk's own progress, quieter than the match count it rides beside. */
+    .status-progress {
+        user-select: none;
+        white-space: nowrap;
+        color: var(--color-text-tertiary);
+    }
+
+    /* Where the walk has got to. It takes whatever room is left and mid-truncates, so a
+       deep path can't push the Stop button off the end of the bar. */
+    .status-path {
+        flex: 1 1 auto;
+        min-width: 0;
+        color: var(--color-text-tertiary);
+        font-family: var(--font-mono);
+        font-size: var(--font-size-xs);
+        white-space: nowrap;
+        overflow: hidden;
+    }
+
+    /* Pinned right: the way out of a search that's taking too long stays in one place
+       whether or not there's a path to show. */
+    .status-stop {
+        margin-left: auto;
+        display: inline-flex;
+        align-items: center;
     }
 
     /* Index unavailable message */

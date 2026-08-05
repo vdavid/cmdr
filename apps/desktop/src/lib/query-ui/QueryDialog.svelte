@@ -246,6 +246,26 @@
         // state; the user hits Enter to fire when ready.
     })
 
+    /** The status bar's Stop button. Same action Escape's first press takes. */
+    function stopLiveRun(): void {
+        runner.cancelLive()
+    }
+
+    /**
+     * What Escape does, in order: hand it to an open popover, then STOP a running live
+     * search, then close.
+     *
+     * The two-step exists because a live search is the one thing in this dialog that
+     * takes minutes, and the reflex for "stop that" is Escape. Closing on the first
+     * press would stop the walk too (the dialog's teardown cancels it), but it would
+     * also take the results already on screen away, which is the opposite of what
+     * someone pressing Escape at 40,000 folders wants.
+     */
+    function resolveEscape(): 'defer' | 'stopped' | 'close' {
+        if (dialogElement?.querySelector('.ui-popover')) return 'defer'
+        return runner.cancelLive() ? 'stopped' : 'close'
+    }
+
     /**
      * Capture-phase Escape handler. Fires before the popover's bubble handler. When
      * a filter-chip popover (or the recent-items popover, which reuses the same
@@ -254,12 +274,11 @@
      */
     function handleEscapeCapture(e: KeyboardEvent): void {
         if (e.key !== 'Escape') return
-        if (dialogElement?.querySelector('.ui-popover')) {
-            return
-        }
+        const outcome = resolveEscape()
+        if (outcome === 'defer') return
         e.preventDefault()
         e.stopPropagation()
-        config.onClose()
+        if (outcome === 'close') config.onClose()
     }
 
     onMount(async () => {
@@ -455,10 +474,15 @@
         // Tab wrapping is handled by `use:trapFocus` on the overlay.
         if (handleModifierShortcuts(e)) return
         switch (e.key) {
-            case 'Escape':
+            case 'Escape': {
+                // The window-capture handler above normally gets here first; this is the
+                // same two-step for the paths that reach the dialog's own keydown.
+                const outcome = resolveEscape()
+                if (outcome === 'defer') break
                 e.preventDefault()
-                config.onClose()
+                if (outcome === 'close') config.onClose()
                 break
+            }
             case 'ArrowDown':
             case 'ArrowUp':
                 handleArrowNav(e)
@@ -622,6 +646,8 @@
             indexEntryCount={config.indexEntryCount}
             countOnly={config.filterChipsExtras.countOnly ?? false}
             onShowResults={config.filterChipsExtras.onToggleCountOnly ? showResultsFromCount : undefined}
+            live={runner.live}
+            onStopLive={config.streamingSource ? stopLiveRun : undefined}
             iconCacheVersion={iconVersion}
             aiEnabled={config.aiEnabled}
             showPathColumn={config.showPathColumn}
