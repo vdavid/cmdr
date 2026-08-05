@@ -349,6 +349,10 @@ mod tests {
     /// on install order.
     #[test]
     fn an_uninstalled_provider_reports_nothing_mounted() {
+        // The installed provider is a process-wide seam, so asking what's mounted
+        // needs the same lock installing one does — otherwise this reads whichever
+        // fake drive a concurrent test had mounted at that instant.
+        let _serialized = crate::indexing::handle::test_lock();
         let provider = current();
         assert!(provider.get("root").is_none());
         assert!(provider.volume_ids().is_empty());

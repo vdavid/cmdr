@@ -22,6 +22,12 @@ fn a_second_build_reports_already_built_rather_than_a_second_index() {
     let _serialized = crate::indexing::handle::test_lock();
     let _released = Index::release_build_claim_for_test();
     let data = tempfile::tempdir().expect("index data dir");
+    // `build()` is the real thing, so it installs the config PERMANENTLY —
+    // `install_for_test`'s restore-on-drop is exactly what it doesn't do. Without
+    // this guard the data dir stays set for the rest of the binary, and
+    // `host::config::tests::an_unset_data_dir_is_an_error_not_an_empty_path` fails
+    // for anyone unlucky enough to run after it.
+    let _config = crate::indexing::host::config::install_data_dir_for_test(data.path());
 
     Index::builder()
         .data_dir(data.path())
