@@ -164,7 +164,13 @@ fn prepare_scope_filter(query: &SearchQuery, case_insensitive: bool) -> ScopeFil
                 exclude_path_prefixes.push(pattern.clone());
             } else if pattern.contains('*') || pattern.contains('?') {
                 let regex_str = glob_to_regex(pattern);
-                if let Ok(re) = RegexBuilder::new(&regex_str).case_insensitive(case_insensitive).build() {
+                // `dot_matches_new_line`: the same glob the query bar compiles, so it
+                // has to mean the same thing. See `matcher::compile_pattern`.
+                if let Ok(re) = RegexBuilder::new(&regex_str)
+                    .case_insensitive(case_insensitive)
+                    .dot_matches_new_line(true)
+                    .build()
+                {
                     exclude_name_patterns.push(re);
                 }
             } else if case_insensitive {

@@ -228,3 +228,81 @@ fn search_with_wildcard_exclude() {
     assert!(names.contains(&"pkg.json"));
     assert!(!names.contains(&"config"));
 }
+
+// ── Newlines in directory names ─────────────────────────────────
+
+/// A two-entry index: one directory whose name contains a newline, holding one file.
+/// `/we\nird/note.txt`
+fn make_newline_dir_index() -> SearchIndex {
+    let mut names = String::new();
+    let offsets: Vec<(u32, u16)> = ["", "we\nird", "note.txt"]
+        .iter()
+        .map(|n| arena_push(&mut names, n))
+        .collect();
+
+    let entries = vec![
+        SearchEntry {
+            id: 1,
+            parent_id: 0,
+            name_offset: offsets[0].0,
+            name_len: offsets[0].1,
+            is_directory: true,
+            size: None,
+            modified_at: None,
+        },
+        SearchEntry {
+            id: 2,
+            parent_id: 1,
+            name_offset: offsets[1].0,
+            name_len: offsets[1].1,
+            is_directory: true,
+            size: None,
+            modified_at: Some(1000),
+        },
+        SearchEntry {
+            id: 3,
+            parent_id: 2,
+            name_offset: offsets[2].0,
+            name_len: offsets[2].1,
+            is_directory: false,
+            size: Some(10),
+            modified_at: Some(2000),
+        },
+    ];
+    let mut id_to_index = HashMap::new();
+    for (i, e) in entries.iter().enumerate() {
+        id_to_index.insert(e.id, i);
+    }
+    SearchIndex {
+        names,
+        entries,
+        id_to_index,
+        generation: 1,
+    }
+}
+
+#[test]
+fn a_wildcard_exclude_reaches_a_directory_name_with_a_newline_in_it() {
+    // Same glob semantics the query bar's patterns get: `*` means any characters,
+    // and a newline in a name is one of them. Without that, `!*ird*` would silently
+    // fail to exclude the one directory the user typed it for.
+    let index = make_newline_dir_index();
+    let query = SearchQuery {
+        name_pattern: None,
+        pattern_type: PatternType::Glob,
+        min_size: None,
+        max_size: None,
+        modified_after: None,
+        modified_before: None,
+        is_directory: Some(false),
+        include_paths: None,
+        exclude_dir_names: Some(vec!["*ird*".to_string()]),
+        include_path_ids: None,
+        count_only: false,
+        limit: 30,
+        case_sensitive: None,
+        exclude_system_dirs: Some(false),
+    };
+    let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
+    assert_eq!(result.total_count, 0, "note.txt sits under an excluded directory");
+}
