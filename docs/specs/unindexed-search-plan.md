@@ -169,8 +169,10 @@ Each records the intent, so an implementer can adapt without re-litigating. All 
     `transports/smb/index.rs:220` via `drive_index_should_run`) and is restated as an invariant in four docs
     (`lifecycle/CLAUDE.md`, `lifecycle/DETAILS.md:383`, `transports/CLAUDE.md:23`, `master.rs`), so all of those need
     the carve-out or the invariant becomes a lie in four places. The veto keeps real teeth under Decision 9: a vetoed
-    drive gets no watcher, so its walked branches re-walk instead of staying live. The settings copy stays as written,
-    see Accepted difference 11.
+    drive gets no watcher, so what a search walked there stays covered and served but stops being kept current the
+    moment the app does. (M11 correction: it is NOT re-walked — the walk marked those directories listed, so the
+    frontier never offers them again and Decision 5 trusts them as covered-but-stale.) The settings copy stays as
+    written, see Accepted difference 11.
 14. **Progress is directories scanned plus the current path. No percentage, no ETA.** The total is unknown by
     definition, and a fabricated ETA violates honest progress (`docs/design-principles.md`).
 15. **There is no way to turn live walking off.** Search is a deliberate action and a walk is what it means; a
@@ -265,9 +267,9 @@ coverage API must not assume a single dimension.
 
 ## Execution status
 
-Through M9, plus M11 in flight. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local `main`.
+Through M9 plus M11; M10 is what's left. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local `main`.
 
-**M11 in progress.** What the watcher's real code says about the milestone's design, recorded as it's found:
+**M11's design did not survive contact with the watcher's real code.** What changed, and why:
 
 - **The premise "a path-prefix test over the drive-root FSEvents stream the watcher already runs" is wrong for the case
   M11 exists to serve.** A `DriveWatcher` starts in exactly two places, `start_scan` and `start_replay`
@@ -292,12 +294,36 @@ Through M9, plus M11 in flight. Branch `worktree-david+unindexed-search-exec`; M
 - **A coalesced `MustScanSubDirs` above a branch has to be re-anchored, not dropped.** FSEvents reports "something under
   here changed" at a shallower path than the branch; a plain prefix test would discard it and lose every change under
   the covered ground.
+- **`BulkReconcileGuard` is not one of the hooks.** M11 named it beside the scan-completion handshake, but it suppresses
+  per-entry propagation during a bulk reconcile (`MarkLedgerUnpaid` / `PayLedgerIfUnpaid`); it has nothing to say about
+  which events a live loop may act on. The handshake was the right pointer and the only one.
+- **The same hazard exists on a SCANNED volume, which no milestone had noticed.** A search walks the holes in an indexed
+  drive while that drive's live loop is running, so the loop and the walker write the same names through one writer. The
+  buffering therefore applies to every live loop, not only a branch-watched one; a scanned volume keeps no branch
+  bookkeeping past the walk (`AfterWalk::Forget`).
+- **⚠️ The SMB change-notify translator has the same unclosed race.** It writes through the volume's writer
+  (`state::get_writer_and_scanning_for`) with no notion of a cover walk, so a walk on a share races it the way a local
+  walk used to race the local loop. Out of M11's scope (this is a local-filesystem watcher) and left standing, recorded
+  in `watch/DETAILS.md`.
 - **"A vetoed drive's walked branches re-walk" (Decision 13, M11, `master.rs`'s module doc) is not what happens.** The
   walk marked those directories listed, so the frontier query never offers them again; with no watcher they are
   covered-but-stale, trusted per Decision 5. The veto's teeth are real but they're "no watcher, so no freshness", not
   "re-walk".
 
 **Landed.**
+
+- **M11**: the branch watch. `watch/branches.rs` holds `WatchScope` + `BranchWatch`: an event inside a covered branch
+  flows, one inside a branch a walk is covering RIGHT NOW waits, one anywhere else is dropped. The middle state is the
+  milestone — writing mid-walk lets the parallel walker's fresh ids lose to `INSERT OR IGNORE` and orphan a subtree,
+  dropping drifts the branch's sizes with nothing to signal it — and it applies on a SCANNED volume too, since a search
+  walking a hole in an indexed drive races that drive's loop identically (nobody had noticed). A sweep above the
+  branches is re-anchored onto them AND kept for the rest of its subtree; a branch-confined reconciler never grows
+  coverage outward and never routes a shallow anchor to the whole-volume rescan. The set persists as
+  `meta.walk_covered_branches` (index-relative, so a remount finds it) and comes back when the volume's index does,
+  replaying from the stored `last_event_id` or bumping the epoch when it can't. `master::branch_watch_allowed` is the
+  gate (master switch + `user_disabled`, NOT `persisted_scan_completed` — a searcher never opted the drive in). Linux
+  watches the branches themselves, macOS the volume root. Proved end to end by a real `DriveWatcher` on a real drive
+  (`cover::tests::a_change_inside_a_walked_branch_reaches_the_index_and_one_beside_it_does_not`).
 
 - **M0** (`2d17845cd`, `d711ebc7c`, `0b60a3f05`, `d4d433b1d`): the one-volume ceiling as a typed
   `ScopeError::SpansMultipleVolumes` at the API, the fan-out deleted (k-way merge, `ColdVolumePolicy`,
@@ -1060,7 +1086,7 @@ Per Decision 10 there is no agent-specific policy left to add, so this milestone
 Tests: an agent search over a partially covered volume walks and returns the union, same as the dialog. Written after.
 Docs: the MCP tool docs, `search/DETAILS.md`. Checks: `pnpm check rust`.
 
-### M11. Watch what the walk covered
+### M11. Watch what the walk covered — LANDED
 
 What makes Decision 9 real, and what lets the plan carry no expiry.
 
@@ -1075,6 +1101,11 @@ What makes Decision 9 real, and what lets the plan carry no expiry.
 - A drive with the per-drive veto set gets no watch (Decision 13), so its walked branches re-walk instead of staying
   live.
 - The branch set is persisted, so it survives restart, and per-drive "Clear index" drops it along with the coverage.
+
+**What landed differs from the above in five places**, each recorded in the execution status: there was no stream to
+filter (a walk-built index has no watcher at all), restart persistence resumes with the volume rather than at launch,
+mid-walk events are BUFFERED rather than merely admitted, a sweep above the branches is re-anchored, and the same
+buffering had to apply to scanned volumes too. "Clear index" needed no work: it deletes the database the set lives on.
 
 Tests, **test-first**: an event inside a covered branch updates the index and one outside it is discarded; a walk that
 adds a branch does not lose events that arrive mid-walk. Written after: restart restores the branch set; a vetoed drive
