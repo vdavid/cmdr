@@ -1,21 +1,31 @@
-//! Pure predicates for "this path is *possibly* macOS-TCC-restricted."
+//! Predicates for "is macOS TCC what's blocking this path?"
 //!
-//! These match a hard-coded list of paths under `$HOME` (plus `/Volumes/*`
-//! for network shares). The predicate is intentionally a coarse FILTER:
-//! it rules out USB drives, ordinary mode-0700 dirs, regular project
-//! folders, etc. The actual restricted-state UI only kicks in when both:
+//! TCC gates access at an ANCHOR, never per subfolder. `SystemPolicyNetworkVolumes`
+//! covers a whole mounted share; the per-folder services cover `~/Downloads` and its
+//! siblings; a FileProvider grant covers one cloud domain's tree. Everything below an
+//! anchor rides on that one grant, so an open anchor means TCC is already satisfied
+//! for the entire subtree.
 //!
-//! 1. `is_potentially_tcc_restricted(path)` returns `true`, AND
-//! 2. We've observed a `PermissionDenied` accessing that path.
+//! Two layers, and callers should be deliberate about which one they want:
 //!
-//! The double check keeps false-positives out: a USB drive with weird
-//! permissions never gets the "TCC-restricted" treatment because it's not
-//! on the hard-coded list.
+//! 1. [`tcc_anchor`] (boolean shorthand: [`is_potentially_tcc_restricted`]) is a coarse
+//!    FILTER answering "which gate would cover this path, if any?". USB drives, project
+//!    folders, and ordinary mode-0700 directories have no anchor. Use it when there's no
+//!    observed denial to reason about, for example to decide whether stat'ing a path
+//!    might raise a TCC prompt.
+//! 2. [`tcc_denial_is_plausible`] is the question an observed `PermissionDenied` should
+//!    ask. It finds the anchor and probes whether the anchor ITSELF is shut. An anchor
+//!    that opens fine means the grant is in hand and the refusal came from the
+//!    filesystem's own permissions (a root-owned `lost+found` on an SMB share, say),
+//!    which no amount of Full Disk Access will change.
 //!
-//! On non-macOS platforms TCC doesn't exist, so both predicates always
-//! return `false`. Callers don't need to cfg-guard.
+//! Classifying a denial with layer 1 alone is how a plain remote permission problem ends
+//! up telling the user to open System Settings, where there is nothing to grant.
+//!
+//! On non-macOS platforms TCC doesn't exist, so everything here returns `false` / `None`.
+//! Callers don't need to cfg-guard.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
 /// Home-relative prefixes for paths that macOS guards via TCC. A path
@@ -50,32 +60,102 @@ const HOME_RELATIVE_PREFIXES: &[&str] = &[
     "Library/Group Containers",
 ];
 
-/// Cached `$HOME` path. Set once at first call to `is_potentially_tcc_restricted`
-/// to avoid repeated `dirs::home_dir()` syscalls.
-static HOME_DIR: OnceLock<Option<std::path::PathBuf>> = OnceLock::new();
+/// Home-relative prefixes whose real gate sits one component DEEPER than the prefix.
+/// `~/Library/CloudStorage` lists fine with no grant at all; the FileProvider gate is
+/// per DOMAIN (`.../Dropbox`, `.../GoogleDrive-you@example.com`), so the domain
+/// directory is the anchor. `Library/Mobile Documents/com~apple~CloudDocs` needs no
+/// entry here: that prefix already names the domain.
+const FILE_PROVIDER_DOMAIN_ROOTS: &[&str] = &["Library/CloudStorage"];
+
+/// Cached `$HOME` path. Set once at first call to [`tcc_anchor`] to avoid
+/// repeated `dirs::home_dir()` syscalls.
+static HOME_DIR: OnceLock<Option<PathBuf>> = OnceLock::new();
 
 fn home_dir() -> Option<&'static Path> {
     HOME_DIR.get_or_init(dirs::home_dir).as_deref()
 }
 
-/// Returns `true` if `path` is on the hard-coded list of paths macOS *may*
-/// restrict via TCC. See module-level doc for the policy.
+/// The path where the TCC gate covering `path` actually sits, or `None` when no gate
+/// covers it. `path` is its own anchor when it IS the gated volume root or folder.
 ///
-/// `false` on non-macOS platforms and when `$HOME` is unset.
-pub fn is_potentially_tcc_restricted(path: &Path) -> bool {
+/// See the module doc for what an anchor means. `None` on non-macOS platforms and when
+/// `$HOME` is unset.
+pub fn tcc_anchor(path: &Path) -> Option<PathBuf> {
     if !cfg!(target_os = "macos") {
-        return false;
+        return None;
     }
-    let Some(home) = home_dir() else {
+    // Network volumes are checked FIRST: a `$HOME` that itself lives on a mounted share
+    // would otherwise take the home branch and miss the gate that really applies.
+    if let Some(volume_root) = network_volume_root(path) {
+        return Some(volume_root);
+    }
+    let home = home_dir()?;
+    home_relative_anchor(path.strip_prefix(home).ok()?, home)
+}
+
+/// Returns `true` if some TCC gate covers `path`. A coarse filter: it says nothing about
+/// whether that gate is currently shut. Use [`tcc_denial_is_plausible`] to classify an
+/// observed permission denial.
+pub fn is_potentially_tcc_restricted(path: &Path) -> bool {
+    tcc_anchor(path).is_some()
+}
+
+/// Returns `true` when macOS TCC is a plausible cause of a permission denial on `path`.
+///
+/// Requires a gate to cover `path` AND that gate to be shut. A denial below an anchor
+/// that opens fine came from the filesystem's own permissions or, on a share, from the
+/// file server, so pointing the user at System Settings would send them nowhere.
+///
+/// Costs one directory read on the anchor, so call it from error paths, not hot loops.
+pub fn tcc_denial_is_plausible(path: &Path) -> bool {
+    tcc_denial_is_plausible_with(path, read_is_denied)
+}
+
+/// [`tcc_denial_is_plausible`] with the anchor probe injected, so the decision logic is
+/// testable without a real gated folder or a live network mount.
+fn tcc_denial_is_plausible_with(path: &Path, anchor_is_shut: impl Fn(&Path) -> bool) -> bool {
+    let Some(anchor) = tcc_anchor(path) else {
         return false;
     };
-    let Ok(rest) = path.strip_prefix(home) else {
-        // Path isn't under $HOME. Check the network-volume branch.
-        return is_network_volume_path(path);
-    };
-    HOME_RELATIVE_PREFIXES
+    // The caller observed a denial on `path`; when `path` IS the gate, that denial is
+    // the probe. Re-reading it would only repeat what we already know.
+    if anchor == path {
+        return true;
+    }
+    anchor_is_shut(&anchor)
+}
+
+/// Whether reading `dir` is refused. Only `PermissionDenied` counts: a directory that's
+/// missing or otherwise unreadable isn't a grant we're lacking.
+///
+/// Opening a directory can succeed where READING it doesn't, so `read_dir` alone is not
+/// the probe. A `lost+found` on a mounted SMB share hands back a handle and only refuses
+/// at the first `readdir`; probing with `read_dir` alone calls that folder open. So pull
+/// the first entry too.
+pub fn read_is_denied(dir: &Path) -> bool {
+    let denied = |e: &std::io::Error| e.kind() == std::io::ErrorKind::PermissionDenied;
+    match std::fs::read_dir(dir) {
+        Err(e) => denied(&e),
+        Ok(mut entries) => matches!(entries.next(), Some(Err(e)) if denied(&e)),
+    }
+}
+
+/// The anchor for a `$HOME`-relative path, given `rest` (the path with `$HOME` stripped)
+/// and the `home` it was stripped from. Split out so tests can drive it with a fake home,
+/// which the `OnceLock` cache otherwise makes impossible.
+fn home_relative_anchor(rest: &Path, home: &Path) -> Option<PathBuf> {
+    let prefix = HOME_RELATIVE_PREFIXES
         .iter()
-        .any(|prefix| rest == Path::new(prefix) || rest.starts_with(prefix))
+        .find(|prefix| rest == Path::new(prefix) || rest.starts_with(prefix))?;
+    let mut anchor = home.join(prefix);
+    if FILE_PROVIDER_DOMAIN_ROOTS.contains(prefix) {
+        // Reach one level in for the domain. A path that stops at the bare prefix has no
+        // domain component, and stays its own anchor.
+        if let Some(domain) = rest.strip_prefix(prefix).ok().and_then(|r| r.components().next()) {
+            anchor.push(domain);
+        }
+    }
+    Some(anchor)
 }
 
 /// Returns `true` for `/Volumes/<share>` (or descendants) where the
@@ -87,11 +167,17 @@ pub fn is_potentially_tcc_restricted(path: &Path) -> bool {
 ///
 /// `false` on non-macOS platforms.
 pub fn is_network_volume_path(path: &Path) -> bool {
+    network_volume_root(path).is_some()
+}
+
+/// The mounted network share `path` sits on, as `/Volumes/<share>`. See
+/// [`is_network_volume_path`] for the filesystem types this recognizes.
+fn network_volume_root(path: &Path) -> Option<PathBuf> {
     #[cfg(target_os = "macos")]
     {
         let s = path.to_string_lossy();
         if !s.starts_with("/Volumes/") {
-            return false;
+            return None;
         }
         // We need to statfs the *root* of the volume (`/Volumes/<share>`),
         // not arbitrary descendants; statfs walks parents on its own, but
@@ -103,17 +189,14 @@ pub fn is_network_volume_path(path: &Path) -> bool {
         // `/Volumes`
         let _ = comps.next();
         // `<share>`
-        let share = match comps.next() {
-            Some(c) => c.as_os_str(),
-            None => return false,
-        };
-        let volume_root = std::path::PathBuf::from("/Volumes").join(share);
-        fs_type_is_network(&volume_root)
+        let share = comps.next()?.as_os_str();
+        let volume_root = PathBuf::from("/Volumes").join(share);
+        fs_type_is_network(&volume_root).then_some(volume_root)
     }
     #[cfg(not(target_os = "macos"))]
     {
         let _ = path;
-        false
+        None
     }
 }
 
@@ -148,22 +231,22 @@ fn fs_type_is_network(path: &Path) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testing::TestDir;
     use std::path::PathBuf;
 
     fn home() -> PathBuf {
         dirs::home_dir().unwrap_or_else(|| PathBuf::from("/Users/test"))
     }
 
-    /// Bypass the OnceLock cache for tests by calling the predicate directly
+    /// Bypass the OnceLock cache for tests by calling the anchor lookup directly
     /// with a known home. Required because OnceLock only initializes once
     /// per process.
+    fn anchor_under_home(path: &Path, home: &Path) -> Option<PathBuf> {
+        home_relative_anchor(path.strip_prefix(home).ok()?, home)
+    }
+
     fn match_under_home(path: &Path, home: &Path) -> bool {
-        let Ok(rest) = path.strip_prefix(home) else {
-            return false;
-        };
-        HOME_RELATIVE_PREFIXES
-            .iter()
-            .any(|prefix| rest == Path::new(prefix) || rest.starts_with(prefix))
+        anchor_under_home(path, home).is_some()
     }
 
     #[test]
@@ -263,6 +346,135 @@ mod tests {
         let h = home();
         assert!(!is_potentially_tcc_restricted(&h.join("Downloads")));
         assert!(!is_network_volume_path(Path::new("/Volumes/share")));
+    }
+
+    // ── anchors ──────────────────────────────────────────────────────────
+
+    #[test]
+    fn per_folder_anchor_is_the_gated_folder_itself() {
+        let h = home();
+        assert_eq!(anchor_under_home(&h.join("Downloads"), &h), Some(h.join("Downloads")));
+        assert_eq!(
+            anchor_under_home(&h.join("Documents/taxes/2025/receipt.pdf"), &h),
+            Some(h.join("Documents")),
+            "a descendant anchors on the gated folder, not on itself"
+        );
+    }
+
+    #[test]
+    fn cloud_storage_anchor_reaches_the_provider_domain() {
+        let h = home();
+        // `~/Library/CloudStorage` itself needs no grant; each FileProvider domain
+        // under it does, so the domain directory is the anchor.
+        assert_eq!(
+            anchor_under_home(&h.join("Library/CloudStorage/Dropbox/notes/todo.md"), &h),
+            Some(h.join("Library/CloudStorage/Dropbox"))
+        );
+        assert_eq!(
+            anchor_under_home(&h.join("Library/CloudStorage/GoogleDrive-x@y.com/f"), &h),
+            Some(h.join("Library/CloudStorage/GoogleDrive-x@y.com"))
+        );
+        assert_eq!(
+            anchor_under_home(&h.join("Library/CloudStorage"), &h),
+            Some(h.join("Library/CloudStorage")),
+            "the bare prefix has no domain to reach into"
+        );
+        // iCloud's prefix already names the domain, so it anchors on the prefix.
+        assert_eq!(
+            anchor_under_home(
+                &h.join("Library/Mobile Documents/com~apple~CloudDocs/Photos/x.heic"),
+                &h
+            ),
+            Some(h.join("Library/Mobile Documents/com~apple~CloudDocs"))
+        );
+    }
+
+    // ── the anchor probe ─────────────────────────────────────────────────
+
+    /// A directory that reads fine, and one that isn't there at all, are both "not
+    /// refused". Only an actual refusal counts as a gate we're locked out of.
+    ///
+    /// The refusal case worth guarding can't be built here: a `lost+found` on an SMB
+    /// share opens fine and only refuses at the first `readdir`, which is why
+    /// `read_is_denied` pulls an entry. Reproducing it needs a live mount, so it's
+    /// covered by `scripts/soak-smb.sh` and by the mode-0000 case below (which refuses
+    /// at open, the other half of the same contract).
+    #[test]
+    fn read_is_denied_only_on_a_real_refusal() {
+        let scratch = TestDir::new("tcc_probe_open");
+        assert!(!read_is_denied(&scratch), "a readable dir is not refused");
+        assert!(
+            !read_is_denied(&scratch.join("no-such-child")),
+            "a missing dir is not a grant we're lacking"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn read_is_denied_on_a_mode_0000_dir() {
+        use std::os::unix::fs::PermissionsExt as _;
+
+        // Root bypasses mode bits entirely, so the assertion wouldn't hold there.
+        // SAFETY: `geteuid` takes no arguments, touches no memory, and cannot fail.
+        if unsafe { libc::geteuid() } == 0 {
+            return;
+        }
+        let scratch = TestDir::new("tcc_probe_shut");
+        let dir = scratch.join("shut");
+        std::fs::create_dir(&dir).expect("create probe dir");
+        std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o000)).expect("chmod 000");
+
+        let denied = read_is_denied(&dir);
+
+        // Restore before asserting: `TestDir`'s Drop can't remove a mode-0000 child, and
+        // a failed assertion would otherwise leak the scratch tree.
+        std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700)).expect("restore mode");
+        assert!(denied, "a mode-0000 dir must read as refused");
+    }
+
+    // ── denial plausibility ──────────────────────────────────────────────
+
+    /// The bug this guards: TCC gates a whole tree, so a denial below an anchor that
+    /// opens fine came from the filesystem, not from macOS. Telling the user to grant
+    /// Full Disk Access would send them after a permission that's already theirs.
+    // `tcc_anchor` short-circuits to `None` off macOS, where TCC doesn't exist.
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn denial_below_an_open_anchor_is_not_tcc() {
+        let h = home();
+        let path = h.join("Documents/root-owned-dir");
+        assert!(
+            match_under_home(&path, &h),
+            "the path must be TCC-classified for this test to be meaningful"
+        );
+        assert!(!tcc_denial_is_plausible_with(&path, |_| false));
+    }
+
+    // `tcc_anchor` short-circuits to `None` off macOS, where TCC doesn't exist.
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn denial_below_a_shut_anchor_is_tcc() {
+        let h = home();
+        assert!(tcc_denial_is_plausible_with(&h.join("Documents/taxes"), |_| true));
+    }
+
+    /// A denial ON the gate needs no probe: the denial we're classifying IS the probe.
+    // `tcc_anchor` short-circuits to `None` off macOS, where TCC doesn't exist.
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn denial_on_the_anchor_itself_skips_the_probe() {
+        let h = home();
+        assert!(tcc_denial_is_plausible_with(&h.join("Documents"), |_| {
+            panic!("the anchor must not be re-probed when it is the denied path")
+        }));
+    }
+
+    // `tcc_anchor` short-circuits to `None` off macOS, where TCC doesn't exist.
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn denial_on_an_ungated_path_is_never_tcc() {
+        // No anchor, so the probe never runs however permissive it is.
+        assert!(!tcc_denial_is_plausible_with(Path::new("/tmp/cmdr-plain/x"), |_| true));
     }
 
     #[test]

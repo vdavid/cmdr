@@ -491,6 +491,18 @@
   "@errors.listing.permissionDenied.suggestion": {
     "sourceHash": "0fa0829"
   },
+  "errors.listing.remotePermissionDenied.title": "Der Server lässt diesen Ordner nicht öffnen",
+  "@errors.listing.remotePermissionDenied.title": {
+    "sourceHash": "1fceff5"
+  },
+  "errors.listing.remotePermissionDenied.explanation": "`{path}` liegt auf einer Netzwerkfreigabe, und das Konto, mit dem du verbunden bist, hat keine Berechtigung, den Ordner zu öffnen. Der Server lehnt die Anfrage ab, bevor macOS überhaupt beteiligt ist, es liegt also nicht an einer Datenschutzeinstellung auf deinem Mac.",
+  "@errors.listing.remotePermissionDenied.explanation": {
+    "sourceHash": "4e6b9ef"
+  },
+  "errors.listing.remotePermissionDenied.suggestion": "Das kannst du versuchen:\n- Prüfe die Zugriffsrechte des Ordners auf dem Server und das Konto, mit dem du die Freigabe verbunden hast\n- Manche Ordner gehören dem Systemkonto des Servers selbst (etwa `lost+found` auf einer Linux-Freigabe) und bleiben für alle anderen verschlossen\n- Um dich als jemand anderes anzumelden, wirf die Freigabe aus und verbinde sie erneut mit diesen Zugangsdaten",
+  "@errors.listing.remotePermissionDenied.suggestion": {
+    "sourceHash": "506e57a"
+  },
   "errors.listing.alreadyExists.title": "Existiert bereits",
   "@errors.listing.alreadyExists.title": {
     "sourceHash": "2dbc546"

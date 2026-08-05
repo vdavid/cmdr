@@ -5625,6 +5625,15 @@ export type ListingErrorReason =
       // The path the failure was about.
       path: string
     }
+  /**
+   *  A file server refused access to a path on a mounted network share. macOS already
+   *  grants the mount, so there is nothing to change on this Mac.
+   */
+  | {
+      reason: 'remotePermissionDenied'
+      // The path the failure was about.
+      path: string
+    }
   // `VolumeError::AlreadyExists`: the destination is taken.
   | {
       reason: 'alreadyExists'

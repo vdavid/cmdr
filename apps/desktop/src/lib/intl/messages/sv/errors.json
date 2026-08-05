@@ -491,6 +491,18 @@
   "@errors.listing.permissionDenied.suggestion": {
     "sourceHash": "0fa0829"
   },
+  "errors.listing.remotePermissionDenied.title": "Servern öppnar inte den här mappen",
+  "@errors.listing.remotePermissionDenied.title": {
+    "sourceHash": "1fceff5"
+  },
+  "errors.listing.remotePermissionDenied.explanation": "`{path}` ligger i en delad mapp på nätverket, och kontot du anslöt med har inte behörighet att öppna den. Servern avvisar förfrågan innan macOS ens är inblandat, så det här är ingen integritetsinställning på din Mac.",
+  "@errors.listing.remotePermissionDenied.explanation": {
+    "sourceHash": "4e6b9ef"
+  },
+  "errors.listing.remotePermissionDenied.suggestion": "Så här kan du prova:\n- Kontrollera mappens behörigheter på servern, och vilket konto du anslöt den delade mappen med\n- Vissa mappar tillhör serverns eget systemkonto (`lost+found` på en Linux-server, till exempel) och förblir stängda för alla andra\n- Vill du ansluta som någon annan, mata ut den delade mappen och anslut den igen med de uppgifterna",
+  "@errors.listing.remotePermissionDenied.suggestion": {
+    "sourceHash": "506e57a"
+  },
   "errors.listing.alreadyExists.title": "Finns redan",
   "@errors.listing.alreadyExists.title": {
     "sourceHash": "2dbc546"

@@ -491,6 +491,18 @@
   "@errors.listing.permissionDenied.suggestion": {
     "sourceHash": "0fa0829"
   },
+  "errors.listing.remotePermissionDenied.title": "A szerver nem nyitja meg ezt a mappát",
+  "@errors.listing.remotePermissionDenied.title": {
+    "sourceHash": "1fceff5"
+  },
+  "errors.listing.remotePermissionDenied.explanation": "A `{path}` egy hálózati megosztáson van, és annak a fióknak, amellyel csatlakoztál, nincs engedélye megnyitni. A szerver már azelőtt elutasítja a kérést, hogy a macOS egyáltalán szóba kerülne, tehát ez nem a Macen lévő adatvédelmi beállításon múlik.",
+  "@errors.listing.remotePermissionDenied.explanation": {
+    "sourceHash": "4e6b9ef"
+  },
+  "errors.listing.remotePermissionDenied.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd a mappa engedélyeit a szerveren, és azt, hogy melyik fiókkal csatlakoztattad a megosztást\n- Egyes mappák a szerver saját rendszerfiókjához tartoznak (például a `lost+found` egy Linuxos megosztáson), és mindenki más elől zárva maradnak\n- Ha másik fiókkal szeretnél csatlakozni, add ki a megosztást, és csatlakoztasd újra azokkal az adatokkal",
+  "@errors.listing.remotePermissionDenied.suggestion": {
+    "sourceHash": "506e57a"
+  },
   "errors.listing.alreadyExists.title": "Már létezik",
   "@errors.listing.alreadyExists.title": {
     "sourceHash": "2dbc546"

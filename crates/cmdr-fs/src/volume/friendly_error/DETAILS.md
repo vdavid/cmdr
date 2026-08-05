@@ -35,8 +35,8 @@ Sources that produce a `ListingError`:
   routes the `Git` reason to its parallel git factory (`git-error-messages.ts`).
 - **`listing_error_from_volume_error(err, path)`** (`volume_error.rs`): the entry point. Maps typed `VolumeError`
   variants through the shared `kinds::*` constructors, and dispatches `IoError { raw_os_error: Some(_) }` to
-  `errno::listing_error_from_errno`. The permission-denied arm branches on `tcc_paths::is_potentially_tcc_restricted`
-  (or `is_network_volume_path`) to choose `TccRestricted` (two escape hatches) vs the generic `PermissionDenied`.
+  `errno::listing_error_from_errno`. The permission-denied arm splits three ways (see § The permission-denied three-way
+  below), since one errno hides three unrelated fixes.
 - **`errno::listing_error_from_errno`** (`errno.rs`): macOS errno → reason, one reason per distinct outcome (errnos with
   identical FE copy collapse to one reason). Non-macOS falls back to `CouldntReadUnknown`.
 - **`enrich_with_provider(error, path)`** (`provider.rs`): detects 18 cloud/mount providers from path patterns +
@@ -51,10 +51,33 @@ Sources that produce a `ListingError`:
 The write path is separate: `write-error` events ship only the typed `WriteOperationError`, and the FE renders its copy
 and classification (`transfer-error-messages.ts`). There is no `friendly_error` involvement on the write path.
 
+## The permission-denied three-way
+
+`VolumeError::PermissionDenied` is one errno covering three problems with nothing in common but the word "permission",
+so `volume_error.rs` picks between three reasons:
+
+- **`TccRestricted`** when `tcc_paths::tcc_denial_is_plausible(path)` holds: a TCC gate covers the path AND that gate is
+  itself shut. Carries `OpenPrivacySettings`, and the FE offers both escape hatches (Full Disk Access, per-folder Files
+  & Folders).
+- **`RemotePermissionDenied`** when TCC is ruled out and `is_network_volume_path(path)` holds: the mount is granted and
+  the file server is the one refusing. NO `action_kind`, because System Settings has nothing that would help.
+- **`PermissionDenied`** otherwise: ordinary local filesystem permissions.
+
+The order matters, and so does the strictness of the first test. TCC gates a whole volume or folder tree, never an
+individual subfolder, so "the path is under a TCC-gated tree" is not evidence that TCC is what refused: a root-owned
+`lost+found` on an otherwise-readable SMB share is a plain server-side denial. Classifying on the coarse path filter
+alone is what used to send those users to Full Disk Access for a grant they already held. `tcc_paths` splits the coarse
+filter (`is_potentially_tcc_restricted`) from the real question (`tcc_denial_is_plausible`, which probes the gate) so
+the distinction is hard to lose again; its module doc has the anchor model.
+
+The probe reads a first ENTRY, it doesn't only open the directory (`tcc_paths::read_is_denied`). A refused folder on an
+SMB mount hands back a directory handle and refuses at the first `readdir`, so an open-only probe reports a shut gate as
+open and flips the classification the wrong way.
+
 ## The Rust/FE split (what lives where)
 
-- **Rust keeps**: errno → reason mapping, the `kinds.rs` constructors, the TCC-vs-permission branch, category / retry /
-  `action_kind` assignment, `enrich_with_provider` detection, the Layer-0 git pass-through and its ordering, and the
+- **Rust keeps**: errno → reason mapping, the `kinds.rs` constructors, the permission-denied three-way, category / retry
+  / `action_kind` assignment, `enrich_with_provider` detection, the Layer-0 git pass-through and its ordering, and the
   `raw_detail` technical string.
 - **FE gains** (`src/lib/error-messages/`): all titles / explanations / suggestions, the provider-suggestion table,
   provider display / app names, the reason / git / provider message factories, the markdown escaper (the XSS boundary),

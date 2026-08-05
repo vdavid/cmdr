@@ -491,6 +491,18 @@
   "@errors.listing.permissionDenied.suggestion": {
     "sourceHash": "0fa0829"
   },
+  "errors.listing.remotePermissionDenied.title": "服务器不让打开这个文件夹",
+  "@errors.listing.remotePermissionDenied.title": {
+    "sourceHash": "1fceff5"
+  },
+  "errors.listing.remotePermissionDenied.explanation": "`{path}` 在一个网络共享上，而你连接时用的账户没有打开它的权限。服务器在 macOS 介入之前就拒绝了请求，所以这不是你 Mac 上的隐私设置。",
+  "@errors.listing.remotePermissionDenied.explanation": {
+    "sourceHash": "4e6b9ef"
+  },
+  "errors.listing.remotePermissionDenied.suggestion": "可以这样试试：\n- 在服务器上查看这个文件夹的权限，以及你是用哪个账户装载的共享\n- 有些文件夹属于服务器自己的系统账户（比如 Linux 共享上的 `lost+found`），对其他所有人都是关闭的\n- 想换个身份连接，就先推出这个共享，再用那套凭据重新装载",
+  "@errors.listing.remotePermissionDenied.suggestion": {
+    "sourceHash": "506e57a"
+  },
   "errors.listing.alreadyExists.title": "已存在",
   "@errors.listing.alreadyExists.title": {
     "sourceHash": "2dbc546"

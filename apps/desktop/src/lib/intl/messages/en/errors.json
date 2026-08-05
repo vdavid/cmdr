@@ -775,6 +775,24 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
 
+  "errors.listing.remotePermissionDenied.title": "The server won't open this folder",
+  "errors.listing.remotePermissionDenied.explanation": "`{path}` lives on a network share, and the account you connected with doesn't have permission to open it. The server turns the request down before macOS is involved, so this isn't a privacy setting on your Mac.",
+  "errors.listing.remotePermissionDenied.suggestion": "Here's what to try:\n- Check the folder's permissions on the server, and which account you mounted the share with\n- Some folders belong to the server's own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, eject the share and mount it again with those credentials",
+  "@errors.listing.remotePermissionDenied.title": {
+    "description": "Title of the listing error panel when a mounted network share (SMB, AFP, or NFS) refuses a folder. macOS privacy controls have already been ruled out, so the refusal comes from the file server. Plain text."
+  },
+  "@errors.listing.remotePermissionDenied.explanation": {
+    "description": "Body of the listing error panel for a folder a network file server refuses. Markdown. \"macOS\" is a proper name; do NOT translate. The contrast with a Mac privacy setting is the point of the sentence: the user can't fix this on their own machine.",
+    "placeholders": {
+      "path": {
+        "description": "Absolute path of the folder on the mounted share, rendered as inline code."
+      }
+    }
+  },
+  "@errors.listing.remotePermissionDenied.suggestion": {
+    "description": "Recovery suggestion for a folder a network file server refuses. Markdown bullet list. \"lost+found\" is a literal Linux directory name; do NOT translate. \"Eject\" is the macOS Finder term for unmounting a share; use the wording your locale's Finder uses."
+  },
+
   "errors.listing.alreadyExists.title": "Already exists",
   "errors.listing.alreadyExists.explanation": "A file or folder already exists at `{path}`, so Cmdr can't create a new one there.",
   "errors.listing.alreadyExists.suggestion": "Rename the existing item or choose a different name for the new one.",

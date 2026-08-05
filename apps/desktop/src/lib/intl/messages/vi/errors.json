@@ -491,6 +491,18 @@
   "@errors.listing.permissionDenied.suggestion": {
     "sourceHash": "0fa0829"
   },
+  "errors.listing.remotePermissionDenied.title": "Máy chủ không mở thư mục này",
+  "@errors.listing.remotePermissionDenied.title": {
+    "sourceHash": "1fceff5"
+  },
+  "errors.listing.remotePermissionDenied.explanation": "`{path}` nằm trên một bản chia sẻ mạng, và tài khoản bạn dùng để kết nối không có quyền mở nó. Máy chủ từ chối yêu cầu trước cả khi macOS tham gia, nên đây không phải là một thiết lập riêng tư trên máy Mac của bạn.",
+  "@errors.listing.remotePermissionDenied.explanation": {
+    "sourceHash": "4e6b9ef"
+  },
+  "errors.listing.remotePermissionDenied.suggestion": "Đây là những cách để thử:\n- Kiểm tra quyền của thư mục trên máy chủ, và tài khoản bạn đã dùng để gắn kết bản chia sẻ\n- Một số thư mục thuộc về tài khoản hệ thống của chính máy chủ (ví dụ `lost+found` trên một bản chia sẻ Linux) và luôn đóng với mọi người khác\n- Để kết nối bằng tài khoản khác, hãy đẩy bản chia sẻ ra rồi gắn kết lại với thông tin đăng nhập đó",
+  "@errors.listing.remotePermissionDenied.suggestion": {
+    "sourceHash": "506e57a"
+  },
   "errors.listing.alreadyExists.title": "Đã tồn tại",
   "@errors.listing.alreadyExists.title": {
     "sourceHash": "2dbc546"

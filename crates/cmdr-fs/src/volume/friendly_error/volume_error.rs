@@ -82,12 +82,18 @@ pub fn listing_error_from_volume_error(err: &VolumeError, path: &Path) -> Listin
         }
         VolumeError::NotFound(_) => kinds::not_found(&path_display, raw),
         VolumeError::PermissionDenied(_) => {
-            // If this is a known TCC-restricted path (Downloads/Documents/Desktop/...
-            // or a network volume), surface the dedicated reason that points to both
-            // Full Disk Access AND the per-folder Files & Folders pane. Otherwise
-            // fall through to the generic permission-denied reason.
-            if crate::tcc_paths::is_potentially_tcc_restricted(path) || crate::tcc_paths::is_network_volume_path(path) {
+            // Three different fixes hide behind one errno, so the branch has to be
+            // narrow. TCC gates a whole volume or folder tree rather than individual
+            // subfolders, so it only explains the denial when the gate itself is shut
+            // (`tcc_denial_is_plausible` probes that); then the dedicated reason points
+            // at both Full Disk Access and the per-folder Files & Folders pane. With TCC
+            // ruled out, a denial on a mounted share came from the file server, and
+            // sending the user to System Settings would have them hunt for a permission
+            // they already hold. Everything else is ordinary filesystem permissions.
+            if crate::tcc_paths::tcc_denial_is_plausible(path) {
                 kinds::tcc_restricted(&path_display, raw)
+            } else if crate::tcc_paths::is_network_volume_path(path) {
+                kinds::remote_permission_denied(&path_display, raw)
             } else {
                 kinds::permission_denied(&path_display, raw)
             }

@@ -354,28 +354,27 @@ fn io_serious_carries_path_and_os_message() {
 
 // ── TCC-vs-permission branch ─────────────────────────────────────────
 
-/// A permission-denied on a TCC-guarded path surfaces the dedicated
-/// `TccRestricted` reason (two escape hatches) AND the privacy-settings
-/// action. A plain path falls through to the generic `PermissionDenied`.
+/// A permission-denied ON a shut TCC gate surfaces the dedicated `TccRestricted`
+/// reason (two escape hatches) AND the privacy-settings action. A plain path
+/// falls through to the generic `PermissionDenied`.
 ///
-/// macOS-only: `is_potentially_tcc_restricted` returns `false` on other
-/// platforms (and `is_network_volume_path` would need a live network mount),
-/// so the TCC branch can't be exercised off-macOS.
+/// macOS-only: `tcc_denial_is_plausible` returns `false` on other platforms, so
+/// the TCC branch can't be exercised off-macOS.
 #[cfg(target_os = "macos")]
 #[test]
-fn permission_denied_tcc_path_uses_tcc_restricted_reason() {
-    // A path under `~/Downloads` is TCC-classified purely by path (no
-    // statfs / live mount needed), so this is stable in CI.
+fn permission_denied_on_a_tcc_gate_uses_tcc_restricted_reason() {
+    // `~/Downloads` is TCC-classified purely by path, and being its own anchor it
+    // needs no probe of a folder this test can't control. Both keep it stable in CI.
     let home = dirs::home_dir().expect("home dir");
-    let tcc_path = home.join("Downloads/some-folder");
+    let gate = home.join("Downloads");
     assert!(
-        crate::tcc_paths::is_potentially_tcc_restricted(&tcc_path),
-        "~/Downloads must be TCC-classified for this test to be meaningful"
+        crate::tcc_paths::tcc_anchor(&gate).as_deref() == Some(gate.as_path()),
+        "~/Downloads must be its own TCC anchor for this test to be meaningful"
     );
-    let listing = listing_error_from_volume_error(&VolumeError::PermissionDenied("x".into()), &tcc_path);
+    let listing = listing_error_from_volume_error(&VolumeError::PermissionDenied("x".into()), &gate);
     assert!(
         matches!(listing.reason, ListingErrorReason::TccRestricted { .. }),
-        "TCC path should use TccRestricted, got {:?}",
+        "a denied TCC gate should use TccRestricted, got {:?}",
         listing.reason
     );
     assert_eq!(listing.category, ErrorCategory::NeedsAction);
@@ -385,8 +384,7 @@ fn permission_denied_tcc_path_uses_tcc_restricted_reason() {
     // through to the generic permission-denied reason.
     let plain_path = Path::new("/tmp/cmdr-not-tcc/folder");
     assert!(
-        !crate::tcc_paths::is_potentially_tcc_restricted(plain_path)
-            && !crate::tcc_paths::is_network_volume_path(plain_path),
+        !crate::tcc_paths::is_potentially_tcc_restricted(plain_path),
         "the plain path must NOT be TCC-classified"
     );
     let listing = listing_error_from_volume_error(&VolumeError::PermissionDenied("x".into()), plain_path);
@@ -395,6 +393,52 @@ fn permission_denied_tcc_path_uses_tcc_restricted_reason() {
         "plain path should use the generic PermissionDenied, got {:?}",
         listing.reason
     );
+}
+
+/// A denial below a TCC gate that OPENS fine isn't TCC's doing: the grant is already
+/// there and something below it refused on its own. Sending the user to System
+/// Settings would have them hunt for a permission they hold, so the privacy-settings
+/// action must not ride along.
+///
+/// `~/Library/CloudStorage` anchors per FileProvider domain, so a made-up domain name
+/// gives a probe target that reliably does not exist (and therefore isn't "shut")
+/// without this test touching a real folder.
+#[cfg(target_os = "macos")]
+#[test]
+fn permission_denied_below_an_open_tcc_gate_is_not_tcc_restricted() {
+    let home = dirs::home_dir().expect("home dir");
+    let path = home.join("Library/CloudStorage/CmdrNoSuchProvider-test/folder");
+    assert!(
+        crate::tcc_paths::is_potentially_tcc_restricted(&path),
+        "the path must be TCC-classified, so the denial reaches the TCC branch"
+    );
+    let listing = listing_error_from_volume_error(&VolumeError::PermissionDenied("x".into()), &path);
+    assert!(
+        matches!(listing.reason, ListingErrorReason::PermissionDenied { .. }),
+        "an open gate should fall through to the generic PermissionDenied, got {:?}",
+        listing.reason
+    );
+}
+
+/// A share's own permissions are the file server's business, so the remote reason
+/// offers no privacy-settings action: there is nothing on this Mac to grant.
+///
+/// Driven through the constructor rather than `listing_error_from_volume_error`,
+/// because reaching the branch needs a live `smbfs`/`afpfs`/`nfs` mount that CI has
+/// no way to provide. `scripts/soak-smb.sh` covers the end-to-end path.
+#[test]
+fn remote_permission_denied_offers_no_privacy_settings_action() {
+    let listing = kinds::remote_permission_denied("/Volumes/share/lost+found", "denied".into());
+    match &listing.reason {
+        ListingErrorReason::RemotePermissionDenied { path } => assert_eq!(path, "/Volumes/share/lost+found"),
+        other => panic!("expected RemotePermissionDenied, got {other:?}"),
+    }
+    assert_eq!(listing.category, ErrorCategory::NeedsAction);
+    assert_eq!(
+        listing.action_kind, None,
+        "System Settings holds no grant for a server-side denial"
+    );
+    assert!(!listing.retry_hint, "retrying reruns the same refused request");
 }
 
 // ── action_kind tests ────────────────────────────────────────────────

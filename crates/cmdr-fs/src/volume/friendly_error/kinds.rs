@@ -29,11 +29,12 @@ pub(super) fn not_found(path_display: &str, raw_detail: String) -> ListingError 
     }
 }
 
-/// Permission-denied on a path that macOS guards via TCC (Downloads, Documents,
-/// Desktop, Pictures, Movies, Music, iCloud Drive, FileProvider domains, network
-/// volumes, etc.; see `crate::tcc_paths`). The user has two
-/// distinct escape hatches (Full Disk Access for everything, or per-folder
-/// Files & Folders for just this one), so it carries its own `reason`.
+/// Permission-denied where macOS TCC is plausibly the cause: the path sits under a TCC
+/// gate (Downloads, Documents, Desktop, Pictures, Movies, Music, iCloud Drive,
+/// FileProvider domains, network volumes, and so on) AND that gate is shut. See
+/// `crate::tcc_paths` for how the two halves are checked. The user has two distinct
+/// escape hatches (Full Disk Access for everything, or per-folder Files & Folders for
+/// just this one), so it carries its own `reason`.
 pub(super) fn tcc_restricted(path_display: &str, raw_detail: String) -> ListingError {
     ListingError {
         category: ErrorCategory::NeedsAction,
@@ -42,6 +43,23 @@ pub(super) fn tcc_restricted(path_display: &str, raw_detail: String) -> ListingE
         },
         provider: None,
         action_kind: Some(ErrorActionKind::OpenPrivacySettings),
+        retry_hint: false,
+        raw_detail,
+    }
+}
+
+/// Permission-denied on a mounted network share (`smbfs`/`afpfs`/`nfs`/`cifs`) with TCC
+/// ruled out: macOS already grants the mount, and the file server is the one refusing.
+/// No `action_kind`, because System Settings holds nothing that would help; the fix
+/// lives on the server or in the account the share was mounted with.
+pub(super) fn remote_permission_denied(path_display: &str, raw_detail: String) -> ListingError {
+    ListingError {
+        category: ErrorCategory::NeedsAction,
+        reason: ListingErrorReason::RemotePermissionDenied {
+            path: path_display.to_string(),
+        },
+        provider: None,
+        action_kind: None,
         retry_hint: false,
         raw_detail,
     }

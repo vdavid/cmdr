@@ -491,6 +491,18 @@
   "@errors.listing.permissionDenied.suggestion": {
     "sourceHash": "0fa0829"
   },
+  "errors.listing.remotePermissionDenied.title": "O servidor não abre esta pasta",
+  "@errors.listing.remotePermissionDenied.title": {
+    "sourceHash": "1fceff5"
+  },
+  "errors.listing.remotePermissionDenied.explanation": "`{path}` está em um compartilhamento de rede, e a conta com que você se conectou não tem permissão para abri-la. O servidor recusa a solicitação antes mesmo de o macOS entrar em cena, então isso não é um ajuste de privacidade no seu Mac.",
+  "@errors.listing.remotePermissionDenied.explanation": {
+    "sourceHash": "4e6b9ef"
+  },
+  "errors.listing.remotePermissionDenied.suggestion": "Veja o que tentar:\n- Verifique as permissões da pasta no servidor, e com qual conta você montou o compartilhamento\n- Algumas pastas pertencem à conta de sistema do próprio servidor (`lost+found` em um compartilhamento Linux, por exemplo) e continuam fechadas para todo mundo\n- Para se conectar como outra pessoa, ejete o compartilhamento e monte-o de novo com essas credenciais",
+  "@errors.listing.remotePermissionDenied.suggestion": {
+    "sourceHash": "506e57a"
+  },
   "errors.listing.alreadyExists.title": "Já existe",
   "@errors.listing.alreadyExists.title": {
     "sourceHash": "2dbc546"

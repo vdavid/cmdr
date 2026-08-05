@@ -491,6 +491,18 @@
   "@errors.listing.permissionDenied.suggestion": {
     "sourceHash": "0fa0829"
   },
+  "errors.listing.remotePermissionDenied.title": "Le serveur n'ouvre pas ce dossier",
+  "@errors.listing.remotePermissionDenied.title": {
+    "sourceHash": "1fceff5"
+  },
+  "errors.listing.remotePermissionDenied.explanation": "`{path}` se trouve sur un partage réseau, et le compte avec lequel vous vous êtes connecté n'a pas l'autorisation de l'ouvrir. Le serveur refuse la demande avant même que macOS n'intervienne, ce n'est donc pas un réglage de confidentialité sur votre Mac.",
+  "@errors.listing.remotePermissionDenied.explanation": {
+    "sourceHash": "4e6b9ef"
+  },
+  "errors.listing.remotePermissionDenied.suggestion": "Voici ce que vous pouvez essayer :\n- Vérifiez les autorisations du dossier sur le serveur, et le compte avec lequel vous avez monté le partage\n- Certains dossiers appartiennent au compte système du serveur lui-même (`lost+found` sur un partage Linux, par exemple) et restent fermés à tous les autres\n- Pour vous connecter sous un autre compte, éjectez le partage et remontez-le avec ces identifiants",
+  "@errors.listing.remotePermissionDenied.suggestion": {
+    "sourceHash": "506e57a"
+  },
   "errors.listing.alreadyExists.title": "Existe déjà",
   "@errors.listing.alreadyExists.title": {
     "sourceHash": "2dbc546"

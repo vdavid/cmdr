@@ -90,6 +90,7 @@ const LISTING_REASONS: ListingErrorReason[] = [
   { reason: 'notFound', path: PATH },
   { reason: 'tccRestricted', path: PATH },
   { reason: 'permissionDenied', path: PATH },
+  { reason: 'remotePermissionDenied', path: PATH },
   { reason: 'alreadyExists', path: PATH },
   { reason: 'cancelled' },
   { reason: 'deviceDisconnected', path: PATH },

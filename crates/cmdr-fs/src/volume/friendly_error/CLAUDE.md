@@ -34,6 +34,10 @@ trait's app-side wiring, backends, capability matrix). App-wide error convention
 - **`enrich_with_provider` SETS `provider`, never overwrites prose.** Detection stays in Rust (needs path patterns +
   `statfs`); the FE overlays the provider-specific suggestion. Adding a `Provider` variant also requires updating the FE
   `provider-error-messages.ts` table AND the `volumes/CLAUDE.md` provider table.
+- **A path under a TCC gate is NOT proof TCC refused it.** TCC gates whole trees, so the permission-denied arm must ask
+  `tcc_paths::tcc_denial_is_plausible` (which probes the gate), never the coarse `is_potentially_tcc_restricted` filter.
+  Swapping in the filter sends everyone whose share has a root-owned folder to Full Disk Access for a grant they hold.
+  The three reasons and why they differ: `DETAILS.md` § The permission-denied three-way.
 - **`raw_detail` is plain text, never markdown** (errno name + code, or the git kind token). It's rendered verbatim in
   the technical-details disclosure, not through snarkdown.
 

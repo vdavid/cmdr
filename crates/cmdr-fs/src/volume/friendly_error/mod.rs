@@ -241,6 +241,12 @@ pub enum ListingErrorReason {
         /// The path the failure was about.
         path: String,
     },
+    /// A file server refused access to a path on a mounted network share. macOS already
+    /// grants the mount, so there is nothing to change on this Mac.
+    RemotePermissionDenied {
+        /// The path the failure was about.
+        path: String,
+    },
     /// `VolumeError::AlreadyExists`: the destination is taken.
     AlreadyExists {
         /// The path the failure was about.
