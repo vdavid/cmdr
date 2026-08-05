@@ -177,13 +177,15 @@ Exported methods for parent components: `toggle()`, `open()`, `close()`, `getIsO
 Sidebar entries whose path is in the runtime "TCC-restricted" set carry an italic + opacity-0.6 label plus a Lucide
 `info` icon. The hover tooltip points the user at both Full Disk Access and the per-folder Files & Folders pane in
 System Settings. State is owned by `crate::restricted_paths` in the backend and exposed via
-`$lib/stores/restricted-paths-store.svelte` (`isRestricted(path)`). The backend records `PermissionDenied` on paths
-matching a hard-coded "possibly TCC-restricted on macOS" list (Downloads/Documents/Desktop/Pictures/Movies/Music,
-`~/Library/Safari/Mail/Messages`, iCloud Drive, `~/Library/CloudStorage`, Containers, network volumes) and re-probes
-every entry whenever the app regains focus (NSApplicationDidBecomeActive observer), which is how the styling clears
-without polling after the user grants permission in System Settings. The same `tcc_paths::is_potentially_tcc_restricted`
-predicate also drives the dedicated "This folder is restricted by macOS" `FriendlyError` shown in `ErrorPane` for
-permission-denied listings on those paths.
+`$lib/stores/restricted-paths-store.svelte` (`isRestricted(path)`). The backend records a `PermissionDenied` only when
+macOS is plausibly the one withholding the path (`tcc_paths::tcc_denial_is_plausible`): the path must sit under a
+hard-coded TCC gate (Downloads/Documents/Desktop/Pictures/Movies/Music, `~/Library/Safari/Mail/Messages`, iCloud Drive,
+`~/Library/CloudStorage` domains, Containers, network volumes) AND that gate must itself be shut. It re-probes every
+entry whenever the app regains focus (NSApplicationDidBecomeActive observer), which is how the styling clears without
+polling after the user grants permission in System Settings. The same predicate drives the dedicated "This folder is
+restricted by macOS" `FriendlyError` shown in `ErrorPane`, so the indicator and the error pane always agree. A folder
+the user simply lacks rights to (a root-owned `lost+found` on a share) is deliberately NOT in the set: no System
+Settings grant would free it, so an indicator promising one would mislead.
 
 ### SMB connection indicator
 

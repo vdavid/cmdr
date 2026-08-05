@@ -10,12 +10,13 @@
 //! Public flow:
 //!
 //! 1. Capture sites (indexer scanner, listing IPC) call `record_denial(path)` when they hit
-//!    `PermissionDenied` on a path that passes `tcc_paths::is_potentially_tcc_restricted`. The path
-//!    enters the set.
+//!    `PermissionDenied`. The path enters the set only if `tcc_paths::tcc_denial_is_plausible`
+//!    holds, so denials that no System Settings grant can fix stay out.
 //! 2. Successful listings call `clear_path(path)` to drop entries that have become accessible.
 //! 3. On `NSApplicationDidBecomeActive`, the observer fires `reprobe_all_async()` which spawns a
-//!    blocking task that runs `read_dir` against each known restricted path. Paths that now succeed
-//!    are cleared. Paths still denied stay in the set.
+//!    blocking task that reads each known restricted path (`tcc_paths::read_is_denied`, which pulls
+//!    an entry rather than only opening the directory: a share can hand back a handle and refuse at
+//!    the first read). Paths that now succeed are cleared. Paths still denied stay in the set.
 //! 4. Any change emits a debounced `restricted-paths-changed` event carrying the full sorted set.
 //!    The frontend store hydrates initially via `get_restricted_paths()` and patches via the event
 //!    afterwards.
@@ -67,12 +68,17 @@ pub fn init(app: &AppHandle) {
     install_did_become_active_observer();
 }
 
-/// Add `path` to the restricted set. No-op if the path is already in the
-/// set or doesn't pass the TCC-restricted predicate. Schedules a debounced
-/// emit on a state change.
+/// Add `path` to the restricted set. No-op if the path is already in the set or if TCC
+/// isn't a plausible cause of the denial. Schedules a debounced emit on a state change.
+///
+/// The predicate is the strict one (`tcc_denial_is_plausible`, which probes the gate),
+/// not the coarse path filter: this set means "macOS is withholding this", and only
+/// paths that can be freed by a grant in System Settings belong in it. A folder the user
+/// simply lacks rights to (a root-owned `lost+found` on a share) would otherwise sit here
+/// forever, re-probed on every activation and never clearing.
 pub fn record_denial(path: impl AsRef<Path>) {
     let path = path.as_ref();
-    if !tcc_paths::is_potentially_tcc_restricted(path) && !tcc_paths::is_network_volume_path(path) {
+    if !tcc_paths::tcc_denial_is_plausible(path) {
         return;
     }
     let buf = path.to_path_buf();
@@ -127,18 +133,15 @@ pub fn reprobe_all_async() {
         return;
     }
     tauri::async_runtime::spawn_blocking(move || {
-        let mut to_clear = Vec::new();
-        for path in &paths_to_probe {
-            match std::fs::read_dir(path) {
-                Ok(_) => to_clear.push(path.clone()),
-                Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => { /* still denied */ }
-                Err(_) => {
-                    // NotFound, broken symlink, etc.: clear so the set
-                    // doesn't grow forever with stale entries.
-                    to_clear.push(path.clone());
-                }
-            }
-        }
+        // Anything not still refused gets cleared, including NotFound and broken
+        // symlinks, so the set doesn't grow forever with stale entries. The probe
+        // reads a first entry rather than only opening the directory, since a share
+        // can hand back a handle and refuse at the first read.
+        let to_clear: Vec<PathBuf> = paths_to_probe
+            .iter()
+            .filter(|path| !tcc_paths::read_is_denied(path))
+            .cloned()
+            .collect();
         for path in to_clear {
             clear_path(path);
         }

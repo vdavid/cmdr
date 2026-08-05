@@ -74,6 +74,9 @@ The probe reads a first ENTRY, it doesn't only open the directory (`tcc_paths::r
 SMB mount hands back a directory handle and refuses at the first `readdir`, so an open-only probe reports a shut gate as
 open and flips the classification the wrong way.
 
+`restricted_paths::record_denial` (app side) gates on the same strict predicate, so the "macOS is withholding this" set
+and this classification can't disagree about a path.
+
 ## The Rust/FE split (what lives where)
 
 - **Rust keeps**: errno → reason mapping, the `kinds.rs` constructors, the permission-denied three-way, category / retry
