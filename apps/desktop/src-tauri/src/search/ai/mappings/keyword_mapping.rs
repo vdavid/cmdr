@@ -129,6 +129,13 @@ fn keyword_redundant_with_type(kw_pattern: &str, type_pattern: &str) -> bool {
 /// conditions. When only one is present, it's used directly.
 /// If the keyword is redundant with the type (e.g., an extension name that the
 /// type pattern already covers), the keyword is dropped.
+///
+/// Every branch carries `(?is)` inline: these are `PatternType::Regex`, so
+/// `search::matcher` compiles them with whatever flags they bring, and a filename
+/// matcher needs both case-insensitivity and a `.` that crosses a newline (filenames
+/// may contain one). A user-typed regex deliberately gets NEITHER by default, because
+/// a person chose that notation and expects to control its flags; a mapping table
+/// isn't an author, so the reasoning that protects them doesn't reach here.
 pub fn merge_keyword_and_type(
     kw: Option<(String, PatternType)>,
     type_filter: Option<&TypeFilter>,
@@ -139,23 +146,18 @@ pub fn merge_keyword_and_type(
             // If keyword is redundant with the type (e.g., "heic" + photos, "sqlite" + databases),
             // just use the type pattern; the keyword adds no value.
             if keyword_redundant_with_type(&kw_pattern, tf.pattern) {
-                return (Some(format!("(?i){}", tf.pattern)), PatternType::Regex);
+                return (Some(format!("(?is){}", tf.pattern)), PatternType::Regex);
             }
             // Extract the core keyword from the pattern
             let keyword_core = extract_keyword_core(&kw_pattern);
             // Combine: keyword must appear, then type extension must match.
-            // These are `PatternType::Regex`, so `search::matcher` compiles them with
-            // standard `.` semantics and this `.*` won't cross a newline — a filename
-            // may contain one. Nobody AUTHORED this pattern, so `(?is)` would be a fair
-            // choice here where it wouldn't be for a user's own regex; left alone
-            // deliberately rather than overlooked.
-            let merged = format!("(?i){keyword_core}.*{}", strip_anchors(tf.pattern));
+            let merged = format!("(?is){keyword_core}.*{}", strip_anchors(tf.pattern));
             (Some(merged), PatternType::Regex)
         }
         // Keywords only → use keyword pattern as-is
         (Some((pattern, pt)), None) => (Some(pattern), pt),
         // Type only → use type pattern as regex
-        (None, Some(tf)) => (Some(format!("(?i){}", tf.pattern)), PatternType::Regex),
+        (None, Some(tf)) => (Some(format!("(?is){}", tf.pattern)), PatternType::Regex),
         // Neither → no pattern
         (None, None) => (None, PatternType::Glob),
     }
@@ -200,6 +202,33 @@ pub(crate) fn parse_exclude_list(exclude: &str) -> Vec<String> {
 mod tests {
     use super::super::type_mapping::type_to_filter;
     use super::*;
+
+    #[test]
+    fn an_ai_built_pattern_reaches_a_filename_with_a_newline_in_it() {
+        // These patterns are `PatternType::Regex`, so `search::matcher` compiles them
+        // with whatever flags they carry inline. A mapping table isn't an author, so
+        // they carry what a FILENAME matcher needs, not what a person writing a regex
+        // would expect to control.
+        let compile = |pattern: &str| {
+            regex::RegexBuilder::new(pattern)
+                .case_insensitive(false) // the flags are inline
+                .build()
+                .expect("mapping patterns must compile")
+        };
+
+        // Keyword + type: the `.*` joining them has to cross the newline.
+        let kw = keywords_to_pattern("invoice");
+        let documents = type_to_filter("documents").expect("documents is a known type");
+        let (merged, pt) = merge_keyword_and_type(kw, Some(&documents));
+        assert_eq!(pt, PatternType::Regex);
+        assert!(compile(&merged.expect("a pattern")).is_match("invoice\n2026.pdf"));
+
+        // Type alone: `screenshots` is the one type pattern with a `.*` of its own.
+        let screenshots = type_to_filter("screenshots").expect("screenshots is a known type");
+        let (type_only, pt) = merge_keyword_and_type(None, Some(&screenshots));
+        assert_eq!(pt, PatternType::Regex);
+        assert!(compile(&type_only.expect("a pattern")).is_match("Screenshot\n2026.png"));
+    }
 
     #[test]
     fn keywords_single_word_glob() {

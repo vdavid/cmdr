@@ -242,14 +242,15 @@ pinned by `matcher::tests::a_case_insensitive_accented_glob_still_crosses_a_newl
 
 A user-typed regex never goes through `glob_to_regex` and deliberately keeps the standard rule: someone writing one
 expects `.` to stop at a newline and `(?s)` to be their own call. ❌ Don't "unify" the two — the asymmetry is the
-decision. Two neighbours to know about:
+decision, and the line it's drawn on is **authorship, not notation**. Which is what settles the two neighbours:
 
-- **The AI mappings emit `PatternType::Regex` patterns matched against FILENAMES**, so they get the strict rule too, and
-  the `.*` in `keyword_mapping`'s merged pattern (and `type_mapping`'s `screenshots`) won't cross a newline. Nobody
-  authored those, so `(?is)` would be defensible there; left strict deliberately, commented at both sites.
-- **The file viewer takes the third position: it REFUSES.** `file_viewer/search_matcher.rs` rejects a pattern that would
+- **The AI mappings emit `PatternType::Regex` matched against FILENAMES, and carry `(?is)` inline.** A mapping table
+  isn't an author, so the reasoning that protects a person's own regex doesn't reach them; they take the flags a
+  filename matcher needs. `keyword_mapping::merge_keyword_and_type` is the single place that prefixes them, so
+  ❌ `type_mapping`'s `TypeFilter.pattern` entries carry no inline flags of their own.
+- **The file viewer takes a third position: it REFUSES.** `file_viewer/search_matcher.rs` rejects a pattern that would
   need to cross a newline with a typed `MultilineNotSupported`, because its streaming model is line-at-a-time. Different
-  problem, already explicit in its own code.
+  problem (file CONTENTS, not names), already explicit in its own code.
 
 **The broad-query guard is per evaluator.** An arena's cost is known before the scan, so a query with no narrowing
 predicate is refused only above `ARENA_BROAD_QUERY_CEILING` rows; below it, "show me everything, by recency" is a fair
