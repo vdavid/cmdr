@@ -966,7 +966,9 @@ fn a_share_or_a_phone_walks_over_the_trait_and_never_locally() {
     // `statfs` can answer for.
     let phone = ColdDrive::with_volume("mtp-serial:1", |volume| volume.with_local_fs_access());
     assert_eq!(
-        bootstrap::walkable_volume(phone.volume_id).expect("a phone is walkable").kind,
+        bootstrap::walkable_volume(phone.volume_id)
+            .expect("a phone is walkable")
+            .kind,
         IndexVolumeKind::Mtp,
     );
 }

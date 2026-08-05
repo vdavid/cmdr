@@ -82,6 +82,7 @@ docs/specs/file-viewer-selection-progress.md
 # cargo-mutants output (tooling artifacts, never commit)
 mutants.out/
 mutants.out.old/
+mutants.out.*/
 
 # Importance eval corpus: anonymized dumps of David's REAL folder trees + his
 # labels, for personalized weight tuning. Never committed — they're derived from

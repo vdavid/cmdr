@@ -6,7 +6,16 @@
 //! writer into the normal index (Decision 2), so the work survives the search
 //! that paid for it and the next search over the same ground walks less.
 //!
-//! ## Two primitives, and which one runs
+//! ## Two kinds of ground, and the one branch between them
+//!
+//! [`Ground`] is the ONLY thing here that asks what kind of volume this is: a
+//! local filesystem is read by the guarded walker, and everything the index
+//! reaches only through a `Volume` — a share, a phone, whatever backend comes
+//! next — by `network_scanner`'s scoped walk. Downstream of a discovered entry
+//! the two are the same code: one writer, one set of epochs, one frontier query,
+//! one descent rule.
+//!
+//! ## Two primitives on the local half, and which one runs
 //!
 //! A frontier node is virgin ground by definition, so the workload is a bulk add
 //! and the PARALLEL walker wins it outright — measured on a real frontier in
@@ -19,7 +28,9 @@
 //! it finds, so over pre-existing rows `INSERT OR IGNORE` would drop its rows
 //! silently and orphan everything below them. `reconcile_subtree` compares by
 //! name and writes only differences, which is exactly the shape that case needs.
-//! ❌ Neither path ever deletes: covering is add-only work.
+//! The trait walk needs no such split: it compares names per directory as it
+//! goes, so it takes that case itself. ❌ No path ever deletes: covering is
+//! add-only work.
 
 use std::path::Path;
 use std::sync::mpsc::{Receiver, SyncSender, sync_channel};
@@ -203,7 +214,10 @@ fn walk_frontier(
     cancel: &CancellationToken,
 ) -> CoverOutcome {
     let Some(ground) = Ground::under(context) else {
-        log::warn!("Cover: '{}' isn't reachable right now, so nothing is walked", context.volume_id);
+        log::warn!(
+            "Cover: '{}' isn't reachable right now, so nothing is walked",
+            context.volume_id
+        );
         return CoverOutcome {
             entries_found: 0,
             dirs_found: 0,
@@ -338,12 +352,11 @@ impl Ground {
                     .then(|| crate::indexing::metadata::extract_metadata(&metadata, true, false))
             }
             Ground::ViaTrait { volume, .. } => {
-                let entry = crate::indexing::host::runtime::block_on(
-                    crate::indexing::network_scanner::stat_one_directory(
+                let entry =
+                    crate::indexing::host::runtime::block_on(crate::indexing::network_scanner::stat_one_directory(
                         std::sync::Arc::clone(volume),
                         path.to_path_buf(),
-                    ),
-                )?;
+                    ))?;
                 Some(crate::indexing::metadata::MetadataSnapshot {
                     // A directory's own row carries no size, on every walk here.
                     logical_size: None,
@@ -385,8 +398,8 @@ impl Ground {
                 // simply walked. Over a network round trip the per-directory name
                 // check is free; over a local `readdir` it wouldn't be, which is why
                 // the two halves differ here and nowhere else.
-                let result = crate::indexing::host::runtime::block_on(
-                    crate::indexing::network_scanner::cover_volume_subtree(
+                let result =
+                    crate::indexing::host::runtime::block_on(crate::indexing::network_scanner::cover_volume_subtree(
                         std::sync::Arc::clone(volume),
                         root.to_path_buf(),
                         &context.space,
@@ -394,8 +407,7 @@ impl Ground {
                         Some(sender.clone()),
                         cancel,
                         pacer,
-                    ),
-                );
+                    ));
                 match result {
                     Ok(summary) => (Some(summary), RootOutcome::Covered),
                     Err(VolumeScanError::Cancelled(summary)) => (Some(summary), RootOutcome::Cancelled),

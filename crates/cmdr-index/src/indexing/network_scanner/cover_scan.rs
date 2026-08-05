@@ -78,6 +78,22 @@ pub(crate) async fn cover_volume_subtree(
     let root_id = resolve_root_id(&conn, space, &root)?;
 
     let mut writes = CoverWrites::new(writer, epoch, emit);
+    // A frontier rooted AT a NAS system directory: mark it and stop, without one
+    // round trip. Both whole-volume walks index such a directory's own row and
+    // refuse its subtree, so it sits at `listed_epoch = 0` — which the descent rule
+    // reads as frontier and would hand to every later search. Walking it is the
+    // stall `system_dirs.rs` exists to prevent (44 TB of hardlinked snapshots on a
+    // 10 TB volume), so the walk says "won't read" instead of "haven't read".
+    if root.file_name().is_some_and(|name| is_recursion_excluded_dir(&name.to_string_lossy())) {
+        log::debug!(
+            "network_scanner: not covering NAS system dir {}; marking it as ground we won't read",
+            root.display()
+        );
+        writes.mark_unreadable(root_id);
+        writes.finish(root_id)?;
+        return Ok(summary(0, 0, 0, start));
+    }
+
     let mut total_entries: u64 = 0;
     let mut total_dirs: u64 = 0;
     let mut total_physical_bytes: u64 = 0;
@@ -209,10 +225,12 @@ pub(crate) async fn cover_volume_subtree(
                 // into with the id it already has, so the ground below it converges
                 // too; nothing is rewritten either way.
                 Some(Slot::InTheIndex(child)) => {
-                    if let Some(child_id) = child
-                        && !is_recursion_excluded_dir(&entry.name)
-                    {
-                        queue.push_back((PathBuf::from(&entry.path), child_id));
+                    if let Some(child_id) = child {
+                        if is_recursion_excluded_dir(&entry.name) {
+                            writes.mark_unreadable(child_id);
+                        } else {
+                            queue.push_back((PathBuf::from(&entry.path), child_id));
+                        }
                     }
                     taken.insert(folded, Slot::TakenHere);
                     continue;
@@ -240,12 +258,15 @@ pub(crate) async fn cover_volume_subtree(
             if is_dir {
                 total_dirs += 1;
                 // The dir's own row is indexed either way; its SUBTREE is what a NAS
-                // system dir doesn't get walked (`system_dirs.rs`).
+                // system dir doesn't get walked (`system_dirs.rs`). Marked as ground
+                // we won't read, so the frontier stops offering it — see the root
+                // case above for why that matters more here than on a full scan.
                 if is_recursion_excluded_dir(&entry.name) {
                     log::debug!(
                         "network_scanner: not descending into NAS system dir {}",
                         child_path.display()
                     );
+                    writes.mark_unreadable(id);
                 } else {
                     queue.push_back((child_path.clone(), id));
                 }
@@ -314,6 +335,9 @@ fn resolve_root_id(conn: &rusqlite::Connection, space: &IndexPathSpace, root: &P
     resolve_scan_root(conn, Path::new(&index_relative), false).map_err(|e| VolumeScanError::Context(e.to_string()))
 }
 
+/// Directory ids per `MarkDirsUnreadable` message, mirroring the local walker's.
+const MARK_CHUNK: usize = 10_000;
+
 /// What a name under the directory being listed already resolves to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Slot {
@@ -359,6 +383,9 @@ struct CoverWrites<'a> {
     discovered: Vec<CoveredEntry>,
     emit: Option<EntrySender>,
     listed: Vec<i64>,
+    /// Directories the walk deliberately won't read into. Stamped so the coverage
+    /// frontier stops offering them to every later search.
+    unreadable: Vec<i64>,
 }
 
 impl<'a> CoverWrites<'a> {
@@ -370,6 +397,7 @@ impl<'a> CoverWrites<'a> {
             discovered: Vec::new(),
             emit,
             listed: Vec::new(),
+            unreadable: Vec::new(),
         }
     }
 
@@ -389,6 +417,13 @@ impl<'a> CoverWrites<'a> {
     /// A directory whose listing succeeded, to be stamped at the finish.
     fn mark_listed(&mut self, dir_id: i64) {
         self.listed.push(dir_id);
+    }
+
+    /// A directory the walk won't read into, to be stamped at the finish. ⚠️ Its
+    /// row still exists and stays navigable; what the mark says is that nothing is
+    /// coming for its subtree, so the frontier must stop naming it.
+    fn mark_unreadable(&mut self, dir_id: i64) {
+        self.unreadable.push(dir_id);
     }
 
     fn flush(&mut self) -> Result<(), VolumeScanError> {
@@ -415,6 +450,11 @@ impl<'a> CoverWrites<'a> {
         // Let the consumer see the end of the walk rather than waiting on a channel
         // nothing will ever write to again.
         self.emit = None;
+        for chunk in std::mem::take(&mut self.unreadable).chunks(MARK_CHUNK) {
+            self.writer
+                .send(WriteMessage::MarkDirsUnreadable { ids: chunk.to_vec() })
+                .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
+        }
         if self.listed.is_empty() {
             return Ok(());
         }

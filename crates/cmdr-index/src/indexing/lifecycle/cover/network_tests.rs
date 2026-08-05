@@ -146,10 +146,10 @@ impl Share {
         cmdr_fs::testing::wait_until(
             std::time::Duration::from_secs(10),
             "the walked scope to read as covered",
-            || {
-                let covered = self.coverage(scope);
-                covered.frontier.is_empty() && covered.unreadable.is_empty()
-            },
+            // Frontier only: ground the walk deliberately won't read into (a NAS
+            // snapshot dir) lands in `unreadable`, which is a settled answer rather
+            // than something still to wait for.
+            || self.coverage(scope).frontier.is_empty(),
         );
         (entries, outcome)
     }
@@ -207,7 +207,9 @@ struct Instrumented {
     /// The one listing that blocks, if any.
     gate: Option<PathBuf>,
     gate_reached: AtomicBool,
-    gate_released: AtomicBool,
+    /// Released by the test. A permit stored before the walk even reaches the gate
+    /// is still honored, so the test can't lose the race by releasing early.
+    gate_released: tokio::sync::Notify,
 }
 
 impl Instrumented {
@@ -220,7 +222,7 @@ impl Instrumented {
             max_in_flight: AtomicU64::new(0),
             gate: None,
             gate_reached: AtomicBool::new(false),
-            gate_released: AtomicBool::new(false),
+            gate_released: tokio::sync::Notify::new(),
         }
     }
 
@@ -238,13 +240,15 @@ impl Instrumented {
 
     /// Block until the walk has reached the gated listing.
     fn wait_for_the_gate(&self) {
-        cmdr_fs::testing::wait_until(std::time::Duration::from_secs(10), "the walk to reach the gated dir", || {
-            self.gate_reached.load(Ordering::SeqCst)
-        });
+        cmdr_fs::testing::wait_until(
+            std::time::Duration::from_secs(10),
+            "the walk to reach the gated dir",
+            || self.gate_reached.load(Ordering::SeqCst),
+        );
     }
 
     fn release_the_gate(&self) {
-        self.gate_released.store(true, Ordering::SeqCst);
+        self.gate_released.notify_one();
     }
 }
 
@@ -283,9 +287,7 @@ impl Volume for Instrumented {
             tokio::task::yield_now().await;
             if self.gate.as_deref() == Some(path) {
                 self.gate_reached.store(true, Ordering::SeqCst);
-                while !self.gate_released.load(Ordering::SeqCst) {
-                    tokio::time::sleep(std::time::Duration::from_millis(2)).await;
-                }
+                self.gate_released.notified().await;
             }
             let result = self.inner.list_directory(path, on_progress).await;
             self.in_flight.fetch_sub(1, Ordering::SeqCst);
@@ -444,7 +446,11 @@ fn the_scan_session_is_paired_on_the_completed_and_the_cancelled_walk() {
     );
 
     share.cover(&share.path("first"));
-    assert_eq!(volume.sessions(), (1, 1), "a completed walk opens one session and closes it");
+    assert_eq!(
+        volume.sessions(),
+        (1, 1),
+        "a completed walk opens one session and closes it"
+    );
 
     let walk = share.walk(&share.path("second"));
     volume.wait_for_the_gate();
@@ -471,7 +477,9 @@ fn the_scan_session_is_paired_on_the_completed_and_the_cancelled_walk() {
 /// burying their navigation behind 64.
 #[test]
 fn the_walk_overlaps_its_listings_within_the_pacer_budget() {
-    let subdirs = 20;
+    // More subdirectories than the budget, so "up to 64 in flight" is a claim the
+    // fixture can actually falsify.
+    let subdirs = crate::indexing::network_scanner::scan_pace::FULL_LISTING_BUDGET as u64 + 6;
     let (share, volume) = Share::instrumented(
         "cover-share-pacing-test",
         |t| {
@@ -607,7 +615,11 @@ fn a_same_name_sibling_keeps_the_first_row_rather_than_orphaning_a_subtree() {
         let tree = Tree(root.to_string());
         let inner = InMemoryVolume::with_entries(
             "Phone",
-            vec![tree.dir("scope"), tree.dir("scope/dup"), tree.file("scope/dup/child.txt", 7)],
+            vec![
+                tree.dir("scope"),
+                tree.dir("scope/dup"),
+                tree.file("scope/dup/child.txt", 7),
+            ],
         )
         .with_root(root);
         Arc::new(SameNameSiblings {
@@ -632,5 +644,266 @@ fn a_same_name_sibling_keeps_the_first_row_rather_than_orphaning_a_subtree() {
         share.child_ids(&share.path("scope/dup")).len(),
         1,
         "and the subtree below it is attributed to the row that survived"
+    );
+}
+
+// ── NAS system directories ───────────────────────────────────────────
+
+/// A search never walks into a NAS snapshot directory, and the frontier stops
+/// offering it after the first walk that sees it.
+///
+/// ⚠️ This is the stall the network scanner exists to avoid, arriving by a new
+/// route. `@Recently-Snapshot` and friends are hardlinked, huge, and re-walking
+/// them costs a full traversal PER SNAPSHOT over serialized SMB — one reported
+/// 44 TB on a 10 TB volume. Both whole-volume walks index the directory's own row
+/// and refuse its subtree, which leaves it `listed_epoch = 0`, which is exactly
+/// what the descent rule calls FRONTIER. So without this, every search of a NAS
+/// hands the walk the one tree nobody may walk.
+#[test]
+fn a_nas_system_dir_is_indexed_but_never_walked_into() {
+    let share = Share::new("cover-share-nas-dirs-test", |t| {
+        vec![
+            t.dir("scope"),
+            t.file("scope/real.txt", 1),
+            t.dir("scope/@Recently-Snapshot"),
+            t.dir("scope/@Recently-Snapshot/2026-08-01"),
+            t.file("scope/@Recently-Snapshot/2026-08-01/huge.bin", 999),
+        ]
+    });
+    let scope = share.path("scope");
+    let snapshot = share.path("scope/@Recently-Snapshot");
+
+    let (entries, outcome) = share.cover(&scope);
+
+    assert_eq!(outcome.entries_found, 2, "real.txt and the snapshot dir's own row");
+    let emitted: Vec<String> = entries.iter().map(|e| e.path.to_string_lossy().to_string()).collect();
+    assert!(
+        !emitted.iter().any(|p| p.contains("huge.bin")),
+        "nothing inside the snapshot tree was walked: {emitted:?}"
+    );
+    assert_eq!(
+        share.child_ids(&snapshot),
+        Vec::<i64>::new(),
+        "its subtree is honestly unknown rather than half-indexed"
+    );
+
+    let covered = share.coverage(&scope);
+    assert!(
+        covered.frontier.is_empty(),
+        "and the frontier does NOT hand the snapshot tree back to the next search: {covered:?}"
+    );
+    assert_eq!(
+        covered.unreadable,
+        [snapshot],
+        "it's reported as ground Cmdr won't read, which is what it is"
+    );
+}
+
+/// The same, for a frontier that names the snapshot directory itself — which is
+/// what an index built before this rule looks like, and what a walk that stopped
+/// just above one leaves behind.
+#[test]
+fn a_frontier_rooted_at_a_nas_system_dir_is_refused_rather_than_walked() {
+    let share = Share::new("cover-share-nas-root-test", |t| {
+        vec![
+            t.dir("@eaDir"),
+            t.dir("@eaDir/inner"),
+            t.file("@eaDir/inner/thumb.jpg", 42),
+        ]
+    });
+    let snapshot = share.path("@eaDir");
+
+    let (entries, outcome) = share.cover(&snapshot);
+
+    assert!(entries.is_empty(), "not one round trip's worth of it was walked");
+    assert_eq!(outcome.entries_found, 0);
+    assert!(
+        share.coverage(&snapshot).frontier.is_empty(),
+        "and it isn't handed back to the next search either"
+    );
+}
+
+// ── When a listing fails ─────────────────────────────────────────────
+
+/// A backend that refuses to list the paths it was given, and serves everything
+/// else from memory.
+struct RefusesToList {
+    inner: InMemoryVolume,
+    refused: Vec<PathBuf>,
+}
+
+impl Volume for RefusesToList {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+    fn root(&self) -> &Path {
+        self.inner.root()
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn list_directory<'a>(
+        &'a self,
+        path: &'a Path,
+        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+    ) -> Fut<'a, Result<Vec<FileEntry>, VolumeError>> {
+        if self.refused.iter().any(|refused| refused == path) {
+            return Box::pin(async { Err(VolumeError::PermissionDenied("test: listing refused".into())) });
+        }
+        self.inner.list_directory(path, on_progress)
+    }
+    fn get_metadata<'a>(&'a self, path: &'a Path) -> Fut<'a, Result<FileEntry, VolumeError>> {
+        self.inner.get_metadata(path)
+    }
+    fn exists<'a>(&'a self, path: &'a Path) -> Fut<'a, bool> {
+        self.inner.exists(path)
+    }
+    fn is_directory<'a>(&'a self, path: &'a Path) -> Fut<'a, Result<bool, VolumeError>> {
+        self.inner.is_directory(path)
+    }
+}
+
+impl Share {
+    /// A share that refuses to list the paths `refuse` names, relative to its
+    /// mount root.
+    fn refusing(volume_id: &'static str, build: impl FnOnce(&Tree) -> Vec<FileEntry>, refuse: &[&str]) -> Self {
+        let refuse: Vec<String> = refuse.iter().map(|r| r.to_string()).collect();
+        Self::with_volume(volume_id, |root| {
+            let tree = Tree(root.to_string());
+            Arc::new(RefusesToList {
+                refused: refuse.iter().map(|r| PathBuf::from(tree.path(r))).collect(),
+                inner: InMemoryVolume::with_entries("Share", build(&tree)).with_root(root),
+            })
+        })
+    }
+}
+
+/// One directory that won't list doesn't stop the walk: its siblings are covered,
+/// and it stays frontier for a later search to try again.
+///
+/// Honest-stale, never false-complete — the same rule the local walker follows for
+/// a directory it can't read.
+#[test]
+fn an_unlistable_directory_is_skipped_and_the_rest_is_covered() {
+    let share = Share::refusing(
+        "cover-share-one-refusal-test",
+        |t| {
+            vec![
+                t.dir("scope"),
+                t.dir("scope/open"),
+                t.file("scope/open/a.txt", 1),
+                t.dir("scope/closed"),
+                t.file("scope/closed/b.txt", 2),
+            ]
+        },
+        &["scope/closed"],
+    );
+    let scope = share.path("scope");
+
+    let (_, outcome) = drain(share.walk(&scope));
+
+    assert_eq!(outcome.roots_covered, 1, "the walk finished the root it was given");
+    cmdr_fs::testing::wait_until(
+        std::time::Duration::from_secs(10),
+        "the readable half of the scope to read as covered",
+        || share.coverage(&scope).frontier == [share.path("scope/closed")],
+    );
+    assert_eq!(
+        share.coverage(&scope).frontier,
+        [share.path("scope/closed")],
+        "and only the directory it couldn't read is left to try again"
+    );
+}
+
+/// The frontier node itself refusing to list is not "covered": it stays frontier,
+/// and the walk says it covered nothing.
+///
+/// ⚠️ Without the typed root arm this reads as an ordinary skipped directory and
+/// the walk reports success over ground it never saw — a search would then trust
+/// an index that answers for nothing.
+#[test]
+fn a_frontier_root_that_will_not_list_covers_nothing() {
+    let share = Share::refusing(
+        "cover-share-root-refusal-test",
+        |t| vec![t.dir("scope"), t.file("scope/a.txt", 1)],
+        &["scope"],
+    );
+    let scope = share.path("scope");
+
+    let (entries, outcome) = drain(share.walk(&scope));
+
+    assert_eq!(outcome.roots_covered, 0, "nothing was covered");
+    assert!(entries.is_empty());
+    assert_eq!(
+        share.coverage(&scope).frontier,
+        [scope],
+        "and the scope is still waiting for a walk that can read it"
+    );
+}
+
+/// A run of failures stops the walk instead of churning every queued directory
+/// into a silently-empty row.
+///
+/// The whole-volume walks carry this backstop because a disconnect that doesn't
+/// map to the typed variant makes EVERY remaining listing fail instantly (~6,475
+/// directories in about a second, in the reported bug). A search walk on the same
+/// dead session would do exactly the same thing.
+#[test]
+fn a_run_of_failures_stops_the_walk_rather_than_churning() {
+    let refusals: Vec<String> = (0..40).map(|i| format!("scope/d{i}")).collect();
+    let refused: Vec<&str> = refusals.iter().map(String::as_str).collect();
+    let share = Share::refusing(
+        "cover-share-backstop-test",
+        |t| {
+            let mut entries = vec![t.dir("scope")];
+            for i in 0..40 {
+                entries.push(t.dir(&format!("scope/d{i}")));
+            }
+            entries
+        },
+        &refused,
+    );
+
+    let (_, outcome) = drain(share.walk(&share.path("scope")));
+
+    assert_eq!(
+        outcome.roots_covered, 0,
+        "the walk stopped on the failure run rather than reporting a covered scope"
+    );
+    assert!(!outcome.cancelled, "nobody cancelled it — it gave up, which is different");
+}
+
+// ── Batching ─────────────────────────────────────────────────────────
+
+/// A big directory reaches its consumer in several bounded batches, not one
+/// giant one and not one crossing per entry.
+///
+/// Decision 3's shape: one channel crossing per batch is what keeps the walk in
+/// `indexing/` and the matching in `search/` without a per-entry cost, and the
+/// bound is what stops a queue growing to the size of the subtree.
+#[test]
+fn a_big_directory_arrives_in_bounded_batches() {
+    let count = 2_500;
+    let share = Share::new("cover-share-batching-test", |t| {
+        let mut entries = vec![t.dir("scope")];
+        for i in 0..count {
+            entries.push(t.file(&format!("scope/f{i:05}.txt"), 1));
+        }
+        entries
+    });
+
+    let walk = share.walk(&share.path("scope"));
+    let mut sizes = Vec::new();
+    while let Some(batch) = walk.next_batch() {
+        sizes.push(batch.len());
+    }
+    let outcome = walk.finish();
+
+    assert_eq!(outcome.entries_found, count as u64);
+    assert_eq!(sizes.iter().sum::<usize>(), count, "every entry reached the consumer");
+    assert!(sizes.len() > 1, "in more than one batch (got {sizes:?})");
+    assert!(
+        sizes.iter().all(|size| *size <= 2000),
+        "and none of them unbounded (got {sizes:?})"
     );
 }
