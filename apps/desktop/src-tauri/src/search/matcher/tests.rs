@@ -226,10 +226,16 @@ fn a_query_can_override_the_platform_default_both_ways() {
 
 // ── NFD normalization (macOS) ────────────────────────────────────────
 
+// The two forms and both tests over them are macOS-only, and the CONSTANTS have to
+// carry the gate too: Linux builds with `-D unused`, so a constant whose only
+// readers are gated out is a hard error there rather than a warning.
+
 /// "café" composed (NFC): the form a keyboard produces.
+#[cfg(target_os = "macos")]
 const CAFE_NFC: &str = "caf\u{e9}.txt";
 /// "café" decomposed (NFD): the form APFS stores, and the form both a walk and the
 /// index read back off the filesystem.
+#[cfg(target_os = "macos")]
 const CAFE_NFD: &str = "cafe\u{301}.txt";
 
 #[cfg(target_os = "macos")]

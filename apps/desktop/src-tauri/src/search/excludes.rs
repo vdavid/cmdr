@@ -160,9 +160,17 @@ impl ExcludeRules {
     }
 
     /// One name in the alphabet the exact-name set is keyed on.
+    ///
+    /// ⚠️ The lowercase is EXPLICIT and not left to `normalize_for_comparison`,
+    /// which is deliberately a no-op off macOS: two names differing in case are two
+    /// different FILES there, so the index is right not to fold its keys. This is a
+    /// user's filter, not an index key — the query said case-insensitive, and
+    /// honoring that only on macOS is exactly the fork that makes a search exclude
+    /// under one alphabet and match under another. The normalization still comes
+    /// from the index, so macOS keeps folding NFD to the form APFS stores.
     fn fold(&self, name: &str) -> String {
         if self.case_insensitive {
-            store::normalize_for_comparison(name)
+            store::normalize_for_comparison(name).to_lowercase()
         } else {
             name.to_string()
         }
