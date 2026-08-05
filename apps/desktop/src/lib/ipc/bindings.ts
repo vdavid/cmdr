@@ -2170,8 +2170,9 @@ export const commands = {
   cancelSearch: (runId: string) => typedError<boolean, string>(__TAURI_INVOKE('cancel_search', { runId })),
   /**
    *  Called when the search dialog closes. Starts the idle timer, cancels any
-   *  in-progress index load, and stops every live search but the one the caller
-   *  asked to keep.
+   *  in-progress index load, and stops every live search of the DIALOG's but the
+   *  one the caller asked to keep. An MCP call's run carries on: nobody watching
+   *  the dialog says nothing about an agent waiting on its own answer.
    *
    *  A walk outlives its dialog only through "Open in pane"
    *  (`docs/specs/unindexed-search-plan.md` M7), which is what `keep_run_id` names:
