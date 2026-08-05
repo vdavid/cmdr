@@ -323,6 +323,15 @@ Through M3d. Branch `worktree-david+unindexed-search-exec`, nothing merged to `m
   mount-rooted, no journal). Refusing it would make a search of it silently wrong; calling it local would point the
   guarded walker at syscalls that block for minutes. ❌ The walk does NOT upgrade an SMB os-mount to a direct session
   the way the enable command does: that can prompt for credentials, which is not something a search may do.
+- **A NAS snapshot directory reads as FRONTIER, so a search of a NAS would have walked the one tree nobody may walk.**
+  `network_scanner` indexes `@Recently-Snapshot` / `@eaDir` / … as rows and refuses their subtrees (hardlinked, per
+  snapshot, 44 TB reported on a 10 TB volume), which leaves them at `listed_epoch = 0` — exactly the descent rule's
+  frontier case. The plan never connected the two, and M2's coverage query has been reporting them since it landed;
+  M3d is what would have acted on it. Closed by stamping them `known_unreadable`, whose meaning widens from "a walk
+  tried and can't read this" to "nothing is coming for this subtree". No new verdict, no per-kind branch in the
+  coverage logic, and an index built earlier heals on the first search that meets one. **M6 inherits it**: those
+  directories now appear in `CoverageMap.unreadable` alongside permission-denied ones, and the copy has to cover both
+  ("Cmdr doesn't search inside snapshot folders" is a different sentence from "grant Full Disk Access").
 - **The empty-root refusal must NOT carry over to the cover walk.** `VolumeScanError::EmptyRoot` exists because a share
   that lists empty is a glitch and a false "complete" strands the index. An empty FOLDER is ordinary, and refusing to
   mark it would hand it back to every later search forever.

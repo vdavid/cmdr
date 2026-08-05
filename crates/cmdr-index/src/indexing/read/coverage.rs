@@ -16,8 +16,11 @@
 //! - `min_subtree_epoch == 0 && listed_epoch > 0` ⇒ **listed**. This directory was
 //!   read, something below it wasn't. It is itself covered ground; descend into
 //!   its child directories and classify each.
-//! - `listed_epoch == 0 && known_unreadable` ⇒ **unreadable**. Tried and can't be
-//!   read. Not frontier, and reported rather than silently dropped.
+//! - `listed_epoch == 0 && known_unreadable` ⇒ **unreadable**. Nothing is coming
+//!   for this subtree: a walk tried and can't read it (permission denied), or
+//!   won't read it at all (a NAS snapshot directory, whose per-snapshot tree is
+//!   the one thing the network scanner refuses on purpose). Not frontier, and
+//!   reported rather than silently dropped.
 //! - `listed_epoch == 0` ⇒ **frontier**. Cut here and hand the subtree to the walk.
 //!
 //! ❌ **Don't simplify this to `min_subtree_epoch` alone.** The min absorbs zero
@@ -130,10 +133,11 @@ pub struct CoverageMap {
     /// emits them as it finds them, and no caller should read the order as meaning
     /// anything.
     pub frontier: Vec<String>,
-    /// Directories a walk has already tried and can't read, so they're not offered
-    /// again. Reported rather than dropped: a search over them is honestly narrow,
-    /// and the user is the one who can fix it (by granting Full Disk Access, or by
-    /// looking elsewhere).
+    /// Directories no walk is going to fill in, so they're not offered again:
+    /// either a walk tried and couldn't read one, or it won't read one (a NAS
+    /// snapshot tree). Reported rather than dropped: a search over them is
+    /// honestly narrow, and the user is the one who can act on it (by granting
+    /// Full Disk Access, or by looking elsewhere).
     pub unreadable: Vec<String>,
     /// Which state of the index this answer describes. Honor the answer only while
     /// the snapshot you're serving the covered half from still matches.
@@ -156,7 +160,8 @@ pub(crate) enum Verdict {
     Listed,
     /// Nothing has listed this directory. The whole subtree goes to the walk.
     Frontier,
-    /// A walk tried this directory and couldn't read it.
+    /// Nothing is coming for this directory: a walk tried and couldn't read it,
+    /// or won't read it at all.
     Unreadable,
 }
 
