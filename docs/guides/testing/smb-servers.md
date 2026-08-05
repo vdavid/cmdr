@@ -65,6 +65,19 @@ alongside the `Cargo.lock` change.
 | `smb-consumer-linux`    | 10491 | Default Linux Samba   | Baseline comparison |
 
 Ports are configurable via `SMB_CONSUMER_*_PORT` environment variables (for example, `SMB_CONSUMER_GUEST_PORT=9445`).
+cmdr's own stack sets these to 11480+ (see `scripts/check/CLAUDE.md`); the table's 10480+ numbers are smb2's defaults.
+
+Every container publishes to **127.0.0.1 only**, via `${SMB_BIND_ADDR:-127.0.0.1}` in the vendored compose file.
+Docker's default is `0.0.0.0`, which would put unauthenticated Samba servers on your LAN and tailnet for as long as the
+containers live. The Linux E2E path is unaffected: that test container joins the `smb-consumer_default` network and
+reaches `smb-consumer-guest:445` container-to-container, never through a host port. Set `SMB_BIND_ADDR=0.0.0.0` only
+when an SMB client outside the Docker host needs in, such as a NAT'd VM, which reaches the host by gateway IP and so
+can't see a loopback binding.
+
+Change the bind address in
+[smb2's source of truth](https://github.com/vdavid/smb2/tree/main/src/testing/fixtures/consumer) and re-vendor, never in
+`.compose/docker-compose.override.yml`: Compose _concatenates_ `ports` across override files rather than replacing them,
+so an override adds a second publish that collides on the host port.
 
 ## Connection URLs
 

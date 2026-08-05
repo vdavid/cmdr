@@ -19,6 +19,11 @@
 #
 # `smb-consumer-flaky` is intentionally excluded: it cycles up and down by design
 # (cycle.sh, no healthcheck), so a restart policy would fight the test it exists to serve.
+#
+# What it must NOT add: `ports`. Compose *concatenates* `ports` across files instead of
+# replacing them, so a publish here becomes a second publish that collides on the host port.
+# The vendored file binds to `${SMB_BIND_ADDR:-127.0.0.1}`; change that upstream in smb2 and
+# re-vendor, or set SMB_BIND_ADDR in the environment for a one-off.
 services:
   smb-consumer-guest:
     restart: unless-stopped

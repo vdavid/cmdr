@@ -383,6 +383,17 @@ Docker E2E is unaffected (it talks to containers over the Docker network on inte
 `docker run -e`). Net: cmdr and smb2's harnesses coexist, and smb2's defaults/`guest_port()` contract stay untouched so
 every other smb2 consumer is unaffected.
 
+**Decision**: those host ports publish to `127.0.0.1`, not all interfaces. **Why**: Docker's default binding is
+`0.0.0.0`, so every bring-up put ~15 unauthenticated Samba servers (guest shares included) on the LAN and tailnet of
+whoever ran the checks, for as long as the containers lived, which the lease model deliberately makes longer than one
+run. The bind address is a `${SMB_BIND_ADDR:-127.0.0.1}` prefix on each `ports:` entry in smb2's compose (the vendored
+source of truth), so it survives re-vendoring; setting `SMB_BIND_ADDR=0.0.0.0` restores the old behavior when a client
+outside the Docker host needs in. No check lost anything: the Rust integration tests run on the host and reach
+`localhost:11480+`, and the Linux Docker E2E was never using host ports (it joins `smb-consumer_default` and talks to
+`:445` by container name). Don't add a `ports:` block to `.compose/docker-compose.override.yml` to change this: Compose
+concatenates `ports` across files rather than replacing them, so the override collides on the host port instead of
+rebinding it.
+
 **Decision**: `IsFast` field on `CheckDefinition` and a curated `--fast` pre-commit lane. **Why**: A pre-commit run
 should finish in ~10s so it actually gets used. The list is editorially curated, not derived from CSV timings: warm
 average is what matters, but cold-cache outliers (`cargo-audit` spiking to ~3 min on advisory DB refresh) would silently

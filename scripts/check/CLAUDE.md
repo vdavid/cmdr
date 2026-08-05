@@ -48,6 +48,8 @@ For check authoring (how to add a check, `CheckDefinition` shape, naming rules, 
 - **cmdr's SMB stack binds host ports 11480+, not smb2's default 10480+**, so cmdr's vendored `smb-consumer` compose and
   smb2's own `consumer` harness coexist instead of fighting over ports. `checks.ApplySmbPortEnv()` sets this before
   bring-up; don't revert to the default range.
+- **Those host ports bind to 127.0.0.1** (`${SMB_BIND_ADDR:-127.0.0.1}` in the vendored compose), not Docker's
+  all-interfaces default. No check is affected; see `DETAILS.md`.
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.
