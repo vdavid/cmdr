@@ -53,9 +53,8 @@ files. Writing rules: `docs/style-guide.md` (active voice, friendly, never the w
 FE side: add the `errors.<reason>.{title,explanation,suggestion}` keys (plus `@key` descriptions) to
 `../intl/messages/en/errors.json`, run `pnpm intl:keys`, translate into every locale (`docs/guides/i18n-translation.md`
 § New feature), add the reason to the factory union (a runtime param goes in the variant and is escaped + named as a
-`{token}`), and add it to the STYLE test matrix. A brand-new reason gets NO golden entry: the fixture records
-pre-change Rust output, so a reason that didn't exist then has nothing to be pinned against. Rust side:
-`crates/cmdr-fs/src/volume/friendly_error/CLAUDE.md`. Full recipe + the convergence note: `DETAILS.md`.
+`{token}`), and add it to the STYLE matrix only. A new reason gets NO golden entry: the fixture pins pre-change output,
+so there's nothing to pin it against. Rust side: `crates/cmdr-fs/src/volume/friendly_error/CLAUDE.md`.
 
 Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.
