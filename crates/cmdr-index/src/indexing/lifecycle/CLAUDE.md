@@ -44,9 +44,11 @@ How a per-volume index is born, lives, transitions, and dies. Every invariant he
 
 - **A fatal storage error STOPS + FAILS the index, never retries** (one incident logged 12,700 warnings in 8 min). Typed
   and terminal; recovery is rebuild.
-- **TWO switches, master wins.** `indexing.enabled` is a HARD gate (autonomous resumes included), enforced in
-  `start_indexing_for`, the choke point all four transports share — ❌ no start path around it. Master-off stops via
-  `stop_indexing`, which must ❌ never write per-drive intent, or the user's choices can't be restored.
+- **TWO switches, master wins, and both gate BACKGROUND work only.** `indexing.enabled` hard-gates
+  `Activation::IndexTheVolume` in `start_indexing_for`, the choke point all four transports share — ❌ no background
+  start around it. Master-off stops via `stop_indexing`, which must ❌ never write per-drive intent. ⚠️ A search walk
+  (`WriterOnly`) is carved out of both switches AND `user_disabled`: it's a read someone asked for and starts no scan
+  or watcher, so refusing only makes their search silently wrong. ❌ Don't "fix" that back into a refusal.
 - **Defer `root` auto-start** (`should_auto_start_indexing`): scanning `/` stacks TCC popups, so FDA gates ONLY `root`.
   A narrow deferral, NOT the master switch; ❌ never feed it to `set_master_enabled`.
 - **The lifecycle bus is neutral and one-way** (consumer → indexing): `watch` not `broadcast`, `send_replace` so a

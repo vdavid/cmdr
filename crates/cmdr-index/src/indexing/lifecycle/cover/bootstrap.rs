@@ -39,14 +39,6 @@ pub(crate) enum NoCoverContext {
     /// already covers everything a search would want walked, and a second writer
     /// on one database races the id counter.
     ScanInProgress,
-    /// Drive indexing is off in settings, and the master switch is a hard gate
-    /// over every start.
-    ///
-    /// Decision 13 carves a user-initiated read out of it — searching is not
-    /// background work — but that carve-out is M3c's, together with the four docs
-    /// that state the invariant. Until then "nothing indexes, anywhere" stays
-    /// true, and this is the one place the walk honors it.
-    MasterSwitchOff,
     /// Standing the index up failed. Log-only.
     Failed(String),
 }
@@ -57,7 +49,6 @@ impl std::fmt::Display for NoCoverContext {
             Self::NotMounted => f.write_str("nothing is mounted under that id"),
             Self::NotLocallyWalkable => f.write_str("a share or a phone can't be walked locally"),
             Self::ScanInProgress => f.write_str("the volume's own scan is running"),
-            Self::MasterSwitchOff => f.write_str("drive indexing is off in settings"),
             Self::Failed(e) => write!(f, "the index wouldn't start: {e}"),
         }
     }
@@ -71,17 +62,22 @@ impl std::fmt::Display for NoCoverContext {
 /// exactly this: a database, an epoch, the read handles, and a writer, with no
 /// scan and no watcher behind them, because the walk writes its own rows and a
 /// full scan of the drive is not what someone searching one folder asked for.
+///
+/// ⚠️ Neither indexing switch is consulted here, and that's Decision 13: the
+/// master switch and the sticky per-drive `user_disabled` veto both stop work the
+/// app would do UNINVITED, and a search is the opposite of uninvited. The
+/// `WriterOnly` start below is carved out of the master gate for the same reason
+/// (`state::start_indexing_for`).
 pub(crate) fn context_for_walk(volume_id: &str) -> Result<CoverContext, NoCoverContext> {
     if let Some(context) = state::cover_context_for(volume_id) {
         return Ok(context);
     }
     if state::is_active(volume_id) {
-        // Registered but not `Running`: its own scan is mid-flight.
+        // Registered but not handing a writer over: either its own scan is
+        // mid-flight, or it's still initializing. Either way that scan covers
+        // everything a search would have walked, and a second writer on one
+        // database races the id counter.
         return Err(NoCoverContext::ScanInProgress);
-    }
-
-    if !crate::indexing::lifecycle::master::master_enabled() {
-        return Err(NoCoverContext::MasterSwitchOff);
     }
 
     let volume = locally_walkable_volume(volume_id)?;
@@ -106,8 +102,8 @@ pub(crate) fn context_for_walk(volume_id: &str) -> Result<CoverContext, NoCoverC
     }
 
     state::cover_context_for(volume_id).ok_or_else(|| {
-        // The reservation was won by something else between the two calls, or the
-        // start no-op'd against the master switch.
+        // The reservation was won by something else between the two calls, and
+        // whatever won it is scanning the volume.
         NoCoverContext::Failed(format!("'{volume_id}' still has no writer after being started"))
     })
 }

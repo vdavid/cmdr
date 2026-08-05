@@ -592,12 +592,22 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
     inodes_trustworthy: bool,
     activation: Activation,
 ) -> Result<(), String> {
-    // The master switch is a HARD gate at the one choke point every transport
-    // funnels through, so no start or autonomous resume path can slip past it (an
-    // SMB reconnect used to, and re-indexed a whole NAS the user had opted out of).
-    // Callers that surface a refusal to the UI check `master_enabled()` themselves
-    // and return a typed reason; here we no-op, since nothing was promised.
-    if !super::master::master_enabled() {
+    // The master switch is a HARD gate on BACKGROUND indexing, at the one choke
+    // point every transport funnels through, so no start or autonomous resume path
+    // can slip past it (an SMB reconnect used to, and re-indexed a whole NAS the
+    // user had opted out of). Callers that surface a refusal to the UI check
+    // `master_enabled()` themselves and return a typed reason; here we no-op, since
+    // nothing was promised.
+    //
+    // ⚠️ `WriterOnly` is carved OUT of it, deliberately (Decision 13): it stands up
+    // a database and a writer for a search-driven walk and starts nothing that runs
+    // on its own — no scan, no watcher, no resume. "Nothing indexes, anywhere"
+    // means nothing indexes UNINVITED; a person searching a folder invited exactly
+    // this read, and refusing it would only make their search quietly wrong. ❌
+    // Don't collapse this back into a bare `master_enabled()` check; the test
+    // `cover::tests::a_search_walks_a_drive_with_the_master_switch_off` is there to
+    // catch it.
+    if activation == Activation::IndexTheVolume && !super::master::master_enabled() {
         log::info!("start_indexing: refusing '{volume_id}' ({kind:?}), drive indexing is off in settings");
         return Ok(());
     }

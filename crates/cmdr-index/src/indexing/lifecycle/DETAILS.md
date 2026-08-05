@@ -366,8 +366,10 @@ maintenance timer can't drift between the two. What that start does differently:
   `routes_to_local_external` predicate the enable command uses, with the `statfs` probe bounded on a thread of its own —
   the async timeout `local_external::classify` uses needs a runtime this path doesn't have, and a probe that won't
   answer IS the answer (`MountFacts::UNPROBEABLE` reads as network, which is refused here anyway).
-- **Still honors the master switch.** Decision 13 carves a user-initiated read out of it; that carve-out is M3c's, along
-  with the four docs that state the invariant, and `NoCoverContext::MasterSwitchOff` is where it lands.
+- **Runs with drive indexing turned off** (Decision 13). Neither the master switch nor the sticky per-drive
+  `user_disabled` veto gates it: both stop work the app does uninvited, and a search is a read the user just asked for.
+  The carve-out is one condition in `start_indexing_for` (`activation == IndexTheVolume`), so `WriterOnly` is the only
+  start that passes a closed gate — and it starts nothing autonomous, which is what makes that safe.
 
 **Active is not indexed.** A writer-only instance makes a volume `is_active` while nothing has ever scanned it, so
 `Index::start_volume` asks `awaits_its_first_scan` (Running, not scanning, no `scan_completed_at`) and force-scans
@@ -456,19 +458,26 @@ path→volume resolution feeding these lives in `../paths/CLAUDE.md`.
 Canonical model; everywhere else points here. Two switches decide whether a volume indexes, and they compose ONE way.
 
 - The **master switch** is `indexing.enabled` in settings, mirrored into the process-wide atomic in `master.rs`. It's a
-  hard gate: off ⇒ nothing indexes, anywhere. Seeded in `lib.rs` setup BEFORE `indexing::init` (which is what unblocks
-  the handle-free SMB reconnect resume, so a late seed lets a NAS re-index itself), then live-applied by
+  hard gate: off ⇒ nothing indexes on its own, anywhere. Seeded in `lib.rs` setup BEFORE `indexing::init` (which is what
+  unblocks the handle-free SMB reconnect resume, so a late seed lets a NAS re-index itself), then live-applied by
   `set_indexing_enabled` per the settings live-apply rule.
 - The **per-drive intent** lives on each volume's own index DB, as two meta markers read by
   `master::drive_index_should_run`: the sticky `user_disabled` (an unconditional veto) and `scan_completed_at`. The boot
   disk is opt-OUT (`is_root`: it indexes unless disabled); every external drive is opt-IN, so it needs a completed scan
   on record before anything resumes it uninvited.
 
-Enforcement is one choke point: `start_indexing_for`, which all four transports funnel through, refuses while the master
-is off. Callers that answer a user get a typed refusal of their own instead of a silent no-op: `enable_drive_index` →
-`EnableIndexingOutcome::IndexingDisabled` (transport-neutral, so the FE has one shape to match),
-`start_indexing_for_smb` → `SmbIndexGateReason::IndexingDisabled` (refused BEFORE the os_mount upgrade, so a refused
-start can't clear the drive's `user_disabled` marker as a side effect).
+**Both switches govern BACKGROUND work only, never a user-initiated read** (Decision 13). A search-driven coverage walk
+runs with the master off and on a `user_disabled` drive alike: it stands up a writer and nothing else, so no scan is
+scheduled and no watcher starts, and the alternative isn't "less work" — it's a search that silently omits files on a
+drive the user can see. The veto keeps real teeth anyway: a vetoed drive gets no watcher, so its walked branches go
+stale and re-walk instead of staying live. ❌ Don't turn either switch back into a gate on `WriterOnly`;
+`cover::tests::a_search_walks_a_drive_with_the_master_switch_off` guards it.
+
+Enforcement is one choke point: `start_indexing_for`, which all four transports funnel through, refuses an
+`IndexTheVolume` activation while the master is off. Callers that answer a user get a typed refusal of their own instead
+of a silent no-op: `enable_drive_index` → `EnableIndexingOutcome::IndexingDisabled` (transport-neutral, so the FE has
+one shape to match), `start_indexing_for_smb` → `SmbIndexGateReason::IndexingDisabled` (refused BEFORE the os_mount
+upgrade, so a refused start can't clear the drive's `user_disabled` marker as a side effect).
 
 Toggling the master switch never writes per-drive intent, in either direction. Off runs `stop_all_indexing`, which is
 `stop_indexing` per volume and so leaves the markers alone (see `../transports/CLAUDE.md` for why that separation is

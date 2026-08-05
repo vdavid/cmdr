@@ -452,9 +452,7 @@ impl Index {
         let context = cover::context_for_walk(volume_id).map_err(|e| match e {
             // Nothing to walk into and nothing built: from out here that reads
             // exactly like a drive that was never indexed, which is what it is.
-            cover::NoCoverContext::NotMounted
-            | cover::NoCoverContext::NotLocallyWalkable
-            | cover::NoCoverContext::MasterSwitchOff => IndexError::NotIndexed {
+            cover::NoCoverContext::NotMounted | cover::NoCoverContext::NotLocallyWalkable => IndexError::NotIndexed {
                 volume_id: volume_id.to_string(),
             },
             // The volume IS being indexed, so `NotIndexed` would be a lie. No

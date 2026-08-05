@@ -207,6 +207,15 @@ impl IndexBuilder {
                 .or_else(|| self.config.as_ref().map(|c| c.data_dir.clone()))
                 .map(host::config::install_data_dir_for_test),
             events: self.events.clone().map(host::events::install_for_test),
+            // The master switch is a process-wide atomic that `install` below is
+            // about to write. Captured HERE, before that write, so a test that
+            // turns drive indexing off doesn't leave it off for whichever test
+            // runs next in the same binary.
+            master: self.indexing_enabled.map(|enabled| {
+                crate::indexing::lifecycle::master::install_for_test(
+                    crate::indexing::lifecycle::state::should_auto_start(enabled),
+                )
+            }),
         };
         let mut builder = self;
         // The runtime slot is a one-shot and a test binary's fallback is already
@@ -236,6 +245,7 @@ pub struct TestInstallGuard {
     volumes: Option<crate::indexing::host::volumes::TestProviderGuard>,
     config: Option<crate::indexing::host::config::TestConfigGuard>,
     events: Option<crate::indexing::host::events::TestSinkGuard>,
+    master: Option<crate::indexing::lifecycle::master::MasterSwitchGuard>,
 }
 
 /// Restores the process's index claim on drop.

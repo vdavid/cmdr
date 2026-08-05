@@ -3,10 +3,19 @@
 //! Two switches decide whether a volume indexes, and they compose ONE way:
 //!
 //! - The **master switch** (`indexing.enabled` in settings) is a hard gate. Off ⇒
-//!   nothing indexes, anywhere: no launch auto-start, no per-drive enable, and no
-//!   autonomous resume (SMB reconnect, MTP, local external).
+//!   nothing indexes on its own, anywhere: no launch auto-start, no per-drive
+//!   enable, and no autonomous resume (SMB reconnect, MTP, local external).
 //! - The **per-drive intent** (persisted on each volume's own index DB) selects
 //!   WHICH drives index while the master is on.
+//!
+//! **Both govern BACKGROUND work only, never a user-initiated read.** A
+//! search-driven coverage walk (`Activation::WriterOnly`, `lifecycle/cover.rs`)
+//! runs with either switch off, because searching a folder Cmdr hasn't indexed IS
+//! reading it, and the person asking is right there. Refusing wouldn't save them
+//! work; it would hand them a search that silently omits files. What the switches
+//! keep is everything that runs uninvited: no scan is scheduled, no watcher is
+//! started, and a vetoed drive still gets none later — which is the veto's real
+//! teeth, since walked branches with no watcher go stale and re-walk.
 //!
 //! Flipping the master off stops every running index through `stop_indexing`,
 //! which by design never writes the sticky `user_disabled` marker
@@ -40,10 +49,40 @@ pub fn set_master_enabled(enabled: bool) {
     log::info!(target: "indexing::master", "Drive indexing master switch is now {}", if enabled { "on" } else { "off" });
 }
 
-/// Whether the master drive-indexing switch is on. Every start/resume path
-/// consults this; `false` means no volume may index.
+/// Whether the master drive-indexing switch is on. Every BACKGROUND start/resume
+/// path consults this; `false` means no volume may index on its own.
+///
+/// ❌ Not a gate on a user-initiated read. A search-driven coverage walk
+/// (`Activation::WriterOnly`) runs whatever this says: the switch governs work
+/// the app does uninvited, and someone searching a folder asked for exactly the
+/// reading the walk does. See the module doc.
 pub fn master_enabled() -> bool {
     MASTER_ENABLED.load(Ordering::Relaxed)
+}
+
+/// Set the switch for one test and put it back on drop, so a test that needs it
+/// off doesn't leak that into whichever test runs next in the same binary.
+///
+/// Process-wide, like every other seam a test handle installs: hold
+/// `handle::test_lock()` first.
+#[cfg(any(test, feature = "testing"))]
+#[must_use = "the switch is restored when the guard drops"]
+pub(crate) fn install_for_test(enabled: bool) -> MasterSwitchGuard {
+    let previous = MASTER_ENABLED.swap(enabled, Ordering::Relaxed);
+    MasterSwitchGuard { previous }
+}
+
+/// Restores the master switch on drop.
+#[cfg(any(test, feature = "testing"))]
+pub(crate) struct MasterSwitchGuard {
+    previous: bool,
+}
+
+#[cfg(any(test, feature = "testing"))]
+impl Drop for MasterSwitchGuard {
+    fn drop(&mut self) {
+        MASTER_ENABLED.store(self.previous, Ordering::Relaxed);
+    }
 }
 
 /// Whether a drive should be indexing right now, from the master switch plus the
@@ -181,9 +220,12 @@ mod tests {
     #[test]
     fn the_master_atomic_defaults_on() {
         // Default-on matters: a unit test or an early start that never seeds the
-        // atomic must behave like today's default-on setting. Deliberately read-only
-        // — flipping the process-wide atomic here would race every parallel test
-        // that starts an index.
+        // atomic must behave like today's default-on setting. Deliberately
+        // read-only — flipping the process-wide atomic here would race every
+        // parallel test that starts an index. Even READING it needs the seam lock,
+        // because a test that legitimately turns the switch off (the search walk's
+        // carve-out) holds that lock while it does.
+        let _serialized = crate::indexing::handle::test_lock();
         assert!(master_enabled(), "the master switch defaults on");
     }
 }
