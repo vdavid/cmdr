@@ -544,6 +544,12 @@ impl IndexManager {
                 task.abort();
             }
         }
+
+        // Stopping a SCAN must not silently retire a branch watch that was never
+        // part of it. A volume with walk-covered branches gets its watcher back
+        // here; one whose scan just stopped has no branches (the scan retired
+        // them), so this is a no-op there.
+        self.ensure_branch_watch(false);
     }
 
     /// Get the current index status.
