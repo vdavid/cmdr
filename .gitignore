@@ -89,3 +89,10 @@ mutants.out.*/
 # personal data and are David's to keep locally. The eval suite is green with none
 # present (CI has none). See docs/guides/importance-evals.md.
 apps/desktop/src-tauri/tests/importance-corpus/
+
+# Temp trees the cover-walk tests build (`cmdr-cover-test-*`, `cmdr-cold-cover-*`).
+# They live in the CWD rather than `/tmp` on purpose (`lifecycle/cover/tests.rs`),
+# and a panicking test leaks one, so a stray `git add -A` can commit a tree of
+# `found.txt` fixtures. It has.
+crates/cmdr-index/cmdr-cover-test-*/
+crates/cmdr-index/cmdr-cold-cover-*/
