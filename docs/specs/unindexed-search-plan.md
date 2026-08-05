@@ -47,9 +47,9 @@ buried. It is meant to be complete; anything found later belongs here.
 1. **An interrupted walk is narrower.** Cancel, drive disconnect, and app quit each end a walk early and yield a
    strictly smaller result set than the indexed run. This is the difference people meet most often, so M6 labels the
    result list incomplete rather than letting it read as exhaustive.
-2. **Unreadable subtrees are narrower.** The 32-failure give-up prune and M2's marker (now
-   `entries.unreadable_cause`) mean a walk without Full Disk Access covers less than an index built when it was
-   granted. Honestly signalled, and M8 offers the way out where there is one, but still a difference.
+2. **Unreadable subtrees are narrower.** The 32-failure give-up prune and M2's marker (now `entries.unreadable_cause`)
+   mean a walk without Full Disk Access covers less than an index built when it was granted. Honestly signalled, and M8
+   offers the way out where there is one, but still a difference.
 3. **Auto-apply works on indexed drives and not on uncovered ground** (Decision 7). Crossing into a frontier needs
    Enter.
 4. **Ranking is not preserved.** Importance weights come from the index, so live-walked results rank by match quality
@@ -265,7 +265,7 @@ coverage API must not assume a single dimension.
 
 ## Execution status
 
-Through M8. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local `main`.
+Through M9. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local `main`.
 
 **Landed.**
 
@@ -342,14 +342,14 @@ Through M8. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local 
   inner span, count-only's "N so far", the Escape two-step, and the coverage note's live half. Verified in the running
   app against a real unindexed NAS and an unindexed disk image.
 
-- **M8**: the Full Disk Access route, and the typed cause it needed. `entries.unreadable_cause` (schema v16) splits
-  "a walk was refused" from "no walk will read this", all the way to two lists on `SearchRunCoverage` and two sentences
-  in `CoverageNote.svelte`. The refusal half offers `search.coverage.setUpFullDiskAccess`, which routes into the
-  onboarding wizard's step 1 (the existing prompt, not a second one) through the host's `onGrantFullDiskAccess`. Three
-  conditions gate it (`coverage-note.ts::offersFullDiskAccess`): a folder was actually refused, this is macOS, and
+- **M8**: the Full Disk Access route, and the typed cause it needed. `entries.unreadable_cause` (schema v16) splits "a
+  walk was refused" from "no walk will read this", all the way to two lists on `SearchRunCoverage` and two sentences in
+  `CoverageNote.svelte`. The refusal half offers `search.coverage.setUpFullDiskAccess`, which routes into the onboarding
+  wizard's step 1 (the existing prompt, not a second one) through the host's `onGrantFullDiskAccess`. Three conditions
+  gate it (`coverage-note.ts::offersFullDiskAccess`): a folder was actually refused, this is macOS, and
   `checkFullDiskAccessQuiet` says Cmdr doesn't already have it. ❌ Never offered over `declined`: no permission opens a
-  snapshot tree. It also carried the M7 leftover — rows now reach the dialog 100 ms after they're found rather than
-  when a 2 000-entry batch fills (`scanner/live_emit.rs`).
+  snapshot tree. It also carried the M7 leftover — rows now reach the dialog 100 ms after they're found rather than when
+  a 2 000-entry batch fills (`scanner/live_emit.rs`).
 
 - **M7**: the walk that outlives its dialog. `walk-handoff.svelte.ts` keeps listening after "Open in pane", appends each
   batch to the snapshot (through `appendSnapshotEntries`, which bumps `mutationTick`), drives the toast, and hands the
@@ -359,14 +359,52 @@ Through M8. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local 
   abandoned-ground signal that closes Accepted difference 9. `CMDR_E2E_WALK_THROTTLE_MS` is the soft test hook the
   milestone asked for.
 
-**Verified in the running app (M8, on a `chmod 000` folder beside a 200-directory sparse tree).** The refusal gets
-its own sentence and path; with real Full Disk Access no offer appears, and under `CMDR_MOCK_FDA=notgranted` the offer
-and its line do, and pressing it closes the search dialog and lands on the wizard's step 1. Rows now arrive while the
-walk runs (`0 → 34 → 91 → 124 → 169 → 200` over three seconds, sampled inside the webview against
+- **M9**: MCP takes the live path. `run_live_collected` runs the same live search `start_live` does and folds its events
+  into one `LiveAnswer` through `CollectingSink` (`search/live/collect.rs`), because a tool call is one request and one
+  reply. `search` and `ai_search` both take it; `run_blocking` stays, serving only the dialog's index-only debounce. The
+  wait is a transport budget (`maxWaitSeconds`, default 20 s, max 120 s) and when it runs out the walk KEEPS GOING — the
+  reply says so and says to run the search again. ❌ Nothing of `ColdVolumePolicy` survived M0 to delete; the
+  milestone's first bullet was already done. `uncovered_scopes` leaves the MCP reply, replaced by the live coverage
+  report including M8's two lists. The `search` tool description had to lose 89 characters to fit the registry's
+  256-char cap.
+
+**Verified in the running app (M9, over `scripts/mcp-call.sh` against the worktree instance).** An index-served search
+returns rows and says nothing; a search over a volume mid-full-scan says the walk was interrupted (which is the M3c
+gate, and the first time MCP could report it at all); a `chmod 000` folder beside a fresh tree comes back as
+`Note: the OS refused to let Cmdr read <path>.` plus `Cmdr walked 3 folders it hadn't indexed yet` — with NO Full Disk
+Access offer, correctly, because this machine has already granted it; a 6 000-directory tree searched with
+`maxWaitSeconds: 1` returns the still-walking note, and the same search again counts 5 402 of its files. ⚠️ The FDA
+OFFER branch was not re-verified in the app (it needs a relaunch under `CMDR_MOCK_FDA=notgranted`); it rests on the unit
+test over `refusal_note`.
+
+**Verified in the running app (M8, on a `chmod 000` folder beside a 200-directory sparse tree).** The refusal gets its
+own sentence and path; with real Full Disk Access no offer appears, and under `CMDR_MOCK_FDA=notgranted` the offer and
+its line do, and pressing it closes the search dialog and lands on the wizard's step 1. Rows now arrive while the walk
+runs (`0 → 34 → 91 → 124 → 169 → 200` over three seconds, sampled inside the webview against
 `CMDR_E2E_WALK_THROTTLE_MS=40`). ⚠️ The DECLINED half was NOT re-verified against a real NAS: it rests on
 `live_e2e.rs`'s fake-volume `@eaDir` assertion and the network cover tests.
 
 **Decisions taken during execution that the spec did not pre-empt.**
+
+- **Superseding was GLOBAL, so an agent's search would have emptied a person's.** `live::register` marked every other
+  run superseded, which is right for one dialog asking one question at a time and wrong the moment a second asker
+  exists: an MCP call would have stopped the dialog's events mid-type, and `release_search_index` (the dialog closing)
+  would have cancelled an agent's walk out from under its caller. Fixed with `RunOrigin` — `Dialog` supersedes only
+  `Dialog`, and `cancel_all_live_runs_except` became `cancel_dialog_runs_except`. Only app quit reaches every origin.
+  The plan didn't see it because Decision 10 reads as "MCP needs nothing new", and it doesn't: it needs the registry to
+  stop assuming one asker.
+- **"Streaming and cancellation where the transport can carry them" resolves to two properties, not zero.** A one-shot
+  reply can't stream, but it can carry the rows that had arrived when the wait ran out (rather than nothing), and it can
+  decline to cancel: `AnswerEnding::StillWalking` hands back an answer and leaves the walk running, which is Decision
+  11's reasoning over a different transport. That's what makes "run the search again" honest advice rather than "start
+  over", and it's pinned by `an_agent_that_stops_waiting_does_not_stop_the_walk`.
+- **A wait budget is not the walk-versus-don't parameter Decision 10 forbids.** `maxWaitSeconds` cannot turn the walk
+  off and cannot make a search index-only; it only says how much of the walk to wait for. Without it an agent had no way
+  to finish a big frontier inside one call, and no way to keep a quick lookup quick.
+- **`ai_search`'s zero-results retry needed a gate it didn't have.** It re-runs the search with the LLM's scope dropped,
+  which over a live path means a second walk over more ground. It now retries only when the first run SETTLED (a run
+  still walking hasn't finished answering) and shares ONE deadline with it, so a fallback can't double the wait the
+  caller asked for.
 
 - **A `CoverWalk` can't be cancelled from anywhere but the thread reading it, so `Index::cover` takes the token.** The
   handle owns a `Receiver` and is therefore `!Sync`; every party that decides a walk should stop (a closing dialog,
@@ -530,11 +568,11 @@ walk runs (`0 → 34 → 91 → 124 → 169 → 200` over three seconds, sampled
   carried bare paths, so permission-denied and NAS snapshot trees were indistinguishable frontend-side (short of
   matching `@eaDir` by name, which the no-string-matching rule forbids) and M6 could only state the fact and name both
   possibilities. M8 needed to ACT on one, so `entries.known_unreadable` became `entries.unreadable_cause` (schema v16,
-  free: v15 never shipped) with an internal `UnreadableCause::{Denied, Declined}`; the local walker stamps `Denied` on
-  a permission-denied read and the trait walk stamps `Declined` on a NAS system dir; `CoverageMap` and
-  `SearchRunCoverage` carry `permission_denied` / `declined` as two lists, and the note renders two sentences. ❌ The
-  enum itself does NOT cross into `lib.rs`: two `Vec<String>` fields on an existing struct cost no root promise, and
-  the ceiling is David's to raise. The consumer partitions by cause anyway, so two lists is also the simpler render.
+  free: v15 never shipped) with an internal `UnreadableCause::{Denied, Declined}`; the local walker stamps `Denied` on a
+  permission-denied read and the trait walk stamps `Declined` on a NAS system dir; `CoverageMap` and `SearchRunCoverage`
+  carry `permission_denied` / `declined` as two lists, and the note renders two sentences. ❌ The enum itself does NOT
+  cross into `lib.rs`: two `Vec<String>` fields on an existing struct cost no root promise, and the ceiling is David's
+  to raise. The consumer partitions by cause anyway, so two lists is also the simpler render.
 - **A live walk's progress used to be only as live as its batches**, and the batch size is what made that visible: a
   `CoveredEntry` batch fills at 2 000 entries, so a walk over a sparse tree (one matching file per directory) reports
   `0 folders scanned` and no path for hundreds of directories. M6 saw it on a `~/Library` walk; M7 fixed it with
@@ -977,14 +1015,16 @@ Full Disk Access, route into the existing prompt rather than leaving someone wit
 Tests: the FDA route appears when the denial pattern matches and not otherwise. Written after. Docs:
 `lib/onboarding/CLAUDE.md`. Checks: `pnpm check desktop`.
 
-### M9. MCP stays a thin wrapper
+### M9. MCP stays a thin wrapper — LANDED
 
 Per Decision 10 there is no agent-specific policy left to add, so this milestone is mostly deletion and verification.
 
 - Drop the `ColdVolumePolicy::Wait` versus `DeferColdVolumes` split at the MCP boundary. Decision 4 removes the only
   situation it applied to (unscoped extra volumes), so both callers now take the same path with the same arguments.
+  **Already done**: M0 deleted the type with the fan-out, and nothing survived at the MCP boundary.
 - An agent search walks exactly like a person's, including streaming and cancellation semantics where the transport can
-  carry them.
+  carry them. **What that means over a one-shot reply**: the rows that had arrived when the wait ran out, and no cancel
+  (the walk keeps going). See the execution-status entries.
 - Keep the typed coverage signal in the MCP reply, which is the one thing MCP already rendered and the dialog did not.
 
 Tests: an agent search over a partially covered volume walks and returns the union, same as the dialog. Written after.

@@ -106,9 +106,7 @@ describe('ground the run did not read', () => {
   })
 
   it('keeps the two apart when a run met both', () => {
-    const text = noteText(
-      liveNote({ permissionDenied: ['/Users/me/Documents'], declined: ['/Volumes/naspi/@eaDir'] }),
-    )
+    const text = noteText(liveNote({ permissionDenied: ['/Users/me/Documents'], declined: ['/Volumes/naspi/@eaDir'] }))
     expect(text).toContain(tString('search.coverage.denied', { count: 1 }))
     expect(text).toContain(tString('search.coverage.declined', { count: 1 }))
   })

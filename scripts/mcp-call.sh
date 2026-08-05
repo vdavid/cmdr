@@ -32,7 +32,9 @@ set -euo pipefail
 #      bound yet (or crashed) — we want a clear error, not a connection to whatever
 #      happens to be listening on an old default.
 HOST="127.0.0.1"
-TIMEOUT=30
+# A search that walks an unindexed drive can hold its reply for up to
+# `maxWaitSeconds` (120 max), so the client has to outlast the server's own wait.
+TIMEOUT="${CMDR_MCP_TIMEOUT:-150}"
 
 resolve_data_dir() {
     # Mirrors computeAppDataDir() in apps/desktop/scripts/instance-id.ts.
@@ -110,6 +112,7 @@ case "${1:-}" in
         echo "  CMDR_INSTANCE_ID  Which instance's <data_dir> to discover from (default: dev)."
         echo "                    Worktree sessions ('pnpm dev --worktree foo') use dev-foo."
         echo "  CMDR_DATA_DIR     Overrides the data-dir derivation entirely."
+        echo "  CMDR_MCP_TIMEOUT  Seconds to wait for a reply (default 150; search can hold one for 120)."
         echo ""
         echo "Examples:"
         echo "  ./scripts/mcp-call.sh search '{\"pattern\":\"*.pdf\",\"limit\":5}'"
@@ -155,17 +158,57 @@ BASE_URL="http://${HOST}:${PORT}/mcp"
 # Track JSON-RPC request ID
 ID=1
 
+# Send one JSON-RPC body. Prints the response on stdout and, when the call didn't
+# land, an explanation on stderr naming WHICH way it failed. Returns curl's exit
+# code, or 22 for an HTTP error status.
+#
+# ❌ Don't collapse this back to `curl -sf … 2>/dev/null`: it turned every failure
+# (nothing listening, a stale port file, an HTTP 403, a wrong instance) into the
+# same "not reachable" line, which is a dead end for whoever is debugging.
 rpc() {
-    local body="$1"
-    curl -sf --max-time "$TIMEOUT" -X POST "$BASE_URL" \
+    local body="$1" response status curl_status
+    response=$(curl -s --max-time "$TIMEOUT" -w '\n%{http_code}' -X POST "$BASE_URL" \
         -H 'Content-Type: application/json' \
         -H "Authorization: Bearer ${TOKEN}" \
-        -d "$body" 2>/dev/null
+        -d "$body")
+    curl_status=$?
+    if [[ $curl_status -ne 0 ]]; then
+        explain_unreachable "$curl_status"
+        return "$curl_status"
+    fi
+    status="${response##*$'\n'}"
+    response="${response%$'\n'*}"
+    if [[ "$status" != 2* ]]; then
+        echo "Error: the MCP server answered HTTP ${status} at ${BASE_URL}." >&2
+        echo "  Response: ${response}" >&2
+        echo "  A 401/403 usually means the token in ${DATA_DIR}/mcp.token is from an older run; restart Cmdr or re-read it." >&2
+        return 22
+    fi
+    printf '%s' "$response"
+}
+
+# Say what a failed connection most likely means. Connection-refused is the one
+# that has actually bitten: a worktree instance restarts on every Rust edit, so a
+# port file left behind by a dead run points at nothing.
+explain_unreachable() {
+    local curl_status="$1"
+    echo "Error: couldn't reach the MCP server at ${BASE_URL} (curl exit ${curl_status})." >&2
+    echo "  Instance data dir: ${DATA_DIR}" >&2
+    if [[ $curl_status -eq 7 ]]; then
+        echo "  Nothing is listening on port ${PORT}. Either Cmdr isn't running for this instance, or the port" >&2
+        echo "  file is stale: the server takes a fresh ephemeral port every launch, and 'pnpm dev' relaunches" >&2
+        echo "  the app on every Rust edit. Check with:" >&2
+        echo "    pgrep -fl Cmdr    and    cat '${DATA_DIR}/mcp.port'" >&2
+        echo "  For a worktree session, start it with: pnpm dev --worktree <slug>" >&2
+    elif [[ $curl_status -eq 28 ]]; then
+        echo "  The request timed out after ${TIMEOUT}s. A search that walks an unindexed drive can take longer;" >&2
+        echo "  raise it with CMDR_MCP_TIMEOUT, or pass a smaller maxWaitSeconds." >&2
+    fi
 }
 
 rpc_pretty() {
     local result
-    result=$(rpc "$1") || { echo "Error: MCP server not reachable at ${BASE_URL}" >&2; exit 1; }
+    result=$(rpc "$1") || exit 1
 
     if command -v jq &>/dev/null; then
         echo "$result" | jq .
@@ -181,7 +224,7 @@ init() {
 {"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"mcp-call","version":"1.0"}}}
 JSON
     )
-    rpc "$body" >/dev/null 2>&1 || { echo "Error: MCP server not reachable at ${BASE_URL}" >&2; exit 1; }
+    rpc "$body" >/dev/null || exit 1
 }
 
 case "${1:-}" in

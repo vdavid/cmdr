@@ -259,6 +259,32 @@ covered comes back to the next query from the index, not from a replay buffer.
 Ground a live walk already holds is reported as `still_covering` rather than walked twice (one walk per patch of
 ground, `lifecycle/cover/live.rs`); those rows reach the same index, so it means "these arrive a bit later".
 
+Superseding is scoped by `RunOrigin`, because it only makes sense for an asker that RETYPES. The dialog is one such
+asker; an MCP call is not. So a `Dialog` run supersedes the dialog's previous run and nothing else, and closing the
+dialog (`cancel_dialog_runs_except`) stops only the dialog's. Without the split, an agent's search would have emptied a
+person's mid-type, and a person closing the dialog would have cancelled an agent's walk out from under its caller.
+Only `cancel_all_live_runs` (app quit) reaches every origin.
+
+### Decision 10: an agent's search over a one-shot transport
+
+`run_live_collected` is the live run for a caller that can't subscribe to events. Same routing, same coverage question,
+same arena, same walk, same matcher; the only difference is `CollectingSink` (`live/collect.rs`), which folds the event
+stream into one `LiveAnswer`. ❌ There is no walk-versus-don't parameter and no agent-specific policy — MCP takes the
+same path a person's search does.
+
+What survives the flattening, and why each half matters:
+
+- **The rows are whatever had arrived** when the wait ran out, with the walk's own progress attached, rather than an
+  empty list. The fold is bounded by the query's row cap (`ResultStream` emits at most `limit` rows for a whole run),
+  so a fold that outlives its reader can't grow.
+- **Returning is not cancelling.** `AnswerEnding::StillWalking` says the walk is still going; its rows land in the
+  index either way, so the same search run again continues from where it left off. That's Decision 11's reasoning over
+  a different transport: walking is coverage work, and coverage work outlives the query that asked for it.
+
+The wait comes from the tool's `maxWaitSeconds` (`AGENT_WAIT_DEFAULT` 20 s, `AGENT_WAIT_MAX` 120 s). It's a transport
+knob: it says how much of the walk to wait for, never whether to walk. The MCP reply renders the typed coverage signal
+above the results (`mcp/executor/search.rs::coverage_note`), including M8's two unreadable lists.
+
 ### Why the walk handle never leaves its thread
 
 `CoverWalk` owns a `Receiver`, so it's `!Sync`. `drive_walk` gives it to a thread whose only job is blocking on it and
@@ -275,7 +301,8 @@ and notice a cancel without polling. Cancelling goes through the `CancellationTo
   reports `cancelled` and we know we didn't ask), a root couldn't be walked (`roots_covered` short of what it took), or
   the volume couldn't be walked at all. `ScanError::RootUnlistable` is volume-root-only, so a subtree walk needs
   exactly this derivation.
-- **`Cancelled`** — Escape, the dialog closing, or the app quitting (`RunEvent::Exit` cancels every run).
+- **`Cancelled`** — Escape, the dialog closing, or the app quitting (`RunEvent::Exit` cancels every run). For an
+  agent's run only the last of those applies: handing an MCP caller its answer never cancels the walk behind it.
 
 None of them can leave coverage claiming completeness: a directory is marked listed only once its rows are written
 (`scanner/CLAUDE.md` § "Honest-stale, never false-complete"), so a walk cut off anywhere claims only what it read.

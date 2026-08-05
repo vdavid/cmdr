@@ -29,9 +29,9 @@ the shared `extract_metadata` primitive at `../metadata.rs` (documented in the [
 - **heartbeat.rs** — what a cover walk reports about itself between batches. **live_emit.rs** — `EmitPacer`, when a
   partial batch of found entries goes to a live consumer anyway (see "The cadence" below).
 - **convergence_tests.rs** — what a walk leaves behind when it doesn't finish. `heartbeat_tests.rs` and
-  `live_emit_tests.rs` cover the two live-consumer facts. `test_fixtures.rs` holds the writer / temp-tree /
-  mock-reader fixtures every test module builds on, including the `ReadGate` that parks one read so a test can look at
-  a walk that is genuinely still running.
+  `live_emit_tests.rs` cover the two live-consumer facts. `test_fixtures.rs` holds the writer / temp-tree / mock-reader
+  fixtures every test module builds on, including the `ReadGate` that parks one read so a test can look at a walk that
+  is genuinely still running.
 - **walker/** — the hang-tolerant engine (`walk`, `std_read_dir`, the `DirVisitor` trait, `DirTask` / `RawDirEntry` /
   `WalkReadError` / `WalkConfig` types, the watchdog, the progress-timeout verdict, the `SubtreeBudget` give-up budget)
   plus `bulk_read` (the `getattrlistbulk`-batched `bulk_read_dir` used in production on macOS). Tests are in
@@ -177,8 +177,8 @@ sender and **keeps walking**: walking is coverage work, and its rows are in the 
 ### The cadence: 2 000 entries, or 100 ms
 
 A batch that only ever went out full is the right size for the crossing and the wrong one for the wait. A search over a
-sparse tree (one matching file per directory, which is what most searches look like) finds rows the whole time and
-shows none until the walk is nearly done: measured on a 1 642-directory disk image, no rows until the end.
+sparse tree (one matching file per directory, which is what most searches look like) finds rows the whole time and shows
+none until the walk is nearly done: measured on a 1 642-directory disk image, no rows until the end.
 
 So `live_emit.rs`'s `EmitPacer` gives the pending batch a deadline, `EMIT_INTERVAL` (100 ms) from the moment its FIRST
 row lands. Two places consult it, and both walkers own one:
@@ -196,9 +196,9 @@ it.
 
 ❌ Don't shrink the batch to the interval's worth of rows instead. The channel is bounded on purpose (Decision 3), and
 100 entries per crossing would spend that bound on chatter. ❌ Don't make the tick unconditional either: the deadline is
-what keeps a full scan (no consumer, so nothing ever waiting) from paying for a clock read per entry. 100 ms is the
-rate search's own `ResultStream` emits at (`apps/desktop/src-tauri/src/search/live.rs`), so the pipe has one cadence
-end to end rather than two that beat against each other.
+what keeps a full scan (no consumer, so nothing ever waiting) from paying for a clock read per entry. 100 ms is the rate
+search's own `ResultStream` emits at (`apps/desktop/src-tauri/src/search/live.rs`), so the pipe has one cadence end to
+end rather than two that beat against each other.
 
 ## The guarded local walker (`scanner/walker/`)
 

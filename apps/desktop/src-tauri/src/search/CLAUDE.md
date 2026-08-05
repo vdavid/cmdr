@@ -7,10 +7,10 @@ unscoped means the boot volume. Flat API: `use crate::search::{SearchQuery, ...}
 
 - `index.rs`: the arena-backed `SearchIndex`. `volumes.rs` (+ `volumes/weights.rs`): per-volume registry, drop timers,
   `ensure_volume(id)`, importance weights.
-- `execute.rs`: `run_blocking(query)` (route → load → engine) and `start_live(...)` (that, plus a walk over what the
-  index can't answer for). `live.rs` (+ `live/events.rs`): the runs in flight, the result batching, the walk pump.
-  `engine.rs`: `search_ranked()`. `matcher.rs`: the compiled query. `excludes.rs`: the scope exclusions.
-  `ranking.rs`: the quality/importance blend.
+- `execute.rs`: `run_blocking` (route → load → engine), `start_live` (that, plus a walk over what the index can't
+  answer for), `run_live_collected` (the same live run, folded into one reply for MCP). `live.rs` (+ `live/events.rs`,
+  `live/collect.rs`): the runs in flight, the batching, the walk pump, the fold. `engine.rs`: `search_ranked()`.
+  `matcher.rs`: the compiled query. `excludes.rs`: the scope exclusions. `ranking.rs`: the quality/importance blend.
 - `types.rs`: pure data. `query.rs`: operations on it. `history.rs`: recent searches. `ai/`: NL → `SearchQuery`
   (`ai/CLAUDE.md`).
 
@@ -22,13 +22,16 @@ unscoped means the boot volume. Flat API: `use crate::search::{SearchQuery, ...}
 - **One matcher and one exclusion set, two evaluators each**: `matcher.rs` (name/type/size/date) and `excludes.rs`
   (`excludeDirNames` + the system tier) serve the arena scan (ancestor IDS) and a live walk (the entry's own PATH). ❌
   Never re-derive case folding or NFD normalization elsewhere: that fork is how an unindexed drive answers differently.
-  ❌ In neither: directory sizes (`dir_stats`, after ranking), the include-root filter. The broad-query guard is per
-  evaluator: a walk refuses, and takes the whole RUN with it rather than answering from the index and looking complete.
+  ❌ In neither: directory sizes, the include-root filter. The broad-query guard IS per evaluator: a walk refuses and
+  takes the whole RUN with it, rather than answering from the index and looking complete.
 - **A live search asks coverage BEFORE loading the arena, and reloads when a walk wrote behind it** (Decision 12):
   "covered" promises the arena holds those rows, and breaking it makes the NEXT query return fewer, silently. Both
   guards matter (walk mark, coverage token). Superseding a run ≠ cancelling: events stop, the walk runs on, the driver
   keeps draining. Cancel = dialog close (which SPARES `release_search_index`'s `keep_run_id`, the run a pane is being
   fed by), Escape, quit; ❌ never the arena idle-drop. `DETAILS.md` § "A live search".
+- **MCP takes the SAME live run, folded into one reply** (`run_live_collected`): no walk-versus-don't parameter
+  (Decision 10), and its wait is a transport budget — when it runs out the walk KEEPS GOING. ❌ Superseding and the
+  dialog close reach `RunOrigin::Dialog` only: an agent's run must not silence a person's, or the reverse.
 - **One volume is the CEILING, enforced at the API** (`resolve_target` returns one target or `ScopeError`), not just in
   the UI. ❌ Don't reintroduce a fan-out: the only way a search can silently omit a drive
   (`docs/specs/unindexed-search-plan.md` Decision 4).
@@ -38,9 +41,10 @@ unscoped means the boot volume. Flat API: `use crate::search::{SearchQuery, ...}
 - **Progress comes off the WALK's heartbeat, not its batches** (which fill at 2 000 entries, so they read as frozen).
   And `walk: Completed` ≠ exhaustive: `abandoned_ground` is the third way short, ❌ never folded into `Interrupted`
   (= the drive went away).
-- **Honesty is TYPED**: branch on `uncovered_scopes` (unindexed volume) / `unresolved_scopes` (path not in the index),
-  ❌ never a string match. `target_volume_id` names the volume routing picked, so callers act on the right drive.
-  `unresolved_scopes` can't tell a typo from a not-yet-walked folder: ❌ don't word it "doesn't exist".
+- **Honesty is TYPED**, ❌ never a string match: `uncovered_scopes` (unindexed volume, index-only runs only — a live
+  run walks it instead), `unresolved_scopes` (path not in the index), and a live run's whole `SearchRunCoverage`.
+  `target_volume_id` names the volume routing picked. `unresolved_scopes` can't tell a typo from a not-yet-walked
+  folder: ❌ don't word it "doesn't exist".
 - **`prepare_search_index`'s `loading` says whether an event is COMING.** `loading: false, ready: false` is the terminal
   "no index here"; without it a machine that declined indexing waits forever.
 - **An SMB id keys on the ADDRESS**, so one NAS reached over both Tailscale and LAN has two index DBs both claiming

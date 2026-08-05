@@ -73,7 +73,19 @@ connects independently and works regardless of the session's MCP state.
 
 # Discover available tools and their parameter schemas
 ./scripts/mcp-call.sh --list-tools
+
+# A worktree session: name the instance, or it discovers the plain "dev" one
+CMDR_INSTANCE_ID=dev-<slug> ./scripts/mcp-call.sh --list-tools
 ```
+
+**When it says it couldn't reach the server, read the rest of the message.** It names the data dir it resolved, the
+port, and curl's own verdict; a `curl exit 7` (nothing listening) on a worktree almost always means the port file is
+stale, because the server takes a fresh ephemeral port every launch and `pnpm dev` relaunches the app on every Rust
+edit. `pgrep -fl Cmdr` plus `cat "<data_dir>/mcp.port"` settles it in one step. An HTTP status instead means the request
+landed and was refused, and the message carries the body.
+
+`search` and `ai_search` can hold a reply for their whole `maxWaitSeconds` (up to 120), so the script waits 150 s by
+default; `CMDR_MCP_TIMEOUT` moves it.
 
 ## Authentication (token-gated tools)
 
@@ -156,6 +168,18 @@ driver_session action: "start", port: <that number>
 
 (Per-worktree dev sessions live at `…/com.veszelovszki.cmdr-dev-<slug>/tauri-mcp.port`; prod at the non-`-dev` data
 dir.) Use `driver_session action: "status"` to check, `"stop"` to disconnect.
+
+### After an app restart, `stop` the session before starting a new one
+
+Across an app restart every `webview_*` call fails with an EMPTY error, and re-pointing the session at the new port on
+its own doesn't fix it: the session has to be torn down and rebuilt (`driver_session action: "stop"`, then `"start"`
+with the port re-read from `tauri-mcp.port`). The bridge is a third-party plugin (`tauri-plugin-mcp-bridge`) talking to
+an external MCP server, so neither end of that handshake is Cmdr's code to fix; the empty error is the whole symptom.
+
+Note the port really does move: the wrapper allocates a fresh ephemeral bridge port per `pnpm dev` launch
+(`tauri-wrapper.ts`, `pickEphemeralPort`), so a session started before a restart is pointing at a dead socket. A watcher
+rebuild (a Rust edit) keeps the port, since the child process inherits `CMDR_MCP_BRIDGE_PORT`; a full `pnpm dev` restart
+does not.
 
 ### Window management: use `manage_window`, not JS APIs
 

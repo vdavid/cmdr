@@ -93,7 +93,10 @@ pub fn format_search_results(rows: &[SearchResultEntry], total_count: u32, limit
     let max_parent = entries.iter().map(|e| e.parent_path.len()).max().unwrap_or(0).max(4);
 
     let mut lines = Vec::with_capacity(entries.len() + 1);
-    lines.push(format!("{shown} of {total_count} results:"));
+    lines.push(format!(
+        "{shown} of {}:",
+        crate::pluralize::pluralize(u64::from(total_count), "result")
+    ));
 
     for entry in entries {
         let display_name = if entry.is_directory {

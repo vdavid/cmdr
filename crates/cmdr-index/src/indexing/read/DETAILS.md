@@ -186,8 +186,8 @@ Both epoch fields plus `entries.unreadable_cause`. Descending from the scope roo
   `Denied` on a permission-denied read (tried, can't), and the trait cover walk stamps `Declined` on a NAS snapshot
   directory (won't, ever — `../network_scanner/DETAILS.md`). Either way nothing is coming for that subtree, so offering
   it as frontier would be a promise no walk keeps. The two answers stay APART all the way to the screen
-  (`CoverageMap::permission_denied` / `::declined`): only the first is something a user can act on, and "grant Full
-  Disk Access" over a snapshot folder is advice that does nothing.
+  (`CoverageMap::permission_denied` / `::declined`): only the first is something a user can act on, and "grant Full Disk
+  Access" over a snapshot folder is advice that does nothing.
 - `listed_epoch == 0` ⇒ **frontier**. Cut; the subtree goes to the walk.
 - No `entries` row at all (a cold volume, or a path this index has never seen) ⇒ the scope root is the whole frontier.
 

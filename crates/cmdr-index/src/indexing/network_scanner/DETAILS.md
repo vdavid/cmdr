@@ -288,12 +288,12 @@ exactly four places, all of them consequences of a person having asked:
   directory in its own right, have its children written under that id, and then lose the row the id belonged to —
   orphaning everything below it. The name check makes it "keep the first, log the rest". Pinned by
   `cover::network_tests::a_same_name_sibling_keeps_the_first_row_rather_than_orphaning_a_subtree`.
-- **NAS system directories are stamped `unreadable_cause = Declined`, not left unlisted.** Both whole-volume walks index such a
-  directory's own row and refuse its subtree, which leaves it at `listed_epoch = 0` — and that is precisely what the
-  descent rule calls FRONTIER, so a search over a NAS would be handed the hardlinked per-snapshot tree this area exists
-  to keep the walk out of. Marking it says "nothing is coming for this subtree", which is what the column means and what
-  a user is owed; the descent rule needs no new case and no per-kind branch. The mark survives because nothing ever
-  lists the directory (`mark_dirs_listed` is what clears it), and a change to the name list re-arms the whole index
+- **NAS system directories are stamped `unreadable_cause = Declined`, not left unlisted.** Both whole-volume walks index
+  such a directory's own row and refuse its subtree, which leaves it at `listed_epoch = 0` — and that is precisely what
+  the descent rule calls FRONTIER, so a search over a NAS would be handed the hardlinked per-snapshot tree this area
+  exists to keep the walk out of. Marking it says "nothing is coming for this subtree", which is what the column means
+  and what a user is owed; the descent rule needs no new case and no per-kind branch. The mark survives because nothing
+  ever lists the directory (`mark_dirs_listed` is what clears it), and a change to the name list re-arms the whole index
   anyway. A frontier rooted AT one is marked and refused without a single round trip, which is what heals an index built
   before this rule. ❌ The cause is `Declined`, never `Denied`: nobody refused us here, and a user offered Full Disk
   Access over a snapshot tree would be sent to fix something that isn't broken.

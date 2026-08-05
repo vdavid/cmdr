@@ -253,7 +253,7 @@ fn test_format_search_results_with_entries() {
         entry_id: 1,
     }];
     let formatted = format_search_results(&rows, 1, 30);
-    assert!(formatted.contains("1 of 1 results:"));
+    assert!(formatted.contains("1 of 1 result:"), "and never \"1 of 1 results\"");
     assert!(formatted.contains("test.pdf"));
     assert!(formatted.contains("~/Documents"));
 }

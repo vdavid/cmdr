@@ -12,8 +12,12 @@ Depth for the MCP tool-execution layer. `CLAUDE.md` holds the must-knows.
 - **`dialogs.rs`**: unified `dialog` tool: open / focus / close / confirm for settings, file-viewer, about, and
   confirmation dialogs.
 - **`async_tools.rs`**: `await`, `connect_to_server`, `remove_manual_server`, `upgrade_smb_to_direct`, `set_setting`.
-- **`search.rs`**: `search` (drive index), `ai_search` (LLM-driven), and the lazy-load of the search index via
-  `spawn_blocking`.
+- **`search.rs`**: `search` and `ai_search` (LLM-driven), both a thin wrapper on `search::run_live_collected` — the
+  SAME live run the dialog starts, walking whatever the index doesn't cover, folded into one reply because a tool call
+  can't carry a stream (`search/DETAILS.md` § "Decision 10"). ❌ No walk-versus-don't parameter. `maxWaitSeconds` is a
+  transport budget only: when it runs out the reply carries what had arrived plus a typed note, and the walk keeps
+  going. `coverage_note` renders the typed coverage signal above the results, including the two unreadable lists
+  (a refused folder offers Full Disk Access when granting it would help; a declined snapshot tree explains instead).
 - **`downloads.rs`**: `go_to_latest_download` (resolves via `downloads::commands::go_to_latest_download`, then
   `mcp-nav-to-path` + `mcp-move-cursor`).
 - **`operation_log.rs`**: `operations_list`, `operations_get` (short-lived read-only connection over the query API,
