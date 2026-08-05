@@ -68,12 +68,15 @@ buried. It is meant to be complete; anything found later belongs here.
 8. **Media, OCR, and semantic search stay empty.** The walk writes the drive index only, never `media_index`, so photo
    and OCR search on a walked-but-unindexed drive returns nothing. Signalled by the existing
    `search.imageResults.notIndexed` copy, so no new work, but it is a difference.
-9. **A walk that ran to completion can still be short.** The parallel walker abandons a directory that stops producing
-   at `LOCAL_LIST_TIMEOUT`, and under rayon contention that left an index about 10% short on a measured run, skipping
-   exactly the large directories people care about (`reconcile/DETAILS.md:25-31`,
-   `docs/notes/indexing-benchmarks-2026-07-21.md`). Coverage stays honest, since an abandoned directory is never marked
-   listed, so the frontier re-offers it next search. But the result list of that run is short without being labelled so,
-   which is why M6 labels it alongside the interrupted states.
+9. **A walk that ran to completion can still be short**, though far less often than an earlier draft of this register
+   claimed. The parallel walker abandons a directory that stops producing at `LOCAL_LIST_TIMEOUT`, or gives up after 32
+   consecutive failed reads. The measured case where that cost ~10% of rows was a phone's File Provider mount inside a
+   whole-`/` scan, **not** general machine load: the walker has never used rayon, and M3a measured zero abandonments
+   across four real trees up to 1.2M entries (`reconcile/DETAILS.md`, `docs/notes/cover-walk-primitive-2026-08-05.md`).
+   A scoped walk only meets that shape when the scope itself contains an unresponsive mount. Coverage stays honest
+   either way, since an abandoned directory is never marked listed, so the frontier re-offers it next search. But the
+   result list of that run is short without being labelled so, which is why M6 labels it alongside the interrupted
+   states.
 10. **The master-switch settings note becomes inaccurate, deliberately.** `settings.indexing.masterOffNote` says "no
     drive is indexed and folder sizes stay hidden"; once a search writes coverage, folder sizes appear for walked
     branches. David reviewed this and chose to leave the copy as-is. ❌ Don't "fix" it without asking him.
