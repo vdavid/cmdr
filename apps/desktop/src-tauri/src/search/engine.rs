@@ -1,6 +1,11 @@
 //! Pure search execution: no I/O, no DB access.
 //!
 //! Takes an `&SearchIndex` + `&SearchQuery`, scans in-memory with rayon, and returns results.
+//!
+//! The per-entry predicates (name pattern, type, size, date) are NOT here: they're a
+//! [`CompiledQuery`](super::matcher::CompiledQuery), so a live walk over unindexed
+//! ground evaluates the same rules this scan does. What stays here is arena-shaped:
+//! the scope filter's ancestor walk, ranking, and path reconstruction.
 
 use std::collections::HashSet;
 
@@ -10,9 +15,10 @@ use regex::{Regex, RegexBuilder};
 use cmdr_index::store::{self, ROOT_ID};
 
 use super::index::SearchIndex;
+use super::matcher::{Candidate, CompiledQuery, Evaluator};
 use super::query::{SYSTEM_DIR_EXCLUDES, glob_to_regex, summarize_query};
 use super::ranking::{self, ImportanceWeights};
-use super::types::{PatternType, SearchQuery, SearchResultEntry};
+use super::types::{SearchQuery, SearchResultEntry};
 
 // ── Scope filter (pre-resolved for the hot loop) ─────────────────────
 
@@ -124,8 +130,12 @@ impl ScopeFilter {
     }
 }
 
-/// Pre-resolve scope filter data from the query and index.
-fn prepare_scope_filter(query: &SearchQuery) -> ScopeFilter {
+/// Pre-resolve scope filter data from the query.
+///
+/// `case_insensitive` comes from the compiled query rather than being derived again:
+/// excluding under a different alphabet than the pattern matched with is the kind of
+/// silent disagreement `matcher.rs` exists to prevent.
+fn prepare_scope_filter(query: &SearchQuery, case_insensitive: bool) -> ScopeFilter {
     // Use pre-resolved include path IDs (resolved via SQLite before search())
     let include_ids = if let Some(ref ids) = query.include_path_ids {
         if ids.is_empty() {
@@ -146,12 +156,6 @@ fn prepare_scope_filter(query: &SearchQuery) -> ScopeFilter {
     let mut exclude_exact_names = HashSet::new();
     let mut exclude_name_patterns = Vec::new();
     let mut exclude_path_prefixes = Vec::new();
-
-    let case_insensitive = match query.case_sensitive {
-        Some(true) => false,
-        Some(false) => true,
-        None => cfg!(target_os = "macos"),
-    };
 
     // User-specified excludes: wildcards → regex, plain names → exact HashSet
     if let Some(ref patterns) = query.exclude_dir_names {
@@ -234,64 +238,18 @@ pub(crate) fn search_ranked(
 ) -> Result<(Vec<SearchResultEntry>, u32), String> {
     let t = std::time::Instant::now();
 
-    // Case-folding rule (shared by pattern matching and ranking): platform default
-    // is insensitive on macOS, sensitive on Linux, overridable per query.
-    let case_insensitive = match query.case_sensitive {
-        Some(true) => false,
-        Some(false) => true,
-        None => cfg!(target_os = "macos"),
-    };
-
-    // Guard: reject unfiltered scans on large indexes. Without a namePattern,
-    // size filter, or directory filter, we'd scan every entry (~60s for 5M entries).
-    let has_name = query.name_pattern.as_ref().is_some_and(|p| !p.is_empty());
-    let has_size = query.min_size.is_some() || query.max_size.is_some();
-    let has_date = query.modified_after.is_some() || query.modified_before.is_some();
-    let has_dir_filter = query.is_directory.is_some();
-    if !has_name && !has_size && !has_dir_filter && !has_date && index.entries.len() > 100_000 {
-        return Err(
-            "Query too broad. Add a filename pattern, size, date, or type filter to narrow results.".to_string(),
-        );
-    }
+    // The per-entry predicates, plus the broad-query guard this arena's size earns.
+    let compiled = CompiledQuery::compile(
+        query,
+        Evaluator::Arena {
+            entries: index.entries.len(),
+        },
+    )
+    .map_err(|e| e.to_string())?;
+    let case_insensitive = compiled.case_insensitive();
 
     // Pre-resolve scope filter
-    let scope_filter = prepare_scope_filter(query);
-
-    // Compile pattern
-    let compiled_pattern = match &query.name_pattern {
-        Some(pattern) if !pattern.is_empty() => {
-            // On macOS, NFD-normalize the pattern before conversion/compilation.
-            // APFS filenames are stored in NFD, so matching a NFD-normalized pattern
-            // against `name` with case_insensitive(true) gives correct results
-            // without needing a separate `name_folded` field.
-            #[cfg(target_os = "macos")]
-            let pattern = {
-                use unicode_normalization::UnicodeNormalization;
-                pattern.nfd().collect::<String>()
-            };
-            let regex_str = match query.pattern_type {
-                PatternType::Glob => {
-                    // If the user typed a plain string without wildcards, wrap it
-                    // in `*...*` so it behaves as a contains/substring match.
-                    // This matches the UX of Total Commander, Double Commander,
-                    // and most file-search dialogs: typing "tes" finds "test.rs".
-                    let glob = if !pattern.contains('*') && !pattern.contains('?') {
-                        format!("*{pattern}*")
-                    } else {
-                        pattern.to_string()
-                    };
-                    glob_to_regex(&glob)
-                }
-                PatternType::Regex => pattern.to_string(),
-            };
-            let re = RegexBuilder::new(&regex_str)
-                .case_insensitive(case_insensitive)
-                .build()
-                .map_err(|e| format!("Invalid pattern: {e}"))?;
-            Some(re)
-        }
-        _ => None,
-    };
+    let scope_filter = prepare_scope_filter(query, case_insensitive);
 
     // Parallel scan: collect matching indices
     let matching_indices: Vec<usize> = index
@@ -304,50 +262,13 @@ pub(crate) fn search_ranked(
                 return false;
             }
 
-            // Name pattern filter
-            if let Some(ref re) = compiled_pattern
-                && !re.is_match(
-                    &index.names[entry.name_offset as usize..entry.name_offset as usize + entry.name_len as usize],
-                )
-            {
+            if !compiled.matches(&Candidate {
+                name: index.name(entry),
+                is_directory: entry.is_directory,
+                size: entry.size,
+                modified_at: entry.modified_at,
+            }) {
                 return false;
-            }
-
-            // Directory filter
-            if let Some(is_dir) = query.is_directory
-                && entry.is_directory != is_dir
-            {
-                return false;
-            }
-
-            // Size filters (for files only; directories get sizes later)
-            if !entry.is_directory {
-                if let Some(min) = query.min_size {
-                    match entry.size {
-                        Some(s) if s >= min => {}
-                        _ => return false,
-                    }
-                }
-                if let Some(max) = query.max_size {
-                    match entry.size {
-                        Some(s) if s <= max => {}
-                        _ => return false,
-                    }
-                }
-            }
-
-            // Date filters
-            if let Some(after) = query.modified_after {
-                match entry.modified_at {
-                    Some(t) if t >= after => {}
-                    _ => return false,
-                }
-            }
-            if let Some(before) = query.modified_before {
-                match entry.modified_at {
-                    Some(t) if t <= before => {}
-                    _ => return false,
-                }
             }
 
             // Scope filter (ancestor walk): only for entries passing all other filters

@@ -13,6 +13,7 @@ pub(crate) mod engine;
 pub(crate) mod execute;
 pub mod history;
 pub(crate) mod index;
+pub(crate) mod matcher;
 pub(crate) mod query;
 pub(crate) mod ranking;
 pub(crate) mod types;
