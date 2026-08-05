@@ -17,23 +17,17 @@ unscoped means the boot volume. Flat API: `use crate::search::{SearchQuery, ...}
 ## Must-knows
 
 - **Three purity rules**: `engine.rs` is PURE (no I/O, no DB); `types.rs` stays free of logic; `search/` consumes
-  `indexing/` ONE WAY, ❌ never the reverse. The nuance a live search adds: it can ASK indexing to cover ground
-  (`Index::cover`) and then read what that wrote. Still one way (a call out through the handle, data back), and ❌ still
-  no matcher, no query, and no search type inside `cmdr-index`.
-- **One matcher, two evaluators**: `matcher.rs`'s `CompiledQuery` owns the name/type/size/date predicates and
-  `excludes.rs`'s `ExcludeRules` owns `excludeDirNames` + the system tier, both for the arena scan AND a live walk's
-  batches (arena: an ancestor-id walk; live: the entry's own path components). ❌ Never re-derive case folding or NFD
-  normalization elsewhere: that fork is how an unindexed drive starts answering differently. ❌ Not in either:
-  directory sizes (`dir_stats`, after ranking), the include-root filter. The broad-query guard is per evaluator; a walk
-  refuses outright, and a run whose frontier needs walking is refused with it rather than answering from the index and
-  looking complete.
-- **A live search asks for coverage BEFORE it loads the arena, and reloads when a walk wrote behind it** (Decision 12).
-  A coverage answer calling a subtree covered is a promise the arena holds its rows; break it and the next query
-  silently returns FEWER results. Both guards are needed: the walk mark (a background indexer must not trigger a
-  rebuild) and the token (a walk that wrote nothing must not either). `DETAILS.md` § "A live search".
-- **Superseding a run is not cancelling it**: its events stop, its walk runs on filling the index, and its driver keeps
-  draining (the walk's channel is bounded). Cancelling is the dialog closing, Escape, or app quit. ❌ Don't tie a
-  walk's lifetime to the arena idle-drop.
+  `indexing/` ONE WAY, ❌ never the reverse. A live search may ASK for a walk (`Index::cover`) and read what it wrote —
+  still one way out through the handle; ❌ still no matcher, query, or search type inside `cmdr-index`.
+- **One matcher and one exclusion set, two evaluators each**: `matcher.rs` (name/type/size/date) and `excludes.rs`
+  (`excludeDirNames` + the system tier) serve the arena scan (ancestor IDS) and a live walk (the entry's own PATH). ❌
+  Never re-derive case folding or NFD normalization elsewhere: that fork is how an unindexed drive answers differently.
+  ❌ In neither: directory sizes (`dir_stats`, after ranking), the include-root filter. The broad-query guard is per
+  evaluator: a walk refuses, and takes the whole RUN with it rather than answering from the index and looking complete.
+- **A live search asks coverage BEFORE loading the arena, and reloads when a walk wrote behind it** (Decision 12):
+  "covered" promises the arena holds those rows, and breaking it makes the NEXT query return fewer, silently. Both
+  guards matter (walk mark, coverage token). Superseding a run ≠ cancelling: events stop, the walk runs on, the driver
+  keeps draining. Cancel = dialog close, Escape, quit; ❌ never the arena idle-drop. `DETAILS.md` § "A live search".
 - **One volume is the CEILING, enforced at the API** (`resolve_target` returns one target or `ScopeError`), not just in
   the UI. ❌ Don't reintroduce a fan-out: the only way a search can silently omit a drive
   (`docs/specs/unindexed-search-plan.md` Decision 4).

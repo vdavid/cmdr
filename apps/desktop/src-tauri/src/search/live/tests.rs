@@ -229,7 +229,10 @@ fn a_query_refined_mid_walk_drops_the_batches_and_keeps_the_walk() {
     // run that stopped reading would park the walk it isn't allowed to stop.
     let _serialized = test_registry_lock();
     let first = register("run-1", "supersede-volume");
-    let q = SearchQuery { limit: 1000, ..query("report") };
+    let q = SearchQuery {
+        limit: 1000,
+        ..query("report")
+    };
     let sink = Arc::new(CollectorSearchEventSink::default());
     let judged = Judged::new(&q);
     let (tx, rx) = sync_channel(8);
@@ -390,6 +393,29 @@ fn the_cap_stops_the_rows_and_never_the_walk() {
     let complete = driven.sink.complete.lock_ignore_poison();
     assert_eq!(complete[0].match_count, 6, "and a count that kept rising past them");
     assert!(complete[0].coverage.capped);
+}
+
+#[test]
+fn the_cap_covers_the_index_half_too() {
+    // The engine truncates its own slice, so this guard never fires in
+    // production — which is exactly why it's asserted here. `add_indexed` is what
+    // the covered half arrives through, and a stream that trusted its caller's
+    // length would emit past the cap the moment one changed.
+    let run = run_for_test("indexed-cap");
+    let q = SearchQuery { limit: 2, ..query("f") };
+    let sink = CollectorSearchEventSink::default();
+    let mut stream = ResultStream::new(&run, &sink, &q);
+
+    let rows: Vec<SearchResultEntry> = (0..5).map(|i| indexed_row(&format!("/covered/f{i}.txt"))).collect();
+    stream.add_indexed(rows, 5);
+
+    assert_eq!(sink.rows().len(), 2, "two rows, as asked");
+    assert!(stream.capped());
+    assert_eq!(
+        sink.progress.lock_ignore_poison().last().expect("an event").match_count,
+        5,
+        "and the count is the volume's, not the slice's"
+    );
 }
 
 #[test]
@@ -583,7 +609,9 @@ fn a_stopped_run_stops_counting_as_well_as_showing() {
     let judged = Judged::new(&q);
     let mut stream = ResultStream::new(&run, &sink, &q);
 
-    judged.judge().consume(vec![covered_file("/walked/report.pdf")], &mut stream);
+    judged
+        .judge()
+        .consume(vec![covered_file("/walked/report.pdf")], &mut stream);
 
     assert_eq!(stream.match_count, 0, "a match found after the stop is not this run's");
     assert!(sink.rows().is_empty());

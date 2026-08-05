@@ -315,11 +315,8 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
         .or_else(|| volumes::registry_mount_root(&target.volume_id));
     // The scope paths the walk is about to answer for itself, in the canonical
     // form both halves speak.
-    let walked_scopes: std::collections::HashSet<&String> = question
-        .frontier
-        .iter()
-        .filter(|root| scopes.contains(root))
-        .collect();
+    let walked_scopes: std::collections::HashSet<&String> =
+        question.frontier.iter().filter(|root| scopes.contains(root)).collect();
     let report =
         |walk: WalkEnding, unreadable: Vec<String>, still_covering: Vec<String>, capped: bool| SearchRunCoverage {
             // A scope the INDEX couldn't resolve isn't a gap once the walk has been

@@ -39,10 +39,9 @@ How a per-volume index is born, lives, transitions, and dies. Every invariant he
   `Ground` picks the guarded walker or the volume's own `Volume` — and only an unmounted id is refused. ⚠️ A volume
   mid-SCAN isn't walked, and two walks over overlapping frontiers don't both take the ground (`cover/live.rs` claims
   roots): one writer doesn't stop `INSERT OR IGNORE` dropping a collider and orphaning its subtree.
-- **A walk stops through the CALLER's `CancellationToken`, ❌ never a method on `CoverWalk`** (it holds a `Receiver`, so
-  it can't leave the thread draining it, while the dialog or the quitting app that decides to stop it is elsewhere). It
-  also **flushes its writer before reporting**, on the cancelled path too, so "what's still uncovered" is true the
-  moment the walk ends rather than one search later.
+- **A walk stops through the CALLER's `CancellationToken`** — `CoverWalk` holds a `Receiver`, so it can't reach the
+  thread that decides to stop it. It **flushes its writer before reporting** (cancel path too), so "what's still
+  uncovered" is true the moment it ends, not one search later.
 - **`IndexVolumeKind` is a capability model**; branch on the axis, not the variant. `has_event_journal()` (only `Local`)
   gates journal replay, NOT `last_event_id.is_some()` (`LocalExternal` persists an id, no journal).
 - **Freshness has ONE total transition table** (`Freshness::on`); no journal ⇒ load Stale on launch. `..._on` (fires on
