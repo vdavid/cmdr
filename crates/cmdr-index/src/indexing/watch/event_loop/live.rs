@@ -14,6 +14,7 @@ use std::time::{Duration, Instant};
 
 use rusqlite::Connection;
 
+use super::super::branches::{Admission, WatchScope};
 use super::super::churn_monitor::ChurnObserver;
 use super::super::watcher;
 use super::{
@@ -89,6 +90,75 @@ pub(super) fn mark_pending_and_drain(volume_id: &str, pending_origins: &mut Hash
     }
 }
 
+/// Add one admitted event to the pending batch, merging it onto whatever that
+/// path already holds.
+///
+/// Shared by the receive arm and the promotion of events a finished walk
+/// released, so a held event is merged by exactly the same rules a live one is.
+pub(in crate::indexing) fn queue_admitted(
+    event: watcher::FsChangeEvent,
+    pending_events: &mut HashMap<String, watcher::FsChangeEvent>,
+) {
+    pending_events
+        .entry(event.path.clone())
+        .and_modify(|existing| {
+            *existing = merge_fs_events(existing, &event);
+        })
+        .or_insert(event);
+}
+
+/// Fold whatever a finished walk released into the batch that's about to run,
+/// and queue a re-list for any branch whose buffer stopped being a complete
+/// record.
+///
+/// Runs before the batch rather than after, so a held event lands in the very
+/// first batch after its walk ends instead of waiting another flush interval.
+pub(super) fn drain_promoted(
+    scope: &WatchScope,
+    pending_events: &mut HashMap<String, watcher::FsChangeEvent>,
+    reconciler: &mut EventReconciler,
+    writer: &IndexWriter,
+) {
+    let promoted = scope.branches().take_promoted();
+    if promoted.is_empty() {
+        return;
+    }
+    log::info!(
+        "Branch watch: releasing {} held by a walk that just ended{}",
+        pluralize(promoted.events.len() as u64, "event"),
+        if promoted.relist.is_empty() {
+            String::new()
+        } else {
+            format!(", and re-listing {}", pluralize(promoted.relist.len() as u64, "branch"))
+        },
+    );
+    for event in promoted.events {
+        queue_admitted(event, pending_events);
+    }
+    for branch in promoted.relist {
+        reconciler.queue_must_scan_sub_dirs(std::path::PathBuf::from(branch), writer);
+    }
+}
+
+/// What the live loop needs to know about the volume it serves, beside the
+/// channel, the reconciler, the writer, and the sink.
+///
+/// One value rather than four arguments, matching [`ReplayConfig`](super::ReplayConfig)
+/// next door: the two loops take the same facts and a caller that mismatched
+/// them would resolve paths in one volume's space against another's index.
+pub(in crate::indexing) struct LiveConfig {
+    /// The volume this loop serves.
+    pub(in crate::indexing) volume_id: String,
+    /// Its path space: pass-through for the boot disk, mount-relative strip for
+    /// a mount-rooted drive.
+    pub(in crate::indexing) space: IndexPathSpace,
+    /// The watcher's overflow flag, or `None` when no watcher started. Set means
+    /// events were dropped before reaching us, and only a rescan recovers.
+    pub(in crate::indexing) watcher_overflow: Option<Arc<AtomicBool>>,
+    /// How much of the volume this loop answers for.
+    pub(in crate::indexing) scope: WatchScope,
+}
+
 /// Process FSEvents in real time after scan + reconciliation completes.
 ///
 /// Runs as a tokio task, reading events from the watcher channel and
@@ -102,10 +172,14 @@ pub(in crate::indexing) async fn run_live_event_loop(
     mut reconciler: EventReconciler,
     writer: IndexWriter,
     events: Arc<dyn EventSink>,
-    volume_id: String,
-    space: IndexPathSpace,
-    watcher_overflow: Option<Arc<AtomicBool>>,
+    config: LiveConfig,
 ) {
+    let LiveConfig {
+        volume_id,
+        space,
+        watcher_overflow,
+        scope,
+    } = config;
     log::info!("Live event processing: started");
     log::info!(target: "stall_probe::reconciler", "live_event_loop_started");
 
@@ -183,16 +257,19 @@ pub(in crate::indexing) async fn run_live_event_loop(
                         // normalizes for the boot disk, passes through for a drive.
                         let canonical = space.absolute(&event.path);
                         let deduped_event = watcher::FsChangeEvent {
-                            path: canonical.clone(),
+                            path: canonical,
                             event_id: event.event_id,
                             flags: event.flags,
                         };
-                        pending_events
-                            .entry(canonical)
-                            .and_modify(|existing| {
-                                *existing = merge_fs_events(existing, &deduped_event);
-                            })
-                            .or_insert(deduped_event);
+                        // On a whole-volume loop every event is ours. On a
+                        // branch-watched volume the scope decides: inside covered
+                        // ground it flows, inside ground a walk is covering right
+                        // now it waits, and anywhere else it's dropped.
+                        if let Admission::Process(admitted) = scope.admit(deduped_event) {
+                            for event in admitted {
+                                queue_admitted(event, &mut pending_events);
+                            }
+                        }
                         event_count += 1;
                         DEBUG_STATS.live_event_count.store(event_count, Ordering::Relaxed);
                         if event_count.is_multiple_of(10_000) {
@@ -205,6 +282,7 @@ pub(in crate::indexing) async fn run_live_event_loop(
                     }
                     None => {
                         // Channel closed: process remaining events before exit
+                        drain_promoted(&scope, &mut pending_events, &mut reconciler, &writer);
                         process_live_batch(
                             &mut pending_events, &mut reconciler, &space, &conn,
                             &writer, &mut pending_origins, churn.with_raw_total(event_count),
@@ -285,6 +363,7 @@ pub(in crate::indexing) async fn run_live_event_loop(
                         break;
                     }
 
+                drain_promoted(&scope, &mut pending_events, &mut reconciler, &writer);
                 let batch_size = pending_events.len() as u64;
                 let batch_start = Instant::now();
                 process_live_batch(
@@ -301,6 +380,17 @@ pub(in crate::indexing) async fn run_live_event_loop(
                         "process_live_batch_slow batch_size={batch_size} batch_ms={batch_ms}",
                     );
                 }
+                // A branch-watched loop discards most of the stream, and
+                // `process_live_batch` only advances the journal position for what
+                // it PROCESSED. Left there, a volume whose branches are quiet would
+                // let its stored position age until the next launch's replay gap is
+                // too wide to be worth replaying — so the position follows the
+                // stream instead, except while something is buffered (see
+                // `safe_event_id`).
+                if let Some(id) = scope.branches().safe_event_id() {
+                    let _ = writer.send(WriteMessage::UpdateLastEventId(id));
+                }
+
                 if !pending_origins.is_empty() {
                     let changed = mark_pending_and_drain(&volume_id, &mut pending_origins);
                     // Both live loops publish the origins, so a volume that took the

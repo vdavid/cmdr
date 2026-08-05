@@ -266,6 +266,12 @@ pub struct EventReconciler {
     /// volume down stops them. Pushed in rather than looked up, because a walk
     /// that starts after teardown would look up nothing and never stop.
     cancel: CancellationToken,
+    /// How much of the volume the loop this reconciler serves answers for, which
+    /// is what decides the ground it may walk (`WatchScope::may_walk`).
+    ///
+    /// `None` for a reconciler with no live loop behind it (a test, a one-shot
+    /// subtree reconcile), where nothing is walking and everything is in scope.
+    scope: Option<crate::indexing::watch::branches::WatchScope>,
 }
 
 /// Everything a rescan walk needs, cloned out of the [`EventReconciler`] so the
@@ -345,7 +351,31 @@ impl EventReconciler {
             volume_id,
             scan_trigger: ScanTrigger::Registry,
             cancel,
+            scope: None,
         }
+    }
+
+    /// Tell this reconciler how much of its volume the loop behind it answers for.
+    ///
+    /// It decides the ground the reconciler may walk: never into a cover walk's
+    /// in-flight ground (on any volume), and on a branch-watched one never outside
+    /// the covered branches. See `WatchScope::may_walk`.
+    pub(crate) fn within(&mut self, scope: crate::indexing::watch::branches::WatchScope) -> &mut Self {
+        self.scope = Some(scope);
+        self
+    }
+
+    /// Whether this reconciler serves a volume watched branch by branch.
+    fn is_branch_confined(&self) -> bool {
+        matches!(
+            self.scope,
+            Some(crate::indexing::watch::branches::WatchScope::Branches(_))
+        )
+    }
+
+    /// Whether a rescan anchor is ground this reconciler may walk right now.
+    fn may_walk(&self, anchor: &Path) -> bool {
+        self.scope.as_ref().is_none_or(|scope| scope.may_walk(anchor))
     }
 
     /// Test constructor with an explicit throttle window, so the trailing flush is
@@ -488,6 +518,14 @@ impl EventReconciler {
             // Keep the path absolute (the reconcile walks the FS from it); the
             // mount-relative strip happens inside `reconcile_subtree`'s resolve.
             let absolute = self.space.absolute(&event.path);
+            if self.is_branch_confined() {
+                // ❌ Never the visible-scanner route here: its shallow-anchor arm
+                // rescans the WHOLE volume, which is the full drive walk a
+                // search-built index exists to not do. The throttled drain walks
+                // the anchor and nothing above it.
+                self.queue_must_scan_sub_dirs(PathBuf::from(&absolute), writer);
+                return Some(event.event_id);
+            }
             // Depth-split routing: a shallow/root-scale anchor takes the visible
             // scanner path; a deep/narrow one keeps the throttled reconcile drain.
             self.route_must_scan_sub_dirs(PathBuf::from(&absolute), writer);

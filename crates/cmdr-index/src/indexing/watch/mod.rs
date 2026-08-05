@@ -8,7 +8,10 @@
 //!   removal-storm coalescing.
 //! - [`churn_monitor`]: an off-by-default per-subtree churn rollup that hooks
 //!   `process_live_batch` (env `CMDR_CHURN_SPIKE`).
+//! - [`branches`]: how much of a volume its loop answers for — everything on a
+//!   scanned volume, and exactly what a search walk covered on a walked one.
 
+pub(crate) mod branches;
 pub(crate) mod churn_monitor;
 pub(crate) mod event_loop;
 pub(crate) mod watcher;

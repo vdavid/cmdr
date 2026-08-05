@@ -199,6 +199,14 @@ pub(crate) fn start(
     let claim = Claim::take(&context.volume_id, frontier);
     let deferred = claim.deferred().to_vec();
 
+    // Tell the volume's watcher what this walk is about to cover, BEFORE it reads
+    // anything. Two things follow from that order: a change landing in the ground
+    // the walk has already passed waits rather than racing the walk's own ids, and
+    // when the walk ends this ground is watched — which is what lets walk-written
+    // coverage carry no expiry (Decision 9). Ground another walk claimed is
+    // already registered by that walk, so only `mine` goes in.
+    super::state::begin_branch_coverage(&context.volume_id, claim.mine());
+
     let (sender, batches) = sync_channel(BATCH_QUEUE_DEPTH);
     let walk_cancel = cancel;
     // ONE pulse for the whole frontier, not one per root: a consumer watching a
@@ -214,6 +222,11 @@ pub(crate) fn start(
             // The claim lives as long as the walk and no longer, so its ground
             // frees up on the completion path, the cancel path, and a panic alike.
             let outcome = walk_frontier(&context, claim.mine(), &sender, &walk_cancel, &walk_heartbeat);
+            // Whatever the outcome: a cancelled walk still marked every directory
+            // it read, so that ground needs watching exactly as much as a completed
+            // walk's does. Runs after the walk's own flush, so the rows the released
+            // events land on are the rows the walk wrote.
+            super::state::finish_branch_coverage(&context.volume_id, claim.mine());
             drop(claim);
             outcome
         })

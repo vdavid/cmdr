@@ -35,12 +35,13 @@ mod verify_guard;
 // Re-export the loop entry points so external callers keep using the stable
 // `event_loop::…` paths (`lifecycle/manager.rs`, `lifecycle/scan_completion.rs`, and the indexing
 // stress tests) after the internal split.
-pub(in crate::indexing) use live::run_live_event_loop;
+pub(in crate::indexing) use live::{LiveConfig, run_live_event_loop};
 pub(in crate::indexing) use replay::run_replay_event_loop;
-// Only the indexing stress tests reach `process_live_batch` directly; gate the
-// re-export so the non-test build doesn't see it as an unused import.
+// Only the indexing stress tests and the branch-watch tests reach these
+// directly; gate the re-exports so the non-test build doesn't see them as
+// unused imports.
 #[cfg(test)]
-pub(in crate::indexing) use live::process_live_batch;
+pub(in crate::indexing) use live::{process_live_batch, queue_admitted};
 
 // ── Shared constants ─────────────────────────────────────────────────
 

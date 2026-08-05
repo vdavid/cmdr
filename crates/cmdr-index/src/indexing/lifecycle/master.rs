@@ -13,9 +13,12 @@
 //! runs with either switch off, because searching a folder Cmdr hasn't indexed IS
 //! reading it, and the person asking is right there. Refusing wouldn't save them
 //! work; it would hand them a search that silently omits files. What the switches
-//! keep is everything that runs uninvited: no scan is scheduled, no watcher is
-//! started, and a vetoed drive still gets none later — which is the veto's real
-//! teeth, since walked branches with no watcher go stale and re-walk.
+//! keep is everything that runs uninvited: no scan is scheduled, and no watcher
+//! is started uninvited. A vetoed drive gets none at all, which is the veto's
+//! real teeth: what a search walked there stays covered and served, but stops
+//! being kept current the moment the app does. See [`branch_watch_allowed`],
+//! which is where a walked branch's watcher asks these two switches (and only
+//! these two).
 //!
 //! Flipping the master off stops every running index through `stop_indexing`,
 //! which by design never writes the sticky `user_disabled` marker
@@ -105,6 +108,23 @@ pub(crate) fn drive_index_should_run(master_on: bool, db_path: &Path, is_root: b
         return false;
     }
     is_root || IndexStore::persisted_scan_completed(db_path)
+}
+
+/// Whether a drive may WATCH the branches a search walk covered on it.
+///
+/// The looser of the two gates, and deliberately so. Watching a walked branch is
+/// what keeps the promise the walk made — that ground is as live as an indexed
+/// drive's — and it costs one stream and no walking. So it asks only what the two
+/// switches say, and NOT `persisted_scan_completed`: that fact means "the user
+/// turned this drive on for background indexing", which is exactly what someone
+/// searching an unindexed drive did not do and does not need to have done.
+///
+/// The veto's teeth are here. A drive the user explicitly turned off gets no
+/// watcher, so what a search walked there is a snapshot: still covered, still
+/// served, but stale from the moment the app stops (Decision 5's covered-but-
+/// stale, which the read side renders as stale rather than current).
+pub(crate) fn branch_watch_allowed(master_on: bool, db_path: &Path) -> bool {
+    master_on && !IndexStore::user_disabled(db_path)
 }
 
 /// Every drive that should be indexing now that the master switch is back on,

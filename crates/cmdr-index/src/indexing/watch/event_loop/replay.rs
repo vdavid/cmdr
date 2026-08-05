@@ -15,7 +15,8 @@ use rusqlite::Connection;
 
 use super::super::churn_monitor::ChurnObserver;
 use super::super::watcher;
-use super::live::{mark_pending_and_drain, process_live_batch};
+use super::super::branches::{self, Admission, WatchScope};
+use super::live::{drain_promoted, mark_pending_and_drain, process_live_batch, queue_admitted};
 use super::verification::run_background_verification;
 use super::{
     BacklogTracker, IngestionPressure, JOURNAL_GAP_THRESHOLD, LIVE_FLUSH_INTERVAL_MS, ReplayConfig,
@@ -408,7 +409,13 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     scanning.store(false, Ordering::Relaxed);
 
     log::info!("Replay: switching to live mode");
+    // The volume that replays a journal is one that indexes whole, so this loop
+    // answers for every path — with the one exception every live loop shares: a
+    // search can walk a hole in it, and those events wait for that walk rather
+    // than racing it (`branches`).
+    let scope = WatchScope::WholeVolume(branches::live_for(&volume_id));
     let mut reconciler = EventReconciler::new_for(volume_id.clone(), space.clone(), cancel.clone());
+    reconciler.within(scope.clone());
     reconciler.switch_to_live();
 
     // Spawn background verification: runs concurrently with live events.
@@ -462,12 +469,11 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                             event_id: event.event_id,
                             flags: event.flags,
                         };
-                        live_pending_events
-                            .entry(canonical)
-                            .and_modify(|existing| {
-                                *existing = merge_fs_events(existing, &deduped_event);
-                            })
-                            .or_insert(deduped_event);
+                        if let Admission::Process(admitted) = scope.admit(deduped_event) {
+                            for event in admitted {
+                                queue_admitted(event, &mut live_pending_events);
+                            }
+                        }
                         live_count += 1;
                         if live_count.is_multiple_of(10_000) {
                             log::debug!(
@@ -478,6 +484,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                         }
                     }
                     None => {
+                        drain_promoted(&scope, &mut live_pending_events, &mut reconciler, &writer);
                         process_live_batch(
                             &mut live_pending_events, &mut reconciler, &space, &conn,
                             &writer, &mut live_pending_origins, churn.with_raw_total(live_count),
@@ -541,6 +548,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                     IngestionPressure::Healthy => backlog.reset(),
                 }
 
+                drain_promoted(&scope, &mut live_pending_events, &mut reconciler, &writer);
                 process_live_batch(
                     &mut live_pending_events, &mut reconciler, &space, &conn,
                     &writer, &mut live_pending_origins, churn.with_raw_total(live_count),

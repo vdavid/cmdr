@@ -137,6 +137,17 @@ impl EventReconciler {
     /// max 1 concurrent. This is the DEEP-anchor path; shallow anchors route to the
     /// scanner via [`route_must_scan_sub_dirs`](Self::route_must_scan_sub_dirs).
     pub(in crate::indexing) fn queue_must_scan_sub_dirs(&mut self, path: PathBuf, writer: &IndexWriter) {
+        // On a branch-watched volume the walk owns coverage growth: an anchor
+        // outside the covered branches would have the watcher indexing ground
+        // nobody asked for. That ground stays frontier, so the next search over it
+        // walks it — which is where growing coverage belongs.
+        if !self.may_walk(&path) {
+            log::trace!(
+                "Reconciler: leaving {} to the next search; it's outside this volume's walked branches",
+                path.display()
+            );
+            return;
+        }
         DEBUG_STATS.record_must_scan(&path.to_string_lossy());
         // Stat the anchor for its birthtime BEFORE it's queued or held: a subtree
         // created seconds ago is still being written (an updater unpacking a

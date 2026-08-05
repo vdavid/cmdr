@@ -59,6 +59,13 @@ pub(crate) struct IndexManager {
     pub(super) volume_cancel: CancellationToken,
     /// FSEvents watcher (started alongside scan, persists after scan completes)
     drive_watcher: Option<DriveWatcher>,
+    /// Whether the watcher above covers only what a search walk covered, rather
+    /// than the whole volume.
+    ///
+    /// The two are mutually exclusive by construction — `ensure_branch_watch`
+    /// declines when a watcher is already running, and `start_scan` retires the
+    /// branch set — so this says which of them is up, never both.
+    pub(super) branch_watched: bool,
     /// Live event processing task (runs after reconciliation completes).
     /// Shared with spawned async tasks so they can store the handle.
     live_event_task: Arc<std::sync::Mutex<Option<tokio::task::JoinHandle<()>>>>,
@@ -250,6 +257,7 @@ pub(in crate::indexing) async fn perform_registry_rescan(volume_id: &str, trigge
                     watcher.stop();
                 }
                 mgr.drive_watcher = None;
+                mgr.branch_watched = false;
                 {
                     let mut task_guard = mgr.live_event_task.lock_ignore_poison();
                     if let Some(task) = task_guard.take() {
@@ -341,6 +349,7 @@ impl IndexManager {
             scan_handle: None,
             volume_cancel,
             drive_watcher: None,
+            branch_watched: false,
             live_event_task: Arc::new(std::sync::Mutex::new(None)),
             events,
             scanning: Arc::new(AtomicBool::new(false)),
@@ -524,6 +533,7 @@ impl IndexManager {
             watcher.stop();
         }
         self.drive_watcher = None;
+        self.branch_watched = false;
 
         DEBUG_STATS.reset();
 
@@ -657,6 +667,7 @@ impl IndexManager {
             watcher.stop();
         }
         self.drive_watcher = None;
+        self.branch_watched = false;
 
         // 3. Wait for the event loop to drain (process final batch + UpdateLastEventId). Use block_in_place
         //    so we can .await the join handle without blocking the tokio runtime thread pool.

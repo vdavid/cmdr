@@ -19,7 +19,8 @@ use crate::indexing::events::{
 use crate::indexing::reconcile::reconciler::{self, EventReconciler};
 use crate::indexing::scanner::{ScanError, ScanSummary};
 use crate::indexing::store::{IndexStore, ScanCalibrationKind};
-use crate::indexing::watch::event_loop::run_live_event_loop;
+use crate::indexing::watch::branches::{self, WatchScope};
+use crate::indexing::watch::event_loop::{LiveConfig, run_live_event_loop};
 use crate::indexing::watch::watcher::FsChangeEvent;
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 use cmdr_fs::ignore_poison::IgnorePoison;
@@ -155,7 +156,14 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
 
     // Step 4: Reconcile buffered watcher events, in this volume's path space
     // (a mount-rooted drive strips its mount root before `resolve_path`).
+    //
+    // A scanned volume is watched WHOLE: the scan covered every path its stream
+    // can carry. It still holds a branch set, because a search can walk a hole in
+    // an indexed drive, and those events have to wait for that walk exactly as
+    // they would on an unindexed one.
+    let scope = WatchScope::WholeVolume(branches::live_for(&volume_id));
     let mut reconciler = EventReconciler::new_for(volume_id.clone(), space.clone(), cancel.clone());
+    reconciler.within(scope.clone());
 
     // Drain all buffered events from the channel into the reconciler
     let mut event_rx = event_rx;
@@ -369,9 +377,12 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
             reconciler,
             writer_live,
             events_live,
-            volume_id_live,
-            space_live,
-            overflow_live,
+            LiveConfig {
+                volume_id: volume_id_live,
+                space: space_live,
+                watcher_overflow: overflow_live,
+                scope,
+            },
         )
         .await;
     });

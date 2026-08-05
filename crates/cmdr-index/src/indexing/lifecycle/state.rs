@@ -267,6 +267,56 @@ pub(crate) fn cover_context_for(volume_id: &str) -> Option<crate::indexing::life
     }
 }
 
+/// Tell a volume's watcher that a search walk is about to cover `paths`.
+///
+/// Called on the thread that starts the walk, BEFORE it reads anything, so an
+/// event that lands in the covered ground waits for the walk instead of racing
+/// it. A volume with no live index (a vetoed drive, a share) has nothing to tell,
+/// and the walk runs exactly as it did.
+pub(crate) fn begin_branch_coverage(volume_id: &str, paths: &[String]) {
+    with_running_manager(volume_id, |mgr| mgr.begin_branch_coverage(paths));
+}
+
+/// Tell it the walk ended, so what it held is released and what it covered
+/// becomes ground the volume keeps current.
+pub(crate) fn finish_branch_coverage(volume_id: &str, paths: &[String]) {
+    with_running_manager(volume_id, |mgr| mgr.finish_branch_coverage(paths));
+}
+
+/// Bring a volume's walk-covered branches back under a watcher, on the instance
+/// that just came up for them.
+///
+/// This is where "the branch set survives a restart" is cashed in: a search-built
+/// index registers, its persisted branches load, and the watcher starts replaying
+/// from where the last session's stream left off. Nothing at LAUNCH does this,
+/// deliberately — an unregistered volume answers neither sizes nor coverage
+/// questions, so the first moment that coverage can be read is the moment its
+/// index comes up, and that's the moment to make it live again.
+fn resume_branch_watch(volume_id: &str) {
+    with_running_manager(volume_id, |mgr| {
+        let conn = match IndexStore::open_read_connection(mgr.db_path()) {
+            Ok(conn) => conn,
+            Err(e) => {
+                log::warn!("Branch watch: can't read '{volume_id}' branches back: {e}");
+                return;
+            }
+        };
+        crate::indexing::watch::branches::resumed_for(volume_id, &mgr.path_space(), &conn);
+        mgr.ensure_branch_watch(true);
+    });
+}
+
+/// Run something against a volume's `Running` manager, or nothing if it has
+/// none. Non-blocking work only — the registry lock is held throughout.
+fn with_running_manager(volume_id: &str, f: impl FnOnce(&mut IndexManager)) {
+    let Ok(mut reg) = INDEX_REGISTRY.lock() else {
+        return;
+    };
+    if let Some(IndexPhase::Running(mgr)) = reg.get_mut(volume_id).map(|i| &mut i.phase) {
+        f(mgr);
+    }
+}
+
 /// Flip a Running volume's "a full scan is in flight" flag, so a test can pin
 /// what a walk does against one without racing a real scan into place.
 #[cfg(test)]
@@ -335,6 +385,10 @@ pub fn stop_indexing(volume_id: &str) -> Result<(), String> {
         pool.invalidate();
     }
     uninstall_pending_sizes(volume_id);
+    // The branch set goes with the instance that watched it. A cleared index
+    // deletes the database, so the persisted copy goes too; a stopped one keeps
+    // it, and the next start reads it back.
+    crate::indexing::watch::branches::forget(volume_id);
 
     // Take the instance out under the lock, publish `ShuttingDown`, then release
     // the lock BEFORE the blocking drain. `mgr.shutdown()` blocks up to 5 s
@@ -785,6 +839,12 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
             drop(reg);
             log::info!("start_indexing: done, '{volume_id}' IndexManager is Running");
 
+            // A search-built index is the one shape that has coverage and no
+            // watcher, so this is where its walked branches come back under one.
+            if activation == Activation::WriterOnly {
+                resume_branch_watch(volume_id);
+            }
+
             // Watch for a fatal storage failure: if the writer trips its signal, the
             // supervisor fails this volume (stop + `Failed` phase) instead of letting
             // it log-and-retry forever. Spawned now that the volume is `Running` so
@@ -1025,6 +1085,10 @@ fn remove_instance_and_handles(volume_id: &str) {
         reg.remove(volume_id);
         let pool = uninstall_read_pool(volume_id);
         uninstall_pending_sizes(volume_id);
+        // The branch set goes with the instance that watched it. A cleared index
+        // deletes the database, so the persisted copy goes too; a stopped one keeps
+        // it, and the next start reads it back.
+        crate::indexing::watch::branches::forget(volume_id);
         pool
     };
     if let Some(pool) = pool {
@@ -1047,6 +1111,10 @@ pub fn clear_index(volume_id: &str) -> Result<(), String> {
         pool.invalidate();
     }
     uninstall_pending_sizes(volume_id);
+    // The branch set goes with the instance that watched it. A cleared index
+    // deletes the database, so the persisted copy goes too; a stopped one keeps
+    // it, and the next start reads it back.
+    crate::indexing::watch::branches::forget(volume_id);
 
     // Take the instance out under the lock, publish `ShuttingDown`, then release
     // the lock BEFORE the blocking drain (same reasoning as `stop_indexing`: the
@@ -1418,6 +1486,10 @@ fn fail_index(events: &dyn crate::EventSink, volume_id: &str, reason: IndexFailu
         pool.invalidate();
     }
     uninstall_pending_sizes(volume_id);
+    // The branch set goes with the instance that watched it. A cleared index
+    // deletes the database, so the persisted copy goes too; a stopped one keeps
+    // it, and the next start reads it back.
+    crate::indexing::watch::branches::forget(volume_id);
 
     // Take the manager out under the lock (transient `ShuttingDown`), so the
     // blocking `shutdown()` drain runs WITHOUT holding the registry lock.
