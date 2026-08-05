@@ -160,6 +160,8 @@ fn fast_cfg(num_threads: usize) -> WalkConfig {
         // so the give-up path stays out of the way here; its own test sets a small
         // budget deliberately.
         give_up_after: DEFAULT_GIVE_UP_AFTER,
+        heartbeat: None,
+        per_dir_delay: None,
     }
 }
 
@@ -618,6 +620,8 @@ fn cancellation_returns_promptly() {
             per_entry_allowance: DEFAULT_PER_ENTRY_ALLOWANCE,
             watchdog_interval: Duration::from_millis(5),
             give_up_after: DEFAULT_GIVE_UP_AFTER,
+            heartbeat: None,
+            per_dir_delay: None,
         },
         fs.clone().reader(),
         visitor,
@@ -653,6 +657,8 @@ fn a_tiny_walk_returns_without_waiting_out_the_watchdog() {
             // Far longer than the walk itself: the walk must not wait for it.
             watchdog_interval: Duration::from_secs(5),
             give_up_after: DEFAULT_GIVE_UP_AFTER,
+            heartbeat: None,
+            per_dir_delay: None,
         },
         fs.reader(),
         Arc::new(RecordingVisitor::new()),
@@ -705,6 +711,8 @@ fn gives_up_on_a_dead_subtree_and_keeps_walking_a_healthy_sibling() {
         per_entry_allowance: DEFAULT_PER_ENTRY_ALLOWANCE,
         watchdog_interval: Duration::from_millis(5),
         give_up_after: GIVE_UP_AFTER,
+        heartbeat: None,
+        per_dir_delay: None,
     };
     let stats = walk(
         root_task("/r"),

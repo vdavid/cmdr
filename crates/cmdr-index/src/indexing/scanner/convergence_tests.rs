@@ -120,7 +120,7 @@ fn a_cancelled_walk_leaves_durable_partial_coverage() {
         .cancel_when_reading(c.clone())
         .reader(&cancel);
 
-    let result = cover_subtree_with_reader(&a, &IndexPathSpace::root(), &writer, None, &cancel, reader);
+    let result = cover_subtree_with_reader(&a, &IndexPathSpace::root(), &writer, None, &cancel, reader, None);
     assert!(
         matches!(result, Err(ScanError::Cancelled(_))),
         "a cancelled walk must surface the typed cancellation, got {result:?}"
@@ -200,7 +200,7 @@ fn a_folder_the_walk_cannot_read_stops_re_entering_the_frontier() {
         .denied_at(denied.clone())
         .reader(&cancel);
 
-    cover_subtree_with_reader(&a, &IndexPathSpace::root(), &writer, None, &cancel, reader).expect("walk A");
+    cover_subtree_with_reader(&a, &IndexPathSpace::root(), &writer, None, &cancel, reader, None).expect("walk A");
     writer.flush_blocking().expect("flush");
     writer.shutdown();
 
@@ -286,7 +286,7 @@ fn a_frontier_node_can_hold_a_listed_descendant() {
     // … and then G itself gets walked and marked.
     let cancel = CancellationToken::new();
     let reader = MockTree::new().dir_at(g.clone(), level(None)).reader(&cancel);
-    cover_subtree_with_reader(&g, &IndexPathSpace::root(), &writer, None, &cancel, reader).expect("walk G");
+    cover_subtree_with_reader(&g, &IndexPathSpace::root(), &writer, None, &cancel, reader, None).expect("walk G");
     writer.flush_blocking().expect("flush");
     writer.shutdown();
 
@@ -347,7 +347,7 @@ fn covering_a_frontier_node_never_removes_a_row_it_did_not_write() {
 
     let cancel = CancellationToken::new();
     let reader = MockTree::new().dir_at(g.clone(), level(None)).reader(&cancel);
-    cover_subtree_with_reader(&g, &IndexPathSpace::root(), &writer, None, &cancel, reader).expect("walk G");
+    cover_subtree_with_reader(&g, &IndexPathSpace::root(), &writer, None, &cancel, reader, None).expect("walk G");
     writer.flush_blocking().expect("flush");
 
     let g_rows_before = child_ids(&db_path, &g.to_string_lossy());
@@ -361,7 +361,7 @@ fn covering_a_frontier_node_never_removes_a_row_it_did_not_write() {
         .dir_at(f.clone(), level(Some("G")))
         .denied_at(g.clone())
         .reader(&cancel);
-    let outcome = cover_subtree_with_reader(&f, &IndexPathSpace::root(), &writer, None, &cancel, reader);
+    let outcome = cover_subtree_with_reader(&f, &IndexPathSpace::root(), &writer, None, &cancel, reader, None);
     writer.flush_blocking().expect("flush");
     writer.shutdown();
 

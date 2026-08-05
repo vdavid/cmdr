@@ -317,28 +317,32 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
     // form both halves speak.
     let walked_scopes: std::collections::HashSet<&String> =
         question.frontier.iter().filter(|root| scopes.contains(root)).collect();
-    let report =
-        |walk: WalkEnding, unreadable: Vec<String>, still_covering: Vec<String>, capped: bool| SearchRunCoverage {
-            // A scope the INDEX couldn't resolve isn't a gap once the walk has been
-            // to it: the walk is the probe, and it just answered. Only a walk that
-            // ran to the end proves it, so anything short leaves the signal
-            // standing. Without this, the very case this milestone exists for — a
-            // folder too new to be indexed — would show "Cmdr doesn't cover this
-            // folder" over a complete list of its files.
-            unresolved_scopes: match walk {
-                WalkEnding::Completed => unresolved_scopes
-                    .iter()
-                    .filter(|scope| !walked_scopes.contains(&query::canonicalize_scope_path(scope)))
-                    .cloned()
-                    .collect(),
-                _ => unresolved_scopes.clone(),
-            },
-            walk,
-            unreadable,
-            still_covering,
-            capped,
-            target_volume_id: target.volume_id.clone(),
-        };
+    let report = |walk: WalkEnding,
+                  unreadable: Vec<String>,
+                  still_covering: Vec<String>,
+                  capped: bool,
+                  abandoned_ground: bool| SearchRunCoverage {
+        // A scope the INDEX couldn't resolve isn't a gap once the walk has been
+        // to it: the walk is the probe, and it just answered. Only a walk that
+        // ran to the end proves it, so anything short leaves the signal
+        // standing. Without this, the very case this milestone exists for — a
+        // folder too new to be indexed — would show "Cmdr doesn't cover this
+        // folder" over a complete list of its files.
+        unresolved_scopes: match walk {
+            WalkEnding::Completed => unresolved_scopes
+                .iter()
+                .filter(|scope| !walked_scopes.contains(&query::canonicalize_scope_path(scope)))
+                .cloned()
+                .collect(),
+            _ => unresolved_scopes.clone(),
+        },
+        walk,
+        unreadable,
+        still_covering,
+        abandoned_ground,
+        capped,
+        target_volume_id: target.volume_id.clone(),
+    };
 
     // Nothing left to walk, or nobody left waiting for it. The stopped case ends
     // here rather than starting a walk that would be cancelled on its first check
@@ -350,6 +354,7 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
             question.unreadable,
             Vec::new(),
             stream.capped(),
+            false,
         );
         stream.finish(coverage);
         return;
@@ -386,6 +391,7 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
                 question.unreadable,
                 Vec::new(),
                 stream.capped(),
+                false,
             );
             stream.finish(coverage);
             return;
@@ -409,17 +415,23 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
         volume_root: mount_root.as_deref(),
         home_dir: home_dir.as_deref(),
     };
-    let ending = live::drive_walk(walk, attempted_roots, &judge, &mut stream);
+    let walked = live::drive_walk(walk, attempted_roots, &judge, &mut stream);
 
     // What nothing is going to walk, re-read now the walk has stamped what it
     // found: a folder it was refused (no Full Disk Access) is `known_unreadable`
     // only once something has tried, so the answer from before the walk would be
     // silent on exactly the case the user can act on.
-    let unreadable = match ending {
+    let unreadable = match walked.ending {
         WalkEnding::Cancelled => question.unreadable,
         _ => coverage_of(&target.volume_id, &scopes).unreadable,
     };
-    let coverage = report(ending, unreadable, still_covering, stream.capped());
+    let coverage = report(
+        walked.ending,
+        unreadable,
+        still_covering,
+        stream.capped(),
+        walked.abandoned_ground,
+    );
     stream.finish(coverage);
 }
 

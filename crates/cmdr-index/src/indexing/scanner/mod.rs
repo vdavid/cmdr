@@ -35,6 +35,9 @@ pub use exclusions::SYSTEM_DIR_EXCLUDES;
 mod file_provider;
 pub(in crate::indexing) use exclusions::*;
 
+mod heartbeat;
+pub(crate) use heartbeat::WalkHeartbeat;
+
 mod insert_visitor;
 use insert_visitor::InsertVisitor;
 
@@ -73,6 +76,8 @@ const WATCHDOG_INTERVAL: Duration = Duration::from_secs(1);
 
 #[cfg(test)]
 mod convergence_tests;
+#[cfg(test)]
+mod heartbeat_tests;
 #[cfg(test)]
 mod policy_tests;
 #[cfg(test)]
@@ -499,6 +504,26 @@ impl From<std::io::Error> for ScanError {
     }
 }
 
+/// How long a COVER walk pauses before each directory read, from
+/// `CMDR_E2E_WALK_THROTTLE_MS`.
+///
+/// A soft test hook, in the style of the app's `CMDR_E2E_COPY_THROTTLE_MS`: a
+/// search that walks a fixture tree finishes in milliseconds, which leaves an E2E
+/// no window to observe a pane growing mid-walk in. Unset in every real build, so
+/// the read costs one `LazyLock` deref per walk and nothing else. ❌ Only cover
+/// walks honor it (they're the only ones a test drives from the UI); a background
+/// scan is never throttled.
+fn cover_walk_throttle() -> Option<Duration> {
+    static THROTTLE: std::sync::LazyLock<Option<Duration>> = std::sync::LazyLock::new(|| {
+        std::env::var("CMDR_E2E_WALK_THROTTLE_MS")
+            .ok()
+            .and_then(|raw| raw.trim().parse::<u64>().ok())
+            .filter(|ms| *ms > 0)
+            .map(Duration::from_millis)
+    });
+    *THROTTLE
+}
+
 // ── Public API ───────────────────────────────────────────────────────
 
 /// Start a full-volume scan on a background thread.
@@ -540,6 +565,7 @@ pub fn scan_volume(
                 &config.space,
                 reader,
                 LOCAL_LIST_TIMEOUT,
+                None,
                 None,
             );
 
@@ -593,6 +619,7 @@ pub fn scan_subtree(
         None,
         default_reader(),
         0,
+        None,
     )
 }
 
@@ -615,13 +642,16 @@ pub fn scan_subtree(
 /// differences.
 ///
 /// `emit` is where a live consumer receives the entries as they're found; pass
-/// `None` to fill the index and nothing else.
+/// `None` to fill the index and nothing else. `heartbeat` is how that same
+/// consumer sees the walk moving between batches, and how many times it gave up
+/// on ground it started.
 pub(in crate::indexing) fn cover_subtree(
     root: &Path,
     space: &IndexPathSpace,
     writer: &IndexWriter,
     emit: Option<EntrySender>,
     cancel: &CancellationToken,
+    heartbeat: &WalkHeartbeat,
 ) -> Result<ScanSummary, ScanError> {
     walk_subtree(
         root,
@@ -632,6 +662,7 @@ pub(in crate::indexing) fn cover_subtree(
         emit,
         default_reader(),
         0,
+        Some(heartbeat),
     )
 }
 
@@ -657,6 +688,7 @@ fn walk_subtree(
     emit: Option<EntrySender>,
     reader: ReadDirFn,
     num_threads: usize,
+    heartbeat: Option<&WalkHeartbeat>,
 ) -> Result<ScanSummary, ScanError> {
     let progress = Arc::new(ScanProgress::new());
     let outcome = run_scan(
@@ -671,6 +703,7 @@ fn walk_subtree(
         reader,
         LOCAL_LIST_TIMEOUT,
         emit,
+        heartbeat,
     )?;
 
     if let Err(e) = writer.send(WriteMessage::ComputeSubtreeAggregates {
@@ -709,6 +742,7 @@ fn run_scan(
     reader: ReadDirFn,
     stall_timeout: Duration,
     emit: Option<EntrySender>,
+    heartbeat: Option<&WalkHeartbeat>,
 ) -> Result<ScanOutcome, ScanError> {
     let start = Instant::now();
     let mode = policy.root;
@@ -791,6 +825,8 @@ fn run_scan(
         per_entry_allowance: DEFAULT_PER_ENTRY_ALLOWANCE,
         watchdog_interval,
         give_up_after: DEFAULT_GIVE_UP_AFTER,
+        heartbeat: heartbeat.cloned(),
+        per_dir_delay: heartbeat.and(cover_walk_throttle()),
     };
     let root_task = DirTask {
         path: root.to_path_buf(),
@@ -815,6 +851,13 @@ fn run_scan(
              (dead mounts / providers); their subtrees are left honestly unindexed",
             pluralize(walk_stats.subtrees_abandoned, "subtree"),
         );
+    }
+    // Both numbers mean the same thing to a search: this walk read less than the
+    // tree holds, so its result list is a lower bound even if the walk ran to the
+    // end (Accepted difference 9). They're separate log lines because the causes
+    // differ; they're one signal because the sentence the user reads doesn't.
+    if let Some(heartbeat) = heartbeat {
+        heartbeat.abandoned(walk_stats.timed_out + walk_stats.subtrees_abandoned);
     }
 
     let was_cancelled = cancel.is_cancelled();
@@ -869,9 +912,10 @@ pub(in crate::indexing) fn cover_subtree_with_reader(
     emit: Option<EntrySender>,
     cancel: &CancellationToken,
     reader: ReadDirFn,
+    heartbeat: Option<&WalkHeartbeat>,
 ) -> Result<ScanSummary, ScanError> {
     let policy = WalkPolicy::for_walk(ScanRoot::Virgin, space, root);
-    walk_subtree(root, space, writer, cancel, policy, emit, reader, 1)
+    walk_subtree(root, space, writer, cancel, policy, emit, reader, 1, heartbeat)
 }
 
 /// [`cover_subtree_with_reader`] with the device probe injected too, so a test
@@ -885,5 +929,5 @@ pub(in crate::indexing) fn cover_subtree_with_device_probe(
     device_of: fn(&Path) -> Option<u64>,
 ) -> Result<ScanSummary, ScanError> {
     let policy = WalkPolicy::with_device_probe(ScanRoot::Virgin, space, root, device_of);
-    walk_subtree(root, space, writer, cancel, policy, None, default_reader(), 1)
+    walk_subtree(root, space, writer, cancel, policy, None, default_reader(), 1, None)
 }

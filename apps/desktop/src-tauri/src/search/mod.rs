@@ -39,7 +39,7 @@ pub(crate) use volumes::{
 pub(crate) use execute::{LiveSearchStart, run_blocking, start_live};
 
 // live.rs (a search that walks what the index can't answer for)
-pub(crate) use live::{cancel_all_live_runs, cancel_live_run};
+pub(crate) use live::{cancel_all_live_runs, cancel_all_live_runs_except, cancel_live_run};
 
 // query.rs
 pub use query::SYSTEM_DIR_EXCLUDES;

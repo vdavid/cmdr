@@ -84,9 +84,16 @@ export function onSearchError(handler: (event: SearchErrorEvent) => void): Promi
   })
 }
 
-/** Signals that the search dialog closed. Starts the idle timer for index eviction. */
-export async function releaseSearchIndex(): Promise<void> {
-  const res = await commands.releaseSearchIndex()
+/**
+ * Signals that the search dialog closed. Starts the idle timer for index eviction
+ * and stops every live search but `keepRunId`.
+ *
+ * A walk outlives the dialog only through "Open in pane", where its results are on
+ * screen in a pane and still growing — that is the one run to name here. Everything
+ * else is a query nobody is reading any more.
+ */
+export async function releaseSearchIndex(keepRunId: string | null = null): Promise<void> {
+  const res = await commands.releaseSearchIndex(keepRunId)
   if (res.status === 'error') throwIpcError(res.error)
 }
 

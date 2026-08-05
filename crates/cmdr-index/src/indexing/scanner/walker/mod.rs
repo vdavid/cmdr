@@ -248,6 +248,14 @@ pub struct WalkConfig {
     /// reads (timeouts + IO errors) with no successful read in between, the whole
     /// remaining subtree is pruned unread. `0` disables the budget.
     pub give_up_after: usize,
+    /// Where to report each directory read as it starts, so a consumer watching a
+    /// cover walk sees it moving between batches. `None` for the background scans,
+    /// which report through their own [`ScanProgress`](super::ScanProgress).
+    pub heartbeat: Option<super::WalkHeartbeat>,
+    /// A pause before each directory read, from `CMDR_E2E_WALK_THROTTLE_MS`. Only
+    /// a cover walk ever sets it, and only under an E2E run; see
+    /// [`cover_walk_throttle`](super::cover_walk_throttle).
+    pub per_dir_delay: Option<Duration>,
 }
 
 impl Default for WalkConfig {
@@ -258,6 +266,8 @@ impl Default for WalkConfig {
             per_entry_allowance: DEFAULT_PER_ENTRY_ALLOWANCE,
             watchdog_interval: Duration::from_secs(1),
             give_up_after: DEFAULT_GIVE_UP_AFTER,
+            heartbeat: None,
+            per_dir_delay: None,
         }
     }
 }
@@ -356,6 +366,8 @@ pub fn walk<V: DirVisitor + 'static>(
         stall_timeout: cfg.stall_timeout,
         per_entry_allowance: cfg.per_entry_allowance,
         give_up_after: cfg.give_up_after,
+        heartbeat: cfg.heartbeat,
+        per_dir_delay: cfg.per_dir_delay,
         slots: Mutex::new(Vec::with_capacity(num_threads)),
         dirs_read: AtomicU64::new(0),
         timed_out: AtomicU64::new(0),
@@ -543,6 +555,10 @@ struct Engine<V: DirVisitor> {
     /// Per-subtree give-up budget threshold (see [`SubtreeBudget`]). Copied onto
     /// every budget the engine mints.
     give_up_after: usize,
+    /// Where each starting read is reported, for a consumer watching this walk.
+    heartbeat: Option<super::WalkHeartbeat>,
+    /// The E2E throttle, applied before each read (see [`WalkConfig::per_dir_delay`]).
+    per_dir_delay: Option<Duration>,
     /// One slot per live worker (initial + replacements). Grows on abandonment.
     slots: Mutex<Vec<Slot>>,
     dirs_read: AtomicU64,
@@ -637,6 +653,16 @@ impl<V: DirVisitor + 'static> Engine<V> {
             if scheduled.budget.is_given_up() {
                 self.complete_one();
                 continue;
+            }
+
+            // Say where the walk is BEFORE the read, not after it: a read that
+            // hangs is exactly the one a watcher wants named, and it would never
+            // report itself from the other side.
+            if let Some(heartbeat) = &self.heartbeat {
+                heartbeat.entering(&scheduled.task.path);
+            }
+            if let Some(delay) = self.per_dir_delay {
+                std::thread::sleep(delay);
             }
 
             // Register the read so the watchdog can time it out, then do the

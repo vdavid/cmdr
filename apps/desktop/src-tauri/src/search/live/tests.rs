@@ -58,15 +58,6 @@ fn covered_file(path: &str) -> CoveredEntry {
     }
 }
 
-fn covered_dir(path: &str) -> CoveredEntry {
-    CoveredEntry {
-        is_directory: true,
-        logical_size: None,
-        physical_size: None,
-        ..covered_file(path)
-    }
-}
-
 fn indexed_row(path: &str) -> SearchResultEntry {
     SearchResultEntry {
         name: path.rsplit('/').next().unwrap_or(path).to_string(),
@@ -87,12 +78,24 @@ fn covered_everything(roots: usize) -> CoverOutcome {
         dirs_found: 0,
         roots_covered: roots,
         cancelled: false,
+        abandoned_ground: false,
+    }
+}
+
+/// An outcome from a walk that covered every root it took but gave up on ground
+/// inside them: the "completed, and still short" case (Accepted difference 9).
+fn covered_but_gave_up(roots: usize) -> CoverOutcome {
+    CoverOutcome {
+        abandoned_ground: true,
+        ..covered_everything(roots)
     }
 }
 
 /// Drive `messages` through a run, and report what the sink saw.
 struct Driven {
     ending: WalkEnding,
+    /// Whether the walk gave up on ground it started, independent of `ending`.
+    abandoned_ground: bool,
     sink: Arc<CollectorSearchEventSink>,
 }
 
@@ -136,18 +139,23 @@ fn drive(
 
     let mut stream = ResultStream::new(run, sink.as_ref(), query);
     stream.add_indexed(indexed, indexed_total);
-    let ending = pump(&rx, 1, &judged.judge(), &mut stream);
+    let walked = pump(&rx, 1, &judged.judge(), &mut stream, &WalkPulse::default());
     let coverage = SearchRunCoverage {
-        walk: ending,
+        walk: walked.ending,
         unreadable: Vec::new(),
         still_covering: Vec::new(),
         unresolved_scopes: Vec::new(),
+        abandoned_ground: walked.abandoned_ground,
         capped: stream.capped(),
         target_volume_id: run.volume_id.clone(),
     };
     stream.finish(coverage);
     feeder.join().expect("the feeder thread");
-    Driven { ending, sink }
+    Driven {
+        ending: walked.ending,
+        abandoned_ground: walked.abandoned_ground,
+        sink,
+    }
 }
 
 // ── The union ────────────────────────────────────────────────────────
@@ -262,7 +270,8 @@ fn a_query_refined_mid_walk_drops_the_batches_and_keeps_the_walk() {
     });
 
     let mut stream = ResultStream::new(&first, sink.as_ref(), &q);
-    let ending = pump(&rx, 1, &judged.judge(), &mut stream);
+    let walked = pump(&rx, 1, &judged.judge(), &mut stream, &WalkPulse::default());
+    let ending = walked.ending;
     feeder.join().expect("the feeder thread");
 
     assert_eq!(ending, WalkEnding::Completed, "the walk ran to the end");
@@ -277,6 +286,7 @@ fn a_query_refined_mid_walk_drops_the_batches_and_keeps_the_walk() {
         unreadable: Vec::new(),
         still_covering: Vec::new(),
         unresolved_scopes: Vec::new(),
+        abandoned_ground: false,
         capped: false,
         target_volume_id: "supersede-volume".to_string(),
     });
@@ -464,26 +474,42 @@ fn a_count_only_run_counts_without_building_a_single_row() {
 // ── Progress ─────────────────────────────────────────────────────────
 
 #[test]
-fn progress_counts_the_directories_the_walk_turned_up_and_says_where_it_is() {
-    // No percentage and no ETA: the total is unknown by definition (Decision 14),
-    // so what a user gets is a count that only goes up and the folder the walk was
-    // in when the batch left it.
+fn progress_follows_the_walk_rather_than_the_batches_it_emits() {
+    // The regression this guards: `dirs_found` and `current_path` used to be
+    // derived from the batches the walk emitted, and a batch fills at 2 000
+    // entries. So a walk grinding through a slow tree — or parked on a directory
+    // that hangs — reported "0 folders scanned" and no path for as long as that
+    // lasted, which reads as frozen. Here NOT ONE batch arrives, and the run still
+    // reports where the walk is. No percentage and no ETA either way: the total is
+    // unknown by definition (Decision 14).
     let run = run_for_test("progress");
     let q = query("report");
-    let driven = drive(&run, &q, Vec::new(), 0, |tx| {
-        tx.send(WalkMsg::Batch(vec![
-            covered_dir("/w/one"),
-            covered_dir("/w/two"),
-            covered_file("/w/two/report.pdf"),
-        ]))
-        .expect("send");
-        tx.send(WalkMsg::Ended(covered_everything(1))).expect("send");
+    let sink = Arc::new(CollectorSearchEventSink::default());
+    let judged = Judged::new(&q);
+    let (tx, rx) = sync_channel(4);
+
+    let pulse = WalkPulse::default();
+    pulse.dirs_scanned.store(41, Ordering::Relaxed);
+    *pulse.current_dir.lock_ignore_poison() = Some("/w/deep/slow".to_string());
+    tx.send(WalkMsg::Ended(covered_everything(1))).expect("send");
+    drop(tx);
+
+    let mut stream = ResultStream::new(&run, sink.as_ref(), &q);
+    pump(&rx, 1, &judged.judge(), &mut stream, &pulse);
+    stream.finish(SearchRunCoverage {
+        walk: WalkEnding::Completed,
+        unreadable: Vec::new(),
+        still_covering: Vec::new(),
+        unresolved_scopes: Vec::new(),
+        abandoned_ground: false,
+        capped: false,
+        target_volume_id: run.volume_id.clone(),
     });
 
-    let progress = driven.sink.progress.lock_ignore_poison();
+    let progress = sink.progress.lock_ignore_poison();
     let last = progress.last().expect("at least one event");
-    assert_eq!(last.dirs_found, 2);
-    assert_eq!(last.current_path.as_deref(), Some("/w/two"));
+    assert_eq!(last.dirs_found, 41, "the count comes off the walk, not the batches");
+    assert_eq!(last.current_path.as_deref(), Some("/w/deep/slow"));
 }
 
 // ── Terminal states ──────────────────────────────────────────────────
@@ -525,13 +551,14 @@ fn cancelling_stops_the_run_promptly_and_ends_it_as_cancelled() {
 
     let started = Instant::now();
     let mut stream = ResultStream::new(&run, sink.as_ref(), &q);
-    let ending = pump(&rx, 1, &judged.judge(), &mut stream);
+    let ending = pump(&rx, 1, &judged.judge(), &mut stream, &WalkPulse::default()).ending;
     let elapsed = started.elapsed();
     stream.finish(SearchRunCoverage {
         walk: ending,
         unreadable: Vec::new(),
         still_covering: Vec::new(),
         unresolved_scopes: Vec::new(),
+        abandoned_ground: false,
         capped: false,
         target_volume_id: run.volume_id.clone(),
     });
@@ -562,6 +589,7 @@ fn a_walk_that_stopped_without_being_asked_reads_as_interrupted() {
             dirs_found: 0,
             roots_covered: 0,
             cancelled: true,
+            abandoned_ground: false,
         }))
         .expect("send");
     });
@@ -570,6 +598,30 @@ fn a_walk_that_stopped_without_being_asked_reads_as_interrupted() {
     let complete = driven.sink.complete.lock_ignore_poison();
     assert_eq!(complete[0].coverage.walk, WalkEnding::Interrupted);
     assert_eq!(complete[0].match_count, 1, "what it did find is still real");
+}
+
+#[test]
+fn a_walk_that_finished_having_given_up_on_ground_says_so_on_its_own_field() {
+    // The quiet third way a run comes back short (Accepted difference 9). The
+    // walk covered every root it took and nobody stopped it, so `walk` reads
+    // `completed` — and the list is still a lower bound. Folding this into
+    // `interrupted` would tell the user the drive went away, which isn't what
+    // happened: those directories stay unlisted and the next search retries them.
+    let run = run_for_test("gave-up");
+    let q = query("report");
+    let driven = drive(&run, &q, Vec::new(), 0, |tx| {
+        tx.send(WalkMsg::Batch(vec![covered_file("/w/report.pdf")]))
+            .expect("send");
+        tx.send(WalkMsg::Ended(covered_but_gave_up(1))).expect("send");
+    });
+
+    assert_eq!(driven.ending, WalkEnding::Completed, "it did reach the end");
+    assert!(driven.abandoned_ground, "and it read less than the tree holds");
+    let complete = driven.sink.complete.lock_ignore_poison();
+    assert!(
+        complete[0].coverage.abandoned_ground,
+        "the terminal event has to carry it, or the UI can't label the list short"
+    );
 }
 
 #[test]
@@ -587,7 +639,7 @@ fn a_walk_that_left_a_root_uncovered_reads_as_interrupted() {
 
     let mut stream = ResultStream::new(&run, sink.as_ref(), &q);
     // Two roots taken, one covered.
-    let ending = pump(&rx, 2, &judged.judge(), &mut stream);
+    let ending = pump(&rx, 2, &judged.judge(), &mut stream, &WalkPulse::default()).ending;
     assert_eq!(ending, WalkEnding::Interrupted);
 }
 
@@ -611,6 +663,7 @@ fn ending_of_puts_our_own_cancel_ahead_of_every_other_verdict() {
         dirs_found: 0,
         roots_covered: 0,
         cancelled: true,
+        abandoned_ground: false,
     };
     assert_eq!(ending_of(Some(&stopped), 1, true), WalkEnding::Cancelled);
     assert_eq!(ending_of(Some(&stopped), 1, false), WalkEnding::Interrupted);

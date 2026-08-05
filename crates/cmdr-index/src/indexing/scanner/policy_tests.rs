@@ -98,6 +98,7 @@ impl Tree {
             &self.writer,
             None,
             &CancellationToken::new(),
+            &WalkHeartbeat::new(),
         )
         .expect("the walk runs");
         self.writer.flush_blocking().expect("flush");

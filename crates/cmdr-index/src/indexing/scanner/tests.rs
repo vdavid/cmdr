@@ -887,6 +887,7 @@ fn timed_out_dir_is_not_marked_listed() {
         reader,
         Duration::from_millis(50), // short timeout so the hang is abandoned fast
         None,
+        None,
     )
     .expect("run_scan");
     assert!(
@@ -968,6 +969,7 @@ fn volume_root_that_never_lists_surfaces_root_unlistable() {
         &IndexPathSpace::root(),
         reader,
         Duration::from_millis(50),
+        None,
         None,
     );
     writer.shutdown();

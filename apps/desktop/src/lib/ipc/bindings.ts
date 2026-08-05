@@ -2170,14 +2170,17 @@ export const commands = {
   cancelSearch: (runId: string) => typedError<boolean, string>(__TAURI_INVOKE('cancel_search', { runId })),
   /**
    *  Called when the search dialog closes. Starts the idle timer, cancels any
-   *  in-progress index load, and stops every live search.
+   *  in-progress index load, and stops every live search but the one the caller
+   *  asked to keep.
    *
    *  A walk outlives its dialog only through "Open in pane"
-   *  (`docs/specs/unindexed-search-plan.md` M7); closing the dialog otherwise means
-   *  nobody is waiting for it. What it already read stays in the index, so the next
-   *  search over that ground starts from where this one stopped.
+   *  (`docs/specs/unindexed-search-plan.md` M7), which is what `keep_run_id` names:
+   *  those results are on screen in a pane and still growing. Closing the dialog
+   *  otherwise means nobody is waiting. What a stopped walk already read stays in
+   *  the index, so the next search over that ground starts from where it stopped.
    */
-  releaseSearchIndex: () => typedError<null, string>(__TAURI_INVOKE('release_search_index')),
+  releaseSearchIndex: (keepRunId: string | null) =>
+    typedError<null, string>(__TAURI_INVOKE('release_search_index', { keepRunId })),
   /**
    *  Translates a natural language search query into structured filters using the configured LLM.
    *
@@ -7744,6 +7747,19 @@ export type SearchRunCoverage = {
    *  signal; ❌ never worded as "that folder doesn't exist".
    */
   unresolvedScopes: string[]
+  /**
+   *  Whether the walk gave up on ground it started: a directory that stopped
+   *  responding and was abandoned, or a subtree pruned by the walker's
+   *  consecutive-failure budget.
+   *
+   *  TRUE means the list is a lower bound even when [`walk`](Self::walk) is
+   *  [`WalkEnding::Completed`] — the third way a run can be short, alongside
+   *  cancel and disconnect (Accepted difference 9), and the quiet one: nothing
+   *  else on the wire hints at it. ❌ Don't fold it into `walk`: those
+   *  directories stay unlisted, so the frontier offers them again, which is a
+   *  different sentence from "the drive went away".
+   */
+  abandonedGround: boolean
   /**
    *  Whether the result cap was reached. The walk carries on past it (the count
    *  keeps rising), only the rows stop.

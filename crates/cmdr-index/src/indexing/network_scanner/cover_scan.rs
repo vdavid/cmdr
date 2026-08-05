@@ -42,7 +42,7 @@ use super::{
 };
 use crate::indexing::IndexPathSpace;
 use crate::indexing::reconcile::reconciler;
-use crate::indexing::scanner::{CoveredEntry, EntrySender, ScanSummary};
+use crate::indexing::scanner::{CoveredEntry, EntrySender, ScanSummary, WalkHeartbeat};
 use crate::indexing::store::{EntryRow, IndexStore, normalize_for_comparison, resolve_scan_root};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 
@@ -52,7 +52,8 @@ use crate::indexing::writer::{IndexWriter, WriteMessage};
 /// `root` is an absolute path in the space the coverage answer used; it must
 /// already have an `entries` row (`lifecycle/cover/bootstrap.rs` materializes the
 /// chain when it doesn't). `emit` is where a live consumer receives entries as
-/// they're found; pass `None` to fill the index and nothing else.
+/// they're found; pass `None` to fill the index and nothing else. `heartbeat` is
+/// how that consumer sees the walk moving between batches, and what it gave up on.
 ///
 /// `Ok` means the walk reached the end of this subtree. A cancel arrives as
 /// `Cancelled` and a mid-walk disconnect as its own typed error — both AFTER the
@@ -65,6 +66,7 @@ pub(crate) async fn cover_volume_subtree(
     emit: Option<EntrySender>,
     cancel: &CancellationToken,
     pacer: &ScanPacer,
+    heartbeat: &WalkHeartbeat,
 ) -> Result<ScanSummary, VolumeScanError> {
     let start = Instant::now();
 
@@ -142,6 +144,10 @@ pub(crate) async fn cover_volume_subtree(
         // through, so the same yield applies.
         while inflight.len() < pacer.listing_budget() {
             let Some((dir, id)) = queue.pop_front() else { break };
+            // Counted (and named) as the listing goes OUT, not as it comes back: a
+            // round trip that never returns is exactly the one a watcher wants to
+            // see named.
+            heartbeat.entering(&dir);
             let vol = Arc::clone(&volume);
             let cancel = cancel.clone();
             inflight.push(async move {
@@ -185,6 +191,10 @@ pub(crate) async fn cover_volume_subtree(
             }
             Err(err) => {
                 consecutive_failures += 1;
+                // Ground this walk started and won't finish. The dir stays
+                // unlisted, so the frontier offers it again — but THIS run's
+                // answer is a lower bound and has to say so.
+                heartbeat.abandoned(1);
                 log::debug!(
                     "network_scanner: skipping unlistable dir {} while covering (consecutive_failures={consecutive_failures}): {err}",
                     dir_path.display(),

@@ -23,6 +23,7 @@
 //! results than the one before it (Decision 12).
 
 use std::collections::{HashMap, HashSet};
+use std::sync::atomic::AtomicU64;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, RecvTimeoutError, SyncSender, sync_channel};
 use std::sync::{Arc, LazyLock, Mutex};
@@ -151,13 +152,25 @@ pub(crate) fn test_registry_lock() -> std::sync::MutexGuard<'static, ()> {
 
 /// Stop every run and every walk behind them.
 ///
-/// The dialog closing calls this, and so does the app quitting: a walk outlives
-/// its dialog only through "Open in pane", and nothing may leave a half-walked
-/// scope looking complete. It can't — a directory is marked listed only once its
-/// rows are written — but a walk still reading a disk nobody is waiting on is
-/// exactly the resource waste the app promises not to be.
+/// The app quitting calls this: nothing may leave a half-walked scope looking
+/// complete. It can't — a directory is marked listed only once its rows are
+/// written — but a walk still reading a disk nobody is waiting on is exactly the
+/// resource waste the app promises not to be.
 pub(crate) fn cancel_all_live_runs() {
+    cancel_all_live_runs_except(None);
+}
+
+/// Stop every run except the one named, if any.
+///
+/// The dialog closing calls this with the run it deliberately outlived: "Open in
+/// pane" promotes the results into a pane and leaves the walk filling it (M7), so
+/// that ONE run has a consumer even though the dialog doesn't. Every other run is
+/// a query nobody is reading.
+pub(crate) fn cancel_all_live_runs_except(keep_run_id: Option<&str>) {
     for run in RUNS.lock_ignore_poison().values() {
+        if keep_run_id.is_some_and(|keep| keep == run.run_id) {
+            continue;
+        }
         run.cancel.cancel();
     }
 }
@@ -266,9 +279,15 @@ impl<'a> ResultStream<'a> {
         }
     }
 
-    /// Record where the walk has got to.
-    pub(crate) fn note_walk_progress(&mut self, dirs_found: u64, current_path: Option<String>) {
-        self.dirs_found += dirs_found;
+    /// Record where the walk has got to, as the WALK reports it.
+    ///
+    /// Absolute values, not deltas, and read off the walk's own heartbeat rather
+    /// than derived from the batches it emits. A batch fills at 2 000 entries, so
+    /// batch-derived progress sits at "0 folders scanned" and no path for as long
+    /// as a batch takes to fill — which on a slow tree, or a directory that hangs,
+    /// reads as frozen while the walk is very much alive.
+    pub(crate) fn set_walk_progress(&mut self, dirs_scanned: u64, current_path: Option<String>) {
+        self.dirs_found = dirs_scanned;
         if current_path.is_some() {
             self.current_path = current_path;
         }
@@ -380,16 +399,11 @@ pub(crate) struct WalkJudge<'a> {
 
 impl WalkJudge<'_> {
     /// Judge one batch and hand what survives to the stream.
+    ///
+    /// ❌ It reports no progress: where the walk is comes from the walk's own
+    /// heartbeat (see [`set_walk_progress`](ResultStream::set_walk_progress)), so
+    /// a run that is receiving no batches still shows one.
     fn consume(&self, batch: Vec<CoveredEntry>, stream: &mut ResultStream<'_>) {
-        let dirs = batch.iter().filter(|entry| entry.is_directory).count() as u64;
-        // Where the walk is, as of this batch. The last entry is the freshest
-        // thing it found; its parent is the directory it was reading.
-        let current = batch
-            .last()
-            .and_then(|entry| entry.path.parent())
-            .map(|parent| parent.to_string_lossy().into_owned());
-        stream.note_walk_progress(dirs, current);
-
         if !stream.wants_results() {
             return;
         }
@@ -429,6 +443,19 @@ fn live_result_entry(entry: &CoveredEntry, path: &str, home_dir: Option<&str>) -
     }
 }
 
+/// How a walk ended, and whether what it read was all there was.
+///
+/// Two answers rather than one, because they're independent: a walk can cover
+/// every root it took, uncancelled, and still have abandoned directories inside
+/// them (Accepted difference 9). Folding that into [`WalkEnding::Interrupted`]
+/// would make the UI say the drive went away, which isn't what happened.
+pub(crate) struct WalkResult {
+    pub(crate) ending: WalkEnding,
+    /// The walk gave up on ground it started, so its rows are a lower bound
+    /// whatever `ending` says.
+    pub(crate) abandoned_ground: bool,
+}
+
 /// Drive a running walk into `stream` until it ends or somebody stops it.
 ///
 /// `attempted_roots` is how many frontier roots this walk actually took (the ones
@@ -439,8 +466,13 @@ pub(crate) fn drive_walk(
     attempted_roots: usize,
     judge: &WalkJudge<'_>,
     stream: &mut ResultStream<'_>,
-) -> WalkEnding {
+) -> WalkResult {
     let (tx, rx) = sync_channel(WALK_QUEUE_DEPTH);
+    // Taken BEFORE the handle moves: progress has to be readable from the thread
+    // that reports it, and the handle is about to go to one that spends its life
+    // blocked on a batch.
+    let dirs_scanned = walk.dirs_scanned_counter();
+    let current_dir = walk.current_dir_slot();
     // The walk handle can't leave this thread once it's blocked on a batch, and
     // the run's thread has to wake up on a timer (to flush, and to notice a
     // cancel). So the handle goes to a thread whose only job is blocking on it.
@@ -449,10 +481,41 @@ pub(crate) fn drive_walk(
         .spawn(move || forward(walk, &tx));
     if let Err(e) = &forwarder {
         log::warn!("Live search: couldn't spawn the walk reader: {e}");
-        return WalkEnding::Interrupted;
+        return WalkResult {
+            ending: WalkEnding::Interrupted,
+            abandoned_ground: false,
+        };
     }
 
-    pump(&rx, attempted_roots, judge, stream)
+    pump(
+        &rx,
+        attempted_roots,
+        judge,
+        stream,
+        &WalkPulse {
+            dirs_scanned,
+            current_dir,
+        },
+    )
+}
+
+/// The two live readings the run takes off its walk between batches.
+///
+/// `Default` is a pulse attached to nothing, which is what a test driving the
+/// pump over a hand-fed channel wants: no walk, so no progress to mirror.
+#[derive(Default)]
+struct WalkPulse {
+    dirs_scanned: Arc<AtomicU64>,
+    current_dir: Arc<Mutex<Option<String>>>,
+}
+
+impl WalkPulse {
+    /// Copy the walk's own progress into the stream. Called every turn of the
+    /// pump, so "still working" survives a walk that is emitting nothing.
+    fn report_into(&self, stream: &mut ResultStream<'_>) {
+        let current = self.current_dir.lock_ignore_poison().clone();
+        stream.set_walk_progress(self.dirs_scanned.load(Ordering::Relaxed), current);
+    }
 }
 
 /// Block on the walk, forwarding what it emits, and end with its verdict.
@@ -475,12 +538,14 @@ fn pump(
     attempted_roots: usize,
     judge: &WalkJudge<'_>,
     stream: &mut ResultStream<'_>,
-) -> WalkEnding {
+    pulse: &WalkPulse,
+) -> WalkResult {
     let mut outcome = None;
     loop {
         if stream.run.is_cancelled() {
             break;
         }
+        pulse.report_into(stream);
         match rx.recv_timeout(BATCH_INTERVAL) {
             Ok(WalkMsg::Batch(batch)) => {
                 // Rows landed in the volume's index, so the arena behind this
@@ -501,7 +566,15 @@ fn pump(
             Err(RecvTimeoutError::Disconnected) => break,
         }
     }
-    ending_of(outcome.as_ref(), attempted_roots, stream.run.is_cancelled())
+    // One last reading, so the terminal event carries the directories the walk
+    // got through after the pump's final tick rather than stopping short of them.
+    pulse.report_into(stream);
+    WalkResult {
+        ending: ending_of(outcome.as_ref(), attempted_roots, stream.run.is_cancelled()),
+        // A walk nobody heard from can't report what it abandoned; the ending
+        // already says the list is a lower bound in that case.
+        abandoned_ground: outcome.as_ref().is_some_and(|outcome| outcome.abandoned_ground),
+    }
 }
 
 /// Which terminal state a walk reached.

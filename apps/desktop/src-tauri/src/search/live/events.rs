@@ -80,6 +80,17 @@ pub struct SearchRunCoverage {
     /// couldn't be walked either. The typed "Cmdr can't speak for this folder"
     /// signal; ❌ never worded as "that folder doesn't exist".
     pub unresolved_scopes: Vec<String>,
+    /// Whether the walk gave up on ground it started: a directory that stopped
+    /// responding and was abandoned, or a subtree pruned by the walker's
+    /// consecutive-failure budget.
+    ///
+    /// TRUE means the list is a lower bound even when [`walk`](Self::walk) is
+    /// [`WalkEnding::Completed`] — the third way a run can be short, alongside
+    /// cancel and disconnect (Accepted difference 9), and the quiet one: nothing
+    /// else on the wire hints at it. ❌ Don't fold it into `walk`: those
+    /// directories stay unlisted, so the frontier offers them again, which is a
+    /// different sentence from "the drive went away".
+    pub abandoned_ground: bool,
     /// Whether the result cap was reached. The walk carries on past it (the count
     /// keeps rising), only the rows stop.
     pub capped: bool,

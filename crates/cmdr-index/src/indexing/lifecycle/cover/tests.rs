@@ -377,7 +377,7 @@ fn measure_one(root: &Path, primitive: Primitive) -> (std::time::Duration, u64, 
     let start = std::time::Instant::now();
     match primitive {
         Primitive::Parallel => {
-            cover_subtree(root, &space, &writer, None, &cancel).expect("parallel walk");
+            cover_subtree(root, &space, &writer, None, &cancel, &WalkHeartbeat::new()).expect("parallel walk");
         }
         Primitive::Serial => {
             let conn = IndexStore::open_read_connection(&db_path).expect("read connection");

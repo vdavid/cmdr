@@ -34,6 +34,7 @@
 
 use std::path::Path;
 use std::sync::Arc;
+use std::sync::Mutex;
 use std::sync::mpsc::{Receiver, SyncSender, sync_channel};
 use std::thread::JoinHandle;
 
@@ -46,7 +47,7 @@ use crate::indexing::metadata::{MetadataSnapshot, extract_metadata};
 use crate::indexing::network_scanner::scan_pace::ScanPacer;
 use crate::indexing::network_scanner::{VolumeScanError, cover_volume_subtree, stat_one_directory};
 use crate::indexing::read::coverage::CoverageDimension;
-use crate::indexing::scanner::{CoveredEntry, ScanError, ScanSummary, cover_subtree};
+use crate::indexing::scanner::{CoveredEntry, ScanError, ScanSummary, WalkHeartbeat, cover_subtree};
 use crate::indexing::store::IndexStore;
 use crate::indexing::volume::IndexVolumeKind;
 use crate::indexing::writer::IndexWriter;
@@ -77,6 +78,15 @@ pub struct CoverOutcome {
     pub roots_covered: usize,
     /// Whether it stopped early because someone cancelled it.
     pub cancelled: bool,
+    /// Whether it gave up on ground it started: a directory abandoned after it
+    /// stopped responding, or a subtree pruned by the consecutive-failure budget.
+    ///
+    /// Independent of every field above: a walk can cover every frontier root it
+    /// took, uncancelled, and still have read less than the tree holds. So a
+    /// caller that reports completeness has to consult this too, or a short
+    /// answer reads as an exhaustive one. Those directories are never marked
+    /// listed, so the next search offers them again.
+    pub abandoned_ground: bool,
 }
 
 /// A running walk over a frontier.
@@ -95,6 +105,7 @@ pub struct CoverWalk {
     batches: Receiver<Vec<CoveredEntry>>,
     thread: JoinHandle<CoverOutcome>,
     deferred: Vec<String>,
+    heartbeat: WalkHeartbeat,
 }
 
 impl CoverWalk {
@@ -102,6 +113,24 @@ impl CoverWalk {
     /// walk has ended, for whatever reason.
     pub fn next_batch(&self) -> Option<Vec<CoveredEntry>> {
         self.batches.recv().ok()
+    }
+
+    /// How many directories the walk has STARTED reading, as a counter it keeps
+    /// writing to.
+    ///
+    /// A counter rather than a number, because the two threads a caller needs are
+    /// not the same one: this handle goes wherever `next_batch` is blocked, and
+    /// whoever reports progress is elsewhere. A batch-derived count reads zero for
+    /// as long as a batch takes to fill (2 000 entries, or forever on a directory
+    /// that hangs), so this is what "still working" has to be measured from.
+    pub fn dirs_scanned_counter(&self) -> Arc<std::sync::atomic::AtomicU64> {
+        self.heartbeat.dirs_scanned_counter()
+    }
+
+    /// The directory the walk started reading most recently, same reasoning.
+    /// Indicative, not a cursor: the local walker reads several at once.
+    pub fn current_dir_slot(&self) -> Arc<Mutex<Option<String>>> {
+        self.heartbeat.current_dir_slot()
     }
 
     /// Frontier roots this walk is NOT covering, because another walk on the same
@@ -130,6 +159,7 @@ impl CoverWalk {
             dirs_found: 0,
             roots_covered: 0,
             cancelled: true,
+            abandoned_ground: false,
         })
     }
 }
@@ -171,6 +201,10 @@ pub(crate) fn start(
 
     let (sender, batches) = sync_channel(BATCH_QUEUE_DEPTH);
     let walk_cancel = cancel;
+    // ONE pulse for the whole frontier, not one per root: a consumer watching a
+    // walk of eight roots wants a count that keeps climbing, not one that restarts.
+    let heartbeat = WalkHeartbeat::new();
+    let walk_heartbeat = heartbeat.clone();
     let thread = std::thread::Builder::new()
         .name("index-cover".into())
         .spawn(move || {
@@ -179,7 +213,7 @@ pub(crate) fn start(
             cmdr_fs::thread_qos::set_current_thread_qos(cmdr_fs::thread_qos::QosClass::Utility);
             // The claim lives as long as the walk and no longer, so its ground
             // frees up on the completion path, the cancel path, and a panic alike.
-            let outcome = walk_frontier(&context, claim.mine(), &sender, &walk_cancel);
+            let outcome = walk_frontier(&context, claim.mine(), &sender, &walk_cancel, &walk_heartbeat);
             drop(claim);
             outcome
         })
@@ -192,6 +226,7 @@ pub(crate) fn start(
                 dirs_found: 0,
                 roots_covered: 0,
                 cancelled: true,
+                abandoned_ground: false,
             })
         });
 
@@ -199,6 +234,7 @@ pub(crate) fn start(
         batches,
         thread,
         deferred,
+        heartbeat,
     }
 }
 
@@ -214,6 +250,7 @@ fn walk_frontier(
     frontier: &[String],
     sender: &SyncSender<Vec<CoveredEntry>>,
     cancel: &CancellationToken,
+    heartbeat: &WalkHeartbeat,
 ) -> CoverOutcome {
     let Some(ground) = Ground::under(context) else {
         log::warn!(
@@ -225,12 +262,17 @@ fn walk_frontier(
             dirs_found: 0,
             roots_covered: 0,
             cancelled: true,
+            abandoned_ground: false,
         };
     };
 
     ground.open_session();
-    let outcome = walk_roots(context, &ground, frontier, sender, cancel);
+    let mut outcome = walk_roots(context, &ground, frontier, sender, cancel, heartbeat);
     ground.close_session();
+    // Read after the walk, not during it: the local half only knows what it gave
+    // up on once its engine reports, and a give-up on the last root counts as much
+    // as one on the first.
+    outcome.abandoned_ground = heartbeat.abandoned_count() > 0;
 
     // Everything this walk learned is COMMITTED before it reports, on the
     // cancelled path too. The rows are the smaller half of that: the marks
@@ -258,12 +300,14 @@ fn walk_roots(
     frontier: &[String],
     sender: &SyncSender<Vec<CoveredEntry>>,
     cancel: &CancellationToken,
+    heartbeat: &WalkHeartbeat,
 ) -> CoverOutcome {
     let mut outcome = CoverOutcome {
         entries_found: 0,
         dirs_found: 0,
         roots_covered: 0,
         cancelled: false,
+        abandoned_ground: false,
     };
 
     for path in frontier {
@@ -284,7 +328,7 @@ fn walk_roots(
         // both arms hand the same summary to the same accumulation and only the
         // VERDICT differs. Keeping one `+=` pair is what stops the cancel path
         // drifting from the completion path.
-        let (summary, verdict) = ground.cover(context, root, sender, cancel);
+        let (summary, verdict) = ground.cover(context, root, sender, cancel, heartbeat);
         if let Some(summary) = summary {
             outcome.entries_found += summary.total_entries;
             outcome.dirs_found += summary.total_dirs;
@@ -382,10 +426,18 @@ impl Ground {
         root: &Path,
         sender: &SyncSender<Vec<CoveredEntry>>,
         cancel: &CancellationToken,
+        heartbeat: &WalkHeartbeat,
     ) -> (Option<ScanSummary>, RootOutcome) {
         match self {
             Ground::Local => {
-                match cover_subtree(root, &context.space, &context.writer, Some(sender.clone()), cancel) {
+                match cover_subtree(
+                    root,
+                    &context.space,
+                    &context.writer,
+                    Some(sender.clone()),
+                    cancel,
+                    heartbeat,
+                ) {
                     Ok(summary) => (Some(summary), RootOutcome::Covered),
                     Err(ScanError::Cancelled(summary)) => (Some(summary), RootOutcome::Cancelled),
                     Err(ScanError::NotVirgin) => (None, repair_non_virgin(context, root, cancel)),
@@ -412,6 +464,7 @@ impl Ground {
                     Some(sender.clone()),
                     cancel,
                     pacer,
+                    heartbeat,
                 ));
                 match result {
                     Ok(summary) => (Some(summary), RootOutcome::Covered),
