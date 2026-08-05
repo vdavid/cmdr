@@ -660,11 +660,11 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
     }
 
     // A writer-only start is the only thing that will ever touch this database
-    // before rows are written into it, so it does the two things a scan start
-    // would otherwise have done for it. Same short-lived write connection as the
-    // bump above, for the same reason: no writer is running yet.
+    // before rows are written into it, so it does what a scan start would
+    // otherwise have done for it. Same short-lived write connection as the bump
+    // above, for the same reason: no writer is running yet.
     if activation == Activation::WriterOnly {
-        prepare_database_for_a_walk(volume_id, &db_path);
+        prepare_database_for_a_walk(volume_id, &db_path, &volume_root);
     }
 
     // One set of shared handles per volume, held by BOTH the registry instance
@@ -790,13 +790,17 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
     Ok(())
 }
 
-/// Give a database a search-driven walk is about to write into the two things a
+/// Give a database a search-driven walk is about to write into the three things a
 /// scan start would have given it.
 ///
 /// 1. **The epoch** every directory the walk lists is stamped with. A cold
 ///    database has no `current_epoch`, and a walk only ever stamps the value it
 ///    reads; seeding it here is what makes epoch 1 mean "this walk covered it".
-/// 2. **The exclusion policy stamp**, but ONLY while the database provably holds
+/// 2. **The mount root** (`volume_path`), which is what lets a reader prefix this
+///    index's mount-relative paths back to absolute ones. Search falls back to
+///    the live volume registry when it's absent, so this is what keeps a
+///    walk-built external index readable once the drive is offline.
+/// 3. **The exclusion policy stamp**, but ONLY while the database provably holds
 ///    nothing (the `ROOT` sentinel alone). It records which policy the rows were
 ///    written under, and an empty database satisfies any policy trivially — the
 ///    same argument as stamping right after a `TruncateData`, which is the only
@@ -809,7 +813,7 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
 ///
 /// Best-effort throughout: a failure costs coverage claims, never correctness, so
 /// it's logged rather than propagated into a refusal to walk at all.
-fn prepare_database_for_a_walk(volume_id: &str, db_path: &std::path::Path) {
+fn prepare_database_for_a_walk(volume_id: &str, db_path: &std::path::Path, volume_root: &std::path::Path) {
     let conn = match IndexStore::open_write_connection(db_path) {
         Ok(conn) => conn,
         Err(e) => {
@@ -819,6 +823,9 @@ fn prepare_database_for_a_walk(volume_id: &str, db_path: &std::path::Path) {
     };
     if let Err(e) = IndexStore::seed_current_epoch(&conn) {
         log::warn!("start_indexing_for('{volume_id}'): seeding the epoch failed: {e}");
+    }
+    if let Err(e) = IndexStore::update_meta(&conn, "volume_path", &volume_root.to_string_lossy()) {
+        log::warn!("start_indexing_for('{volume_id}'): recording the mount root failed: {e}");
     }
     match IndexStore::get_entry_count(&conn) {
         // 1 is the `ROOT` sentinel `create_tables` inserts, so this is an index

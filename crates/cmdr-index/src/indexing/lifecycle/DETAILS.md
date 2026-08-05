@@ -40,9 +40,11 @@ concurrently without corrupting each other. Every invariant below holds independ
   heal latch. If the rebuild can't start (share unmounted, scan already running) we log and keep serving the existing
   index; nothing stamps the DB until a rebuild actually truncates, so the next load re-arms. Triggers, name list, and
   the stamp are canonical in `../network_scanner/DETAILS.md` § "NAS snapshot/system dirs aren't recursed".
-- **cover.rs** (+ `cover/tests.rs`) — the SEARCH-driven walk, the write half of the coverage concept whose read half is
-  `../read/coverage.rs`. `Index::cover` resolves a `CoverContext` (the volume's running writer + its path space) here,
-  spawns one Utility-QoS thread, and walks each frontier root the coverage answer named. Detail below.
+- **cover.rs** (+ `cover/bootstrap.rs`, `cover/tests.rs`) — the SEARCH-driven walk, the write half of the coverage
+  concept whose read half is `../read/coverage.rs`. `Index::cover` resolves a `CoverContext` (the volume's writer + its
+  path space) here, spawns one Utility-QoS thread, and walks each frontier root the coverage answer named. `bootstrap`
+  is everything that has to exist first: an index on a volume that has none, and an `entries` row for a path the index
+  has never seen. Detail below.
 - **scan_completion.rs** — the post-scan handler: the vanished-volume abort and the LOCAL failure→Stale arm (below).
 - **freshness.rs** — the `Fresh`/`Stale`/`Scanning`/`Failed` transition table (`Freshness::on`) +
   `initial_freshness_on_launch`.
@@ -338,6 +340,50 @@ caller that stopped reading can't deadlock against a walk parked on a full one.
 
 **The channel is bounded at eight batches.** A consumer that falls behind slows the walk rather than growing a queue to
 the size of the subtree; each batch already carries up to 2 000 entries.
+
+### What has to exist before a walk can run (`cover/bootstrap.rs`)
+
+A walk needs a database with a writer behind it, an epoch to stamp listed directories with, and an `entries` row to
+resolve its root against. A volume nobody ever indexed has none of them, and a volume indexed yesterday can still be
+missing the last one — a folder created since its parent was listed has no row either, so this is not only a cold-drive
+concern. ❌ Nothing in here lists a directory or claims coverage: it creates rows at `listed_epoch = 0` and the walk
+earns the rest.
+
+**Standing an index up for a walk** (`context_for_walk`). A volume that's already `Running` hands its writer over
+untouched. Otherwise the bootstrap starts one with `Activation::WriterOnly` — the same `start_indexing_for` every enable
+funnels through, minus `resume_or_scan`, so the lock-first reservation, read-handle install, failure supervisor, and
+maintenance timer can't drift between the two. What that start does differently:
+
+- **Seeds `current_epoch` and stamps `EXCLUSION_POLICY_KEY`, the latter ONLY while the database holds nothing past the
+  `ROOT` sentinel** (`prepare_database_for_a_walk`). An empty database satisfies any exclusion policy trivially, which
+  is the same argument that licenses the stamp right after a `TruncateData` — the only other moment that holds
+  (`../store/CLAUDE.md`). Load-bearing: without the stamp `coverage` trusts nothing the walk writes, so every later
+  search re-walks the same ground and a cold drive never converges.
+- **Never inherits the Fresh a journal replay earns.** It doesn't replay, so a persisted index it didn't verify loads
+  Stale exactly like a non-journaled one (and bumps the epoch on the way, as any launch-as-Stale does).
+- **Refuses what it can't walk**: a volume that isn't mounted, and a share or a phone (the LOCAL guarded walker must
+  never traverse a network mount; their scoped walk is M3d). Classified by the same typed facts and the same
+  `routes_to_local_external` predicate the enable command uses, with the `statfs` probe bounded on a thread of its own —
+  the async timeout `local_external::classify` uses needs a runtime this path doesn't have, and a probe that won't
+  answer IS the answer (`MountFacts::UNPROBEABLE` reads as network, which is refused here anyway).
+- **Still honors the master switch.** Decision 13 carves a user-initiated read out of it; that carve-out is M3c's, along
+  with the four docs that state the invariant, and `NoCoverContext::MasterSwitchOff` is where it lands.
+
+**Active is not indexed.** A writer-only instance makes a volume `is_active` while nothing has ever scanned it, so
+`Index::start_volume` asks `awaits_its_first_scan` (Running, not scanning, no `scan_completed_at`) and force-scans
+instead of reporting `Started` at a volume that would never index. A first scan someone stopped leaves the same shape
+and had the same problem. Two consequences deliberately left standing: `VolumeIndexStatus.enabled` reads true (the
+frontend renders `freshness: null` gray, so the badge is honest), and the first-connect "index this drive?" toast
+suppresses itself on a drive a search already walked.
+
+**Materializing a path's chain** (`ensure_walkable`). The common case is one lookup — a frontier node a coverage answer
+found by descending into its parent's listing already has a row. Otherwise the chain from the volume root down is
+created through the writer (`UpsertEntryV2`, resolved by `(parent_id, name)`, so a row arriving meanwhile is updated
+rather than duplicated past `idx_parent_name_folded`), one flush per created component, each carrying the real
+directory's metadata. It declines rather than guesses in three cases: a chain running through a FILE row (the stale
+file→dir type change `reconcile_subtree` escalates on — parenting under a file id orphans everything below), a path that
+isn't a directory on disk any more, and a symlink (stored, never descended into, so a walk rooted below one would
+attribute another directory's contents to it).
 
 ## Vanished-volume scan abort (`scan_completion.rs`)
 

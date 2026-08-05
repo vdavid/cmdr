@@ -628,6 +628,7 @@ fn clear_registry_and_pools() {
         "sweep-fresh",
         "sweep-stale",
         "sweep-scanning",
+        "awaits-first-scan",
     ];
     let mut reg = INDEX_REGISTRY.lock().unwrap();
     for vid in STATE_TEST_VIDS {
@@ -638,6 +639,34 @@ fn clear_registry_and_pools() {
         uninstall_read_pool(vid);
         uninstall_pending_sizes(vid);
     }
+}
+
+/// "Has this volume ever actually been walked?" is not "is it active?", and
+/// `Index::start_volume` branches on the difference — a search-driven walk
+/// registers an instance nothing has ever scanned, and an enable that treated it
+/// as indexed would leave the drive unindexed forever.
+///
+/// A volume nobody registered, and one whose own start is still in flight, both
+/// answer NO: there is nothing to scan, and a start already running needs no
+/// second one.
+#[test]
+fn awaiting_a_first_scan_is_not_the_same_as_being_active() {
+    let _guard = INDEX_REGISTRY_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+    clear_registry_and_pools();
+
+    assert!(
+        !awaits_its_first_scan("awaits-first-scan"),
+        "an unregistered volume has no index to scan into"
+    );
+
+    let _dir = reserve_initializing_index_for_test("awaits-first-scan", IndexVolumeKind::Local);
+    assert!(is_active("awaits-first-scan"), "reserved ⇒ active");
+    assert!(
+        !awaits_its_first_scan("awaits-first-scan"),
+        "a start already in flight owns the first scan"
+    );
+
+    clear_registry_and_pools();
 }
 
 /// Tests that mutate `INDEX_REGISTRY` serialize on this guard (mirrors

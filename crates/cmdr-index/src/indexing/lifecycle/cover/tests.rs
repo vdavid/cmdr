@@ -556,9 +556,10 @@ fn a_frontier_path_that_is_not_a_directory_on_disk_is_declined() {
 /// data directory configured".
 struct ColdDrive {
     _installed: crate::indexing::handle::TestInstallGuard,
-    _data: tempfile::TempDir,
+    data: tempfile::TempDir,
     tree: tempfile::TempDir,
     index: crate::indexing::handle::Index,
+    events: std::sync::Arc<crate::indexing::events::RecordingSink>,
     volume_id: &'static str,
     _serialized: std::sync::MutexGuard<'static, ()>,
 }
@@ -592,16 +593,19 @@ impl ColdDrive {
                 cmdr_fs::volume::InMemoryVolume::new("Cold").with_root(tree.path()),
             )),
         );
+        let events = std::sync::Arc::new(crate::indexing::events::RecordingSink::new());
         let (index, installed) = crate::indexing::handle::Index::builder()
             .data_dir(data.path())
             .volumes(std::sync::Arc::clone(&volumes) as std::sync::Arc<_>)
+            .events(std::sync::Arc::clone(&events) as std::sync::Arc<dyn crate::indexing::events::EventSink>)
             .install_for_test();
 
         Self {
             _installed: installed,
-            _data: data,
+            data,
             tree,
             index,
+            events,
             volume_id,
             _serialized: serialized,
         }
@@ -609,6 +613,20 @@ impl ColdDrive {
 
     fn path(&self, relative: &str) -> String {
         self.tree.path().join(relative).to_string_lossy().to_string()
+    }
+
+    /// This drive's index database, whether or not anything has created it yet.
+    fn db_path(&self) -> PathBuf {
+        self.data.path().join(format!("index-{}.db", self.volume_id))
+    }
+
+    /// How many full scans this drive has announced.
+    fn scans_started(&self) -> usize {
+        self.events
+            .kinds_for(self.volume_id)
+            .iter()
+            .filter(|kind| **kind == crate::indexing::events::IndexEventKind::ScanStarted)
+            .count()
     }
 
     fn coverage(&self, path: &str) -> crate::indexing::read::coverage::CoverageMap {
@@ -683,6 +701,41 @@ fn a_cold_volume_bootstraps_and_claims_only_what_it_walked() {
     );
 }
 
+/// A walk over a drive whose index is left over from an earlier session reads it
+/// as Stale, never Fresh.
+///
+/// Fresh-on-launch is what a journal REPLAY earns, and a writer-only start
+/// doesn't replay: nothing has been watching this volume, so its rows are
+/// stale-but-visible. Claiming Fresh would make the badge say "authoritative"
+/// over an index nobody has verified since the app was last open.
+#[test]
+fn a_walk_on_a_left_over_index_reads_it_as_stale() {
+    let drive = ColdDrive::new("cover-cold-leftover-test");
+    {
+        // A local index a previous session completed, with nothing running it now.
+        drop(IndexStore::open(&drive.db_path()).expect("open store"));
+        let conn = IndexStore::open_write_connection(&drive.db_path()).expect("write connection");
+        IndexStore::update_meta(&conn, "scan_completed_at", "1700000000").expect("stamp a completed scan");
+    }
+
+    // Started as the JOURNALED kind on purpose: the boot disk is the only kind
+    // that can load Fresh at all, so it's the only one where this can go wrong.
+    crate::indexing::lifecycle::state::start_indexing_for(
+        drive.volume_id,
+        drive.tree.path().to_path_buf(),
+        crate::indexing::volume::IndexVolumeKind::Local,
+        true,
+        crate::indexing::lifecycle::state::Activation::WriterOnly,
+    )
+    .expect("stand the index up for a walk");
+
+    assert_eq!(
+        crate::indexing::lifecycle::state::get_freshness(drive.volume_id),
+        Some(crate::indexing::lifecycle::freshness::Freshness::Stale),
+        "a walk replays no journal, so it verifies nothing and may not claim Fresh"
+    );
+}
+
 /// The second walk on a bootstrapped drive reuses the writer the first one stood
 /// up, and the coverage the first one earned is still there.
 ///
@@ -741,6 +794,17 @@ async fn turning_indexing_on_after_a_walk_still_scans_the_drive() {
         || drive.coverage(&volume_root).frontier.is_empty(),
     )
     .await;
+    assert_eq!(drive.scans_started(), 1, "exactly one scan, not one per call");
+
+    // And the other side of the same gate: a drive that HAS been indexed must not
+    // be rescanned by an enable. On a real drive that's a full re-walk of
+    // everything — minutes on a NAS — off one stray click.
+    drive
+        .index
+        .start_volume(drive.volume_id)
+        .await
+        .expect("a second enable is a no-op");
+    assert_eq!(drive.scans_started(), 1, "an indexed drive is left alone");
 }
 
 /// A drive that isn't mounted has nothing to walk and nothing to root an index

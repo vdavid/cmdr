@@ -84,12 +84,15 @@ name and the subtrees it used to skip stay row-less while their parents keep cla
 search, with nothing to trigger a re-walk. So an absent or stale stamp means **no coverage claim in that database is
 trusted** and the whole scope goes to the walk.
 
-❌ **Stamp it ONLY right after a `TruncateData`** — the one moment the DB provably holds no row beneath a directory
-today's policy excludes. A reconcile or a scoped fill never re-lists the volume, so it can't clear what an older policy
-let in. Both sites do it: `lifecycle/manager/start.rs` (local) and `lifecycle/network_scan.rs` (SMB/MTP, alongside the
-NAS list's own `SYSTEM_DIR_EXCLUSIONS_KEY` stamp, which is the same pattern for a different list). `CMDR_E2E_START_PATH`
-is deliberately outside the fingerprint: it narrows the effective policy at runtime but it's a per-run fixture path, and
-folding it in would write a machine-specific value into every E2E index.
+❌ **Stamp it ONLY while the DB provably holds no row beneath a directory today's policy excludes**, which is exactly
+two moments: right after a `TruncateData`, and on a database that has never held an entry at all (`entry_count <= 1`,
+the `ROOT` sentinel alone — `lifecycle/state.rs`'s `prepare_database_for_a_walk`, where a search-driven walk stands a
+cold volume's index up and would otherwise write rows nothing ever trusts). A reconcile or a scoped fill over an index
+that ALREADY holds rows never re-lists the volume, so it can't clear what an older policy let in, and must leave the
+stamp alone. The three sites: `lifecycle/manager/start.rs` (local), `lifecycle/network_scan.rs` (SMB/MTP, alongside the
+NAS list's own `SYSTEM_DIR_EXCLUSIONS_KEY` stamp, which is the same pattern for a different list), and the cold
+bootstrap above. `CMDR_E2E_START_PATH` is deliberately outside the fingerprint: it narrows the effective policy at
+runtime but it's a per-run fixture path, and folding it in would write a machine-specific value into every E2E index.
 
 **`read_high_water_id`** is `MAX(id)` on `entries`, the cheap write watermark half of `CoverageToken`. A watermark, not
 a count: ids come from one monotonic per-volume counter, so any walk that inserts rows raises it, at the cost of a seek

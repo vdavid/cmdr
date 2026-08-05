@@ -9,15 +9,18 @@ How a per-volume index is born, lives, transitions, and dies. Every invariant he
 - **manager.rs** the per-volume coordinator (+ **manager/start.rs**, LOCAL scan and journal-replay starts);
   **network_scan.rs** the SMB/MTP trait scan; **scan_completion.rs** post-scan; **progress_reporter.rs** +
   **partial_agg.rs** the 500 ms progress pump.
-- **cover.rs** — the search-driven walk over a coverage frontier (`Index::cover`).
+- **cover.rs** (+ **cover/bootstrap.rs**, what has to exist before a walk can run) — the search-driven walk over a
+  coverage frontier (`Index::cover`).
 
 - **freshness.rs**, **failure.rs**, **master.rs** (the master switch), **lifecycle_bus.rs** (the neutral scan-completed
   / registration / dirs-changed bus).
 
 ## Must-knows
 
-- **`INDEX_REGISTRY` is the authority** on which volumes are indexed, and guards lifecycle ONLY. **Disabled = the
-  ABSENCE of a key** (no `IndexPhase::Disabled`); `get_status`/`is_active` read absent as disabled.
+- **`INDEX_REGISTRY` is the authority** on which volumes have a live index, and guards lifecycle ONLY. **Disabled = the
+  ABSENCE of a key** (no `IndexPhase::Disabled`); `get_status`/`is_active` read absent as disabled. But **present ≠
+  indexed**: a walk-built index is `is_active` with nothing ever scanned, so an enable asks `awaits_its_first_scan`
+  (`Index::start_volume`), else the drive never indexes.
 - **Handles are PUSHED down, never pulled up.** A volume's `ReadPool`/`PendingSizes` live in `../read/handles.rs`; its
   stop token reaches a walk from whoever holds the instance. ❌ Nothing below `lifecycle` may import `lifecycle::state`:
   reads would wait on the lock teardown holds, and a late lookup hands a doomed walk a token that never fires.
@@ -31,8 +34,9 @@ How a per-volume index is born, lives, transitions, and dies. Every invariant he
   AND the blocking scan-start: holding froze the UI; re-locking self-deadlocked on real hardware.
 - **A manual rescan routes by the TYPED kind** (`rescan_scanner_for_kind`): SMB/MTP → `start_volume_scan`, local →
   `start_scan`. ❌ Never `start_scan` a trait-scanned volume: it walks nothing and falsely completes.
-- **A cover walk reuses the volume's RUNNING writer, never starts one** (`cover_context_for`). Two writers race the id
-  counter; an `Initializing` volume already scans what a search wants. No index ⇒ `Err` (M3b).
+- **A cover walk reuses the RUNNING writer; no index ⇒ it stands one up** (`Activation::WriterOnly`: DB, epoch, writer,
+  read handles; ❌ no scan or watcher, and `../store/` owns its `EXCLUSION_POLICY_KEY` stamp). Two writers race the id
+  counter. Shares and phones are refused (M3d).
 - **`IndexVolumeKind` is a capability model**; branch on the axis, not the variant. `has_event_journal()` (only `Local`)
   gates journal replay, NOT `last_event_id.is_some()` (`LocalExternal` persists an id, no journal).
 - **Freshness has ONE total transition table** (`Freshness::on`); no journal ⇒ load Stale on launch. `..._on` (fires on

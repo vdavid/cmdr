@@ -250,7 +250,7 @@ coverage API must not assume a single dimension.
 
 ## Execution status
 
-Through M3a. Branch `worktree-david+unindexed-search-exec`, nothing merged to `main` yet.
+Through M3b. Branch `worktree-david+unindexed-search-exec`, nothing merged to `main` yet.
 
 **Landed.**
 
@@ -276,8 +276,34 @@ Through M3a. Branch `worktree-david+unindexed-search-exec`, nothing merged to `m
   serial reconcile takes that case. The walk also stamps `known_unreadable` for permission-denied reads, which M2's
   column had no writer for. Primitive chosen by measurement — parallel walker, 3.2–5.8x over the serial reconcile with
   identical row counts on four real trees (`docs/notes/cover-walk-primitive-2026-08-05.md`). Root promises 47 → 50.
+- **M3b**: the cold bootstrap, behind `cover` rather than as a method of its own, so **neither ceiling moved**
+  (`handle/DETAILS.md` argues why). `start_indexing_for` gained an `Activation`: `IndexTheVolume` or `WriterOnly` (a
+  database, an epoch, the read handles, a writer — no scan, no watcher). A writer-only start seeds `current_epoch` and
+  stamps `EXCLUSION_POLICY_KEY` **only on a database that has never held an entry**, which is what makes a cold drive
+  converge at all. It never claims the Fresh a journal replay earns. Shares, phones, and unmounted drives are refused
+  (`NotIndexed`), classified through the enable command's own predicate with the `statfs` probe bounded on its own
+  thread. `ensure_walkable` materializes a frontier path's ancestor chain through the writer at `listed_epoch = 0`, and
+  declines a chain through a FILE row, a vanished path, or a symlink.
 
 **Decisions taken during execution that the spec did not pre-empt.**
+
+- **The missing-row case is NOT cold-volume-specific, and the plan undersold it.** M3b was written as "a drive that was
+  never indexed"; a folder created since its parent was last listed has no `entries` row on a fully indexed drive
+  either, and it's exactly the frontier node a coverage answer hands back. Same fix, but it is a warm-volume correctness
+  bug, not only a bootstrap one.
+- **Active stopped meaning indexed.** A writer-only instance makes `is_active` true on a volume nothing ever scanned, so
+  `Index::start_volume` had to stop short-circuiting on it (`awaits_its_first_scan` → force a scan). That also fixed a
+  pre-existing case with no walk involved: a first scan someone stopped left the same shape, and "Turn on indexing" was
+  a no-op on it. Two consequences left standing for M10: `VolumeIndexStatus.enabled` reads true for a walk-built index
+  (the frontend renders `freshness: null` gray, so the badge is honest), and `first-connect-trigger.ts:49` suppresses
+  the "index this drive?" toast on a drive a search already walked.
+- **The master switch still gates the walk.** Decision 13's carve-out is M3c's, so M3b keeps the invariant the four docs
+  state and puts the whole gate in one place (`NoCoverContext::MasterSwitchOff`) for M3c to remove.
+- **`Index::list_children` reports an unlisted directory's rows as its contents.** `list_dir_children` never consults
+  `listed_epoch`, so a directory with a row but no listing (which the chain materialization creates, and which FSEvents
+  verification and `reconcile_subtree` already created) answers with a partial listing rather than "not indexed". The
+  agent's `list_dir` tool is the consumer, and its contract says a read that is a lower bound has to say so. Not fixed
+  here — it's an honesty gap in a tool result, not in coverage — but it wants an owner.
 
 - **`unresolvedScopes` copy says what Cmdr knows, never that a folder is missing.** Telling "not walked yet" from
   "genuinely not found" needs a filesystem probe inside search routing, which is a network-hang hazard and M5's job.

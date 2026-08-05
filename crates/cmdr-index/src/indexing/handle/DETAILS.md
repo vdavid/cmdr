@@ -81,6 +81,20 @@ genuinely can't do without:
 - **`CoverOutcome`** — what the walk covered, and whether somebody stopped it. M5's terminal UI states are exactly that
   distinction, and neither of them is a failure.
 
+**Why standing a cold volume's index up is NOT a method of its own** (2026-08-05, M3b). A drive nobody ever indexed has
+no database, no epoch, no writer, and no entry to resolve a scan root against, so `cover` used to refuse it — the one
+case that made the whole concept useless where it's needed most. The obvious move was a fifth call ("prepare this
+volume", "ensure an index"), and it would have been a mistake twice over: it makes every caller responsible for a
+sequencing rule the index can enforce itself, and it names an internal (an `IndexManager` exists) rather than something
+the caller wants. `cover` already writes to disk and already means "make the index able to answer for this"; a volume
+with nothing to write into is a case of that, not a different question. So the bootstrap is behind `cover`, the surface
+stays at 38 methods and 50 root promises, and **neither ceiling moved for M3b**.
+
+The cost, stated plainly: `cover` on a cold drive creates a database and registers the volume, which is a bigger side
+effect than the name suggests. That is bounded by what it stands up — a writer and nothing else, no scan, no watcher —
+and by what it refuses (an unmounted drive, a share, a phone: all `NotIndexed`). `lifecycle/DETAILS.md` § "What has to
+exist before a walk can run" is the mechanism.
+
 Nothing further is owed to the concept; a fourth type here needs the same argument these did. `CoverageToken`'s fields
 stay private and it's `PartialEq` only — the sole question worth asking of it is whether two answers describe the same
 rows, and exposing the epoch would invite callers to reason about a scheme the read side deliberately keeps inside
@@ -165,7 +179,9 @@ is supposed to BE the surface.
   read half's three on 2026-08-05, the walk half's three the same day).
 - **38 methods on `Index`** — the 36 above plus `Index::builder`, which the headline number treats as the constructor
   rather than a call, plus `cover`, which took the slot reserved for it by name. That reservation is now spent; the
-  ceiling is at its number, so the next method has to be argued the way these were.
+  ceiling is at its number, so the next method has to be argued the way these were. M3b's cold-volume bootstrap took
+  none of it: it went behind `cover` rather than becoming a 39th method (above, "Why standing a cold volume's index up
+  is NOT a method of its own").
 - **17 public modules** and **156 public items inside them** — the surface the root re-exports don't capture, which is
   where `media_index` and `importance` live. Unchanged: the coverage module is `pub(crate)`, reaching a host only
   through the handle and the root re-exports.
