@@ -44,8 +44,8 @@ How a per-volume index is born, lives, transitions, and dies. Every invariant he
 - **Freshness has ONE total transition table** (`Freshness::on`); no journal ⇒ load Stale on launch. `..._on` (fires on
   the `Arc`) vs `apply_freshness_event` (looks up under the lock) is LOCK DISCIPLINE, not style.
 
-- **A fatal storage error STOPS + FAILS the index, never retries** (one incident logged 12,700 warnings in 8 min).
-  Typed and terminal; recovery is rebuild.
+- **A fatal storage error STOPS + FAILS the index, never retries** (one incident logged 12,700 warnings in 8 min). Typed
+  and terminal; recovery is rebuild.
 - **TWO switches, master wins, and both gate BACKGROUND work only.** `indexing.enabled` hard-gates
   `Activation::IndexTheVolume` in `start_indexing_for`, the choke point all four transports share. Master-off stops via
   `stop_indexing`, which must ❌ never write per-drive intent. ⚠️ A search walk (`WriterOnly`) is carved out of both

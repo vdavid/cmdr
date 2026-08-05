@@ -43,9 +43,9 @@ concurrently without corrupting each other. Every invariant below holds independ
 - **cover.rs** (+ `cover/bootstrap.rs`, `cover/live.rs`, `cover/tests.rs`, `cover/network_tests.rs`) — the SEARCH-driven
   walk, the write half of the coverage concept whose read half is `../read/coverage.rs`. `Index::cover` resolves a
   `CoverContext` (the volume, its writer, its path space, its kind) here, spawns one Utility-QoS thread, and walks each
-  frontier root the coverage answer named — through the local guarded walker or the volume's own `Volume`, whichever
-  the kind calls for (`Ground`). `bootstrap` is everything that has to exist first: an index on a volume that has none, and an `entries` row for
-  a path the index has never seen. `live` is which roots are already being walked. Detail below.
+  frontier root the coverage answer named — through the local guarded walker or the volume's own `Volume`, whichever the
+  kind calls for (`Ground`). `bootstrap` is everything that has to exist first: an index on a volume that has none, and
+  an `entries` row for a path the index has never seen. `live` is which roots are already being walked. Detail below.
 - **scan_completion.rs** — the post-scan handler: the vanished-volume abort and the LOCAL failure→Stale arm (below).
 - **freshness.rs** — the `Fresh`/`Stale`/`Scanning`/`Failed` transition table (`Freshness::on`) +
   `initial_freshness_on_launch`.
@@ -322,19 +322,19 @@ volume's real index through its ONE writer (Decision 2 of `docs/specs/unindexed-
 the search that paid for it and the next search over the same ground walks less.
 
 **Which ground, and which walk reads it** (`Ground`). Every volume kind falls in one of two halves, and that is the ONE
-per-kind branch in the whole coverage concept: a local filesystem is read by the guarded walker, and everything else —
-a share, a phone, whatever backend comes next — through its `Volume` (`../network_scanner/DETAILS.md` § "The scoped
-cover walk"). Downstream of a discovered entry the two are identical: same writer, same epochs, same `dir_stats`, same
+per-kind branch in the whole coverage concept: a local filesystem is read by the guarded walker, and everything else — a
+share, a phone, whatever backend comes next — through its `Volume` (`../network_scanner/DETAILS.md` § "The scoped cover
+walk"). Downstream of a discovered entry the two are identical: same writer, same epochs, same `dir_stats`, same
 frontier query, same descent rule. `Ground::under` resolves the half from the kind on the registry instance the writer
 came from, and answers `None` when a trait-scanned volume has been ejected since the coverage answer.
 
 **Two primitives on the local half, and which one runs.** A frontier node is virgin ground by definition, so this is a
 bulk add and the parallel guarded walker wins outright — 3.2–5.8x over the serial reconcile with identical row counts on
 four real trees (`docs/notes/cover-walk-primitive-2026-08-05.md`). The serial reconcile is kept as the REPAIR path, for
-the one case the parallel walker can't take: a frontier node the index already holds rows under
-(`ScanError::NotVirgin`, see `../scanner/DETAILS.md` § "Three scan roots"). It compares by name and writes only
-differences, which is exactly that case's shape. The trait half needs no such split — it is add-only per directory, so
-it simply takes the case. ❌ No path ever deletes: covering is add-only work.
+the one case the parallel walker can't take: a frontier node the index already holds rows under (`ScanError::NotVirgin`,
+see `../scanner/DETAILS.md` § "Three scan roots"). It compares by name and writes only differences, which is exactly
+that case's shape. The trait half needs no such split — it is add-only per directory, so it simply takes the case. ❌ No
+path ever deletes: covering is add-only work.
 
 **The backend's scan session brackets the WHOLE frontier**, not each root: over SMB that's a pool of extra connections
 (`begin_scan_session` / `end_scan_session`), and opening one per frontier root would pay the setup repeatedly inside one
@@ -430,9 +430,9 @@ rather than duplicated past `idx_parent_name_folded`), one flush per created com
 directory's metadata. Where that metadata comes from is `Ground`'s to answer: an `lstat` on the local half, and a
 deadline-bounded `stat_one_directory` round trip on the trait half (whose timeout races the task's JOIN handle for the
 same reason listings do — dropping a `get_metadata` future mid-round-trip wedges a phone). It declines rather than
-guesses in three cases: a chain running through a FILE row (the stale file→dir type change `reconcile_subtree`
-escalates on — parenting under a file id orphans everything below), a path that isn't a directory any more, and a
-symlink (stored, never descended into, so a walk rooted below one would attribute another directory's contents to it).
+guesses in three cases: a chain running through a FILE row (the stale file→dir type change `reconcile_subtree` escalates
+on — parenting under a file id orphans everything below), a path that isn't a directory any more, and a symlink (stored,
+never descended into, so a walk rooted below one would attribute another directory's contents to it).
 
 ## Vanished-volume scan abort (`scan_completion.rs`)
 

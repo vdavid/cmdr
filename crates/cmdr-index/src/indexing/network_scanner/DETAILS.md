@@ -5,13 +5,12 @@ guardrails are in `CLAUDE.md`.
 
 This area owns the three `Volume`-trait BFS walks (fresh, reconcile, and the search-driven scoped cover), their
 round-trip disciplines, the terminal-disconnect partial-preserving finish, the consecutive-failure backstop, scan
-pacing, and the NAS system-dir skips. Points outward:
-the registry / phase machine / freshness / gating / manual-rescan routing in `../lifecycle/DETAILS.md`; the honest-sizes
-model + `dir_stats` ledger + the shared `Arc<AtomicI64>` id counter in `../writer/DETAILS.md`; the reconcile mode
-predicate, the shared per-dir diff (`diff_dir_against_db`), the `BulkReconcileGuard`, and the completion-handler
-empty-root policy in `../reconcile/DETAILS.md`; mount-relative path spaces in `../paths/DETAILS.md`; SMB/MTP transport
-enable + live watch in `../transports/CLAUDE.md`. The local guarded walker is a different scanner:
-`../scanner/DETAILS.md`.
+pacing, and the NAS system-dir skips. Points outward: the registry / phase machine / freshness / gating / manual-rescan
+routing in `../lifecycle/DETAILS.md`; the honest-sizes model + `dir_stats` ledger + the shared `Arc<AtomicI64>` id
+counter in `../writer/DETAILS.md`; the reconcile mode predicate, the shared per-dir diff (`diff_dir_against_db`), the
+`BulkReconcileGuard`, and the completion-handler empty-root policy in `../reconcile/DETAILS.md`; mount-relative path
+spaces in `../paths/DETAILS.md`; SMB/MTP transport enable + live watch in `../transports/CLAUDE.md`. The local guarded
+walker is a different scanner: `../scanner/DETAILS.md`.
 
 ## The `Volume`-trait scan path
 
@@ -76,12 +75,12 @@ prunes one parallel subtree.
 ### Bounded-concurrency walk (`FULL_LISTING_BUDGET`)
 
 All three walks keep up to `FULL_LISTING_BUDGET` (64) `list_directory` round trips in flight at once via a
-`FuturesUnordered` pump, instead of one-at-a-time. Directory listing is latency-bound — each dir is an
-open+query+close round trip over an otherwise-idle link — so overlapping them is a near-linear speedup (one real
-first-scan went from ~28 dirs/s serial to ~137 dirs/s and ~4,700 entries/s, ≈7–8× end to end). **Only the network I/O
-overlaps**: results are processed serially on the walk task, so `ScanContext` id allocation (fresh) and the DB read
-connection + diff (reconcile) stay single-owner with no locking, and the "a dir's id is registered before its children
-are listed" invariant still holds — a child is enqueued only after its parent's result is processed.
+`FuturesUnordered` pump, instead of one-at-a-time. Directory listing is latency-bound — each dir is an open+query+close
+round trip over an otherwise-idle link — so overlapping them is a near-linear speedup (one real first-scan went from ~28
+dirs/s serial to ~137 dirs/s and ~4,700 entries/s, ≈7–8× end to end). **Only the network I/O overlaps**: results are
+processed serially on the walk task, so `ScanContext` id allocation (fresh) and the DB read connection + diff
+(reconcile) stay single-owner with no locking, and the "a dir's id is registered before its children are listed"
+invariant still holds — a child is enqueued only after its parent's result is processed.
 
 **Decision/Why concurrency is safe for the data-integrity guarantees:** cancel drops the in-flight set (the smb2/MTP
 backends tolerate a dropped request waiter); a typed terminal disconnect stops topping up and runs the
@@ -129,11 +128,11 @@ The walk's listing budget isn't a constant: at every top-up it asks `ScanPacer::
 holds it — the user browsing it, OR a user-initiated transfer touching it (the host's order: interactive > transfers >
 indexing; the transfer signal is `priority::transfers`' per-volume gauge). All three walks read it, the search-driven
 cover walk included: it runs over the same session the pane browses through, so a search of one folder must not bury the
-navigation the user makes while reading its results. **Why it exists:** a scan and the pane's own listings share ONE SMB session (every `SmbVolume` clone
-multiplexes frames over the same connection), so 64 in-flight listings bury a navigation behind the backlog — a 40-entry
-folder took **10.7 s** to open mid-scan on a real QNAP (`/Volumes/naspi`, ~2M entries, 2026-07-19) and was instant the
-second the scan finished. That's also the first impression the app makes on someone who connects a NAS and enables
-indexing because it sounds good.
+navigation the user makes while reading its results. **Why it exists:** a scan and the pane's own listings share ONE SMB
+session (every `SmbVolume` clone multiplexes frames over the same connection), so 64 in-flight listings bury a
+navigation behind the backlog — a 40-entry folder took **10.7 s** to open mid-scan on a real QNAP (`/Volumes/naspi`, ~2M
+entries, 2026-07-19) and was instant the second the scan finished. That's also the first impression the app makes on
+someone who connects a NAS and enables indexing because it sounds good.
 
 **The signals** are `priority::foreground`'s per-volume timestamp, stamped by the listing IPC
 (`note_foreground_activity_on`) on every navigation, and `priority::transfers`' per-volume gauge, raised for the whole
@@ -265,10 +264,10 @@ discipline above (cancel per round trip, `LIST_TIMEOUT` racing the JOIN handle, 
 consecutive-failure backstops, `ScanPacer`, the NAS system-dir skip) and diverges from the two whole-volume walks in
 exactly four places, all of them consequences of a person having asked:
 
-- **Scoped root.** The root resolves through `space.index_relative` + `resolve_scan_root(.., false)` to its own entry id,
-  never `ROOT_ID`, and the BFS carries `(path, id)` pairs the way the reconcile walk does. `lifecycle/cover/bootstrap.rs`
-  has already materialized the ancestor chain when the index had no row for it, using `stat_one_directory` for the same
-  reason the listings use `list_one_directory`.
+- **Scoped root.** The root resolves through `space.index_relative` + `resolve_scan_root(.., false)` to its own entry
+  id, never `ROOT_ID`, and the BFS carries `(path, id)` pairs the way the reconcile walk does.
+  `lifecycle/cover/bootstrap.rs` has already materialized the ancestor chain when the index had no row for it, using
+  `stat_one_directory` for the same reason the listings use `list_one_directory`.
 - **A cancel KEEPS its coverage.** The finish sequence (flush → `MarkDirsListed` → `ComputeSubtreeAggregates`) runs on
   EVERY exit: clean, cancel, disconnect, unlistable root. **Decision/Why:** convergence. A search that walks eight
   minutes of a NAS and is then cancelled has to leave the frontier genuinely smaller, or repeated searching over the
@@ -281,8 +280,8 @@ exactly four places, all of them consequences of a person having asked:
   **Decision/Why not the local walker's virgin-root refusal:** the parallel walker refuses non-virgin ground because a
   per-directory DB lookup from eight worker threads would cost real time against a `readdir` that costs microseconds.
   Here the lookup is an indexed query against a listing that cost a network round trip, so taking the case is cheaper
-  than refusing it — and it removes the need for a repair path, which over the trait would have meant a second walk.
-  The cost is that stale rows under covered ground aren't corrected; that's `reconcile/`'s job (Decision 5 trusts a
+  than refusing it — and it removes the need for a repair path, which over the trait would have meant a second walk. The
+  cost is that stale rows under covered ground aren't corrected; that's `reconcile/`'s job (Decision 5 trusts a
   covered-but-stale subtree rather than re-walking it).
 - **MTP same-name siblings become explicit.** The store holds one row per `(parent_id, name_folded)` and
   `insert_entries_v2_batch` is `INSERT OR IGNORE`, so a second child with the same name would take an id, be queued as a
