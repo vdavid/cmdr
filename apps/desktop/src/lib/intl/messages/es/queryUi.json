@@ -624,5 +624,49 @@
   "queryUi.scope.currentFolder": "Carpeta actual",
   "@queryUi.scope.currentFolder": {
     "sourceHash": "1a5db52"
+  },
+  "queryUi.results.live.resolvingCoverage": "Comprobando qué está ya indexado...",
+  "queryUi.results.live.readingIndex": "Leyendo lo que ya está indexado...",
+  "queryUi.results.live.walking": "Recorriendo carpetas que aún no están indexadas...",
+  "queryUi.results.live.matchesSoFar": "{countText} {count, plural, one {coincidencia} many {coincidencias} other {coincidencias}} hasta ahora",
+  "queryUi.results.live.foldersScanned": "{countText} {count, plural, one {carpeta recorrida} many {carpetas recorridas} other {carpetas recorridas}}",
+  "queryUi.results.live.incomplete": "{shownText} de {totalText} resultados. Cmdr no terminó de buscar.",
+  "queryUi.results.live.capped": "Mostrando las primeras {shownText} de {totalText} coincidencias.",
+  "queryUi.results.live.stop": "Detener",
+  "queryUi.results.live.stopTooltip": "Detener la búsqueda. Todo lo encontrado hasta ahora sigue en pantalla.",
+  "queryUi.results.live.scanningAria": "Ahora mismo en {path}",
+  "queryUi.results.countOnly.soFar": "{count, plural, one {Esta búsqueda lleva <total>{countText}</total> resultado} many {Esta búsqueda lleva <total>{countText}</total> resultados} other {Esta búsqueda lleva <total>{countText}</total> resultados}}",
+  "@queryUi.results.live.resolvingCoverage": {
+    "sourceHash": "07b501d"
+  },
+  "@queryUi.results.live.readingIndex": {
+    "sourceHash": "5a048c9"
+  },
+  "@queryUi.results.live.walking": {
+    "sourceHash": "b2dbe67"
+  },
+  "@queryUi.results.live.matchesSoFar": {
+    "sourceHash": "5c09eb4"
+  },
+  "@queryUi.results.live.foldersScanned": {
+    "sourceHash": "5a3247d"
+  },
+  "@queryUi.results.live.incomplete": {
+    "sourceHash": "7dccf6e"
+  },
+  "@queryUi.results.live.capped": {
+    "sourceHash": "7c0475d"
+  },
+  "@queryUi.results.live.stop": {
+    "sourceHash": "cae7d57"
+  },
+  "@queryUi.results.live.stopTooltip": {
+    "sourceHash": "e72f5d7"
+  },
+  "@queryUi.results.live.scanningAria": {
+    "sourceHash": "0071028"
+  },
+  "@queryUi.results.countOnly.soFar": {
+    "sourceHash": "dbdb208"
   }
 }

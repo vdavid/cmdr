@@ -626,5 +626,49 @@
   "queryUi.scope.currentFolder": "Huidige map",
   "@queryUi.scope.currentFolder": {
     "sourceHash": "1a5db52"
+  },
+  "queryUi.results.live.resolvingCoverage": "Nagaan wat er al geïndexeerd is...",
+  "queryUi.results.live.readingIndex": "Lezen wat er al geïndexeerd is...",
+  "queryUi.results.live.walking": "Mappen doorlopen die nog niet geïndexeerd zijn...",
+  "queryUi.results.live.matchesSoFar": "{countText} {count, plural, one {resultaat} other {resultaten}} tot nu toe",
+  "queryUi.results.live.foldersScanned": "{countText} {count, plural, one {map} other {mappen}} doorlopen",
+  "queryUi.results.live.incomplete": "{shownText} van {totalText} resultaten. Cmdr is niet klaargekomen.",
+  "queryUi.results.live.capped": "De eerste {shownText} van {totalText} resultaten worden getoond.",
+  "queryUi.results.live.stop": "Stoppen",
+  "queryUi.results.live.stopTooltip": "Stop met zoeken. Alles wat al gevonden is, blijft staan.",
+  "queryUi.results.live.scanningAria": "Nu in {path}",
+  "queryUi.results.countOnly.soFar": "{count, plural, one {Deze zoekopdracht levert tot nu toe <total>{countText}</total> resultaat op} other {Deze zoekopdracht levert tot nu toe <total>{countText}</total> resultaten op}}",
+  "@queryUi.results.live.resolvingCoverage": {
+    "sourceHash": "07b501d"
+  },
+  "@queryUi.results.live.readingIndex": {
+    "sourceHash": "5a048c9"
+  },
+  "@queryUi.results.live.walking": {
+    "sourceHash": "b2dbe67"
+  },
+  "@queryUi.results.live.matchesSoFar": {
+    "sourceHash": "5c09eb4"
+  },
+  "@queryUi.results.live.foldersScanned": {
+    "sourceHash": "5a3247d"
+  },
+  "@queryUi.results.live.incomplete": {
+    "sourceHash": "7dccf6e"
+  },
+  "@queryUi.results.live.capped": {
+    "sourceHash": "7c0475d"
+  },
+  "@queryUi.results.live.stop": {
+    "sourceHash": "cae7d57"
+  },
+  "@queryUi.results.live.stopTooltip": {
+    "sourceHash": "e72f5d7"
+  },
+  "@queryUi.results.live.scanningAria": {
+    "sourceHash": "0071028"
+  },
+  "@queryUi.results.countOnly.soFar": {
+    "sourceHash": "dbdb208"
   }
 }

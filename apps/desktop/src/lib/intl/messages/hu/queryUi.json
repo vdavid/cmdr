@@ -623,5 +623,49 @@
   "queryUi.scope.currentFolder": "Aktuális mappa",
   "@queryUi.scope.currentFolder": {
     "sourceHash": "1a5db52"
+  },
+  "queryUi.results.live.resolvingCoverage": "Kiderítjük, mi van már indexelve…",
+  "queryUi.results.live.readingIndex": "A már indexelt rész olvasása…",
+  "queryUi.results.live.walking": "Még nem indexelt mappák átnézése…",
+  "queryUi.results.live.matchesSoFar": "Eddig {countText} {count, plural, one {találat} other {találat}}",
+  "queryUi.results.live.foldersScanned": "{countText} {count, plural, one {mappa} other {mappa}} átnézve",
+  "queryUi.results.live.incomplete": "{totalText} találatból {shownText}. A Cmdr nem jutott a végére.",
+  "queryUi.results.live.capped": "{totalText} találatból az első {shownText} látszik.",
+  "queryUi.results.live.stop": "Leállítás",
+  "queryUi.results.live.stopTooltip": "Keresés leállítása. Ami eddig megvan, a képernyőn marad.",
+  "queryUi.results.live.scanningAria": "Most itt jár: {path}",
+  "queryUi.results.countOnly.soFar": "{count, plural, one {Ez a keresés eddig <total>{countText}</total> találatot adott} other {Ez a keresés eddig <total>{countText}</total> találatot adott}}",
+  "@queryUi.results.live.resolvingCoverage": {
+    "sourceHash": "07b501d"
+  },
+  "@queryUi.results.live.readingIndex": {
+    "sourceHash": "5a048c9"
+  },
+  "@queryUi.results.live.walking": {
+    "sourceHash": "b2dbe67"
+  },
+  "@queryUi.results.live.matchesSoFar": {
+    "sourceHash": "5c09eb4"
+  },
+  "@queryUi.results.live.foldersScanned": {
+    "sourceHash": "5a3247d"
+  },
+  "@queryUi.results.live.incomplete": {
+    "sourceHash": "7dccf6e"
+  },
+  "@queryUi.results.live.capped": {
+    "sourceHash": "7c0475d"
+  },
+  "@queryUi.results.live.stop": {
+    "sourceHash": "cae7d57"
+  },
+  "@queryUi.results.live.stopTooltip": {
+    "sourceHash": "e72f5d7"
+  },
+  "@queryUi.results.live.scanningAria": {
+    "sourceHash": "0071028"
+  },
+  "@queryUi.results.countOnly.soFar": {
+    "sourceHash": "dbdb208"
   }
 }
