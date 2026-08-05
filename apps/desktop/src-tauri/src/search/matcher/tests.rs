@@ -111,13 +111,16 @@ fn an_unbuildable_pattern_is_refused_with_the_reason() {
 }
 
 #[test]
-fn an_empty_pattern_filters_nothing() {
+fn an_empty_pattern_is_no_pattern_at_all() {
+    // Not "a pattern that happens to match nearly everything". An empty glob would
+    // compile to `^.*.*$`, and `.` doesn't cross a newline, so a filename containing
+    // one — legal on Unix — would drop out of a query that filters by nothing.
     let mut q = query();
     q.name_pattern = Some(String::new());
-    q.is_directory = Some(false); // so the guard has something to narrow on
     let compiled = CompiledQuery::compile(&q, SMALL_ARENA).unwrap();
 
     assert!(compiled.matches(&file("anything-at-all")));
+    assert!(compiled.matches(&file("we\nird.txt")));
 }
 
 // ── Case folding ─────────────────────────────────────────────────────
