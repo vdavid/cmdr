@@ -652,6 +652,7 @@ export {
   forgetDriveIndex,
   rescanDriveIndex,
   clearDriveIndex,
+  getIndexDiskUsage,
   recordVisit,
 } from './indexing'
 

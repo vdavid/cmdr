@@ -26,7 +26,7 @@
 //! directly via `super::state`.
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::LazyLock;
 use std::sync::atomic::Ordering;
@@ -911,7 +911,7 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
 ///
 /// Best-effort throughout: a failure costs coverage claims, never correctness, so
 /// it's logged rather than propagated into a refusal to walk at all.
-fn prepare_database_for_a_walk(volume_id: &str, db_path: &std::path::Path, volume_root: &std::path::Path) {
+fn prepare_database_for_a_walk(volume_id: &str, db_path: &Path, volume_root: &Path) {
     let conn = match IndexStore::open_write_connection(db_path) {
         Ok(conn) => conn,
         Err(e) => {
@@ -1139,7 +1139,17 @@ pub fn clear_index(volume_id: &str) -> Result<(), String> {
         let instance = match reg.get_mut(volume_id) {
             Some(i) => i,
             None => {
-                log::info!("Drive index clear requested but '{volume_id}' was not indexed");
+                // No instance, but very possibly a database: one a search's walk
+                // built and nothing re-registered after a restart, or one a drive
+                // kept when the user turned its indexing off. Clearing has to
+                // reclaim that disk — a no-op here is what made "clear" and
+                // "forget this drive" silently do nothing for exactly the people
+                // with an index nobody is maintaining. Nothing is running, so the
+                // files can go straight away.
+                drop(reg);
+                let db_path = resolved_index_db_path(volume_id)?;
+                delete_index_db_files(&db_path)?;
+                log::info!("Drive index cleared for '{volume_id}' (no live index; database deleted)");
                 return Ok(());
             }
         };
@@ -1191,9 +1201,17 @@ pub fn clear_index(volume_id: &str) -> Result<(), String> {
         ClearTarget::NoWriter { db_path } => db_path,
     };
 
-    // Delete DB file and WAL/SHM sidecars
+    delete_index_db_files(&db_path)?;
+    log::info!("Drive index cleared for '{volume_id}' (DB deleted)");
+
+    Ok(())
+}
+
+/// Delete an index database and its WAL/SHM sidecars. Every caller has already
+/// made sure nothing is reading or writing it.
+fn delete_index_db_files(db_path: &Path) -> Result<(), String> {
     for path in [
-        db_path.clone(),
+        db_path.to_path_buf(),
         db_path.with_extension("db-wal"),
         db_path.with_extension("db-shm"),
     ] {
@@ -1201,9 +1219,37 @@ pub fn clear_index(volume_id: &str) -> Result<(), String> {
             std::fs::remove_file(&path).map_err(|e| format!("Failed to delete {}: {e}", path.display()))?;
         }
     }
-    log::info!("Drive index cleared for '{volume_id}' (DB deleted)");
-
     Ok(())
+}
+
+/// Clear EVERY volume's index: the ones running right now and the databases on
+/// disk nothing has registered.
+///
+/// The two halves are both needed and neither implies the other. The registry
+/// knows the boot disk mid-scan; the data dir knows the share whose index a
+/// search walked into existence three launches ago, which is precisely the disk
+/// use nobody could see before. Each volume goes through [`clear_index`], so a
+/// live one still drains its writer and withdraws its read handles first.
+///
+/// Reports the first failure but always finishes the sweep: leaving half the
+/// databases behind because one file was locked would be a worse answer than
+/// reclaiming what it could.
+pub fn clear_every_index() -> Result<(), String> {
+    let mut volume_ids = all_registered_volume_ids();
+    for volume_id in crate::indexing::resources::retention::volume_ids_on_disk() {
+        if !volume_ids.contains(&volume_id) {
+            volume_ids.push(volume_id);
+        }
+    }
+    let mut first_error = None;
+    for volume_id in &volume_ids {
+        if let Err(e) = clear_index(volume_id) {
+            log::warn!("clear_every_index: clearing '{volume_id}' failed: {e}");
+            first_error.get_or_insert(e);
+        }
+    }
+    log::info!("Every drive index cleared ({} volume(s))", volume_ids.len());
+    first_error.map_or(Ok(()), Err)
 }
 
 // ── Module-level public API (called by IPC commands) ─────────────────

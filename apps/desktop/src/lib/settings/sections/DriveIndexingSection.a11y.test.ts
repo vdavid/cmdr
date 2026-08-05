@@ -7,10 +7,10 @@
 import { describe, it, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
 
-const { getSettingMock, setSettingMock, getIndexStatusMock, clearDriveIndexMock } = vi.hoisted(() => ({
+const { getSettingMock, setSettingMock, getIndexDiskUsageMock, clearDriveIndexMock } = vi.hoisted(() => ({
   getSettingMock: vi.fn(),
   setSettingMock: vi.fn(),
-  getIndexStatusMock: vi.fn(),
+  getIndexDiskUsageMock: vi.fn(),
   clearDriveIndexMock: vi.fn(),
 }))
 
@@ -25,7 +25,7 @@ vi.mock('$lib/settings/settings-store', () => ({
 
 vi.mock('$lib/ipc/bindings', () => ({
   commands: {
-    getIndexStatus: getIndexStatusMock,
+    getIndexDiskUsage: getIndexDiskUsageMock,
     clearDriveIndex: clearDriveIndexMock,
   },
 }))
@@ -49,7 +49,7 @@ beforeEach(() => {
     }
   })
   setSettingMock.mockReset()
-  getIndexStatusMock.mockReset().mockResolvedValue({ status: 'ok', data: { dbFileSize: 1024 } })
+  getIndexDiskUsageMock.mockReset().mockResolvedValue({ status: 'ok', data: 1024 })
   clearDriveIndexMock.mockReset().mockResolvedValue({ status: 'ok', data: null })
 })
 

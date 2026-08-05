@@ -2272,23 +2272,23 @@
 
   "settings.fileSystemWatching.indexSize": "Index size",
   "@settings.fileSystemWatching.indexSize": {
-    "description": "Label for the on-disk size of the drive index, shown on the indexing card in Settings > Behavior > File system watching.",
+    "description": "Label for how much disk every drive index takes up together, shown on the indexing card in Settings > Behavior > File system watching.",
     "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.fileSystemWatching.clearing": "Clearing...",
   "@settings.fileSystemWatching.clearing": {
-    "description": "Button text shown while the drive index is being deleted. The trailing ellipsis signals an in-progress action; keep it. Pairs with \"Clear index\"."
+    "description": "Button text shown while the drive indexes are being deleted. The trailing ellipsis signals an in-progress action; keep it. Pairs with \"Clear index\"."
   },
   "settings.fileSystemWatching.clearIndex": "Clear index",
   "@settings.fileSystemWatching.clearIndex": {
-    "description": "Button text that deletes the drive index. Pairs with the in-progress \"Clearing...\" state.",
+    "description": "Button text that deletes every drive index. Pairs with the in-progress \"Clearing...\" state.",
     "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.fileSystemWatching.noIndex": "No index",
   "@settings.fileSystemWatching.noIndex": {
-    "description": "Shown in place of the index size when no drive index exists yet."
+    "description": "Shown in place of the index size when no drive has an index on disk yet."
   },
-  "settings.fileSystemWatching.clearIndexDescription": "Deletes the index database. A fresh scan starts next time indexing is enabled.",
+  "settings.fileSystemWatching.clearIndexDescription": "Deletes every drive's index. Indexing builds it again, and so does searching a folder Cmdr hasn't indexed.",
   "@settings.fileSystemWatching.clearIndexDescription": {
     "description": "Help text under the Clear index button explaining what clearing does.",
     "screenshot": "settings-behavior-file-system-watching.png"

@@ -1882,9 +1882,9 @@
   "@settings.fileSystemWatching.noIndex": {
     "sourceHash": "14eee3b"
   },
-  "settings.fileSystemWatching.clearIndexDescription": "Apaga o banco de dados do índice. Um novo escaneamento começa na próxima vez que a indexação for ativada.",
+  "settings.fileSystemWatching.clearIndexDescription": "Apaga o índice de todos os discos. A indexação cria de novo, e uma busca numa pasta que o Cmdr não indexou também.",
   "@settings.fileSystemWatching.clearIndexDescription": {
-    "sourceHash": "61d9b4e"
+    "sourceHash": "370e2bc"
   },
   "settings.fileSystemWatching.cardDownloads": "Downloads",
   "@settings.fileSystemWatching.cardDownloads": {

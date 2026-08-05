@@ -1888,9 +1888,9 @@
   "@settings.fileSystemWatching.noIndex": {
     "sourceHash": "14eee3b"
   },
-  "settings.fileSystemWatching.clearIndexDescription": "Tar bort indexdatabasen. En ny genomsökning startar nästa gång indexering är aktiverad.",
+  "settings.fileSystemWatching.clearIndexDescription": "Raderar indexet för alla enheter. Indexeringen bygger upp det igen, och en sökning i en mapp som Cmdr inte har indexerat gör det också.",
   "@settings.fileSystemWatching.clearIndexDescription": {
-    "sourceHash": "61d9b4e"
+    "sourceHash": "370e2bc"
   },
   "settings.fileSystemWatching.cardDownloads": "Hämtade filer",
   "@settings.fileSystemWatching.cardDownloads": {

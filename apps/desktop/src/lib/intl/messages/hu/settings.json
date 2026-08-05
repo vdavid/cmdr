@@ -1882,9 +1882,9 @@
   "@settings.fileSystemWatching.noIndex": {
     "sourceHash": "14eee3b"
   },
-  "settings.fileSystemWatching.clearIndexDescription": "Törli az indexadatbázist. Az indexelés következő bekapcsolásakor friss vizsgálat indul.",
+  "settings.fileSystemWatching.clearIndexDescription": "Törli az összes meghajtó indexét. Az indexelés újraépíti, és egy olyan mappában futó keresés is, amelyet a Cmdr nem indexelt.",
   "@settings.fileSystemWatching.clearIndexDescription": {
-    "sourceHash": "61d9b4e"
+    "sourceHash": "370e2bc"
   },
   "settings.fileSystemWatching.cardDownloads": "Letöltések",
   "@settings.fileSystemWatching.cardDownloads": {

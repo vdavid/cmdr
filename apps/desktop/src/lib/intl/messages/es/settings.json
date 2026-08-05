@@ -1882,9 +1882,9 @@
   "@settings.fileSystemWatching.noIndex": {
     "sourceHash": "14eee3b"
   },
-  "settings.fileSystemWatching.clearIndexDescription": "Elimina la base de datos del índice. Se inicia un nuevo análisis la próxima vez que se active la indexación.",
+  "settings.fileSystemWatching.clearIndexDescription": "Borra el índice de todas las unidades. La indexación vuelve a crearlo, y una búsqueda en una carpeta que Cmdr no ha indexado también.",
   "@settings.fileSystemWatching.clearIndexDescription": {
-    "sourceHash": "61d9b4e"
+    "sourceHash": "370e2bc"
   },
   "settings.fileSystemWatching.cardDownloads": "Descargas",
   "@settings.fileSystemWatching.cardDownloads": {

@@ -672,3 +672,74 @@ fn awaiting_a_first_scan_is_not_the_same_as_being_active() {
 /// Tests that mutate `INDEX_REGISTRY` serialize on this guard (mirrors
 /// `tests/integration_tests.rs`'s `INDEXING_TEST_GUARD`).
 static INDEX_REGISTRY_TEST_GUARD: LazyLock<std::sync::Mutex<()>> = LazyLock::new(|| std::sync::Mutex::new(()));
+
+/// Clearing has to reach a database no volume has an instance for. That's the
+/// ordinary shape once a search can walk: the walk stands a writer up, the app
+/// restarts, and with drive indexing off nothing ever registers that volume
+/// again — so the registry lookup that used to answer "not indexed, nothing to
+/// do" was leaving real disk behind with no way for anyone to reclaim it.
+#[test]
+fn clearing_reaches_a_database_no_volume_is_registered_for() {
+    let _lock = crate::indexing::handle::test_lock();
+    let _guard = INDEX_REGISTRY_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+    clear_registry_and_pools();
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let _config = crate::indexing::host::config::install_data_dir_for_test(dir.path());
+    let db_path = dir.path().join("index-smb-walked-only.db");
+    std::fs::write(&db_path, vec![0u8; 64]).expect("write db");
+    std::fs::write(dir.path().join("index-smb-walked-only.db-wal"), vec![0u8; 8]).expect("write wal");
+
+    assert!(!is_active("smb-walked-only"), "test setup: nothing is registered");
+    clear_index("smb-walked-only").expect("clearing an unregistered index must succeed");
+
+    assert!(!db_path.exists(), "the database must be gone");
+    assert!(
+        !dir.path().join("index-smb-walked-only.db-wal").exists(),
+        "its WAL sidecar must go with it"
+    );
+}
+
+/// "Clear index" in settings means the whole index, not the boot disk's: a
+/// search walks whichever drive it's pointed at, so the disk it accumulates can
+/// belong to a share nobody ever turned indexing on for. The sweep therefore
+/// takes the union of what's registered and what's on disk.
+#[test]
+fn clearing_everything_takes_the_registered_and_the_forgotten_alike() {
+    let _lock = crate::indexing::handle::test_lock();
+    let _guard = INDEX_REGISTRY_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+    clear_registry_and_pools();
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let _config = crate::indexing::host::config::install_data_dir_for_test(dir.path());
+
+    // One volume with a live instance, one database with nobody behind it.
+    let live_db = dir.path().join("index-smb-nas.db");
+    let store = IndexStore::open(&live_db).expect("open store");
+    let pool = Arc::new(ReadPool::new(live_db.clone()).expect("pool"));
+    assert!(
+        try_reserve_initializing_phase(
+            "smb-nas",
+            IndexVolumeKind::Smb,
+            store,
+            pool,
+            Arc::new(PendingSizes::new()),
+            VolumeSignals::new(fresh(Some(Freshness::Stale)), NoopEventSink::shared()),
+        )
+        .is_ok(),
+        "reserve must succeed"
+    );
+    let orphan_db = dir.path().join("index-mtp-old-phone.db");
+    std::fs::write(&orphan_db, vec![0u8; 64]).expect("write orphan db");
+
+    clear_every_index().expect("the sweep must succeed");
+
+    assert!(!live_db.exists(), "the registered volume's database must go");
+    assert!(!orphan_db.exists(), "so must the one nothing registered");
+    assert!(!is_active("smb-nas"), "and the instance with it");
+    assert_eq!(
+        crate::indexing::resources::retention::total_index_db_bytes(),
+        0,
+        "nothing is left to report"
+    );
+}

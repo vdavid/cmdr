@@ -1881,9 +1881,9 @@
   "@settings.fileSystemWatching.noIndex": {
     "sourceHash": "14eee3b"
   },
-  "settings.fileSystemWatching.clearIndexDescription": "删除索引数据库。下次启用索引时会重新扫描。",
+  "settings.fileSystemWatching.clearIndexDescription": "删除所有驱动器的索引。建立索引会重新生成，在 Cmdr 未建立索引的文件夹里搜索也会。",
   "@settings.fileSystemWatching.clearIndexDescription": {
-    "sourceHash": "61d9b4e"
+    "sourceHash": "370e2bc"
   },
   "settings.fileSystemWatching.cardDownloads": "下载",
   "@settings.fileSystemWatching.cardDownloads": {

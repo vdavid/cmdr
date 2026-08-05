@@ -35,6 +35,7 @@ vi.mock('$lib/tauri-commands', () => ({
     Promise.resolve({ status: 'ok', data: { status: 'registered', binding: '', enabled: true } }),
   ),
   getIndexStatus: vi.fn(() => Promise.resolve({ status: 'ok', data: { dbFileSize: 1024 } })),
+  getIndexDiskUsage: vi.fn(() => Promise.resolve({ status: 'ok', data: 1024 })),
   clearDriveIndex: vi.fn(() => Promise.resolve({ status: 'ok', data: null })),
 }))
 
@@ -51,6 +52,7 @@ vi.mock('$lib/ipc/bindings', () => ({
       Promise.resolve({ status: 'ok', data: { status: 'registered', binding: '', enabled: true } }),
     ),
     getIndexStatus: vi.fn(() => Promise.resolve({ status: 'ok', data: { dbFileSize: 1024 } })),
+    getIndexDiskUsage: vi.fn(() => Promise.resolve({ status: 'ok', data: 1024 })),
     clearDriveIndex: vi.fn(() => Promise.resolve({ status: 'ok', data: null })),
   },
 }))

@@ -110,10 +110,25 @@ var surfaceGuardedCrates = []struct {
 		//
 		// Nothing else is owed to the coverage concept. A fourth type here needs
 		// the same argument these three did.
+		//
+		// Raised again on 2026-08-05, with David's say-so, for ONE more concept:
+		// WHAT THE INDEX OCCUPIES ON DISK, and dropping all of it. Once a search
+		// walks, a machine that indexes nothing still accumulates databases, and
+		// the settings screen has to be able to show and reclaim them.
+		// `HandleMethods` 38 → 40, and no new root promise (both answer in types
+		// the crate already promises):
+		//
+		//   - `Index::disk_footprint` — the bytes every index database occupies,
+		//     read off the FILES rather than the registry, which can't see the
+		//     database a walk built and nothing re-registered after a restart.
+		//   - `Index::forget_all_volumes` — the whole-index sibling of
+		//     `forget_volume`, reaching those same unregistered databases.
+		//
+		// The concept is closed: measuring and clearing is all of it.
 		HandleType: "Index",
 		Ceilings: surfaceCeilings{
 			RootPromises:   50,
-			HandleMethods:  38,
+			HandleMethods:  40,
 			PublicModules:  17,
 			SubsystemItems: 156,
 		},

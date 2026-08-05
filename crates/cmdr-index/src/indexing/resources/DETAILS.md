@@ -103,3 +103,15 @@ abandoned-drive accumulation ever proves to need more.
 
 The user-facing forget/disable/clear paths and the prune→Disabled model live in `../lifecycle/DETAILS.md` (`clear_index`
 / `forget_drive_index` / `disable_drive_index`); retention here is the automatic bounded-accumulation backstop.
+
+### What it all takes up, and clearing it (the settings screen)
+
+`total_index_db_bytes` and `volume_ids_on_disk` answer over the same enumeration the cap uses, `root` included. They
+exist because the REGISTRY can't answer either question: a database a search's walk built has no instance behind it the
+moment the app restarts, and neither does the index of a drive whose indexing the user turned off. Those are exactly the
+bytes a person is entitled to see and reclaim, so the settings row and its Clear button read the files
+(`Index::disk_footprint`, `Index::forget_all_volumes`).
+
+There is **no size cap** on any of it, by decision (`docs/specs/unindexed-search-plan.md` Decision 17): the answer to
+disk use is that the size and the Clear button work with drive indexing off, not a byte budget. If people complain about
+disk use, a cap can come later — which is the `TODO(retention)` above, one policy for both concerns.

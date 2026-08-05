@@ -247,6 +247,21 @@ impl Index {
         state::clear_index(volume_id).map_err(Into::into)
     }
 
+    /// Forget every volume's index: stop whatever is running and delete every
+    /// index database on disk, live or not.
+    ///
+    /// The whole-index sibling of [`forget_volume`](Self::forget_volume), for the
+    /// user who asks to reclaim the disk rather than to be rid of one drive. It
+    /// reaches databases no volume has an instance for, which is the only way to
+    /// clear what a search's walk left behind on a machine that indexes nothing.
+    ///
+    /// **Blocking**: draining a running volume's writer can take seconds, and
+    /// this drains them one after another. Never call it on a thread the
+    /// interface is waiting on.
+    pub fn forget_all_volumes(&self) -> Result<(), IndexError> {
+        state::clear_every_index().map_err(Into::into)
+    }
+
     /// A removable drive is going away; stop indexing it if it's the kind that
     /// has to stop. Reports whether it did.
     ///
@@ -304,6 +319,19 @@ impl Index {
     /// One volume's scan counters, database size, and last-scan facts.
     pub fn status(&self, volume_id: &str) -> Result<IndexStatusResponse, IndexError> {
         crate::indexing::read::queries::get_status(volume_id).map_err(Into::into)
+    }
+
+    /// How many bytes every index database occupies on disk right now, across all
+    /// volumes and including WAL sidecars.
+    ///
+    /// Reads the files, not the pool, because that's the only honest answer: a
+    /// database a search's walk built is on disk with nothing registered for it
+    /// after a restart, and so is the index of a drive whose indexing the user
+    /// turned off. Both are disk a person is entitled to see and reclaim, and
+    /// [`status`](Self::status) reports neither. `0` means the index holds
+    /// nothing at all.
+    pub fn disk_footprint(&self) -> u64 {
+        crate::indexing::resources::retention::total_index_db_bytes()
     }
 
     /// Everything [`status`](Self::status) reports plus the internals a developer

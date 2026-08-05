@@ -1892,9 +1892,9 @@
   "@settings.fileSystemWatching.noIndex": {
     "sourceHash": "14eee3b"
   },
-  "settings.fileSystemWatching.clearIndexDescription": "Supprime la base de données d''index. Un nouveau balayage démarre la prochaine fois que l''indexation est activée.",
+  "settings.fileSystemWatching.clearIndexDescription": "Supprime l''index de tous les disques. L''indexation le reconstruit, et une recherche dans un dossier que Cmdr n''a pas indexé aussi.",
   "@settings.fileSystemWatching.clearIndexDescription": {
-    "sourceHash": "61d9b4e"
+    "sourceHash": "370e2bc"
   },
   "settings.fileSystemWatching.cardDownloads": "Téléchargements",
   "@settings.fileSystemWatching.cardDownloads": {

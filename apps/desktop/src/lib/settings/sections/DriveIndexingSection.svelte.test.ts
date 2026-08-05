@@ -6,20 +6,23 @@
  *     indexing toggle, the index-size / clear-index action row, the per-drive
  *     prompt toggle + re-enable button, and the stale-notify toggle.
  *   - The clear-index button calls the backend IPC.
+ *   - The size and the clear button work with the master switch OFF, since a
+ *     search walks whatever folder it's pointed at and leaves an index behind
+ *     (`docs/specs/unindexed-search-plan.md` M10).
  *   - The hidden `indexing.indexSize` search anchor keeps the card visible when
  *     searching "index size", so the page never blanks.
  *
- * The section calls two backend IPCs (index status, clear index). Both mocked
- * so the tests run without a Tauri runtime.
+ * The section calls two backend IPCs (the index's disk use, clear index). Both
+ * mocked so the tests run without a Tauri runtime.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
 
-const { getSettingMock, setSettingMock, getIndexStatusMock, clearDriveIndexMock } = vi.hoisted(() => ({
+const { getSettingMock, setSettingMock, getIndexDiskUsageMock, clearDriveIndexMock } = vi.hoisted(() => ({
   getSettingMock: vi.fn(),
   setSettingMock: vi.fn(),
-  getIndexStatusMock: vi.fn(),
+  getIndexDiskUsageMock: vi.fn(),
   clearDriveIndexMock: vi.fn(),
 }))
 
@@ -34,7 +37,7 @@ vi.mock('$lib/settings/settings-store', () => ({
 
 vi.mock('$lib/ipc/bindings', () => ({
   commands: {
-    getIndexStatus: getIndexStatusMock,
+    getIndexDiskUsage: getIndexDiskUsageMock,
     clearDriveIndex: clearDriveIndexMock,
   },
 }))
@@ -61,7 +64,7 @@ function setDefaultSettings(): void {
 beforeEach(() => {
   getSettingMock.mockReset()
   setSettingMock.mockReset()
-  getIndexStatusMock.mockReset().mockResolvedValue({ status: 'ok', data: { dbFileSize: 1024 } })
+  getIndexDiskUsageMock.mockReset().mockResolvedValue({ status: 'ok', data: 1024 })
   clearDriveIndexMock.mockReset().mockResolvedValue({ status: 'ok', data: null })
   setDefaultSettings()
 })
@@ -97,6 +100,36 @@ describe('DriveIndexingSection', () => {
     await tick()
     await Promise.resolve()
     expect(clearDriveIndexMock).toHaveBeenCalled()
+    target.remove()
+  })
+
+  it('shows the size and offers Clear with drive indexing off, because a search still writes an index', async () => {
+    // The master switch stops BACKGROUND indexing, never a search's walk
+    // (Decision 13), so "off" is exactly the state where an index accumulates
+    // that nobody asked for. It has to be visible and clearable there, or the
+    // only people with an unwanted index are the ones who can't get rid of it.
+    getSettingMock.mockImplementation((key: string): unknown => (key === 'indexing.enabled' ? false : '[]'))
+    getIndexDiskUsageMock.mockResolvedValue({ status: 'ok', data: 42_000_000 })
+    const target = await mountSection()
+
+    expect(target.querySelector('.info-value')?.textContent).toContain('MB')
+    const clearButton = Array.from(target.querySelectorAll('button')).find(
+      (b) => b.textContent.trim() === 'Clear index',
+    )
+    expect(clearButton).toBeDefined()
+    clearButton?.click()
+    await tick()
+    await Promise.resolve()
+    expect(clearDriveIndexMock).toHaveBeenCalled()
+    target.remove()
+  })
+
+  it('says "No index" and offers no Clear when nothing is on disk', async () => {
+    getIndexDiskUsageMock.mockResolvedValue({ status: 'ok', data: 0 })
+    const target = await mountSection()
+
+    expect(target.querySelector('.info-value')?.textContent.trim()).toBe('No index')
+    expect(Array.from(target.querySelectorAll('button')).map((b) => b.textContent.trim())).not.toContain('Clear index')
     target.remove()
   })
 

@@ -88,10 +88,33 @@ pub async fn get_dir_stats_batch(paths: Vec<String>) -> Result<Vec<Option<DirSta
     index().dir_stats_batch(&paths).map_err(|e| e.to_string())
 }
 
+/// How much disk every drive's index takes up, in bytes, WAL sidecars included.
+///
+/// Deliberately not `get_index_status().db_file_size`, which reports the boot
+/// disk's live instance and therefore reports nothing at all on a machine where
+/// drive indexing is off — the machine most likely to have accumulated index
+/// databases it never asked for, since a search walks whatever folder it's
+/// pointed at. `0` means there's nothing on disk to clear.
+#[tauri::command]
+#[specta::specta]
+pub async fn get_index_disk_usage() -> Result<u64, String> {
+    Ok(index().disk_footprint())
+}
+
+/// Delete every drive's index (the settings screen's "Clear index").
+///
+/// Every volume, not just `root`: a search walks the drive it's pointed at, so
+/// the disk this reclaims can belong to a share or an external drive the user
+/// never turned indexing on for. Per-drive clearing has its own action
+/// ([`forget_drive_index`], from the drive's badge menu).
 #[tauri::command]
 #[specta::specta]
 pub async fn clear_drive_index() -> Result<(), String> {
-    index().forget_volume(ROOT_VOLUME_ID).map_err(|e| e.to_string())
+    // Draining a running volume's writer blocks for up to five seconds each, so
+    // it goes on a blocking thread rather than the IPC handler's.
+    tauri::async_runtime::spawn_blocking(|| index().forget_all_volumes().map_err(|e| e.to_string()))
+        .await
+        .map_err(|e| format!("Clearing the index didn't finish: {e}"))?
 }
 
 /// Extended debug status for the debug window (dev only).

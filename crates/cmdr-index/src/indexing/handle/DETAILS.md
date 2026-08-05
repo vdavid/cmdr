@@ -107,6 +107,25 @@ rows, and exposing the epoch would invite callers to reason about a scheme the r
 
 The mechanism, the descent rule, and the tests that hold it: `../read/DETAILS.md` § "The coverage frontier".
 
+## What the index occupies on disk: the second concept added since the audit
+
+Added 2026-08-05, the same effort's last milestone. Once a search walks, a machine with drive indexing OFF accumulates
+index databases nobody asked for, so the settings screen has to be able to show and reclaim them. Two calls, both about
+files rather than volumes, and `HandleMethods` 38 → 40 with no new root promise:
+
+- **`disk_footprint()`** — the bytes every index database occupies, sidecars included. It reads the data dir, ❌ never
+  the registry: the whole point is the database a walk built that nothing re-registered after a restart, which
+  `status(volume_id)` reports as absent because it asks the live instance.
+- **`forget_all_volumes()`** — the whole-index sibling of `forget_volume`, reaching those same unregistered databases.
+  Each volume still goes through `clear_index`, so a live one drains its writer and withdraws its read handles first.
+
+Why not one call per volume from the host: the host would have to enumerate `index-{volume_id}.db` itself, which is this
+crate's private file convention (`../resources/retention.rs` owns it), and `volume_ids()` reports the REGISTERED
+volumes, which is exactly the set that misses the case.
+
+The concept is closed: measuring and clearing is all of it. A cap on the footprint would be a third call and a policy,
+and David's decision is that there is no cap for now (`docs/specs/unindexed-search-plan.md` Decision 17).
+
 ## The mapping
 
 ### The 14 the glob was hiding
@@ -182,11 +201,11 @@ is supposed to BE the surface.
 
 - **50 root promises** — the names `lib.rs` exports, `pub mod` included. 44 at the audit, plus coverage's six types (the
   read half's three on 2026-08-05, the walk half's three the same day).
-- **38 methods on `Index`** — the 36 above plus `Index::builder`, which the headline number treats as the constructor
-  rather than a call, plus `cover`, which took the slot reserved for it by name. That reservation is now spent; the
-  ceiling is at its number, so the next method has to be argued the way these were. M3b's cold-volume bootstrap took
-  none of it: it went behind `cover` rather than becoming a 39th method (above, "Why standing a cold volume's index up
-  is NOT a method of its own").
+- **40 methods on `Index`** — the 36 above plus `Index::builder`, which the headline number treats as the constructor
+  rather than a call, plus `cover`, which took the slot reserved for it by name, plus the disk-footprint pair below.
+  M3b's cold-volume bootstrap took none of it: it went behind `cover` rather than becoming a method (above, "Why
+  standing a cold volume's index up is NOT a method of its own"). No reserved slot is left, so the next method has to be
+  argued the way these were.
 - **17 public modules** and **156 public items inside them** — the surface the root re-exports don't capture, which is
   where `media_index` and `importance` live. Unchanged: the coverage module is `pub(crate)`, reaching a host only
   through the handle and the root re-exports.

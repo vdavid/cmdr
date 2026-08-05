@@ -211,6 +211,7 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::indexing::get_dir_stats,
         crate::commands::indexing::get_dir_stats_batch,
         crate::commands::indexing::clear_drive_index,
+        crate::commands::indexing::get_index_disk_usage,
         crate::commands::indexing::set_indexing_enabled,
         crate::commands::indexing::start_indexing_after_fda_decision,
         crate::commands::indexing::get_index_debug_status,

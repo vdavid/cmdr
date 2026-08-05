@@ -9,8 +9,9 @@ front door.
 - **A `pub` here is a promise. Adding one is a design act, not a compile fix.** Before you add a method, check the four
   dispositions in `DETAILS.md` § "The public surface": name it for what the caller wants (never for the internal behind
   it), fold it into a call that already exists, delete it, or put it behind the `testing` feature. The surface is 37
-  items and each one is justified in that table; a 38th needs the same. The one reserved slot is SPENT (`cover`, the
-  coverage concept's walk half, landed 2026-08-05), so there is no headroom left.
+  items and each one is justified in that table; the next one needs the same. Both raises are SPENT (`cover`, the
+  coverage concept's walk half; `disk_footprint` + `forget_all_volumes`, what the index occupies on disk and dropping
+  all of it), so there is no headroom left.
 - **❌ The app never calls into `indexing::` internals.** It holds the handle (`crate::index_host::index()`) and calls
   methods. A `crate::indexing::<area>::…` from app code is a back-edge that stops compiling at the extraction, so it's a
   bug now, not later.

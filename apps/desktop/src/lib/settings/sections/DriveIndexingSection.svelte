@@ -11,6 +11,12 @@
      * operates on whatever paths it can read; the gate is for the downloads
      * watcher (which lives in `NotificationsSection.svelte`).
      *
+     * The index-size row is NOT overridden by the master switch, unlike every
+     * other row here. Off means no drive indexes in the background, not that
+     * there's no index: a search walks the folder it's pointed at either way, so
+     * the size and the Clear button read the whole footprint from disk and stay
+     * usable exactly when someone declined indexing and searched anyway.
+     *
      * Card visibility under search is section-owned: the `SectionCard` frame is
      * wrapped in `{#if anyVisible(shouldShow, ...ids)}` over the SAME `shouldShow`
      * predicate that gates each row, so an all-filtered-out card hides its frame
@@ -31,7 +37,7 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import Size from '$lib/ui/Size.svelte'
     import { getAppLogger } from '$lib/logging/logger'
-    import { clearDriveIndex, getIndexStatus } from '$lib/tauri-commands'
+    import { clearDriveIndex, getIndexDiskUsage } from '$lib/tauri-commands'
 
     interface Props {
         searchQuery: string
@@ -64,18 +70,21 @@
         hasSilenced = false
     }
 
-    let dbFileSize = $state<number | null>(null)
+    // What the index takes up across EVERY drive, read off the files on disk. It
+    // has to hold with the master switch off: a search walks the folder it's
+    // pointed at whatever the switch says (`docs/specs/unindexed-search-plan.md`
+    // Decision 13), so the machine that indexes nothing is exactly the one whose
+    // index nobody could see or clear when this read the live `root` instance.
+    // `null` means there's nothing on disk, which is the one case with no size to
+    // show and nothing to clear.
+    let indexBytes = $state<number | null>(null)
     let clearing = $state(false)
     let clearError = $state<string | null>(null)
     let refreshTimer: ReturnType<typeof setInterval> | undefined
 
-    async function refreshDbSize() {
-        const res = await getIndexStatus()
-        if (res.status === 'ok') {
-            dbFileSize = res.data.dbFileSize
-        } else {
-            dbFileSize = null
-        }
+    async function refreshIndexSize() {
+        const res = await getIndexDiskUsage()
+        indexBytes = res.status === 'ok' && res.data > 0 ? res.data : null
     }
 
     async function handleClearIndex() {
@@ -84,7 +93,7 @@
         try {
             const res = await clearDriveIndex()
             if (res.status === 'error') throw new Error(res.error)
-            dbFileSize = null
+            indexBytes = null
             log.info('Drive index cleared from settings')
         } catch (error: unknown) {
             const msg = error instanceof Error ? error.message : String(error)
@@ -96,7 +105,7 @@
     }
 
     onMount(() => {
-        void refreshDbSize()
+        void refreshIndexSize()
         // Re-read whether any drive is silenced (a first-connect notification can
         // silence one while this page is open, in the same window or another).
         const unsubSilenced = onSpecificSettingChange('indexing.silencedDrives', () => {
@@ -107,8 +116,8 @@
         const unsubMaster = onSpecificSettingChange('indexing.enabled', (_id, value) => {
             masterEnabled = value
         })
-        // Refresh DB size every 2 seconds while visible
-        refreshTimer = setInterval(() => void refreshDbSize(), 2000)
+        // Refresh the index's disk use every 2 seconds while visible
+        refreshTimer = setInterval(() => void refreshIndexSize(), 2000)
 
         return () => {
             clearInterval(refreshTimer)
@@ -142,7 +151,10 @@
                     <div class="index-row">
                         <span class="info-label">{tString('settings.fileSystemWatching.indexSize')}</span>
                         <div class="index-controls">
-                            {#if dbFileSize != null || clearing}
+                            <!-- Offered whenever there's something on disk, master
+                                 switch or not: what a search walked is real data
+                                 the user may want back. -->
+                            {#if indexBytes != null || clearing}
                                 <Button variant="secondary" size="mini" onclick={handleClearIndex} disabled={clearing}>
                                     {clearing
                                         ? tString('settings.fileSystemWatching.clearing')
@@ -150,8 +162,8 @@
                                 </Button>
                             {/if}
                             <span class="info-value">
-                                {#if dbFileSize != null}
-                                    <Size bytes={dbFileSize} />
+                                {#if indexBytes != null}
+                                    <Size bytes={indexBytes} />
                                 {:else}
                                     {tString('settings.fileSystemWatching.noIndex')}
                                 {/if}

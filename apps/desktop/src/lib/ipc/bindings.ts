@@ -1731,7 +1731,25 @@ export const commands = {
     >(__TAURI_INVOKE('get_dir_stats', { path })),
   getDirStatsBatch: (paths: string[]) =>
     typedError<(DirStats | null)[], string>(__TAURI_INVOKE('get_dir_stats_batch', { paths })),
+  /**
+   *  Delete every drive's index (the settings screen's "Clear index").
+   *
+   *  Every volume, not just `root`: a search walks the drive it's pointed at, so
+   *  the disk this reclaims can belong to a share or an external drive the user
+   *  never turned indexing on for. Per-drive clearing has its own action
+   *  ([`forget_drive_index`], from the drive's badge menu).
+   */
   clearDriveIndex: () => typedError<null, string>(__TAURI_INVOKE('clear_drive_index')),
+  /**
+   *  How much disk every drive's index takes up, in bytes, WAL sidecars included.
+   *
+   *  Deliberately not `get_index_status().db_file_size`, which reports the boot
+   *  disk's live instance and therefore reports nothing at all on a machine where
+   *  drive indexing is off — the machine most likely to have accumulated index
+   *  databases it never asked for, since a search walks whatever folder it's
+   *  pointed at. `0` means there's nothing on disk to clear.
+   */
+  getIndexDiskUsage: () => typedError<number, string>(__TAURI_INVOKE('get_index_disk_usage')),
   /**
    *  Apply the master drive-indexing switch (`indexing.enabled`), live.
    *

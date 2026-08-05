@@ -1887,9 +1887,9 @@
   "@settings.fileSystemWatching.noIndex": {
     "sourceHash": "14eee3b"
   },
-  "settings.fileSystemWatching.clearIndexDescription": "Verwijdert de indexdatabase. Een verse scan start de volgende keer dat indexeren is ingeschakeld.",
+  "settings.fileSystemWatching.clearIndexDescription": "Verwijdert de index van elke schijf. Indexeren bouwt hem weer op, en zoeken in een map die Cmdr niet heeft geïndexeerd ook.",
   "@settings.fileSystemWatching.clearIndexDescription": {
-    "sourceHash": "61d9b4e"
+    "sourceHash": "370e2bc"
   },
   "settings.fileSystemWatching.cardDownloads": "Downloads",
   "@settings.fileSystemWatching.cardDownloads": {

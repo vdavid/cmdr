@@ -124,6 +124,14 @@ fn delete_index_db_files(db_path: &Path) {
 /// Enumerate every `index-*.db` in `data_dir` (excluding `root`), pairing each
 /// with its mtime. Skips entries we can't stat (logged) and non-index files.
 fn enumerate_external_index_dbs(data_dir: &Path) -> Vec<IndexDbFile> {
+    let mut dbs = enumerate_index_dbs(data_dir);
+    dbs.retain(|db| db.volume_id != ROOT_VOLUME_ID);
+    dbs
+}
+
+/// Enumerate every `index-*.db` in `data_dir`, `root` included, pairing each with
+/// its mtime. Skips entries we can't stat (logged) and non-index files.
+fn enumerate_index_dbs(data_dir: &Path) -> Vec<IndexDbFile> {
     let read_dir = match std::fs::read_dir(data_dir) {
         Ok(rd) => rd,
         Err(e) => {
@@ -141,9 +149,6 @@ fn enumerate_external_index_dbs(data_dir: &Path) -> Vec<IndexDbFile> {
         let Some(volume_id) = volume_id_from_db_filename(file_name) else {
             continue;
         };
-        if volume_id == ROOT_VOLUME_ID {
-            continue;
-        }
         let modified = match entry.metadata().and_then(|m| m.modified()) {
             Ok(t) => t,
             Err(e) => {
@@ -162,6 +167,64 @@ fn enumerate_external_index_dbs(data_dir: &Path) -> Vec<IndexDbFile> {
     out
 }
 
+/// How many bytes every index database on disk occupies right now, `root`
+/// included and WAL/SHM sidecars counted, whether or not the volume has a live
+/// instance.
+///
+/// The registry can't answer this: a database only a search's walk ever wrote is
+/// on disk with nothing registered for it the moment the app restarts, and so is
+/// a drive's index the user turned indexing off for. That's exactly the disk the
+/// settings screen has to be able to show and reclaim, so this reads the files
+/// rather than the pool. Best-effort: a database it can't stat counts as zero
+/// instead of failing the whole answer.
+pub(crate) fn total_index_db_bytes() -> u64 {
+    let Some(data_dir) = data_dir_for_sweep("measure the index's disk use") else {
+        return 0;
+    };
+    enumerate_index_dbs(&data_dir)
+        .iter()
+        .map(|db| index_db_bytes(&db.path))
+        .sum()
+}
+
+/// The volume id of every index database on disk, `root` included and in no
+/// particular order. What a "clear everything" sweep needs on top of the
+/// registry, which only knows the volumes that are live right now.
+pub(crate) fn volume_ids_on_disk() -> Vec<String> {
+    let Some(data_dir) = data_dir_for_sweep("list the index databases on disk") else {
+        return Vec::new();
+    };
+    enumerate_index_dbs(&data_dir)
+        .into_iter()
+        .map(|db| db.volume_id)
+        .collect()
+}
+
+/// One index database's bytes on disk, sidecars included. Mirrors
+/// `IndexStore::db_file_size`, which answers the same question for a database
+/// that happens to be open.
+fn index_db_bytes(db_path: &Path) -> u64 {
+    [
+        db_path.to_path_buf(),
+        db_path.with_extension("db-wal"),
+        db_path.with_extension("db-shm"),
+    ]
+    .iter()
+    .map(|path| std::fs::metadata(path).map(|m| m.len()).unwrap_or(0))
+    .sum()
+}
+
+/// The data dir, or `None` with one log line naming what couldn't be done.
+fn data_dir_for_sweep(what: &str) -> Option<PathBuf> {
+    match crate::indexing::host::config::data_dir() {
+        Ok(dir) => Some(dir),
+        Err(e) => {
+            log::warn!(target: "indexing::retention", "cannot resolve the data dir to {what}: {e}");
+            None
+        }
+    }
+}
+
 /// Enforce the external-index-DB cap: evict the least-recently-used OFFLINE
 /// (not currently registered) external index DBs until back under
 /// [`MAX_EXTERNAL_INDEX_DBS`]. A no-op when under the cap. Logs what it evicts.
@@ -170,12 +233,8 @@ fn enumerate_external_index_dbs(data_dir: &Path) -> Vec<IndexDbFile> {
 /// exactly when accumulation can grow. Never evicts a live volume's DB (see the
 /// module safety invariants) nor `root`.
 pub(crate) fn enforce_external_index_cap() {
-    let data_dir = match crate::indexing::host::config::data_dir() {
-        Ok(d) => d,
-        Err(e) => {
-            log::warn!(target: "indexing::retention", "cannot resolve data dir for cap enforcement: {e}");
-            return;
-        }
+    let Some(data_dir) = data_dir_for_sweep("enforce the index-database cap") else {
+        return;
     };
     let candidates = enumerate_external_index_dbs(&data_dir);
     let registered = state::all_registered_volume_ids();
@@ -275,5 +334,28 @@ mod tests {
         let registered = vec!["smb-live1".to_string(), "smb-live2".to_string()];
         let evicted = select_evictions(&candidates, &registered, 2);
         assert_eq!(evicted, vec![PathBuf::from("/data/index-smb-cold.db")]);
+    }
+
+    /// The settings screen's two questions, over files rather than the registry:
+    /// how much disk is this, and which volumes is it. Both have to answer for a
+    /// database nothing has registered — the shape a search's walk leaves behind
+    /// on a machine that indexes nothing.
+    #[test]
+    fn the_footprint_counts_every_database_and_its_sidecars() {
+        let _lock = crate::indexing::handle::test_lock();
+        let dir = tempfile::tempdir().expect("temp dir");
+        let _config = crate::indexing::host::config::install_data_dir_for_test(dir.path());
+
+        std::fs::write(dir.path().join("index-root.db"), vec![0u8; 1000]).expect("write root db");
+        std::fs::write(dir.path().join("index-root.db-wal"), vec![0u8; 500]).expect("write root wal");
+        std::fs::write(dir.path().join("index-smb-nas.db"), vec![0u8; 300]).expect("write share db");
+        // Not an index database, and never counted as one.
+        std::fs::write(dir.path().join("history.db"), vec![0u8; 9999]).expect("write other db");
+
+        assert_eq!(total_index_db_bytes(), 1800, "main + WAL, across every volume");
+
+        let mut ids = volume_ids_on_disk();
+        ids.sort();
+        assert_eq!(ids, vec!["root".to_string(), "smb-nas".to_string()]);
     }
 }

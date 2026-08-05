@@ -1879,9 +1879,9 @@
   "@settings.fileSystemWatching.noIndex": {
     "sourceHash": "14eee3b"
   },
-  "settings.fileSystemWatching.clearIndexDescription": "Xóa cơ sở dữ liệu chỉ mục. Một lần quét mới sẽ bắt đầu vào lần lập chỉ mục được bật tiếp theo.",
+  "settings.fileSystemWatching.clearIndexDescription": "Xóa chỉ mục của mọi ổ đĩa. Việc lập chỉ mục sẽ tạo lại, và một lần tìm kiếm trong thư mục mà Cmdr chưa lập chỉ mục cũng vậy.",
   "@settings.fileSystemWatching.clearIndexDescription": {
-    "sourceHash": "61d9b4e"
+    "sourceHash": "370e2bc"
   },
   "settings.fileSystemWatching.cardDownloads": "Tải về",
   "@settings.fileSystemWatching.cardDownloads": {

@@ -178,9 +178,18 @@ export function rescanDriveIndex(volumeId: string) {
   return commands.rescanDriveIndex(volumeId)
 }
 
-/** Clears the local (`root`) drive index entirely. */
+/** Clears EVERY drive's index, including databases no drive is indexing right now. */
 export function clearDriveIndex() {
   return commands.clearDriveIndex()
+}
+
+/**
+ * How many bytes every drive's index takes up on disk. Reads the files, so it
+ * answers on a machine with drive indexing off — where a search's walk is the
+ * only thing that ever wrote an index. `0` means there's nothing to clear.
+ */
+export function getIndexDiskUsage() {
+  return commands.getIndexDiskUsage()
 }
 
 /**
