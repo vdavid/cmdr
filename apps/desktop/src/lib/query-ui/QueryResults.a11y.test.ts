@@ -231,3 +231,101 @@ describe('SearchResults a11y', () => {
     expect(out.violations).toEqual([])
   })
 })
+
+/**
+ * A live run adds three things an audit should see: the phase spinner, the status bar
+ * as a progress strip (counters, the walked path, a Stop button), and the throttled
+ * live region that had to move off `.status-bar` onto an inner span.
+ */
+describe('SearchResults a11y: a live run', () => {
+  /**
+   * The populated-results audit's rule set: `nested-interactive` is off because the
+   * path pills inside a row are mouse-only `tabindex="-1"` children of the row, which
+   * is itself the keyboard target (see the block comment above).
+   */
+  async function auditWithRows(target: HTMLElement): Promise<void> {
+    const out = await axe.run(target, {
+      runOnly: {
+        type: 'tag',
+        values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'],
+      },
+      rules: {
+        'color-contrast': { enabled: false },
+        region: { enabled: false },
+        'nested-interactive': { enabled: false },
+      },
+    })
+    expect(out.violations).toEqual([])
+  }
+
+  const sampleRows: SearchResultEntry[] = [
+    {
+      name: 'photo1.jpg',
+      path: '/Users/test/pictures/photo1.jpg',
+      parentPath: '/Users/test/pictures',
+      isDirectory: false,
+      size: 1_500_000,
+      modifiedAt: 1_710_000_000,
+      iconId: 'ext:jpg',
+    },
+  ]
+
+  const walking = {
+    phase: 'walking' as const,
+    matchCount: 1234,
+    dirsFound: 4312,
+    currentPath: '/Volumes/naspi/photos/2019',
+    capped: false,
+    running: true,
+    incomplete: false,
+  }
+
+  it('the phase state, with nothing found yet, has no a11y violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(SearchResults, {
+      target,
+      props: { ...defaultProps, isSearching: true, hasSearched: true, query: 'report', live: walking },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('rows plus the running progress strip has no a11y violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(SearchResults, {
+      target,
+      props: {
+        ...defaultProps,
+        isSearching: true,
+        hasSearched: true,
+        query: 'report',
+        results: sampleRows,
+        totalCount: 1234,
+        live: walking,
+        onStopLive: () => {},
+      },
+    })
+    await tick()
+    await auditWithRows(target)
+  })
+
+  it('a run that stopped short has no a11y violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(SearchResults, {
+      target,
+      props: {
+        ...defaultProps,
+        hasSearched: true,
+        query: 'report',
+        results: sampleRows,
+        totalCount: 40,
+        live: { ...walking, running: false, incomplete: true, currentPath: null, matchCount: 40 },
+      },
+    })
+    await tick()
+    await auditWithRows(target)
+  })
+})

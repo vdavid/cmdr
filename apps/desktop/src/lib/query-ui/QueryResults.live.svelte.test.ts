@@ -134,6 +134,20 @@ describe('rows stay on screen while the run keeps finding more', () => {
     expect(status).not.toContain('of 1,234 results')
   })
 
+  it('shows where the walk has got to, named for a screen reader', async () => {
+    // The path is rendered by the mid-truncating action, so the element is empty in
+    // the markup and filled at runtime. Pinning that it ends up with text is what
+    // catches a wiring change that leaves a blank strip where progress should be.
+    const target = mountWith({
+      results: rows(1),
+      live: liveView({ currentPath: '/Volumes/naspi/photos/2019' }),
+    })
+    await tick()
+    const path = target.querySelector('.status-path')
+    expect(path?.textContent ?? '').toContain('naspi')
+    expect(path?.getAttribute('aria-label')).toContain('/Volumes/naspi/photos/2019')
+  })
+
   it('offers a way out, with the key that does the same thing', async () => {
     const stop = vi.fn()
     const target = mountWith({ results: rows(1), live: liveView(), onStopLive: stop })
