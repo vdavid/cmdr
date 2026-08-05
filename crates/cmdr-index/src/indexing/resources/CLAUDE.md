@@ -38,6 +38,10 @@ per-volume), these cap the WHOLE indexing pool.
   filesystem-free `select_evictions`. SAFETY (enforced by the selector, unit-tested): never evict a registered
   (`Running`/`Initializing`) volume's DB nor `root`, no matter how old its mtime. `forget`/`disable`/`clear` are
   lifecycle's, not here.
+- **The same enumeration answers what the whole index OCCUPIES** (`Index::disk_footprint`) and which volumes have a
+  database at all. Both read the FILES: ❌ the registry can't be asked, since it can't see the database a search's walk
+  built and nothing re-registered. There is ❌ no size cap, by decision (`docs/specs/unindexed-search-plan.md` Decision
+  17); coverage that has to be rebuilt from scratch is EVICTED instead, and `DETAILS.md` names the three cases.
 
 Thresholds, the memory-snapshot breakdown, the shared-ceiling rationale, and the LRU + safety logic: `DETAILS.md`. Read
 it before any non-trivial work here: editing, planning, reorganizing, or advising.

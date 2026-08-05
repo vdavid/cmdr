@@ -293,32 +293,32 @@ All eleven milestones landed. Branch `worktree-david+unindexed-search-exec`; M0�
 3. ✅ **Analytics.** `search_used` fired at run START with one prop (`mode`), which leaves every question this effort
    raises unanswerable. It now fires ONCE per run, when the run ENDS, with `trigger` (the debounce apart from a run
    somebody asked for), `ending`, `coverage`, `duration_bucket`, `abandoned_ground`, `capped`. `coverage` comes off a
-   new typed `SearchRunCoverage::kind` (`covered`/`live`/`mixed`, from the coverage QUESTION rather than how far the
-   run got). `superseded` is the frontend's own word, since the backend never reports one. CTA conversion is two
-   events (`search_cta_offered` / `search_cta_used`), because the Full Disk Access offer depends on a TCC probe that
-   answers after the run does. ⚠️ The run clock starts on the coverage callback's `null`, ❌ not on
-   `searchFilesStreaming` resolving: a small folder's whole run can arrive before that promise does, which is what made
-   the first version report no duration at all. That retired `LiveSearchSourceDeps.onStarted`.
+   new typed `SearchRunCoverage::kind` (`covered`/`live`/`mixed`, from the coverage QUESTION rather than how far the run
+   got). `superseded` is the frontend's own word, since the backend never reports one. CTA conversion is two events
+   (`search_cta_offered` / `search_cta_used`), because the Full Disk Access offer depends on a TCC probe that answers
+   after the run does. ⚠️ The run clock starts on the coverage callback's `null`, ❌ not on `searchFilesStreaming`
+   resolving: a small folder's whole run can arrive before that promise does, which is what made the first version
+   report no duration at all. That retired `LiveSearchSourceDeps.onStarted`.
 4. ✅ **`feature-status.json`.** "Finds files on an indexed drive" was the whole limitation this effort removed; the
    note now says an indexed folder answers in well under a second, an unindexed one gets walked live with results
    arriving as they're found, and one search still covers one drive.
 5. ✅ **The `content_epoch` note** is in `writer/DETAILS.md` beside the `listed_epoch` rules it will reuse, with the ❌
    that matters: one epoch for both dimensions would make a content pass invalidate listing coverage.
 6. ✅ **The locale sweep.** Five more French strings had lost their apostrophes or carried a lone `'` where the catalog
-   rule is `''` (M8 fixed four; these are the rest of this effort's ~40 keys). Register needed nothing: all nine
-   locales address the reader the way `docs/i18n/formal-informal-decisions.md` decides. ⚠️ Five EN strings from this
-   effort carry a lone `'` (`didn't`, `what's`); they render correctly (nothing ICU-significant follows) and the wider
-   catalog is mixed at 264 occurrences, so doubling them would restamp 45 `sourceHash` lines for no visible change.
-   Left, deliberately.
-7. ✅ **The `CLAUDE.md` budget.** `src-tauri/src/search/` 879 → 597 and `src/lib/search/` 684 → 599 (the two named), plus
-   `scanner/` 692 → 598, `read/` 601 → 593, `onboarding/` 621 → 600, and `lifecycle/` 803 → 645 (still over, but well
-   under the 771 this effort found it at). ⚠️ Three files stay over and are NOT this effort's doing:
+   rule is `''` (M8 fixed four; these are the rest of this effort's ~40 keys). Register needed nothing: all nine locales
+   address the reader the way `docs/i18n/formal-informal-decisions.md` decides. ⚠️ Five EN strings from this effort
+   carry a lone `'` (`didn't`, `what's`); they render correctly (nothing ICU-significant follows) and the wider catalog
+   is mixed at 264 occurrences, so doubling them would restamp 45 `sourceHash` lines for no visible change. Left,
+   deliberately.
+7. ✅ **The `CLAUDE.md` budget.** `src-tauri/src/search/` 879 → 597 and `src/lib/search/` 684 → 599 (the two named),
+   plus `scanner/` 692 → 598, `read/` 601 → 593, `onboarding/` 621 → 600, and `lifecycle/` 803 → 645 (still over, but
+   well under the 771 this effort found it at). ⚠️ Three files stay over and are NOT this effort's doing:
    `importance/scheduler` (621), `network_scanner` (685), `store` (709).
 8. ✅ **M1's narrowed surface reads coherently**, verified in the running app: an auto-applied run on a drive with no
    index says "Cmdr hasn't indexed Macintosh HD yet, so this search skipped: ~", then "Press Enter and Cmdr will look
    through it now.", then offers [Index this drive] [Don't ask again]. The gap, the one-key way out, and the durable
-   offer, in that order. The offer is structurally index-only-run-only (`coverageCtaVolumeId` needs
-   `uncoveredScopes`, which `coverageNoteFromRun` always leaves empty).
+   offer, in that order. The offer is structurally index-only-run-only (`coverageCtaVolumeId` needs `uncoveredScopes`,
+   which `coverageNoteFromRun` always leaves empty).
 9. ✅ **M3b's two leftovers split.** `VolumeIndexStatus.enabled` is RIGHT: it says "an index is registered", which is
    what it computes and what the badge needs (a walk-built index carries `freshness: null` and renders gray). Its doc
    now says it is NOT "this drive is indexed". The first-connect suppression was WRONG: it asked `enabled` alone, so a
@@ -328,11 +328,11 @@ All eleven milestones landed. Branch `worktree-david+unindexed-search-exec`; M0�
     on the three files above.
 
 **Found by driving the app, and not by any test: a search from the home folder walked nothing.** A pane in `~` stores
-its path as `~`, and M0 made the current folder the DEFAULT scope, so that string became the include path of an
-ordinary search. `realpath` doesn't expand a tilde, so the index resolved a literal `~` (an indexed drive would have
-said "Cmdr's index doesn't cover this folder yet") and the walk resolved `/~` and reported "This search stopped early".
-Cmdr launches in `~`, so this was the default search on a default machine. Fixed in `canonicalize_scope_path`, the one
-funnel both halves of a live search take their scope through.
+its path as `~`, and M0 made the current folder the DEFAULT scope, so that string became the include path of an ordinary
+search. `realpath` doesn't expand a tilde, so the index resolved a literal `~` (an indexed drive would have said "Cmdr's
+index doesn't cover this folder yet") and the walk resolved `/~` and reported "This search stopped early". Cmdr launches
+in `~`, so this was the default search on a default machine. Fixed in `canonicalize_scope_path`, the one funnel both
+halves of a live search take their scope through.
 
 **Verified in the running app (M10).** With drive indexing OFF and a search having walked, Settings > Indexing > Drive
 indexing shows "Index size 121.75 MB" and a live Clear button — where before it said "No index" with no button, and a
@@ -725,9 +725,8 @@ runs (`0 → 34 → 91 → 124 → 169 → 200` over three seconds, sampled insi
 
 - The drafted copy from M0 and M1 (11 keys, translated into all nine locales) has not been reviewed. An edit means
   retranslating.
-- `SearchDialog.svelte.test.ts` is 1,471 lines against a 1,179 `file-length` allowlist entry, and
-  `lifecycle/state.rs` 1,672 against 1,356. Both were over before this effort and grew inside it. Warn-only. Raise,
-  split, or leave.
+- `SearchDialog.svelte.test.ts` is 1,471 lines against a 1,179 `file-length` allowlist entry, and `lifecycle/state.rs`
+  1,672 against 1,356. Both were over before this effort and grew inside it. Warn-only. Raise, split, or leave.
 - Whether the network CTA variant should still offer "Index this drive" at all.
 - The M7 copy (nine keys: the still-searching toast and its two last words, plus the abandoned-folders note) is drafted
   and translated into all nine locales, unreviewed like M0's and M1's. So is M10's rewritten "Clear index" help text,
@@ -735,9 +734,9 @@ runs (`0 → 34 → 91 → 124 → 169 → 200` over three seconds, sampled insi
 - `index-crate-isolation`'s ceilings were raised twice inside this effort, both with David's standing say-so and both
   argued in the check: root promises 44 → 50 and `Index` methods 35 → 40. There is no headroom left, by design.
 
-**When this lands**: the ~120 MB dev data dir at
-`~/Library/Application Support/com.veszelovszki.cmdr-dev-unindexsearch` holds a walk-built index from M10's live
-verification, and drive indexing is back ON there, so it re-scans on its own. Delete it whenever.
+**When this lands**: the ~120 MB dev data dir at `~/Library/Application Support/com.veszelovszki.cmdr-dev-unindexsearch`
+holds a walk-built index from M10's live verification, and drive indexing is back ON there, so it re-scans on its own.
+Delete it whenever.
 
 ## Sequencing
 

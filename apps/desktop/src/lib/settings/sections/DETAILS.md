@@ -52,7 +52,13 @@ sections compose).
   this section renders the rows it overrides as overridden: both sub-toggles get `disabled` + the "Off with drive
   indexing" badge, the hand-rendered re-enable row dims with them (`.reenable-row.overridden`, matching `SettingRow`'s
   own disabled opacity), and one `.master-off-note` line says what stopped and that each drive keeps its own choice.
-  Clear index stays live on purpose: reclaiming the disk is exactly what someone who turned indexing off may want next.
+  Clear index stays live on purpose: reclaiming the disk is exactly what someone who turned indexing off may want next,
+  and after this effort there IS something to reclaim there — a search walks whatever folder it's pointed at whichever
+  way the switch is set (`docs/specs/unindexed-search-plan.md` Decision 13). So the size and the button read the whole
+  index's FOOTPRINT off disk (`get_index_disk_usage`, every `index-*.db` plus sidecars, `root` included) instead of the
+  live `root` instance's `db_file_size`, which answers `None` on exactly the machine that most needs the number.
+  Clearing goes just as wide (`clear_drive_index` → `Index::forget_all_volumes`): a walk's disk can belong to a share
+  nobody ever enabled, and per-drive clearing has its own action in the drive's badge menu.
 - **`NotificationsSection.svelte`**: `Behavior > Notifications`: two `SectionCard` card groups — Downloads (BOTH
   Downloads-folder features in one card: the 4-option `downloadsNotifications` ToggleGroup, plus the on/off go-to-latest
   `Switch` whose description references the live global binding — the combo is edited under Keyboard shortcuts; anchor
