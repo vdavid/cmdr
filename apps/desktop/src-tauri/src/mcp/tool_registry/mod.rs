@@ -453,7 +453,7 @@ mcp_tools! {
 
     // ── Search ──────────────────────────────────────────────────────────────
     "search" => {
-        desc: "Search the drive index by filename pattern, size, date, or type; returns paths (no UI). Set countOnly:true for just the total. Prefer over ai_search for a plain pattern/filter, over open_search_dialog for programmatic lookup. Needs an indexed volume.",
+        desc: "Search one drive by filename pattern, size, date, or type; returns paths (no UI). Reads the index where it covers the scope and walks the folders it doesn't, so an unindexed drive still answers, only slower. Set countOnly:true for the total alone.",
         schema: schemas::search_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::AiClient],
@@ -461,7 +461,7 @@ mcp_tools! {
         run: params_only search::execute_search
     },
     "ai_search" => {
-        desc: "Search with a natural-language query; the configured LLM turns it into a structured search over the drive index and returns matching paths. Use search instead when you can express the query as a pattern or filter (it skips the LLM call).",
+        desc: "Search with a natural-language query; the configured LLM turns it into a structured search over one drive, reading the index and walking whatever it hasn't covered. Use search instead when you can express the query as a pattern or filter (no LLM call).",
         schema: schemas::ai_search_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::AiClient],

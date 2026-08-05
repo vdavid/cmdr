@@ -21,6 +21,11 @@
 //! mark ([`volumes::mark_walked_behind`]) has to keep pace with the rows the walk
 //! is still writing, or the next query prunes them as covered and shows FEWER
 //! results than the one before it (Decision 12).
+//!
+//! Superseding is scoped to the DIALOG, which is the one asker that retypes; see
+//! [`RunOrigin`]. An MCP call gets the same run, the same walk, and the same
+//! answer, folded into one reply by [`collect`] because its transport can't
+//! carry a stream.
 
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::AtomicU64;
@@ -42,8 +47,10 @@ use super::ranking::hash_path;
 use super::types::{SearchQuery, SearchResultEntry};
 use super::volumes;
 
+pub(crate) mod collect;
 pub(crate) mod events;
 
+pub(crate) use collect::{AnswerEnding, CollectingSink, LiveAnswer};
 pub(crate) use events::{
     SearchCancelledEvent, SearchCompleteEvent, SearchErrorEvent, SearchEventSink, SearchPhase, SearchProgressEvent,
     SearchRunCoverage, SearchRunError, TauriSearchEventSink, WalkEnding,
@@ -63,12 +70,32 @@ const WALK_QUEUE_DEPTH: usize = 4;
 
 // ── The runs in flight ───────────────────────────────────────────────
 
+/// Who asked, which is what decides a new run's effect on the ones already in
+/// flight.
+///
+/// ❌ Not a policy switch: both origins take the same path, walk the same
+/// ground, and get the same answer (`docs/specs/unindexed-search-plan.md`
+/// Decision 10). What differs is only who else is in the room.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum RunOrigin {
+    /// The search dialog. One dialog asks one question at a time, so a new run
+    /// supersedes its previous one, and closing the dialog stops what it left
+    /// behind.
+    Dialog,
+    /// An MCP tool call. Its own asker with its own caller waiting, so it
+    /// neither supersedes nor is superseded, and a dialog closing is none of its
+    /// business. Only the app quitting stops it.
+    Agent,
+}
+
 /// One live search run, from the query that started it to its terminal event.
 pub(crate) struct LiveRun {
     /// What every event this run emits is stamped with.
     pub(crate) run_id: String,
     /// The one volume it covers.
     pub(crate) volume_id: String,
+    /// Who asked for it.
+    origin: RunOrigin,
     /// Stops the walk AND the run. It's the token handed to `Index::cover`, so
     /// cancelling reaches the walk wherever it is rather than at the next batch
     /// boundary.
@@ -104,22 +131,29 @@ impl LiveRun {
 /// Every run that hasn't reached its terminal state, keyed by run id.
 static RUNS: LazyLock<Mutex<HashMap<String, Arc<LiveRun>>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
 
-/// Register a run and supersede every other one.
+/// Register a run, superseding the ones it speaks over.
 ///
-/// The dialog asks one question at a time, so an earlier run's results are by
-/// definition for a query the user has moved on from. ❌ Superseding does not
-/// cancel: their walks keep filling the index, which is what makes the refined
-/// query cheaper than the first one.
-pub(crate) fn register(run_id: &str, volume_id: &str) -> Arc<LiveRun> {
+/// The dialog asks one question at a time, so an earlier DIALOG run's results
+/// are by definition for a query the user has moved on from. ❌ Superseding does
+/// not cancel: their walks keep filling the index, which is what makes the
+/// refined query cheaper than the first one.
+///
+/// ❌ It reaches no [`RunOrigin::Agent`] run, in either direction: an MCP call
+/// has its own caller waiting on its own answer, and a person typing has no
+/// business emptying it (nor the other way round).
+pub(crate) fn register(run_id: &str, volume_id: &str, origin: RunOrigin) -> Arc<LiveRun> {
     let run = Arc::new(LiveRun {
         run_id: run_id.to_string(),
         volume_id: volume_id.to_string(),
+        origin,
         cancel: CancellationToken::new(),
         superseded: AtomicBool::new(false),
     });
     let mut runs = RUNS.lock_ignore_poison();
-    for other in runs.values() {
-        other.superseded.store(true, Ordering::Relaxed);
+    if origin == RunOrigin::Dialog {
+        for other in runs.values().filter(|other| other.origin == RunOrigin::Dialog) {
+            other.superseded.store(true, Ordering::Relaxed);
+        }
     }
     runs.insert(run_id.to_string(), Arc::clone(&run));
     run
@@ -157,18 +191,23 @@ pub(crate) fn test_registry_lock() -> std::sync::MutexGuard<'static, ()> {
 /// written — but a walk still reading a disk nobody is waiting on is exactly the
 /// resource waste the app promises not to be.
 pub(crate) fn cancel_all_live_runs() {
-    cancel_all_live_runs_except(None);
+    for run in RUNS.lock_ignore_poison().values() {
+        run.cancel.cancel();
+    }
 }
 
-/// Stop every run except the one named, if any.
+/// Stop every DIALOG run except the one named, if any.
 ///
 /// The dialog closing calls this with the run it deliberately outlived: "Open in
 /// pane" promotes the results into a pane and leaves the walk filling it (M7), so
-/// that ONE run has a consumer even though the dialog doesn't. Every other run is
-/// a query nobody is reading.
-pub(crate) fn cancel_all_live_runs_except(keep_run_id: Option<&str>) {
+/// that ONE run has a consumer even though the dialog doesn't. Every other run of
+/// the dialog's is a query nobody is reading.
+///
+/// ❌ An agent's run is untouched: closing the dialog says nothing about an MCP
+/// call still waiting for its answer.
+pub(crate) fn cancel_dialog_runs_except(keep_run_id: Option<&str>) {
     for run in RUNS.lock_ignore_poison().values() {
-        if keep_run_id.is_some_and(|keep| keep == run.run_id) {
+        if run.origin != RunOrigin::Dialog || keep_run_id.is_some_and(|keep| keep == run.run_id) {
             continue;
         }
         run.cancel.cancel();

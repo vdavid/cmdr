@@ -20,6 +20,11 @@
 //!   engine pass; the difference is that the frontier gets read live rather than
 //!   reported as missing.
 //!
+//! [`run_live_collected`] is the second of those over a transport that can't
+//! carry events: same run, same walk, folded into one reply
+//! (`live/collect.rs`). The MCP tools take it, which is all Decision 10's "a
+//! thin wrapper on the same path" amounts to in code.
+//!
 //! The two halves of a live run are complementary by construction: the frontier
 //! (`Index::coverage`) is exactly the ground the arena has nothing to say about,
 //! so the engine's unfiltered pass over the scope IS the covered half. That's why
@@ -33,7 +38,8 @@ use cmdr_index::{CoverageDimension, CoverageToken, ROOT_VOLUME_ID, ReadPool};
 use super::engine;
 use super::excludes::ExcludeRules;
 use super::live::{
-    self, LiveRun, ResultStream, SearchEventSink, SearchPhase, SearchRunCoverage, SearchRunError, WalkEnding, WalkJudge,
+    self, CollectingSink, LiveAnswer, LiveRun, ResultStream, RunOrigin, SearchEventSink, SearchPhase,
+    SearchRunCoverage, SearchRunError, WalkEnding, WalkJudge,
 };
 use super::matcher::{CompiledQuery, Evaluator};
 use super::query;
@@ -246,7 +252,7 @@ pub(crate) fn start_live(app: tauri::AppHandle, query: SearchQuery, run_id: Stri
         run_id: run_id.clone(),
         target_volume_id: target.volume_id.clone(),
     };
-    let run = live::register(&run_id, &target.volume_id);
+    let run = live::register(&run_id, &target.volume_id, RunOrigin::Dialog);
 
     let spawned = std::thread::Builder::new().name("search-live".into()).spawn(move || {
         let sink = live::TauriSearchEventSink::new(app);
@@ -258,6 +264,53 @@ pub(crate) fn start_live(app: tauri::AppHandle, query: SearchQuery, run_id: Stri
         return Err(format!("Search couldn't start: {e}"));
     }
     Ok(started)
+}
+
+/// How long an agent's search waits for its answer when it names no budget.
+///
+/// Long enough for a cold arena on a big drive (10.9 s measured on a 13.5 M-entry
+/// NAS index) plus a short walk, short enough to stay inside a typical MCP client's
+/// request timeout. Past it the walk keeps going and the reply says so.
+pub(crate) const AGENT_WAIT_DEFAULT: std::time::Duration = std::time::Duration::from_secs(20);
+
+/// The longest an agent may ask to wait. A tool call is somebody's turn: past
+/// this the honest answer is "here's what I have, ask again".
+pub(crate) const AGENT_WAIT_MAX: std::time::Duration = std::time::Duration::from_secs(120);
+
+/// Run a live search for a caller that can't subscribe to its events, and hand
+/// back one answer.
+///
+/// The same run [`start_live`] starts: the same coverage question, the same
+/// arena, the same walk, the same matching. Only the reporting differs, because
+/// an MCP tool call is one request and one reply (`live/collect.rs` says what
+/// survives the flattening).
+///
+/// Blocks for up to `budget` — call it inside `spawn_blocking`. ❌ Returning
+/// does not stop the walk: its rows land in the index either way, so the same
+/// search run again continues from where this one left off.
+pub(crate) fn run_live_collected(query: SearchQuery, budget: std::time::Duration) -> Result<LiveAnswer, String> {
+    // Activity only, no `cancel_idle_timer`: that pairs with the dialog closing
+    // to restart it, and an agent has no dialog. The backstop timer stays the
+    // one thing that eventually drops the arena.
+    volumes::touch_activity();
+
+    let target = resolve_target(&query).map_err(|e| e.to_string())?;
+    let volume_id = target.volume_id.clone();
+    let run_id = format!("agent-{}", uuid::Uuid::new_v4());
+    let run = live::register(&run_id, &volume_id, RunOrigin::Agent);
+
+    let sink = std::sync::Arc::new(CollectingSink::default());
+    let run_sink = std::sync::Arc::clone(&sink);
+    let spawned = std::thread::Builder::new().name("search-agent".into()).spawn(move || {
+        run_live_blocking(query, target, &run, run_sink.as_ref());
+        live::deregister(&run.run_id);
+    });
+    if let Err(e) = spawned {
+        live::deregister(&run_id);
+        return Err(format!("Search couldn't start: {e}"));
+    }
+
+    Ok(sink.answer_within(budget.min(AGENT_WAIT_MAX), volume_id))
 }
 
 /// A live search, start to terminal event. Long-lived and synchronous; call it

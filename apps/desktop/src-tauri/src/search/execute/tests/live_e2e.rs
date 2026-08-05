@@ -25,7 +25,7 @@ use cmdr_index::{CoverageDimension, Index, NoopEventSink};
 use super::*;
 use crate::ignore_poison::IgnorePoison;
 use crate::search::live::events::CollectorSearchEventSink;
-use crate::search::live::{self, SearchPhase, WalkEnding};
+use crate::search::live::{self, AnswerEnding, RunOrigin, SearchPhase, WalkEnding};
 
 /// A platform-appropriate mount root: read routing only sends a path to a
 /// per-mount index under an external-mount prefix, and those differ per OS.
@@ -78,10 +78,9 @@ struct Answer {
     unresolved: Vec<String>,
 }
 
-/// Run one live search over `scope`, to completion, and report what the frontend
-/// would have seen.
-fn search(run_id: &str, scope: &str) -> Answer {
-    let query = SearchQuery {
+/// The one query every search below runs, scoped to `scope`.
+fn query_for(scope: &str) -> SearchQuery {
+    SearchQuery {
         name_pattern: Some("txt".to_string()),
         pattern_type: PatternType::Glob,
         min_size: None,
@@ -96,13 +95,19 @@ fn search(run_id: &str, scope: &str) -> Answer {
         limit: 30,
         case_sensitive: Some(false),
         exclude_system_dirs: Some(false),
-    };
+    }
+}
+
+/// Run one live search over `scope`, to completion, and report what the frontend
+/// would have seen.
+fn search(run_id: &str, scope: &str) -> Answer {
+    let query = query_for(scope);
     let target = Target {
         volume_id: VOLUME_ID.to_string(),
         include_paths: vec![scope.to_string()],
         from_scope: true,
     };
-    let run = live::register(run_id, VOLUME_ID);
+    let run = live::register(run_id, VOLUME_ID, RunOrigin::Dialog);
     let sink = CollectorSearchEventSink::default();
     run_live_blocking(query, target, &run, &sink);
     live::deregister(run_id);
@@ -129,6 +134,152 @@ fn search(run_id: &str, scope: &str) -> Answer {
         declined: terminal.coverage.declined.clone(),
         unresolved: terminal.coverage.unresolved_scopes.clone(),
     }
+}
+
+/// What one agent search over `scope` came back with, through the entry point
+/// the MCP tools take.
+struct AgentAnswer {
+    paths: Vec<String>,
+    match_count: u32,
+    dirs_found: u64,
+    ending: AnswerEnding,
+}
+
+/// Run one agent search over `scope`, waiting up to `budget` for it.
+fn agent_search(scope: &str, budget: std::time::Duration) -> AgentAnswer {
+    let mut query = query_for(scope);
+    query.include_paths = Some(vec![scope.to_string()]);
+    let answer = run_live_collected(query, budget).expect("routing resolves to the one fake volume");
+    let mut paths: Vec<String> = answer.entries.iter().map(|entry| entry.path.clone()).collect();
+    paths.sort();
+    AgentAnswer {
+        paths,
+        match_count: answer.match_count,
+        dirs_found: answer.dirs_found,
+        ending: answer.ending,
+    }
+}
+
+/// The coverage report of a settled answer.
+fn settled(ending: &AnswerEnding) -> &SearchRunCoverage {
+    match ending {
+        AnswerEnding::Settled(coverage) => coverage,
+        other => panic!("the run was expected to settle, and reported {other:?}"),
+    }
+}
+
+#[test]
+fn an_agent_search_walks_the_same_ground_and_gets_the_same_union() {
+    // Decision 10: the MCP tools are a thin wrapper on the same path, so an
+    // agent's search walks exactly like a person's. The transport is the only
+    // difference — one reply instead of a stream — and this is what says the
+    // ANSWER is the same one, over a volume where half the ground is indexed and
+    // half is not.
+    let _serialized = test_lock();
+    let _one_run_at_a_time = live::test_registry_lock();
+    let data = tempfile::tempdir().expect("index data dir");
+    let _search_data = volumes::install_data_dir_for_test(data.path());
+    let root = format!("{MOUNT_PREFIX}/{VOLUME_ID}");
+
+    let volumes = FakeVolumeProvider::shared();
+    volumes.register(VOLUME_ID, drive(&root)).mark_network(&root);
+    let (index, _installed) = Index::builder()
+        .data_dir(data.path())
+        .volumes(Arc::clone(&volumes) as Arc<_>)
+        .events(NoopEventSink::shared())
+        .install_for_test();
+
+    // Half the drive indexed, by a person's search.
+    let dialog = search("agent-e2e-dialog", &format!("{root}/a"));
+    assert_eq!(dialog.walk, WalkEnding::Completed);
+
+    // Now the agent asks for the whole drive: the arena answers for `a`, the walk
+    // covers `b`, and the reply carries the union.
+    let whole = agent_search(&root, std::time::Duration::from_secs(30));
+    assert_eq!(
+        whole.paths,
+        vec![
+            format!("{root}/a/nested/two.txt"),
+            format!("{root}/a/one.txt"),
+            format!("{root}/b/three.txt"),
+        ],
+        "every file once, from whichever half found it"
+    );
+    assert_eq!(whole.match_count, 3, "and counted once each");
+    let coverage = settled(&whole.ending);
+    assert_eq!(coverage.walk, WalkEnding::Completed);
+    assert!(whole.dirs_found > 0, "the agent's search really walked");
+    // The typed coverage signal MCP renders, carried through the fold: M8's
+    // declined list reaches an agent exactly as it reaches the dialog.
+    assert_eq!(coverage.declined, vec![format!("{root}/b/@eaDir")]);
+    assert!(coverage.permission_denied.is_empty());
+    assert!(coverage.unresolved_scopes.is_empty());
+
+    // And the agent's walk converged like a person's: the same search again has
+    // nothing left to walk.
+    let again = agent_search(&root, std::time::Duration::from_secs(30));
+    assert_eq!(settled(&again.ending).walk, WalkEnding::NothingToWalk);
+    assert_eq!(again.paths, whole.paths);
+    assert_eq!(again.dirs_found, 0, "an index-served answer walked nothing");
+
+    volumes::forget_volume_for_test(VOLUME_ID);
+    let _ = index.forget_volume(VOLUME_ID);
+}
+
+#[test]
+fn an_agent_that_stops_waiting_does_not_stop_the_walk() {
+    // The half of "streaming" a one-shot transport can still carry: handing back
+    // an answer is not a cancel. The walk's rows land in the index either way, so
+    // the next call picks up ground this one never saw — which is what makes
+    // "run it again" honest advice rather than "start over".
+    let _serialized = test_lock();
+    let _one_run_at_a_time = live::test_registry_lock();
+    let data = tempfile::tempdir().expect("index data dir");
+    let _search_data = volumes::install_data_dir_for_test(data.path());
+    let root = format!("{MOUNT_PREFIX}/{VOLUME_ID}");
+
+    let volumes = FakeVolumeProvider::shared();
+    volumes.register(VOLUME_ID, drive(&root)).mark_network(&root);
+    let (index, _installed) = Index::builder()
+        .data_dir(data.path())
+        .volumes(Arc::clone(&volumes) as Arc<_>)
+        .events(NoopEventSink::shared())
+        .install_for_test();
+
+    // A budget too short for any run to settle in.
+    let cut_short = agent_search(&root, std::time::Duration::from_millis(1));
+    assert!(
+        matches!(cut_short.ending, AnswerEnding::StillWalking),
+        "the answer says the walk is still going: {:?}",
+        cut_short.ending
+    );
+
+    // The walk nobody is waiting for covers the drive anyway.
+    cmdr_fs::testing::wait_until(
+        std::time::Duration::from_secs(30),
+        "the abandoned walk to cover its frontier",
+        || {
+            index
+                .coverage(VOLUME_ID, &root, CoverageDimension::Listing)
+                .is_ok_and(|map| map.frontier.is_empty())
+        },
+    );
+
+    // So the next call answers from the index, in full.
+    let next = agent_search(&root, std::time::Duration::from_secs(30));
+    assert_eq!(settled(&next.ending).walk, WalkEnding::NothingToWalk);
+    assert_eq!(
+        next.paths,
+        vec![
+            format!("{root}/a/nested/two.txt"),
+            format!("{root}/a/one.txt"),
+            format!("{root}/b/three.txt"),
+        ],
+        "and it holds everything the abandoned walk wrote"
+    );
+
+    volumes::forget_volume_for_test(VOLUME_ID);
+    let _ = index.forget_volume(VOLUME_ID);
 }
 
 #[test]

@@ -236,37 +236,23 @@ fn test_parse_human_size_invalid() {
 
 #[test]
 fn test_format_search_results_empty() {
-    use crate::search::SearchResult;
-    let result = SearchResult {
-        entries: Vec::new(),
-        total_count: 0,
-        uncovered_scopes: Vec::new(),
-        unresolved_scopes: Vec::new(),
-        target_volume_id: "root".to_string(),
-    };
-    assert_eq!(format_search_results(&result, 30), "No files found matching the query.");
+    assert_eq!(format_search_results(&[], 0, 30), "No files found matching the query.");
 }
 
 #[test]
 fn test_format_search_results_with_entries() {
-    use crate::search::{SearchResult, SearchResultEntry};
-    let result = SearchResult {
-        entries: vec![SearchResultEntry {
-            name: "test.pdf".to_string(),
-            path: "/Users/test/Documents/test.pdf".to_string(),
-            parent_path: "~/Documents".to_string(),
-            is_directory: false,
-            size: Some(340_000),
-            modified_at: Some(1_735_689_600),
-            icon_id: "pdf".to_string(),
-            entry_id: 1,
-        }],
-        total_count: 1,
-        uncovered_scopes: Vec::new(),
-        unresolved_scopes: Vec::new(),
-        target_volume_id: "root".to_string(),
-    };
-    let formatted = format_search_results(&result, 30);
+    use crate::search::SearchResultEntry;
+    let rows = vec![SearchResultEntry {
+        name: "test.pdf".to_string(),
+        path: "/Users/test/Documents/test.pdf".to_string(),
+        parent_path: "~/Documents".to_string(),
+        is_directory: false,
+        size: Some(340_000),
+        modified_at: Some(1_735_689_600),
+        icon_id: "pdf".to_string(),
+        entry_id: 1,
+    }];
+    let formatted = format_search_results(&rows, 1, 30);
     assert!(formatted.contains("1 of 1 results:"));
     assert!(formatted.contains("test.pdf"));
     assert!(formatted.contains("~/Documents"));
@@ -274,24 +260,18 @@ fn test_format_search_results_with_entries() {
 
 #[test]
 fn test_format_search_results_directory_trailing_slash() {
-    use crate::search::{SearchResult, SearchResultEntry};
-    let result = SearchResult {
-        entries: vec![SearchResultEntry {
-            name: "Projects".to_string(),
-            path: "/Users/test/Projects".to_string(),
-            parent_path: "~".to_string(),
-            is_directory: true,
-            size: Some(1_200_000),
-            modified_at: Some(1_735_689_600),
-            icon_id: "dir".to_string(),
-            entry_id: 2,
-        }],
-        total_count: 1,
-        uncovered_scopes: Vec::new(),
-        unresolved_scopes: Vec::new(),
-        target_volume_id: "root".to_string(),
-    };
-    let formatted = format_search_results(&result, 30);
+    use crate::search::SearchResultEntry;
+    let rows = vec![SearchResultEntry {
+        name: "Projects".to_string(),
+        path: "/Users/test/Projects".to_string(),
+        parent_path: "~".to_string(),
+        is_directory: true,
+        size: Some(1_200_000),
+        modified_at: Some(1_735_689_600),
+        icon_id: "dir".to_string(),
+        entry_id: 2,
+    }];
+    let formatted = format_search_results(&rows, 1, 30);
     assert!(formatted.contains("Projects/"));
 }
 

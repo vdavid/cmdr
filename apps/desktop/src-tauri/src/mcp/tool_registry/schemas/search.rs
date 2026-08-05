@@ -55,6 +55,10 @@ pub fn search_schema() -> Value {
             "limit": {
                 "type": "integer",
                 "description": "Max results to return. Default: 30"
+            },
+            "maxWaitSeconds": {
+                "type": "integer",
+                "description": "How long to wait for the answer, 1-120. Cmdr walks whatever the index hasn't covered yet, so a first search of a folder takes as long as reading it does. When the wait runs out you get what was found so far plus a note; the walk keeps going, so running the same search again picks up the rest. Default: 20"
             }
         },
         "required": []
@@ -76,6 +80,10 @@ pub fn ai_search_schema() -> Value {
             "limit": {
                 "type": "integer",
                 "description": "Max results to return. Default: 30"
+            },
+            "maxWaitSeconds": {
+                "type": "integer",
+                "description": "How long to wait for the search, 1-120 (on top of the LLM translation, which runs first). Cmdr walks whatever the index hasn't covered yet, so a first search of a folder takes as long as reading it does. When the wait runs out you get what was found so far plus a note. Default: 20"
             }
         },
         "required": ["query"]

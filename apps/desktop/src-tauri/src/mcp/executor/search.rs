@@ -1,10 +1,26 @@
 //! Search tool handlers (search, ai_search).
+//!
+//! Both are a thin wrapper on the same path a person's search takes
+//! (`docs/specs/unindexed-search-plan.md` Decision 10): `search::run_live_collected`,
+//! which walks whatever the index can't answer for. There is no
+//! walk-versus-don't parameter and no agent-specific policy — an agent's search
+//! walks exactly like a person's, and the only thing the transport changes is
+//! that the answer arrives once instead of in batches (`search/live/collect.rs`).
+
+use std::time::Duration;
 
 use serde_json::{Value, json};
 
 use super::{ToolError, ToolResult};
 use crate::search::PatternType;
-use crate::search::{self, SearchQuery, SearchResult, format_size, format_timestamp, summarize_query};
+use crate::search::{
+    self, AnswerEnding, LiveAnswer, SearchQuery, SearchResultEntry, format_size, format_timestamp, summarize_query,
+};
+
+/// The least time worth starting `ai_search`'s widened retry with. Below it the
+/// retry would report "still walking" over ground it barely touched, which is
+/// noise on top of an answer that already said it found nothing.
+const FALLBACK_FLOOR: Duration = Duration::from_secs(2);
 
 /// Parse a human-readable size string into bytes.
 /// Supports B, KB, MB, GB, TB (case-insensitive, with or without space).
@@ -51,13 +67,13 @@ pub fn parse_human_size(s: &str) -> Result<u64, ToolError> {
 }
 
 /// Format search results as a human-readable table.
-pub fn format_search_results(result: &SearchResult, limit: u32) -> String {
-    if result.entries.is_empty() {
+pub fn format_search_results(rows: &[SearchResultEntry], total_count: u32, limit: u32) -> String {
+    if rows.is_empty() {
         return "No files found matching the query.".to_string();
     }
 
-    let shown = result.entries.len().min(limit as usize);
-    let entries = &result.entries[..shown];
+    let shown = rows.len().min(limit as usize);
+    let entries = &rows[..shown];
 
     // Compute column widths
     let max_name = entries
@@ -77,7 +93,7 @@ pub fn format_search_results(result: &SearchResult, limit: u32) -> String {
     let max_parent = entries.iter().map(|e| e.parent_path.len()).max().unwrap_or(0).max(4);
 
     let mut lines = Vec::with_capacity(entries.len() + 1);
-    lines.push(format!("{} of {} results:", shown, result.total_count));
+    lines.push(format!("{shown} of {total_count} results:"));
 
     for entry in entries {
         let display_name = if entry.is_directory {
@@ -110,35 +126,130 @@ pub fn format_search_results(result: &SearchResult, limit: u32) -> String {
     lines.join("\n")
 }
 
-/// An honest one-line note naming any scopes the search couldn't cover (a scope
-/// pointing at a volume with no search index), or `None` when coverage is complete.
-/// Rendered so an agent learns its NAS/ejected-drive scope was skipped rather than
-/// reading an empty result as "no matches".
-fn coverage_note(result: &SearchResult) -> Option<String> {
+/// Everything the run couldn't answer for, as lines above the results.
+///
+/// Every one of these comes off a TYPED field, never a message match
+/// (`.claude/rules/no-string-matching.md`). It is the one thing MCP has always
+/// rendered that the dialog didn't, and the reason an agent can't read an empty
+/// list as "there's nothing there": each line says which ground the answer
+/// doesn't speak for, and what would open it.
+fn coverage_note(answer: &LiveAnswer) -> Option<String> {
     let mut notes = Vec::new();
-    if !result.uncovered_scopes.is_empty() {
+
+    if let AnswerEnding::Settled(coverage) = &answer.ending {
+        if !coverage.unresolved_scopes.is_empty() {
+            notes.push(format!(
+                "Note: Cmdr couldn't resolve {}: a typo, or a folder nothing has walked yet.",
+                coverage.unresolved_scopes.join(", ")
+            ));
+        }
+        if !coverage.permission_denied.is_empty() {
+            notes.push(refusal_note(&coverage.permission_denied, full_disk_access_would_help()));
+        }
+        if !coverage.declined.is_empty() {
+            notes.push(format!(
+                "Note: Cmdr never reads snapshot folders (each one is a hardlinked copy of the whole share), so it skipped {}.",
+                coverage.declined.join(", ")
+            ));
+        }
+        if !coverage.still_covering.is_empty() {
+            notes.push(format!(
+                "Note: another search is already walking {}, so this run left it alone. Those results land in the index; run this search again to pick them up.",
+                coverage.still_covering.join(", ")
+            ));
+        }
+        if coverage.abandoned_ground {
+            notes.push(
+                "Note: the walk gave up on folders that stopped responding, so this list is a lower bound.".to_string(),
+            );
+        }
+        match coverage.walk {
+            search::WalkEnding::Interrupted => notes.push(
+                "Note: the walk stopped before covering everything (the drive went away, or a folder wouldn't read), so this list is a lower bound. Running the search again picks up the rest."
+                    .to_string(),
+            ),
+            search::WalkEnding::Cancelled => notes.push(
+                "Note: the search was stopped before it finished, so this list is a lower bound.".to_string(),
+            ),
+            // Nothing to say: the index covered the whole scope, or the walk
+            // covered everything it took. `dirs_found` still reports the work.
+            search::WalkEnding::NothingToWalk | search::WalkEnding::Completed => {}
+        }
+        if answer.dirs_found > 0 && coverage.walk == search::WalkEnding::Completed {
+            notes.push(format!(
+                "Cmdr walked {} folders it hadn't indexed yet, so the next search over them is instant.",
+                answer.dirs_found
+            ));
+        }
+    }
+
+    if matches!(answer.ending, AnswerEnding::StillWalking) {
         notes.push(format!(
-            "Note: Cmdr hasn't indexed {} yet, so it isn't searchable. Skipped it.",
-            result.uncovered_scopes.join(", ")
+            "Note: Cmdr is still walking {} ({} folders so far), so this list and count are a lower bound. The walk keeps filling the index, so running this search again picks up where it left off, or pass a bigger maxWaitSeconds to wait it out.",
+            answer.target_volume_id, answer.dirs_found
         ));
     }
-    if !result.unresolved_scopes.is_empty() {
-        notes.push(format!(
-            "Note: couldn't find {} in the index (a typo, or not indexed yet).",
-            result.unresolved_scopes.join(", ")
-        ));
-    }
+
     (!notes.is_empty()).then(|| notes.join("\n"))
 }
 
-/// Run a routed single-volume search on a blocking thread (route → load → scan).
-/// Shared by both `search` and `ai_search`, and the SAME path the dialog takes: an
-/// agent's search behaves exactly like a person's.
-async fn run_search(query: SearchQuery) -> Result<SearchResult, ToolError> {
-    tokio::task::spawn_blocking(move || search::run_blocking(query))
+/// Whether pointing at Full Disk Access would actually open a refused folder:
+/// on macOS, and only while Cmdr doesn't already hold it. With FDA granted the
+/// refusal is something else (a locked folder), and the advice would do nothing.
+/// The dialog gates its offer on the same conditions
+/// (`coverage-note.ts::offersFullDiskAccess`).
+fn full_disk_access_would_help() -> bool {
+    cfg!(target_os = "macos") && !crate::permissions::check_full_disk_access_quiet()
+}
+
+/// The line for folders the OS refused a walk: the only half of the unreadable
+/// ground somebody can act on, so it offers the fix when there is one.
+fn refusal_note(paths: &[String], offer_full_disk_access: bool) -> String {
+    let refused = format!("Note: the OS refused to let Cmdr read {}.", paths.join(", "));
+    if offer_full_disk_access {
+        return format!(
+            "{refused} Granting Cmdr Full Disk Access in System Settings > Privacy & Security opens them, and the next search covers them."
+        );
+    }
+    refused
+}
+
+/// Run a search over its one target volume and wait for the answer.
+///
+/// Shared by `search` and `ai_search`, and the SAME path the dialog takes: an
+/// agent's search walks what the index can't answer for, exactly like a
+/// person's. Waits up to `budget`; past that the walk carries on and the reply
+/// says so.
+async fn run_search(query: SearchQuery, budget: Duration) -> Result<LiveAnswer, ToolError> {
+    let answer = tokio::task::spawn_blocking(move || search::run_live_collected(query, budget))
         .await
-        .map_err(|e| ToolError::internal(format!("Search failed: {e}")))?
-        .map_err(ToolError::internal)
+        .map_err(|e| ToolError::internal(format!("Search couldn't run: {e}")))?
+        .map_err(ToolError::invalid_params)?;
+
+    // A run that couldn't run at all is the caller's problem to fix, so it comes
+    // back as an error rather than as an empty list with a note. Branch on the
+    // typed cause: a query the walk refuses is the caller's to narrow, an index
+    // that won't open is not.
+    if let AnswerEnding::Failed { error, message } = &answer.ending {
+        return Err(match error {
+            search::SearchRunError::Query => ToolError::invalid_params(message.clone()),
+            search::SearchRunError::IndexUnreadable => ToolError::internal(message.clone()),
+        });
+    }
+    Ok(answer)
+}
+
+/// How long this call may wait for its answer, from the caller's `maxWaitSeconds`.
+///
+/// ❌ Not a walk-versus-don't switch: the walk happens either way, and it keeps
+/// going after the wait runs out. This only says how much of it to wait for.
+fn wait_budget(params: &Value) -> Duration {
+    params
+        .get("maxWaitSeconds")
+        .and_then(|v| v.as_u64())
+        .map(Duration::from_secs)
+        .unwrap_or(search::AGENT_WAIT_DEFAULT)
+        .clamp(Duration::from_secs(1), search::AGENT_WAIT_MAX)
 }
 
 /// Execute the `search` tool.
@@ -217,16 +328,17 @@ pub async fn execute_search(params: &Value) -> ToolResult {
         exclude_system_dirs,
     };
 
-    let result = run_search(query).await?;
+    let answer = run_search(query, wait_budget(params)).await?;
 
-    // Count-only replaces the table with a bare count; the coverage note (if any
-    // scope was unindexed) still rides along so the count isn't misread as complete.
+    // Count-only replaces the table with a bare count; the coverage note (if the
+    // run couldn't speak for some ground) still rides along so the count isn't
+    // misread as complete.
     let body = if count_only {
-        format_match_count(result.total_count, is_directory)
+        format_match_count(answer.match_count, is_directory)
     } else {
-        format_search_results(&result, limit)
+        format_search_results(&answer.entries, answer.match_count, limit)
     };
-    let output = match coverage_note(&result) {
+    let output = match coverage_note(&answer) {
         Some(note) => format!("{note}\n\n{body}"),
         None => body,
     };
@@ -341,20 +453,32 @@ pub async fn execute_ai_search(params: &Value) -> ToolResult {
 
     let query = build_search_query_from_translate(&translate_result, scope_str, limit);
 
+    // One budget for the whole call, however many searches it takes: the caller
+    // is waiting on ONE tool call, and a fallback that got its own full budget
+    // could double the wait it asked for.
+    let budget = wait_budget(params);
+    let deadline = std::time::Instant::now() + budget;
+
     log::debug!("MCP ai_search: running search...");
     let t = std::time::Instant::now();
-    let result = run_search(query.clone()).await.inspect_err(|e| {
-        crate::log_error!("MCP ai_search: search failed: {}", e.message);
+    let answer = run_search(query.clone(), budget).await.inspect_err(|e| {
+        crate::log_error!("MCP ai_search: the search couldn't run: {}", e.message);
     })?;
     log::info!(
-        "MCP ai_search: search completed in {:.1}s, {} results (total_count={})",
+        "MCP ai_search: search completed in {:.1}s, {} results (match_count={})",
         t.elapsed().as_secs_f64(),
-        result.entries.len(),
-        result.total_count
+        answer.entries.len(),
+        answer.match_count
     );
 
     // ── Fallback: if 0 results and the LLM suggested searchPaths, retry without them ──
-    let (result, query) = if result.total_count == 0
+    // Only once the first run SETTLED: a run still walking hasn't finished
+    // answering, so widening the scope on it would trade a partial answer for a
+    // second walk over even more ground.
+    let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+    let (answer, query) = if answer.match_count == 0
+        && matches!(answer.ending, AnswerEnding::Settled(_))
+        && remaining >= FALLBACK_FLOOR
         && translate_result
             .query
             .include_paths
@@ -369,30 +493,30 @@ pub async fn execute_ai_search(params: &Value) -> ToolResult {
         fallback_query.include_paths = None;
         fallback_query.include_path_ids = None;
         let t = std::time::Instant::now();
-        let result = run_search(fallback_query.clone()).await.inspect_err(|e| {
-            crate::log_error!("MCP ai_search: fallback search failed: {}", e.message);
+        let answer = run_search(fallback_query.clone(), remaining).await.inspect_err(|e| {
+            crate::log_error!("MCP ai_search: the fallback search couldn't run: {}", e.message);
         })?;
         log::info!(
             "MCP ai_search: fallback full-drive search completed in {:.1}s, {} results",
             t.elapsed().as_secs_f64(),
-            result.total_count
+            answer.match_count
         );
-        (result, fallback_query)
+        (answer, fallback_query)
     } else {
-        (result, query)
+        (answer, query)
     };
 
     let interpreted = summarize_query(&query);
-    let formatted = format_search_results(&result, limit);
+    let formatted = format_search_results(&answer.entries, answer.match_count, limit);
     let caveat_line = translate_result
         .caveat
         .as_deref()
         .map(|c| format!("Note: {c}\n"))
         .unwrap_or_default();
-    let coverage_line = coverage_note(&result).map(|n| format!("{n}\n")).unwrap_or_default();
+    let coverage_line = coverage_note(&answer).map(|n| format!("{n}\n")).unwrap_or_default();
     let output = format!(
         "{} hits\n\nInterpreted query: {interpreted}\n{caveat_line}{coverage_line}\n{formatted}",
-        result.total_count
+        answer.match_count
     );
     log::info!(
         "MCP ai_search: completed in {:.1}s, output length={}",
@@ -405,6 +529,108 @@ pub async fn execute_ai_search(params: &Value) -> ToolResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::search::WalkEnding;
+    use crate::search::live::SearchRunCoverage;
+
+    /// A run that covered everything, over `volume`.
+    fn covered(volume: &str) -> SearchRunCoverage {
+        SearchRunCoverage {
+            walk: WalkEnding::NothingToWalk,
+            permission_denied: Vec::new(),
+            declined: Vec::new(),
+            still_covering: Vec::new(),
+            unresolved_scopes: Vec::new(),
+            abandoned_ground: false,
+            capped: false,
+            target_volume_id: volume.to_string(),
+        }
+    }
+
+    fn answer(ending: AnswerEnding, dirs_found: u64) -> LiveAnswer {
+        LiveAnswer {
+            target_volume_id: "naspi".to_string(),
+            entries: Vec::new(),
+            match_count: 0,
+            dirs_found,
+            ending,
+        }
+    }
+
+    #[test]
+    fn a_run_that_covered_its_scope_from_the_index_says_nothing() {
+        // The note exists to name ground the answer doesn't speak for. A complete
+        // answer has none, and a line per search would train an agent to skip
+        // them all.
+        let settled = answer(AnswerEnding::Settled(Box::new(covered("naspi"))), 0);
+        assert_eq!(coverage_note(&settled), None);
+    }
+
+    #[test]
+    fn the_two_unreadable_lists_get_two_different_sentences() {
+        // M8's typed cause, end to end: one half is a permission somebody can
+        // grant, the other is ground Cmdr declines to read. ❌ Never one list and
+        // never one sentence — offering Full Disk Access over a snapshot folder
+        // is advice that does nothing.
+        let coverage = SearchRunCoverage {
+            walk: WalkEnding::Completed,
+            permission_denied: vec!["/Users/dave/Documents".to_string()],
+            declined: vec!["/Volumes/naspi/@eaDir".to_string()],
+            ..covered("naspi")
+        };
+        let note = coverage_note(&answer(AnswerEnding::Settled(Box::new(coverage)), 12))
+            .expect("unreadable ground is always reported");
+        assert!(note.contains("/Users/dave/Documents"), "{note}");
+        assert!(note.contains("/Volumes/naspi/@eaDir"), "{note}");
+        assert!(note.contains("snapshot folders"), "{note}");
+        assert!(
+            note.lines().count() >= 3,
+            "each cause gets its own sentence, plus the walk's own line: {note}"
+        );
+    }
+
+    #[test]
+    fn full_disk_access_is_offered_only_when_granting_it_would_help() {
+        let refused = vec!["/Users/dave/Downloads".to_string()];
+        let offered = refusal_note(&refused, true);
+        assert!(offered.contains("/Users/dave/Downloads"));
+        assert!(offered.contains("Full Disk Access"));
+        // Cmdr already has it (or this isn't macOS): the folder is still named,
+        // and no advice that would do nothing.
+        let plain = refusal_note(&refused, false);
+        assert!(plain.contains("/Users/dave/Downloads"));
+        assert!(!plain.contains("Full Disk Access"));
+    }
+
+    #[test]
+    fn a_walk_still_running_says_so_and_says_what_to_do_about_it() {
+        // The one thing an agent must not do with a partial answer is read it as
+        // complete. It names the drive, the work so far, and the two ways on.
+        let note = coverage_note(&answer(AnswerEnding::StillWalking, 480)).expect("a partial answer always says so");
+        assert!(note.contains("still walking"), "{note}");
+        assert!(note.contains("naspi") && note.contains("480"), "{note}");
+        assert!(note.contains("again") && note.contains("maxWaitSeconds"), "{note}");
+    }
+
+    #[test]
+    fn an_interrupted_walk_says_the_list_is_a_lower_bound() {
+        let coverage = SearchRunCoverage {
+            walk: WalkEnding::Interrupted,
+            ..covered("naspi")
+        };
+        let note =
+            coverage_note(&answer(AnswerEnding::Settled(Box::new(coverage)), 3)).expect("a short answer says so");
+        assert!(note.contains("lower bound"), "{note}");
+    }
+
+    #[test]
+    fn the_wait_budget_defaults_and_clamps() {
+        // The transport knob, not a policy one: it can't turn the walk off, and
+        // it can't hold a caller's turn open indefinitely either.
+        assert_eq!(wait_budget(&json!({})), search::AGENT_WAIT_DEFAULT);
+        assert_eq!(wait_budget(&json!({ "maxWaitSeconds": 45 })), Duration::from_secs(45));
+        assert_eq!(wait_budget(&json!({ "maxWaitSeconds": 0 })), Duration::from_secs(1));
+        assert_eq!(wait_budget(&json!({ "maxWaitSeconds": 9_000 })), search::AGENT_WAIT_MAX);
+    }
 
     #[test]
     fn format_match_count_reflects_type_and_plurality() {

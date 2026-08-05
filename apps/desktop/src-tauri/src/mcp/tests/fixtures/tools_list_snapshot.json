@@ -665,7 +665,7 @@
       "name": "swap_panes"
     },
     {
-      "description": "Search the drive index by filename pattern, size, date, or type; returns paths (no UI). Set countOnly:true for just the total. Prefer over ai_search for a plain pattern/filter, over open_search_dialog for programmatic lookup. Needs an indexed volume.",
+      "description": "Search one drive by filename pattern, size, date, or type; returns paths (no UI). Reads the index where it covers the scope and walks the folders it doesn't, so an unindexed drive still answers, only slower. Set countOnly:true for the total alone.",
       "inputSchema": {
         "properties": {
           "caseSensitive": {
@@ -682,6 +682,10 @@
           },
           "limit": {
             "description": "Max results to return. Default: 30",
+            "type": "integer"
+          },
+          "maxWaitSeconds": {
+            "description": "How long to wait for the answer, 1-120. Cmdr walks whatever the index hasn't covered yet, so a first search of a folder takes as long as reading it does. When the wait runs out you get what was found so far plus a note; the walk keeps going, so running the same search again picks up the rest. Default: 20",
             "type": "integer"
           },
           "modifiedAfter": {
@@ -731,11 +735,15 @@
       "name": "search"
     },
     {
-      "description": "Search with a natural-language query; the configured LLM turns it into a structured search over the drive index and returns matching paths. Use search instead when you can express the query as a pattern or filter (it skips the LLM call).",
+      "description": "Search with a natural-language query; the configured LLM turns it into a structured search over one drive, reading the index and walking whatever it hasn't covered. Use search instead when you can express the query as a pattern or filter (no LLM call).",
       "inputSchema": {
         "properties": {
           "limit": {
             "description": "Max results to return. Default: 30",
+            "type": "integer"
+          },
+          "maxWaitSeconds": {
+            "description": "How long to wait for the search, 1-120 (on top of the LLM translation, which runs first). Cmdr walks whatever the index hasn't covered yet, so a first search of a folder takes as long as reading it does. When the wait runs out you get what was found so far plus a note. Default: 20",
             "type": "integer"
           },
           "query": {

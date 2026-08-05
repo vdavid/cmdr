@@ -36,10 +36,15 @@ pub(crate) use volumes::{
 };
 
 // execute.rs (single-volume orchestration)
-pub(crate) use execute::{LiveSearchStart, run_blocking, start_live};
+pub(crate) use execute::{
+    AGENT_WAIT_DEFAULT, AGENT_WAIT_MAX, LiveSearchStart, run_blocking, run_live_collected, start_live,
+};
 
 // live.rs (a search that walks what the index can't answer for)
-pub(crate) use live::{cancel_all_live_runs, cancel_all_live_runs_except, cancel_live_run};
+pub(crate) use live::{
+    AnswerEnding, LiveAnswer, SearchRunError, WalkEnding, cancel_all_live_runs, cancel_dialog_runs_except,
+    cancel_live_run,
+};
 
 // query.rs
 pub use query::SYSTEM_DIR_EXCLUDES;
