@@ -81,7 +81,11 @@ struct CopyTaskSuccess {
 ///
 /// `failed_path` is the in-flight partial entry to remove from
 /// `in_flight_partials` (the temp sibling under safe-replace, else the dest
-/// item path). `cleanup_temp` distinguishes a STREAM failure (`true` — the
+/// item path). ❌ It is NOT the path to report: it names where the partial sits
+/// on the DESTINATION, which for a directory source is the dest dir root.
+/// `reported_path` is the SOURCE item the walker actually failed on (a file deep
+/// inside the subtree, not the top-level item the user selected), and is the only
+/// one of the two a user can act on. Keep them separate. `cleanup_temp` distinguishes a STREAM failure (`true` — the
 /// dest/temp is a half-written partial and must be cleaned) from a FINALIZE
 /// failure after a SUCCESSFUL write (`false` — the temp holds the only complete
 /// copy of the new data and MUST be left on disk).
@@ -94,6 +98,7 @@ struct CopyTaskSuccess {
 /// empty-only, so a merged dir holding a sentinel survives.
 struct CopyTaskFailure {
     failed_path: PathBuf,
+    reported_path: PathBuf,
     error: VolumeError,
     cleanup_temp: bool,
     source_is_dir: bool,
@@ -617,6 +622,7 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                                 // so there's no directory ledger to carry.
                                 return Err(CopyTaskFailure {
                                     failed_path: dest_owned,
+                                    reported_path: source_owned.clone(),
                                     error: e,
                                     cleanup_temp: false,
                                     source_is_dir: false,
@@ -664,7 +670,8 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                     // dir and destroy pre-existing dest-only files.
                     Err(e) => Err(CopyTaskFailure {
                         failed_path: dest_owned,
-                        error: e,
+                        reported_path: e.path,
+                        error: e.error,
                         cleanup_temp: true,
                         source_is_dir: source_is_dir_hint,
                         created_files,
@@ -830,6 +837,7 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
             }
             Some(Err(CopyTaskFailure {
                 failed_path: failed_dest,
+                reported_path,
                 error: e,
                 cleanup_temp,
                 source_is_dir,
@@ -866,7 +874,7 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                     // loss.
                     last_dest_path = Some(failed_dest.clone());
                 }
-                copy_error = Some(WriteFailure::from_volume(&failed_dest, e));
+                copy_error = Some(WriteFailure::from_volume(&reported_path, e));
                 // Drop remaining in-flight tasks; their streams close,
                 // temp files get cleaned up by the per-backend write
                 // abort + delete path. Partial cleanup is done below.

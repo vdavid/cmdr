@@ -529,7 +529,10 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                                 copied_paths.lock_ignore_poison().extend(files);
                                 created_dirs.lock_ignore_poison().extend(dirs);
                             }
-                            Err(map_volume_error(&source_path.display().to_string(), e))
+                            // Report the path the walker actually failed on (for a
+                            // directory source, a file deep inside), ❌ never the
+                            // top-level `source_path` the user selected.
+                            Err(map_volume_error(&e.path.display().to_string(), e.error))
                         }
                     }
                 })

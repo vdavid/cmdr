@@ -550,14 +550,19 @@ pub(crate) async fn move_volumes_with_progress(
                     {
                         Ok(b) => b,
                         Err(e) => {
+                            // Log and report the path the walker actually failed
+                            // on, which for a directory source is a file deep
+                            // inside it — ❌ never `source_path`, the top-level
+                            // item, which tells the user nothing they can act on.
                             log::warn!(
                                 target: "move",
-                                "move_between_volumes: copy phase failed for {} -> {}: {}",
+                                "move_between_volumes: copy phase failed for {} (under {} -> {}): {}",
+                                e.path.display(),
                                 source_path.display(),
                                 dest_item_path.display(),
-                                e
+                                e.error
                             );
-                            return Err(map_volume_error(&source_path.display().to_string(), e));
+                            return Err(map_volume_error(&e.path.display().to_string(), e.error));
                         }
                     };
                     // Overwrote iff the top-level file→file safe-replace fires below

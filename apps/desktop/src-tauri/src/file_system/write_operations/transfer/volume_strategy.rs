@@ -27,6 +27,7 @@ pub(super) use super::staged_write::WriteStaging;
 use super::transfer_probe::{TaskPhase, arm_current_task_stall_abort, note_task_retry, set_task_bytes, set_task_phase};
 use super::volume_conflict::{ResolvedConflict, resolve_volume_conflict};
 use super::volume_preflight::SourceHint;
+use super::volume_transfer_error::{AtPath, PathedVolumeError};
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{Volume, VolumeError, VolumeReadStream};
 use crate::ignore_poison::IgnorePoison;
@@ -240,10 +241,10 @@ pub(super) async fn copy_single_path(
     // merge walker — and a directory conflict never yields a caller temp, so
     // passing the same expression everywhere stays correct.
     staging: WriteStaging,
-) -> Result<u64, VolumeError> {
+) -> Result<u64, PathedVolumeError> {
     // Check cancellation up front.
     if super::super::state::is_cancelled(&state.intent) {
-        return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+        return Err(VolumeError::Cancelled("Operation cancelled by user".to_string())).at(source_path);
     }
 
     if source_is_directory {
@@ -298,7 +299,8 @@ pub(super) async fn copy_single_path(
             on_file_progress,
             staging,
         )
-        .await?;
+        .await
+        .at(source_path)?;
         on_file_complete(bytes);
         Ok(bytes)
     }
@@ -387,6 +389,9 @@ pub(in crate::file_system::write_operations) async fn pull_path_to_local(
         WriteStaging::Stage,
     )
     .await
+    // The scratch dir is discarded wholesale on any failure and this seam
+    // reports no per-item path, so the originating path has no reader here.
+    .map_err(|e| e.error)
 }
 
 /// Streams one file from source to destination via `open_read_stream` /
@@ -661,7 +666,7 @@ pub(super) async fn copy_directory_streaming(
     // in the plan and leave the byte write to the caller's single decode pass.
     // `None` ⇒ normal streaming copy.
     plan: Option<&super::volume_sequential_extract::ExtractPlan>,
-) -> Result<u64, VolumeError> {
+) -> Result<u64, PathedVolumeError> {
     note_pending_for_local_dest(dest_volume, dest_path);
 
     // Ensure the destination directory exists, and learn whether THIS level
@@ -688,7 +693,7 @@ pub(super) async fn copy_directory_streaming(
                 // does via `create_dir_all` semantics). Treat as fresh.
                 false
             }
-            Err(e) => return Err(e),
+            Err(e) => return Err(e).at(source_path),
         }
     } else {
         // Untrusted-collision backend (MTP): pre-check existence.
@@ -703,7 +708,7 @@ pub(super) async fn copy_directory_streaming(
                 // A race created it between the check and the create; merge.
                 Err(VolumeError::AlreadyExists(_)) => true,
                 Err(VolumeError::NotSupported) => false,
-                Err(e) => return Err(e),
+                Err(e) => return Err(e).at(source_path),
             }
         }
     };
@@ -713,7 +718,8 @@ pub(super) async fn copy_directory_streaming(
     let dest_by_name: HashMap<String, FileEntry> = if level_pre_existed {
         dest_volume
             .list_directory(dest_path, None)
-            .await?
+            .await
+            .at(source_path)?
             .into_iter()
             .map(|e| (e.name.clone(), e))
             .collect()
@@ -721,12 +727,12 @@ pub(super) async fn copy_directory_streaming(
         HashMap::new()
     };
 
-    let entries = source_volume.list_directory(source_path, None).await?;
+    let entries = source_volume.list_directory(source_path, None).await.at(source_path)?;
     let mut total_bytes = 0u64;
 
     for entry in &entries {
         if super::super::state::is_cancelled(&state.intent) {
-            return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+            return Err(VolumeError::Cancelled("Operation cancelled by user".to_string())).at(source_path);
         }
 
         let child_source = PathBuf::from(&entry.path);
@@ -764,7 +770,10 @@ pub(super) async fn copy_directory_streaming(
         if dest_hit.is_some()
             && let Some(ctx) = merge
         {
-            match resolve_merge_child(ctx, source_volume, &child_source, entry, dest_volume, &child_dest).await? {
+            match resolve_merge_child(ctx, source_volume, &child_source, entry, dest_volume, &child_dest)
+                .await
+                .at(&child_source)?
+            {
                 MergeChildDecision::Skip => {
                     // A DEEP skip: record it so the caller knows this subtree did
                     // not extract in full (the move-out op must keep the source in
@@ -815,6 +824,9 @@ pub(super) async fn copy_directory_streaming(
             continue;
         }
 
+        // ❗ `.at(&child_source)` is the whole point: this is the deepest frame
+        // that knows WHICH file failed. Report it one level up and the user gets
+        // the name of the folder they selected instead of the file that broke.
         let bytes = stream_pipe_file(
             source_volume,
             &child_source,
@@ -825,13 +837,16 @@ pub(super) async fn copy_directory_streaming(
             on_file_progress,
             staging_for(&replace_after_write),
         )
-        .await?;
+        .await
+        .at(&child_source)?;
         // Safe-replace finalize for a file→file Overwrite: the temp now holds
         // the complete new bytes; swap it over the original. On finalize error
         // the temp is preserved as committed data (see `finalize_safe_replace`).
         let recorded = match replace_after_write {
             Some(orig) => {
-                super::volume_conflict::finalize_safe_replace(dest_volume, &write_dest, &orig).await?;
+                super::volume_conflict::finalize_safe_replace(dest_volume, &write_dest, &orig)
+                    .await
+                    .at(&child_source)?;
                 // A deep-merge child that replaced an existing dest file: record
                 // the overwrite so the operation-log eligibility is honest (a copy
                 // / move that overwrote isn't rollbackable — the original is gone).
@@ -954,9 +969,11 @@ mod single_shot_tests;
 #[cfg(test)]
 #[path = "volume_strategy_stale_handle_tests.rs"]
 mod stale_handle_tests;
+// `pub(super)` so sibling test modules under `transfer` (notably
+// `volume_move_tests`) reuse the same doubles instead of hand-rolling their own.
 #[cfg(test)]
 #[path = "volume_strategy_test_support.rs"]
-mod test_support;
+pub(super) mod test_support;
 #[cfg(test)]
 #[path = "volume_strategy_yield_tests.rs"]
 mod yield_tests;

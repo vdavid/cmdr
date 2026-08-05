@@ -18,6 +18,7 @@
 
 use super::super::super::state::{OperationIntent, cancel_write_operation, load_intent};
 use super::super::super::test_support::TestOperationGuard;
+use super::super::volume_transfer_error::PathedVolumeError;
 use super::test_support::{
     REL_CHUNK, REL_TOTAL, RelLog, ReleasingSource, SLOW_CHUNK_COUNT, SLOW_CHUNK_SIZE, SlowSource, make_state,
     park_holds_at, rel_expected_bytes,
@@ -195,7 +196,13 @@ async fn streaming_copy_cancel_while_paused_mid_file_unblocks() {
         .expect("cancel-while-paused must unblock the parked copy")
         .expect("copy task must not panic");
     assert!(
-        matches!(result, Err(VolumeError::Cancelled(_))),
+        matches!(
+            result,
+            Err(PathedVolumeError {
+                error: VolumeError::Cancelled(_),
+                ..
+            })
+        ),
         "cancel wins over pause: the copy ends Cancelled, got {result:?}"
     );
     assert_eq!(
@@ -395,7 +402,13 @@ async fn paused_mtp_copy_cancel_while_paused_keeps_no_partial() {
         .expect("cancel-while-paused must unblock the parked copy")
         .expect("copy task must not panic");
     assert!(
-        matches!(result, Err(VolumeError::Cancelled(_))),
+        matches!(
+            result,
+            Err(PathedVolumeError {
+                error: VolumeError::Cancelled(_),
+                ..
+            })
+        ),
         "cancel wins over pause: the copy ends Cancelled, got {result:?}"
     );
     assert!(

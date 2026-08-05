@@ -19,6 +19,7 @@ use super::staged_write::StagedWrite;
 use super::volume_strategy::{
     CreatedPaths, MergeCtx, copy_directory_streaming, note_pending_for_local_dest, resolve_staging, staging_for,
 };
+use super::volume_transfer_error::{AtPath, PathedVolumeError};
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 
@@ -88,7 +89,7 @@ pub(super) async fn extract_sequential_subtree(
     on_file_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
     on_file_complete: &(dyn Fn(u64) + Sync),
     merge: Option<&MergeCtx<'_>>,
-) -> Result<u64, VolumeError> {
+) -> Result<u64, PathedVolumeError> {
     // Phase 1: build the directory structure + resolve conflicts, recording each
     // file's resolved destination in the plan (no bytes streamed).
     let plan = ExtractPlan::default();
@@ -107,11 +108,14 @@ pub(super) async fn extract_sequential_subtree(
     .await?;
 
     // Phase 2: one decode pass over the subtree's files.
-    let mut extractor = source_volume.open_sequential_extract(source_path).await?;
+    let mut extractor = source_volume
+        .open_sequential_extract(source_path)
+        .await
+        .at(source_path)?;
     let mut total_bytes = 0u64;
-    while let Some(file) = extractor.next_file().await? {
+    while let Some(file) = extractor.next_file().await.at(source_path)? {
         if super::super::state::is_cancelled(&state.intent) {
-            return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+            return Err(VolumeError::Cancelled("Operation cancelled by user".to_string())).at(source_path);
         }
         // Not in the plan ⇒ the file was skipped by conflict resolution (or isn't
         // wanted). Drop it; the next `next_file` drains its bytes.
@@ -139,16 +143,18 @@ pub(super) async fn extract_sequential_subtree(
             Ok(bytes) => bytes,
             Err(e) => {
                 staged.abandon(dest_volume).await;
-                return Err(e);
+                return Err(e).at(&file.source_path);
             }
         };
-        staged.commit(dest_volume).await?;
+        staged.commit(dest_volume).await.at(&file.source_path)?;
 
         // Safe-replace finalize for a file→file Overwrite (same as the per-entry
         // path): the temp holds the complete new bytes; swap it over the original.
         let recorded = match planned.replace_after_write {
             Some(orig) => {
-                super::volume_conflict::finalize_safe_replace(dest_volume, &planned.dest_path, &orig).await?;
+                super::volume_conflict::finalize_safe_replace(dest_volume, &planned.dest_path, &orig)
+                    .await
+                    .at(&file.source_path)?;
                 orig
             }
             None => planned.dest_path,

@@ -28,6 +28,7 @@
 
 use super::super::super::state::cancel_write_operation;
 use super::super::super::test_support::TestOperationGuard;
+use super::super::volume_transfer_error::PathedVolumeError;
 use super::test_support::{
     AutoYieldTuningGuard, ForegroundBusyDest, PanicIfProbedDest, REL_CHUNK, REL_TOTAL, RelLog, ReleasingSource,
     make_state, park_holds_at, rel_expected_bytes,
@@ -314,7 +315,13 @@ async fn dest_yield_cancel_while_parked_returns_cancelled_promptly() {
                 .expect("cancel during a destination yield must unblock the parked upload (no hang)")
                 .expect("copy task must not panic");
             assert!(
-                matches!(result, Err(VolumeError::Cancelled(_))),
+                matches!(
+                    result,
+                    Err(PathedVolumeError {
+                        error: VolumeError::Cancelled(_),
+                        ..
+                    })
+                ),
                 "cancel wins over a destination yield: the upload ends Cancelled, got {result:?}"
             );
             assert!(

@@ -81,7 +81,7 @@ async fn test_copy_single_path_cancelled() {
     .await;
 
     assert!(result.is_err());
-    assert!(matches!(result.unwrap_err(), VolumeError::Cancelled(_)));
+    assert!(matches!(result.unwrap_err().error, VolumeError::Cancelled(_)));
 }
 
 // ========================================================================

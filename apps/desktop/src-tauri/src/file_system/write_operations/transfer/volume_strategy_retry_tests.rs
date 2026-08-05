@@ -47,6 +47,8 @@ async fn copy_one(
     staging: WriteStaging,
     dest_path: &str,
 ) -> Result<u64, VolumeError> {
+    // These tests assert on the VolumeError variant, not on which path failed
+    // (they copy one known file), so drop the path the engine attaches.
     copy_single_path(
         source,
         Path::new("/a.txt"),
@@ -62,6 +64,7 @@ async fn copy_one(
         staging,
     )
     .await
+    .map_err(|e| e.error)
 }
 
 /// The headline: a transport blip takes out one attempt, the file runs again, and

@@ -45,6 +45,50 @@ impl From<(VolumeError, PathBuf)> for WriteFailure {
     }
 }
 
+/// A `VolumeError` plus the path that actually produced it.
+///
+/// One `copy_single_path` call can descend a whole subtree, so the failure a
+/// caller sees may come from a file thousands of entries below the top-level
+/// item the user selected. Only the walker knows which one it was, and once the
+/// error leaves it that knowledge is gone for good. Carrying the originating
+/// path out WITH the error is what lets the reported message name the file that
+/// failed instead of the folder that happens to contain it. ❌ Don't "simplify"
+/// this back to a bare `VolumeError`: the caller cannot reconstruct the path,
+/// and its only honest fallback is the top-level item, which is the wrong
+/// answer for every directory transfer.
+#[derive(Debug, Clone)]
+pub(super) struct PathedVolumeError {
+    /// The item that failed, as deep in the tree as the walker got.
+    pub path: PathBuf,
+    pub error: VolumeError,
+}
+
+impl From<PathedVolumeError> for WriteFailure {
+    fn from(e: PathedVolumeError) -> Self {
+        Self {
+            error: map_volume_error(&e.path.display().to_string(), e.error),
+        }
+    }
+}
+
+/// Attaches the failing path to a `Result<_, VolumeError>`.
+///
+/// Use it at the site that KNOWS the path (the loop holding `child_source`),
+/// never higher: an `at()` applied one frame up re-labels the error with the
+/// parent, which is the bug this whole type exists to prevent.
+pub(super) trait AtPath<T> {
+    fn at(self, path: &Path) -> Result<T, PathedVolumeError>;
+}
+
+impl<T> AtPath<T> for Result<T, VolumeError> {
+    fn at(self, path: &Path) -> Result<T, PathedVolumeError> {
+        self.map_err(|error| PathedVolumeError {
+            path: path.to_path_buf(),
+            error,
+        })
+    }
+}
+
 /// Builds a `WriteErrorEvent` from a `WriteFailure`. The FE renders all copy and
 /// classification from the typed `error`. Shared by `volume_move` and `volume_copy`.
 pub(super) fn write_error_event_from(

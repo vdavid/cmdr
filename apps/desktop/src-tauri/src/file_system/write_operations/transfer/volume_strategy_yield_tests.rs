@@ -19,6 +19,7 @@
 
 use super::super::super::state::{OperationIntent, cancel_write_operation, load_intent};
 use super::super::super::test_support::TestOperationGuard;
+use super::super::volume_transfer_error::PathedVolumeError;
 use super::test_support::{
     AutoYieldTuningGuard, NeverPendingYieldSource, PARK_WINDOW, REL_CHUNK, REL_TOTAL, RelLog, ReleasingSource,
     YieldingSource, make_state, park_holds_at, rel_expected_bytes,
@@ -428,7 +429,7 @@ async fn auto_yield_cancel_while_yielding_keeps_no_partial() {
                 .expect("cancel during an auto-yield must unblock the parked copy (no hang)")
                 .expect("copy task must not panic");
             assert!(
-                matches!(result, Err(VolumeError::Cancelled(_))),
+                matches!(result, Err(PathedVolumeError { error: VolumeError::Cancelled(_), .. })),
                 "cancel wins over an auto-yield: the copy ends Cancelled, got {result:?}"
             );
             assert!(

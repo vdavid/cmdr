@@ -8,6 +8,7 @@
 //! call, skipped conflicts bump `files_done` so the bar doesn't stall, and
 //! cancel between sources stops further transfers.
 
+use super::super::volume_strategy::test_support::FlakyDest;
 use super::*;
 use crate::file_system::volume::{InMemoryVolume, LocalPosixVolume, VolumeError};
 use crate::file_system::write_operations::state::ConflictResolutionResponse;
@@ -1468,4 +1469,61 @@ async fn same_volume_move_creates_missing_nested_dest() {
     assert!(!volume.exists(Path::new("/a.txt")).await, "source renamed away");
     let mut a = volume.open_read_stream(Path::new("/archive/2026/a.txt")).await.unwrap();
     assert_eq!(a.next_chunk().await.unwrap().unwrap(), b"alpha");
+}
+
+/// A cross-volume move of a FOLDER that fails on a file deep inside it must
+/// report THAT file's path, not the top-level folder the user selected.
+///
+/// Pre-fix, `move_volumes_with_progress` mapped every copy-phase failure with
+/// the top-level `source_path`, so a 24 GB folder move that tripped on one
+/// unwritable file 3,000 items down told the user only "this folder failed".
+/// That is undiagnosable: the folder is fine, one leaf is not, and the name of
+/// the leaf is the entire content of the report.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn cross_volume_move_error_names_the_child_that_failed_not_the_selected_folder() {
+    let src = Arc::new(InMemoryVolume::new("source").with_space_info(10_000_000, 10_000_000));
+    src.create_directory(Path::new("/tree")).await.unwrap();
+    src.create_directory(Path::new("/tree/nested")).await.unwrap();
+    src.create_file(Path::new("/tree/fine.txt"), b"fine").await.unwrap();
+    src.create_file(Path::new("/tree/nested/doomed.txt"), b"doomed")
+        .await
+        .unwrap();
+    let source: Arc<dyn Volume> = src as Arc<dyn Volume>;
+
+    // Only the deep child fails, and it never recovers.
+    let flaky = FlakyDest::new(
+        usize::MAX,
+        VolumeError::IoError {
+            message: "Protocol error: STATUS_OBJECT_NAME_INVALID during Create".to_string(),
+            raw_os_error: None,
+        },
+    )
+    .only_for("doomed.txt");
+    let dest: Arc<dyn Volume> = Arc::clone(&flaky) as Arc<dyn Volume>;
+
+    let events = Arc::new(CollectorEventSink::new());
+    let result = move_volumes_with_progress(
+        events.clone(),
+        "op-move-deep-child-error",
+        &make_state(),
+        Arc::clone(&source),
+        &[PathBuf::from("/tree")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config_default(),
+    )
+    .await;
+
+    let failure = result.expect_err("the deep child's write never succeeds, so the move must fail");
+    let WriteOperationError::IoError { path, .. } = &failure.error else {
+        panic!("expected an IoError, got {:?}", failure.error);
+    };
+    assert_eq!(
+        path, "/tree/nested/doomed.txt",
+        "the error must name the file that actually failed, not the selected folder"
+    );
+
+    // The move must not have deleted anything: the copy phase never completed.
+    assert!(source.exists(Path::new("/tree/fine.txt")).await);
+    assert!(source.exists(Path::new("/tree/nested/doomed.txt")).await);
 }

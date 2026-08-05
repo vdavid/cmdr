@@ -731,3 +731,32 @@ exact CI error, and the new shape is clean.
 This is the same class as `3d4c9816f`, where two `use` statements sat above their
 macOS-only use sites. Any code whose only consumer is behind `cfg(target_os = "macos")`
 needs the same `cfg` on the thing above it.
+
+## Naming the item that failed
+
+**Decision**: a transfer failure travels as `PathedVolumeError { path, error }` (`volume_transfer_error.rs`), not a
+bare `VolumeError`, from `copy_single_path` / `copy_directory_streaming` / `extract_sequential_subtree` out to the
+three drivers. The `AtPath::at()` helper attaches the path at the frame that knows it.
+
+**Why**: one `copy_single_path` call can walk an entire subtree, so the error a driver receives may come from a file
+thousands of entries below the top-level item the user selected. With a bare `VolumeError` the driver's only available
+path was that top-level item, and it used it: a folder move that tripped on one unwritable file reported nothing but
+the folder's own name. That is undiagnosable — the folder is fine, one leaf is not, and the leaf's name is the entire
+content of the report. The originating path exists only inside the walker; once the error leaves without it, it cannot
+be reconstructed.
+
+**Where each driver attaches it**:
+
+- Cross-volume move (`volume_move.rs`) and serial copy (`volume_copy_serial.rs`) map with `e.path`, never the loop's
+  `source_path`.
+- The concurrent driver (`volume_copy_concurrent.rs`) carries TWO paths on `CopyTaskFailure` and they are not
+  interchangeable: `failed_path` is the DESTINATION entry to drop from `in_flight_partials` and possibly clean, while
+  `reported_path` is the SOURCE item the user is told about. Merging them would either clean the wrong path or report
+  the dest dir root.
+- `pull_path_to_local` deliberately drops back to a bare `VolumeError`: it materializes into a scratch dir that is
+  discarded wholesale on failure, so no consumer reads a per-item path.
+
+**Don't** re-collapse this to `VolumeError` for tidiness, and don't `.at()` one frame up from the failure — a path
+attached by the parent names the parent, which is exactly the bug.
+
+Pinned by `volume_move_tests.rs::cross_volume_move_error_names_the_child_that_failed_not_the_selected_folder`.

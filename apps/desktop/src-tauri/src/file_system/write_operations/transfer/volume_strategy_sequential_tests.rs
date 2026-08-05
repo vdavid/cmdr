@@ -7,6 +7,7 @@
 //! tar is sequential-access, so it takes the one-pass path); the destination is
 //! an `InMemoryVolume`, so the write lands through the normal `write_from_stream`.
 
+use super::super::volume_transfer_error::PathedVolumeError;
 use super::test_support::make_state;
 use super::*;
 use std::io::Write;
@@ -283,7 +284,13 @@ async fn sequential_extract_cancels_between_members() {
     .await;
 
     assert!(
-        matches!(result, Err(VolumeError::Cancelled(_))),
+        matches!(
+            result,
+            Err(PathedVolumeError {
+                error: VolumeError::Cancelled(_),
+                ..
+            })
+        ),
         "cancel mid-extract surfaces as Cancelled, got {result:?}"
     );
     assert_eq!(completed.load(Ordering::SeqCst), 1, "exactly one member was written");

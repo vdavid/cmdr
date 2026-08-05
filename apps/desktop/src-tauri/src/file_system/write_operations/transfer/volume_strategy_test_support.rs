@@ -233,20 +233,20 @@ impl Volume for FailOnceStaleDest {
 ///   after themselves; a wedged one may not.
 /// - **It is a real volume underneath**, so staging, the landing rename, and the
 ///   final content are all observable end to end.
-pub(super) struct FlakyDest {
-    pub(super) inner: Arc<crate::file_system::volume::InMemoryVolume>,
-    pub(super) fail_writes: usize,
-    pub(super) error: VolumeError,
-    pub(super) calls: AtomicUsize,
+pub(crate) struct FlakyDest {
+    pub(crate) inner: Arc<crate::file_system::volume::InMemoryVolume>,
+    pub(crate) fail_writes: usize,
+    pub(crate) error: VolumeError,
+    pub(crate) calls: AtomicUsize,
     /// When set, only writes whose target file name STARTS WITH this string are
     /// eligible to fail (a staged write targets `<name>.cmdr-tmp-<uuid>`, so the
     /// prefix is how a test names one child of a merge). `None` ⇒ every write.
-    pub(super) fail_only_named: Option<String>,
+    pub(crate) fail_only_named: Option<String>,
 }
 
 impl FlakyDest {
     /// A destination that fails `fail_writes` times with `error`, then works.
-    pub(super) fn new(fail_writes: usize, error: VolumeError) -> Arc<Self> {
+    pub(crate) fn new(fail_writes: usize, error: VolumeError) -> Arc<Self> {
         Arc::new(Self {
             inner: Arc::new(
                 crate::file_system::volume::InMemoryVolume::new("flaky-dest").with_space_info(10_000_000, 10_000_000),
@@ -259,19 +259,19 @@ impl FlakyDest {
     }
 
     /// Narrows the failures to one file, named by the prefix of its final name.
-    pub(super) fn only_for(mut self: Arc<Self>, name: &str) -> Arc<Self> {
+    pub(crate) fn only_for(mut self: Arc<Self>, name: &str) -> Arc<Self> {
         Arc::get_mut(&mut self)
             .expect("the fixture is not shared yet")
             .fail_only_named = Some(name.to_owned());
         self
     }
 
-    pub(super) fn write_calls(&self) -> usize {
+    pub(crate) fn write_calls(&self) -> usize {
         self.calls.load(Ordering::SeqCst)
     }
 
     /// Everything sitting in the destination root, by name.
-    pub(super) async fn names(&self) -> Vec<String> {
+    pub(crate) async fn names(&self) -> Vec<String> {
         self.inner
             .list_directory(Path::new("/"), None)
             .await
@@ -282,7 +282,7 @@ impl FlakyDest {
     }
 
     /// The bytes at `path`, or `None` when nothing is there.
-    pub(super) async fn read(&self, path: &str) -> Option<Vec<u8>> {
+    pub(crate) async fn read(&self, path: &str) -> Option<Vec<u8>> {
         let mut stream = self.inner.open_read_stream(Path::new(path)).await.ok()?;
         let mut buf = Vec::new();
         while let Some(Ok(chunk)) = stream.next_chunk().await {
