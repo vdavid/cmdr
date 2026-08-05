@@ -573,7 +573,7 @@ struct ColdDrive {
     data: tempfile::TempDir,
     tree: tempfile::TempDir,
     index: crate::indexing::handle::Index,
-    events: std::sync::Arc<crate::indexing::events::RecordingSink>,
+    events: Arc<crate::indexing::events::RecordingSink>,
     volume_id: &'static str,
     _serialized: std::sync::MutexGuard<'static, ()>,
 }
@@ -618,15 +618,15 @@ impl ColdDrive {
         let volumes = crate::indexing::host::volumes::FakeVolumeProvider::shared();
         volumes.register(
             volume_id,
-            std::sync::Arc::new(describe(
+            Arc::new(describe(
                 cmdr_fs::volume::InMemoryVolume::new("Cold").with_root(tree.path()),
             )),
         );
-        let events = std::sync::Arc::new(crate::indexing::events::RecordingSink::new());
+        let events = Arc::new(crate::indexing::events::RecordingSink::new());
         let mut builder = crate::indexing::handle::Index::builder()
             .data_dir(data.path())
-            .volumes(std::sync::Arc::clone(&volumes) as std::sync::Arc<_>)
-            .events(std::sync::Arc::clone(&events) as std::sync::Arc<dyn crate::indexing::events::EventSink>);
+            .volumes(Arc::clone(&volumes) as Arc<_>)
+            .events(Arc::clone(&events) as Arc<dyn crate::indexing::events::EventSink>);
         if let Some(enabled) = indexing_enabled {
             builder = builder.indexing_enabled(Some(enabled));
         }

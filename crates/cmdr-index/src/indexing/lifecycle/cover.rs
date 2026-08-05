@@ -33,13 +33,18 @@
 //! add-only work.
 
 use std::path::Path;
+use std::sync::Arc;
 use std::sync::mpsc::{Receiver, SyncSender, sync_channel};
 use std::thread::JoinHandle;
 
+use cmdr_fs::volume::Volume;
 use tokio_util::sync::CancellationToken;
 
 use crate::indexing::IndexPathSpace;
-use crate::indexing::network_scanner::VolumeScanError;
+use crate::indexing::host::runtime;
+use crate::indexing::metadata::{MetadataSnapshot, extract_metadata};
+use crate::indexing::network_scanner::scan_pace::ScanPacer;
+use crate::indexing::network_scanner::{VolumeScanError, cover_volume_subtree, stat_one_directory};
 use crate::indexing::read::coverage::CoverageDimension;
 use crate::indexing::scanner::{CoveredEntry, ScanError, ScanSummary, cover_subtree};
 use crate::indexing::store::IndexStore;
@@ -301,10 +306,10 @@ pub(super) enum Ground {
     Local,
     /// A share, a phone, or whatever backend comes next.
     ViaTrait {
-        volume: std::sync::Arc<dyn cmdr_fs::volume::Volume>,
+        volume: Arc<dyn Volume>,
         /// The same per-volume listing budget the background scan yields with, so
         /// browsing the share while it walks drops it to one listing in flight.
-        pacer: crate::indexing::network_scanner::scan_pace::ScanPacer,
+        pacer: ScanPacer,
     },
 }
 
@@ -319,7 +324,7 @@ impl Ground {
         let volume = crate::indexing::host::volumes::current().get(&context.volume_id)?;
         Some(Ground::ViaTrait {
             volume,
-            pacer: crate::indexing::network_scanner::scan_pace::ScanPacer::for_volume(context.volume_id.clone()),
+            pacer: ScanPacer::for_volume(context.volume_id.clone()),
         })
     }
 
@@ -327,7 +332,7 @@ impl Ground {
     /// a small pool of extra connections). Default no-op everywhere else.
     fn open_session(&self) {
         if let Ground::ViaTrait { volume, .. } = self {
-            crate::indexing::host::runtime::block_on(volume.begin_scan_session());
+            runtime::block_on(volume.begin_scan_session());
         }
     }
 
@@ -335,29 +340,23 @@ impl Ground {
     /// [`open_session`](Self::open_session) by the shape of `walk_frontier`.
     fn close_session(&self) {
         if let Ground::ViaTrait { volume, .. } = self {
-            crate::indexing::host::runtime::block_on(volume.end_scan_session());
+            runtime::block_on(volume.end_scan_session());
         }
     }
 
     /// Whether `path` is a directory this walk may descend into, and what to record
     /// for it. `None` for anything else: gone, unreadable, or a symlink.
-    pub(super) fn stat_directory(&self, path: &Path) -> Option<crate::indexing::metadata::MetadataSnapshot> {
+    pub(super) fn stat_directory(&self, path: &Path) -> Option<MetadataSnapshot> {
         match self {
             Ground::Local => {
                 let metadata = std::fs::symlink_metadata(path).ok()?;
                 // A symlink reports `is_dir() == false` here, which is the answer we
                 // want: the index stores symlinks without descending into them.
-                metadata
-                    .is_dir()
-                    .then(|| crate::indexing::metadata::extract_metadata(&metadata, true, false))
+                metadata.is_dir().then(|| extract_metadata(&metadata, true, false))
             }
             Ground::ViaTrait { volume, .. } => {
-                let entry =
-                    crate::indexing::host::runtime::block_on(crate::indexing::network_scanner::stat_one_directory(
-                        std::sync::Arc::clone(volume),
-                        path.to_path_buf(),
-                    ))?;
-                Some(crate::indexing::metadata::MetadataSnapshot {
+                let entry = runtime::block_on(stat_one_directory(Arc::clone(volume), path.to_path_buf()))?;
+                Some(MetadataSnapshot {
                     // A directory's own row carries no size, on every walk here.
                     logical_size: None,
                     physical_size: None,
@@ -398,16 +397,15 @@ impl Ground {
                 // simply walked. Over a network round trip the per-directory name
                 // check is free; over a local `readdir` it wouldn't be, which is why
                 // the two halves differ here and nowhere else.
-                let result =
-                    crate::indexing::host::runtime::block_on(crate::indexing::network_scanner::cover_volume_subtree(
-                        std::sync::Arc::clone(volume),
-                        root.to_path_buf(),
-                        &context.space,
-                        &context.writer,
-                        Some(sender.clone()),
-                        cancel,
-                        pacer,
-                    ));
+                let result = runtime::block_on(cover_volume_subtree(
+                    Arc::clone(volume),
+                    root.to_path_buf(),
+                    &context.space,
+                    &context.writer,
+                    Some(sender.clone()),
+                    cancel,
+                    pacer,
+                ));
                 match result {
                     Ok(summary) => (Some(summary), RootOutcome::Covered),
                     Err(VolumeScanError::Cancelled(summary)) => (Some(summary), RootOutcome::Cancelled),
