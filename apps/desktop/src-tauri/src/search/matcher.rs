@@ -41,7 +41,12 @@
 //!   that isn't in the arena; the live path applies the same policy against a walked
 //!   entry's own path instead.
 
+use std::borrow::Cow;
+use std::path::Path;
+
 use regex::{Regex, RegexBuilder};
+
+use cmdr_index::CoveredEntry;
 
 use super::query::glob_to_regex;
 use super::types::{PatternType, SearchQuery};
@@ -65,10 +70,10 @@ pub(crate) enum Evaluator {
     /// ❌ Don't key this on an entry count the way [`Self::Arena`] does. An unindexed
     /// volume's arena holds zero rows, so a count-based ceiling is exactly the guard
     /// that never fires on the path that needs it most.
-    // Constructed by M5, which is what feeds a walk's batches into `execute.rs`. The
-    // matcher lands first so this guard is verifiable before anything depends on it
-    // (`docs/specs/unindexed-search-plan.md` § M4).
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "M5 is what feeds a walk's batches into `execute.rs`; the matcher lands first so the no-fork invariant and the guard are verifiable before anything depends on them"
+    )]
     LiveWalk,
 }
 
@@ -268,6 +273,47 @@ fn compile_pattern(pattern: &str, pattern_type: &PatternType, case_insensitive: 
         .case_insensitive(case_insensitive)
         .build()
         .map_err(|e| CompileError::InvalidPattern(e.to_string()))
+}
+
+// ── The live-walk evaluator ──────────────────────────────────────────
+
+#[allow(
+    dead_code,
+    reason = "M5 is what feeds a walk's batches into `execute.rs`; the matcher lands first so the no-fork invariant and the guard are verifiable before anything depends on them"
+)]
+impl CompiledQuery {
+    /// Whether one entry a walk discovered satisfies every predicate.
+    ///
+    /// The size is the entry's OWN, before hardlink dedup, because that's what a
+    /// listing shows. The index stores the deduplicated size instead, so a 2nd+
+    /// hardlink to one file is sizeless there: a size bound keeps it in a live result
+    /// and drops it from an indexed one. Bounded, and the live answer is the truthful
+    /// one, so it stays.
+    pub(crate) fn matches_covered(&self, entry: &CoveredEntry) -> bool {
+        self.matches(&Candidate {
+            name: &covered_name(&entry.path),
+            is_directory: entry.is_directory,
+            size: entry.logical_size,
+            modified_at: entry.modified_at,
+        })
+    }
+}
+
+/// The name a walked entry matches under.
+///
+/// Byte-identical to the name the index would have stored for the same entry, lossy
+/// conversion and the nameless-path fallback included: the local walker derives its
+/// row name from the same path the same way (`indexing/scanner/insert_visitor.rs`),
+/// and the trait walk's row name is the listing's `name`, which is that path's last
+/// component. ❌ Don't "improve" this alone — a name derived two ways is the fork
+/// this module exists to prevent.
+#[allow(
+    dead_code,
+    reason = "M5 is what feeds a walk's batches into `execute.rs`; the matcher lands first so the no-fork invariant and the guard are verifiable before anything depends on them"
+)]
+fn covered_name(path: &Path) -> Cow<'_, str> {
+    path.file_name()
+        .map_or(Cow::Borrowed(""), |name| name.to_string_lossy())
 }
 
 #[cfg(test)]
