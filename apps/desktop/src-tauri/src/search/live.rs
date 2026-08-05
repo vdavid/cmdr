@@ -274,11 +274,15 @@ impl<'a> ResultStream<'a> {
         }
     }
 
-    /// Emit whatever is pending if the interval has elapsed, or if a full batch
-    /// is waiting. Called on every walk batch and on every idle tick, so a run
-    /// that finds nothing still reports progress.
+    /// Emit if it's been [`BATCH_INTERVAL`] since the last event. Called after
+    /// every walk batch and on every idle tick, so a run that is finding nothing
+    /// still reports where the walk has got to.
+    ///
+    /// ❌ No row check here: a full batch has already gone out from inside
+    /// `add_indexed` / `add_walked`, which is where the count crosses
+    /// [`BATCH_ROWS`]. What's left for the clock is the remainder.
     pub(crate) fn flush_if_due(&mut self, phase: SearchPhase) {
-        if self.pending.len() >= BATCH_ROWS || self.last_emit.elapsed() >= BATCH_INTERVAL {
+        if self.last_emit.elapsed() >= BATCH_INTERVAL {
             self.flush(phase);
         }
     }

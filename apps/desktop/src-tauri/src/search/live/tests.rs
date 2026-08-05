@@ -367,7 +367,8 @@ fn a_lone_row_does_not_wait_for_company() {
     let driven = drive(&run, &q, Vec::new(), 0, |tx| {
         tx.send(WalkMsg::Batch(vec![covered_file("/w/report.pdf")]))
             .expect("send");
-        // Long enough that a flush waiting on the next message would be visible.
+        // Several flush intervals of silence, so both halves of the rule are
+        // visible: the row went out during it, and progress kept arriving.
         // allowed-test-sleep: the silence IS the subject — a walk that says nothing for a while
         std::thread::sleep(Duration::from_millis(400));
         tx.send(WalkMsg::Ended(covered_everything(1))).expect("send");
