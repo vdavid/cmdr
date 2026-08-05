@@ -235,8 +235,9 @@ index build: it still measures 1–3 ms warm per file.
 
 ## How `.svelte` really parses
 
-Measured on IDEA 2026.2 build 262.8665.176 with Svelte plugin 262.8665.173, 2026-08-03, by `SveltePsiSpikeTest` and
-`LanguageCoverageSpikeTest`. Re-run them after an IDE upgrade; they print everything below.
+Measured by `SveltePsiSpikeTest` and `LanguageCoverageSpikeTest`, first on IDEA 2026.2 build 262.8665.176 with Svelte
+plugin 262.8665.173 (2026-08-03) and unchanged on build 262.9437.65 with Svelte plugin 262.9437.22 (2026-08-05). Re-run
+them after an IDE upgrade; they print everything below.
 
 ### Question 1: does `{tString(…)}` in a template surface as JavaScript PSI?
 
@@ -271,11 +272,14 @@ Only `SvelteHTML` matters for registration, because of the next point.
 ### The structural fact that decides everything
 
 A `.svelte` file has a **`SingleRootFileViewProvider` with exactly one language, `SvelteHTML`**. The JS lives inline in
-that same tree behind `SvelteJSLazyPsiElement`. The folding pass dispatches per view-provider root, so a builder
-registered for `SvelteJS` or `SvelteTS` would never run on a `.svelte` file at all. Register for `SvelteHTML` and walk
-down; `PsiTreeUtil.findChildrenOfType` reaches the JS nodes fine, which is what
+that same tree behind `SvelteJSLazyPsiElement`. Register for `SvelteHTML` and walk down;
+`PsiTreeUtil.findChildrenOfType` reaches the JS nodes fine, which is what
 `SveltePsiSpikeTest.testTemplateExpressionSurfacesAsJavaScriptPsi` asserts by pulling both the `<script>` and the
 template key out of one `SvelteHTML` root.
+
+**One view-provider root is not one folding root.** The folding pass also runs per embedded root, so a builder is handed
+the `<script>` block (`SvelteJSEmbeddedContentImpl`) and every `{…}` template expression (`SvelteJSLazyPsiElement`) as
+roots of their own, in language `SvelteTS`. That's the trap in the next section.
 
 ### The registration rule, and the trap in it
 
@@ -287,6 +291,33 @@ language that has any, not the union. `TypeScript`'s chain does contain `JavaScr
 Consequence: **registering for `JavaScript` silently does nothing for `.ts` files.** Register explicitly for every
 language, and add it to `LanguageCoverageSpikeTest.FOLDING_LANGUAGES` so a missing registration fails a test rather than
 quietly folding nothing.
+
+**The same rule read the other way is what shipped a bug.** A dialect that has _no_ registration of its own doesn't
+shadow anything, so the climb goes past it and lands on ours: `SvelteTS` registers no folding builder, so
+`LanguageFolding.allForLanguage(SvelteTS)` returns the `TypeScript` list, `I18nKeyFoldingBuilder` among it.
+`LanguageCoverageSpikeTest.testSvelteJsDialectsInheritOurTypeScriptFoldingBuilder` pins that.
+
+**Gotcha/Why: a fold offered twice over one range is dropped, not merged.** Combine the two facts above and a `.svelte`
+file reaches this builder once through its `SvelteHTML` file root, which walks the file whole, and again through each
+embedded `SvelteTS` root, which walks its own fragment. Every JavaScript key site produced two identical descriptors and
+the platform kept neither. `<Trans key="…">` is XML, which no JavaScript root can reach, so it went on folding alone.
+Measured 2026-08-05 in a licensed tier 2 sandbox on IDEA 2026.2.1 build 262.9437.65 with Svelte plugin 262.9437.22, by
+logging each `buildFoldRegions` call:
+
+- `SvelteHtmlFile` (`SvelteHTML`): 8 key sites, of which the 2 attribute folds were the only ones that rendered.
+- `SvelteJSEmbeddedContentImpl` (`SvelteTS`): 4 key sites, all of them already in the file root's 8.
+- `SvelteJSLazyPsiElement` (`SvelteTS`), three of them: 1 more key site, likewise already counted.
+- `JSFileImpl` (`TypeScript`) for a `.ts` file: one root, one pass, no duplication, which is why `.ts` never broke.
+
+So **`I18nKeyFoldingBuilder` folds `PsiFile` roots only**. It always walks its root whole, so a fragment root can only
+ever re-offer what the file's own pass already built; there is nothing to lose by declining it. Navigation was never
+affected: `keySiteFor` walks _up_ from the element under the caret and never involves a root at all, which is why
+`.svelte` ⌘-click kept working throughout and made the bug look like a registration problem.
+
+`I18nKeyFoldingTest.testAnEmbeddedSvelteRootFoldsNothingTheWholeFileAlreadyDid` is the guard. It asks the builder for
+each embedded root directly, because **no end-to-end fold assertion can catch this in tier 1**: the headless fixture
+runs only the file-root pass, so `testASvelteTemplateAndScriptBothFold` passed green the whole time the feature was
+broken in a real IDE.
 
 ### What i18n folding does with all that
 
@@ -305,7 +336,7 @@ quietly folding nothing.
 
 ### Tier 1: headless fixtures. Works, and it's the loop.
 
-`mise exec -- ./gradlew test`. 80 tests, ~10 s cold, ~2 s warm. No window, no display, no license. Everything the
+`mise exec -- ./gradlew test`. 83 tests, ~10 s cold, ~2 s warm. No window, no display, no license. Everything the
 features need to assert is assertable here, **including both ⌘-clicks**: for the changelog, replace the application's
 `BrowserLauncher` with a recorder, run `IdeActions.ACTION_GOTO_DECLARATION`, and assert the URL it was asked to open;
 for a message key, `GotoDeclarationAction.findAllTargetElements` returns the catalog entry itself.
@@ -341,7 +372,12 @@ the platform's own "Open in browser" affordance.
 Confirmed 2026-08-04 for the folding too: `sample.ts` opens with every resolvable key already collapsed to its sentence
 in curly quotes, `labelKey:` and `descriptionKey:` still showing their names in front of the folded value, `Here''s`
 rendering as `Here's`, `{countText}` intact, and the unknown key, the bare string, and the template-built key left as
-source. `runIde` opens both fixture files; the last one in the list is the focused tab.
+source. `runIde` opens every fixture file; the last one in the list is the focused tab.
+
+Confirmed 2026-08-05 for `.svelte`, on the licensed sandbox with Svelte plugin 262.9437.22: `Sample.svelte` opens with
+the `<script>` call, both key properties, the template call, the `{#snippet}` call, and both `<Trans key="…">`
+attributes collapsed to their sentences, `Here''s` reading as `Here's` and `{countText}` intact, while the unknown key
+and the template-built key stay as source. That's the whole feature in the one place a headless fixture can't reach.
 
 Confirmed 2026-08-04 for key navigation, one half of it: with the caret inside a key the catalog doesn't have, Navigate
 → Declaration or Usages says "Cannot find declaration to go to" and nothing else happens, which is the must-not-throw
@@ -353,17 +389,16 @@ including against the repo's real catalog.
 ```sh
 cd tools/intellij-plugin
 mise exec -- ./gradlew runIde &                       # ~40 s to a usable window
-PID=$(ps -Ao pid,command | grep "[c]mdr-idea-plugin" | grep "Contents/Home/bin/java" | awk '{print $1}' | head -1)
-osascript -e "tell application \"System Events\" to tell (first process whose unix id is $PID) to set frontmost to true"
-screencapture -x -o /tmp/tier2.png
-kill $PID
+ID=$(swift scripts/sandbox-window-id.swift | head -1 | cut -f1)
+screencapture -x -o -l "$ID" /tmp/tier2.png
+kill $(ps -Ao pid,command | grep "[c]mdr-idea-plugin" | grep "/bin/java" | awk '{print $1}' | head -1)
 ```
 
 **Capture the window, not the screen.** `screencapture -x -o -l <window-id>` grabs the sandbox IDE alone even when it's
-buried, so a screenshot can't pick up whatever David has open. There's no CLI that prints window IDs and the system
-Python has no `Quartz`, so get one from a four-line Swift script over `CGWindowListCopyWindowInfo` filtered by window
-name (`sandbox-project – …`); `swift <file>.swift` runs it with no project. Raising the window first is then only about
-keyboard focus, never about the picture.
+buried, so a screenshot can't pick up whatever David has open, and nothing has to be raised. There's no CLI that prints
+window IDs and the system Python has no `Quartz`, so `scripts/sandbox-window-id.swift` reads
+`CGWindowListCopyWindowInfo` and filters by window name (`sandbox-project – …`); `swift <file>.swift` runs it with no
+project. Raise the window only when a gesture needs keyboard focus, never for a picture.
 
 - **Check for a sandbox IDE that's already running before launching one.** A stale instance from a previous session
   keeps its old plugin build, logs `Failed to unload modified plugins`, and every screenshot then shows code that isn't
@@ -397,13 +432,17 @@ keyboard focus, never about the picture.
 - **Don't reach for `.idea/workspace.xml` to pre-open a file.** It looks like the tidy way and it doesn't work: on
   2026.2 the seeded file survives on disk untouched and the IDE still opens an empty editor. Passing the file as a
   second launch argument (`runIde` → `[<projectDir>, <file>]`) is what opens it.
-- **The sandbox IDE runs unlicensed, so Ultimate-only plugins don't load.** The log says it plainly:
+- **The sandbox is licensed, and that's what makes `.svelte` observable.** `seedIdeSandbox` copies every `*.key` and
+  `*.license` file out of the local IDE's config directory into the sandbox's, so `com.intellij.modules.ultimate` is
+  present and the Svelte plugin loads. `Loaded custom plugins: Svelte (…), Cmdr dev tools (…)` in `idea.log` is the
+  confirmation; without the license it instead reads
   `Plugin 'Svelte' (dev.blachut.svelte.lang) requires plugin with id=com.intellij.modules.ultimate to be enabled`, and
-  `cmdr-svelte.xml` is excluded along with it. **`.svelte` behavior is therefore not observable in tier 2.** Tier 1 has
-  no such limit: it loads plugins from paths rather than through the licensing gate, which is why the Svelte spike tests
-  pass there. Confirm Svelte behavior by sideloading into David's own licensed IDE (`README.md`).
-- Building against the local install sidesteps the licensing question for _compilation_, not for `runIde`. The spec's
-  "no licensing question" line is true of the build and not of tier 2.
+  `cmdr-svelte.xml` is silently excluded along with it. The config directory is found through the install's own
+  `product-info.json` (`dataDirectoryName`), so an IDE upgrade moves it for free, and the files are only ever read. **An
+  unlicensed tier 2 is how a `.svelte` regression once shipped**: the headless suite can't see the embedded-root
+  duplication, so every `.svelte` change has to be confirmed here.
+- Building against the local install sidesteps the licensing question for _compilation_. `runIde` needs the seeded key
+  on top of that.
 
 ### Tier 3: scripted UI runs
 
@@ -429,8 +468,8 @@ Not built. Two reading aids don't have a UI surface worth a Starter-framework ha
 
 ## Where things live
 
-- `build.gradle.kts` — the whole build. `gradle.properties` — the two machine-specific paths and the Kotlin stdlib
-  opt-out.
+- `build.gradle.kts` — the whole build, including `seedIdeSandbox` (trust, marker, license). `gradle.properties` — the
+  two machine-specific paths and the Kotlin stdlib opt-out. `scripts/sandbox-window-id.swift` — the tier 2 window ID.
 - `src/main/resources/META-INF/plugin.xml` — the descriptor. `cmdr-svelte.xml` — the Svelte-only half.
 - `src/main/kotlin/com/getcmdr/idea/core/` — `CmdrProjectService`, `CmdrPluginConfig`, `FeatureConfig`.
   `features/changelog/` — the commit links. `features/i18n/` — `MessageCatalog` and its service (the index), `KeySites`
@@ -440,6 +479,7 @@ Not built. Two reading aids don't have a UI surface worth a Starter-framework ha
   property), `core/`, `features/changelog/`, `features/i18n/` (with `CatalogFixture.kt`, the fixture project both i18n
   tests set up), and `platform/` (`FoldingTestSupport.kt` with the `updateFoldRegions` gotcha and its harness test, plus
   the two spikes).
-- `sandbox-project/` — the tier 2 fixture: `CHANGELOG.md` for the links, `sample.ts` plus
-  `apps/desktop/src/lib/intl/messages/en/sandbox.json` for the folding. Its `.idea/` and the copied marker are generated
-  and ignored.
+- `sandbox-project/` — the tier 2 fixture, one file per feature and language: `CHANGELOG.md` for the links, `sample.ts`
+  and `Sample.svelte` (with `Trans.svelte` beside it) for the folding, all resolving against
+  `apps/desktop/src/lib/intl/messages/en/sandbox.json`. `runIde` opens them in that order, so `Sample.svelte` is the
+  focused tab. Its `.idea/` and the copied marker are generated and ignored.

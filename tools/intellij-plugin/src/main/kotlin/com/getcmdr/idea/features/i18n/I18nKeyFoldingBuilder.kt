@@ -6,6 +6,7 @@ import com.intellij.lang.folding.FoldingDescriptor
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.project.DumbAware
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiFile
 
 /**
  * Folds a resolvable message key to its English text, so reading a screen's code reads like the screen.
@@ -18,6 +19,11 @@ import com.intellij.psi.PsiElement
  */
 class I18nKeyFoldingBuilder : FoldingBuilderEx(), DumbAware {
     override fun buildFoldRegions(root: PsiElement, document: Document, quick: Boolean): Array<FoldingDescriptor> {
+        // Only a whole file, never a fragment of one. The folding pass offers embedded roots as well as file roots,
+        // and this builder always walks its root whole, so a fragment can only re-offer regions the file's own pass
+        // already built. Duplicates don't stack: the platform drops the region entirely. See `DETAILS.md`.
+        if (root !is PsiFile) return FoldingDescriptor.EMPTY_ARRAY
+
         val config = i18nConfigFor(root) ?: return FoldingDescriptor.EMPTY_ARRAY
         val catalog = MessageCatalogService.getInstance(root.project).catalog() ?: return FoldingDescriptor.EMPTY_ARRAY
 

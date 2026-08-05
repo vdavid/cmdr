@@ -4,6 +4,8 @@ import com.getcmdr.idea.RepoFiles
 import com.getcmdr.idea.core.CmdrProjectService
 import com.getcmdr.idea.platform.FoldingTestCase
 import com.intellij.openapi.util.TextRange
+import com.intellij.psi.PsiFile
+import com.intellij.psi.util.PsiTreeUtil
 import java.io.File
 
 /**
@@ -196,6 +198,61 @@ class I18nKeyFoldingTest : FoldingTestCase() {
             listOf("\"ui.loadingIcon.cancelHint\"" to "“Press {key} to cancel”"),
             folds(),
         )
+    }
+
+    /**
+     * The regression that shipped: in a real IDE, every JavaScript key site in a `.svelte` file silently stopped
+     * folding while `<Trans key="…">` went on working.
+     *
+     * `SvelteTS` carries no folding registration of its own, so `LanguageFolding.allForLanguage` climbs its base
+     * chain to `TypeScript` and finds ours. The folding pass then hands this builder the embedded `<script>` and each
+     * `{…}` template expression as roots in their own right, on top of the whole-file `SvelteHTML` root it has
+     * already walked. Every JS key site came back twice, and the platform answers two fold regions over one range by
+     * keeping neither. Only the `<Trans>` attribute, which no JavaScript root can reach, survived.
+     *
+     * Pre-fix this would have passed wrongly through `folds()`: tier 1 never runs those extra passes, so no
+     * end-to-end fold assertion can see the duplication. Ask the builder for the embedded roots directly instead.
+     */
+    fun testAnEmbeddedSvelteRootFoldsNothingTheWholeFileAlreadyDid() {
+        if (skipWithoutSveltePlugin()) return
+        myFixture.cmdrProjectWith("a.title" to "Send crash report?")
+        myFixture.configureByText(
+            "Sample.svelte",
+            """
+            <script lang="ts">
+                const inScript = tString('a.title')
+            </script>
+
+            <p>{tString('a.title')}</p>
+            """.trimIndent(),
+        )
+
+        val file = myFixture.file
+        val config = requireNotNull(i18nConfigFor(file)) { "the fixture project should be a Cmdr checkout" }
+        val builder = I18nKeyFoldingBuilder()
+        val document = myFixture.editor.document
+
+        // Every root the folding pass can offer besides the file itself: a child whose language differs from its
+        // parent's is exactly where the platform starts a pass of its own.
+        val embeddedRoots = PsiTreeUtil.collectElements(file) {
+            it !is PsiFile && it.parent?.language?.equals(it.language) == false
+        }
+        assertNotEmpty(embeddedRoots.toList())
+
+        val reachableSites = embeddedRoots.sumOf { keySitesIn(it, config).size }
+        assertTrue(
+            "the embedded roots have to be able to see key sites, or this test proves nothing",
+            reachableSites > 0,
+        )
+        embeddedRoots.forEach { root ->
+            assertEmpty(
+                "${root.javaClass.simpleName} re-offered a fold the file's own pass already built, " +
+                    "and the platform drops both",
+                builder.buildFoldRegions(root, document, false).toList(),
+            )
+        }
+        val fromTheFile = builder.buildFoldRegions(file, document, false)
+        assertEquals("the file's own pass still folds every key site", 2, fromTheFile.size)
     }
 
     /**

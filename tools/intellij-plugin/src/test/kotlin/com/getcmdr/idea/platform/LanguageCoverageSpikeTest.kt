@@ -49,6 +49,28 @@ class LanguageCoverageSpikeTest : BasePlatformTestCase() {
         assertTrue("SvelteTS should be a TypeScript dialect", svelteTs.contains("TypeScript"))
     }
 
+    /**
+     * The inverse of the shadowing rule, and the one that bit us: inheritance *does* carry a registration when the
+     * dialect has none of its own. `SvelteTS` registers no folding builder, so the climb reaches `TypeScript` and
+     * hands back ours. A `.svelte` file therefore reaches `I18nKeyFoldingBuilder` twice, once through its
+     * `SvelteHTML` root and once through every embedded JavaScript root, which is why the builder folds only
+     * `PsiFile` roots. See `I18nKeyFoldingTest.testAnEmbeddedSvelteRootFoldsNothingTheWholeFileAlreadyDid`.
+     */
+    fun testSvelteJsDialectsInheritOurTypeScriptFoldingBuilder() {
+        if (Language.findLanguageByID("SvelteTS") == null) {
+            println("[spike] SKIPPED: the Svelte plugin isn't on the test classpath.")
+            return
+        }
+        listOf("SvelteTS", "SvelteJS").forEach { id ->
+            val builders = foldingBuilderNames(id)
+            println("[spike] folding builders for $id: ${builders.joinToString()}")
+            assertTrue(
+                "$id no longer inherits our builder; the `PsiFile` guard in I18nKeyFoldingBuilder may be moot now",
+                builders.any { it.startsWith(CMDR_PACKAGE) },
+            )
+        }
+    }
+
     fun testEveryLanguageWeRegisterAFoldingBuilderForSeesIt() {
         if (FOLDING_LANGUAGES.isEmpty()) {
             println("[spike] no Cmdr folding builders are registered yet, so there's nothing to cover.")
