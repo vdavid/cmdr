@@ -384,6 +384,26 @@ predecessor's ground, from the index rather than from a replay. ❌ Don't replac
 to get live batches for the shared ground; it needs per-subscriber filtering and per-subscriber completion (one root is
 done while the walk moves on to the next), and there is no second consumer today to shape either against.
 
+### What the walk leaves watched
+
+A walk that covered ground and left nothing watching it is a snapshot of a folder taken once, which is what the plan's
+rejected 24-hour expiry existed to bound. Instead the walk registers its frontier roots as WATCHED BRANCHES, and the
+volume's live loop keeps exactly that ground current — so a walked branch is as live as an indexed drive's rows, with no
+re-walking and no TTL (Decision 9). The mechanism, the admission rule, the persistence, and the Linux split are
+canonical in `../watch/DETAILS.md` § "Watching what a search walked"; what belongs here is the lifecycle wiring:
+
+- **`cover::start` registers before the walk thread spawns** (`state::begin_branch_coverage`), so a change landing in
+  ground the walk has already passed waits instead of racing the walk's own ids — the same collision item 3 above
+  describes between two walks, with the live loop as the second writer. It runs on EVERY volume with a loop, including a
+  scanned one.
+- **The walk thread finishes it** (`state::finish_branch_coverage`) after `walk_frontier`'s own writer flush, whatever
+  the outcome: a cancelled walk still marked every directory it read, so that ground needs watching exactly as much.
+- **`ensure_branch_watch` starts the watcher** for a volume that has none — the `WriterOnly` shape, the only one with
+  coverage and no watcher. A scanned volume declines it (`branch_watched` says which of the two is up), and `start_scan`
+  retires the branch set outright, so a volume is branch-watched or whole-watched and never both.
+- **A resume is the `WriterOnly` arm of `start_indexing_for`**, not a launch pass: an unregistered volume answers
+  neither sizes nor coverage questions, so the first moment that coverage can be read is the moment its index comes up.
+
 ### What has to exist before a walk can run (`cover/bootstrap.rs`)
 
 A walk needs a database with a writer behind it, an epoch to stamp listed directories with, and an `entries` row to
@@ -518,9 +538,12 @@ Canonical model; everywhere else points here. Two switches decide whether a volu
 **Both switches govern BACKGROUND work only, never a user-initiated read** (Decision 13). A search-driven coverage walk
 runs with the master off and on a `user_disabled` drive alike: it stands up a writer and nothing else, so no scan is
 scheduled and no watcher starts, and the alternative isn't "less work" — it's a search that silently omits files on a
-drive the user can see. The veto keeps real teeth anyway: a vetoed drive gets no watcher, so its walked branches go
-stale and re-walk instead of staying live. ❌ Don't turn either switch back into a gate on `WriterOnly`;
-`cover::tests::a_search_walks_a_drive_with_the_master_switch_off` guards it.
+drive the user can see. The veto keeps real teeth anyway, and this is where they are: a vetoed drive gets no watcher
+(`master::branch_watch_allowed`), so what a search walked there stays covered and served but stops being kept current
+the moment the app stops. ❌ It is NOT re-walked — the walk marked those directories listed, so the frontier never
+offers them again and Decision 5 trusts them as covered-but-stale. ❌ Don't turn either switch back into a gate on
+`WriterOnly`; `cover::tests::a_search_walks_a_drive_with_the_master_switch_off` guards it, and
+`a_vetoed_drive_is_walked_and_left_unwatched` guards the other half.
 
 Enforcement is one choke point: `start_indexing_for`, which all four transports funnel through, refuses an
 `IndexTheVolume` activation while the master is off. Callers that answer a user get a typed refusal of their own instead

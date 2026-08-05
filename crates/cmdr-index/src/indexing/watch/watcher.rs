@@ -443,8 +443,8 @@ fn watch_one(
     watcher: &std::sync::Mutex<notify::RecommendedWatcher>,
     root: &std::path::Path,
 ) -> Result<(), WatcherError> {
-    use notify::{RecursiveMode, Watcher};
     use cmdr_fs::ignore_poison::IgnorePoison;
+    use notify::{RecursiveMode, Watcher};
 
     watcher
         .lock_ignore_poison()

@@ -94,7 +94,8 @@ impl Fixture {
     /// live loop runs them through.
     fn run_batch(&self, scope: &WatchScope, events: Vec<FsChangeEvent>) {
         let space = IndexPathSpace::root();
-        let mut reconciler = EventReconciler::new_for("branch-test".to_string(), space.clone(), CancellationToken::new());
+        let mut reconciler =
+            EventReconciler::new_for("branch-test".to_string(), space.clone(), CancellationToken::new());
         reconciler.switch_to_live();
         let mut pending: HashMap<String, FsChangeEvent> = HashMap::new();
         let promoted = scope.branches().take_promoted();
@@ -170,7 +171,10 @@ fn an_event_inside_a_covered_branch_reaches_the_index_and_one_outside_does_not()
 
     f.run_batch(&scope, vec![created_file(&inside, 10), created_file(&outside, 11)]);
 
-    assert!(f.is_indexed(&inside), "a change inside the walked branch updates the index");
+    assert!(
+        f.is_indexed(&inside),
+        "a change inside the walked branch updates the index"
+    );
     assert!(
         !f.is_indexed(&outside),
         "a change outside every walked branch is not this index's business: writing it would \
@@ -273,7 +277,10 @@ fn an_overflowing_buffer_asks_for_a_relist_instead_of_a_replay() {
     let branch = vec!["/vol/covered".to_string()];
     watch.begin_covering(&branch);
     for id in 0..(BRANCH_BUFFER_CAP as u64 + 5) {
-        let _ = watch.admit(created_file(&format!("/vol/covered/f{id}.txt"), id + 1), Reach::CoveredBranches);
+        let _ = watch.admit(
+            created_file(&format!("/vol/covered/f{id}.txt"), id + 1),
+            Reach::CoveredBranches,
+        );
     }
     watch.finish_covering(&branch, AfterWalk::Watch);
 

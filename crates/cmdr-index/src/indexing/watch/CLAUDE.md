@@ -7,6 +7,8 @@ plus the event loop that turns its stream into index writes.
 
 - **watcher.rs** — the drive watcher: macOS FSEvents via `cmdr-fsevent-stream` (event IDs + `sinceWhen` replay), Linux
   inotify via `notify`. `supports_event_replay()` gates journal replay.
+- **branches.rs** — `WatchScope` + `BranchWatch`: how much of a volume its loop answers for, and the buffer that keeps a
+  cover walk and a live loop off each other's ground.
 - **event_loop.rs + event_loop/** — three non-calling responsibilities plus shared primitives: `live.rs`
   (`run_live_event_loop`, `process_live_batch`), `replay.rs` (`run_replay_event_loop`, cold-start journal replay),
   `verification.rs` + `verify_guard.rs` (post-replay diff), `storm.rs` (removal-storm coalescing), `tests/`.
@@ -30,6 +32,19 @@ plus the event loop that turns its stream into index writes.
 - **The churn monitor must hook BOTH live loops.** `process_live_batch` takes the `ChurnObserver` by `&mut` so both are
   covered by construction; hooking only one measured nothing on the cold-start replay route. Guarded by
   `churn_monitor/tests.rs::every_live_loop_owns_a_real_churn_observer`.
+- **Every live loop carries a `WatchScope`, and an event in ground a cover walk is covering RIGHT NOW is BUFFERED, not
+  written** — on a scanned volume too. Writing it lets the parallel walker's fresh ids lose to `INSERT OR IGNORE` and
+  orphan a subtree; discarding it drifts the branch's sizes with no signal. Released when the walk ends. ❌ Don't make
+  the whole-volume arm skip the branch set.
+- **A search-built index (`WriterOnly`) has NO watcher until `ensure_branch_watch` starts one**, scoped to the covered
+  branches; a scanned volume already watches everything, so a volume is branch-watched or whole-watched, never both. A
+  coalesced `MustScanSubDirs` above the branches is RE-ANCHORED onto them, never dropped. The branch-confined reconciler
+  never walks outside them and never routes a shallow anchor to the whole-volume scanner. Gate:
+  `master::branch_watch_allowed` (master switch + `user_disabled` only) — a vetoed drive's walked ground stays covered
+  but stops being kept current.
+- **Linux watches the BRANCHES, macOS the volume root.** `notify`'s recursive mode costs one inotify watch per directory
+  against `max_user_watches`; an FSEvents stream costs nothing per directory and its volume-rooted `sinceWhen` is what
+  replays a branch covered last session.
 - **Background verification is post-replay and boot-disk only.** Its cost-bounding (the two teeth in `verify_guard.rs`)
   is canonical in `../reconcile/DETAILS.md` — don't restate it here.
 

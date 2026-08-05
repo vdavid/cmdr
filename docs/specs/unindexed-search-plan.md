@@ -282,13 +282,13 @@ Through M9, plus M11 in flight. Branch `worktree-david+unindexed-search-exec`; M
   FSEvents `sinceWhen` replay does its half from the persisted `last_event_id`.
 - **The mid-walk boundary case is worse than "events get discarded".** Letting the live loop write into a branch a
   parallel walk is covering is M3c's collision one level down: the walker allocates fresh ids, `INSERT OR IGNORE` drops
-  the loser, and its subtree is orphaned. So the events must be BUFFERED, not just admitted — which is exactly the
-  shape of the scan-completion handshake (`buffer during the scan → replay → switch_to_live`), per branch instead of
-  per volume.
+  the loser, and its subtree is orphaned. So the events must be BUFFERED, not just admitted — which is exactly the shape
+  of the scan-completion handshake (`buffer during the scan → replay → switch_to_live`), per branch instead of per
+  volume.
 - **Discarding an out-of-branch event is not free either.** `process_fs_event` escalates a missing-parent event to a
   subtree rescan (`reconciler/escalation.rs`), so an unfiltered watcher on a walk-built index would walk ground nobody
-  asked for. A branch-scoped loop clamps escalation to the branches, and never routes a shallow `MustScanSubDirs` to
-  the whole-volume rescan.
+  asked for. A branch-scoped loop clamps escalation to the branches, and never routes a shallow `MustScanSubDirs` to the
+  whole-volume rescan.
 - **A coalesced `MustScanSubDirs` above a branch has to be re-anchored, not dropped.** FSEvents reports "something under
   here changed" at a shallower path than the branch; a plain prefix test would discard it and lose every change under
   the covered ground.

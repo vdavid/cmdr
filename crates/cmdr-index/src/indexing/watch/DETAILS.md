@@ -15,7 +15,10 @@ post-replay verification COST-BOUNDING (the two teeth) in `../reconcile/DETAILS.
 
 - **watcher.rs** — the drive-level filesystem watcher. macOS: FSEvents via `cmdr-fsevent-stream` with event IDs and
   `sinceWhen` replay. Linux: `notify` (inotify) with recursive watching and a synthetic event counter. Other platforms:
-  stub. `supports_event_replay()` lets callers branch on whether journal replay is available.
+  stub. `supports_event_replay()` lets callers branch on whether journal replay is available. `start_branches` +
+  `watch_branch` are the branch-watched entry points (below).
+- **branches.rs (+branches/tests.rs)** — `WatchScope`, `BranchWatch`, and the admission rule a live loop reads events by
+  (below).
 - **event_loop.rs** — holds only what more than one loop uses: `merge_fs_events` (deduplication with flag priority),
   `open_read_conn_with_retry` (read-connection open at each loop's start), `ReplayConfig` (the manager→replay bridge
   struct, which also carries the volume's stop token down so nothing here looks one up), the cross-loop flush/gap
@@ -41,6 +44,94 @@ post-replay verification COST-BOUNDING (the two teeth) in `../reconcile/DETAILS.
 - **event_loop/storm.rs** — removal-storm coalescing helpers (`REMOVAL_STORM_THRESHOLD`, `STORM_GROUP_PREFIX_DEPTH`).
 - **event_loop/tests/** — `ingestion` / `merge` / `rename` / `split_parent` clusters plus shared fixtures in `mod.rs`.
 - **churn_monitor.rs (+churn_monitor/)** — the off-by-default per-subtree churn observability spike (below).
+
+## Watching what a search walked
+
+A volume the user turned indexing on for is walked whole and watched whole. A volume a SEARCH walked
+(`../lifecycle/cover.rs`, `Activation::WriterOnly`) has a few covered branches and nothing else, and it starts with no
+watcher at all — a `DriveWatcher` is created only by `start_scan` and `start_replay`. `branches.rs` is what gives that
+shape a live loop, and it's the whole of why walk-written coverage carries no expiry (plan Decision 9): a walked branch
+is kept as current as an indexed drive's rows, so nothing has to be re-walked and nothing has to age out.
+
+**`WatchScope` is per LOOP, and both arms carry the branch set.**
+
+- `WholeVolume(watch)` — a scanned volume. Every event is the index's business, EXCEPT one landing in ground a cover
+  walk is covering right now.
+- `Branches(watch)` — a search-built index. Only events inside covered branches are its business.
+
+**The three verdicts** (`BranchWatch::admit`), by the DEEPEST branch containing the event's path:
+
+1. no walk on it ⇒ **process**;
+2. a walk covering it ⇒ **buffer**, released when that walk ends;
+3. no branch at all ⇒ **discard** on a branch-watched volume, **process** on a whole-watched one.
+
+**Why buffering, on every volume.** Letting a live loop write into a branch a walk is covering is `cover/live.rs`'s
+two-walks collision one level down: the parallel walker allocates fresh ids, `insert_entries_v2_batch` is
+`INSERT OR IGNORE`, and whichever row loses takes its subtree with it. Discarding instead drifts the branch's aggregates
+with nothing to signal it. So the events wait — the per-branch shape of the scan-completion handshake, which buffers a
+whole volume's events for the same reason. Deepest-match is what lets a walk over a POCKET inside an already-live branch
+buffer while the rest of that branch keeps flowing.
+
+**Buffer overflow re-lists rather than replays.** Past `BRANCH_BUFFER_CAP` (100,000 events) the buffer stops being a
+complete record, so the branch is dropped and queued as a `MustScanSubDirs` anchor when its walk ends.
+
+**A coalesced sweep above the branches is RE-ANCHORED onto them, never dropped.** FSEvents reports "a lot changed under
+here" at a shallower path than the branch; a plain prefix test would lose every change inside covered ground behind one
+`MustScanSubDirs`. On a whole-watched volume the original sweep is kept too — unless a walk is covering one of the
+branches under it, in which case it waits rather than walking into the walk.
+
+**The reconciler is confined by the same scope** (`EventReconciler::within`, `WatchScope::may_walk`): it never walks
+ground a cover walk holds (any volume), and on a branch-watched volume never outside the branches — an escalation anchor
+in unwalked ground is left to the next search, which is where growing coverage belongs. A branch-watched volume also
+never routes a shallow `MustScanSubDirs` to the visible scanner, whose shallow arm rescans the WHOLE volume.
+
+**The journal position follows the STREAM, not what was processed.** A branch-watched loop discards most events, and
+`process_live_batch` only advances `last_event_id` for what it wrote; left there, a volume with quiet branches would age
+its stored position until the next launch's replay gap is too wide to be worth replaying. `safe_event_id` advances it
+from every event SEEN, and returns `None` while anything is buffered (advancing past a held event would let a restart
+skip it).
+
+**Where the set lives, and how it comes back.** In memory per volume (`live_for`), and on the volume's own database as
+`meta.walk_covered_branches` — index-relative, so a drive that returns at a different mount point still finds its
+branches. It comes back when the volume's index does (`state::resume_branch_watch`, the `WriterOnly` arm of
+`start_indexing_for`), which is the first moment anything can read that coverage: an unregistered volume answers neither
+sizes nor coverage questions. ❌ There is no launch-time pass, and adding one would start writers for drives nobody is
+asking about. `resumed_for` restores INTO whatever the session already holds rather than replacing it.
+
+**Replay, or an honest epoch bump.** A resumed watch starts from the stored `last_event_id` so FSEvents replays what
+happened while the app was off. When it can't (no replay support, no stored id, or a gap past `JOURNAL_GAP_THRESHOLD`)
+the resume bumps `current_epoch`: the rows stay covered and trusted (Decision 5) and the read side renders them stale
+rather than current. ❌ Never on the walk path — a bump right after a walk would mark rows stale that were written a
+second ago.
+
+**Two switches, one gate** (`master::branch_watch_allowed`): the master switch and the sticky per-drive `user_disabled`
+veto. NOT `persisted_scan_completed` — that means "the user turned this drive on for background indexing", which is
+exactly what someone searching an unindexed drive did not do. A vetoed drive gets no watcher, so its walked ground stays
+covered and served but stops being kept current; it is NOT re-walked (the walk marked those directories listed, so the
+frontier never offers them again).
+
+**Branch-watched or whole-watched, never both.** `ensure_branch_watch` declines when a watcher is already running, and
+`start_scan` retires the branch set (`branches::clear`) because a scanned volume answers for every path. A walk on a
+whole-watched volume registers its branches only to buffer for the walk's duration (`AfterWalk::Forget`).
+
+**Local volumes only.** This is a local-filesystem watcher, so a share or a phone gets no branch watch: its walked
+branches are exactly as stale as its scanned index, which loads Stale on every launch anyway. ⚠️ Known gap: SMB's own
+change-notify translator (`../transports/smb/`) writes through the volume's writer unfiltered, so a cover walk on a
+share races it the way a local walk used to race the local loop.
+
+## Platform split: why Linux watches branches and macOS watches the volume
+
+On macOS a branch watch is one FSEvents stream over the VOLUME ROOT plus the scope's path test. A stream costs nothing
+per directory below its root, and rooting it at the volume is what makes `sinceWhen` replay the whole journal — a branch
+added last session would otherwise have no history to replay. `watch_branch` is a no-op.
+
+On Linux `notify`'s recursive mode registers ONE inotify watch per directory against `max_user_watches` (8,192 by
+default on many distributions), so `start_branches` watches the covered branches themselves and `watch_branch` adds each
+new one to the RUNNING watcher (which `notify` supports, so no stream restart per walk). The registration walks the
+branch adding watches, slow enough on a big tree to matter, so it runs on a blocking task rather than on the search
+thread holding the registry lock. The window that opens is one the branch is being WALKED across, and its events buffer
+until the walk ends either way. ❌ Don't unify these by watching the volume root on Linux: it spends the machine's watch
+budget on ground we don't answer for, and fails outright on a big tree.
 
 ## Data flow (live + replay)
 

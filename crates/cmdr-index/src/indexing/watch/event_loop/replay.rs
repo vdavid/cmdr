@@ -13,9 +13,9 @@ use std::time::{Duration, Instant};
 
 use rusqlite::Connection;
 
+use super::super::branches::{self, Admission, WatchScope};
 use super::super::churn_monitor::ChurnObserver;
 use super::super::watcher;
-use super::super::branches::{self, Admission, WatchScope};
 use super::live::{drain_promoted, mark_pending_and_drain, process_live_batch, queue_admitted};
 use super::verification::run_background_verification;
 use super::{
