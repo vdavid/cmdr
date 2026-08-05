@@ -348,6 +348,8 @@ pub fn walk<V: DirVisitor + 'static>(
         cv: Condvar::new(),
         outstanding: AtomicUsize::new(0),
         done: AtomicBool::new(false),
+        watchdog_wake: Condvar::new(),
+        watchdog_lock: Mutex::new(()),
         cancel,
         reader,
         visitor,
@@ -519,6 +521,18 @@ struct Engine<V: DirVisitor> {
     outstanding: AtomicUsize,
     /// Set (under the `queue` lock) when the walk is finished or cancelled.
     done: AtomicBool,
+    /// Wakes the watchdog the moment the walk is done, so a SHORT walk doesn't
+    /// pay a whole `watchdog_interval` of dead time before `walk` can return.
+    /// It cost a flat ~1 s per walk on a plain `sleep`, which is invisible on a
+    /// full volume scan and ruinous for a search covering many small frontier
+    /// nodes one after another. Paired with `watchdog_lock`, not `queue`'s
+    /// mutex: `cv` is notified once per enqueued directory, and waiting on that
+    /// would wake the watchdog tens of thousands of times a walk.
+    watchdog_wake: Condvar,
+    /// Held while the watchdog decides whether to sleep, and taken-then-released
+    /// by `signal_done` before it notifies, so the wake can't be missed in the
+    /// window between the check and the wait.
+    watchdog_lock: Mutex<()>,
     /// The walk's stop signal. Workers check it between tasks and between
     /// entries, so a cancel lands within one directory read.
     cancel: CancellationToken,
@@ -567,10 +581,7 @@ impl<V: DirVisitor + 'static> Engine<V> {
     /// (under the queue lock, so a worker mid-`wait` can't miss the wakeup).
     fn complete_one(&self) {
         if self.outstanding.fetch_sub(1, Ordering::SeqCst) == 1 {
-            let _guard = self.queue.lock_ignore_poison();
-            self.done.store(true, Ordering::SeqCst);
-            drop(_guard);
-            self.cv.notify_all();
+            self.signal_done();
         }
     }
 
@@ -580,6 +591,11 @@ impl<V: DirVisitor + 'static> Engine<V> {
         self.done.store(true, Ordering::SeqCst);
         drop(_guard);
         self.cv.notify_all();
+        // Take and release the watchdog's lock before notifying: that's what
+        // orders this against its check-then-wait, so a walk that finishes
+        // between the two doesn't leave it asleep for a whole interval.
+        drop(self.watchdog_lock.lock_ignore_poison());
+        self.watchdog_wake.notify_all();
     }
 
     fn spawn_worker(self: Arc<Self>, slot: Slot) {
@@ -706,7 +722,19 @@ impl<V: DirVisitor + 'static> Engine<V> {
 
     fn run_watchdog(self: Arc<Self>, interval: Duration) {
         loop {
-            std::thread::sleep(interval);
+            {
+                // Check under the lock, then wait on it: `signal_done` takes the
+                // same lock before notifying, so the walk can't finish inside the
+                // gap and leave us sleeping out the interval.
+                let guard = self.watchdog_lock.lock_ignore_poison();
+                if self.done.load(Ordering::SeqCst) {
+                    return;
+                }
+                let _ = self
+                    .watchdog_wake
+                    .wait_timeout(guard, interval)
+                    .unwrap_or_else(|e| e.into_inner());
+            }
             if self.done.load(Ordering::SeqCst) {
                 return;
             }

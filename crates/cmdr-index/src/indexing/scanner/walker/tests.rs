@@ -630,6 +630,42 @@ fn cancellation_returns_promptly() {
     );
 }
 
+/// A walk that finishes returns as soon as it's finished, not one watchdog
+/// interval later.
+///
+/// The watchdog is joined before `walk` returns, so a plain `sleep(interval)`
+/// put a flat floor of one interval — a full second in production — under EVERY
+/// walk however small. Invisible on a volume scan; ruinous for a search covering
+/// a run of small frontier nodes, which pays it once per node.
+#[test]
+fn a_tiny_walk_returns_without_waiting_out_the_watchdog() {
+    let mut b = TreeBuilder::default();
+    b.dir("/r", &[("a.txt", RawFileType::File)]);
+    let fs = b.build(HashSet::new(), Duration::ZERO);
+
+    let start = Instant::now();
+    let stats = walk(
+        root_task("/r"),
+        WalkConfig {
+            num_threads: 2,
+            stall_timeout: Duration::from_secs(10),
+            per_entry_allowance: DEFAULT_PER_ENTRY_ALLOWANCE,
+            // Far longer than the walk itself: the walk must not wait for it.
+            watchdog_interval: Duration::from_secs(5),
+            give_up_after: DEFAULT_GIVE_UP_AFTER,
+        },
+        fs.reader(),
+        Arc::new(RecordingVisitor::new()),
+        CancellationToken::new(),
+    );
+    assert_eq!(stats.dirs_read, 1, "it did read the one directory");
+    assert!(
+        start.elapsed() < Duration::from_secs(1),
+        "a one-directory walk must not pay the watchdog interval (elapsed {:?})",
+        start.elapsed(),
+    );
+}
+
 #[test]
 fn gives_up_on_a_dead_subtree_and_keeps_walking_a_healthy_sibling() {
     // A dead mount: `/r/dead` lists OK but EVERY one of its many children fails to
