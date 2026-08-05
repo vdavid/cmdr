@@ -328,9 +328,8 @@ Through M3d, plus M4. Branch `worktree-david+unindexed-search-exec`, nothing mer
   matcher takes the path's last component, byte-identically to how `insert_visitor` derives the row name. That holds by
   construction for the local walker (same expression, same input) but only by agreement for the trait walk, whose row
   name is the listing's `name` field while its path is the listing's `path`. A `Volume` backend reporting a path whose
-  last component isn't that name would desynchronize live and indexed results silently. Recorded in
-  `search/DETAILS.md`; not worth a `name` field on `CoveredEntry` (a `String` per entry per batch) unless a backend
-  ever needs one.
+  last component isn't that name would desynchronize live and indexed results silently. Recorded in `search/DETAILS.md`;
+  not worth a `name` field on `CoveredEntry` (a `String` per entry per batch) unless a backend ever needs one.
 
 - **The trait walk is add-only PER DIRECTORY, so it needs no virgin-root refusal and no repair path.** M3a's
   `ScanError::NotVirgin` exists because the parallel local walker can't afford a DB lookup per directory across eight

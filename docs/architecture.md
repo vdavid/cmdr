@@ -268,9 +268,9 @@ are ordinary members.
 Whole-drive file search powered by the index DB. The search index lazy-loads all entries into memory (~600 MB for 5M
 files), scans them with rayon in parallel, returns results by recency, and drops after an idle timeout. Backend: a pure
 `search()` function (no I/O) in `search/engine.rs`, the compiled query it matches with in `search/matcher.rs`,
-DB-touching ops in `query.rs`, global index lifecycle in `index.rs`, AI query translation in `search/ai/`. The dialog is the first `query-ui` consumer; "Open in pane" hands off to a
-frontend-only virtual `search-results` volume (snapshot store, refcounted). Full detail:
-`src-tauri/src/search/CLAUDE.md` and `apps/desktop/src/lib/search/CLAUDE.md`.
+DB-touching ops in `query.rs`, global index lifecycle in `index.rs`, AI query translation in `search/ai/`. The dialog is
+the first `query-ui` consumer; "Open in pane" hands off to a frontend-only virtual `search-results` volume (snapshot
+store, refcounted). Full detail: `src-tauri/src/search/CLAUDE.md` and `apps/desktop/src/lib/search/CLAUDE.md`.
 
 ## Cross-cutting patterns
 
