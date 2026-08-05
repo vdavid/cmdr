@@ -298,7 +298,7 @@ fn a_walk_that_wrote_rows_marks_its_volume_for_the_next_query() {
     let run = register("run-marks", "marked-volume");
     let second = register("run-marks-2", "marked-volume");
     let q = query("report");
-    crate::search::volumes::take_walked_behind("marked-volume");
+    volumes::take_walked_behind("marked-volume");
 
     drive(&run, &q, Vec::new(), 0, |tx| {
         tx.send(WalkMsg::Batch(vec![covered_file("/walked/report.pdf")]))
@@ -307,7 +307,7 @@ fn a_walk_that_wrote_rows_marks_its_volume_for_the_next_query() {
     });
 
     assert!(
-        crate::search::volumes::take_walked_behind("marked-volume"),
+        volumes::take_walked_behind("marked-volume"),
         "a superseded run's walk still moves the arena out from under the next query"
     );
     drop(second);
@@ -345,11 +345,16 @@ fn the_index_half_goes_out_in_batches_too() {
     // three events, not 250. The frontend appends per event, so a row-per-event
     // stream is 250 renders of a growing list.
     let run = run_for_test("indexed-batching");
-    let q = SearchQuery { limit: 1000, ..query("f") };
+    let q = SearchQuery {
+        limit: 1000,
+        ..query("f")
+    };
     let sink = CollectorSearchEventSink::default();
     let mut stream = ResultStream::new(&run, &sink, &q);
 
-    let rows: Vec<SearchResultEntry> = (0..250).map(|i| indexed_row(&format!("/covered/f{i:04}.txt"))).collect();
+    let rows: Vec<SearchResultEntry> = (0..250)
+        .map(|i| indexed_row(&format!("/covered/f{i:04}.txt")))
+        .collect();
     stream.add_indexed(rows, 250);
 
     let sizes: Vec<usize> = sink.batch_sizes().into_iter().filter(|size| *size > 0).collect();

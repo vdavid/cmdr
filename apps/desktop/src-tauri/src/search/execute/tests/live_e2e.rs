@@ -236,6 +236,6 @@ fn a_drive_with_no_index_is_walked_live_then_read_back_from_what_the_walk_wrote(
         "searching a drive is what indexed it"
     );
 
-    crate::search::volumes::forget_volume_for_test(VOLUME_ID);
+    volumes::forget_volume_for_test(VOLUME_ID);
     let _ = index.forget_volume(VOLUME_ID);
 }

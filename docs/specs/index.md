@@ -60,7 +60,7 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       non-destructive alternative is measured 9-19× slower on the add-everything delta a frontier walk always is, so the
       primitive is chosen by measurement and a cold volume needs real bootstrap work. Walked branches get a watcher
       rather than an expiry, so they stay live like indexed ones. Also fixes why none of it is reachable today: search
-      returns before running at all when root's arena isn't loaded. Carries a 10-item register of accepted
+      returns before running at all when root's arena isn't loaded. Carries a 13-item register of accepted
       indexed-versus-not differences and a record of everything David settled on 2026-08-04.
 - [x] 2026-08-03 `jetbrains-plugin.md` - SHIPPED, and wiped. A private IntelliJ plugin at `tools/intellij-plugin/`
       carrying Cmdr-specific reading aids: commit hashes in a `CHANGELOG.md` entry render link-colored and ⌘-click to
