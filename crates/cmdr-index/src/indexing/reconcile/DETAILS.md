@@ -27,10 +27,14 @@ clears `scan_completed_at` before the scan runs, and `MutationTracker::bump` can
 `docs/notes/swap-scan-feasibility.md`.
 
 **Before trusting that speed comparison, read `docs/notes/indexing-benchmarks-2026-07-21.md`.** Measured on an idle
-machine, the fresh parallel scan takes 52.7 s and the reconcile 476.9 s — but the parallel scan ABANDONS directories at
-`LOCAL_LIST_TIMEOUT` under rayon contention and left the index ~10% short (6,001,637 rows, versus 6,663,048 after the
-reconcile filled in the five subtrees it had skipped). The parallel walk buys part of its speed by giving up, and the
-directories it gives up on are the large ones whose sizes users most want.
+machine, the fresh parallel scan takes 52.7 s and the reconcile 476.9 s — but that scan left the index ~10% short
+(6,001,637 rows, versus 6,663,048 after the reconcile filled in the five subtrees it had skipped). The parallel walk
+buys part of its speed by giving up. What it gives up on is a genuinely unresponsive mount, not a busy machine: the
+abandonments were `LOCAL_LIST_TIMEOUT` and the 32-consecutive-failure give-up budget firing inside a phone's File
+Provider mount. (❌ Not "rayon contention" — the walker has never used rayon, see `../scanner/CLAUDE.md`
+§ "Never rayon".) A SCOPED walk doesn't meet that shape unless the scope contains such a mount: measured over four real
+trees up to 1.2M entries, the parallel walker wrote exactly the reconcile's row count and abandoned nothing
+(`docs/notes/cover-walk-primitive-2026-08-05.md`).
 
 **Mode predicate.** Both scan entry points pick reconcile vs truncate from the entry count read off the live read
 connection BEFORE any truncate, but the threshold differs by path:

@@ -17,6 +17,9 @@ A fourth is load-bearing as a regression anchor:
 
 - `coverage-frontier-query-2026-08-05.md` — the search frontier query measured against its 50 ms warm budget on a real
   658 188-folder root index, plus what it actually scales with and when to revisit the "no new index" call.
+- `cover-walk-primitive-2026-08-05.md` — parallel walker against serial reconcile over four real trees, the decision it
+  settled for search-driven walks, and what the published "the parallel walk gives up ~10% of rows" caveat actually
+  turned out to be.
 
 - `index-extraction-baseline.md` — the `cmdr-index` extraction.
 - `archive-extraction-baseline.md` — the `cmdr-archive` extraction, the measurement gate
