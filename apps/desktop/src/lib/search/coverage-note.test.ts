@@ -15,6 +15,7 @@ function result(overrides: Partial<SearchResult> = {}): SearchResult {
 function runCoverage(overrides: Partial<SearchRunCoverage> = {}): SearchRunCoverage {
   return {
     walk: 'completed',
+    kind: 'live',
     permissionDenied: [],
     declined: [],
     stillCovering: [],

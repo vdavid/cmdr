@@ -72,6 +72,7 @@ function view(overrides: Partial<LiveRunView> = {}): LiveRunView {
 function coverage(overrides: Partial<SearchRunCoverage> = {}): SearchRunCoverage {
   return {
     walk: 'completed',
+    kind: 'live',
     permissionDenied: [],
     declined: [],
     stillCovering: [],

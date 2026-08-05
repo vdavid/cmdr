@@ -49,6 +49,23 @@ pub enum WalkEnding {
     Cancelled,
 }
 
+/// What ground a run's answer was drawn from: the index, a live walk, or both.
+///
+/// Derived from the coverage question rather than from how the walk ended, so it
+/// says what the search HAD to do, not how far it got — a cancelled run over
+/// half-covered ground is still `Mixed`, with [`WalkEnding`] saying the rest.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum CoverageKind {
+    /// The index covered the whole scope. Nothing had to be walked.
+    Covered,
+    /// Nothing in the scope was covered, so every bit of the answer was walked
+    /// live. The cold-drive case this effort exists for.
+    Live,
+    /// Part of the scope came from the index and part from the walk.
+    Mixed,
+}
+
 /// What a live run could NOT answer for, gathered in one place so a terminal
 /// event says it once.
 ///
@@ -61,6 +78,10 @@ pub struct SearchRunCoverage {
     /// How the walk ended. Anything but [`WalkEnding::Completed`] /
     /// [`WalkEnding::NothingToWalk`] means the list is a lower bound.
     pub walk: WalkEnding,
+    /// Which ground this run's answer came from. The measure of how often a
+    /// search still needs to walk at all, and the one field here that describes
+    /// the QUESTION rather than what came back from it.
+    pub kind: CoverageKind,
     /// Directories a walk tried to read and was REFUSED, as absolute paths.
     ///
     /// The half a user can act on: on macOS this is usually Full Disk Access, and

@@ -52,8 +52,8 @@ pub(crate) mod events;
 
 pub(crate) use collect::{AnswerEnding, CollectingSink, LiveAnswer};
 pub(crate) use events::{
-    SearchCancelledEvent, SearchCompleteEvent, SearchErrorEvent, SearchEventSink, SearchPhase, SearchProgressEvent,
-    SearchRunCoverage, SearchRunError, TauriSearchEventSink, WalkEnding,
+    CoverageKind, SearchCancelledEvent, SearchCompleteEvent, SearchErrorEvent, SearchEventSink, SearchPhase,
+    SearchProgressEvent, SearchRunCoverage, SearchRunError, TauriSearchEventSink, WalkEnding,
 };
 
 /// The most rows one event carries.

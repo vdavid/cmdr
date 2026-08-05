@@ -77,7 +77,9 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
 - `app_launched` (backend, `lib.rs` setup): no props.
 - `pane_navigated` (frontend, `FilePane.svelte` `handleListingComplete`): `volume_kind` enum
   (`local`/`smb`/`mtp`/`network`/`search-results`); never the path.
-- `search_used` (frontend, `SearchDialog.svelte` `runSearch`): `mode` enum; never the query.
+- `search_used` (frontend, `SearchDialog.svelte`, once per run when the run ENDS): `mode`, `trigger`, `ending`,
+  `coverage`, `duration_bucket`, `abandoned_ground`, `capped`; never the query. See below.
+- `search_cta_offered` / `search_cta_used` (frontend, same file): `cta` enum. See below.
 - `select_files_used` (frontend, `SelectionDialog.svelte` `commitMatches`): `mode` + `action` (add/remove); never the
   pattern.
 - `file_transfer_completed` (backend, `write_operations/types.rs` `TauriEventSink::emit_complete`): `op` (copy/move),
@@ -88,3 +90,35 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
 - `settings_opened` (frontend, `command-handlers/app-dialog-handlers.ts` `app.settings`): no props.
 - `error_encountered` (backend, `listing/streaming.rs` `TauriListingEventSink::emit_error`): `category` enum (from the
   FriendlyError); never the path/message/provider.
+
+## The search events, in detail
+
+Search is the one feature whose interesting question is not "did somebody use it?" but "did it have to walk, how long
+did that take, and did they stay for it?" — since a search now covers unindexed ground by walking it
+(`docs/specs/unindexed-search-plan.md`). The vocabulary is minted in `apps/desktop/src/lib/search/search-analytics.ts`, a pure module
+that cannot see a query, a pattern, or a path.
+
+**`search_used` fires ONCE per run, when the run ends.** Firing at the start would leave every one of those questions
+unanswerable. The props:
+
+- `mode` — the dialog's own mode enum (`filename` / `ai`).
+- `trigger` — `run` (Enter or the run button, the path that walks) or `autoApply` (the debounce, which answers from the
+  index alone, Decision 7). ❌ Don't fold them together: auto-apply fires on every typing pause, so it would drown the
+  deliberate searches in the denominator.
+- `ending` — `completed` / `interrupted` (the drive went away) / `cancelled` (Escape or the dialog closing) /
+  `superseded`. The cancel rate is `cancelled` over the `trigger: run` total.
+- `coverage` — `covered` (the index answered it all) / `live` (nothing was covered, every row came off the walk) /
+  `mixed`, from the backend's own `SearchRunCoverage::kind`, or `unknown` for a run that ended before saying.
+- `duration_bucket` — `<1s` / `1-5s` / `5-30s` / `30s-2m` / `2m+`. Absent for an index-only run, which answers inside
+  one promise: timing it would measure the IPC round trip, not a wait anybody felt.
+- `abandoned_ground` and `capped` — the two ways a run comes back short WITHOUT its ending saying so.
+
+**`superseded` is the frontend's own word.** The backend never reports it: a run the user typed past keeps walking
+(Decision 11) and no terminal event for it is coming, so the arrival of its successor is the only moment it can be
+counted. That's why the run clock starts on the coverage callback's `null` (a run starting) rather than on
+`searchFilesStreaming` resolving — a small folder's whole run can arrive before that promise does.
+
+**CTA conversion is two events, not a prop.** `search_cta_offered` fires when the coverage note starts offering one and
+`search_cta_used` when it's pressed, both carrying the same `cta` enum (`indexDrive` / `fullDiskAccess`), so conversion
+is a ratio per CTA. It can't be one prop on `search_used`: the Full Disk Access offer depends on a TCC probe that
+answers AFTER the run does, so an offer counted at settle time would miss every late one and put the rate over 100%.

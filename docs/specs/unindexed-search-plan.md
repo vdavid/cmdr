@@ -267,7 +267,28 @@ coverage API must not assume a single dimension.
 
 ## Execution status
 
-Through M9 plus M11; M10 is what's left. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local `main`.
+Through M9 plus M11, and M10 is in flight. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local `main`.
+
+**M10, item by item** (updated as each lands, so a session that dies mid-milestone leaves a record):
+
+1. ✅ **The Clear button and the size indicator with drive indexing off.** The section read `get_index_status(root)`,
+   which answers off the LIVE registry, so the machine most likely to hold an index it never asked for was the one told
+   "No index" with no Clear button — and pressing Clear there would have done nothing anyway (`clear_index` on a volume
+   with no instance logged "was not indexed" and returned OK, a pre-existing bug that also made the per-drive "Forget
+   this drive" a no-op on an offline drive). Now `Index::disk_footprint` sums every `index-*.db` plus sidecars off the
+   FILES, and `Index::forget_all_volumes` clears the union of the registry and the data dir. Scope widened deliberately
+   from root to every volume: a search walks whichever drive it's pointed at, so the disk can belong to a share nobody
+   ever enabled. `HandleMethods` 38 → 40, no new root promise.
+2. ✅ **Decision 17 wired.** Two of its three cases already evicted (a schema change deletes and recreates the file, a
+   failed store is forgotten before the retry). The third had nowhere to go: an index that predates this build's
+   exclusion policy counts as covering NOTHING, so a walk-built drive re-walked its whole scope on every search forever
+   (each root on the slow non-virgin repair path) and never re-stamped, because only a truncating full scan may stamp —
+   and no scan is coming for a drive nobody indexes. A writer-only start now drops that database through `clear_index`
+   before the store opens. ⚠️ **A `ReadPool` over a recreated database could serve the DELETED one**, found while
+   proving that: the thread-local cache is keyed by `(db_path, generation)` and every pool started at `0`, so a
+   successor pool inherited connections still open on the unlinked inode. Pre-existing and reachable with no walk
+   involved ("Forget this drive", then turn indexing back on). Fixed by issuing each pool a globally unique starting
+   generation.
 
 **M11's design did not survive contact with the watcher's real code.** What changed, and why:
 

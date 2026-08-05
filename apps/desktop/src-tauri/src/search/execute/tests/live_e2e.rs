@@ -25,7 +25,7 @@ use cmdr_index::{CoverageDimension, Index, NoopEventSink};
 use super::*;
 use crate::ignore_poison::IgnorePoison;
 use crate::search::live::events::CollectorSearchEventSink;
-use crate::search::live::{self, AnswerEnding, RunOrigin, SearchPhase, WalkEnding};
+use crate::search::live::{self, AnswerEnding, CoverageKind, RunOrigin, SearchPhase, WalkEnding};
 
 /// A platform-appropriate mount root: read routing only sends a path to a
 /// per-mount index under an external-mount prefix, and those differ per OS.
@@ -72,6 +72,7 @@ struct Answer {
     paths: Vec<String>,
     match_count: u32,
     walk: WalkEnding,
+    kind: CoverageKind,
     phases: Vec<SearchPhase>,
     permission_denied: Vec<String>,
     declined: Vec<String>,
@@ -129,6 +130,7 @@ fn search(run_id: &str, scope: &str) -> Answer {
         paths,
         match_count: terminal.match_count,
         walk: terminal.coverage.walk,
+        kind: terminal.coverage.kind,
         phases: progress.iter().map(|event| event.phase).collect(),
         permission_denied: terminal.coverage.permission_denied.clone(),
         declined: terminal.coverage.declined.clone(),
@@ -307,6 +309,11 @@ fn a_drive_with_no_index_is_walked_live_then_read_back_from_what_the_walk_wrote(
         "the walk found both files under the scope"
     );
     assert_eq!(first.walk, WalkEnding::Completed);
+    assert_eq!(
+        first.kind,
+        CoverageKind::Live,
+        "the scope root was itself frontier, so every row came off the walk"
+    );
     assert_eq!(first.match_count, 2);
     assert!(
         first.phases.contains(&SearchPhase::ResolvingCoverage) && first.phases.contains(&SearchPhase::Walking),
@@ -318,6 +325,7 @@ fn a_drive_with_no_index_is_walked_live_then_read_back_from_what_the_walk_wrote(
     //    index answers for what the first one covered.
     let second = search("e2e-2", &format!("{root}/a"));
     assert_eq!(second.walk, WalkEnding::NothingToWalk, "the frontier is gone");
+    assert_eq!(second.kind, CoverageKind::Covered, "and the index answered all of it");
     assert_eq!(second.paths, first.paths, "and the answer is the same one");
     assert!(
         !second.phases.contains(&SearchPhase::Walking),

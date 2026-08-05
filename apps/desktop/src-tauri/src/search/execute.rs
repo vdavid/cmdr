@@ -38,7 +38,7 @@ use cmdr_index::{CoverageDimension, CoverageToken, ROOT_VOLUME_ID, ReadPool};
 use super::engine;
 use super::excludes::ExcludeRules;
 use super::live::{
-    self, CollectingSink, LiveAnswer, LiveRun, ResultStream, RunOrigin, SearchEventSink, SearchPhase,
+    self, CollectingSink, CoverageKind, LiveAnswer, LiveRun, ResultStream, RunOrigin, SearchEventSink, SearchPhase,
     SearchRunCoverage, SearchRunError, WalkEnding, WalkJudge,
 };
 use super::matcher::{CompiledQuery, Evaluator};
@@ -370,6 +370,7 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
     // form both halves speak.
     let walked_scopes: std::collections::HashSet<&String> =
         question.frontier.iter().filter(|root| scopes.contains(root)).collect();
+    let kind = coverage_kind(&question.frontier, &scopes);
     let report = |walk: WalkEnding,
                   unreadable: UnreadableGround,
                   still_covering: Vec<String>,
@@ -390,6 +391,7 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
             _ => unresolved_scopes.clone(),
         },
         walk,
+        kind,
         permission_denied: unreadable.permission_denied,
         declined: unreadable.declined,
         still_covering,
@@ -487,6 +489,24 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
         walked.abandoned_ground,
     );
     stream.finish(coverage);
+}
+
+/// Which ground a run's answer is drawn from, decided by the coverage question
+/// and nothing downstream of it.
+///
+/// A scope root that is itself a frontier root was covered by NOTHING, so a run
+/// where that holds for every scope answers entirely off the walk. One where it
+/// holds for none of them still had ground to walk somewhere below, which is the
+/// mixed case. Pure, because it's the measure of how often a search still needs
+/// to walk at all and that number is worth being able to test.
+fn coverage_kind(frontier: &[String], scopes: &[String]) -> CoverageKind {
+    if frontier.is_empty() {
+        return CoverageKind::Covered;
+    }
+    if scopes.iter().all(|scope| frontier.contains(scope)) {
+        return CoverageKind::Live;
+    }
+    CoverageKind::Mixed
 }
 
 /// Directories nothing is going to walk, split by WHOSE refusal it was: the two

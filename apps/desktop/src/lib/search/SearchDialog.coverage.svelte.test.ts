@@ -39,6 +39,7 @@ const {
   setSettingMock,
   volumesMock,
   addToastMock,
+  trackEventMock,
 } = vi.hoisted(() => ({
   prepareSearchIndexMock: vi.fn(() => Promise.resolve({ ready: true, entryCount: 1234, loading: false })),
   searchFilesMock: vi.fn(
@@ -65,6 +66,7 @@ const {
   setSettingMock: vi.fn(),
   volumesMock: vi.fn(() => [] as { id: string; name: string; path: string; category: string }[]),
   addToastMock: vi.fn(),
+  trackEventMock: vi.fn((_event: string, _props?: Record<string, unknown>) => Promise.resolve()),
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
@@ -99,7 +101,7 @@ vi.mock('$lib/tauri-commands', () => ({
   applyRecentSearchesMaxCount: vi.fn(() => Promise.resolve()),
   showFileContextMenu: vi.fn(() => Promise.resolve()),
   showInFinder: vi.fn(() => Promise.resolve()),
-  trackEvent: vi.fn(() => Promise.resolve()),
+  trackEvent: trackEventMock,
   enableDriveIndex: enableDriveIndexMock,
   // The image-OCR grid is off in these tests (`mediaIndex.enabled` false), so it fires nothing.
   mediaIndexSearchOcr: vi.fn(() => Promise.resolve([])),
@@ -248,6 +250,9 @@ function result(overrides: Partial<SearchResult>): SearchResult {
  * faithful — the real source installs its listeners before invoking, exactly so a run
  * that finishes immediately isn't missed.
  */
+/** What the fake backend's terminal event says its answer was drawn from. */
+let liveCoverageKind: 'covered' | 'live' | 'mixed' = 'covered'
+
 function installLiveBackend(): void {
   searchFilesStreamingMock.mockImplementation(async (query: unknown, runId: string) => {
     const answer = await searchFilesMock(query)
@@ -268,6 +273,7 @@ function installLiveBackend(): void {
         matchCount: answer.totalCount,
         coverage: {
           walk: 'nothingToWalk',
+          kind: liveCoverageKind,
           permissionDenied: [],
           declined: [],
           stillCovering: [],
@@ -300,6 +306,8 @@ beforeEach(() => {
   setSettingMock.mockReset()
   volumesMock.mockReturnValue([])
   silencedDrives.value = '[]'
+  liveCoverageKind = 'covered'
+  trackEventMock.mockReset()
 })
 
 describe('the readiness gate is per target, not "is root loaded"', () => {
@@ -467,5 +475,91 @@ describe('the per-drive indexing offer', () => {
     await runAutoApplied(overlay, '*.pdf')
 
     expect(offerButton(target)).toBeNull()
+  })
+})
+
+describe('what a search reports to analytics', () => {
+  /** Every `search_used` call's props, in order. */
+  function searchEvents(): Record<string, unknown>[] {
+    return trackEventMock.mock.calls
+      .filter((call) => call[0] === 'search_used')
+      .map((call) => call[1] as Record<string, unknown>)
+  }
+
+  it('reports a run ONCE, when it ends, with the ground its answer came from', async () => {
+    // Reporting at the start would leave every question this event exists to
+    // answer unanswerable: whether the search had to walk, how long that took,
+    // and whether the person stayed for it.
+    liveCoverageKind = 'live'
+    const { overlay } = await mountDialog()
+    setQuery('*.pdf')
+    await runSearch(overlay)
+
+    expect(searchEvents()).toEqual([
+      {
+        mode: 'filename',
+        trigger: 'run',
+        ending: 'completed',
+        coverage: 'live',
+        abandoned_ground: false,
+        capped: false,
+        duration_bucket: expect.any(String),
+      },
+    ])
+  })
+
+  it('marks the debounce apart from a run the user asked for', async () => {
+    // Auto-apply fires on every typing pause and never walks (Decision 7), so
+    // folding the two together would drown the deliberate searches in it.
+    const { overlay } = await mountDialog({ autoApply: true })
+    await runAutoApplied(overlay, '*.pdf')
+
+    const events = searchEvents()
+    expect(events).toHaveLength(1)
+    expect(events[0].trigger).toBe('autoApply')
+    expect(events[0].coverage).toBe('covered')
+    expect(events[0]).not.toHaveProperty('duration_bucket')
+  })
+
+  it('reports the run the user typed past as superseded, not as a cancel', async () => {
+    // Its walk keeps going (Decision 11) and no terminal event for it is coming,
+    // so the arrival of its successor is the only moment it can be counted.
+    const { overlay } = await mountDialog()
+    // A backend that never settles: the first run stays in flight.
+    searchFilesStreamingMock.mockImplementation(async (_query: unknown, runId: string) =>
+      Promise.resolve({ runId, targetVolumeId: 'root' }),
+    )
+    setQuery('*.pdf')
+    await runSearch(overlay)
+    expect(searchEvents()).toHaveLength(0)
+
+    setQuery('*.png')
+    await runSearch(overlay)
+
+    const events = searchEvents()
+    expect(events).toHaveLength(1)
+    expect(events[0].ending).toBe('superseded')
+    expect(events[0].coverage).toBe('unknown')
+  })
+
+  it('counts a CTA when it is offered and when it is pressed, so conversion is a ratio', async () => {
+    volumesMock.mockReturnValue([{ id: 'smb-nas', name: 'NAS', path: '/Volumes/nas', category: 'network' }])
+    searchFilesMock.mockResolvedValue({
+      entries: [],
+      totalCount: 0,
+      uncoveredScopes: ['/Volumes/nas/photos'],
+      targetVolumeId: 'smb-nas',
+    })
+    const { overlay } = await mountDialog({ autoApply: true })
+    await runAutoApplied(overlay, '*.pdf')
+
+    expect(trackEventMock).toHaveBeenCalledWith('search_cta_offered', { cta: 'indexDrive' })
+
+    const button = Array.from(overlay.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === tString('search.coverage.indexDrive'),
+    )
+    button?.click()
+    await settle()
+    expect(trackEventMock).toHaveBeenCalledWith('search_cta_used', { cta: 'indexDrive' })
   })
 })

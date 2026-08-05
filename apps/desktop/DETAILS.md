@@ -27,6 +27,32 @@ launched in, so running it from the main repo root serves **main's** frontend wi
 and Dock label: your worktree edits never load and the app looks unfixed (you QA the wrong code). The flag isolates the
 instance, not the source.
 
+### A second launch on one data dir looks exactly like a crash
+
+`instance_lock` refuses a launch when another process already owns the data dir (two processes on one index corrupt it),
+and the refusal is a **modal alert on the user's desktop** plus `exit 143` in the log. From a script's side that is
+indistinguishable from a build failure or a crash — so a launch loop retries, and each retry puts another dialog in
+front of whoever is at the machine. An agent that never sees the alert can do this for an hour.
+
+So **check before you launch**, and don't trust the exit code to tell you why:
+
+```bash
+pgrep -f 'worktree.*<slug>.*Cmdr'   # empty ⇒ safe to launch; otherwise drive the one that's up, or kill it
+grep -n 'instance_lock' <your dev log>   # the refusal says which PID owns the dir
+```
+
+Two traps that make this worse than it sounds:
+
+- **The binary is `Cmdr`, capital C** (`target/debug/Cmdr`, from `productName`), while the crate and the cargo
+  invocation are lowercase. `pkill -f 'target/debug/cmdr'` matches the build, not the app, so it looks like it worked
+  and the old instance keeps the lock.
+- **The `tauri-mcp.port` file belongs to the LAST wrapper that started**, refused or not, so after a refused launch it
+  names a port nothing is listening on. Read the live process's port instead (`lsof -nP -p <pid> | grep LISTEN`) rather
+  than the file.
+
+If you genuinely want two apps at once, give the second one its own `--worktree` slug: separate slug, separate data dir,
+no lock contention.
+
 ### Dev watcher and markdown files
 
 Two watchers run during `pnpm dev`, each with its own shield (don't delete either):

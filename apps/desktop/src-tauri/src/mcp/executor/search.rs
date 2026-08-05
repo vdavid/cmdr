@@ -533,12 +533,13 @@ pub async fn execute_ai_search(params: &Value) -> ToolResult {
 mod tests {
     use super::*;
     use crate::search::WalkEnding;
-    use crate::search::live::SearchRunCoverage;
+    use crate::search::live::{CoverageKind, SearchRunCoverage};
 
     /// A run that covered everything, over `volume`.
     fn covered(volume: &str) -> SearchRunCoverage {
         SearchRunCoverage {
             walk: WalkEnding::NothingToWalk,
+            kind: CoverageKind::Covered,
             permission_denied: Vec::new(),
             declined: Vec::new(),
             still_covering: Vec::new(),
@@ -576,6 +577,7 @@ mod tests {
         // is advice that does nothing.
         let coverage = SearchRunCoverage {
             walk: WalkEnding::Completed,
+            kind: CoverageKind::Live,
             permission_denied: vec!["/Users/dave/Documents".to_string()],
             declined: vec!["/Volumes/naspi/@eaDir".to_string()],
             ..covered("naspi")
@@ -618,6 +620,7 @@ mod tests {
     fn an_interrupted_walk_says_the_list_is_a_lower_bound() {
         let coverage = SearchRunCoverage {
             walk: WalkEnding::Interrupted,
+            kind: CoverageKind::Live,
             ..covered("naspi")
         };
         let note =

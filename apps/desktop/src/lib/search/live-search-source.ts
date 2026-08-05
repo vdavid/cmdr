@@ -39,12 +39,15 @@ export interface LiveSearchSourceDeps {
   /**
    * The run's coverage answer: `null` when a run starts (a caveat may never outlive the
    * run that earned it) and the terminal one when it ends.
+   *
+   * Also the run's two clock edges, which is why the `null` matters as much as the
+   * answer: a run can end BEFORE `searchFilesStreaming` resolves (a small folder's
+   * whole run arrives while the invoke is still in flight), so nothing downstream of
+   * that promise can be trusted to see a run start.
    */
   onCoverage: (coverage: SearchRunCoverage | null) => void
   /** The order a finished walk's rows are left in. */
   rank: (entries: SearchResultEntry[]) => SearchResultEntry[]
-  /** Called once per started run, for the "a search ran" analytics event. */
-  onStarted?: () => void
   /**
    * The run in flight and where it has got to, or `null` once it has ended.
    *
@@ -119,7 +122,6 @@ export function createLiveSearchSource(deps: LiveSearchSourceDeps): QueryStreamS
       try {
         const query = await deps.buildQuery()
         await searchFilesStreaming(query, runId)
-        deps.onStarted?.()
       } catch (err) {
         stop()
         deps.onRunState?.(null)

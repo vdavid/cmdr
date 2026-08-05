@@ -207,7 +207,11 @@ describe('handing a running walk to a pane', () => {
     // The whole milestone in one assertion: the close names the run it must not stop.
     // `null` here means the walk dies the moment the pane appears, and the only sign is
     // a pane that stops filling.
-    expect(releaseSearchIndexMock).toHaveBeenCalledWith(runId)
+    //
+    // ❌ `toHaveBeenCalledWith` alone is NOT enough, and that gap hid the bug once: a
+    // SECOND release carrying `null` cancels the run just as dead, and the assertion
+    // still passes because the first call matched. Count the calls.
+    expect(releaseSearchIndexMock.mock.calls).toEqual([[runId]])
     expect(cancelSearchMock).not.toHaveBeenCalled()
   })
 

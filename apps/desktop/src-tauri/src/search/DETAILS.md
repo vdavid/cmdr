@@ -308,6 +308,17 @@ None of them can leave coverage claiming completeness: a directory is marked lis
 (`scanner/CLAUDE.md` § "Honest-stale, never false-complete"), so a walk cut off anywhere claims only what it read.
 App quit needs nothing beyond that — the process dies with the marks unwritten.
 
+### Which ground the answer came from (`CoverageKind`)
+
+Beside the ending, the terminal answer says whether the run needed a walk at all: `Covered` (empty frontier), `Live`
+(every scope root was ITSELF a frontier root, so nothing was covered) or `Mixed`. Derived by the pure `coverage_kind`
+from the coverage question alone, so it describes the QUESTION rather than how far the run got — a cancelled run over
+half-covered ground is still `Mixed`, and `WalkEnding` says the rest.
+
+It exists to be counted: "how often does a search still have to walk" is the measure of this whole effort, and the
+frontend ships it as the `coverage` prop on `search_used` (`analytics/DETAILS.md` § "The search events, in detail").
+Nothing branches on it, which is why it's a field on the coverage report rather than a second signal.
+
 ### What a live result carries, and what it can't
 
 - **No `entry_id`** (`0`): a walked entry has no arena id.

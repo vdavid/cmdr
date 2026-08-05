@@ -56,24 +56,20 @@ let missedEntries: SearchResultEntry[] = []
 let resumedInto: LiveRunHandlers | null = null
 
 /**
- * The run a pane is being fed by, or `null`.
- *
- * The one thing the dialog's teardown has to ask before it closes: closing stops every
- * live run, and this is the run that must survive it. Asked of THIS module rather than
- * read off the state cell directly, so the answer comes from the same place that sets
- * it and can't drift from it.
- */
-export function handedOffRunId(): string | null {
-  return getWalkHandoff()?.runId ?? null
-}
-
-/**
  * Starts feeding `snapshotId` from the still-running `runId`, and says so.
  *
  * Called by `SearchDialog` from "Open in pane" when the run is live. `view` is where
  * the dialog had got to, so the toast opens on real numbers rather than zeroes.
+ *
+ * **Returns the run id it took over**, and the caller must keep it: the dialog's close
+ * stops every live run but the one it names, and this is that one. ❌ Don't have the
+ * caller ask a module function or the state cell for it at teardown instead. That was
+ * the shape this started as, and in the running app the answer came back `null` while
+ * every unit test passed — the walk died the moment the pane appeared, with a toast
+ * still saying "still searching" over it. A value the caller holds can't be defeated by
+ * module resolution or by teardown ordering.
  */
-export function handOffWalk(params: { runId: string; snapshotId: string; label: string; view: LiveRunView }): void {
+export function handOffWalk(params: { runId: string; snapshotId: string; label: string; view: LiveRunView }): string {
   // One at a time: a second "Open in pane" supersedes the first run backend side
   // anyway, so the earlier handoff has nothing left to hear.
   settle(null)
@@ -110,6 +106,8 @@ export function handOffWalk(params: { runId: string; snapshotId: string; label: 
       // there forever. Drop it and leave the pane with what it already has.
       if (getWalkHandoff()?.runId === runId) settle(null)
     })
+
+  return runId
 }
 
 /** One batch: into the snapshot, into the toast, and on to a reopened dialog. */

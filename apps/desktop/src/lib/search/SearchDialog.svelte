@@ -45,7 +45,9 @@
         removeRecentSearch as removeRecentSearchIpc,
         addRecentSearch as addRecentSearchIpc,
         type HistoryEntry,
+        type SearchResult,
         type SearchResultEntry,
+        type SearchRunCoverage,
         type TranslateResult,
         type UnlistenFn,
     } from '$lib/tauri-commands'
@@ -103,6 +105,12 @@
         offersFullDiskAccess,
     } from './coverage-note'
     import { createLiveSearchSource } from './live-search-source'
+    import {
+        endingOf,
+        searchUsedProps,
+        type SearchCta,
+        type SearchRunFacts,
+    } from './search-analytics'
     import { rankLiveResults } from './live-ranking'
     import { indexUncoveredDrive } from './coverage-actions'
     import { describeVolume, type SearchTargetVolume } from './search-target-volume'
@@ -135,7 +143,7 @@
         type SearchSnapshot,
     } from './snapshot-store.svelte'
     import { buildSnapshotLabel } from './snapshot-label'
-    import { handOffWalk, handedOffRunId } from './walk-handoff.svelte'
+    import { handOffWalk } from './walk-handoff.svelte'
     import { setSearchReopener } from './walk-handoff-state.svelte'
     import type { LiveRunView } from '$lib/query-ui/query-stream'
 
@@ -319,11 +327,35 @@
         onGrantFullDiskAccess &&
             offersFullDiskAccess({ note: coverageNote, isMac: isMacOS(), hasFullDiskAccess })
             ? () => {
+                  trackCtaUsed('fullDiskAccess')
                   onClose()
                   onGrantFullDiskAccess()
               }
             : null,
     )
+
+    /**
+     * CTA conversion, as two events rather than one prop: an offer can only be
+     * counted when it's on screen, and it's pressed (or not) later. The ratio is
+     * `search_cta_used` over `search_cta_offered`, per `cta`.
+     *
+     * The offer is reported from an effect rather than from the run's terminal
+     * event because the Full Disk Access one depends on a TCC probe that answers
+     * after the run does; reporting at settle time would miss every offer that
+     * arrives a moment late and put the conversion rate over 100%.
+     */
+    let offeredCta = $state<SearchCta>('none')
+    $effect(() => {
+        const cta: SearchCta =
+            coverageCtaVolumeId !== null ? 'indexDrive' : grantFullDiskAccess !== null ? 'fullDiskAccess' : 'none'
+        if (cta === offeredCta) return
+        offeredCta = cta
+        if (cta !== 'none') void trackEvent('search_cta_offered', { cta })
+    })
+
+    function trackCtaUsed(cta: SearchCta): void {
+        void trackEvent('search_cta_used', { cta })
+    }
 
     /**
      * Adapter from Search's `HistoryEntry` shape into the generic `RecentItemView` the
@@ -467,9 +499,53 @@
         return query
     }
 
-    /** PII-free analytics: a search ran. Only the mode enum crosses; never the query/pattern. */
-    function trackSearchRun(): void {
-        void trackEvent('search_used', { mode: getMode() })
+    // ─────────────────────────────────────────────────────────────────────────
+    // Analytics. PII-free by construction: every value is a categorical enum or
+    // a bucket name, minted in `search-analytics.ts`, which can't see a query, a
+    // pattern, or a path. A run reports ONCE, when it ends, because the numbers
+    // worth having (did it need to walk, how long did that take, did the person
+    // stay for it) aren't known before then.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /** The live run being timed, or `null` between runs. */
+    let timedRun: { startedAt: number } | null = null
+
+    function trackSearchRun(facts: Omit<SearchRunFacts, 'mode'>): void {
+        void trackEvent('search_used', searchUsedProps({ ...facts, mode: getMode() }))
+    }
+
+    /** The index-only answer the debounce produced. Nothing walked, so nothing to time. */
+    function trackAutoAppliedRun(result: SearchResult): void {
+        trackSearchRun({
+            trigger: 'autoApply',
+            ending: 'completed',
+            // This path can't walk, so what it reports IS what the index covered —
+            // and an uncovered scope is a gap it names rather than fills.
+            coverage: (result.uncoveredScopes?.length ?? 0) > 0 ? 'unknown' : 'covered',
+            durationMs: null,
+            abandonedGround: false,
+            capped: false,
+        })
+    }
+
+    /**
+     * A live run ended. Called for the three endings the backend reports and, from
+     * the coverage callback itself, for the fourth: a run whose successor arrived while it was still
+     * going. That one is superseded rather than cancelled — its walk keeps running
+     * (Decision 11) — and nobody will ever tell us how it turned out, so its
+     * coverage is honestly unknown.
+     */
+    function trackLiveRunEnd(coverage: SearchRunCoverage | null): void {
+        const startedAt = timedRun?.startedAt ?? null
+        timedRun = null
+        trackSearchRun({
+            trigger: 'run',
+            ending: coverage === null ? 'superseded' : endingOf(coverage),
+            coverage: coverage?.kind ?? 'unknown',
+            durationMs: startedAt === null ? null : Math.round(performance.now() - startedAt),
+            abandonedGround: coverage?.abandonedGround ?? false,
+            capped: coverage?.capped ?? false,
+        })
     }
 
     /**
@@ -487,7 +563,7 @@
         // Coverage honesty: an empty answer with a structural reason says so, instead of
         // reading as "nothing matched" (`search/DETAILS.md` § Honesty).
         setCoverageNote(coverageNoteFrom(result))
-        trackSearchRun()
+        trackAutoAppliedRun(result)
         return { entries: result.entries, totalCount: result.totalCount }
     }
 
@@ -504,6 +580,17 @@
      */
     let liveRun: { runId: string; view: LiveRunView } | null = null
 
+    /**
+     * The run this dialog handed to a pane, held right here so the close can name it.
+     *
+     * ❌ Don't replace this with a lookup at teardown time. It was one, and in the
+     * running app the lookup answered `null` while every unit test passed: the close
+     * cancelled the very walk the pane was being fed by, the pane froze at whatever had
+     * arrived, and the toast went on saying "still searching" over it. A plain local set
+     * on the way out has no resolution or ordering to get wrong.
+     */
+    let handedOffRun: string | null = null
+
     const liveSearchSource = createLiveSearchSource({
         buildQuery: buildRunQuery,
         onRunState: (state) => {
@@ -511,6 +598,16 @@
         },
         onCoverage: (coverage) => {
             setCoverageNote(coverage === null ? null : coverageNoteFromRun(coverage))
+            if (coverage !== null) {
+                trackLiveRunEnd(coverage)
+                return
+            }
+            // `null` is a run STARTING. A run still being timed at that moment is
+            // one the user typed past: superseded, with no terminal event coming.
+            // ⚠️ The clock starts here and not on `searchFilesStreaming` resolving:
+            // a small folder's whole run can be emitted before the invoke returns.
+            if (timedRun !== null) trackLiveRunEnd(null)
+            timedRun = { startedAt: performance.now() }
         },
         rank: (entries) =>
             rankLiveResults(entries, {
@@ -518,7 +615,6 @@
                 mode: getMode(),
                 caseSensitive: getCaseSensitive(),
             }),
-        onStarted: trackSearchRun,
     })
 
     /**
@@ -578,7 +674,7 @@
         // there. Everything after this — the toast, the snapshot appends, handing the
         // run back if the dialog reopens — belongs to `walk-handoff.svelte.ts`.
         if (liveRun) {
-            handOffWalk({ runId: liveRun.runId, snapshotId: id, label, view: liveRun.view })
+            handedOffRun = handOffWalk({ runId: liveRun.runId, snapshotId: id, label, view: liveRun.view })
         }
 
         persistRecentSearch()
@@ -753,7 +849,7 @@
         // A handed-off walk is the one run the close must NOT stop: its results are in
         // a pane and still growing. Every other run in flight is a query nobody is
         // reading any more.
-        releaseSearchIndex(handedOffRunId()).catch(() => {})
+        releaseSearchIndex(handedOffRun).catch(() => {})
         unlistenReady?.()
         unlistenReady = undefined
     }
@@ -903,6 +999,7 @@
         onIndexDrive={coverageCtaVolumeId === null
             ? null
             : () => {
+                  trackCtaUsed('indexDrive')
                   void indexUncoveredDrive(coverageCtaVolumeId, coverageDrive.name)
               }}
         onSilenceDrive={silenceUncoveredDrive}

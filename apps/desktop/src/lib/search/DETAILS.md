@@ -205,6 +205,25 @@ lower bound either way); the exact sentence only when the ground was covered. Ev
 difference 12 (a live count-only run can double-count a file that is both in the arena and inside a frontier subtree),
 which is registered rather than fixed.
 
+## What a search reports (`search-analytics.ts`)
+
+A run reports to analytics ONCE, when it ENDS, because the questions worth asking about a search that can walk aren't
+answerable before then: did it need to walk at all, how long did that take, did the person stay for it. The vocabulary
+(triggers, endings, coverage kinds, duration buckets) is a pure module that can't see a query, a pattern, or a path; the
+dialog owns the clock and the IPC.
+
+Two things about the wiring are load-bearing:
+
+- **The clock starts on the coverage callback's `null`**, not on `searchFilesStreaming` resolving. A small folder's
+  whole run can arrive before that promise does, so a start hook downstream of it fires AFTER the run already ended.
+- **A run whose successor arrives while it's still going is `superseded`, and only the frontend can say so.** Its walk
+  keeps running (Decision 11) and no terminal event for it is coming, so the next run starting is the one moment it can
+  be counted.
+
+CTA conversion is two events (`search_cta_offered` / `search_cta_used`) rather than a prop, because the Full Disk Access
+offer depends on a TCC probe that answers after the run does. The prop list, the values, and why each exists:
+`apps/desktop/src-tauri/src/analytics/DETAILS.md` § "The search events, in detail".
+
 ## State shape
 
 The user's typed text and the active mode are one model:

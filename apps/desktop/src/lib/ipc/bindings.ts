@@ -3965,6 +3965,24 @@ export type CostSummary = {
 }
 
 /**
+ *  What ground a run's answer was drawn from: the index, a live walk, or both.
+ *
+ *  Derived from the coverage question rather than from how the walk ended, so it
+ *  says what the search HAD to do, not how far it got — a cancelled run over
+ *  half-covered ground is still `Mixed`, with [`WalkEnding`] saying the rest.
+ */
+export type CoverageKind =
+  // The index covered the whole scope. Nothing had to be walked.
+  | 'covered'
+  /**
+   *  Nothing in the scope was covered, so every bit of the answer was walked
+   *  live. The cold-drive case this effort exists for.
+   */
+  | 'live'
+  // Part of the scope came from the index and part from the walk.
+  | 'mixed'
+
+/**
  *  The live preview behind the importance slider: across the ENABLED volumes in
  *  `volume_ids`, how many folders score at or above `threshold` and how many images
  *  they hold ((importance ≥ `threshold`) AND volume opted-in — never a non-opted-in
@@ -7741,6 +7759,12 @@ export type SearchRunCoverage = {
    *  [`WalkEnding::NothingToWalk`] means the list is a lower bound.
    */
   walk: WalkEnding
+  /**
+   *  Which ground this run's answer came from. The measure of how often a
+   *  search still needs to walk at all, and the one field here that describes
+   *  the QUESTION rather than what came back from it.
+   */
+  kind: CoverageKind
   /**
    *  Directories a walk tried to read and was REFUSED, as absolute paths.
    *

@@ -266,3 +266,37 @@ fn count_only_volume_total_subtracts_out_of_range_dirs() {
     // No size filter ⇒ the volume total is already exact, nothing subtracted.
     assert_eq!(count_only_volume_total(5, &dirs, &plain_query("report")), 5);
 }
+
+// ── Which ground the answer came from ────────────────────────────────
+
+/// Nothing to walk means the index answered the whole question.
+#[test]
+fn a_run_with_no_frontier_is_covered() {
+    assert_eq!(coverage_kind(&[], &["/a".to_string()]), CoverageKind::Covered);
+}
+
+/// A scope root that is ITSELF a frontier root was covered by nothing, so the
+/// whole answer came off the walk. The cold-drive case.
+#[test]
+fn a_run_whose_every_scope_is_frontier_is_live() {
+    let scopes = vec!["/a".to_string(), "/b".to_string()];
+    let frontier = vec!["/a".to_string(), "/b".to_string()];
+    assert_eq!(coverage_kind(&frontier, &scopes), CoverageKind::Live);
+}
+
+/// Ground below a scope the index HAS listed is the mixed case, and so is one
+/// scope of two being covered. Both are "part of this came from the index".
+#[test]
+fn a_run_walking_below_a_listed_scope_is_mixed() {
+    let scopes = vec!["/a".to_string()];
+    assert_eq!(
+        coverage_kind(&["/a/new".to_string()], &scopes),
+        CoverageKind::Mixed,
+        "the scope was listed; something under it wasn't"
+    );
+    assert_eq!(
+        coverage_kind(&["/b".to_string()], &["/a".to_string(), "/b".to_string()]),
+        CoverageKind::Mixed,
+        "one scope covered, one not"
+    );
+}
