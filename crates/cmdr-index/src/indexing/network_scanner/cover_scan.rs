@@ -171,12 +171,17 @@ pub(crate) async fn cover_volume_subtree(
                 writes.finish(root_id)?;
                 return Err(VolumeScanError::Volume(e));
             }
-            Err(VolumeScanError::Volume(ref e)) if dir_path == root => {
-                // The frontier node itself can't be listed: there is nothing to
-                // cover. It stays frontier and the next search asks again.
+            Err(err) if dir_path == root => {
+                // The frontier node itself can't be listed — refused, timed out, or
+                // anything else. There is nothing to cover, so this is a FAILED root
+                // rather than a covered one: it stays frontier and the next search
+                // asks again. ⚠️ Matched on the root path for EVERY error, not just
+                // the backend's typed ones, because falling through to the skip
+                // branch below would drain the queue and report a clean walk over
+                // ground nothing ever read.
                 commit_scan_tx(writer, &mut tx_open)?;
                 writes.finish(root_id)?;
-                return Err(VolumeScanError::Volume(e.clone()));
+                return Err(err);
             }
             Err(err) => {
                 consecutive_failures += 1;
