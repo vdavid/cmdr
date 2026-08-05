@@ -176,6 +176,14 @@ fn walk_frontier(
             break;
         }
         let root = Path::new(path);
+        // Ground the index has no row for can't be resolved to a scan root, and
+        // that isn't only a cold volume's problem: a folder created since its
+        // parent was last listed has no row on a fully indexed drive either. Give
+        // the walk the chain it needs, without claiming a listing for any of it.
+        if let Err(e) = bootstrap::ensure_walkable(context, root) {
+            log::warn!("Cover: can't walk {path}: {e}");
+            continue;
+        }
         // A partial walk's totals count exactly as much as a complete one's, so
         // both arms hand the same summary to the same accumulation and only the
         // VERDICT differs. Keeping one `+=` pair is what stops the cancel path
@@ -269,6 +277,8 @@ enum RootOutcome {
     /// It couldn't run. The node stays frontier and the next search asks again.
     Failed,
 }
+
+mod bootstrap;
 
 #[cfg(test)]
 mod tests;

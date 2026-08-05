@@ -405,6 +405,142 @@ fn walkdir_count(root: &Path) -> u64 {
     count
 }
 
+// ── Ground the index has no row for ──────────────────────────────────
+
+/// A frontier path with no `entries` row is walkable, and the chain the walk
+/// needs to get there is materialized on the way.
+///
+/// This is NOT only a cold-volume story: a folder created since the last listing
+/// has no row on a fully indexed volume either, and its parent is exactly the
+/// frontier node a coverage answer names. Without this, the walk resolves its
+/// root to nothing and the frontier never shrinks.
+#[test]
+fn a_frontier_path_with_no_row_is_materialized_and_walked() {
+    let f = Fixture::new();
+    let root = f.tree.path();
+    std::fs::create_dir_all(root.join("fresh/deeper")).expect("dirs");
+    std::fs::write(root.join("fresh/deeper/found.txt"), "x").expect("file");
+    // Deliberately NO `seed_chain` for `fresh`: nothing has listed the tree root,
+    // so neither `fresh` nor `fresh/deeper` has a row.
+
+    let walk = start(
+        f.context(),
+        vec![f.path("fresh/deeper")],
+        CoverageDimension::Listing,
+        CancellationToken::new(),
+    );
+    let (entries, outcome) = drain(walk);
+    f.writer.flush_blocking().expect("flush");
+
+    assert_eq!(outcome.roots_covered, 1, "the walk reached ground it had no row for");
+    assert_eq!(entries.len(), 1, "and delivered what it found there");
+    assert!(
+        f.listed_epoch(&f.path("fresh/deeper")) > 0,
+        "the walked node is covered"
+    );
+}
+
+/// The chain a walk had to materialize claims nothing: an ancestor row exists so
+/// the walk could resolve its root, and its `listed_epoch` stays zero because
+/// nobody read it. A stamped ancestor would mark the whole tree covered off the
+/// back of one walked folder.
+#[test]
+fn a_materialized_ancestor_claims_no_listing() {
+    let f = Fixture::new();
+    let root = f.tree.path();
+    std::fs::create_dir_all(root.join("fresh/deeper")).expect("dirs");
+    std::fs::create_dir_all(root.join("fresh/untouched")).expect("dirs");
+
+    let walk = start(
+        f.context(),
+        vec![f.path("fresh/deeper")],
+        CoverageDimension::Listing,
+        CancellationToken::new(),
+    );
+    drain(walk);
+    f.writer.flush_blocking().expect("flush");
+
+    assert_eq!(
+        f.listed_epoch(&f.path("fresh")),
+        0,
+        "the ancestor was materialized, never listed"
+    );
+    assert!(
+        f.child_ids(&f.path("fresh")).len() == 1,
+        "and only the child the walk needed exists under it, not the sibling nobody read"
+    );
+}
+
+/// A chain that runs through a FILE row is declined rather than parented under.
+///
+/// The stale file→dir type change the reconciler escalates on
+/// (`reconcile_subtree`'s "parent of X is not a directory row"): upserting
+/// children under a file id orphans every one of them, so the walk leaves the
+/// root in the frontier and lets the reconcile that heals type changes have it.
+#[test]
+fn a_chain_running_through_a_file_row_is_declined() {
+    let f = Fixture::new();
+    let root = f.tree.path();
+    std::fs::create_dir_all(root.join("mixed/inner")).expect("dirs");
+    // The index believes `mixed` is a file — what a file replaced by a directory
+    // leaves behind until something re-lists the parent.
+    let parent_id = f.seed_chain(root);
+    {
+        let conn = IndexStore::open_write_connection(&f.db_path).expect("write connection");
+        IndexStore::insert_entry_v2(&conn, parent_id, "mixed", false, false, Some(1), None, None, None)
+            .expect("insert the file row");
+    }
+
+    let walk = start(
+        f.context(),
+        vec![f.path("mixed/inner")],
+        CoverageDimension::Listing,
+        CancellationToken::new(),
+    );
+    let (entries, outcome) = drain(walk);
+
+    assert_eq!(outcome.roots_covered, 0, "the walk declined the broken chain");
+    assert!(entries.is_empty());
+    assert!(
+        matches!(
+            bootstrap::ensure_walkable(&f.context(), &root.join("mixed/inner")),
+            Err(bootstrap::NotWalkable::FileRowInTheChain(_))
+        ),
+        "and says which kind of broken"
+    );
+}
+
+/// A frontier path that isn't a directory on disk — deleted between the coverage
+/// answer and the walk, or a symlink the index stores but never descends into —
+/// gets no row at all. Materializing one would leave a directory in the index
+/// that nothing can ever list.
+#[test]
+fn a_frontier_path_that_is_not_a_directory_on_disk_is_declined() {
+    let f = Fixture::new();
+    let root = f.tree.path();
+    std::fs::create_dir_all(root.join("real")).expect("dirs");
+
+    assert!(
+        matches!(
+            bootstrap::ensure_walkable(&f.context(), &root.join("gone")),
+            Err(bootstrap::NotWalkable::NotADirectoryOnDisk(_))
+        ),
+        "a path that isn't there can't be walked"
+    );
+    #[cfg(unix)]
+    {
+        std::os::unix::fs::symlink(root.join("real"), root.join("link")).expect("symlink");
+        assert!(
+            matches!(
+                bootstrap::ensure_walkable(&f.context(), &root.join("link")),
+                Err(bootstrap::NotWalkable::NotADirectoryOnDisk(_))
+            ),
+            "a symlink is not a directory to descend into"
+        );
+    }
+    assert!(f.child_ids(&f.path("")).is_empty(), "and neither one left a row behind");
+}
+
 // ── Cancellation ─────────────────────────────────────────────────────
 
 /// A walk stopped partway reports what it DID cover, not zero.
