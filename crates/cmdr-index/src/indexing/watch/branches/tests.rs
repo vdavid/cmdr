@@ -13,7 +13,7 @@ use super::*;
 use crate::indexing::reconcile::reconciler::EventReconciler;
 use crate::indexing::store::ROOT_ID;
 use crate::indexing::watch::churn_monitor::ChurnObserver;
-use crate::indexing::watch::event_loop::{process_live_batch, queue_admitted};
+use crate::indexing::watch::event_loop::{drain_promoted, process_live_batch, queue_admitted};
 use crate::indexing::watch::watcher::FsEventFlags;
 use tokio_util::sync::CancellationToken;
 
@@ -98,10 +98,9 @@ impl Fixture {
             EventReconciler::new_for("branch-test".to_string(), space.clone(), CancellationToken::new());
         reconciler.switch_to_live();
         let mut pending: HashMap<String, FsChangeEvent> = HashMap::new();
-        let promoted = scope.branches().take_promoted();
-        for event in promoted.events {
-            queue_admitted(event, &mut pending);
-        }
+        // Through the loop's own promotion path, not a hand-rolled copy of it: the
+        // release of a held event is exactly what these tests are for.
+        drain_promoted(scope, &mut pending, &mut reconciler, &self.writer);
         for event in events {
             if let Admission::Process(admitted) = scope.admit(event) {
                 for event in admitted {
@@ -323,6 +322,99 @@ fn the_journal_position_never_advances_past_a_held_event() {
 
     watch.finish_covering(&branch, AfterWalk::Watch);
     assert_eq!(watch.safe_event_id(), Some(41));
+}
+
+
+/// Two searches can walk overlapping frontiers, so a branch counts its walks:
+/// the first one finishing must not un-buffer the second's ground.
+#[test]
+fn a_branch_two_walks_are_covering_stays_held_until_the_last_one_ends() {
+    let watch = Arc::new(BranchWatch::with_branches(Vec::new()));
+    let branch = vec!["/vol/covered".to_string()];
+    watch.begin_covering(&branch);
+    watch.begin_covering(&branch);
+
+    let _ = watch.admit(created_file("/vol/covered/held.txt", 1), Reach::CoveredBranches);
+    watch.finish_covering(&branch, AfterWalk::Watch);
+    assert!(
+        watch.take_promoted().events.is_empty(),
+        "one walk ending is not the ground going quiet"
+    );
+    assert!(
+        matches!(
+            watch.admit(created_file("/vol/covered/second.txt", 2), Reach::CoveredBranches),
+            Admission::Buffered
+        ),
+        "and the branch is still under walk"
+    );
+
+    watch.finish_covering(&branch, AfterWalk::Watch);
+    assert_eq!(watch.take_promoted().events.len(), 2, "released when the last walk ends");
+}
+
+/// On a scanned volume the branch set does one job — hold events for a walk's
+/// duration — and it has to do it without swallowing everything else.
+#[test]
+fn a_whole_watched_volume_holds_only_the_ground_its_walk_is_covering() {
+    let watch = Arc::new(BranchWatch::with_branches(Vec::new()));
+    let branch = vec!["/vol/hole".to_string()];
+    watch.begin_covering(&branch);
+    let scope = WatchScope::WholeVolume(Arc::clone(&watch));
+
+    assert!(
+        matches!(scope.admit(created_file("/vol/hole/inner.txt", 1)), Admission::Buffered),
+        "the walk's ground waits for it, on an indexed drive exactly as on a walked one"
+    );
+    assert!(
+        matches!(scope.admit(created_file("/vol/elsewhere.txt", 2)), Admission::Process(_)),
+        "and everything else is still this loop's business"
+    );
+
+    // A coalesced sweep ABOVE the walk waits too: reconciling it would walk a
+    // subtree straight through the ground the walk is covering.
+    assert!(
+        matches!(scope.admit(must_scan("/vol", 3)), Admission::Buffered),
+        "a sweep over the walk's ground waits for the walk"
+    );
+
+    watch.finish_covering(&branch, AfterWalk::Forget);
+    assert!(
+        watch.branch_paths().is_empty(),
+        "and a scanned volume keeps no branch bookkeeping once the walk is done"
+    );
+    assert_eq!(watch.take_promoted().events.len(), 3, "everything it held is released");
+
+    // With no walk in flight, a sweep above is processed AND re-anchored onto
+    // nothing (there are no branches left), so it flows unchanged.
+    assert!(matches!(scope.admit(must_scan("/vol", 4)), Admission::Process(_)));
+}
+
+/// A sweep above a LIVE branch on a scanned volume keeps both halves: the branch
+/// gets its own anchored copy, and the original still reconciles the rest of the
+/// subtree.
+#[test]
+fn a_whole_watched_sweep_above_a_live_branch_keeps_both_halves() {
+    let watch = Arc::new(BranchWatch::with_branches(Vec::new()));
+    let branch = vec!["/vol/covered".to_string()];
+    watch.begin_covering(&branch);
+    watch.finish_covering(&branch, AfterWalk::Watch);
+    let scope = WatchScope::WholeVolume(watch);
+
+    let Admission::Process(events) = scope.admit(must_scan("/vol", 1)) else {
+        panic!("a whole-watched volume answers for the sweep it was handed");
+    };
+    let mut paths: Vec<String> = events.into_iter().map(|e| e.path).collect();
+    paths.sort();
+    assert_eq!(paths, ["/vol", "/vol/covered"]);
+}
+
+/// A plain event outside every branch is DISCARDED, not held: holding it would
+/// leak, and a branch-watched loop has nothing to hold it against.
+#[test]
+fn an_ordinary_event_outside_the_branches_is_dropped_not_held() {
+    let scope = live_watch(&["/vol/covered"]);
+    assert!(events_are_discarded(&scope, created_file("/vol/elsewhere/x.txt", 1)));
+    assert!(events_are_discarded(&scope, must_scan("/vol/elsewhere", 2)));
 }
 
 // ── Persistence ──────────────────────────────────────────────────────

@@ -661,6 +661,20 @@ impl ColdDrive {
             .count()
     }
 
+    /// Whether the drive's index holds a row for this absolute path.
+    fn is_indexed(&self, path: &str) -> bool {
+        let Ok(conn) = IndexStore::open_read_connection(&self.db_path()) else {
+            return false;
+        };
+        let Some(relative) = IndexPathSpace::mount_rooted(self.path("")).index_relative(path) else {
+            return false;
+        };
+        crate::indexing::store::resolve_path(&conn, &relative)
+            .ok()
+            .flatten()
+            .is_some()
+    }
+
     /// What the drive's own database says it walked, as stored (index-relative).
     fn persisted_branches(&self) -> Option<String> {
         let conn = IndexStore::open_read_connection(&self.db_path()).ok()?;
@@ -943,13 +957,60 @@ fn a_walk_leaves_the_ground_it_covered_watched_and_written_down() {
 
     assert_eq!(
         crate::indexing::watch::branches::live_for(drive.volume_id).branch_paths(),
-        [scope.clone()],
+        [scope.as_str()],
         "the walked branch is the volume's to keep current now"
     );
     assert_eq!(
         drive.persisted_branches(),
         Some("/scope".to_string()),
         "and it's on the drive's own database, index-relative so a remount still finds it"
+    );
+}
+
+/// The whole promise, through the real watcher: change a file inside walked
+/// ground and the index follows; change one beside it and the index doesn't move.
+///
+/// Every other test here drives the admission rule directly. This one starts a
+/// real `DriveWatcher` on a real drive and touches real files, which is the only
+/// way to prove `ensure_branch_watch` starts something that works — the failure it
+/// catches is a walked branch that reads live and is quietly frozen.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+#[tokio::test(flavor = "multi_thread")]
+#[allow(
+    clippy::await_holding_lock,
+    reason = "the fixture holds the process-wide seams for the whole test; holding it across the await IS the point"
+)]
+async fn a_change_inside_a_walked_branch_reaches_the_index_and_one_beside_it_does_not() {
+    let drive = ColdDrive::new("cover-branch-live-test");
+    std::fs::create_dir_all(drive.tree.path().join("walked")).expect("dirs");
+    std::fs::create_dir_all(drive.tree.path().join("beside")).expect("dirs");
+    std::fs::write(drive.tree.path().join("walked/already-there.txt"), "x").expect("file");
+    let branch = drive.path("walked");
+
+    drive.cover(&branch);
+    assert!(
+        !crate::indexing::watch::branches::live_for(drive.volume_id)
+            .branch_paths()
+            .is_empty(),
+        "precondition: the walk left a branch to watch"
+    );
+
+    // Both drives created AFTER the walk, so neither is in the index yet. The
+    // watcher is the only thing that can put either one there.
+    std::fs::write(drive.tree.path().join("walked/appeared.txt"), "new").expect("file");
+    std::fs::write(drive.tree.path().join("beside/appeared.txt"), "new").expect("file");
+
+    let inside = drive.path("walked/appeared.txt");
+    let outside = drive.path("beside/appeared.txt");
+    cmdr_fs::testing::wait_until_async(
+        std::time::Duration::from_secs(30),
+        "the watcher to index the change inside the walked branch",
+        || drive.is_indexed(&inside),
+    )
+    .await;
+    assert!(
+        !drive.is_indexed(&outside),
+        "and the folder beside it stays this index's business only once a search walks it"
     );
 }
 

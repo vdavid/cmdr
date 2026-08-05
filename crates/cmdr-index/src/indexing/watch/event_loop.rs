@@ -41,7 +41,7 @@ pub(in crate::indexing) use replay::run_replay_event_loop;
 // directly; gate the re-exports so the non-test build doesn't see them as
 // unused imports.
 #[cfg(test)]
-pub(in crate::indexing) use live::{process_live_batch, queue_admitted};
+pub(in crate::indexing) use live::{drain_promoted, process_live_batch, queue_admitted};
 
 // ── Shared constants ─────────────────────────────────────────────────
 

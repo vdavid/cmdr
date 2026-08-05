@@ -113,25 +113,24 @@ pub(in crate::indexing) fn queue_admitted(
 ///
 /// Runs before the batch rather than after, so a held event lands in the very
 /// first batch after its walk ends instead of waiting another flush interval.
-pub(super) fn drain_promoted(
+pub(in crate::indexing) fn drain_promoted(
     scope: &WatchScope,
     pending_events: &mut HashMap<String, watcher::FsChangeEvent>,
     reconciler: &mut EventReconciler,
     writer: &IndexWriter,
 ) {
     let promoted = scope.branches().take_promoted();
-    if promoted.is_empty() {
-        return;
+    if !promoted.events.is_empty() || !promoted.relist.is_empty() {
+            log::info!(
+            "Branch watch: releasing {} held by a walk that just ended{}",
+            pluralize(promoted.events.len() as u64, "event"),
+            if promoted.relist.is_empty() {
+                String::new()
+            } else {
+                format!(", and re-listing {}", pluralize(promoted.relist.len() as u64, "branch"))
+            },
+        );
     }
-    log::info!(
-        "Branch watch: releasing {} held by a walk that just ended{}",
-        pluralize(promoted.events.len() as u64, "event"),
-        if promoted.relist.is_empty() {
-            String::new()
-        } else {
-            format!(", and re-listing {}", pluralize(promoted.relist.len() as u64, "branch"))
-        },
-    );
     for event in promoted.events {
         queue_admitted(event, pending_events);
     }

@@ -357,16 +357,16 @@ async fn a_branch_watched_volume_never_routes_an_anchor_to_the_whole_volume_scan
     );
     assert_eq!(
         reconciler.rescan_scopes(),
-        vec![std::path::PathBuf::from("/covered")],
+        vec![PathBuf::from("/covered")],
         "the anchor walks on the throttled drain instead"
     );
 
     // And an anchor outside every branch is left to the next search, which is
     // where growing coverage belongs.
-    reconciler.queue_must_scan_sub_dirs(std::path::PathBuf::from("/elsewhere"), &writer);
+    reconciler.queue_must_scan_sub_dirs(PathBuf::from("/elsewhere"), &writer);
     assert_eq!(
         reconciler.rescan_scopes(),
-        vec![std::path::PathBuf::from("/covered")],
+        vec![PathBuf::from("/covered")],
         "the watcher never indexes ground nobody asked it to walk"
     );
 

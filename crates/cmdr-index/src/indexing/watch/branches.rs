@@ -278,12 +278,6 @@ pub(crate) struct Promoted {
     pub(crate) relist: Vec<String>,
 }
 
-impl Promoted {
-    pub(crate) fn is_empty(&self) -> bool {
-        self.events.is_empty() && self.relist.is_empty()
-    }
-}
-
 /// One volume's branch set, shared between the walks that grow it and the live
 /// loop that reads it.
 pub(crate) struct BranchWatch {
@@ -414,8 +408,7 @@ impl BranchWatch {
             .collect();
         if event.flags.must_scan_sub_dirs && !under.is_empty() {
             let mut process = Vec::new();
-            let walked_under = under.iter().any(|&i| state.branches[i].walks > 0);
-            for index in under {
+            for &index in &under {
                 let anchored = FsChangeEvent {
                     path: state.branches[index].path.clone(),
                     event_id: event.event_id,
@@ -425,13 +418,19 @@ impl BranchWatch {
                     process.append(&mut events);
                 }
             }
-            // A whole-watched volume keeps the sweep it was handed: the branches
-            // under it are covered by their own re-anchored copies, and the rest of
-            // the subtree is still this loop's to reconcile. Unless a walk is
-            // covering one of them, in which case the sweep waits for it rather
-            // than walking into the walk.
-            if reach == Reach::WholeVolume && !walked_under {
-                process.push(event);
+            // A whole-watched volume keeps the sweep it was handed as well: the
+            // branches under it get their own re-anchored copies, and the rest of
+            // the subtree is still this loop's to reconcile. If a walk is covering
+            // one of those branches, the sweep is HELD against it rather than
+            // dropped — reconciling it now would walk straight through the walk,
+            // and dropping it would lose the rest of the subtree it speaks for.
+            if reach == Reach::WholeVolume {
+                match under.iter().find(|&&i| state.branches[i].walks > 0) {
+                    Some(&walked) => {
+                        state.take(walked, event, reach);
+                    }
+                    None => process.push(event),
+                }
             }
             return if process.is_empty() {
                 Admission::Buffered
