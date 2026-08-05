@@ -82,6 +82,14 @@ export function createDeletedDirPoll(deps: DeletedDirPollDeps): DeletedDirPoll {
       const volumePath = deps.getVolumePath()
       // On an external volume, check whether the volume root itself is gone.
       // If so, skip: the volume unmount handler will manage the transition.
+      //
+      // A volume that's already been UNREGISTERED reads as `/` here (the pane's
+      // `volumePath` prop falls back to `/` when the id is no longer in the
+      // volume list), so it takes the else branch and walks up freely — past its
+      // own dead mount point, possibly onto another volume. That's intended:
+      // nothing else moves a pane off a vanished volume, and `navigateToFallback`
+      // re-resolves the owning volume for wherever the walk-up lands. See
+      // `DETAILS.md` § "The walk-up fallback".
       if (volumePath !== '/') {
         void pathExistsChecked(volumePath).then(({ data: volumeExists, timedOut: volumeTimedOut }) => {
           // If we couldn't tell whether the volume is there, don't walk up.

@@ -456,6 +456,25 @@ injected accessors (the `type-to-jump-controller` idiom, not a state-owning `.sv
 `adoptListing` share `loadGeneration`, so they live in the loader too. `cleanup()` (called from FilePane's `onDestroy`)
 owns the full listing teardown (`cancelListing` + `listDirectoryEnd` + `evictPerPathIconsForDir` + the six `unlisten*`).
 
+**The walk-up fallback re-resolves the target's OWNING volume (`listing-loader.ts::navigateToFallback`).** All four
+"what I'm showing is gone" recoveries funnel here — the `onListingError` deleted-path branch, `deleted-dir-poll.ts`, the
+`onDirectoryDeleted` handler in `listing-diff-sync.svelte.ts`, and the two SMB cancel/disconnect handlers in
+`smb-view-state.svelte.ts` — each after a `resolveValidPath` walk-up. That walk-up can climb OUT of the pane's volume,
+so the target's owner decides where we land, via `resolvePathVolume(target)`; a differing owner routes through
+`onVolumeChange` instead of a same-volume `loadDirectory`. `~` and `/` short-circuit to the root volume before the
+resolve (they're the chain's last-resort rungs, and `~` is expanded backend-side so it isn't resolvable as written); an
+unresolvable owner (dead mount, statfs timeout) lands in place, since the pane's own volume is then the honest guess.
+
+_Decision / why:_ assuming the pane's volume still owns the fallback target strands the pane. An SMB share unmounts, its
+volume id is unregistered, the walk-up climbs from `/Volumes/<share>/sub` out to `/Volumes` (owned by the ROOT volume),
+and the listing goes out under the share's dead id → `Path not found: Volume not found`. It's PERMANENT, not transient:
+the landed path exists, so the poll's miss counter resets and nothing retries. Note the walk-up gets there only because
+`getVolumePath()` reports `/` for an unregistered volume (`DualPaneExplorer`'s `volumes.find(…)?.path ?? '/'`), which
+also disarms the "volume root is gone, skip" guard in `deleted-dir-poll.ts`. That masking is deliberate cover, not a
+second bug to fix: nothing else moves a pane off a vanished volume, so the poll is the only rescue, and walking up to a
+live ancestor on the right volume is the outcome we want. Tighten the guard and the pane sits on a dead share
+indefinitely instead.
+
 **Nav-state persistence fires from ONE subscriber (A5).** `persistence-subscriber.svelte.ts` is the single module that
 writes pane navigation state to `app-status.json`. `DualPaneExplorer` creates it synchronously during init (L3, the
 `initListingDiffSync` pattern). Its two per-pane reactive `$effect`s watch the store's active-tab nav-state (path /

@@ -47,6 +47,7 @@ const h = vi.hoisted(() => ({
   listDirectoryStart: vi.fn(),
   findFileIndex: vi.fn(),
   pathExistsChecked: vi.fn(),
+  resolvePathVolume: vi.fn(),
   trackEvent: vi.fn(),
   resolveValidPath: vi.fn(),
   getSetting: vi.fn(),
@@ -71,6 +72,7 @@ vi.mock('$lib/tauri-commands', () => ({
   listDirectoryStart: h.listDirectoryStart,
   findFileIndex: h.findFileIndex,
   pathExistsChecked: h.pathExistsChecked,
+  resolvePathVolume: h.resolvePathVolume,
   trackEvent: h.trackEvent,
 }))
 vi.mock('./tag-sweep', () => ({ sweepListingTags: vi.fn() }))
@@ -256,6 +258,9 @@ beforeEach(() => {
   )
   h.findFileIndex.mockResolvedValue(0)
   h.pathExistsChecked.mockResolvedValue({ data: true, timedOut: false })
+  // Default: the fallback target's owner is unresolvable, so the loader keeps the
+  // pane's own volume. Tests that cross a volume boundary override this.
+  h.resolvePathVolume.mockResolvedValue({ volume: null, timedOut: false })
   h.resolveValidPath.mockResolvedValue('/valid')
   h.getSetting.mockReturnValue(false) // 'listing.showTags' off → skip the tag sweep
 })
@@ -524,11 +529,63 @@ describe('createListingLoader — navigateToFallback / handleCancelLoading / nav
 
   it('navigateToFallback loads the target in-place when it is inside the volume', async () => {
     const { loader, state, spies } = makeHarness({ volumeId: 'root' })
+    h.resolvePathVolume.mockResolvedValueOnce({ volume: { id: 'root', path: '/' }, timedOut: false })
     loader.navigateToFallback('/some/dir')
+    await vi.waitFor(() => {
+      expect(state.currentPath).toBe('/some/dir')
+    })
     expect(spies.onVolumeChange).not.toHaveBeenCalled()
-    expect(state.currentPath).toBe('/some/dir')
     await vi.waitFor(() => {
       expect(h.listDirectoryStart).toHaveBeenCalled()
+    })
+  })
+
+  it('navigateToFallback switches to the volume that owns the target when the walk-up crossed a boundary', async () => {
+    // The share unmounted under the pane, so the walk-up climbed out of
+    // `/Volumes/naspi` into `/Volumes` — which belongs to the ROOT volume.
+    // Listing it under the pane's now-dangling volume id fails with
+    // "Volume not found", which is what left a pane stuck for hours.
+    const { loader, state, spies } = makeHarness({
+      volumeId: 'smb-192-168-1-111-445-naspi',
+      volumePath: '/',
+      currentPath: '/Volumes/naspi/_todo_pics',
+    })
+    h.resolvePathVolume.mockResolvedValueOnce({ volume: { id: 'root', path: '/' }, timedOut: false })
+    loader.navigateToFallback('/Volumes')
+    await vi.waitFor(() => {
+      expect(spies.onVolumeChange).toHaveBeenCalledWith('root', '/', '/Volumes')
+    })
+    // The switch owns the landing, so the loader must not also list `/Volumes`
+    // on the dead volume.
+    expect(h.listDirectoryStart).not.toHaveBeenCalled()
+    expect(state.currentPath).toBe('/Volumes/naspi/_todo_pics')
+  })
+
+  it('navigateToFallback stays put when the target owner cannot be resolved', async () => {
+    // An unresolvable owner (dead mount, timeout) must not trigger a volume
+    // switch: falling back to the pane's own volume is the honest guess.
+    const { loader, state, spies } = makeHarness({ volumeId: 'smb-host', volumePath: '/Volumes/x' })
+    h.resolvePathVolume.mockResolvedValueOnce({ volume: null, timedOut: true })
+    loader.navigateToFallback('/Volumes/x/sub')
+    await vi.waitFor(() => {
+      expect(state.currentPath).toBe('/Volumes/x/sub')
+    })
+    expect(spies.onVolumeChange).not.toHaveBeenCalled()
+  })
+
+  it('the deleted-path walk-up switches volumes end to end', async () => {
+    const { loader, state, spies } = makeHarness({
+      volumeId: 'smb-192-168-1-111-445-naspi',
+      volumePath: '/',
+      currentPath: '/Volumes/naspi/gone',
+    })
+    h.pathExistsChecked.mockResolvedValueOnce({ data: false, timedOut: false })
+    h.resolveValidPath.mockResolvedValueOnce('/Volumes')
+    h.resolvePathVolume.mockResolvedValueOnce({ volume: { id: 'root', path: '/' }, timedOut: false })
+    await loader.loadDirectory('/Volumes/naspi/gone')
+    h.listeners.error[0]({ listingId: state.listingId, message: 'no such dir' })
+    await vi.waitFor(() => {
+      expect(spies.onVolumeChange).toHaveBeenCalledWith('root', '/', '/Volumes')
     })
   })
 

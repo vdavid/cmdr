@@ -32,6 +32,7 @@ import {
   cancelListing,
   findFileIndex,
   pathExistsChecked,
+  resolvePathVolume,
   listDirectoryEnd,
   listDirectoryStart,
   onListingOpening,
@@ -211,20 +212,47 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
 
   /**
    * Navigates to a fallback path after the current path became invalid.
-   * If the resolved path is outside the current volume (~ or /), switches
-   * to the root volume instead of trying to list it on a non-root volume.
+   *
+   * The walk-up that produced `validPath` can leave the pane's volume behind, so
+   * the target's OWNER decides where we land, not the pane's current volume id.
+   * Skipping that re-resolution is what once stranded a pane: an SMB share
+   * unmounted, the walk-up climbed from `/Volumes/<share>/sub` out to `/Volumes`
+   * (which belongs to the ROOT volume), and listing it under the share's now-
+   * unregistered id failed with "Volume not found" — permanently, since the poll
+   * that triggered the walk-up sees the landed path exist and stops retrying.
    */
   function navigateToFallback(validPath: string | null) {
     const target = validPath ?? '~'
-    const isOutsideVolume = deps.getVolumeId() !== 'root' && (target === '~' || target === '/')
-    if (isOutsideVolume && deps.onVolumeChange) {
-      // The volume root was unreachable: switch to the root volume
-      log.info('Volume root unreachable, switching to root volume with path: {target}', { target })
-      deps.onVolumeChange('root', '/', target)
-    } else {
-      deps.setCurrentPath(target)
-      void loadDirectory(target)
+    // `~` and `/` are the walk-up's last-resort rungs: reaching one means the
+    // pane's own volume root was unreachable. They're also not resolvable as-is
+    // (`~` is expanded backend-side), so they route to the root volume directly.
+    if (target === '~' || target === '/') {
+      if (deps.getVolumeId() !== 'root' && deps.onVolumeChange) {
+        log.info('Volume root unreachable, switching to root volume with path: {target}', { target })
+        deps.onVolumeChange('root', '/', target)
+      } else {
+        landOnFallback(target)
+      }
+      return
     }
+    void resolvePathVolume(target).then(({ volume }) => {
+      // An unresolvable owner (dead mount, statfs timeout) means we don't know
+      // better than the pane's own volume, so land in place as before.
+      if (volume && volume.id !== deps.getVolumeId() && deps.onVolumeChange) {
+        log.info('Switching to volume {volumeId}, which owns the fallback path {target}', {
+          target,
+          volumeId: volume.id,
+        })
+        deps.onVolumeChange(volume.id, volume.path, target)
+        return
+      }
+      landOnFallback(target)
+    })
+  }
+
+  function landOnFallback(target: string) {
+    deps.setCurrentPath(target)
+    void loadDirectory(target)
   }
 
   async function loadDirectory(path: string, selectName?: string) {
