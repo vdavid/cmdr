@@ -907,7 +907,11 @@ fn a_big_directory_arrives_in_bounded_batches() {
     assert!(sizes.len() > 1, "in more than one batch (got {sizes:?})");
     assert!(
         sizes.iter().all(|size| *size <= 2000),
-        "and none of them unbounded (got {sizes:?})"
+        "none of them unbounded (got {sizes:?})"
+    );
+    assert!(
+        sizes.iter().any(|size| *size > 1),
+        "and one crossing per BATCH, not per entry (got {sizes:?})"
     );
 }
 
