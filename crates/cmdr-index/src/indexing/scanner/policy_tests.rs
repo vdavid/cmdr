@@ -346,6 +346,31 @@ fn measure_boundary_probe() {
     );
 }
 
+/// The real probe reads a real device, and tells two filesystems apart.
+///
+/// Every other boundary test injects a probe, so without this one the production
+/// `device_of` could return a constant and nothing would notice (`cargo mutants`
+/// found exactly that). `/dev` is the mount that's a different filesystem from
+/// `/` on both platforms we run on: devfs on macOS, devtmpfs on Linux.
+#[test]
+#[cfg(unix)]
+fn the_real_device_probe_tells_two_filesystems_apart() {
+    let root = device_of(Path::new("/")).expect("`/` has a device");
+    let dev = device_of(Path::new("/dev")).expect("`/dev` has a device");
+
+    assert_ne!(root, dev, "a mounted filesystem is a different device from its parent");
+    assert_eq!(
+        device_of(Path::new("/")),
+        Some(root),
+        "and the answer is the path's, not a counter"
+    );
+    assert_eq!(
+        device_of(Path::new("/no-such-path-cmdr-boundary-probe")),
+        None,
+        "a path that isn't there has no device to report"
+    );
+}
+
 /// A walk whose own root has no readable device pins nothing, rather than pinning
 /// `None` and cutting every child it finds.
 #[test]
