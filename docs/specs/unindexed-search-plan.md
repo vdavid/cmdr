@@ -1,6 +1,6 @@
 # Search that covers the folder you picked, indexed or not
 
-**Status**: IN EXECUTION. M0, M1, and M2 have landed; M3a is next. See § Execution status before resuming. **Owner**:
+**Status**: IN EXECUTION. M0 through M6 have landed; M7 is next. See § Execution status before resuming. **Owner**:
 David. **Date**: 2026-08-03.
 
 Indexing stays optional. A search that runs to completion returns the same files with or without an index, only slower,
@@ -263,7 +263,7 @@ coverage API must not assume a single dimension.
 
 ## Execution status
 
-Through M5. Branch `worktree-david+unindexed-search-exec`, nothing merged to `main` yet.
+Through M6. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local `main`.
 
 **Landed.**
 
@@ -330,6 +330,15 @@ Through M5. Branch `worktree-david+unindexed-search-exec`, nothing merged to `ma
   terminal states. `excludes.rs` extracts the scope exclusions so the live path applies the same ones. The proof is
   `execute/tests/live_e2e.rs`: six searches over a real `Index` and a real walk, including the Decision 12 anchor
   (verified by breaking `arena_for_coverage` and watching it return an empty list).
+
+- **M6**: the streaming UI. `query-ui/query-stream.ts` holds the answers-over-time contract (phases, batches, a typed
+  end, a `QueryStreamSource`) and `query-runner.svelte.ts` owns the run: the minted run id, the generation guard,
+  appending, the cursor held by path identity, and one re-rank on completion (skipped when nothing walked, and once the
+  user has moved the cursor). Search supplies the wire (`live-search-source.ts`) and the order (`live-ranking.ts`, which
+  mirrors the backend's bands and is ORDERING, never membership). Three phase states, a status bar that becomes the
+  progress strip (count, folders scanned, current path, Stop with its shortcut), a throttled `aria-live` region on an
+  inner span, count-only's "N so far", the Escape two-step, and the coverage note's live half. Verified in the running
+  app against a real unindexed NAS and an unindexed disk image.
 
 **Decisions taken during execution that the spec did not pre-empt.**
 
@@ -484,6 +493,23 @@ Through M5. Branch `worktree-david+unindexed-search-exec`, nothing merged to `ma
 - **Every walk paid a full watchdog interval of dead time.** Found while measuring the primitive choice: `walk` joins
   its watchdog, which slept a flat interval before checking whether the walk was done. A 368-entry tree took 1.01 s.
   Fixed (condvar, woken by `signal_done`); same tree now 3.92 ms. It affected `scan_subtree` on the verifier path too.
+
+- **Routing Enter through the walk retires the uncovered note from user-triggered runs.** A live run WALKS a drive with
+  no index instead of reporting it as a gap, and `SearchRunCoverage` has no `uncovered_scopes` at all, so
+  `search.coverage.uncovered.*` and the per-drive "Index this drive" offer are now reachable only from an auto-applied
+  (index-only) run. That reads well — the debounce says what it couldn't cover and offers the fuller search for one key
+  (`search.coverage.pressEnter`) — but it is a real narrowing of M1's surface that M10's settings/analytics sweep should
+  know about.
+- **`unreadable`'s two causes have one list and no discriminator.** `SearchRunCoverage::unreadable`'s own doc says "two
+  causes, two different sentences — ❌ don't render one", but the wire carries bare paths: permission-denied and NAS
+  snapshot trees are indistinguishable frontend-side (short of matching `@eaDir` by name, which the no-string-matching
+  rule forbids). M6 renders ONE sentence stating the fact plus a second naming both possibilities; the Rust doc comment
+  was corrected to say so. Giving the list a typed cause is the fix if M8's Full Disk Access route wants to act on one.
+- **A live walk's progress is only as live as its batches.** `dirs_found` / `current_path` are derived from the batches
+  `WalkJudge::consume` sees, so a walk blocked on a slow or hung directory reports `0 folders scanned` and no path for
+  as long as it's stuck. Observed on a local `~/Library` walk that sat at zero for seconds. Honest (nothing HAS been
+  found) but it reads as frozen; a heartbeat from the walker would fix it, and M7's "still running" toast will want the
+  same data.
 
 **Open, needing David.**
 

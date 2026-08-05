@@ -297,6 +297,23 @@ describe('auto-apply never walks (Decision 7)', () => {
     expect(plainRuns).toBe(1)
   })
 
+  it('clears the spinner when the bar is emptied mid-walk', async () => {
+    // A live run has no promise whose `finally` clears `isSearching`: dropping its
+    // subscription is the last anyone hears of it. Without the reset the dialog sits on
+    // "Searching…" forever, with nothing coming and no way back.
+    const h = makeStreamRunner()
+    const run = await startRun(h)
+    run.onProgress(progress({ entries: entriesNamed('a.txt'), matchCount: 1 }))
+    expect(h.config.state.getIsSearching()).toBe(true)
+
+    h.config.state.setQuery('')
+    h.runner.scheduleSearch()
+
+    expect(h.config.state.getIsSearching()).toBe(false)
+    expect(h.runner.live).toBeNull()
+    expect(h.config.state.getResults()).toEqual([])
+  })
+
   it('drops a live run’s view when a plain run replaces it', async () => {
     const h = makeStreamRunner()
     const run = await startRun(h)

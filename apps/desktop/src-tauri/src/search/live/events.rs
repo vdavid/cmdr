@@ -64,7 +64,13 @@ pub struct SearchRunCoverage {
     /// Directories nothing is going to walk, as absolute paths: either a walk
     /// tried and can't read one (permission denied), or it won't read one at all
     /// (a NAS snapshot tree, whose per-snapshot copies the scanner refuses on
-    /// purpose). Two causes, two different sentences — ❌ don't render one.
+    /// purpose).
+    ///
+    /// Two causes, ONE list, and nothing here tells them apart — so the UI states
+    /// the fact and names both possibilities rather than guessing
+    /// (`lib/search/DETAILS.md` § The live search). ❌ Don't write copy that
+    /// claims it's one of them. Add a typed cause here if a caller ever needs to
+    /// ACT on one (M8's Full Disk Access route is the candidate).
     pub unreadable: Vec<String>,
     /// Ground another walk on this volume is covering right now, so this run left
     /// it alone. Its rows reach the same index, so this is "these arrive a bit

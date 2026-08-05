@@ -310,9 +310,14 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
    * Called when the user empties the query with no filter left standing.
    */
   function resetToEmptyState(): void {
+    // A live run has no promise whose `finally` clears the spinner: dropping its
+    // subscription is the last anyone hears of it. So emptying the bar mid-walk has to
+    // clear the flag here, or the dialog sits on "Searching…" with nothing coming.
+    const wasStreaming = live !== null
     dropLiveSubscription()
     live = null
     const state = deps.getConfig().state
+    if (wasStreaming) state.setIsSearching(false)
     state.setResults([])
     state.setTotalCount(0)
     state.setCursorIndex(0)
