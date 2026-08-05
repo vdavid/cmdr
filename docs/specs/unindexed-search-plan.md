@@ -250,7 +250,7 @@ coverage API must not assume a single dimension.
 
 ## Execution status
 
-Through M3c. Branch `worktree-david+unindexed-search-exec`, nothing merged to `main` yet.
+Through M3d. Branch `worktree-david+unindexed-search-exec`, nothing merged to `main` yet.
 
 **Landed.**
 
@@ -293,7 +293,44 @@ Through M3c. Branch `worktree-david+unindexed-search-exec`, nothing merged to `m
   would sit in the frontier forever. File Provider domains stay in scope, pinned by a test that claims every directory
   is a domain root and asserts the walk descends anyway.
 
+- **M3d**: the scoped walk on every volume kind. `network_scanner/cover_scan.rs::cover_volume_subtree` is a scoped BFS
+  over the `Volume` trait — one frontier node resolved to its own entry id, the same round-trip disciplines and
+  `ScanPacer` budget the two whole-volume walks use, `begin_scan_session` / `end_scan_session` bracketing the WHOLE
+  frontier once. Its driver (`lifecycle/cover.rs`, `Ground`) is the ONE per-kind branch in the coverage concept: local
+  ground reads the disk, everything else asks its `Volume`, and nothing downstream of a discovered entry differs. The
+  M3b classifier is open — shares, phones, and network mounts route to the trait walk instead of `NotIndexed`, and only
+  an unmounted id is refused. No gate and no confirmation step, per David.
+
 **Decisions taken during execution that the spec did not pre-empt.**
+
+- **The trait walk is add-only PER DIRECTORY, so it needs no virgin-root refusal and no repair path.** M3a's
+  `ScanError::NotVirgin` exists because the parallel local walker can't afford a DB lookup per directory across eight
+  worker threads reading a `readdir` that costs microseconds. Over the trait that lookup is an indexed query against a
+  listing that cost a network round trip, so the walk simply compares each directory's names against the index: an
+  existing name keeps its row and its id, an existing child directory is descended into with that id. That closes a gap
+  the plan didn't see — there is no scoped serial reconcile over the `Volume` trait, so a `NotVirgin` on a share would
+  have had nowhere to go and the node would have stayed frontier forever.
+- **MTP's same-name siblings are a data-integrity bug, not a cosmetic one, and the same name check fixes them.** Two
+  objects with one name in one folder would otherwise both get ids, both be queued as directories, and both write
+  children — after which `INSERT OR IGNORE` drops one row and orphans everything the walk attributed to it.
+- **The cold bootstrap needed a trait path too, which M3d's spec text doesn't mention.** `ensure_walkable` materializes
+  a frontier path's ancestor chain with `std::fs::symlink_metadata`, which answers nothing for `mtp://…` and needn't
+  answer for a direct smb2 session either — every cold trait-volume walk would have declined its own root as "not a
+  directory on disk". `Ground::stat_directory` now supplies it, through a `stat_one_directory` whose timeout races the
+  task's JOIN handle for exactly the reason listings do.
+- **A network volume that is neither a phone nor a plain local mount is classified `Smb`.** The kind names the SCAN
+  PATH, not the protocol, and an NFS or WebDAV mount needs precisely what that variant carries (trait-scanned,
+  mount-rooted, no journal). Refusing it would make a search of it silently wrong; calling it local would point the
+  guarded walker at syscalls that block for minutes. ❌ The walk does NOT upgrade an SMB os-mount to a direct session
+  the way the enable command does: that can prompt for credentials, which is not something a search may do.
+- **The empty-root refusal must NOT carry over to the cover walk.** `VolumeScanError::EmptyRoot` exists because a share
+  that lists empty is a glitch and a false "complete" strands the index. An empty FOLDER is ordinary, and refusing to
+  mark it would hand it back to every later search forever.
+- **`lifecycle/network_scan.rs`'s exclusion-policy stamp claimed something the network walks don't do.** Its comment
+  said a network scan applies the local junk-basename and pseudo-filesystem tiers; neither network walk calls
+  `should_exclude` at all. The stamp is still right to be written (it's conservative — it can only over-report a policy
+  change, which costs a re-walk), and the cover walk deliberately matches the full scan here rather than applying
+  exclusions the full scan doesn't, so a walk-built share index holds the same rows a scanned one would. Comment fixed.
 
 - **The master-switch carve-out is ONE code site, not three.** The plan named `handle/mod.rs`'s `start_volume` and
   `transports/smb/index.rs`'s reconnect resume alongside `start_indexing_for`, but both of those ARE background work by

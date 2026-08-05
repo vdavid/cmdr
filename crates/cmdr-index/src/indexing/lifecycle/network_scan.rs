@@ -269,10 +269,12 @@ impl IndexManager {
             let _ = self
                 .writer
                 .send(crate::indexing::network_scanner::exclusion_stamp_message());
-            // Same moment, same reasoning, for the local tiers a network scan also
-            // applies (junk basenames, pseudo-filesystems at the volume root).
-            // Coverage answers over this volume are worthless without it — see
-            // `store::EXCLUSION_POLICY_KEY`.
+            // Same moment, same reasoning, for the LOCAL exclusion policy. A network
+            // walk doesn't run `should_exclude` at all (its own skip list is the NAS
+            // one above), so the stamp is conservative rather than exact: it can only
+            // over-report a policy change, which costs a re-walk, never claim a
+            // coverage the rows don't support. Without any stamp, coverage answers
+            // over this volume are worthless — see `store::EXCLUSION_POLICY_KEY`.
             let _ = self
                 .writer
                 .send(crate::indexing::scanner::exclusion_policy_stamp_message());

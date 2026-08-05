@@ -40,10 +40,11 @@ concurrently without corrupting each other. Every invariant below holds independ
   heal latch. If the rebuild can't start (share unmounted, scan already running) we log and keep serving the existing
   index; nothing stamps the DB until a rebuild actually truncates, so the next load re-arms. Triggers, name list, and
   the stamp are canonical in `../network_scanner/DETAILS.md` § "NAS snapshot/system dirs aren't recursed".
-- **cover.rs** (+ `cover/bootstrap.rs`, `cover/live.rs`, `cover/tests.rs`) — the SEARCH-driven walk, the write half of
-  the coverage concept whose read half is `../read/coverage.rs`. `Index::cover` resolves a `CoverContext` (the volume,
-  its writer, its path space) here, spawns one Utility-QoS thread, and walks each frontier root the coverage answer
-  named. `bootstrap` is everything that has to exist first: an index on a volume that has none, and an `entries` row for
+- **cover.rs** (+ `cover/bootstrap.rs`, `cover/live.rs`, `cover/tests.rs`, `cover/network_tests.rs`) — the SEARCH-driven
+  walk, the write half of the coverage concept whose read half is `../read/coverage.rs`. `Index::cover` resolves a
+  `CoverContext` (the volume, its writer, its path space, its kind) here, spawns one Utility-QoS thread, and walks each
+  frontier root the coverage answer named — through the local guarded walker or the volume's own `Volume`, whichever
+  the kind calls for (`Ground`). `bootstrap` is everything that has to exist first: an index on a volume that has none, and an `entries` row for
   a path the index has never seen. `live` is which roots are already being walked. Detail below.
 - **scan_completion.rs** — the post-scan handler: the vanished-volume abort and the LOCAL failure→Stale arm (below).
 - **freshness.rs** — the `Fresh`/`Stale`/`Scanning`/`Failed` transition table (`Freshness::on`) +
@@ -320,12 +321,25 @@ live processing always writes, so the writer trips.
 volume's real index through its ONE writer (Decision 2 of `docs/specs/unindexed-search-plan.md`), so the work outlives
 the search that paid for it and the next search over the same ground walks less.
 
-**Two primitives, and which one runs.** A frontier node is virgin ground by definition, so this is a bulk add and the
-parallel guarded walker wins outright — 3.2–5.8x over the serial reconcile with identical row counts on four real trees
-(`docs/notes/cover-walk-primitive-2026-08-05.md`). The serial reconcile is kept as the REPAIR path, for the one case the
-parallel walker can't take: a frontier node the index already holds rows under (`ScanError::NotVirgin`, see
-`../scanner/DETAILS.md` § "Three scan roots"). It compares by name and writes only differences, which is exactly that
-case's shape. ❌ Neither path ever deletes: covering is add-only work.
+**Which ground, and which walk reads it** (`Ground`). Every volume kind falls in one of two halves, and that is the ONE
+per-kind branch in the whole coverage concept: a local filesystem is read by the guarded walker, and everything else —
+a share, a phone, whatever backend comes next — through its `Volume` (`../network_scanner/DETAILS.md` § "The scoped
+cover walk"). Downstream of a discovered entry the two are identical: same writer, same epochs, same `dir_stats`, same
+frontier query, same descent rule. `Ground::under` resolves the half from the kind on the registry instance the writer
+came from, and answers `None` when a trait-scanned volume has been ejected since the coverage answer.
+
+**Two primitives on the local half, and which one runs.** A frontier node is virgin ground by definition, so this is a
+bulk add and the parallel guarded walker wins outright — 3.2–5.8x over the serial reconcile with identical row counts on
+four real trees (`docs/notes/cover-walk-primitive-2026-08-05.md`). The serial reconcile is kept as the REPAIR path, for
+the one case the parallel walker can't take: a frontier node the index already holds rows under
+(`ScanError::NotVirgin`, see `../scanner/DETAILS.md` § "Three scan roots"). It compares by name and writes only
+differences, which is exactly that case's shape. The trait half needs no such split — it is add-only per directory, so
+it simply takes the case. ❌ No path ever deletes: covering is add-only work.
+
+**The backend's scan session brackets the WHOLE frontier**, not each root: over SMB that's a pool of extra connections
+(`begin_scan_session` / `end_scan_session`), and opening one per frontier root would pay the setup repeatedly inside one
+walk. ❌ Nothing between the two calls may return early — `walk_frontier` keeps the loop in a helper for exactly that
+reason, so a cancelled walk can't leave the pool standing.
 
 **Terminal states.** `CoverOutcome.cancelled` separates "the index answers for this scope now" from "somebody stopped
 us", which are different phases in the UI. Neither is a failure: a cancelled walk still left every directory it read
@@ -388,11 +402,15 @@ maintenance timer can't drift between the two. What that start does differently:
   search re-walks the same ground and a cold drive never converges.
 - **Never inherits the Fresh a journal replay earns.** It doesn't replay, so a persisted index it didn't verify loads
   Stale exactly like a non-journaled one (and bumps the epoch on the way, as any launch-as-Stale does).
-- **Refuses what it can't walk**: a volume that isn't mounted, and a share or a phone (the LOCAL guarded walker must
-  never traverse a network mount; their scoped walk is M3d). Classified by the same typed facts and the same
-  `routes_to_local_external` predicate the enable command uses, with the `statfs` probe bounded on a thread of its own —
-  the async timeout `local_external::classify` uses needs a runtime this path doesn't have, and a probe that won't
-  answer IS the answer (`MountFacts::UNPROBEABLE` reads as network, which is refused here anyway).
+- **Classifies the volume by how its ground is read**, so the only thing it refuses is a volume nothing has mounted.
+  Same typed facts and the same predicates the enable command uses (MTP's id vocabulary first — `mtp://…` is not a path
+  a `statfs` can answer for — then `routes_to_local_external` over a live smb2 session and the network-filesystem flag),
+  with the `statfs` probe bounded on a thread of its own: the async timeout `local_external::classify` uses needs a
+  runtime this path doesn't have, and a probe that won't answer IS the answer (`MountFacts::UNPROBEABLE` reads as
+  network, which routes to the trait walk — the right walk for a mount whose `statfs` won't return). ⚠️ The kind names
+  the SCAN PATH, not the protocol: an NFS or WebDAV mount is classified `Smb` because that is what every trait-scanned,
+  mount-rooted, journal-less volume needs. Refusing it instead would make a search of it silently wrong, and calling it
+  local would point the guarded walker at syscalls that block for minutes.
 - **Runs with drive indexing turned off** (Decision 13). Neither the master switch nor the sticky per-drive
   `user_disabled` veto gates it: both stop work the app does uninvited, and a search is a read the user just asked for.
   The carve-out is one condition in `start_indexing_for` (`activation == IndexTheVolume`), so `WriterOnly` is the only
@@ -409,10 +427,12 @@ suppresses itself on a drive a search already walked.
 found by descending into its parent's listing already has a row. Otherwise the chain from the volume root down is
 created through the writer (`UpsertEntryV2`, resolved by `(parent_id, name)`, so a row arriving meanwhile is updated
 rather than duplicated past `idx_parent_name_folded`), one flush per created component, each carrying the real
-directory's metadata. It declines rather than guesses in three cases: a chain running through a FILE row (the stale
-file→dir type change `reconcile_subtree` escalates on — parenting under a file id orphans everything below), a path that
-isn't a directory on disk any more, and a symlink (stored, never descended into, so a walk rooted below one would
-attribute another directory's contents to it).
+directory's metadata. Where that metadata comes from is `Ground`'s to answer: an `lstat` on the local half, and a
+deadline-bounded `stat_one_directory` round trip on the trait half (whose timeout races the task's JOIN handle for the
+same reason listings do — dropping a `get_metadata` future mid-round-trip wedges a phone). It declines rather than
+guesses in three cases: a chain running through a FILE row (the stale file→dir type change `reconcile_subtree`
+escalates on — parenting under a file id orphans everything below), a path that isn't a directory any more, and a
+symlink (stored, never descended into, so a walk rooted below one would attribute another directory's contents to it).
 
 ## Vanished-volume scan abort (`scan_completion.rs`)
 

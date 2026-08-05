@@ -64,6 +64,14 @@ children, and ancestors (critical for Docker E2E performance).
   want: they've just decided the index's picture of that subtree is wrong.
 - **`Virgin`** — a coverage frontier node, walked by `cover_subtree` for a search. ❌ Deletes NOTHING.
 
+This walker covers a frontier node only when the volume's ground is a local filesystem. Everything the index reaches
+through a `Volume` instead — a share, a phone, a future backend — is covered by `../network_scanner/`'s scoped walk,
+which its driver (`../lifecycle/cover.rs`, `Ground`) picks by volume kind. Nothing else about coverage forks: same
+writer, same epochs, same frontier query, same descent rule. The one place the two walks genuinely differ is
+`ScanError::NotVirgin` — the trait walk compares each directory's names against the index instead of refusing, because
+there an indexed query is free next to the network round trip that produced the listing, while here it would sit in the
+hot path of eight worker threads reading a `readdir` that costs microseconds.
+
 Each root also picks the walk's `WalkPolicy` — what it refuses to descend into — described below.
 
 ## `WalkPolicy`: what a walk refuses to descend into

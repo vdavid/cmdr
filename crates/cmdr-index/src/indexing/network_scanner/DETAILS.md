@@ -3,8 +3,9 @@
 Read this before any non-trivial work in `network_scanner/`: editing, planning, reorganizing, or advising. Must-know
 guardrails are in `CLAUDE.md`.
 
-This area owns the `Volume`-trait BFS scan/reconcile walk, its round-trip disciplines, the terminal-disconnect
-partial-preserving finish, the consecutive-failure backstop, scan pacing, and the NAS system-dir skips. Points outward:
+This area owns the three `Volume`-trait BFS walks (fresh, reconcile, and the search-driven scoped cover), their
+round-trip disciplines, the terminal-disconnect partial-preserving finish, the consecutive-failure backstop, scan
+pacing, and the NAS system-dir skips. Points outward:
 the registry / phase machine / freshness / gating / manual-rescan routing in `../lifecycle/DETAILS.md`; the honest-sizes
 model + `dir_stats` ledger + the shared `Arc<AtomicI64>` id counter in `../writer/DETAILS.md`; the reconcile mode
 predicate, the shared per-dir diff (`diff_dir_against_db`), the `BulkReconcileGuard`, and the completion-handler
@@ -23,7 +24,12 @@ stays here on the serial network BFS; the parallel local walker dropped it in fa
 Sizes come from `FileEntry.size` (SMB stat); since SMB has no separate physical size or inode, physical mirrors logical
 and inode is `None`. Symlinks contribute no size (matching the local scanner's `du`-style omission).
 
-Three disciplines for network round trips (all in `list_one_directory`):
+No walk here names a backend, which is what makes the coverage concept work on a future one for free:
+`lifecycle/cover.rs` picks between "read the disk" and "ask the `Volume`", and everything downstream of a discovered
+entry — ids, writer, epochs, `dir_stats`, the frontier query, the descent rule — is identical either way.
+
+Three disciplines for network round trips (in `list_one_directory`, and in `stat_one_directory`, which the cover walk's
+chain materialization uses for a single path):
 
 - **Cancelable at every round trip**: the walk's `CancellationToken` is checked before each directory listing and
   threaded into `list_directory_for_scan`, so an in-flight MTP listing bails within one round trip. A cancel flushes the
@@ -69,8 +75,8 @@ prunes one parallel subtree.
 
 ### Bounded-concurrency walk (`FULL_LISTING_BUDGET`)
 
-Both the fresh scan and the reconcile walk keep up to `FULL_LISTING_BUDGET` (64) `list_directory` round trips in flight
-at once via a `FuturesUnordered` pump, instead of one-at-a-time. Directory listing is latency-bound — each dir is an
+All three walks keep up to `FULL_LISTING_BUDGET` (64) `list_directory` round trips in flight at once via a
+`FuturesUnordered` pump, instead of one-at-a-time. Directory listing is latency-bound — each dir is an
 open+query+close round trip over an otherwise-idle link — so overlapping them is a near-linear speedup (one real
 first-scan went from ~28 dirs/s serial to ~137 dirs/s and ~4,700 entries/s, ≈7–8× end to end). **Only the network I/O
 overlaps**: results are processed serially on the walk task, so `ScanContext` id allocation (fresh) and the DB read
@@ -121,8 +127,9 @@ bulk writes via `BulkReconcileGuard`. The remaining lever is fewer round trips p
 The walk's listing budget isn't a constant: at every top-up it asks `ScanPacer::listing_budget()`, which returns
 `FULL_LISTING_BUDGET` (64) while the share is quiet and `YIELDING_LISTING_BUDGET` (1) while a higher-priority claim
 holds it — the user browsing it, OR a user-initiated transfer touching it (the host's order: interactive > transfers >
-indexing; the transfer signal is `priority::transfers`' per-volume gauge). Both the fresh scan and the reconcile walk
-read it. **Why it exists:** a scan and the pane's own listings share ONE SMB session (every `SmbVolume` clone
+indexing; the transfer signal is `priority::transfers`' per-volume gauge). All three walks read it, the search-driven
+cover walk included: it runs over the same session the pane browses through, so a search of one folder must not bury the
+navigation the user makes while reading its results. **Why it exists:** a scan and the pane's own listings share ONE SMB session (every `SmbVolume` clone
 multiplexes frames over the same connection), so 64 in-flight listings bury a navigation behind the backlog — a 40-entry
 folder took **10.7 s** to open mid-scan on a real QNAP (`/Volumes/naspi`, ~2M entries, 2026-07-19) and was instant the
 second the scan finished. That's also the first impression the app makes on someone who connects a NAS and enables
@@ -247,6 +254,47 @@ and writes NO `scan_completed_at`. A false "complete" over a transiently-empty r
 policy — empty (`EmptyRoot`) vs failed (`Volume`/`Io`) root, why both reconcile paths bail BEFORE diffing the root, and
 the accepted genuinely-empty-volume false-negative — is canonical in `../reconcile/DETAILS.md` § No completion marker on
 an empty root.
+
+## The scoped cover walk (`cover_scan.rs`)
+
+`cover_volume_subtree(volume, root, space, writer, emit, cancel, pacer)` is the search-driven half of the coverage
+concept over the `Volume` trait: it covers ONE frontier node that `Index::coverage` named, feeding the entries it finds
+to a live consumer while filling the index. Its driver is `lifecycle/cover.rs`, which picks between it and the local
+guarded walker by volume kind and owns the frontier loop, the claims, and the session bracket. It keeps every round-trip
+discipline above (cancel per round trip, `LIST_TIMEOUT` racing the JOIN handle, autoreleasepool, typed-disconnect and
+consecutive-failure backstops, `ScanPacer`, the NAS system-dir skip) and diverges from the two whole-volume walks in
+exactly four places, all of them consequences of a person having asked:
+
+- **Scoped root.** The root resolves through `space.index_relative` + `resolve_scan_root(.., false)` to its own entry id,
+  never `ROOT_ID`, and the BFS carries `(path, id)` pairs the way the reconcile walk does. `lifecycle/cover/bootstrap.rs`
+  has already materialized the ancestor chain when the index had no row for it, using `stat_one_directory` for the same
+  reason the listings use `list_one_directory`.
+- **A cancel KEEPS its coverage.** The finish sequence (flush → `MarkDirsListed` → `ComputeSubtreeAggregates`) runs on
+  EVERY exit: clean, cancel, disconnect, unlistable root. **Decision/Why:** convergence. A search that walks eight
+  minutes of a NAS and is then cancelled has to leave the frontier genuinely smaller, or repeated searching over the
+  same area never gets faster and the walk is pure loss. The whole-volume scan is the opposite case (a half-built index
+  of a share is not an index of the share), so the two rules disagree on purpose. The aggregate is the SUBTREE one, and
+  the writer repairs the ancestor chain above it from there.
+- **Add-only, per directory.** Before writing a listing's rows it reads the names the index already holds under that
+  directory (`list_children_on`, folded through `normalize_for_comparison`, the same fold `idx_parent_name_folded`
+  uses). A name that's already there keeps its row and its id; a directory among them is descended into with that id.
+  **Decision/Why not the local walker's virgin-root refusal:** the parallel walker refuses non-virgin ground because a
+  per-directory DB lookup from eight worker threads would cost real time against a `readdir` that costs microseconds.
+  Here the lookup is an indexed query against a listing that cost a network round trip, so taking the case is cheaper
+  than refusing it — and it removes the need for a repair path, which over the trait would have meant a second walk.
+  The cost is that stale rows under covered ground aren't corrected; that's `reconcile/`'s job (Decision 5 trusts a
+  covered-but-stale subtree rather than re-walking it).
+- **MTP same-name siblings become explicit.** The store holds one row per `(parent_id, name_folded)` and
+  `insert_entries_v2_batch` is `INSERT OR IGNORE`, so a second child with the same name would take an id, be queued as a
+  directory in its own right, have its children written under that id, and then lose the row the id belonged to —
+  orphaning everything below it. The name check makes it "keep the first, log the rest". Pinned by
+  `cover::network_tests::a_same_name_sibling_keeps_the_first_row_rather_than_orphaning_a_subtree`.
+- **No empty-root refusal.** `VolumeScanError::EmptyRoot` exists because a share that lists empty is a glitch, and a
+  false "complete" strands the whole index. An empty FOLDER is an ordinary thing to search, and refusing to mark it
+  would hand it back to every later search forever, so the cover walk marks it listed and moves on.
+
+Tests live with the driver (`lifecycle/cover/network_tests.rs`), over an `InMemoryVolume`, because what they pin is the
+walk's contract with a backend rather than anything SMB- or MTP-specific.
 
 ## Reconcile
 
