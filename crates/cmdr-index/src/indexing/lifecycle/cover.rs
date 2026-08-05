@@ -232,6 +232,16 @@ fn walk_frontier(
     let outcome = walk_roots(context, &ground, frontier, sender, cancel);
     ground.close_session();
 
+    // Everything this walk learned is COMMITTED before it reports, on the
+    // cancelled path too. The rows are the smaller half of that: the marks
+    // matter more — a directory the walk gave up on carries `known_unreadable`,
+    // and a caller that asks what's still uncovered the moment the walk ends
+    // would otherwise be told "nothing", one search too early. It's the last
+    // thing the walk does, so nothing waits on the queue that didn't have to.
+    if let Err(e) = context.writer.flush_blocking() {
+        log::warn!("Cover: the walk's last rows may not have landed: {e}");
+    }
+
     log::debug!(
         "Cover: {} over {}{}",
         pluralize(outcome.entries_found, "entry"),

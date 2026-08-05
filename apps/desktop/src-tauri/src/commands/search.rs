@@ -124,6 +124,33 @@ pub async fn search_files(query: SearchQuery) -> Result<SearchResult, String> {
         .map_err(|e| format!("Search task failed: {e}"))?
 }
 
+/// Search the scope's volume, walking whatever its index can't answer for yet.
+///
+/// Returns as soon as routing has picked a volume; everything else arrives as
+/// `search-progress` / `search-complete` / `search-cancelled` / `search-error`
+/// events stamped with `run_id`. Starting a run supersedes the previous one (its
+/// events stop, its walk carries on), and `cancel_search` stops one outright.
+///
+/// `run_id` comes from the caller so no event can arrive against an id the
+/// frontend hasn't seen yet, exactly as `listing_id` does for a streaming
+/// listing.
+#[tauri::command]
+#[specta::specta]
+pub async fn search_files_streaming(
+    app: tauri::AppHandle,
+    query: SearchQuery,
+    run_id: String,
+) -> Result<search::LiveSearchStart, String> {
+    search::start_live(app, query, run_id)
+}
+
+/// Stop a live search and the walk behind it. Returns whether there was one.
+#[tauri::command]
+#[specta::specta]
+pub async fn cancel_search(run_id: String) -> Result<bool, String> {
+    Ok(search::cancel_live_run(&run_id))
+}
+
 /// Nudge the dialog that a volume's index is now searchable, naming the volume and
 /// its entry count.
 fn emit_index_ready(app: &tauri::AppHandle, volume_id: &str, entry_count: u64) {
@@ -136,12 +163,18 @@ fn emit_index_ready(app: &tauri::AppHandle, volume_id: &str, entry_count: u64) {
     .emit(app);
 }
 
-/// Called when the search dialog closes. Starts the idle timer and cancels any
-/// in-progress index load.
+/// Called when the search dialog closes. Starts the idle timer, cancels any
+/// in-progress index load, and stops every live search.
+///
+/// A walk outlives its dialog only through "Open in pane"
+/// (`docs/specs/unindexed-search-plan.md` M7); closing the dialog otherwise means
+/// nobody is waiting for it. What it already read stays in the index, so the next
+/// search over that ground starts from where this one stopped.
 #[tauri::command]
 #[specta::specta]
 pub async fn release_search_index() -> Result<(), String> {
     search::DIALOG_OPEN.store(false, Ordering::Relaxed);
+    search::cancel_all_live_runs();
     search::cancel_active_loads();
     search::start_idle_timer();
     Ok(())

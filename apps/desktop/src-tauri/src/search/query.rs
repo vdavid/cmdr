@@ -243,7 +243,7 @@ pub(crate) fn split_scope_segments(input: &str) -> Vec<String> {
 /// analog of `blocking_with_timeout`; `resolve_include_paths` is sync). On timeout,
 /// an error, or a non-existent path we keep the literal — today's best-effort
 /// behavior, so an offline/unmounted-index scope still gets its literal match.
-fn canonicalize_scope_path(path: &str) -> String {
+pub(crate) fn canonicalize_scope_path(path: &str) -> String {
     let owned = path.to_string();
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {

@@ -49,6 +49,7 @@ use specta_typescript::Typescript;
 use tauri_specta::{Builder, collect_events};
 
 use crate::commands::search::SearchIndexReadyEvent;
+use crate::search::live::events::{SearchCancelledEvent, SearchCompleteEvent, SearchErrorEvent, SearchProgressEvent};
 use crate::events::index_mapping::{
     AggregationProgressEvent, IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexFreshnessChangedEvent,
     IndexMemoryWarningEvent, IndexPhaseChangedEvent, IndexReplayCompleteEvent, IndexReplayProgressEvent,
@@ -628,6 +629,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::media_index::media_index_folder_coverage,
         crate::commands::search::prepare_search_index,
         crate::commands::search::search_files,
+        crate::commands::search::search_files_streaming,
+        crate::commands::search::cancel_search,
         crate::commands::search::release_search_index,
         crate::commands::search::translate_search_query,
         crate::commands::search::parse_search_scope,
@@ -776,6 +779,13 @@ pub fn builder() -> Builder<tauri::Wry> {
             IndexMemoryWarningEvent,       // event_name = "index-memory-warning"
             IndexFreshnessChangedEvent,    // event_name = "index-freshness-changed"
             SearchIndexReadyEvent,         // event_name = "search-index-ready"
+            // Live search (search/live/events.rs `TauriSearchEventSink`): one
+            // progress stream plus one terminal event, every one stamped with the
+            // run it belongs to.
+            SearchProgressEvent,
+            SearchCompleteEvent,
+            SearchCancelledEvent,
+            SearchErrorEvent,
             // Image enrichment progress (media_index/events.rs): image
             // indexing joins the top-right indicator as a second publisher.
             MediaEnrichProgressEvent, // event_name = "media-enrich-progress"

@@ -10,41 +10,38 @@
 use std::collections::HashSet;
 
 use rayon::prelude::*;
-use regex::{Regex, RegexBuilder};
 
-use cmdr_index::store::{self, ROOT_ID};
+use cmdr_index::store::ROOT_ID;
 
+use super::excludes::ExcludeRules;
 use super::index::SearchIndex;
 use super::matcher::{Candidate, CompiledQuery, Evaluator};
-use super::query::{SYSTEM_DIR_EXCLUDES, glob_to_regex, summarize_query};
+use super::query::summarize_query;
 use super::ranking::{self, ImportanceWeights};
 use super::types::{SearchQuery, SearchResultEntry};
 
 // ── Scope filter (pre-resolved for the hot loop) ─────────────────────
 
 /// Pre-resolved scope filter for efficient ancestor-walk filtering during search.
+///
+/// The arena EVALUATOR for the exclusions; the rules themselves are
+/// [`ExcludeRules`], shared with the live walk so the two can't disagree
+/// (`excludes.rs`). What stays here is arena-shaped: the include roots are entry
+/// ids, and the ancestor walk is a `parent_id` chain.
 struct ScopeFilter {
     /// Entry IDs that represent the include path roots. An entry passes if
     /// any of its ancestors (including itself) is in this set.
     include_ids: Option<HashSet<i64>>,
-    /// Exact directory names to exclude (O(1) HashSet lookup per ancestor level).
-    /// Stored normalized when `case_insensitive` is true.
-    exclude_exact_names: HashSet<String>,
-    /// Whether exclude name matching is case-insensitive.
-    case_insensitive: bool,
-    /// Compiled regex patterns for glob-based directory name exclusion.
-    /// Only used for user-specified patterns containing wildcards (* or ?).
-    exclude_name_patterns: Vec<Regex>,
-    /// Absolute path prefixes for path-based exclusion.
-    exclude_path_prefixes: Vec<String>,
+    /// The directory names and path prefixes this query excludes.
+    excludes: ExcludeRules,
+    /// The volume's mount root, prepended before a path-prefix comparison: the
+    /// index stores mount-relative paths, and a user's path exclude is absolute.
+    path_prefix: String,
 }
 
 impl ScopeFilter {
     fn is_active(&self) -> bool {
-        self.include_ids.is_some()
-            || !self.exclude_exact_names.is_empty()
-            || !self.exclude_name_patterns.is_empty()
-            || !self.exclude_path_prefixes.is_empty()
+        self.include_ids.is_some() || !self.excludes.is_empty()
     }
 
     /// Check if an entry at `entry_idx` passes the scope filter by walking
@@ -75,53 +72,32 @@ impl ScopeFilter {
         }
 
         // Exclude check: walk ancestors, check each name against exclusions
-        let has_name_excludes = !self.exclude_exact_names.is_empty() || !self.exclude_name_patterns.is_empty();
-        if has_name_excludes || !self.exclude_path_prefixes.is_empty() {
-            // For path-prefix excludes, reconstruct the path lazily
-            if !self.exclude_path_prefixes.is_empty() {
-                let path = reconstruct_path_from_index(index, entry.id);
-                for prefix in &self.exclude_path_prefixes {
-                    if path.starts_with(prefix.as_str()) {
-                        return false;
-                    }
-                }
+        if self.excludes.has_path_prefixes() {
+            // For path-prefix excludes, reconstruct the path lazily — and in the
+            // MOUNT space, because a user's path exclude is absolute while the
+            // index stores mount-relative paths.
+            let path = apply_path_prefix(&self.path_prefix, &reconstruct_path_from_index(index, entry.id));
+            if self.excludes.excludes_path(&path) {
+                return false;
             }
+        }
 
-            // For bare-name excludes, walk ancestors and check directory names
-            if has_name_excludes {
-                let mut current_id = entry.parent_id;
-                loop {
-                    if current_id == ROOT_ID || current_id == 0 {
-                        break;
-                    }
-                    match index.id_to_index.get(&current_id) {
-                        Some(&idx) => {
-                            let ancestor = &index.entries[idx];
-                            if ancestor.is_directory {
-                                let name = index.name(ancestor);
-                                // O(1) exact-name check (system dirs + simple user excludes)
-                                if !self.exclude_exact_names.is_empty() {
-                                    let excluded = if self.case_insensitive {
-                                        self.exclude_exact_names
-                                            .contains(&store::normalize_for_comparison(name))
-                                    } else {
-                                        self.exclude_exact_names.contains(name)
-                                    };
-                                    if excluded {
-                                        return false;
-                                    }
-                                }
-                                // Glob-pattern check (user wildcards only)
-                                for pat in &self.exclude_name_patterns {
-                                    if pat.is_match(name) {
-                                        return false;
-                                    }
-                                }
-                            }
-                            current_id = ancestor.parent_id;
+        // For bare-name excludes, walk ancestors and check directory names
+        if self.excludes.has_name_rules() {
+            let mut current_id = entry.parent_id;
+            loop {
+                if current_id == ROOT_ID || current_id == 0 {
+                    break;
+                }
+                match index.id_to_index.get(&current_id) {
+                    Some(&idx) => {
+                        let ancestor = &index.entries[idx];
+                        if ancestor.is_directory && self.excludes.excludes_dir_name(index.name(ancestor)) {
+                            return false;
                         }
-                        None => break,
+                        current_id = ancestor.parent_id;
                     }
+                    None => break,
                 }
             }
         }
@@ -135,7 +111,7 @@ impl ScopeFilter {
 /// `case_insensitive` comes from the compiled query rather than being derived again:
 /// excluding under a different alphabet than the pattern matched with is the kind of
 /// silent disagreement `matcher.rs` exists to prevent.
-fn prepare_scope_filter(query: &SearchQuery, case_insensitive: bool) -> ScopeFilter {
+fn prepare_scope_filter(query: &SearchQuery, case_insensitive: bool, path_prefix: &str) -> ScopeFilter {
     // Use pre-resolved include path IDs (resolved via SQLite before search())
     let include_ids = if let Some(ref ids) = query.include_path_ids {
         if ids.is_empty() {
@@ -152,47 +128,10 @@ fn prepare_scope_filter(query: &SearchQuery, case_insensitive: bool) -> ScopeFil
         None
     };
 
-    // Build exclude filters from user-specified patterns and system dir list
-    let mut exclude_exact_names = HashSet::new();
-    let mut exclude_name_patterns = Vec::new();
-    let mut exclude_path_prefixes = Vec::new();
-
-    // User-specified excludes: wildcards → regex, plain names → exact HashSet
-    if let Some(ref patterns) = query.exclude_dir_names {
-        for pattern in patterns {
-            if pattern.contains('/') {
-                exclude_path_prefixes.push(pattern.clone());
-            } else if pattern.contains('*') || pattern.contains('?') {
-                let regex_str = glob_to_regex(pattern);
-                if let Ok(re) = RegexBuilder::new(&regex_str).case_insensitive(case_insensitive).build() {
-                    exclude_name_patterns.push(re);
-                }
-            } else if case_insensitive {
-                exclude_exact_names.insert(store::normalize_for_comparison(pattern));
-            } else {
-                exclude_exact_names.insert(pattern.clone());
-            }
-        }
-    }
-
-    // System dir excludes (unless explicitly disabled)
-    if query.exclude_system_dirs != Some(false) {
-        for &name in SYSTEM_DIR_EXCLUDES {
-            let key = if case_insensitive {
-                store::normalize_for_comparison(name)
-            } else {
-                name.to_string()
-            };
-            exclude_exact_names.insert(key);
-        }
-    }
-
     ScopeFilter {
         include_ids,
-        exclude_exact_names,
-        case_insensitive,
-        exclude_name_patterns,
-        exclude_path_prefixes,
+        excludes: ExcludeRules::from_query(query, case_insensitive),
+        path_prefix: path_prefix.to_string(),
     }
 }
 
@@ -249,7 +188,7 @@ pub(crate) fn search_ranked(
     let case_insensitive = compiled.case_insensitive();
 
     // Pre-resolve scope filter
-    let scope_filter = prepare_scope_filter(query, case_insensitive);
+    let scope_filter = prepare_scope_filter(query, case_insensitive, path_prefix);
 
     // Parallel scan: collect matching indices
     let matching_indices: Vec<usize> = index
@@ -386,24 +325,7 @@ fn apply_path_prefix(prefix: &str, path: &str) -> String {
 fn build_result_entry(index: &SearchIndex, idx: usize, path_prefix: &str, home_dir: Option<&str>) -> SearchResultEntry {
     let entry = &index.entries[idx];
     let path = apply_path_prefix(path_prefix, &reconstruct_path_from_index(index, entry.id));
-    let parent_path = match path.rfind('/') {
-        Some(0) => "/".to_string(),
-        Some(pos) => {
-            let parent = &path[..pos];
-            // Replace home dir prefix with ~ (a no-op for a prefixed non-root path,
-            // whose mount root is never the home dir).
-            if let Some(home) = home_dir {
-                if let Some(rest) = parent.strip_prefix(home) {
-                    format!("~{rest}")
-                } else {
-                    parent.to_string()
-                }
-            } else {
-                parent.to_string()
-            }
-        }
-        None => path.clone(),
-    };
+    let parent_path = home_relative_parent(&path, home_dir);
     let entry_name = index.name(entry);
     let icon_id = derive_icon_id(entry_name, entry.is_directory);
     SearchResultEntry {
@@ -415,6 +337,26 @@ fn build_result_entry(index: &SearchIndex, idx: usize, path_prefix: &str, home_d
         modified_at: entry.modified_at,
         icon_id,
         entry_id: entry.id,
+    }
+}
+
+/// A result row's parent path, with the home directory written as `~`.
+///
+/// Shared with the live walk, which builds its rows from a walked path rather
+/// than from the arena: a result should read the same however it was found.
+pub(crate) fn home_relative_parent(path: &str, home_dir: Option<&str>) -> String {
+    match path.rfind('/') {
+        Some(0) => "/".to_string(),
+        Some(pos) => {
+            let parent = &path[..pos];
+            // Replace home dir prefix with ~ (a no-op for a prefixed non-root path,
+            // whose mount root is never the home dir).
+            match home_dir.and_then(|home| parent.strip_prefix(home)) {
+                Some(rest) => format!("~{rest}"),
+                None => parent.to_string(),
+            }
+        }
+        None => path.to_string(),
     }
 }
 

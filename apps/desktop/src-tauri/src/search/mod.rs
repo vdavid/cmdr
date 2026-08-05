@@ -10,9 +10,11 @@ pub mod ai;
 #[cfg(test)]
 mod bench;
 pub(crate) mod engine;
+pub(crate) mod excludes;
 pub(crate) mod execute;
 pub mod history;
 pub(crate) mod index;
+pub(crate) mod live;
 pub(crate) mod matcher;
 pub(crate) mod query;
 pub(crate) mod ranking;
@@ -34,7 +36,10 @@ pub(crate) use volumes::{
 };
 
 // execute.rs (single-volume orchestration)
-pub(crate) use execute::run_blocking;
+pub(crate) use execute::{LiveSearchStart, run_blocking, start_live};
+
+// live.rs (a search that walks what the index can't answer for)
+pub(crate) use live::{cancel_all_live_runs, cancel_live_run};
 
 // query.rs
 pub use query::SYSTEM_DIR_EXCLUDES;

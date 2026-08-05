@@ -1,0 +1,547 @@
+//! What a live run does with what the walk hands it: the union, the batching,
+//! the cap, and every terminal state.
+//!
+//! The walk itself isn't here — it's driven through a plain channel, which is
+//! exactly the seam `drive_walk` puts between the walk's thread and the run's.
+//! Real walks over real ground are `crates/cmdr-index/src/indexing/lifecycle/cover/`
+//! and the end-to-end test in `search/execute/tests.rs`.
+
+use std::path::PathBuf;
+use std::sync::mpsc::{SyncSender, sync_channel};
+
+use super::events::CollectorSearchEventSink;
+use super::*;
+use crate::search::types::PatternType;
+
+// ── Fixtures ─────────────────────────────────────────────────────────
+
+/// A run built without the registry, so a test never supersedes another's.
+/// Registry behavior has its own tests, which take [`registry_lock`].
+fn run_for_test(volume_id: &str) -> Arc<LiveRun> {
+    Arc::new(LiveRun {
+        run_id: format!("run-{volume_id}"),
+        volume_id: volume_id.to_string(),
+        cancel: CancellationToken::new(),
+        superseded: AtomicBool::new(false),
+    })
+}
+
+/// Serializes the tests that use the process-wide run registry.
+fn registry_lock() -> std::sync::MutexGuard<'static, ()> {
+    static LOCK: Mutex<()> = Mutex::new(());
+    LOCK.lock_ignore_poison()
+}
+
+/// A plain substring query for `stem`, with the system-directory tier off unless
+/// a test asks for it.
+fn query(stem: &str) -> SearchQuery {
+    SearchQuery {
+        name_pattern: Some(stem.to_string()),
+        pattern_type: PatternType::Glob,
+        min_size: None,
+        max_size: None,
+        modified_after: None,
+        modified_before: None,
+        is_directory: None,
+        include_paths: None,
+        exclude_dir_names: None,
+        include_path_ids: None,
+        count_only: false,
+        limit: 30,
+        case_sensitive: Some(false),
+        exclude_system_dirs: Some(false),
+    }
+}
+
+fn covered_file(path: &str) -> CoveredEntry {
+    CoveredEntry {
+        path: PathBuf::from(path),
+        is_directory: false,
+        is_symlink: false,
+        logical_size: Some(10),
+        physical_size: Some(10),
+        modified_at: Some(1),
+    }
+}
+
+fn covered_dir(path: &str) -> CoveredEntry {
+    CoveredEntry {
+        is_directory: true,
+        logical_size: None,
+        physical_size: None,
+        ..covered_file(path)
+    }
+}
+
+fn indexed_row(path: &str) -> SearchResultEntry {
+    SearchResultEntry {
+        name: path.rsplit('/').next().unwrap_or(path).to_string(),
+        path: path.to_string(),
+        parent_path: "/".to_string(),
+        is_directory: false,
+        size: Some(10),
+        modified_at: Some(1),
+        icon_id: "file".to_string(),
+        entry_id: 7,
+    }
+}
+
+/// An outcome from a walk that covered everything it took.
+fn covered_everything(roots: usize) -> CoverOutcome {
+    CoverOutcome {
+        entries_found: 0,
+        dirs_found: 0,
+        roots_covered: roots,
+        cancelled: false,
+    }
+}
+
+/// Drive `messages` through a run, and report what the sink saw.
+struct Driven {
+    ending: WalkEnding,
+    sink: Arc<CollectorSearchEventSink>,
+}
+
+/// Everything a walked entry is judged by, built for one query.
+struct Judged {
+    compiled: CompiledQuery,
+    excludes: ExcludeRules,
+}
+
+impl Judged {
+    fn new(query: &SearchQuery) -> Self {
+        let compiled = CompiledQuery::compile(query, crate::search::matcher::Evaluator::LiveWalk)
+            .expect("the test queries all narrow something");
+        let excludes = ExcludeRules::from_query(query, compiled.case_insensitive());
+        Self { compiled, excludes }
+    }
+
+    fn judge(&self) -> WalkJudge<'_> {
+        WalkJudge {
+            compiled: &self.compiled,
+            excludes: &self.excludes,
+            volume_root: None,
+            home_dir: None,
+        }
+    }
+}
+
+/// Run the pump over a channel a test feeds, with `indexed` standing in for the
+/// covered half.
+fn drive(
+    run: &Arc<LiveRun>,
+    query: &SearchQuery,
+    indexed: Vec<SearchResultEntry>,
+    indexed_total: u32,
+    feed: impl FnOnce(&SyncSender<WalkMsg>) + Send + 'static,
+) -> Driven {
+    let sink = Arc::new(CollectorSearchEventSink::default());
+    let judged = Judged::new(query);
+    let (tx, rx) = sync_channel(8);
+    let feeder = std::thread::spawn(move || feed(&tx));
+
+    let mut stream = ResultStream::new(run, sink.as_ref(), query);
+    stream.add_indexed(indexed, indexed_total);
+    let ending = pump(&rx, 1, &judged.judge(), &mut stream);
+    let coverage = SearchCoverage {
+        walk: ending,
+        unreadable: Vec::new(),
+        still_covering: Vec::new(),
+        unresolved_scopes: Vec::new(),
+        capped: stream.capped(),
+        target_volume_id: run.volume_id.clone(),
+    };
+    stream.finish(coverage);
+    feeder.join().expect("the feeder thread");
+    Driven { ending, sink }
+}
+
+// ── The union ────────────────────────────────────────────────────────
+
+#[test]
+fn the_two_halves_make_one_answer_with_nothing_shown_twice() {
+    // The covered half comes from the index and the rest from the walk, and the
+    // partition is what keeps them apart. The race it can't rule out — a file
+    // indexed between the frontier query and the walk reaching it — would show
+    // the same file twice and count it twice, which is what the bounded seen-set
+    // insures against.
+    let run = run_for_test("union");
+    let q = query("report");
+    let driven = drive(
+        &run,
+        &q,
+        vec![indexed_row("/covered/report-1.pdf")],
+        1,
+        |tx| {
+            tx.send(WalkMsg::Batch(vec![
+                covered_file("/walked/report-2.pdf"),
+                // The same file the index already answered for.
+                covered_file("/covered/report-1.pdf"),
+                covered_file("/walked/notes.txt"),
+            ]))
+            .expect("send");
+            tx.send(WalkMsg::Ended(covered_everything(1))).expect("send");
+        },
+    );
+
+    assert_eq!(driven.ending, WalkEnding::Completed);
+    let paths: Vec<String> = driven.sink.rows().into_iter().map(|row| row.path).collect();
+    assert_eq!(
+        paths,
+        vec!["/covered/report-1.pdf", "/walked/report-2.pdf"],
+        "the index half first, then what the walk added, each once"
+    );
+    let complete = driven.sink.complete.lock_ignore_poison();
+    assert_eq!(
+        complete[0].match_count, 2,
+        "and the count is the union's, not the sum of the two halves"
+    );
+}
+
+#[test]
+fn a_walked_entry_is_judged_by_the_matcher_and_the_exclusions_alike() {
+    // The live half applies BOTH: the compiled query (`matcher.rs`) and the scope
+    // exclusions (`excludes.rs`), so a drive being unindexed can't turn a filter
+    // off. Here the system-directory tier is on, so the match inside
+    // `node_modules` is out and the one beside it is in.
+    let run = run_for_test("judged");
+    let q = SearchQuery {
+        exclude_system_dirs: Some(true),
+        ..query("report")
+    };
+    let driven = drive(&run, &q, Vec::new(), 0, |tx| {
+        tx.send(WalkMsg::Batch(vec![
+            covered_file("/p/node_modules/report.pdf"),
+            covered_file("/p/src/report.pdf"),
+            covered_file("/p/src/unrelated.txt"),
+        ]))
+        .expect("send");
+        tx.send(WalkMsg::Ended(covered_everything(1))).expect("send");
+    });
+
+    let paths: Vec<String> = driven.sink.rows().into_iter().map(|row| row.path).collect();
+    assert_eq!(paths, vec!["/p/src/report.pdf"]);
+}
+
+// ── Superseding (Decision 11) ────────────────────────────────────────
+
+#[test]
+fn a_superseded_run_says_nothing_and_still_drains_its_walk() {
+    // Refining a query drops the old query's batches, and its walk keeps going.
+    // Draining is not politeness: the channel is bounded, so a run that stopped
+    // reading would park the walk it isn't allowed to stop.
+    let _serialized = registry_lock();
+    let first = register("run-1", "supersede-volume");
+    let _second = register("run-2", "supersede-volume");
+    assert!(!first.wants_events(), "the newer run supersedes the older one");
+    assert!(!first.is_cancelled(), "❌ and does NOT stop its walk");
+
+    let q = query("report");
+    let driven = drive(&first, &q, vec![indexed_row("/covered/report.pdf")], 1, |tx| {
+        tx.send(WalkMsg::Batch(vec![covered_file("/walked/report.pdf")]))
+            .expect("a superseded run still reads its walk");
+        tx.send(WalkMsg::Ended(covered_everything(1))).expect("send");
+    });
+
+    assert_eq!(driven.ending, WalkEnding::Completed, "the walk ran to the end");
+    assert!(driven.sink.progress.lock_ignore_poison().is_empty(), "and said nothing");
+    assert!(driven.sink.complete.lock_ignore_poison().is_empty());
+    deregister("run-1");
+    deregister("run-2");
+}
+
+#[test]
+fn a_walk_that_wrote_rows_marks_its_volume_for_the_next_query() {
+    // The other half of Decisions 11 and 12 together: the ground this walk covered
+    // is recovered from the INDEX by the next query, which only works if that
+    // query rebuilds its arena first. The mark is what tells it to, and a
+    // superseded run has to keep marking — its walk is still writing.
+    let _serialized = registry_lock();
+    let run = register("run-marks", "marked-volume");
+    let second = register("run-marks-2", "marked-volume");
+    let q = query("report");
+    crate::search::volumes::take_walked_behind("marked-volume");
+
+    drive(&run, &q, Vec::new(), 0, |tx| {
+        tx.send(WalkMsg::Batch(vec![covered_file("/walked/report.pdf")]))
+            .expect("send");
+        tx.send(WalkMsg::Ended(covered_everything(1))).expect("send");
+    });
+
+    assert!(
+        crate::search::volumes::take_walked_behind("marked-volume"),
+        "a superseded run's walk still moves the arena out from under the next query"
+    );
+    drop(second);
+    deregister("run-marks");
+    deregister("run-marks-2");
+}
+
+// ── Batching ─────────────────────────────────────────────────────────
+
+#[test]
+fn rows_go_out_in_batches_of_at_most_a_hundred() {
+    let run = run_for_test("batching");
+    let q = SearchQuery { limit: 1000, ..query("f") };
+    let driven = drive(&run, &q, Vec::new(), 0, |tx| {
+        let batch: Vec<CoveredEntry> = (0..250).map(|i| covered_file(&format!("/w/f{i:04}.txt"))).collect();
+        tx.send(WalkMsg::Batch(batch)).expect("send");
+        tx.send(WalkMsg::Ended(covered_everything(1))).expect("send");
+    });
+
+    assert_eq!(driven.sink.rows().len(), 250);
+    let sizes = driven.sink.batch_sizes();
+    assert!(
+        sizes.iter().all(|size| *size <= 100),
+        "no event carries more than a hundred rows: {sizes:?}"
+    );
+    assert!(sizes.iter().filter(|size| **size > 0).count() >= 3, "{sizes:?}");
+}
+
+#[test]
+fn a_lone_row_does_not_wait_for_company() {
+    // A walk grinding through folders that match nothing must not hold the one
+    // match it did find until the next batch happens to arrive — that's the 100 ms
+    // half of "100 rows or 100 ms, whichever comes first".
+    let run = run_for_test("interval");
+    let q = query("report");
+    let started = Instant::now();
+    let driven = drive(&run, &q, Vec::new(), 0, |tx| {
+        tx.send(WalkMsg::Batch(vec![covered_file("/w/report.pdf")]))
+            .expect("send");
+        // Long enough that a flush waiting on the next message would be visible.
+        std::thread::sleep(Duration::from_millis(400));
+        tx.send(WalkMsg::Ended(covered_everything(1))).expect("send");
+    });
+
+    let first_row_at = driven
+        .sink
+        .progress
+        .lock_ignore_poison()
+        .iter()
+        .position(|event| !event.entries.is_empty())
+        .expect("the row went out");
+    assert!(first_row_at < driven.sink.batch_sizes().len() - 1, "before the end");
+    assert!(started.elapsed() >= Duration::from_millis(400), "the walk really ran on");
+}
+
+// ── The cap ──────────────────────────────────────────────────────────
+
+#[test]
+fn the_cap_stops_the_rows_and_never_the_walk() {
+    // Convergence is the payoff: a walk stopped at the cap would leave the ground
+    // it hadn't reached uncovered forever, and freeze "N so far" at a number that
+    // never becomes true. So the rows stop, the count doesn't, and the walk runs
+    // to the end.
+    let run = run_for_test("capped");
+    let q = SearchQuery { limit: 2, ..query("f") };
+    let driven = drive(&run, &q, Vec::new(), 0, |tx| {
+        for i in 0..6 {
+            tx.send(WalkMsg::Batch(vec![covered_file(&format!("/w/f{i}.txt"))]))
+                .expect("the walk is never turned away at the cap");
+        }
+        tx.send(WalkMsg::Ended(covered_everything(1))).expect("send");
+    });
+
+    assert_eq!(driven.ending, WalkEnding::Completed);
+    assert_eq!(driven.sink.rows().len(), 2, "two rows, as asked");
+    let complete = driven.sink.complete.lock_ignore_poison();
+    assert_eq!(complete[0].match_count, 6, "and a count that kept rising past them");
+    assert!(complete[0].coverage.capped);
+}
+
+#[test]
+fn a_count_only_run_counts_without_building_a_single_row() {
+    let run = run_for_test("count-only");
+    let q = SearchQuery {
+        count_only: true,
+        ..query("f")
+    };
+    let driven = drive(&run, &q, Vec::new(), 0, |tx| {
+        tx.send(WalkMsg::Batch(vec![covered_file("/w/f1.txt"), covered_file("/w/f2.txt")]))
+            .expect("send");
+        tx.send(WalkMsg::Ended(covered_everything(1))).expect("send");
+    });
+
+    assert!(driven.sink.rows().is_empty());
+    assert_eq!(driven.sink.complete.lock_ignore_poison()[0].match_count, 2);
+}
+
+// ── Progress ─────────────────────────────────────────────────────────
+
+#[test]
+fn progress_counts_the_directories_the_walk_turned_up_and_says_where_it_is() {
+    // No percentage and no ETA: the total is unknown by definition (Decision 14),
+    // so what a user gets is a count that only goes up and the folder the walk was
+    // in when the batch left it.
+    let run = run_for_test("progress");
+    let q = query("report");
+    let driven = drive(&run, &q, Vec::new(), 0, |tx| {
+        tx.send(WalkMsg::Batch(vec![
+            covered_dir("/w/one"),
+            covered_dir("/w/two"),
+            covered_file("/w/two/report.pdf"),
+        ]))
+        .expect("send");
+        tx.send(WalkMsg::Ended(covered_everything(1))).expect("send");
+    });
+
+    let progress = driven.sink.progress.lock_ignore_poison();
+    let last = progress.last().expect("at least one event");
+    assert_eq!(last.dirs_found, 2);
+    assert_eq!(last.current_path.as_deref(), Some("/w/two"));
+}
+
+// ── Terminal states ──────────────────────────────────────────────────
+
+#[test]
+fn a_completed_walk_that_covered_its_ground_reads_as_complete() {
+    let run = run_for_test("complete");
+    let q = query("report");
+    let driven = drive(&run, &q, Vec::new(), 0, |tx| {
+        tx.send(WalkMsg::Ended(covered_everything(1))).expect("send");
+    });
+    assert_eq!(driven.ending, WalkEnding::Completed);
+    assert_eq!(driven.sink.complete.lock_ignore_poison().len(), 1);
+    assert!(driven.sink.cancelled.lock_ignore_poison().is_empty());
+}
+
+#[test]
+fn cancelling_stops_the_run_promptly_and_ends_it_as_cancelled() {
+    // Escape, or the dialog closing. The run must not wait for a walk that may be
+    // parked on a slow network read, so the wait is bounded by the flush interval.
+    let run = run_for_test("cancel");
+    let q = query("report");
+    let sink = Arc::new(CollectorSearchEventSink::default());
+    let judged = Judged::new(&q);
+    // A walk that says nothing for a long time (a network read in flight): only
+    // the cancel gets this run out, so the sender is deliberately never joined.
+    let (tx, rx) = sync_channel::<WalkMsg>(1);
+    std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_secs(5));
+        let _ = tx.send(WalkMsg::Ended(covered_everything(1)));
+    });
+    let cancel_at = run.cancel_token();
+    std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_millis(20));
+        cancel_at.cancel();
+    });
+
+    let started = Instant::now();
+    let mut stream = ResultStream::new(&run, sink.as_ref(), &q);
+    let ending = pump(&rx, 1, &judged.judge(), &mut stream);
+    let elapsed = started.elapsed();
+    stream.finish(SearchCoverage {
+        walk: ending,
+        unreadable: Vec::new(),
+        still_covering: Vec::new(),
+        unresolved_scopes: Vec::new(),
+        capped: false,
+        target_volume_id: run.volume_id.clone(),
+    });
+
+    assert_eq!(ending, WalkEnding::Cancelled);
+    assert!(
+        elapsed < Duration::from_millis(500),
+        "it stopped without waiting the walk out ({elapsed:?})"
+    );
+    let cancelled = sink.cancelled.lock_ignore_poison();
+    assert_eq!(cancelled.len(), 1, "one terminal event, and it's the cancelled one");
+    assert_eq!(cancelled[0].coverage.walk, WalkEnding::Cancelled);
+    assert!(sink.complete.lock_ignore_poison().is_empty());
+}
+
+#[test]
+fn a_walk_that_stopped_without_being_asked_reads_as_interrupted() {
+    // The drive went away mid-walk. `CoverOutcome::cancelled` says the walk
+    // stopped early; that we did NOT ask is what makes it a disconnect rather than
+    // a cancel, and the two are different sentences in the UI.
+    let run = run_for_test("disconnect");
+    let q = query("report");
+    let driven = drive(&run, &q, Vec::new(), 0, |tx| {
+        tx.send(WalkMsg::Batch(vec![covered_file("/w/report.pdf")])).expect("send");
+        tx.send(WalkMsg::Ended(CoverOutcome {
+            entries_found: 1,
+            dirs_found: 0,
+            roots_covered: 0,
+            cancelled: true,
+        }))
+        .expect("send");
+    });
+
+    assert_eq!(driven.ending, WalkEnding::Interrupted);
+    let complete = driven.sink.complete.lock_ignore_poison();
+    assert_eq!(complete[0].coverage.walk, WalkEnding::Interrupted);
+    assert_eq!(complete[0].match_count, 1, "what it did find is still real");
+}
+
+#[test]
+fn a_walk_that_left_a_root_uncovered_reads_as_interrupted() {
+    // One frontier root that couldn't be walked doesn't stop the others, and it
+    // doesn't get to look complete either: the root stays frontier, and the next
+    // search asks for it again.
+    let run = run_for_test("partial");
+    let q = query("report");
+    let sink = Arc::new(CollectorSearchEventSink::default());
+    let judged = Judged::new(&q);
+    let (tx, rx) = sync_channel(4);
+    tx.send(WalkMsg::Ended(covered_everything(1))).expect("send");
+    drop(tx);
+
+    let mut stream = ResultStream::new(&run, sink.as_ref(), &q);
+    // Two roots taken, one covered.
+    let ending = pump(&rx, 2, &judged.judge(), &mut stream);
+    assert_eq!(ending, WalkEnding::Interrupted);
+}
+
+#[test]
+fn a_walk_that_never_reported_at_all_reads_as_interrupted() {
+    // The reader thread died, or the process is coming down. Nothing may claim the
+    // frontier was covered.
+    let run = run_for_test("silent");
+    let q = query("report");
+    let driven = drive(&run, &q, Vec::new(), 0, |_tx| {});
+    assert_eq!(driven.ending, WalkEnding::Interrupted);
+}
+
+#[test]
+fn ending_of_puts_our_own_cancel_ahead_of_every_other_verdict() {
+    // A cancelled walk reports `cancelled` whatever else happened, so the order of
+    // these checks IS the difference between "you stopped it" and "the drive went
+    // away".
+    let stopped = CoverOutcome {
+        entries_found: 0,
+        dirs_found: 0,
+        roots_covered: 0,
+        cancelled: true,
+    };
+    assert_eq!(ending_of(Some(&stopped), 1, true), WalkEnding::Cancelled);
+    assert_eq!(ending_of(Some(&stopped), 1, false), WalkEnding::Interrupted);
+    assert_eq!(ending_of(Some(&covered_everything(2)), 2, false), WalkEnding::Completed);
+    assert_eq!(ending_of(None, 0, true), WalkEnding::Cancelled);
+    assert_eq!(ending_of(None, 0, false), WalkEnding::Interrupted);
+}
+
+// ── The registry ─────────────────────────────────────────────────────
+
+#[test]
+fn cancelling_everything_stops_every_run_in_flight() {
+    // What a closing dialog and a quitting app both call.
+    let _serialized = registry_lock();
+    let one = register("run-all-1", "volume-a");
+    let two = register("run-all-2", "volume-b");
+    cancel_all_live_runs();
+    assert!(one.is_cancelled() && two.is_cancelled());
+    deregister("run-all-1");
+    deregister("run-all-2");
+}
+
+#[test]
+fn cancelling_a_run_nobody_registered_says_so_rather_than_pretending() {
+    let _serialized = registry_lock();
+    assert!(!cancel_live_run("a-run-that-never-was"));
+    let run = register("run-cancel-one", "volume-c");
+    assert!(cancel_live_run("run-cancel-one"));
+    assert!(run.is_cancelled());
+    deregister("run-cancel-one");
+}

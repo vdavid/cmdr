@@ -23,7 +23,7 @@ use std::sync::{Arc, LazyLock, Mutex, OnceLock};
 use crate::ignore_poison::IgnorePoison;
 use crate::index_host::index;
 use cmdr_index::store::IndexStore;
-use cmdr_index::{ROOT_VOLUME_ID, ReadPool};
+use cmdr_index::{CoverageToken, ROOT_VOLUME_ID, ReadPool};
 
 use super::index::{SearchIndex, load_search_index, now_secs};
 
@@ -68,6 +68,13 @@ pub(crate) struct LoadedVolume {
     /// volume stamps 0 and simply reloads on the next dialog session (its index is far
     /// less volatile, and it drops on idle anyway).
     generation: u64,
+    /// Which state of the volume's index this arena is a snapshot of, read just
+    /// BEFORE the rows were (so it can only under-claim). A coverage answer is
+    /// honored only while its own token matches this one: an answer that calls a
+    /// subtree covered is a promise the arena holds its rows, and a walk that
+    /// wrote rows behind the arena breaks that promise silently
+    /// (`docs/specs/unindexed-search-plan.md` Decision 12).
+    pub(crate) coverage_token: CoverageToken,
 }
 
 /// The outcome of loading a volume's index.
@@ -234,18 +241,30 @@ pub(crate) fn has_searchable_index(volume_id: &str) -> bool {
 /// has it (an offline volume whose DB predates the meta) — the caller then treats
 /// the scope as unresolved rather than mis-rooting it.
 fn read_mount_root(pool: &ReadPool, volume_id: &str) -> Option<String> {
-    let usable = |s: String| (s != "/" && !s.is_empty()).then_some(s);
     let from_meta = pool
         .with_conn(|conn| IndexStore::get_meta(conn, "volume_path").ok().flatten())
         .ok()
         .flatten()
-        .and_then(usable);
-    from_meta.or_else(|| {
-        crate::file_system::volume::manager::get_volume_manager()
-            .get(volume_id)
-            .map(|v| v.root().to_string_lossy().into_owned())
-            .and_then(usable)
-    })
+        .and_then(usable_mount_root);
+    from_meta.or_else(|| registry_mount_root(volume_id))
+}
+
+/// A mounted volume's root, from the LIVE registry.
+///
+/// The fallback half of [`read_mount_root`], and the only source a live search
+/// has when the volume has no arena to read the meta from — a drive nobody ever
+/// indexed still has a mount root, and the walk reports paths under it.
+pub(crate) fn registry_mount_root(volume_id: &str) -> Option<String> {
+    crate::file_system::volume::manager::get_volume_manager()
+        .get(volume_id)
+        .map(|v| v.root().to_string_lossy().into_owned())
+        .and_then(usable_mount_root)
+}
+
+/// `/` and the empty string aren't mount roots: they're what an index with no
+/// `volume_path` meta, or the boot volume, reports.
+fn usable_mount_root(root: String) -> Option<String> {
+    (root != "/" && !root.is_empty()).then_some(root)
 }
 
 /// Load one volume's index synchronously (call inside `spawn_blocking`). Opens the
@@ -253,6 +272,11 @@ fn read_mount_root(pool: &ReadPool, volume_id: &str) -> Option<String> {
 /// from `index-{volume_id}.db` on disk), loads the arena, reads the mount root, and
 /// loads the volume's importance weights into [`WEIGHTS`].
 fn load_volume_blocking(volume_id: &str, data_dir: &Path, cancel: &AtomicBool) -> VolumeLoad {
+    // Taken BEFORE the rows, so a write racing this load makes the arena look
+    // older than it is rather than newer. Under-claiming costs a reload; the
+    // other way round would serve a coverage answer the arena can't back.
+    let coverage_token = index().coverage_token(volume_id);
+
     let (pool, mount_root, generation) = if volume_id == ROOT_VOLUME_ID {
         // Root's pool is the live registry's; absent means the root scan hasn't
         // produced a searchable index yet (indexing off / first scan running).
@@ -285,7 +309,46 @@ fn load_volume_blocking(volume_id: &str, data_dir: &Path, cancel: &AtomicBool) -
         pool,
         mount_root,
         generation,
+        coverage_token,
     }))
+}
+
+// ── Arenas a walk left behind (Decision 12) ──────────────────────────
+
+/// Volumes a cover walk has written rows into since their arena was loaded.
+///
+/// Only a WALK marks one. Background indexing writes rows constantly on the boot
+/// disk, and rebuilding on that would put a multi-second pass in front of every
+/// search ([`get_loaded`] says why that was removed once already) — while the lag
+/// it would close is the ordinary index lag search has always had. A walk is
+/// different in kind: the same search that just showed those files live would
+/// prune them as "covered" on its next run and show FEWER results, with no
+/// signal. So the mark is narrow on purpose.
+static WALKED_BEHIND: LazyLock<Mutex<std::collections::HashSet<String>>> =
+    LazyLock::new(|| Mutex::new(std::collections::HashSet::new()));
+
+/// Record that a walk wrote rows into this volume's index, so the next query
+/// reloads its arena before pruning anything as covered.
+pub(crate) fn mark_walked_behind(volume_id: &str) {
+    WALKED_BEHIND.lock_ignore_poison().insert(volume_id.to_string());
+}
+
+/// Take the mark, if there is one. Taking it is the caller's promise to reload:
+/// a walk still running re-marks with its next batch, so a query that reloads
+/// mid-walk is behind by at most what landed since.
+pub(crate) fn take_walked_behind(volume_id: &str) -> bool {
+    WALKED_BEHIND.lock_ignore_poison().remove(volume_id)
+}
+
+/// Drop a volume's arena and load it again, synchronously.
+///
+/// For the one caller that must NOT be served a snapshot: a coverage answer whose
+/// covered half this arena predates. Loading here rather than in the background is
+/// the whole point — the answer is only true against an arena at least as new as
+/// it is.
+pub(crate) fn reload_volume(volume_id: &str) -> VolumeLoad {
+    SEARCH_INDICES.lock_ignore_poison().remove(volume_id);
+    ensure_volume(volume_id)
 }
 
 /// Ensure a volume's index is loaded and return it (cache-aware). A warm entry

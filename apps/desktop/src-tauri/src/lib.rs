@@ -980,6 +980,13 @@ pub fn run() {
                     // may have a pending change the process won't outlive.
                     window_state::save_on_exit(_app);
 
+                    // Stop any live search walk. Coverage stays honest either way
+                    // (a directory is marked listed only once its rows are
+                    // written, so a walk cut off mid-flight claims nothing it
+                    // didn't read), but a walk reading a disk for a window that
+                    // no longer exists is work nobody asked for.
+                    search::cancel_all_live_runs();
+
                     // Restore ptpcamerad before exit so we don't leave the system
                     // with the daemon disabled after Cmdr closes
                     #[cfg(target_os = "macos")]
