@@ -26,6 +26,9 @@ File Provider mount, plus the scope-aware exclusion policy every local path shar
   resets it). Throttle, not exclude: a healthy provider is fully indexed, no path denylist.
 - **A COVER walk carries a `WalkHeartbeat`** (`heartbeat.rs`), stamped as each read STARTS: batches fill at 2 000
   entries, so a consumer deriving progress from them sees zero. It also totals the walk's give-ups. Scans pass `None`.
+- **A partial batch of found entries goes out after 100 ms** (`live_emit.rs`), from the push path AND the watchdog tick
+  (the only thing still moving when a walk parks). ❌ Don't drop the tick, ❌ don't shrink the batch to match (the
+  channel bound stops per-entry chatter), ❌ no third cadence.
 - **Honest-stale, never false-complete.** An abandoned or give-up-pruned dir is NEVER marked listed, so it stays
   `listed_epoch = 0` (unknown size, `EntryRow` intact); never zeroed, never `scan_completed_at`-marked. PERMISSION
   DENIED also gets `known_unreadable`; a TIMEOUT doesn't, since dead mounts heal. `mark_dirs_listed` clears it.

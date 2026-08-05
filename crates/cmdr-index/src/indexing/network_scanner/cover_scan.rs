@@ -42,7 +42,7 @@ use super::{
 };
 use crate::indexing::IndexPathSpace;
 use crate::indexing::reconcile::reconciler;
-use crate::indexing::scanner::{CoveredEntry, EntrySender, ScanSummary, WalkHeartbeat};
+use crate::indexing::scanner::{CoveredEntry, EmitPacer, EntrySender, ScanSummary, WalkHeartbeat};
 use crate::indexing::store::{EntryRow, IndexStore, normalize_for_comparison, resolve_scan_root};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 
@@ -403,6 +403,9 @@ struct CoverWrites<'a> {
     /// The same entries in the shape a live search consumes, held only while
     /// somebody is listening.
     discovered: Vec<CoveredEntry>,
+    /// When [`discovered`](Self::discovered) has waited long enough to go over
+    /// part-full, so a sparse tree doesn't look like a walk that found nothing.
+    emit_pacer: EmitPacer,
     emit: Option<EntrySender>,
     listed: Vec<i64>,
     /// Directories the walk deliberately won't read into. Stamped so the coverage
@@ -417,6 +420,7 @@ impl<'a> CoverWrites<'a> {
             epoch,
             batch: Vec::with_capacity(BATCH_SIZE),
             discovered: Vec::new(),
+            emit_pacer: EmitPacer::new(),
             emit,
             listed: Vec::new(),
             unreadable: Vec::new(),
@@ -429,9 +433,14 @@ impl<'a> CoverWrites<'a> {
         self.batch.push(row);
         if self.emit.is_some() {
             self.discovered.push(discovered);
+            self.emit_pacer.waiting();
         }
         if self.batch.len() >= BATCH_SIZE {
             self.flush()?;
+        } else if self.emit_pacer.is_due() {
+            // The writer's batch isn't full and the consumer's has waited: hand
+            // over what somebody is watching, and leave the rows to fill.
+            self.hand_over();
         }
         Ok(())
     }
@@ -450,19 +459,26 @@ impl<'a> CoverWrites<'a> {
 
     fn flush(&mut self) -> Result<(), VolumeScanError> {
         flush_batch(&mut self.batch, self.writer)?;
+        self.hand_over();
+        Ok(())
+    }
+
+    /// Give the entries found so far to whoever is watching the walk.
+    ///
+    /// A consumer that has gone away (a closed search dialog) just stops being
+    /// fed: the walk keeps running, because walking is coverage work and its rows
+    /// are already in the index for the next query to find.
+    fn hand_over(&mut self) {
+        self.emit_pacer.sent();
         if self.discovered.is_empty() {
-            return Ok(());
+            return;
         }
         let batch = std::mem::take(&mut self.discovered);
-        // A consumer that has gone away (a closed search dialog) just stops being
-        // fed: the walk keeps running, because walking is coverage work and its rows
-        // are already in the index for the next query to find.
         if let Some(sender) = self.emit.as_ref()
             && sender.send(batch).is_err()
         {
             self.emit = None;
         }
-        Ok(())
     }
 
     /// Flush the last rows, stamp every directory the walk listed, and roll the

@@ -12,7 +12,7 @@ use tokio_util::sync::CancellationToken;
 
 use super::exclusions::is_canonicalization_alias;
 use super::walker::{DirTask, DirVisitor, RawDirEntry, RawFileType, WalkReadError};
-use super::{CoveredEntry, EntrySender, MARK_CHUNK, ScanError, ScanProgress, WalkPolicy};
+use super::{CoveredEntry, EmitPacer, EntrySender, MARK_CHUNK, ScanError, ScanProgress, WalkPolicy};
 use crate::indexing::events::{Diagnostic, IndexErrorReport, IndexEvent};
 use crate::indexing::metadata;
 use crate::indexing::store::EntryRow;
@@ -43,6 +43,19 @@ struct Pending {
     /// The same entries in the shape a live search consumes. Populated only when
     /// somebody is listening.
     discovered: Vec<CoveredEntry>,
+    /// When [`discovered`](Self::discovered) has waited long enough to be handed
+    /// over part-full. It lives in here so asking costs no second lock; the ROWS
+    /// keep their own schedule, since a batch of rows nobody is waiting on is
+    /// throughput and a batch of entries somebody is watching is latency.
+    emit_pacer: EmitPacer,
+}
+
+impl Pending {
+    /// Take the entries waiting for a live consumer, stopping their clock.
+    fn take_discovered(&mut self) -> Vec<CoveredEntry> {
+        self.emit_pacer.sent();
+        std::mem::take(&mut self.discovered)
+    }
 }
 
 /// Fresh-scan [`DirVisitor`]: inserts every discovered entry as a new row,
@@ -133,7 +146,7 @@ impl InsertVisitor {
     fn flush(&self, pending: &mut Pending) {
         let rows = std::mem::take(&mut pending.rows);
         let listed = std::mem::take(&mut pending.listed);
-        let discovered = std::mem::take(&mut pending.discovered);
+        let discovered = pending.take_discovered();
 
         if !rows.is_empty()
             && let Err(e) = self.writer.send(WriteMessage::InsertEntriesV2(rows))
@@ -179,9 +192,17 @@ impl InsertVisitor {
         pending.rows.push(row);
         if let Some(entry) = discovered {
             pending.discovered.push(entry);
+            pending.emit_pacer.waiting();
         }
         if pending.rows.len() >= self.batch_size {
             self.flush(&mut pending);
+        } else if pending.emit_pacer.is_due() {
+            // The rows aren't ready to go and the entries have waited: hand over
+            // what a live consumer is watching without waiting for the writer's
+            // batch to fill. Rows and marks keep their pairing untouched — this
+            // sends neither.
+            let discovered = pending.take_discovered();
+            self.emit(discovered);
         }
     }
 
@@ -365,6 +386,21 @@ impl DirVisitor for InsertVisitor {
                 detail: Diagnostic(error.to_string()),
             },
         });
+    }
+
+    /// Hand over a batch that has been waiting, even though nothing new was
+    /// found. Every other hook here fires on discovery, so a walk parked on one
+    /// slow directory would otherwise hold everything it found before it parked
+    /// until the walk ended.
+    fn on_watchdog_tick(&self) {
+        let discovered = {
+            let mut pending = self.pending.lock_ignore_poison();
+            if !pending.emit_pacer.is_due() {
+                return;
+            }
+            pending.take_discovered()
+        };
+        self.emit(discovered);
     }
 
     fn visit_read_error(&self, dir: &DirTask, err: &WalkReadError) {

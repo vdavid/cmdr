@@ -517,10 +517,11 @@ Through M7. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local 
 - **A live walk's progress used to be only as live as its batches**, and the batch size is what made that visible: a
   `CoveredEntry` batch fills at 2 000 entries, so a walk over a sparse tree (one matching file per directory) reports
   `0 folders scanned` and no path for hundreds of directories. M6 saw it on a `~/Library` walk; M7 fixed it with
-  `WalkHeartbeat`, stamped as each directory read STARTS. ⚠️ The related UX fact is NOT fixed: the ROWS still only
-  appear when a batch fills, so a sparse tree shows "0 matches so far" for a long time while the folder count climbs.
-  Verified on a 1 642-directory disk image with one file per leaf: no rows until the walk was nearly done. Worth a look
-  in M10 — a time-based flush inside the walker's emit would close it.
+  `WalkHeartbeat`, stamped as each directory read STARTS. The ROWS had the same problem and M8 closed it:
+  `scanner/live_emit.rs`'s `EmitPacer` hands a partial batch over 100 ms after its first row, consulted from the push
+  path and — because a walk parked on one directory calls no visitor hook at all — from the local walker's watchdog
+  tick, which runs at 100 ms rather than a second while somebody is watching. ❌ The batch itself stays at 2 000: the
+  channel is bounded on purpose, and 100 entries per crossing would spend that bound on chatter.
 - **A `.svelte.ts` module dynamic-imported by URL is a SECOND instance.** `import('/src/lib/x.svelte.ts')` and
   `import('/src/lib/x.svelte')` give two modules with two copies of the state, and the app resolves to the `.ts` one.
   Only a debugging hazard (nothing in the app imports by URL), but it cost an hour of chasing a phantom duplicate-module

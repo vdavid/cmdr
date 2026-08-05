@@ -204,6 +204,18 @@ pub trait DirVisitor: Send + Sync {
     /// queue); how loudly to report it is the visitor's call, so this defaults to
     /// silence and the production visitor overrides it.
     fn note_worker_spawn_failure(&self, _error: &std::io::Error) {}
+
+    /// The walk's watchdog came round, so anything the visitor owes on a CLOCK
+    /// rather than on an entry can go out now.
+    ///
+    /// It exists because the visitor's own hooks all fire on discovery: a walk
+    /// parked on one slow directory calls none of them, and whatever it found
+    /// before it parked would sit until the walk ended. The watchdog is the one
+    /// thread still moving then, and it already wakes on
+    /// [`WalkConfig::watchdog_interval`], so this costs no thread of its own.
+    /// Defaults to nothing; a walk with a live consumer is the only one with
+    /// anything to do here.
+    fn on_watchdog_tick(&self) {}
 }
 
 /// Default per-subtree consecutive-read-failure budget. Mirrors the network
@@ -768,6 +780,11 @@ impl<V: DirVisitor + 'static> Engine<V> {
                 self.signal_done();
                 return;
             }
+
+            // Before judging the reads: whatever the visitor owes on a clock. A
+            // walk parked on one directory reaches nothing else, and this is the
+            // thread still moving.
+            self.visitor.on_watchdog_tick();
 
             let now = Instant::now();
             // Snapshot the slot handles (cheap Arc clones) so we don't hold the

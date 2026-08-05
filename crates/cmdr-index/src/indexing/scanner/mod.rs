@@ -38,6 +38,9 @@ pub(in crate::indexing) use exclusions::*;
 mod heartbeat;
 pub(crate) use heartbeat::WalkHeartbeat;
 
+mod live_emit;
+pub(in crate::indexing) use live_emit::{EMIT_INTERVAL, EmitPacer};
+
 mod insert_visitor;
 use insert_visitor::InsertVisitor;
 
@@ -78,6 +81,8 @@ const WATCHDOG_INTERVAL: Duration = Duration::from_secs(1);
 mod convergence_tests;
 #[cfg(test)]
 mod heartbeat_tests;
+#[cfg(test)]
+mod live_emit_tests;
 #[cfg(test)]
 mod policy_tests;
 #[cfg(test)]
@@ -805,6 +810,7 @@ fn run_scan(
     // visitor can stop the walk on a writer-send failure WITHOUT that reading as
     // a user cancel (`was_cancelled` below asks the parent).
     let walk_cancel = cancel.child_token();
+    let emitting = emit.is_some();
     let visitor = Arc::new(InsertVisitor::new(
         writer.clone(),
         policy,
@@ -819,6 +825,15 @@ fn run_scan(
     // Watchdog ticks faster than the timeout (production 15s → 1s; a short test
     // timeout scales down, floored at 5ms).
     let watchdog_interval = (stall_timeout / 15).clamp(Duration::from_millis(5), WATCHDOG_INTERVAL);
+    // A walk somebody is watching gives the watchdog a second duty: handing over
+    // a partial batch of found entries that has waited long enough. So its tick
+    // can't be slower than that wait, or a walk parked on one directory would sit
+    // on rows it has already found (`live_emit.rs`).
+    let watchdog_interval = if emitting {
+        watchdog_interval.min(EMIT_INTERVAL)
+    } else {
+        watchdog_interval
+    };
     let cfg = WalkConfig {
         num_threads,
         stall_timeout,

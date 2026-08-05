@@ -7,10 +7,12 @@
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::sync::atomic::Ordering;
+use std::sync::{Arc, Condvar, Mutex};
 
 use tokio_util::sync::CancellationToken;
+
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 use super::walker::{InlineStat, RawDirEntry, RawFileType, ReadDirFn, ReadProgress};
 use crate::indexing::store::{IndexStore, ROOT_ID};
@@ -94,6 +96,39 @@ pub(super) fn dir(name: &'static str) -> MockChild {
     }
 }
 
+/// A read the test holds open until it says otherwise.
+///
+/// What it buys is a walk that is genuinely still running while the test looks at
+/// what it has emitted so far — the only honest way to ask "does a consumer see
+/// rows before the walk ends?". A condvar rather than a sleep: the test decides
+/// when the read completes, so nothing depends on how fast the machine is.
+pub(super) struct ReadGate {
+    open: Mutex<bool>,
+    wake: Condvar,
+}
+
+impl ReadGate {
+    pub(super) fn closed() -> Arc<Self> {
+        Arc::new(Self {
+            open: Mutex::new(false),
+            wake: Condvar::new(),
+        })
+    }
+
+    /// Let the parked read finish.
+    pub(super) fn open(&self) {
+        *self.open.lock_ignore_poison() = true;
+        self.wake.notify_all();
+    }
+
+    fn wait(&self) {
+        let mut open = self.open.lock_ignore_poison();
+        while !*open {
+            open = self.wake.wait(open).unwrap_or_else(|e| e.into_inner());
+        }
+    }
+}
+
 /// A directory tree that lives only in the reader, so a test can decide which
 /// reads succeed and when the walk gets cancelled without racing a real
 /// filesystem.
@@ -109,6 +144,8 @@ pub(super) struct MockTree {
     cancel_on_read: Option<PathBuf>,
     /// Reading these paths fails with permission denied.
     denied: Vec<PathBuf>,
+    /// Reading this path parks until the test opens the gate.
+    gated: Option<(PathBuf, Arc<ReadGate>)>,
 }
 
 impl MockTree {
@@ -139,12 +176,20 @@ impl MockTree {
         self
     }
 
+    /// A directory whose read parks until `gate` opens, so the walk is provably
+    /// still running while the test inspects what it has emitted.
+    pub(super) fn gated_at(mut self, path: impl Into<PathBuf>, gate: &Arc<ReadGate>) -> Self {
+        self.gated = Some((path.into(), Arc::clone(gate)));
+        self
+    }
+
     /// The reader `run_scan` drives, wired to `cancel`.
     pub(super) fn reader(self, cancel: &CancellationToken) -> ReadDirFn {
         let MockTree {
             dirs,
             cancel_on_read,
             denied,
+            gated,
         } = self;
         let dirs = Arc::new(dirs);
         let cancel = cancel.clone();
@@ -152,6 +197,11 @@ impl MockTree {
             if cancel_on_read.as_deref() == Some(path) {
                 cancel.cancel();
                 return Err(std::io::Error::other("cancelled mid-walk (test)"));
+            }
+            if let Some((gated_path, gate)) = gated.as_ref()
+                && gated_path == path
+            {
+                gate.wait();
             }
             if denied.iter().any(|d| d == path) {
                 return Err(std::io::Error::new(
