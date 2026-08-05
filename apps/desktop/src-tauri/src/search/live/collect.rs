@@ -95,6 +95,9 @@ impl CollectingSink {
     /// Returns as soon as the run reaches a terminal state, or the moment the
     /// budget runs out with the run still going. Either way the caller gets
     /// every row that had arrived.
+    ///
+    /// TAKES the rows, so call it once per run: a second call would report the
+    /// ones that arrived since, not the answer.
     pub(crate) fn answer_within(&self, budget: Duration, target_volume_id: String) -> LiveAnswer {
         let fold = self.fold.lock_ignore_poison();
         let (mut fold, _) = self
