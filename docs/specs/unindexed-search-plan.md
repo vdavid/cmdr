@@ -250,7 +250,7 @@ coverage API must not assume a single dimension.
 
 ## Execution status
 
-Through M3b. Branch `worktree-david+unindexed-search-exec`, nothing merged to `main` yet.
+Through M3c. Branch `worktree-david+unindexed-search-exec`, nothing merged to `main` yet.
 
 **Landed.**
 
@@ -285,7 +285,40 @@ Through M3b. Branch `worktree-david+unindexed-search-exec`, nothing merged to `m
   thread. `ensure_walkable` materializes a frontier path's ancestor chain through the writer at `listed_epoch = 0`, and
   declines a chain through a FILE row, a vanished path, or a symlink.
 
+- **M3c**: walk policy. Structural exclusions are on for the search walk, as `ExclusionMode` layered over the
+  kind-derived `ExclusionScope`; the walk pins the device its root sits on and cuts where another filesystem is mounted
+  (one `symlink_metadata` per discovered directory, 2–3 µs and 3–6% of wall clock, measured); Decision 13's carve-out
+  landed as one condition in `start_indexing_for`, with the four docs corrected; and one walk per patch of ground
+  (`cover/live.rs`) closes the collision one writer per DB doesn't. Either cut writes NO ROW, because an unlisted row
+  would sit in the frontier forever. File Provider domains stay in scope, pinned by a test that claims every directory
+  is a domain root and asserts the walk descends anyway.
+
 **Decisions taken during execution that the spec did not pre-empt.**
+
+- **The master-switch carve-out is ONE code site, not three.** The plan named `handle/mod.rs`'s `start_volume` and
+  `transports/smb/index.rs`'s reconnect resume alongside `start_indexing_for`, but both of those ARE background work by
+  Decision 13's own definition: "Turn on indexing for this drive" and an autonomous reconnect are exactly what the
+  switch exists to stop. Carving them out would contradict the decision it's implementing. The walk passes through
+  `start_indexing_for` only, so the carve-out is `activation == Activation::IndexTheVolume` there plus deleting M3b's
+  `NoCoverContext::MasterSwitchOff`. The four docs were all four right to need it.
+- **One writer per DB is not enough on its own.** Two walks through the SAME writer over the same directories collide
+  identically to two writers: each allocates a fresh id for the same name, `INSERT OR IGNORE` drops one, and its subtree
+  is orphaned. Hence the frontier claims. The plan's "coalesce onto one walk" is implemented as "one walk takes the
+  ground, the other reports what it left" rather than a shared-subscriber fan-out — Decisions 11 and 12 already say a
+  superseded query recovers its predecessor's ground from the index, and a fan-out needs per-subscriber filtering and
+  per-subscriber completion with no second consumer to shape either against.
+- **A volume mid-full-scan needed a real gate, not just a comment.** `cover_context_for` handed the writer over whenever
+  the phase was `Running`, and a full scan runs in `Running` with `mgr.scanning` set. The plan said "a search over a
+  volume mid-full-scan does not walk at all"; it didn't yet.
+- **The exclusion switch earns its keep only because `Rebuild` stays off.** The plan's own reasoning ("the existing
+  callers do not depend on today's no-exclusions default") is correct, and turning `Rebuild` on too costs exactly one
+  test — at which point `ExclusionMode` is dead code and the answer is "always apply". Left off deliberately: it changes
+  what `reconcile/verifier.rs` and `watch/event_loop/verification.rs` write, and there IS a real divergence to close
+  there (a `Rebuild` of a newly discovered `/Library` indexes `/Library/Caches`, which no boot scan does). That wants
+  its own change with those areas' docs, not a ride-along. Recorded in `scanner/DETAILS.md` § "`WalkPolicy`".
+- **Two seam tests had been failing on every full `cargo test -p cmdr-index --lib` run**, which blocks `cargo mutants`
+  entirely (it refuses a red baseline). The real `build()` installs the config permanently where `install_for_test`
+  restores it, and one provider test read a process-wide seam without the lock. Both fixed.
 
 - **The missing-row case is NOT cold-volume-specific, and the plan undersold it.** M3b was written as "a drive that was
   never indexed"; a folder created since its parent was last listed has no `entries` row on a fully indexed drive
