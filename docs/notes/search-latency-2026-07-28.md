@@ -88,6 +88,10 @@ warm, so contention inflates everything and compresses the parallel win.
 So the first unscoped query after opening the dialog waited on ~4.4 s of NAS arena loading cold, and the 10.9 s single
 load in the prod log above on a genuinely cold cache. Three things fix it, none of which narrows what search covers:
 
+> ⚠️ Point 1 below is **superseded**: the one-volume ceiling deleted the fan-out and `ColdVolumePolicy` with it, so
+> every search now waits for its one volume's arena (`docs/specs/unindexed-search-plan.md` Decision 4). The
+> measurements stand; the mechanism described is gone. Points 2 and 3 still hold.
+
 1. **A cold volume no longer blocks the dialog's search** (`ColdVolumePolicy::DeferColdVolumes`). The run answers from
    the arenas already in memory and returns the cold volumes in `RunOutcome::deferred_volumes`; `search_files` warms
    each behind the reply and emits `search-index-ready`, which the dialog's existing listener turns into a re-run. So
