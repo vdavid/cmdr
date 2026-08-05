@@ -105,6 +105,10 @@ volume's `dir_stats`.
   `RootProbes::is_domain_root`) as a cut — it answers where a volume ROOT sits, for the pseudo-filesystem rule.
 - **A full scan pins nothing**, deliberately: it bounds itself by path prefix (`/Volumes/` under `BootDisk`) and pinning
   it would silently change what a boot index contains for anyone with a disk image mounted in their home dir.
+- Accepted edge, the same one an exclusion carries: a cut directory's parent reads as covered, so if the drive is later
+  UNMOUNTED, the (now ordinary, and almost always empty) mount-point directory stays invisible to search until something
+  re-lists its parent — which FSEvents does on the next change there. `/Volumes/X` under the boot scan has behaved this
+  way all along.
 - Cost: one `symlink_metadata` per discovered DIRECTORY, about 2–3 µs and 3–6% of a walk's wall clock
   (`docs/notes/cover-walk-primitive-2026-08-05.md`, which also records why `ATTR_CMN_DEVID` on the batched read and a
   `getmntinfo` snapshot were both rejected). The probe is a `fn` pointer so a test can put a mount anywhere in a temp
