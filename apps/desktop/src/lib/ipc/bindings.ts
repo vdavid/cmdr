@@ -8793,13 +8793,20 @@ export type VolumeIndexStatus = {
   /**
    *  Whether an index is registered (and thus being kept live) for this
    *  volume. `false` ⇒ gray / not-indexed.
+   *
+   *  ⚠️ Registered is NOT the same as indexed: a search's walk stands a
+   *  writer-only instance up on a drive nothing has ever scanned, so this reads
+   *  `true` there while [`freshness`](Self::freshness) stays `None`. A caller
+   *  asking "is this drive indexed?" (rather than "is there an instance?") must
+   *  consult BOTH — the first-connect prompt does.
    */
   enabled: boolean
   /**
    *  The volume's freshness (gray = `None`/disabled; blue = `scanning`; green
-   *  = `fresh`; yellow = `stale`; red = `failed`). Always `Some` when `enabled`,
-   *  and `Some(Failed)` for a dead index even though `enabled` is `false` (the
-   *  instance stays registered in the `Failed` phase so the badge is honest).
+   *  = `fresh`; yellow = `stale`; red = `failed`). `Some(Failed)` for a dead
+   *  index even though `enabled` is `false` (the instance stays registered in
+   *  the `Failed` phase so the badge is honest), and `None` on a registered
+   *  volume nothing has scanned, which is what a walk-built index looks like.
    */
   freshness: Freshness | null
   /**

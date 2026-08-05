@@ -2,6 +2,8 @@
  * Tests for the first-connect prompt gating (D6): the prompt shows only when
  * indexing is on, the per-drive prompt is on, the drive isn't silenced, isn't
  * `root`, isn't already indexed, and wasn't already prompted this session.
+ * "Already indexed" means a scan built or is building it — ❌ never merely
+ * "an instance is registered", which a search's walk is enough for.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { VolumeIndexStatus } from '$lib/ipc/bindings'
@@ -97,6 +99,25 @@ describe('maybePromptFirstConnect gating', () => {
     }
     await maybePromptFirstConnect('smb-e', 'Share E', actions)
     expect(addToast).not.toHaveBeenCalled()
+  })
+
+  it('still prompts a drive a SEARCH walked, which is registered but not indexed', async () => {
+    // A search's walk stands a writer-only instance up on a drive nothing has
+    // ever scanned, so `enabled` reads true there while `freshness` stays null.
+    // Treating that as "already indexed" would retire the offer for the drive
+    // that most needs it — the walk covered one folder, not the drive.
+    statusByVolume['smb-walked'] = {
+      volumeId: 'smb-walked',
+      enabled: true,
+      freshness: null,
+      failure: null,
+      scanCompletedAt: null,
+      scanDurationMs: null,
+      coalescedSignalsSinceSweep: 0,
+      nextSweepDueAt: null,
+    }
+    await maybePromptFirstConnect('smb-walked', 'Walked share', actions)
+    expect(addToast).toHaveBeenCalledTimes(1)
   })
 
   it('does not prompt the same drive twice in a session', async () => {

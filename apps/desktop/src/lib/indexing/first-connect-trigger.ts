@@ -44,9 +44,14 @@ export async function maybePromptFirstConnect(
   if (!getSetting('indexing.askForEachDrive')) return
   if (isDriveSilenced(volumeId)) return
 
-  // Don't prompt a drive that's already indexed (enabled or a persisted index).
+  // Don't prompt a drive a scan has already indexed (or is indexing right now).
+  // ⚠️ `enabled` alone doesn't say that: a search's walk registers a writer-only
+  // instance on a drive nothing has ever scanned, and `freshness` is what tells
+  // the two apart (`null` until something scans). Suppressing on `enabled` alone
+  // retired the offer for the drive that most needs it — a walk covered the
+  // folder somebody searched, not the drive.
   const statusRes = await getVolumeIndexStatusById(volumeId)
-  if (statusRes.status === 'ok' && statusRes.data.enabled) return
+  if (statusRes.status === 'ok' && statusRes.data.enabled && statusRes.data.freshness !== null) return
 
   promptedThisSession.add(volumeId)
   log.debug('Showing first-connect index prompt for {vid}', { vid: volumeId })
