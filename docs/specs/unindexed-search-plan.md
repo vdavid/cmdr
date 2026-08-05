@@ -1,6 +1,6 @@
 # Search that covers the folder you picked, indexed or not
 
-**Status**: IN EXECUTION. M0 through M6 have landed; M7 is next. See § Execution status before resuming. **Owner**:
+**Status**: IN EXECUTION. M0 through M7 have landed; M8 is next. See § Execution status before resuming. **Owner**:
 David. **Date**: 2026-08-03.
 
 Indexing stays optional. A search that runs to completion returns the same files with or without an index, only slower,
@@ -68,8 +68,9 @@ buried. It is meant to be complete; anything found later belongs here.
 8. **Media, OCR, and semantic search stay empty.** The walk writes the drive index only, never `media_index`, so photo
    and OCR search on a walked-but-unindexed drive returns nothing. Signalled by the existing
    `search.imageResults.notIndexed` copy, so no new work, but it is a difference.
-9. **A walk that ran to completion can still be short**, though far less often than an earlier draft of this register
-   claimed. The parallel walker abandons a directory that stops producing at `LOCAL_LIST_TIMEOUT`, or gives up after 32
+9. **A walk that ran to completion can still be short**, and M7 labelled it (`SearchRunCoverage::abandoned_ground` →
+   `search.coverage.walk.abandoned`), though it happens far less often than an earlier draft of this register claimed.
+   The parallel walker abandons a directory that stops producing at `LOCAL_LIST_TIMEOUT`, or gives up after 32
    consecutive failed reads. The measured case where that cost ~10% of rows was a phone's File Provider mount inside a
    whole-`/` scan, **not** general machine load: the walker has never used rayon, and M3a measured zero abandonments
    across four real trees up to 1.2M entries (`reconcile/DETAILS.md`, `docs/notes/cover-walk-primitive-2026-08-05.md`).
@@ -263,7 +264,7 @@ coverage API must not assume a single dimension.
 
 ## Execution status
 
-Through M6. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local `main`.
+Through M7. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local `main`.
 
 **Landed.**
 
@@ -339,6 +340,14 @@ Through M6. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local 
   progress strip (count, folders scanned, current path, Stop with its shortcut), a throttled `aria-live` region on an
   inner span, count-only's "N so far", the Escape two-step, and the coverage note's live half. Verified in the running
   app against a real unindexed NAS and an unindexed disk image.
+
+- **M7**: the walk that outlives its dialog. `walk-handoff.svelte.ts` keeps listening after "Open in pane", appends each
+  batch to the snapshot (through `appendSnapshotEntries`, which bumps `mutationTick`), drives the toast, and hands the
+  run back to a reopened dialog through the new `QueryStreamSource.resume`. `release_search_index` gained a
+  `keep_run_id` so the close spares exactly that run. It shipped with two things the milestone didn't name: a walker
+  HEARTBEAT (progress off the walk rather than its batches, which M6 recorded as the thing to fix) and the
+  abandoned-ground signal that closes Accepted difference 9. `CMDR_E2E_WALK_THROTTLE_MS` is the soft test hook the
+  milestone asked for.
 
 **Decisions taken during execution that the spec did not pre-empt.**
 
@@ -505,11 +514,24 @@ Through M6. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local 
   snapshot trees are indistinguishable frontend-side (short of matching `@eaDir` by name, which the no-string-matching
   rule forbids). M6 renders ONE sentence stating the fact plus a second naming both possibilities; the Rust doc comment
   was corrected to say so. Giving the list a typed cause is the fix if M8's Full Disk Access route wants to act on one.
-- **A live walk's progress is only as live as its batches.** `dirs_found` / `current_path` are derived from the batches
-  `WalkJudge::consume` sees, so a walk blocked on a slow or hung directory reports `0 folders scanned` and no path for
-  as long as it's stuck. Observed on a local `~/Library` walk that sat at zero for seconds. Honest (nothing HAS been
-  found) but it reads as frozen; a heartbeat from the walker would fix it, and M7's "still running" toast will want the
-  same data.
+- **A live walk's progress used to be only as live as its batches**, and the batch size is what made that visible: a
+  `CoveredEntry` batch fills at 2 000 entries, so a walk over a sparse tree (one matching file per directory) reports
+  `0 folders scanned` and no path for hundreds of directories. M6 saw it on a `~/Library` walk; M7 fixed it with
+  `WalkHeartbeat`, stamped as each directory read STARTS. ⚠️ The related UX fact is NOT fixed: the ROWS still only
+  appear when a batch fills, so a sparse tree shows "0 matches so far" for a long time while the folder count climbs.
+  Verified on a 1 642-directory disk image with one file per leaf: no rows until the walk was nearly done. Worth a look
+  in M10 — a time-based flush inside the walker's emit would close it.
+- **A `.svelte.ts` module dynamic-imported by URL is a SECOND instance.** `import('/src/lib/x.svelte.ts')` and
+  `import('/src/lib/x.svelte')` give two modules with two copies of the state, and the app resolves to the `.ts` one.
+  Only a debugging hazard (nothing in the app imports by URL), but it cost an hour of chasing a phantom duplicate-module
+  bug while diagnosing M7's cancel.
+
+- **The dialog close cancelled the run it had just handed to a pane.** Found in the running app, not by any test:
+  `release_search_index` correctly spares its `keep_run_id`, but the frontend passed `null`, so the walk stopped the
+  instant the pane appeared — the pane held whatever had arrived, the toast said "still searching" over a walk that
+  wasn't, and nothing reported a thing. Fixed by asking the module that OWNS the handoff (`handedOffRunId()`) rather
+  than reading the state cell from the dialog, and pinned by `SearchDialog.handoff.svelte.test.ts`. ⚠️ The fix is
+  covered by that test but was NOT re-verified end to end in the running app.
 
 **Open, needing David.**
 
@@ -518,6 +540,8 @@ Through M6. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local 
 - `SearchDialog.svelte.test.ts` is 1,406 lines against a 1,179 `file-length` allowlist entry, already over before this
   effort. Warn-only. Raise, split, or leave.
 - Whether the network CTA variant should still offer "Index this drive" at all.
+- The M7 copy (nine keys: the still-searching toast and its two last words, plus the abandoned-folders note) is drafted
+  and translated into all nine locales, unreviewed like M0's and M1's.
 
 **Before resuming**: rebase onto current local `main`, and note the ~1 GB dev data dir at
 `~/Library/Application Support/com.veszelovszki.cmdr-dev-unindexsearch` (a full index from live verification, worth

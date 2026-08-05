@@ -128,8 +128,8 @@
         type SearchSnapshot,
     } from './snapshot-store.svelte'
     import { buildSnapshotLabel } from './snapshot-label'
-    import { handOffWalk } from './walk-handoff.svelte'
-    import { getWalkHandoff, setSearchReopener } from './walk-handoff-state.svelte'
+    import { handOffWalk, handedOffRunId } from './walk-handoff.svelte'
+    import { setSearchReopener } from './walk-handoff-state.svelte'
     import type { LiveRunView } from '$lib/query-ui/query-stream'
 
     interface Props {
@@ -699,7 +699,7 @@
         // A handed-off walk is the one run the close must NOT stop: its results are in
         // a pane and still growing. Every other run in flight is a query nobody is
         // reading any more.
-        releaseSearchIndex(getWalkHandoff()?.runId ?? null).catch(() => {})
+        releaseSearchIndex(handedOffRunId()).catch(() => {})
         unlistenReady?.()
         unlistenReady = undefined
     }

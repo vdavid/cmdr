@@ -215,7 +215,14 @@ splices its predecessor's rows into the list with no error and no warning. `quer
 **Cancel versus supersede.** A new run drops the old subscription (`dropLiveSubscription`) and lets its work carry on.
 `cancelLive()` calls the source's `cancel` and then waits: the end state is the RUN's own word (a terminal update
 relabels it), never an optimistic local flip. `dispose()` also only unsubscribes — whether the work outlives the dialog
-is the consumer's call (Search's `releaseSearchIndex` stops every live run).
+is the consumer's call (Search's `releaseSearchIndex` stops every live run but the one a pane is being fed by).
+
+**`resume` adopts a run that outlived the last dialog.** The runner calls it once, on mount, BEFORE the
+reopen-with-results decision, and a run handed back wins: re-running would SUPERSEDE the live one and strand whatever it
+was still feeding (Search's "Open in pane" leaves a walk filling that pane). It's synchronous by design — the decision
+gates the mount path, and the consumer is already listening, so this only adds a second reader. The resumption carries
+`missedEntries`, the rows found while nobody here was looking; without them the dialog shows a count its list can't
+account for.
 
 **Rows, cursor, order.** Batches append in arrival order; the cursor is held by PATH identity, so it stays on its row
 across every batch and across the completion re-rank. `lastDialogEvent` flips to `'results-arrived'` on the FIRST batch

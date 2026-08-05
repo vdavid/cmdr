@@ -188,6 +188,12 @@ can't disagree about which row leads. Importance weights are the index's and a w
 plan's accepted difference 4. Because nothing is added or dropped, the fork that would make an unindexed drive ANSWER
 differently isn't possible here.
 
+**The abandoned-ground signal is the quiet third way a run comes back short.** `walk: completed` no longer means the
+list is exhaustive: `abandonedGround` is true when the walk gave up on folders it started (one that stopped responding,
+or a subtree pruned after too many failed reads), and those folders stay unlisted so the next search retries them. It
+rides ALONGSIDE the ending rather than inside it — folding it into `interrupted` would tell the user the drive went
+away, which isn't what happened. `isIncomplete` and the note both consult it (Accepted difference 9).
+
 **Count-only tells the truth about a rising number.** "N so far" while the walk runs and after a run that ended short (a
 lower bound either way); the exact sentence only when the ground was covered. Even then the total inherits accepted
 difference 12 (a live count-only run can double-count a file that is both in the arena and inside a frontier subtree),
@@ -417,6 +423,44 @@ The label shown in the pane breadcrumb (and the snapshot's `label` field) is bui
   original prompt when the model omits the field.
 - Filename mode: the pattern as-is (`*.pdf`).
 - Regex mode: the pattern wrapped in slashes (`/pattern/`).
+
+## The walk that outlives the dialog (`walk-handoff.svelte.ts`)
+
+"Open in pane" is the ONE case where a search keeps running with its dialog gone (plan M7). Everything else about
+closing the dialog stops the walk, because nobody is waiting for it; here the results are on screen in a pane, so the
+rows keep arriving there.
+
+Four parts, and they're split across three files for one reason each:
+
+- **`walk-handoff.svelte.ts`** owns the run after the handoff: it keeps listening (`observeSearchRun`), appends every
+  batch to the snapshot, drives the toast, and hands the run back to a reopened dialog.
+- **`walk-handoff-state.svelte.ts`** holds the state cell and the two actions a person can take on it (reopen, stop).
+  Split out because the module above owns the toast COMPONENT and the component has to read the live counters; both in
+  one file is an import cycle.
+- **`live-run-events.ts`** holds the four Tauri listeners. Split out because the handoff and the dialog's transport both
+  subscribe and can't import each other.
+
+**The close must NAME the run it spares.** `teardownSearchLifecycle` calls `releaseSearchIndex(handedOffRunId())`, and
+`release_search_index` cancels every run BUT that one. A `null` there kills the walk the instant the pane appears: the
+pane fills with whatever had arrived, the toast says "still searching" over a walk that isn't, and nothing reports a
+problem. Pinned by `SearchDialog.handoff.svelte.test.ts`.
+
+**Four ways it settles, and only one stops the walk.** The terminal event, a new search superseding the run
+(`supersedeHandedOffWalk`, called from `createLiveSearchSource.start` — no terminal event is coming for a superseded
+run, so without this the toast waits forever), the run failing, and the pane going away. Only the last cancels: it's the
+one where the work has lost its last consumer. Superseding deliberately doesn't (Decision 11 — the walk carries on
+filling the index).
+
+**The toast is prop-free on purpose.** A toast replaced in place keeps the props it was created with
+(`ui/toast/toast-store.svelte.ts`), so counters passed in would freeze at the values they had when the pane opened. The
+content component reads the module instead.
+
+**Reopening ADOPTS, it doesn't re-run.** `QueryStreamSource.resume` wins over QueryDialog's reopen-with-results path: a
+fresh run would supersede the live one and the pane would quietly stop growing. The resumption carries the rows found
+while nobody was listening, or the dialog would show a count the list can't account for.
+
+**Appends need the mutation tick.** `appendSnapshotEntries` bumps it; snapshots aren't `$state`, so without it the rows
+land in the store and never reach the screen.
 
 ## Snapshot store
 

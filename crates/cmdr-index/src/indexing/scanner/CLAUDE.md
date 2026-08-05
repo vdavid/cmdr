@@ -24,6 +24,8 @@ File Provider mount, plus the scope-aware exclusion policy every local path shar
   dropped 661,411 rows once). A read that can't report progress falls back to the plain total cap.
 - **Subtree give-up after `DEFAULT_GIVE_UP_AFTER` (32) consecutive failed reads** (sticky per dir; a successful sibling
   resets it). Throttle, not exclude: a healthy provider is fully indexed, no path denylist.
+- **A COVER walk carries a `WalkHeartbeat`** (`heartbeat.rs`), stamped as each read STARTS: batches fill at 2 000
+  entries, so a consumer deriving progress from them sees zero. It also totals the walk's give-ups. Scans pass `None`.
 - **Honest-stale, never false-complete.** An abandoned or give-up-pruned dir is NEVER marked listed, so it stays
   `listed_epoch = 0` (unknown size, `EntryRow` intact); never zeroed, never `scan_completed_at`-marked. PERMISSION
   DENIED also gets `known_unreadable`; a TIMEOUT doesn't, since dead mounts heal. `mark_dirs_listed` clears it.

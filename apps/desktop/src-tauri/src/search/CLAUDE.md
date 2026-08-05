@@ -27,13 +27,17 @@ unscoped means the boot volume. Flat API: `use crate::search::{SearchQuery, ...}
 - **A live search asks coverage BEFORE loading the arena, and reloads when a walk wrote behind it** (Decision 12):
   "covered" promises the arena holds those rows, and breaking it makes the NEXT query return fewer, silently. Both
   guards matter (walk mark, coverage token). Superseding a run ≠ cancelling: events stop, the walk runs on, the driver
-  keeps draining. Cancel = dialog close, Escape, quit; ❌ never the arena idle-drop. `DETAILS.md` § "A live search".
+  keeps draining. Cancel = dialog close (which SPARES `release_search_index`'s `keep_run_id`, the run a pane is being
+  fed by), Escape, quit; ❌ never the arena idle-drop. `DETAILS.md` § "A live search".
 - **One volume is the CEILING, enforced at the API** (`resolve_target` returns one target or `ScopeError`), not just in
   the UI. ❌ Don't reintroduce a fan-out: the only way a search can silently omit a drive
   (`docs/specs/unindexed-search-plan.md` Decision 4).
 - **`execute.rs` routes.** Non-root indices are mount-relative: PREFIX the mount
   root onto read paths, STRIP it from scope paths (a mount-root scope means the WHOLE volume). Mount root = the
   `volume_path` meta OR the live registry; ❌ don't assume the meta is set.
+- **Progress comes off the WALK's heartbeat, not its batches** (which fill at 2 000 entries, so they read as frozen).
+  And `walk: Completed` ≠ exhaustive: `abandoned_ground` is the third way short, ❌ never folded into `Interrupted`
+  (= the drive went away).
 - **Honesty is TYPED**: branch on `uncovered_scopes` (unindexed volume) / `unresolved_scopes` (path not in the index),
   ❌ never a string match. `target_volume_id` names the volume routing picked, so callers act on the right drive.
   `unresolved_scopes` can't tell a typo from a not-yet-walked folder: ❌ don't word it "doesn't exist".

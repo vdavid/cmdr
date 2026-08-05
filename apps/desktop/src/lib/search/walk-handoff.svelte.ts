@@ -56,6 +56,18 @@ let missedEntries: SearchResultEntry[] = []
 let resumedInto: LiveRunHandlers | null = null
 
 /**
+ * The run a pane is being fed by, or `null`.
+ *
+ * The one thing the dialog's teardown has to ask before it closes: closing stops every
+ * live run, and this is the run that must survive it. Asked of THIS module rather than
+ * read off the state cell directly, so the answer comes from the same place that sets
+ * it and can't drift from it.
+ */
+export function handedOffRunId(): string | null {
+  return getWalkHandoff()?.runId ?? null
+}
+
+/**
  * Starts feeding `snapshotId` from the still-running `runId`, and says so.
  *
  * Called by `SearchDialog` from "Open in pane" when the run is live. `view` is where

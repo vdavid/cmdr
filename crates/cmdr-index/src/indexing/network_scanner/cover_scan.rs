@@ -58,6 +58,10 @@ use crate::indexing::writer::{IndexWriter, WriteMessage};
 /// `Ok` means the walk reached the end of this subtree. A cancel arrives as
 /// `Cancelled` and a mid-walk disconnect as its own typed error — both AFTER the
 /// coverage the walk earned is durable.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the walk's whole context: what to read, where to write, who's listening, and how to stop. A param struct would only rename the same eight things"
+)]
 pub(crate) async fn cover_volume_subtree(
     volume: Arc<dyn Volume>,
     root: PathBuf,

@@ -39,6 +39,9 @@ How a per-volume index is born, lives, transitions, and dies. Every invariant he
   `Ground` picks the guarded walker or the volume's own `Volume` — and only an unmounted id is refused. ⚠️ A volume
   mid-SCAN isn't walked, and two walks over overlapping frontiers don't both take the ground (`cover/live.rs` claims
   roots): one writer doesn't stop `INSERT OR IGNORE` dropping a collider and orphaning its subtree.
+- **`CoverOutcome::abandoned_ground` is independent of every other field**: every root covered, uncancelled, and still
+  short. ❌ A caller reporting completeness must consult it. Live progress rides the same `WalkHeartbeat`
+  (`CoverWalk::dirs_scanned_counter` / `current_dir_slot`).
 - **A walk stops through the CALLER's `CancellationToken`** — `CoverWalk` holds a `Receiver`, so it can't reach the
   thread that decides to stop it. It **flushes its writer before reporting** (cancel path too), so "what's still
   uncovered" is true the moment it ends, not one search later.
