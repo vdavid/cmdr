@@ -372,9 +372,9 @@
   "@fileOperations.transferProgress.close": {
     "sourceHash": "7d9eb7a"
   },
-  "fileOperations.transferProgress.stallNotice": "Không có tiến triển trong {duration}.",
+  "fileOperations.transferProgress.stallNotice": "Không có tiến triển trong {duration}",
   "@fileOperations.transferProgress.stallNotice": {
-    "sourceHash": "c88a3f3"
+    "sourceHash": "4b3c8e6"
   },
   "fileOperations.transferProgress.stallWaitingDestination": "Đang chờ đích phản hồi.",
   "@fileOperations.transferProgress.stallWaitingDestination": {
@@ -528,9 +528,9 @@
   "@fileOperations.transferProgress.fileProgressAria": {
     "sourceHash": "07db117"
   },
-  "fileOperations.transferProgress.etaRemaining": "còn ~{duration}",
+  "fileOperations.transferProgress.etaRemaining": "còn {duration}",
   "@fileOperations.transferProgress.etaRemaining": {
-    "sourceHash": "5bbf895"
+    "sourceHash": "a6b154c"
   },
   "fileOperations.transferProgress.smbNativeNote": "Chia sẻ này dùng kết nối hệ thống. Việc hủy và hoàn tác có thể bị trễ.",
   "@fileOperations.transferProgress.smbNativeNote": {

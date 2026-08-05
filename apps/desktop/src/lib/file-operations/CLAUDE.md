@@ -13,6 +13,8 @@ file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete)
 - `queue/CLAUDE.md`: the standalone transfer-queue window (lists every running/waiting operation with per-row
   pause/resume/cancel, multi-select + Cancel selected, global pause/resume). Renders from the operations store that
   merges the thin `operations-changed` snapshot with the live `write-progress` stream.
+- `TransferProgressReadout.svelte`: the dual-bar readout (size + count, each with amount, percent, rate, plus one
+  time-left cell) shared by the progress dialog and the queue rows. Two densities, one layout.
 - `scan-throughput.ts`: rolling-window scan-rate estimator (see below).
 
 ## Must-knows
@@ -30,6 +32,10 @@ file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete)
   (`file-operations-i18n-parity.test.ts` + the count-phrase unit tests for dialog copy;
   `transfer/transfer-error-messages.parity.test.ts` for the write-error copy); a copy edit lands in the catalog AND the
   test together. See [`$lib/intl/messages/CLAUDE.md`](../intl/messages/CLAUDE.md).
+- **One dual-bar readout, two surfaces.** The progress dialog and the Transfers window's rows both render
+  `TransferProgressReadout.svelte`, so what a running operation looks like is defined once. Its readout cells are
+  fixed-width by design (the bars must follow the window, not the digits), which puts a floor under whatever hosts it:
+  the queue window's `MIN_WIDTH` and the dialog's 580 px both exist for it. Depth: `DETAILS.md`.
 - **`scan-throughput.ts` covers the scan phase only.** The backend `EtaEstimator` covers write phases, so `DeleteDialog`
   and `TransferProgressDialog` use `ScanThroughput` to show `filesPerSecond` / `bytesPerSecond` during the scan. It
   returns nulls until two samples land, clamps negative deltas to zero, and must be `reset()` between scans. Pure, no

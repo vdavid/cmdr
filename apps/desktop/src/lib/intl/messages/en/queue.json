@@ -35,22 +35,6 @@
     }
   },
 
-  "queue.row.etaRemaining": "{duration} left",
-  "@queue.row.etaRemaining": {
-    "description": "Estimated time remaining for a running operation row, for example \"2m 30s left\". The duration text comes in ready-made.",
-    "placeholders": {
-      "duration": "the already-formatted time remaining, for example \"2m 30s\" or \"45s\""
-    }
-  },
-
-  "queue.row.stalled": "No progress for {duration}",
-  "@queue.row.stalled": {
-    "description": "Replaces the time-remaining text on an operation row when that transfer has stopped moving, so the row stops showing a countdown we no longer believe. The duration text comes in ready-made, for example \"45s\".",
-    "placeholders": {
-      "duration": "the already-formatted length of time nothing has moved, for example \"45s\""
-    }
-  },
-
   "queue.row.pause": "Pause",
   "@queue.row.pause": {
     "description": "Button on an operation row that pauses that transfer in place. It can be resumed later. Toggles to \"Resume\"."

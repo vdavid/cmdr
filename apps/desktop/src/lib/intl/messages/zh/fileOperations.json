@@ -371,9 +371,9 @@
   "@fileOperations.transferProgress.close": {
     "sourceHash": "7d9eb7a"
   },
-  "fileOperations.transferProgress.stallNotice": "已有 {duration} 没有进度。",
+  "fileOperations.transferProgress.stallNotice": "已有 {duration} 没有进度",
   "@fileOperations.transferProgress.stallNotice": {
-    "sourceHash": "c88a3f3"
+    "sourceHash": "4b3c8e6"
   },
   "fileOperations.transferProgress.stallWaitingDestination": "正在等待目标位置响应。",
   "@fileOperations.transferProgress.stallWaitingDestination": {
@@ -527,9 +527,9 @@
   "@fileOperations.transferProgress.fileProgressAria": {
     "sourceHash": "07db117"
   },
-  "fileOperations.transferProgress.etaRemaining": "剩余约 {duration}",
+  "fileOperations.transferProgress.etaRemaining": "剩余 {duration}",
   "@fileOperations.transferProgress.etaRemaining": {
-    "sourceHash": "5bbf895"
+    "sourceHash": "a6b154c"
   },
   "fileOperations.transferProgress.smbNativeNote": "这个共享使用系统连接。取消和回滚可能会有延迟。",
   "@fileOperations.transferProgress.smbNativeNote": {

@@ -55,6 +55,14 @@ page to hide settled rows. Typed set, not a string-substring test (`no-string-ma
 The progress-dialog Queue button and the auto-queue surfacing open the window via `openQueueWindow()` and read this same
 store. Don't fork a second opener or store.
 
+## Row layout
+
+A row is a five-column grid whose chrome (select, type icon, source→dest summary, status, actions) sits on line 1, with
+the shared `../TransferProgressReadout.svelte` spanning line 2 from the summary column to the end. The readout gets the
+full row width rather than a slot beside the buttons because its columns are fixed-width: sharing a line with the status
+and two buttons would have pushed the window's minimum width past 700 px for the bars to survive. A row with no
+`write-progress` to show — a queued op, or an instant `rename` / `create_folder` / `create_file` — renders line 1 only.
+
 ## Vibrancy + reduce-transparency
 
 `queue-window.ts` opens transparent and applies `Effect.UnderWindowBackground` via `setEffects` after creation (the
@@ -90,7 +98,8 @@ the MAIN window, which already holds those perms — nothing to add there (see `
 - `operations-store.svelte.test.ts`: the reducers (snapshot → rows, progress merge + unknown-op drop, prune on leave,
   running/paused presence) and `isTerminalStatus`.
 - `QueueRow.svelte.test.ts`: per-status controls (Pause vs Resume vs queued), click wiring, the select checkbox, the
-  live bar from a progress event, and the `data-status` / `data-operation-id` E2E hooks.
+  live bar from a progress event, and the `data-status` / `data-operation-id` E2E hooks. The readout's own behavior
+  (both bars, percents, rates, time left, stall) is covered once, in `../TransferProgressReadout.svelte.test.ts`.
 - `QueueRow.a11y.test.ts`: axe over the row in running / paused / queued / selected states.
 - E2E: `test/e2e-playwright/transfer-queue.spec.ts` — two same-lane ops → one Running + one Queued, cancel the queued,
   pause + resume the running.

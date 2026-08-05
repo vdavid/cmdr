@@ -23,14 +23,6 @@
   "@queue.row.status": {
     "sourceHash": "2bbdaaa"
   },
-  "queue.row.etaRemaining": "剩余 {duration}",
-  "@queue.row.etaRemaining": {
-    "sourceHash": "a6b154c"
-  },
-  "queue.row.stalled": "已有 {duration} 没有进度",
-  "@queue.row.stalled": {
-    "sourceHash": "4b3c8e6"
-  },
   "queue.row.pause": "暂停",
   "@queue.row.pause": {
     "sourceHash": "858e4ba"

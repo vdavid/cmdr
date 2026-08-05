@@ -3,16 +3,13 @@
     import Checkbox from '$lib/ui/Checkbox.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
-    import ProgressBar from '$lib/ui/ProgressBar.svelte'
-    import Size from '$lib/ui/Size.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import type { OperationRow } from './operations-store.svelte'
     import { operationTypeIcon } from './operation-icon'
     import { transferReadout } from '../progress-readout'
-    import { formatDuration, seconds } from '$lib/units'
+    import TransferProgressReadout from '../TransferProgressReadout.svelte'
     import { stallNoticeFor } from '../transfer/transfer-stall'
-    import Trans from '$lib/intl/Trans.svelte'
 
     interface Props {
         row: OperationRow
@@ -41,40 +38,25 @@
     const label = $derived(tString('queue.row.label', { type: snapshot.operationType }))
     const statusLabel = $derived(tString('queue.row.status', { status }))
 
-    /** Progress fraction (0..1) from the live event, by bytes when known, else
-     *  by file count. Null when there's no progress yet (queued / scanning). */
-    const fraction = $derived.by(() => {
-        if (!progress) return null
-        if (progress.bytesTotal > 0) return progress.bytesDone / progress.bytesTotal
-        if (progress.filesTotal > 0) return progress.filesDone / progress.filesTotal
-        return null
-    })
+    /** The dual-bar readout shows once there's something to fill either bar.
+     *  Instant ops (rename, create folder/file) emit no `write-progress` at all,
+     *  so their rows stay a single line. */
+    const showReadout = $derived(
+        (isRunning || isPaused) && progress !== null && (progress.bytesTotal > 0 || progress.filesTotal > 0),
+    )
 
     /** Non-null once the BACKEND reports this transfer has stopped moving for a
      *  reason that isn't deliberate. Same classifier the copy dialog uses, so
      *  the two windows can't disagree about whether something is stuck. */
     const stall = $derived(stallNoticeFor(progress?.activity))
 
-    /** The SMOOTHED ETA from the store, never `progress.etaSeconds`: the copy
-     *  dialog renders the same smoothed value, so the two windows agree. A
-     *  stalled row shows how long it's been still instead of a countdown. */
-    const etaText = $derived.by(() => {
-        if (!isRunning) return null
-        if (stall) {
-            return tString('queue.row.stalled', { duration: formatDuration(seconds(stall.stillForSeconds)) })
-        }
-        if (row.etaSecondsDisplay === null) return null
-        return tString('queue.row.etaRemaining', { duration: formatDuration(row.etaSecondsDisplay) })
-    })
-
-    /** Transfer speed: the backend's `bytesPerSecond`, rendered with the same
-     *  `<Size>` + `<size></size>/s` catalog phrasing the copy dialog uses.
-     *  Null until the backend's estimator warms up. */
-    const speedRate = $derived.by(() => {
-        if (!isRunning || !progress) return null
-        const rate = transferReadout(progress).bytesPerSecond
-        return rate === null || rate <= 0 ? null : rate
-    })
+    /** Speed and ETA describe a transfer that's moving, so a paused row shows
+     *  neither. The ETA is the SMOOTHED value from the store, never
+     *  `progress.etaSeconds`: the copy dialog renders the same smoothed number,
+     *  so the two windows agree. */
+    const byteRate = $derived(isRunning && progress ? transferReadout(progress).bytesPerSecond : null)
+    const fileRate = $derived(isRunning ? (progress?.filesPerSecond ?? null) : null)
+    const etaSeconds = $derived(isRunning ? row.etaSecondsDisplay : null)
 
     const pauseResumeLabel = $derived(
         isPaused ? tString('queue.row.resume') : tString('queue.row.pause'),
@@ -104,44 +86,15 @@
         <Icon name={typeIcon} size={16} />
     </span>
 
-    <div class="main-cell">
-        <div class="summary-row">
-            <span class="op-label">{label}</span>
-            {#if snapshot.source}
-                <span class="path" use:tooltip={{ text: snapshot.source, overflowOnly: true }}>{sourceName}</span>
-            {/if}
-            {#if snapshot.destination}
-                <span class="arrow" aria-hidden="true">&#x2192;</span>
-                <span class="path dest" use:tooltip={{ text: snapshot.destination, overflowOnly: true }}
-                    >{destName}</span
-                >
-            {/if}
-        </div>
-
-        <div class="progress-row">
-            {#if fraction !== null && (isRunning || isPaused)}
-                <ProgressBar
-                    value={fraction}
-                    size="sm"
-                    ariaLabel={tString('queue.row.label', { type: snapshot.operationType })}
-                />
-                {#if progress && progress.bytesTotal > 0}
-                    <span class="bytes"><Size bytes={progress.bytesDone} /> / <Size bytes={progress.bytesTotal} /></span>
-                {/if}
-            {:else if isQueued}
-                <span class="queued-hint">
-                    <Icon name="hourglass" size={12} />
-                </span>
-            {/if}
-            {#if speedRate !== null}
-                <span class="speed"
-                    ><Trans key="fileOperations.shared.byteRate" snippets={{ size: byteRateSize }} /></span
-                >
-            {/if}
-            {#if etaText}
-                <span class="eta" class:stalled={stall !== null}>{etaText}</span>
-            {/if}
-        </div>
+    <div class="summary-row">
+        <span class="op-label">{label}</span>
+        {#if snapshot.source}
+            <span class="path" use:tooltip={{ text: snapshot.source, overflowOnly: true }}>{sourceName}</span>
+        {/if}
+        {#if snapshot.destination}
+            <span class="arrow" aria-hidden="true">&#x2192;</span>
+            <span class="path dest" use:tooltip={{ text: snapshot.destination, overflowOnly: true }}>{destName}</span>
+        {/if}
     </div>
 
     <span class="status-cell" class:running={isRunning} class:paused={isPaused} class:queued={isQueued}>
@@ -169,16 +122,36 @@
             </Button>
         {/if}
     </div>
-</li>
 
-{#snippet byteRateSize(children: import('svelte').Snippet)}<Size bytes={speedRate ?? 0} />{@render children()}{/snippet}
+    <!-- Second line, spanning everything right of the icon gutter: the same
+         dual-bar readout the copy dialog shows, in its compact density. -->
+    {#if showReadout && progress}
+        <div class="readout-cell">
+            <TransferProgressReadout
+                density="compact"
+                bytesDone={progress.bytesDone}
+                bytesTotal={progress.bytesTotal}
+                filesDone={progress.filesDone}
+                filesTotal={progress.filesTotal}
+                bytesPerSecond={byteRate}
+                filesPerSecond={fileRate}
+                {etaSeconds}
+                {stall}
+                countKind={snapshot.operationType === 'trash' ? 'items' : 'files'}
+            />
+        </div>
+    {/if}
+</li>
 
 <style>
     .queue-row {
         display: grid;
+        /* One row of chrome (select, type, summary, status, actions) with the
+           readout on a second line under the summary. The bars need the full
+           width far more than they need to sit beside the buttons. */
         grid-template-columns: auto auto minmax(0, 1fr) auto auto;
         align-items: center;
-        gap: var(--spacing-sm);
+        gap: var(--spacing-xs) var(--spacing-sm);
         padding: var(--spacing-sm) var(--spacing-md);
         border-radius: var(--radius-md);
         border: 1px solid transparent;
@@ -200,19 +173,17 @@
         color: var(--color-text-secondary);
     }
 
-    .main-cell {
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
-    }
-
     .summary-row {
         display: flex;
         align-items: baseline;
         gap: var(--spacing-xs);
         min-width: 0;
         font-size: var(--font-size-sm);
+    }
+
+    .readout-cell {
+        grid-column: 3 / -1;
+        min-width: 0;
     }
 
     .op-label {
@@ -235,33 +206,6 @@
 
     .arrow {
         flex-shrink: 0;
-        color: var(--color-text-tertiary);
-    }
-
-    .progress-row {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-        min-height: 14px;
-    }
-
-    .bytes,
-    .speed,
-    .eta {
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-        flex-shrink: 0;
-        font-variant-numeric: tabular-nums;
-    }
-
-    /* A stalled row's readout is the one thing on it worth noticing. */
-    .eta.stalled {
-        color: var(--color-text-secondary);
-    }
-
-    .queued-hint {
-        display: flex;
-        align-items: center;
         color: var(--color-text-tertiary);
     }
 

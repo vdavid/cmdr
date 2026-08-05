@@ -373,9 +373,9 @@
   "@fileOperations.transferProgress.close": {
     "sourceHash": "7d9eb7a"
   },
-  "fileOperations.transferProgress.stallNotice": "Inget har hänt på {duration}.",
+  "fileOperations.transferProgress.stallNotice": "Inget har hänt på {duration}",
   "@fileOperations.transferProgress.stallNotice": {
-    "sourceHash": "c88a3f3"
+    "sourceHash": "4b3c8e6"
   },
   "fileOperations.transferProgress.stallWaitingDestination": "Väntar på att målet ska svara.",
   "@fileOperations.transferProgress.stallWaitingDestination": {
@@ -529,9 +529,9 @@
   "@fileOperations.transferProgress.fileProgressAria": {
     "sourceHash": "07db117"
   },
-  "fileOperations.transferProgress.etaRemaining": "~{duration} kvar",
+  "fileOperations.transferProgress.etaRemaining": "{duration} kvar",
   "@fileOperations.transferProgress.etaRemaining": {
-    "sourceHash": "5bbf895"
+    "sourceHash": "a6b154c"
   },
   "fileOperations.transferProgress.smbNativeNote": "Den här delade mappen använder systemanslutningen. Avbrytning och återställning kan fördröjas.",
   "@fileOperations.transferProgress.smbNativeNote": {

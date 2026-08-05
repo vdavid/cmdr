@@ -373,9 +373,9 @@
   "@fileOperations.transferProgress.close": {
     "sourceHash": "7d9eb7a"
   },
-  "fileOperations.transferProgress.stallNotice": "Sem progresso há {duration}.",
+  "fileOperations.transferProgress.stallNotice": "Sem progresso há {duration}",
   "@fileOperations.transferProgress.stallNotice": {
-    "sourceHash": "c88a3f3"
+    "sourceHash": "4b3c8e6"
   },
   "fileOperations.transferProgress.stallWaitingDestination": "Aguardando resposta do destino.",
   "@fileOperations.transferProgress.stallWaitingDestination": {
@@ -529,9 +529,9 @@
   "@fileOperations.transferProgress.fileProgressAria": {
     "sourceHash": "07db117"
   },
-  "fileOperations.transferProgress.etaRemaining": "~{duration} restantes",
+  "fileOperations.transferProgress.etaRemaining": "{duration} restantes",
   "@fileOperations.transferProgress.etaRemaining": {
-    "sourceHash": "5bbf895"
+    "sourceHash": "a6b154c"
   },
   "fileOperations.transferProgress.smbNativeNote": "Este compartilhamento usa a conexão do sistema. O cancelamento e a reversão podem demorar.",
   "@fileOperations.transferProgress.smbNativeNote": {

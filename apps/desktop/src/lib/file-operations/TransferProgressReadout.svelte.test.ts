@@ -1,0 +1,96 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { mount, flushSync, type ComponentProps } from 'svelte'
+import TransferProgressReadout from './TransferProgressReadout.svelte'
+import { seconds } from '$lib/units'
+
+// The component reads reactive settings (file-size format) deep in `<Size>`. The
+// real path needs the settings store; stub the format getter to keep the unit
+// test isolated.
+vi.mock('$lib/settings/reactive-settings.svelte', () => ({
+  getFileSizeFormat: () => 'decimal',
+}))
+
+let target: HTMLElement
+
+function render(props: ComponentProps<typeof TransferProgressReadout>): void {
+  target = document.createElement('div')
+  document.body.appendChild(target)
+  mount(TransferProgressReadout, { target, props })
+  flushSync()
+}
+
+function texts(selector: string): string[] {
+  return [...target.querySelectorAll(selector)].map((el) => el.textContent.replace(/\s+/g, ' ').trim())
+}
+
+const halfway = { bytesDone: 50, bytesTotal: 200, filesDone: 1, filesTotal: 4 }
+
+beforeEach(() => {
+  document.body.innerHTML = ''
+})
+
+describe('TransferProgressReadout', () => {
+  it('renders a size bar and a count bar, each at its own percentage', () => {
+    render(halfway)
+    const bars = [...target.querySelectorAll('[role="progressbar"]')]
+    expect(bars.map((b) => b.getAttribute('aria-valuenow'))).toEqual(['25', '25'])
+    expect(bars.map((b) => b.getAttribute('aria-label'))).toEqual(['Size progress', 'File progress'])
+    expect(texts('.percent')).toEqual(['25%', '25%'])
+  })
+
+  it('drops the size row when the total size is unknown, keeping the count row', () => {
+    render({ ...halfway, bytesDone: 0, bytesTotal: 0 })
+    const bars = [...target.querySelectorAll('[role="progressbar"]')]
+    expect(bars.length).toBe(1)
+    expect(bars[0].getAttribute('aria-label')).toBe('File progress')
+    expect(texts('.percent')).toEqual(['25%'])
+  })
+
+  it('shows both amounts: bytes done/total and files done/total', () => {
+    render(halfway)
+    expect(texts('.amount')).toEqual(['50 bytes / 200 bytes', '1 / 4'])
+  })
+
+  it('shows both rates, and neither before the estimator warms up', () => {
+    render({ ...halfway, bytesPerSecond: 1_500_000, filesPerSecond: 27 })
+    expect(texts('.rate')).toEqual(['1.50 MB/s', '27 files/s'])
+
+    document.body.innerHTML = ''
+    render(halfway)
+    expect(texts('.rate')).toEqual(['', ''])
+  })
+
+  it('renders the time left, and keeps the cell in place before an ETA lands', () => {
+    render({ ...halfway, etaSeconds: seconds(154) })
+    expect(texts('.time')).toEqual(['2m 34s left'])
+
+    document.body.innerHTML = ''
+    render(halfway)
+    // Present but empty: the cell holds its width so nothing shifts when the
+    // estimate arrives.
+    expect(texts('.time')).toEqual([''])
+  })
+
+  it('a stall displaces the countdown we no longer believe', () => {
+    render({
+      ...halfway,
+      etaSeconds: seconds(154),
+      stall: { stillForSeconds: 45, reason: 'destination', inFlight: 2 },
+    })
+    expect(texts('.time')).toEqual(['No progress for 45s'])
+    expect(target.querySelector('.time')?.classList.contains('stalled')).toBe(true)
+  })
+
+  it('labels its rows in the dialog and drops the labels in a list row', () => {
+    render(halfway)
+    expect(texts('.bar-label')).toEqual(['Size', 'Files'])
+
+    document.body.innerHTML = ''
+    render({ ...halfway, countKind: 'items' })
+    expect(texts('.bar-label')).toEqual(['Size', 'Items'])
+
+    document.body.innerHTML = ''
+    render({ ...halfway, density: 'compact' })
+    expect(texts('.bar-label')).toEqual([])
+  })
+})

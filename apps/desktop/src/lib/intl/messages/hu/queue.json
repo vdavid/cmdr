@@ -23,14 +23,6 @@
   "@queue.row.status": {
     "sourceHash": "2bbdaaa"
   },
-  "queue.row.etaRemaining": "{duration} van hátra",
-  "@queue.row.etaRemaining": {
-    "sourceHash": "a6b154c"
-  },
-  "queue.row.stalled": "{duration} óta nincs előrehaladás",
-  "@queue.row.stalled": {
-    "sourceHash": "4b3c8e6"
-  },
   "queue.row.pause": "Szüneteltetés",
   "@queue.row.pause": {
     "sourceHash": "858e4ba"

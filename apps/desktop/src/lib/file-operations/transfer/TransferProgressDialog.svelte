@@ -11,8 +11,6 @@
         ConflictResolution,
     } from '$lib/file-explorer/types'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
-    import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
-    import Size from '$lib/ui/Size.svelte'
     import DirectionIndicator from './DirectionIndicator.svelte'
     import { deriveTransferLabel } from './transfer-dialog-utils'
     import ScanPhaseBody from './ScanPhaseBody.svelte'
@@ -22,13 +20,11 @@
     import Button from '$lib/ui/Button.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
-    import ProgressBar from '$lib/ui/ProgressBar.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
-    import Trans from '$lib/intl/Trans.svelte'
+    import TransferProgressReadout from '../TransferProgressReadout.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import type { MessageKey } from '$lib/intl/keys.gen'
-    import { formatDuration, formatFilesPerSecond, seconds } from '$lib/units'
     import { stallNoticeFor } from './transfer-stall'
 
     interface Props {
@@ -95,6 +91,10 @@
         onQueue,
         mcpRequestId,
     }: Props = $props()
+
+    /** Wide enough that the shared readout's fixed columns (amount, percent,
+     *  rate, time left) still leave the bars a readable width. */
+    const DIALOG_WIDTH_STYLE = 'width: 580px'
 
     /** The select discriminator the catalog's gerund/verb messages key on. */
     const gerundKind = $derived(operationType)
@@ -287,7 +287,7 @@
     onclose={() => {
         void progress.handleCancel(false)
     }}
-    containerStyle="width: 500px"
+    containerStyle={DIALOG_WIDTH_STYLE}
 >
     {#snippet title()}
         {#if waitingForScan}
@@ -408,61 +408,21 @@
                 />
             </div>
         {:else}
-            <!-- Dual progress bars (size + count) for the active phase. -->
-            <div class="progress-grid">
-                {#if bytesTotal > 0}
-                    <span class="progress-label">{tString('fileOperations.transferProgress.progressSize')}</span>
-                    <ProgressBar
-                        value={bytesDone / bytesTotal}
-                        ariaLabel={tString('fileOperations.transferProgress.sizeProgressAria')}
-                    />
-                    <span class="progress-detail">
-                        <Size bytes={bytesDone} /> / <Size bytes={bytesTotal} />
-                        ({Math.round((bytesDone / bytesTotal) * 100)}%)
-                    </span>
-                {/if}
-
-                <span class="progress-label"
-                    >{operationType === 'trash'
-                        ? tString('fileOperations.transferProgress.progressItems')
-                        : tString('fileOperations.transferProgress.progressFiles')}</span
-                >
-                <ProgressBar
-                    value={filesTotal > 0 ? filesDone / filesTotal : 0}
-                    ariaLabel={tString('fileOperations.transferProgress.fileProgressAria')}
+            <!-- Dual progress bars (size + count) for the active phase. The
+                 Transfers window's rows render the same component, so the two
+                 surfaces can't drift apart on what a running op looks like. -->
+            <div class="progress-section">
+                <TransferProgressReadout
+                    {bytesDone}
+                    {bytesTotal}
+                    {filesDone}
+                    {filesTotal}
+                    {bytesPerSecond}
+                    {filesPerSecond}
+                    etaSeconds={etaSecondsDisplay}
+                    {stall}
+                    countKind={operationType === 'trash' ? 'items' : 'files'}
                 />
-                <span class="progress-detail">{formatNumber(filesDone)} / {formatNumber(filesTotal)}</span>
-                <div class="progress-meta">
-                    <span class="progress-speeds">
-                        {#if bytesPerSecond !== null && bytesPerSecond > 0}
-                            <span class="progress-speed"
-                                ><Trans key="fileOperations.shared.byteRate" snippets={{ size: byteRateSize }} /></span
-                            >
-                        {/if}
-                        {#if filesPerSecond !== null}
-                            {@const filesPerSecLabel = formatFilesPerSecond(filesPerSecond)}
-                            {#if filesPerSecLabel !== null}
-                                <span class="progress-speed">{filesPerSecLabel}</span>
-                            {/if}
-                        {/if}
-                    </span>
-                    {#if stall}
-                        <!-- A countdown we no longer believe is worse than no
-                             countdown: the dialog showed "~8m 12s remaining"
-                             through a 20-minute stall. -->
-                        <span class="progress-stall"
-                            >{tString('fileOperations.transferProgress.stallNotice', {
-                                duration: formatDuration(seconds(stall.stillForSeconds)),
-                            })}</span
-                        >
-                    {:else if etaSecondsDisplay !== null}
-                        <span class="progress-eta"
-                            >{tString('fileOperations.transferProgress.etaRemaining', {
-                                duration: formatDuration(etaSecondsDisplay),
-                            })}</span
-                        >
-                    {/if}
-                </div>
             </div>
 
             {#if stall}
@@ -584,8 +544,6 @@
     {/if}
 </ModalDialog>
 
-{#snippet byteRateSize(children: import('svelte').Snippet)}<Size bytes={bytesPerSecond ?? 0} />{@render children()}{/snippet}
-
 <style>
     /* Scan wait section (wraps the ScanPhaseBody child during the scan phases) */
     .scan-wait-section {
@@ -652,55 +610,11 @@
         background: var(--color-allow);
     }
 
-    /* Dual progress bars */
-    .progress-grid {
-        display: grid;
-        grid-template-columns: auto 1fr auto;
-        gap: var(--spacing-xs) var(--spacing-sm);
-        align-items: center;
+    /* Gutter around the shared dual-bar readout; the readout owns its own
+       internal widths. */
+    .progress-section {
         padding: 0 var(--spacing-xl);
         margin-bottom: var(--spacing-md);
-    }
-
-    .progress-label {
-        font-size: var(--font-size-sm);
-        color: var(--color-text-tertiary);
-    }
-
-    .progress-detail {
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
-        font-variant-numeric: tabular-nums;
-        text-align: right;
-    }
-
-    .progress-meta {
-        grid-column: 1 / -1;
-        display: flex;
-        justify-content: space-between;
-        font-size: var(--font-size-sm);
-    }
-
-    .progress-speeds {
-        display: inline-flex;
-        gap: var(--spacing-sm);
-    }
-
-    .progress-speed {
-        color: var(--color-text-secondary);
-        font-variant-numeric: tabular-nums;
-    }
-
-    .progress-eta {
-        color: var(--color-text-tertiary);
-    }
-
-    /* Replaces the ETA once the backend reports the transfer has stopped
-       moving. Warmer than the tertiary ETA it displaces, because it's the line
-       that has to be noticed. */
-    .progress-stall {
-        color: var(--color-text-secondary);
-        font-variant-numeric: tabular-nums;
     }
 
     .stall-notice {

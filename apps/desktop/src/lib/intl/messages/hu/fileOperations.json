@@ -373,9 +373,9 @@
   "@fileOperations.transferProgress.close": {
     "sourceHash": "7d9eb7a"
   },
-  "fileOperations.transferProgress.stallNotice": "{duration} óta nincs előrehaladás.",
+  "fileOperations.transferProgress.stallNotice": "{duration} óta nincs előrehaladás",
   "@fileOperations.transferProgress.stallNotice": {
-    "sourceHash": "c88a3f3"
+    "sourceHash": "4b3c8e6"
   },
   "fileOperations.transferProgress.stallWaitingDestination": "Várakozás a cél válaszára.",
   "@fileOperations.transferProgress.stallWaitingDestination": {
@@ -529,9 +529,9 @@
   "@fileOperations.transferProgress.fileProgressAria": {
     "sourceHash": "07db117"
   },
-  "fileOperations.transferProgress.etaRemaining": "~{duration} van hátra",
+  "fileOperations.transferProgress.etaRemaining": "{duration} van hátra",
   "@fileOperations.transferProgress.etaRemaining": {
-    "sourceHash": "5bbf895"
+    "sourceHash": "a6b154c"
   },
   "fileOperations.transferProgress.smbNativeNote": "Ez a megosztás a rendszerkapcsolatot használja. A megszakítás és a visszagörgetés késhet.",
   "@fileOperations.transferProgress.smbNativeNote": {

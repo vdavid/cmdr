@@ -23,14 +23,6 @@
   "@queue.row.status": {
     "sourceHash": "2bbdaaa"
   },
-  "queue.row.etaRemaining": "{duration} restantes",
-  "@queue.row.etaRemaining": {
-    "sourceHash": "a6b154c"
-  },
-  "queue.row.stalled": "Sem progresso há {duration}",
-  "@queue.row.stalled": {
-    "sourceHash": "4b3c8e6"
-  },
   "queue.row.pause": "Pausar",
   "@queue.row.pause": {
     "sourceHash": "858e4ba"

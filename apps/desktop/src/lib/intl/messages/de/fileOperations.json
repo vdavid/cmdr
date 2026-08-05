@@ -373,9 +373,9 @@
   "@fileOperations.transferProgress.close": {
     "sourceHash": "7d9eb7a"
   },
-  "fileOperations.transferProgress.stallNotice": "Kein Fortschritt seit {duration}.",
+  "fileOperations.transferProgress.stallNotice": "Kein Fortschritt seit {duration}",
   "@fileOperations.transferProgress.stallNotice": {
-    "sourceHash": "c88a3f3"
+    "sourceHash": "4b3c8e6"
   },
   "fileOperations.transferProgress.stallWaitingDestination": "Cmdr wartet auf eine Antwort vom Ziel.",
   "@fileOperations.transferProgress.stallWaitingDestination": {
@@ -530,9 +530,9 @@
   "@fileOperations.transferProgress.fileProgressAria": {
     "sourceHash": "07db117"
   },
-  "fileOperations.transferProgress.etaRemaining": "noch ~{duration}",
+  "fileOperations.transferProgress.etaRemaining": "noch {duration}",
   "@fileOperations.transferProgress.etaRemaining": {
-    "sourceHash": "5bbf895"
+    "sourceHash": "a6b154c"
   },
   "fileOperations.transferProgress.smbNativeNote": "Diese Freigabe nutzt die Systemverbindung. Abbruch und Rollback können sich verzögern.",
   "@fileOperations.transferProgress.smbNativeNote": {

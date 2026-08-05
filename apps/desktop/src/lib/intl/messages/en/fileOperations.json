@@ -609,9 +609,9 @@
     "description": "Button on the copy/move progress dialog that closes the window while the transfer is still finishing in the background. Shown once cancelling is under way, so the person never has to wait for a slow device to respond. Keep it short; it sits next to Cancel."
   },
 
-  "fileOperations.transferProgress.stallNotice": "No progress for {duration}.",
+  "fileOperations.transferProgress.stallNotice": "No progress for {duration}",
   "@fileOperations.transferProgress.stallNotice": {
-    "description": "Replaces the time-remaining line on the copy/move progress dialog when a transfer has stopped moving, so we stop showing a countdown we no longer believe. {duration} is a formatted length of time such as '45s' or '2m 30s'.",
+    "description": "Replaces the time-left text when a transfer has stopped moving, so we stop showing a countdown we no longer believe. Appears on both surfaces that show a running transfer: the copy/move/delete progress dialog and the rows of the Transfers window. {duration} is a formatted length of time such as '45s' or '2m 30s'.",
     "placeholders": {
       "duration": { "content": "$1", "example": "45s" }
     }
@@ -838,9 +838,9 @@
     "screenshot": "conflict-dialog.png"
   },
 
-  "fileOperations.transferProgress.etaRemaining": "~{duration} remaining",
+  "fileOperations.transferProgress.etaRemaining": "{duration} left",
   "@fileOperations.transferProgress.etaRemaining": {
-    "description": "Estimated time left, shown next to the progress bar, e.g. '~2m 30s remaining'. The ~ marks it as an estimate; the duration is already formatted.",
+    "description": "Estimated time left, shown next to the progress bars, for example \"2m 30s left\". Appears on both surfaces that show a running transfer: the copy/move/delete progress dialog and the rows of the Transfers window. It sits in a narrow fixed-width cell, so keep it short. The duration comes in ready-made.",
     "placeholders": {
       "duration": "the estimated time left, already formatted (e.g. 2m 30s)"
     }

@@ -29,10 +29,15 @@ import { readMainRect, readMonitors, readSavedRect, resolveChildPosition } from 
 const log = getAppLogger('queue')
 
 /** Base (scale = 1) window size. Roomy enough for several operation rows with
- *  inline progress bars; resizable, with the list scrolling inside. */
-const BASE_WIDTH = 560
+ *  inline progress bars; resizable, with the list scrolling inside.
+ *
+ *  The minimum is set by one row's contents, not by taste: a row's readout
+ *  columns (amount, percent, rate, time left) are fixed-width, and below this
+ *  the progress bars they sit beside squeeze down to nothing. Shrink the
+ *  minimum only alongside `TransferProgressReadout`'s compact columns. */
+const BASE_WIDTH = 660
 const BASE_HEIGHT = 480
-const MIN_WIDTH = 420
+const MIN_WIDTH = 540
 const MIN_HEIGHT = 280
 
 /**
