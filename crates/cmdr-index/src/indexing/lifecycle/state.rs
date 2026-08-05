@@ -538,6 +538,24 @@ pub(crate) fn get_freshness(volume_id: &str) -> Option<Freshness> {
         .and_then(|i| i.signals.freshness.lock().ok().and_then(|f| *f))
 }
 
+/// What a start does once the volume's writer is up.
+///
+/// Both arms build the same thing — a database, a writer thread, the read
+/// handles, a registered instance — and differ only in what runs next, which is
+/// exactly the difference between indexing a drive and being able to write to
+/// its index.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::indexing::lifecycle) enum Activation {
+    /// Index the volume: replay its journal or walk it whole, then keep watching
+    /// it. What turning indexing on for a drive means.
+    IndexTheVolume,
+    /// Stand the index up and stop there: no scan, no watcher. What a
+    /// search-driven coverage walk needs — it writes the rows itself, and a full
+    /// scan of the drive is precisely what someone searching one folder did not
+    /// ask for.
+    WriterOnly,
+}
+
 /// Create the IndexManager for the root volume and auto-start indexing
 /// (resume from existing index or fresh scan).
 ///
@@ -549,7 +567,13 @@ pub(crate) fn get_freshness(volume_id: &str) -> Option<Freshness> {
 /// starts an SMB share. Both funnel through `start_indexing_for`.
 pub fn start_indexing() -> Result<(), String> {
     // The boot disk is APFS, so its inodes are trustworthy.
-    start_indexing_for(ROOT_VOLUME_ID, PathBuf::from("/"), IndexVolumeKind::Local, true)
+    start_indexing_for(
+        ROOT_VOLUME_ID,
+        PathBuf::from("/"),
+        IndexVolumeKind::Local,
+        true,
+        Activation::IndexTheVolume,
+    )
 }
 
 /// Start indexing for a specific volume id and root path.
@@ -558,11 +582,15 @@ pub fn start_indexing() -> Result<(), String> {
 /// once by the caller (from the volume's `FilesystemKind` for a local external
 /// drive; `true` for the boot disk and trait-scanned volumes). It threads to the
 /// per-scan `IndexPathSpace` so a FAT/exFAT drive stores `inode: None`.
-fn start_indexing_for(
+///
+/// `activation` picks what happens once the writer is up: a full index, or the
+/// writer alone for a search-driven walk to fill in ([`Activation`]).
+pub(in crate::indexing::lifecycle) fn start_indexing_for(
     volume_id: &str,
     volume_root: PathBuf,
     kind: IndexVolumeKind,
     inodes_trustworthy: bool,
+    activation: Activation,
 ) -> Result<(), String> {
     // The master switch is a HARD gate at the one choke point every transport
     // funnels through, so no start or autonomous resume path can slip past it (an
@@ -601,7 +629,12 @@ fn start_indexing_for(
         .get_index_status()
         .map(|s| s.scan_completed_at.is_some())
         .unwrap_or(false);
-    let initial_freshness = super::freshness::initial_freshness_on_launch(scan_completed, kind.has_event_journal());
+    // A writer-only start never replays the journal, so it can't inherit the Fresh
+    // a replay earns: an index it didn't verify loads Stale, exactly like a
+    // non-journaled one. (A never-scanned volume loads `None` either way, which is
+    // what a cold drive gets.)
+    let journaled = activation == Activation::IndexTheVolume && kind.has_event_journal();
+    let initial_freshness = super::freshness::initial_freshness_on_launch(scan_completed, journaled);
 
     // Launch-as-Stale ⇒ bump `current_epoch` at THIS call site (the pure
     // `initial_freshness_on_launch` has no DB handle and can't bump). A
@@ -624,6 +657,14 @@ fn start_indexing_for(
             }
             Err(e) => log::warn!("start_indexing_for('{volume_id}'): launch epoch bump conn failed: {e}"),
         }
+    }
+
+    // A writer-only start is the only thing that will ever touch this database
+    // before rows are written into it, so it does the two things a scan start
+    // would otherwise have done for it. Same short-lived write connection as the
+    // bump above, for the same reason: no writer is running yet.
+    if activation == Activation::WriterOnly {
+        prepare_database_for_a_walk(volume_id, &db_path);
     }
 
     // One set of shared handles per volume, held by BOTH the registry instance
@@ -674,7 +715,12 @@ fn start_indexing_for(
         }
     };
 
-    let scan_result = manager.resume_or_scan();
+    let scan_result = match activation {
+        Activation::IndexTheVolume => manager.resume_or_scan(),
+        // Nothing to resume and nothing to scan: the walk that asked for this
+        // writer is the only thing that will write through it.
+        Activation::WriterOnly => Ok(()),
+    };
 
     // Clone the writer before moving manager into the registry, so we can hand
     // it to the maintenance timer if startup succeeds.
@@ -744,6 +790,55 @@ fn start_indexing_for(
     Ok(())
 }
 
+/// Give a database a search-driven walk is about to write into the two things a
+/// scan start would have given it.
+///
+/// 1. **The epoch** every directory the walk lists is stamped with. A cold
+///    database has no `current_epoch`, and a walk only ever stamps the value it
+///    reads; seeding it here is what makes epoch 1 mean "this walk covered it".
+/// 2. **The exclusion policy stamp**, but ONLY while the database provably holds
+///    nothing (the `ROOT` sentinel alone). It records which policy the rows were
+///    written under, and an empty database satisfies any policy trivially — the
+///    same argument as stamping right after a `TruncateData`, which is the only
+///    other moment that holds. Without it `coverage` trusts NOTHING the walk
+///    writes and every later search re-walks the same ground, so convergence on a
+///    cold drive lives or dies here (`store::EXCLUSION_POLICY_KEY`).
+///
+/// ❌ A database that already holds rows is left unstamped: those rows came from
+/// somewhere this call can't vouch for.
+///
+/// Best-effort throughout: a failure costs coverage claims, never correctness, so
+/// it's logged rather than propagated into a refusal to walk at all.
+fn prepare_database_for_a_walk(volume_id: &str, db_path: &std::path::Path) {
+    let conn = match IndexStore::open_write_connection(db_path) {
+        Ok(conn) => conn,
+        Err(e) => {
+            log::warn!("start_indexing_for('{volume_id}'): couldn't prepare the index for a walk: {e}");
+            return;
+        }
+    };
+    if let Err(e) = IndexStore::seed_current_epoch(&conn) {
+        log::warn!("start_indexing_for('{volume_id}'): seeding the epoch failed: {e}");
+    }
+    match IndexStore::get_entry_count(&conn) {
+        // 1 is the `ROOT` sentinel `create_tables` inserts, so this is an index
+        // that has never held an entry — the same shape a `TruncateData` leaves.
+        Ok(count) if count <= 1 => {
+            if let Err(e) = IndexStore::update_meta(
+                &conn,
+                crate::indexing::store::EXCLUSION_POLICY_KEY,
+                &crate::indexing::scanner::exclusion_policy_fingerprint(),
+            ) {
+                log::warn!("start_indexing_for('{volume_id}'): stamping the exclusion policy failed: {e}");
+            }
+        }
+        Ok(_) => log::debug!(
+            "start_indexing_for('{volume_id}'): the index already holds rows, so its exclusion-policy stamp stands as it is"
+        ),
+        Err(e) => log::warn!("start_indexing_for('{volume_id}'): couldn't count the index's entries: {e}"),
+    }
+}
+
 /// Internal SMB-start entry point, called by `smb_index::start_indexing_for_smb`
 /// AFTER the direct-smb2 gate has passed. Funnels into the shared
 /// `start_indexing_for` with the `Smb` kind so the lock-first reservation,
@@ -752,7 +847,13 @@ fn start_indexing_for(
 pub(crate) fn start_indexing_for_smb_inner(volume_id: &str, mount_root: PathBuf) -> Result<(), String> {
     // SMB stores trait-provided inodes and doesn't run the local inode-keyed
     // rename pre-pass, so its inode identity is treated as trustworthy.
-    start_indexing_for(volume_id, mount_root, IndexVolumeKind::Smb, true)
+    start_indexing_for(
+        volume_id,
+        mount_root,
+        IndexVolumeKind::Smb,
+        true,
+        Activation::IndexTheVolume,
+    )
 }
 
 /// Internal MTP-start entry point, called by `mtp_index::start_indexing_for_mtp`
@@ -764,7 +865,13 @@ pub(crate) fn start_indexing_for_smb_inner(volume_id: &str, mount_root: PathBuf)
 pub(crate) fn start_indexing_for_mtp_inner(volume_id: &str, volume_root: PathBuf) -> Result<(), String> {
     // MTP reuses the `inode` column for PTP object handles and doesn't run the
     // local rename pre-pass, so its inode identity is treated as trustworthy.
-    start_indexing_for(volume_id, volume_root, IndexVolumeKind::Mtp, true)
+    start_indexing_for(
+        volume_id,
+        volume_root,
+        IndexVolumeKind::Mtp,
+        true,
+        Activation::IndexTheVolume,
+    )
 }
 
 /// Internal local-external-start entry point, called by
@@ -791,6 +898,7 @@ pub(crate) fn start_indexing_for_local_external_inner(
         mount_root,
         IndexVolumeKind::LocalExternal,
         inodes_trustworthy,
+        Activation::IndexTheVolume,
     )
 }
 
@@ -1149,6 +1257,33 @@ pub fn reserve_initializing_index_for_test(volume_id: &str, kind: IndexVolumeKin
     )
     .unwrap_or_else(|_| panic!("reserve {volume_id} must succeed from absent"));
     dir
+}
+
+/// Whether a volume has an index but has never actually been walked: nothing
+/// scanning now, and no completed scan on disk.
+///
+/// Two things leave that shape. A search-driven coverage walk stands a writer up
+/// and nothing else ([`Activation::WriterOnly`]), and a first scan someone
+/// stopped leaves its manager behind. In both cases the volume reads as active
+/// while no walk has ever covered it, so an enable that short-circuits on
+/// activity alone would swallow the very request that asks for one.
+pub(crate) fn awaits_its_first_scan(volume_id: &str) -> bool {
+    let db_path = {
+        let Ok(reg) = INDEX_REGISTRY.lock() else { return false };
+        match reg.get(volume_id).map(|i| &i.phase) {
+            // `Initializing` is a start already in flight, and a scanning manager
+            // is a walk already running: neither needs another.
+            Some(IndexPhase::Running(mgr)) if !mgr.scanning.load(Ordering::Relaxed) => mgr.db_path().to_path_buf(),
+            _ => return false,
+        }
+    };
+    // Off the lock: reading meta is SQLite work, and nothing that touches a
+    // database belongs under the lifecycle lock. The key is the one a completed
+    // scan writes and a scan start clears (`manager/start.rs`).
+    let completed = IndexStore::open_read_connection(&db_path)
+        .and_then(|conn| IndexStore::get_meta(&conn, "scan_completed_at"))
+        .unwrap_or(None);
+    completed.is_none()
 }
 
 /// Check whether a volume's index is active (initializing or running).

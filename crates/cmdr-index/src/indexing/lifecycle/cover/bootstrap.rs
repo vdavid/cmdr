@@ -15,9 +15,192 @@
 use std::path::{Path, PathBuf};
 
 use super::CoverContext;
+use crate::indexing::host::volumes::MountFacts;
+use crate::indexing::lifecycle::state::{self, Activation};
 use crate::indexing::metadata::extract_metadata;
 use crate::indexing::store::{IndexStore, ROOT_ID, resolve_path};
+use crate::indexing::volume::{IndexVolumeKind, ROOT_VOLUME_ID};
 use crate::indexing::writer::WriteMessage;
+
+/// Why a volume can't be walked at all.
+///
+/// Separate from [`NotWalkable`], which is about one path: these are about the
+/// volume, and the walk never starts.
+#[derive(Debug)]
+pub(crate) enum NoCoverContext {
+    /// Nothing is mounted under this id, so there's no drive to walk and no root
+    /// to index it against.
+    NotMounted,
+    /// A share or a phone. Its scoped walk is the `Volume`-trait one M3d builds;
+    /// pointing the LOCAL guarded walker at a network mount would traverse a
+    /// share over syscalls that block for minutes.
+    NotLocallyWalkable,
+    /// The volume's own scan owns the writer right now. Nothing to do: that scan
+    /// already covers everything a search would want walked, and a second writer
+    /// on one database races the id counter.
+    ScanInProgress,
+    /// Drive indexing is off in settings, and the master switch is a hard gate
+    /// over every start.
+    ///
+    /// Decision 13 carves a user-initiated read out of it — searching is not
+    /// background work — but that carve-out is M3c's, together with the four docs
+    /// that state the invariant. Until then "nothing indexes, anywhere" stays
+    /// true, and this is the one place the walk honors it.
+    MasterSwitchOff,
+    /// Standing the index up failed. Log-only.
+    Failed(String),
+}
+
+impl std::fmt::Display for NoCoverContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::NotMounted => f.write_str("nothing is mounted under that id"),
+            Self::NotLocallyWalkable => f.write_str("a share or a phone can't be walked locally"),
+            Self::ScanInProgress => f.write_str("the volume's own scan is running"),
+            Self::MasterSwitchOff => f.write_str("drive indexing is off in settings"),
+            Self::Failed(e) => write!(f, "the index wouldn't start: {e}"),
+        }
+    }
+}
+
+/// The context a walk on `volume_id` runs in, standing the index up first when
+/// the volume has none.
+///
+/// A volume that's already indexing hands its RUNNING writer over untouched —
+/// one writer per database, always. A volume with no index gets one built for
+/// exactly this: a database, an epoch, the read handles, and a writer, with no
+/// scan and no watcher behind them, because the walk writes its own rows and a
+/// full scan of the drive is not what someone searching one folder asked for.
+pub(crate) fn context_for_walk(volume_id: &str) -> Result<CoverContext, NoCoverContext> {
+    if let Some(context) = state::cover_context_for(volume_id) {
+        return Ok(context);
+    }
+    if state::is_active(volume_id) {
+        // Registered but not `Running`: its own scan is mid-flight.
+        return Err(NoCoverContext::ScanInProgress);
+    }
+
+    if !crate::indexing::lifecycle::master::master_enabled() {
+        return Err(NoCoverContext::MasterSwitchOff);
+    }
+
+    let volume = locally_walkable_volume(volume_id)?;
+    log::info!(
+        "Cover: '{volume_id}' has no index; standing one up at {} for the walk to fill in",
+        volume.root.display()
+    );
+    state::start_indexing_for(
+        volume_id,
+        volume.root,
+        volume.kind,
+        volume.inodes_trustworthy,
+        Activation::WriterOnly,
+    )
+    .map_err(NoCoverContext::Failed)?;
+
+    if volume.kind == IndexVolumeKind::LocalExternal {
+        // A new external index database just came online, so cap accumulation the
+        // same way turning indexing on for the drive would have. Never touches a
+        // registered volume, and this one is registered now.
+        crate::indexing::resources::retention::enforce_external_index_cap();
+    }
+
+    state::cover_context_for(volume_id).ok_or_else(|| {
+        // The reservation was won by something else between the two calls, or the
+        // start no-op'd against the master switch.
+        NoCoverContext::Failed(format!("'{volume_id}' still has no writer after being started"))
+    })
+}
+
+/// What the bootstrap needs to know about a volume before it can index it.
+struct WalkableVolume {
+    root: PathBuf,
+    kind: IndexVolumeKind,
+    inodes_trustworthy: bool,
+}
+
+/// Classify a volume the LOCAL guarded walker may walk, or say why it can't.
+///
+/// The boot disk is known without asking anyone. Everything else is the same
+/// question `local_external::classify` answers at the enable command, decided by
+/// the same typed facts (a live smb2 session, a network filesystem) through the
+/// same predicate — never a volume-id or path substring
+/// (`.claude/rules/no-string-matching.md`).
+fn locally_walkable_volume(volume_id: &str) -> Result<WalkableVolume, NoCoverContext> {
+    if volume_id == ROOT_VOLUME_ID {
+        // The boot disk is APFS, so its inodes are trustworthy.
+        return Ok(WalkableVolume {
+            root: PathBuf::from("/"),
+            kind: IndexVolumeKind::Local,
+            inodes_trustworthy: true,
+        });
+    }
+    classify_external(volume_id)
+}
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+fn classify_external(volume_id: &str) -> Result<WalkableVolume, NoCoverContext> {
+    use crate::indexing::transports::local_external::index::routes_to_local_external;
+
+    let volumes = crate::indexing::host::volumes::current();
+    let volume = volumes.get(volume_id).ok_or(NoCoverContext::NotMounted)?;
+    // A phone's files exist only over PTP, so there is no path to walk at all.
+    if !volume.supports_local_fs_access() {
+        return Err(NoCoverContext::NotLocallyWalkable);
+    }
+    let root = volume.root().to_path_buf();
+    let facts = probe_mount(&root);
+    if !routes_to_local_external(volume.smb_connection_state().is_some(), facts.is_network) {
+        return Err(NoCoverContext::NotLocallyWalkable);
+    }
+    Ok(WalkableVolume {
+        root,
+        kind: IndexVolumeKind::LocalExternal,
+        inodes_trustworthy: facts.inodes_trustworthy,
+    })
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+fn classify_external(_volume_id: &str) -> Result<WalkableVolume, NoCoverContext> {
+    // No external-drive transport is compiled here, so the boot disk is the only
+    // volume with anywhere to run.
+    Err(NoCoverContext::NotLocallyWalkable)
+}
+
+/// The mount's filesystem facts, under a hard deadline, on a thread of its own.
+///
+/// The probe is a `statfs`: microseconds on a local mount, and minutes on a
+/// wedged network one. This runs on the thread a search is waiting on, so it
+/// can't afford to wait — and a probe that won't answer IS the answer, because
+/// [`MountFacts::UNPROBEABLE`] reads as network and a network volume is refused
+/// here anyway. The probe thread is left to finish on its own; it holds nothing
+/// but its own syscall.
+///
+/// A dedicated thread rather than the async timeout `local_external::classify`
+/// uses, because this path has no runtime to borrow and must not become async
+/// for one syscall.
+fn probe_mount(root: &Path) -> MountFacts {
+    let (answer, wait) = std::sync::mpsc::channel();
+    let probe_root = root.to_path_buf();
+    let spawned = std::thread::Builder::new()
+        .name("index-mount-probe".into())
+        .spawn(move || {
+            let _ = answer.send(crate::indexing::host::volumes::current().mount_facts(&probe_root));
+        });
+    if spawned.is_err() {
+        return MountFacts::UNPROBEABLE;
+    }
+    wait.recv_timeout(MOUNT_PROBE_TIMEOUT)
+        .unwrap_or(MountFacts::UNPROBEABLE)
+}
+
+/// How long the mount probe may take before the volume counts as unprobeable.
+/// The same deadline the enable command's classification uses, for the same
+/// reason.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+const MOUNT_PROBE_TIMEOUT: std::time::Duration = crate::indexing::transports::local_external::index::FS_PROBE_TIMEOUT;
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+const MOUNT_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
 
 /// Why a frontier path can't be walked.
 ///

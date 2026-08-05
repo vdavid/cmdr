@@ -541,6 +541,264 @@ fn a_frontier_path_that_is_not_a_directory_on_disk_is_declined() {
     assert!(f.child_ids(&f.path("")).is_empty(), "and neither one left a row behind");
 }
 
+// ── The cold volume ──────────────────────────────────────────────────
+
+/// A drive with no index, as the host reports one, plus the handle to reach it
+/// through.
+///
+/// Everything behind the handle is process-wide, so this holds the test lock for
+/// its whole life and forgets the volume on the way out; a leaked registry entry
+/// would follow the next test into its own drive.
+/// ⚠️ Field order IS the teardown order: struct fields drop in declaration
+/// order, so the seam guard has to come before the lock guard. The other way
+/// round, this restores the previous data directory AFTER releasing the lock —
+/// over the top of whichever test took it next, which then fails with "no index
+/// data directory configured".
+struct ColdDrive {
+    _installed: crate::indexing::handle::TestInstallGuard,
+    _data: tempfile::TempDir,
+    tree: tempfile::TempDir,
+    index: crate::indexing::handle::Index,
+    volume_id: &'static str,
+    _serialized: std::sync::MutexGuard<'static, ()>,
+}
+
+impl ColdDrive {
+    /// A local drive as the host reports one: readable through the local
+    /// filesystem, no smb2 session, a local mount. Its contents come off the real
+    /// temp tree, because the LOCAL walker reads the disk rather than the volume.
+    fn new(volume_id: &'static str) -> Self {
+        Self::with_volume(volume_id, |volume| volume.with_local_fs_access())
+    }
+
+    /// The same, with the registered volume shaped by `describe` — a share, a
+    /// phone, whatever the refusal under test needs.
+    fn with_volume(
+        volume_id: &'static str,
+        describe: impl FnOnce(cmdr_fs::volume::InMemoryVolume) -> cmdr_fs::volume::InMemoryVolume,
+    ) -> Self {
+        let serialized = crate::indexing::handle::test_lock();
+        let data = tempfile::tempdir().expect("index data dir");
+        // In the CWD rather than `/tmp`, for the reasons `Fixture` names.
+        let tree = tempfile::Builder::new()
+            .prefix("cmdr-cold-cover-")
+            .tempdir_in(std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
+            .expect("temp tree");
+
+        let volumes = crate::indexing::host::volumes::FakeVolumeProvider::shared();
+        volumes.register(
+            volume_id,
+            std::sync::Arc::new(describe(
+                cmdr_fs::volume::InMemoryVolume::new("Cold").with_root(tree.path()),
+            )),
+        );
+        let (index, installed) = crate::indexing::handle::Index::builder()
+            .data_dir(data.path())
+            .volumes(std::sync::Arc::clone(&volumes) as std::sync::Arc<_>)
+            .install_for_test();
+
+        Self {
+            _installed: installed,
+            _data: data,
+            tree,
+            index,
+            volume_id,
+            _serialized: serialized,
+        }
+    }
+
+    fn path(&self, relative: &str) -> String {
+        self.tree.path().join(relative).to_string_lossy().to_string()
+    }
+
+    fn coverage(&self, path: &str) -> crate::indexing::read::coverage::CoverageMap {
+        self.index
+            .coverage(self.volume_id, path, CoverageDimension::Listing)
+            .expect("the volume answers for its own coverage")
+    }
+
+    /// Walk one scope to the end, waiting for the rows to land.
+    fn cover(&self, scope: &str) -> CoverOutcome {
+        let walk = self
+            .index
+            .cover(self.volume_id, vec![scope.to_string()], CoverageDimension::Listing)
+            .expect("the drive is walkable");
+        let (_, outcome) = drain(walk);
+        cmdr_fs::testing::wait_until(
+            std::time::Duration::from_secs(10),
+            "the walked scope to read as covered",
+            || {
+                let covered = self.coverage(scope);
+                covered.frontier.is_empty() && covered.unreadable.is_empty()
+            },
+        );
+        outcome
+    }
+}
+
+impl Drop for ColdDrive {
+    fn drop(&mut self) {
+        let _ = self.index.forget_volume(self.volume_id);
+    }
+}
+
+/// A drive nobody ever indexed, driven through the public handle: the walk
+/// stands the whole index up (database, epoch, writer, the chain down to the
+/// scope), covers exactly the folder it was pointed at, and claims NOTHING
+/// else.
+///
+/// The second half is the load-bearing one. A bootstrap that claimed anything
+/// beyond what it read would make the very next search skip ground nobody has
+/// walked, and a search that quietly omits a folder is the bug this whole effort
+/// exists to remove. So the volume root — the ancestor the bootstrap had to
+/// materialize to reach the scope — must still read as uncovered afterwards.
+#[test]
+fn a_cold_volume_bootstraps_and_claims_only_what_it_walked() {
+    let drive = ColdDrive::new("cover-cold-bootstrap-test");
+    std::fs::create_dir_all(drive.tree.path().join("scope/inner")).expect("dirs");
+    std::fs::write(drive.tree.path().join("scope/inner/found.txt"), "x").expect("file");
+    std::fs::create_dir_all(drive.tree.path().join("elsewhere")).expect("dirs");
+    let scope = drive.path("scope");
+    let volume_root = drive.path("");
+
+    let cold = drive.coverage(&scope);
+    assert_eq!(cold.frontier, vec![scope.clone()], "nothing is covered yet");
+    assert_eq!(cold.token, crate::indexing::read::coverage::CoverageToken::UNINDEXED);
+
+    let outcome = drive.cover(&scope);
+    assert!(!outcome.cancelled);
+    assert_eq!(outcome.roots_covered, 1, "the scope was covered");
+    assert_eq!(outcome.entries_found, 2, "inner/ and inner/found.txt");
+
+    let whole_volume = drive.coverage(&volume_root);
+    assert_eq!(
+        whole_volume.frontier,
+        vec![volume_root],
+        "the volume root was materialized, not listed: nothing may claim coverage it didn't earn"
+    );
+    assert_ne!(
+        whole_volume.token,
+        crate::indexing::read::coverage::CoverageToken::UNINDEXED,
+        "and the volume now has an index to answer from"
+    );
+}
+
+/// The second walk on a bootstrapped drive reuses the writer the first one stood
+/// up, and the coverage the first one earned is still there.
+///
+/// One writer per database is the invariant: a second would allocate ids from its
+/// own counter and inflate `dir_stats`, and a second bootstrap that re-prepared
+/// the database would throw the first walk's ground away.
+#[test]
+fn a_second_walk_reuses_the_index_the_first_one_stood_up() {
+    let drive = ColdDrive::new("cover-cold-second-walk-test");
+    for name in ["first", "second"] {
+        std::fs::create_dir_all(drive.tree.path().join(name)).expect("dirs");
+        std::fs::write(drive.tree.path().join(name).join("f.txt"), "x").expect("file");
+    }
+
+    drive.cover(&drive.path("first"));
+    drive.cover(&drive.path("second"));
+
+    assert!(
+        drive.coverage(&drive.path("first")).frontier.is_empty(),
+        "the first walk's ground survived the second walk"
+    );
+}
+
+/// Turning indexing on for a drive a search already walked runs the full scan
+/// the person asked for, instead of no-opping against the index the walk left.
+///
+/// A walk registers an instance with no scan and no watcher behind it, so a bare
+/// "this volume is already active" would swallow the request for exactly those.
+/// A first scan someone stopped leaves the same shape, and had the same problem.
+#[tokio::test(flavor = "multi_thread")]
+#[allow(
+    clippy::await_holding_lock,
+    reason = "the fixture holds the process-wide seams for the whole test; holding it across the await IS the point"
+)]
+async fn turning_indexing_on_after_a_walk_still_scans_the_drive() {
+    let drive = ColdDrive::new("cover-cold-then-enable-test");
+    std::fs::create_dir_all(drive.tree.path().join("walked")).expect("dirs");
+    std::fs::create_dir_all(drive.tree.path().join("never-walked")).expect("dirs");
+    let volume_root = drive.path("");
+
+    drive.cover(&drive.path("walked"));
+    assert!(
+        !drive.coverage(&volume_root).frontier.is_empty(),
+        "precondition: one walked folder leaves the rest of the drive uncovered"
+    );
+
+    drive
+        .index
+        .start_volume(drive.volume_id)
+        .await
+        .expect("the drive starts indexing");
+
+    cmdr_fs::testing::wait_until_async(
+        std::time::Duration::from_secs(20),
+        "the full scan to cover the whole drive",
+        || drive.coverage(&volume_root).frontier.is_empty(),
+    )
+    .await;
+}
+
+/// A drive that isn't mounted has nothing to walk and nothing to root an index
+/// at, so it reads as what it is: not indexed.
+#[test]
+fn an_unmounted_volume_is_not_walkable() {
+    let drive = ColdDrive::new("cover-cold-unmounted-test");
+    assert!(
+        matches!(
+            drive.index.cover(
+                "nothing-is-mounted-here",
+                vec![drive.path("x")],
+                CoverageDimension::Listing
+            ),
+            Err(crate::indexing::handle::IndexError::NotIndexed { .. })
+        ),
+        "an unmounted drive can't be bootstrapped"
+    );
+}
+
+/// A share and a phone are refused rather than walked locally.
+///
+/// The LOCAL guarded walker must never be pointed at a network mount — it would
+/// traverse the share over syscalls that block for minutes, and the rows it wrote
+/// would fight the trait scanner's. Their scoped walk is the `Volume`-trait one
+/// (M3d); until it exists, a search over them is honestly index-only. Classified
+/// by typed facts, never by the volume id.
+#[test]
+fn a_share_or_a_phone_is_not_walked_locally() {
+    {
+        let share = ColdDrive::with_volume("cover-cold-share-test", |volume| {
+            volume
+                .with_local_fs_access()
+                .with_smb_connection_state(cmdr_fs::volume::SmbConnectionState::Direct)
+        });
+        assert!(
+            matches!(
+                share
+                    .index
+                    .cover(share.volume_id, vec![share.path("x")], CoverageDimension::Listing),
+                Err(crate::indexing::handle::IndexError::NotIndexed { .. })
+            ),
+            "a share is not local ground"
+        );
+    }
+    // A phone's files exist only over PTP: no local path to walk at all.
+    let phone = ColdDrive::with_volume("cover-cold-phone-test", |volume| volume);
+    assert!(
+        matches!(
+            phone
+                .index
+                .cover(phone.volume_id, vec![phone.path("x")], CoverageDimension::Listing),
+            Err(crate::indexing::handle::IndexError::NotIndexed { .. })
+        ),
+        "a volume with no local filesystem access is not local ground"
+    );
+}
+
 // ── Cancellation ─────────────────────────────────────────────────────
 
 /// A walk stopped partway reports what it DID cover, not zero.

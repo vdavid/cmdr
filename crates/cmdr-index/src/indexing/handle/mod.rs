@@ -165,6 +165,14 @@ impl Index {
     /// cache.
     pub async fn start_volume(&self, volume_id: &str) -> Result<StartOutcome, IndexError> {
         if state::is_active(volume_id) {
+            // Active isn't the same as indexed: a search-driven walk leaves a
+            // writer with no scan and no watcher behind it, and so does a first
+            // scan somebody stopped. Returning `Started` there would swallow the
+            // request for the very walk this call is asking for, so route it to
+            // the scan instead — which is what a first full walk is.
+            if state::awaits_its_first_scan(volume_id) && crate::indexing::lifecycle::master::master_enabled() {
+                state::force_scan(volume_id)?;
+            }
             return Ok(StartOutcome::Started);
         }
         // The master switch outranks every per-volume choice, so it's answered
@@ -430,15 +438,30 @@ impl Index {
     /// it: a superseded query keeps its walk, because walking is coverage work
     /// and matching is query work.
     ///
-    /// `Err` when the volume has no running index to write into.
+    /// A volume with no index gets one, built for exactly this and nothing more:
+    /// no full scan of the drive, no watcher, just somewhere for the walk to
+    /// write. [`NotIndexed`](IndexError::NotIndexed) means there was nothing to
+    /// build one for — the drive isn't mounted, or it's a share or a phone, whose
+    /// scoped walk isn't here yet.
     pub fn cover(
         &self,
         volume_id: &str,
         frontier: Vec<String>,
         dimension: CoverageDimension,
     ) -> Result<CoverWalk, IndexError> {
-        let context = state::cover_context_for(volume_id)
-            .ok_or_else(|| IndexError::Internal(Diagnostic(format!("no running index to cover '{volume_id}' into"))))?;
+        let context = cover::context_for_walk(volume_id).map_err(|e| match e {
+            // Nothing to walk into and nothing built: from out here that reads
+            // exactly like a drive that was never indexed, which is what it is.
+            cover::NoCoverContext::NotMounted
+            | cover::NoCoverContext::NotLocallyWalkable
+            | cover::NoCoverContext::MasterSwitchOff => IndexError::NotIndexed {
+                volume_id: volume_id.to_string(),
+            },
+            // The volume IS being indexed, so `NotIndexed` would be a lie. No
+            // caller acts on the difference yet; the walk simply doesn't run,
+            // because the scan already covers what it would have walked.
+            other => IndexError::Internal(Diagnostic(format!("can't walk '{volume_id}': {other}"))),
+        })?;
         Ok(cover::start(context, frontier, dimension, CancellationToken::new()))
     }
 

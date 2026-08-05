@@ -280,5 +280,7 @@ enum RootOutcome {
 
 mod bootstrap;
 
+pub(crate) use bootstrap::{NoCoverContext, context_for_walk};
+
 #[cfg(test)]
 mod tests;

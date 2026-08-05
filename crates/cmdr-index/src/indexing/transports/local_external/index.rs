@@ -31,7 +31,7 @@ use tokio::time::Duration;
 /// How long to wait for the mount's filesystem-type probe before treating the
 /// volume as non-local. A local mount's `statfs` returns in microseconds; the cap
 /// only bites on a hung network mount, which we then route to the SMB gate.
-const FS_PROBE_TIMEOUT: Duration = Duration::from_secs(2);
+pub(in crate::indexing) const FS_PROBE_TIMEOUT: Duration = Duration::from_secs(2);
 
 /// The outcome of routing a per-drive enable through the local-external branch.
 pub(crate) enum LocalExternalEnable {
@@ -52,7 +52,7 @@ pub(crate) enum LocalExternalEnable {
 /// never run the local guarded walker (a network `readdir` can hang, and the
 /// index would be mis-scanned). Pure so the routing decision is unit-testable
 /// without a `VolumeManager` or an `AppHandle`.
-fn routes_to_local_external(is_smb_session: bool, fs_is_network: bool) -> bool {
+pub(in crate::indexing) fn routes_to_local_external(is_smb_session: bool, fs_is_network: bool) -> bool {
     !(is_smb_session || fs_is_network)
 }
 
