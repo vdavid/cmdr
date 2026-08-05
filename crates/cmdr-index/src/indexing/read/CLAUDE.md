@@ -22,20 +22,19 @@ Serve recursive sizes, index status, and coverage back to the app. Everything he
   epoch ONCE per pass. `expected_totals` returns `None` for ANY incomplete (`min_subtree_epoch == 0`) or unindexed
   source: a lower bound would overshoot the write-op progress bar past 100%.
 - **The pending-sizes hourglass is a marked-SET, cleared WHOLESALE on writer `queue_depth == 0`** (self-healing, no
-  per-entry pairing to leak). Marked only at the live loop's drain points (live-only, so replay doesn't flag everything
-  on startup). Rides `DirStats` only, NOT `FileEntry` enrichment (deliberate). A second held-roots tier survives the
-  wholesale clear for seconds-long coalesced rescans.
-- **`ReadPool`'s thread-local is a 3-slot LRU (`sqlite_util::ThreadConnCache`), not one connection.** One slot made a
-  thread alternating between two volumes (an ordinary two-pane setup) reopen on every alternation, losing the
-  connection's `prepare_cached` statements on the hot path. ❌ Don't add a mutex here, and ❌ don't shrink it back to
-  one slot. DETAILS § Enrichment.
+  per-entry pairing to leak). Marked only at the live loop's drain points, so replay doesn't flag everything on startup.
+  Rides `DirStats` only, NOT `FileEntry` enrichment. A held-roots tier survives the wholesale clear for seconds-long
+  coalesced rescans.
+- **`ReadPool`'s thread-local is a 3-slot LRU, not one connection.** One slot made a thread alternating between two
+  volumes reopen on every alternation, losing that connection's `prepare_cached` statements on the hot path. ❌ No mutex
+  here, ❌ don't shrink it back, and ❌ don't reset a new pool's starting generation to a constant (it would inherit a
+  deleted database's cached connections). DETAILS § Enrichment.
 - **The coverage frontier needs BOTH epoch fields; ❌ never `min_subtree_epoch` alone** (it 0-absorbs upward, so the cut
   is always the scope root and the answer is "walk everything"). `min > 0` covered, `min == 0 && listed > 0` descend,
   `listed == 0 && unreadable_cause` skip (into `permission_denied` or `declined`, ❌ never merged), else frontier. Rests
-  on `min > 0` ⇒ `listed > 0` and the `EXCLUSION_POLICY_KEY` stamp: absent or stale ⇒ nothing is trusted. DETAILS § The
-  coverage frontier.
-- **Enrichment logs once per changed result, via `EnrichResultMemo`** (fires only when `(dir_count, enriched)` differs).
-  Don't add a per-pass line; an idle pane triggers this ~2/s per pane.
+  on `min > 0` ⇒ `listed > 0` and the `EXCLUSION_POLICY_KEY` stamp: stale or absent ⇒ nothing is trusted.
+- **Enrichment logs once per changed result, via `EnrichResultMemo`.** ❌ No per-pass line: an idle pane triggers this
+  ~2/s.
 
 ## Module map
 

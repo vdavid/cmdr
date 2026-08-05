@@ -26,15 +26,14 @@ Flow: FDA (1) → AI (2) → Open beta (3) → Optional (4). Linux skips step 1 
   it at runtime races the TCC popups the gate suppresses (we hit 5-10 stacked popups once). The resume rule lands the
   user on step 2 after relaunch. Deny advances normally.
 - **Step 1 polls for a live FDA grant (macOS).** While the Allow/Deny variants are open and FDA isn't granted, a 500 ms
-  `$effect` poller in `StepFda` calls `checkFullDiskAccessQuiet` (the side-effect-free probe, NOT `checkFullDiskAccess`,
-  which fires the TCC-registration storm and logging on every denial). On grant it calls `setStep1Granted()` (success
-  state, footer flips to "Restart Cmdr") and stops; the interval also clears on unmount (no leaks). The restart still
-  applies (the gate is boot-set); don't try to clear it live. The poller never runs on `already-granted` or Linux.
+  `$effect` poller in `StepFda` calls `checkFullDiskAccessQuiet` — the side-effect-free probe, ❌ never
+  `checkFullDiskAccess`, which fires a TCC-registration storm on every denial. On grant it calls `setStep1Granted()` and
+  stops; the interval clears on unmount. The restart still applies (the gate is boot-set). The poller never runs on
+  `already-granted` or Linux.
 - **No Escape handler on the wizard.** Dismissing without choosing leaves no recorded preference; the user must commit
   to Allow / Deny / Next on each step. (Closing requires committing to a step; MCP close/focus aren't wired.)
-- **The AI step's forward button stays enabled regardless of API-key validity** (no-key-blocks-advance). Don't gate
-  advance on connection status; the auto-check is informational. First AI use surfaces the standard `NotConfigured`
-  path.
+- **The AI step's forward button stays enabled regardless of API-key validity.** ❌ Don't gate advance on connection
+  status: the auto-check is informational, and first AI use surfaces the standard `NotConfigured` path.
 - **FDA stays a three-state setting** (`notAskedYet` / `allow` / `deny`), never a boolean: the app must tell "never
   asked" from "granted-then-revoked" from "explicitly declined".
 - **Two things stay gated on the FDA decision at boot:** the drive indexer and the path-based icon fetches in
@@ -42,11 +41,9 @@ Flow: FDA (1) → AI (2) → Open beta (3) → Optional (4). Linux skips step 1 
   clears the runtime gate and starts the indexer/MTP watcher (one TCC popup per protected folder). On Allow, the
   relaunch opens the gate at boot. See `src-tauri/src/fda_gate.rs`.
 - **`StepBeta` and `StepOptional` reuse existing Settings wiring** (`UpdatesSection`'s `betaSignup`/email path,
-  `<SettingSwitch>` writing via `setSetting()`). The email path POSTs only the email, never an install id. Don't fork
-  it.
+  `<SettingSwitch>` via `setSetting()`). The email path POSTs only the email, never an install id. ❌ Don't fork it.
 - **Search's coverage note routes INTO step 1** when a walk was refused a folder and Cmdr lacks FDA
-  (`lib/search/coverage-note.ts::offersFullDiskAccess`). ❌ No second FDA prompt, ❌ never over a snapshot folder.
-  `DETAILS.md` § The search route in.
+  (`coverage-note.ts::offersFullDiskAccess`): ❌ no second FDA prompt, ❌ never over a snapshot folder.
 - **`CMDR_FORCE_ONBOARDING=1`** forces the wizard regardless of persisted state;
   `CMDR_MOCK_FDA=granted|denied|notgranted` overrides the TCC probe for testing all banner branches.
 
