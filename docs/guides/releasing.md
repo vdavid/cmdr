@@ -37,7 +37,8 @@ else has to change.
 Re-enabling the persistent cargo target dir belongs with that switch, not before it: the old `CARGO_TARGET_DIR`
 (`~/.cache/cmdr-release-target`, outside the workspace `actions/checkout` wipes) was safe ONLY because the jobs ran
 sequentially on one machine. Under hosted runners they run concurrently, where a shared target dir would have cargo
-locking and corrupting it. The directory is still on the Mac and still ~15–30 GB; `rm -rf` it if disk gets tight.
+locking and corrupting it. The directory is gone (reclaimed 21 GB); switching back recreates it, at the cost of one
+cold compile.
 
 ## Release gates that abort before tagging
 
