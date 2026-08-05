@@ -40,11 +40,11 @@ concurrently without corrupting each other. Every invariant below holds independ
   heal latch. If the rebuild can't start (share unmounted, scan already running) we log and keep serving the existing
   index; nothing stamps the DB until a rebuild actually truncates, so the next load re-arms. Triggers, name list, and
   the stamp are canonical in `../network_scanner/DETAILS.md` § "NAS snapshot/system dirs aren't recursed".
-- **cover.rs** (+ `cover/bootstrap.rs`, `cover/tests.rs`) — the SEARCH-driven walk, the write half of the coverage
-  concept whose read half is `../read/coverage.rs`. `Index::cover` resolves a `CoverContext` (the volume's writer + its
-  path space) here, spawns one Utility-QoS thread, and walks each frontier root the coverage answer named. `bootstrap`
-  is everything that has to exist first: an index on a volume that has none, and an `entries` row for a path the index
-  has never seen. Detail below.
+- **cover.rs** (+ `cover/bootstrap.rs`, `cover/live.rs`, `cover/tests.rs`) — the SEARCH-driven walk, the write half of
+  the coverage concept whose read half is `../read/coverage.rs`. `Index::cover` resolves a `CoverContext` (the volume,
+  its writer, its path space) here, spawns one Utility-QoS thread, and walks each frontier root the coverage answer
+  named. `bootstrap` is everything that has to exist first: an index on a volume that has none, and an `entries` row for
+  a path the index has never seen. `live` is which roots are already being walked. Detail below.
 - **scan_completion.rs** — the post-scan handler: the vanished-volume abort and the LOCAL failure→Stale arm (below).
 - **freshness.rs** — the `Fresh`/`Stale`/`Scanning`/`Failed` transition table (`Freshness::on`) +
   `initial_freshness_on_launch`.
@@ -340,6 +340,33 @@ caller that stopped reading can't deadlock against a walk parked on a full one.
 
 **The channel is bounded at eight batches.** A consumer that falls behind slows the walk rather than growing a queue to
 the size of the subtree; each batch already carries up to 2 000 entries.
+
+### One writer per database, and one walk per patch of ground
+
+The hazard is the one this file states for the registry generally: two writers on one database own separate id counters
+and separate `AccumulatorMaps`, so they produce primary-key collisions and inflated `dir_stats`. A walk answers it at
+three levels, each closing a case the one above it can't see.
+
+1. **Reuse the volume's writer** (`state::cover_context_for`). A `Running` volume hands its own writer over; the walk
+   never stands a second one up.
+2. **Don't walk a volume that's being scanned.** `cover_context_for` answers `None` while `mgr.scanning` is set, and
+   `context_for_walk` turns that plus `Initializing` into `NoCoverContext::ScanInProgress`. The scan already covers
+   everything a search would have walked, and running beside it isn't merely redundant: both allocate fresh ids for the
+   same names, `insert_entries_v2_batch` is `INSERT OR IGNORE`, and the row that loses takes its subtree with it. With
+   no index at all, the lock-first reservation inside `start_indexing_for` decides who builds one.
+3. **Claim the frontier roots** (`cover/live.rs`). One writer isn't enough on its own, because two walks THROUGH that
+   one writer over the same directories hit the same `INSERT OR IGNORE` collision. Decision 11 makes this routine: a
+   refined query re-asks `coverage` while the first query's walk is still running, and that first walk keeps going. So
+   `cover::start` claims each root on the caller's thread, skips any that overlaps a live one in either direction
+   (component-aware, so `/a/bc` is not inside `/a/b`), and reports the skipped ones as
+   `CoverWalk::covered_by_another_walk`. The claim is owned by the walk thread, so the ground frees up on the completion
+   path, the cancel path, and a panic alike.
+
+The deferred caller loses nothing durable: the other walk's rows land in the same index, and Decision 12 makes them
+visible to the very next query — which is exactly how Decision 11 already says a superseded query recovers its
+predecessor's ground, from the index rather than from a replay. ❌ Don't replace this with a shared-subscriber fan-out
+to get live batches for the shared ground; it needs per-subscriber filtering and per-subscriber completion (one root is
+done while the walk moves on to the next), and there is no second consumer today to shape either against.
 
 ### What has to exist before a walk can run (`cover/bootstrap.rs`)
 

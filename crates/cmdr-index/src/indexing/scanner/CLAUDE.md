@@ -1,7 +1,7 @@
 # Local guarded scanner
 
-The LOCAL fresh-scan directory walker (boot disk + `LocalExternal`), built to survive a hung `readdir` on a
-disconnected File Provider mount, plus the scope-aware exclusion policy every local path shares.
+The LOCAL fresh-scan directory walker (boot disk + `LocalExternal`), built to survive a hung `readdir` on a disconnected
+File Provider mount, plus the scope-aware exclusion policy every local path shares.
 
 ## Module map
 

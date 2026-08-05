@@ -72,6 +72,7 @@ pub struct CoverWalk {
     batches: Receiver<Vec<CoveredEntry>>,
     cancel: CancellationToken,
     thread: JoinHandle<CoverOutcome>,
+    deferred: Vec<String>,
 }
 
 impl CoverWalk {
@@ -79,6 +80,18 @@ impl CoverWalk {
     /// walk has ended, for whatever reason.
     pub fn next_batch(&self) -> Option<Vec<CoveredEntry>> {
         self.batches.recv().ok()
+    }
+
+    /// Frontier roots this walk is NOT covering, because another walk on the same
+    /// volume already is.
+    ///
+    /// Their rows land in the same index either way, and a query re-run once the
+    /// other walk gets there picks them up — so this is "you'll get these a bit
+    /// later", never "these are lost". Normally empty; it fills when a refined
+    /// query asks for ground its predecessor's walk is still covering, which
+    /// Decision 11 keeps running.
+    pub fn covered_by_another_walk(&self) -> &[String] {
+        &self.deferred
     }
 
     /// Stop the walk. Returns immediately; the walk winds down behind it, and
@@ -108,6 +121,7 @@ impl CoverWalk {
 /// Everything one walk needs, resolved on the caller's thread so a bad request
 /// fails before a thread is spawned.
 pub(crate) struct CoverContext {
+    pub volume_id: String,
     pub writer: IndexWriter,
     pub space: IndexPathSpace,
 }
@@ -116,7 +130,9 @@ pub(crate) struct CoverContext {
 ///
 /// The paths are the ones a [`coverage`](crate::Index::coverage) answer named,
 /// each taken whole: nothing under a frontier node is covered, so there is no
-/// pruning to do inside one.
+/// pruning to do inside one. Ground another walk on this volume is already
+/// covering is left to it and reported as
+/// [`covered_by_another_walk`](CoverWalk::covered_by_another_walk).
 pub(crate) fn start(
     context: CoverContext,
     frontier: Vec<String>,
@@ -127,6 +143,12 @@ pub(crate) fn start(
     // compile error here, not a silently-ignored parameter.
     let CoverageDimension::Listing = dimension;
 
+    // Taken on the CALLER's thread, so the answer is already true by the time
+    // this returns: a caller that starts two walks in a row can't have the second
+    // one claim ground the first hasn't reached the registry with yet.
+    let claim = Claim::take(&context.volume_id, frontier);
+    let deferred = claim.deferred().to_vec();
+
     let (sender, batches) = sync_channel(BATCH_QUEUE_DEPTH);
     let walk_cancel = cancel.clone();
     let thread = std::thread::Builder::new()
@@ -135,7 +157,11 @@ pub(crate) fn start(
             // Yield CPU to the UI, exactly as the full scan does: someone is
             // waiting on the results, but they're waiting on the UI more.
             cmdr_fs::thread_qos::set_current_thread_qos(cmdr_fs::thread_qos::QosClass::Utility);
-            walk_frontier(&context, &frontier, &sender, &walk_cancel)
+            // The claim lives as long as the walk and no longer, so its ground
+            // frees up on the completion path, the cancel path, and a panic alike.
+            let outcome = walk_frontier(&context, claim.mine(), &sender, &walk_cancel);
+            drop(claim);
+            outcome
         })
         .unwrap_or_else(|e| {
             // A machine that can't spawn a thread has a bigger problem than this
@@ -153,6 +179,7 @@ pub(crate) fn start(
         batches,
         cancel,
         thread,
+        deferred,
     }
 }
 
@@ -279,8 +306,10 @@ enum RootOutcome {
 }
 
 mod bootstrap;
+mod live;
 
 pub(crate) use bootstrap::{NoCoverContext, context_for_walk};
+use live::Claim;
 
 #[cfg(test)]
 mod tests;

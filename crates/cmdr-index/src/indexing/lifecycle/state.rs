@@ -237,17 +237,41 @@ pub(crate) fn get_writer_and_scanning_for(volume_id: &str) -> Option<(crate::ind
 /// Everything a coverage walk needs to run on a volume: its writer (the one
 /// writer per DB) and its path space.
 ///
-/// `None` while the volume is `Initializing` — its own scan owns the writer, and
-/// that scan already covers whatever a search would want walked — or when the
-/// volume has no index at all, which is M3b's cold-bootstrap case.
+/// The walk REUSES the volume's running writer rather than standing a second one
+/// up, which is the whole point: two writers on one database own separate id
+/// counters and separate accumulator maps, so they collide on the primary key and
+/// inflate `dir_stats`.
+///
+/// `None` in three cases, and a caller that gets it should walk nothing:
+/// - the volume is `Initializing`, so its own start owns the writer;
+/// - a full scan is RUNNING on it, which already covers everything a search would
+///   have walked, and whose fresh ids would collide with the walk's over the same
+///   names (`INSERT OR IGNORE` drops one and orphans its subtree);
+/// - the volume has no index at all, which is the cold-bootstrap case
+///   (`cover/bootstrap.rs` builds one).
 pub(crate) fn cover_context_for(volume_id: &str) -> Option<crate::indexing::lifecycle::cover::CoverContext> {
     let reg = INDEX_REGISTRY.lock().ok()?;
     match reg.get(volume_id).map(|i| &i.phase) {
-        Some(IndexPhase::Running(mgr)) => Some(crate::indexing::lifecycle::cover::CoverContext {
-            writer: mgr.writer.clone(),
-            space: mgr.path_space(),
-        }),
+        Some(IndexPhase::Running(mgr)) if !mgr.scanning.load(Ordering::Relaxed) => {
+            Some(crate::indexing::lifecycle::cover::CoverContext {
+                volume_id: volume_id.to_string(),
+                writer: mgr.writer.clone(),
+                space: mgr.path_space(),
+            })
+        }
         _ => None,
+    }
+}
+
+/// Flip a Running volume's "a full scan is in flight" flag, so a test can pin
+/// what a walk does against one without racing a real scan into place.
+#[cfg(test)]
+pub(crate) fn set_scanning_for_test(volume_id: &str, scanning: bool) {
+    use cmdr_fs::ignore_poison::IgnorePoison;
+    let reg = INDEX_REGISTRY.lock_ignore_poison();
+    match reg.get(volume_id).map(|i| &i.phase) {
+        Some(IndexPhase::Running(mgr)) => mgr.scanning.store(scanning, Ordering::Relaxed),
+        _ => panic!("'{volume_id}' has no running manager to mark"),
     }
 }
 

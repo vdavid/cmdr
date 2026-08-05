@@ -18,6 +18,10 @@ struct Fixture {
     _db_dir: tempfile::TempDir,
     db_path: PathBuf,
     writer: IndexWriter,
+    /// A volume id of its own, because the in-flight frontier claims
+    /// (`live.rs`) are keyed by one and these tests run in parallel over paths
+    /// that would otherwise look like each other's ground.
+    volume_id: String,
 }
 
 impl Fixture {
@@ -38,6 +42,7 @@ impl Fixture {
             _db_dir: db_dir,
             db_path,
             writer,
+            volume_id: format!("cover-fixture-{}", next_fixture_id()),
         };
         fixture.seed_chain(fixture.tree.path());
         fixture
@@ -62,6 +67,7 @@ impl Fixture {
 
     fn context(&self) -> CoverContext {
         CoverContext {
+            volume_id: self.volume_id.clone(),
             writer: self.writer.clone(),
             space: IndexPathSpace::root(),
         }
@@ -98,6 +104,13 @@ impl Fixture {
             .expect("listed epoch")
             .expect("row")
     }
+}
+
+/// A fresh volume id per fixture, so parallel tests never look like each other's
+/// in-flight walk.
+fn next_fixture_id() -> u64 {
+    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    NEXT.fetch_add(1, Ordering::Relaxed)
 }
 
 /// Drain a walk, collecting every entry it emitted.
@@ -950,6 +963,129 @@ fn a_share_or_a_phone_is_not_walked_locally() {
         ),
         "a volume with no local filesystem access is not local ground"
     );
+}
+
+// ── One writer per database ──────────────────────────────────────────
+
+/// A volume whose own full scan is running isn't walked at all.
+///
+/// Two reasons, and either alone would be enough: the scan already covers
+/// everything a search would want walked, and a walk beside it allocates fresh
+/// ids for names the scan is inserting under its own — `INSERT OR IGNORE` drops
+/// whichever loses and orphans everything below it.
+#[test]
+fn a_volume_mid_full_scan_is_not_walked() {
+    let drive = ColdDrive::new("cover-scan-in-progress-test");
+    std::fs::create_dir_all(drive.tree.path().join("scope")).expect("dirs");
+
+    // A writer-only start is the shape a walk leaves: Running, nothing scanning.
+    crate::indexing::lifecycle::state::start_indexing_for(
+        drive.volume_id,
+        drive.tree.path().to_path_buf(),
+        crate::indexing::volume::IndexVolumeKind::Local,
+        true,
+        crate::indexing::lifecycle::state::Activation::WriterOnly,
+    )
+    .expect("stand the index up");
+    assert!(
+        bootstrap::context_for_walk(drive.volume_id).is_ok(),
+        "precondition: with no scan running, the walk reuses this writer"
+    );
+
+    crate::indexing::lifecycle::state::set_scanning_for_test(drive.volume_id, true);
+    assert!(
+        matches!(
+            bootstrap::context_for_walk(drive.volume_id),
+            Err(bootstrap::NoCoverContext::ScanInProgress)
+        ),
+        "a scan owns the volume while it runs"
+    );
+
+    crate::indexing::lifecycle::state::set_scanning_for_test(drive.volume_id, false);
+    assert!(
+        bootstrap::context_for_walk(drive.volume_id).is_ok(),
+        "and hands it back when it's done"
+    );
+}
+
+/// Two walks over overlapping ground don't both walk it: the second leaves the
+/// shared roots to the first, walks the rest, and says which it left.
+///
+/// This is the case Decision 11 creates — a refined query re-asks `coverage`
+/// while the first query's walk is still running — and it's a data-safety rule,
+/// not a performance one. The second search loses nothing durable: the first
+/// walk's rows go into the same index, which is where Decision 11 already says a
+/// superseded query recovers its predecessor's ground.
+///
+/// The live walk is stood in for by its `Claim`, deliberately: a real first walk
+/// over a small fixture can finish before the second one starts, and a test that
+/// races its own precondition would go green on a broken implementation about
+/// half the time.
+#[test]
+fn a_walk_leaves_ground_another_walk_is_covering_to_it() {
+    let f = Fixture::new();
+    let root = f.tree.path();
+    std::fs::create_dir_all(root.join("shared/inner")).expect("dirs");
+    std::fs::create_dir_all(root.join("mine")).expect("dirs");
+    std::fs::write(root.join("mine/f.txt"), "x").expect("file");
+    std::fs::write(root.join("shared/inner/theirs.txt"), "x").expect("file");
+    f.seed_chain(&root.join("shared"));
+    f.seed_chain(&root.join("mine"));
+
+    let first = Claim::take(&f.volume_id, vec![f.path("shared")]);
+    let second = start(
+        f.context(),
+        vec![f.path("shared/inner"), f.path("mine")],
+        CoverageDimension::Listing,
+        CancellationToken::new(),
+    );
+
+    assert_eq!(
+        second.covered_by_another_walk(),
+        [f.path("shared/inner")],
+        "ground inside a live walk is left to it"
+    );
+    let (entries, outcome) = drain(second);
+    f.writer.flush_blocking().expect("flush");
+    assert_eq!(outcome.roots_covered, 1, "and the rest is walked normally");
+    assert_eq!(entries.len(), 1, "only `mine`'s file, none of the shared ground");
+    assert!(
+        f.child_ids(&f.path("shared")).is_empty(),
+        "and this walk wrote nothing at all under the deferred root, rather than \
+         half-covering ground the other walk is mid-way through"
+    );
+
+    drop(first);
+}
+
+/// A walk holds its ground only while it runs, so the next search over the same
+/// folder walks rather than deferring forever.
+#[test]
+fn a_finished_walk_releases_the_ground_it_held() {
+    let f = Fixture::new();
+    std::fs::create_dir_all(f.tree.path().join("once")).expect("dirs");
+    f.seed_chain(&f.tree.path().join("once"));
+
+    let walk = start(
+        f.context(),
+        vec![f.path("once")],
+        CoverageDimension::Listing,
+        CancellationToken::new(),
+    );
+    assert!(walk.covered_by_another_walk().is_empty(), "nobody else holds it");
+    drain(walk);
+
+    let again = start(
+        f.context(),
+        vec![f.path("once")],
+        CoverageDimension::Listing,
+        CancellationToken::new(),
+    );
+    assert!(
+        again.covered_by_another_walk().is_empty(),
+        "a finished walk holds nothing"
+    );
+    drain(again);
 }
 
 // ── Cancellation ─────────────────────────────────────────────────────
