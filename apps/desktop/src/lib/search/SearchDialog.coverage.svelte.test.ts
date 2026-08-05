@@ -495,17 +495,17 @@ describe('what a search reports to analytics', () => {
     setQuery('*.pdf')
     await runSearch(overlay)
 
-    expect(searchEvents()).toEqual([
-      {
-        mode: 'filename',
-        trigger: 'run',
-        ending: 'completed',
-        coverage: 'live',
-        abandoned_ground: false,
-        capped: false,
-        duration_bucket: expect.any(String),
-      },
-    ])
+    const events = searchEvents()
+    expect(events).toHaveLength(1)
+    expect(events[0]).toMatchObject({
+      mode: 'filename',
+      trigger: 'run',
+      ending: 'completed',
+      coverage: 'live',
+      abandoned_ground: false,
+      capped: false,
+    })
+    expect(typeof events[0].duration_bucket).toBe('string')
   })
 
   it('marks the debounce apart from a run the user asked for', async () => {
@@ -556,7 +556,7 @@ describe('what a search reports to analytics', () => {
     expect(trackEventMock).toHaveBeenCalledWith('search_cta_offered', { cta: 'indexDrive' })
 
     const button = Array.from(overlay.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === tString('search.coverage.indexDrive'),
+      (b) => b.textContent.trim() === tString('search.coverage.indexDrive'),
     )
     button?.click()
     await settle()
