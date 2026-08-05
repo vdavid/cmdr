@@ -85,6 +85,14 @@ buried. It is meant to be complete; anything found later belongs here.
 11. **The master-switch settings note becomes inaccurate, deliberately.** `settings.indexing.masterOffNote` says "no
     drive is indexed and folder sizes stay hidden"; once a search writes coverage, folder sizes appear for walked
     branches. David reviewed this and chose to leave the copy as-is. ❌ Don't "fix" it without asking him.
+12. **A live count-only search can count a file twice.** The row path dedupes a walked entry against the rows already
+    emitted, bounded by the result cap; a count has no such bound, so a file that is BOTH in the arena and inside a
+    frontier subtree is counted by each half. It takes rows under an unlisted directory to happen at all (a
+    verification pass, or an interrupted walk), and the row path is unaffected. Found in M5.
+13. **A non-virgin frontier root's newly found rows arrive one search late.** The local repair path for a frontier root
+    the index already holds children for writes through the serial reconcile, which takes no live consumer, so what it
+    ADDS lands in the index without streaming. The next query sees it (the arena mark is set when the walk starts, not
+    when it emits). Rare, and the ground is genuinely covered afterwards. Found in M5.
 
 ## Decisions
 
@@ -255,7 +263,7 @@ coverage API must not assume a single dimension.
 
 ## Execution status
 
-Through M3d, plus M4. Branch `worktree-david+unindexed-search-exec`, nothing merged to `main` yet.
+Through M5. Branch `worktree-david+unindexed-search-exec`, nothing merged to `main` yet.
 
 **Landed.**
 
@@ -313,7 +321,47 @@ Through M3d, plus M4. Branch `worktree-david+unindexed-search-exec`, nothing mer
   bare `String`s, with `Display` reproducing both sentences verbatim. The broad-query guard is now per evaluator: the
   arena keeps its row-count ceiling, a live walk refuses outright.
 
+- **M5**: the fallback in `execute.rs` (`run_live_blocking`), and everything a search that arrives over time needs.
+  Coverage is asked BEFORE the arena loads, so an arena loaded after it holds every row it calls covered; the reload
+  then runs when the walk mark AND the token disagree (`arena_for_coverage`). `live.rs` holds the run registry (a new
+  run supersedes the others without cancelling them), `ResultStream` (100 rows or 100 ms, the cap that stops rows and
+  never the walk, the bounded dedup set), and `drive_walk` (a forwarder thread for the `!Sync` walk handle, the run's
+  own loop waiting on a deadline). Four events, run-id-stamped, in `live/events.rs`; `WalkEnding` types the four
+  terminal states. `excludes.rs` extracts the scope exclusions so the live path applies the same ones. The proof is
+  `execute/tests/live_e2e.rs`: six searches over a real `Index` and a real walk, including the Decision 12 anchor
+  (verified by breaking `arena_for_coverage` and watching it return an empty list).
+
 **Decisions taken during execution that the spec did not pre-empt.**
+
+- **A `CoverWalk` can't be cancelled from anywhere but the thread reading it, so `Index::cover` takes the token.** The
+  handle owns a `Receiver` and is therefore `!Sync`; every party that decides a walk should stop (a closing dialog,
+  Escape, a quitting app) is somewhere else. `CoverWalk::cancel` was deleted rather than left as a second way to do it.
+  This is also what M7 needs to stop a walk it deliberately outlived.
+- **"App quit through the `resources/` stop-hooks" doesn't exist.** Those hooks run from `stop_all_indexing` (the memory
+  watchdog, and master-switch-off), not from app exit, and `register_subsystem_stop_hook` isn't exported from
+  `cmdr-index` at all, so app code can't register one without a new root promise. Quit cancels every live run at
+  `RunEvent::Exit` instead, which is the terminal state the milestone actually needed. Under a watchdog stop the walk's
+  writer goes away and its roots fail honestly (`RootOutcome::Failed`, nothing marked); a walk that keeps READING under
+  a memory stop is a real (small) gap left standing.
+- **The arena mark has to be set when a walk STARTS, not on its first batch.** A walk can write rows it never emits:
+  the local repair path for a non-virgin frontier root writes through the serial reconcile, which takes no live
+  consumer. On the batch-only mark those rows were pruned as covered by the next query and served from an arena that
+  predated them — the exact Decision 12 failure, reached by a route Decision 12 didn't name.
+- **The trait walk doesn't re-emit rows the index already holds**, so the two halves genuinely don't overlap in
+  practice and the bounded dedup set stays what the plan called it: insurance for the indexed-between-query-and-walk
+  race. Its unit test is what proves it, since no end-to-end fixture can produce the race on purpose.
+- **`Index::coverage` reads the LIVE registry's pool while a search's arena can come from a DB file on disk.** A volume
+  with an index on disk but no registered instance therefore reports its whole scope as frontier while the arena
+  answers from the file. Harmless (the dedup set absorbs the overlap, and the first walk registers the volume) but it
+  means the first live search of such a volume over-walks.
+- **`SearchCoverage` was already taken.** The operation log exports one (how much of a copy's source tree a journal
+  search covered), and specta refuses two types of one name, so the live one is `SearchRunCoverage`.
+- **A live count-only search can double-count.** The row path dedupes against emitted rows, bounded by the cap; a count
+  has no bound to dedupe within, so a file both in the arena and inside a frontier subtree counts twice. Needs rows
+  under an unlisted directory to happen at all. Belongs in the accepted-differences register.
+- **A broad query on a partly covered scope refuses the whole run** rather than answering from the index and looking
+  complete. The arena guard would have allowed it below 100k rows, and the answer would have been a confident-looking
+  list that silently skipped the unindexed half — which is what this plan exists to remove.
 
 - **Case folding was derived in three places, not one, and that's a fork the plan didn't name.** M4 was written as "the
   pattern compile plus the size, date, and type predicates". But `prepare_scope_filter` computed the case-sensitivity

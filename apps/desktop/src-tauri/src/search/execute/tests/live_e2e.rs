@@ -51,6 +51,14 @@ fn drive(root: &str) -> Arc<dyn Volume> {
             ..FileEntry::new("two.txt".into(), format!("{root}/a/nested/two.txt"), false, false)
         },
         FileEntry::new("b".into(), format!("{root}/b"), true, false),
+        // A NAS snapshot tree: rows, but nothing walks inside one (hardlinked per
+        // snapshot, 44 TB reported on a 10 TB volume), so it's the settled
+        // "nothing is coming for this" case the user has to be told about.
+        FileEntry::new("@eaDir".into(), format!("{root}/b/@eaDir"), true, false),
+        FileEntry {
+            size: Some(44),
+            ..FileEntry::new("hidden.txt".into(), format!("{root}/b/@eaDir/hidden.txt"), false, false)
+        },
         FileEntry {
             size: Some(33),
             ..FileEntry::new("three.txt".into(), format!("{root}/b/three.txt"), false, false)
@@ -65,6 +73,7 @@ struct Answer {
     match_count: u32,
     walk: WalkEnding,
     phases: Vec<SearchPhase>,
+    unreadable: Vec<String>,
 }
 
 /// Run one live search over `scope`, to completion, and report what the frontend
@@ -114,6 +123,7 @@ fn search(run_id: &str, scope: &str) -> Answer {
         match_count: terminal.match_count,
         walk: terminal.coverage.walk,
         phases: progress.iter().map(|event| event.phase).collect(),
+        unreadable: terminal.coverage.unreadable.clone(),
     }
 }
 
@@ -166,6 +176,14 @@ fn a_drive_with_no_index_is_walked_live_then_read_back_from_what_the_walk_wrote(
     let third = search("e2e-3", &format!("{root}/b"));
     assert_eq!(third.paths, vec![format!("{root}/b/three.txt")]);
     assert_eq!(third.walk, WalkEnding::Completed);
+    // And the walk says what it won't read, in the same breath it says it
+    // finished: the snapshot tree it just stamped, not silence. Read back AFTER
+    // the walk, because nothing had tried before it.
+    assert_eq!(
+        third.unreadable,
+        vec![format!("{root}/b/@eaDir")],
+        "a directory nothing is coming for is reported, never swallowed"
+    );
 
     // 4. THE anchor. `b` now reads as covered, so nothing walks it — and the
     //    warm arena predates every row in it. Without Decision 12's reload this

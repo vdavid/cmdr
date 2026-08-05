@@ -195,20 +195,111 @@ field:
 - **`unresolved_scopes`** — the volume IS indexed but the specific path isn't in it. **The two causes are
   indistinguishable here**: a typo or deleted folder, and a real folder the user is standing in on a partially indexed
   volume, both land in this bucket. So the copy says what the index knows ("Cmdr's index doesn't cover this folder
-  yet") and never that the folder doesn't exist. M5 of `docs/specs/unindexed-search-plan.md` splits them, once a walk
-  can tell "not walked yet" from "genuinely not found".
+  yet") and never that the folder doesn't exist. A LIVE search resolves the difference by acting rather than probing: a
+  path the index has never seen is a frontier root, so the walk goes and reads it, and a path that genuinely isn't
+  there is a root the walk declines. No filesystem probe inside routing, which would be a network-hang hazard on a
+  scope pointing at a dead mount.
 
 `target_volume_id` rides alongside: the ONE volume routing picked. The dialog acts on it rather than re-deriving a
 volume from the scope path, which would fork routing (an SMB id keys on the ADDRESS; cloud drives route to `root`) and
 could offer to index the wrong drive when the user typed a scope on another one.
 
 A `VolumeLoad::Failed` volume (a DB that won't open, or a load cancelled by the dialog closing) also returns
-`uncovered_result`, so it reads as "not indexed" rather than getting its own signal. That's deliberate for now: for the
-user, search has no usable index for that drive either way, and re-indexing is the same fix. M5 owns terminal states and
-can split it.
+`uncovered_result` on the index-only path, so it reads as "not indexed" rather than getting its own signal. That's
+deliberate: for the user, search has no usable index for that drive either way, and re-indexing is the same fix. **The
+live path splits them**, because there the difference decides what happens next — `NotIndexed` is walkable (that's the
+whole point of the milestone) while `Failed` is a `SearchRunError::IndexUnreadable`, which no walk can fix.
 
 A scope that spans two volumes is NOT one of these: it's a hard `Err` from `resolve_target`, because there's no volume
 to return partial results from.
+
+## A live search (`execute.rs::run_live_blocking`, `live.rs`)
+
+The milestone the whole coverage concept was built for: on a folder the index doesn't cover, a search **walks it**
+rather than reporting a gap. `docs/specs/unindexed-search-plan.md` is the plan; this is what landed.
+
+### The shape
+
+1. **Ask what's uncovered** — `Index::coverage(volume, scope, Listing)` per scope path, merged. Frontier roots plus the
+   directories nothing will walk, plus a `CoverageToken` naming the state of the index the answer describes.
+2. **Load the arena** — after step 1, deliberately (below).
+3. **The covered half** — `search_covered_half`, the identical engine pass `run_blocking` runs. The frontier is exactly
+   the ground the arena has nothing to say about, so an unfiltered pass over the scope IS the covered half; nothing
+   enumerates covered subtrees.
+4. **Walk the rest** — `Index::cover(volume, frontier, Listing, token)`, batches judged by the same `CompiledQuery` an
+   arena row gets plus the same `ExcludeRules` (`excludes.rs`), streamed out through `ResultStream`.
+5. **A terminal event**, with what the run could not answer for.
+
+### Decision 12: the arena and the coverage answer have to be in step
+
+A coverage answer that calls a subtree covered is a **promise the arena holds its rows**. A walk that wrote rows behind
+the arena breaks that promise, and the break is silent: the same query, run again, prunes the ground it just walked and
+returns FEWER results than the first time. `execute/tests/live_e2e.rs` pins it (and fails with an empty list if
+`arena_for_coverage` is reduced to a plain `ensure_volume`).
+
+Two mechanisms, both load-bearing:
+
+- **The order.** Coverage is asked BEFORE the arena is loaded, so an arena loaded after it holds every row it calls
+  covered, whatever else landed meanwhile. A reload therefore fixes the mismatch in one pass rather than racing it.
+- **The walk mark plus the token.** `volumes::mark_walked_behind` is set when a walk STARTS (not on its first batch: the
+  local repair path for a non-virgin frontier root writes through the serial reconcile, which has no live consumer, so
+  it writes rows it never emits). The reload runs only when the mark is set AND the arena's token disagrees with the
+  coverage answer's. Without the token, every query after any walk pays a full rebuild; without the mark, a boot disk
+  — whose background indexer moves the token several times a second — would rebuild in front of nearly every search,
+  the regression `volumes::get_loaded` documents removing once already. What's left uncovered is ordinary index lag,
+  which search has always had.
+
+### Decision 11: superseding is not cancelling
+
+Refining a query registers a new run and marks the old one superseded. The old run stops emitting; its walk keeps
+running, and its driver keeps DRAINING — the walk's channel is bounded, so a run that stopped reading would park the
+walk it isn't allowed to stop, and the arena mark has to keep pace with rows it's still writing. The ground it already
+covered comes back to the next query from the index, not from a replay buffer.
+
+Ground a live walk already holds is reported as `still_covering` rather than walked twice (one walk per patch of
+ground, `lifecycle/cover/live.rs`); those rows reach the same index, so it means "these arrive a bit later".
+
+### Why the walk handle never leaves its thread
+
+`CoverWalk` owns a `Receiver`, so it's `!Sync`. `drive_walk` gives it to a thread whose only job is blocking on it and
+forwarding, while the run's own loop waits on a channel with a deadline — which is what lets it flush on the interval
+and notice a cancel without polling. Cancelling goes through the `CancellationToken` the run handed `Index::cover`.
+
+### Terminal states
+
+`WalkEnding` is typed because three of the four leave the list incomplete and the copy differs:
+
+- **`NothingToWalk`** — the index covered the scope; no walk ran.
+- **`Completed`** — every frontier root this run took was covered.
+- **`Interrupted`** — the walk stopped without being asked (an ejected drive, a share that dropped: `CoverOutcome`
+  reports `cancelled` and we know we didn't ask), a root couldn't be walked (`roots_covered` short of what it took), or
+  the volume couldn't be walked at all. `ScanError::RootUnlistable` is volume-root-only, so a subtree walk needs
+  exactly this derivation.
+- **`Cancelled`** — Escape, the dialog closing, or the app quitting (`RunEvent::Exit` cancels every run).
+
+None of them can leave coverage claiming completeness: a directory is marked listed only once its rows are written
+(`scanner/CLAUDE.md` § "Honest-stale, never false-complete"), so a walk cut off anywhere claims only what it read.
+App quit needs nothing beyond that — the process dies with the marks unwritten.
+
+### What a live result carries, and what it can't
+
+- **No `entry_id`** (`0`): a walked entry has no arena id.
+- **No directory size**: `dir_stats` doesn't exist for ground walked a moment ago (Accepted difference 5), and a file's
+  size is its own, pre-hardlink-dedup, which is what a listing shows.
+- **Arrival order, not rank.** Ranking is a whole-result-set operation; the frontend appends and re-ranks once on
+  completion (Decision 8).
+- **The cap stops rows, never the walk.** Convergence is the payoff, and a stopped walk would freeze "N so far" at a
+  number that never becomes true. `capped` says the rows stopped; the count keeps rising.
+
+### Known gaps, both narrow
+
+- **A non-virgin frontier root's rows don't stream.** The local repair path (`cover.rs::repair_non_virgin`) writes
+  through the serial reconcile, which takes no live consumer, so rows it ADDS appear on the next query rather than this
+  one. Rare (it takes an FSEvents verification pass writing children under a directory nothing listed), and the arena
+  mark is what makes "the next query" true.
+- **A count-only live search can double-count.** The row path dedupes against the emitted rows, bounded by the cap;
+  a count has no such bound, so a file that is both in the arena and inside a frontier subtree counts twice. It takes
+  rows under an unlisted directory to happen at all.
 
 ## The compiled query (`matcher.rs`)
 

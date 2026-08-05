@@ -523,6 +523,22 @@ fn ending_of_puts_our_own_cancel_ahead_of_every_other_verdict() {
     assert_eq!(ending_of(None, 0, false), WalkEnding::Interrupted);
 }
 
+// ── The wire ─────────────────────────────────────────────────────────
+
+#[test]
+fn the_event_family_keeps_its_wire_names() {
+    // The frontend listens by string, and a window's capability permission is
+    // granted under that string, so a rename is a listener that silently never
+    // fires. `#[tauri_specta(event_name = …)]` pins each one; this is what says so
+    // out loud, on the side that emits them.
+    use tauri_specta::Event;
+
+    assert_eq!(SearchProgressEvent::NAME, "search-progress");
+    assert_eq!(SearchCompleteEvent::NAME, "search-complete");
+    assert_eq!(SearchCancelledEvent::NAME, "search-cancelled");
+    assert_eq!(SearchErrorEvent::NAME, "search-error");
+}
+
 // ── The registry ─────────────────────────────────────────────────────
 
 #[test]
