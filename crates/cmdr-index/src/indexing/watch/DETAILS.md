@@ -91,6 +91,12 @@ its stored position until the next launch's replay gap is too wide to be worth r
 from every event SEEN, and returns `None` while anything is buffered (advancing past a held event would let a restart
 skip it).
 
+⚠️ Two limits left standing there, both self-healing through the frontier. `process_live_batch` sends its own
+`UpdateLastEventId` for what it processed, so a processed event with a higher id than a HELD one can still carry the
+position past it — a crash in that window loses that one change from the journal replay. And a branch is persisted when
+its walk FINISHES, so a crash mid-walk leaves covered rows with no branch entry: they stay covered and served (Decision
+5's covered-but-stale) but unwatched until something walks that ground again.
+
 **Where the set lives, and how it comes back.** In memory per volume (`live_for`), and on the volume's own database as
 `meta.walk_covered_branches` — index-relative, so a drive that returns at a different mount point still finds its
 branches. It comes back when the volume's index does (`state::resume_branch_watch`, the `WriterOnly` arm of

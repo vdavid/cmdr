@@ -319,6 +319,8 @@ impl DriveWatcher {
         _since_when: u64,
         event_sender: mpsc::UnboundedSender<FsChangeEvent>,
     ) -> Result<Self, WatcherError> {
+        use notify::Watcher;
+
         let roots = branches;
         let running = Arc::new(AtomicBool::new(true));
         let event_counter = Arc::new(AtomicU64::new(1));
