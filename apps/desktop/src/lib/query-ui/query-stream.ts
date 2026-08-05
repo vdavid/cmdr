@@ -131,6 +131,10 @@ export function liveStatusLine(view: LiveRunView, shownCount: number): string {
     })
   }
   if (view.incomplete) {
+    // "0 of 0 results" in front of "didn't finish looking" is two numbers saying
+    // nothing. Stopping a search before anything matched is ordinary, so that case
+    // gets the sentence without the arithmetic.
+    if (view.matchCount === 0) return tString('queryUi.results.live.incompleteEmpty')
     return tString('queryUi.results.live.incomplete', {
       shownText: formatInteger(shownCount),
       totalText: formatInteger(view.matchCount),

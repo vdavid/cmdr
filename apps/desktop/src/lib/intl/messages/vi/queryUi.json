@@ -668,5 +668,9 @@
   },
   "@queryUi.results.countOnly.soFar": {
     "sourceHash": "dbdb208"
+  },
+  "queryUi.results.live.incompleteEmpty": "Chưa tìm thấy gì thì tìm kiếm đã dừng. Cmdr chưa tìm xong.",
+  "@queryUi.results.live.incompleteEmpty": {
+    "sourceHash": "bfa15df"
   }
 }

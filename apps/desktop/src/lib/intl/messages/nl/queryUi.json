@@ -670,5 +670,9 @@
   },
   "@queryUi.results.countOnly.soFar": {
     "sourceHash": "dbdb208"
+  },
+  "queryUi.results.live.incompleteEmpty": "Niets gevonden voordat de zoekopdracht stopte. Cmdr is niet klaargekomen.",
+  "@queryUi.results.live.incompleteEmpty": {
+    "sourceHash": "bfa15df"
   }
 }

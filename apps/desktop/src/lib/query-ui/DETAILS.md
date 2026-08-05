@@ -50,9 +50,11 @@ component keeps only what genuinely needs the component: the `$derived` readers 
 the mount/destroy hooks, the DOM refs, and the template.
 
 - **`query-runner.svelte.ts`** — everything between "the user wants results" and "state holds them": the nothing-to-run
-  guard, the auto-apply debounce and its gates, the IME guard, `executeQuery`, the `runAiSearch` round-trip, and the
-  `hasSearched` / `highlightedFields` flags the template renders off. Also exports two pure helpers the component's
-  effects call, `hasRunnableQuery(state)` and `shouldShowRunHint(...)`.
+  guard, the auto-apply debounce and its gates, the IME guard, `executeQuery`, the `runAiSearch` round-trip, the
+  streaming run (§ Streaming), and the `hasSearched` / `highlightedFields` / `live` flags the template renders off. Also
+  exports two pure helpers the component's effects call, `hasRunnableQuery(state)` and `shouldShowRunHint(...)`.
+- **`query-stream.ts`** — the answers-over-time contract plus its pure pieces: the status sentences, the phase labels,
+  and the announcement throttle. No Tauri, no coverage vocabulary; § Streaming has the whole shape.
 - **`recent-popover.svelte.ts`** — the dropdown's open flag plus its focus-restore rules (`close()` defers a frame and
   yields to whoever claimed focus; `closeAndFocus()` waits a tick past the popover's own focus trap).
 - **`query-shortcuts.ts`** — pure key routing: `matchKey` (modifier-superset rejection + the macOS Option-glyph `code`
@@ -192,6 +194,55 @@ still-mounted popover's focus trap can't pull it back.
 `metaLabel` (result count, then the filter summary). Both come pre-formatted from the consumer's adapter (`formatAge` /
 `rowMeta` in `recent-items-utils.ts`), so the component never reads an entry field. The full picture (mode name, every
 filter, the count) stays in the row's `title` tooltip — the meta line is for recognition at a glance, not for reading.
+
+### Streaming: a query whose answer arrives over time
+
+Search of ground the index doesn't cover walks it, so its answer lands in batches over seconds or minutes instead of one
+promise. Selection matches a pane listing it already holds and never streams, which is why the whole mechanism is
+OPTIONAL and lives behind `config.streamingSource`.
+
+**The split.** The consumer owns the wire (Search's `lib/search/live-search-source.ts` wraps the four Tauri events); the
+RUNNER owns the run. `query-stream.ts` is the vocabulary between them, and it is deliberately free of Tauri, coverage,
+and walks: a `QueryStreamProgress` (phase, batch, counts, `capped`), a `QueryStreamEnd` (`matchCount`, `incomplete`,
+`walked`, `capped`), and a `QueryStreamSource` (`start` → teardown, `cancel`, optional `rankOnCompletion`). That's what
+keeps Search's vocabulary out of the shared dialog while the state writes stay where the ownership contract puts them.
+
+**The generation guard is the load-bearing one.** The runner mints the run id and hands it to `start`, so no update can
+arrive against an id it hasn't seen. Superseding a run does NOT cancel the work behind it (Decision 11), so the previous
+run's batches keep arriving; every callback checks the id first and drops anything else. Without it, a refined query
+splices its predecessor's rows into the list with no error and no warning. `query-runner.streaming.test.ts` pins it.
+
+**Cancel versus supersede.** A new run drops the old subscription (`dropLiveSubscription`) and lets its work carry on.
+`cancelLive()` calls the source's `cancel` and then waits: the end state is the RUN's own word (a terminal update
+relabels it), never an optimistic local flip. `dispose()` also only unsubscribes — whether the work outlives the dialog
+is the consumer's call (Search's `releaseSearchIndex` stops every live run).
+
+**Rows, cursor, order.** Batches append in arrival order; the cursor is held by PATH identity, so it stays on its row
+across every batch and across the completion re-rank. `lastDialogEvent` flips to `'results-arrived'` on the FIRST batch
+only — every later one would overwrite the `'cursor-moved'` the user just caused, which is also the flag that suppresses
+the re-rank. The re-rank runs once, on completion, only when `walked` (an index-only answer arrived ranked already) and
+only when the user hasn't moved the cursor.
+
+**Auto-apply never streams** (Decision 7): the debounce passes `fromAutoApply`, which routes to the one-shot `runQuery`.
+Six keystrokes would otherwise start and abandon five multi-minute walks. The consequence worth knowing: the one-shot
+path is now the ONLY one that can report a drive with no index at all, so Search's uncovered-drive note and its indexing
+offer belong to auto-applied runs, and the note ends with "Press Enter and Cmdr will look through it now."
+
+**What `QueryResults` does differently under a live run.** `isSearching` is true for the run's WHOLE life, so the
+pre-streaming rule (spinner replaces the list) would hide every row a walk finds. The gates are now
+`!isSearching || streaming` plus `liveWaiting` (a live run with nothing to render yet), which is the only state that
+still owns the content area. The status bar becomes the progress strip: the count, the walk's own progress, where it has
+got to, and the Stop button.
+
+**The `aria-live` region is an inner span.** A run emits a batch every 100 ms and the visible counter moves with it;
+announcing each one floods a screen reader, and an axe audit sees a valid live region and says nothing. So the region
+carries a THROTTLED copy (`createAnnouncementThrottle`: one every two seconds, plus every final update, plus never the
+same sentence twice). ❌ Don't put `aria-live` back on `.status-bar` itself.
+
+**Escape means two things.** `resolveEscape()` runs popover → stop the run → close, and both the window-capture handler
+and the dialog's own keydown go through it. Closing on the first press would stop the walk anyway (teardown cancels it)
+but would also take the results already on screen away, which is the opposite of what somebody pressing Escape at 40,000
+folders wants.
 
 ### Count-only results
 

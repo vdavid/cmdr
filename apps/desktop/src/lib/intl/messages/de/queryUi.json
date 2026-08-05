@@ -667,5 +667,9 @@
   },
   "@queryUi.results.countOnly.soFar": {
     "sourceHash": "dbdb208"
+  },
+  "queryUi.results.live.incompleteEmpty": "Nichts gefunden, bevor die Suche stoppte. Cmdr ist nicht fertig geworden.",
+  "@queryUi.results.live.incompleteEmpty": {
+    "sourceHash": "bfa15df"
   }
 }

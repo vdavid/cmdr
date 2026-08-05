@@ -139,10 +139,11 @@ search in that session silently did nothing.
 
 `runSearch()` clears the note before the IPC and writes the answer's `uncoveredScopes` / `unresolvedScopes` /
 `targetVolumeId` into it after (`coverageNoteFrom`), so the note always belongs to the run on screen and a run that
-throws can't leave a stale caveat under a fresh answer. `CoverageNote.svelte` renders it through QueryDialog's
-`resultsNotice` slot, directly above the results it qualifies. Both lists are checked independently rather than as an
-either/or: they're mutually exclusive today by construction, and a reader that assumed so would go silent if that
-changed.
+throws can't leave a stale caveat under a fresh answer. A LIVE run does the same through its source's `onCoverage`
+(`null` on start, the terminal answer at the end); what it fills in is § The live search. `CoverageNote.svelte` renders
+it through QueryDialog's `resultsNotice` slot, directly above the results it qualifies. Both lists are checked
+independently rather than as an either/or: they're mutually exclusive today by construction, and a reader that assumed
+so would go silent if that changed.
 
 The per-drive offer ("Index this drive") shows only for an **uncovered** gap (an unresolved path is on a drive that's
 already indexed, so there's nothing to turn on), only for a drive the live volume list can name, and never for a drive
@@ -150,6 +151,47 @@ the user silenced (`indexing.silencedDrives`, the same persisted choice the firs
 again" writes it here). The note itself always renders: silencing the offer doesn't make the gap untrue. The offer acts
 on `SearchResult.targetVolumeId` — the volume the BACKEND routed to — because a typed scope can point at a drive the
 pane isn't on, and offering to index the wrong one would be worse than saying nothing.
+
+## The live search (`live-search-source.ts`, `live-ranking.ts`)
+
+A search of ground the index doesn't cover walks it, so the answer arrives over seconds or minutes. The shared dialog
+carries the streaming machinery (`query-ui/DETAILS.md` § Streaming); everything Search-flavoured stops here.
+
+**Two run paths, one query builder.** `buildRunQuery()` builds the payload (bar + filters + AI pattern + the scope,
+whose parse is async) and both paths call it, or an auto-applied answer and an Enter-run one could differ for reasons
+nobody could see. `runQuery` (`runSearch`) is the one-shot index answer the DEBOUNCE takes; `streamingSource` is every
+run the user asked for. That's Decision 7: a live walk never auto-applies, because six keystrokes would start and
+abandon five multi-minute walks.
+
+**What that costs, and what it buys.** The one-shot path is now the only one that can report `uncoveredScopes` — a live
+run WALKS a drive with no index rather than reporting it as a gap, which is the whole point of the effort. So the
+uncovered copy and the per-drive indexing offer belong to auto-applied runs, and that note ends with "Press Enter and
+Cmdr will look through it now" so the gap it reports costs one key to close. The run button says the same thing standing
+still (`runTitleOverride`).
+
+**The coverage note gained a `live` half** (`coverageNoteFromRun`): how the walk ended, folders nothing will read, and
+ground another walk already holds. Three notes on the copy:
+
+- **`unreadable` has two causes and one sentence.** A folder Cmdr was refused (no Full Disk Access) and a NAS snapshot
+  tree the scanner declines on purpose land in the SAME list, and nothing on the wire tells them apart. So the note
+  states the fact and then names both possibilities. ❌ Don't write copy that claims it's one of them, and ❌ don't
+  infer the cause from the path's basename. (M8 owns routing the Full Disk Access case into its prompt.)
+- **`interrupted` is not an error.** The drive went away, or a root couldn't be read. It means the list is a lower
+  bound, and the status bar says that much while the note says which kind of short it was.
+- **`stillCovering` is "these arrive a bit later", never "these are lost".** Another walk on the same volume holds that
+  ground; its rows reach the same index.
+
+**`rankLiveResults` is ORDERING, never membership.** A live run appends the index's ranked half and then the walk's rows
+in arrival order, which is right while the list grows and wrong once it stops, so the run's last act is one re-rank over
+the whole set by match quality then recency. It mirrors the backend's `ranking::stem_for` / `classify_match` so the two
+can't disagree about which row leads. Importance weights are the index's and a walked row has none, which is exactly the
+plan's accepted difference 4. Because nothing is added or dropped, the fork that would make an unindexed drive ANSWER
+differently isn't possible here.
+
+**Count-only tells the truth about a rising number.** "N so far" while the walk runs and after a run that ended short (a
+lower bound either way); the exact sentence only when the ground was covered. Even then the total inherits accepted
+difference 12 (a live count-only run can double-count a file that is both in the arena and inside a frontier subtree),
+which is registered rather than fixed.
 
 ## State shape
 

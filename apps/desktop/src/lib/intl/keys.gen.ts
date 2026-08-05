@@ -1903,6 +1903,7 @@ export type MessageKey =
   | 'queryUi.results.live.capped'
   | 'queryUi.results.live.foldersScanned'
   | 'queryUi.results.live.incomplete'
+  | 'queryUi.results.live.incompleteEmpty'
   | 'queryUi.results.live.matchesSoFar'
   | 'queryUi.results.live.readingIndex'
   | 'queryUi.results.live.resolvingCoverage'

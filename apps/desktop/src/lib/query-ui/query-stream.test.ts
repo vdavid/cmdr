@@ -102,6 +102,13 @@ describe('liveStatusLine', () => {
     expect(line).toBe("12 of 40 results. Cmdr didn't finish looking.")
   })
 
+  it('drops the arithmetic when a stopped run had found nothing', () => {
+    // Found driving the app: stopping a slow search before anything matched read as
+    // "0 of 0 results. Cmdr didn't finish looking.", which is two numbers saying nothing.
+    const line = liveStatusLine(view({ running: false, incomplete: true, matchCount: 0 }), 0)
+    expect(line).toBe("Nothing found before this search stopped. Cmdr didn't finish looking.")
+  })
+
   it('says the rows stopped at the cap while the count carried on', () => {
     const line = liveStatusLine(view({ running: false, capped: true, matchCount: 5000 }), 1000)
     expect(line).toBe('Showing the first 1,000 of 5,000 matches.')

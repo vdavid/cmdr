@@ -43,7 +43,6 @@
     "description": "Label on the run button at the right edge of the search input. A keyboard-shortcut glyph may appear next to it. Tight control: keep it short.",
     "screenshot": "search-dialog.png"
   },
-
   "queryUi.mode.ai.label": "Ask anything",
   "@queryUi.mode.ai.label": {
     "description": "Label of the AI mode chip in the search dialog's mode row. The chip switches the dialog into natural-language AI search. Carries a small 'AI' badge and the Alt+A shortcut. Tight chip: keep it short."
@@ -92,7 +91,6 @@
     "description": "Accessibility label for the whole mode-chip row (the group of mode chips), read by screen readers.",
     "screenshot": "search-dialog.png"
   },
-
   "queryUi.empty.tryLine": "Try…",
   "@queryUi.empty.tryLine": {
     "description": "Small heading above the example-query chips in the search dialog's empty state, before the user has searched. Invites the user to try one of the example queries below it. Ends with an ellipsis.",
@@ -107,7 +105,6 @@
   "@queryUi.empty.tipAi": {
     "description": "Keyboard tip at the bottom of the search dialog's empty state, when AI search is on (adds the AI-run shortcut). The tags wrap keyboard-shortcut glyphs (rendered as small key badges). The glyphs ⌘N, ⌘H, and ⌘Enter are macOS shortcuts and must stay as-is."
   },
-
   "queryUi.empty.indexReady": "Index ready · {countText} {count, plural, one {entry} other {entries}}",
   "@queryUi.empty.indexReady": {
     "description": "Muted status line in the search dialog's empty state, telling the user the search index finished loading and how many files it holds. The '·' is a middle-dot separator.",
@@ -117,7 +114,6 @@
     },
     "screenshot": "search-dialog.png"
   },
-
   "queryUi.ai.lead": "Here''s what the agent did:",
   "@queryUi.ai.lead": {
     "description": "Lead-in line of the AI transparency strip, shown after an AI search has run. Introduces a plain-language summary of the filters the AI set. First-person 'agent' voice is intentional here (a sanctioned exception to the no-first-person rule): the product's model is an AI agent acting for the user. Keep it warm and honest."
@@ -174,7 +170,6 @@
   "@queryUi.ai.typeSummary.foldersOnly": {
     "description": "Value of the Type filter line in the AI transparency strip when the AI limited results to folders (not files)."
   },
-
   "queryUi.results.col.name": "Name",
   "@queryUi.results.col.name": {
     "description": "Column header for the filename column in the search results table.",
@@ -199,7 +194,6 @@
   "@queryUi.results.listboxAria": {
     "description": "Accessibility label for the search results list, read by screen readers."
   },
-
   "queryUi.results.scanningWithCount": "Scanning in progress ({countText} entries)...",
   "@queryUi.results.scanningWithCount": {
     "description": "Status-bar text shown while the drive index is still being built, reporting roughly how many files have been scanned so far. Ends with '...' (three dots). Note: this count uses a compact short form, not the locale-grouped form.",
@@ -287,7 +281,6 @@
   "@queryUi.results.noMatchHeading": {
     "description": "Heading shown when a search returns no results, above a bulleted list of the active search criteria. Ends with a colon."
   },
-
   "queryUi.results.live.resolvingCoverage": "Working out what's already indexed...",
   "@queryUi.results.live.resolvingCoverage": {
     "description": "Label under a spinner at the start of a search that may have to look through folders the app hasn't indexed. The app is checking which parts of the folder it already knows about, which can take a few seconds on a big drive. Ends with '...' (three dots)."
@@ -324,6 +317,11 @@
       "totalText": "the total number of matches found before the search stopped, already formatted for display"
     }
   },
+  "queryUi.results.live.incompleteEmpty": "Nothing found before this search stopped. Cmdr didn't finish looking.",
+  "@queryUi.results.live.incompleteEmpty": {
+    "description": "Status-bar text after a search that was stopped (by the user, or by a drive going away) before it found anything at all. Says plainly that the empty list isn't a real 'nothing matched'; the note above the results explains why. 'Cmdr' is the product name and stays as-is. Avoid the words 'error' and 'failed'.",
+    "placeholders": {}
+  },
   "queryUi.results.live.capped": "Showing the first {shownText} of {totalText} matches.",
   "@queryUi.results.live.capped": {
     "description": "Status-bar text after a search found more matches than the list can hold, so only the first batch is listed while the total counts them all.",
@@ -355,7 +353,6 @@
       "countText": "the same number, already formatted with the locale's digit grouping (for example 12,345)"
     }
   },
-
   "queryUi.pathPills.hiddenAria": "Hidden path segments: {segments}",
   "@queryUi.pathPills.hiddenAria": {
     "description": "Accessibility label for the '…' collapse pill in a result row's path, listing the folder names hidden behind it.",
@@ -363,7 +360,6 @@
       "segments": "the hidden folder names, comma-separated, shown verbatim and not translated"
     }
   },
-
   "queryUi.recent.trailingTooltip": "Show all recent searches",
   "@queryUi.recent.trailingTooltip": {
     "description": "Tooltip on the small chevron button inside the search dialog's query field, which opens the recent-searches dropdown. A keyboard-shortcut glyph appears next to it.",
@@ -394,12 +390,10 @@
     "description": "Accessibility label for the list of entries inside the recent-searches popover, read by screen readers.",
     "screenshot": "search-dialog.png"
   },
-
   "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> to move · <selectKey>Enter</selectKey> to fill the field · right-click to remove",
   "@queryUi.recent.popoverHint": {
     "description": "Footer hint at the bottom of the recent-searches dropdown, explaining the keyboard and mouse controls. Enter loads the picked search back into the query field without running it, so the user can edit it first. The <moveKey> and <selectKey> tags wrap keyboard-shortcut glyphs (rendered as small key badges); keep them around the shortcut text. The '·' are middle-dot separators. '↑↓' and 'Enter' are key names; keep them as-is."
   },
-
   "queryUi.recent.mode.ai": "AI",
   "@queryUi.recent.mode.ai": {
     "description": "Friendly name of the AI search mode, used in recent-search chip tooltips and accessibility labels. 'AI' is a brand-like term; keep it as-is in most languages."
@@ -413,7 +407,6 @@
     "description": "Friendly name of the Filename search mode, used in recent-search chip tooltips.",
     "screenshot": "search-dialog.png"
   },
-
   "queryUi.age.justNow": "just now",
   "@queryUi.age.justNow": {
     "description": "Relative-time label in a recent-search chip tooltip for an action that happened less than a minute ago."
@@ -538,7 +531,6 @@
       "before": "the date in ISO format (YYYY-MM-DD), not translated"
     }
   },
-
   "queryUi.recent.chipTooltipHeader": "{mode} · {age}",
   "@queryUi.recent.chipTooltipHeader": {
     "description": "First line of a recent-search chip's hover tooltip: the search mode and how long ago it ran, joined by a middle-dot. Both parts are already translated.",
@@ -548,7 +540,6 @@
     },
     "screenshot": "search-dialog.png"
   },
-
   "queryUi.dialog.actionsAria": "Dialog actions",
   "@queryUi.dialog.actionsAria": {
     "description": "Accessibility label for the group of primary/secondary buttons in the search dialog footer, read by screen readers.",
@@ -569,7 +560,6 @@
   "@queryUi.dialog.runQueryUnknownReason": {
     "description": "Stand-in reason inside the 'Couldn't finish that search' toast when the app got no explanation back. Suggests the most likely fix."
   },
-
   "queryUi.filters.toolbarAria": "Search filters",
   "@queryUi.filters.toolbarAria": {
     "description": "Accessibility label for the filter-chip strip (type toggle plus Pattern, Size, Modified, and Search-in chips), read by screen readers.",
@@ -615,7 +605,6 @@
     "description": "Label of the scope filter chip, which opens a popover to limit search to specific folders. Tight chip: keep it short.",
     "screenshot": "search-dialog.png"
   },
-
   "queryUi.filters.countOnly.label": "Count only",
   "@queryUi.filters.countOnly.label": {
     "description": "Label of a toggle switch at the end of the search filter strip. When on, the search shows only how many files match, not the list of results. Keep it short (it sits inline next to a small switch).",
@@ -625,12 +614,10 @@
   "@queryUi.filters.countOnly.tooltip": {
     "description": "Tooltip on the 'Count only' toggle in the search filter strip, explaining what turning it on does."
   },
-
   "queryUi.filters.scope.includesSystemFolders": "includes system folders",
   "@queryUi.filters.scope.includesSystemFolders": {
     "description": "Summary shown on the Search-in chip when the user has turned off the default 'hide boring folders' option, so system and build folders are now searched too. Lowercase, reads as a chip value."
   },
-
   "queryUi.filters.size.summary.single": "{prefix} {valueText} {unit}",
   "@queryUi.filters.size.summary.single": {
     "description": "Summary shown on the Size chip for a one-sided size filter (greater-than, less-than, or equals). For example '> 100 MB'.",
@@ -650,7 +637,6 @@
       "maxUnit": "the upper-bound unit, already formatted (for example GB), not translated"
     }
   },
-
   "queryUi.filters.date.summary.after": "after {date}",
   "@queryUi.filters.date.summary.after": {
     "description": "Summary shown on the Modified chip for a 'modified after' filter (on or after this date).",
@@ -673,7 +659,6 @@
       "before": "the end date in ISO format (YYYY-MM-DD), not translated"
     }
   },
-
   "queryUi.size.comparator.any": "any",
   "@queryUi.size.comparator.any": {
     "description": "First option in the Size popover's comparator column: no size limit. Lowercase; reads as a cell in a list of choices.",
@@ -743,7 +728,6 @@
   "@queryUi.size.aria.customMax": {
     "description": "Accessibility label for the free-form upper-bound size number input in the Size popover."
   },
-
   "queryUi.date.comparator.any": "any",
   "@queryUi.date.comparator.any": {
     "description": "First option in the Modified popover's comparator column: no date limit. Lowercase; reads as a cell in a list of choices."
@@ -792,7 +776,6 @@
   "@queryUi.date.aria.customMax": {
     "description": "Accessibility label for the free-form upper-bound date picker in the Modified popover."
   },
-
   "queryUi.date.preset.today": "today {time}",
   "@queryUi.date.preset.today": {
     "description": "Preset cell in the Modified popover meaning 'since the start of today'. The time is shown so the user knows it means midnight.",
@@ -848,7 +831,6 @@
       "time": "the start-of-day time, here always '0:00' (midnight)"
     }
   },
-
   "queryUi.scope.popover.label": "Search in",
   "@queryUi.scope.popover.label": {
     "description": "Header label of the scope ('Search in') filter popover, which limits search to specific folders."
@@ -861,7 +843,6 @@
   "@queryUi.scope.hint": {
     "description": "Help text under the folder textarea in the scope popover, explaining the syntax for limiting search to folders. The <bang>, <star>, and <question> tags wrap literal characters ('!', '*', '?') shown in a code style; keep those characters as-is and keep the tags around them. 'Comma-separated' means the user separates multiple paths with commas."
   },
-
   "queryUi.scope.textareaAria": "Scope folders",
   "@queryUi.scope.textareaAria": {
     "description": "Accessibility label for the folder-list textarea in the scope popover, read by screen readers."
