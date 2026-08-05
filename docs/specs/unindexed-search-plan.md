@@ -359,6 +359,13 @@ Through M8. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local 
   abandoned-ground signal that closes Accepted difference 9. `CMDR_E2E_WALK_THROTTLE_MS` is the soft test hook the
   milestone asked for.
 
+**Verified in the running app (M8, on a `chmod 000` folder beside a 200-directory sparse tree).** The refusal gets
+its own sentence and path; with real Full Disk Access no offer appears, and under `CMDR_MOCK_FDA=notgranted` the offer
+and its line do, and pressing it closes the search dialog and lands on the wizard's step 1. Rows now arrive while the
+walk runs (`0 → 34 → 91 → 124 → 169 → 200` over three seconds, sampled inside the webview against
+`CMDR_E2E_WALK_THROTTLE_MS=40`). ⚠️ The DECLINED half was NOT re-verified against a real NAS: it rests on
+`live_e2e.rs`'s fake-volume `@eaDir` assertion and the network cover tests.
+
 **Decisions taken during execution that the spec did not pre-empt.**
 
 - **A `CoverWalk` can't be cancelled from anywhere but the thread reading it, so `Index::cover` takes the token.** The
