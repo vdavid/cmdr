@@ -265,7 +265,37 @@ coverage API must not assume a single dimension.
 
 ## Execution status
 
-Through M9. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local `main`.
+Through M9, plus M11 in flight. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local `main`.
+
+**M11 in progress.** What the watcher's real code says about the milestone's design, recorded as it's found:
+
+- **The premise "a path-prefix test over the drive-root FSEvents stream the watcher already runs" is wrong for the case
+  M11 exists to serve.** A `DriveWatcher` starts in exactly two places, `start_scan` and `start_replay`
+  (`lifecycle/manager/start.rs`), both of which belong to `Activation::IndexTheVolume`. A walk-built index is
+  `Activation::WriterOnly`: "a database, an epoch, the read handles, a writer — no scan, no watcher". So there is no
+  stream to filter; M11 has to START one. Conversely a volume that DOES have the drive-root stream is fully indexed and
+  fully watched, and needs nothing from M11.
+- **Restart persistence therefore doesn't come free either.** Nothing at launch registers an index for a drive the user
+  never enabled, so a persisted branch set has nobody to hand itself to. Resolution: the branch watch resumes when the
+  volume's index instance does (the `WriterOnly` arm of `start_indexing_for`), which is the first moment anything can
+  read that coverage at all — a search, since an unregistered volume serves neither sizes nor coverage answers. The
+  FSEvents `sinceWhen` replay does its half from the persisted `last_event_id`.
+- **The mid-walk boundary case is worse than "events get discarded".** Letting the live loop write into a branch a
+  parallel walk is covering is M3c's collision one level down: the walker allocates fresh ids, `INSERT OR IGNORE` drops
+  the loser, and its subtree is orphaned. So the events must be BUFFERED, not just admitted — which is exactly the
+  shape of the scan-completion handshake (`buffer during the scan → replay → switch_to_live`), per branch instead of
+  per volume.
+- **Discarding an out-of-branch event is not free either.** `process_fs_event` escalates a missing-parent event to a
+  subtree rescan (`reconciler/escalation.rs`), so an unfiltered watcher on a walk-built index would walk ground nobody
+  asked for. A branch-scoped loop clamps escalation to the branches, and never routes a shallow `MustScanSubDirs` to
+  the whole-volume rescan.
+- **A coalesced `MustScanSubDirs` above a branch has to be re-anchored, not dropped.** FSEvents reports "something under
+  here changed" at a shallower path than the branch; a plain prefix test would discard it and lose every change under
+  the covered ground.
+- **"A vetoed drive's walked branches re-walk" (Decision 13, M11, `master.rs`'s module doc) is not what happens.** The
+  walk marked those directories listed, so the frontier query never offers them again; with no watcher they are
+  covered-but-stale, trusted per Decision 5. The veto's teeth are real but they're "no watcher, so no freshness", not
+  "re-walk".
 
 **Landed.**
 
