@@ -70,6 +70,11 @@ export interface MatchAccessors {
  * `glob_to_regex` in `src-tauri/src/search/query.rs`: `*` → `.*`, `?` → `.`,
  * everything else literal (regex metacharacters escaped). Anchored with `^…$`
  * for full-name matching.
+ *
+ * The `s` (dotAll) flag mirrors the Rust side's `dot_matches_new_line`: `*` means
+ * "any characters" and `?` means "one character", and a newline in a filename is
+ * legal and is one of them. Regex mode below deliberately does NOT get it, so `.`
+ * keeps the meaning a regex author expects.
  */
 function globToRegex(glob: string, caseSensitive: boolean): RegExp {
   let pattern = '^'
@@ -85,7 +90,7 @@ function globToRegex(glob: string, caseSensitive: boolean): RegExp {
     }
   }
   pattern += '$'
-  return new RegExp(pattern, caseSensitive ? '' : 'i')
+  return new RegExp(pattern, caseSensitive ? 's' : 'is')
 }
 
 /**

@@ -25,7 +25,10 @@ have no path column and shouldn't dominate the viewport), `max-height: 80vh`.
   custom cap.
 - **`selection-matching.ts`**: Pure: `matchEntries(accessors, total, query) → number[]`. Compiles the glob to a JS
   RegExp (anchored, mirrors the Rust `glob_to_regex` in `src-tauri/src/search/query.rs`), composes pattern + size + date
-  predicates with AND.
+  predicates with AND. **Glob mode gets the `s` (dotAll) flag, regex mode does not**: `*` and `?` mean "any characters"
+  and "one character", and a filename may contain a newline, while a regex author expects `.` to stop at one. Same
+  asymmetry the Rust matcher makes (`src-tauri/src/search/DETAILS.md`), with one difference to know: JavaScript has no
+  inline `(?s)`, so the escape hatch in regex mode here is `[\s\S]` rather than a flag.
 - **`selection-matching.test.ts`**: Glob / regex / case-sensitive / size / date / snapshot-pane accessor / empty pattern
   / bad regex / stress invariants (sorted, no dups, in-range).
 - **`selection-history-state.svelte.ts`**: Instantiates the recent-items factory for Selection (uses

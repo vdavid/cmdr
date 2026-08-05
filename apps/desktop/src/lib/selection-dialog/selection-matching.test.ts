@@ -41,6 +41,14 @@ describe('matchEntries: glob mode', () => {
     const q: SelectionMatchQuery = { pattern: '   ', kind: 'glob', caseSensitive: false }
     expect(matchEntries(fromNames(list), list.length, q)).toEqual([])
   })
+
+  it('reaches a name with a newline in it', () => {
+    // `*` means any characters, and a newline in a filename is legal and is one of
+    // them. Matches the Rust side, which compiles globs with `dot_matches_new_line`.
+    const list = ['we\nird.txt', 'plain.txt']
+    const q: SelectionMatchQuery = { pattern: '*.txt', kind: 'glob', caseSensitive: false }
+    expect(matchEntries(fromNames(list), list.length, q)).toEqual([0, 1])
+  })
 })
 
 describe('matchEntries: regex mode', () => {
@@ -48,6 +56,18 @@ describe('matchEntries: regex mode', () => {
     const list = ['app.log', 'app.LOG', 'README.md', 'app']
     const q: SelectionMatchQuery = { pattern: '^app\\.log$', kind: 'regex', caseSensitive: false }
     expect(matchEntries(fromNames(list), list.length, q)).toEqual([0, 1])
+  })
+
+  it('keeps standard dot semantics, where `.` stops at a newline', () => {
+    // The deliberate opposite of glob mode: someone writing a regex expects `.` not to
+    // cross a newline. JavaScript has no inline `(?s)` (that's the Rust side's opt-in),
+    // so the escape hatch here is a class that spans everything.
+    const list = ['we\nird.txt']
+    const strict: SelectionMatchQuery = { pattern: 'we.ird\\.txt', kind: 'regex', caseSensitive: false }
+    expect(matchEntries(fromNames(list), list.length, strict)).toEqual([])
+
+    const spanning: SelectionMatchQuery = { pattern: 'we[\\s\\S]ird\\.txt', kind: 'regex', caseSensitive: false }
+    expect(matchEntries(fromNames(list), list.length, spanning)).toEqual([0])
   })
 
   it('returns [] on bad regex (SyntaxError)', () => {
