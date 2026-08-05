@@ -348,9 +348,11 @@ it stays frontier, and the next `coverage` call names it again.
 
 **Ownership and cancellation.** `cover_context_for` matches `IndexPhase::Running` only, so a walk reuses the volume's
 existing writer and never stands a second one up (two writers on one DB race the id counter and the accumulator maps).
-Cancel through `CoverWalk::cancel`; DROPPING the handle does not stop the walk (Decision 11 — walking is coverage work,
-matching is query work, so a superseded query keeps its walk). `finish` drops the batch channel BEFORE joining, so a
-caller that stopped reading can't deadlock against a walk parked on a full one.
+Cancel through the `CancellationToken` the caller passed to `Index::cover`, never through the handle: the handle owns a
+`Receiver` and so can't be shared with the thread that decides to stop it (a closing dialog, a quitting app), which is
+why `CoverWalk` has no `cancel` of its own. DROPPING the handle does not stop the walk either (Decision 11 — walking is
+coverage work, matching is query work, so a superseded query keeps its walk). `finish` drops the batch channel BEFORE
+joining, so a caller that stopped reading can't deadlock against a walk parked on a full one.
 
 **The channel is bounded at eight batches.** A consumer that falls behind slows the walk rather than growing a queue to
 the size of the subtree; each batch already carries up to 2 000 entries.

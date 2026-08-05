@@ -434,10 +434,13 @@ impl Index {
     /// cancelled still leaves every directory it read covered, and the next walk
     /// over the same scope has that much less to do.
     ///
-    /// Cancel it through the returned handle. Dropping the handle does NOT stop
-    /// it: a superseded query keeps its walk, because walking is coverage work
-    /// and matching is query work. Ground another walk on the same volume is
-    /// already covering is left to that walk and reported as
+    /// Cancel it through the `cancel` token you pass in, from wherever you like:
+    /// the walk handle itself can't leave the thread that reads its batches, and
+    /// the thing that decides a walk should stop (a closing dialog, a quitting
+    /// app) is rarely that thread. Dropping the handle does NOT stop it: a
+    /// superseded query keeps its walk, because walking is coverage work and
+    /// matching is query work. Ground another walk on the same volume is already
+    /// covering is left to that walk and reported as
     /// [`covered_by_another_walk`](CoverWalk::covered_by_another_walk); its rows
     /// reach the same index either way.
     ///
@@ -452,6 +455,7 @@ impl Index {
         volume_id: &str,
         frontier: Vec<String>,
         dimension: CoverageDimension,
+        cancel: CancellationToken,
     ) -> Result<CoverWalk, IndexError> {
         let context = cover::context_for_walk(volume_id).map_err(|e| match e {
             // Nothing to walk into and nothing built: from out here that reads
@@ -464,7 +468,7 @@ impl Index {
             // because the scan already covers what it would have walked.
             other => IndexError::Internal(Diagnostic(format!("can't walk '{volume_id}': {other}"))),
         })?;
-        Ok(cover::start(context, frontier, dimension, CancellationToken::new()))
+        Ok(cover::start(context, frontier, dimension, cancel))
     }
 
     /// The user is looking at this directory; check that the index still matches

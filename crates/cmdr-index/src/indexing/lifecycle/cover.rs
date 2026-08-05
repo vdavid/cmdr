@@ -86,9 +86,13 @@ pub struct CoverOutcome {
 /// walk (Decision 11: a superseded query keeps its walk running, because walking
 /// is coverage work and matching is query work) — the walk simply stops emitting
 /// and runs to completion filling the index.
+///
+/// ❌ It carries no `cancel` of its own: the handle holds a `Receiver`, so it
+/// can't be shared with a second thread, and stopping a walk is nearly always
+/// someone else's decision. Cancelling is the token [`start`] took, which the
+/// caller keeps a clone of.
 pub struct CoverWalk {
     batches: Receiver<Vec<CoveredEntry>>,
-    cancel: CancellationToken,
     thread: JoinHandle<CoverOutcome>,
     deferred: Vec<String>,
 }
@@ -112,18 +116,12 @@ impl CoverWalk {
         &self.deferred
     }
 
-    /// Stop the walk. Returns immediately; the walk winds down behind it, and
-    /// everything it already read stays marked.
-    pub fn cancel(&self) {
-        self.cancel.cancel();
-    }
-
     /// Wait for the walk to end and report what it covered.
     ///
     /// Drops the batch channel first, so a caller that stopped reading batches
-    /// doesn't deadlock against a walk parked on a full one. ❌ Call
-    /// [`cancel`](Self::cancel) first if you want it to stop — on its own this
-    /// waits for the whole frontier.
+    /// doesn't deadlock against a walk parked on a full one. ❌ Cancel the token
+    /// first if you want it to stop — on its own this waits for the whole
+    /// frontier.
     pub fn finish(self) -> CoverOutcome {
         let CoverWalk { batches, thread, .. } = self;
         drop(batches);
@@ -172,7 +170,7 @@ pub(crate) fn start(
     let deferred = claim.deferred().to_vec();
 
     let (sender, batches) = sync_channel(BATCH_QUEUE_DEPTH);
-    let walk_cancel = cancel.clone();
+    let walk_cancel = cancel;
     let thread = std::thread::Builder::new()
         .name("index-cover".into())
         .spawn(move || {
@@ -199,7 +197,6 @@ pub(crate) fn start(
 
     CoverWalk {
         batches,
-        cancel,
         thread,
         deferred,
     }

@@ -671,7 +671,12 @@ impl ColdDrive {
     fn cover(&self, scope: &str) -> CoverOutcome {
         let walk = self
             .index
-            .cover(self.volume_id, vec![scope.to_string()], CoverageDimension::Listing)
+            .cover(
+                self.volume_id,
+                vec![scope.to_string()],
+                CoverageDimension::Listing,
+                CancellationToken::new(),
+            )
             .expect("the drive is walkable");
         let (_, outcome) = drain(walk);
         cmdr_fs::testing::wait_until(
@@ -920,7 +925,8 @@ fn an_unmounted_volume_is_not_walkable() {
             drive.index.cover(
                 "nothing-is-mounted-here",
                 vec![drive.path("x")],
-                CoverageDimension::Listing
+                CoverageDimension::Listing,
+                CancellationToken::new(),
             ),
             Err(crate::indexing::handle::IndexError::NotIndexed { .. })
         ),

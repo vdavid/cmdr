@@ -55,9 +55,10 @@ Two calls, one question:
   needed": `IndexStore::read_current_epoch` never reaches the handle, because a bare epoch isn't the question. A walk
   stamps `listed_epoch` and never bumps `current_epoch`, so the epoch alone can't move when rows appear; the token pairs
   it with the id high-water mark, which does.
-- **`cover(volume_id, frontier, dimension)`** — the walk half: it takes the frontier a coverage answer named and fills
-  it in, handing back each batch of entries it finds while it's still running. It landed 2026-08-05 into the slot
-  reserved for it, and brought the three types its answer is made of (below).
+- **`cover(volume_id, frontier, dimension, cancel)`** — the walk half: it takes the frontier a coverage answer named and
+  fills it in, handing back each batch of entries it finds while it's still running. It landed 2026-08-05 into the slot
+  reserved for it, and brought the three types its answer is made of (below). The `cancel` token is a parameter rather
+  than a method on the handle because the handle can't leave the thread reading its batches (§ below).
 
 **Why the covered half is not in the answer.** It's tempting to return "these subtrees are covered, those aren't", and
 it would be a second, weaker copy of something the index already has. The two halves are complementary over the same
@@ -73,8 +74,12 @@ touching every one of them.
 `CoverWalk`, `CoveredEntry`, and `CoverOutcome` are the walk's, and each earns its place by being something a host
 genuinely can't do without:
 
-- **`CoverWalk`** — the running walk. There is no way to take batches off it, cancel it, or wait for it without a handle
-  to it, and it can't be a plain `Receiver` because cancelling and finishing are part of the contract.
+- **`CoverWalk`** — the running walk. There is no way to take batches off it or wait for it without a handle to it, and
+  it can't be a plain `Receiver` because finishing (join, and the totals that come back) is part of the contract.
+  **Stopping it is NOT on this type**: a `Receiver` is `!Sync`, so the handle stays on the one thread that reads it,
+  while the decision to stop belongs to a closing dialog or a quitting app somewhere else. So `cover` takes the
+  `CancellationToken`, the caller keeps a clone, and there is exactly one way to stop a walk from anywhere (M5,
+  2026-08-05).
 - **`CoveredEntry`** — one entry the walk found. This type crossing the boundary IS the design: Decision 3 keeps the
   matcher in `search/` and the scan in `indexing/`, so what crosses is data, not a predicate. It carries the entry's own
   pre-dedup sizes, because a result row showing a hardlinked file as 0 bytes would be wrong.

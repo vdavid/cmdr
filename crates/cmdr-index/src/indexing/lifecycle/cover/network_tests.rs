@@ -133,16 +133,24 @@ impl Share {
         ids
     }
 
-    /// Start a walk over one scope.
-    fn walk(&self, scope: &str) -> CoverWalk {
-        self.index
-            .cover(self.volume_id, vec![scope.to_string()], CoverageDimension::Listing)
-            .expect("the share is walkable")
+    /// Start a walk over one scope, with the token that stops it.
+    fn walk(&self, scope: &str) -> (CoverWalk, CancellationToken) {
+        let cancel = CancellationToken::new();
+        let walk = self
+            .index
+            .cover(
+                self.volume_id,
+                vec![scope.to_string()],
+                CoverageDimension::Listing,
+                cancel.clone(),
+            )
+            .expect("the share is walkable");
+        (walk, cancel)
     }
 
     /// Walk one scope to the end, waiting for the rows to land.
     fn cover(&self, scope: &str) -> (Vec<CoveredEntry>, CoverOutcome) {
-        let (entries, outcome) = drain(self.walk(scope));
+        let (entries, outcome) = drain(self.walk(scope).0);
         cmdr_fs::testing::wait_until(
             std::time::Duration::from_secs(10),
             "the walked scope to read as covered",
@@ -398,9 +406,9 @@ fn a_cancelled_walk_over_a_share_keeps_the_ground_it_covered() {
     );
     let scope = share.path("scope");
 
-    let walk = share.walk(&scope);
+    let (walk, cancel) = share.walk(&scope);
     volume.wait_for_the_gate();
-    walk.cancel();
+    cancel.cancel();
     volume.release_the_gate();
 
     let (entries, outcome) = drain(walk);
@@ -452,9 +460,9 @@ fn the_scan_session_is_paired_on_the_completed_and_the_cancelled_walk() {
         "a completed walk opens one session and closes it"
     );
 
-    let walk = share.walk(&share.path("second"));
+    let (walk, cancel) = share.walk(&share.path("second"));
     volume.wait_for_the_gate();
-    walk.cancel();
+    cancel.cancel();
     volume.release_the_gate();
     let (_, outcome) = drain(walk);
 
@@ -800,7 +808,7 @@ fn an_unlistable_directory_is_skipped_and_the_rest_is_covered() {
     );
     let scope = share.path("scope");
 
-    let (_, outcome) = drain(share.walk(&scope));
+    let (_, outcome) = drain(share.walk(&scope).0);
 
     assert_eq!(outcome.roots_covered, 1, "the walk finished the root it was given");
     cmdr_fs::testing::wait_until(
@@ -830,7 +838,7 @@ fn a_frontier_root_that_will_not_list_covers_nothing() {
     );
     let scope = share.path("scope");
 
-    let (entries, outcome) = drain(share.walk(&scope));
+    let (entries, outcome) = drain(share.walk(&scope).0);
 
     assert_eq!(outcome.roots_covered, 0, "nothing was covered");
     assert!(entries.is_empty());
@@ -864,7 +872,7 @@ fn a_run_of_failures_stops_the_walk_rather_than_churning() {
         &refused,
     );
 
-    let (_, outcome) = drain(share.walk(&share.path("scope")));
+    let (_, outcome) = drain(share.walk(&share.path("scope")).0);
 
     assert_eq!(
         outcome.roots_covered, 0,
@@ -895,7 +903,7 @@ fn a_big_directory_arrives_in_bounded_batches() {
         entries
     });
 
-    let walk = share.walk(&share.path("scope"));
+    let (walk, _cancel) = share.walk(&share.path("scope"));
     let mut sizes = Vec::new();
     while let Some(batch) = walk.next_batch() {
         sizes.push(batch.len());
@@ -970,7 +978,12 @@ fn a_walk_over_a_phone_covers_the_folder_it_was_pointed_at() {
 
     let (entries, outcome) = drain(
         index
-            .cover(volume_id, vec![scope.clone()], CoverageDimension::Listing)
+            .cover(
+                volume_id,
+                vec![scope.clone()],
+                CoverageDimension::Listing,
+                CancellationToken::new(),
+            )
             .expect("a phone is walkable"),
     );
 
