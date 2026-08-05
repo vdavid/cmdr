@@ -84,7 +84,10 @@ pub(crate) async fn cover_volume_subtree(
     // reads as frontier and would hand to every later search. Walking it is the
     // stall `system_dirs.rs` exists to prevent (44 TB of hardlinked snapshots on a
     // 10 TB volume), so the walk says "won't read" instead of "haven't read".
-    if root.file_name().is_some_and(|name| is_recursion_excluded_dir(&name.to_string_lossy())) {
+    if root
+        .file_name()
+        .is_some_and(|name| is_recursion_excluded_dir(&name.to_string_lossy()))
+    {
         log::debug!(
             "network_scanner: not covering NAS system dir {}; marking it as ground we won't read",
             root.display()

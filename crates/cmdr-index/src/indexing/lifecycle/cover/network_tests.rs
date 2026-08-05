@@ -870,7 +870,10 @@ fn a_run_of_failures_stops_the_walk_rather_than_churning() {
         outcome.roots_covered, 0,
         "the walk stopped on the failure run rather than reporting a covered scope"
     );
-    assert!(!outcome.cancelled, "nobody cancelled it — it gave up, which is different");
+    assert!(
+        !outcome.cancelled,
+        "nobody cancelled it — it gave up, which is different"
+    );
 }
 
 // ── Batching ─────────────────────────────────────────────────────────
@@ -955,7 +958,11 @@ fn a_walk_over_a_phone_covers_the_folder_it_was_pointed_at() {
             .coverage(volume_id, path, CoverageDimension::Listing)
             .expect("the phone answers for its own coverage")
     };
-    assert_eq!(coverage(&scope).frontier, [scope.clone()], "nothing is covered yet");
+    assert_eq!(
+        coverage(&scope).frontier,
+        std::slice::from_ref(&scope),
+        "nothing is covered yet"
+    );
 
     let (entries, outcome) = drain(
         index
@@ -967,7 +974,10 @@ fn a_walk_over_a_phone_covers_the_folder_it_was_pointed_at() {
     assert_eq!(outcome.entries_found, 2, "Camera/ and the photo in it");
     let mut emitted: Vec<String> = entries.iter().map(|e| e.path.to_string_lossy().to_string()).collect();
     emitted.sort();
-    assert_eq!(emitted, [tree.path("DCIM/Camera"), tree.path("DCIM/Camera/IMG_0001.jpg")]);
+    assert_eq!(
+        emitted,
+        [tree.path("DCIM/Camera"), tree.path("DCIM/Camera/IMG_0001.jpg")]
+    );
 
     cmdr_fs::testing::wait_until(
         std::time::Duration::from_secs(10),
