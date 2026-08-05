@@ -269,6 +269,24 @@ fn summarize_empty_name_pattern() {
 
 // ── canonicalize_scope_path ─────────────────────────────────────
 
+/// A scope path the PANE reports can be tilde-form: a tab sitting in the home
+/// folder stores `~`, and since the default scope became "the current folder"
+/// that string is what a search's include path is. Unexpanded it resolves to a
+/// literal `~` — nothing in the index, and `/~` to a walk — so an ordinary
+/// search from the home folder reported "the index doesn't cover this folder"
+/// and then walked nothing at all.
+#[test]
+fn canonicalize_scope_path_expands_the_home_tilde() {
+    let home = std::env::var("HOME").expect("HOME is set");
+    assert_eq!(canonicalize_scope_path("~"), canonicalize_scope_path(&home));
+    assert_eq!(
+        canonicalize_scope_path("~/Documents"),
+        canonicalize_scope_path(&format!("{home}/Documents"))
+    );
+    // A tilde INSIDE a path is an ordinary character, and a file may be named it.
+    assert_eq!(canonicalize_scope_path("/tmp/~notme"), "/tmp/~notme");
+}
+
 #[cfg(unix)]
 #[test]
 fn canonicalize_scope_path_resolves_symlinks() {

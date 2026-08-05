@@ -238,12 +238,22 @@ pub(crate) fn split_scope_segments(input: &str) -> Vec<String> {
 /// nothing → silent empty results. We canonicalize each include path ONCE here (a
 /// handful of paths, off the hot per-entry scan loop) before the DB walk.
 ///
+/// The tilde is expanded FIRST, and that half is load-bearing: a pane sitting in
+/// the home folder reports its path as `~`, and since the default scope became
+/// "the current folder" that string is the include path a plain search runs with.
+/// `realpath` doesn't expand it (it's a shell convention), so unexpanded it
+/// resolves to nothing in the index and to `/~` in a walk — an ordinary search
+/// from the home folder said "the index doesn't cover this folder" and then
+/// walked nothing. ❌ Don't move the expansion downstream: both halves of a live
+/// search take the scope through here.
+///
 /// `fs::canonicalize` issues `realpath`, which blocks indefinitely on a dead network
 /// mount, so it runs on a detached worker thread under a 2 s deadline (the sync
 /// analog of `blocking_with_timeout`; `resolve_include_paths` is sync). On timeout,
 /// an error, or a non-existent path we keep the literal — today's best-effort
 /// behavior, so an offline/unmounted-index scope still gets its literal match.
 pub(crate) fn canonicalize_scope_path(path: &str) -> String {
+    let path = &crate::commands::file_system::expand_tilde(path);
     let owned = path.to_string();
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
