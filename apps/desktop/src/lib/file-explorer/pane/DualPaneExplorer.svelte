@@ -958,6 +958,10 @@
         return paneCommands.getFileAndPathUnderCursor()
     }
 
+    export function getPathToCopyUnderCursor(): string | null {
+        return paneCommands.getPathToCopyUnderCursor()
+    }
+
     export function toggleTagOnFocusedSelection(color: number): Promise<void> {
         return paneCommands.toggleTagOnFocusedSelection(color)
     }

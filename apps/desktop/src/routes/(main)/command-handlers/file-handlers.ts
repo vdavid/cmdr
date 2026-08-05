@@ -1,10 +1,11 @@
 /**
  * File-action handlers: the viewer / rename / copy / move / new-folder/file /
  * delete dialog openers, the MCP `dialog.confirm`, and the
- * get-entry-under-cursor-then-act arms (edit / show in Finder / copy path /
- * copy filename / get info / the cloud offline pair). The repeated "read the
- * entry under the cursor, act on it if present" shape is the `withEntryUnderCursor`
- * helper, so the cursor read happens once per arm.
+ * get-entry-under-cursor-then-act arms (edit / show in Finder / copy filename /
+ * get info / the cloud offline pair). The repeated "read the entry under the
+ * cursor, act on it if present" shape is the `withEntryUnderCursor` helper, so the
+ * cursor read happens once per arm. The two copy-a-path arms sit outside it: they
+ * accept the `..` row (as the pane's own directory) and share `copyPathAndAnnounce`.
  */
 import {
   showInFinder,
@@ -22,6 +23,7 @@ import {
   armQuickLookDispatchGuard,
 } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
 import { addToast } from '$lib/ui/toast'
+import CopiedPathToastContent from '$lib/file-explorer/CopiedPathToastContent.svelte'
 import { getFocusedPanePath, getFocusedPaneVolumeId } from '$lib/file-explorer/pane/focused-pane-reads'
 import { pathInsideArchive } from '$lib/file-explorer/pane/volume-capabilities'
 import { tString } from '$lib/intl/messages.svelte'
@@ -46,6 +48,34 @@ function withEntryUnderCursor(
   if (entryUnderCursor) {
     return fn(entryUnderCursor)
   }
+}
+
+/**
+ * Max width of the copied-path toast. Wider than the 360 default so a typical
+ * home-directory path fits on one or two lines; capped by the toast container's
+ * own 440. The toast still shrinks to its content, so a short path doesn't get a
+ * wide box.
+ */
+const COPIED_PATH_TOAST_WIDTH_PX = 432
+
+/**
+ * Puts `path` on the clipboard and confirms it with a transient info toast that
+ * shows what landed there.
+ *
+ * The toast joins a one-slot group rather than reusing a fixed toast id: dedup by
+ * id replaces content and level in place but NOT props, so a second copy would
+ * re-show the first path. Group eviction retires the old toast and pushes a fresh
+ * one, which also restarts the auto-dismiss timer.
+ */
+async function copyPathAndAnnounce(path: string): Promise<void> {
+  await copyToClipboard(path)
+  addToast(CopiedPathToastContent, {
+    level: 'info',
+    props: { path },
+    widthPx: COPIED_PATH_TOAST_WIDTH_PX,
+    toastGroup: 'copied-path',
+    maxInGroup: 1,
+  })
 }
 
 export const fileHandlers = {
@@ -135,12 +165,19 @@ export const fileHandlers = {
 
   'file.showInFinder': (hctx) => withEntryUnderCursor(hctx, (entry) => showInFinder(entry.path)),
 
-  'file.copyPath': (hctx) => withEntryUnderCursor(hctx, (entry) => copyToClipboard(entry.path)),
+  'file.copyPath': async ({ explorerRef }) => {
+    // Not `withEntryUnderCursor`: on the `..` row this copies the pane's OWN
+    // directory, where every other under-cursor arm treats `..` as "no entry".
+    const path = explorerRef?.getPathToCopyUnderCursor()
+    if (path) {
+      await copyPathAndAnnounce(path)
+    }
+  },
 
   'file.copyCurrentDirectoryPath': async () => {
     const currentPath = getFocusedPanePath()
     if (currentPath) {
-      await copyToClipboard(currentPath)
+      await copyPathAndAnnounce(currentPath)
     }
   },
 

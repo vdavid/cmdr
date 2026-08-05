@@ -1047,3 +1047,15 @@ REVIEW FLAGS (stalled-transfer pass):
   `Geen voortgang in {duration}`, `{duration} geen voortgang`.
 - `De overdracht komt niet meer vooruit.` — see the term row; `ligt stil` is the more idiomatic standstill phrase but
   risks reading as "paused" in a dialog that has a real paused state.
+
+## Gekopieerd pad: de klembordbevestiging (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
+
+Eén sleutel: de regel van de informatiemelding na ⌃⌘C. Het pad staat eronder op een eigen regel in een
+vaste-breedtelettertype, dus het is GEEN plaatshouder in de zin: de zin eindigt op een dubbele punt en moet zonder het
+pad kloppen.
+
+- **"Copied the path, it's now on your clipboard:" → `Pad gekopieerd, het staat nu op het klembord:`** · hergebruikt
+  `clipboard → klembord` en `path → pad` uit het glossarium (macOS AppKit) · high. Object-dan-voltooid-deelwoord volgt
+  de zustermeldingen (`{countText} onderdelen gekopieerd`), en `op het klembord` matcht `clipboard.empty` ("Geen
+  bestanden op het klembord"). Geen bezittelijk voornaamwoord: er is er maar één.
+- Geen `sameAsSourceJustification` nodig: de waarde wijkt af van het Engels.

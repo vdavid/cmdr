@@ -725,6 +725,10 @@
   "@fileExplorer.clipboard.pastedAsFileSettings": {
     "sourceHash": "74a883a"
   },
+  "fileExplorer.clipboard.copiedPath": "Caminho copiado, agora está na área de transferência:",
+  "@fileExplorer.clipboard.copiedPath": {
+    "sourceHash": "afb1cc2"
+  },
   "fileExplorer.tabs.limitReached": "Limite de abas atingido",
   "@fileExplorer.tabs.limitReached": {
     "sourceHash": "2d4205a"

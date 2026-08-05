@@ -886,3 +886,14 @@ replaces the ETA line, so it must stay calm and never reach for `fel`/`misslycka
   (`öppen`/`skriven` singular vs `öppna`/`skrivna` plural), so a shared tail would be ungrammatical in one branch.
   Verified with `IntlMessageFormat(msg,'sv')`: 1 → `one`, 2 and 0 → `other`.
 - No `sameAsSourceJustification` needed: all eight values differ from English.
+
+## Kopierad sökväg: urklippsbekräftelsen (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
+
+En nyckel: raden i informationsnotisen efter ⌃⌘C. Sökvägen visas under den, på egen rad med fast teckenbredd, så den är
+INTE en platshållare i meningen: meningen slutar med kolon och måste fungera utan den.
+
+- **"Copied the path, it's now on your clipboard:" → `Kopierade sökvägen, den finns nu i urklipp:`** · återanvänder
+  `path → sökväg` och `clipboard → urklipp` ur glossaret (macOS Finder) · high. Preteritum först speglar systernotisen
+  `Kopierade {countText} objekt`, och `i urklipp` (inte `på urklipp`) är den redan settlade prepositionen
+  (`clipboard.empty` = "Inga filer i urklipp."). Inget possessivt "ditt urklipp": det finns bara ett.
+- Inget `sameAsSourceJustification` behövs: värdet skiljer sig från engelskan.

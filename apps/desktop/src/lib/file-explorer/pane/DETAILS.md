@@ -370,6 +370,15 @@ write surfaces retire in a later phase, so the downloads helpers (`go-to-latest.
 **Cross-pane drag.** `DualPaneExplorer.getFileAndPathUnderCursor()` prefers `FilePane.getPathUnderCursor()` over
 `${currentPath}/${filename}` so snapshot-pane drags carry real filesystem paths, not `search-results://sr-N/<name>`.
 
+**Copy-path is the one arm that accepts `..`.** `pane-commands.ts::getPathToCopyUnderCursor()` returns the cursor
+entry's path, or the pane's OWN directory when the cursor sits on the synthetic `..` row: copying a path from `..` in
+`~/Downloads` yields `/Users/…/Downloads`, matching what you'd get by navigating up and pointing at that folder. It's a
+separate function rather than a widening of `getFileAndPathUnderCursor()` because every other under-cursor arm (open,
+rename, Get Info, Quick Look, tags, the cloud pair) must keep reading `..` as "no entry". Null when no row is under the
+cursor at all, so the handler no-ops instead of copying a path nobody pointed at. Reading the pane path here is safe
+from the `search-results://` hazard above: the `..` row only exists where `hasParent` holds, which a snapshot pane never
+does.
+
 **Self-drag identity (drop builds from app state, not the pasteboard).** `drag-drop-controller.svelte.ts::handleDrop`
 consumes the self-drag identity recorded at drag start (`drag/drag-drop.ts::recordSelfDragIdentity`) instead of
 resolving the pasteboard-derived paths, but only when `getIsDraggingFromSelf()` is true AND the recorded

@@ -724,6 +724,10 @@
   "@fileExplorer.clipboard.pastedAsFileSettings": {
     "sourceHash": "74a883a"
   },
+  "fileExplorer.clipboard.copiedPath": "Ruta copiada, ya está en el portapapeles:",
+  "@fileExplorer.clipboard.copiedPath": {
+    "sourceHash": "afb1cc2"
+  },
   "fileExplorer.tabs.limitReached": "Se alcanzó el límite de pestañas",
   "@fileExplorer.tabs.limitReached": {
     "sourceHash": "2d4205a"

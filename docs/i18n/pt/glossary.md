@@ -707,3 +707,14 @@ The copy/move dialog stops showing an ETA it no longer believes and explains the
   registro", `errorReporter` "arquivos de registro") · confirmed. Keeping the head noun `arquivo de` is what separates
   the log file from the `registro de operações` feature; MS terminology's "arquivo de log" loses to catalog consistency.
 - No `sameAsSourceJustification` needed: all eight values differ from English.
+
+## Caminho copiado: a confirmação da área de transferência (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
+
+Uma chave: a linha do aviso informativo depois de ⌃⌘C. O caminho aparece abaixo, em linha própria e monoespaçada, então
+NÃO é um marcador dentro da frase: a frase termina em dois-pontos e precisa funcionar sem ele.
+
+- **"Copied the path, it's now on your clipboard:" → `Caminho copiado, agora está na área de transferência:`** ·
+  reutiliza `path → caminho` e `clipboard → área de transferência` do glossário (macOS "Área de Transferência") · high.
+  O particípio inicial segue os avisos irmãos (`{countText} itens copiados`). Sem possessivo ("sua área de
+  transferência"): só existe uma, e o macOS usa o artigo.
+- Sem `sameAsSourceJustification`: o valor difere do inglês.

@@ -1039,3 +1039,14 @@ Settled while translating the stalled-transfer notice (7 `fileOperations.transfe
   `fileOperations.button.cancel` = `Mégsem`, so the pair is unambiguous: `Bezárás` closes the window, `Mégsem` stops the
   operation.
 - No `sameAsSourceJustification` needed in this batch: all 8 values differ from English.
+
+## Másolt útvonal: a vágólap-visszajelzés (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
+
+Egy kulcs: a ⌃⌘C utáni információs toast szövege. Maga az útvonal alatta, külön, fix szélességű sorban jelenik meg,
+tehát NEM helyőrző a mondatban: a mondat kettősponttal zárul, és önmagában is állnia kell.
+
+- **"Copied the path, it's now on your clipboard:" → `Útvonal másolva, most már a vágólapon van:`** · a bevett
+  `clipboard → vágólap` és `path → útvonal` (`Ugrás útvonalra`) szótári döntéseket használja · high. Az `-va/-ve`
+  határozói igenév a testvér toastok mintája (`{countText} elem másolva`). Birtokos rag nélkül (`a vágólapon`, nem
+  `a vágólapodon`): egy vágólap van, a macOS is névelővel mondja.
+- `sameAsSourceJustification` nem kell: az érték eltér az angoltól.

@@ -878,3 +878,14 @@ Phrasings settled (keep consistent): "No progress for {duration}" → `Không c�
 period on the dialog line, without it on the queue row, matching English); "Cancel it, or leave it running in the
 background." → `Hãy hủy, hoặc để nó tiếp tục chạy ở chế độ nền.` (`tiếp tục chạy ở chế độ nền` composed from the
 catalog's `Giữ chạy ở chế độ nền` + `Vẫn đang chạy ở chế độ nền`).
+
+## Đường dẫn đã sao chép: xác nhận bảng nhớ tạm (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
+
+Một khóa: dòng thông báo thông tin sau ⌃⌘C. Đường dẫn hiện ngay bên dưới trên một dòng riêng với phông chữ đơn cách, nên
+nó KHÔNG phải chỗ giữ chỗ trong câu: câu kết thúc bằng dấu hai chấm và phải đứng vững khi thiếu đường dẫn.
+
+- **"Copied the path, it's now on your clipboard:" → `Đã sao chép đường dẫn vào bảng nhớ tạm:`** · dùng lại
+  `clipboard → bảng nhớ tạm` và `path → đường dẫn` đã chốt trong glossary (macOS AppKit) · high. Mở đầu bằng `Đã` khớp
+  các thông báo anh em (`Đã sao chép {countText} mục`). Gộp "it's now on your clipboard" vào cụm `vào bảng nhớ tạm`:
+  dịch sát bằng đại từ `nó` sẽ lủng củng, và tiếng Việt không dùng sở hữu cho một bảng nhớ tạm duy nhất.
+- Không cần `sameAsSourceJustification`: giá trị khác tiếng Anh.

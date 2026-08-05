@@ -792,3 +792,15 @@ Terms and phrasings settled for the eight stall strings (`fileOperations.transfe
   option-offering frame, "Du kannst auch auf „Sichern unter“ klicken") rather than a bare imperative: the line points at
   two choices, it doesn't order one.
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+## Kopierter Pfad: die Zwischenablage-Bestätigung (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
+
+Ein Key: die Info-Toast-Zeile nach ⌃⌘C. Der Pfad selbst steht darunter in einer eigenen Monospace-Zeile, ist also KEIN
+Platzhalter im Satz — der Satz endet auf einem Doppelpunkt und muss ohne den Pfad grammatisch stehen.
+
+- **"Copied the path, it's now on your clipboard:" → `Pfad kopiert, er liegt jetzt in der Zwischenablage:`** · reuses
+  the settled `clipboard → Zwischenablage` und `path → Pfad` (Glossar: "Zu Pfad gehen") · high. Das partizipiale
+  `Pfad kopiert` folgt dem Muster der Geschwister-Toasts (`{countText} Objekte kopiert`). Kein `dein` vor
+  `Zwischenablage`: es gibt nur eine, das Possessivum wäre im Deutschen unnatürlich (macOS sagt "in die Zwischenablage
+  kopieren", nie "in deine").
+- Kein `sameAsSourceJustification` nötig: der Wert unterscheidet sich vom Englischen.

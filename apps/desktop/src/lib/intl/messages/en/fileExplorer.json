@@ -1084,6 +1084,10 @@
   "@fileExplorer.clipboard.pastedAsFileSettings": {
     "description": "Button on the paste-as-file info toast that opens Settings (Behavior > Navigation & file ops) so the user can change or turn off this paste behavior."
   },
+  "fileExplorer.clipboard.copiedPath": "Copied the path, it''s now on your clipboard:",
+  "@fileExplorer.clipboard.copiedPath": {
+    "description": "Info toast confirming that the path of the item under the cursor (or of the current folder, when the cursor sits on the \"..\" row) went to the system clipboard. The path itself is rendered on its own line below this sentence, in a monospace font, so the sentence ends with a colon and never contains the path."
+  },
   "fileExplorer.tabs.limitReached": "Tab limit reached",
   "@fileExplorer.tabs.limitReached": {
     "description": "Warning toast when the user tries to open another tab but the per-pane tab limit is already reached."

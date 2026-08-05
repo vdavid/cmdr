@@ -873,3 +873,14 @@ Nautilus, and Total/Double Commander.
   `escrito`/`escritos` agree with the counted noun. The es value is one plural block whose branches each carry the full
   sentence. Same rule as the transfer-toast verb-agreement entry above · high.
 - No `sameAsSourceJustification` needed: all eight values differ from English.
+
+## Ruta copiada: la confirmación del portapapeles (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
+
+Una clave: la línea del aviso informativo tras ⌃⌘C. La ruta va debajo, en su propia línea monoespaciada, así que NO es
+un marcador dentro de la frase: la frase acaba en dos puntos y tiene que sostenerse sin la ruta.
+
+- **"Copied the path, it's now on your clipboard:" → `Ruta copiada, ya está en el portapapeles:`** · reutiliza
+  `path → ruta` y `clipboard → portapapeles` del glosario (macOS "Portapapeles") · high. El participio inicial sigue el
+  patrón de los avisos hermanos (`{countText} ítems copiados`). Sin posesivo (`tu portapapeles`): solo hay uno y macOS
+  usa siempre el artículo.
+- No hace falta `sameAsSourceJustification`: el valor difiere del inglés.

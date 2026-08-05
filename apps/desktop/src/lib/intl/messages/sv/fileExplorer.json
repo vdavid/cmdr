@@ -725,6 +725,10 @@
   "@fileExplorer.clipboard.pastedAsFileSettings": {
     "sourceHash": "74a883a"
   },
+  "fileExplorer.clipboard.copiedPath": "Kopierade sökvägen, den finns nu i urklipp:",
+  "@fileExplorer.clipboard.copiedPath": {
+    "sourceHash": "afb1cc2"
+  },
   "fileExplorer.tabs.limitReached": "Gränsen för antal flikar nådd",
   "@fileExplorer.tabs.limitReached": {
     "sourceHash": "2d4205a"

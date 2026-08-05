@@ -183,6 +183,7 @@ vi.mock('$lib/file-explorer/quick-look/quick-look-state.svelte', () => ({
 
 import { handleCommandExecute, type CommandDispatchContext } from './command-dispatch'
 import { COMMAND_IDS, type CommandId } from '$lib/commands'
+import CopiedPathToastContent from '$lib/file-explorer/CopiedPathToastContent.svelte'
 // The reusable harness (id-set derivations + ctx/explorer builders) is shared
 // with the sibling `command-dispatch.delegate-arms.test.ts`. The `vi.mock` block
 // above stays LOCAL to each test file — vitest hoists mocks per file, so they
@@ -295,11 +296,26 @@ describe('characterization — entry-under-cursor arms', () => {
     expect(showInFinder).toHaveBeenCalledExactlyOnceWith(ENTRY.path)
   })
 
-  it('file.copyPath → copyToClipboard(path)', async () => {
+  it('file.copyPath → copyToClipboard(path) + the copied-path toast', async () => {
     const explorer = makeExplorerSpy()
-    explorer.getFileAndPathUnderCursor.mockReturnValue(ENTRY)
+    explorer.getPathToCopyUnderCursor.mockReturnValue(ENTRY.path)
     await handleCommandExecute('file.copyPath', makeCtx(explorer))
     expect(copyToClipboard).toHaveBeenCalledExactlyOnceWith(ENTRY.path)
+    expect(addToast).toHaveBeenCalledExactlyOnceWith(CopiedPathToastContent, {
+      level: 'info',
+      props: { path: ENTRY.path },
+      widthPx: 432,
+      toastGroup: 'copied-path',
+      maxInGroup: 1,
+    })
+  })
+
+  it('file.copyPath → no-op when no row is under the cursor', async () => {
+    const explorer = makeExplorerSpy()
+    explorer.getPathToCopyUnderCursor.mockReturnValue(null)
+    await handleCommandExecute('file.copyPath', makeCtx(explorer))
+    expect(copyToClipboard).not.toHaveBeenCalled()
+    expect(addToast).not.toHaveBeenCalled()
   })
 
   it('file.copyFilename → copyToClipboard(filename)', async () => {
@@ -316,10 +332,14 @@ describe('characterization — entry-under-cursor arms', () => {
     expect(getInfo).toHaveBeenCalledExactlyOnceWith(ENTRY.path)
   })
 
-  it('file.copyCurrentDirectoryPath → copyToClipboard(focused pane path)', async () => {
+  it('file.copyCurrentDirectoryPath → copyToClipboard(focused pane path) + the copied-path toast', async () => {
     getPanePath.mockReturnValue('/Users/test/dir')
     await handleCommandExecute('file.copyCurrentDirectoryPath', makeCtx(makeExplorerSpy()))
     expect(copyToClipboard).toHaveBeenCalledExactlyOnceWith('/Users/test/dir')
+    expect(addToast).toHaveBeenCalledExactlyOnceWith(
+      CopiedPathToastContent,
+      expect.objectContaining({ props: { path: '/Users/test/dir' } }),
+    )
   })
 
   it('file.copyCurrentDirectoryPath → no-op when the focused pane has no path', async () => {

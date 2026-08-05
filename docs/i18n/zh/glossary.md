@@ -881,3 +881,13 @@ wait-on-a-remote-endpoint phrasing (the exact same surface), Microsoft zh-Hans T
   `2m 30s`, `1h 5m` from `units/duration.ts`), so it lands as Latin text in a Chinese sentence: keep a space on BOTH
   sides (`已有 {duration} 没有进度`), the same way `剩余约 {duration}` already does · `high`
 - No `sameAsSourceJustification` needed: all eight values differ from English.
+
+## 已拷贝路径：剪贴板确认提示 (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
+
+一个键：按 ⌃⌘C 之后的信息提示行。路径本身在下一行以等宽字体单独显示，因此它并不是句中的占位符——句子以全角冒号结尾，去掉路径后也必须读得通。
+
+- **"Copied the path, it's now on your clipboard:" → `已将路径拷贝到剪贴板：`** · 复用词汇表中已确认的 `path → 路径` 与
+  `clipboard → 剪贴板`，动词沿用 Finder 的 `拷贝` · confirmed。`已将 X 拷贝到 Y`
+  与同批的粘贴提示 (`已将剪贴板{图像/PDF/文本}粘贴为 {filename}`) 同构，`已` 表示动作已完成。英文的 "it's now on your
+  clipboard" 合并进 `到剪贴板`：中文不给唯一的剪贴板加物主代词。冒号用全角 `：`。
+- 无需 `sameAsSourceJustification`：该值与英文不同。

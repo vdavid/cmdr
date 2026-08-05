@@ -897,6 +897,7 @@ export type MessageKey =
   | 'fileExplorer.archiveEnterMenu.open'
   | 'fileExplorer.breadcrumb.navigateTooltip'
   | 'fileExplorer.clipboard.copied'
+  | 'fileExplorer.clipboard.copiedPath'
   | 'fileExplorer.clipboard.cutReady'
   | 'fileExplorer.clipboard.empty'
   | 'fileExplorer.clipboard.pastedAsFile'

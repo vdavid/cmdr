@@ -75,6 +75,26 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
   }
 
   /**
+   * The path the "copy path" command puts on the clipboard: the cursor entry's own
+   * path, or — when the cursor sits on the synthetic `..` row — the focused pane's
+   * OWN directory. Standing on `..` in `~/Downloads` copies `/Users/…/Downloads`,
+   * the same path you'd get by navigating up and putting the cursor on that folder.
+   *
+   * Null when the pane has no cursor entry at all (an empty listing with no `..`
+   * row), so the caller no-ops rather than copying a pane path nobody pointed at.
+   * The `..` row only exists where `hasParent` holds, which the snapshot pane never
+   * does — so the pane path read here is always a real filesystem path, never the
+   * opaque `search-results://<id>` URL.
+   */
+  function getPathToCopyUnderCursor(): string | null {
+    const entryUnderCursor = getFileAndPathUnderCursor()
+    if (entryUnderCursor) return entryUnderCursor.path
+    const focusedPane = access.getFocusedPane()
+    if (access.getPaneRef(focusedPane)?.getFilenameUnderCursor() !== '..') return null
+    return access.getPanePath(focusedPane) || null
+  }
+
+  /**
    * Toggle a Finder system color tag (index 1..=7) on the focused pane's selection,
    * or on the cursor entry when nothing is selected (mirrors how the file F-key ops
    * fall back to the cursor). Resolves selected indices → paths via the backend
@@ -456,6 +476,7 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     openVolumeChooser,
     closeVolumeChooser,
     getFileAndPathUnderCursor,
+    getPathToCopyUnderCursor,
     toggleTagOnFocusedSelection,
     sendKeyToFocusedPane,
     openItemUnderCursor,

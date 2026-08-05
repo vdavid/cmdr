@@ -285,6 +285,36 @@ describe('getFileAndPathUnderCursor path preference', () => {
   })
 })
 
+describe('getPathToCopyUnderCursor', () => {
+  it('returns the cursor entry path for a regular row', () => {
+    const ref = buildPaneRef({ filenameUnderCursor: 'doc.txt', pathUnderCursor: undefined })
+    const cmds = create(buildAccess({ paneRefs: { left: ref }, paths: { left: '/Users/x/dir' } }))
+    expect(cmds.getPathToCopyUnderCursor()).toBe('/Users/x/dir/doc.txt')
+  })
+
+  it("returns the pane's own directory when the cursor sits on ..", () => {
+    const ref = buildPaneRef({ filenameUnderCursor: '..' })
+    const cmds = create(buildAccess({ paneRefs: { left: ref }, paths: { left: '/Users/x/Downloads' } }))
+    expect(cmds.getPathToCopyUnderCursor()).toBe('/Users/x/Downloads')
+  })
+
+  it('reads the FOCUSED pane, not always the left one', () => {
+    const cmds = create(
+      buildAccess({
+        focusedPane: 'right',
+        paneRefs: { left: buildPaneRef(), right: buildPaneRef({ filenameUnderCursor: '..' }) },
+        paths: { right: '/Volumes/naspi/papers' },
+      }),
+    )
+    expect(cmds.getPathToCopyUnderCursor()).toBe('/Volumes/naspi/papers')
+  })
+
+  it('returns null when no row is under the cursor', () => {
+    const ref = buildPaneRef({ filenameUnderCursor: undefined })
+    expect(create(buildAccess({ paneRefs: { left: ref } })).getPathToCopyUnderCursor()).toBeNull()
+  })
+})
+
 describe('routePanelKey type-to-jump intercept mirroring', () => {
   function payload(over: Partial<Parameters<ReturnType<typeof create>['routePanelKey']>[0]> = {}) {
     return { key: 'a', code: 'KeyA', shiftKey: false, metaKey: false, altKey: false, ctrlKey: false, ...over }

@@ -53,6 +53,13 @@ export interface ExplorerAPI {
   navigate: (intent: NavigateIntent) => NavigateResult
   getFileAndPathUnderCursor: () => { path: string; filename: string } | null
   /**
+   * The path the "copy path" command copies: the cursor entry's path, or the pane's
+   * own directory when the cursor sits on `..`. Null when no row is under the cursor.
+   * Separate from `getFileAndPathUnderCursor` on purpose: every other under-cursor arm
+   * (open, rename, Get Info, …) must keep treating `..` as "no entry".
+   */
+  getPathToCopyUnderCursor: () => string | null
+  /**
    * Toggles a Finder system color tag (index 1..=7, grey…orange) on the focused
    * pane's selection, or on the cursor entry when nothing is selected. Resolves the
    * paths + the pane's listing id and calls the `toggle_tags` IPC, which writes and

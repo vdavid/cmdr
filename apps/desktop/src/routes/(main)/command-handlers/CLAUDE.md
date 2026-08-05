@@ -22,7 +22,11 @@ The family-grouped handler modules behind the dispatch core (`../command-dispatc
   Every other explorer-driving arm `void`s its promise. `void`-ing a round-trip (or awaiting a fire-and-forget) is a
   silent behavior break with no compile error.
 - **Grouped ids share ONE body, no copy-paste.** The four `view.zoom.setNN` presets call one `applyZoomPreset`; the
-  get-entry-then-act file/cloud arms call one `withEntryUnderCursor`.
+  get-entry-then-act file/cloud arms call one `withEntryUnderCursor`; `file.copyPath` and
+  `file.copyCurrentDirectoryPath` call one `copyPathAndAnnounce` (clipboard write + the copied-path toast).
+- **`file.copyPath` deliberately skips `withEntryUnderCursor`**: it reads `getPathToCopyUnderCursor()`, which resolves
+  the `..` row to the pane's own directory. Every other under-cursor arm must keep treating `..` as "no entry"
+  (`file-explorer/pane/DETAILS.md` § Copy-path).
 - **The clipboard arms branch on `isTextInputFocused()` (`$lib/utils/text-input-focus`) before touching the explorer**,
   because a native menu accelerator reaches them even when focus is in a dialog's text field. Use that predicate, don't
   re-roll the `activeElement` check: the keydown resolver and the capability guard read the same one, and they have to

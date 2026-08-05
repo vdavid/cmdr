@@ -1040,3 +1040,15 @@ Phrasing notes for this pass:
 - No `sameAsSourceJustification` needed: all eight values differ from English.
 - `{duration}` arrives pre-formatted ("45s", "2m 30s") from `$lib/units`, so it is NOT localized by this catalog; the
   sentence is built so any length or shape reads correctly after "depuis".
+
+## Chemin copié : la confirmation du presse-papiers (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
+
+Une clé : la ligne de la notification d'information après ⌃⌘C. Le chemin s'affiche en dessous, sur sa propre ligne en
+police à chasse fixe : ce n'est donc PAS un paramètre dans la phrase, qui se termine par deux-points et doit tenir sans
+lui.
+
+- **"Copied the path, it's now on your clipboard:" → `Chemin copié, il est maintenant dans le presse-papiers :`** ·
+  reprend `path → chemin` et `clipboard → presse-papiers` du glossaire (macOS Finder) · high. Espace ASCII normale avant
+  les deux-points, conformément à style.md § Punctuation spacing ; jamais U+202F. Pas de possessif ("votre
+  presse-papiers") : macOS emploie l'article défini.
+- Pas de `sameAsSourceJustification` : la valeur diffère de l'anglais.
