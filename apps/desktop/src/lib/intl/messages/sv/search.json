@@ -95,6 +95,38 @@
   "@search.imageResults.similarEmpty": {
     "sourceHash": "d3ef9f7"
   },
+  "search.walkHandoff.running": "Söker fortfarande efter {label}",
+  "@search.walkHandoff.running": {
+    "sourceHash": "79a7339"
+  },
+  "search.walkHandoff.counts": "{matchCount, plural, one {# träff} other {# träffar}} hittills, {folderCount, plural, one {# mapp} other {# mappar}} genomsökta",
+  "@search.walkHandoff.counts": {
+    "sourceHash": "8e68f3f"
+  },
+  "search.walkHandoff.reopen": "Öppna sökningen igen",
+  "@search.walkHandoff.reopen": {
+    "sourceHash": "6b49872"
+  },
+  "search.walkHandoff.stop": "Stoppa",
+  "@search.walkHandoff.stop": {
+    "sourceHash": "cae7d57"
+  },
+  "search.walkHandoff.hideTooltip": "Dölj det här. Sökningen fortsätter.",
+  "@search.walkHandoff.hideTooltip": {
+    "sourceHash": "7ee94f1"
+  },
+  "search.walkHandoff.finished": "{count, plural, one {Hittade # träff} other {Hittade # träffar}} för {label}.",
+  "@search.walkHandoff.finished": {
+    "sourceHash": "0cbc210"
+  },
+  "search.walkHandoff.stoppedShort": "Resultaten för {label} kan vara korta: Cmdr hann inte igenom allt.",
+  "@search.walkHandoff.stoppedShort": {
+    "sourceHash": "3a2a5dd"
+  },
+  "search.walkHandoff.superseded": "Cmdr slutade fylla på resultaten för {label}, för din nya sökning tog över.",
+  "@search.walkHandoff.superseded": {
+    "sourceHash": "83aa5a2"
+  },
   "search.coverage.uncovered.local": "Cmdr har inte indexerat {drive} än, så den här sökningen hoppade över:",
   "@search.coverage.uncovered.local": {
     "sourceHash": "3b75a63"
@@ -106,6 +138,30 @@
   "search.coverage.unresolved": "{count, plural, one {Cmdrs index täcker inte den här mappen än, så sökningen hoppade över den:} other {Cmdrs index täcker inte de här mapparna än, så sökningen hoppade över dem:}}",
   "@search.coverage.unresolved": {
     "sourceHash": "8d9517e"
+  },
+  "search.coverage.walk.cancelled": "Du stoppade den här sökningen, så du ser vad Cmdr hade hunnit hitta. Allt som lästes på vägen är sparat, så en ny sökning fortsätter därifrån.",
+  "@search.coverage.walk.cancelled": {
+    "sourceHash": "ea9caa1"
+  },
+  "search.coverage.walk.interrupted": "Sökningen tog slut i förtid, så det kan finnas mer på {drive}. Söker du igen fortsätter den där den slutade.",
+  "@search.coverage.walk.interrupted": {
+    "sourceHash": "4c6a0a4"
+  },
+  "search.coverage.walk.abandoned": "Några mappar slutade svara, så Cmdr gick vidare utan dem och listan kan vara kort. Söker du igen får de en chans till.",
+  "@search.coverage.walk.abandoned": {
+    "sourceHash": "4a6a2af"
+  },
+  "search.coverage.unreadable": "{count, plural, one {Cmdr kunde inte titta in i den här mappen, så inget därifrån finns bland resultaten:} other {Cmdr kunde inte titta in i de här mapparna, så inget därifrån finns bland resultaten:}}",
+  "@search.coverage.unreadable": {
+    "sourceHash": "32dadf5"
+  },
+  "search.coverage.unreadableWhy": "Det är antingen en behörighet Cmdr inte har än, eller en ögonblicksbildsmapp som den låter vara med flit.",
+  "@search.coverage.unreadableWhy": {
+    "sourceHash": "373e661"
+  },
+  "search.coverage.stillCovering": "{count, plural, one {En annan sökning går igenom den här mappen just nu, så dess filer dyker upp strax:} other {En annan sökning går igenom de här mapparna just nu, så deras filer dyker upp strax:}}",
+  "@search.coverage.stillCovering": {
+    "sourceHash": "acd21dc"
   },
   "search.coverage.unnamedDrive": "den här enheten",
   "@search.coverage.unnamedDrive": {
@@ -138,26 +194,6 @@
   "search.snapshot.cappedLabel": "{label} (första {capText} av {totalText})",
   "@search.snapshot.cappedLabel": {
     "sourceHash": "35523ac"
-  },
-  "search.coverage.walk.cancelled": "Du stoppade den här sökningen, så du ser vad Cmdr hade hunnit hitta. Allt som lästes på vägen är sparat, så en ny sökning fortsätter därifrån.",
-  "search.coverage.walk.interrupted": "Sökningen tog slut i förtid, så det kan finnas mer på {drive}. Söker du igen fortsätter den där den slutade.",
-  "search.coverage.unreadable": "{count, plural, one {Cmdr kunde inte titta in i den här mappen, så inget därifrån finns bland resultaten:} other {Cmdr kunde inte titta in i de här mapparna, så inget därifrån finns bland resultaten:}}",
-  "search.coverage.unreadableWhy": "Det är antingen en behörighet Cmdr inte har än, eller en ögonblicksbildsmapp som den låter vara med flit.",
-  "search.coverage.stillCovering": "{count, plural, one {En annan sökning går igenom den här mappen just nu, så dess filer dyker upp strax:} other {En annan sökning går igenom de här mapparna just nu, så deras filer dyker upp strax:}}",
-  "@search.coverage.walk.cancelled": {
-    "sourceHash": "ea9caa1"
-  },
-  "@search.coverage.walk.interrupted": {
-    "sourceHash": "4c6a0a4"
-  },
-  "@search.coverage.unreadable": {
-    "sourceHash": "32dadf5"
-  },
-  "@search.coverage.unreadableWhy": {
-    "sourceHash": "373e661"
-  },
-  "@search.coverage.stillCovering": {
-    "sourceHash": "acd21dc"
   },
   "search.runTitle": "Sök, även i mappar som inte är indexerade än",
   "@search.runTitle": {

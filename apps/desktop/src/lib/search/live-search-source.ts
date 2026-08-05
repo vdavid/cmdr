@@ -11,21 +11,27 @@
  * Listeners are installed BEFORE the command is invoked: the backend can emit its first
  * batch (or its whole run, on a small folder) before the invoke resolves, and a listener
  * installed after would miss it.
+ *
+ * Two ways in, because a walk can outlive the dialog that started it ("Open in pane",
+ * `walk-handoff.svelte.ts`): `start` runs a NEW query, and `resume` re-attaches a
+ * reopened dialog to the one still running.
  */
 
 import {
   cancelSearch,
-  onSearchCancelled,
-  onSearchComplete,
-  onSearchError,
-  onSearchProgress,
   searchFilesStreaming,
   type SearchQuery,
   type SearchRunCoverage,
   type SearchResultEntry,
-  type UnlistenFn,
 } from '$lib/tauri-commands'
-import type { QueryStreamCallbacks, QueryStreamSource } from '$lib/query-ui/query-stream'
+import type {
+  LiveRunView,
+  QueryStreamCallbacks,
+  QueryStreamResumption,
+  QueryStreamSource,
+} from '$lib/query-ui/query-stream'
+import { liveViewOf, observeSearchRun } from './live-run-events'
+import { resumeHandedOffWalk, supersedeHandedOffWalk } from './walk-handoff.svelte'
 
 export interface LiveSearchSourceDeps {
   /** Builds the payload for the run about to start (scope parsing included, so async). */
@@ -39,82 +45,95 @@ export interface LiveSearchSourceDeps {
   rank: (entries: SearchResultEntry[]) => SearchResultEntry[]
   /** Called once per started run, for the "a search ran" analytics event. */
   onStarted?: () => void
+  /**
+   * The run in flight and where it has got to, or `null` once it has ended.
+   *
+   * The runner owns the run for the DIALOG's purposes and keeps its id private; this
+   * is for the one thing Search does with a run the dialog is finished with — hand it
+   * to a pane and let it keep walking (`walk-handoff.svelte.ts`). ❌ Don't mirror it
+   * into reactive state: it fires per batch, and the dialog already renders the same
+   * numbers off the runner.
+   */
+  onRunState?: (state: { runId: string; view: LiveRunView } | null) => void
 }
 
 /**
  * A walk that ended any way but "covered it" leaves the list a lower bound. Two of the
- * four endings are that; the shared dialog only needs the boolean, and Search's note
- * says which one it was.
+ * four endings are that, and so is a walk that finished having abandoned folders on
+ * the way (Accepted difference 9) — the third reason, and the one nothing else on the
+ * wire hints at. The shared dialog only needs the boolean; Search's note says which
+ * of the three it was.
  */
 function isIncomplete(coverage: SearchRunCoverage): boolean {
-  return coverage.walk === 'interrupted' || coverage.walk === 'cancelled'
+  return coverage.walk === 'interrupted' || coverage.walk === 'cancelled' || coverage.abandonedGround
 }
 
 export function createLiveSearchSource(deps: LiveSearchSourceDeps): QueryStreamSource {
+  /** The shared "the run ended" shape, from Search's own terminal answer. */
+  const settle = (callbacks: QueryStreamCallbacks) => (matchCount: number, coverage: SearchRunCoverage) => {
+    deps.onCoverage(coverage)
+    callbacks.onEnd({
+      matchCount,
+      incomplete: isIncomplete(coverage),
+      // `nothingToWalk` means the index answered the whole scope, so its rows came
+      // ranked and re-ranking them would only throw that ranking away.
+      walked: coverage.walk !== 'nothingToWalk',
+      capped: coverage.capped,
+    })
+  }
+
   return {
     start: async (runId: string, callbacks: QueryStreamCallbacks): Promise<() => void> => {
       deps.onCoverage(null)
-      const unlisten: UnlistenFn[] = []
-      const stop = (): void => {
-        for (const off of unlisten) off()
-        unlisten.length = 0
-      }
-      /** Everything this run says; anything naming another run is somebody else's. */
-      const mine = (eventRunId: string): boolean => eventRunId === runId
+      // Starting a run supersedes every other one backend side, so a walk handed off
+      // to a pane goes silent from here on. Telling it now is what stops its toast
+      // waiting forever on a terminal event that is never coming.
+      supersedeHandedOffWalk()
+      deps.onRunState?.({
+        runId,
+        view: {
+          phase: 'resolvingCoverage',
+          matchCount: 0,
+          dirsFound: 0,
+          currentPath: null,
+          capped: false,
+          running: true,
+          incomplete: false,
+        },
+      })
+      const stop = await observeSearchRun(runId, {
+        onProgress: (event) => {
+          deps.onRunState?.({ runId, view: liveViewOf(event) })
+          callbacks.onProgress(event)
+        },
+        onSettled: (matchCount, coverage) => {
+          deps.onRunState?.(null)
+          settle(callbacks)(matchCount, coverage)
+        },
+        onFailed: (message) => {
+          deps.onRunState?.(null)
+          callbacks.onFailed(message)
+        },
+      })
 
       try {
-        unlisten.push(
-          await onSearchProgress((event) => {
-            if (!mine(event.runId)) return
-            callbacks.onProgress({
-              phase: event.phase,
-              entries: event.entries,
-              matchCount: event.matchCount,
-              dirsFound: event.dirsFound,
-              currentPath: event.currentPath,
-              capped: event.capped,
-            })
-          }),
-        )
-        const settle = (matchCount: number, coverage: SearchRunCoverage): void => {
-          deps.onCoverage(coverage)
-          callbacks.onEnd({
-            matchCount,
-            incomplete: isIncomplete(coverage),
-            // `nothingToWalk` means the index answered the whole scope, so its rows came
-            // ranked and re-ranking them would only throw that ranking away.
-            walked: coverage.walk !== 'nothingToWalk',
-            capped: coverage.capped,
-          })
-        }
-        unlisten.push(
-          await onSearchComplete((event) => {
-            if (mine(event.runId)) settle(event.matchCount, event.coverage)
-          }),
-        )
-        unlisten.push(
-          await onSearchCancelled((event) => {
-            if (mine(event.runId)) settle(event.matchCount, event.coverage)
-          }),
-        )
-        unlisten.push(
-          await onSearchError((event) => {
-            // The typed `error` is the branch a future caller acts on (M8 routes
-            // `indexUnreadable` differently); the sentence is rendered backend-side for
-            // the same reason the engine's "Query too broad" is.
-            if (mine(event.runId)) callbacks.onFailed(event.message)
-          }),
-        )
-
         const query = await deps.buildQuery()
         await searchFilesStreaming(query, runId)
         deps.onStarted?.()
       } catch (err) {
         stop()
+        deps.onRunState?.(null)
         throw err
       }
       return stop
     },
+
+    resume: (callbacks: QueryStreamCallbacks): QueryStreamResumption | null =>
+      resumeHandedOffWalk({
+        onProgress: callbacks.onProgress,
+        onSettled: settle(callbacks),
+        onFailed: callbacks.onFailed,
+      }),
 
     cancel: (runId: string): void => {
       void cancelSearch(runId).catch(() => {

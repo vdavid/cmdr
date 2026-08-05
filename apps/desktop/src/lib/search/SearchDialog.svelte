@@ -128,6 +128,9 @@
         type SearchSnapshot,
     } from './snapshot-store.svelte'
     import { buildSnapshotLabel } from './snapshot-label'
+    import { handOffWalk } from './walk-handoff.svelte'
+    import { getWalkHandoff, setSearchReopener } from './walk-handoff-state.svelte'
+    import type { LiveRunView } from '$lib/query-ui/query-stream'
 
     interface Props {
         /** Called when user selects a result: receives the full path. */
@@ -151,6 +154,13 @@
          */
         onShowAllInMainWindow?: (snapshotId: string) => void
         /**
+         * Reopens this dialog after it closed. Wired to the toast's "Reopen search"
+         * button, for the case the dialog can't handle itself: "Open in pane" left a
+         * walk running, and by the time someone wants back in, this component is gone
+         * and only the host still has the flag.
+         */
+        onReopen?: () => void
+        /**
          * The ONE volume this session covers: the focused pane's current volume. It names
          * the arena the readiness gate waits for, the drive the coverage note speaks
          * about, and the media index the image-OCR grid queries (so browsing a NAS
@@ -166,6 +176,7 @@
         onClose,
         scopePresets,
         onShowAllInMainWindow,
+        onReopen,
         searchVolume = { volumeId: ROOT_VOLUME_ID, mountRoot: '/', isNetwork: false },
     }: Props = $props()
 
@@ -431,8 +442,19 @@
      * arriving in batches. Its coverage answer lands in the same note the one-shot path
      * writes, so a caveat still can't outlive the run that earned it.
      */
+    /**
+     * The live run in flight, for the ONE thing that needs it after the dialog is
+     * done with it: handing the walk to a pane and letting it keep going. Plain, not
+     * `$state` — it changes on every batch, and making it reactive would rebuild the
+     * dialog's whole config ten times a second for a value nothing renders.
+     */
+    let liveRun: { runId: string; view: LiveRunView } | null = null
+
     const liveSearchSource = createLiveSearchSource({
         buildQuery: buildRunQuery,
+        onRunState: (state) => {
+            liveRun = state
+        },
         onCoverage: (coverage) => {
             setCoverageNote(coverage === null ? null : coverageNoteFromRun(coverage))
         },
@@ -496,6 +518,14 @@
         }
         createSnapshot(id, snapshot)
         setLastAttemptId(id)
+
+        // The one case where a walk outlives its dialog: the results are about to be
+        // on screen in a pane, so the walk keeps going and its rows keep landing
+        // there. Everything after this — the toast, the snapshot appends, handing the
+        // run back if the dialog reopens — belongs to `walk-handoff.svelte.ts`.
+        if (liveRun) {
+            handOffWalk({ runId: liveRun.runId, snapshotId: id, label, view: liveRun.view })
+        }
 
         persistRecentSearch()
 
@@ -666,7 +696,10 @@
     }
 
     function teardownSearchLifecycle(): void {
-        releaseSearchIndex().catch(() => {})
+        // A handed-off walk is the one run the close must NOT stop: its results are in
+        // a pane and still growing. Every other run in flight is a query nobody is
+        // reading any more.
+        releaseSearchIndex(getWalkHandoff()?.runId ?? null).catch(() => {})
         unlistenReady?.()
         unlistenReady = undefined
     }
@@ -677,6 +710,10 @@
         unlistenAiProvider = onSpecificSettingChange('ai.provider', (_id, value: unknown) => {
             aiProvider = typeof value === 'string' ? value : 'off'
         })
+        // How the handed-off walk's toast gets back here. Registered rather than
+        // passed, because by the time the button is pressed this component is gone and
+        // only the host still has the flag that mounts it.
+        setSearchReopener(onReopen ?? null)
     })
 
     onDestroy(() => {

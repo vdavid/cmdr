@@ -238,6 +238,54 @@
   "@queryUi.results.noMatchHeading": {
     "sourceHash": "15383e2"
   },
+  "queryUi.results.live.resolvingCoverage": "Đang xem những gì đã lập chỉ mục...",
+  "@queryUi.results.live.resolvingCoverage": {
+    "sourceHash": "07b501d"
+  },
+  "queryUi.results.live.readingIndex": "Đang đọc phần đã lập chỉ mục...",
+  "@queryUi.results.live.readingIndex": {
+    "sourceHash": "5a048c9"
+  },
+  "queryUi.results.live.walking": "Đang duyệt các thư mục chưa lập chỉ mục...",
+  "@queryUi.results.live.walking": {
+    "sourceHash": "b2dbe67"
+  },
+  "queryUi.results.live.matchesSoFar": "Đến giờ có {countText} {count, plural, other {kết quả}}",
+  "@queryUi.results.live.matchesSoFar": {
+    "sourceHash": "5c09eb4"
+  },
+  "queryUi.results.live.foldersScanned": "Đã duyệt {countText} {count, plural, other {thư mục}}",
+  "@queryUi.results.live.foldersScanned": {
+    "sourceHash": "5a3247d"
+  },
+  "queryUi.results.live.incomplete": "{shownText} trên {totalText} kết quả. Cmdr chưa tìm xong.",
+  "@queryUi.results.live.incomplete": {
+    "sourceHash": "7dccf6e"
+  },
+  "queryUi.results.live.incompleteEmpty": "Chưa tìm thấy gì thì tìm kiếm đã dừng. Cmdr chưa tìm xong.",
+  "@queryUi.results.live.incompleteEmpty": {
+    "sourceHash": "bfa15df"
+  },
+  "queryUi.results.live.capped": "Đang hiện {shownText} kết quả đầu tiên trong {totalText}.",
+  "@queryUi.results.live.capped": {
+    "sourceHash": "7c0475d"
+  },
+  "queryUi.results.live.stop": "Dừng",
+  "@queryUi.results.live.stop": {
+    "sourceHash": "cae7d57"
+  },
+  "queryUi.results.live.stopTooltip": "Dừng tìm kiếm. Những gì đã tìm thấy vẫn ở trên màn hình.",
+  "@queryUi.results.live.stopTooltip": {
+    "sourceHash": "e72f5d7"
+  },
+  "queryUi.results.live.scanningAria": "Hiện đang ở {path}",
+  "@queryUi.results.live.scanningAria": {
+    "sourceHash": "0071028"
+  },
+  "queryUi.results.countOnly.soFar": "{count, plural, other {Đến giờ tìm kiếm này cho <total>{countText}</total> kết quả}}",
+  "@queryUi.results.countOnly.soFar": {
+    "sourceHash": "dbdb208"
+  },
   "queryUi.pathPills.hiddenAria": "Các đoạn đường dẫn bị ẩn: {segments}",
   "@queryUi.pathPills.hiddenAria": {
     "sourceHash": "f62e273"
@@ -624,53 +672,5 @@
   "queryUi.scope.currentFolder": "Thư mục hiện tại",
   "@queryUi.scope.currentFolder": {
     "sourceHash": "1a5db52"
-  },
-  "queryUi.results.live.resolvingCoverage": "Đang xem những gì đã lập chỉ mục...",
-  "queryUi.results.live.readingIndex": "Đang đọc phần đã lập chỉ mục...",
-  "queryUi.results.live.walking": "Đang duyệt các thư mục chưa lập chỉ mục...",
-  "queryUi.results.live.matchesSoFar": "Đến giờ có {countText} {count, plural, other {kết quả}}",
-  "queryUi.results.live.foldersScanned": "Đã duyệt {countText} {count, plural, other {thư mục}}",
-  "queryUi.results.live.incomplete": "{shownText} trên {totalText} kết quả. Cmdr chưa tìm xong.",
-  "queryUi.results.live.capped": "Đang hiện {shownText} kết quả đầu tiên trong {totalText}.",
-  "queryUi.results.live.stop": "Dừng",
-  "queryUi.results.live.stopTooltip": "Dừng tìm kiếm. Những gì đã tìm thấy vẫn ở trên màn hình.",
-  "queryUi.results.live.scanningAria": "Hiện đang ở {path}",
-  "queryUi.results.countOnly.soFar": "{count, plural, other {Đến giờ tìm kiếm này cho <total>{countText}</total> kết quả}}",
-  "@queryUi.results.live.resolvingCoverage": {
-    "sourceHash": "07b501d"
-  },
-  "@queryUi.results.live.readingIndex": {
-    "sourceHash": "5a048c9"
-  },
-  "@queryUi.results.live.walking": {
-    "sourceHash": "b2dbe67"
-  },
-  "@queryUi.results.live.matchesSoFar": {
-    "sourceHash": "5c09eb4"
-  },
-  "@queryUi.results.live.foldersScanned": {
-    "sourceHash": "5a3247d"
-  },
-  "@queryUi.results.live.incomplete": {
-    "sourceHash": "7dccf6e"
-  },
-  "@queryUi.results.live.capped": {
-    "sourceHash": "7c0475d"
-  },
-  "@queryUi.results.live.stop": {
-    "sourceHash": "cae7d57"
-  },
-  "@queryUi.results.live.stopTooltip": {
-    "sourceHash": "e72f5d7"
-  },
-  "@queryUi.results.live.scanningAria": {
-    "sourceHash": "0071028"
-  },
-  "@queryUi.results.countOnly.soFar": {
-    "sourceHash": "dbdb208"
-  },
-  "queryUi.results.live.incompleteEmpty": "Chưa tìm thấy gì thì tìm kiếm đã dừng. Cmdr chưa tìm xong.",
-  "@queryUi.results.live.incompleteEmpty": {
-    "sourceHash": "bfa15df"
   }
 }

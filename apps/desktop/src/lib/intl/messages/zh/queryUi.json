@@ -236,6 +236,54 @@
   "@queryUi.results.noMatchHeading": {
     "sourceHash": "15383e2"
   },
+  "queryUi.results.live.resolvingCoverage": "正在确认哪些内容已建立索引…",
+  "@queryUi.results.live.resolvingCoverage": {
+    "sourceHash": "07b501d"
+  },
+  "queryUi.results.live.readingIndex": "正在读取已建立索引的部分…",
+  "@queryUi.results.live.readingIndex": {
+    "sourceHash": "5a048c9"
+  },
+  "queryUi.results.live.walking": "正在逐个查看尚未建立索引的文件夹…",
+  "@queryUi.results.live.walking": {
+    "sourceHash": "b2dbe67"
+  },
+  "queryUi.results.live.matchesSoFar": "目前找到 {countText} {count, plural, other {个结果}}",
+  "@queryUi.results.live.matchesSoFar": {
+    "sourceHash": "5c09eb4"
+  },
+  "queryUi.results.live.foldersScanned": "已查看 {countText} {count, plural, other {个文件夹}}",
+  "@queryUi.results.live.foldersScanned": {
+    "sourceHash": "5a3247d"
+  },
+  "queryUi.results.live.incomplete": "{totalText} 个结果中显示 {shownText} 个。Cmdr 没有找完。",
+  "@queryUi.results.live.incomplete": {
+    "sourceHash": "7dccf6e"
+  },
+  "queryUi.results.live.incompleteEmpty": "搜索停止前没有找到任何内容。Cmdr 没有找完。",
+  "@queryUi.results.live.incompleteEmpty": {
+    "sourceHash": "bfa15df"
+  },
+  "queryUi.results.live.capped": "{totalText} 个结果中显示前 {shownText} 个。",
+  "@queryUi.results.live.capped": {
+    "sourceHash": "7c0475d"
+  },
+  "queryUi.results.live.stop": "停止",
+  "@queryUi.results.live.stop": {
+    "sourceHash": "cae7d57"
+  },
+  "queryUi.results.live.stopTooltip": "停止搜索。已经找到的内容会留在屏幕上。",
+  "@queryUi.results.live.stopTooltip": {
+    "sourceHash": "e72f5d7"
+  },
+  "queryUi.results.live.scanningAria": "当前位置：{path}",
+  "@queryUi.results.live.scanningAria": {
+    "sourceHash": "0071028"
+  },
+  "queryUi.results.countOnly.soFar": "{count, plural, other {此搜索目前找到 <total>{countText}</total> 个结果}}",
+  "@queryUi.results.countOnly.soFar": {
+    "sourceHash": "dbdb208"
+  },
   "queryUi.pathPills.hiddenAria": "隐藏的路径片段：{segments}",
   "@queryUi.pathPills.hiddenAria": {
     "sourceHash": "f62e273"
@@ -620,53 +668,5 @@
   "queryUi.scope.currentFolder": "当前文件夹",
   "@queryUi.scope.currentFolder": {
     "sourceHash": "1a5db52"
-  },
-  "queryUi.results.live.resolvingCoverage": "正在确认哪些内容已建立索引…",
-  "queryUi.results.live.readingIndex": "正在读取已建立索引的部分…",
-  "queryUi.results.live.walking": "正在逐个查看尚未建立索引的文件夹…",
-  "queryUi.results.live.matchesSoFar": "目前找到 {countText} {count, plural, other {个结果}}",
-  "queryUi.results.live.foldersScanned": "已查看 {countText} {count, plural, other {个文件夹}}",
-  "queryUi.results.live.incomplete": "{totalText} 个结果中显示 {shownText} 个。Cmdr 没有找完。",
-  "queryUi.results.live.capped": "{totalText} 个结果中显示前 {shownText} 个。",
-  "queryUi.results.live.stop": "停止",
-  "queryUi.results.live.stopTooltip": "停止搜索。已经找到的内容会留在屏幕上。",
-  "queryUi.results.live.scanningAria": "当前位置：{path}",
-  "queryUi.results.countOnly.soFar": "{count, plural, other {此搜索目前找到 <total>{countText}</total> 个结果}}",
-  "@queryUi.results.live.resolvingCoverage": {
-    "sourceHash": "07b501d"
-  },
-  "@queryUi.results.live.readingIndex": {
-    "sourceHash": "5a048c9"
-  },
-  "@queryUi.results.live.walking": {
-    "sourceHash": "b2dbe67"
-  },
-  "@queryUi.results.live.matchesSoFar": {
-    "sourceHash": "5c09eb4"
-  },
-  "@queryUi.results.live.foldersScanned": {
-    "sourceHash": "5a3247d"
-  },
-  "@queryUi.results.live.incomplete": {
-    "sourceHash": "7dccf6e"
-  },
-  "@queryUi.results.live.capped": {
-    "sourceHash": "7c0475d"
-  },
-  "@queryUi.results.live.stop": {
-    "sourceHash": "cae7d57"
-  },
-  "@queryUi.results.live.stopTooltip": {
-    "sourceHash": "e72f5d7"
-  },
-  "@queryUi.results.live.scanningAria": {
-    "sourceHash": "0071028"
-  },
-  "@queryUi.results.countOnly.soFar": {
-    "sourceHash": "dbdb208"
-  },
-  "queryUi.results.live.incompleteEmpty": "搜索停止前没有找到任何内容。Cmdr 没有找完。",
-  "@queryUi.results.live.incompleteEmpty": {
-    "sourceHash": "bfa15df"
   }
 }

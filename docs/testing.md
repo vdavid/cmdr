@@ -472,6 +472,10 @@ E2E test hooks split along two axes:
 - **`CMDR_VIRTUAL_MTP=1` (or `=<dir>`)**: Dev opt-in: `pnpm dev` registers the virtual MTP device. See
   `tooling/virtual-mtp.md`.
 - **`CMDR_E2E_COPY_THROTTLE_MS`**: Per-file sleep inside the copy loop. Lets tests stage Cancel/Rollback.
+- **`CMDR_E2E_WALK_THROTTLE_MS`**: Per-directory sleep before a search's COVER walk reads one, so a spec has a window in
+  which to watch a live search still running (`search-walk-handoff.spec.ts`). Background scans are never throttled. Read
+  in `crates/cmdr-index/src/indexing/scanner/mod.rs` (`cover_walk_throttle`) rather than `crate::test_mode`, because the
+  index crate can't reach the app; it's cached in a `LazyLock`, so an unset var costs one deref per walk.
 - **`CMDR_PLAYWRIGHT_SOCKET`**: Override the plugin's Unix socket path (one socket per shard).
 
 **Existing soft hooks** (IPC-driven, feature-gated to `playwright-e2e`):

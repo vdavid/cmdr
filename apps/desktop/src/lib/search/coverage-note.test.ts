@@ -4,12 +4,45 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import type { SearchResult } from '$lib/tauri-commands'
-import { coverageNoteFrom, isTargetIndexReady } from './coverage-note'
+import type { SearchResult, SearchRunCoverage } from '$lib/tauri-commands'
+import { coverageNoteFrom, coverageNoteFromRun, isTargetIndexReady } from './coverage-note'
 
 function result(overrides: Partial<SearchResult> = {}): SearchResult {
   return { entries: [], totalCount: 0, ...overrides }
 }
+
+function runCoverage(overrides: Partial<SearchRunCoverage> = {}): SearchRunCoverage {
+  return {
+    walk: 'completed',
+    unreadable: [],
+    stillCovering: [],
+    unresolvedScopes: [],
+    abandonedGround: false,
+    capped: false,
+    targetVolumeId: 'root',
+    ...overrides,
+  }
+}
+
+describe('coverageNoteFromRun', () => {
+  it('returns null for a walk that covered its whole frontier', () => {
+    expect(coverageNoteFromRun(runCoverage())).toBeNull()
+  })
+
+  it('labels a walk that finished having given up on folders', () => {
+    // The quiet way a run comes back short: every root covered, nobody stopped
+    // it, and it still read less than the tree holds. Without a note here the
+    // list reads as exhaustive (Accepted difference 9).
+    const note = coverageNoteFromRun(runCoverage({ abandonedGround: true }))
+    expect(note?.live?.abandonedGround).toBe(true)
+    expect(note?.live?.walk).toBe('completed')
+  })
+
+  it('carries the flag alongside a cancel, which is a second reason to be short', () => {
+    const note = coverageNoteFromRun(runCoverage({ walk: 'cancelled', abandonedGround: true }))
+    expect(note?.live).toEqual({ walk: 'cancelled', unreadable: [], stillCovering: [], abandonedGround: true })
+  })
+})
 
 describe('coverageNoteFrom', () => {
   it('returns null for a run that covered everything asked of it', () => {

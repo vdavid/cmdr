@@ -37,6 +37,14 @@ export interface LiveCoverage {
    * "these are lost".
    */
   stillCovering: string[]
+  /**
+   * The walk gave up on folders it started: one that stopped responding and was
+   * abandoned, or a subtree pruned after too many failed reads. TRUE means the
+   * list is a lower bound even when `walk` is `completed` — the quiet third way a
+   * run comes back short, alongside cancel and disconnect. Those folders stay
+   * unlisted, so searching again retries them.
+   */
+  abandonedGround: boolean
 }
 
 /** What one run couldn't cover, ready to render. Absent when coverage was complete. */
@@ -86,7 +94,7 @@ export function coverageNoteFrom(result: SearchResult): CoverageNote | null {
  * is what a walk genuinely can't answer for.
  */
 export function coverageNoteFromRun(coverage: SearchRunCoverage): CoverageNote | null {
-  const short = coverage.walk === 'interrupted' || coverage.walk === 'cancelled'
+  const short = coverage.walk === 'interrupted' || coverage.walk === 'cancelled' || coverage.abandonedGround
   if (
     !short &&
     coverage.unreadable.length === 0 &&
@@ -103,6 +111,7 @@ export function coverageNoteFromRun(coverage: SearchRunCoverage): CoverageNote |
       walk: coverage.walk,
       unreadable: coverage.unreadable,
       stillCovering: coverage.stillCovering,
+      abandonedGround: coverage.abandonedGround,
     },
   }
 }

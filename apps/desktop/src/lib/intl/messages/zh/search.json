@@ -95,6 +95,38 @@
   "@search.imageResults.similarEmpty": {
     "sourceHash": "d3ef9f7"
   },
+  "search.walkHandoff.running": "还在搜索 {label}",
+  "@search.walkHandoff.running": {
+    "sourceHash": "79a7339"
+  },
+  "search.walkHandoff.counts": "目前 {matchCount, plural, other {# 个匹配}}，已扫描 {folderCount, plural, other {# 个文件夹}}",
+  "@search.walkHandoff.counts": {
+    "sourceHash": "8e68f3f"
+  },
+  "search.walkHandoff.reopen": "重新打开搜索",
+  "@search.walkHandoff.reopen": {
+    "sourceHash": "6b49872"
+  },
+  "search.walkHandoff.stop": "停止",
+  "@search.walkHandoff.stop": {
+    "sourceHash": "cae7d57"
+  },
+  "search.walkHandoff.hideTooltip": "隐藏这条。搜索会继续运行。",
+  "@search.walkHandoff.hideTooltip": {
+    "sourceHash": "7ee94f1"
+  },
+  "search.walkHandoff.finished": "为 {label} 找到 {count, plural, other {# 个匹配}}。",
+  "@search.walkHandoff.finished": {
+    "sourceHash": "0cbc210"
+  },
+  "search.walkHandoff.stoppedShort": "{label} 的结果可能不全：Cmdr 没能走完全部。",
+  "@search.walkHandoff.stoppedShort": {
+    "sourceHash": "3a2a5dd"
+  },
+  "search.walkHandoff.superseded": "Cmdr 不再往 {label} 的结果里添加了，因为你的新搜索接手了。",
+  "@search.walkHandoff.superseded": {
+    "sourceHash": "83aa5a2"
+  },
   "search.coverage.uncovered.local": "Cmdr 尚未为 {drive} 建立索引，因此本次搜索跳过了：",
   "@search.coverage.uncovered.local": {
     "sourceHash": "3b75a63"
@@ -106,6 +138,30 @@
   "search.coverage.unresolved": "{count, plural, other {Cmdr 的索引尚未覆盖以下文件夹，因此本次搜索跳过了：}}",
   "@search.coverage.unresolved": {
     "sourceHash": "8d9517e"
+  },
+  "search.coverage.walk.cancelled": "你停止了这次搜索，所以这里是 Cmdr 到那时为止找到的内容。一路上读过的内容都已保存，再搜一次会从那里接着来。",
+  "@search.coverage.walk.cancelled": {
+    "sourceHash": "ea9caa1"
+  },
+  "search.coverage.walk.interrupted": "这次搜索提前结束了，所以 {drive} 上可能还有更多。再搜一次会从上次停下的地方继续。",
+  "@search.coverage.walk.interrupted": {
+    "sourceHash": "4c6a0a4"
+  },
+  "search.coverage.walk.abandoned": "有些文件夹没再响应，Cmdr 就跳过它们继续了，所以这个列表可能不全。再搜一次会重新试试它们。",
+  "@search.coverage.walk.abandoned": {
+    "sourceHash": "4a6a2af"
+  },
+  "search.coverage.unreadable": "{count, plural, other {Cmdr 无法查看以下文件夹的内容，因此结果中没有其中的文件：}}",
+  "@search.coverage.unreadable": {
+    "sourceHash": "32dadf5"
+  },
+  "search.coverage.unreadableWhy": "要么是 Cmdr 还没有的权限，要么是它有意跳过的快照文件夹。",
+  "@search.coverage.unreadableWhy": {
+    "sourceHash": "373e661"
+  },
+  "search.coverage.stillCovering": "{count, plural, other {另一次搜索正在查看以下文件夹，其中的文件稍后就会出现：}}",
+  "@search.coverage.stillCovering": {
+    "sourceHash": "acd21dc"
   },
   "search.coverage.unnamedDrive": "此驱动器",
   "@search.coverage.unnamedDrive": {
@@ -138,26 +194,6 @@
   "search.snapshot.cappedLabel": "{label}（共 {totalText} 个，前 {capText} 个）",
   "@search.snapshot.cappedLabel": {
     "sourceHash": "35523ac"
-  },
-  "search.coverage.walk.cancelled": "你停止了这次搜索，所以这里是 Cmdr 到那时为止找到的内容。一路上读过的内容都已保存，再搜一次会从那里接着来。",
-  "search.coverage.walk.interrupted": "这次搜索提前结束了，所以 {drive} 上可能还有更多。再搜一次会从上次停下的地方继续。",
-  "search.coverage.unreadable": "{count, plural, other {Cmdr 无法查看以下文件夹的内容，因此结果中没有其中的文件：}}",
-  "search.coverage.unreadableWhy": "要么是 Cmdr 还没有的权限，要么是它有意跳过的快照文件夹。",
-  "search.coverage.stillCovering": "{count, plural, other {另一次搜索正在查看以下文件夹，其中的文件稍后就会出现：}}",
-  "@search.coverage.walk.cancelled": {
-    "sourceHash": "ea9caa1"
-  },
-  "@search.coverage.walk.interrupted": {
-    "sourceHash": "4c6a0a4"
-  },
-  "@search.coverage.unreadable": {
-    "sourceHash": "32dadf5"
-  },
-  "@search.coverage.unreadableWhy": {
-    "sourceHash": "373e661"
-  },
-  "@search.coverage.stillCovering": {
-    "sourceHash": "acd21dc"
   },
   "search.runTitle": "搜索，包括尚未建立索引的文件夹",
   "@search.runTitle": {

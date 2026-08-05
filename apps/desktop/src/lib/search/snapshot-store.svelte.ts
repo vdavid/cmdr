@@ -70,6 +70,12 @@ export interface SearchSnapshot {
 /** Internal map entry: snapshot plus the live reference count. */
 interface StoreEntry extends SearchSnapshot {
   refCount: number
+  /**
+   * The label before the cap annotation, kept so a snapshot that GROWS past the cap
+   * later (a walk still filling it, `walk-handoff.svelte.ts`) can be relabelled from
+   * the same base instead of annotating an already-annotated string.
+   */
+  baseLabel: string
 }
 
 // eslint-disable-next-line svelte/prefer-svelte-reactivity -- not reactive state; consumers read imperatively at render time. Snapshots are immutable once stored (refCount aside), so there's nothing to subscribe to. See module header.
@@ -115,26 +121,61 @@ export function getOrCreate(id: string, snapshot: SearchSnapshot): SearchSnapsho
   if (existing) {
     return existing
   }
-  const total = snapshot.totalCount
   const capped =
     snapshot.entries.length > SNAPSHOT_ENTRIES_CAP ? snapshot.entries.slice(0, SNAPSHOT_ENTRIES_CAP) : snapshot.entries
-  const label =
-    snapshot.entries.length > SNAPSHOT_ENTRIES_CAP
-      ? tString('search.snapshot.cappedLabel', {
-          label: snapshot.label,
-          capText: String(SNAPSHOT_ENTRIES_CAP),
-          totalText: String(total),
-        })
-      : snapshot.label
   const entry: StoreEntry = {
     ...snapshot,
     id,
     entries: capped,
-    label,
+    label: labelFor(snapshot.label, capped.length, snapshot.totalCount),
+    baseLabel: snapshot.label,
     refCount: 0,
   }
   store.set(id, entry)
   return entry
+}
+
+/**
+ * The label a snapshot wears, annotated once the CAP is what's holding rows back.
+ *
+ * ❌ Not "whenever `shown < total`": a run capped backend-side hands over 1,000 rows
+ * against a total of 5,000 and has always rendered its plain label, with the
+ * shown-vs-total gap carrying that signal instead (see the module header).
+ */
+function labelFor(baseLabel: string, shown: number, total: number): string {
+  if (shown < SNAPSHOT_ENTRIES_CAP || shown >= total) return baseLabel
+  return tString('search.snapshot.cappedLabel', {
+    label: baseLabel,
+    capText: String(shown),
+    totalText: String(total),
+  })
+}
+
+/**
+ * Appends rows a still-running walk found to a snapshot already open in a pane, and
+ * reports whether that snapshot is still there.
+ *
+ * `false` means its last pane went away and the caller should stop feeding it (and
+ * stop the walk behind it: nobody is waiting on those rows any more).
+ *
+ * Rows stop at [`SNAPSHOT_ENTRIES_CAP`]; `totalCount` doesn't, so the label picks up
+ * its "first N of M" the moment the two diverge. The mutation tick is bumped on every
+ * append that lands, because snapshots aren't `$state` and `SearchResultsView` reads
+ * that tick to re-derive (see the module header).
+ */
+export function appendSnapshotEntries(id: string, entries: SearchResultEntry[], totalCount: number): boolean {
+  const stored = store.get(id)
+  if (!stored) return false
+  const room = SNAPSHOT_ENTRIES_CAP - stored.entries.length
+  if (room > 0 && entries.length > 0) {
+    // A fresh array rather than a push: reactive consumers derive off `entries`, and
+    // an in-place mutation of the same reference is exactly what they can't see.
+    stored.entries = [...stored.entries, ...entries.slice(0, room)]
+  }
+  stored.totalCount = Math.max(stored.totalCount, totalCount)
+  stored.label = labelFor(stored.baseLabel, stored.entries.length, stored.totalCount)
+  mutationTick += 1
+  return true
 }
 
 /** Returns the snapshot for `id`, or `undefined` if not stored / already evicted. */

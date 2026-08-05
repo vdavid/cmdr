@@ -326,3 +326,85 @@ describe('auto-apply never walks (Decision 7)', () => {
     expect(h.cancelled).toEqual([])
   })
 })
+
+describe('adopting a run that outlived the last dialog', () => {
+  it('reports nothing to adopt when the source has no run to hand over', () => {
+    const h = makeStreamRunner()
+    expect(h.runner.resumeLive()).toBe(false)
+    expect(h.runner.live).toBeNull()
+  })
+
+  it('picks the run up where it was, rows included', () => {
+    // Search's "Open in pane" leaves a walk feeding that pane. Reopening the dialog
+    // has to show THAT search: starting a fresh one would supersede it, and the pane
+    // would quietly stop growing.
+    let resumedCallbacks: QueryStreamCallbacks | null = null
+    let stops = 0
+    const h = makeStreamRunner({
+      resume: (callbacks) => {
+        resumedCallbacks = callbacks
+        return {
+          runId: 'handed-over',
+          view: {
+            phase: 'walking',
+            matchCount: 12,
+            dirsFound: 400,
+            currentPath: '/w/deep',
+            capped: false,
+            running: true,
+            incomplete: false,
+          },
+          missedEntries: entriesNamed('found-while-closed.txt'),
+          stop: () => {
+            stops += 1
+          },
+        }
+      },
+    })
+
+    expect(h.runner.resumeLive()).toBe(true)
+    expect(h.runner.live?.running).toBe(true)
+    expect(h.runner.live?.dirsFound).toBe(400)
+    // The count and the list have to tell the same story: without the missed rows
+    // the dialog would claim 12 matches over an empty list.
+    expect(h.config.state.getResults().map((e) => e.name)).toEqual(['found-while-closed.txt'])
+    expect(h.config.state.getTotalCount()).toBe(12)
+    expect(h.config.state.getIsSearching()).toBe(true)
+    expect(h.runner.hasSearched).toBe(true)
+
+    // And it's a real adoption, not a copy: later batches land, and Escape can stop it.
+    resumedCallbacks!.onProgress(progress({ entries: entriesNamed('later.txt'), matchCount: 13 }))
+    expect(h.config.state.getResults().map((e) => e.name)).toEqual(['found-while-closed.txt', 'later.txt'])
+    expect(h.runner.cancelLive()).toBe(true)
+    expect(h.cancelled).toEqual(['handed-over'])
+
+    h.runner.dispose()
+    expect(stops).toBe(1)
+  })
+
+  it('drops the adopted run when the user asks a new question', async () => {
+    const h = makeStreamRunner({
+      resume: (callbacks) => ({
+        runId: 'handed-over',
+        view: {
+          phase: 'walking',
+          matchCount: 1,
+          dirsFound: 1,
+          currentPath: null,
+          capped: false,
+          running: true,
+          incomplete: false,
+        },
+        missedEntries: [],
+        stop: () => {
+          void callbacks
+        },
+      }),
+    })
+    h.runner.resumeLive()
+    const fresh = await startRun(h)
+    expect(h.started[0].runId).not.toBe('handed-over')
+    fresh.onProgress(progress({ entries: entriesNamed('new.txt'), matchCount: 1 }))
+    expect(h.config.state.getResults().map((e) => e.name)).toEqual(['new.txt'])
+  })
+})

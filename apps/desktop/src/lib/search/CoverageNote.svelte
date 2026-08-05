@@ -67,6 +67,13 @@
         {#if walkMessage}
             <p class="message">{walkMessage}</p>
         {/if}
+        {#if note.live?.abandonedGround}
+            <!-- The third way a run comes back short, and the quiet one: the walk
+                 reached the end of its frontier having given up on folders along
+                 the way. Its own line, because it's true alongside a cancel or a
+                 disconnect rather than instead of one. -->
+            <p class="message">{tString('search.coverage.walk.abandoned')}</p>
+        {/if}
         {#if note.live && note.live.unreadable.length > 0}
             <!-- ONE sentence for two causes, because the wire carries one list and no
                  way to tell them apart: a folder Cmdr was refused, and a snapshot tree

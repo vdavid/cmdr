@@ -296,7 +296,18 @@
         // which is MORE correct than showing rows from the old folder; Search re-hits the
         // index). AI mode never auto-runs (cloud cost): `hasSearched` was already seeded from
         // the prior run, so its persisted results render as-is without re-calling translate.
-        if (config.state.getLastRunQuery() !== null && config.state.getMode() !== 'ai' && hasRunnableQuery(config.state)) {
+        //
+        // A run the consumer kept alive across the last close wins over both: Search's
+        // "Open in pane" leaves a walk feeding that pane, and re-running would SUPERSEDE
+        // it — the pane would stop growing with nothing on screen saying why. So adopt
+        // first, and only re-derive when there was nothing to adopt.
+        const resumed = runner.resumeLive()
+        if (
+            !resumed &&
+            config.state.getLastRunQuery() !== null &&
+            config.state.getMode() !== 'ai' &&
+            hasRunnableQuery(config.state)
+        ) {
             config.state.setRunOnMount(true)
         }
 

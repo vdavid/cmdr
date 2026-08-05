@@ -121,6 +121,7 @@ describe('the live-search event family', () => {
         unreadable: [],
         stillCovering: [],
         unresolvedScopes: [],
+        abandonedGround: false,
         capped: false,
         targetVolumeId: 'root',
       },

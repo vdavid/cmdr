@@ -238,6 +238,54 @@
   "@queryUi.results.noMatchHeading": {
     "sourceHash": "15383e2"
   },
+  "queryUi.results.live.resolvingCoverage": "Tar reda på vad som redan är indexerat...",
+  "@queryUi.results.live.resolvingCoverage": {
+    "sourceHash": "07b501d"
+  },
+  "queryUi.results.live.readingIndex": "Läser det som redan är indexerat...",
+  "@queryUi.results.live.readingIndex": {
+    "sourceHash": "5a048c9"
+  },
+  "queryUi.results.live.walking": "Går igenom mappar som inte är indexerade än...",
+  "@queryUi.results.live.walking": {
+    "sourceHash": "b2dbe67"
+  },
+  "queryUi.results.live.matchesSoFar": "{countText} {count, plural, one {träff} other {träffar}} hittills",
+  "@queryUi.results.live.matchesSoFar": {
+    "sourceHash": "5c09eb4"
+  },
+  "queryUi.results.live.foldersScanned": "{countText} {count, plural, one {mapp} other {mappar}} genomgångna",
+  "@queryUi.results.live.foldersScanned": {
+    "sourceHash": "5a3247d"
+  },
+  "queryUi.results.live.incomplete": "{shownText} av {totalText} resultat. Cmdr hann inte klart.",
+  "@queryUi.results.live.incomplete": {
+    "sourceHash": "7dccf6e"
+  },
+  "queryUi.results.live.incompleteEmpty": "Inget hittades innan sökningen stoppades. Cmdr hann inte klart.",
+  "@queryUi.results.live.incompleteEmpty": {
+    "sourceHash": "bfa15df"
+  },
+  "queryUi.results.live.capped": "Visar de första {shownText} av {totalText} träffarna.",
+  "@queryUi.results.live.capped": {
+    "sourceHash": "7c0475d"
+  },
+  "queryUi.results.live.stop": "Stoppa",
+  "@queryUi.results.live.stop": {
+    "sourceHash": "cae7d57"
+  },
+  "queryUi.results.live.stopTooltip": "Stoppa sökningen. Allt som redan hittats blir kvar.",
+  "@queryUi.results.live.stopTooltip": {
+    "sourceHash": "e72f5d7"
+  },
+  "queryUi.results.live.scanningAria": "Just nu i {path}",
+  "@queryUi.results.live.scanningAria": {
+    "sourceHash": "0071028"
+  },
+  "queryUi.results.countOnly.soFar": "{count, plural, one {Den här sökningen har hittat <total>{countText}</total> resultat hittills} other {Den här sökningen har hittat <total>{countText}</total> resultat hittills}}",
+  "@queryUi.results.countOnly.soFar": {
+    "sourceHash": "dbdb208"
+  },
   "queryUi.pathPills.hiddenAria": "Dolda sökvägssegment: {segments}",
   "@queryUi.pathPills.hiddenAria": {
     "sourceHash": "f62e273"
@@ -624,53 +672,5 @@
   "queryUi.scope.currentFolder": "Aktuell mapp",
   "@queryUi.scope.currentFolder": {
     "sourceHash": "1a5db52"
-  },
-  "queryUi.results.live.resolvingCoverage": "Tar reda på vad som redan är indexerat...",
-  "queryUi.results.live.readingIndex": "Läser det som redan är indexerat...",
-  "queryUi.results.live.walking": "Går igenom mappar som inte är indexerade än...",
-  "queryUi.results.live.matchesSoFar": "{countText} {count, plural, one {träff} other {träffar}} hittills",
-  "queryUi.results.live.foldersScanned": "{countText} {count, plural, one {mapp} other {mappar}} genomgångna",
-  "queryUi.results.live.incomplete": "{shownText} av {totalText} resultat. Cmdr hann inte klart.",
-  "queryUi.results.live.capped": "Visar de första {shownText} av {totalText} träffarna.",
-  "queryUi.results.live.stop": "Stoppa",
-  "queryUi.results.live.stopTooltip": "Stoppa sökningen. Allt som redan hittats blir kvar.",
-  "queryUi.results.live.scanningAria": "Just nu i {path}",
-  "queryUi.results.countOnly.soFar": "{count, plural, one {Den här sökningen har hittat <total>{countText}</total> resultat hittills} other {Den här sökningen har hittat <total>{countText}</total> resultat hittills}}",
-  "@queryUi.results.live.resolvingCoverage": {
-    "sourceHash": "07b501d"
-  },
-  "@queryUi.results.live.readingIndex": {
-    "sourceHash": "5a048c9"
-  },
-  "@queryUi.results.live.walking": {
-    "sourceHash": "b2dbe67"
-  },
-  "@queryUi.results.live.matchesSoFar": {
-    "sourceHash": "5c09eb4"
-  },
-  "@queryUi.results.live.foldersScanned": {
-    "sourceHash": "5a3247d"
-  },
-  "@queryUi.results.live.incomplete": {
-    "sourceHash": "7dccf6e"
-  },
-  "@queryUi.results.live.capped": {
-    "sourceHash": "7c0475d"
-  },
-  "@queryUi.results.live.stop": {
-    "sourceHash": "cae7d57"
-  },
-  "@queryUi.results.live.stopTooltip": {
-    "sourceHash": "e72f5d7"
-  },
-  "@queryUi.results.live.scanningAria": {
-    "sourceHash": "0071028"
-  },
-  "@queryUi.results.countOnly.soFar": {
-    "sourceHash": "dbdb208"
-  },
-  "queryUi.results.live.incompleteEmpty": "Inget hittades innan sökningen stoppades. Cmdr hann inte klart.",
-  "@queryUi.results.live.incompleteEmpty": {
-    "sourceHash": "bfa15df"
   }
 }

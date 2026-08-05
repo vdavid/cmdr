@@ -663,6 +663,9 @@
                 scopePresets={getFocusedPaneSearchScope()}
                 searchVolume={getFocusedPaneSearchTargetVolume()}
                 onShowAllInMainWindow={handleOpenSearchInPane}
+                onReopen={() => {
+                    showSearchDialog = true
+                }}
             />
         {/if}
 

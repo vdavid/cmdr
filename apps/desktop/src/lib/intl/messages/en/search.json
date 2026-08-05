@@ -118,6 +118,61 @@
   "@search.imageResults.similarEmpty": {
     "description": "Shown in the \"similar images\" view when this drive has no images close enough to the chosen one (for example the chosen image isn't indexed yet)."
   },
+  "search.walkHandoff.running": "Still searching for {label}",
+  "@search.walkHandoff.running": {
+    "description": "Headline of the toast shown in the main window when a search kept running after the user sent its results to a pane. A spinner sits next to it. {label} is the short name of the search (the query text, or the AI-generated title).",
+    "placeholders": {
+      "label": "the search's short name, e.g. \"*.pdf\" or \"tax paperwork\""
+    }
+  },
+  "search.walkHandoff.counts": "{matchCount, plural, one {# match} other {# matches}} so far, {folderCount, plural, one {# folder} other {# folders}} scanned",
+  "@search.walkHandoff.counts": {
+    "description": "Second line of the still-searching toast: how many files matched and how many folders Cmdr has been through. No percentage or estimate, because the total is unknowable. Use matchText and folderText for the digits if your language needs them grouped.",
+    "placeholders": {
+      "matchCount": "number of matches so far, for plural selection",
+      "matchText": "the same number, already formatted with thousands separators",
+      "folderCount": "number of folders scanned, for plural selection",
+      "folderText": "the same number, already formatted with thousands separators"
+    }
+  },
+  "search.walkHandoff.reopen": "Reopen search",
+  "@search.walkHandoff.reopen": {
+    "description": "Button in the still-searching toast that brings the search dialog back, with the running search still in it. Short: it renders as a small button.",
+    "placeholders": {}
+  },
+  "search.walkHandoff.stop": "Stop",
+  "@search.walkHandoff.stop": {
+    "description": "Button in the still-searching toast that stops the search. What it already found stays in the pane. Short: it renders as a small button.",
+    "placeholders": {}
+  },
+  "search.walkHandoff.hideTooltip": "Hide this. The search keeps running.",
+  "@search.walkHandoff.hideTooltip": {
+    "description": "Tooltip on the still-searching toast's close (X) button, making clear that dismissing the toast doesn't stop the search (the toast has its own Stop button for that).",
+    "placeholders": {}
+  },
+  "search.walkHandoff.finished": "{count, plural, one {Found # match} other {Found # matches}} for {label}.",
+  "@search.walkHandoff.finished": {
+    "description": "Toast that replaces the still-searching one when the search finishes having covered everything. It fades on its own. Use countText for the digits if your language needs them grouped.",
+    "placeholders": {
+      "count": "the final number of matches, for plural selection",
+      "countText": "the same number, already formatted with thousands separators",
+      "label": "the search's short name, e.g. \"*.pdf\" or \"tax paperwork\""
+    }
+  },
+  "search.walkHandoff.stoppedShort": "The results for {label} may be short: Cmdr didn''t get through everything.",
+  "@search.walkHandoff.stoppedShort": {
+    "description": "Toast that replaces the still-searching one when the search ended without covering everything (stopped, the drive went away, or folders it had to give up on). It fades on its own. Reopening the search shows the detail. Avoid the words 'error' and 'failed'.",
+    "placeholders": {
+      "label": "the search's short name, e.g. \"*.pdf\" or \"tax paperwork\""
+    }
+  },
+  "search.walkHandoff.superseded": "Cmdr stopped adding to the results for {label}, because your new search took over.",
+  "@search.walkHandoff.superseded": {
+    "description": "Toast shown when the user starts a new search while an older one was still filling a pane. The pane keeps what it has; only the additions stop. It fades on its own.",
+    "placeholders": {
+      "label": "the older search's short name, e.g. \"*.pdf\" or \"tax paperwork\""
+    }
+  },
   "search.coverage.uncovered.local": "Cmdr hasn''t indexed {drive} yet, so this search skipped:",
   "@search.coverage.uncovered.local": {
     "description": "Note above the search results when the search covered a local drive that has no index, so it had nothing to look through. A list of the skipped folder paths follows the colon, which is why the sentence ends open. Conversational; avoid the words 'error' and 'failed'.",
@@ -150,6 +205,11 @@
     "placeholders": {
       "drive": "the drive's display name (e.g. Backups), or the generic phrase from search.coverage.unnamedDrive when the drive isn't mounted any more"
     }
+  },
+  "search.coverage.walk.abandoned": "Some folders stopped answering, so Cmdr moved on without them and this list may be short. Searching again gives them another try.",
+  "@search.coverage.walk.abandoned": {
+    "description": "Note above the search results, shown when the live walk finished but gave up on one or more folders on the way (a folder that stopped responding, or a subtree it pruned after too many failed reads). It exists so a short list isn't read as an exhaustive one. Cmdr doesn't know which folders, so none are listed. Avoid the words 'error' and 'failed'.",
+    "placeholders": {}
   },
   "search.coverage.unreadable": "{count, plural, one {Cmdr couldn''t look inside this folder, so nothing from it is in the results:} other {Cmdr couldn''t look inside these folders, so nothing from them is in the results:}}",
   "@search.coverage.unreadable": {

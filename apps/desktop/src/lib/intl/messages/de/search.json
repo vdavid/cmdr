@@ -95,6 +95,38 @@
   "@search.imageResults.similarEmpty": {
     "sourceHash": "d3ef9f7"
   },
+  "search.walkHandoff.running": "Sucht weiter nach {label}",
+  "@search.walkHandoff.running": {
+    "sourceHash": "79a7339"
+  },
+  "search.walkHandoff.counts": "{matchCount, plural, one {# Treffer} other {# Treffer}} bisher, {folderCount, plural, one {# Ordner} other {# Ordner}} durchsucht",
+  "@search.walkHandoff.counts": {
+    "sourceHash": "8e68f3f"
+  },
+  "search.walkHandoff.reopen": "Suche wieder öffnen",
+  "@search.walkHandoff.reopen": {
+    "sourceHash": "6b49872"
+  },
+  "search.walkHandoff.stop": "Stopp",
+  "@search.walkHandoff.stop": {
+    "sourceHash": "cae7d57"
+  },
+  "search.walkHandoff.hideTooltip": "Ausblenden. Die Suche läuft weiter.",
+  "@search.walkHandoff.hideTooltip": {
+    "sourceHash": "7ee94f1"
+  },
+  "search.walkHandoff.finished": "{count, plural, one {# Treffer} other {# Treffer}} für {label} gefunden.",
+  "@search.walkHandoff.finished": {
+    "sourceHash": "0cbc210"
+  },
+  "search.walkHandoff.stoppedShort": "Die Ergebnisse für {label} sind womöglich unvollständig: Cmdr ist nicht überall durchgekommen.",
+  "@search.walkHandoff.stoppedShort": {
+    "sourceHash": "3a2a5dd"
+  },
+  "search.walkHandoff.superseded": "Cmdr fügt den Ergebnissen für {label} nichts mehr hinzu, weil deine neue Suche übernommen hat.",
+  "@search.walkHandoff.superseded": {
+    "sourceHash": "83aa5a2"
+  },
   "search.coverage.uncovered.local": "Cmdr hat {drive} noch nicht indiziert, deshalb hat diese Suche Folgendes übersprungen:",
   "@search.coverage.uncovered.local": {
     "sourceHash": "3b75a63"
@@ -106,6 +138,30 @@
   "search.coverage.unresolved": "{count, plural, one {Cmdrs Index enthält diesen Ordner noch nicht, deshalb hat die Suche ihn übersprungen:} other {Cmdrs Index enthält diese Ordner noch nicht, deshalb hat die Suche sie übersprungen:}}",
   "@search.coverage.unresolved": {
     "sourceHash": "8d9517e"
+  },
+  "search.coverage.walk.cancelled": "Du hast diese Suche gestoppt, deshalb siehst du, was Cmdr bis dahin gefunden hatte. Alles auf dem Weg Gelesene ist gespeichert, eine erneute Suche macht dort weiter.",
+  "@search.coverage.walk.cancelled": {
+    "sourceHash": "ea9caa1"
+  },
+  "search.coverage.walk.interrupted": "Diese Suche endete vorzeitig, auf {drive} kann es also mehr geben. Eine erneute Suche macht dort weiter, wo sie aufgehört hat.",
+  "@search.coverage.walk.interrupted": {
+    "sourceHash": "4c6a0a4"
+  },
+  "search.coverage.walk.abandoned": "Manche Ordner haben nicht mehr geantwortet, also ist Cmdr ohne sie weitergezogen und diese Liste ist womöglich unvollständig. Eine erneute Suche versucht es noch mal.",
+  "@search.coverage.walk.abandoned": {
+    "sourceHash": "4a6a2af"
+  },
+  "search.coverage.unreadable": "{count, plural, one {Cmdr konnte nicht in diesen Ordner hineinsehen, deshalb ist nichts daraus in den Ergebnissen:} other {Cmdr konnte nicht in diese Ordner hineinsehen, deshalb ist nichts daraus in den Ergebnissen:}}",
+  "@search.coverage.unreadable": {
+    "sourceHash": "32dadf5"
+  },
+  "search.coverage.unreadableWhy": "Das ist entweder eine Berechtigung, die Cmdr noch nicht hat, oder ein Snapshot-Ordner, den es absichtlich in Ruhe lässt.",
+  "@search.coverage.unreadableWhy": {
+    "sourceHash": "373e661"
+  },
+  "search.coverage.stillCovering": "{count, plural, one {Eine andere Suche geht diesen Ordner gerade durch, seine Dateien tauchen also gleich auf:} other {Eine andere Suche geht diese Ordner gerade durch, ihre Dateien tauchen also gleich auf:}}",
+  "@search.coverage.stillCovering": {
+    "sourceHash": "acd21dc"
   },
   "search.coverage.unnamedDrive": "dieses Laufwerk",
   "@search.coverage.unnamedDrive": {
@@ -138,26 +194,6 @@
   "search.snapshot.cappedLabel": "{label} (erste {capText} von {totalText})",
   "@search.snapshot.cappedLabel": {
     "sourceHash": "35523ac"
-  },
-  "search.coverage.walk.cancelled": "Du hast diese Suche gestoppt, deshalb siehst du, was Cmdr bis dahin gefunden hatte. Alles auf dem Weg Gelesene ist gespeichert, eine erneute Suche macht dort weiter.",
-  "search.coverage.walk.interrupted": "Diese Suche endete vorzeitig, auf {drive} kann es also mehr geben. Eine erneute Suche macht dort weiter, wo sie aufgehört hat.",
-  "search.coverage.unreadable": "{count, plural, one {Cmdr konnte nicht in diesen Ordner hineinsehen, deshalb ist nichts daraus in den Ergebnissen:} other {Cmdr konnte nicht in diese Ordner hineinsehen, deshalb ist nichts daraus in den Ergebnissen:}}",
-  "search.coverage.unreadableWhy": "Das ist entweder eine Berechtigung, die Cmdr noch nicht hat, oder ein Snapshot-Ordner, den es absichtlich in Ruhe lässt.",
-  "search.coverage.stillCovering": "{count, plural, one {Eine andere Suche geht diesen Ordner gerade durch, seine Dateien tauchen also gleich auf:} other {Eine andere Suche geht diese Ordner gerade durch, ihre Dateien tauchen also gleich auf:}}",
-  "@search.coverage.walk.cancelled": {
-    "sourceHash": "ea9caa1"
-  },
-  "@search.coverage.walk.interrupted": {
-    "sourceHash": "4c6a0a4"
-  },
-  "@search.coverage.unreadable": {
-    "sourceHash": "32dadf5"
-  },
-  "@search.coverage.unreadableWhy": {
-    "sourceHash": "373e661"
-  },
-  "@search.coverage.stillCovering": {
-    "sourceHash": "acd21dc"
   },
   "search.runTitle": "Suchen, auch in Ordnern ohne Index",
   "@search.runTitle": {

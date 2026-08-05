@@ -71,6 +71,15 @@ export interface QueryRunner {
    * to stop, which is what makes Escape a two-step (first stops, then closes).
    */
   cancelLive: () => boolean
+  /**
+   * Adopts a run the consumer kept alive across this dialog's last close, and reports
+   * whether there was one.
+   *
+   * Called once on mount, BEFORE the reopen-with-results decision: a fresh run would
+   * supersede the live one and strand whatever it was still feeding, so adopting has
+   * to win.
+   */
+  resumeLive: () => boolean
   /** Debounced auto-apply, behind the AI / setting / IME gates. */
   scheduleSearch: () => void
   executeQuery: (options?: RunOptions) => Promise<void>
@@ -241,6 +250,48 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
     live = null
     config.state.setIsSearching(false)
     toastRunFailure(message)
+  }
+
+  /**
+   * Picks up a run that outlived the last dialog, rows and all.
+   *
+   * The consumer has been listening the whole time (Search's walk keeps feeding the
+   * pane it was opened into), so this only adds this dialog as a second reader: the
+   * run id, where it had got to, and the rows found while nobody here was looking.
+   * Without those rows the list and the count would disagree by however many arrived
+   * in between, which is the silent kind of wrong.
+   */
+  function resumeLiveRun(config: QueryDialogConfig<E>, source: QueryStreamSource): boolean {
+    // Filled the moment `resume` returns, and read only from callbacks that fire
+    // later — the same generation guard a started run uses, against the same field.
+    let adoptedRunId: string | null = null
+    const mine = (): boolean => adoptedRunId !== null && liveRunId === adoptedRunId
+
+    const resumed = source.resume?.({
+      onProgress: (update) => {
+        if (mine()) applyLiveProgress(config, update)
+      },
+      onEnd: (end) => {
+        if (mine()) finishLiveRun(config, source, end)
+      },
+      onFailed: (message) => {
+        if (mine()) failLiveRun(config, message)
+      },
+    })
+    if (!resumed) return false
+
+    dropLiveSubscription()
+    adoptedRunId = resumed.runId
+    liveRunId = resumed.runId
+    stopLiveUpdates = resumed.stop
+    live = resumed.view
+    hasSearched = true
+    config.state.setTotalCount(resumed.view.matchCount)
+    config.state.setIsSearching(resumed.view.running)
+    if (resumed.missedEntries.length > 0) {
+      setResultsHoldingCursor(config.state, [...config.state.getResults(), ...resumed.missedEntries])
+    }
+    return true
   }
 
   /**
@@ -516,6 +567,11 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
       // The end state is the run's own word (the terminal update relabels it), so
       // nothing flips here. What this promises the caller is only "there was one".
       return true
+    },
+    resumeLive: () => {
+      const config = deps.getConfig()
+      if (!config.streamingSource) return false
+      return resumeLiveRun(config, config.streamingSource)
     },
     scheduleSearch,
     executeQuery,

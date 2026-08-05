@@ -95,6 +95,38 @@
   "@search.imageResults.similarEmpty": {
     "sourceHash": "d3ef9f7"
   },
+  "search.walkHandoff.running": "Ainda buscando {label}",
+  "@search.walkHandoff.running": {
+    "sourceHash": "79a7339"
+  },
+  "search.walkHandoff.counts": "{matchCount, plural, one {# resultado} many {# resultados} other {# resultados}} até agora, {folderCount, plural, one {# pasta} many {# pastas} other {# pastas}} percorridas",
+  "@search.walkHandoff.counts": {
+    "sourceHash": "8e68f3f"
+  },
+  "search.walkHandoff.reopen": "Reabrir a busca",
+  "@search.walkHandoff.reopen": {
+    "sourceHash": "6b49872"
+  },
+  "search.walkHandoff.stop": "Parar",
+  "@search.walkHandoff.stop": {
+    "sourceHash": "cae7d57"
+  },
+  "search.walkHandoff.hideTooltip": "Esconder isto. A busca continua.",
+  "@search.walkHandoff.hideTooltip": {
+    "sourceHash": "7ee94f1"
+  },
+  "search.walkHandoff.finished": "{count, plural, one {# resultado encontrado} many {# resultados encontrados} other {# resultados encontrados}} para {label}.",
+  "@search.walkHandoff.finished": {
+    "sourceHash": "0cbc210"
+  },
+  "search.walkHandoff.stoppedShort": "Os resultados de {label} podem estar curtos: o Cmdr não percorreu tudo.",
+  "@search.walkHandoff.stoppedShort": {
+    "sourceHash": "3a2a5dd"
+  },
+  "search.walkHandoff.superseded": "O Cmdr parou de adicionar aos resultados de {label}, porque sua nova busca assumiu.",
+  "@search.walkHandoff.superseded": {
+    "sourceHash": "83aa5a2"
+  },
   "search.coverage.uncovered.local": "O Cmdr ainda não indexou {drive}, então esta busca ignorou:",
   "@search.coverage.uncovered.local": {
     "sourceHash": "3b75a63"
@@ -106,6 +138,30 @@
   "search.coverage.unresolved": "{count, plural, one {O índice do Cmdr ainda não cobre esta pasta, então a busca a ignorou:} many {O índice do Cmdr ainda não cobre estas pastas, então a busca as ignorou:} other {O índice do Cmdr ainda não cobre estas pastas, então a busca as ignorou:}}",
   "@search.coverage.unresolved": {
     "sourceHash": "8d9517e"
+  },
+  "search.coverage.walk.cancelled": "Você parou esta busca, então vê o que o Cmdr tinha encontrado até ali. Tudo o que ele leu pelo caminho fica guardado, e uma nova busca continua dali.",
+  "@search.coverage.walk.cancelled": {
+    "sourceHash": "ea9caa1"
+  },
+  "search.coverage.walk.interrupted": "Esta busca parou antes da hora, então pode haver mais em {drive}. Buscar de novo continua de onde parou.",
+  "@search.coverage.walk.interrupted": {
+    "sourceHash": "4c6a0a4"
+  },
+  "search.coverage.walk.abandoned": "Algumas pastas pararam de responder, então o Cmdr seguiu sem elas e esta lista pode estar curta. Buscar de novo dá outra chance a elas.",
+  "@search.coverage.walk.abandoned": {
+    "sourceHash": "4a6a2af"
+  },
+  "search.coverage.unreadable": "{count, plural, one {O Cmdr não conseguiu olhar dentro desta pasta, então nada dela está nos resultados:} many {O Cmdr não conseguiu olhar dentro destas pastas, então nada delas está nos resultados:} other {O Cmdr não conseguiu olhar dentro destas pastas, então nada delas está nos resultados:}}",
+  "@search.coverage.unreadable": {
+    "sourceHash": "32dadf5"
+  },
+  "search.coverage.unreadableWhy": "É uma permissão que o Cmdr ainda não tem, ou uma pasta de snapshots que ele deixa de lado de propósito.",
+  "@search.coverage.unreadableWhy": {
+    "sourceHash": "373e661"
+  },
+  "search.coverage.stillCovering": "{count, plural, one {Outra busca está percorrendo esta pasta agora, então os arquivos dela aparecem já já:} many {Outra busca está percorrendo estas pastas agora, então os arquivos delas aparecem já já:} other {Outra busca está percorrendo estas pastas agora, então os arquivos delas aparecem já já:}}",
+  "@search.coverage.stillCovering": {
+    "sourceHash": "acd21dc"
   },
   "search.coverage.unnamedDrive": "este disco",
   "@search.coverage.unnamedDrive": {
@@ -138,26 +194,6 @@
   "search.snapshot.cappedLabel": "{label} (primeiros {capText} de {totalText})",
   "@search.snapshot.cappedLabel": {
     "sourceHash": "35523ac"
-  },
-  "search.coverage.walk.cancelled": "Você parou esta busca, então vê o que o Cmdr tinha encontrado até ali. Tudo o que ele leu pelo caminho fica guardado, e uma nova busca continua dali.",
-  "search.coverage.walk.interrupted": "Esta busca parou antes da hora, então pode haver mais em {drive}. Buscar de novo continua de onde parou.",
-  "search.coverage.unreadable": "{count, plural, one {O Cmdr não conseguiu olhar dentro desta pasta, então nada dela está nos resultados:} many {O Cmdr não conseguiu olhar dentro destas pastas, então nada delas está nos resultados:} other {O Cmdr não conseguiu olhar dentro destas pastas, então nada delas está nos resultados:}}",
-  "search.coverage.unreadableWhy": "É uma permissão que o Cmdr ainda não tem, ou uma pasta de snapshots que ele deixa de lado de propósito.",
-  "search.coverage.stillCovering": "{count, plural, one {Outra busca está percorrendo esta pasta agora, então os arquivos dela aparecem já já:} many {Outra busca está percorrendo estas pastas agora, então os arquivos delas aparecem já já:} other {Outra busca está percorrendo estas pastas agora, então os arquivos delas aparecem já já:}}",
-  "@search.coverage.walk.cancelled": {
-    "sourceHash": "ea9caa1"
-  },
-  "@search.coverage.walk.interrupted": {
-    "sourceHash": "4c6a0a4"
-  },
-  "@search.coverage.unreadable": {
-    "sourceHash": "32dadf5"
-  },
-  "@search.coverage.unreadableWhy": {
-    "sourceHash": "373e661"
-  },
-  "@search.coverage.stillCovering": {
-    "sourceHash": "acd21dc"
   },
   "search.runTitle": "Buscar, incluindo pastas que ainda não estão indexadas",
   "@search.runTitle": {

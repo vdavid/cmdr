@@ -95,6 +95,38 @@
   "@search.imageResults.similarEmpty": {
     "sourceHash": "d3ef9f7"
   },
+  "search.walkHandoff.running": "Zoekt nog naar {label}",
+  "@search.walkHandoff.running": {
+    "sourceHash": "79a7339"
+  },
+  "search.walkHandoff.counts": "tot nu toe {matchCount, plural, one {# resultaat} other {# resultaten}}, {folderCount, plural, one {# map} other {# mappen}} doorzocht",
+  "@search.walkHandoff.counts": {
+    "sourceHash": "8e68f3f"
+  },
+  "search.walkHandoff.reopen": "Zoekopdracht opnieuw openen",
+  "@search.walkHandoff.reopen": {
+    "sourceHash": "6b49872"
+  },
+  "search.walkHandoff.stop": "Stoppen",
+  "@search.walkHandoff.stop": {
+    "sourceHash": "cae7d57"
+  },
+  "search.walkHandoff.hideTooltip": "Dit verbergen. De zoekopdracht loopt door.",
+  "@search.walkHandoff.hideTooltip": {
+    "sourceHash": "7ee94f1"
+  },
+  "search.walkHandoff.finished": "{count, plural, one {# resultaat} other {# resultaten}} gevonden voor {label}.",
+  "@search.walkHandoff.finished": {
+    "sourceHash": "0cbc210"
+  },
+  "search.walkHandoff.stoppedShort": "De resultaten voor {label} zijn mogelijk niet compleet: Cmdr kwam niet overal doorheen.",
+  "@search.walkHandoff.stoppedShort": {
+    "sourceHash": "3a2a5dd"
+  },
+  "search.walkHandoff.superseded": "Cmdr voegt niets meer toe aan de resultaten voor {label}, want je nieuwe zoekopdracht nam het over.",
+  "@search.walkHandoff.superseded": {
+    "sourceHash": "83aa5a2"
+  },
   "search.coverage.uncovered.local": "Cmdr heeft {drive} nog niet geïndexeerd, dus deze zoekopdracht sloeg dit over:",
   "@search.coverage.uncovered.local": {
     "sourceHash": "3b75a63"
@@ -106,6 +138,30 @@
   "search.coverage.unresolved": "{count, plural, one {De index van Cmdr bevat deze map nog niet, dus de zoekopdracht sloeg hem over:} other {De index van Cmdr bevat deze mappen nog niet, dus de zoekopdracht sloeg ze over:}}",
   "@search.coverage.unresolved": {
     "sourceHash": "8d9517e"
+  },
+  "search.coverage.walk.cancelled": "Je hebt deze zoekopdracht gestopt, dus je ziet wat Cmdr tot dan toe had gevonden. Alles wat het onderweg heeft gelezen is bewaard, dus opnieuw zoeken pakt daar de draad op.",
+  "@search.coverage.walk.cancelled": {
+    "sourceHash": "ea9caa1"
+  },
+  "search.coverage.walk.interrupted": "Deze zoekopdracht stopte voortijdig, dus er kan meer op {drive} staan. Opnieuw zoeken gaat verder waar het gebleven was.",
+  "@search.coverage.walk.interrupted": {
+    "sourceHash": "4c6a0a4"
+  },
+  "search.coverage.walk.abandoned": "Sommige mappen gaven geen antwoord meer, dus ging Cmdr zonder ze verder en is deze lijst mogelijk niet compleet. Opnieuw zoeken geeft ze nog een kans.",
+  "@search.coverage.walk.abandoned": {
+    "sourceHash": "4a6a2af"
+  },
+  "search.coverage.unreadable": "{count, plural, one {Cmdr kon niet in deze map kijken, dus er staat niets uit deze map in de resultaten:} other {Cmdr kon niet in deze mappen kijken, dus er staat niets uit deze mappen in de resultaten:}}",
+  "@search.coverage.unreadable": {
+    "sourceHash": "32dadf5"
+  },
+  "search.coverage.unreadableWhy": "Dat is een rechtenkwestie die Cmdr nog niet heeft, of een snapshotmap die het bewust met rust laat.",
+  "@search.coverage.unreadableWhy": {
+    "sourceHash": "373e661"
+  },
+  "search.coverage.stillCovering": "{count, plural, one {Een andere zoekopdracht loopt deze map nu door, dus de bestanden verschijnen zo:} other {Een andere zoekopdracht loopt deze mappen nu door, dus de bestanden verschijnen zo:}}",
+  "@search.coverage.stillCovering": {
+    "sourceHash": "acd21dc"
   },
   "search.coverage.unnamedDrive": "deze schijf",
   "@search.coverage.unnamedDrive": {
@@ -138,26 +194,6 @@
   "search.snapshot.cappedLabel": "{label} (eerste {capText} van {totalText})",
   "@search.snapshot.cappedLabel": {
     "sourceHash": "35523ac"
-  },
-  "search.coverage.walk.cancelled": "Je hebt deze zoekopdracht gestopt, dus je ziet wat Cmdr tot dan toe had gevonden. Alles wat het onderweg heeft gelezen is bewaard, dus opnieuw zoeken pakt daar de draad op.",
-  "search.coverage.walk.interrupted": "Deze zoekopdracht stopte voortijdig, dus er kan meer op {drive} staan. Opnieuw zoeken gaat verder waar het gebleven was.",
-  "search.coverage.unreadable": "{count, plural, one {Cmdr kon niet in deze map kijken, dus er staat niets uit deze map in de resultaten:} other {Cmdr kon niet in deze mappen kijken, dus er staat niets uit deze mappen in de resultaten:}}",
-  "search.coverage.unreadableWhy": "Dat is een rechtenkwestie die Cmdr nog niet heeft, of een snapshotmap die het bewust met rust laat.",
-  "search.coverage.stillCovering": "{count, plural, one {Een andere zoekopdracht loopt deze map nu door, dus de bestanden verschijnen zo:} other {Een andere zoekopdracht loopt deze mappen nu door, dus de bestanden verschijnen zo:}}",
-  "@search.coverage.walk.cancelled": {
-    "sourceHash": "ea9caa1"
-  },
-  "@search.coverage.walk.interrupted": {
-    "sourceHash": "4c6a0a4"
-  },
-  "@search.coverage.unreadable": {
-    "sourceHash": "32dadf5"
-  },
-  "@search.coverage.unreadableWhy": {
-    "sourceHash": "373e661"
-  },
-  "@search.coverage.stillCovering": {
-    "sourceHash": "acd21dc"
   },
   "search.runTitle": "Zoeken, ook in mappen die nog niet geïndexeerd zijn",
   "@search.runTitle": {

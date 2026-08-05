@@ -239,6 +239,54 @@
   "@queryUi.results.noMatchHeading": {
     "sourceHash": "15383e2"
   },
+  "queryUi.results.live.resolvingCoverage": "Wird geprüft, was bereits indiziert ist …",
+  "@queryUi.results.live.resolvingCoverage": {
+    "sourceHash": "07b501d"
+  },
+  "queryUi.results.live.readingIndex": "Bereits Indiziertes wird gelesen …",
+  "@queryUi.results.live.readingIndex": {
+    "sourceHash": "5a048c9"
+  },
+  "queryUi.results.live.walking": "Ordner ohne Index werden durchsucht …",
+  "@queryUi.results.live.walking": {
+    "sourceHash": "b2dbe67"
+  },
+  "queryUi.results.live.matchesSoFar": "{countText} {count, plural, one {Treffer} other {Treffer}} bisher",
+  "@queryUi.results.live.matchesSoFar": {
+    "sourceHash": "5c09eb4"
+  },
+  "queryUi.results.live.foldersScanned": "{countText} {count, plural, one {Ordner} other {Ordner}} durchsucht",
+  "@queryUi.results.live.foldersScanned": {
+    "sourceHash": "5a3247d"
+  },
+  "queryUi.results.live.incomplete": "{shownText} von {totalText} Ergebnissen. Cmdr ist nicht fertig geworden.",
+  "@queryUi.results.live.incomplete": {
+    "sourceHash": "7dccf6e"
+  },
+  "queryUi.results.live.incompleteEmpty": "Nichts gefunden, bevor die Suche stoppte. Cmdr ist nicht fertig geworden.",
+  "@queryUi.results.live.incompleteEmpty": {
+    "sourceHash": "bfa15df"
+  },
+  "queryUi.results.live.capped": "Die ersten {shownText} von {totalText} Treffern werden gezeigt.",
+  "@queryUi.results.live.capped": {
+    "sourceHash": "7c0475d"
+  },
+  "queryUi.results.live.stop": "Stopp",
+  "@queryUi.results.live.stop": {
+    "sourceHash": "cae7d57"
+  },
+  "queryUi.results.live.stopTooltip": "Suche stoppen. Alles bisher Gefundene bleibt sichtbar.",
+  "@queryUi.results.live.stopTooltip": {
+    "sourceHash": "e72f5d7"
+  },
+  "queryUi.results.live.scanningAria": "Gerade in {path}",
+  "@queryUi.results.live.scanningAria": {
+    "sourceHash": "0071028"
+  },
+  "queryUi.results.countOnly.soFar": "{count, plural, one {Diese Suche hat bisher <total>{countText}</total> Ergebnis gefunden} other {Diese Suche hat bisher <total>{countText}</total> Ergebnisse gefunden}}",
+  "@queryUi.results.countOnly.soFar": {
+    "sourceHash": "dbdb208"
+  },
   "queryUi.pathPills.hiddenAria": "Verborgene Pfadsegmente: {segments}",
   "@queryUi.pathPills.hiddenAria": {
     "sourceHash": "f62e273"
@@ -623,53 +671,5 @@
   "queryUi.scope.currentFolder": "Aktueller Ordner",
   "@queryUi.scope.currentFolder": {
     "sourceHash": "1a5db52"
-  },
-  "queryUi.results.live.resolvingCoverage": "Wird geprüft, was bereits indiziert ist …",
-  "queryUi.results.live.readingIndex": "Bereits Indiziertes wird gelesen …",
-  "queryUi.results.live.walking": "Ordner ohne Index werden durchsucht …",
-  "queryUi.results.live.matchesSoFar": "{countText} {count, plural, one {Treffer} other {Treffer}} bisher",
-  "queryUi.results.live.foldersScanned": "{countText} {count, plural, one {Ordner} other {Ordner}} durchsucht",
-  "queryUi.results.live.incomplete": "{shownText} von {totalText} Ergebnissen. Cmdr ist nicht fertig geworden.",
-  "queryUi.results.live.capped": "Die ersten {shownText} von {totalText} Treffern werden gezeigt.",
-  "queryUi.results.live.stop": "Stopp",
-  "queryUi.results.live.stopTooltip": "Suche stoppen. Alles bisher Gefundene bleibt sichtbar.",
-  "queryUi.results.live.scanningAria": "Gerade in {path}",
-  "queryUi.results.countOnly.soFar": "{count, plural, one {Diese Suche hat bisher <total>{countText}</total> Ergebnis gefunden} other {Diese Suche hat bisher <total>{countText}</total> Ergebnisse gefunden}}",
-  "@queryUi.results.live.resolvingCoverage": {
-    "sourceHash": "07b501d"
-  },
-  "@queryUi.results.live.readingIndex": {
-    "sourceHash": "5a048c9"
-  },
-  "@queryUi.results.live.walking": {
-    "sourceHash": "b2dbe67"
-  },
-  "@queryUi.results.live.matchesSoFar": {
-    "sourceHash": "5c09eb4"
-  },
-  "@queryUi.results.live.foldersScanned": {
-    "sourceHash": "5a3247d"
-  },
-  "@queryUi.results.live.incomplete": {
-    "sourceHash": "7dccf6e"
-  },
-  "@queryUi.results.live.capped": {
-    "sourceHash": "7c0475d"
-  },
-  "@queryUi.results.live.stop": {
-    "sourceHash": "cae7d57"
-  },
-  "@queryUi.results.live.stopTooltip": {
-    "sourceHash": "e72f5d7"
-  },
-  "@queryUi.results.live.scanningAria": {
-    "sourceHash": "0071028"
-  },
-  "@queryUi.results.countOnly.soFar": {
-    "sourceHash": "dbdb208"
-  },
-  "queryUi.results.live.incompleteEmpty": "Nichts gefunden, bevor die Suche stoppte. Cmdr ist nicht fertig geworden.",
-  "@queryUi.results.live.incompleteEmpty": {
-    "sourceHash": "bfa15df"
   }
 }

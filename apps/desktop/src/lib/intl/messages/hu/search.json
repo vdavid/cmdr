@@ -95,6 +95,38 @@
   "@search.imageResults.similarEmpty": {
     "sourceHash": "d3ef9f7"
   },
+  "search.walkHandoff.running": "Még mindig keresi: {label}",
+  "@search.walkHandoff.running": {
+    "sourceHash": "79a7339"
+  },
+  "search.walkHandoff.counts": "eddig {matchCount, plural, one {# találat} other {# találat}}, {folderCount, plural, one {# mappa} other {# mappa}} átnézve",
+  "@search.walkHandoff.counts": {
+    "sourceHash": "8e68f3f"
+  },
+  "search.walkHandoff.reopen": "Keresés újranyitása",
+  "@search.walkHandoff.reopen": {
+    "sourceHash": "6b49872"
+  },
+  "search.walkHandoff.stop": "Leállítás",
+  "@search.walkHandoff.stop": {
+    "sourceHash": "cae7d57"
+  },
+  "search.walkHandoff.hideTooltip": "Elrejtés. A keresés tovább fut.",
+  "@search.walkHandoff.hideTooltip": {
+    "sourceHash": "7ee94f1"
+  },
+  "search.walkHandoff.finished": "{count, plural, one {# találat} other {# találat}} erre: {label}.",
+  "@search.walkHandoff.finished": {
+    "sourceHash": "0cbc210"
+  },
+  "search.walkHandoff.stoppedShort": "Lehet, hogy a(z) {label} találatai hiányosak: a Cmdr nem jutott át mindenen.",
+  "@search.walkHandoff.stoppedShort": {
+    "sourceHash": "3a2a5dd"
+  },
+  "search.walkHandoff.superseded": "A Cmdr már nem tesz hozzá a(z) {label} találataihoz, mert az új keresésed vette át a helyét.",
+  "@search.walkHandoff.superseded": {
+    "sourceHash": "83aa5a2"
+  },
   "search.coverage.uncovered.local": "A Cmdr még nem indexelte ezt: {drive}. Ezért a keresés kihagyta:",
   "@search.coverage.uncovered.local": {
     "sourceHash": "3b75a63"
@@ -106,6 +138,30 @@
   "search.coverage.unresolved": "{count, plural, one {A Cmdr indexe még nem fedi le ezt a mappát, ezért a keresés kihagyta:} other {A Cmdr indexe még nem fedi le ezeket a mappákat, ezért a keresés kihagyta őket:}}",
   "@search.coverage.unresolved": {
     "sourceHash": "8d9517e"
+  },
+  "search.coverage.walk.cancelled": "Leállítottad ezt a keresést, ezért azt látod, amit a Cmdr addig talált. Amit közben elolvasott, az megmarad, így egy újabb keresés onnan folytatja.",
+  "@search.coverage.walk.cancelled": {
+    "sourceHash": "ea9caa1"
+  },
+  "search.coverage.walk.interrupted": "Ez a keresés korábban véget ért, szóval lehet még több is itt: {drive}. Ha újra keresel, onnan folytatja, ahol abbahagyta.",
+  "@search.coverage.walk.interrupted": {
+    "sourceHash": "4c6a0a4"
+  },
+  "search.coverage.walk.abandoned": "Néhány mappa nem válaszolt tovább, így a Cmdr nélkülük ment tovább, és ez a lista talán hiányos. Ha újra keresel, kapnak még egy esélyt.",
+  "@search.coverage.walk.abandoned": {
+    "sourceHash": "4a6a2af"
+  },
+  "search.coverage.unreadable": "{count, plural, one {A Cmdr nem tudott belenézni ebbe a mappába, ezért semmi sincs belőle a találatok között:} other {A Cmdr nem tudott belenézni ezekbe a mappákba, ezért semmi sincs belőlük a találatok között:}}",
+  "@search.coverage.unreadable": {
+    "sourceHash": "32dadf5"
+  },
+  "search.coverage.unreadableWhy": "Ez vagy egy jogosultság, amivel a Cmdr még nem rendelkezik, vagy egy pillanatkép-mappa, amit szándékosan békén hagy.",
+  "@search.coverage.unreadableWhy": {
+    "sourceHash": "373e661"
+  },
+  "search.coverage.stillCovering": "{count, plural, one {Egy másik keresés épp most nézi át ezt a mappát, úgyhogy a fájljai mindjárt előkerülnek:} other {Egy másik keresés épp most nézi át ezeket a mappákat, úgyhogy a fájljaik mindjárt előkerülnek:}}",
+  "@search.coverage.stillCovering": {
+    "sourceHash": "acd21dc"
   },
   "search.coverage.unnamedDrive": "ez a meghajtó",
   "@search.coverage.unnamedDrive": {
@@ -138,26 +194,6 @@
   "search.snapshot.cappedLabel": "{label} (az első {capText}, összesen {totalText})",
   "@search.snapshot.cappedLabel": {
     "sourceHash": "35523ac"
-  },
-  "search.coverage.walk.cancelled": "Leállítottad ezt a keresést, ezért azt látod, amit a Cmdr addig talált. Amit közben elolvasott, az megmarad, így egy újabb keresés onnan folytatja.",
-  "search.coverage.walk.interrupted": "Ez a keresés korábban véget ért, szóval lehet még több is itt: {drive}. Ha újra keresel, onnan folytatja, ahol abbahagyta.",
-  "search.coverage.unreadable": "{count, plural, one {A Cmdr nem tudott belenézni ebbe a mappába, ezért semmi sincs belőle a találatok között:} other {A Cmdr nem tudott belenézni ezekbe a mappákba, ezért semmi sincs belőlük a találatok között:}}",
-  "search.coverage.unreadableWhy": "Ez vagy egy jogosultság, amivel a Cmdr még nem rendelkezik, vagy egy pillanatkép-mappa, amit szándékosan békén hagy.",
-  "search.coverage.stillCovering": "{count, plural, one {Egy másik keresés épp most nézi át ezt a mappát, úgyhogy a fájljai mindjárt előkerülnek:} other {Egy másik keresés épp most nézi át ezeket a mappákat, úgyhogy a fájljaik mindjárt előkerülnek:}}",
-  "@search.coverage.walk.cancelled": {
-    "sourceHash": "ea9caa1"
-  },
-  "@search.coverage.walk.interrupted": {
-    "sourceHash": "4c6a0a4"
-  },
-  "@search.coverage.unreadable": {
-    "sourceHash": "32dadf5"
-  },
-  "@search.coverage.unreadableWhy": {
-    "sourceHash": "373e661"
-  },
-  "@search.coverage.stillCovering": {
-    "sourceHash": "acd21dc"
   },
   "search.runTitle": "Keresés, a nem indexelt mappákban is",
   "@search.runTitle": {

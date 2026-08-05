@@ -69,6 +69,25 @@ export interface QueryStreamCallbacks {
   onFailed: (message: string) => void
 }
 
+/**
+ * A run still going from before this dialog mounted, handed back so the runner can
+ * pick it up where it was.
+ */
+export interface QueryStreamResumption {
+  /** The run to measure every later update against. */
+  runId: string
+  /** Where the run has got to, so the dialog reopens showing it rather than a finished list. */
+  view: LiveRunView
+  /**
+   * Rows the run found while nobody was listening, in arrival order. Appending them
+   * is what keeps the list and the count telling the same story; without it the
+   * dialog would say "1,200 matches" over 300 rows.
+   */
+  missedEntries: SearchResultEntry[]
+  /** Detaches, without stopping the work — the same promise `start`'s teardown makes. */
+  stop: () => void
+}
+
 /** The consumer-owned transport for a query that answers over time. */
 export interface QueryStreamSource {
   /**
@@ -84,6 +103,17 @@ export interface QueryStreamSource {
    * runner drops the id) rather than cancelling the work already in flight.
    */
   cancel: (runId: string) => void
+  /**
+   * A run the consumer deliberately kept alive after the last dialog closed, or
+   * `null` when there isn't one. Called once per runner, before the dialog decides
+   * to re-run anything: adopting beats re-running, because a fresh run would
+   * SUPERSEDE the live one and strand whatever it was still feeding.
+   *
+   * Synchronous by design — the decision gates the dialog's mount path, so it can't
+   * wait on a round trip. The consumer is already listening; this only adds a second
+   * reader.
+   */
+  resume?: (callbacks: QueryStreamCallbacks) => QueryStreamResumption | null
   /**
    * The order to leave a completed run's rows in. Called once, on completion, and only
    * for a run that walked; skipped once the user has moved the cursor, because
