@@ -638,6 +638,28 @@ fn a_stopped_run_stops_counting_as_well_as_showing() {
     assert_eq!(stream.dirs_found, 0);
 }
 
+#[test]
+fn a_run_that_cannot_run_says_so_unless_nobody_is_listening() {
+    // The refusal path is the one that tells someone WHY they got nothing — "add a
+    // filename pattern" for a query too broad to walk with. It has to reach a live
+    // run, and it has to stay quiet for a superseded one, whose id the frontend
+    // dropped when it asked the next question.
+    let q = query("report");
+    let live_sink = CollectorSearchEventSink::default();
+    let listening = run_for_test("failing");
+    ResultStream::new(&listening, &live_sink, &q).fail(SearchRunError::Query, "Query too broad.".to_string());
+    let errors = live_sink.errors.lock_ignore_poison();
+    assert_eq!(errors.len(), 1);
+    assert_eq!(errors[0].error, SearchRunError::Query);
+    assert_eq!(errors[0].message, "Query too broad.");
+
+    let gone_sink = CollectorSearchEventSink::default();
+    let superseded = run_for_test("failing-superseded");
+    superseded.superseded.store(true, Ordering::Relaxed);
+    ResultStream::new(&superseded, &gone_sink, &q).fail(SearchRunError::Query, "Query too broad.".to_string());
+    assert!(gone_sink.errors.lock_ignore_poison().is_empty());
+}
+
 // ── The wire ─────────────────────────────────────────────────────────
 
 #[test]
