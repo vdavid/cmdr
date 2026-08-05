@@ -438,7 +438,8 @@ project. Raise the window only when a gesture needs keyboard focus, never for a 
   confirmation; without the license it instead reads
   `Plugin 'Svelte' (dev.blachut.svelte.lang) requires plugin with id=com.intellij.modules.ultimate to be enabled`, and
   `cmdr-svelte.xml` is silently excluded along with it. The config directory is found through the install's own
-  `product-info.json` (`dataDirectoryName`), so an IDE upgrade moves it for free, and the files are only ever read. **An
+  `product-info.json` (`dataDirectoryName`), so an IDE upgrade moves it for free, and the files are only ever read. The
+  copy lands under `.intellijPlatform/`, which `.gitignore` covers, so a license key can't reach a commit. **An
   unlicensed tier 2 is how a `.svelte` regression once shipped**: the headless suite can't see the embedded-root
   duplication, so every `.svelte` change has to be confirmed here.
 - Building against the local install sidesteps the licensing question for _compilation_. `runIde` needs the seeded key
