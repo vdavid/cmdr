@@ -5,10 +5,18 @@ consumer test harness. Cmdr doesn't maintain its own Dockerfiles.
 
 ## Overview
 
-The Docker Compose files live in `test/smb-servers/.compose/` and are **vendored** from smb2's `tests/docker/consumer/`
-(see `.compose/VENDORED.md`). When you bump the smb2 git dep, re-vendor them with
-`cp -r ~/projects-git/vdavid/smb2/tests/docker/consumer apps/desktop/test/smb-servers/.compose` and commit the result
-alongside the `Cargo.lock` change.
+The Docker Compose files live in `test/smb-servers/.compose/` and are **vendored** from smb2's
+`src/testing/fixtures/consumer/` (see `.compose/VENDORED.md` for the full procedure). When you bump the smb2 git dep,
+re-vendor them and commit the result alongside the `Cargo.lock` change:
+
+```bash
+rsync -a --delete --exclude=VENDORED.md --exclude=docker-compose.override.yml \
+    ~/projects-git/vdavid/smb2/src/testing/fixtures/consumer/ \
+    apps/desktop/test/smb-servers/.compose/
+```
+
+Both excludes matter: `VENDORED.md` and `docker-compose.override.yml` are cmdr-owned and don't exist upstream, so
+`--delete` would remove them.
 
 **Location**: `test/smb-servers/`
 
@@ -129,9 +137,11 @@ edge cases (unicode names, deep trees, 50 shares, etc.) against real Samba serve
 # Check logs for a specific container
 docker compose -p smb-consumer logs smb-consumer-guest
 
-# Re-vendor compose files from smb2 (run from the apps/desktop directory)
-rm -rf test/smb-servers/.compose
-cp -r ~/projects-git/vdavid/smb2/tests/docker/consumer test/smb-servers/.compose
+# Re-vendor compose files from smb2 (run from the repo root; never `rm -rf` the
+# .compose directory, it holds two cmdr-owned files the rsync excludes protect)
+rsync -a --delete --exclude=VENDORED.md --exclude=docker-compose.override.yml \
+    ~/projects-git/vdavid/smb2/src/testing/fixtures/consumer/ \
+    apps/desktop/test/smb-servers/.compose/
 ```
 
 ### Port already in use
