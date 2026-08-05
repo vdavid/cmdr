@@ -46,6 +46,12 @@ editing app code; use `cmdr_fs::…` from another crate.
   else's flake. `DETAILS.md` § "Gotcha: `cfg(test)`-conditioned BEHAVIOR".
 - **Turn the `testing` feature on through a dev-dependency, never a normal one.** That's what keeps it out of shipped
   builds. It gates `testing::TestDir`, `wait_until` / `wait_until_async`, and the QoS no-op together.
+- **`InMemoryVolume` must honor the `Volume` contracts data safety LEANS on, not just the happy path.** Two it gets
+  asked about constantly: `delete` refuses a NON-EMPTY directory (`ENOTEMPTY`), and `rename` of a directory carries its
+  whole subtree. Both were once loose, and each silently disarmed a whole test class — the same-volume rename-merge
+  preserves a skipped child's source purely by letting its parent's cleanup delete FAIL, and a same-volume move IS
+  directory renames, so a rename that moved only the dir node made those tests pass over the exact data-loss shape they
+  existed to catch. ❌ Never relax a contract to make a test green; the double is the oracle.
 - **Nothing here produces user-facing prose.** Errors carry typed reasons and structured params; the frontend renders
   every word. `pluralize` and `FileEntry`'s `display_size` are the named exceptions — see `DETAILS.md`.
 

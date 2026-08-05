@@ -1019,7 +1019,11 @@ async fn deep_merge_clash_reports_the_real_destination_size() {
         Some("DEST-is-much-bigger".len() as u64),
         "the deep clash must report the destination's real size, not 0"
     );
-    assert_eq!(source_size, Some(3), "the deep clash must report the source's real size");
+    assert_eq!(
+        source_size,
+        Some(3),
+        "the deep clash must report the source's real size"
+    );
 }
 
 /// "Overwrite all smaller" answered on the FIRST clash inside a merge must

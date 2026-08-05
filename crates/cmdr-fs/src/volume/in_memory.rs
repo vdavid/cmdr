@@ -546,6 +546,23 @@ impl Volume for InMemoryVolume {
 
             let normalized = self.normalize(path);
 
+            // `Volume::delete`'s contract is "file or EMPTY directory only"
+            // (LocalPosix uses `std::fs::remove_dir`, which fails `ENOTEMPTY`;
+            // SMB returns STATUS_DIRECTORY_NOT_EMPTY). Honor it here, because
+            // real data-safety logic LEANS on the refusal: the same-volume
+            // rename-merge preserves a skipped child's source purely by letting
+            // its parent's cleanup delete fail, and the volume move's source
+            // sweep relies on the same shape. A test double that deleted a
+            // non-empty directory would orphan the children in the map and let
+            // every such regression pass silently.
+            let is_dir = entries.get(&normalized).is_some_and(|e| e.metadata.is_directory);
+            if is_dir && entries.keys().any(|k| k.parent() == Some(normalized.as_path())) {
+                return Err(VolumeError::IoError {
+                    message: "Directory not empty".into(),
+                    raw_os_error: Some(66), // ENOTEMPTY on macOS
+                });
+            }
+
             entries
                 .remove(&normalized)
                 .map(|_| ())
@@ -583,8 +600,35 @@ impl Volume for InMemoryVolume {
                 .unwrap_or_default();
             entry.metadata.name = new_name;
             entry.metadata.path = to_normalized.display().to_string();
+            let was_directory = entry.metadata.is_directory;
 
-            entries.insert(to_normalized, entry);
+            entries.insert(to_normalized.clone(), entry);
+
+            // Renaming a DIRECTORY carries its whole subtree along — that's the
+            // single server-side call the same-volume move is built on ("a whole
+            // subtree moves with one rename, never descended"). Re-key every
+            // descendant. Moving only the directory node would silently orphan
+            // the contents: they'd vanish from every listing while still sitting
+            // in the map, so a test asserting by exact path would still find them
+            // and a subtree walk would not — passing vacuously over exactly the
+            // data-loss shape these tests exist to catch.
+            if was_directory {
+                let descendants: Vec<PathBuf> = entries
+                    .keys()
+                    .filter(|k| k.starts_with(&from_normalized) && *k != &from_normalized)
+                    .cloned()
+                    .collect();
+                for old_key in descendants {
+                    let Ok(suffix) = old_key.strip_prefix(&from_normalized) else {
+                        continue;
+                    };
+                    let new_key = to_normalized.join(suffix);
+                    if let Some(mut moved) = entries.remove(&old_key) {
+                        moved.metadata.path = new_key.display().to_string();
+                        entries.insert(new_key, moved);
+                    }
+                }
+            }
             Ok(())
         })
     }

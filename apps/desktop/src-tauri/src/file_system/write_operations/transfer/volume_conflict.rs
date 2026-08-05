@@ -174,10 +174,8 @@ pub(super) async fn resolve_volume_conflict(
                 .and_then(|m| m.modified_at)
                 .map(|s| s as i64);
             let destination_meta = dest_volume.get_metadata(dest_path).await.ok();
-            let destination_modified: Option<i64> = destination_meta
-                .as_ref()
-                .and_then(|m| m.modified_at)
-                .map(|s| s as i64);
+            let destination_modified: Option<i64> =
+                destination_meta.as_ref().and_then(|m| m.modified_at).map(|s| s as i64);
 
             // Destination size: the caller's hint when it has one, else the
             // stat just above (free — it's the same round-trip the mtime needs).
