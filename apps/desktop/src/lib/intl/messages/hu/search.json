@@ -158,5 +158,13 @@
   },
   "@search.coverage.stillCovering": {
     "sourceHash": "acd21dc"
+  },
+  "search.runTitle": "Keresés, a nem indexelt mappákban is",
+  "@search.runTitle": {
+    "sourceHash": "859abd4"
+  },
+  "search.coverage.pressEnter": "Nyomd meg az Entert, és a Cmdr most átnézi.",
+  "@search.coverage.pressEnter": {
+    "sourceHash": "f340335"
   }
 }

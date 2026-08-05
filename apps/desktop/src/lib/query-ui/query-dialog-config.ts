@@ -222,6 +222,12 @@ export interface QueryDialogConfig<E = unknown> {
 
   /** Copy for the QueryBar's right-gutter run hint. */
   runHintCopy: string
+  /**
+   * Overrides the run button's tooltip and accessible name (filename / regex modes; AI
+   * mode keeps its own). Search sets it so the button VOICES what Enter does that
+   * auto-apply won't: look through folders that aren't indexed yet (Decision 7).
+   */
+  runTitleOverride?: string
 
   /** Recent-items store. */
   historyStore: RecentItemsStore<E>

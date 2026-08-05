@@ -158,5 +158,13 @@
   },
   "@search.coverage.stillCovering": {
     "sourceHash": "acd21dc"
+  },
+  "search.runTitle": "Sök, även i mappar som inte är indexerade än",
+  "@search.runTitle": {
+    "sourceHash": "859abd4"
+  },
+  "search.coverage.pressEnter": "Tryck på Enter så går Cmdr igenom dem nu.",
+  "@search.coverage.pressEnter": {
+    "sourceHash": "f340335"
   }
 }

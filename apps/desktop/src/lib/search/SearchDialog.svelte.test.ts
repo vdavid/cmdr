@@ -50,7 +50,7 @@ const {
   mediaVolumeStateMock,
 } = vi.hoisted(() => {
   const searchFilesMock = vi.fn(
-    (): Promise<{ entries: SearchResultEntry[]; totalCount: number }> =>
+    (_query?: unknown): Promise<{ entries: SearchResultEntry[]; totalCount: number }> =>
       Promise.resolve({ entries: [], totalCount: 0 }),
   )
   const liveListeners = {
@@ -66,7 +66,7 @@ const {
    * `SearchDialog.coverage.svelte.test.ts`.
    */
   const searchFilesStreamingMock = vi.fn(async (query: unknown, runId: string) => {
-    const answer = await searchFilesMock(query as never)
+    const answer = await searchFilesMock(query)
     for (const listener of liveListeners.progress) {
       listener({
         runId,

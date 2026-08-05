@@ -158,5 +158,13 @@
   },
   "@search.coverage.stillCovering": {
     "sourceHash": "acd21dc"
+  },
+  "search.runTitle": "Buscar, incluindo pastas que ainda não estão indexadas",
+  "@search.runTitle": {
+    "sourceHash": "859abd4"
+  },
+  "search.coverage.pressEnter": "Aperte Enter e o Cmdr percorre elas agora.",
+  "@search.coverage.pressEnter": {
+    "sourceHash": "f340335"
   }
 }

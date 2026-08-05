@@ -727,6 +727,9 @@
         showPathColumn: true,
 
         runHintCopy: tString('search.runHint'),
+        // The run button voices what Enter does that the debounce won't: reach past the
+        // index into folders that aren't indexed yet (Decision 7).
+        runTitleOverride: tString('search.runTitle'),
 
         historyStore: recentSearchesStore,
         recentItems: {

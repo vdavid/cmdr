@@ -110,6 +110,11 @@
                 {/each}
             </ul>
         {/if}
+        {#if !note.live}
+            <!-- An index-only answer: this run was the DEBOUNCE's, which never walks
+                 (Decision 7). So the gap it reports has a way out that costs one key. -->
+            <p class="message secondary">{tString('search.coverage.pressEnter')}</p>
+        {/if}
         {#if onIndexDrive}
             <div class="actions">
                 <Button variant="primary" size="mini" onclick={onIndexDrive}>

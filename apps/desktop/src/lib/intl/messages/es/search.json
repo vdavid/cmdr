@@ -158,5 +158,13 @@
   },
   "@search.coverage.stillCovering": {
     "sourceHash": "acd21dc"
+  },
+  "search.runTitle": "Buscar, incluidas las carpetas aún sin indexar",
+  "@search.runTitle": {
+    "sourceHash": "859abd4"
+  },
+  "search.coverage.pressEnter": "Pulsa Intro y Cmdr las recorrerá ahora.",
+  "@search.coverage.pressEnter": {
+    "sourceHash": "f340335"
   }
 }

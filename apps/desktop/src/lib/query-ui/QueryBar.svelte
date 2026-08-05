@@ -49,6 +49,14 @@
         /** True when the bar should show the "Press Enter to search" hint. Owned by the parent. */
         showRunHint?: boolean
         /**
+         * Replaces the run button's tooltip and accessible name. Search sets it so the
+         * button says what Enter actually does now: search past the index, into folders
+         * that aren't indexed yet, which the auto-apply debounce deliberately won't do
+         * (`docs/specs/unindexed-search-plan.md` Decision 7). Omitted → the per-mode
+         * default.
+         */
+        runTitleOverride?: string
+        /**
          * D8: when true, the run button surfaces the `⏎` shortcut hint. The dialog
          * owns the ⏎ ownership swap; when this is false, the hint moves to the
          * footer's "Go to file" button.
@@ -79,6 +87,7 @@
         disabled,
         aiHighlight,
         showRunHint = false,
+        runTitleOverride,
         showEnterHint = true,
         recentOpen = false,
         onInput,
@@ -105,7 +114,11 @@
     })
 
     /** AI mode runs only on explicit Enter / ⌘Enter / Run-button click. Show the hint title to match. */
-    const runTitle = $derived(mode === 'ai' ? tString('queryUi.bar.runTitle.ai') : tString('queryUi.bar.runTitle.default'))
+    const runTitle = $derived(
+        mode === 'ai'
+            ? tString('queryUi.bar.runTitle.ai')
+            : (runTitleOverride ?? tString('queryUi.bar.runTitle.default')),
+    )
 </script>
 
 <!-- `display: contents`: the bar hands its two halves straight to the dialog's 2×2

@@ -158,5 +158,13 @@
   },
   "@search.coverage.stillCovering": {
     "sourceHash": "acd21dc"
+  },
+  "search.runTitle": "Zoeken, ook in mappen die nog niet geïndexeerd zijn",
+  "@search.runTitle": {
+    "sourceHash": "859abd4"
+  },
+  "search.coverage.pressEnter": "Druk op Enter, dan kijkt Cmdr er nu doorheen.",
+  "@search.coverage.pressEnter": {
+    "sourceHash": "f340335"
   }
 }

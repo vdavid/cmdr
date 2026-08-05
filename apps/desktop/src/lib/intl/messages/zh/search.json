@@ -158,5 +158,13 @@
   },
   "@search.coverage.stillCovering": {
     "sourceHash": "acd21dc"
+  },
+  "search.runTitle": "搜索，包括尚未建立索引的文件夹",
+  "@search.runTitle": {
+    "sourceHash": "859abd4"
+  },
+  "search.coverage.pressEnter": "按 Enter，Cmdr 现在就去查看。",
+  "@search.coverage.pressEnter": {
+    "sourceHash": "f340335"
   }
 }

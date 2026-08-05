@@ -158,5 +158,13 @@
   },
   "@search.coverage.stillCovering": {
     "sourceHash": "acd21dc"
+  },
+  "search.runTitle": "Suchen, auch in Ordnern ohne Index",
+  "@search.runTitle": {
+    "sourceHash": "859abd4"
+  },
+  "search.coverage.pressEnter": "Drücke die Eingabetaste, dann sieht Cmdr jetzt hinein.",
+  "@search.coverage.pressEnter": {
+    "sourceHash": "f340335"
   }
 }

@@ -42,7 +42,9 @@ const {
 } = vi.hoisted(() => ({
   prepareSearchIndexMock: vi.fn(() => Promise.resolve({ ready: true, entryCount: 1234, loading: false })),
   searchFilesMock: vi.fn(
-    (): Promise<{
+    (
+      _query?: unknown,
+    ): Promise<{
       entries: SearchResultEntry[]
       totalCount: number
       uncoveredScopes?: string[]
@@ -248,7 +250,7 @@ function result(overrides: Partial<SearchResult>): SearchResult {
  */
 function installLiveBackend(): void {
   searchFilesStreamingMock.mockImplementation(async (query: unknown, runId: string) => {
-    const answer = await searchFilesMock(query as never)
+    const answer = await searchFilesMock(query)
     for (const listener of liveListeners.progress) {
       listener({
         runId,

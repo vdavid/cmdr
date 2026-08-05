@@ -158,5 +158,13 @@
   },
   "@search.coverage.stillCovering": {
     "sourceHash": "acd21dc"
+  },
+  "search.runTitle": "Tìm kiếm, kể cả trong thư mục chưa lập chỉ mục",
+  "@search.runTitle": {
+    "sourceHash": "859abd4"
+  },
+  "search.coverage.pressEnter": "Nhấn Enter và Cmdr sẽ duyệt qua ngay.",
+  "@search.coverage.pressEnter": {
+    "sourceHash": "f340335"
   }
 }
