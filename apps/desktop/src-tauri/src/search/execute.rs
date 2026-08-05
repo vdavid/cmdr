@@ -363,6 +363,14 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
         }
     };
 
+    // The arena behind this search is out of date from here on. Marked at the
+    // START, not on the first batch: a walk can write rows it never emits — the
+    // local repair path for a frontier root that already holds rows writes
+    // through the serial reconcile, which has no live consumer — and those rows
+    // would otherwise be pruned as covered by the next query and served from an
+    // arena that predates them.
+    volumes::mark_walked_behind(&target.volume_id);
+
     let still_covering = walk.covered_by_another_walk().to_vec();
     let attempted_roots = question.frontier.len().saturating_sub(still_covering.len());
     let home_dir = dirs::home_dir().map(|home| home.to_string_lossy().into_owned());

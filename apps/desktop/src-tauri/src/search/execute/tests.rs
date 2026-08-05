@@ -1,6 +1,7 @@
-//! Orchestration tests that don't need the live registry: the one-volume ceiling
-//! (`resolve_target`), the ranked slice `run_blocking` truncates, mount-path
-//! prefixing, and the directory size post-filter.
+//! Orchestration tests: the one-volume ceiling (`resolve_target`), the ranked
+//! slice `run_blocking` truncates, mount-path prefixing, the directory size
+//! post-filter — and, at the bottom, a live search driven end to end over a real
+//! index the walk builds as it goes.
 
 use std::collections::HashMap;
 
@@ -10,6 +11,8 @@ use crate::search::index::{SearchEntry, SearchIndex};
 use crate::search::ranking::ImportanceWeights;
 use crate::search::types::{PatternType, SearchResultEntry};
 use cmdr_index::ROOT_VOLUME_ID;
+
+mod live_e2e;
 
 // ── Synthetic index builder ──────────────────────────────────────────
 

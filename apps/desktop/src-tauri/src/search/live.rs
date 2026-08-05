@@ -141,6 +141,14 @@ pub(crate) fn cancel_live_run(run_id: &str) -> bool {
     }
 }
 
+/// Serializes the tests that register a run. Registering supersedes every OTHER
+/// run in the process, so two tests running at once would silence each other.
+#[cfg(test)]
+pub(crate) fn test_registry_lock() -> std::sync::MutexGuard<'static, ()> {
+    static LOCK: Mutex<()> = Mutex::new(());
+    LOCK.lock_ignore_poison()
+}
+
 /// Stop every run and every walk behind them.
 ///
 /// The dialog closing calls this, and so does the app quitting: a walk outlives

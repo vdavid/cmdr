@@ -16,7 +16,7 @@ use crate::search::types::PatternType;
 // ── Fixtures ─────────────────────────────────────────────────────────
 
 /// A run built without the registry, so a test never supersedes another's.
-/// Registry behavior has its own tests, which take [`registry_lock`].
+/// Registry behavior has its own tests, which take [`test_registry_lock`].
 fn run_for_test(volume_id: &str) -> Arc<LiveRun> {
     Arc::new(LiveRun {
         run_id: format!("run-{volume_id}"),
@@ -24,12 +24,6 @@ fn run_for_test(volume_id: &str) -> Arc<LiveRun> {
         cancel: CancellationToken::new(),
         superseded: AtomicBool::new(false),
     })
-}
-
-/// Serializes the tests that use the process-wide run registry.
-fn registry_lock() -> std::sync::MutexGuard<'static, ()> {
-    static LOCK: Mutex<()> = Mutex::new(());
-    LOCK.lock_ignore_poison()
 }
 
 /// A plain substring query for `stem`, with the system-directory tier off unless
@@ -230,7 +224,7 @@ fn a_superseded_run_says_nothing_and_still_drains_its_walk() {
     // Refining a query drops the old query's batches, and its walk keeps going.
     // Draining is not politeness: the channel is bounded, so a run that stopped
     // reading would park the walk it isn't allowed to stop.
-    let _serialized = registry_lock();
+    let _serialized = test_registry_lock();
     let first = register("run-1", "supersede-volume");
     let _second = register("run-2", "supersede-volume");
     assert!(!first.wants_events(), "the newer run supersedes the older one");
@@ -256,7 +250,7 @@ fn a_walk_that_wrote_rows_marks_its_volume_for_the_next_query() {
     // is recovered from the INDEX by the next query, which only works if that
     // query rebuilds its arena first. The mark is what tells it to, and a
     // superseded run has to keep marking — its walk is still writing.
-    let _serialized = registry_lock();
+    let _serialized = test_registry_lock();
     let run = register("run-marks", "marked-volume");
     let second = register("run-marks-2", "marked-volume");
     let q = query("report");
@@ -527,7 +521,7 @@ fn ending_of_puts_our_own_cancel_ahead_of_every_other_verdict() {
 #[test]
 fn cancelling_everything_stops_every_run_in_flight() {
     // What a closing dialog and a quitting app both call.
-    let _serialized = registry_lock();
+    let _serialized = test_registry_lock();
     let one = register("run-all-1", "volume-a");
     let two = register("run-all-2", "volume-b");
     cancel_all_live_runs();
@@ -538,7 +532,7 @@ fn cancelling_everything_stops_every_run_in_flight() {
 
 #[test]
 fn cancelling_a_run_nobody_registered_says_so_rather_than_pretending() {
-    let _serialized = registry_lock();
+    let _serialized = test_registry_lock();
     assert!(!cancel_live_run("a-run-that-never-was"));
     let run = register("run-cancel-one", "volume-c");
     assert!(cancel_live_run("run-cancel-one"));

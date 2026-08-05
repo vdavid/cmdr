@@ -18,7 +18,7 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, LazyLock, Mutex, OnceLock};
+use std::sync::{Arc, LazyLock, Mutex};
 
 use crate::ignore_poison::IgnorePoison;
 use crate::index_host::index;
@@ -34,16 +34,49 @@ pub(crate) use weights::{start_importance_weight_subscriber, weights_for};
 // ── App data dir (set once at startup) ───────────────────────────────
 
 /// The resolved app data dir, where every `index-{volume_id}.db` and
-/// `importance-{volume_id}.db` lives. Set once from app setup (search commands and
-/// MCP have no `AppHandle`, so they read it from here instead of re-resolving).
-static DATA_DIR: OnceLock<PathBuf> = OnceLock::new();
+/// `importance-{volume_id}.db` lives. Set from app setup (search commands and MCP
+/// have no `AppHandle`, so they read it from here instead of re-resolving), and
+/// swapped under a guard by a test that needs its own — a live search builds a
+/// real index DB in there, so a shared path would have two tests reading each
+/// other's drives.
+static DATA_DIR: LazyLock<Mutex<Option<PathBuf>>> = LazyLock::new(|| Mutex::new(None));
 
 pub(crate) fn set_data_dir(dir: PathBuf) {
-    let _ = DATA_DIR.set(dir);
+    *DATA_DIR.lock_ignore_poison() = Some(dir);
 }
 
 fn data_dir() -> Option<PathBuf> {
-    DATA_DIR.get().cloned()
+    DATA_DIR.lock_ignore_poison().clone()
+}
+
+/// Point search's data directory somewhere for one test, restoring the previous
+/// value on drop. Hold `cmdr_index::testing::host::test_lock` first: this slot is
+/// process-wide, like the index's own.
+#[cfg(test)]
+pub(crate) fn install_data_dir_for_test(dir: &Path) -> TestDataDirGuard {
+    let previous = DATA_DIR.lock_ignore_poison().replace(dir.to_path_buf());
+    TestDataDirGuard { previous }
+}
+
+/// Puts the previous search data directory back.
+#[cfg(test)]
+pub(crate) struct TestDataDirGuard {
+    previous: Option<PathBuf>,
+}
+
+#[cfg(test)]
+impl Drop for TestDataDirGuard {
+    fn drop(&mut self) {
+        *DATA_DIR.lock_ignore_poison() = self.previous.take();
+    }
+}
+
+/// Drop one volume's arena and its walk mark, so a test's drive can't be served
+/// to whatever runs next in the same binary.
+#[cfg(test)]
+pub(crate) fn forget_volume_for_test(volume_id: &str) {
+    SEARCH_INDICES.lock_ignore_poison().remove(volume_id);
+    take_walked_behind(volume_id);
 }
 
 // ── Loaded volume state ──────────────────────────────────────────────
