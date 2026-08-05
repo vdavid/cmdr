@@ -1014,6 +1014,39 @@ async fn a_change_inside_a_walked_branch_reaches_the_index_and_one_beside_it_doe
     );
 }
 
+/// Clearing a drive's index takes its branches with it, because they describe
+/// coverage that no longer exists.
+///
+/// No code does this: the set lives on the database the clear deletes, which is
+/// why it lives there. The test is here so a later change that moves it somewhere
+/// else has to notice.
+#[test]
+fn clearing_a_drives_index_drops_the_branches_with_the_coverage() {
+    let drive = ColdDrive::new("cover-branch-clear-test");
+    std::fs::create_dir_all(drive.tree.path().join("scope")).expect("dirs");
+    std::fs::write(drive.tree.path().join("scope/found.txt"), "x").expect("file");
+
+    drive.cover(&drive.path("scope"));
+    assert!(
+        drive.persisted_branches().is_some(),
+        "precondition: a branch was written"
+    );
+
+    drive.index.forget_volume(drive.volume_id).expect("clear the index");
+
+    assert_eq!(
+        drive.persisted_branches(),
+        None,
+        "the database went, and the set with it"
+    );
+    assert!(
+        crate::indexing::watch::branches::live_for(drive.volume_id)
+            .branch_paths()
+            .is_empty(),
+        "and nothing in memory still claims to watch it"
+    );
+}
+
 /// The per-drive veto's teeth, and the whole of them: a drive the user turned
 /// indexing off for is still walked for a search (Decision 13), and is left
 /// unwatched afterwards.
