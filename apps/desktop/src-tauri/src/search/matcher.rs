@@ -58,6 +58,18 @@ pub(crate) enum Evaluator {
     /// bounded, so a query with no narrowing predicate is refused only once the arena
     /// is big enough for the scan to be felt (~60 s at 5M entries).
     Arena { entries: usize },
+    /// A live walk over ground the index doesn't cover yet. There is no size to
+    /// weigh: the scan reads a filesystem of unknown extent, over a network in the
+    /// worst case, so a query with no narrowing predicate is refused outright.
+    ///
+    /// ❌ Don't key this on an entry count the way [`Self::Arena`] does. An unindexed
+    /// volume's arena holds zero rows, so a count-based ceiling is exactly the guard
+    /// that never fires on the path that needs it most.
+    // Constructed by M5, which is what feeds a walk's batches into `execute.rs`. The
+    // matcher lands first so this guard is verifiable before anything depends on it
+    // (`docs/specs/unindexed-search-plan.md` § M4).
+    #[allow(dead_code)]
+    LiveWalk,
 }
 
 /// Why a query couldn't be compiled. Typed so callers branch on the variant rather
@@ -216,6 +228,7 @@ fn narrows(query: &SearchQuery) -> bool {
 fn refuses_broad_queries(evaluator: Evaluator) -> bool {
     match evaluator {
         Evaluator::Arena { entries } => entries > ARENA_BROAD_QUERY_CEILING,
+        Evaluator::LiveWalk => true,
     }
 }
 

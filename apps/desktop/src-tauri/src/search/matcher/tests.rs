@@ -324,6 +324,17 @@ fn every_predicate_has_to_hold_at_once() {
 /// applies it.
 type Narrowing = (&'static str, fn(&mut SearchQuery));
 
+/// Every predicate that counts as narrowing. Both evaluators are held to the same
+/// list, so a new predicate that one of them forgets shows up as a failure.
+const NARROWINGS: [Narrowing; 6] = [
+    ("name", |q| q.name_pattern = Some("x".to_string())),
+    ("min size", |q| q.min_size = Some(1)),
+    ("max size", |q| q.max_size = Some(1)),
+    ("modified after", |q| q.modified_after = Some(1)),
+    ("modified before", |q| q.modified_before = Some(1)),
+    ("type", |q| q.is_directory = Some(true)),
+];
+
 #[test]
 fn a_small_arena_serves_a_query_that_narrows_nothing() {
     let compiled = CompiledQuery::compile(&query(), Evaluator::Arena { entries: 10 });
@@ -351,15 +362,7 @@ fn any_one_predicate_narrows_enough_for_a_big_arena() {
     let big = Evaluator::Arena {
         entries: ARENA_BROAD_QUERY_CEILING + 1,
     };
-    let narrowed: [Narrowing; 6] = [
-        ("name", |q| q.name_pattern = Some("x".to_string())),
-        ("min size", |q| q.min_size = Some(1)),
-        ("max size", |q| q.max_size = Some(1)),
-        ("modified after", |q| q.modified_after = Some(1)),
-        ("modified before", |q| q.modified_before = Some(1)),
-        ("type", |q| q.is_directory = Some(true)),
-    ];
-    for (label, narrow) in narrowed {
+    for (label, narrow) in NARROWINGS {
         let mut q = query();
         narrow(&mut q);
         assert!(
@@ -377,6 +380,28 @@ fn an_empty_name_pattern_narrows_nothing() {
         entries: ARENA_BROAD_QUERY_CEILING + 1,
     };
     assert_eq!(CompiledQuery::compile(&q, big).unwrap_err(), CompileError::TooBroad);
+}
+
+#[test]
+fn a_live_walk_refuses_a_query_that_narrows_nothing() {
+    // Unconditionally: there's no arena to weigh, and the ground a walk would read
+    // is a filesystem of unknown size, over a network in the worst case.
+    assert_eq!(
+        CompiledQuery::compile(&query(), Evaluator::LiveWalk).unwrap_err(),
+        CompileError::TooBroad
+    );
+}
+
+#[test]
+fn a_live_walk_serves_a_query_that_narrows_anything() {
+    for (label, narrow) in NARROWINGS {
+        let mut q = query();
+        narrow(&mut q);
+        assert!(
+            CompiledQuery::compile(&q, Evaluator::LiveWalk).is_ok(),
+            "a {label} predicate should narrow enough"
+        );
+    }
 }
 
 #[test]
