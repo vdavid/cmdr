@@ -178,11 +178,12 @@ pub(crate) struct ResultStream<'a> {
     pending: Vec<SearchResultEntry>,
     emitted: usize,
     match_count: u32,
-    /// Path hashes of the rows already emitted, so a file the index handed back
-    /// AND the walk rediscovers is shown once. Bounded by [`limit`](Self::limit),
-    /// which is what makes it affordable: it insures the race (a file indexed
-    /// between the frontier query and the walk reaching it), it is not the
-    /// mechanism that keeps the two halves apart — the tree partition is.
+    /// Path hashes of the rows already EMITTED, so a file the index handed back
+    /// and the walk rediscovers is shown once. Bounded by [`limit`](Self::limit)
+    /// rather than by the walk, which is what makes it affordable on a walk that
+    /// matches a million entries. It insures a race (a file indexed between the
+    /// frontier query and the walk reaching it); it is not the mechanism that
+    /// keeps the two halves apart — the tree partition is.
     seen: HashSet<u64>,
     dirs_found: u64,
     current_path: Option<String>,
@@ -242,15 +243,22 @@ impl<'a> ResultStream<'a> {
 
     /// Take one match the walk found. Counted always; shown while there's room.
     pub(crate) fn add_walked(&mut self, entry: SearchResultEntry) {
-        if !self.seen.insert(hash_path(&entry.path)) {
+        let path = hash_path(&entry.path);
+        if self.seen.contains(&path) {
             // The index already answered for this one. Rare by construction, and
             // the count must not move either: it's the same file.
             return;
         }
         self.match_count = self.match_count.saturating_add(1);
         if self.count_only || self.emitted >= self.limit {
+            // Nothing more to remember: the set exists to keep a ROW from
+            // appearing twice, and no further rows are going out. What it costs is
+            // that a duplicate arriving past the cap is counted twice — the same
+            // bounded inaccuracy a count-only run has, and the price of a set that
+            // can't grow with the walk.
             return;
         }
+        self.seen.insert(path);
         self.emitted += 1;
         self.pending.push(entry);
         if self.pending.len() >= BATCH_ROWS {

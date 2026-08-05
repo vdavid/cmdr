@@ -214,26 +214,69 @@ fn a_walked_entry_is_judged_by_the_matcher_and_the_exclusions_alike() {
 // ── Superseding (Decision 11) ────────────────────────────────────────
 
 #[test]
-fn a_superseded_run_says_nothing_and_still_drains_its_walk() {
-    // Refining a query drops the old query's batches, and its walk keeps going.
-    // Draining is not politeness: the channel is bounded, so a run that stopped
-    // reading would park the walk it isn't allowed to stop.
+fn a_query_refined_mid_walk_drops_the_batches_and_keeps_the_walk() {
+    // The TDD anchor for Decision 11, in the shape it happens: a walk is running
+    // and streaming when the user refines the query. Everything already sent
+    // stands; everything found after belongs to a question nobody is asking any
+    // more; and the WALK — coverage work, not query work — runs to the end, so the
+    // refined query finds that ground in the index rather than walking it again.
+    //
+    // Draining after the supersede is not politeness: the channel is bounded, so a
+    // run that stopped reading would park the walk it isn't allowed to stop.
     let _serialized = test_registry_lock();
     let first = register("run-1", "supersede-volume");
-    let _second = register("run-2", "supersede-volume");
-    assert!(!first.wants_events(), "the newer run supersedes the older one");
-    assert!(!first.is_cancelled(), "❌ and does NOT stop its walk");
+    let q = SearchQuery { limit: 1000, ..query("report") };
+    let sink = Arc::new(CollectorSearchEventSink::default());
+    let judged = Judged::new(&q);
+    let (tx, rx) = sync_channel(8);
 
-    let q = query("report");
-    let driven = drive(&first, &q, vec![indexed_row("/covered/report.pdf")], 1, |tx| {
-        tx.send(WalkMsg::Batch(vec![covered_file("/walked/report.pdf")]))
+    let watcher = Arc::clone(&sink);
+    let refined = Arc::clone(&first);
+    let feeder = std::thread::spawn(move || {
+        // A full batch, so it goes out on the row rule rather than the timer.
+        let found: Vec<CoveredEntry> = (0..BATCH_ROWS)
+            .map(|i| covered_file(&format!("/walked/report-before-{i:03}.pdf")))
+            .collect();
+        tx.send(WalkMsg::Batch(found)).expect("send");
+        // Refine only once those results are genuinely on screen, or the test
+        // would be asserting about a batch the run never got to see.
+        cmdr_fs::testing::wait_until(Duration::from_secs(5), "the first batch to reach the frontend", || {
+            watcher.rows().len() == BATCH_ROWS
+        });
+
+        // The user types. A new run registers, superseding this one.
+        let _second = register("run-2", "supersede-volume");
+        assert!(!refined.wants_events(), "the newer run supersedes the older one");
+        assert!(!refined.is_cancelled(), "❌ and does NOT stop its walk");
+
+        tx.send(WalkMsg::Batch(vec![covered_file("/walked/report-after.pdf")]))
             .expect("a superseded run still reads its walk");
         tx.send(WalkMsg::Ended(covered_everything(1))).expect("send");
     });
 
-    assert_eq!(driven.ending, WalkEnding::Completed, "the walk ran to the end");
-    assert!(driven.sink.progress.lock_ignore_poison().is_empty(), "and said nothing");
-    assert!(driven.sink.complete.lock_ignore_poison().is_empty());
+    let mut stream = ResultStream::new(&first, sink.as_ref(), &q);
+    let ending = pump(&rx, 1, &judged.judge(), &mut stream);
+    feeder.join().expect("the feeder thread");
+
+    assert_eq!(ending, WalkEnding::Completed, "the walk ran to the end");
+    let paths: Vec<String> = sink.rows().into_iter().map(|row| row.path).collect();
+    assert_eq!(paths.len(), BATCH_ROWS, "what it found before the refinement stands");
+    assert!(
+        !paths.iter().any(|path| path.contains("after")),
+        "and what came after is dropped: {paths:?}"
+    );
+    stream.finish(SearchRunCoverage {
+        walk: ending,
+        unreadable: Vec::new(),
+        still_covering: Vec::new(),
+        unresolved_scopes: Vec::new(),
+        capped: false,
+        target_volume_id: "supersede-volume".to_string(),
+    });
+    assert!(
+        sink.complete.lock_ignore_poison().is_empty(),
+        "and a superseded run has no last word either"
+    );
     deregister("run-1");
     deregister("run-2");
 }
