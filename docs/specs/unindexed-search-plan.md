@@ -830,6 +830,29 @@ also add Y"). Docs: `search/CLAUDE.md` (the one-way-consumer must-know needs its
 
 ### M6. Streaming results in the query UI
 
+**What M5 hands you.** `commands.searchFilesStreaming(query, runId)` returns `{ runId, targetVolumeId }` as soon as
+routing has picked a volume (a scope spanning two is the error branch), and `commands.cancelSearch(runId)` stops one.
+The caller mints the run id, exactly as it does a `listingId`, so no event can arrive against an id the frontend hasn't
+seen. Then:
+
+- **`search-progress`** — `phase` (`resolvingCoverage` | `readingIndex` | `walking`), `entries` (arrival order, ≤100),
+  `matchCount` (the run's total so far, past the cap included), `dirsFound` + `currentPath` (Decision 14's progress),
+  `capped`.
+- **`search-complete`** / **`search-cancelled`** — `matchCount` plus `coverage`: `walk` (`nothingToWalk` | `completed` |
+  `interrupted` | `cancelled`), `unreadable`, `stillCovering`, `unresolvedScopes`, `capped`, `targetVolumeId`.
+- **`search-error`** — a typed `error` (`query` | `indexUnreadable`) plus the sentence to show.
+
+Five things that will bite otherwise:
+
+- **A superseded run goes silent — including its terminal event.** Starting a run supersedes every other one backend
+  side, so ❌ don't wait for a `-complete` on a run you've replaced; drop its id and move on.
+- **`unreadable` has two causes and needs two sentences**: a folder Cmdr was refused (grant Full Disk Access) and a NAS
+  snapshot tree nobody walks. Same list, different copy.
+- **`walk: interrupted` is the drive-went-away state**, not an error, and it means the list is a lower bound.
+- **A live row carries no `entryId` and no directory size** (Accepted difference 5), so anything keyed on either has to
+  tolerate their absence.
+- **Count-only is "N so far"** until the terminal event, and can over-count by the overlap (Accepted difference 12).
+
 - `query-runner.svelte.ts:169-172` awaits one `runQuery()` then calls `setResults` / `setTotalCount` /
   `setCursorIndex(0)`. Add an incremental path there: append, a generation guard, and a cursor held by path identity.
 - **The streaming source belongs to `query-runner.svelte.ts`, not `QueryDialog`.** The invariant is real
