@@ -129,6 +129,17 @@ fn the_volume_root_is_where_the_ancestor_walk_stops() {
 // ── Cheap-path guards ────────────────────────────────────────────────
 
 #[test]
+fn a_name_only_rule_set_never_materializes_a_path() {
+    // The arena's evaluator reconstructs an entry's whole path ONLY for a path
+    // prefix, and reconstruction is per candidate on a scan of millions. So a rule
+    // set with no prefixes has to say so, or the hot path pays for a string it
+    // would only throw away.
+    let rules = ExcludeRules::from_query(&with_excludes(&["node_modules"]), true);
+    assert!(!rules.has_path_prefixes());
+    assert!(rules.has_name_rules());
+}
+
+#[test]
 fn a_rule_set_with_no_names_never_walks_the_components() {
     // `has_name_rules` is what lets the live evaluator skip the component walk,
     // and a path-prefix-only rule set must still answer correctly.

@@ -566,6 +566,28 @@ fn ending_of_puts_our_own_cancel_ahead_of_every_other_verdict() {
     assert_eq!(ending_of(None, 0, false), WalkEnding::Interrupted);
 }
 
+#[test]
+fn a_stopped_run_stops_counting_as_well_as_showing() {
+    // Cancel's end state is "what was found before stopping", so the gate has to
+    // cover the COUNT, not just the rows: a walk winding down still hands over
+    // whatever batch it was mid-way through, and counting those would leave the
+    // number on screen creeping up after the user pressed Escape.
+    let run = run_for_test("stopped");
+    run.cancel_token().cancel();
+    let q = query("report");
+    let sink = CollectorSearchEventSink::default();
+    let judged = Judged::new(&q);
+    let mut stream = ResultStream::new(&run, &sink, &q);
+
+    judged.judge().consume(vec![covered_file("/walked/report.pdf")], &mut stream);
+
+    assert_eq!(stream.match_count, 0, "a match found after the stop is not this run's");
+    assert!(sink.rows().is_empty());
+    // Progress still moves: what the walk READ is true whoever asked for it, and
+    // the terminal event reports it.
+    assert_eq!(stream.dirs_found, 0);
+}
+
 // ── The wire ─────────────────────────────────────────────────────────
 
 #[test]
