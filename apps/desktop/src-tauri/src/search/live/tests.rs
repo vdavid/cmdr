@@ -184,6 +184,10 @@ fn the_two_halves_make_one_answer_with_nothing_shown_twice() {
         complete[0].match_count, 2,
         "and the count is the union's, not the sum of the two halves"
     );
+    assert!(
+        !complete[0].coverage.capped,
+        "a run that showed everything it found doesn't claim it was cut short"
+    );
 }
 
 #[test]
