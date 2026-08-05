@@ -252,25 +252,33 @@ fn case_insensitive_for(query: &SearchQuery) -> bool {
 /// A glob with no wildcard is wrapped in `*…*` so typing `tes` finds `test.rs`, the
 /// UX every file-search dialog has. On macOS the pattern is NFD-normalized first, so
 /// it matches the decomposed names APFS stores without folding every candidate.
+///
+/// The two pattern types get DIFFERENT `.` semantics, on purpose. A glob's `*` and
+/// `?` become `.*` and `.`, and they mean "any characters" and "one character" —
+/// a newline in a filename is legal and is one of them, so the glob path opts into
+/// `dot_matches_new_line`. A user-supplied regex keeps the standard rule, where `.`
+/// stops at a newline and `(?s)` is how an author asks for more; overriding that
+/// would make Cmdr's regex mode a dialect of its own.
 fn compile_pattern(pattern: &str, pattern_type: &PatternType, case_insensitive: bool) -> Result<Regex, CompileError> {
     #[cfg(target_os = "macos")]
     let pattern = {
         use unicode_normalization::UnicodeNormalization;
         pattern.nfd().collect::<String>()
     };
-    let regex_str = match pattern_type {
+    let (regex_str, dot_matches_new_line) = match pattern_type {
         PatternType::Glob => {
             let glob = if !pattern.contains('*') && !pattern.contains('?') {
                 format!("*{pattern}*")
             } else {
                 pattern.to_string()
             };
-            glob_to_regex(&glob)
+            (glob_to_regex(&glob), true)
         }
-        PatternType::Regex => pattern.to_string(),
+        PatternType::Regex => (pattern.to_string(), false),
     };
     RegexBuilder::new(&regex_str)
         .case_insensitive(case_insensitive)
+        .dot_matches_new_line(dot_matches_new_line)
         .build()
         .map_err(|e| CompileError::InvalidPattern(e.to_string()))
 }

@@ -233,6 +233,12 @@ app. That constraint is also why `Index::cover` hands back `CoveredEntry` batche
   `id_to_index`, so neither means anything for an entry that isn't in the arena. The live path applies the same policy
   against a walked entry's own path instead.
 
+**A glob's `.` crosses a newline; a user's regex keeps standard semantics.** Filenames may contain newlines, and a
+glob's `*` and `?` mean "any characters" and "one character", so `compile_pattern` builds the glob path with
+`dot_matches_new_line(true)`. The regex path deliberately does not: someone writing a regex expects `.` to stop at a
+newline and `(?s)` to be how they ask for more, and quietly overriding that would make Cmdr's regex mode a dialect.
+❌ Don't "unify" the two flags — the asymmetry is the decision.
+
 **The broad-query guard is per evaluator.** An arena's cost is known before the scan, so a query with no narrowing
 predicate is refused only above `ARENA_BROAD_QUERY_CEILING` rows; below it, "show me everything, by recency" is a fair
 ask. A live walk has no such bound (an unknown filesystem, over a network in the worst case), so it refuses outright.

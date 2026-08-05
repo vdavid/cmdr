@@ -112,15 +112,74 @@ fn an_unbuildable_pattern_is_refused_with_the_reason() {
 
 #[test]
 fn an_empty_pattern_is_no_pattern_at_all() {
-    // Not "a pattern that happens to match nearly everything". An empty glob would
-    // compile to `^.*.*$`, and `.` doesn't cross a newline, so a filename containing
-    // one — legal on Unix — would drop out of a query that filters by nothing.
+    // No regex is compiled and none runs per entry, which is why `narrows()` treats
+    // an empty pattern as no pattern too.
     let mut q = query();
     q.name_pattern = Some(String::new());
     let compiled = CompiledQuery::compile(&q, SMALL_ARENA).unwrap();
 
     assert!(compiled.matches(&file("anything-at-all")));
-    assert!(compiled.matches(&file("we\nird.txt")));
+    assert!(compiled.matches(&file(NEWLINE_NAME)));
+}
+
+// ── Newlines in filenames ────────────────────────────────────────────
+
+/// A filename with a newline in it. Legal on every platform Cmdr runs on, and the
+/// kind of thing a script or a bad download leaves behind.
+const NEWLINE_NAME: &str = "we\nird.txt";
+
+#[test]
+fn a_newline_in_a_name_doesnt_hide_it_from_a_glob() {
+    // `*` means "any characters", so it means that one too.
+    let mut wildcard = query();
+    wildcard.name_pattern = Some("*.txt".to_string());
+    assert!(
+        CompiledQuery::compile(&wildcard, SMALL_ARENA)
+            .unwrap()
+            .matches(&file(NEWLINE_NAME))
+    );
+
+    // And the plain-text query, which is a glob wrapped in `*…*`.
+    let mut plain = query();
+    plain.name_pattern = Some("ird".to_string());
+    assert!(
+        CompiledQuery::compile(&plain, SMALL_ARENA)
+            .unwrap()
+            .matches(&file(NEWLINE_NAME))
+    );
+
+    // `?` is one character, and a newline is a character.
+    let mut single = query();
+    single.name_pattern = Some("we?ird.txt".to_string());
+    assert!(
+        CompiledQuery::compile(&single, SMALL_ARENA)
+            .unwrap()
+            .matches(&file(NEWLINE_NAME))
+    );
+}
+
+#[test]
+fn a_regex_query_keeps_standard_dot_semantics() {
+    // The opposite call from the glob one, deliberately: someone writing a regex
+    // expects `.` not to cross a newline, and `(?s)` when they want it to. Changing
+    // that under them would make Cmdr's regex mode a dialect.
+    let mut strict = query();
+    strict.name_pattern = Some(r"we.ird\.txt".to_string());
+    strict.pattern_type = PatternType::Regex;
+    assert!(
+        !CompiledQuery::compile(&strict, SMALL_ARENA)
+            .unwrap()
+            .matches(&file(NEWLINE_NAME))
+    );
+
+    let mut opted_in = query();
+    opted_in.name_pattern = Some(r"(?s)we.ird\.txt".to_string());
+    opted_in.pattern_type = PatternType::Regex;
+    assert!(
+        CompiledQuery::compile(&opted_in, SMALL_ARENA)
+            .unwrap()
+            .matches(&file(NEWLINE_NAME))
+    );
 }
 
 // ── Case folding ─────────────────────────────────────────────────────
