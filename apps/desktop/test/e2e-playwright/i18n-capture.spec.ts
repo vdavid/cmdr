@@ -216,13 +216,14 @@ test.describe('i18n screenshot capture', () => {
   // default. As the surface set grows, bump this. (A normal interaction test fits
   // in 15s; this is a multi-surface capture driver, not a normal test.)
   test('captures representative surfaces and writes the coupling report', async ({ tauriPage }) => {
-    // Each surface is brought frontmost, given real animation frames, and written
-    // to a VERIFIED PNG before the run moves on, so every shot costs what a
-    // genuine composite costs. ❌ Don't cut this back to save wall time: a timeout
-    // here tears the plugin socket down mid-pass, and every remaining surface then
-    // fails with a confusing `Not connected` that looks like an app crash. The
-    // worst-case pass adds per-surface zoom + resize + an extra reflow settle.
-    test.setTimeout(isWorstCasePass ? 480000 : 360000)
+    // A clean pass finishes in ~90s; the headroom is for a DISTURBED one. Someone
+    // using the computer mid-run backgrounds the window, and each affected surface
+    // then spends up to 3 verified attempts. ❌ Don't trim this back: on timeout
+    // Playwright destroys the plugin socket, so every remaining surface dies with a
+    // confusing `Not connected` INSTEAD of the blank-frame message that actually
+    // explains what happened. The worst-case pass adds per-surface zoom + resize +
+    // an extra reflow settle on top.
+    test.setTimeout(isWorstCasePass ? 480000 : 300000)
     const main = tauriPage as TauriPage
     mkdirSync(screenshotsDir, { recursive: true })
 

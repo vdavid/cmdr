@@ -184,22 +184,30 @@ What's where, and what's tracked:
 - The `@key.screenshot` / `@key.screenshotNote` refs in `en/*.json`: **tracked.** Written line-surgically (only those
   two fields change; the coupler has a value-safety test covering both).
 
+### ❗ Leave the computer alone during a capture run
+
+The native screenshot reads the window's last COMPOSITED CoreGraphics frame, and macOS stops compositing a window that
+isn't frontmost. Using the computer during a run (clicking into another app) therefore backgrounds Cmdr and the capture
+photographs the empty startup frame, while every other signal looks healthy: the DOM is right, the `waitForSelector`
+gates pass, the key dump is full, and the report records a surface that is really a dark rectangle with three traffic
+lights. **A run once wrote 31 such images and reported success.**
+
+This is the cause of blank screenshots essentially every time. It is not a bug in the app or the harness, so don't go
+hunting for one. Before starting a capture, tell David to keep his hands off the laptop until it finishes; the app's
+YELLOW `SCREENSHOT` title bar is the running reminder (see `../../app-mode.ts`).
+
 ### Every shot is verified before the run can go green
 
-The native screenshot reads the window's last COMPOSITED CoreGraphics frame, and macOS doesn't composite a window that
-isn't frontmost. A backgrounded window therefore photographs as the empty startup frame while every other signal looks
-healthy: the DOM is right, the `waitForSelector` gates pass, the key dump is full, and the report records a surface that
-is really a dark rectangle with three traffic lights. **A run once wrote 31 such images and reported success**, so the
-harness now proves each image instead of assuming it:
+The harness proves each image instead of assuming it:
 
 - Every capture goes through `shoot()` in `test/e2e-playwright/i18n-capture-helpers.ts`. ❌ Never call
   `page.screenshot()` directly from the harness; that path skips the whole guard.
-- `shoot()` orders the target window to the front, waits for real animation frames (rAF is delivered only while the
-  window is being composited), waits for a WHOLE PNG on disk (the capture's write outlives its command), then decodes it
-  and checks it carries content (`i18n-capture-png.ts`, unit-tested). Failure re-focuses, waits longer, and re-shoots;
-  after three attempts the surface goes to `capture-failed.json` and fails the run.
+- Per attempt, `shoot()` fronts the target window, settles the paint, shoots, waits for a WHOLE PNG on disk (the
+  capture's write outlives its command), then decodes it and checks it carries content (`i18n-capture-png.ts`,
+  unit-tested). After three failed attempts the surface goes to `capture-failed.json` and fails the run, with a message
+  that leads with the leave-the-computer-alone cause.
 - ❌ Don't relax or remove the pixel check, and ❌ don't "fix" a blank surface with a longer sleep. The DOM being
-  correct is exactly the state in which this bug ships blank images, so only the image bytes can catch it.
+  correct is exactly the state in which blank images ship, so only the image bytes can catch it.
 
 ### Direct vs representative couplings
 

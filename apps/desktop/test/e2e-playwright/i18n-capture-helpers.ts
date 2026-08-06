@@ -11,7 +11,6 @@
  * here. Split out purely for the file-length budget; behavior is unchanged.
  */
 
-import { createHash } from 'node:crypto'
 import { readFileSync, renameSync, rmSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -212,57 +211,25 @@ export async function keysFor(page: TauriPage, surface: string): Promise<string[
   return dump[surface] ?? []
 }
 
-/** Frames `settlePaint` waits for: one to apply the DOM change, one to composite it. */
-const SETTLE_FRAMES = 2
-
-/**
- * Upper bound on `waitForFrames`, and the ONLY thing that keeps a paused window
- * from hanging the eval forever. It is a bail-out, never the readiness signal:
- * `waitForFrames` reports WHICH of the two happened, and a bail-out means the
- * compositor never advanced, which is exactly the state that produces a stale
- * frame. A foreground window delivers its frames in ~16 ms each, so the ceiling
- * costs nothing when things work.
- */
-const FRAME_WAIT_TIMEOUT_MS = 500
-
-/**
- * Waits for `frames` real animation frames on `page`. Returns true when they all
- * landed, false when the timeout bailed out first.
- *
- * A delivered `requestAnimationFrame` callback is the observable proof that the
- * compositor is running for this window: macOS pauses rAF on a window that isn't
- * being composited (occluded or backgrounded), which is the same condition that
- * makes the native screenshot return a stale frame. So "frames landed" and "the
- * screenshot will show the current UI" are the same state, and a false here is an
- * early warning that the shot is about to be wrong.
- */
-async function waitForFrames(page: TauriPage, frames: number, timeoutMs: number): Promise<boolean> {
-  return page.evaluate<boolean>(`new Promise(function(resolve) {
-    var left = ${String(frames)};
-    var done = false;
-    var finish = function(ok) { if (!done) { done = true; resolve(ok); } };
-    var tick = function() {
-      left -= 1;
-      if (left <= 0) finish(true); else requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-    setTimeout(function() { finish(false); }, ${String(timeoutMs)});
-  })`)
-}
-
 /**
  * Waits for the webview to composite a fresh frame before a native screenshot.
  * The native (CoreGraphics) capture grabs the window's last COMPOSITED frame,
  * which lags a just-applied DOM change (a freshly-opened modal), so without this
  * the modal can be missing from the image.
  *
- * Returns whether real frames landed (true) or the timeout bailed out (false).
- * ❌ Don't drop that return value on the floor: swallowing it is what let a whole
- * run of stale frames pass as green. `shoot()` logs it next to the blank verdict,
- * which is what makes a failure legible instead of mysterious.
+ * Resolves on the next animation frame, BUT races a short timeout:
+ * `requestAnimationFrame` is throttled/paused on a window that isn't foreground,
+ * where it would otherwise never fire and hang the eval. The timeout is a safety
+ * net, not the primary signal: a foreground window resolves on the real frame in
+ * ~16 ms, and `shoot()`'s pixel check is what actually guards the result.
  */
-export async function settlePaint(page: TauriPage): Promise<boolean> {
-  return waitForFrames(page, SETTLE_FRAMES, FRAME_WAIT_TIMEOUT_MS)
+export async function settlePaint(page: TauriPage): Promise<void> {
+  await page.evaluate(`new Promise(function(resolve) {
+    var done = false;
+    var finish = function() { if (!done) { done = true; resolve(true); } };
+    requestAnimationFrame(function() { requestAnimationFrame(finish); });
+    setTimeout(finish, 500);
+  })`)
 }
 
 /**
@@ -274,42 +241,6 @@ export async function settlePaint(page: TauriPage): Promise<boolean> {
 export async function focusWindow(page: TauriPage, label: string): Promise<void> {
   const labelJson = JSON.stringify(label)
   await page.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:window|set_focus', { label: ${labelJson} })`)
-}
-
-/**
- * Whether the focus QUERY is usable at all. `core:window:allow-is-focused` is
- * granted only in the E2E capture build (`src-tauri/build.rs` writes it into the
- * generated `playwright.json`), so an app built without the feature rejects the
- * invoke. One rejection turns the query off for the rest of the run rather than
- * paying a rejected IPC per shot; the pixel check still guards every image.
- */
-let focusQuerySupported = true
-
-/**
- * Reads whether window `label` currently holds focus; null when unknowable.
- *
- * Diagnostics only, asked on the failure path. ❌ Don't gate a shot on this: it
- * reports macOS KEY-window status, which needs the whole APP to be active, while
- * what a screenshot actually needs is the window ordered to the front and
- * unoccluded. A test run is routinely not the active app, so the two disagree
- * constantly, and waiting on this once cost ~2 s per shot for no signal. It IS
- * worth reporting next to a rejected image, where a `false` is a strong hint.
- */
-async function queryFocused(page: TauriPage, label: string): Promise<boolean | null> {
-  if (!focusQuerySupported) return null
-  const labelJson = JSON.stringify(label)
-  try {
-    return await page.evaluate<boolean>(
-      `window.__TAURI_INTERNALS__.invoke('plugin:window|is_focused', { label: ${labelJson} })`,
-    )
-  } catch (err) {
-    focusQuerySupported = false
-    console.warn(
-      `[i18n-capture] can't query window focus (${err instanceof Error ? err.message : String(err)}); ` +
-        `falling back to the screenshot content check alone`,
-    )
-    return null
-  }
 }
 
 /** Attempts a surface's shot gets before the surface is failed outright. */
@@ -355,13 +286,6 @@ function readIfComplete(path: string): Buffer | null {
   }
 }
 
-/** Frames a retry waits for, and its ceiling: more room than the first attempt. */
-const RETRY_FRAMES = 6
-const RETRY_FRAME_TIMEOUT_MS = 3000
-
-/** sha1 of each written PNG → the surface that wrote it first, for the stale-frame warning. */
-const shotFingerprints = new Map<string, string>()
-
 /**
  * Thrown when `shoot` cannot get real content into the PNG. Its own type so a
  * caller that treats a staging failure as a documented skip (the dialog gallery)
@@ -375,30 +299,35 @@ export class BlankShotError extends Error {
 }
 
 /**
+ * What a reader (agent or human) needs to know the moment a capture comes back
+ * blank. The cause is almost never the app or the harness: macOS stops
+ * compositing a window that isn't frontmost, so anyone clicking into another app
+ * mid-run leaves the capture reading a stale, pre-paint frame. Lead with that, so
+ * nobody spends an afternoon hunting a bug in Cmdr.
+ *
+ * DRAFT (David reviews human-facing copy).
+ */
+const BLANK_SHOT_EXPLANATION =
+  'This is almost certainly NOT a bug in Cmdr or in the harness: macOS stops compositing a window that ' +
+  'is not frontmost, so the capture reads a stale frame from before the UI painted. It usually means the ' +
+  'computer was in use while the run was going. Leave the machine alone while `pnpm i18n:capture` runs, ' +
+  'then re-run it.'
+
+/**
  * Takes ONE verified native screenshot of `page`'s window into `screenshot`.
  *
  * The contract every caller relies on: when this returns, a real image of the
  * CURRENT UI is on disk. When it can't get one, it throws, and the surface lands
  * in `capture-failed.json` and fails the run.
  *
- * How it gets there:
- *  1. Order the window to the front (`set_focus`), because macOS composites a
- *     frontmost window and an uncomposited one hands the capture whatever frame
- *     it last drew (usually the empty startup window). Every window needs this,
- *     the main one included: it loses front position to every settings/viewer
- *     window the run opens.
- *  2. Wait for real animation frames (`settlePaint`), which only arrive while the
- *     compositor is running for this window.
- *  3. Wait for the WHOLE PNG to land on disk (the capture's write outlives its
- *     command), then decode it and check it carries content. This is the
- *     authoritative step: 1 and 2 are remedies and proxies, but the pixels are
- *     the thing we're promising, so the pixels are what we verify.
+ * Per attempt: bring the window to the front (`set_focus`), settle the paint,
+ * shoot, wait for the WHOLE PNG to land on disk (the capture's write outlives its
+ * command), then decode it and check it carries content. The pixels are the only
+ * real guard — the focus and settle steps are the remedy, not the proof.
  *
- * A rejected shot re-focuses, waits on a longer run of frames, and re-shoots.
- *
- * ❌ Never replace any of this with "wait N seconds and hope". A run once wrote 31
- * blank images with the DOM fully correct, every gate passed, and a green result;
- * only the image bytes could have caught it.
+ * ❌ Never replace the pixel check with "wait N seconds and hope". A run once
+ * wrote 31 blank images with the DOM fully correct, every gate passed, and a green
+ * result; only the image bytes could have caught it.
  */
 export async function shoot(page: TauriPage, windowLabel: string, screenshot: string): Promise<void> {
   const path = join(screenshotsDir, screenshot)
@@ -411,59 +340,32 @@ export async function shoot(page: TauriPage, windowLabel: string, screenshot: st
     for (let attempt = 1; attempt <= SHOT_ATTEMPTS; attempt++) {
       const stagePath = `${path}.staged-${String(attempt)}`
       staging.push(stagePath)
-      // Order the window to the front. This is the remedy, not a check: macOS
-      // composites a frontmost, unoccluded window, and an uncomposited one hands
-      // the capture a stale frame.
+      // Order the window to the front so macOS composites it. This is the remedy a
+      // retry leans on: whatever stole the front position (usually someone using
+      // the computer), asking for it back is what can fix the next attempt.
       await focusWindow(page, windowLabel).catch(() => {})
-      // A retry gives the compositor a longer run of frames: the usual reason a
-      // first attempt comes back blank is that focus had only just landed.
-      const painted =
-        attempt === 1 ? await settlePaint(page) : await waitForFrames(page, RETRY_FRAMES, RETRY_FRAME_TIMEOUT_MS)
+      await settlePaint(page)
       const written = await screenshotToFile(page, stagePath)
       const verdict = written === null ? null : assessImageContent(written)
-      if (written !== null && verdict !== null && verdict.ok) {
+      if (verdict !== null && verdict.ok) {
         renameSync(stagePath, path)
         if (attempt > 1) console.log(`[i18n-capture] ${screenshot}: real content on attempt ${String(attempt)}`)
-        warnOnDuplicateFrame(screenshot, written)
         return
       }
-      // Only a rejected shot pays for the diagnostics.
-      const frontmost = await queryFocused(page, windowLabel)
-      const state =
-        `window '${windowLabel}' frontmost=${frontmost === null ? 'unknown' : String(frontmost)}, ` +
-        `frames=${painted ? 'delivered' : 'TIMED OUT (compositor stalled)'}`
-      if (written === null || verdict === null) {
-        const problem = `the capture never finished writing a PNG (waited ${String(SHOT_FILE_TIMEOUT_MS)} ms)`
-        tries.push(`attempt ${String(attempt)}: ${problem} [${state}]`)
-        console.warn(`[i18n-capture] ${screenshot}: ${problem} [${state}]; re-shooting`)
-        continue
-      }
-      tries.push(`attempt ${String(attempt)}: ${verdict.reason} [${state}]`)
-      console.warn(`[i18n-capture] ${screenshot}: ${verdict.reason} [${state}]; re-focusing and re-shooting`)
+      const problem =
+        verdict === null
+          ? `the capture never finished writing a PNG (waited ${String(SHOT_FILE_TIMEOUT_MS)} ms)`
+          : verdict.reason
+      tries.push(`attempt ${String(attempt)}: ${problem}`)
+      console.warn(`[i18n-capture] ${screenshot}: ${problem}; re-focusing window '${windowLabel}' and re-shooting`)
     }
   } finally {
     for (const stagePath of staging) rmSync(stagePath, { force: true })
   }
   throw new BlankShotError(
-    `no real content in ${screenshot} after ${String(SHOT_ATTEMPTS)} attempts. ${tries.join(' | ')}. ` +
-      `A blank shot means the window never composited the frame the capture reads.`,
+    `captured a blank frame for '${screenshot}' after ${String(SHOT_ATTEMPTS)} tries. ` +
+      `${BLANK_SHOT_EXPLANATION} (${tries.join('; ')})`,
   )
-}
-
-/**
- * Warns when a shot is byte-identical to an earlier surface's shot. That's the
- * OTHER shape of a stale frame: not blank, just the previous surface's picture
- * captured again because the window never re-composited. A warning rather than a
- * failure, since two surfaces could in principle look the same.
- */
-function warnOnDuplicateFrame(screenshot: string, written: Buffer): void {
-  const digest = createHash('sha1').update(written).digest('hex')
-  const first = shotFingerprints.get(digest)
-  if (first !== undefined && first !== screenshot) {
-    console.warn(`[i18n-capture] ${screenshot} is pixel-identical to ${first}: likely a stale (re-captured) frame`)
-    return
-  }
-  shotFingerprints.set(digest, screenshot)
 }
 
 /**

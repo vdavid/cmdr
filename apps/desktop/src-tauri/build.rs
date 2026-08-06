@@ -17,11 +17,6 @@ fn main() {
     // grants the plugin's IPC permissions. This file is gitignored and only exists
     // during feature-enabled builds (the plugin's permission schemas aren't available
     // without the feature, so we can't put this in the static capabilities/).
-    //
-    // `allow-is-focused` is here for the i18n capture harness: it confirms a window
-    // actually became frontmost before a native screenshot, because macOS only
-    // composites a frontmost window and the capture reads the composited frame.
-    // Production never needs to ask.
     #[cfg(feature = "playwright-e2e")]
     {
         // Write via temp + rename (the house atomic-write pattern). Besides atomicity, this
@@ -47,8 +42,7 @@ fn main() {
         "core:window:allow-set-title",
         "core:window:allow-set-size",
         "core:window:allow-set-min-size",
-        "core:window:allow-set-focus",
-        "core:window:allow-is-focused"
+        "core:window:allow-set-focus"
     ]
 }
 "#,
