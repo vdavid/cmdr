@@ -15,8 +15,13 @@
 //!   cargo test -p cmdr --lib search::bench::bench_volume_fanout -- --ignored --nocapture
 //!
 //! # What a loaded arena actually costs, in heap bytes and in process RSS.
+//! # (`--exact`: a sibling bench's arena would land in the same RSS reading.)
 //! CMDR_SEARCH_BENCH_DB="/path/index-root.db" \
-//!   cargo test -p cmdr --lib search::bench::bench_arena_bytes -- --ignored --nocapture
+//!   cargo test -p cmdr --lib -- --ignored --nocapture --exact search::bench::bench_arena_bytes
+//!
+//! # The arena pass alone, best-of-N, with and without size/date filters.
+//! CMDR_SEARCH_BENCH_DB="/path/index-root.db" \
+//!   cargo test -p cmdr --lib search::bench::bench_arena_scan -- --ignored --nocapture
 //! ```
 //!
 //! Phases are isolated by differencing whole `search_ranked` runs rather than by
@@ -360,6 +365,81 @@ fn bench_volume_fanout() {
     );
 }
 
+/// Time the ARENA PASS alone, best-of-N, with and without the filters that read an
+/// entry's size and date.
+///
+/// The one instrument for "did a change to the row's shape make scanning slower".
+/// `bench_real_index` can't answer that: its queries set no size or date bound, so the
+/// matcher skips those predicates entirely, and its single run per pattern is swamped by
+/// machine noise on a busy box.
+///
+/// Two shapes, because they cost differently:
+///
+/// - **name only** — every row still pays the `Candidate` build, which decodes both
+///   optional fields whether or not the query asks about them.
+/// - **+ size and date bounds** — the predicates actually read the decoded values, on
+///   every row the name pattern let through.
+///
+/// Count-only, so the number is the rayon scan with no ranking or path materialization
+/// in it. Reported as min and median over the repeats: the minimum is the closest thing
+/// to an uncontended run, and on a machine running other work it's the only figure two
+/// builds can be compared on. Comparing two builds means comparing two BINARIES —
+/// `cargo test --release` overwrites the same one, so copy it aside between builds and
+/// run them alternately, or the machine's mood ends up in the delta.
+#[test]
+#[ignore = "benchmark; needs CMDR_SEARCH_BENCH_DB pointing at a real index-*.db"]
+#[allow(
+    clippy::print_stderr,
+    reason = "an ignored measurement harness prints its table to stderr for `--nocapture`; it never runs in the app or CI"
+)]
+fn bench_arena_scan() {
+    let Ok(db) = std::env::var("CMDR_SEARCH_BENCH_DB") else {
+        eprintln!("CMDR_SEARCH_BENCH_DB not set; skipping");
+        return;
+    };
+    let repeats: usize = std::env::var("CMDR_SEARCH_BENCH_REPEATS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(9);
+
+    let pool = ReadPool::new(db.clone().into()).expect("open index DB");
+    let index = load_search_index(&pool, &AtomicBool::new(false)).expect("load index");
+    let empty = ImportanceWeights::empty();
+    eprintln!(
+        "\n{db}\n  {}, size_of::<SearchEntry>() = {} B, best of {repeats}",
+        pluralize_with(index.entries.len() as u64, "entry", "entries"),
+        size_of::<SearchEntry>(),
+    );
+
+    // A one-letter pattern, so the name filter passes millions of rows through to the
+    // size and date predicates rather than rejecting them on the regex.
+    let name_only = query("e", PatternType::Glob, true);
+    let filtered = SearchQuery {
+        min_size: Some(1_000_000),
+        modified_after: Some(1_600_000_000),
+        ..query("e", PatternType::Glob, true)
+    };
+
+    for (label, q) in [("name only", &name_only), ("+ size and date bounds", &filtered)] {
+        let mut runs: Vec<std::time::Duration> = Vec::with_capacity(repeats);
+        let mut total = 0;
+        for _ in 0..repeats {
+            let t = Instant::now();
+            total = search_ranked(&index, q, &empty, "", None)
+                .expect("count-only search should succeed")
+                .total_count;
+            runs.push(t.elapsed());
+        }
+        runs.sort_unstable();
+        eprintln!(
+            "  {label:<24} matches {total:>9}  min {:>9.2?}  median {:>9.2?}",
+            runs[0],
+            runs[repeats / 2],
+        );
+    }
+    eprintln!();
+}
+
 /// This process's resident set in bytes, as the kernel reports it.
 fn process_rss_bytes() -> u64 {
     std::process::Command::new("ps")
@@ -379,14 +459,24 @@ fn process_rss_bytes() -> u64 {
 /// - **Heap bytes held** ([`heap_bytes_held`]) is exact and reproducible: it's the
 ///   requested `Layout` sizes the built `SearchIndex` still holds, so a rerun on the
 ///   same DB gives the same figure. Compare THIS across a change to the row's shape.
-/// - **Process RSS** confirms the heap delta actually reaches resident memory. It's
-///   noisier (page cache for the DB read lands in it too) and it's measured under the
-///   test binary's `System`-backed counting allocator, not the mimalloc the shipping
-///   app uses, so ❌ don't quote it as the app's footprint.
+/// - **Process RSS with the arena resident** confirms the heap figure reaches real
+///   memory. Read the ABSOLUTE number, not the Δ: a warm-up load runs and is dropped
+///   first (otherwise the delta is mostly the DB's page cache), so by the measured load
+///   the allocator is reusing pages it already holds and the Δ reads as ~0. The absolute
+///   figure is reproducible to 0.1 MB across runs.
+///
+/// ⚠️ Both are measured under the test binary's `System`-backed counting allocator, not
+/// the mimalloc the shipping app uses, so ❌ don't quote either as the app's footprint.
+/// A DIFFERENCE between two builds carries; an absolute figure doesn't.
+///
+/// ❌ **Run this one ALONE** (`--exact search::bench::bench_arena_bytes`). The harness
+/// runs `#[test]`s in parallel inside one process, so a sibling bench holding its own
+/// arena lands in the same RSS reading. The heap figure is thread-local and unaffected.
 ///
 /// Point it at a SNAPSHOT of a real index rather than the live file if you're comparing
 /// two builds: the boot volume's index gains rows by the second, and a row count that
-/// moved between runs is a difference the arena shape didn't cause.
+/// moved between runs is a difference the arena shape didn't cause. Comparing two builds
+/// means comparing two BINARIES — see [`bench_arena_scan`] on copying one aside.
 #[test]
 #[ignore = "benchmark; needs CMDR_SEARCH_BENCH_DB pointing at a real index-*.db"]
 #[allow(
@@ -402,30 +492,35 @@ fn bench_arena_bytes() {
     };
     let pool = ReadPool::new(db.clone().into()).expect("open index DB");
 
-    let rss_before = process_rss_bytes();
+    // A throwaway load first, then drop it, so the DB's page cache and the allocator's
+    // first-touch growth are already paid for and the figure below is one arena's worth
+    // of resident memory rather than everything this process has ever touched.
+    drop(load_search_index(&pool, &AtomicBool::new(false)).expect("load index"));
+
+    let rss_empty = process_rss_bytes();
     let t = Instant::now();
     let (index, heap) = heap_bytes_held(|| load_search_index(&pool, &AtomicBool::new(false)).expect("load index"));
     let load = t.elapsed();
-    let rss_after = process_rss_bytes();
+    let rss_loaded = process_rss_bytes();
 
     let rows = index.entries.len() as f64;
     let mb = |bytes: i64| bytes as f64 / (1024.0 * 1024.0);
+    let entries_bytes = (index.entries.capacity() * size_of::<SearchEntry>()) as i64;
     eprintln!(
         "\n{db}\n  {} loaded in {load:.2?}\n  \
          size_of::<SearchEntry>() = {} B\n  \
-         arena heap held:  {:>9.1} MB  ({:.1} B a row)\n    \
-         of which entries: {:>9.1} MB\n    \
-         names + id map:   {:>9.1} MB\n  \
-         process RSS:      {:>9.1} MB → {:.1} MB (Δ {:.1} MB)\n",
+         arena heap held:      {:>9.1} MB  ({:.1} B a row)\n    \
+         of which entries:     {:>9.1} MB\n    \
+         names + id map:       {:>9.1} MB\n  \
+         process RSS, arena resident: {:.1} MB (empty {:.1} MB)\n",
         pluralize_with(index.entries.len() as u64, "entry", "entries"),
         size_of::<SearchEntry>(),
         mb(heap),
         heap as f64 / rows,
-        mb((index.entries.capacity() * size_of::<SearchEntry>()) as i64),
-        mb(heap) - mb((index.entries.capacity() * size_of::<SearchEntry>()) as i64),
-        rss_before as f64 / (1024.0 * 1024.0),
-        rss_after as f64 / (1024.0 * 1024.0),
-        (rss_after as f64 - rss_before as f64) / (1024.0 * 1024.0),
+        mb(entries_bytes),
+        mb(heap - entries_bytes),
+        rss_loaded as f64 / (1024.0 * 1024.0),
+        rss_empty as f64 / (1024.0 * 1024.0),
     );
 
     // Keep the arena alive past the RSS read above.
