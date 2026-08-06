@@ -345,9 +345,9 @@ fn run_vacuum_probe(source: &Path, scratch: &Path, scope: Option<&str>, json: bo
     Ok(())
 }
 
-/// Refuse to write the scratch copy anywhere an app instance owns its data. The
-/// probe deletes rows and VACUUMs; aimed at a live index it would destroy a rescan
-/// that costs tens of minutes to redo.
+/// Refuse to write the scratch copy anywhere an app instance owns its data. This
+/// path gets overwritten, and with a `--scope` it gets rows deleted out of it;
+/// aimed at a live index that would destroy a rescan costing tens of minutes.
 fn guard_not_live(db: &Path) -> Result<(), String> {
     let s = db.display().to_string();
     if s.contains("com.veszelovszki.cmdr") || s.contains("Application Support") {
@@ -538,7 +538,7 @@ impl Scope {
 
 // ── Rows in scope ────────────────────────────────────────────────────
 
-struct Under {
+struct ScopeRows {
     files: i64,
     dirs: i64,
     logical_bytes: i64,
@@ -546,7 +546,7 @@ struct Under {
     null_logical_files: i64,
 }
 
-impl Under {
+impl ScopeRows {
     fn emit(&self, out: &mut Doc) {
         out.num("scope_file_rows", self.files);
         out.num("scope_dir_rows", self.dirs);
@@ -559,7 +559,7 @@ impl Under {
 /// One descent over the scope. A scoped descent seeds on the scope root itself,
 /// which is a directory the subtree's own count shouldn't claim, so it comes back
 /// off the directory total.
-fn rows_under(conn: &Connection, scope: &Scope) -> Result<Under, String> {
+fn rows_under(conn: &Connection, scope: &Scope) -> Result<ScopeRows, String> {
     let sql = format!(
         "{}
          SELECT sum(s.is_dir = 0),
@@ -582,7 +582,7 @@ fn rows_under(conn: &Connection, scope: &Scope) -> Result<Under, String> {
         })
         .map_err(|e| format!("walking {}: {e}", scope.path))?;
     let seed_dirs = i64::from(!scope.is_whole_index());
-    Ok(Under {
+    Ok(ScopeRows {
         files: row.0,
         dirs: row.1 - seed_dirs,
         logical_bytes: row.2,
@@ -605,26 +605,27 @@ fn child_stats(conn: &Connection, scope: &Scope) -> Result<Vec<Record>, String> 
         .flatten()
         .collect();
 
-    let mut stats: Vec<(String, Under)> = children
-        .into_iter()
-        .filter_map(|(id, name)| {
-            let child = Scope {
-                id,
-                path: format!("{}/{name}", scope.path.trim_end_matches('/')),
-            };
-            let under = rows_under(conn, &child).ok()?;
-            Some((child.path, under))
-        })
-        .collect();
-    stats.sort_by_key(|(_, u)| -u.files);
+    // A failed descent propagates rather than dropping the child quietly: it would
+    // be a SQL error, and a table whose rows silently stop adding up to the totals
+    // above it is worse than no table. Index drift shows up as zero rows, not here.
+    let mut stats: Vec<(String, ScopeRows)> = Vec::with_capacity(children.len());
+    for (id, name) in children {
+        let child = Scope {
+            id,
+            path: format!("{}/{name}", scope.path.trim_end_matches('/')),
+        };
+        let rows = rows_under(conn, &child)?;
+        stats.push((child.path, rows));
+    }
+    stats.sort_by_key(|(_, rows)| -rows.files);
     Ok(stats
         .into_iter()
-        .map(|(path, u)| {
+        .map(|(path, rows)| {
             vec![
                 ("path".to_string(), format!("\"{}\"", escape(&path))),
-                ("file_rows".to_string(), u.files.to_string()),
-                ("dir_rows".to_string(), u.dirs.to_string()),
-                ("logical_bytes".to_string(), u.logical_bytes.to_string()),
+                ("file_rows".to_string(), rows.files.to_string()),
+                ("dir_rows".to_string(), rows.dirs.to_string()),
+                ("logical_bytes".to_string(), rows.logical_bytes.to_string()),
             ]
         })
         .collect())
