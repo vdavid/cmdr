@@ -30,6 +30,33 @@ cargo run -p index-query -- ~/Library/Application\ Support/com.veszelovszki.cmdr
 
 Output is tab-separated with a header row (like `sqlite3` default mode).
 
+## `index-size-probe`: what the index is full of, and what a `VACUUM` would reclaim
+
+Structural questions about a multi-gigabyte index that no app query answers. All three subcommands are safe against a
+LIVE index. Add `--json` to any of them so two runs diff, and `--scope <path>` to narrow to one subtree (an absolute
+path; without it each subcommand covers the whole index). Build in release: `rows` over a 6M-row index takes ~25 s
+released and minutes debug.
+
+```sh
+# Rows and bytes per table and index, dbstat page attribution, and a per-child breakdown of where they sit.
+cargo run --release -p index-query --bin index-size-probe -- rows <index.db> [--scope <path>]
+
+# Directory fan-out percentiles and the file-size distribution.
+cargo run --release -p index-query --bin index-size-probe -- distribution <index.db> [--scope <path>]
+
+# What a VACUUM would give back; with --scope, what that subtree's file rows cost on disk.
+cargo run --release -p index-query --bin index-size-probe -- vacuum-probe <index.db> <scratch.db> [--scope <path>]
+```
+
+- **`rows` and `distribution` never write.** Each run pins one read snapshot, so the per-child rows still add up to the
+  totals printed above them while the app is indexing.
+- **`vacuum-probe` never writes to the source either.** It copies via `VACUUM INTO` from a read-only connection (a `cp`
+  of a live WAL-mode DB is a torn read, and stopping the app to copy it costs a rescan) and does its deleting on the
+  scratch copy, whose path it refuses if that sits inside an app data directory.
+- **Descend by re-running.** `rows` sorts children by file rows, so `--scope` on the top row is the next question.
+- **Two per-row numbers, and they disagree on purpose.** `dbstat_bytes_per_entry_row_estimate` attributes pages;
+  `measured_bytes_per_file_row` (scoped `vacuum-probe`) deletes the rows and weighs the file. Trust the measured one.
+
 ## The importance binaries in the same crate
 
 Both point at a REAL index READ-ONLY (WAL gives a consistent snapshot) and report numbers only, never a folder name.
