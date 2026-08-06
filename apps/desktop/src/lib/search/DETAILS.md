@@ -420,6 +420,14 @@ event: it sanitizes the payload, defaults `mode` to `'ai'` when AI is enabled (e
 writes can't re-trigger the effect. AI mode honors the explicit-trigger contract because the MCP caller's
 `autoRun: true` counts as the explicit trigger.
 
+A prefill also clears `lastRunQuery`, because it REPLACES the session: it drops the previous run's results, and that
+field names the query those results came from. ❌ Don't restore it. The dialog's reopen-with-results path is a second
+producer of `runOnMount` and arms it from exactly that field, in `onMount` — after the prefill's own run has already
+fired and cleared the flag. That ran the same query twice a millisecond apart; the second run found its ground claimed
+by the first one's walk (`cover/live.rs`), walked nothing, and is the one the dialog renders, so
+`open_search_dialog autoRun: true` on unindexed ground showed an empty dialog. Clearing the field also makes
+`autoRun: false` mean what it says, instead of the reopen path running the prefill anyway.
+
 **Footer right-edge actions**: the shared `QueryDialog` renders the two footer buttons at the right of the dialog
 footer, opposite the recent-searches strip, from Search's `config.secondaryAction` / `config.primaryAction`. They're
 standard `$lib/ui/Button`s (`size="regular"`) with the keyboard shortcut on a `ShortcutChip`, disabled (not hidden) when
@@ -460,9 +468,9 @@ The label shown in the pane breadcrumb (and the snapshot's `label` field) is bui
 
 ## The walk that outlives the dialog (`walk-handoff.svelte.ts`)
 
-"Open in pane" is the ONE case where a search keeps running with its dialog gone. Everything else about
-closing the dialog stops the walk, because nobody is waiting for it; here the results are on screen in a pane, so the
-rows keep arriving there.
+"Open in pane" is the ONE case where a search keeps running with its dialog gone. Everything else about closing the
+dialog stops the walk, because nobody is waiting for it; here the results are on screen in a pane, so the rows keep
+arriving there.
 
 Four parts, and they're split across three files for one reason each:
 

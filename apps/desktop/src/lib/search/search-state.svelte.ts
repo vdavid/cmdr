@@ -280,7 +280,17 @@ export function applySearchPrefill(prefill: SearchPrefill): void {
   core.setResults([])
   core.setTotalCount(0)
   core.setCursorIndex(0)
+  // A prefill REPLACES the session, so there is no previous run left to restore:
+  // `lastRunQuery` names the query the results above came from, and they're gone.
+  // ❌ Don't drop this. `runOnMount` is a one-shot flag with three producers, and
+  // the dialog's reopen-with-results path arms it from exactly this field — after
+  // the prefill's own run has already fired and cleared it. That fired the SAME
+  // query twice, a millisecond apart: the second run found its ground claimed by
+  // the first one's walk, walked nothing, and is the one the dialog renders. An
+  // agent calling `open_search_dialog` with `autoRun: true` got an empty dialog.
+  core.setLastRunQuery(null)
 
+  // The caller's `autoRun` is the whole decision now, in both directions.
   core.setRunOnMount(prefill.autoRun ?? true)
 }
 

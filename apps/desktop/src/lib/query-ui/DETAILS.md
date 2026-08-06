@@ -313,6 +313,10 @@ recent-search activation) flow through the same path. The effect dispatches when
 shared `hasRunnableQuery()` predicate (non-empty query OR size/date/type filter active). AI mode honors the
 explicit-trigger contract because the prefill caller's `autoRun: true` IS the explicit trigger.
 
+⚠️ The flag has THREE producers and is consumed once per arming, so a producer that arms it after another one's run has
+already fired runs the same query twice. Search's prefill closes that by clearing `lastRunQuery` (a prefill replaces the
+session), which is what the reopen producer below reads; see `lib/search/DETAILS.md` § MCP `open_search_dialog`.
+
 A third producer of `runOnMount` is the reopen path. `onMount` sets the flag when the surviving state holds a restorable
 NON-AI session (`getLastRunQuery() !== null` AND `hasRunnableQuery()` AND `mode !== 'ai'`), so the dialog re-derives
 results on reopen instead of resting on the empty state: Select re-runs the matcher against the freshly-snapshotted
