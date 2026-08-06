@@ -75,6 +75,7 @@ fn main() {
         _ => {
             eprintln!(
                 "Usage:\n  {0} rows <index.db> [--json]\n  \
+                 {0} distribution <index.db> [--json]\n  \
                  {0} vacuum-probe <index.db> <scratch-copy.db> [--json]",
                 args[0]
             );

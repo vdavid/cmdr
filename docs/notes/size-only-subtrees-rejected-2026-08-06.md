@@ -32,7 +32,7 @@ actively searching.
 
 On the real index: **81 681 multi-link inode families, and 92.2% of them have partners in a DIFFERENT directory.**
 
-The index's dedup rule is a global one — an `entries` + `idx_inode` lookup that stores `logical_size = NULL` for a
+The index's dedup rule is a global one: an `entries` + `idx_inode` lookup that stores `logical_size = NULL` for a
 repeat inode, so the bytes are counted once across the whole volume. **Per-directory summing cannot reproduce that**,
 because for nine families in ten the other names live somewhere else entirely. Any future design that deletes file rows
 has to solve this first, and "sum within the folder" is not the solution.
@@ -68,7 +68,7 @@ arithmetic, not measurement.**
   ancestor per candidate inside an interactive loop. Binary search trades ~144 MB for ~23 cache-missing comparisons per
   lookup and has to be measured on BOTH axes before anyone calls it a win.
 - **The better first experiment on that map**: entries already arrive rowid-ordered (`id INTEGER PRIMARY KEY`), so a
-  sorted `Vec<(i64, u32)>` at 12 B/row — or an offset table exploiting id contiguity — likely gets most of the memory
+  sorted `Vec<(i64, u32)>` at 12 B/row (or an offset table exploiting id contiguity) likely gets most of the memory
   while staying O(1)-ish.
 
 ## APFS clones over-count sizes. A finding, NOT a plan.
@@ -104,7 +104,7 @@ Reference material if anyone picks it up:
 
 Both are committed and generic, so a re-measurement is a re-run:
 
-- `cargo run -p index-query --bin index-size-probe` — rows, bytes, fan-out, size distribution, and vacuum-reclaim, all
+- `cargo run -p index-query --bin index-size-probe`: rows, bytes, fan-out, size distribution, and vacuum-reclaim, all
   safe against the live index.
-- `scripts/churn-baseline` — CPU, memory, rows written, and log volume across an idle control and a churn phase, with
+- `scripts/churn-baseline`: CPU, memory, rows written, and log volume across an idle control and a churn phase, with
   the root writer thread's own CPU read off its heartbeat.
