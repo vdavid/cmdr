@@ -187,7 +187,7 @@ export async function scanForClipping(page: TauriPage, label: string): Promise<v
       console.warn(`[i18n-overflow] ${label}: ${String(findings.length)} clipped element(s)`)
     }
   } catch {
-    // Best-effort: a window whose eval channel is unresponsive (e.g. shortcuts)
+    // Best-effort: a window that closed mid-scan, or whose eval didn't come back,
     // just gets no findings rather than failing the run.
     clipFindings[label] ??= []
   }
@@ -262,13 +262,15 @@ async function readFontScale(page: TauriPage): Promise<number> {
  * in sync): `tauri.conf.json` (main, fixed 950x550), `settings-window.ts`
  * (`SETTINGS_CHROME_WIDTH + SETTINGS_CONTENT_BASE_MIN_WIDTH*scale` by
  * `SETTINGS_BASE_MIN_HEIGHT*scale`), `open-viewer.ts` (viewer, fixed 400x300),
- * and `shortcuts-window.ts` (`MIN_WIDTH*scale` by `MIN_HEIGHT`). The scaled ones
- * use the worst-case scale (`MAX_UI_ZOOM/100`).
+ * `shortcuts-window.ts` (`MIN_WIDTH*scale` by `MIN_HEIGHT`), and `queue-window.ts`
+ * (`MIN_WIDTH*scale` by `MIN_HEIGHT*scale`, both scaled). The scaled ones use the
+ * worst-case scale (`MAX_UI_ZOOM/100`).
  */
 function minSizeFor(label: string): { width: number; height: number } {
   const scale = MAX_UI_ZOOM / 100
   if (label === 'settings') return { width: 252 + 348 * scale, height: 400 * scale }
   if (label === 'shortcuts') return { width: 300 * scale, height: 420 }
+  if (label === 'queue') return { width: 540 * scale, height: 280 * scale }
   if (label.startsWith('viewer')) return { width: 400, height: 300 }
   // main window (and any main-window overlay captured against `main`).
   return { width: 950, height: 550 }
@@ -307,7 +309,16 @@ async function resizeWindowToMin(page: TauriPage, label: string): Promise<void> 
 export async function stressLayoutIfWorstCase(page: TauriPage, label: string): Promise<void> {
   if (!isWorstCasePass) return
   // Drive the real zoom path; cross-window-synced + re-runs computeAndApply.
-  await captureCall(page, 'setTextSize', String(MAX_UI_ZOOM))
+  // The QUEUE window can't drive it: `capabilities/queue.json` deliberately drops
+  // `store:default`, so its `setSetting` write is ACL-denied. Harmless, because
+  // the zoom is cross-window-synced and every main-window surface ran first, so
+  // the app is already at max zoom by the time the queue window opens. The resize
+  // below is what this window actually needs.
+  if (label === 'queue') {
+    await captureCall(page, 'setTextSize', String(MAX_UI_ZOOM)).catch(() => {})
+  } else {
+    await captureCall(page, 'setTextSize', String(MAX_UI_ZOOM))
+  }
   // Wait for the scale to land (and the settings window's live min-size effect to
   // recompute) before resizing, so the clamp targets the max-zoom floor. Polls
   // the live `--font-scale`; falls through on timeout rather than hanging.

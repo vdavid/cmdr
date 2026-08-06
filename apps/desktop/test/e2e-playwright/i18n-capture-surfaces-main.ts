@@ -122,4 +122,34 @@ export async function captureMainExplorerSurfaces(
     .evaluate(`document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Shift', bubbles: true }))`)
     .catch(() => {})
   await captureCall(main, 'disable').catch(() => {})
+
+  // ── Pane volume chooser ─────────────────────────────────────────────────────
+  // The dropdown behind a pane's volume breadcrumb. It's a pane-owned overlay, not
+  // a registered soft dialog (`UNREGISTERED_OVERLAY_ENTRIES` says so), so neither
+  // the dialog tranche nor the gallery pass reaches it, and it's the only place the
+  // sidebar's group headings and the favorites empty-state render.
+  await captureSurface('pane-volume-chooser', report, failed, async () => {
+    await captureCall(main, 'reset')
+    await captureCall(main, 'setSurface', 'pane-volume-chooser')
+    await captureCall<boolean>(main, 'enable')
+    // Click the breadcrumb's volume name, the same target ⌥F1 activates.
+    await main.evaluate(`(function(){
+      var pane = document.querySelector('.file-pane.is-focused') || document.querySelector('.file-pane');
+      var name = pane && pane.querySelector('.volume-breadcrumb .volume-name');
+      if (!name) throw new Error('no volume breadcrumb in the focused pane');
+      name.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    })()`)
+    await main.waitForSelector('.volume-dropdown .category-label', 5000)
+    return { page: main }
+  })
+  // Escape closes the dropdown; the poll keeps a slow close from bleeding into the
+  // next surface's shot.
+  await main
+    .evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`)
+    .catch(() => {})
+  await expect
+    .poll(async () => main.evaluate<number>(`document.querySelectorAll('.volume-dropdown').length`), { timeout: 3000 })
+    .toBe(0)
+    .catch(() => {})
+  await captureCall(main, 'disable').catch(() => {})
 }

@@ -262,8 +262,12 @@ await closeScopedWindow(tauriPage as TauriPage, settings, 'settings')
 command, that's a real bug. Production hits the same wall. Fix by either adding the missing permission to the capability
 file or changing the test to use a permitted command.
 
-The auto-generated `playwright.json` capability (`src-tauri/build.rs`) now includes `"main"`, `"settings"`, and
-`"viewer-*"` so the plugin's `pw_result` IPC callback works from all three.
+**Every window a test drives must be listed in the auto-generated `playwright.json` capability**
+(`src-tauri/build.rs`): currently `"main"`, `"settings"`, `"viewer-*"`, `"shortcuts"`, and `"queue"`. The plugin sends an
+eval's RESULT back through its own `plugin:playwright|pw_result` IPC command, and Tauri gates IPC per window through the
+capability ACL. A window missing from that list can receive the script but can never answer, so the plugin waits out its
+full 30 s ceiling and even `1+1` reads as a hang: the failure looks like a broken window, not a missing permission. The
+`shortcuts` window sat "known-broken" for weeks on exactly this. Add the label when you add the window.
 
 ## Key decisions
 

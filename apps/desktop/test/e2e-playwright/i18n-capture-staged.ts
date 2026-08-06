@@ -28,7 +28,13 @@ import { ensureAppReady, dismissOverlay, dispatchMenuCommand, getFixtureRoot } f
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import { initMcpClient, mcpSelectVolume, mcpAwaitItem } from '../e2e-shared/mcp-client.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
-import { type SurfaceEntry, captureCall, captureSurface, captureToastSurface } from './i18n-capture-helpers.js'
+import {
+  type SurfaceEntry,
+  captureCall,
+  captureSurface,
+  captureToastSurface,
+  focusWindow,
+} from './i18n-capture-helpers.js'
 
 /** The virtual MTP device's internal-storage volume name (matches `mtp.spec.ts`). */
 const MTP_INTERNAL_STORAGE = 'Virtual Pixel 9 - Internal Storage'
@@ -196,6 +202,7 @@ export async function captureLicensePass(
   if (pass === 'license:commercial' || pass === 'license:perpetual') {
     // The paid About is opened on demand by command, so the app can be brought to
     // a clean ready state first.
+    await awaitFirstListing(main)
     await ensureAppReady(main)
     const label = pass === 'license:perpetual' ? 'about-perpetual' : 'about-commercial'
     await captureSurface(label, report, failed, async () => {
@@ -218,8 +225,9 @@ export async function captureLicensePass(
   const bootModal = async (label: string, dialogId: string): Promise<void> => {
     await captureSurface(label, report, failed, async () => {
       // App-loaded signal without touching modals (no Escape, no route reset that
-      // would unmount the boot dialog).
-      await main.waitForSelector('.file-entry', 15000)
+      // would unmount the boot dialog). Same generous budget as `awaitFirstListing`,
+      // and for the same reason.
+      await awaitFirstListing(main)
       await main.waitForSelector(`[data-dialog-id="${dialogId}"]`, 10000)
       await captureCall(main, 'reset')
       await captureCall(main, 'setSurface', label)
@@ -238,6 +246,32 @@ export async function captureLicensePass(
     await bootModal('expiration', 'expiration')
     return
   }
+}
+
+/**
+ * Brings the main window forward and waits, generously, for the first pane
+ * listing to render. Every mock pass calls this BEFORE anything that assumes the
+ * app is up.
+ *
+ * Two things it defends against, both of which killed these passes while the
+ * single-launch runs stayed green:
+ *
+ * - **A zero-sized `.file-entry`.** The plugin's `wait_for_selector` requires a
+ *   non-zero bounding rect, and under `CMDR_E2E_MODE` every window opens
+ *   unfocused and ordered to the back. An occluded window can sit unlaid-out, so
+ *   the rows exist in the DOM with no box and the wait can never succeed. Focus
+ *   first, and they lay out.
+ * - **A slow first paint.** `ensureAppReady` allows 15 s, which is plenty for a
+ *   warm, idle machine. A mock pass is the Nth launch of a multi-launch run
+ *   against a data dir whose drive index has a backlog to replay, often while the
+ *   machine is compiling something else.
+ *
+ * Costs nothing when the app is ready: the focus is one IPC and the wait returns
+ * on the same tick.
+ */
+async function awaitFirstListing(main: TauriPage): Promise<void> {
+  await focusWindow(main, 'main').catch(() => {})
+  await main.waitForSelector('.file-entry', 60000)
 }
 
 /** Onboarding step-1 (FDA) selector + the active-step dot reader, shared with the wizard walk. */
@@ -260,6 +294,7 @@ export async function captureFdaOnboardingPass(
   report: Record<string, SurfaceEntry>,
   failed: string[],
 ): Promise<void> {
+  await awaitFirstListing(main)
   await ensureAppReady(main)
   const label = `onboarding-fda-${pass.replace('fda:', '')}`
 

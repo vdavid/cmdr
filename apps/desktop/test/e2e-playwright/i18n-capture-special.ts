@@ -10,13 +10,16 @@
  * frontend can't toggle. All use the shared engines in `i18n-capture-helpers.ts`.
  */
 
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { expect } from './fixtures.js'
 import {
   ensureAppReady,
   dismissOverlay,
   openViewerWindow,
   closeScopedWindow,
   dispatchMenuCommand,
+  getFixtureRoot,
   CTRL_OR_META,
 } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
@@ -25,19 +28,20 @@ import { type SurfaceEntry, captureCall, captureSurface, focusWindow } from './i
 /**
  * Captures the main-window report/feedback/license dialogs reachable on the
  * DEFAULT launch (no license mock): the license-key ENTRY dialog (Personal
- * state, no key on file), the error-report dialog, and the feedback dialog.
+ * state, no key on file), the error-report dialog, the feedback dialog, and the
+ * acknowledgements dialog.
  *
- * All three are `ModalDialog`s rendered into the MAIN window's sink and opened by
- * a registry command, so each follows the About rhythm: enable + setSurface the
+ * All are `ModalDialog`s rendered into the MAIN window's sink and opened by a
+ * registry command, so each follows the About rhythm: enable + setSurface the
  * sink BEFORE dispatching the command (to record mount-time `t()` calls), wait on
  * the dialog's `data-dialog-id`, capture, then dismiss + disable.
  *
- * The COMMERCIAL / perpetual / expired / reminder license surfaces (and the
- * license DETAILS view) can't be reached here: they depend on `AppStatus`, which
- * `app_status.rs` derives from `CMDR_MOCK_LICENSE` ONLY under
- * `#[cfg(debug_assertions)]`, and the capture binary is a RELEASE build (mock
- * compiled out). They're document-skipped in the spec: see its license-state
- * skip block for the reason.
+ * The COMMERCIAL / perpetual / expired / reminder license surfaces live in their
+ * own `CMDR_MOCK_LICENSE` launches (`captureLicensePass` in
+ * `i18n-capture-staged.ts`): `app_status.rs` reads that env only under
+ * `#[cfg(debug_assertions)]`, which the capture build turns on for the release
+ * profile. The license DETAILS view stays document-skipped in the spec: it needs
+ * a real committed key, which the `AppStatus` mock doesn't populate.
  */
 export async function captureMainDialogs(
   main: TauriPage,
@@ -47,6 +51,8 @@ export async function captureMainDialogs(
   await ensureAppReady(main)
 
   // Opens one main-window ModalDialog by command, captures it, dismisses it.
+  // `waitSelector` should name something the dialog only renders once it has the
+  // content its copy describes, not just its shell.
   const dialogSurface = async (label: string, commandId: string, waitSelector: string): Promise<void> => {
     await captureSurface(label, report, failed, async () => {
       await captureCall(main, 'reset')
@@ -73,6 +79,127 @@ export async function captureMainDialogs(
 
   // Feedback dialog (`feedback.send`). Opens directly; renders `feedback.dialog.*`.
   await dialogSurface('feedback', 'feedback.send', '[data-dialog-id="feedback"]')
+
+  // Acknowledgements dialog (`app.acknowledgements`). It reads the generated
+  // third-party notices asynchronously and shows a spinner until they land, so we
+  // wait for the package list rather than the dialog shell: the loaded branch is
+  // what renders the jump links, the section headings, and the full-texts line
+  // (`licensing.acknowledgements.*`). The spinner branch would record only
+  // `.loading` and shoot a nearly empty dialog.
+  await dialogSurface('acknowledgements', 'app.acknowledgements', '[data-dialog-id="acknowledgements"] .packages-scroll')
+}
+
+/** Files per staged source dir: enough that a copy stays Running through the shot. */
+const QUEUE_FILES_PER_SOURCE = 24
+/** Two distinct sources so the copies don't collide on the destination; both sit on
+ *  volume `root`, so they share the local lane and serialize (one Running, one Queued). */
+const QUEUE_SOURCES = ['queue-shot-a', 'queue-shot-b']
+/** Per-file delay (ms) the backend honors while capturing, so the transfers outlive the shot. */
+const QUEUE_THROTTLE_MS = 250
+
+/** Creates `left/<name>/` with `QUEUE_FILES_PER_SOURCE` tiny files, Node-side on real disk. */
+function makeQueueSource(fixtureRoot: string, name: string): void {
+  const dir = join(fixtureRoot, 'left', name)
+  mkdirSync(dir, { recursive: true })
+  for (let i = 0; i < QUEUE_FILES_PER_SOURCE; i++) {
+    writeFileSync(join(dir, `file-${String(i).padStart(2, '0')}.txt`), 'x'.repeat(1024))
+  }
+}
+
+/** Starts a local→local copy of `left/<sourceName>/` into `right/` through the production IPC. */
+async function startQueueCopy(main: TauriPage, fixtureRoot: string, sourceName: string): Promise<void> {
+  const src = JSON.stringify(join(fixtureRoot, 'left', sourceName))
+  const destDir = JSON.stringify(join(fixtureRoot, 'right'))
+  await main.evaluate(`window.__TAURI_INTERNALS__.invoke('copy_between_volumes', {
+    sourceVolumeId: 'root',
+    sourcePaths: [${src}],
+    destVolumeId: 'root',
+    destPath: ${destDir},
+    config: { conflictResolution: 'rename', progressIntervalMs: 100, maxConflictsToShow: 10, previewId: null, preKnownConflicts: [] }
+  })`)
+}
+
+/**
+ * Captures the TRANSFER QUEUE window in both of its states: empty, then with one
+ * Running and one Queued row.
+ *
+ * `/queue` is its own `WebviewWindow` (own webview context, own capture sink),
+ * opened by the `queue.show` registry command, and every `queue.*` key is
+ * exclusive to it: nothing else in the app can stand in for this surface.
+ *
+ * The rows need real work in flight, so this stages the same two same-lane copies
+ * `transfer-queue.spec.ts` uses and slows the backend with `set_test_throttle` so
+ * they outlive the screenshot. Empty first, so `queue.empty.*` couples to the
+ * image that actually shows the empty state rather than to a populated list.
+ *
+ * The throttle is cleared and every staged operation cancelled in `finally`, so a
+ * later surface never captures a queue still grinding through leftovers.
+ */
+export async function captureQueueWindow(
+  main: TauriPage,
+  report: Record<string, SurfaceEntry>,
+  failed: string[],
+): Promise<void> {
+  await ensureAppReady(main)
+  const fixtureRoot = getFixtureRoot()
+  for (const name of QUEUE_SOURCES) makeQueueSource(fixtureRoot, name)
+
+  let queue: TauriPage | undefined
+  try {
+    await dispatchMenuCommand(main, 'queue.show')
+    queue = await main.waitForWindow((w) => w.label === 'queue', { timeout: 10000 })
+    const q = queue
+
+    await captureSurface('queue-empty', report, failed, async () => {
+      // `waitForWindow` returns the moment the label exists, which is BEFORE the
+      // document loads; an eval landing in the outgoing document is torn down
+      // before it can post its result, so one retry rides that out.
+      await q.waitForSelector('.empty-state', 15000).catch(async () => {
+        await q.waitForSelector('.empty-state', 15000)
+      })
+      await focusWindow(q, 'queue')
+      await captureCall(q, 'reset')
+      await captureCall<boolean>(q, 'enable')
+      return { page: q, focusLabel: 'queue' }
+    })
+
+    await captureSurface('queue', report, failed, async () => {
+      await main.evaluate(
+        `window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: ${String(QUEUE_THROTTLE_MS)} })`,
+      )
+      for (const name of QUEUE_SOURCES) await startQueueCopy(main, fixtureRoot, name)
+      // Both rows present AND settled into their two different statuses: the
+      // Queued row's copy (`queue.row.queued`) is half of what this surface adds.
+      await expect
+        .poll(
+          async () =>
+            q.evaluate<string>(`(function(){
+              var rows = Array.from(document.querySelectorAll('.queue-row'));
+              return rows.map(function(r){ return r.getAttribute('data-status'); }).sort().join(',');
+            })()`),
+          { timeout: 20000 },
+        )
+        .toBe('queued,running')
+      return { page: q, focusLabel: 'queue' }
+    })
+  } catch (err) {
+    for (const label of ['queue-empty', 'queue']) {
+      if (!(label in report) && !failed.includes(label)) failed.push(label)
+    }
+    console.warn(`[i18n-capture] queue window setup FAILED: ${err instanceof Error ? err.message : String(err)}`)
+  } finally {
+    await main
+      .evaluate(`(async function(){
+        try { await window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: null }); } catch (e) {}
+        try {
+          var ops = await window.__TAURI_INTERNALS__.invoke('list_operations');
+          var ids = ops.map(function(o){ return o.operationId; });
+          if (ids.length) await window.__TAURI_INTERNALS__.invoke('cancel_operations', { operationIds: ids });
+        } catch (e) {}
+      })()`)
+      .catch(() => {})
+    if (queue) await closeScopedWindow(main, queue, 'queue').catch(() => {})
+  }
 }
 
 /**

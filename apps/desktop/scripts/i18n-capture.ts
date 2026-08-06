@@ -327,12 +327,15 @@ async function main() {
   // The MAIN launch captures every default-launch surface and writes the report
   // fresh. `CMDR_MOCK_FDA=granted` opens the FDA gate so the download teaching
   // toast surfaces (its event bridge bails when the gate is pending); the
-  // debug-assertions capture build honors the mock. The virtual MTP device
+  // debug-assertions capture build honors the mock. `CMDR_E2E_ASK_CMDR_FAKE=1`
+  // routes Ask Cmdr's send through the scripted fake LLM, which is what both
+  // answers the message and opens the composer's provider gate, so the rail's
+  // chat surfaces render without a configured provider. The virtual MTP device
   // auto-registers under E2E mode (no env needed beyond the feature).
   // `CMDR_I18N_OVERFLOW_LOCALE` (overflow pass only) tells the spec to switch the
   // app to the pseudolocale, redirect screenshots to `overflow/`, and run the
   // clip scan; empty/absent → the normal English coupling capture.
-  const mainEnv: Record<string, string> = { CMDR_MOCK_FDA: 'granted' }
+  const mainEnv: Record<string, string> = { CMDR_MOCK_FDA: 'granted', CMDR_E2E_ASK_CMDR_FAKE: '1' }
   if (isOverflow) mainEnv.CMDR_I18N_OVERFLOW_LOCALE = captureLocale
   // Worst-case overflow pass: the spec reads this to also max the UI zoom and
   // shrink each window to its minimum before each shot + clip scan, and to

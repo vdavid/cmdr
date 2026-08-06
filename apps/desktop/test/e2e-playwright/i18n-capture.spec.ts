@@ -45,7 +45,6 @@ import {
   viewerFixturePath,
   captureCall,
   dismissAllToasts,
-  keysFor,
   settlePaint,
   focusWindow,
   captureSurface,
@@ -54,8 +53,6 @@ import {
   isWorstCasePass,
   overflowLocale,
   clipFindings,
-  scanForClipping,
-  stressLayoutIfWorstCase,
 } from './i18n-capture-helpers.js'
 import {
   captureSettingsWindow,
@@ -67,8 +64,10 @@ import {
   captureIndexingStatus,
   captureIndexingGallery,
 } from './i18n-capture-surfaces.js'
-import { captureMainDialogs, captureViewerSubsurfaces } from './i18n-capture-special.js'
+import { captureMainDialogs, captureViewerSubsurfaces, captureQueueWindow } from './i18n-capture-special.js'
 import { captureMainExplorerSurfaces } from './i18n-capture-surfaces-main.js'
+import { captureGalleryDialogs } from './i18n-capture-gallery.js'
+import { captureAskCmdrSurfaces } from './i18n-capture-ask-cmdr.js'
 import {
   captureMtpSurfaces,
   captureDownloadToasts,
@@ -306,6 +305,12 @@ test.describe('i18n screenshot capture', () => {
     // immaterial; staged early to keep the main window the active surface.
     await captureMainExplorerSurfaces(main, report, failed)
 
+    // ── Ask Cmdr rail (consent → empty → one exchange → threads) ──────────────
+    // Also a main-window panel, and staged EARLY for one reason: the consent gate
+    // is a one-time screen recorded in `main.db`, so the only chance to photograph
+    // it is before anything in this run accepts it.
+    await captureAskCmdrSurfaces(main, report, failed, skipped)
+
     // ── Surface 3 + 4..N: Settings window (every section) ─────────────────────
     await captureSettingsWindow(main, report, failed)
 
@@ -415,6 +420,15 @@ test.describe('i18n screenshot capture', () => {
     // transient error state can't perturb earlier captures.
     await captureErrorPaneExample('error-message-example', report, failed, main)
 
+    // ── Registry-driven soft dialogs (every gallery state worth a shot) ────────
+    // Drives `DIALOG_GALLERY_ENTRIES` through the main window's own
+    // `debug-open-gallery-dialog` listener, so a dialog gets a screenshot the day
+    // it gets a gallery row. Runs LAST, after every hand-staged surface: a state
+    // is photographed only when it resolves a key nothing else recorded, so a
+    // faithful capture of the production path always beats a gallery preview of
+    // the same dialog. See `i18n-capture-gallery.ts` for the two limits it keeps.
+    await captureGalleryDialogs(main, report, skipped)
+
     // ── Documented skips deferred beyond the mock-staged surfaces ─────────────
     // These surfaces need backend state / events we can't fake from the frontend
     // here, so they're SKIPPED (not failed) and tracked for coverage honesty:
@@ -458,15 +472,11 @@ test.describe('i18n screenshot capture', () => {
 
     // ── Documented skips: surfaces needing backend state or a new prod hook ────
     // SKIPPED (not failed), tracked for coverage honesty:
-    //  - crash-report dialog (`crashReporter.*`): only mounts when boot's
-    //    `checkPendingCrashReport()` IPC returns a pending crash; the gating +
-    //    state live in `(main)/+layout.svelte` (runes-touching, `file-length`-
-    //    flagged). There's no command or E2E event to force it, and adding an
-    //    `e2e-show-crash-report` listener to that production file is out of scope
-    //    for this capture work (a real prod-code change with its own review).
     //  - viewer large-copy confirm/refuse dialogs (`viewer.copyDialog.*`): only
     //    appear for a text selection over ~10 MB (confirm) / ~100 MB (refuse);
-    //    no fixture stages a selection that large deterministically.
+    //    no fixture stages a selection that large deterministically. The gallery
+    //    has rows for both, but they're viewer-hosted, and the gallery pass keeps
+    //    to main-window dialogs so no shot shows a backdrop the dialog never has.
     //  - viewer reload toast (`viewer.reloadToast.*`): needs a file-changed event
     //    from the backend watcher while the viewer is open; the frontend can't
     //    fire it here.
@@ -478,97 +488,50 @@ test.describe('i18n screenshot capture', () => {
     //    About (`about-commercial` / `about-perpetual`), the commercial-reminder
     //    modal, and the expiration modal ARE captured in their license passes (the
     //    debug-assertions capture build honors the mock).
-    for (const docSkip of [
-      'crash-report',
-      'viewer-copy-confirm',
-      'viewer-copy-refuse',
-      'viewer-reload-toast',
-      'license-details',
-    ]) {
+    // ❌ Don't add the crash-report dialog here. It only mounts from a boot-time
+    // pending crash, so it looks unreachable, but the gallery pass opens it
+    // through its registry row: no new hook in `(main)/+layout.svelte` needed.
+    for (const docSkip of ['viewer-copy-confirm', 'viewer-copy-refuse', 'viewer-reload-toast', 'license-details']) {
       skipped.push(docSkip)
     }
     console.warn(
-      `[i18n-capture] ${String(5)} surfaces SKIPPED (need backend state, a new prod hook, or a committed key): ` +
-        `crash-report dialog (boot-only pending-crash state), viewer large-copy confirm/refuse ` +
-        `(need a >10 MB selection), viewer reload toast (needs a watcher event), and the license-details ` +
-        `view (needs a real committed key, not just the AppStatus mock).`,
+      `[i18n-capture] ${String(4)} surfaces SKIPPED (need backend state, a huge selection, or a committed key): ` +
+        `viewer large-copy confirm/refuse (need a >10 MB selection), viewer reload toast (needs a watcher ` +
+        `event), and the license-details view (needs a real committed key, not just the AppStatus mock).`,
     )
 
-    // ── Surface: keyboard shortcuts window (KNOWN-SKIPPED) ────────────────────
+    // ── Surface: keyboard shortcuts window ────────────────────────────────────
     // The standalone Keyboard shortcuts WebviewWindow (label `shortcuts`,
-    // `/shortcuts` route, opened by `help.openShortcuts`) opens and is visible,
-    // but the playwright plugin's `eval` channel never returns for THIS window:
-    // even a trivial `1+1` times out, while the same eval works on `main`,
-    // `settings`, and `viewer-*`. The plugin's per-window native screenshot also
-    // grabs the main window's frame for the `shortcuts` label. So the
-    // setSurface/rerender/dump capture flow (all eval-based) can't run here.
-    // Reproduced in isolation (window opened first and alone). Root cause sits in
-    // the tauri-playwright plugin's per-window eval/capture for this specific
-    // window, which is out of scope to change here.
+    // `/shortcuts` route, opened by `help.openShortcuts`): its own webview context
+    // and capture sink, like the Settings and viewer windows.
     //
-    // Cost of skipping is low: this window renders only the `shortcuts.list.*`
-    // keys via `ShortcutsList` (noShortcut, addedTooltip, disabledTooltip), 4
-    // keys total, and nothing else couples them today, so they stay uncoupled.
-    // It is SKIPPED (not failed): a clean run shouldn't go red on a documented
-    // harness gap. Tracked in `capture-skipped.json` for coverage honesty.
-    //
-    // TODO(lead-verify): confirm the eval-channel hang on the `shortcuts` window
-    // during your run (try `page.evaluate('1+1')` against it). If it's fixable in
-    // the fork (per-window eval result routing) or by a window-config tweak,
-    // re-enable this surface by moving 'shortcuts' back into a `captureSurface`
-    // call. The staging that WOULD work once eval responds is preserved below,
-    // behind a short probe so it never costs the run 30s.
-    skipped.push('shortcuts')
-    console.warn(
-      `[i18n-capture] surface shortcuts SKIPPED: tauri-playwright eval channel unresponsive for the ` +
-        `'shortcuts' window (trivial evals time out; main/settings/viewer are fine). Owns 4 shortcuts.list.* keys.`,
-    )
+    // Every eval into a secondary window rides back on the plugin's own
+    // `plugin:playwright|pw_result` IPC, which Tauri gates per window through the
+    // capability ACL. A window missing from the E2E-only `playwright.json`
+    // capability (generated by `src-tauri/build.rs`) can never post its result, so
+    // even `1+1` burns the plugin's 30s ceiling and looks like a hang. Keep this
+    // window (and `queue`) in that list.
     let shortcuts: TauriPage | undefined
-    try {
+    await captureSurface('shortcuts', report, failed, async () => {
       await dispatchMenuCommand(main, 'help.openShortcuts')
       shortcuts = await main.waitForWindow((w) => w.label === 'shortcuts', { timeout: 10000 })
-      // Probe the eval channel with a 3s budget. If it ever starts responding
-      // (fork fix), capture the surface for real; otherwise leave it skipped
-      // without burning the default 30s eval timeout.
-      const evalWorks = await Promise.race([
-        // Swallow the eventual 30s reject of the hung eval so it doesn't surface
-        // as an unhandled rejection after the 3s probe loses the race.
-        shortcuts
-          .evaluate<number>('1+1')
-          .then((v) => v === 2)
-          .catch(() => false),
-        new Promise<boolean>((r) =>
-          setTimeout(() => {
-            r(false)
-          }, 3000),
-        ),
-      ])
-      if (evalWorks) {
-        await focusWindow(shortcuts, 'shortcuts')
-        await shortcuts.waitForSelector('.shortcuts-scroll .row', 10000)
-        if (isOverflowPass) await captureCall(shortcuts, 'setLocale', overflowLocale)
-        await captureCall(shortcuts, 'reset')
-        await captureCall<boolean>(shortcuts, 'enable')
-        await captureCall(shortcuts, 'setSurface', 'shortcuts')
-        await captureCall(shortcuts, 'rerender')
-        // Worst-case pass: max zoom + min size on the shortcuts window too (no-op
-        // otherwise). Only reached if the eval channel recovers; harmless either way.
-        await stressLayoutIfWorstCase(shortcuts, 'shortcuts')
-        await focusWindow(shortcuts, 'shortcuts')
-        await settlePaint(shortcuts)
-        await shortcuts.screenshot({ path: join(screenshotsDir, 'shortcuts.png') })
-        report['shortcuts'] = { screenshot: 'shortcuts.png', keys: await keysFor(shortcuts, 'shortcuts') }
-        await scanForClipping(shortcuts, 'shortcuts')
-        skipped.splice(skipped.indexOf('shortcuts'), 1)
-        console.log(
-          `[i18n-capture] shortcuts: ${String(report['shortcuts'].keys.length)} keys → shortcuts.png (eval recovered)`,
-        )
-      }
-    } catch {
-      // Open/probe failed; stays skipped (already recorded above).
-    } finally {
-      if (shortcuts) await closeScopedWindow(main, shortcuts, 'shortcuts').catch(() => {})
-    }
+      const s = shortcuts
+      // `waitForWindow` returns the moment the label exists, which is BEFORE the
+      // document loads; an eval landing in the outgoing document is torn down
+      // before it can post its result, so one retry rides that out.
+      await s.waitForSelector('.shortcuts-scroll .row', 15000).catch(async () => {
+        await s.waitForSelector('.shortcuts-scroll .row', 15000)
+      })
+      await focusWindow(s, 'shortcuts')
+      await captureCall(s, 'reset')
+      await captureCall<boolean>(s, 'enable')
+      return { page: s, focusLabel: 'shortcuts' }
+    })
+    if (shortcuts) await closeScopedWindow(main, shortcuts, 'shortcuts').catch(() => {})
+
+    // ── Surface: transfer-queue window (empty + populated) ────────────────────
+    // Its own window on `/queue`, and the only place any `queue.*` key renders.
+    await captureQueueWindow(main, report, failed)
 
     // Always write the report with whatever succeeded. The shape stays a flat
     // `surface → { screenshot, keys }` map because `couple-screenshots.ts`

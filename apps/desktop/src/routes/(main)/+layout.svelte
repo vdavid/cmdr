@@ -52,9 +52,11 @@
         cleanupAutoSendToastListener,
     } from '$lib/error-reporter/auto-send-toast.svelte'
     import { getAppLogger } from '$lib/logging/logger'
-    // Dev-only dialog gallery harness (Debug > Soft dialogs). Gated below on
-    // `import.meta.env.DEV`, which Vite inlines to a build-time boolean, so the
-    // harness and every dialog it imports drop out of production builds.
+    // Dialog gallery harness (Debug > Soft dialogs). Gated below on
+    // `import.meta.env.DEV || __CMDR_I18N_CAPTURE__`, both of which Vite inlines to
+    // build-time booleans, so the harness and every dialog it imports drop out of
+    // production builds. The capture flag is what lets the i18n screenshot driver
+    // open gallery states in its own build; see `dialog-gallery/DETAILS.md`.
     import DialogGallery from '$lib/dialog-gallery/DialogGallery.svelte'
     import type { Snippet } from 'svelte'
 
@@ -333,7 +335,7 @@
 {#if showPermissionDialog}
     <MtpPermissionDialog onClose={closePermissionDialog} onRetry={retryPermissionConnection} />
 {/if}
-{#if import.meta.env.DEV}
+{#if import.meta.env.DEV || __CMDR_I18N_CAPTURE__}
     <DialogGallery />
 {/if}
 <div class="page-wrapper">

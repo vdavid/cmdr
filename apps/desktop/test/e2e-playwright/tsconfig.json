@@ -9,7 +9,12 @@
     "noEmit": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "types": ["node"]
+    "types": ["node"],
+    // The i18n capture driver reads the dialog gallery's registry straight from
+    // `src/` so the two can't drift. That module's only import is a `import type`
+    // through the app's `$lib` alias, erased at runtime, but tsc still has to
+    // resolve it.
+    "paths": { "$lib/*": ["../../src/lib/*"] }
   },
   "include": ["*.ts", "helpers/*.ts"]
 }
