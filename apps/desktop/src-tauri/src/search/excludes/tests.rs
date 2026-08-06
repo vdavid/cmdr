@@ -102,7 +102,10 @@ fn an_uppercase_directory_on_disk_is_excluded_under_a_case_insensitive_query() {
     assert!(rules.excludes_walked("/p/Library/Caches/thing.db", None));
 
     let tier = ExcludeRules::from_query(&query(), true);
-    assert!(tier.excludes_walked("/p/Library/Caches/thing.db", None), "the system tier too");
+    assert!(
+        tier.excludes_walked("/p/Library/Caches/thing.db", None),
+        "the system tier too"
+    );
 }
 
 // ── User excludes: globs and path prefixes ───────────────────────────
