@@ -48,7 +48,7 @@ import { openGalleryDialog } from '$lib/dialog-gallery/gallery-state.svelte'
 import { resolveDiskFixture, type FixtureDirPayload } from '$lib/dialog-gallery/disk-fixture'
 import { openOnboardingPreview } from '$lib/dialog-gallery/onboarding-preview'
 import { openStaleDrivePreview } from '$lib/dialog-gallery/stale-drive-preview'
-import { getAppMode } from '$lib/app-mode'
+import { isE2eRun } from '$lib/app-mode'
 import type { ExplorerAPI } from './explorer-api'
 import type { FriendlyError, TransferOperationType } from '$lib/file-explorer/types'
 
@@ -475,10 +475,10 @@ export async function setupDialogListeners(ctx: ListenerSetupContext): Promise<v
   // this event to exercise OUR drop handling (the shared destination guard,
   // source-volume resolution, and transfer dialog) through the SAME
   // `dragDrop.handleFileDrop` the live drop branch runs. Gated on
-  // `getAppMode() === 'e2e'` (set by CMDR_E2E_MODE=1, never true in prod),
+  // `isE2eRun()` (set by CMDR_E2E_MODE=1, never true in prod),
   // so production never reacts even if the event were somehow emitted.
   await listenTauri('e2e-trigger-file-drop', (event) => {
-    if (getAppMode() !== 'e2e') return
+    if (!isE2eRun()) return
     const { paths, targetPane, targetFolderPath, operation, recordedIdentity } = event.payload as {
       paths: string[]
       targetPane: 'left' | 'right'
@@ -494,7 +494,7 @@ export async function setupDialogListeners(ctx: ListenerSetupContext): Promise<v
   // so no popup leaks into other specs. To exercise the real auto-show path,
   // the whats-new spec emits this event with `isOnboarded: true` and an old
   // `lastSeenVersion`; the handler seeds them and runs `maybeRunWhatsNew(true)`,
-  // the SAME trigger the boot path uses. Gated on `getAppMode() === 'e2e'`,
+  // the SAME trigger the boot path uses. Gated on `isE2eRun()`,
   // never true in prod.
   //
   // The whats-new keys are seeded via `seedSettingForE2E` (cache + save, NO
@@ -505,7 +505,7 @@ export async function setupDialogListeners(ctx: ListenerSetupContext): Promise<v
   // matching production where the seed comes from disk at boot, never a live
   // emit.
   await listenTauri('e2e-rerun-whats-new', (event) => {
-    if (getAppMode() !== 'e2e') return
+    if (!isE2eRun()) return
     const { isOnboarded, lastSeenVersion, showOnUpdate } = event.payload as {
       isOnboarded: boolean
       lastSeenVersion: string

@@ -21,7 +21,7 @@
 
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { LogicalPosition, LogicalSize } from '@tauri-apps/api/dpi'
-import { getAppMode } from '$lib/app-mode'
+import { isE2eRun } from '$lib/app-mode'
 import { getAppLogger } from '$lib/logging/logger'
 import { readMonitors } from '$lib/window-positioning'
 import { growRectForRail, nearestMonitor, shrinkRectForRail, type Rect } from '$lib/window-positioning-utils'
@@ -53,7 +53,7 @@ async function fillsScreen(win: ReturnType<typeof getCurrentWindow>): Promise<bo
  * fallback. Records the applied growth for {@link shrinkMainWindowForRail}.
  */
 export async function growMainWindowForRail(railWidth: number): Promise<void> {
-  if (getAppMode() === 'e2e') return
+  if (isE2eRun()) return
   try {
     const win = getCurrentWindow()
     if (await fillsScreen(win)) {
@@ -84,7 +84,7 @@ export async function growMainWindowForRail(railWidth: number): Promise<void> {
  * width so a persisted-open window still shrinks on close.
  */
 export async function shrinkMainWindowForRail(railWidth: number): Promise<void> {
-  if (getAppMode() === 'e2e') return
+  if (isE2eRun()) return
   const growth = lastGrowth ?? { grewBy: railWidth, shiftedLeftBy: 0 }
   lastGrowth = null
   if (growth.grewBy <= 0 && growth.shiftedLeftBy === 0) return

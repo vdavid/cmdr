@@ -24,7 +24,7 @@ import { Effect, EffectState } from '@tauri-apps/api/window'
 import { getShouldReduceTransparency } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { getEffectiveScale } from '$lib/text-size.svelte'
-import { decorateChildWindowTitle, getAppMode, orderChildWindowToBackInE2e } from '$lib/app-mode'
+import { decorateChildWindowTitle, isE2eRun, orderChildWindowToBackInE2e } from '$lib/app-mode'
 import { readMainRect, readMonitors, readSavedRect, resolveChildPosition } from '$lib/window-positioning'
 
 const log = getAppLogger('settings')
@@ -65,7 +65,7 @@ export async function openSettingsWindow(section?: string[], anchor?: string): P
   // E2E suites re-open Settings many times; stealing OS focus each time
   // makes the host machine unusable while tests run. The plugin reaches the
   // webview over a Unix socket, so it doesn't need OS focus to drive the DOM.
-  const isE2e = getAppMode() === 'e2e'
+  const isE2e = isE2eRun()
 
   const existing = await WebviewWindow.getByLabel('settings')
   if (existing) {

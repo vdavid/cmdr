@@ -12,38 +12,39 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 2044 / 2743 keys have a screenshot (75%):** 1176 direct (43%) and 868 representative (32%). 699 remain uncoupled.
+**Total: 2044 / 2743 keys have a screenshot (75%):** 1176 direct (43%) and 868 representative (32%). 699 remain
+uncoupled.
 
-| Area | Direct | Representative | Uncoupled | Total | Any % |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| ai | 0 | 101 | 0 | 101 | 100% |
-| askCmdr | 73 | 0 | 76 | 149 | 49% |
-| commandPalette | 3 | 0 | 3 | 6 | 50% |
-| commands | 132 | 0 | 40 | 172 | 77% |
-| common | 0 | 0 | 2 | 2 | 0% |
-| crashReporter | 9 | 5 | 0 | 14 | 100% |
-| downloads | 10 | 0 | 26 | 36 | 28% |
-| errorReporter | 10 | 0 | 24 | 34 | 29% |
-| errors | 68 | 293 | 0 | 361 | 100% |
-| feedback | 7 | 0 | 6 | 13 | 54% |
-| fileExplorer | 111 | 89 | 149 | 349 | 57% |
-| fileOperations | 96 | 43 | 30 | 169 | 82% |
-| goToPath | 5 | 0 | 5 | 10 | 50% |
-| indexing | 31 | 0 | 28 | 59 | 53% |
-| licensing | 47 | 35 | 25 | 107 | 77% |
-| lowDiskSpace | 0 | 0 | 5 | 5 | 0% |
-| main | 0 | 0 | 2 | 2 | 0% |
-| mtp | 18 | 4 | 0 | 22 | 100% |
-| notifications | 0 | 0 | 1 | 1 | 0% |
-| onboarding | 79 | 32 | 14 | 125 | 89% |
-| operationLog | 23 | 0 | 14 | 37 | 62% |
-| queryUi | 44 | 122 | 0 | 166 | 100% |
-| queue | 15 | 0 | 3 | 18 | 83% |
-| search | 9 | 44 | 0 | 53 | 100% |
-| settings | 310 | 0 | 226 | 536 | 58% |
-| shortcuts | 26 | 28 | 0 | 54 | 100% |
-| transfer | 2 | 0 | 10 | 12 | 17% |
-| ui | 12 | 0 | 9 | 21 | 57% |
-| updates | 0 | 10 | 0 | 10 | 100% |
-| viewer | 31 | 62 | 0 | 93 | 100% |
-| whatsNew | 5 | 0 | 1 | 6 | 83% |
+| Area           | Direct | Representative | Uncoupled | Total | Any % |
+| -------------- | -----: | -------------: | --------: | ----: | ----: |
+| ai             |      0 |            101 |         0 |   101 |  100% |
+| askCmdr        |     73 |              0 |        76 |   149 |   49% |
+| commandPalette |      3 |              0 |         3 |     6 |   50% |
+| commands       |    132 |              0 |        40 |   172 |   77% |
+| common         |      0 |              0 |         2 |     2 |    0% |
+| crashReporter  |      9 |              5 |         0 |    14 |  100% |
+| downloads      |     10 |              0 |        26 |    36 |   28% |
+| errorReporter  |     10 |              0 |        24 |    34 |   29% |
+| errors         |     68 |            293 |         0 |   361 |  100% |
+| feedback       |      7 |              0 |         6 |    13 |   54% |
+| fileExplorer   |    111 |             89 |       149 |   349 |   57% |
+| fileOperations |     96 |             43 |        30 |   169 |   82% |
+| goToPath       |      5 |              0 |         5 |    10 |   50% |
+| indexing       |     31 |              0 |        28 |    59 |   53% |
+| licensing      |     47 |             35 |        25 |   107 |   77% |
+| lowDiskSpace   |      0 |              0 |         5 |     5 |    0% |
+| main           |      0 |              0 |         2 |     2 |    0% |
+| mtp            |     18 |              4 |         0 |    22 |  100% |
+| notifications  |      0 |              0 |         1 |     1 |    0% |
+| onboarding     |     79 |             32 |        14 |   125 |   89% |
+| operationLog   |     23 |              0 |        14 |    37 |   62% |
+| queryUi        |     44 |            122 |         0 |   166 |  100% |
+| queue          |     15 |              0 |         3 |    18 |   83% |
+| search         |      9 |             44 |         0 |    53 |  100% |
+| settings       |    310 |              0 |       226 |   536 |   58% |
+| shortcuts      |     26 |             28 |         0 |    54 |  100% |
+| transfer       |      2 |              0 |        10 |    12 |   17% |
+| ui             |     12 |              0 |         9 |    21 |   57% |
+| updates        |      0 |             10 |         0 |    10 |  100% |
+| viewer         |     31 |             62 |         0 |    93 |  100% |
+| whatsNew       |      5 |              0 |         1 |     6 |   83% |

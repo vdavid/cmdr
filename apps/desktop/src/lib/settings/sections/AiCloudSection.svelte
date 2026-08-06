@@ -20,7 +20,7 @@
     import { checkAiConnection, getAiApiKey, saveAiApiKey } from '$lib/tauri-commands'
     import { pushConfigToBackend } from '$lib/settings/ai-config'
     import { computeModelCacheKey, getCachedModels, setCachedModels } from '$lib/settings/ai-model-cache'
-    import { getAppMode } from '$lib/app-mode'
+    import { isE2eRun } from '$lib/app-mode'
     import { describeSecretError, type SecretErrorMessage } from './ai-secret-error'
     import { addToast, dismissToast } from '$lib/ui/toast'
     import { tString } from '$lib/intl/messages.svelte'
@@ -190,7 +190,7 @@
         // Auto-loading the list is the only request that fires without a user action; suppress it
         // only in automated E2E (no real provider there, so it'd just add network flakiness). Dev and
         // prod both auto-load. Cache hits above still work everywhere, including E2E.
-        if (getAppMode() === 'e2e') return
+        if (isE2eRun()) return
         if (connectionCheckTimer || connectionStatus === 'checking') return
         scheduleConnectionCheck()
     }

@@ -21,7 +21,7 @@ let cascadeIndex = 0
  */
 export async function openFileViewer(filePath: string, volumeId = 'root'): Promise<void> {
   const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow')
-  const { decorateChildWindowTitle, getAppMode, orderChildWindowToBackInE2e } = await import('$lib/app-mode')
+  const { decorateChildWindowTitle, isE2eRun, orderChildWindowToBackInE2e } = await import('$lib/app-mode')
 
   // Use a unique label per viewer instance (timestamp-based)
   const label = `viewer-${String(Date.now())}`
@@ -31,7 +31,7 @@ export async function openFileViewer(filePath: string, volumeId = 'root'): Promi
   // E2E suites open viewer windows repeatedly; stealing OS focus each time
   // makes the host machine unusable while tests run. The plugin reaches the
   // webview over a Unix socket, so it doesn't need OS focus to drive the DOM.
-  const isE2e = getAppMode() === 'e2e'
+  const isE2e = isE2eRun()
 
   // Cascade from main's top-left so multiple viewers don't pile on top of each
   // other. Falls back to Tauri's `center: true` if main isn't open.

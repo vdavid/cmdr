@@ -60,9 +60,9 @@ E2E path non-obvious:
   into whichever spec runs first and trips the overlay leak guard in `fixtures.ts`. So `maybeRunWhatsNew()`
   early-returns under E2E mode unless called with `force: true`. This keeps every non-whats-new spec popup-free.
 - **The spec drives the real auto path explicitly.** `whats-new.spec.ts` emits the E2E-gated `e2e-rerun-whats-new` event
-  (handler in `routes/(main)/listener-setup.ts`, gated on `getAppMode() === 'e2e'`). The handler seeds `isOnboarded`
-  (via `saveSettings`) plus `whatsNew.lastSeenVersion` + `whatsNew.showOnUpdate`, then calls `maybeRunWhatsNew(true)` so
-  the real `runWhatsNewStartupTrigger` runs (decide → fetch → open → stamp).
+  (handler in `routes/(main)/listener-setup.ts`, gated on `isE2eRun()`). The handler seeds `isOnboarded` (via
+  `saveSettings`) plus `whatsNew.lastSeenVersion` + `whatsNew.showOnUpdate`, then calls `maybeRunWhatsNew(true)` so the
+  real `runWhatsNewStartupTrigger` runs (decide → fetch → open → stamp).
 
 **The whats-new keys are seeded via `seedSettingForE2E` (cache + save, NO cross-window emit), not `setSetting`.** A
 `setSetting` seed emits a `settings:changed` event that loops back to this same window (no sender-id guard in the

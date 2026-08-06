@@ -249,6 +249,23 @@ changes nothing they observe. The mechanism lives at the code: `test_mode::is_e2
 `commands::ui::{show_main_window, order_window_to_back}` (per-window `orderBack:`), called from the openers via
 `app-mode.ts`'s `orderChildWindowToBackInE2e`.
 
+## App modes and their title bars
+
+`app-mode.ts` resolves one of `prod` / `dev` / `e2e` / `capture`, which the main window turns into a tinted title bar
+(plain / pink `DEV MODE` / blue `E2E MODE` / **yellow `SCREENSHOT`**) plus a decorated child-window title. Signals: dev
+from `import.meta.env.DEV`, e2e from `CMDR_E2E_MODE` via the backend's `isE2eMode()`, capture from the
+`__CMDR_I18N_CAPTURE__` build define (`CMDR_I18N_CAPTURE_BUILD=1`). Precedence is capture > e2e > dev.
+
+- **Capture mode exists to be SEEN.** A capture build's only job is taking the translator screenshots, and using the
+  computer mid-run turns those screenshots blank (macOS stops compositing a backgrounded window). The yellow
+  `SCREENSHOT` bar is the glanceable "leave this alone", clearly distinct from an ordinary E2E run, which is harmless to
+  interrupt. It's a signal, not a grab: a capture build keeps `Prohibited` and still orders child windows to the back.
+- **❗ For anything that changes BEHAVIOR, call `isE2eRun()`, never `getAppMode() === 'e2e'`.** `capture` is a
+  refinement of `e2e`, not an alternative: a capture run drives the app through the same harness events. Comparing to
+  `'e2e'` alone silently disables the E2E-only listeners (the dialog gallery, the whats-new rerun) and the onboarding
+  suppression in a capture build, which breaks the capture run itself. `getAppMode()` is for the visual marker only.
+- The `SCREENSHOT` title text is INSIDE all ~133 translator screenshots, so changing that marker re-renders every image.
+
 The activation policy is set through Tauri's own API, not a hand-rolled `objc2` call: `App::set_activation_policy` (and
 `AppHandle::set_activation_policy`) plus the re-exported `tauri::ActivationPolicy` enum (`Regular` / `Accessory` /
 `Prohibited`) are public on macOS (verified on tauri 2.10.3). Only the per-window `orderBack:` drops to `objc2`

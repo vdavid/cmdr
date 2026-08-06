@@ -19,9 +19,13 @@ const win = {
   setPosition: vi.fn<(p: unknown) => Promise<void>>(),
 }
 const readMonitorsMock = vi.fn<() => Promise<MonitorRect[]>>()
-const getAppModeMock = vi.fn<() => 'prod' | 'dev' | 'e2e'>()
+const getAppModeMock = vi.fn<() => 'prod' | 'dev' | 'e2e' | 'capture'>()
 
-vi.mock('$lib/app-mode', () => ({ getAppMode: () => getAppModeMock() }))
+// `isE2eRun` mirrors the real helper: a capture run counts as an E2E run.
+vi.mock('$lib/app-mode', () => ({
+  getAppMode: () => getAppModeMock(),
+  isE2eRun: () => getAppModeMock() === 'e2e' || getAppModeMock() === 'capture',
+}))
 vi.mock('@tauri-apps/api/window', () => ({ getCurrentWindow: () => win }))
 vi.mock('@tauri-apps/api/dpi', () => ({
   LogicalSize: class {
@@ -121,6 +125,13 @@ describe('shrinkMainWindowForRail', () => {
 })
 
 describe('E2E mode', () => {
+  it('never touches the window in a capture run either (capture is an E2E run)', async () => {
+    getAppModeMock.mockReturnValue('capture')
+    setWindow({ x: 100, y: 100, width: 1080, height: 720 })
+    await growMainWindowForRail(340)
+    expect(win.setSize).not.toHaveBeenCalled()
+  })
+
   it('never touches the window under E2E (backgrounded runs must not be re-fronted)', async () => {
     getAppModeMock.mockReturnValue('e2e')
     setWindow({ x: 100, y: 100, width: 1080, height: 720 })

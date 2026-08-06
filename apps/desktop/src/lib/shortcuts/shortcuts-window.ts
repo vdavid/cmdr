@@ -19,7 +19,7 @@ import { LogicalPosition } from '@tauri-apps/api/dpi'
 import { emitTo } from '@tauri-apps/api/event'
 import { getAppLogger } from '$lib/logging/logger'
 import { getEffectiveScale } from '$lib/text-size.svelte'
-import { decorateChildWindowTitle, getAppMode, orderChildWindowToBackInE2e } from '$lib/app-mode'
+import { decorateChildWindowTitle, isE2eRun, orderChildWindowToBackInE2e } from '$lib/app-mode'
 import {
   centerOnMain,
   nearestMonitor,
@@ -47,7 +47,7 @@ const MONITOR_HEIGHT_MARGIN = 80
 export async function openShortcutsWindow(): Promise<void> {
   // E2E suites stealing OS focus on each open make the host unusable; the plugin
   // drives the webview over a socket, so it doesn't need focus. Mirrors Settings.
-  const isE2e = getAppMode() === 'e2e'
+  const isE2e = isE2eRun()
 
   const existing = await WebviewWindow.getByLabel('shortcuts')
   if (existing) {

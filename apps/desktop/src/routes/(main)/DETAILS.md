@@ -256,8 +256,8 @@ dispatch path can't rely on the keydown bail.
 
 ## Off-bus test and debug hooks
 
-- **E2E drop hook.** `+page.svelte` registers an `e2e-trigger-file-drop` listener gated on `getAppMode() === 'e2e'` (set
-  by `CMDR_E2E_MODE=1`, never true in prod). It forwards to `explorerRef.triggerFileDrop`, which delegates to the drag
+- **E2E drop hook.** `+page.svelte` registers an `e2e-trigger-file-drop` listener gated on `isE2eRun()` (set by
+  `CMDR_E2E_MODE=1`, never true in prod). It forwards to `explorerRef.triggerFileDrop`, which delegates to the drag
   controller's `handleFileDrop`, the same seam the live `onDragDropEvent` 'drop' branch runs. Real OS drag can't be
   synthesized in Playwright, so the harness emits this event to exercise drop handling end to end (shared destination
   guard, source-volume resolution, transfer dialog). See `test/e2e-playwright/DETAILS.md` § "Transfer-dialog counters +

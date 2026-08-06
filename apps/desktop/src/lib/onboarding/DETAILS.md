@@ -93,10 +93,10 @@ The toast fires from `resolveOnboardingMount()`'s two wizard-skipping branches (
 mounting; no need for an extra `onboardingShowing` check). It writes `onboarding.upgradeNudgeShown = true` synchronously
 after firing, so it never appears again on the same machine.
 
-The toast is suppressed under `getAppMode() === 'e2e'` so it doesn't leak into Playwright's first-spec-of-the-run state
-(each E2E shard gets its own fresh data dir, so the nudge would otherwise fire once per shard launch and trip the
-fixture safety net). The firing logic itself is unit-tested in `routes/(main)/startup-gates.test.ts`; the E2E
-suppression is a target-mode gate, not a behaviour change.
+The toast is suppressed under `isE2eRun()` so it doesn't leak into Playwright's first-spec-of-the-run state (each E2E
+shard gets its own fresh data dir, so the nudge would otherwise fire once per shard launch and trip the fixture safety
+net). The firing logic itself is unit-tested in `routes/(main)/startup-gates.test.ts`; the E2E suppression is a
+target-mode gate, not a behaviour change.
 
 ### MCP
 

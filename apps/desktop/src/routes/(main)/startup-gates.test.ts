@@ -36,7 +36,11 @@ vi.mock('$lib/whats-new/whats-new-trigger.svelte', () => ({
 }))
 vi.mock('$lib/settings-store', () => ({ loadSettings: mocks.loadSettings, saveSettings: mocks.saveSettings }))
 vi.mock('$lib/settings', () => ({ getSetting: mocks.getSetting, setSetting: mocks.setSetting }))
-vi.mock('$lib/app-mode', () => ({ getAppMode: mocks.getAppMode }))
+// `isE2eRun` mirrors the real helper: a capture run counts as an E2E run.
+vi.mock('$lib/app-mode', () => ({
+  getAppMode: mocks.getAppMode,
+  isE2eRun: () => mocks.getAppMode() === 'e2e' || mocks.getAppMode() === 'capture',
+}))
 vi.mock('$lib/updates/updater.svelte', () => ({ notifyOnboardingComplete: mocks.notifyOnboardingComplete }))
 vi.mock('$lib/shortcuts/key-capture', () => ({ isMacOS: mocks.isMacOS }))
 vi.mock('$lib/ui/toast', () => ({ addToast: mocks.addToast }))

@@ -26,10 +26,12 @@ vi.mock('$lib/logging/logger', () => ({
 import {
   initAppMode,
   getAppMode,
+  isE2eRun,
   decorateChildWindowTitle,
   decorateMainWindowTitle,
   orderChildWindowToBackInE2e,
   _resetForTests,
+  _setCaptureBuildForTests,
 } from './app-mode'
 
 /** Minimal `WebviewWindow` stand-in: `once` fires the callback so the helper's
@@ -78,6 +80,66 @@ describe('app-mode', () => {
   it('getAppMode pre-init falls back to dev/prod from import.meta.env.DEV', () => {
     // Before initAppMode runs, vitest's DEV=true → dev. Either way, never e2e.
     expect(getAppMode()).not.toBe('e2e')
+  })
+
+  describe('capture mode', () => {
+    it('resolves to capture from the build define, without asking the backend', async () => {
+      _setCaptureBuildForTests(true)
+      expect(await initAppMode()).toBe('capture')
+      expect(getAppMode()).toBe('capture')
+      // The define is synchronous and decisive, so there's no `isE2eMode()` round trip.
+      expect(isE2eModeSpy).not.toHaveBeenCalled()
+    })
+
+    it('wins over e2e, which in turn wins over dev', async () => {
+      // A capture run IS an E2E run (backend reports E2E too); the most specific marker wins.
+      _setCaptureBuildForTests(true)
+      isE2eModeSpy.mockResolvedValue(true)
+      expect(await initAppMode()).toBe('capture')
+
+      _resetForTests()
+      isE2eModeSpy.mockResolvedValue(true)
+      expect(await initAppMode()).toBe('e2e')
+
+      _resetForTests()
+      isE2eModeSpy.mockResolvedValue(false)
+      expect(await initAppMode()).toBe('dev')
+    })
+
+    it('reports capture pre-init too, so the first frame is already yellow', () => {
+      _setCaptureBuildForTests(true)
+      expect(getAppMode()).toBe('capture')
+    })
+
+    it('counts as an E2E run, so harness-only behavior stays on', async () => {
+      _setCaptureBuildForTests(true)
+      await initAppMode()
+      expect(isE2eRun()).toBe(true)
+
+      _resetForTests()
+      isE2eModeSpy.mockResolvedValue(true)
+      await initAppMode()
+      expect(isE2eRun()).toBe(true)
+
+      _resetForTests()
+      isE2eModeSpy.mockResolvedValue(false)
+      await initAppMode()
+      expect(isE2eRun()).toBe(false)
+    })
+
+    it('still keeps child windows out of the way, like any run', async () => {
+      _setCaptureBuildForTests(true)
+      await initAppMode()
+      const win = fakeWindow('settings')
+      await orderChildWindowToBackInE2e(win)
+      expect(orderWindowToBackSpy).toHaveBeenCalledWith('settings')
+    })
+
+    it('marks child window titles with SCREENSHOT', async () => {
+      _setCaptureBuildForTests(true)
+      await initAppMode()
+      expect(decorateChildWindowTitle('Settings')).toBe('SCREENSHOT - Settings - SCREENSHOT')
+    })
   })
 
   describe('orderChildWindowToBackInE2e', () => {
@@ -133,6 +195,18 @@ describe('app-mode', () => {
 
     it('marks E2E without a label (E2E sessions carry none)', () => {
       expect(decorateMainWindowTitle('Cmdr', 'e2e', '')).toBe('E2E MODE - Cmdr - E2E MODE')
+    })
+
+    it('marks a capture run SCREENSHOT, the text baked into every translator image', () => {
+      expect(decorateMainWindowTitle('Cmdr – Personal use only', 'capture', '')).toBe(
+        'SCREENSHOT - Cmdr – Personal use only - SCREENSHOT',
+      )
+    })
+
+    it('keeps the worktree label wrapping in a capture run started from a worktree', () => {
+      expect(decorateMainWindowTitle('Cmdr', 'capture', 'i18n-blank-shots')).toBe(
+        '(i18n-blank-shots) SCREENSHOT - Cmdr - SCREENSHOT (i18n-blank-shots)',
+      )
     })
   })
 })

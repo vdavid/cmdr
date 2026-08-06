@@ -72,15 +72,15 @@ codegen ever sees it:
 
 ```jsonc
 {
-    "transfer.trash": "Moved {countText} {count, plural, one {file} other {files}} to trash",
-    "@transfer.trash": {
-        "description": "Toast confirming items were moved to the macOS Trash. Shown briefly after a delete-to-trash (F8).",
-        "placeholders": {
-            "countText": "how many files, already formatted for display (e.g. 1,234)",
-            "count": "the same number of files (drives the singular/plural form of the noun)",
-        },
-        "screenshot": "transfer-complete-toast.png",
+  "transfer.trash": "Moved {countText} {count, plural, one {file} other {files}} to trash",
+  "@transfer.trash": {
+    "description": "Toast confirming items were moved to the macOS Trash. Shown briefly after a delete-to-trash (F8).",
+    "placeholders": {
+      "countText": "how many files, already formatted for display (e.g. 1,234)",
+      "count": "the same number of files (drives the singular/plural form of the noun)",
     },
+    "screenshot": "transfer-complete-toast.png",
+  },
 }
 ```
 
@@ -94,12 +94,12 @@ codegen ever sees it:
   translator already knows to preserve placeholder/`plural`/`select` syntax and apply their language's plural
   categories: that's a one-time instruction in the translator-agent prompt, not per-string noise). Two cases the
   description MUST cover (the audit's top blind-translation risks):
-    - **A pass-through placeholder** (`{message}`, `{reason}`, a raw `{path}`, or any value Cmdr doesn't control, such
-      as an OS error string or an arbitrary file path): the description MUST say the inserted value is uncontrolled, so
-      the translator structures the sentence to tolerate any length, casing, gender, or number.
-    - **A fragment / concatenation key** (a sentence part assembled at runtime, e.g. `*Part` keys): the description MUST
-      name the `*Join` key that assembles it (today `fileOperations.shared.andJoin`), so the translator knows word order
-      is owned by the join key and translates the fragment to read naturally once joined.
+  - **A pass-through placeholder** (`{message}`, `{reason}`, a raw `{path}`, or any value Cmdr doesn't control, such as
+    an OS error string or an arbitrary file path): the description MUST say the inserted value is uncontrolled, so the
+    translator structures the sentence to tolerate any length, casing, gender, or number.
+  - **A fragment / concatenation key** (a sentence part assembled at runtime, e.g. `*Part` keys): the description MUST
+    name the `*Join` key that assembles it (today `fileOperations.shared.andJoin`), so the translator knows word order
+    is owned by the join key and translates the fragment to read naturally once joined.
 - `placeholders`: an ARB-style map giving each placeholder a PLAIN-LANGUAGE meaning plus an example value, in the
   translator's terms ("number of files", "the folder name"), never the ICU mechanics ("raw integer for plural
   selection"). Include it whenever a message has placeholders; omit it for static strings. This is what lets a

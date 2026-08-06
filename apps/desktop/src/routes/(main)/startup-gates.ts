@@ -16,7 +16,7 @@ import { openWizard as openOnboardingWizard } from '$lib/onboarding/onboarding-s
 import { runWhatsNewStartupTrigger } from '$lib/whats-new/whats-new-trigger.svelte'
 import { loadSettings, saveSettings } from '$lib/settings-store'
 import { getSetting, setSetting } from '$lib/settings'
-import { getAppMode } from '$lib/app-mode'
+import { isE2eRun } from '$lib/app-mode'
 import { notifyOnboardingComplete } from '$lib/updates/updater.svelte'
 import { isMacOS } from '$lib/shortcuts/key-capture'
 import { addToast } from '$lib/ui/toast'
@@ -114,7 +114,7 @@ export async function resolveOnboardingMount(ctx: StartupGatesContext): Promise<
  * covers the firing behaviour instead.
  */
 export function maybeFireUpgradeNudge(): void {
-  if (getAppMode() === 'e2e') return
+  if (isE2eRun()) return
   if (getSetting('onboarding.upgradeNudgeShown')) return
   const message = isMacOS() ? tString('main.upgradeNudge.mac') : tString('main.upgradeNudge.other')
   addToast(message, { level: 'info' })
@@ -135,7 +135,7 @@ export function maybeFireUpgradeNudge(): void {
  * which calls this with `force: true`.
  */
 export async function maybeRunWhatsNew(ctx: StartupGatesContext, force = false): Promise<void> {
-  if (!force && getAppMode() === 'e2e') return
+  if (!force && isE2eRun()) return
   const settings = await loadSettings()
   await runWhatsNewStartupTrigger({
     onboarded: settings.isOnboarded,

@@ -627,6 +627,7 @@
             class="title-bar"
             class:dev-mode={appMode === 'dev'}
             class:e2e-mode={appMode === 'e2e'}
+            class:capture-mode={appMode === 'capture'}
             data-tauri-drag-region
         >
             <!-- Mark the text span as a drag region too. The header above
@@ -757,9 +758,9 @@
         position: relative;
     }
 
-    /* Dev/E2E mode title-bar tint at 25 % alpha — strong enough to read
-       clearly as DEV / E2E, light enough to leave the underlying title
-       bar visible. */
+    /* Dev/E2E/capture mode title-bar tint at 25 % alpha — strong enough to read
+       clearly as DEV / E2E / SCREENSHOT, light enough to leave the underlying
+       title bar visible. */
     /*noinspection CssUnusedSymbol*/
     .title-bar.dev-mode::after {
         content: '';
@@ -775,6 +776,20 @@
         position: absolute;
         inset: 0;
         background-color: color-mix(in srgb, dodgerblue, transparent 75%);
+        pointer-events: none;
+    }
+
+    /* Screenshot-capture runs: yellow, so a glance says "a capture is in flight,
+       leave the machine alone" rather than "just another E2E run". `goldenrod`
+       over plain `yellow`: at 25 % alpha a pure yellow washes out against the
+       title bar and fights the white title text, while goldenrod stays clearly
+       yellow AND keeps the text readable. */
+    /*noinspection CssUnusedSymbol*/
+    .title-bar.capture-mode::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-color: color-mix(in srgb, goldenrod, transparent 75%);
         pointer-events: none;
     }
 

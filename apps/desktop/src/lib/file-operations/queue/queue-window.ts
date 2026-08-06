@@ -23,7 +23,7 @@ import { Effect, EffectState } from '@tauri-apps/api/window'
 import { getShouldReduceTransparency } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { getEffectiveScale } from '$lib/text-size.svelte'
-import { decorateChildWindowTitle, getAppMode, orderChildWindowToBackInE2e } from '$lib/app-mode'
+import { decorateChildWindowTitle, isE2eRun, orderChildWindowToBackInE2e } from '$lib/app-mode'
 import { readMainRect, readMonitors, readSavedRect, resolveChildPosition } from '$lib/window-positioning'
 
 const log = getAppLogger('queue')
@@ -52,7 +52,7 @@ export async function openQueueWindow(): Promise<void> {
   // E2E suites re-open windows many times; stealing OS focus each time makes the
   // host machine unusable while tests run. The plugin drives the webview over a
   // socket, so it doesn't need OS focus. Mirrors Settings / Shortcuts.
-  const isE2e = getAppMode() === 'e2e'
+  const isE2e = isE2eRun()
 
   try {
     const existing = await WebviewWindow.getByLabel('queue')
