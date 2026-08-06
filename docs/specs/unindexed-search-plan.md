@@ -721,6 +721,45 @@ runs (`0 → 34 → 91 → 124 → 169 → 200` over three seconds, sampled insi
   than reading the state cell from the dialog, and pinned by `SearchDialog.handoff.svelte.test.ts`. ⚠️ The fix is
   covered by that test but was NOT re-verified end to end in the running app.
 
+**The closing pass (after M11): the E2E premise, and what fixing it turned up.**
+
+- **Both live-walk specs rested on a false premise, and the feature's headline had no working end-to-end coverage.**
+  "The E2E instance runs against a fresh `CMDR_DATA_DIR`, so the fixture tree is uncovered ground and Enter WALKS it" is
+  wrong: `CMDR_E2E_START_PATH` narrows the boot scan to the fixture root
+  (`scanner/exclusions.rs::e2e_allowlist_path`), and `Scan: complete (42 entries, 9 dirs)` lands ~100 ms after launch.
+  So `search-live` passed VACUOUSLY (rows appear, no Stop button, "results", no note — all equally true of an
+  index-served run) and `search-walk-handoff` failed outright, with no walk to outlive the dialog.
+- **The fix is a spec-level premise, not a product change**: `test/e2e-playwright/search-walk-ground.ts` takes the index
+  away through the two per-drive actions a user has (`indexing disable` + `forget`, then re-reads `cmdr://indexing` to
+  prove it's gone) and builds a directory CHAIN as ground. The chain is what makes the timing honest rather than
+  guessed: a walk through it is serial by construction, so it lasts at least `depth × CMDR_E2E_WALK_THROTTLE_MS` on any
+  machine. That state also pins Decision 13 end to end — neither indexing switch gates a walk somebody ASKED for.
+  Measured: 24 levels at a 100 ms throttle ≈ 6 s, versus 44 ms unthrottled.
+- **Proved by making each spec fail for the right reason, twice**: with `context_for_walk` stubbed to refuse every walk,
+  and with the ground rescanned INTO the index instead of forgotten. All three tests go red both ways, at the
+  walk-observing assertions.
+- ⚠️ **The throttle was 25 ms and the Linux lane never set it at all**, so the handoff spec had no window there even in
+  principle. Now 100 ms in both harnesses (`desktop-svelte-e2e-playwright.go`, `scripts/e2e-linux.sh`).
+- **A handed-off pane never grew, and that's M7's headline claim.** Found by the rebuilt spec, at the assertion the old
+  one couldn't reach. Rows reached the snapshot and the toast counted to 24 while the pane held the two it opened with:
+  `appendSnapshotEntries` wrote into the stored object, so `SearchResultsView`'s `snapshot` derived recomputed to the
+  same reference and Svelte stopped propagation before the `entries` derived below it. Both mutators now `store.set` a
+  replaced entry. The old spec's `SNAPSHOT_ROWS` also watched the RIGHT pane, where `..` alone satisfied "rows are
+  here"; "Show all in main window" routes the ACTIVE pane, which is the left one.
+- **A run whose matches total exactly the row cap said "Showing the first 30 of 30 matches."** `capped` means "the cap
+  was reached", which is true the moment the last row fits; the sentence now needs rows actually held back.
+- **`Rebuild` applies exclusions now**, and `ExclusionMode` is deleted with it (one variant left = always apply). It
+  cost exactly the one test M3c predicted. The callers' `should_exclude` gate covers the directory they hand over and
+  stops there, which is why a rebuild of a newly discovered `/Library` was indexing `/Library/Caches`.
+- **`Index::list_children` consults `listed_epoch` now**: a directory with a row but no listing answers `None` ("not
+  indexed") rather than handing back a lower bound shaped like a complete listing. `> 0`, not "at the current epoch",
+  matching the descent rule.
+
+**Attribution.** M7's Open-in-pane handoff fix (the `handedOffRunId()` change and `SearchDialog.handoff.svelte.test.ts`)
+is INSIDE commit `0253ba91d`, whose message is about analytics: that agent ran `git add -A` over another agent's dirty
+tree. Nothing was lost, and the history is deliberately not rewritten — other work is stacked on it. Recorded here so
+the next reader isn't misled by the message.
+
 **Open, needing David.**
 
 - The drafted copy from M0 and M1 (11 keys, translated into all nine locales) has not been reviewed. An edit means
@@ -733,6 +772,9 @@ runs (`0 → 34 → 91 → 124 → 169 → 200` over three seconds, sampled insi
   which now says clearing takes EVERY drive's index.
 - `index-crate-isolation`'s ceilings were raised twice inside this effort, both with David's standing say-so and both
   argued in the check: root promises 44 → 50 and `Index` methods 35 → 40. There is no headroom left, by design.
+- Four `CLAUDE.md` files the closing pass touched sit 3–7 words over the 600-word soft budget after three trimming
+  rounds (`lib/search`, `test/e2e-playwright`, `indexing/read`, `indexing/scanner`), each carrying one new guardrail.
+  Warn-only, and ❌ no allowlist was touched. Trim further, or leave.
 
 **When this lands**: the ~120 MB dev data dir at `~/Library/Application Support/com.veszelovszki.cmdr-dev-unindexsearch`
 holds a walk-built index from M10's live verification, and drive indexing is back ON there, so it re-scans on its own.
