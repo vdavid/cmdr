@@ -4,8 +4,8 @@ In-memory filename search + AI query translation. **One volume per search, and t
 (`resolve_target`), not just the UI: ❌ no fan-out, it's the only way a search can silently omit a drive. A scope routes
 to the volume that owns it; unscoped means the boot volume.
 
-`execute.rs` routes and runs (index-only, live, MCP); `live.rs` + `live/` the runs in flight and the walk pump;
-`engine.rs` scans the arena (`index.rs`, per volume via `volumes.rs`); `matcher.rs`, `excludes.rs`, `ranking.rs` judge
+`execute.rs` routes and runs (index-only, live, MCP); `live.rs` the run registry and `ResultStream`, with the event
+family and the one-shot fold in `live/CLAUDE.md`; `engine.rs` scans the arena (`index.rs`, per volume via `volumes.rs`); `matcher.rs`, `excludes.rs`, `ranking.rs` judge
 and order a row; `types.rs` / `query.rs` the data, `history.rs` recent searches, `ai/` NL translation (`ai/CLAUDE.md`).
 
 ## Must-knows
@@ -22,8 +22,6 @@ and order a row; `types.rs` / `query.rs` the data, `history.rs` recent searches,
 - **Superseding a run ≠ cancelling it**: events stop, the walk runs on. Cancel is the dialog close (which SPARES
   `keep_run_id`), Escape, or quit — ❌ never the arena idle-drop, and `RunOrigin::Dialog` only, so an agent's run can't
   silence a person's.
-- **MCP shares the SAME live run, folded into one reply** (Decision 10): ❌ no walk-versus-don't parameter, and its wait
-  is a transport budget the walk outlives.
 - **Non-root indices are mount-relative**: PREFIX the mount root onto read paths, STRIP it from scopes. Mount root is
   the `volume_path` meta OR the live registry, ❌ never assume the meta is set; routing picks the live id when one NAS
   has two DBs.

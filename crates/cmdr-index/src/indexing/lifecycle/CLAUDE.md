@@ -4,8 +4,8 @@ How a per-volume index is born, lives, transitions, and dies. Every invariant he
 
 `state.rs` the registry + `IndexPhase` machine + failure supervisor + `IndexManager`/`ReadPool` bootstrap; `manager.rs`
 (+ `manager/start.rs`) the per-volume coordinator; `network_scan.rs` the SMB/MTP trait scan; `scan_completion.rs`;
-`progress_reporter.rs` + `partial_agg.rs` the 500 ms progress pump; `cover.rs` (+ `cover/{bootstrap,live}.rs`) the
-search-driven walk; `freshness.rs`, `failure.rs`, `master.rs`, `lifecycle_bus.rs`.
+`progress_reporter.rs` + `partial_agg.rs` the 500 ms progress pump; `cover.rs` the search-driven walk, with its
+bootstrap and ground-claiming rules in `cover/CLAUDE.md`; `freshness.rs`, `failure.rs`, `master.rs`, `lifecycle_bus.rs`.
 
 ## Must-knows
 
@@ -22,7 +22,7 @@ search-driven walk; `freshness.rs`, `failure.rs`, `master.rs`, `lifecycle_bus.rs
   volume: it walks nothing and falsely completes.
 - **A cover walk reuses the RUNNING writer, or stands one up** (`Activation::WriterOnly`: DB, epoch, writer, read
   handles, ❌ no scan or watcher), and EVICTS an index whose coverage this build refuses. ⚠️ A volume mid-SCAN isn't
-  walked, and `cover/live.rs` claims roots so two walks never take the same ground.
+  walked.
 - **`CoverOutcome::abandoned_ground` is independent of every other field**, so ❌ any caller reporting completeness must
   consult it.
 - **A walk stops through the CALLER's token and flushes its writer before reporting**, cancel included.
