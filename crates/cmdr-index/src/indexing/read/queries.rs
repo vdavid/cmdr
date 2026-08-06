@@ -358,10 +358,31 @@ pub fn list_dir_children(path: &str) -> Result<Option<Vec<store::EntryRow>>, Str
                 Some(id) => id,
                 None => return Ok(None),
             };
-        let children =
-            IndexStore::list_children_on(entry_id, conn).map_err(|e| format!("Couldn't list children: {e}"))?;
-        Ok(Some(children))
+        listed_children_on(conn, entry_id).map_err(|e| format!("Couldn't list children: {e}"))
     })?
+}
+
+/// The rows under `entry_id`, or `None` when nothing has LISTED that directory.
+///
+/// Rows can sit under a directory no walk has read: FSEvents verification upserts
+/// children without marking their parent listed, and the cover walk materializes a
+/// frontier path's ancestor chain at `listed_epoch = 0`. Those rows are a LOWER
+/// BOUND on what the directory holds, and handing them back as its children would
+/// report a partial listing as a complete one — the caller has nothing in the
+/// answer to tell the two apart. `None` routes it to the same "not indexed" it
+/// already has for a path with no row at all.
+///
+/// `> 0` rather than "at the current epoch", matching the coverage descent rule:
+/// a listing from an older epoch is stale, not absent, and Decision 5 trusts it.
+fn listed_children_on(
+    conn: &rusqlite::Connection,
+    entry_id: i64,
+) -> Result<Option<Vec<store::EntryRow>>, store::IndexStoreError> {
+    let listed = IndexStore::get_listed_epoch_by_id(conn, entry_id)?.unwrap_or(0);
+    if listed == 0 {
+        return Ok(None);
+    }
+    Ok(Some(IndexStore::list_children_on(entry_id, conn)?))
 }
 
 /// Batch lookup of dir_stats, resolving the owning volume from the paths. The
@@ -381,9 +402,69 @@ pub fn get_dir_stats_batch(paths: &[String]) -> Result<Vec<Option<DirStats>>, St
 mod tests {
     use std::sync::Arc;
 
+    use rusqlite::Connection;
+
     use super::*;
     use crate::indexing::host::volumes::{self, FakeVolumeProvider};
+    use crate::indexing::store::ROOT_ID;
     use cmdr_fs::volume::InMemoryVolume;
+
+    /// A temp index with one directory holding one file, and nothing listed yet.
+    fn index_with_an_unlisted_dir() -> (Connection, i64, tempfile::TempDir) {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let store = IndexStore::open(&dir.path().join("queries-test-index.db")).expect("open store");
+        let conn = IndexStore::open_write_connection(store.db_path()).expect("write connection");
+        let sub = IndexStore::insert_entry_v2(&conn, ROOT_ID, "sub", true, false, None, None, None, None)
+            .expect("insert dir");
+        IndexStore::insert_entry_v2(&conn, sub, "seen.txt", false, false, Some(1), Some(1), None, None)
+            .expect("insert file");
+        (conn, sub, dir)
+    }
+
+    /// A directory with rows under it but no listing answers "not indexed", not a
+    /// partial listing.
+    ///
+    /// Both halves matter, and the shape is ordinary rather than exotic: FSEvents
+    /// verification upserts children under a directory without marking that
+    /// directory listed, and the cover walk's ancestor-chain materialization writes
+    /// the chain at `listed_epoch = 0`. The consumer is the agent's `list_dir`,
+    /// whose contract says a read that is a lower bound has to say so — and it
+    /// can't say so about rows handed over as if they were the whole story.
+    #[test]
+    fn an_unlisted_directorys_rows_are_not_its_contents() {
+        let (conn, sub, _dir) = index_with_an_unlisted_dir();
+
+        assert!(
+            listed_children_on(&conn, sub).expect("list").is_none(),
+            "nothing listed this directory, so the index has no contents to report for it"
+        );
+
+        IndexStore::mark_dirs_listed(&conn, &[sub], 1).expect("mark listed");
+        let listed = listed_children_on(&conn, sub).expect("list").expect("listed now");
+        assert_eq!(
+            listed.iter().map(|row| row.name.as_str()).collect::<Vec<_>>(),
+            vec!["seen.txt"],
+            "once a walk has read it, its rows ARE its contents"
+        );
+    }
+
+    /// An empty directory somebody listed is still an answer: `Some(vec![])`, never
+    /// the `None` that means "not indexed".
+    #[test]
+    fn a_listed_empty_directory_answers_with_no_children() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let store = IndexStore::open(&dir.path().join("queries-empty-index.db")).expect("open store");
+        let conn = IndexStore::open_write_connection(store.db_path()).expect("write connection");
+        let empty = IndexStore::insert_entry_v2(&conn, ROOT_ID, "empty", true, false, None, None, None, None)
+            .expect("insert dir");
+        IndexStore::mark_dirs_listed(&conn, &[empty], 1).expect("mark listed");
+
+        let answered = listed_children_on(&conn, empty).expect("list");
+        assert!(
+            answered.is_some_and(|rows| rows.is_empty()),
+            "an empty folder is an answer, not a gap"
+        );
+    }
 
     /// A mounted-but-unindexed external drive reports its OWN index status (`off` —
     /// no index registered under its id), not `root`'s. `cmdr://state`'s

@@ -401,8 +401,13 @@ impl Index {
         crate::indexing::read::queries::get_dir_stats_batch(paths).map_err(Into::into)
     }
 
-    /// What the index has under one directory, without touching the disk. `None`
-    /// when the path isn't indexed.
+    /// What the index has under one directory, without touching the disk.
+    ///
+    /// `None` when the path isn't indexed, which includes a directory that HAS a
+    /// row but that nothing has listed: rows under it are a lower bound (FSEvents
+    /// verification and the cover walk's chain materialization both create that
+    /// shape), and there is nothing in a `Vec<EntryRow>` for a caller to read that
+    /// caveat off.
     pub fn list_children(&self, path: &str) -> Result<Option<Vec<EntryRow>>, IndexError> {
         crate::indexing::read::queries::list_dir_children(path).map_err(Into::into)
     }
