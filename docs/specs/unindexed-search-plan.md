@@ -755,6 +755,15 @@ runs (`0 → 34 → 91 → 124 → 169 → 200` over three seconds, sampled insi
   indexed") rather than handing back a lower bound shaped like a complete listing. `> 0`, not "at the current epoch",
   matching the descent rule.
 
+**Verified after the closing pass.** The macOS Playwright lane is green (269 tests across 3 shards) and the Linux
+Docker lane is green (279 tests) — the first full Linux run of this effort, and the specs the lead reported failing
+there pass, including the `search-recent` flake, which turned out to be my restore handing the drive back "fresh" but
+not yet able to answer. ⚠️ `rust-tests` reports 56–79 tests killed at the 8 s nextest cap; that is CONTENTION, not this
+work: `cargo test -p cmdr-index --lib` is 1,346/1,346 green, each flagged test passes alone in ~1.2 s, and the same
+four index tests time out identically on the pre-change tree (controlled by checking the changed files out at
+`046b9c7a7^` and re-running). ⚠️ Two duration warns are new and warn-only: the live-walk tests take 6.1 s / 6.3 s on
+macOS and 2.7 s / 3.6 s on Linux, because a walk somebody can watch is the point. ❌ No allowlist entry added.
+
 **Attribution.** M7's Open-in-pane handoff fix (the `handedOffRunId()` change and `SearchDialog.handoff.svelte.test.ts`)
 is INSIDE commit `0253ba91d`, whose message is about analytics: that agent ran `git add -A` over another agent's dirty
 tree. Nothing was lost, and the history is deliberately not rewritten — other work is stacked on it. Recorded here so
