@@ -32,6 +32,39 @@ impl IndexStore {
     ///
     /// Returns a `Vec` with the same length as `entry_ids`, where each element
     /// is `Some(DirStatsById)` if found or `None` otherwise.
+    /// Every directory whose recursive size falls inside `[min, max]`, as
+    /// `(entry_id, recursive_logical_size)`.
+    ///
+    /// The whole table, filtered in SQL. It exists because a directory's size is
+    /// NOT in the entries table, so a size filter over directories can only be
+    /// applied by joining here — and applying it after the search engine's ranked
+    /// cut silently drops the biggest folders on the drive (they lose the
+    /// recency-weighted ranking long before anything reads their size). Handing
+    /// the caller the passing set up front makes the filter and the resulting
+    /// count exact.
+    ///
+    /// Deliberately NOT indexed on `recursive_logical_size`: this runs only for a
+    /// search that filters or sorts directories by size, while an index on it
+    /// would be rewritten by every rollup update on the indexing hot path.
+    pub fn dir_sizes_in_range(
+        conn: &Connection,
+        min: Option<u64>,
+        max: Option<u64>,
+    ) -> Result<Vec<(i64, u64)>, IndexStoreError> {
+        let min = min.unwrap_or(0) as i64;
+        // Saturate rather than wrap: a max above i64 means "no upper bound".
+        let max = max.map(|m| i64::try_from(m).unwrap_or(i64::MAX)).unwrap_or(i64::MAX);
+        let mut stmt = conn.prepare(
+            "SELECT entry_id, recursive_logical_size FROM dir_stats
+             WHERE recursive_logical_size >= ?1 AND recursive_logical_size <= ?2",
+        )?;
+        let rows = stmt.query_map([min, max], |row| {
+            Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?.max(0) as u64))
+        })?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    /// Batch-fetch several directories' stats by entry id, in the order asked.
     pub fn get_dir_stats_batch_by_ids(
         conn: &Connection,
         entry_ids: &[i64],

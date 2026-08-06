@@ -347,6 +347,18 @@ pub async fn execute_search(params: &Value) -> ToolResult {
 
     let case_sensitive = params.get("caseSensitive").and_then(|v| v.as_bool());
     let exclude_system_dirs = params.get("excludeSystemDirs").and_then(|v| v.as_bool());
+    let sort_by = match params.get("sortBy").and_then(|v| v.as_str()) {
+        None | Some("relevance") => None,
+        Some("size") => Some(search::SearchSort::Size),
+        Some("modified") => Some(search::SearchSort::Modified),
+        // Refused, not defaulted: a caller who asked for the biggest matches and
+        // silently got the best-ranked ones would read the top row as the biggest.
+        Some(other) => {
+            return Err(ToolError::invalid_params(format!(
+                "Unknown sortBy '{other}'. Use 'relevance', 'size', or 'modified'."
+            )));
+        }
+    };
     let count_only = params.get("countOnly").and_then(|v| v.as_bool()).unwrap_or(false);
 
     let query = SearchQuery {
@@ -364,6 +376,7 @@ pub async fn execute_search(params: &Value) -> ToolResult {
         limit,
         case_sensitive,
         exclude_system_dirs,
+        sort_by,
     };
 
     let answer = run_search(query, wait_budget(params)).await?;
@@ -441,6 +454,9 @@ fn build_search_query_from_translate(
         limit,
         case_sensitive: translate_result.query.case_sensitive,
         exclude_system_dirs: translate_result.query.exclude_system_dirs,
+        // The AI translator shapes filters, not ordering: an ai_search answer is
+        // ranked by relevance like the dialog's.
+        sort_by: None,
     }
 }
 

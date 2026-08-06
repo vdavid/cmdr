@@ -96,28 +96,14 @@ fn plain_query(stem: &str) -> SearchQuery {
         limit: 30,
         case_sensitive: Some(false),
         exclude_system_dirs: Some(false),
+        sort_by: None,
     }
 }
 
 fn ranked(index: &SearchIndex, query: &SearchQuery, prefix: &str) -> Vec<SearchResultEntry> {
-    engine::search_ranked(index, query, &ImportanceWeights::empty(), prefix)
+    engine::search_ranked(index, query, &ImportanceWeights::empty(), prefix, None)
         .expect("search_ranked")
         .entries
-}
-
-/// A hand-built directory result, for the size post-filter (the engine never
-/// materializes a directory's `dir_stats` size — `execute.rs` fills it).
-fn dir_entry(name: &str, size: u64, entry_id: i64) -> SearchResultEntry {
-    SearchResultEntry {
-        name: name.to_string(),
-        path: format!("/{name}"),
-        parent_path: "/".to_string(),
-        is_directory: true,
-        size: Some(size),
-        modified_at: Some(1),
-        icon_id: "dir".to_string(),
-        entry_id,
-    }
 }
 
 // ── The ranked slice `run_blocking` hands back ───────────────────────
@@ -156,37 +142,6 @@ fn non_root_paths_are_prefixed_with_the_mount_root() {
     // Root (empty prefix) leaves the reconstructed absolute path untouched.
     let out_root = ranked(&vol, &query, "");
     assert_eq!(out_root[0].path, "/sub/report.pdf");
-}
-
-// ── Directory size post-filter ───────────────────────────────────────
-
-#[test]
-fn filter_dirs_by_size_trims_dirs_keeps_files() {
-    let vol = one_file_index("sub", "report.pdf", 100);
-    let query = plain_query("report");
-    let mut out = ranked(&vol, &query, "");
-    // Force a directory entry alongside the file to exercise the dir filter.
-    out.push(dir_entry("bigdir", 50, 99));
-
-    // min_size 100: the file (already engine-filtered) passes; the 50-byte dir drops.
-    let mut q = query.clone();
-    q.min_size = Some(100);
-    let before = out.len() as u32;
-    let total = filter_dirs_by_size(&mut out, &q, before);
-    let names: Vec<&str> = out.iter().map(|e| e.name.as_str()).collect();
-    assert_eq!(names, vec!["report.pdf"]);
-    assert_eq!(total, 1, "total reflects the retained length under a size filter");
-}
-
-#[test]
-fn filter_dirs_by_size_no_filter_is_noop() {
-    let vol = one_file_index("sub", "report.pdf", 100);
-    let query = plain_query("report");
-    let mut out = ranked(&vol, &query, "");
-    let before = out.len() as u32;
-    let total = filter_dirs_by_size(&mut out, &query, before);
-    assert_eq!(total, before, "no size filter ⇒ total unchanged");
-    assert_eq!(out.len() as u32, before);
 }
 
 // ── The one-volume ceiling (`resolve_target`) ────────────────────────
@@ -238,8 +193,9 @@ fn an_unscoped_query_targets_the_boot_volume() {
 #[test]
 fn count_only_returns_an_exact_total_and_no_rows() {
     // Count-only runs the same engine pass but returns just the total: no rows are
-    // materialized (no size filter on dirs) and the volume's match count is already
-    // exact. Mirrors the count-only branch of `run_blocking`.
+    // materialized, and the total is exact by construction — a directory size
+    // filter was applied inside the scan (`DirSizes`), not subtracted afterwards.
+    // Mirrors the count-only branch of `run_blocking`.
     let vol = one_file_index("a", "report.pdf", 100);
     let mut query = plain_query("report");
     query.count_only = true;
@@ -248,27 +204,9 @@ fn count_only_returns_an_exact_total_and_no_rows() {
         entries: ranked,
         total_count: vtotal,
         ..
-    } = engine::search_ranked(&vol, &query, &ImportanceWeights::empty(), "").expect("search_ranked");
-    assert!(
-        ranked.is_empty(),
-        "count-only returns no rows without a directory size filter"
-    );
-    assert_eq!(count_only_volume_total(vtotal, &ranked, &query), 1);
-}
-
-#[test]
-fn count_only_volume_total_subtracts_out_of_range_dirs() {
-    // Hand-build two matching directories with filled sizes. The engine's total counts
-    // every match
-    // (say 3 files that passed the size filter + these 2 dirs = 5); after the size
-    // check, the 100-byte dir falls under the floor and drops, so the exact total is 4.
-    let dirs = vec![dir_entry("big", 10_000, 98), dir_entry("small", 100, 99)];
-    let mut q = plain_query("report");
-    q.count_only = true;
-    q.min_size = Some(1_000);
-    assert_eq!(count_only_volume_total(5, &dirs, &q), 4);
-    // No size filter ⇒ the volume total is already exact, nothing subtracted.
-    assert_eq!(count_only_volume_total(5, &dirs, &plain_query("report")), 5);
+    } = engine::search_ranked(&vol, &query, &ImportanceWeights::empty(), "", None).expect("search_ranked");
+    assert!(ranked.is_empty(), "count-only returns no rows");
+    assert_eq!(vtotal, 1, "and the total needs no correction pass");
 }
 
 // ── Which ground the answer came from ────────────────────────────────

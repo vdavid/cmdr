@@ -48,6 +48,11 @@ pub fn search_schema() -> Value {
                 "type": "boolean",
                 "description": "Exclude system/build/cache folders (node_modules, .git, Caches, etc). Default: true. Turn it OFF for disk-space questions: those folders are usually where the space went. The result says how many matches this hid."
             },
+            "sortBy": {
+                "type": "string",
+                "enum": ["relevance", "size", "modified"],
+                "description": "Result order. Default 'relevance' (best name match, then recency). 'size' returns the biggest matches that exist anywhere in scope, files and folders on one scale (a folder by its recursive total) — use it with excludeSystemDirs: false to find where disk space went. 'modified' returns the newest."
+            },
             "countOnly": {
                 "type": "boolean",
                 "description": "Set true when you only need the total, not the results. Returns just the match count (for example, \"1,234 files match\") and skips the file list. Faster than a full search. Default: false"

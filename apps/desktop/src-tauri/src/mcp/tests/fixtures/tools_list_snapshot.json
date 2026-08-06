@@ -720,6 +720,15 @@
             "description": "Minimum file size, human-readable (for example, \"1 MB\", \"500 KB\")",
             "type": "string"
           },
+          "sortBy": {
+            "description": "Result order. Default 'relevance' (best name match, then recency). 'size' returns the biggest matches that exist anywhere in scope, files and folders on one scale (a folder by its recursive total) — use it with excludeSystemDirs: false to find where disk space went. 'modified' returns the newest.",
+            "enum": [
+              "relevance",
+              "size",
+              "modified"
+            ],
+            "type": "string"
+          },
           "type": {
             "description": "Filter by type. Omit for both.",
             "enum": [

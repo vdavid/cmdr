@@ -183,6 +183,7 @@ fn pattern_query_for(scope: &str, pattern: &str) -> SearchQuery {
         limit: 30,
         case_sensitive: Some(false),
         exclude_system_dirs: Some(false),
+        sort_by: None,
     }
 }
 

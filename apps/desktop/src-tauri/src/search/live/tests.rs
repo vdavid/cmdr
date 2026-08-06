@@ -45,6 +45,7 @@ fn query(stem: &str) -> SearchQuery {
         limit: 30,
         case_sensitive: Some(false),
         exclude_system_dirs: Some(false),
+        sort_by: None,
     }
 }
 

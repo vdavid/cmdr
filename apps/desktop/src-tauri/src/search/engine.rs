@@ -18,7 +18,7 @@ use super::index::SearchIndex;
 use super::matcher::{Candidate, CompiledQuery, Evaluator};
 use super::query::summarize_query;
 use super::ranking::{self, ImportanceWeights};
-use super::types::{SearchQuery, SearchResultEntry};
+use super::types::{SearchQuery, SearchResultEntry, SearchSort};
 
 // ── Scope filter (pre-resolved for the hot loop) ─────────────────────
 
@@ -168,7 +168,7 @@ pub(crate) fn search(
     query: &SearchQuery,
     weights: &ImportanceWeights,
 ) -> Result<super::types::SearchResult, String> {
-    let ranked = search_ranked(index, query, weights, "")?;
+    let ranked = search_ranked(index, query, weights, "", None)?;
     Ok(super::types::SearchResult {
         entries: ranked.entries,
         total_count: ranked.total_count,
@@ -177,6 +177,38 @@ pub(crate) fn search(
         target_volume_id: String::new(),
         hidden_by_excludes: ranked.hidden_by_excludes,
     })
+}
+
+/// Directory sizes from `dir_stats`, keyed by entry id.
+///
+/// A directory's size lives in `dir_stats`, not in the arena, so the engine can't
+/// know it on its own. `execute.rs` reads the passing set up front and hands it
+/// in, which is what makes a directory size filter EXACT: applying it after the
+/// ranked cut instead drops the biggest folders on the drive long before anything
+/// reads their size, because they lose a recency-weighted ranking against
+/// hundreds of thousands of freshly-touched ones.
+pub(crate) struct DirSizes {
+    by_id: std::collections::HashMap<i64, u64>,
+    /// Whether absence from the map means "outside the size filter" (a filter) or
+    /// merely "size unknown" (built only to sort by size). Getting this backwards
+    /// would silently delete every directory the index has no `dir_stats` row for.
+    is_filter: bool,
+}
+
+impl DirSizes {
+    pub(crate) fn new(by_id: std::collections::HashMap<i64, u64>, is_filter: bool) -> Self {
+        Self { by_id, is_filter }
+    }
+
+    /// Whether a directory passes. Always true when the map is only a sort key.
+    fn passes(&self, entry_id: i64) -> bool {
+        !self.is_filter || self.by_id.contains_key(&entry_id)
+    }
+
+    /// A directory's recursive size, if known.
+    fn get(&self, entry_id: i64) -> Option<u64> {
+        self.by_id.get(&entry_id).copied()
+    }
 }
 
 /// What one volume's scan produced: the ranked rows, how many matched, and how
@@ -208,6 +240,7 @@ pub(crate) fn search_ranked(
     query: &SearchQuery,
     weights: &ImportanceWeights,
     path_prefix: &str,
+    dir_sizes: Option<&DirSizes>,
 ) -> Result<Ranked, String> {
     let t = std::time::Instant::now();
 
@@ -251,6 +284,17 @@ pub(crate) fn search_ranked(
                 return false;
             }
 
+            // A directory's size filter, applied HERE rather than after ranking:
+            // its size isn't in the arena, so `compiled` couldn't judge it, and a
+            // filter applied to the ranked top-k answers from a recency-ordered
+            // sample instead of from the drive.
+            if entry.is_directory
+                && let Some(sizes) = dir_sizes
+                && !sizes.passes(entry.id)
+            {
+                return false;
+            }
+
             // Scope filter (ancestor walk): only for entries passing all other filters
             if scope_filter.is_active() {
                 match scope_filter.verdict(index, *i) {
@@ -271,42 +315,10 @@ pub(crate) fn search_ranked(
     let total_count = matching_indices.len() as u32;
     let hidden_by_excludes = hidden_by_excludes.into_inner();
 
-    let has_size_filter = query.min_size.is_some() || query.max_size.is_some();
-    let dirs_included = query.is_directory != Some(false);
-
     // Count-only: skip ranking, truncation, and per-entry path materialization —
-    // the expensive parts — and return just the total.
-    //
-    // A size filter on directories is the one case that needs more work. Directory
-    // sizes live in `dir_stats` (the DB), not the in-memory index, so the engine
-    // can't size-filter directories here (that's why `total_count` still counts
-    // every matching directory). When a size filter is set and directories aren't
-    // excluded, hand the matching directories back in `entries` so the caller can
-    // fetch their sizes and subtract the ones outside the filter (see
-    // `query::finalize_count_only`). Files are already size-filtered above.
+    // the expensive parts — and return just the total. It's exact including
+    // directory size filters, because `dir_sizes` applied those inside the scan.
     if query.count_only {
-        // Skip ranking and file materialization — the count is exact as-is. Exception: a
-        // size filter on directories needs their dir_stats sizes (the DB, filled by
-        // execute.rs), so hand the matching directories back — ranked, so they reuse the
-        // same materialization — for the caller to size-check and subtract. Files are
-        // already size-filtered above.
-        let entries: Vec<SearchResultEntry> = if has_size_filter && dirs_included {
-            let home_dir = dirs::home_dir().map(|p| p.to_string_lossy().to_string());
-            let dir_indices: Vec<usize> = matching_indices
-                .iter()
-                .copied()
-                .filter(|&idx| index.entries[idx].is_directory)
-                .collect();
-            let stem = ranking::stem_for(query);
-            // `usize::MAX`: the caller subtracts the out-of-range directories from the
-            // volume total, so it needs every matching directory, not a top-k slice.
-            ranking::rank_indices(index, &dir_indices, &stem, case_insensitive, weights, usize::MAX)
-                .into_iter()
-                .map(|idx| build_result_entry(index, idx, path_prefix, home_dir.as_deref()))
-                .collect()
-        } else {
-            Vec::new()
-        };
         log::debug!(
             "Count-only search: {} → {} matches, took {:?}",
             summarize_query(query),
@@ -314,28 +326,29 @@ pub(crate) fn search_ranked(
             t.elapsed()
         );
         return Ok(Ranked {
-            entries,
+            entries: Vec::new(),
             total_count,
             hidden_by_excludes,
         });
     }
 
-    // Keep only `limit` entries. When size filters are active and directories are
-    // included, keep extra candidates because some directories may be filtered out
-    // later in fill_directory_sizes (directory sizes come from dir_stats, not the
-    // entries table).
-    let base_limit = query.limit.min(1000) as usize;
-    let limit = if has_size_filter && dirs_included {
-        (base_limit * 3).max(base_limit + 100)
-    } else {
-        base_limit
-    };
+    // Every candidate here already passed every filter, directory sizes included,
+    // so the cut is exactly the caller's limit — no over-fetch to absorb a
+    // post-ranking correction.
+    let limit = query.limit.min(1000) as usize;
 
-    // Rank by match-quality band first, then importance-boosted recency within a
-    // band (empty weights ⇒ pure recency, today's order). See `ranking.rs`. The
-    // returned order IS the result order; the caller only truncates it.
-    let stem = ranking::stem_for(query);
-    let ranked = ranking::rank_indices(index, &matching_indices, &stem, case_insensitive, weights, limit);
+    // Order the survivors. Relevance is the default and what `ranking.rs` owns:
+    // match-quality band first, then importance-boosted recency within a band
+    // (empty weights ⇒ pure recency). An explicit `sort_by` replaces that
+    // wholesale — a caller who asked for the biggest matches wants the biggest on
+    // the drive, not the best-ranked few reordered among themselves.
+    let ranked = match query.sort_by {
+        None | Some(SearchSort::Relevance) => {
+            let stem = ranking::stem_for(query);
+            ranking::rank_indices(index, &matching_indices, &stem, case_insensitive, weights, limit)
+        }
+        Some(sort) => sort_indices(index, matching_indices.clone(), sort, dir_sizes, limit),
+    };
 
     // Reconstruct paths and build result entries (prefixed into the volume's mount
     // space, so a non-root volume's mount-relative index paths become absolute).
@@ -357,6 +370,55 @@ pub(crate) fn search_ranked(
         total_count,
         hidden_by_excludes,
     })
+}
+
+/// Take the top `limit` matches by an explicit sort key.
+///
+/// Unknown keys sort LAST in both directions: a directory the index has no
+/// `dir_stats` row for is unknown, not zero-sized, and leading either direction
+/// with it would claim "biggest" or "smallest" on no evidence. Ties break on entry
+/// id so a page is stable.
+///
+/// `select_nth_unstable_by` first, so a broad query pays a partition over the
+/// candidates rather than a full sort of them, and only the surviving prefix is
+/// ordered.
+fn sort_indices(
+    index: &SearchIndex,
+    mut candidates: Vec<usize>,
+    sort: SearchSort,
+    dir_sizes: Option<&DirSizes>,
+    limit: usize,
+) -> Vec<usize> {
+    let key = |idx: usize| -> Option<u64> {
+        let entry = &index.entries[idx];
+        match sort {
+            SearchSort::Size => {
+                if entry.is_directory {
+                    dir_sizes.and_then(|sizes| sizes.get(entry.id))
+                } else {
+                    entry.size
+                }
+            }
+            SearchSort::Modified => entry.modified_at,
+            SearchSort::Relevance => None,
+        }
+    };
+    let compare = |a: &usize, b: &usize| {
+        let (ka, kb) = (key(*a), key(*b));
+        let ordering = match (ka, kb) {
+            (Some(ka), Some(kb)) => kb.cmp(&ka), // biggest / newest first
+            (Some(_), None) => std::cmp::Ordering::Less,
+            (None, Some(_)) => std::cmp::Ordering::Greater,
+            (None, None) => std::cmp::Ordering::Equal,
+        };
+        ordering.then_with(|| index.entries[*a].id.cmp(&index.entries[*b].id))
+    };
+    if candidates.len() > limit {
+        candidates.select_nth_unstable_by(limit, compare);
+        candidates.truncate(limit);
+    }
+    candidates.sort_unstable_by(compare);
+    candidates
 }
 
 /// Prepend a volume's mount-root prefix to an index-reconstructed path.

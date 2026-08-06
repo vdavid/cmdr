@@ -24,7 +24,7 @@ pub(crate) mod volumes;
 // Flat re-exports so consumers can `use crate::search::{SearchQuery, ...}`
 
 // types.rs
-pub use types::{ParsedScope, PatternType, SearchQuery, SearchResult, SearchResultEntry};
+pub use types::{ParsedScope, PatternType, SearchQuery, SearchResult, SearchResultEntry, SearchSort};
 
 // index.rs
 pub use index::{SearchEntry, SearchIndex};

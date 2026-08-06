@@ -200,6 +200,36 @@ field:
   there is a root the walk declines. No filesystem probe inside routing, which would be a network-hang hazard on a
   scope pointing at a dead mount.
 
+### Directory size filters and `sortBy`
+
+A directory's size lives in `dir_stats`, not in the search arena, so the parallel scan can't judge it on its own. The
+answer is `engine::DirSizes`: `execute.rs::dir_sizes_for` reads the passing set (`IndexStore::dir_sizes_in_range`) BEFORE
+the engine runs and hands it in, so the scan filters directories on size like everything else.
+
+**Why the order matters.** Applying it afterwards, to the ranked top-k, answers from a recency-ordered sample instead of
+from the drive: `sizeMin: 50 GB` over a real machine returned four folders and missed a 1.7 TB `~/Library`, because a
+folder nobody touched today loses the importance-boosted recency ranking against hundreds of thousands of freshly-touched
+ones long before anything reads its size. Filtering inside the scan also makes `total_count` exact by construction, which
+is why count-only no longer needs a correction pass (no over-fetch, no returned directory rows, no subtraction).
+
+`dir_sizes_for` builds the map only for a query that filters or sorts directories by size, because it's a full scan of
+`dir_stats`. That table is deliberately NOT indexed on `recursive_logical_size`: the index would be rewritten by every
+rollup update on the indexing hot path, to speed up a query that runs only when someone asks about sizes.
+
+❌ **A failed read must fail the search.** The engine reads a missing map as "no directory size filter to apply", so
+falling back to `None` on a DB error would answer with every matching directory regardless of size — a wrong answer
+wearing a right one's clothes.
+
+`sort_by` (`SearchSort`) rides the same map. `Relevance` is the default and what `ranking.rs` owns; `Size` and `Modified`
+REPLACE that ranking rather than reordering its top-k, because "the biggest matches" means the biggest that exist. A
+directory is compared on its recursive size and a file on its own, so one enormous file can outrank every folder around
+it. Unknown keys sort last in both directions (`sort_indices`), ties break on entry id, and the top-k is taken with
+`select_nth_unstable_by` so a broad query pays a partition rather than a full sort.
+
+**Over live-walked ground this filter can't apply**: a walked directory has no `dir_stats` row yet, which is Accepted
+difference 5 in `docs/specs/unindexed-search-plan.md`. The index half is exact; the walked half doesn't match
+directories on size.
+
 ### Honesty: `hidden_by_excludes`
 
 The third typed honesty field, and the only one that fires on a search that worked perfectly. It counts matches an

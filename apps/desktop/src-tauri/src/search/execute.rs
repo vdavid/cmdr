@@ -43,7 +43,7 @@ use super::live::{
 };
 use super::matcher::{CompiledQuery, Evaluator};
 use super::query;
-use super::types::{SearchQuery, SearchResult, SearchResultEntry};
+use super::types::{SearchQuery, SearchResult, SearchResultEntry, SearchSort};
 use super::volumes::{self, LoadedVolume, VolumeLoad};
 
 /// The one volume a search targets: the volume id plus the scope include paths that
@@ -127,7 +127,6 @@ pub(crate) fn run_blocking(query: SearchQuery) -> Result<SearchResult, String> {
     volumes::touch_activity();
 
     let target = resolve_target(&query).map_err(|e| e.to_string())?;
-    let limit = query.limit.min(1000) as usize;
 
     let loaded = match volumes::ensure_volume(&target.volume_id) {
         VolumeLoad::Loaded(v) => v,
@@ -138,7 +137,7 @@ pub(crate) fn run_blocking(query: SearchQuery) -> Result<SearchResult, String> {
         }
     };
 
-    let half = search_covered_half(&query, &target, &loaded, limit)?;
+    let half = search_covered_half(&query, &target, &loaded)?;
 
     Ok(SearchResult {
         entries: half.entries,
@@ -166,12 +165,7 @@ struct CoveredHalf {
 /// Run the engine over `loaded` and finish the result: resolve the scope to entry
 /// ids, fill directory sizes from `dir_stats`, apply the size post-filter, and cut
 /// the over-fetch back to `limit`.
-fn search_covered_half(
-    query: &SearchQuery,
-    target: &Target,
-    loaded: &LoadedVolume,
-    limit: usize,
-) -> Result<CoveredHalf, String> {
+fn search_covered_half(query: &SearchQuery, target: &Target, loaded: &LoadedVolume) -> Result<CoveredHalf, String> {
     let mut vq = query.clone();
     let unresolved_scopes = if target.include_paths.is_empty() {
         vq.include_paths = None;
@@ -194,31 +188,21 @@ fn search_covered_half(
 
     let weights = volumes::weights_for(&target.volume_id);
     let prefix = loaded.mount_root.as_deref().unwrap_or("");
+    let dir_sizes = dir_sizes_for(&vq, &loaded.pool)?;
     let engine::Ranked {
         mut entries,
-        total_count: mut total,
+        total_count: total,
         hidden_by_excludes,
-    } = engine::search_ranked(&loaded.index, &vq, &weights, prefix)?;
+    } = engine::search_ranked(&loaded.index, &vq, &weights, prefix, dir_sizes.as_ref())?;
 
     if query.count_only {
-        // Count-only: an exact total, no rows. `entries` holds the matching directories
-        // only when a size filter applies to them (else it's empty and `total` is
-        // already exact). Fill their dir_stats sizes and subtract the ones outside the
-        // filter. Files are already size-filtered by the engine.
-        if !entries.is_empty() {
-            fill_dir_sizes(&mut entries, &loaded.pool);
-        }
-        total = count_only_volume_total(total, &entries, &vq);
+        // The engine's total is already exact — directory size filters included, since
+        // `dir_sizes` applied them inside the scan — and count-only returns no rows.
         entries.clear();
     } else {
-        // Directory sizes live in `dir_stats`, not the entries table, so fill them
-        // from the volume's pool, then drop dirs outside the size filter (the engine
-        // over-fetched dir candidates to absorb this — see its limit bump).
+        // The rows are the right rows; they just don't carry a directory's recursive
+        // size yet, because that isn't in the entries table.
         fill_dir_sizes(&mut entries, &loaded.pool);
-        total = filter_dirs_by_size(&mut entries, &vq, total);
-        // The engine already returns best-first, so there's nothing to re-sort: only
-        // the over-fetch needs cutting back to what the caller asked for.
-        entries.truncate(limit);
     }
 
     Ok(CoveredHalf {
@@ -636,10 +620,9 @@ fn groundwork(
     };
 
     let half = match loaded.as_deref().filter(|_| !run.is_cancelled()) {
-        Some(loaded) => Some(
-            search_covered_half(query, target, loaded, query.limit.min(1000) as usize)
-                .map_err(|message| (SearchRunError::Query, message))?,
-        ),
+        Some(loaded) => {
+            Some(search_covered_half(query, target, loaded).map_err(|message| (SearchRunError::Query, message))?)
+        }
         None => None,
     };
 
@@ -806,6 +789,40 @@ fn uncovered_result(target: Target) -> SearchResult {
     }
 }
 
+/// Read the directory sizes this query needs BEFORE the engine ranks anything, or
+/// `None` when it needs none.
+///
+/// A directory's size lives in `dir_stats`, so the arena scan can't judge it. Doing
+/// it afterwards, over the ranked top-k, is what made `sizeMin: 50 GB` miss a 1.7 TB
+/// `~/Library`: it lost a recency-weighted ranking against hundreds of thousands of
+/// freshly-touched folders long before anything looked at its size. Handing the
+/// passing set in makes both the filter and `total_count` exact.
+///
+/// Built only for a query that filters or sorts directories by size, because it's a
+/// full scan of `dir_stats` (deliberately unindexed on size — see
+/// `IndexStore::dir_sizes_in_range`).
+fn dir_sizes_for(query: &SearchQuery, pool: &ReadPool) -> Result<Option<engine::DirSizes>, String> {
+    let dirs_included = query.is_directory != Some(false);
+    let has_size_filter = query.min_size.is_some() || query.max_size.is_some();
+    let sorts_by_size = query.sort_by == Some(SearchSort::Size);
+    if !dirs_included || !(has_size_filter || sorts_by_size) {
+        return Ok(None);
+    }
+    // Without a size filter the range is unbounded, so this is every directory:
+    // the map is then a SORT KEY, and a directory missing from it is unknown-sized
+    // rather than filtered out.
+    let (min, max) = (query.min_size, query.max_size);
+    // ❌ Never fall back to `None` here. The engine reads a missing map as "no
+    // directory size filter to apply", so a failed read would answer with every
+    // matching directory regardless of size — a wrong answer wearing a right one's
+    // clothes. Failing is the honest outcome.
+    let rows = pool
+        .with_conn(|conn| IndexStore::dir_sizes_in_range(conn, min, max))
+        .map_err(|e| format!("Couldn't read directory sizes: {e}"))?
+        .map_err(|e| format!("Couldn't read directory sizes: {e}"))?;
+    Ok(Some(engine::DirSizes::new(rows.into_iter().collect(), has_size_filter)))
+}
+
 /// Fill directory entries' sizes from a volume's `dir_stats` (batch lookup by entry
 /// id). Files already carry their size from the entries table; only directories
 /// reach here sizeless.
@@ -829,49 +846,6 @@ fn fill_dir_sizes(entries: &mut [SearchResultEntry], pool: &ReadPool) {
             }
         }
     });
-}
-
-/// Drop directories whose (dir_stats) size falls outside the query's size filter,
-/// and return the adjusted match total. Files are already size-filtered by the
-/// engine, so they pass through. A no-op (returns `total` unchanged) when the query
-/// has no size filter; otherwise `total` becomes the retained length (approximate,
-/// as the exact count would need `dir_stats` for every matching directory).
-fn filter_dirs_by_size(entries: &mut Vec<SearchResultEntry>, query: &SearchQuery, total: u32) -> u32 {
-    if query.min_size.is_none() && query.max_size.is_none() {
-        return total;
-    }
-    entries.retain(|e| !e.is_directory || size_in_range(e.size, query.min_size, query.max_size));
-    entries.len() as u32
-}
-
-/// Whether a size (bytes) satisfies the query's min/max bounds. `None` (a directory
-/// whose `dir_stats` row is missing) fails any active bound.
-fn size_in_range(size: Option<u64>, min: Option<u64>, max: Option<u64>) -> bool {
-    if let Some(min) = min {
-        match size {
-            Some(s) if s >= min => {}
-            _ => return false,
-        }
-    }
-    if let Some(max) = max {
-        match size {
-            Some(s) if s <= max => {}
-            _ => return false,
-        }
-    }
-    true
-}
-
-/// Adjust a count-only volume total by subtracting the directories whose `dir_stats`
-/// size falls outside the query's size filter. `dirs` holds the matching directories
-/// the engine handed back for this check (empty when no size filter applies to them,
-/// in which case `total` is already exact). Files are already size-filtered upstream.
-fn count_only_volume_total(total: u32, dirs: &[SearchResultEntry], query: &SearchQuery) -> u32 {
-    let out_of_range = dirs
-        .iter()
-        .filter(|e| !size_in_range(e.size, query.min_size, query.max_size))
-        .count() as u32;
-    total.saturating_sub(out_of_range)
 }
 
 #[cfg(test)]

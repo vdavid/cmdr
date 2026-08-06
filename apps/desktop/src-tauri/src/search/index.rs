@@ -221,6 +221,7 @@ mod tests {
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
+            sort_by: None,
         };
         let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         assert_eq!(result.total_count, 1);

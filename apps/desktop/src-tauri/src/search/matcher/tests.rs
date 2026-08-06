@@ -26,6 +26,7 @@ fn query() -> SearchQuery {
         limit: 30,
         case_sensitive: None,
         exclude_system_dirs: Some(false),
+        sort_by: None,
     }
 }
 

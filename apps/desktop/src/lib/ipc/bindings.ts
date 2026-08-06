@@ -7690,6 +7690,12 @@ export type SearchQuery = {
    */
   caseSensitive?: boolean | null
   /**
+   *  How to order the results. `None` / `Relevance` is the ranked default;
+   *  anything else replaces the ranking wholesale, so "the biggest matches"
+   *  means the biggest on the drive rather than the best-ranked few reordered.
+   */
+  sortBy?: SearchSort | null
+  /**
    *  Whether to exclude common system/build/cache directories.
    *  `None` or `Some(true)` = exclude, `Some(false)` = include everything.
    */
@@ -7856,6 +7862,16 @@ export type SearchRunError =
    *  "never indexed", which is not an error — that volume gets walked.
    */
   | 'indexUnreadable'
+
+/**
+ *  How to order search results.
+ *
+ *  `Relevance` is what `ranking.rs` computes (match-quality band, then
+ *  importance-boosted recency). The other two are plain keys, and they REPLACE the
+ *  ranking rather than reordering its top-k, because a caller asking for the
+ *  biggest matches means the biggest ones that exist.
+ */
+export type SearchSort = 'relevance' | 'size' | 'modified'
 
 /**
  *  Status of an ongoing search.

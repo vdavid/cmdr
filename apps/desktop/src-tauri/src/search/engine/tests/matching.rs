@@ -21,6 +21,7 @@ fn search_glob_plain_text_matches_substring() {
         limit: 30,
         case_sensitive: None,
         exclude_system_dirs: Some(false),
+        sort_by: None,
     };
     let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
     // "ote" should match "notes.txt" as a substring
@@ -46,6 +47,7 @@ fn search_glob_plain_text_matches_prefix() {
         limit: 30,
         case_sensitive: None,
         exclude_system_dirs: Some(false),
+        sort_by: None,
     };
     let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
     // "repo" should match "report.pdf" and "Q1-report.pdf"
@@ -72,6 +74,7 @@ fn search_glob_with_wildcards_not_auto_wrapped() {
         limit: 30,
         case_sensitive: None,
         exclude_system_dirs: Some(false),
+        sort_by: None,
     };
     let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
     // "report*" matches "report.pdf" but NOT "Q1-report.pdf"
@@ -99,6 +102,7 @@ fn search_glob_star_pdf() {
         limit: 30,
         case_sensitive: None,
         exclude_system_dirs: Some(false),
+        sort_by: None,
     };
     let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
     assert_eq!(result.total_count, 2);
@@ -123,6 +127,7 @@ fn search_glob_question_mark() {
         limit: 30,
         case_sensitive: None,
         exclude_system_dirs: Some(false),
+        sort_by: None,
     };
     let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
     assert_eq!(result.total_count, 1);
@@ -150,6 +155,7 @@ fn search_glob_case_insensitive_macos() {
         limit: 30,
         case_sensitive: None,
         exclude_system_dirs: Some(false),
+        sort_by: None,
     };
     let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
     // On macOS, matching is case-insensitive
@@ -177,6 +183,7 @@ fn search_regex_alternation() {
         limit: 30,
         case_sensitive: None,
         exclude_system_dirs: Some(false),
+        sort_by: None,
     };
     let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
     assert_eq!(result.total_count, 1);
@@ -201,6 +208,7 @@ fn search_invalid_regex() {
         limit: 30,
         case_sensitive: None,
         exclude_system_dirs: Some(false),
+        sort_by: None,
     };
     let result = search(&index, &query, &ImportanceWeights::empty());
     assert!(result.is_err());

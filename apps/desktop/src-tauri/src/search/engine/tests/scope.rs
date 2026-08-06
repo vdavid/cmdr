@@ -138,6 +138,7 @@ fn search_with_include_path_filter() {
         limit: 30,
         case_sensitive: None,
         exclude_system_dirs: Some(false),
+        sort_by: None,
     };
     let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
     // Should find app.rs and pkg.json (both under /Users/alice/projects)
@@ -166,6 +167,7 @@ fn search_with_exclude_pattern() {
         limit: 30,
         case_sensitive: None,
         exclude_system_dirs: Some(false),
+        sort_by: None,
     };
     let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
     // Should find app.rs and config, but NOT pkg.json (under node_modules)
@@ -199,6 +201,7 @@ fn an_excluded_match_is_counted_not_just_dropped() {
         limit: 30,
         case_sensitive: None,
         exclude_system_dirs: Some(false),
+        sort_by: None,
     };
     let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
     assert_eq!(result.total_count, 2, "the excluded row stays out of the results");
@@ -226,6 +229,7 @@ fn a_match_outside_the_include_roots_is_not_counted_as_hidden() {
         limit: 30,
         case_sensitive: None,
         exclude_system_dirs: Some(false),
+        sort_by: None,
     };
     let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
     assert_eq!(result.hidden_by_excludes, 0);
@@ -249,6 +253,7 @@ fn search_with_include_and_exclude() {
         limit: 30,
         case_sensitive: None,
         exclude_system_dirs: Some(false),
+        sort_by: None,
     };
     let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
     // Only app.rs: under projects but not under node_modules
@@ -274,6 +279,7 @@ fn search_with_wildcard_exclude() {
         limit: 30,
         case_sensitive: None,
         exclude_system_dirs: Some(false),
+        sort_by: None,
     };
     let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
     // Should exclude config (under .git) but keep app.rs and pkg.json
@@ -357,6 +363,7 @@ fn a_wildcard_exclude_reaches_a_directory_name_with_a_newline_in_it() {
         limit: 30,
         case_sensitive: None,
         exclude_system_dirs: Some(false),
+        sort_by: None,
     };
     let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
     assert_eq!(result.total_count, 0, "note.txt sits under an excluded directory");

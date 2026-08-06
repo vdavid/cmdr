@@ -67,6 +67,7 @@ pub fn build_search_query(parsed: &ParsedLlmResponse) -> SearchQuery {
         limit: 30,
         case_sensitive: None,
         exclude_system_dirs: if include_system_dirs { Some(false) } else { None },
+        sort_by: None,
     }
 }
 

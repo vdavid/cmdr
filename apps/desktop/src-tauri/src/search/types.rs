@@ -4,6 +4,20 @@ use serde::{Deserialize, Serialize};
 
 // ── Query types ──────────────────────────────────────────────────────
 
+/// How to order search results.
+///
+/// `Relevance` is what `ranking.rs` computes (match-quality band, then
+/// importance-boosted recency). The other two are plain keys, and they REPLACE the
+/// ranking rather than reordering its top-k, because a caller asking for the
+/// biggest matches means the biggest ones that exist.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum SearchSort {
+    Relevance,
+    Size,
+    Modified,
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchQuery {
@@ -29,6 +43,11 @@ pub struct SearchQuery {
     /// `None` = platform default (false on macOS, true on Linux).
     #[serde(default)]
     pub case_sensitive: Option<bool>,
+    /// How to order the results. `None` / `Relevance` is the ranked default;
+    /// anything else replaces the ranking wholesale, so "the biggest matches"
+    /// means the biggest on the drive rather than the best-ranked few reordered.
+    #[serde(default)]
+    pub sort_by: Option<SearchSort>,
     /// Whether to exclude common system/build/cache directories.
     /// `None` or `Some(true)` = exclude, `Some(false)` = include everything.
     #[serde(default)]
@@ -141,6 +160,7 @@ mod tests {
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
+            sort_by: None,
         };
         let json = serde_json::to_string(&query).unwrap();
         assert!(json.contains("namePattern"));

@@ -181,6 +181,7 @@ fn query(pattern: &str, pattern_type: PatternType, count_only: bool) -> SearchQu
         // Excludes off: the synthetic tree has no `node_modules`, and this keeps the
         // scan cost comparable between runs.
         exclude_system_dirs: Some(false),
+        sort_by: None,
     }
 }
 
@@ -193,18 +194,19 @@ fn measure(label: &str, index: &SearchIndex, weights: &ImportanceWeights, patter
     let empty = ImportanceWeights::empty();
 
     let t = Instant::now();
-    let total = search_ranked(index, &query(pattern, pattern_type.clone(), true), &empty, "")
+    let total = search_ranked(index, &query(pattern, pattern_type.clone(), true), &empty, "", None)
         .expect("count-only search should succeed")
         .total_count;
     let scan = t.elapsed();
 
     let t = Instant::now();
-    let _ = search_ranked(index, &query(pattern, pattern_type.clone(), false), &empty, "")
+    let _ = search_ranked(index, &query(pattern, pattern_type.clone(), false), &empty, "", None)
         .expect("unweighted search should succeed");
     let unweighted = t.elapsed();
 
     let t = Instant::now();
-    let _ = search_ranked(index, &query(pattern, pattern_type, false), weights, "").expect("search should succeed");
+    let _ =
+        search_ranked(index, &query(pattern, pattern_type, false), weights, "", None).expect("search should succeed");
     let weighted = t.elapsed();
 
     eprintln!(

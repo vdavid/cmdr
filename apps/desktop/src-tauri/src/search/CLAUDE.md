@@ -39,8 +39,11 @@ it; unscoped means the boot volume.
   terminal "no index here", without which a machine that declined indexing waits forever.
 - **A stale root arena is SERVED**, refreshed in the background. ❌ Never reload-on-mismatch: root's generation ticks
   several times a second, costing 2.6 s per search.
-- **Count-only** returns an exact total and no rows — except under a dir-size filter, where `run_blocking` MUST
-  `fill_dir_sizes` then `count_only_volume_total`, or it over-counts.
+- **Count-only returns an exact total and no rows**, dir-size filters included: a directory's size isn't in the arena,
+  so `dir_sizes_for` reads the passing set from `dir_stats` BEFORE the scan and the engine filters on it there.
+  ❌ Never move a directory size filter after ranking — it then answers from a recency-ordered top-k, which is how
+  `sizeMin: 50 GB` missed a 1.7 TB `~/Library`. ❌ Never let a failed `dir_stats` read fall back to "no map": the engine
+  reads that as "no filter" and returns every matching directory. `DETAILS.md` § Directory size filters.
 - **Memory is the design constraint**: arena-allocated names (❌ no owned `String`s), importance keyed on `hash_path`
   and ❌ never the path, ranking per MATCH and so top-k.
 - **`history.rs` holds two locks** (a cache `Mutex`, then `DISK_LOCK`): ❌ no `fs` call or `.await` under a guard.
