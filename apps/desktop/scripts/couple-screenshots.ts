@@ -54,6 +54,9 @@ import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
+import { type RepresentativeMapping, REPRESENTATIVE_SCREENSHOTS } from './representative-screenshots.ts'
+
+export { type RepresentativeMapping, REPRESENTATIVE_SCREENSHOTS }
 
 /**
  * The catalog filename a key belongs to: first dot-segment + `.json`.
@@ -97,129 +100,6 @@ export function couplingsFromReport(report: CaptureReport): Map<string, string> 
  * sites in `apps/desktop/src/lib/`).
  */
 export const DYNAMIC_KEY_PREFIXES: string[] = ['errors.git.', 'errors.listing.', 'errors.provider.', 'errors.write.']
-
-/**
- * Curated REPRESENTATIVE screenshot mappings, applied AFTER the precise
- * capture-based coupling. A representative coupling is honest-by-design: it says
- * "we have no exact screenshot of YOUR string, but here's a real screenshot of
- * the same panel/toast/dialog where it appears, in the same position", so a
- * translator loads ONE image for a whole family of strings instead of none.
- *
- * Each entry maps a key `prefix` to an already-captured `screenshot` plus a
- * translator-facing `note` explaining how the image relates to the key. The note
- * is written to `@key.screenshotNote` alongside `@key.screenshot`.
- *
- * Direct (captured) couplings ALWAYS win: a representative is only written to a
- * key that is STILL uncoupled after the capture pass (no exact screenshot of its
- * own). The first matching prefix in this ordered list wins, so list more
- * specific prefixes before broader ones.
- *
- * Honesty bar: only add a mapping where the layout/position genuinely matches,
- * where the string really does render in that panel, in that spot. If no captured
- * surface honestly represents a cluster, leave it uncoupled (it shows in the
- * coverage report) rather than forcing a misleading image.
- */
-export interface RepresentativeMapping {
-  prefix: string
-  screenshot: string
-  note: string
-}
-
-export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
-  {
-    // The whole friendly-error family (listing / write / provider / git) shares
-    // one presentation: an error pane (or, for write ops, the same title +
-    // explanation + suggestion layout in a dialog). The example shows a DIFFERENT
-    // error than yours, but your title/message/suggestion text appears in this
-    // same panel, in the same three stacked positions.
-    prefix: 'errors.',
-    screenshot: 'error-message-example.png',
-    note:
-      'Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion ' +
-      'below it (plus an optional action button and a collapsed "Technical details"). This screenshot shows a DIFFERENT error, ' +
-      'but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. ' +
-      'errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is.',
-  },
-  {
-    // SMB / network connect + reconnect + the MTP connection states all live on
-    // the network/device browsing surface reached via "Connect to server".
-    prefix: 'fileExplorer.network.',
-    screenshot: 'connect-to-server.png',
-    note:
-      'Network (SMB) connection flow. This shows the "Connect to server" surface; your string appears here or on the ' +
-      'closely-related browsing/sign-in/reconnect states reached from it.',
-  },
-  {
-    prefix: 'fileExplorer.smbReconnect.',
-    screenshot: 'connect-to-server.png',
-    note:
-      'The SMB reconnect banner shown when a mounted server drops: a "Reconnecting…" title, a countdown, and Retry/Cancel ' +
-      'controls. This shows the related "Connect to server" surface; your string appears in the same network-connection context.',
-  },
-  {
-    prefix: 'fileExplorer.networkMount.',
-    screenshot: 'connect-to-server.png',
-    note: 'Shown while mounting a network share, in the same network-connection flow as the "Connect to server" surface pictured here.',
-  },
-  {
-    // MTP device connection states + dialogs share the MTP browsing context.
-    prefix: 'fileExplorer.mtp.',
-    screenshot: 'mtp-browse.png',
-    note:
-      'MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears ' +
-      'as a status message in this same device context (connecting, busy, disconnected, etc.).',
-  },
-  {
-    prefix: 'mtp.',
-    screenshot: 'mtp-browse.png',
-    note:
-      'MTP (phone/camera) device messaging: a connect/permission dialog or toast tied to an MTP device. This shows the MTP ' +
-      'browse surface for context. Keep device/protocol names (MTP, PTP) as-is.',
-  },
-  {
-    // The Ask Cmdr model-override hint renders conditionally, so it keeps a precise
-    // note explaining the screenshot may not show it (more specific than the `ai.` rule below).
-    prefix: 'ai.cloud.askCmdrOverrideHint',
-    screenshot: 'settings-ai-ask-cmdr.png',
-    note: 'The hint renders under the model picker in the Settings > AI > Ask Cmdr subsection pictured here (only while the Ask Cmdr override is set, so the screenshot may not show it).',
-  },
-  {
-    // AI provider/cloud connection states render in the Settings > AI > Provider subsection.
-    // Settings > AI is captured as three separate surfaces (provider, Ask Cmdr, MCP server);
-    // the provider one is where connection state lives, so it's the honest stand-in.
-    prefix: 'ai.',
-    screenshot: 'settings-ai-provider.png',
-    note:
-      'AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider ' +
-      'subsection pictured here (and inline near AI actions). This shows the AI provider settings for context.',
-  },
-  {
-    prefix: 'onboarding.cloudSetup.',
-    screenshot: 'onboarding-ai.png',
-    note: 'Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render.',
-  },
-  {
-    prefix: 'onboarding.stepAi.',
-    screenshot: 'onboarding-ai.png',
-    note: 'The AI step of the onboarding wizard, pictured here.',
-  },
-  {
-    // The crash-report dialog reuses the error-report dialog's form.
-    prefix: 'crashReporter.',
-    screenshot: 'error-report.png',
-    note:
-      'The crash-report dialog (shown after the app quit unexpectedly) uses the same report-form layout as the error-report ' +
-      'dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons.',
-  },
-  {
-    // The shortcuts window reuses the Settings keyboard-shortcuts list layout.
-    prefix: 'shortcuts.',
-    screenshot: 'settings-keyboard-shortcuts.png',
-    note:
-      'Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout ' +
-      'as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated.',
-  },
-]
 
 /**
  * Returns the first representative mapping whose prefix matches `key`, or null.
