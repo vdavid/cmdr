@@ -35,6 +35,11 @@ and order a row; `types.rs` / `query.rs` the data, `history.rs` recent searches,
   map" on a read error — the engine reads that as "no filter". DETAILS § Directory size filters.
 - **Memory is the design constraint**: arena-allocated names (❌ no owned `String`s), importance keyed on `hash_path`,
   ranking per MATCH and so top-k.
+- **A `SearchEntry` is 40 bytes and stays 40 bytes** — one per file on the volume, so a byte is megabytes. Its `size`
+  and `modified_at` are `OptU64`, a `u64::MAX`-sentinel encoding: ❌ never "simplify" either back to `Option<u64>`
+  (16 B for a value needing 8), and ❌ never compare against the sentinel — `.get()` is the only read. `None` is
+  MEANINGFUL in both (a NULL `logical_size` is a hardlink-deduped row, not a zero-byte file), so ❌ never collapse it
+  into `0`. DETAILS § The arena row.
 - **`history.rs` holds two locks** (cache `Mutex`, then `DISK_LOCK`): ❌ no `fs` call or `.await` under a guard.
 
 Rationale, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,

@@ -56,6 +56,38 @@ Depth for the search backend. `CLAUDE.md` holds the must-knows; this file holds 
   be speculative. When v2 lands, replace the quarantine branch with a `match` on the version calling a
   `migrate_v1_to_v2` helper.
 
+## The arena row (`index.rs`)
+
+The arena holds one `SearchEntry` per file on the volume — 6,045,549 rows on David's boot disk — and it stays resident
+for as long as someone is searching, so **what a row costs IS the app's peak footprint**. That makes the row's size a
+design constraint, and `search/index/memory_tests.rs` pins it at 40 bytes.
+
+**`size` and `modified_at` are `OptU64`, not `Option<u64>`.** A `u64` uses every one of its bit patterns, so `Option`
+has no niche to hide `None` in and Rust adds a whole discriminant word: the two fields were 32 of the struct's 56 bytes
+for two values needing 8 each. Sentinel-encoding them took the row to 40 and the loaded root arena from 689.5 MiB to
+597.2 MiB, with no measurable change to scan latency (`docs/notes/search-arena-row-2026-08-06.md` has the before/after
+and the A/B method).
+
+- **`u64::MAX` is the absent marker and cannot collide.** Both values come out of SQLite `INTEGER` columns, which are
+  SIGNED 64-bit, so the index can't store or return anything above `i64::MAX` — the sentinel is outside the
+  representable range by construction, not merely an implausible value inside it. (It's unreachable physically too:
+  16 EiB is twice APFS's own per-file ceiling.)
+- **❌ Never collapse `None` into `0`.** `logical_size` is NULL on every 2nd+ name of a hardlinked inode — the index
+  counts an inode's bytes once and stores NULL on the rest, 934,793 of 6.0 M rows here — so the two mean different
+  things, and conflating them would change what folder totals and size filters report on a hardlink-heavy tree.
+  Symmetrically, a real zero-byte file must not read back as "unknown". `index.rs`'s
+  `a_hardlink_deduped_row_loads_back_as_unknown_size` pins both directions.
+- **❌ Never compare against the sentinel at a call site.** `OptU64`'s inner `u64` is private and `get()` is the only
+  way in, so the encoding is invisible outside the type; its `Debug` prints as the `Option` it stands for, so a log
+  line never shows a bare `18446744073709551615`.
+- **The arena readers are `engine.rs`** (the `Candidate` build, the `sortBy` key, `build_result_entry`) **and
+  `ranking.rs`** (the recency key). `Candidate`, `CoveredEntry`, and `SearchResultEntry` keep plain `Option<u64>`:
+  they're per-result or per-batch, not per-row, so the 16 bytes buy readability there instead of costing memory.
+
+**The next lever is the names arena plus `id_to_index`**, now 366.6 MiB of the 597.2 MiB an arena costs. ⚠️ Removing
+`id_to_index` is NOT a free win — it's hit once per ancestor per candidate inside an interactive loop, so it has to be
+measured on the latency axis first (`docs/notes/size-only-subtrees-rejected-2026-08-06.md` § The search arena).
+
 ## Single-volume search
 
 A search covers at most ONE volume. `execute.rs::run_blocking` owns the orchestration; `engine.rs` stays per-index and
@@ -534,7 +566,12 @@ home dir), so this pass — not the rayon scan — was the search's dominant cos
   matching directory, since the caller subtracts the out-of-range ones from the volume total.
 
 Measurements and the before/after table: `docs/notes/search-latency-2026-07-28.md`. The harness is
-`bench.rs` (`#[ignore]`d; it can run against a real `index-*.db`).
+`bench.rs` (`#[ignore]`d; it can run against a real `index-*.db`). Two of its benches answer the arena-SHAPE
+questions rather than the ranking ones: `bench_arena_bytes` (what a loaded arena costs, in heap bytes and in process
+RSS) and `bench_arena_scan` (the count-only pass, best-of-N, with and without the size/date filters that read an
+entry's `OptU64` fields). ❌ Don't reach for `bench_real_index` to answer "did the row's shape make scanning slower":
+its queries set no size or date bound, so the matcher skips those predicates, and one run per pattern is swamped by
+machine noise.
 
 ### The weight-map lifecycle (`volumes/weights.rs`)
 

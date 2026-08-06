@@ -60,8 +60,8 @@ first line rejects them. Anything that ever detects these tags has to read the f
 Shrinking what a row costs there is a better lever than not storing the row at all. **All figures below are struct
 arithmetic, not measurement.**
 
-- **Sentinel-encode the two `Option<u64>` in `SearchEntry`.** They're 32 of its 56 bytes, entirely for niches the type
-  doesn't have. ~96 MB, and no catch that's visible from here. Start here.
+- **✅ Done: sentinel-encoding the two `Option<u64>` in `SearchEntry`.** The row is 40 bytes, the arena is 92 MiB
+  cheaper, and the scan is no slower. Measurements and the A/B method: `search-arena-row-2026-08-06.md`.
 - **⚠️ Removing `id_to_index: HashMap<i64, usize>` is NOT a free win.** It has four production call sites in
   `search/engine.rs` (lines 70, 98, 498, 540), all ancestor walking for scope and path building, so it's hit once per
   ancestor per candidate inside an interactive loop. Binary search trades ~144 MB for ~23 cache-missing comparisons per

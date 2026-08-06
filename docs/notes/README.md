@@ -26,6 +26,9 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 - `cover-walk-primitive-2026-08-05.md` — parallel walker against serial reconcile over four real trees, the decision it
   settled for search-driven walks, and what the published "the parallel walk gives up ~10% of rows" caveat actually
   turned out to be.
+- `search-arena-row-2026-08-06.md` — what shrinking `SearchEntry` from 56 to 40 bytes actually bought (−92 MiB of
+  arena, measured two ways), that it cost no scan latency, and the A/B method for comparing two builds on a machine
+  running other work.
 
 **A decision record for something we evaluated and rejected**, kept so nobody re-proposes it from the same premises:
 
