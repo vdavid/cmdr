@@ -4,7 +4,7 @@
  * number that's still rising.
  *
  * The regression this file guards is the one the old spinner logic causes: `isSearching`
- * is TRUE for a live run's whole life, and the pre-M6 rule replaced the whole list with
+ * is TRUE for a live run's whole life, and the old rule replaced the whole list with
  * a spinner whenever it was. Under a walk that runs for minutes, that would hide every
  * row the walk found until it finished — which is the streaming UI not existing.
  */
@@ -112,7 +112,7 @@ describe('the three phases, while there is nothing to show yet', () => {
 
 describe('rows stay on screen while the run keeps finding more', () => {
   it('renders the rows found so far instead of replacing them with a spinner', async () => {
-    // `isSearching` is true for the whole live run. Before M6 that emptied the list.
+    // `isSearching` is true for the whole live run. The old spinner rule emptied the list.
     const target = mountWith({ results: rows(3), totalCount: 3, live: liveView({ matchCount: 3 }) })
     await tick()
     expect(target.querySelectorAll('.result-row')).toHaveLength(3)

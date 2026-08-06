@@ -583,7 +583,7 @@ mod tests {
 
     #[test]
     fn the_two_unreadable_lists_get_two_different_sentences() {
-        // M8's typed cause, end to end: one half is a permission somebody can
+        // The typed unreadable cause, end to end: one half is a permission somebody can
         // grant, the other is ground Cmdr declines to read. ❌ Never one list and
         // never one sentence — offering Full Disk Access over a snapshot folder
         // is advice that does nothing.

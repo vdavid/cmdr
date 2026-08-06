@@ -137,7 +137,7 @@ fn a_walk_emits_what_it_writes() {
     std::fs::write(root.join("shallow/deep/two.txt"), "bb").expect("file");
     // A frontier node always has its own row: `coverage` found it by descending
     // into its parent's listing. (A path the index has never seen at all is
-    // M3b's cold-bootstrap case, not this one.)
+    // the cold-bootstrap case, not this one.)
     f.seed_chain(&root.join("shallow"));
 
     let frontier = vec![f.path("shallow")];
@@ -1306,7 +1306,7 @@ fn a_finished_walk_releases_the_ground_it_held() {
 
 /// A walk stopped partway reports what it DID cover, not zero.
 ///
-/// The totals are what M5's "walked 40,000 folders" line reads, and a cancelled
+/// The totals are what the dialog's "walked 40,000 folders" line reads, and a cancelled
 /// walk that reported nothing would tell the user their eight minutes bought
 /// them nothing — when in fact every folder it read is now in the index.
 #[test]

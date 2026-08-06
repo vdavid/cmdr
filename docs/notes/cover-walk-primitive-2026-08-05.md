@@ -1,6 +1,6 @@
 # Which primitive covers a search frontier, 2026-08-05
 
-M3a of `docs/specs/unindexed-search-plan.md` had one real decision in it: whether a search-driven walk over a coverage
+The cover-walk work in `docs/specs/unindexed-search-plan.md` had one real decision in it: whether a search-driven walk over a coverage
 frontier should run on the **parallel guarded walker** (`scanner::scan_subtree`) or the **serial reconcile**
 (`reconcile::reconcile_subtree`). The plan said to decide it by measurement on a representative frontier rather than by
 either of the two published full-volume numbers. This is that measurement.
@@ -78,14 +78,14 @@ window. Same tree: **3.92 ms**. Pinned by
 
 - **If the frontier ever includes a File Provider mount root.** That is the one shape that produced the published
   shortfall. The walk survives it (that is what the guarded walker exists for), but the subtree stays frontier and
-  re-enters every search until the mount responds. M3c's exclusion policy and M11's watch story both touch this.
+  re-enters every search until the mount responds. The walk's exclusion policy and the branch watch both touch this.
 - **If the serial reconcile stops being the repair path.** It is still used, for a frontier node the index already holds
   rows under, where the parallel walker's fresh ids would collide (`lifecycle/cover.rs`). If that case is ever closed
   another way, the serial path leaves the cover story entirely.
-- **On network volumes (M3d).** Neither number here transfers: SMB and MTP walk over the `Volume` trait, where the wire
+- **On network volumes.** Neither number here transfers: SMB and MTP walk over the `Volume` trait, where the wire
   is the bottleneck, and the parallelism question is a different one.
 
-## What the volume-boundary probe costs (added 2026-08-05, M3c)
+## What the volume-boundary probe costs (added 2026-08-05)
 
 The search walk stays on the device it started on (Decision 4: a search targets one volume), and the batched macOS read
 carries no `ATTR_CMN_DEVID`, so the check is one `symlink_metadata` per directory the walk discovers. Measured by

@@ -199,7 +199,8 @@ pub(crate) fn cancel_all_live_runs() {
 /// Stop every DIALOG run except the one named, if any.
 ///
 /// The dialog closing calls this with the run it deliberately outlived: "Open in
-/// pane" promotes the results into a pane and leaves the walk filling it (M7), so
+/// pane" promotes the results into a pane and leaves the walk filling it (the
+/// handoff, `src/lib/search/walk-handoff.svelte.ts`), so
 /// that ONE run has a consumer even though the dialog doesn't. Every other run of
 /// the dialog's is a query nobody is reading.
 ///

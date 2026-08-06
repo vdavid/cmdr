@@ -206,7 +206,7 @@ async function settle(): Promise<void> {
 }
 
 /**
- * Enter, which since M6 takes the LIVE path: a run that walks whatever the index can't
+ * Enter, which takes the LIVE path: a run that walks whatever the index can't
  * answer for. The fake backend answers it from `searchFilesMock` (the one spy for "a
  * search asked this query", shared with the index-only path) and reports a run that had
  * nothing to walk, which is what an index-covered scope produces.

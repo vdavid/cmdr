@@ -134,9 +134,11 @@ for?"**, not "is root loaded". The pure `isTargetIndexReady` (`coverage-note.ts`
 Waiting when an event IS coming is still worth it: each ungated keystroke would otherwise issue an IPC that blocks on
 the same arena load, burning a blocking-pool thread per keystroke for no earlier answer.
 
-**Known gap**: if root's pre-load starts and then fails to read its DB (corruption), no event follows and the dialog
-stays on "Loading index…" for the session. Reopening the dialog re-asks `prepare_search_index` and recovers. M5 of
-`docs/specs/unindexed-search-plan.md` owns terminal states and closes it properly.
+**Known gap, still open**: if root's pre-load starts and then fails to read its DB (corruption), no event follows and
+the dialog stays on "Loading index…" for the session. The spawned load in `commands/search.rs::prepare_search_index`
+logs `VolumeLoad::Failed` / `NotIndexed` and emits nothing, so the gate never resolves. Reopening the dialog re-asks
+`prepare_search_index` and recovers. The proper fix is a terminal "no index is coming" signal on that path, which the
+live-search work did NOT deliver: its terminal states cover a RUN, and this failure happens before a run starts.
 
 **⌘N doesn't touch readiness.** `clearExtras()` resets what the user typed and leaves what the machine reported alone.
 Wiping the readiness flag there meant the gate went back to "waiting" with no second event ever coming, so every later
@@ -458,7 +460,7 @@ The label shown in the pane breadcrumb (and the snapshot's `label` field) is bui
 
 ## The walk that outlives the dialog (`walk-handoff.svelte.ts`)
 
-"Open in pane" is the ONE case where a search keeps running with its dialog gone (plan M7). Everything else about
+"Open in pane" is the ONE case where a search keeps running with its dialog gone. Everything else about
 closing the dialog stops the walk, because nobody is waiting for it; here the results are on screen in a pane, so the
 rows keep arriving there.
 

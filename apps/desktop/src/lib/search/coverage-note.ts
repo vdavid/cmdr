@@ -64,9 +64,9 @@ export interface CoverageNote {
    * Scope paths on an indexed volume that its index doesn't hold. PROVISIONAL: on a
    * partially indexed volume, a folder the user is standing in lands here just as a
    * typo does, so the copy says what Cmdr knows ("the index doesn't cover it") and
-   * never that the folder doesn't exist. M5 splits "not walked yet" from "genuinely
-   * not found" once the walk can tell them apart
-   * (`docs/specs/unindexed-search-plan.md`).
+   * never that the folder doesn't exist. A live run reports its gaps through
+   * `SearchRunCoverage` instead, which is what tells "not walked yet" from
+   * "genuinely not found".
    */
   unresolvedScopes: string[]
   /** The volume the search covered, per the backend's routing. */
@@ -130,8 +130,7 @@ export function coverageNoteFromRun(coverage: SearchRunCoverage): CoverageNote |
  * The gate is PER TARGET, not "is root loaded". Only a volume with a pre-load in
  * flight is worth waiting for; everything else runs and lets the backend answer,
  * honestly and possibly with a coverage gap. That's what makes search reachable on a
- * machine that declined indexing, where nothing will ever report ready
- * (`docs/specs/unindexed-search-plan.md` M1).
+ * machine that declined indexing, where nothing will ever report ready.
  *
  * `targetVolumeId` is `null` when the dialog can't know the target: the user typed a
  * scope, and routing a path to a volume is the backend's job (an SMB id keys on the

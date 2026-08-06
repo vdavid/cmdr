@@ -211,7 +211,7 @@ fn an_agent_search_walks_the_same_ground_and_gets_the_same_union() {
     let coverage = settled(&whole.ending);
     assert_eq!(coverage.walk, WalkEnding::Completed);
     assert!(whole.dirs_found > 0, "the agent's search really walked");
-    // The typed coverage signal MCP renders, carried through the fold: M8's
+    // The typed coverage signal MCP renders, carried through the fold: the
     // declined list reaches an agent exactly as it reaches the dialog.
     assert_eq!(coverage.declined, vec![format!("{root}/b/@eaDir")]);
     assert!(coverage.permission_denied.is_empty());

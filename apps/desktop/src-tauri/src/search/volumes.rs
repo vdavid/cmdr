@@ -249,8 +249,7 @@ fn spawn_background_refresh(volume_id: &str) {
 ///
 /// The dialog asks this so it can tell "an arena is on its way, wait for the
 /// `search-index-ready` event" from "there is nothing to wait for". Without the
-/// distinction a machine that declined indexing waits forever and never searches
-/// (`docs/specs/unindexed-search-plan.md` M1).
+/// distinction a machine that declined indexing waits forever and never searches.
 pub(crate) fn has_searchable_index(volume_id: &str) -> bool {
     if get_loaded_raw(volume_id).is_some() {
         return true;

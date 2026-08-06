@@ -100,8 +100,8 @@ isn't keyed on a stable server identity" below.
 
 Loading a volume's arena is a multi-second, multi-hundred-MB read (2.4 s warm page cache for a 2.6 M-entry NAS index,
 10.9 s observed cold in prod), and every caller now pays it: there's one target, and answering "nothing found" for the
-one place someone asked about would be a lie, not a fast path. M6 of the plan voices that wait honestly instead of
-hiding it.
+one place someone asked about would be a lie, not a fast path. The dialog's phase states voice that wait honestly
+instead of hiding it.
 
 Every arena load is SINGLE-FLIGHTED per volume through `LOAD_GATES`: a second caller waits for the first's arena instead
 of reading the same DB again, which used to cost both a duplicate multi-second load and a transient second copy of the
@@ -283,7 +283,7 @@ What survives the flattening, and why each half matters:
 
 The wait comes from the tool's `maxWaitSeconds` (`AGENT_WAIT_DEFAULT` 20 s, `AGENT_WAIT_MAX` 120 s). It's a transport
 knob: it says how much of the walk to wait for, never whether to walk. The MCP reply renders the typed coverage signal
-above the results (`mcp/executor/search.rs::coverage_note`), including M8's two unreadable lists.
+above the results (`mcp/executor/search.rs::coverage_note`), including the two unreadable lists.
 
 ### Why the walk handle never leaves its thread
 
@@ -343,7 +343,7 @@ Nothing branches on it, which is why it's a field on the coverage report rather 
 
 The per-entry predicates (name pattern, type, size, date) are a `CompiledQuery`, not part of the arena scan. The reason
 is the second evaluator: a search over ground the index doesn't cover walks it live and matches the entries the walk
-emits (`docs/specs/unindexed-search-plan.md` Decision 3, M4). If those entries were judged by a second copy of the
+emits (`docs/specs/unindexed-search-plan.md` Decision 3). If those entries were judged by a second copy of the
 rules, the same query would answer differently depending on whether the drive happened to be indexed, which is the one
 thing that plan forbids. So both paths call `CompiledQuery::matches`, and the module owns the rules that break
 silently when duplicated: the case-folding resolution (the scope filter and the ranker read it back rather than

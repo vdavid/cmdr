@@ -91,7 +91,7 @@ fn frontier(db_path: &Path, scope: &str) -> Vec<String> {
 
 // ── 1. A cancelled walk keeps the coverage it earned ─────────────────
 
-/// David's case, and the reason M3a exists: `/A/B/C` with ten files each, a walk
+/// David's case, and the reason incremental marking exists: `/A/B/C` with ten files each, a walk
 /// cancelled before it reaches C.
 ///
 /// A and B were read, so their contents are in the index and their sizes are a
@@ -100,7 +100,7 @@ fn frontier(db_path: &Path, scope: &str) -> Vec<String> {
 /// the honest `<dir>` placeholder — and, crucially, it is the ONLY thing the
 /// next search has to walk.
 ///
-/// Before M3a a cancelled walk stamped ZERO coverage: A and B held rows nothing
+/// Before incremental marking a cancelled walk stamped ZERO coverage: A and B held rows nothing
 /// had marked listed, so the whole subtree re-entered the frontier on every
 /// later search and nothing ever converged.
 #[test]
@@ -178,8 +178,8 @@ fn a_cancelled_walk_leaves_durable_partial_coverage() {
 /// the walk CAN'T READ stays `listed_epoch = 0` forever, so it re-enters the
 /// frontier on every single search and that part of the scope never converges.
 ///
-/// M2 added the column for exactly this and left it with no
-/// writer. The walk stamps it, but only for PERMISSION DENIED — the durable,
+/// The schema carries the column for exactly this. The walk is its only
+/// writer, and stamps it only for PERMISSION DENIED — the durable,
 /// user-fixable case. Any other read error might be transient (a dead mount
 /// coming back, a storm passing), and pinning those would stop the retry that
 /// heals them.

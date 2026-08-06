@@ -36,8 +36,8 @@ pub struct PrepareResult {
 ///
 /// The event NAMES its volume rather than implying root: a search targets one volume
 /// (`search/execute.rs`), so "ready" is only ever true of a particular one. Today
-/// only root's dialog pre-load emits; the per-target readiness gate that consumes
-/// `volumeId` is the next milestone (`docs/specs/unindexed-search-plan.md` M1).
+/// only root's dialog pre-load emits; the frontend's readiness gate is per target and
+/// consumes `volumeId` (`src/lib/search/coverage-note.ts::isTargetIndexReady`).
 #[derive(Debug, Clone, serde::Deserialize, Serialize, specta::Type, tauri_specta::Event)]
 #[tauri_specta(event_name = "search-index-ready")]
 #[serde(rename_all = "camelCase")]
@@ -169,7 +169,7 @@ fn emit_index_ready(app: &tauri::AppHandle, volume_id: &str, entry_count: u64) {
 /// the dialog says nothing about an agent waiting on its own answer.
 ///
 /// A walk outlives its dialog only through "Open in pane"
-/// (`docs/specs/unindexed-search-plan.md` M7), which is what `keep_run_id` names:
+/// (the handoff, `src/lib/search/walk-handoff.svelte.ts`), which is what `keep_run_id` names:
 /// those results are on screen in a pane and still growing. Closing the dialog
 /// otherwise means nobody is waiting. What a stopped walk already read stays in
 /// the index, so the next search over that ground starts from where it stopped.

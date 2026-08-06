@@ -29,7 +29,8 @@ before anything was built on top of it, so a later regression has a number to co
 | release | 19.1 ms                    | **5.43 ms**          | 5.24 – 5.56 ms   |
 | debug   | (not separately taken)     | 16.78 ms             | 16.59 – 17.06 ms |
 
-Frontier: **373 directories**. Unreadable: 0 (nothing stamps the marker until M5).
+Frontier: **373 directories**. Unreadable: 0 (at the time of this measurement nothing stamped the marker yet; the
+cover walk does now).
 
 ## Why it's fast, and what it actually scales with
 
@@ -55,5 +56,5 @@ index on `entries (parent_id, is_directory, listed_epoch, known_unreadable, id)`
   this query.
 - **SMB and MTP indexes.** The query is transport-agnostic (it reads SQLite, not the volume), so the only difference is
   the size and shape of the tree. A NAS index is larger but flatter, which the descent likes.
-- **A partly-walked index**, which is what search-written coverage produces from M3a on. That tree has far more gaps
-  than 375, so it's the shape worth re-measuring once M5 can produce one.
+- **A partly-walked index**, which is what search-written coverage produces. That tree has far more gaps than 375, so
+  it's the shape worth re-measuring against a real live-search-built index.

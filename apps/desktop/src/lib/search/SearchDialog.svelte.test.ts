@@ -58,7 +58,7 @@ const {
     complete: new Set<(event: unknown) => void>(),
   }
   /**
-   * The backend's side of a live run (the path Enter and the ⏎ button take since M6).
+   * The backend's side of a live run (the path Enter and the ⏎ button take).
    * It answers from `searchFilesMock`, which stays the one spy for "a search asked this
    * query", and reports a run that had nothing to walk. Emitting inside the start call
    * is faithful: the real source installs its listeners before invoking, precisely so a
@@ -1381,7 +1381,7 @@ describe('SearchDialog scope ladder (one volume is the ceiling)', () => {
   }
 
   it('an empty scope box searches the current folder, not everywhere', async () => {
-    // The behavior change M0 makes: "no scope" used to fan out across every indexed
+    // The behavior change the one-volume ceiling makes: "no scope" used to fan out across every indexed
     // volume. It now means the one folder the user is standing in.
     const { overlay, cleanup } = await mountDialog()
     const query = await runAndCaptureQuery(overlay)

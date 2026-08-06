@@ -3,7 +3,7 @@
  * running.
  *
  * Closing the search dialog normally stops the walk behind it, because nobody is
- * waiting for it. "Open in pane" is the exception the plan names (M7): the results
+ * waiting for it. "Open in pane" is the one exception: the results
  * are on screen in a pane, so the walk keeps going and the rows it finds keep
  * arriving there. This module is what makes that true — module state, so it survives
  * the dialog's unmount, and the only thing in Search that owns a run nobody is

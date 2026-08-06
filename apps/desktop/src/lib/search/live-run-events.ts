@@ -96,8 +96,8 @@ export async function observeSearchRun(runId: string, handlers: LiveRunHandlers)
     )
     unlisten.push(
       await onSearchError((event) => {
-        // The typed `error` is the branch a future caller acts on (M8 routes
-        // `indexUnreadable` differently); the sentence is rendered backend-side for
+        // The typed `error` is the branch a future caller acts on (routing
+        // `indexUnreadable` somewhere of its own); the sentence is rendered backend-side for
         // the same reason the engine's "Query too broad" is.
         if (mine(event.runId)) handlers.onFailed(event.message)
       }),

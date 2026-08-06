@@ -239,8 +239,7 @@
     /**
      * Whether a search may run now. PER TARGET: waiting is only right while a pre-load
      * for THIS volume is in flight. Gating on root instead left a machine with no root
-     * index unable to search at all, since no `search-index-ready` was ever coming
-     * (`docs/specs/unindexed-search-plan.md` M1).
+     * index unable to search at all, since no `search-index-ready` was ever coming.
      */
     const isIndexReady = $derived(
         isTargetIndexReady({
