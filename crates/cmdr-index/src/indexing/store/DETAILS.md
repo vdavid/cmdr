@@ -269,8 +269,8 @@ in the VDBE program. That is not waste, it is the normal cost of PREPARING an in
 defect was paying it once per row instead of once per statement.
 
 **Why the cache capacity is load-bearing, not a tuning knob.** `rusqlite`'s statement cache is an LRU keyed by SQL text
-with `STATEMENT_CACHE_DEFAULT_CAPACITY = 16`, and this store alone holds **35** `prepare_cached` sites (`entries.rs` 25,
-`dir_stats.rs` 6, `meta.rs` 2, `mod.rs` 1, `connection.rs` 1). A writer working across them would evict and re-compile
+with `STATEMENT_CACHE_DEFAULT_CAPACITY = 16`, and this store alone holds **38** `prepare_cached` sites (`entries.rs` 25,
+`dir_stats.rs` 6, `meta.rs` 5, `mod.rs` 1, `connection.rs` 1). A writer working across them would evict and re-compile
 statements it was about to reuse, reintroducing exactly the cost `prepare_cached` removes, **with no error and no
 failing test to show for it**. `sqlite_util::apply_statement_cache` sets 64 on write connections beside
 `apply_page_cache`, so the two role-splits are set in one place. ⚠️ Raise it when the `prepare_cached` count approaches

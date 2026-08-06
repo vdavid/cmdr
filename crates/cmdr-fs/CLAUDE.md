@@ -1,59 +1,40 @@
 # `cmdr-fs`
 
-The filesystem vocabulary and host primitives every layer of Cmdr speaks in, as a workspace crate with **no `tauri` in
-its dependency tree**. It exists so the index subsystems can reach `Volume` and `FileEntry` without reaching the app.
-
-The app re-exports every item here from its original path, so `crate::file_system::volume::VolumeError`,
-`crate::pluralize`, `crate::icons::special_folders`, and the rest all still resolve. Prefer the original path when
-editing app code; use `cmdr_fs::…` from another crate.
+The filesystem vocabulary and host primitives every layer of Cmdr speaks in, with **no `tauri` in its dependency tree**,
+so the index subsystems reach `Volume` and `FileEntry` without reaching the app. The app re-exports every item from its
+original path (`crate::file_system::volume::VolumeError`, `crate::pluralize`, …); prefer that path in app code,
+`cmdr_fs::…` from another crate.
 
 ## Module map
 
-- `volume/`: the `Volume` trait plus `VolumeReadStream` / `SequentialExtract`, the data types it exchanges (`types.rs`),
-  the volume ID helpers (`ids.rs`), `InMemoryVolume`, `friendly_error/` (typed, word-free error classification — see its
-  own `CLAUDE.md`), and `host/` — everything a backend needs from the app around it, as named traits. Read
-  `crates/cmdr-fs/src/volume/host/CLAUDE.md` before writing a new backend or moving an existing one out of the app.
-- `entry.rs`: `FileEntry`, `TagRef`, `get_icon_id`, and the uid/gid → name caches. What every listing yields.
-- `icons/`: the two per-entry icon classifiers `get_icon_id` calls — `special_folders` (a `HashMap` lookup) and
-  `packages` (a suffix test). Nothing that touches the disk.
-- `archive_format.rs`: name → `ArchiveFormat`, the single source of truth for archive detection.
-- `filesystem_kind.rs`: `FilesystemKind` / `MaxFileSize` / `FilesystemInfo` (classification only).
-- `firmlinks.rs`: `normalize_path`, the macOS firmlink canonicalization (`/System/Volumes/Data/x` ⇒ `/x`). Pure path
-  work with no host or index behind it, and the index and the app's watchers have to agree on it.
-- `sqlite_util.rs`: the ONE process-wide SQLite page-cache slab, the connection factories that install it, the
-  role-split per-connection budgets (`apply_page_cache`, `apply_statement_cache`), the per-thread read-connection cache,
-  and freelist reclamation. Shared by all five stores (three index DBs, the agent's, the operation log's), which is why
-  it can't live in either end.
-- `staging.rs`: `StagingTemp`, the ONLY way to name a scratch file, plus the markers every one carries and the in-flight
-  registry that says whether a live operation still owns one. Whether the user SEES one is the app's
+- `volume/`: the `Volume` trait and the types it exchanges, `InMemoryVolume`, `friendly_error/` (typed, word-free
+  classification), and `host/` — what a backend needs from the app, as named traits. Read `src/volume/host/CLAUDE.md`
+  before writing a backend or moving one out of the app.
+- `entry.rs` + `icons/`: `FileEntry` and the two disk-free classifiers `get_icon_id` calls. What every listing yields.
+- `sqlite_util.rs`: the ONE process-wide page-cache slab plus the connection factories all five stores open through.
+- `staging.rs`: `StagingTemp`, the ONLY way to name a scratch file. Whether the user SEES one is app-side
   (`file_system::staging`).
-- `log_rollup.rs` (repetitive-log-line rate limiter), `tcc_paths.rs`, `ignore_poison.rs`, `pluralize.rs`,
-  `thread_qos.rs`, `process_memory.rs`, `testing.rs`.
+- Leaves: `archive_format.rs` (sole source of truth for archive detection), `filesystem_kind.rs` (classification only),
+  `firmlinks.rs` (`normalize_path`; the index and the app's watchers have to agree on it), `log_rollup.rs`,
+  `tcc_paths.rs`, `ignore_poison.rs`, `pluralize.rs`, `thread_qos.rs`, `process_memory.rs`, `testing.rs`.
 
 ## Must-knows
 
-- **`#![deny(missing_docs)]` holds here.** A new `pub` item, field, or enum variant needs a doc comment. Several of
-  these types cross IPC through `specta::Type`, so the comment lands in `bindings.ts` too.
-- **`specta` is pinned to `=2.0.0-rc.24`, identical to the app's.** Two `specta` crates in one graph and these `Type`
-  impls stop satisfying `tauri-specta`, which breaks bindings generation.
+- **`#![deny(missing_docs)]` holds here.** New `pub` items, fields, and variants need doc comments; several cross IPC via
+  `specta::Type`, so the comment lands in `bindings.ts` too.
+- **`specta` stays pinned to `=2.0.0-rc.24`, identical to the app's.** Two copies in one graph break bindings generation.
 - **`Volume::notify_mutation` defaults to a no-op.** A new mutable backend must override it or its destination pane goes
-  stale after a copy; the local-FS behavior lives app-side in
-  `file_system::listing::mutation::patch_listing_after_local_mutation`. `DETAILS.md` § "What the app kept".
-- **❌ Never gate BEHAVIOR on `cfg(test)` in this crate; use `any(test, feature = "testing")`.** `cfg(test)` is set only
-  while compiling a crate's own test target, so in a consumer's test build the arm silently flips and production
-  behavior runs inside their suite. `thread_qos`'s no-op was `not(test)` and started applying the real Utility QoS to
-  the app's background threads, starving a walker test past its watchdog. It compiles clean and surfaces as someone
-  else's flake. `DETAILS.md` § "Gotcha: `cfg(test)`-conditioned BEHAVIOR".
+  stale after a copy. `DETAILS.md` § "What the app kept".
+- **❌ Never gate BEHAVIOR on `cfg(test)` here; use `any(test, feature = "testing")`.** `cfg(test)` is off in a
+  consumer's test build, so the arm flips and production behavior runs inside their suite. It compiles clean and
+  surfaces as someone else's flake. `DETAILS.md` § "Gotcha: `cfg(test)`-conditioned BEHAVIOR".
 - **Turn the `testing` feature on through a dev-dependency, never a normal one.** That's what keeps it out of shipped
-  builds. It gates `testing::TestDir`, `wait_until` / `wait_until_async`, and the QoS no-op together.
-- **`InMemoryVolume` must honor the `Volume` contracts data safety LEANS on, not just the happy path.** Two it gets
-  asked about constantly: `delete` refuses a NON-EMPTY directory (`ENOTEMPTY`), and `rename` of a directory carries its
-  whole subtree. Both were once loose, and each silently disarmed a whole test class — the same-volume rename-merge
-  preserves a skipped child's source purely by letting its parent's cleanup delete FAIL, and a same-volume move IS
-  directory renames, so a rename that moved only the dir node made those tests pass over the exact data-loss shape they
-  existed to catch. ❌ Never relax a contract to make a test green; the double is the oracle.
+  builds.
+- **`InMemoryVolume` honors the `Volume` contracts data safety LEANS on**, not just the happy path: `delete` refuses a
+  non-empty directory, `rename` of a directory carries its subtree. ❌ Never relax a contract to make a test green; the
+  double is the oracle. `DETAILS.md` § "`InMemoryVolume` honors the contracts".
 - **Nothing here produces user-facing prose.** Errors carry typed reasons and structured params; the frontend renders
-  every word. `pluralize` and `FileEntry`'s `display_size` are the named exceptions — see `DETAILS.md`.
+  every word. `pluralize` and `display_size` are the named exceptions.
 
-Composition rationale (why each item is here, what was cut to make it fit, and what deliberately stayed in the app):
-`DETAILS.md`. Read it before moving anything else down or pushing anything back up.
+Composition rationale, the four cuts that made the closure finite, and what deliberately stayed in the app: `DETAILS.md`.
+Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

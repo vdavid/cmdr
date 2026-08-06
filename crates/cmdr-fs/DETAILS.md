@@ -172,3 +172,14 @@ The API contract says this crate emits no user-facing strings. Two things look l
   are _written_ by the app-side git module; this crate only carries them. The bar is about production, not presence.
 
 Anyone grepping `String` in this crate and concluding the bar was abandoned should read this paragraph first.
+
+## `InMemoryVolume` honors the contracts data safety leans on
+
+The double is the oracle: two `Volume` contracts have to hold in it, not just on the happy path.
+
+- **`delete` refuses a NON-EMPTY directory** (`ENOTEMPTY`). The same-volume rename-merge preserves a skipped child's
+  source purely by letting its parent's cleanup delete FAIL. A permissive `delete` disarms that whole test class.
+- **`rename` of a directory carries its whole subtree.** A same-volume move IS directory renames, so a `rename` that
+  moved only the dir node made those tests pass over the exact data-loss shape they existed to catch.
+
+❌ Never relax a contract to make a test green.
