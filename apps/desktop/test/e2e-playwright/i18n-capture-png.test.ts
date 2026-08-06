@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { deflateSync } from 'node:zlib'
-import { decodePng, assessImageContent, MIN_DISTINCT_COLORS, MIN_CONTENT_FRACTION } from './i18n-capture-png.js'
+import {
+  decodePng,
+  isCompletePng,
+  assessImageContent,
+  MIN_DISTINCT_COLORS,
+  MIN_CONTENT_FRACTION,
+} from './i18n-capture-png.js'
 
 /** CRC-32 (the PNG chunk checksum), so the fixtures below are real PNG bytes. */
 function crc32(buf: Buffer): number {
@@ -99,6 +105,30 @@ describe('decodePng', () => {
 
   it('rejects a non-PNG buffer instead of returning garbage', () => {
     expect(() => decodePng(Buffer.from('not a png at all'))).toThrow()
+  })
+})
+
+describe('isCompletePng', () => {
+  // The native capture's file write lands AFTER its command returns, so the
+  // harness watches for a whole file rather than reading whatever is there. A
+  // half-written PNG must never reach the content check.
+  const whole = encodePng(40, 30, solid(40, 30, [30, 30, 34]))
+
+  it('accepts a fully-written file', () => {
+    expect(isCompletePng(whole)).toBe(true)
+  })
+
+  it('rejects a file still missing its IEND chunk', () => {
+    expect(isCompletePng(whole.subarray(0, whole.length - 12))).toBe(false)
+  })
+
+  it('rejects a file cut off mid-IDAT', () => {
+    expect(isCompletePng(whole.subarray(0, Math.floor(whole.length / 2)))).toBe(false)
+  })
+
+  it('rejects an empty or tiny file', () => {
+    expect(isCompletePng(Buffer.alloc(0))).toBe(false)
+    expect(isCompletePng(Buffer.from([0x89, 0x50]))).toBe(false)
   })
 })
 

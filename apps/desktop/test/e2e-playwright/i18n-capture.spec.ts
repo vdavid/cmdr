@@ -210,15 +210,19 @@ function writeOverflowReport(): void {
 }
 
 test.describe('i18n screenshot capture', () => {
-  // Drives ~22 surfaces across several windows (main, dialogs, a separate
-  // Settings window iterating 18 sections, the viewer, the shortcuts window),
-  // with window open/close throughout, well over the 15s per-test default. As
-  // the surface set grows, bump this. (A normal interaction test fits in
-  // 15s; this is a multi-surface capture driver, not a normal test.)
+  // Drives ~65 surfaces across several windows (main, dialogs, a separate
+  // Settings window iterating 18 sections, the viewer, the shortcuts and queue
+  // windows), with window open/close throughout, well over the 15s per-test
+  // default. As the surface set grows, bump this. (A normal interaction test fits
+  // in 15s; this is a multi-surface capture driver, not a normal test.)
   test('captures representative surfaces and writes the coupling report', async ({ tauriPage }) => {
-    // The worst-case pass adds per-surface zoom + resize + an extra reflow settle,
-    // so it needs more headroom than the default 180s; give it 300s.
-    test.setTimeout(isWorstCasePass ? 300000 : 180000)
+    // Each surface is brought frontmost, given real animation frames, and written
+    // to a VERIFIED PNG before the run moves on, so every shot costs what a
+    // genuine composite costs. ❌ Don't cut this back to save wall time: a timeout
+    // here tears the plugin socket down mid-pass, and every remaining surface then
+    // fails with a confusing `Not connected` that looks like an app crash. The
+    // worst-case pass adds per-surface zoom + resize + an extra reflow settle.
+    test.setTimeout(isWorstCasePass ? 480000 : 360000)
     const main = tauriPage as TauriPage
     mkdirSync(screenshotsDir, { recursive: true })
 

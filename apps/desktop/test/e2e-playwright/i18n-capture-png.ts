@@ -31,6 +31,24 @@ const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0
 /** Bytes per pixel in the one format we accept (RGBA8). */
 const BPP = 4
 
+/** The terminating chunk every complete PNG ends with: length 0, type IEND, CRC. */
+const IEND_CHUNK = Buffer.from([0, 0, 0, 0, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82])
+
+/**
+ * Whether `bytes` is a WHOLE PNG file rather than one still being written.
+ *
+ * The native capture's file write completes AFTER its command returns, so a read
+ * that fires immediately can land on a partial file (or nothing at all). Since a
+ * PNG always ends with the fixed 12-byte IEND chunk, its presence at the tail is
+ * an exact end-of-file marker: no polling on file size, no guessing with a timer.
+ * `shoot()` waits on this before it judges an image.
+ */
+export function isCompletePng(bytes: Buffer): boolean {
+  if (bytes.length < PNG_SIGNATURE.length + IEND_CHUNK.length) return false
+  if (!bytes.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE)) return false
+  return bytes.subarray(bytes.length - IEND_CHUNK.length).equals(IEND_CHUNK)
+}
+
 /** The header fields we care about, plus the concatenated compressed pixel data. */
 interface PngParts {
   width: number

@@ -161,14 +161,27 @@ Only the layout facts that none of those carry live here:
 - **The capture harness photographs through `shoot()`, and `shoot()` verifies the pixels.** The native screenshot
   returns the window's last COMPOSITED frame, and macOS composites only a frontmost window, so a backgrounded window
   yields the empty startup frame with every other signal healthy (DOM correct, selectors matched, keys recorded). A run
-  once wrote 31 blank images and reported success. `shoot()` (in `i18n-capture-helpers.ts`) therefore: brings the target
-  window frontmost and CONFIRMS it via `plugin:window|is_focused`; waits for real animation frames (`settlePaint`
-  returns whether frames arrived or the bail-out timer fired, because rAF is delivered only while the window is being
-  composited); then decodes the written PNG and rejects a uniform / content-free image (`i18n-capture-png.ts`, a
-  dependency-free RGBA8 reader with unit tests). It re-focuses and re-shoots up to three times, then throws a
-  `BlankShotError`, which puts the surface in `capture-failed.json` and fails the run. ❌ No `page.screenshot()` calls
-  in the harness outside `shoot()`, ❌ no relaxing the pixel check, and ❌ no fixing a blank surface with a longer sleep:
-  a correct DOM is precisely the state this bug ships blank images in.
+  once wrote 31 blank images and reported success. `shoot()` (in `i18n-capture-helpers.ts`) therefore: orders the target
+  window to the front via `set_focus` (the main window needs this as much as a child window, since it loses front
+  position to every settings/viewer window the run opens); waits for real animation frames (`settlePaint` returns
+  whether frames arrived or the bail-out timer fired, because rAF is delivered only while the window is being
+  composited); waits for a WHOLE PNG on disk; then decodes it and rejects a uniform / content-free image
+  (`i18n-capture-png.ts`, a dependency-free RGBA8 reader with unit tests). It re-focuses and re-shoots up to three
+  times, then throws a `BlankShotError`, which puts the surface in `capture-failed.json` and fails the run. ❌ No
+  `page.screenshot()` calls in the harness outside `shoot()`, ❌ no relaxing the pixel check, and ❌ no fixing a blank
+  surface with a longer sleep: a correct DOM is precisely the state this bug ships blank images in.
+- **`page.screenshot({ path })` returns BEFORE the PNG is on disk.** The plugin's `native_screenshot` write outlives its
+  command, and during a burst (the 13 indexing-tile shots) it falls seconds behind, so reading the path the moment the
+  call resolves finds a missing or half-written file. `shoot()` waits for `isCompletePng` (the file's own IEND
+  terminator) instead, and shoots each attempt to its own `.staged-N` path so a slow write from a rejected attempt can
+  never land on top of a good image.
+- **`plugin:window|is_focused` is diagnostics, never a gate.** It reports macOS KEY-window status, which needs the whole
+  APP to be active; a test run usually isn't the active app, while the window is still ordered to the front and
+  composites fine. Waiting on it cost ~2 s per shot and pushed the pass past its timeout for no signal. It's asked only
+  when a shot is rejected, where a `false` is a useful hint in the failure message.
+- **The i18n capture pass sets its own generous `test.setTimeout`.** Verified shots cost what a real composite costs. On
+  timeout Playwright destroys the plugin socket, so every remaining surface fails with `Not connected` and the run looks
+  like an app crash rather than a slow pass. Raise the timeout as surfaces are added.
 - **Cargo features gate whole groups.** Every spec needs `playwright-e2e` (it's what grants the plugin's IPC
   permissions); the `mtp*` specs additionally need `virtual-mtp`; `smb.spec.ts` needs `smb-e2e` plus Docker (smb2's
   consumer containers).

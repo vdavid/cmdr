@@ -35,11 +35,12 @@ tree; `helpers.ts` re-exports `helpers/`; a spec's filename picks its shard (DET
   the shared tree.
 - **The clipboard is mocked, not real** under the `playwright-e2e` feature: the bytes live in a Rust `Mutex`, not
   `NSPasteboard`, so `pbpaste` won't see them. Read mock state through the clipboard IPC commands.
-- **The i18n capture harness screenshots ONLY through `shoot()`** (`i18n-capture-helpers.ts`), which makes the window
-  frontmost, confirms it, waits for real frames, and then verifies the PNG carries content. macOS composites only a
-  frontmost window, so a bare `page.screenshot()` on a backgrounded one silently writes the empty startup frame with
-  every other signal healthy; one run shipped 31 blank images that way. ❌ Don't call `page.screenshot()` directly here,
-  don't loosen the pixel check, and don't answer a blank surface with a longer sleep.
+- **The i18n capture harness screenshots ONLY through `shoot()`** (`i18n-capture-helpers.ts`), which orders the window
+  to the front, waits for real frames, waits for the whole PNG to land (the plugin's write outlives its command), and
+  verifies the image carries content. macOS composites only a frontmost window, so a bare `page.screenshot()` on a
+  backgrounded one silently writes the empty startup frame with every other signal healthy; one run shipped 31 blank
+  images that way. ❌ Don't call `page.screenshot()` directly here, don't loosen the pixel check, and don't answer a
+  blank surface with a longer sleep.
 - **`tauri-plugin-store` reads your REAL store files unless redirected** (`getStore()` → `resolveStorePath`, isolated by
   `CMDR_DATA_DIR`), so a persisted-UI-state spec that passes in CI but fails locally usually means a stale local value.
 
