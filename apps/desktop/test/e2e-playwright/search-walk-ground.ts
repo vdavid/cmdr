@@ -31,6 +31,7 @@
 import fs from 'fs'
 import path from 'path'
 
+import { expect } from './fixtures.js'
 import { getFixtureRoot } from './helpers.js'
 import { mcpCall, mcpReadResource } from '../e2e-shared/mcp-client.js'
 
@@ -116,4 +117,15 @@ export async function restoreLocalVolumeIndex(): Promise<void> {
     value: 'fresh',
     timeoutSeconds: 30,
   })
+  // `fresh` says the SCAN finished, which is not the same as "a search can answer
+  // from it": the arena is a separate snapshot and the truncate-and-rebuild above
+  // invalidated whatever one was loaded. A spec that opens the dialog into that
+  // window gets an auto-applied run with nothing to serve (seen on the Linux lane,
+  // where `search-recent` failed once and passed on the retry). Asking for a real
+  // answer is what makes the handover complete.
+  await expect
+    .poll(async () => mcpCall('search', { pattern: 'file-a*', scope: `${getFixtureRoot()}/left`, limit: 1 }), {
+      timeout: 20_000,
+    })
+    .toContain('file-a.txt')
 }
