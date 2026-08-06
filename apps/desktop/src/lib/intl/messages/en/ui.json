@@ -79,7 +79,7 @@
       "countText": "how many files, already formatted for display (for example 1,234)",
       "count": "the same number of files (drives the singular/plural form of the noun)"
     },
-    "screenshot": "conflict-dialog.png"
+    "screenshot": "ask-cmdr-consent.png"
   },
   "ui.loadingIcon.loaded": "Loaded {countText} {count, plural, one {file} other {files}}...",
   "@ui.loadingIcon.loaded": {
@@ -105,7 +105,7 @@
     "placeholders": {
       "key": "position of the inline Esc key pill (a styled chip the app fills in); keep the empty wrapper tag"
     },
-    "screenshot": "conflict-dialog.png"
+    "screenshot": "ask-cmdr-consent.png"
   },
   "ui.numberInput.decrease": "Decrease {label}",
   "@ui.numberInput.decrease": {

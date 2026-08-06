@@ -126,6 +126,15 @@ async function runMockPass(pass: string, main: TauriPage): Promise<void> {
     `[i18n-capture] pass '${pass}': ${String(Object.keys(report).length)} surfaces in report, ` +
       `${String(failed.length)} failed, ${String(skipped.length)} skipped`,
   )
+
+  // Clear anything still on screen before the harness's leak guard runs, exactly
+  // as the main pass does. These mock passes stage one or two surfaces and finish
+  // in seconds, but the virtual MTP device announces itself on ITS own schedule,
+  // so its connect toast can land mid-pass on a toast no surface here staged. The
+  // guard then fails a pass whose every surface captured cleanly, which reads as a
+  // capture failure and isn't one.
+  await dismissAllToasts(main).catch(() => {})
+
   expect(failed, `surfaces failed to capture in pass ${pass}: ${failed.join(', ')}`).toEqual([])
 }
 
