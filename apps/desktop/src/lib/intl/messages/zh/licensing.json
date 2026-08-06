@@ -24,6 +24,10 @@
   "@licensing.acknowledgements.npmHeading": {
     "sourceHash": "44bdf59"
   },
+  "licensing.acknowledgements.jumpToRust": "跳转到 Rust crate",
+  "@licensing.acknowledgements.jumpToRust": {
+    "sourceHash": "60d4a21"
+  },
   "licensing.acknowledgements.jumpToNpm": "跳转到 npm 包",
   "@licensing.acknowledgements.jumpToNpm": {
     "sourceHash": "9f55ebb"

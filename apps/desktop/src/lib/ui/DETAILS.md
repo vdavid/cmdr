@@ -91,10 +91,13 @@ and its padded background hangs below the words.
 primary action last (rightmost). Pass buttons via the `footer` snippet — `ModalDialog` renders them in a `.modal-footer`
 that owns the right-alignment, gap, and the dialog's bottom padding, so callers don't hand-roll a button-row. The title
 bar's padding, the footer's, and the body's side inset all come from ONE token (`--spacing-dialog`), so title, body, and
-buttons line up flush at the same inset and nothing crowds the title or the action row. A `padded={false}` body that
-insets its own sections must use that same token. A dialog with a custom button layout (multiple rows, a left-side
-helper, equal-width buttons) keeps its buttons in `children` and right-aligns them itself; genuinely centered content
-(spinners, progress bars, numeric readouts, hero panels like `AboutWindow`) stays centered.
+buttons line up flush at the same inset and nothing crowds the title or the action row. **The body inset is not
+opt-outable**: there is no `padded` prop, and a body section must never re-add `--spacing-dialog` of its own (that's
+double inset). A block that genuinely needs to reach the panel edge cancels the inset locally with a negative inline
+margin, so the exception is visible at the one place it applies instead of the rule being off for the whole dialog. A
+dialog with a custom button layout (multiple rows, a left-side helper, equal-width buttons) keeps its buttons in
+`children` and right-aligns them itself; genuinely centered content (spinners, progress bars, numeric readouts, hero
+panels like `AboutWindow`) stays centered.
 
 **The panel must never become a containing block for `position: fixed`.** The drag offset rides on `left` / `top`
 against the panel's own `position: relative`. ❌ Don't move it to a `transform`, and don't add `filter`,
@@ -883,20 +886,29 @@ background" — Settings panels, the Debug window's Components catalog, anywhere
 
 Props:
 
-| Prop       | Type       | Notes                                                                                         |
-| ---------- | ---------- | --------------------------------------------------------------------------------------------- |
-| `label`    | `string?`  | Rendered as a sentence-case `<h3>` above the card. Omit for an unlabelled grouping.           |
-| `id`       | `string?`  | Set on the outer `<section>` element. Use for scroll-to anchors (`#components-foo`).          |
-| `gated`    | `boolean?` | Default `false`. `true` dims the card (see below) to signal a closed gate (e.g. FDA-pending). |
-| `children` | Snippet    | Slot for whatever goes inside the card                                                        |
+| Prop       | Type               | Notes                                                                                         |
+| ---------- | ------------------ | --------------------------------------------------------------------------------------------- |
+| `label`    | `string?`          | Rendered as a sentence-case `<h3>` above the card. Omit for an unlabelled grouping.           |
+| `id`       | `string?`          | Set on the outer `<section>` element. Use for scroll-to anchors (`#components-foo`).          |
+| `gated`    | `boolean?`         | Default `false`. `true` dims the card (see below) to signal a closed gate (e.g. FDA-pending). |
+| `tone`     | `SectionCardTone?` | Default `'neutral'`. `'info'` / `'warning'` / `'error'` tint the fill and border (see below). |
+| `children` | Snippet            | Slot for whatever goes inside the card                                                        |
 
 `gated` emits `data-gated="true"` on the outer `<section>` and the card owns the dimming rule
 (`.section-card-wrap[data-gated='true'] .section-card { opacity: .5 }`), so consumers stop hand-rolling a wrapper div
 for it (`NotificationsSection`'s FDA-gated Downloads card). It owns only the visual cue — inner controls keep their own
 `disabled` state. Omitted when `false` (no attribute), so `[data-gated]` selectors and tests stay clean.
 
+`tone` emits `data-tone` on the inner `.section-card` and swaps the fill and border: `info` → `--color-info-bg` /
+`--color-info-border`, `warning` → `--color-warning-bg-solid` / `--color-warning`, `error` → `--color-error-bg` /
+`--color-error-border`. Each uses the OPAQUE tint token, because a toned card usually sits on a modal panel and a
+translucent fill lets the window behind bleed through. The tone colors the SURFACE only: text inside keeps its normal
+color, so a tinted card stays a block you read rather than a wall of colored type. The transfer dialog's conflict block
+is the reference use (`warning`, with the summary sentence in `--color-text-primary`).
+
 Spacing between adjacent `SectionCard`s is built in (`var(--spacing-xl)` bottom margin); consumers don't have to manage
-it. Stack them top-to-bottom and they read correctly.
+it. Stack them top-to-bottom and they read correctly. Inside a flex/grid column that already sets a `gap`, zero it
+(`.dialog-body > :global(.section-card-wrap) { margin-bottom: 0 }`) so the two don't add up.
 
 Anatomy:
 

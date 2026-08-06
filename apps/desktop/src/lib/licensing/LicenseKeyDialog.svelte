@@ -329,7 +329,6 @@
     dialogId="license"
     onclose={handleClose}
     containerStyle="min-width: 400px; max-width: 500px"
-    padded={false}
 >
     {#snippet title()}
         {#if isLoading}
@@ -484,10 +483,6 @@
 </ModalDialog>
 
 <style>
-    .dialog-body {
-        padding: var(--spacing-md) var(--spacing-2xl) var(--spacing-xl);
-    }
-
     .description {
         margin: 0 0 var(--spacing-xl);
         font-size: var(--font-size-md);

@@ -469,7 +469,7 @@
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
-        padding: var(--spacing-sm) var(--spacing-dialog);
+        padding: var(--spacing-sm) 0;
         border-bottom: 1px solid var(--color-border-subtle);
         flex-wrap: wrap;
     }

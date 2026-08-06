@@ -24,6 +24,10 @@
   "@licensing.acknowledgements.npmHeading": {
     "sourceHash": "44bdf59"
   },
+  "licensing.acknowledgements.jumpToRust": "Ugrás a Rust crate-ekhez",
+  "@licensing.acknowledgements.jumpToRust": {
+    "sourceHash": "60d4a21"
+  },
   "licensing.acknowledgements.jumpToNpm": "Ugrás az npm csomagokhoz",
   "@licensing.acknowledgements.jumpToNpm": {
     "sourceHash": "9f55ebb"

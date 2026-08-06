@@ -29,9 +29,13 @@
       "count": "how many npm packages ship in the app, e.g. 125"
     }
   },
+  "licensing.acknowledgements.jumpToRust": "Jump to Rust crates",
+  "@licensing.acknowledgements.jumpToRust": {
+    "description": "Label of a button in the Acknowledgements dialog, above the scrollable package list. Pressing it scrolls the Rust crates section into view. 'Rust' is a product name and stays untranslated. Keep it short: it shares one row with the npm button, each taking half the width."
+  },
   "licensing.acknowledgements.jumpToNpm": "Jump to npm packages",
   "@licensing.acknowledgements.jumpToNpm": {
-    "description": "Label of a small button in the Acknowledgements dialog, above the 'Rust crates' heading. Pressing it scrolls the npm packages section into view. 'npm' is a product name and stays lowercase and untranslated. Keep it short: it sits on one line inside a narrow button."
+    "description": "Label of a button in the Acknowledgements dialog, above the scrollable package list. Pressing it scrolls the npm packages section into view. 'npm' is a product name and stays lowercase and untranslated. Keep it short: it shares one row with the Rust button, each taking half the width."
   },
   "licensing.acknowledgements.fullTexts": "The full license texts ship with Cmdr in <notices>THIRD-PARTY-NOTICES.md</notices>.",
   "@licensing.acknowledgements.fullTexts": {

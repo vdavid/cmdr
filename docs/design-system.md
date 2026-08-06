@@ -373,7 +373,11 @@ opacity fade.
 
 For a live view of every primitive in `lib/ui/`, with all variants and states rendered flat, open the in-app **component
 catalog**: Debug window (`⌘D`) → "Components", or `http://localhost:<port>/dev/components` in a browser tab. The
-canonical "grouped card" wrapper used there (and intended for Settings refactors) is `SectionCard.svelte`.
+canonical "grouped card" wrapper used there (and intended for Settings refactors) is `SectionCard.svelte`. Its `tone`
+prop (`neutral` | `info` | `warning` | `error`) is how a block says "pay attention here": it tints the card's fill and
+border and leaves the text inside its normal color, so the signal rides the surface rather than turning a paragraph into
+colored type. Reach for a toned card instead of hand-rolling a tinted `<p>` banner; prop table in
+`apps/desktop/src/lib/ui/DETAILS.md` § SectionCard.
 
 ### Focus indicators (app)
 
@@ -506,12 +510,14 @@ box) is `--color-bg-secondary` and reads as RAISED; a content well (the query di
 `--color-bg-primary` and reads as RECESSED. That's the settings window's own stack, minus the vibrancy. A dialog's
 strips paint no background of their own; separate them with spacing, or at most a hairline.
 
-`ModalDialog` owns the standard body padding, so dialogs don't set their own. The horizontal inset (`--spacing-dialog`)
-matches the title bar and footer, and a `padded={false}` body that insets its own sections must use the SAME token or it
-won't line up. The title bar's bottom padding supplies the gap above the body; the footer supplies the gap below, and a
-footerless dialog gets the same inset as bottom padding on the body instead. The opt-outs:
+`ModalDialog` owns the standard body padding, so dialogs don't set their own, and there is **no opt-out**: the
+horizontal inset (`--spacing-dialog`) matches the title bar and footer on every dialog, so a new body section can't
+forget it and hang off the panel edge. The title bar's bottom padding supplies the gap above the body; the footer
+supplies the gap below, and a footerless dialog gets the same inset as bottom padding on the body instead. ❌ A body
+section must never re-add `--spacing-dialog` of its own — that's a double inset. A block that genuinely has to reach the
+panel edge cancels the inset locally with a negative inline margin (`margin-inline: calc(var(--spacing-dialog) * -1)`),
+so the exception is visible where it applies. The opt-ins:
 
-- `padded={false}`: full-bleed body with no padding, for content that manages its own (edge-to-edge lists, for example).
 - `resizable`: lets the user drag the bottom-right corner to resize the dialog (default off). Turn it on for dialogs
   that host resizable content like review lists; the body region grows and scrolls, and the caller still passes the
   initial size via `containerStyle`. The dialog can't grow past the viewport or shrink below a usable minimum.
@@ -640,10 +646,14 @@ grids that own their own label). Bind with `<Checkbox bind:checked={value} />`.
 **`RadioGroup`** is an items-driven single-select. Props: `value` (bindable, `''` means nothing selected), `items`
 (`RadioItem[]`, each `{ value, label, description?, disabled? }`; `description` renders as quieter text below the
 label), `onValueChange`, `disabled` (group-level), `orientation` (`'vertical'` stacks, `'horizontal'` wraps in a row),
-`ariaLabel`, a `footer` snippet rendered after the items with the current `value` (for custom content when a specific
-option is selected), and an `itemTrailing` snippet rendered on one option's own line (Brief mode's "Limit to" carries
-its width field that way). `itemTrailing` renders BESIDE the option, never inside it: a focusable control nested in a
-`role="radio"` element trips axe's nested-interactive rule.
+`columns` (N equal full-width grid columns filling row by row, so five options over three columns read as 3 + 2;
+overrides `orientation`, and beats `'horizontal'` whenever a wrapping row would break somewhere arbitrary), `ariaLabel`,
+a `footer` snippet rendered after the items with the current `value` (for custom content when a specific option is
+selected), and an `itemTrailing` snippet rendered on one option's own line (Brief mode's "Limit to" carries its width
+field that way). `itemTrailing` renders BESIDE the option, never inside it: a focusable control nested in a
+`role="radio"` element trips axe's nested-interactive rule. An option's dot CENTERS on its label; only an option that
+carries a `description` top-aligns (it emits `data-described`), because there the dot belongs beside the label line
+rather than the block's middle.
 
 **`Switch`** (`lib/ui/Switch.svelte`) is the track-and-thumb on/off control: a thin wrapper over Ark UI's `Switch`, with
 the same prop shape as `Checkbox` minus `indeterminate` (`checked` bindable, `disabled`, `id`, `ariaLabel`,

@@ -516,8 +516,7 @@
   The dialog chrome (radius, panel edge, shadow, title bar, ×, focus trap, MCP
   registry, focus restore) is `ModalDialog`'s. We opt into:
     - `align="top"`      the Spotlight-style placement this dialog has always had.
-    - `fillBody`         fixed-height frame; `.results-container` absorbs the slack.
-    - `padded={false}`   every strip is full-bleed and pads itself.
+    - `fillBody`         fixed-height frame; `.results-well` absorbs the slack.
     - `ownsKeyboard`     `handleKeyDown` owns Enter (the ⏎ ownership swap) and the
                          window-capture Escape that defers to an open popover.
     - `closeOnOverlayClick`  clicking the scrim dismisses, as it always has.
@@ -528,7 +527,6 @@
     overlayClass="search-overlay"
     align="top"
     fillBody
-    padded={false}
     ownsKeyboard
     closeOnOverlayClick
     containerStyle="width: 100%; max-width: {config.maxWidth}; max-height: 80vh;"
@@ -758,14 +756,13 @@
        + Count-only switch on row 2. ONE `auto` right column, shared by both rows, sizes
        itself to the wider of "Search ⏎" / "Count only" and never wraps either; the left
        column takes the rest at `minmax(0, 1fr)` so the `fullWidth` ToggleGroup can't push
-       the grid wider than the dialog. The strips own their inset (`padded={false}`), and
-       this one covers all four cells. */
+       the grid wider than the dialog. The side inset is `ModalDialog`'s. */
     .query-grid {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
         gap: var(--spacing-sm);
-        padding: var(--spacing-lg) var(--spacing-dialog);
+        padding: var(--spacing-lg) 0;
         flex-shrink: 0;
     }
 
@@ -791,7 +788,7 @@
        surface "Matching what's shown in the list (the full path)"; Search passes
        undefined and the row doesn't render. */
     .query-dialog__notice {
-        padding: var(--spacing-xs) var(--spacing-dialog);
+        padding: var(--spacing-xs) 0;
         color: var(--color-text-tertiary);
         font-size: var(--font-size-sm);
         flex-shrink: 0;
@@ -814,7 +811,7 @@
         display: inline-flex;
         align-items: center;
         gap: var(--spacing-sm);
-        padding: var(--spacing-sm) var(--spacing-dialog);
+        padding: var(--spacing-sm) 0;
     }
 
     /* The action verb leads; the shortcut hint rides a standard `ShortcutChip` to its right. */

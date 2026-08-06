@@ -421,197 +421,203 @@
         >{@render children()}</strong
     >{/snippet}
 
-<!-- Column headers. Path is the flex column (1fr); Size + Modified are fixed `ch` tracks.
-     Header cells use the same grid template as the rows so columns line up.
+<!-- The well wraps header + list + status bar so ONE element owns the rounded corners
+     and clips the three square children inside them. It also carries the `flex: 1`
+     that used to sit on `.results-container`, so the well (not the list alone) is
+     what absorbs the dialog's spare height. -->
+<div class="results-well">
+    <!-- Column headers. Path is the flex column (1fr); Size + Modified are fixed `ch` tracks.
+         Header cells use the same grid template as the rows so columns line up.
 
-     Rendered ONLY when rows are (the `showingRows` predicate). Column labels over a
-     spinner, a "no files match" list, the empty state, or a count-only total describe a
-     table that isn't there, and they're the loudest thing in an otherwise quiet area.
-     The seam they used to draw between the chip strip and the results is now the chip
-     strip's own bottom hairline plus the surface flip. -->
-{#if showingRows}
+         Rendered ONLY when rows are (the `showingRows` predicate). Column labels over a
+         spinner, a "no files match" list, the empty state, or a count-only total describe a
+         table that isn't there, and they're the loudest thing in an otherwise quiet area.
+         The seam they used to draw between the chip strip and the results is now the chip
+         strip's own bottom hairline plus the surface flip. -->
+    {#if showingRows}
+        <div
+            class="column-header"
+            class:animate-track={animateNameTrack}
+            style="grid-template-columns: {gridTemplate};"
+        >
+            <span class="col-label col-icon" aria-hidden="true"></span>
+            <span class="col-label">{tString('queryUi.results.col.name')}</span>
+            {#if showPathColumn}<span class="col-label col-path">{tString('queryUi.results.col.path')}</span>{/if}
+            <span class="col-label col-right">{tString('queryUi.results.col.size')}</span>
+            <span class="col-label col-right">{tString('queryUi.results.col.modified')}</span>
+        </div>
+    {/if}
+
+    <!-- Results list. `role="listbox"` only applies when option rows are rendered; empty/loading/
+         unavailable states are bare text containers so axe doesn't flag aria-required-children. -->
     <div
-        class="column-header"
-        class:animate-track={animateNameTrack}
-        style="grid-template-columns: {gridTemplate};"
+        class="results-container"
+        bind:this={resultsContainer}
+        onscroll={handleResultsScroll}
+        role={showingRows ? 'listbox' : undefined}
+        aria-label={showingRows ? tString('queryUi.results.listboxAria') : undefined}
     >
-        <span class="col-label col-icon" aria-hidden="true"></span>
-        <span class="col-label">{tString('queryUi.results.col.name')}</span>
-        {#if showPathColumn}<span class="col-label col-path">{tString('queryUi.results.col.path')}</span>{/if}
-        <span class="col-label col-right">{tString('queryUi.results.col.size')}</span>
-        <span class="col-label col-right">{tString('queryUi.results.col.modified')}</span>
-    </div>
-{/if}
-
-<!-- Results list. `role="listbox"` only applies when option rows are rendered; empty/loading/
-     unavailable states are bare text containers so axe doesn't flag aria-required-children. -->
-<div
-    class="results-container"
-    bind:this={resultsContainer}
-    onscroll={handleResultsScroll}
-    role={showingRows ? 'listbox' : undefined}
-    aria-label={showingRows ? tString('queryUi.results.listboxAria') : undefined}
->
-    {#if !isIndexAvailable}
-        <div class="index-unavailable">
-            <p class="unavailable-message">
-                {tString('queryUi.results.indexNotReady')}
-            </p>
-            {#if scanning}
-                <p class="unavailable-progress">
-                    {entriesScanned > 0
-                        ? tString('queryUi.results.scanProgressWithCount', {
-                              countText: formatEntryCount(entriesScanned),
-                          })
-                        : tString('queryUi.results.scanProgress')}
+        {#if !isIndexAvailable}
+            <div class="index-unavailable">
+                <p class="unavailable-message">
+                    {tString('queryUi.results.indexNotReady')}
                 </p>
-            {/if}
-        </div>
-    {:else if !isIndexReady && hasSearched}
-        <div class="loading-state">
-            <Spinner size="md" />
-            <div class="loading-label">{tString('queryUi.results.loadingIndex')}</div>
-        </div>
-    {:else if liveWaiting && live}
-        <!-- Three honest waits, not one spinner: working out what's already covered can
-             mean a multi-second index load on a big drive, reading the index is quick,
-             and walking what isn't indexed is unbounded. Saying which one you're in is
-             the difference between "slow" and "stuck". The counters and the way out
-             live in the status bar, so they don't move between here and there once the
-             first rows land. -->
-        <div class="loading-state">
-            <Spinner size="md" />
-            <div class="loading-label">{livePhaseLabel(live.phase)}</div>
-        </div>
-    {:else if isSearching && !streaming}
-        <!-- D1/D2: full result list area is replaced by the standard spinner +
-             "Searching..." label. No rows render while the fetch is in-flight,
-             since the previous result set is now stale relative to the new
-             query/filter state. -->
-        <div class="loading-state">
-            <Spinner size="md" />
-            <div class="loading-label">{tString('queryUi.results.searching')}</div>
-        </div>
-    {:else if showingCount}
-        <!-- Count-only: the search ran but the backend returned no rows, just a total. One
-             normal-size sentence with only the number in bold, and a way back to the list.
-             The `<total>` tag lets each locale put the number where its grammar wants it. -->
-        <div class="count-only-summary" aria-live="polite">
-            <p class="count-only-sentence">
-                <Trans
-                    key={countIsProvisional
-                        ? 'queryUi.results.countOnly.soFar'
-                        : 'queryUi.results.countOnly.sentence'}
-                    params={{ count: totalCount, countText: formatInteger(totalCount) }}
-                    snippets={{ total: countTotal }}
-                />
-            </p>
-            {#if onShowResults}
-                <Button variant="secondary" onclick={onShowResults}>
-                    {tString('queryUi.results.countOnly.showResults')}
-                </Button>
-            {/if}
-        </div>
-    {:else if results.length === 0 && hasSearched && !isSearching && (query.trim() || sizeFilter !== 'any' || dateFilter !== 'any')}
-        <!-- D4: structured no-results state. Heading + bulleted criteria list. -->
-        <div class="no-results">
-            <p class="no-results-heading">{tString('queryUi.results.noMatchHeading')}</p>
-            <ul class="no-results-criteria">
-                {#each buildCriteria() as item (item)}
-                    <li>{item}</li>
-                {/each}
-            </ul>
-        </div>
-    {:else if !hasSearched && !query.trim() && isIndexReady && sizeFilter === 'any' && dateFilter === 'any'}
-        <EmptyState {aiEnabled} {indexEntryCount} examples={emptyExamples} onPick={onPickExample} />
-    {:else}
-        {#each results as entry, index (entry.path)}
-            <div
-                class="result-row"
-                class:animate-track={animateNameTrack}
-                class:is-under-cursor={index === cursorIndex}
-                style="grid-template-columns: {gridTemplate};"
-                onclick={() => {
-                    onResultClick(index)
-                }}
-                oncontextmenu={(e) => {
-                    e.preventDefault()
-                    onRowMenu(entry)
-                }}
-                onmouseenter={() => {
-                    onHover(index)
-                }}
-                role="option"
-                tabindex="-1"
-                aria-selected={index === cursorIndex}
-            >
-                <span class="result-icon">
-                    {#if getIconUrl(entry.iconId)}
-                        <img class="icon-img" src={getIconUrl(entry.iconId)} alt="" width="16" height="16" />
-                    {:else if entry.isDirectory}
-                        <span class="icon-fallback"><Icon name="folder" size={16} aria-hidden="true" /></span>
-                    {:else}
-                        <span class="icon-fallback"><Icon name="file" size={16} aria-hidden="true" /></span>
-                    {/if}
-                </span>
-                <!-- Mid-truncating name. `useShortenMiddle` measures with pretext
-                     and snaps to '.' so the extension stays visible. Tooltip
-                     shows the full name only when truncation actually happened. -->
-                <span
-                    class="result-name"
-                    use:useShortenMiddle={{
-                        text: entry.name,
-                        preferBreakAt: '.',
-                        startRatio: 0.7,
-                        tooltipWhenTruncated: true,
-                    }}
-                ></span>
-                {#if showPathColumn}
-                    <span class="result-path">
-                        <PathPills path={entry.parentPath} onPick={onPickPath} />
-                    </span>
+                {#if scanning}
+                    <p class="unavailable-progress">
+                        {entriesScanned > 0
+                            ? tString('queryUi.results.scanProgressWithCount', {
+                                  countText: formatEntryCount(entriesScanned),
+                              })
+                            : tString('queryUi.results.scanProgress')}
+                    </p>
                 {/if}
-                <span class="result-size">
-                    <Size bytes={entry.size} />
-                </span>
-                <span class="result-modified">
-                    <DateLabel modifiedAt={entry.modifiedAt} />
-                </span>
             </div>
-        {/each}
-    {/if}
-</div>
+        {:else if !isIndexReady && hasSearched}
+            <div class="loading-state">
+                <Spinner size="md" />
+                <div class="loading-label">{tString('queryUi.results.loadingIndex')}</div>
+            </div>
+        {:else if liveWaiting && live}
+            <!-- Three honest waits, not one spinner: working out what's already covered can
+                 mean a multi-second index load on a big drive, reading the index is quick,
+                 and walking what isn't indexed is unbounded. Saying which one you're in is
+                 the difference between "slow" and "stuck". The counters and the way out
+                 live in the status bar, so they don't move between here and there once the
+                 first rows land. -->
+            <div class="loading-state">
+                <Spinner size="md" />
+                <div class="loading-label">{livePhaseLabel(live.phase)}</div>
+            </div>
+        {:else if isSearching && !streaming}
+            <!-- D1/D2: full result list area is replaced by the standard spinner +
+                 "Searching..." label. No rows render while the fetch is in-flight,
+                 since the previous result set is now stale relative to the new
+                 query/filter state. -->
+            <div class="loading-state">
+                <Spinner size="md" />
+                <div class="loading-label">{tString('queryUi.results.searching')}</div>
+            </div>
+        {:else if showingCount}
+            <!-- Count-only: the search ran but the backend returned no rows, just a total. One
+                 normal-size sentence with only the number in bold, and a way back to the list.
+                 The `<total>` tag lets each locale put the number where its grammar wants it. -->
+            <div class="count-only-summary" aria-live="polite">
+                <p class="count-only-sentence">
+                    <Trans
+                        key={countIsProvisional
+                            ? 'queryUi.results.countOnly.soFar'
+                            : 'queryUi.results.countOnly.sentence'}
+                        params={{ count: totalCount, countText: formatInteger(totalCount) }}
+                        snippets={{ total: countTotal }}
+                    />
+                </p>
+                {#if onShowResults}
+                    <Button variant="secondary" onclick={onShowResults}>
+                        {tString('queryUi.results.countOnly.showResults')}
+                    </Button>
+                {/if}
+            </div>
+        {:else if results.length === 0 && hasSearched && !isSearching && (query.trim() || sizeFilter !== 'any' || dateFilter !== 'any')}
+            <!-- D4: structured no-results state. Heading + bulleted criteria list. -->
+            <div class="no-results">
+                <p class="no-results-heading">{tString('queryUi.results.noMatchHeading')}</p>
+                <ul class="no-results-criteria">
+                    {#each buildCriteria() as item (item)}
+                        <li>{item}</li>
+                    {/each}
+                </ul>
+            </div>
+        {:else if !hasSearched && !query.trim() && isIndexReady && sizeFilter === 'any' && dateFilter === 'any'}
+            <EmptyState {aiEnabled} {indexEntryCount} examples={emptyExamples} onPick={onPickExample} />
+        {:else}
+            {#each results as entry, index (entry.path)}
+                <div
+                    class="result-row"
+                    class:animate-track={animateNameTrack}
+                    class:is-under-cursor={index === cursorIndex}
+                    style="grid-template-columns: {gridTemplate};"
+                    onclick={() => {
+                        onResultClick(index)
+                    }}
+                    oncontextmenu={(e) => {
+                        e.preventDefault()
+                        onRowMenu(entry)
+                    }}
+                    onmouseenter={() => {
+                        onHover(index)
+                    }}
+                    role="option"
+                    tabindex="-1"
+                    aria-selected={index === cursorIndex}
+                >
+                    <span class="result-icon">
+                        {#if getIconUrl(entry.iconId)}
+                            <img class="icon-img" src={getIconUrl(entry.iconId)} alt="" width="16" height="16" />
+                        {:else if entry.isDirectory}
+                            <span class="icon-fallback"><Icon name="folder" size={16} aria-hidden="true" /></span>
+                        {:else}
+                            <span class="icon-fallback"><Icon name="file" size={16} aria-hidden="true" /></span>
+                        {/if}
+                    </span>
+                    <!-- Mid-truncating name. `useShortenMiddle` measures with pretext
+                         and snaps to '.' so the extension stays visible. Tooltip
+                         shows the full name only when truncation actually happened. -->
+                    <span
+                        class="result-name"
+                        use:useShortenMiddle={{
+                            text: entry.name,
+                            preferBreakAt: '.',
+                            startRatio: 0.7,
+                            tooltipWhenTruncated: true,
+                        }}
+                    ></span>
+                    {#if showPathColumn}
+                        <span class="result-path">
+                            <PathPills path={entry.parentPath} onPick={onPickPath} />
+                        </span>
+                    {/if}
+                    <span class="result-size">
+                        <Size bytes={entry.size} />
+                    </span>
+                    <span class="result-modified">
+                        <DateLabel modifiedAt={entry.modifiedAt} />
+                    </span>
+                </div>
+            {/each}
+        {/if}
+    </div>
 
-<!-- Status bar. Always in the DOM so the `aria-live` region survives every state change and
-     announces the next status; it collapses to nothing (no border, no padding, no height)
-     whenever it has nothing to say, which keeps the results well from ending in an empty
-     bordered strip while a search runs. Collapsing rather than unmounting also means the
-     dialog's height doesn't jump when the bar has something to report again.
+    <!-- Status bar. Always in the DOM so the `aria-live` region survives every state change and
+         announces the next status; it collapses to nothing (no border, no padding, no height)
+         whenever it has nothing to say, which keeps the results well from ending in an empty
+         bordered strip while a search runs. Collapsing rather than unmounting also means the
+         dialog's height doesn't jump when the bar has something to report again.
 
-     While a live run streams, the bar is also its progress strip: the count, the walk's
-     own progress, where it has got to, and the way to stop it. The `aria-live` region is
-     the INNER span, carrying a throttled copy, because the visible numbers move ten times
-     a second and a screen reader can't be asked to read that. -->
-<div class="status-bar" class:is-empty={!statusText && !streaming}>
-    <span class="status-text">{statusText}</span>
-    {#if walkProgress}
-        <span class="status-progress">{walkProgress}</span>
-    {/if}
-    {#if streaming && live?.currentPath}
-        <span
-            class="status-path"
-            aria-label={tString('queryUi.results.live.scanningAria', { path: live.currentPath })}
-            use:useShortenMiddle={{ text: live.currentPath, preferBreakAt: '/', startRatio: 0.3 }}
-        ></span>
-    {/if}
-    {#if streaming && onStopLive}
-        <span class="status-stop" use:tooltip={tString('queryUi.results.live.stopTooltip')}>
-            <Button variant="secondary" size="mini" onclick={onStopLive}>
-                {tString('queryUi.results.live.stop')}<ShortcutChip key="Esc" size="sm" />
-            </Button>
-        </span>
-    {/if}
-    <span class="sr-only" aria-live="polite">{announcement}</span>
+         While a live run streams, the bar is also its progress strip: the count, the walk's
+         own progress, where it has got to, and the way to stop it. The `aria-live` region is
+         the INNER span, carrying a throttled copy, because the visible numbers move ten times
+         a second and a screen reader can't be asked to read that. -->
+    <div class="status-bar" class:is-empty={!statusText && !streaming}>
+        <span class="status-text">{statusText}</span>
+        {#if walkProgress}
+            <span class="status-progress">{walkProgress}</span>
+        {/if}
+        {#if streaming && live?.currentPath}
+            <span
+                class="status-path"
+                aria-label={tString('queryUi.results.live.scanningAria', { path: live.currentPath })}
+                use:useShortenMiddle={{ text: live.currentPath, preferBreakAt: '/', startRatio: 0.3 }}
+            ></span>
+        {/if}
+        {#if streaming && onStopLive}
+            <span class="status-stop" use:tooltip={tString('queryUi.results.live.stopTooltip')}>
+                <Button variant="secondary" size="mini" onclick={onStopLive}>
+                    {tString('queryUi.results.live.stop')}<ShortcutChip key="Esc" size="sm" />
+                </Button>
+            </span>
+        {/if}
+            <span class="sr-only" aria-live="polite">{announcement}</span>
+        </div>
 </div>
 
 <style>
@@ -645,9 +651,24 @@
        a surface of its own: `--color-bg-primary`, a recessed well against the panel's
        `--color-bg-dialog`. Everything above it sits on the panel. That flip IS the
        separation between "how do I narrow this" and "here's what I found"; the chip
-       strip's bottom hairline and the footer's top hairline only sharpen it. */
+       strip's bottom hairline and the footer's top hairline only sharpen it.
+
+       The well is inset from the panel edge like every other block in the dialog, so it
+       rounds its corners and clips the three square children to them. `overflow: hidden`
+       does the clipping; the list inside keeps its own scrolling. */
+    .results-well {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+    }
+
+    /* The well's children inset by `--spacing-md`, their breathing room inside it; the
+       dialog's own edge inset is `ModalDialog`'s and lands on the well. */
     .column-header {
-        padding: var(--spacing-xs) var(--spacing-dialog);
+        padding: var(--spacing-xs) var(--spacing-md);
         background: var(--color-bg-primary);
         /* The font-size MUST sit on the grid container, not just on `.col-label`: the
            `ch` tracks above resolve against the element that owns the grid. `.result-row`
@@ -682,8 +703,8 @@
         text-align: right;
     }
 
-    /* Results list. The only `flex: 1 1 auto` child in the dialog body, so it absorbs
-       every bit of room the strips above and below leave. */
+    /* Results list. The `flex: 1 1 auto` child of the well, so it absorbs every bit of
+       room the header and status bar leave. */
     .results-container {
         flex: 1 1 auto;
         min-height: 0;
@@ -774,7 +795,7 @@
            so the look stays clean with the tighter padding. Rows aren't virtualized
            (search caps at 30, Selection lists one folder), so the height is content-
            driven: no row-height constant to keep in sync with the font. */
-        padding: var(--spacing-xxs) var(--spacing-dialog);
+        padding: var(--spacing-xxs) var(--spacing-md);
         font-size: var(--font-size-md);
         color: var(--color-text-primary);
     }
@@ -854,7 +875,7 @@
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
-        padding: var(--spacing-xs) var(--spacing-dialog);
+        padding: var(--spacing-xs) var(--spacing-md);
         background: var(--color-bg-primary);
         border-top: 1px solid var(--color-border-subtle);
         font-size: var(--font-size-md);

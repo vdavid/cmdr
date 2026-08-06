@@ -54,10 +54,12 @@
         }
     }
 
-    /** Scrolls the npm heading to the top of the body's scroll region. */
-    function jumpToNpm(): void {
-        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        headings.npm?.scrollIntoView({ block: 'start', behavior: reduceMotion ? 'auto' : 'smooth' })
+    /** Scrolls a section's heading to the top of the package list's scroll region. */
+    function jumpTo(key: string): () => void {
+        return () => {
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+            headings[key]?.scrollIntoView({ block: 'start', behavior: reduceMotion ? 'auto' : 'smooth' })
+        }
     }
 </script>
 
@@ -76,7 +78,6 @@
     dialogId="acknowledgements"
     onclose={onClose}
     fillBody
-    padded={false}
     containerStyle="width: 515px; min-width: 515px; max-width: 515px; height: 80vh"
 >
     {#snippet title()}
@@ -92,34 +93,37 @@
 
         {#if loaded}
             <div class="jump">
-                <Button size="mini" onclick={jumpToNpm}>{tString('licensing.acknowledgements.jumpToNpm')}</Button>
+                <Button size="mini" onclick={jumpTo('rust')}>{tString('licensing.acknowledgements.jumpToRust')}</Button>
+                <Button size="mini" onclick={jumpTo('npm')}>{tString('licensing.acknowledgements.jumpToNpm')}</Button>
             </div>
 
-            <div class="packages">
-                {#each sections as section (section.key)}
-                    <h3 bind:this={headings[section.key]}>{section.heading}</h3>
-                    <ul class="package-list">
-                        {#each section.packages as pkg (pkg.name + pkg.version)}
-                            <li>
-                                {#if pkg.url}
-                                    <!-- `LinkButton` with an `href`: it owns the app's only sanctioned
-                                         `cursor: pointer`, and its click handler routes to the system
-                                         browser via the opener plugin instead of navigating the webview. -->
-                                    <LinkButton
-                                        href={pkg.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        onclick={handleLinkClick(pkg.url)}>{pkg.name}</LinkButton
-                                    >
-                                {:else}
-                                    <span class="package-name">{pkg.name}</span>
-                                {/if}
-                                <span class="package-version">{pkg.version}</span>
-                                <span class="package-license">{pkg.license}</span>
-                            </li>
-                        {/each}
-                    </ul>
-                {/each}
+            <div class="packages-scroll">
+                <div class="packages">
+                    {#each sections as section (section.key)}
+                        <h3 bind:this={headings[section.key]}>{section.heading}</h3>
+                        <ul class="package-list">
+                            {#each section.packages as pkg (pkg.name + pkg.version)}
+                                <li>
+                                    {#if pkg.url}
+                                        <!-- `LinkButton` with an `href`: it owns the app's only sanctioned
+                                             `cursor: pointer`, and its click handler routes to the system
+                                             browser via the opener plugin instead of navigating the webview. -->
+                                        <LinkButton
+                                            href={pkg.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onclick={handleLinkClick(pkg.url)}>{pkg.name}</LinkButton
+                                        >
+                                    {:else}
+                                        <span class="package-name">{pkg.name}</span>
+                                    {/if}
+                                    <span class="package-version">{pkg.version}</span>
+                                    <span class="package-license">{pkg.license}</span>
+                                </li>
+                            {/each}
+                        </ul>
+                    {/each}
+                </div>
             </div>
 
             <p class="full-texts"><Trans key="licensing.acknowledgements.fullTexts" snippets={{ notices }} /></p>
@@ -130,16 +134,15 @@
 </ModalDialog>
 
 <style>
-    /* The body IS the scroll region (`fillBody` + `padded={false}`): it absorbs the
-       panel's vertical slack, so the list reaches the bottom edge at any content
-       length, and it owns the padding ModalDialog would otherwise apply, so the
-       scrollbar rides the panel edge. The horizontal inset is `--spacing-dialog`,
-       the title bar's own inset, which lines the content up with the title. */
+    /* A three-part column inside the `fillBody` panel: the thank-you note and the jump
+       buttons on top, the notices link pinned at the bottom, and only the package list
+       between them scrolling. Scrolling the whole body instead would push David's note
+       and the notices link out of sight the moment you move the list. */
     .acknowledgements-body {
         flex: 1 1 auto;
         min-height: 0;
-        overflow-y: auto;
-        padding: 0 var(--spacing-dialog) var(--spacing-dialog);
+        display: flex;
+        flex-direction: column;
     }
 
     .note p {
@@ -153,8 +156,29 @@
         color: var(--color-text-secondary);
     }
 
+    /* Both jump buttons on one full-width row, half each: two equal targets read as a
+       pair of section tabs, which is what they are. */
     .jump {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--spacing-md);
         margin-bottom: var(--spacing-sm);
+    }
+
+    .jump :global(.btn) {
+        width: 100%;
+    }
+
+    /* The scroll region. Pulled out by the rows' own inset and padded back, so the
+       striped rows line up with the headings and the dialog title while the scrollbar
+       rides just inside the panel edge. `.packages`' negative margin lands its margin
+       box exactly on this padding box, so nothing overflows sideways. */
+    .packages-scroll {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        margin-inline: calc(var(--spacing-sm) * -1);
+        padding-inline: var(--spacing-sm);
     }
 
     /* One grid for BOTH lists: each `ul` and each row is a `subgrid`, so the three
@@ -172,6 +196,12 @@
         /* Pulled out so the striped rows' own inset lands their text back in line
            with the headings and the dialog title. */
         margin-inline: calc(var(--spacing-sm) * -1);
+    }
+
+    /* The first heading opens the scroll region, so it doesn't need the gap that
+       separates the second list from the first one above it. */
+    .packages > h3:first-child {
+        margin-top: 0;
     }
 
     .packages > h3,
@@ -243,9 +273,11 @@
         color: var(--color-text-tertiary);
     }
 
+    /* Pinned below the scroll region, never scrolled away: it's the pointer to the
+       full license texts, which is the legally load-bearing part of this dialog. */
     .full-texts,
     .loading {
-        margin: var(--spacing-xl) 0 0;
+        margin: var(--spacing-md) 0 0;
         color: var(--color-text-tertiary);
         font-size: var(--font-size-sm);
     }

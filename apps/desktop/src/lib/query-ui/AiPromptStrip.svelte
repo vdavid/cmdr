@@ -86,7 +86,7 @@
         display: flex;
         align-items: flex-start;
         gap: var(--spacing-md);
-        padding: var(--spacing-sm) var(--spacing-dialog);
+        padding: var(--spacing-sm) 0;
     }
 
     .strip-text {

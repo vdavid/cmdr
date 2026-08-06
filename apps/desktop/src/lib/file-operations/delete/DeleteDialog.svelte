@@ -245,7 +245,6 @@
     onclose={handleCancel}
     ariaDescribedby={hasWarningBanner ? 'delete-warning-text' : undefined}
     containerStyle="width: 500px"
-    padded={false}
 >
     {#snippet title()}{dialogTitle}{/snippet}
 
@@ -389,8 +388,7 @@
 
 <style>
     /* Uniform vertical rhythm: every section is a flex-column child, so a single
-       `gap` sets equal spacing between all of them. Each keeps its own `--spacing-dialog`
-       side inset (matching the title bar and footer). */
+       `gap` sets equal spacing between all of them. The side inset is `ModalDialog`'s. */
     .dialog-body {
         display: flex;
         flex-direction: column;
@@ -398,7 +396,6 @@
     }
 
     .source-path {
-        padding: 0 var(--spacing-dialog);
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
     }
@@ -408,7 +405,6 @@
         display: flex;
         align-items: flex-start;
         gap: var(--spacing-sm);
-        margin: 0 var(--spacing-dialog);
         padding: var(--spacing-sm) var(--spacing-md);
         background: var(--color-warning-bg);
         border: 1px solid var(--color-warning);
@@ -430,7 +426,6 @@
 
     /* Scrollable file list */
     .file-list-container {
-        margin: 0 var(--spacing-dialog);
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-md);
         overflow: hidden;
@@ -490,7 +485,6 @@
         display: flex;
         align-items: flex-start;
         gap: var(--spacing-sm);
-        padding: 0 var(--spacing-dialog);
         font-size: var(--font-size-sm);
         color: var(--color-warning);
         line-height: 1.4;
@@ -508,7 +502,6 @@
         align-items: center;
         justify-content: flex-end;
         gap: var(--spacing-sm);
-        padding: 0 var(--spacing-dialog);
         font-size: var(--font-size-sm);
     }
 
@@ -541,7 +534,6 @@
         display: flex;
         justify-content: flex-end;
         gap: var(--spacing-xs);
-        padding: 0 var(--spacing-dialog);
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
     }
@@ -556,7 +548,6 @@
 
     .scan-current-dir {
         padding: var(--spacing-xs) var(--spacing-md);
-        margin: 0 var(--spacing-dialog);
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
         overflow: hidden;

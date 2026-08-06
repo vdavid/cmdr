@@ -94,9 +94,12 @@ Shape decisions worth keeping:
   readers and right-click "Copy link" while the opener plugin does the actual opening. Rows override only
   `text-decoration` (underline on hover, not at rest): hundreds of permanently underlined names read as noise.
 - **Fixed size, no `resizable`.** `containerStyle` pins `width: 644px` (min = max) and `height: 80vh`. `fillBody` makes
-  the panel a flex column and `padded={false}` hands the body its own padding, so the body IS the scroll region: it
-  absorbs the panel's vertical slack (no dead gap under a short list), its scrollbar rides the panel edge, and its
-  horizontal inset is `--spacing-dialog`, the same one the title bar uses, so content lines up with the title.
+  the panel a flex column, and the body is a three-part column inside it: David's thank-you note and the two jump
+  buttons on top, the THIRD-PARTY-NOTICES link pinned at the bottom, and only `.packages-scroll` between them scrolling.
+  Scrolling the whole body instead would push the note and the notices link (the legally load-bearing pointer) out of
+  sight the moment you move the list. `.packages-scroll` pulls itself out by `--spacing-sm` and pads the same amount
+  back, so `.packages`' negative margin lands its margin box exactly on that padding box: the striped rows keep the
+  dialog's left edge, the scrollbar rides just inside the panel edge, and nothing overflows sideways.
 - **One grid spans both lists.** `.packages` is `grid-template-columns: minmax(0, 1fr) auto auto` (name takes the slack,
   version and license size to content); each `ul` and each `li` is `grid-template-columns: subgrid` spanning `1 / -1`.
   That nested subgrid is what makes the crate list and the npm list share identical column widths; a per-list grid would
@@ -105,8 +108,9 @@ Shape decisions worth keeping:
 The two lists render from one `{#each}` over a `sections` array rather than a snippet called twice: `{@render}` of a
 void snippet trips `@typescript-eslint/no-confusing-void-expression`, and a separate child component would need its own
 a11y test (`a11y-coverage` requires one per `lib/` component). The section headings are bound into a `headings` record
-by section key so the "Jump to npm packages" button can `scrollIntoView` the npm one (`behavior: 'auto'` under
-`prefers-reduced-motion: reduce`).
+by section key so either jump button can `scrollIntoView` its heading (`behavior: 'auto'` under
+`prefers-reduced-motion: reduce`); `jumpTo(key)` returns the handler, so the two buttons differ only by key. They share
+one full-width 50/50 grid row above the scroll region, which reads as a pair of section tabs, which is what they are.
 
 **Testing gotcha**: the package list arrives from an `import()` that settles over an unknown number of macrotasks, so a
 fixed count of `tick()`s silently leaves the dialog in its loading state. Both test files poll for `.package-list li`

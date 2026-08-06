@@ -105,13 +105,9 @@ describe('ModalDialog body padding and resizing', () => {
     target.remove()
   })
 
-  it('adds .flush when padded is false (full-bleed body)', () => {
-    const target = mountDialog({ padded: false })
-    expect(target.querySelector('.modal-body')?.classList.contains('flush')).toBe(true)
-    target.remove()
-  })
-
-  it('does not add .flush by default (padded defaults to true)', () => {
+  // There is no full-bleed opt-out: the body inset is always ModalDialog's, so a
+  // dialog can't quietly leave one of its sections hanging off the panel edge.
+  it('always keeps the body inset (no full-bleed opt-out)', () => {
     const target = mountDialog({})
     expect(target.querySelector('.modal-body')?.classList.contains('flush')).toBe(false)
     target.remove()

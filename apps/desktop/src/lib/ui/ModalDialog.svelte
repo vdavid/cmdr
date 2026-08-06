@@ -34,12 +34,6 @@
         /** Inline style string for the dialog container (sizing, colors) */
         containerStyle?: string
         /**
-         * Standard body padding (`--spacing-dialog`, horizontal). ModalDialog owns it so
-         * dialogs don't hand-roll their own. Set `false` for full-bleed bodies
-         * that manage their own padding (e.g. edge-to-edge lists).
-         */
-        padded?: boolean
-        /**
          * Lets the user drag the bottom-right corner to resize the dialog. The
          * body region grows and scrolls; the caller still passes the initial
          * size via `containerStyle`. Off by default.
@@ -105,7 +99,6 @@
         blur = false,
         ariaDescribedby,
         containerStyle = '',
-        padded = true,
         resizable = false,
         growDownward = false,
         align = 'center',
@@ -317,7 +310,7 @@
                 {@render title()}
             </h2>
         </div>
-        <div class="modal-body" class:no-footer={!footer} class:flush={!padded}>
+        <div class="modal-body" class:no-footer={!footer}>
             {@render children()}
         </div>
         {#if footer}
@@ -476,9 +469,11 @@
         text-align: left;
     }
 
-    /* Standard body padding, owned here so dialogs don't hand-roll it. The
-       horizontal inset matches the title bar and footer; the title bar's bottom
-       padding supplies the top gap and the footer supplies the bottom. */
+    /* Body padding, owned here and NOT opt-outable: every dialog's content lines up
+       with the title and the action row, and a new section can't forget the inset.
+       The title bar's bottom padding supplies the top gap, the footer the bottom.
+       A block that needs to reach the panel edge (a full-bleed divider or scroll
+       region) cancels it locally with a negative inline margin. */
     .modal-body {
         padding: 0 var(--spacing-dialog);
     }
@@ -486,11 +481,6 @@
     /* Footerless dialogs: the body owns the bottom padding the footer would give. */
     .modal-body.no-footer {
         padding-bottom: var(--spacing-dialog);
-    }
-
-    /* Full-bleed opt-out (`padded={false}`): the body manages its own padding. */
-    .modal-body.flush {
-        padding: 0;
     }
 
     /* Right-aligned action footer (macOS convention: primary action rightmost).

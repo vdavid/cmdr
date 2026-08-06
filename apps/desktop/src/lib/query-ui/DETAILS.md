@@ -108,9 +108,8 @@ Five opt-ins carry the shape this dialog needs (each documented in `$lib/ui/DETA
 
 - `align="top"` — the Spotlight placement, 10vh from the top.
 - `fillBody` + `containerStyle="… max-height: 80vh"` — a fixed-height frame whose body is a flex column, so
-  `.results-container` (the only `flex: 1 1 auto` descendant) absorbs the slack and scrolls while every strip keeps its
-  intrinsic height.
-- `padded={false}` — every strip is full-bleed and pads itself.
+  `.results-well` (the only `flex: 1 1 auto` descendant) absorbs the slack while every strip keeps its intrinsic height;
+  `.results-container` inside the well is what actually scrolls.
 - `ownsKeyboard` — `handleKeyDown` owns the whole contract: Enter (the `⏎` ownership swap) and the capture-phase Escape
   that defers to an open `.ui-popover`. `ModalDialog` still `stopPropagation()`s (shielding the explorer behind the
   scrim) and still drives `onclose` from the × button, the focus-trap escape fallback, and the MCP close registry.
@@ -146,11 +145,13 @@ changes what the search RETURNS rather than what it matches, and `ModeChips` is 
 house `$lib/ui/Switch`; a hand-rolled `role="switch"` is rejected by `cmdr/prefer-ui-primitive`. Flipping it re-runs via
 `scheduleSearch()` (debounced, and a no-op in AI mode, which keeps the explicit-trigger contract).
 
-Every strip insets at `--spacing-dialog` (20 px), the same as `ModalDialog`'s title bar, so the title, the query field,
-the chips, the result rows, the status bar, and the footer actions all share one left edge. The strips own that padding
-individually (`padded={false}`; for the four zone-1 controls that's the `.query-grid` paying it once for all of them),
-so a new strip has to opt in or the column goes ragged; the centered state blocks inside `QueryResults` (loading /
-no-results / empty) are content padding, not strip inset, and stay on the generic scale.
+Every strip sits at `ModalDialog`'s `--spacing-dialog` (20 px) side inset, the same as its title bar, so the title, the
+query field, the chips, and the footer actions all share one left edge — and they get it for free: a strip sets VERTICAL
+padding only, and re-adding a horizontal `--spacing-dialog` would double the inset. The results zone is one step further
+in: `.results-well` takes the body inset like any other block, rounds its corners, and clips the header, list, and
+status bar inside it, and those three pay `--spacing-md` of their own so the rows breathe inside the well rather than
+starting on its edge. The centered state blocks inside `QueryResults` (loading / no-results / empty) are content
+padding, not strip inset, and stay on the generic scale.
 
 ### Recent-items dropdown
 
