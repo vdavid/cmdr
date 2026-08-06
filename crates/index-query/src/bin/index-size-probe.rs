@@ -132,8 +132,8 @@ fn run_rows(db: &Path, scope: Option<&str>, json: bool) -> Result<(), String> {
     out.str("scope_path", &scope.path);
     files.emit(&mut out);
     totals.emit(&mut out);
-    if let Some(under) = &scoped {
-        under.emit(&mut out);
+    if let Some(rows) = &scoped {
+        rows.emit(&mut out);
     }
     for (name, (bytes, count)) in &pages {
         out.num(&format!("dbstat_{name}_bytes"), *bytes);
@@ -149,8 +149,8 @@ fn run_rows(db: &Path, scope: Option<&str>, json: bool) -> Result<(), String> {
     if totals.entries > 0 {
         let est = per_row_bytes as f64 / totals.entries as f64;
         out.real("dbstat_bytes_per_entry_row_estimate", est);
-        if let Some(under) = &scoped {
-            out.real("dbstat_scope_file_rows_bytes_estimate", est * under.files as f64);
+        if let Some(rows) = &scoped {
+            out.real("dbstat_scope_file_rows_bytes_estimate", est * rows.files as f64);
         }
     }
     out.table("per_child", child_stats(&conn, &scope)?);

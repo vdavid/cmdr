@@ -104,8 +104,7 @@ Reference material if anyone picks it up:
 Both are committed and generic, so a re-measurement is a re-run:
 
 - `index-size-probe`: rows, bytes, fan-out, size distribution, and vacuum-reclaim, all safe against the live index.
-  Usage is in `docs/tooling/index-query.md`. It carries no trace of this proposal: any
-  subtree it reports on is named with `--scope`, so re-measuring the slice above means passing those paths rather than
-  re-deriving them from tags.
+  Usage is in `docs/tooling/index-query.md`. It carries no trace of this proposal: any subtree it reports on is named
+  with `--scope`, so re-measuring the slice above means passing those paths rather than re-deriving them from tags.
 - `scripts/churn-baseline`: CPU, memory, rows written, and log volume across an idle control and a churn phase, with the
   root writer thread's own CPU read off its heartbeat.
