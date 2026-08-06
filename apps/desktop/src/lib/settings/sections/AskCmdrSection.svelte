@@ -230,7 +230,6 @@
         margin: 0 0 var(--spacing-md);
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
-        line-height: 1.5;
     }
 
     .enable-row {
@@ -272,7 +271,6 @@
 
     .disclosure-body {
         margin-top: var(--spacing-sm);
-        line-height: 1.5;
     }
 
     .disclosure-body ul {
@@ -299,13 +297,11 @@
         margin: 0 0 var(--spacing-sm);
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
-        line-height: 1.5;
     }
 
     .memory-warning {
         margin: var(--spacing-xs) 0 0;
         font-size: var(--font-size-sm);
-        line-height: 1.4;
         color: var(--color-warning-text);
     }
 

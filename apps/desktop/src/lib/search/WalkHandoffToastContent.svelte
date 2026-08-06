@@ -64,7 +64,6 @@
         align-items: center;
         gap: var(--spacing-xs);
         color: var(--color-text-primary);
-        line-height: 1.4;
     }
 
     .counts {

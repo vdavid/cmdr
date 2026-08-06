@@ -82,7 +82,6 @@
         flex-direction: column;
         gap: var(--spacing-xs);
         font-size: var(--font-size-sm);
-        line-height: 1.4;
         color: var(--color-text-primary);
         /* Toasts default to a narrow column; give this one a bit more room so
            lines don't break awkwardly mid-sentence. */

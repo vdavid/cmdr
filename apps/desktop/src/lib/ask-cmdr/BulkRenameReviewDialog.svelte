@@ -417,7 +417,6 @@
         height: 100%;
         min-height: 0;
         font-size: var(--font-size-md);
-        line-height: 1.4;
     }
 
     .description,

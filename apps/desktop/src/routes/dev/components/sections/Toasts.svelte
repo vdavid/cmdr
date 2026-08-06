@@ -162,13 +162,12 @@
     .toast-message {
         flex: 1;
         color: var(--color-text-primary);
-        line-height: 1.4;
     }
 
     .toast-close {
         flex-shrink: 0;
         color: var(--color-text-tertiary);
         font-size: var(--font-size-sm);
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
     }
 </style>

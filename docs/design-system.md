@@ -228,14 +228,33 @@ macOS text size preference (Accessibility > Display > Text size), while pane tex
 This requires research into how WKWebView responds to macOS Dynamic Type and is tracked as a future milestone, not part
 of the initial design system migration.
 
-**Line-height** (critical for a file manager):
+### Leading (line height)
 
-| Context              | Line-height | Why                                                                    |
-| -------------------- | ----------- | ---------------------------------------------------------------------- |
-| File list rows       | `1.0`       | Maximum density. Row height controls vertical rhythm, not line-height. |
-| Dialog/settings body | `1.4`       | Comfortable reading for multi-line text.                               |
-| Buttons, labels      | `1.0`       | Tight. Padding controls button height, not line-height.                |
-| Headings             | `1.2`       | Standard heading tightness.                                            |
+Leading is a property of the type style, not a per-component decision. A component never invents a number: stylelint
+allows only these four tokens (a raw `0` stays legal; it collapses a box rather than setting a rhythm).
+
+| Token                        | Value  | Where                                                                              |
+| ---------------------------- | ------ | ---------------------------------------------------------------------------------- |
+| `--font-line-height-flat`    | `1`    | Glyph boxes, badges, one-line chips: the height comes from padding, not the text    |
+| `--font-line-height-tight`   | `1.2`  | Form controls (the `app-field.css` contract) and display type                       |
+| `--font-line-height-normal`  | `1.4`  | Every reading text. Inherited, so components rarely write it                        |
+| `--font-line-height-prose`   | `1.55` | Long-measure blocks only: past ~70 characters (onboarding, consent, legal, changelog) |
+
+**Why four and not a per-size ladder.** Leading is a function of type size (inversely) and measure (directly). The
+size-inverse half only bites across big jumps, and our text range is 10–16px, narrow enough that one ratio serves it;
+`tight` covers the display sizes where it does bite. The measure half is the one real judgment call, and it's decided by
+looking at the container width, not by taste.
+
+**Set once per surface, inherited from there.** A unitless line height inherits as a RATIO, so one declaration gives
+every descendant the right leading for its own font size. `app.css` sets `normal` on the text surfaces: `.modal-dialog`,
+`.wizard-panel`, `.toast`, and the settings / shortcuts / queue / debug window roots. Inside those, a component writes
+`line-height` only when it needs something structurally different.
+
+**The main window is deliberately absent from that list.** Its file lists and chrome are fixed-height, OS-dense surfaces
+where the font's own metrics are the right answer, so they keep the browser default and any inherited ratio would be a
+regression. Dialogs opened from the main window are on the list, so they still read as text. The file viewer's
+`.file-content` is the one documented exception: its `1.5` is a measured contract shared with
+`viewer-line-heights.svelte.ts` and `.line`'s pixel height, carrying a `stylelint-disable` that says so.
 
 **Weight:**
 

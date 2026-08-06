@@ -82,7 +82,7 @@
         color: var(--color-text-secondary);
         /* Tiny overflow badge; below the smallest font-size token, so raw px. */
         font-size: 8px;
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
         font-variant-numeric: tabular-nums;
     }
 </style>

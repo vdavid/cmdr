@@ -176,7 +176,6 @@
         margin: var(--spacing-xs) 0 0;
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
-        line-height: 1.4;
     }
 
     .cm-ready {

@@ -151,7 +151,7 @@
         justify-content: center;
         height: 100%;
         padding: var(--spacing-xl);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
         user-select: text;
         -webkit-user-select: text;
     }

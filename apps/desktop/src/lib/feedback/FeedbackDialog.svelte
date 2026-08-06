@@ -186,7 +186,6 @@
         margin: 0 0 var(--spacing-md);
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
-        line-height: 1.5;
     }
 
     .feedback-label {

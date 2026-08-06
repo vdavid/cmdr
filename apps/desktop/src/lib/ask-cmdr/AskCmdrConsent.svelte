@@ -95,7 +95,7 @@
     .consent-intro {
         margin: 0 0 var(--spacing-sm);
         font-size: var(--font-size-sm);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
         color: var(--color-text-primary);
     }
 
@@ -103,7 +103,7 @@
         margin: 0 0 var(--spacing-md);
         padding-left: var(--spacing-lg);
         font-size: var(--font-size-sm);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
         color: var(--color-text-secondary);
     }
 
@@ -114,14 +114,14 @@
     .consent-para {
         margin: 0 0 var(--spacing-sm);
         font-size: var(--font-size-sm);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
         color: var(--color-text-secondary);
     }
 
     .consent-note {
         margin: var(--spacing-sm) 0 0;
         font-size: var(--font-size-xs);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
         color: var(--color-text-tertiary);
     }
 

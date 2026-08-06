@@ -89,6 +89,5 @@
         margin: 0 0 var(--spacing-md);
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
-        line-height: 1.5;
     }
 </style>

@@ -429,7 +429,7 @@
 
     p {
         margin: 0 0 var(--spacing-md);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
     }
 
     .banner {
@@ -497,7 +497,6 @@
         margin: 0 0 var(--spacing-lg);
         border-collapse: collapse;
         font-size: var(--font-size-sm);
-        line-height: 1.4;
     }
 
     .comparison th,
@@ -616,7 +615,6 @@
         grid-row: 2;
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
-        line-height: 1.4;
     }
 
     .cloud-grid {

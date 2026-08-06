@@ -19,7 +19,7 @@
         overflow-y: auto;
         padding: var(--spacing-2xl);
         font-size: var(--font-size-md);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
         color: var(--color-text-primary);
     }
 </style>

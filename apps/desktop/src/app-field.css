@@ -124,7 +124,7 @@ textarea::selection {
   font-family: var(--font-system), sans-serif;
   font-size: var(--font-size-input);
   /* Tight: the field's height comes from the frame's padding, not line-height. */
-  line-height: 1.2;
+  line-height: var(--font-line-height-tight);
   outline: none;
   /* Text entry is the one place the app opts back into selectable text and the
      I-beam: `html, body { user-select: none; cursor: default }` would otherwise
@@ -143,7 +143,7 @@ textarea::selection {
 textarea.text-field-control {
   display: block;
   width: 100%;
-  line-height: 1.4;
+  line-height: var(--font-line-height-normal);
   resize: vertical;
 }
 

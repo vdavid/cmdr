@@ -460,7 +460,7 @@
         height: 14px;
         border-radius: var(--radius-full);
         font-size: var(--font-size-sm);
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
         color: var(--color-text-tertiary);
         opacity: 0;
         transition:

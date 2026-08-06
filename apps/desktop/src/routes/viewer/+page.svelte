@@ -1191,7 +1191,7 @@
         border-bottom: 1px solid var(--color-error-border);
         flex-shrink: 0;
         font-size: var(--font-size-sm);
-        line-height: 1.4;
+        line-height: var(--font-line-height-normal);
     }
 
     .binary-warning-text {
@@ -1272,7 +1272,7 @@
         font-size: var(--font-size-sm);
         font-weight: 500;
         padding: var(--spacing-xxs) var(--spacing-xs);
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
         transition: all var(--transition-base);
     }
 
@@ -1316,6 +1316,10 @@
         overflow-anchor: none; /* Virtual scroll manages scroll position programmatically */
         font-family: var(--font-mono);
         font-size: var(--font-size-sm);
+        /* Not a leading token: this number is a MEASURED contract. The wrapped-line
+           measurer in `viewer-line-heights.svelte.ts` renders its probe with the same
+           literal, and `.line`'s 18px height is 12px × this. Change one, change all three. */
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- measured contract, see above */
         line-height: 1.5;
         /* The viewer owns its own selection model (see selection.svelte.ts). We
          * suppress the browser's native selection because it can't render a
@@ -1437,7 +1441,7 @@
         margin: 0;
         color: var(--color-warning);
         font-size: var(--font-size-md);
-        line-height: 1.4;
+        line-height: var(--font-line-height-normal);
         text-align: center;
     }
 
@@ -1451,7 +1455,7 @@
         padding: 3px 12px;
         font-size: var(--font-size-sm);
         font-weight: 500;
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
         border-radius: var(--radius-sm);
         background: var(--color-warning-bg-solid);
         color: var(--color-warning-text);

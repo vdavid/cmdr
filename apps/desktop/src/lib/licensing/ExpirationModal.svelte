@@ -76,13 +76,13 @@
         margin: 0 0 var(--spacing-sm);
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
     }
 
     .info {
         margin: 0 0 var(--spacing-xl);
         font-size: var(--font-size-md);
         color: var(--color-text-tertiary);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
     }
 </style>

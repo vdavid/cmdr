@@ -369,7 +369,6 @@
         margin: var(--spacing-sm) 0 0;
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
-        line-height: 1.4;
     }
 
     .mi-preview-pending {
@@ -380,14 +379,12 @@
         margin: var(--spacing-xxs) 0 0;
         color: var(--color-accent-text);
         font-size: var(--font-size-sm);
-        line-height: 1.4;
     }
 
     .mi-floor {
         margin: var(--spacing-xs) 0 0;
         color: var(--color-text-tertiary);
         font-size: var(--font-size-sm);
-        line-height: 1.4;
     }
 
     .mi-progress {
@@ -417,7 +414,6 @@
         margin: var(--spacing-xxs) 0 0;
         color: var(--color-text-tertiary);
         font-size: var(--font-size-sm);
-        line-height: 1.4;
     }
 
 </style>

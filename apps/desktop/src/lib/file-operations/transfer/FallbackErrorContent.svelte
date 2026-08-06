@@ -51,14 +51,12 @@
         margin: 0 0 var(--spacing-sm);
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
-        line-height: 1.5;
     }
 
     .suggestion {
         margin: 0;
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
-        line-height: 1.5;
     }
 
     .oversized-files {

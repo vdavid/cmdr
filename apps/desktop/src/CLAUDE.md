@@ -12,6 +12,10 @@ code under here.
   nudges, display font sizes) may stay raw, with a `stylelint-disable` + `-- reason`.
 - Global CSS is `app.css` (tokens, base) plus `app-field` / `app-utilities` / `app-tooltip` / `app-file-list`, which
   `routes/+layout.svelte` loads AFTER it. Never `@import` those four: that hoists and inverts the cascade.
+- ❌ Never write a raw `line-height` number (stylelint rejects everything but `0`). Leading comes from the four
+  `--font-line-height-*` tokens, and the text surfaces (`.modal-dialog`, `.toast`, the sheet, the secondary windows)
+  already INHERIT `normal` from `app.css`, so a component usually writes nothing at all. The main window and file lists
+  deliberately inherit no ratio. Which token where: `docs/design-system.md` § Leading.
 - A translucent / frosted-glass surface MUST degrade when "reduce transparency" is on. Key the opaque fallback off the
   `html.reduce-transparency` CLASS, NOT `@media (prefers-reduced-transparency)`: WKWebView never reflects that media
   query, so the class is toggled from the backend `NSWorkspace` value via `$lib/reduce-transparency` (inited per

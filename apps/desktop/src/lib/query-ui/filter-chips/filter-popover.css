@@ -75,7 +75,7 @@
   text-align: left;
   padding: var(--spacing-xs) 10px;
   font-size: var(--font-size-sm);
-  line-height: 1.3;
+  line-height: var(--font-line-height-normal);
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
@@ -135,7 +135,7 @@
   color: var(--color-text-primary);
   width: 100%;
   padding: 0;
-  line-height: 1.3;
+  line-height: var(--font-line-height-normal);
 }
 
 /* Free-form number / date input used under each "Custom…" cell in the

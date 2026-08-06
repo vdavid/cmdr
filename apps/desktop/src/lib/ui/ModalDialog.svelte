@@ -428,7 +428,7 @@
         border: none;
         color: var(--color-text-secondary);
         font-size: var(--font-size-xl);
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
         border-radius: var(--radius-full);
     }
 

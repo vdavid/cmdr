@@ -241,7 +241,6 @@
 
     .toast-message {
         color: var(--color-text-primary);
-        line-height: 1.4;
     }
 
     .toast-actions {
@@ -268,7 +267,7 @@
         align-items: center;
         justify-content: center;
         border-radius: var(--radius-sm);
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
         transition:
             background var(--transition-fast),
             color var(--transition-fast);

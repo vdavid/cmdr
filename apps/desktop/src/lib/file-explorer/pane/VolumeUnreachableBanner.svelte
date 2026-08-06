@@ -98,7 +98,7 @@
     .banner-detail {
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
-        line-height: 1.4;
+        line-height: var(--font-line-height-normal);
         margin: 0 0 var(--spacing-md) 0;
     }
 

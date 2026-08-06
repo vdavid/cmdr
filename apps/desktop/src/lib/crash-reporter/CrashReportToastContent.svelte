@@ -29,7 +29,6 @@
 
     .message {
         color: var(--color-text-primary);
-        line-height: 1.4;
     }
 
     .actions {

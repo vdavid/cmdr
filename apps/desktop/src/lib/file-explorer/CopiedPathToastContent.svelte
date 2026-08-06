@@ -24,13 +24,11 @@
 
     .message {
         color: var(--color-text-primary);
-        line-height: 1.4;
     }
 
     .path {
         font-family: var(--font-mono);
         color: var(--color-text-secondary);
-        line-height: 1.5;
         /* A long path wraps instead of spilling out of the toast. `anywhere` rather
            than `break-word` so a break can land mid-segment too: one 200-character
            folder name carries no break opportunity of its own. */

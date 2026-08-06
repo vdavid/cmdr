@@ -191,7 +191,6 @@
         margin: 0;
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
-        line-height: 1.4;
     }
 
     /* The follow-up under a refused folder: what would open it, and not the headline. */

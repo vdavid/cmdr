@@ -280,7 +280,6 @@
         background: var(--color-bg-tertiary);
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
-        line-height: 1.4;
         display: flex;
         flex-wrap: wrap;
         align-items: center;
@@ -296,6 +295,5 @@
         margin: var(--spacing-xs) 0 0;
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
-        line-height: 1.4;
     }
 </style>

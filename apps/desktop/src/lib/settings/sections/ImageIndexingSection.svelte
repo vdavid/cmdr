@@ -169,6 +169,5 @@
         margin: var(--spacing-xs) 0 var(--spacing-sm);
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
-        line-height: 1.4;
     }
 </style>

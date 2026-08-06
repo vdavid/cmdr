@@ -353,7 +353,6 @@
         margin: 0 0 var(--spacing-sm);
         font-size: var(--font-size-sm);
         color: var(--color-warning);
-        line-height: 1.4;
     }
 
     .timeout-actions {

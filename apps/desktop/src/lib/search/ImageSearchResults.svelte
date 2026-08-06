@@ -475,7 +475,6 @@
         margin: var(--spacing-xs) 0;
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
-        line-height: 1.4;
     }
 
     .ir-notice-indexing {
@@ -631,7 +630,6 @@
     .ir-snippet {
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
-        line-height: 1.35;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         line-clamp: 2;
@@ -653,6 +651,5 @@
         font-size: var(--font-size-sm);
         font-style: italic;
         color: var(--color-text-tertiary);
-        line-height: 1.35;
     }
 </style>

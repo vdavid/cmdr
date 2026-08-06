@@ -173,7 +173,7 @@
     .scope-hint {
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
-        line-height: 1.4;
+        line-height: var(--font-line-height-normal);
     }
 
     .scope-hint code {
@@ -213,7 +213,7 @@
         border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);
         color: var(--color-text-secondary);
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
     }
 
     .footer-button:not(:disabled):hover {

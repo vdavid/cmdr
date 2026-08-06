@@ -221,7 +221,7 @@
         margin: 0;
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
-        line-height: 1.4;
+        line-height: var(--font-line-height-normal);
     }
 
     .drop-hint {

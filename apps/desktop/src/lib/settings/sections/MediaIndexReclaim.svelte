@@ -131,6 +131,5 @@
         margin: 0 0 var(--spacing-xs);
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
-        line-height: 1.4;
     }
 </style>

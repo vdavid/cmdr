@@ -34,10 +34,6 @@
         color: var(--color-text-primary);
     }
 
-    .message {
-        line-height: 1.4;
-    }
-
     .actions {
         display: flex;
         justify-content: flex-end;

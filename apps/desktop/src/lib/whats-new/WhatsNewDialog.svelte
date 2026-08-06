@@ -187,9 +187,6 @@
        `containerStyle`): this region takes the slack, `.scroll-area` inside it scrolls, and a
        collapsed slice still shrink-wraps to a short dialog. */
     .body {
-        /* One rhythm for every block of changelog prose, so a lead and an entry list set
-           the same lines whichever order they appear in. */
-        --font-whats-new-line-height: 1.55;
         /* The marker column: bullets need barely more than the glyph, a numbered lead needs
            room for "10.". Both keep wrapped lines aligned with the first line's text. */
         --spacing-whats-new-marker: 1.15em;
@@ -211,7 +208,6 @@
         margin: var(--spacing-md) 0;
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
-        line-height: 1.5;
     }
 
     .release {
@@ -247,7 +243,7 @@
         margin: 0 0 var(--spacing-md);
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
-        line-height: var(--font-whats-new-line-height);
+        line-height: var(--font-line-height-prose);
     }
 
     /* The lead's bold headline (the part most people read): lift it to the primary
@@ -340,7 +336,7 @@
     .lead :global(ul) > :global(li)::before,
     .entries li::before {
         font-size: 1.35em;
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
     }
 
     /* The 0fr → 1fr row is the animated height; the inner element clips while it grows. */
@@ -375,7 +371,7 @@
         font-size: var(--font-size-md);
         font-weight: 600;
         color: var(--color-text-primary);
-        line-height: var(--font-whats-new-line-height);
+        line-height: var(--font-line-height-prose);
     }
 
     .section-title:first-child {
@@ -387,7 +383,7 @@
     .entries li {
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
-        line-height: var(--font-whats-new-line-height);
+        line-height: var(--font-line-height-prose);
     }
 
     /* Inline markdown from the changelog: keep code/quotes readable inside list items. */

@@ -173,7 +173,6 @@
         margin: 0 0 var(--spacing-md);
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
-        line-height: 1.5;
     }
 
     .dialogs-panel {
@@ -264,6 +263,5 @@
         margin: 0;
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
-        line-height: 1.5;
     }
 </style>

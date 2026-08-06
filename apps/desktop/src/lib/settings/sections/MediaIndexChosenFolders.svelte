@@ -165,14 +165,12 @@
         margin: var(--spacing-xxs) 0 var(--spacing-sm);
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
-        line-height: 1.4;
     }
 
     .mi-folders-empty {
         margin: 0 0 var(--spacing-sm);
         color: var(--color-text-tertiary);
         font-size: var(--font-size-sm);
-        line-height: 1.4;
     }
 
     .mi-folders-list {

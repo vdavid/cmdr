@@ -149,7 +149,7 @@
         margin: 0 0 var(--spacing-sm);
         color: var(--color-text-primary);
         font-size: var(--font-size-md);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
     }
 
     .signature {

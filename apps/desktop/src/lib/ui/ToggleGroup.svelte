@@ -257,7 +257,7 @@
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
         font-weight: 500;
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
         white-space: nowrap;
         transition:
             background var(--transition-base),
@@ -317,11 +317,11 @@
         background: var(--color-accent-subtle);
         color: var(--color-text-primary);
         border-radius: var(--radius-xs);
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
     }
 
     :global(.tg-root .tg-label) {
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
     }
 
     /* Mono tertiary hint (for example `⌥A`), rendered in every cell including the active one.
@@ -334,7 +334,7 @@
         font-family: var(--font-mono);
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
     }
 
     /* On the accent-filled active cell the tertiary gray all but vanishes (down to ~1:1 on some

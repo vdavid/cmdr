@@ -44,6 +44,5 @@
         margin: 0;
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
-        line-height: 1.4;
     }
 </style>

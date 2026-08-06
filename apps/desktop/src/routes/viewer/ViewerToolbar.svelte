@@ -165,7 +165,7 @@
         font-weight: 500;
         /* stylelint-disable-next-line declaration-property-value-disallowed-list -- compact toolbar button */
         padding: 2px 10px;
-        line-height: 1.4;
+        line-height: var(--font-line-height-normal);
         transition: all var(--transition-base);
     }
 

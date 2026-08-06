@@ -487,7 +487,7 @@
         margin: 0 0 var(--spacing-xl);
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
     }
 
     .info-box {
@@ -543,7 +543,6 @@
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
         font-weight: 400;
-        line-height: 1.4;
     }
 
     .info-value.mono {
@@ -562,7 +561,7 @@
     .warning-text {
         font-size: var(--font-size-md);
         color: var(--color-warning);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
     }
 
     .input-group {
@@ -573,7 +572,7 @@
         margin: 0 0 var(--spacing-sm);
         font-size: var(--font-size-md);
         color: var(--color-error);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
         white-space: pre-wrap;
     }
 
@@ -581,7 +580,7 @@
         margin: 0 0 var(--spacing-lg);
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
     }
 
     .button-row {

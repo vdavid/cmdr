@@ -101,7 +101,7 @@
         margin: 0;
         color: var(--color-text-secondary);
         font-size: var(--font-size-md);
-        line-height: 1.3;
+        line-height: var(--font-line-height-normal);
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
@@ -112,7 +112,7 @@
         flex-direction: column;
         gap: var(--spacing-xxs);
         font-size: var(--font-size-md);
-        line-height: 1.3;
+        line-height: var(--font-line-height-normal);
     }
 
     .ai-summary-lead {
@@ -162,7 +162,7 @@
         color: var(--color-text-tertiary);
         font-size: var(--font-size-md);
         font-style: italic;
-        line-height: 1.3;
+        line-height: var(--font-line-height-normal);
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
@@ -173,7 +173,7 @@
         padding: var(--spacing-xxs) var(--spacing-sm);
         font-size: var(--font-size-md);
         font-weight: 500;
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
         color: var(--color-text-secondary);
         background: transparent;
         border: 1px solid var(--color-border);

@@ -377,7 +377,7 @@
         max-width: 260px;
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
-        line-height: 1.4;
+        line-height: var(--font-line-height-normal);
     }
 
     .drive-index-menu-separator {

@@ -1048,7 +1048,7 @@
         overflow-y: hidden;
         font-family: var(--font-system), sans-serif;
         font-size: var(--font-size-sm);
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
         flex: 1;
         outline: none;
     }

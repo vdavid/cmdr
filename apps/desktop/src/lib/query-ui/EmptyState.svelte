@@ -148,7 +148,7 @@
         padding: var(--spacing-xs) var(--spacing-md);
         font-size: var(--font-size-sm);
         font-weight: 500;
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
         color: var(--color-text-primary);
         background: var(--color-bg-tertiary);
         border: 1px solid var(--color-border);
@@ -174,11 +174,11 @@
         background: var(--color-accent-subtle);
         color: var(--color-text-primary);
         border-radius: var(--radius-xs);
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
     }
 
     .chip-label {
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
     }
 
     .index-status {

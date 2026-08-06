@@ -116,7 +116,6 @@
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
         margin: 0;
-        line-height: 1.4;
     }
 
     .no-subsections {

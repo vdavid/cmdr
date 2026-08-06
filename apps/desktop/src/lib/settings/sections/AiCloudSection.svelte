@@ -521,14 +521,12 @@
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
         margin: calc(-1 * var(--spacing-sm)) 0 var(--spacing-md);
-        line-height: 1.4;
     }
 
     .askcmdr-override-hint {
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
         margin: calc(-1 * var(--spacing-sm)) 0 var(--spacing-md);
-        line-height: 1.4;
         overflow-wrap: anywhere;
     }
 

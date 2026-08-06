@@ -206,7 +206,6 @@
         margin: 0 0 var(--spacing-lg);
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
-        line-height: 1.5;
     }
 
     .dp-button-row {
@@ -221,7 +220,6 @@
         display: inline-block;
         font-size: var(--font-size-md);
         font-weight: 500;
-        line-height: 1.5;
         padding: 7px 20px;
         border-radius: var(--radius-md);
     }

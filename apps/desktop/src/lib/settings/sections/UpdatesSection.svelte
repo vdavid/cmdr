@@ -225,13 +225,8 @@
         min-height: 1.4em;
     }
 
-    .status-text {
-        line-height: 1.4;
-    }
-
     .error-message {
         color: var(--color-text-primary);
-        line-height: 1.4;
     }
 
     .link-button {
@@ -252,7 +247,6 @@
     .signup-feedback {
         margin: var(--spacing-xs) 0 0;
         font-size: var(--font-size-sm);
-        line-height: 1.4;
     }
 
     .signup-feedback.success {
@@ -266,7 +260,6 @@
     .email-note {
         margin: var(--spacing-xs) 0 var(--spacing-md);
         font-size: var(--font-size-xs);
-        line-height: 1.5;
         color: var(--color-text-secondary);
     }
 </style>

@@ -1430,7 +1430,7 @@
     .volume-space-timeout-icon {
         font-size: var(--font-size-xs);
         color: var(--color-warning);
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
         transition: opacity var(--transition-base);
     }
 
@@ -1478,7 +1478,7 @@
         cursor: default;
         color: var(--color-warning-text);
         font-size: var(--font-size-md);
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
         border-radius: var(--radius-sm);
         transition: background-color var(--transition-base);
     }
@@ -1737,7 +1737,7 @@
         border-radius: var(--radius-sm);
         flex-shrink: 0;
         font: inherit;
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
         transition: background-color var(--transition-base), color var(--transition-base);
     }
 

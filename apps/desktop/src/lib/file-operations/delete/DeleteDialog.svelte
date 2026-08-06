@@ -421,7 +421,6 @@
         margin: 0;
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
-        line-height: 1.4;
     }
 
     /* Scrollable file list */
@@ -487,7 +486,6 @@
         gap: var(--spacing-sm);
         font-size: var(--font-size-sm);
         color: var(--color-warning);
-        line-height: 1.4;
     }
 
     .symlink-icon {

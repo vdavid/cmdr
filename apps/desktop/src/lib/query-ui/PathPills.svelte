@@ -300,7 +300,7 @@
         font-size: var(--font-size-md);
         font-family: inherit;
         color: var(--color-text-tertiary);
-        line-height: 1.2;
+        line-height: var(--font-line-height-tight);
         white-space: nowrap;
         flex-shrink: 0;
         transition:
@@ -348,7 +348,7 @@
         font-size: var(--font-size-xs);
         font-family: inherit;
         color: var(--color-accent-text);
-        line-height: 1.2;
+        line-height: var(--font-line-height-tight);
         white-space: nowrap;
         cursor: default;
     }

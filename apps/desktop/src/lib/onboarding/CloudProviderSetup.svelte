@@ -507,7 +507,6 @@
         margin: 0;
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
-        line-height: 1.4;
     }
 
     .setup-steps {
@@ -539,7 +538,7 @@
         color: var(--color-text-tertiary);
         font-size: var(--font-size-xs);
         font-weight: 600;
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
     }
 
     .step-marker::before {
@@ -569,13 +568,11 @@
     .step-label {
         font-size: var(--font-size-md);
         color: var(--color-text-primary);
-        line-height: 1.4;
     }
 
     .status {
         margin: 0;
         font-size: var(--font-size-sm);
-        line-height: 1.4;
     }
 
     .status-checking {

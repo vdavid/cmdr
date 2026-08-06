@@ -57,7 +57,7 @@
        and would go oval on a wide button. */
     .btn {
         font-weight: 500;
-        line-height: 1.5;
+        line-height: var(--font-line-height-normal);
         border-radius: var(--radius-full);
         transition: all var(--transition-base);
     }

@@ -179,7 +179,7 @@
         min-width: 220px;
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
-        line-height: 1.3;
+        line-height: var(--font-line-height-normal);
     }
 
     /* Reduced transparency: `--color-bg-glass` flips to opaque (in `app.css`); drop the blur here. */

@@ -29,6 +29,6 @@
         background: var(--color-accent-subtle);
         color: var(--color-text-primary);
         border-radius: var(--radius-xs);
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
     }
 </style>

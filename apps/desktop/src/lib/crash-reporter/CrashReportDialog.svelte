@@ -136,7 +136,6 @@
         margin: 0 0 var(--spacing-sm);
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
-        line-height: 1.5;
     }
 
     .privacy-note {

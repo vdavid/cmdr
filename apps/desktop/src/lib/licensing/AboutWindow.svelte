@@ -219,7 +219,7 @@
     .license-description {
         color: var(--color-text-primary);
         font-size: var(--font-size-md);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
         margin: 0;
     }
 

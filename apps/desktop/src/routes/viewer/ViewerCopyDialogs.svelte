@@ -82,7 +82,7 @@
 <style>
     .copy-dialog-body {
         font-size: var(--font-size-md);
-        line-height: 1.4;
+        line-height: var(--font-line-height-normal);
         color: var(--color-text-secondary);
         margin: 0;
     }

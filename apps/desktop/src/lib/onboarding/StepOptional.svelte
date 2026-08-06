@@ -128,7 +128,7 @@
 
     .lede {
         margin: 0 0 var(--spacing-lg);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
         color: var(--color-text-primary);
     }
 
@@ -170,14 +170,13 @@
         text-align: right;
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
-        line-height: 1.4;
     }
 
     .toggle-list {
         margin: 0 0 var(--spacing-sm);
         padding-left: var(--spacing-lg);
         font-size: var(--font-size-sm);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
         color: var(--color-text-secondary);
     }
 
@@ -195,7 +194,7 @@
     .toggle-desc {
         margin: 0;
         font-size: var(--font-size-sm);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
         color: var(--color-text-secondary);
     }
 

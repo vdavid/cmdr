@@ -825,7 +825,7 @@
         justify-content: center;
         width: 16px;
         font-size: var(--font-size-md);
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
     }
 
     .icon-img {

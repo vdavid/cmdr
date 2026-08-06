@@ -148,7 +148,7 @@
         align-items: center;
         gap: var(--spacing-xs);
         font-weight: 500;
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
         color: var(--color-text-secondary);
         background: transparent;
         border: 1px solid var(--color-border);
@@ -218,7 +218,7 @@
     }
 
     .chip-label {
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
     }
 
     /* The recent pill truncates its (potentially long) query text. */
@@ -237,7 +237,7 @@
         border-radius: var(--radius-full);
         color: var(--color-text-tertiary);
         font-size: var(--font-size-md);
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
     }
 
     .chip-clear:hover {

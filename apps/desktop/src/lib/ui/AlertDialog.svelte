@@ -82,7 +82,6 @@
         margin: 0;
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
-        line-height: 1.5;
     }
 
     .path {

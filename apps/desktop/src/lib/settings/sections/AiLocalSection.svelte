@@ -581,7 +581,6 @@
     .not-installed-text {
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
-        line-height: 1.4;
         margin: var(--spacing-xs) 0;
     }
 
@@ -630,7 +629,7 @@
 
     .warning-icon {
         font-size: var(--font-size-md);
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
         cursor: default;
     }
 

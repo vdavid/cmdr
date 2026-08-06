@@ -67,7 +67,7 @@
         color: color-mix(in srgb, white, transparent 8%);
         font-family: var(--font-system), sans-serif;
         font-size: var(--font-size-xs);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
         backdrop-filter: blur(8px);
         /* Fade edges via CSS mask-image */
         mask-image: linear-gradient(to bottom, transparent 0%, black 8px, black calc(100% - 8px), transparent 100%);

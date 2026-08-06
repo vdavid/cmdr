@@ -228,7 +228,7 @@
         border-radius: var(--radius-xs);
         color: var(--color-text-tertiary);
         cursor: default;
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
     }
 
     .recent-trigger:hover:not(:disabled) {
@@ -269,6 +269,6 @@
         display: inline-flex;
         align-items: center;
         gap: var(--spacing-xs);
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
     }
 </style>

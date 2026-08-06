@@ -174,7 +174,7 @@
         background: transparent;
         color: var(--color-text-primary);
         font-size: var(--font-size-input);
-        line-height: 1.2;
+        line-height: var(--font-line-height-tight);
     }
 
     :global(.combobox-input:focus) {

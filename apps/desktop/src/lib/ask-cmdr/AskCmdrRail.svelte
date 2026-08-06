@@ -266,7 +266,7 @@
     .empty-hint {
         margin: 0;
         font-size: var(--font-size-sm);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
     }
 
     .soft-cap {

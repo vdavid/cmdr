@@ -42,6 +42,10 @@ export default {
       'font-size': ['/\\b(10|12|14|16|20)px\\b/'], // --font-size-*
       'border-radius': ['/\\b(2|4|6|8|20|29)px\\b/'], // --radius-*
       'z-index': ['/^\\d{2,}/'],
+      // Leading is a property of the type style, not a per-component decision:
+      // use a --font-line-height-* token (see `docs/design-system.md` § Leading).
+      // A raw `0` stays legal, it collapses a box rather than setting a rhythm.
+      'line-height': ['/^(?!0$)[\\d.]+$/'],
       'font-family': ['/^(?!var\\(|inherit|unset|initial)/'],
       cursor: ['pointer'],
       // --color-accent has insufficient contrast as text on light backgrounds.

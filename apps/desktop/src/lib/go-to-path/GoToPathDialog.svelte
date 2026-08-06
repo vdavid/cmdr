@@ -279,7 +279,6 @@
         margin: var(--spacing-sm) 0 0;
         font-size: var(--font-size-sm);
         color: var(--color-warning);
-        line-height: 1.4;
         word-break: break-all;
     }
 

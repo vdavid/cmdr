@@ -71,7 +71,6 @@
     .ai-description {
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
-        line-height: 1.4;
     }
 
     .ai-progress-text {

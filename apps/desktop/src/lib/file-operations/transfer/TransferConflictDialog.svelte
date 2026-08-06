@@ -320,7 +320,6 @@
         border: 1px solid var(--color-error-border);
         border-radius: var(--radius-md);
         font-size: var(--font-size-sm);
-        line-height: 1.4;
     }
 
     .conflict-warning strong {

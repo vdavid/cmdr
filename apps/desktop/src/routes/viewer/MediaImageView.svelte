@@ -290,6 +290,6 @@
   .media-error p {
     margin: 0;
     max-width: 28rem;
-    line-height: 1.4;
+    line-height: var(--font-line-height-normal);
   }
 </style>

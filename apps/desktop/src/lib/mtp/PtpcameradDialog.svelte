@@ -86,7 +86,7 @@
         margin: 0 0 var(--spacing-md);
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
     }
 
     .description strong {
@@ -98,7 +98,7 @@
         margin: 0 0 var(--spacing-lg);
         font-size: var(--font-size-md);
         color: var(--color-text-tertiary);
-        line-height: 1.6;
+        line-height: var(--font-line-height-prose);
     }
 
     .explanation code {
@@ -117,6 +117,6 @@
         margin: 0 0 var(--spacing-xl);
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
     }
 </style>

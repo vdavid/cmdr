@@ -60,7 +60,6 @@
 
     .message {
         color: var(--color-text-primary);
-        line-height: 1.4;
         word-break: break-all;
     }
 

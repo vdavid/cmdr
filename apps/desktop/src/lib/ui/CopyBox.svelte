@@ -66,7 +66,7 @@
         font-size: var(--font-size-sm);
         color: var(--color-text-primary);
         word-break: break-all;
-        line-height: 1.5;
+        line-height: var(--font-line-height-normal);
         background: none;
         padding: 0;
     }

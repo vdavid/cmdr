@@ -144,7 +144,6 @@
         border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
         font-size: var(--font-size-sm);
-        line-height: 1.5;
     }
 
     .local-network-info h4 {

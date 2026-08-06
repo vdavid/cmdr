@@ -176,7 +176,7 @@
         border-radius: var(--radius-sm);
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
-        line-height: 1.5;
+        line-height: var(--font-line-height-prose);
         transition: background var(--transition-base), color var(--transition-base);
     }
 

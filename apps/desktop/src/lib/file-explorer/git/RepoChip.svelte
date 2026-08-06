@@ -79,7 +79,7 @@
     align-items: center;
     gap: var(--spacing-xs);
     padding: 0 var(--spacing-sm);
-    line-height: 1;
+    line-height: var(--font-line-height-flat);
     border-radius: var(--radius-full);
     font-size: var(--font-size-xs);
     font-weight: 500;

@@ -287,7 +287,7 @@
 
     .prose {
         font-size: var(--font-size-sm);
-        line-height: 1.55;
+        line-height: var(--font-line-height-prose);
         color: var(--color-text-primary);
         word-break: break-word;
     }

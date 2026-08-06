@@ -377,6 +377,19 @@
   --font-size-lg: 1rem; /* 16px */
   --font-size-xl: 1.25rem; /* 20px */
 
+  /* === Leading (line height) ===
+     Four values, and only one of them is ever a judgment call. Leading is a
+     property of the type style, not a per-component decision, so components
+     never invent a number: stylelint allows only these tokens.
+     Our text range is 10-16px, narrow enough that one ratio serves all of it;
+     the "large type needs less leading" rule only bites at display sizes,
+     which is what `tight` covers. Where each one goes:
+     `docs/design-system.md` § Leading. */
+  --font-line-height-flat: 1; /* Glyph boxes, badges, one-line chips: height comes from padding */
+  --font-line-height-tight: 1.2; /* Form controls, headings, display type */
+  --font-line-height-normal: 1.4; /* Every reading text; inherited by the text surfaces below */
+  --font-line-height-prose: 1.55; /* Long-measure blocks only (past ~70 characters) */
+
   /* === Border radius === */
   --radius-xs: 2px;
   --radius-sm: 4px;
@@ -971,6 +984,28 @@ a:focus-visible,
     margin-block-start: var(--spacing-lg);
     margin-block-end: var(--spacing-lg);
   }
+}
+
+/* Leading, set once per text surface and inherited from there.
+ *
+ * A unitless line height inherits as a RATIO, so one declaration per surface
+ * gives every descendant the right leading for its own font size, and a
+ * component only writes `line-height` when it needs something structurally
+ * different (a glyph box, a control, a long-measure prose block).
+ *
+ * The MAIN WINDOW is deliberately absent. Its file lists and chrome are
+ * fixed-height, OS-dense surfaces where the font's own metrics are the right
+ * answer and any inherited ratio would be a regression; they keep the browser
+ * default. Dialogs opened from the main window are listed here, so they still
+ * read as text. Where each token goes: `docs/design-system.md` § Leading. */
+.modal-dialog,
+.wizard-panel,
+.toast,
+.settings-window,
+.shortcuts-window,
+.queue-window,
+.debug-window {
+  line-height: var(--font-line-height-normal);
 }
 
 @media (prefers-reduced-motion: no-preference) {

@@ -686,7 +686,7 @@
         display: none;
         align-items: center;
         justify-content: center;
-        line-height: 1;
+        line-height: var(--font-line-height-flat);
         flex-shrink: 0;
     }
 

@@ -102,7 +102,7 @@
         background: var(--color-bg-primary);
         color: var(--color-text-primary);
         font-size: var(--font-size-input);
-        line-height: 1.2;
+        line-height: var(--font-line-height-tight);
         text-align: center;
     }
 
