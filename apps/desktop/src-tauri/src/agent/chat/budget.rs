@@ -605,7 +605,7 @@ mod tests {
 
     #[test]
     fn a_batch_hint_derives_from_the_budget() {
-        // (budget − 10% headroom − 3,347 of prefix) / 349 per file, while the prompt is what
+        // (budget − 10% headroom − 3,476 of prefix) / 349 per file, while the prompt is what
         // binds.
         assert_eq!(files_per_batch(16_000), 31);
         assert_eq!(files_per_batch(32_000), 72);

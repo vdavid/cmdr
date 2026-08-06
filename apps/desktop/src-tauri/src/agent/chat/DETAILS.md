@@ -199,7 +199,7 @@ same shape as the interactive model override.
 
 ### A local window too small to use
 
-`prompt_budget_for_local_context(4096)` was 2,457 tokens against 3,347 of fixed overhead: the shipped default could not
+`prompt_budget_for_local_context(4096)` was 2,457 tokens against 3,476 of fixed overhead: the shipped default could not
 complete one turn. So `MIN_LOCAL_CONTEXT_TOKENS = 16_384` is the floor, `ai.localContextSize` offers nothing smaller,
 and a stored 2,048 / 4,096 / 8,192 no longer validates (it resolves to the 16,384 default on load, migrating an early
 tester instead of leaving them broken).
@@ -230,7 +230,7 @@ all. A persist problem is logged and dropped — a gauge is worth no turn.
 `files_per_batch(prompt_tokens)` answers how many files one content-based rename batch fits, as the **smaller of two
 limits**:
 
-- what the PROMPT holds: `(budget − 10% headroom − 3,347 of prefix) / 349 per file`. The headroom exists because the
+- what the PROMPT holds: `(budget − 10% headroom − 3,476 of prefix) / 349 per file`. The headroom exists because the
   measured 100-file turn came in ~4% above what the per-file costs account for (the paths the calls name, the envelope,
   the user's sentence, JSON scaffolding).
 - what one REPLY can emit: `AGENT_MAX_OUTPUT_TOKENS` (12,000), less a half-slot reasoning reserve, divided by the plan
@@ -256,7 +256,7 @@ Estimated tokens from the shipped assets and `estimate_prompt_tokens`. Every fig
 `context/cost_tests.rs`, whose constants block is the single copy; a failure there names both numbers and says to update
 the test and the plan's "measured ground truth" section together.
 
-- **Fixed overhead: 3,347 tokens** on every single call — 963 for `SYSTEM_PROMPT` and 2,384 for the 12 tool
+- **Fixed overhead: 3,476 tokens** on every single call — 963 for `SYSTEM_PROMPT` and 2,513 for the 11 tool
   declarations. It's why the old flat 8k left only ~4.9k for the actual work, so an 11-file `image_facts` batch fit and a
   12-file one did not.
 - **Per file: 269 for an `image_facts` row** (at 900 chars of OCR, the corpus average, against the 2,000-char cap — a
