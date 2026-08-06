@@ -53,11 +53,18 @@ target/
 # Auto-generated capability file for playwright-e2e feature (created by build.rs)
 apps/desktop/src-tauri/capabilities/playwright.json
 
-# Go-built check-runner binaries (one per tool dir)
+# Go-built binaries (one per tool dir, named after the dir by `go build`)
 scripts/check/check
 scripts/check-a11y-contrast/check-a11y-contrast
 scripts/check-btn-restyle/check-btn-restyle
 scripts/check-css-unused/check-css-unused
+scripts/churn-analysis/churn-analysis
+scripts/churn-baseline/churn-baseline
+scripts/cpu-rss-sampler/cpu-rss-sampler
+scripts/e2e-test-timings/e2e-test-timings
+scripts/loc-counter/loc-counter
+scripts/reanchor-cost/reanchor-cost
+scripts/test-data-generator/test-data-generator
 
 # Downloaded llama-server binaries (fetched at build time, not committed).
 # Both forms because worktrees replace the dir with a symlink that points into

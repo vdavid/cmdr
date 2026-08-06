@@ -12,7 +12,7 @@
 //
 // Usage:
 //
-//	go run ./scripts/cpu-rss-sampler [flags]
+//	cd scripts/cpu-rss-sampler && go run . [flags]
 //
 // Flags: -interval (sample period, default 2s), -name (executable basename to
 // match, default Cmdr), -pid (watch this PID directly, skipping discovery),
