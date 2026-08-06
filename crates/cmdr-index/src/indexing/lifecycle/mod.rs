@@ -1,8 +1,9 @@
 //! Orchestration: how a per-volume index is born, lives, transitions, and dies.
 //!
-//! - [`state`]: the `INDEX_REGISTRY`, the `IndexPhase` machine, `IndexVolumeKind`,
-//!   and the `IndexManager`/`ReadPool` bootstrap. The authority for WHICH volumes
-//!   are indexed and each volume's lifecycle.
+//! - [`state`]: the `INDEX_REGISTRY` and the `IndexPhase` machine, with a job per
+//!   file under `state/` (start, teardown, scan control, queries, the freshness
+//!   bridge, the failure supervisor) re-exported from `state` itself. The
+//!   authority for WHICH volumes are indexed and each volume's lifecycle.
 //! - [`manager`]: `IndexManager`, the per-volume coordinator + the LOCAL scan
 //!   dispatch. [`network_scan`]: its SMB/MTP `Volume`-trait scan path (a sibling
 //!   `impl IndexManager` block). [`scan_completion`]: the post-scan handler.

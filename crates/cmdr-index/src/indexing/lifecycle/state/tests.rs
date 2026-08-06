@@ -1,6 +1,10 @@
 use super::*;
 use crate::NoopEventSink;
-use crate::indexing::read::enrichment::get_read_pool_for;
+use crate::indexing::lifecycle::freshness::FreshnessEvent;
+use crate::indexing::read::enrichment::{ReadPool, get_read_pool_for, uninstall_read_pool};
+use crate::indexing::read::pending_sizes::{PendingSizes, uninstall_pending_sizes};
+use crate::indexing::volume::ROOT_VOLUME_ID;
+use std::time::Duration;
 
 /// The read path's skip-vs-route gate is "does `get_read_pool_for` return a
 /// pool?". An unregistered volume must return `None` (so its listings skip

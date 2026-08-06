@@ -8,9 +8,31 @@ concurrently without corrupting each other. Every invariant below holds independ
 
 ## Module structure
 
-- **state.rs** (+ `state/tests.rs`) — the lifecycle/registry CORE: the `IndexPhase` enum, the per-volume
-  `INDEX_REGISTRY` (`Mutex<HashMap<VolumeId, IndexInstance>>`), the phase transitions, the registry helpers, and the
-  `IndexManager` + `ReadPool` bootstrap. A volume's IDENTITY (`VolumeId`, `ROOT_VOLUME_ID`, `IndexVolumeKind`) is
+- **state.rs** (+ the `state/` submodules) — the lifecycle/registry CORE: the `IndexPhase` enum, the per-volume
+  `INDEX_REGISTRY` (`Mutex<HashMap<VolumeId, IndexInstance>>`), and the thin registry helpers that hand a `Running`
+  manager's writer, cover context, or branch-coverage calls out. Everything that ACTS on the registry sits one file
+  down, one job each, and `state.rs` re-exports all of it, so `state::<anything>` remains the only path any caller
+  uses (`state/` is private):
+  - `auto_start.rs` — the two pure launch-policy predicates (settings, plus the FDA gate).
+  - `reservation.rs` — `try_reserve_initializing_phase` (the lock-first `(absent) -> Initializing` check-and-set that
+    carries the one-writer-per-DB contract), `is_initializing_phase`, and the test-only reservation helper.
+  - `startup.rs` — `start_indexing_for`, the choke point every transport funnels through, plus `Activation`,
+    `start_indexing`, and the three per-transport `*_inner` entry points. `walk_database.rs` holds the two things only
+    a `WriterOnly` start does: evict an index whose coverage this build refuses, and stamp/seed the empty one that
+    replaces it.
+  - `teardown.rs` — `stop_indexing`, `clear_index`, `clear_every_index`, `reset_to_not_indexed`,
+    `disable_drive_index_persist_intent`, `remove_instance_and_handles`, and `stop_all_indexing`, all sharing the
+    withdraw-then-publish-`ShuttingDown`-then-drop-the-guard-then-drain ordering.
+  - `scan_control.rs` — `force_scan`, `stop_scan`, `trigger_verification`.
+  - `queries.rs` — the read-only surface: `is_active`, `is_failed`, `index_failure`, `awaits_its_first_scan`,
+    `ready_volumes_with_kind`, `all_registered_volume_ids`, `volume_kind`, `registered_mtp_volume_ids_for_device`.
+  - `freshness_bridge.rs` — the registry ↔ `freshness.rs` wiring (`apply_freshness_event` vs `..._on`, which is LOCK
+    DISCIPLINE, not style) plus `bump_current_epoch_for` / `get_freshness`.
+  - `supervisor.rs` — `spawn_failure_supervisor` + `fail_index`, the `Failed`-phase transition (the signal itself is
+    `failure.rs`).
+  - `tests.rs` — the registry-level lifecycle tests.
+
+  A volume's IDENTITY (`VolumeId`, `ROOT_VOLUME_ID`, `IndexVolumeKind`) is
   deliberately NOT here: it's the leaf `../volume.rs`, so path routing, the transports, and the bus can name a volume
   without importing the registry. Nothing below `lifecycle` imports `lifecycle::state` — a volume's read handles and its
   stop token are pushed DOWN to the code that needs them (both sections below), which is what keeps that statable.

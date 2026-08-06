@@ -1,0 +1,133 @@
+//! Driving the walks a registered volume runs: force a rescan, stop the one in
+//! flight, and kick off per-navigation verification.
+//!
+//! All three reach into a `Running` manager, and the two that can block share the
+//! teardown paths' discipline: take the manager OUT under the lock, drop the
+//! guard, then do the slow part.
+
+use std::sync::Arc;
+use std::sync::atomic::Ordering;
+
+use super::{INDEX_REGISTRY, IndexInstance, IndexPhase};
+use crate::indexing::reconcile::verifier;
+
+/// Flip a Running volume's "a full scan is in flight" flag, so a test can pin
+/// what a walk does against one without racing a real scan into place.
+#[cfg(test)]
+pub(crate) fn set_scanning_for_test(volume_id: &str, scanning: bool) {
+    use cmdr_fs::ignore_poison::IgnorePoison;
+    let reg = INDEX_REGISTRY.lock_ignore_poison();
+    match reg.get(volume_id).map(|i| &i.phase) {
+        Some(IndexPhase::Running(mgr)) => mgr.scanning.store(scanning, Ordering::Relaxed),
+        _ => panic!("'{volume_id}' has no running manager to mark"),
+    }
+}
+
+/// Trigger background verification of a directory against the volume's index DB.
+/// Called after enrichment on each navigation. No-op if the volume's index is
+/// not running. Fully fire-and-forget: the registry lock is acquired on a
+/// spawned task, so it never blocks the caller (navigation thread).
+pub fn trigger_verification(volume_id: &str, dir_path: &str) {
+    let volume_id = volume_id.to_string();
+    let dir_path = dir_path.to_string();
+    crate::indexing::host::runtime::spawn(async move {
+        let reg = match INDEX_REGISTRY.lock() {
+            Ok(g) => g,
+            Err(_) => return,
+        };
+        if let Some(IndexInstance {
+            phase: IndexPhase::Running(mgr),
+            signals,
+            ..
+        }) = reg.get(&volume_id)
+        {
+            let writer = mgr.writer.clone();
+            let events = Arc::clone(&mgr.events);
+            let scanning = mgr.scanning.load(Ordering::Relaxed);
+            // The volume's path space, taken off the SAME instance the writer came
+            // from. The verifier reads `volume_id`'s index and writes `mgr.writer`,
+            // so the two must name one volume: routing the read through root's pool
+            // (or resolving a mount-absolute path against root's index) made this a
+            // silent no-op on every SMB, MTP, and external volume.
+            let space = mgr.path_space();
+            // Hand the walk a child of THIS volume's stop signal, taken here where
+            // we already hold the instance. The verifier feeds this volume's writer,
+            // so tearing the volume down must stop the walk rather than let it write
+            // into a draining writer — and a token resolved here can't come back
+            // `None` (and silently never fire) the way a later lookup could, once the
+            // volume is gone.
+            let cancel = signals.cancel.child_token();
+            drop(reg);
+            verifier::maybe_verify(volume_id, dir_path, space, writer, events, scanning, cancel);
+        }
+    });
+}
+
+/// Force a fresh full scan for a volume (for debug/manual trigger).
+///
+/// Takes the `Running` manager OUT of the registry under the lock (publishing a
+/// transient `ShuttingDown`), DROPS the guard, then runs `start_scan` — whose
+/// prelude does blocking I/O (`block_in_place(flush_blocking)`, a space-info
+/// query) — off the lock, and finally re-locks only to put the manager back as
+/// `Running`. Same drop-the-guard-before-blocking discipline as
+/// `stop_indexing`/`clear_index` (DETAILS § "Drop the registry guard before the
+/// shutdown drain"): a blocking flush under the global registry lock would
+/// freeze every concurrent registry user (the QA-observed UI freeze), on top of
+/// the self-deadlock from the freshness firing (now fixed via the manager's own
+/// freshness `Arc`). `start_scan`'s spawned tasks capture their own clones and
+/// never re-resolve the manager in the registry, so it's safe to run detached.
+pub fn force_scan(volume_id: &str) -> Result<(), String> {
+    // Take the manager out under the lock (transient `ShuttingDown`), so the
+    // blocking rescan prelude runs WITHOUT holding the registry lock.
+    let mut mgr = {
+        let mut reg = INDEX_REGISTRY.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
+        let instance = reg.get_mut(volume_id).ok_or("Indexing not initialized")?;
+        match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown) {
+            IndexPhase::Running(mgr) => mgr,
+            other => {
+                // Not running (Initializing / ShuttingDown): nothing to force.
+                // Put the phase back and report not-initialized, as before.
+                instance.phase = other;
+                return Err("Indexing not initialized".to_string());
+            }
+        }
+    };
+
+    // Guard released: run the (blocking-prelude) scan start off the lock.
+    // `force_rescan` routes by the volume's TYPED kind: a `Local` volume runs the
+    // guarded walker (`start_scan`), an SMB/MTP volume walks the `Volume` trait from its share
+    // root (`start_volume_scan`). Calling `start_scan` unconditionally here ran
+    // the local guarded walker over a network mount — walking nothing and falsely
+    // marking the index complete — so a NAS "Rescan now" indexed zero entries.
+    let result = mgr.force_rescan("manual start");
+
+    // Re-lock to restore the manager as `Running`. If the instance vanished
+    // while we were detached (a concurrent `stop_indexing`/`clear_index` swapped
+    // it out), respect that and shut our now-orphaned manager down instead of
+    // resurrecting a removed volume.
+    let mut reg = INDEX_REGISTRY.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
+    match reg.get_mut(volume_id) {
+        Some(instance) if matches!(instance.phase, IndexPhase::ShuttingDown) => {
+            instance.phase = IndexPhase::Running(mgr);
+            result
+        }
+        _ => {
+            drop(reg);
+            log::info!("force_scan: '{volume_id}' was torn down during scan start; shutting down the manager");
+            mgr.shutdown();
+            result
+        }
+    }
+}
+
+/// Stop the active scan for a volume without shutting down the manager.
+pub fn stop_scan(volume_id: &str) -> Result<(), String> {
+    let mut reg = INDEX_REGISTRY.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
+    match reg.get_mut(volume_id).map(|i| &mut i.phase) {
+        Some(IndexPhase::Running(mgr)) => {
+            mgr.stop_scan();
+            Ok(())
+        }
+        _ => Err("Indexing not initialized".to_string()),
+    }
+}

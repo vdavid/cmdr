@@ -1,0 +1,342 @@
+//! Taking a volume's index down: stop, forget, reset, and the sweep over every
+//! one of them.
+//!
+//! Every path here shares one ordering, and it is load-bearing: withdraw the read
+//! handles FIRST (that IS the read-skip), publish `ShuttingDown` under the lock,
+//! DROP the lock, run the blocking drain, then remove the instance.
+
+use std::path::{Path, PathBuf};
+
+use super::{INDEX_REGISTRY, IndexPhase, all_registered_volume_ids, resolved_index_db_path};
+use crate::indexing::lifecycle::manager::IndexManager;
+use crate::indexing::read::enrichment::uninstall_read_pool;
+use crate::indexing::read::pending_sizes::uninstall_pending_sizes;
+use crate::indexing::reconcile::verifier;
+use crate::indexing::store::IndexStore;
+
+/// Stop all scans and watcher for a volume without deleting its DB.
+///
+/// Called when the user disables indexing via settings. The index stays on disk
+/// but no scanning or watching runs. Directory sizes revert to `<dir>`.
+pub fn stop_indexing(volume_id: &str) -> Result<(), String> {
+    verifier::invalidate();
+
+    // Withdraw this volume's ReadPool/PendingSizes and invalidate the pool before
+    // shutdown, so in-flight readers stop routing here and thread-local connections
+    // are discarded. Uninstalling first (not after the registry removal) is what
+    // leaves no window where a reader can still open a connection to a DB that's
+    // about to be drained.
+    if let Some(pool) = uninstall_read_pool(volume_id) {
+        pool.invalidate();
+    }
+    uninstall_pending_sizes(volume_id);
+    // The branch set goes with the instance that watched it. A cleared index
+    // deletes the database, so the persisted copy goes too; a stopped one keeps
+    // it, and the next start reads it back.
+    crate::indexing::watch::branches::forget(volume_id);
+
+    // Take the instance out under the lock, publish `ShuttingDown`, then release
+    // the lock BEFORE the blocking drain. `mgr.shutdown()` blocks up to 5 s
+    // draining the live-event task; holding the registry lock across it would
+    // stall every concurrent `get_status`/`is_active`/`trigger_verification`
+    // caller (for ANY volume) and park a tokio worker. The live event loop reads
+    // via `ReadPool` and never reacquires the registry lock, so dropping the
+    // guard while `ShuttingDown` is published is safe: concurrent callers see
+    // `ShuttingDown` and proceed.
+    let owned_mgr = {
+        let mut reg = INDEX_REGISTRY
+            .lock()
+            .map_err(|e| format!("Failed to lock registry: {e}"))?;
+        let instance = match reg.get_mut(volume_id) {
+            Some(i) => i,
+            None => return Ok(()), // not indexed
+        };
+        match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown) {
+            IndexPhase::Running(mgr) => mgr,
+            IndexPhase::Initializing { .. } => {
+                // An in-flight start observes the removal and shuts its half-built
+                // manager down. Removing the whole instance is correct: it's
+                // disabled now.
+                reg.remove(volume_id);
+                log::info!("Indexing stopped during initialization for '{volume_id}'");
+                return Ok(());
+            }
+            IndexPhase::Failed { .. } => {
+                // Its manager/writer are already torn down (nothing to drain).
+                // Disabling a failed index removes the instance, so the badge goes
+                // gray/disabled instead of staying red. The DB file stays on disk
+                // for a future re-enable (or a Forget to reclaim it).
+                reg.remove(volume_id);
+                log::info!("Indexing disabled for a failed volume '{volume_id}'");
+                return Ok(());
+            }
+            other => {
+                instance.phase = other; // put it back, wasn't running
+                return Ok(());
+            }
+        }
+    };
+
+    // Guard released: run the blocking drain without holding the registry lock.
+    let mut mgr = owned_mgr;
+    mgr.shutdown();
+
+    // Re-lock only to remove the now-disabled instance.
+    {
+        let mut reg = INDEX_REGISTRY
+            .lock()
+            .map_err(|e| format!("Failed to lock registry: {e}"))?;
+        reg.remove(volume_id);
+    }
+    log::info!("Indexing stopped for '{volume_id}' (DB preserved on disk)");
+
+    Ok(())
+}
+
+/// Discard a volume's partial index and reset it to gray / not-indexed
+/// (D-interrupted): an interrupted/disconnected network scan leaves data that's
+/// worthless once the volume is gone, so we don't keep a half-snapshot live.
+///
+/// Removes the registry instance (so reads skip → gray), draining/shutting down
+/// the writer first. The DB file stays on disk but carries no `scan_completed_at`
+/// (the scan path cleared it at start), so a future enable does a clean fresh
+/// scan. Equivalent to `stop_indexing` for this purpose, named for intent.
+pub(crate) fn reset_to_not_indexed(volume_id: &str) {
+    if let Err(e) = stop_indexing(volume_id) {
+        log::warn!("reset_to_not_indexed('{volume_id}') failed: {e}");
+    }
+}
+
+/// Turn indexing OFF for a drive at the user's explicit request: stop it (DB kept
+/// on disk for a fast re-enable), then persist the sticky `user_disabled` marker so
+/// a later reconnect doesn't auto-resume what the user turned off.
+///
+/// This is the ONLY caller that writes the marker — deliberately NOT `stop_indexing`
+/// itself, which also runs on eject, unmount, an interrupted network scan
+/// (`reset_to_not_indexed`), and the memory watchdog; marking there would suppress
+/// auto-resume after a transient teardown, not a real user disable. The marker is
+/// consumed only by the SMB auto-resume gate (`smb_index::smb_index_was_enabled`);
+/// root/MTP/local-external have no auto-resume path that reads it. The write runs
+/// AFTER the drain, so no writer thread contends. Writing the marker is best-effort
+/// (a failure only means a future reconnect might re-resume; logged).
+pub fn disable_drive_index_persist_intent(volume_id: &str) -> Result<(), String> {
+    stop_indexing(volume_id)?;
+    if let Ok(db_path) = resolved_index_db_path(volume_id)
+        && db_path.exists()
+        && let Err(e) = IndexStore::set_user_disabled(&db_path, true)
+    {
+        log::warn!("disable_drive_index_persist_intent('{volume_id}'): marking user_disabled failed: {e}");
+    }
+    Ok(())
+}
+
+/// Remove a volume's instance from the registry and withdraw its read-path
+/// handles from the tables in `read/handles.rs`. Used on start-up failure paths.
+///
+/// ⚠️ Freeing the slot and withdrawing the handles is ONE critical section, and
+/// must stay one. Freeing the slot first and releasing the guard before the
+/// withdrawal lets a competing `start_indexing_for` reserve the now-empty slot and
+/// install FRESH handles in between — which this call then withdraws, leaving a
+/// live, registered index that routes no read pool, so its listings show `<dir>`
+/// until the next stop/start. ❌ Don't "tidy" the withdrawal out of the guard.
+///
+/// Holding the registry across it is safe by the leaf-lock property in
+/// `read/handles.rs` (a hash removal, nothing called under the guard), and it's the
+/// same registry → table nesting `try_reserve_initializing_phase` already uses, so
+/// it adds no ordering hazard. `invalidate()` stays OUTSIDE: it's the one part no
+/// successor can observe, and the guard has no reason to cover it.
+///
+/// The other teardown paths (`stop_indexing`, `clear_index`, `fail_index`) withdraw
+/// BEFORE they touch the registry and are safe for the mirror-image reason: the key
+/// still exists while they withdraw, so no competing start can reserve yet.
+pub(super) fn remove_instance_and_handles(volume_id: &str) {
+    let pool = {
+        let mut reg = INDEX_REGISTRY.lock().expect("INDEX_REGISTRY lock poisoned");
+        reg.remove(volume_id);
+        let pool = uninstall_read_pool(volume_id);
+        uninstall_pending_sizes(volume_id);
+        // The branch set goes with the instance that watched it. A cleared index
+        // deletes the database, so the persisted copy goes too; a stopped one keeps
+        // it, and the next start reads it back.
+        crate::indexing::watch::branches::forget(volume_id);
+        pool
+    };
+    if let Some(pool) = pool {
+        pool.invalidate();
+    }
+}
+
+/// Stop all scans, shut down the writer, delete the DB file, and reset state
+/// for a volume.
+///
+/// Call `start_indexing()` to create a fresh index afterward.
+pub fn clear_index(volume_id: &str) -> Result<(), String> {
+    verifier::invalidate();
+
+    // Withdraw this volume's ReadPool/PendingSizes and invalidate the pool BEFORE
+    // the DB files go, so no reader can be holding (or can still open) a connection
+    // to a file we're about to delete. This ordering is load-bearing; ❌ don't move
+    // it below the drain.
+    if let Some(pool) = uninstall_read_pool(volume_id) {
+        pool.invalidate();
+    }
+    uninstall_pending_sizes(volume_id);
+    // The branch set goes with the instance that watched it. A cleared index
+    // deletes the database, so the persisted copy goes too; a stopped one keeps
+    // it, and the next start reads it back.
+    crate::indexing::watch::branches::forget(volume_id);
+
+    // Take the instance out under the lock, publish `ShuttingDown`, then release
+    // the lock BEFORE the blocking drain (same reasoning as `stop_indexing`: the
+    // up-to-5 s `mgr.shutdown()` drain must not stall concurrent registry
+    // readers or park a tokio worker). The live event loop reads via `ReadPool`
+    // and never reacquires the registry lock, so dropping the guard while
+    // `ShuttingDown` is published is safe.
+    // Take ownership of whatever the instance carries. `Running` hands back the
+    // manager (needs a blocking drain before the files go); `Initializing` /
+    // `ShuttingDown` carry no live writer to drain but MUST still be removed so
+    // the badge goes gray (not a dangling Stale) and the DB is reclaimed —
+    // forgetting a re-enabled-but-still-scanning Stale index has to work. Either
+    // way we resolve the DB path before dropping the guard.
+    enum ClearTarget {
+        Running { mgr: Box<IndexManager> },
+        NoWriter { db_path: PathBuf },
+    }
+    let target = {
+        let mut reg = INDEX_REGISTRY
+            .lock()
+            .map_err(|e| format!("Failed to lock registry: {e}"))?;
+        let instance = match reg.get_mut(volume_id) {
+            Some(i) => i,
+            None => {
+                // No instance, but very possibly a database: one a search's walk
+                // built and nothing re-registered after a restart, or one a drive
+                // kept when the user turned its indexing off. Clearing has to
+                // reclaim that disk — a no-op here is what made "clear" and
+                // "forget this drive" silently do nothing for exactly the people
+                // with an index nobody is maintaining. Nothing is running, so the
+                // files can go straight away.
+                drop(reg);
+                let db_path = resolved_index_db_path(volume_id)?;
+                delete_index_db_files(&db_path)?;
+                log::info!("Drive index cleared for '{volume_id}' (no live index; database deleted)");
+                return Ok(());
+            }
+        };
+        match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown) {
+            IndexPhase::Running(mgr) => ClearTarget::Running { mgr },
+            IndexPhase::Initializing { store } => {
+                // No live writer thread to drain (still in resume_or_scan), but
+                // an in-flight start may be mid-`resume_or_scan`: publishing
+                // `ShuttingDown` makes it observe the change and shut its
+                // half-built manager down (same contract as `stop_indexing`).
+                let db_path = store.db_path().to_path_buf();
+                reg.remove(volume_id);
+                ClearTarget::NoWriter { db_path }
+            }
+            IndexPhase::Failed { db_path, .. } => {
+                // The failed manager/writer are already torn down. This is the
+                // recovery reclaim: remove the instance and delete the (dead) DB so
+                // a fresh `start_indexing` rebuilds from scratch. The stored
+                // `db_path` avoids re-resolving it off an `AppHandle`.
+                reg.remove(volume_id);
+                ClearTarget::NoWriter { db_path }
+            }
+            IndexPhase::ShuttingDown => {
+                // Another teardown is already draining this volume. It will
+                // remove the instance and (for clear) delete the DB; don't race
+                // a second delete. Put the marker back and bail.
+                instance.phase = IndexPhase::ShuttingDown;
+                log::info!("Drive index clear requested but '{volume_id}' is already shutting down");
+                return Ok(());
+            }
+        }
+    };
+
+    // Guard released: run the blocking drain (Running only) without the lock.
+    let db_path = match target {
+        ClearTarget::Running { mgr } => {
+            let mut mgr = mgr;
+            let db_path = mgr.db_path().to_path_buf();
+            mgr.shutdown();
+            // Re-lock only to remove the now-disabled instance.
+            {
+                let mut reg = INDEX_REGISTRY
+                    .lock()
+                    .map_err(|e| format!("Failed to lock registry: {e}"))?;
+                reg.remove(volume_id);
+            }
+            db_path
+        }
+        ClearTarget::NoWriter { db_path } => db_path,
+    };
+
+    delete_index_db_files(&db_path)?;
+    log::info!("Drive index cleared for '{volume_id}' (DB deleted)");
+
+    Ok(())
+}
+
+/// Delete an index database and its WAL/SHM sidecars. Every caller has already
+/// made sure nothing is reading or writing it.
+fn delete_index_db_files(db_path: &Path) -> Result<(), String> {
+    for path in [
+        db_path.to_path_buf(),
+        db_path.with_extension("db-wal"),
+        db_path.with_extension("db-shm"),
+    ] {
+        if path.exists() {
+            std::fs::remove_file(&path).map_err(|e| format!("Failed to delete {}: {e}", path.display()))?;
+        }
+    }
+    Ok(())
+}
+
+/// Clear EVERY volume's index: the ones running right now and the databases on
+/// disk nothing has registered.
+///
+/// The two halves are both needed and neither implies the other. The registry
+/// knows the boot disk mid-scan; the data dir knows the share whose index a
+/// search walked into existence three launches ago, which is precisely the disk
+/// use nobody could see before. Each volume goes through [`clear_index`], so a
+/// live one still drains its writer and withdraws its read handles first.
+///
+/// Reports the first failure but always finishes the sweep: leaving half the
+/// databases behind because one file was locked would be a worse answer than
+/// reclaiming what it could.
+pub fn clear_every_index() -> Result<(), String> {
+    let mut volume_ids = all_registered_volume_ids();
+    for volume_id in crate::indexing::resources::retention::volume_ids_on_disk() {
+        if !volume_ids.contains(&volume_id) {
+            volume_ids.push(volume_id);
+        }
+    }
+    let mut first_error = None;
+    for volume_id in &volume_ids {
+        if let Err(e) = clear_index(volume_id) {
+            log::warn!("clear_every_index: clearing '{volume_id}' failed: {e}");
+            first_error.get_or_insert(e);
+        }
+    }
+    log::info!("Every drive index cleared ({} volume(s))", volume_ids.len());
+    first_error.map_or(Ok(()), Err)
+}
+
+/// Stop indexing for every registered volume. Each `stop_indexing` drains and
+/// removes one instance; we snapshot the ids first so we're not iterating the map
+/// while `stop_indexing` mutates it.
+///
+/// Two callers: the memory watchdog (the global memory-budget action) and the
+/// master switch going off. Neither writes the sticky `user_disabled` marker, so
+/// per-drive intent survives and the master switch can restore it (see
+/// `master::drives_to_resume`).
+pub(crate) fn stop_all_indexing() {
+    for volume_id in all_registered_volume_ids() {
+        if let Err(e) = stop_indexing(&volume_id) {
+            log::warn!("stop_all_indexing: stop_indexing('{volume_id}') failed: {e}");
+        }
+    }
+    // Tell shared-resident-pool subsystems (media_index enrichment) to yield to the
+    // SAME 16 GB ceiling, rather than a second independent budget over one pool.
+    crate::indexing::resources::subsystem_stop::run_subsystem_stop_hooks();
+}
