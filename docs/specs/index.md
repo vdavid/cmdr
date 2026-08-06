@@ -33,27 +33,28 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       `docs/notes/importance-treadmill-2026-08-04.md`. **Shipped**: smb2 0.17.0 (self-healing directory watch, 5,911
       WARNs/6 h gone, plus a latent AES-GMAC CANCEL bug); writer statement caching with the capacity guard (rusqlite's
       cache is 16 entries and the store needs 35, so the obvious fix alone would have thrashed silently); implicit write
-      batching (**70.2 -> 34.1 us per row, 2.06x**, real writer path, median of three runs each); importance passes
-      writing only what moved; and the sync-status poll skipping folders with no cloud files. **Open**: the origin bound
-      and demotion, the M3 arrival-rate governor (unchanged in substance: denylists rejected, must engage
-      `cost_budget.rs:37`, the external-volume blind window, the hourglass flicker, and Spike B's over-climb finding),
-      log volume, and the 643 MB `MALLOC_LARGE`, which is the primary memory unknown now that page-cache overflow is
-      shown to land only in `MALLOC_SMALL` and the search arena is shown to drop correctly.
+      batching (**2.06x**, real writer path, median of three runs each; the 70.2 -> 34.1 us absolutes are DEBUG-build
+      numbers and the release path is ~4.6x cheaper, so quote the ratio, never the microseconds — see
+      `docs/notes/size-only-subtrees-rejected-2026-08-06.md`); importance passes writing only what moved; and the
+      sync-status poll skipping folders with no cloud files. **Open**: the origin bound and demotion, the M3
+      arrival-rate governor (unchanged in substance: denylists rejected, must engage `cost_budget.rs:37`, the
+      external-volume blind window, the hourglass flicker, and Spike B's over-climb finding), log volume, and the 643 MB
+      `MALLOC_LARGE`, which is the primary memory unknown now that page-cache overflow is shown to land only in
+      `MALLOC_SMALL` and the search arena is shown to drop correctly.
 
 - [x] 2026-08-04 `unindexed-search-plan.md` - SHIPPED (all eleven milestones on local `main`); doc kept for its
       decisions and its register of accepted indexed-versus-not differences. A search returns the same files indexed or
-      not, only slower,
-      on every volume kind (local, SMB, MTP, and whatever comes next), by walking the uncovered part live and writing
-      what it finds into the drive index. Made reachable by capping a search at ONE volume: fan-out was the only way a
-      search could quietly omit a drive, so removing it deletes machinery (k-way merge, cold-volume deferral,
-      re-run-on-ready) rather than adding any, and the MCP tools collapse to a thin wrapper on the same path. Three
-      findings shape the mechanism. The descent rule needs BOTH epoch fields: `min_subtree_epoch` alone degenerates to
-      "walk everything", since its zero-absorbing min forces zero on every ancestor of any gap. Exclusions are a
-      live-walk concern only, because an excluded dir gets no `entries` row at all, so the walk must index what the
-      scanner does with `excludeSystemDirs` staying a match-time filter. And the convergence it all rests on **does not
-      exist today**: a cancelled `scan_subtree` stamps zero coverage and deletes descendants first, while the
-      non-destructive alternative is measured 9-19× slower on the add-everything delta a frontier walk always is, so the
-      primitive is chosen by measurement and a cold volume needs real bootstrap work. Walked branches get a watcher
+      not, only slower, on every volume kind (local, SMB, MTP, and whatever comes next), by walking the uncovered part
+      live and writing what it finds into the drive index. Made reachable by capping a search at ONE volume: fan-out was
+      the only way a search could quietly omit a drive, so removing it deletes machinery (k-way merge, cold-volume
+      deferral, re-run-on-ready) rather than adding any, and the MCP tools collapse to a thin wrapper on the same path.
+      Three findings shape the mechanism. The descent rule needs BOTH epoch fields: `min_subtree_epoch` alone
+      degenerates to "walk everything", since its zero-absorbing min forces zero on every ancestor of any gap.
+      Exclusions are a live-walk concern only, because an excluded dir gets no `entries` row at all, so the walk must
+      index what the scanner does with `excludeSystemDirs` staying a match-time filter. And the convergence it all rests
+      on **does not exist today**: a cancelled `scan_subtree` stamps zero coverage and deletes descendants first, while
+      the non-destructive alternative is measured 9-19× slower on the add-everything delta a frontier walk always is, so
+      the primitive is chosen by measurement and a cold volume needs real bootstrap work. Walked branches get a watcher
       rather than an expiry, so they stay live like indexed ones. Also fixes why none of it is reachable today: search
       returns before running at all when root's arena isn't loaded. Carries a 13-item register of accepted
       indexed-versus-not differences and a record of everything David settled on 2026-08-04.

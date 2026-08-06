@@ -45,10 +45,7 @@ pub fn current_thread_cpu_time() -> Option<Duration> {
 /// The real FFI, shared by the public wrapper and the test that verifies it.
 #[cfg(target_os = "macos")]
 fn read_thread_cpu_time_macos() -> Option<Duration> {
-    let mut ts = libc::timespec {
-        tv_sec: 0,
-        tv_nsec: 0,
-    };
+    let mut ts = libc::timespec { tv_sec: 0, tv_nsec: 0 };
     // SAFETY: `clock_gettime` writes a `timespec` through the pointer we hand it.
     // `ts` is a live, writable local of exactly that type, and
     // `CLOCK_THREAD_CPUTIME_ID` is a valid clock id on macOS 10.12+. The call
@@ -58,7 +55,10 @@ fn read_thread_cpu_time_macos() -> Option<Duration> {
     if rc != 0 {
         return None;
     }
-    Some(Duration::new(ts.tv_sec.max(0) as u64, ts.tv_nsec.clamp(0, 999_999_999) as u32))
+    Some(Duration::new(
+        ts.tv_sec.max(0) as u64,
+        ts.tv_nsec.clamp(0, 999_999_999) as u32,
+    ))
 }
 
 #[cfg(all(test, target_os = "macos"))]

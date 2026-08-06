@@ -30,9 +30,13 @@ body, and `#[cfg(test)]` items are all invisible to a header grep.
   constructor pulled three more things down with it (below).
 - **`InMemoryVolume`.** The one `Volume` impl that needs no host. It rides with the trait so a test in any crate can
   build a volume without the app.
-- **`ignore_poison`, `pluralize`, `thread_qos`, `process_memory`.** Host primitives with 8–49 references from the index
-  trees, none of which can sensibly be injected. `thread_qos` in particular is the property that kept indexing
-  in-process at all: a `tokio::runtime::Handle` does nothing for thread scheduling class.
+- **`ignore_poison`, `pluralize`, `thread_qos`, `thread_cpu`, `process_memory`.** Host primitives with 8–49 references
+  from the index trees, none of which can sensibly be injected. `thread_qos` in particular is the property that kept
+  indexing in-process at all: a `tokio::runtime::Handle` does nothing for thread scheduling class. `thread_cpu` reads
+  `CLOCK_THREAD_CPUTIME_ID` for the CALLING thread, which is the only way to attribute CPU to one thread on macOS:
+  `ps -M` reports per-thread cumulative CPU but no thread names, so a thread has to report its own. It's cumulative on
+  purpose, so a window is the difference of two readings; the index writer's heartbeat is its one consumer today
+  (`../cmdr-index/src/indexing/writer/probe_stats.rs`).
 - **`sqlite_util`.** A leaf over `std` + `rusqlite`, whose only two in-crate calls are `pluralize` and `ignore_poison`,
   both already here. It had to come down because five stores share it and they sit on both sides of the boundary: the
   three index DBs move into `cmdr-index`, while the agent's and the operation log's stay app-side. Putting it in

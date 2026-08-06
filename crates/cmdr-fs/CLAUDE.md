@@ -16,7 +16,8 @@ original path (`crate::file_system::volume::VolumeError`, `crate::pluralize`, â€
   (`file_system::staging`).
 - Leaves: `archive_format.rs` (sole source of truth for archive detection), `filesystem_kind.rs` (classification only),
   `firmlinks.rs` (`normalize_path`; the index and the app's watchers have to agree on it), `log_rollup.rs`,
-  `tcc_paths.rs`, `ignore_poison.rs`, `pluralize.rs`, `thread_qos.rs`, `process_memory.rs`, `testing.rs`.
+  `tcc_paths.rs`, `ignore_poison.rs`, `pluralize.rs`, `thread_qos.rs`, `thread_cpu.rs`, `process_memory.rs`,
+  `testing.rs`.
 
 ## Must-knows
 

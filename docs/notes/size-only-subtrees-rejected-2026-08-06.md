@@ -57,9 +57,9 @@ that predicate into product code.
 
 ## The search arena: the most valuable surviving lead
 
-`load_search_index` (`apps/desktop/src-tauri/src/search/index.rs`) loads all ~6M rows unfiltered into an arena. Shrinking
-what a row costs there is a better lever than not storing the row at all. **All figures below are struct arithmetic, not
-measurement.**
+`load_search_index` (`apps/desktop/src-tauri/src/search/index.rs`) loads all ~6M rows unfiltered into an arena.
+Shrinking what a row costs there is a better lever than not storing the row at all. **All figures below are struct
+arithmetic, not measurement.**
 
 - **Sentinel-encode the two `Option<u64>` in `SearchEntry`.** They're 32 of its 56 bytes, entirely for niches the type
   doesn't have. ~96 MB, and no catch that's visible from here. Start here.
@@ -82,9 +82,9 @@ of real data.
 
 **The blast radius is user-facing, not internal**: `physicalSize` reaches `SelectionInfo.svelte`, the size column via
 `measure-column-widths.ts`, and the `sizeDisplayMode` switch in `full-list-utils.ts` including `recursivePhysicalSize`
-for directories. And **Finder's Duplicate uses `clonefile` on APFS**, so ordinary users hit this by duplicating a folder.
-It is not an artifact of one developer having five `target/` copies. Hardlink attribution is arbitrary in the same
-family of ways: one folder shows the bytes, its siblings show zero.
+for directories. And **Finder's Duplicate uses `clonefile` on APFS**, so ordinary users hit this by duplicating a
+folder. It is not an artifact of one developer having five `target/` copies. Hardlink attribution is arbitrary in the
+same family of ways: one folder shows the bytes, its siblings show zero.
 
 Reference material if anyone picks it up:
 

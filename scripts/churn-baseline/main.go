@@ -380,6 +380,27 @@ loop:
 		LogRotations:   logDelta.Rotations,
 		Samples:        samples,
 	}
+	p.derive(elapsed, driver)
+	fmt.Fprintf(os.Stderr,
+		"[%s] done: %.1fs wall, app CPU %.1fs (%.1f%% of one core), %d rows (%d ours, %d marked), "+
+			"%d builds, %d writer msgs (root writer thread %.1fs CPU, %.1f%% of the app's), "+
+			"%d anchors coalesced, %d events skipped, %.1f MB log\n\n",
+		name, p.WallSeconds, p.AppCPUSeconds, p.AppCPUPercent, p.RowsTotal, p.RowsInRepo, p.RowsInMarked,
+		p.Builds, p.WriterMsgs, float64(p.WriterCPUMs)/1000, 100*p.WriterCPUShare,
+		p.EventWork.CoalescedAnchors, p.EventWork.SkippedEvents,
+		float64(p.LogBytes)/(1<<20))
+	return p, nil
+}
+
+// derive fills in every number computed FROM the measurements rather than taken
+// as one. Kept apart from measurePhase so the measuring and the arithmetic can be
+// read separately; every guard here is a divide-by-zero on a phase where nothing
+// of that kind happened.
+//
+// These normalized figures are what survives a comparison across runs: absolute
+// CPU depends on how big the churned tree happened to be that day, where CPU per
+// hour and CPU per row don't.
+func (p *Phase) derive(elapsed time.Duration, driver *churnDriver) {
 	if driver != nil {
 		p.Builds = driver.builds
 		p.DriverCPUSeconds = driver.cpuSeconds
@@ -407,15 +428,6 @@ loop:
 		p.RepoRowShare = float64(p.RowsInRepo) / float64(p.RowsTotal)
 		p.MarkedRowShare = float64(p.RowsInMarked) / float64(p.RowsTotal)
 	}
-	fmt.Fprintf(os.Stderr,
-		"[%s] done: %.1fs wall, app CPU %.1fs (%.1f%% of one core), %d rows (%d ours, %d marked), "+
-			"%d builds, %d writer msgs (root writer thread %.1fs CPU, %.1f%% of the app's), "+
-			"%d anchors coalesced, %d events skipped, %.1f MB log\n\n",
-		name, p.WallSeconds, p.AppCPUSeconds, p.AppCPUPercent, p.RowsTotal, p.RowsInRepo, p.RowsInMarked,
-		p.Builds, p.WriterMsgs, float64(p.WriterCPUMs)/1000, 100*p.WriterCPUShare,
-		p.EventWork.CoalescedAnchors, p.EventWork.SkippedEvents,
-		float64(p.LogBytes)/(1<<20))
-	return p, nil
 }
 
 // ── The churn driver ─────────────────────────────────────────────────
