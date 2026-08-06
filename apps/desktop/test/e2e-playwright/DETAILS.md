@@ -148,9 +148,9 @@ details.
 ## Files
 
 Which specs exist and what each covers: `codegraph_files` plus each spec's own `test(...)` titles. The area's shape:
-`CLAUDE.md` § Module map. Run recipes are in § "Running on macOS" and § "Running a single spec", the drop-entry helpers
-in § "Transfer-dialog counters + programmatic drop entry", the axe rule set and the poll-helper rules in § "Key
-decisions". Only the layout facts that none of those carry live here:
+`CLAUDE.md`. Run recipes are in § "Running on macOS" and § "Running a single spec", the drop-entry helpers in §
+"Transfer-dialog counters + programmatic drop entry", the axe rule set and the poll-helper rules in § "Key decisions".
+Only the layout facts that none of those carry live here:
 
 - **A spec's FILENAME picks its shard**, through `playwright.config.ts`'s `/mtp(-[a-z-]+)?\.spec\.ts$/`: anything
   matching runs on the dedicated sequential MTP lane, everything else on the parallel `--shard X/2` non-MTP lanes. So
@@ -398,9 +398,9 @@ Toasts auto-dismiss after 4 seconds if `dismissal: 'transient'` (the default), o
   `expectAndDismissToast(tauriPage, 'Space')` in `app.spec.ts`.
 - **Toasts nothing in the test triggered**: a device announcing itself fires on ITS schedule, not the test's, so the
   toast can land after whatever staged that area already cleaned up, and strand the run on something no step asked for.
-  The virtual MTP device's connect toast does exactly this to the i18n capture run, which is why
-  `i18n-capture.spec.ts` clears toasts once more at the very end rather than relying on per-surface cleanup. A test that
-  merely runs long enough for a background event to fire needs the same end-of-test sweep.
+  The virtual MTP device's connect toast does exactly this to the i18n capture run, which is why `i18n-capture.spec.ts`
+  clears toasts once more at the very end rather than relying on per-surface cleanup. A test that merely runs long
+  enough for a background event to fire needs the same end-of-test sweep.
 
 ## Gotchas
 

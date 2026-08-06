@@ -27,13 +27,13 @@ to 80vw on smaller windows, and the results region absorbs whatever vertical roo
 
 ## Files
 
-Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` § Module
-map. What each piece DOES is in the sections below: the wrapper in § "Search wrapper", the two state factories and the
-façade in § "Where the state actually lives", the snapshot store and its refcounting in § "Snapshot store",
-`searchable-folder` in § "'Use current folder' smart fallback", and the capability flags in § "Capability flags".
-Everything shared with the Selection dialog (the query bar, mode chips, AI strip, filter chips, path pills, row menu,
-results table, empty state, and the `recent-items/` family) lives in `../query-ui/CLAUDE.md`, over the app-wide
-`$lib/ui/Chip` / `Popover` / `FilterPopover` primitives. Only the layout facts that none of those carry live here:
+Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md`. What
+each piece DOES is in the sections below: the wrapper in § "Search wrapper", the two state factories and the façade in §
+"Where the state actually lives", the snapshot store and its refcounting in § "Snapshot store", `searchable-folder` in §
+"'Use current folder' smart fallback", and the capability flags in § "Capability flags". Everything shared with the
+Selection dialog (the query bar, mode chips, AI strip, filter chips, path pills, row menu, results table, empty state,
+and the `recent-items/` family) lives in `../query-ui/CLAUDE.md`, over the app-wide `$lib/ui/Chip` / `Popover` /
+`FilterPopover` primitives. Only the layout facts that none of those carry live here:
 
 - **`SearchResultsView.svelte` does NOT live in this directory.** It sits in `lib/file-explorer/pane/` with the other
   pane views even though it's conceptually a Search consumer, because it renders as a pane for `search-results://`

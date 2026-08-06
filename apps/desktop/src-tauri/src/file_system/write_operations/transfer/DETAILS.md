@@ -13,8 +13,8 @@ conflict-policy radios, and the cancel/settle close contract.
 
 ## Files
 
-Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` § Module
-map. What the mechanisms DO is in the sections below (copy strategy in § "Copy + move semantics" and § "Key decisions",
+Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md`. What
+the mechanisms DO is in the sections below (copy strategy in § "Copy + move semantics" and § "Key decisions",
 per-file flushing in § Durability, the two driver entry points and leaf-granular progress in § "Key decisions", the
 archive route in § "One-pass sequential extract", the same-volume rename-merge in § "Key decisions"). Only the layout
 facts that none of those carry live here:
