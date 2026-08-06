@@ -83,20 +83,20 @@ Each root also picks the walk's `WalkPolicy` — what it refuses to descend into
 Two rules, both about staying on the ground this walk owns, resolved once before the walk starts and carried by the
 visitor. Neither is a second source of scope.
 
-**The structural exclusion policy, with an on/off switch.** WHICH rules apply comes from the volume KIND, via
-`ExclusionScope` (below); WHETHER they run comes from `ScanRoot::exclusions`. `Volume` and `Virgin` apply them,
-`Rebuild` doesn't.
+**The structural exclusion policy, which EVERY walk runs.** WHICH rules apply comes from the volume KIND, via
+`ExclusionScope` (below); whether they run isn't a question — the invariant is that a walk writes the rows a full scan
+would write, whatever pointed it at its root.
 
 - A `Virgin` walk MUST: its roots come from a coverage answer that looked at nothing under them, so without the gate a
   scoped search of `/` walks `/private/var` and `/proc`, and the walk-written index stops matching what a full scan
   would have produced.
-- A `Rebuild` is pointed at one directory its caller already gated — `../reconcile/verifier.rs` and
-  `../watch/event_loop/verification.rs` each ask `should_exclude` about the new directory before handing it over — so
-  it's a re-read of ground somebody chose.
-- ⚠️ That leaves one real divergence standing: a `Rebuild` of a directory whose CHILDREN are excluded (a newly
-  discovered `/Library`, whose `/Library/Caches` no boot scan indexes) writes rows the scan wouldn't. Flipping `Rebuild`
-  to `Apply` closes it and costs one test, but it changes behavior in two areas that own their own docs, so it wants its
-  own change rather than riding along with the search walk.
+- A `Rebuild` MUST too, and this is what the gate its callers run does NOT cover. `../reconcile/verifier.rs` and
+  `../watch/event_loop/verification.rs` each ask `should_exclude` about the new DIRECTORY before handing it over, and
+  that stops at the root: a rebuild of a newly discovered `/Library` used to index `/Library/Caches`, which no boot scan
+  does. Verification would write rows a scan would never produce, and structurally-excluded content could surface in
+  search results.
+- The policy never touches the walk's own ROOT (`insert_visitor` gates discovered CHILDREN), so applying it everywhere
+  can't cut a caller's chosen directory out from under it.
 - ❌ The `SYSTEM_DIR_EXCLUDES` tier is NOT part of this and never should be (Decision 6 of the unindexed-search plan):
   it's large, it sits under folders people search, and skipping it at walk time would stamp coverage on parents whose
   `dir_stats` are badly short. It's a MATCH-time filter, applied by search, importance, and the folder-size tooltip.

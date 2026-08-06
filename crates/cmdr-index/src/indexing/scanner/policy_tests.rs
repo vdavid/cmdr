@@ -146,18 +146,21 @@ fn a_search_walk_skips_a_structurally_excluded_child() {
     );
 }
 
-/// A rebuild walk does NOT, and that difference is the switch.
+/// So does a rebuild walk: its CALLER gated the one directory it was pointed at,
+/// which says nothing about what is underneath.
 ///
-/// `scan_subtree`'s two callers (`reconcile/verifier.rs` and
-/// `watch/event_loop/verification.rs`) each ask `should_exclude` about the
-/// directory before handing it over, so a rebuild is a re-read of ground somebody
-/// already gated — while a search walk's roots come from a coverage answer that
-/// looked at nothing.
+/// `scan_subtree`'s callers (`reconcile/verifier.rs` and
+/// `watch/event_loop/verification.rs`) ask `should_exclude` about the new
+/// directory before handing it over, and that gate stops at the root. A rebuild of
+/// a newly discovered `/Library` would otherwise index `/Library/Caches`, which no
+/// boot scan does — verification writing rows a scan would never produce, and
+/// structurally-excluded content reachable from search results.
 #[test]
-fn a_rebuild_walk_indexes_what_its_caller_already_gated() {
+fn a_rebuild_walk_skips_a_structurally_excluded_child() {
     let tree = Tree::new();
     std::fs::create_dir_all(tree.path("scope/.Spotlight-V100")).expect("dirs");
     std::fs::write(tree.path("scope/.Spotlight-V100/junk.db"), "x").expect("file");
+    std::fs::write(tree.path("scope/real.txt"), "x").expect("file");
     ensure_path_in_db(&tree.db_path, &tree.path("scope"), &tree.writer);
 
     scan_subtree(
@@ -169,9 +172,10 @@ fn a_rebuild_walk_indexes_what_its_caller_already_gated() {
     .expect("the rebuild runs");
     tree.writer.flush_blocking().expect("flush");
 
+    assert!(tree.has_row("scope/real.txt"), "the rebuild indexes the ordinary child");
     assert!(
-        tree.has_row("scope/.Spotlight-V100"),
-        "the rebuild indexes the directory it was pointed at, whole"
+        !tree.has_row("scope/.Spotlight-V100"),
+        "a rebuild writes what a full scan would write, and a full scan never writes this"
     );
 }
 

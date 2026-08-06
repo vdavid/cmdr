@@ -103,22 +103,6 @@ pub(crate) enum ExclusionTier {
     MountRooted,
 }
 
-/// Whether a walk runs the structural exclusion policy over the children it
-/// finds.
-///
-/// Layered OVER an [`ExclusionScope`], never a second source of one: the scope
-/// says WHICH rules this volume kind gets (derived from the kind, never from
-/// `is_volume_root`), and this says whether they run at all. Which one a walk
-/// takes is decided by what the walk IS — see `ScanRoot::exclusions`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum ExclusionMode {
-    /// Gate every discovered child through `should_exclude`.
-    Apply,
-    /// Index whatever the walk finds. For a walk pointed at a directory
-    /// something else already gated.
-    Off,
-}
-
 /// A `should_exclude` check's scope: which [`ExclusionTier`] applies AND where the
 /// volume root sits, because one rule (the root-position pseudo-filesystem skip,
 /// [`is_pseudo_fs_at_volume_root`]) keys on root POSITION rather than on the path

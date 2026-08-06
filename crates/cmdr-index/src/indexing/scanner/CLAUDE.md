@@ -41,9 +41,9 @@ File Provider mount, plus the exclusion policy every local path shares.
   Never report a size the parser didn't read.
 - **`should_exclude` derives scope from the volume KIND, never `is_volume_root`.** Tier (a) absolute prefixes apply ONLY
   under `BootDisk`; on a mount-rooted scan they'd exclude every child → zero rows → falsely Fresh.
-- **`WalkPolicy` = what a walk won't descend into**: that scope, an on/off switch (`Volume`/`Virgin` apply, `Rebuild`
-  doesn't), and the device `Virgin` pins. Either cut writes NO ROW — an unlisted row sits in the frontier forever. ⚠️
-  Pin = the WALK root's device; ❌ File Provider domains are NOT a boundary (Decision 16).
+- **`WalkPolicy` = what a walk won't descend into**: that scope, which EVERY walk applies (a caller's gate stops at its
+  root), plus the device `Virgin` pins. Either cut writes NO ROW — an unlisted row sits in the frontier forever. ⚠️ Pin
+  = the WALK root's device; ❌ File Provider domains are NOT a boundary (Decision 16).
 - **The pseudo-fs trio (`proc`, `sys`, `dev`) is skipped only at a corroborated volume root**: root POSITION AND all
   three present as siblings, since a name-only rule would drop a user's `.../Dropbox/dev`.
 

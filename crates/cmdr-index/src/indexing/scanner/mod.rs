@@ -145,23 +145,6 @@ impl ScanRoot {
         self == ScanRoot::Volume
     }
 
-    /// Whether this walk runs the structural exclusion policy over the children
-    /// it finds.
-    ///
-    /// A `Rebuild` is pointed at ONE directory that its caller already gated
-    /// (`reconcile/verifier.rs` and `watch/event_loop/verification.rs` both ask
-    /// `should_exclude` about the new directory before handing it over), so the
-    /// walk is a re-read of ground somebody chose. A `Virgin` walk is the
-    /// opposite: a search names a scope, the coverage answer turns it into
-    /// frontier roots, and nothing between them has looked at what's underneath.
-    /// Without the gate, a scoped search of `/` walks `/private/var` and `/proc`.
-    fn exclusions(self) -> ExclusionMode {
-        match self {
-            ScanRoot::Volume | ScanRoot::Virgin => ExclusionMode::Apply,
-            ScanRoot::Rebuild => ExclusionMode::Off,
-        }
-    }
-
     /// Whether this walk must stay on the device it started on.
     ///
     /// Only the search walk does. A search targets ONE volume (Decision 4), so
@@ -180,8 +163,9 @@ impl ScanRoot {
 /// second source of scope:
 ///
 /// - the **structural exclusion policy**, whose rules come from the volume KIND
-///   ([`ExclusionScope`], never from `is_volume_root`) and whose on/off comes
-///   from what the walk IS ([`ScanRoot::exclusions`]);
+///   ([`ExclusionScope`], never from `is_volume_root`) and which EVERY walk runs:
+///   a walk writes the rows a full scan would write, or the index stops matching
+///   itself;
 /// - the **device** the walk started on, so a filesystem mounted inside the tree
 ///   is left to its own volume's index ([`ScanRoot::stays_on_one_device`]).
 ///
@@ -198,8 +182,6 @@ struct WalkPolicy {
     root: ScanRoot,
     /// Which structural rules this volume kind gets.
     scope: ExclusionScope,
-    /// Whether they run at all for this walk.
-    exclusions: ExclusionMode,
     /// The device the walk's own root sits on, or `None` when this walk doesn't
     /// pin one (and so descends wherever the tree leads).
     ///
@@ -228,7 +210,6 @@ impl WalkPolicy {
         Self {
             root: mode,
             scope: space.exclusion_scope().clone(),
-            exclusions: mode.exclusions(),
             // A root whose device can't be read pins nothing: the walk is about to
             // fail to list it anyway, and a `None` pin that cut every child would
             // turn an unreadable root into a false-complete.
@@ -240,7 +221,7 @@ impl WalkPolicy {
     /// Whether the structural policy excludes this child. Pure string work plus,
     /// for a directory actually named `proc` / `sys` / `dev`, the root probes.
     fn excludes(&self, path_str: &str) -> bool {
-        self.exclusions == ExclusionMode::Apply && should_exclude(path_str, &self.scope)
+        should_exclude(path_str, &self.scope)
     }
 
     /// Whether descending into this DIRECTORY would leave the volume the walk is
