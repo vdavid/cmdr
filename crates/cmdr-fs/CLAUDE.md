@@ -20,9 +20,10 @@ original path (`crate::file_system::volume::VolumeError`, `crate::pluralize`, ‚Ä
 
 ## Must-knows
 
-- **`#![deny(missing_docs)]` holds here.** New `pub` items, fields, and variants need doc comments; several cross IPC via
-  `specta::Type`, so the comment lands in `bindings.ts` too.
-- **`specta` stays pinned to `=2.0.0-rc.24`, identical to the app's.** Two copies in one graph break bindings generation.
+- **`#![deny(missing_docs)]` holds here.** New `pub` items, fields, and variants need doc comments; several cross IPC
+  via `specta::Type`, so the comment lands in `bindings.ts` too.
+- **`specta` stays pinned to `=2.0.0-rc.24`, identical to the app's.** Two copies in one graph break bindings
+  generation.
 - **`Volume::notify_mutation` defaults to a no-op.** A new mutable backend must override it or its destination pane goes
   stale after a copy. `DETAILS.md` ¬ß "What the app kept".
 - **‚ùå Never gate BEHAVIOR on `cfg(test)` here; use `any(test, feature = "testing")`.** `cfg(test)` is off in a
@@ -36,5 +37,5 @@ original path (`crate::file_system::volume::VolumeError`, `crate::pluralize`, ‚Ä
 - **Nothing here produces user-facing prose.** Errors carry typed reasons and structured params; the frontend renders
   every word. `pluralize` and `display_size` are the named exceptions.
 
-Composition rationale, the four cuts that made the closure finite, and what deliberately stayed in the app: `DETAILS.md`.
-Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Composition rationale, the four cuts that made the closure finite, and what deliberately stayed in the app:
+`DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

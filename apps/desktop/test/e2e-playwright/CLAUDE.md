@@ -1,9 +1,9 @@
 # Playwright E2E tests (tauri-playwright)
 
-Playwright E2E for Cmdr in Tauri mode: commands inject into the real Tauri webview over a Unix socket. The same specs run
-on macOS (native) and Linux (Docker); platform differences ride `CTRL_OR_META` in `helpers.ts`. `playwright.config.ts`,
-`fixtures.ts`, and `global-{setup,teardown}.ts` own config, title decoration, and the fixture tree; `helpers.ts`
-re-exports `helpers/`; a spec's filename picks its shard (DETAILS § Files).
+Playwright E2E for Cmdr in Tauri mode: commands inject into the real Tauri webview over a Unix socket. The same specs
+run on macOS (native) and Linux (Docker); platform differences ride `CTRL_OR_META` in `helpers.ts`.
+`playwright.config.ts`, `fixtures.ts`, and `global-{setup,teardown}.ts` own config, title decoration, and the fixture
+tree; `helpers.ts` re-exports `helpers/`; a spec's filename picks its shard (DETAILS § Files).
 
 ## Must-knows
 
@@ -21,8 +21,8 @@ re-exports `helpers/`; a spec's filename picks its shard (DETAILS § Files).
   keystroke can vanish and fail as an opaque timeout that looks like a flake. Use `dismissOverlay` and
   `expectAndDismissToast` (the wording IS the contract). `fixtures.ts`'s global `afterEach` fails and cleans any leak,
   so ❌ no defensive double-Escape in `beforeEach`.
-- **Bare `await pollUntil(...)` is silent on timeout** (returns `false`), so the test goes green when the condition never
-  held. Use `expect.poll(...).toBeTruthy()` or `expect(await pollUntil(...)).toBe(true)`; same trap for every
+- **Bare `await pollUntil(...)` is silent on timeout** (returns `false`), so the test goes green when the condition
+  never held. Use `expect.poll(...).toBeTruthy()` or `expect(await pollUntil(...)).toBe(true)`; same trap for every
   `Promise<boolean>` helper. The `bare-poll` check flags these; opt out with `// allowed-bare-poll: <reason>`.
 - **Exercise viewer + settings through the production multi-window flow** (`openViewerWindow` /
   `openSettingsWindowViaProd` / `closeScopedWindow`), ❌ never by routing the main window to `/viewer` or `/settings`:

@@ -1,8 +1,8 @@
 # Cover-walk internals details
 
 Standing a walk up (`bootstrap.rs`) and keeping two walks off the same ground (`live.rs`). Read this before any
-non-trivial work here: editing, planning, reorganizing, or advising. The walk itself, its outcome type, and the
-registry it activates through are `../CLAUDE.md` and `../DETAILS.md`.
+non-trivial work here: editing, planning, reorganizing, or advising. The walk itself, its outcome type, and the registry
+it activates through are `../CLAUDE.md` and `../DETAILS.md`.
 
 ## One writer per database, and one walk per patch of ground
 
@@ -17,9 +17,9 @@ three levels, each closing a case the one above it can't see.
    everything a search would have walked, and running beside it isn't merely redundant: both allocate fresh ids for the
    same names, `insert_entries_v2_batch` is `INSERT OR IGNORE`, and the row that loses takes its subtree with it. With
    no index at all, the lock-first reservation inside `start_indexing_for` decides who builds one.
-3. **Claim the frontier roots** (`live.rs`). One writer isn't enough on its own, because two walks THROUGH that
-   one writer over the same directories hit the same `INSERT OR IGNORE` collision. Decision 11 makes this routine: a
-   refined query re-asks `coverage` while the first query's walk is still running, and that first walk keeps going. So
+3. **Claim the frontier roots** (`live.rs`). One writer isn't enough on its own, because two walks THROUGH that one
+   writer over the same directories hit the same `INSERT OR IGNORE` collision. Decision 11 makes this routine: a refined
+   query re-asks `coverage` while the first query's walk is still running, and that first walk keeps going. So
    `cover::start` claims each root on the caller's thread, skips any that overlaps a live one in either direction
    (component-aware, so `/a/bc` is not inside `/a/b`), and reports the skipped ones as
    `CoverWalk::covered_by_another_walk`. The claim is owned by the walk thread, so the ground frees up on the completion

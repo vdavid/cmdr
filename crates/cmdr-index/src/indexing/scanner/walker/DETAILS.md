@@ -54,8 +54,8 @@ is offline, which froze the whole scan.
 ## The walker's progress timeout
 
 **Elapsed time cannot tell a BIG directory from a BROKEN one, so the walker doesn't measure it.** Every read publishes
-what it has delivered through a `ReadProgress` handle (`mod.rs`), and the watchdog judges that
-(`Engine::verdict`). Two rules, either of which abandons the read:
+what it has delivered through a `ReadProgress` handle (`mod.rs`), and the watchdog judges that (`Engine::verdict`). Two
+rules, either of which abandons the read:
 
 - **Stalled** — nothing delivered for `WalkConfig::stall_timeout` (production `LOCAL_LIST_TIMEOUT`, 15 s). This is the
   hung-mount rule, and it applies at any point in a read: a mount that drops after delivering a million entries is
@@ -72,8 +72,8 @@ flat and merely large (200,000 / 179,523 / 102,929 / 100,000 / 74,024 entries), 
 of them in 10.8 s or less. They only exceeded 15 s in the parallel scan, which runs one read per core, so the constant
 was being asked a question its own doc comment never claimed to answer ("an online cloud dir lists in well under a
 second"). Measurements: `docs/notes/indexing-benchmarks-2026-07-21.md`. Same class of mistake, same week, as the
-reconcile cost budget's cumulative-time metric (see `../../reconcile/DETAILS.md`), and the same fix shape: score the work
-done, not the clock.
+reconcile cost budget's cumulative-time metric (see `../../reconcile/DETAILS.md`), and the same fix shape: score the
+work done, not the clock.
 
 **A reader that can't report progress is still bounded.** With `entries` stuck at 0, both rules collapse to the plain
 total-duration cap the walker always had — which is the honest verdict, since a read we can't observe is
@@ -87,6 +87,6 @@ entry.
 contract (an abandoned dir is never marked listed, so it stays `listed_epoch = 0`). Fewer false timeouts simply means
 `DEFAULT_GIVE_UP_AFTER` trips less often on healthy volumes.
 
-Tests (`tests.rs`, all millisecond-scale with a mock reader):
-`a_read_that_keeps_delivering_is_never_abandoned`, `a_read_that_stops_delivering_is_abandoned_promptly`,
-`a_reader_that_cannot_report_progress_is_still_bounded`, `a_trickling_read_is_abandoned_by_the_per_entry_allowance`.
+Tests (`tests.rs`, all millisecond-scale with a mock reader): `a_read_that_keeps_delivering_is_never_abandoned`,
+`a_read_that_stops_delivering_is_abandoned_promptly`, `a_reader_that_cannot_report_progress_is_still_bounded`,
+`a_trickling_read_is_abandoned_by_the_per_entry_allowance`.

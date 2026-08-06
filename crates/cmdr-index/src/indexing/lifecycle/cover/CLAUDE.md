@@ -1,7 +1,7 @@
 # Cover-walk internals
 
-What a coverage walk needs before it can start (`bootstrap.rs`) and how two walks stay off the same ground
-(`live.rs`). The walk itself, its `CoverOutcome`, and the activation it goes through are `../CLAUDE.md`.
+What a coverage walk needs before it can start (`bootstrap.rs`) and how two walks stay off the same ground (`live.rs`).
+The walk itself, its `CoverOutcome`, and the activation it goes through are `../CLAUDE.md`.
 
 ## Must-knows
 
