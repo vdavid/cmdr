@@ -414,15 +414,19 @@ mod tests {
     fn read_is_denied_on_a_mode_0000_dir() {
         use std::os::unix::fs::PermissionsExt as _;
 
-        // Root bypasses mode bits entirely, so the assertion wouldn't hold there.
-        // SAFETY: `geteuid` takes no arguments, touches no memory, and cannot fail.
-        if unsafe { libc::geteuid() } == 0 {
-            return;
-        }
         let scratch = TestDir::new("tcc_probe_shut");
         let dir = scratch.join("shut");
         std::fs::create_dir(&dir).expect("create probe dir");
         std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o000)).expect("chmod 000");
+
+        // Root bypasses mode bits entirely, and some filesystems ignore them outright,
+        // so there'd be nothing to assert. Probing the dir directly answers "can this
+        // process still read it?" for both cases at once, where an euid test only covers
+        // the first (and would drag `libc`, a macOS-only dependency here, onto Linux).
+        if std::fs::read_dir(&dir).is_ok() {
+            std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700)).expect("restore mode");
+            return;
+        }
 
         let denied = read_is_denied(&dir);
 
