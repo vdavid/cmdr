@@ -31,6 +31,26 @@ const OVERLAY_SELECTORS = [
 // ── Overlay + toast dismissal ───────────────────────────────────────────────
 
 /**
+ * Closes every open toast by clicking its `.toast-close`, then waits for them to clear.
+ *
+ * A run also has to clear toasts it never staged: the virtual MTP device announces
+ * itself on its own schedule, so its connect toast can land long after whatever
+ * staged it cleaned up, and anything still on screen when a test ends trips the
+ * `afterEach` leak guard. So a spec that touches nothing toast-shaped may still owe
+ * one call to this before it finishes.
+ */
+export async function dismissAllToasts(tauriPage: PageLike): Promise<void> {
+  await tauriPage.evaluate(`(function(){
+        var toasts = document.querySelectorAll('.toast');
+        for (var i = 0; i < toasts.length; i++) {
+            var close = toasts[i].querySelector('.toast-close');
+            if (close) close.click();
+        }
+    })()`)
+  await expect.poll(async () => (await tauriPage.count('.toast')) === 0, { timeout: 3000 }).toBeTruthy()
+}
+
+/**
  * Dismiss the topmost open overlay (modal dialog, command palette, search
  * dialog, filter-chip popover, volume picker dropdown) via synthetic Escape on
  * the overlay element itself, then assert it actually closed.

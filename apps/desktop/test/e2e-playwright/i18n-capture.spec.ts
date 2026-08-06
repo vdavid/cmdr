@@ -29,6 +29,7 @@ import { join } from 'node:path'
 import { test, expect } from './fixtures.js'
 import {
   ensureAppReady,
+  dismissAllToasts,
   dismissOverlay,
   openViewerWindow,
   closeScopedWindow,
@@ -44,7 +45,6 @@ import {
   skippedPath,
   viewerFixturePath,
   captureCall,
-  dismissAllToasts,
   settlePaint,
   focusWindow,
   captureSurface,

@@ -15,7 +15,7 @@ import { readFileSync, renameSync, rmSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect } from './fixtures.js'
-import { getFixtureRoot } from './helpers.js'
+import { dismissAllToasts, getFixtureRoot } from './helpers.js'
 import { assessImageContent, isCompletePng } from './i18n-capture-png.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
@@ -585,25 +585,6 @@ async function waitForToastSettled(page: TauriPage): Promise<void> {
       { timeout: 2000 },
     )
     .toBeTruthy()
-}
-
-/**
- * Closes every open toast by clicking its `.toast-close`, then waits for them to clear.
- *
- * Exported because the run also has to clear toasts it never staged: the virtual MTP
- * device announces itself on its own schedule, so its connect toast can land after the
- * MTP surface already cleaned up, and whatever is on screen when the test ends trips the
- * harness's leak guard. The spec calls this once more before it finishes.
- */
-export async function dismissAllToasts(page: TauriPage): Promise<void> {
-  await page.evaluate(`(function(){
-    var toasts = document.querySelectorAll('.toast');
-    for (var i = 0; i < toasts.length; i++) {
-      var close = toasts[i].querySelector('.toast-close');
-      if (close) close.click();
-    }
-  })()`)
-  await expect.poll(async () => (await page.count('.toast')) === 0, { timeout: 3000 }).toBeTruthy()
 }
 
 /**
