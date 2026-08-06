@@ -6,8 +6,8 @@ handlers and typed result shapes colocated here. Depth: `DETAILS.md`.
 
 ## Module map
 
-- `read/`: one file per family — `state` (`app_state`), `pane_listing` (`list_pane_files`), `listing` (`list_dir` +
-  `largest_dirs`), `importance`
+- `read/`: one file per family — `state` (`app_state`), `pane_listing` (`list_pane_files`), `listing` (`list_dir`),
+  `importance`
   (`important_folders` + `folder_importance`), `volumes` (`list_volumes`). The `operations_list` / `operations_get` and
   `search_photos` / `image_facts` (photo search and image lookup) tools are shared with the ai-client view, so their
   handlers live in `mcp/executor/` (`operation_log.rs`, `photos.rs`, `image_facts.rs`), not here.

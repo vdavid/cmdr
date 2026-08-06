@@ -63,11 +63,10 @@ agent-only table**). Two per-entry dimensions express the split:
 - **`consumers`** (`&[Consumer]`, `AiClient` / `Agent`): the exposure axis. `get_all_tools()` returns entries whose
   `consumers` include `AiClient` (the MCP wire); `agent_tool_view()` returns those including `Agent` (the in-process
   agent runtime). The macro emits a `Tool` per entry *conditionally*, so an agent-only entry never reaches the MCP wire
-  and vice versa. The agent view is the six read families authored under `crate::agent::tools::read` (`app_state`,
-  `list_dir`, `largest_dirs`, `important_folders`, `folder_importance`, `list_volumes`) plus `operations_list` /
-  `operations_get`, shared into `[AiClient, Agent]` because their read schemas fit unchanged. Adding those didn't touch
-  the ai-client wire snapshot (agent-only entries are filtered out of `get_all_tools()`; a shared entry stays byte-
-  identical there). Agent handlers/schemas live under `../agent/tools/CLAUDE.md`, named by path from the entry.
+  and vice versa. The agent view is the read families authored under `crate::agent::tools::read` (`app_state`,
+  `list_pane_files`, `important_folders`, `folder_importance`, `list_volumes`) plus `list_dir`, `operations_list` /
+  `operations_get`, `search_photos`, and `image_facts`, shared into `[AiClient, Agent]` because their read schemas fit
+  both readers unchanged. Agent handlers/schemas live under `../agent/tools/CLAUDE.md`, named by path from the entry.
 - **`access`** (`Read` / `Propose` / `Write`): whether the tool reads, asks, or mutates. `Write` covers any mutation of
   the filesystem OR app state — nav, cursor, selection, tabs, dialogs, settings, connect/eject, file ops,
   rollback-cancel; when in doubt, `Write`. Only genuine read surfaces (`search`, `ai_search`, `await`,

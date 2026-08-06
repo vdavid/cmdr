@@ -653,10 +653,10 @@ mcp_tools! {
         run: app_params crate::agent::tools::propose::rename::execute_propose_rename_plan
     },
     "list_dir" => {
-        desc: "List a directory's immediate children (names, folder/file, size, modified) plus its recursive size totals, from the drive index. Reports index freshness honestly (fresh / scanning / stale) and returns a typed 'no index' when the volume isn't indexed, never a wrong zero. Reads the index only — it never touches the disk.",
+        desc: "List a folder's children from the drive index, plus its own recursive size total. Sort by name, size, or modified; page with limit/offset. sortBy size ranks files and folders together by space used, to find where space goes. Index-only, never the disk.",
         schema: crate::agent::tools::read::listing::list_dir_schema(),
         gate: TokenGate::Open,
-        consumers: &[Consumer::Agent],
+        consumers: &[Consumer::AiClient, Consumer::Agent],
         access: Access::Read,
         run: app_params crate::agent::tools::read::listing::execute_list_dir
     },
@@ -667,14 +667,6 @@ mcp_tools! {
         consumers: &[Consumer::Agent],
         access: Access::Read,
         run: app_params crate::agent::tools::read::pane_listing::execute_list_pane_files
-    },
-    "largest_dirs" => {
-        desc: "Find the largest subdirectories directly under a path, by recursive size (largest first). Batches directory-size lookups over the index and sorts them. Reports freshness and whether each size is an exact total or a lower bound.",
-        schema: crate::agent::tools::read::listing::largest_dirs_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::Agent],
-        access: Access::Read,
-        run: app_params crate::agent::tools::read::listing::execute_largest_dirs
     },
     "important_folders" => {
         desc: "List the most important folders across scored volumes (top-N, or those at or above a score threshold), highest first. Importance is Cmdr's own offline signal, so it answers even for an unmounted-but-scored drive. Each row carries its volume and score.",

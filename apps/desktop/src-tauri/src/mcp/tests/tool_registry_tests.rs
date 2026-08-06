@@ -64,14 +64,15 @@ const EXPECTED_TOOL_NAMES: &[&str] = &[
     "operations_rollback",
     "search_photos",
     "image_facts",
+    "list_dir",
 ];
 
 #[test]
 fn test_all_tools_count() {
     // 6 nav + 2 cursor + 1 selection + 8 file_op + 1 tag + 3 view + 1 tab + 2 dialog + 3 app
     // + 2 search + 1 settings + 1 indexing + 1 queue + 1 favorites + 3 network + 1 eject + 1
-    // await + 1 downloads + 3 operation_log + 2 photo (search + facts) = 44
-    assert_eq!(get_all_tools().len(), 44);
+    // await + 1 downloads + 3 operation_log + 2 photo (search + facts) + 1 index listing (list_dir) = 45
+    assert_eq!(get_all_tools().len(), 45);
 }
 
 #[test]
@@ -596,6 +597,7 @@ fn test_gate_table_is_complete_and_correct() {
         ("operations_rollback", TokenGate::IfAutoConfirm),
         ("search_photos", TokenGate::Open),
         ("image_facts", TokenGate::Open),
+        ("list_dir", TokenGate::Open),
     ]
     .into_iter()
     .collect();
@@ -656,7 +658,6 @@ const EXPECTED_AGENT_TOOL_NAMES: &[&str] = &[
     "app_state",
     "list_dir",
     "list_pane_files",
-    "largest_dirs",
     "important_folders",
     "folder_importance",
     "list_volumes",

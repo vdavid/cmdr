@@ -63,14 +63,6 @@
   "@askCmdr.tool.listDir.done": {
     "description": "Past-tense label after the assistant listed a folder."
   },
-  "askCmdr.tool.largestDirs.doing": "Finding the largest folders",
-  "@askCmdr.tool.largestDirs.doing": {
-    "description": "Present-tense status for the assistant finding the biggest subfolders by size."
-  },
-  "askCmdr.tool.largestDirs.done": "Found the largest folders",
-  "@askCmdr.tool.largestDirs.done": {
-    "description": "Past-tense label after the assistant found the biggest subfolders."
-  },
   "askCmdr.tool.importantFolders.doing": "Finding your important folders",
   "@askCmdr.tool.importantFolders.doing": {
     "description": "Present-tense status for the assistant finding the user's most important folders."

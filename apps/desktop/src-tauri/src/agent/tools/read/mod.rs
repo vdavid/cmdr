@@ -1,7 +1,7 @@
 //! The Ask Cmdr agent's concrete read-only tool handlers, one file per family:
 //!
 //! - [`state`]: `app_state` — the live pane + volume snapshot.
-//! - [`listing`]: `list_dir` + `largest_dirs` — drive-index listing and by-size ranking.
+//! - [`listing`]: `list_dir` — drive-index listing, sortable by size (the disk-usage question).
 //! - [`importance`]: `important_folders` + `folder_importance` — the offline importance signal.
 //! - [`volumes`]: `list_volumes` — every volume with freshness + connectivity.
 //!
@@ -39,6 +39,12 @@ pub(crate) fn expand_tilde(path: &str) -> String {
 /// takes `bool` by value, not `&bool`, so serde needs this shim.
 pub(crate) fn is_false(b: &bool) -> bool {
     !*b
+}
+
+/// `serde(skip_serializing_if)` predicate for a count that carries no information
+/// when it's zero (an `offset` nobody paged past).
+pub(crate) fn is_zero(n: &usize) -> bool {
+    *n == 0
 }
 
 /// Join a child name onto a parent directory path, avoiding a doubled slash at the

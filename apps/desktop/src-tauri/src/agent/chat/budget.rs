@@ -81,8 +81,8 @@ const _: () = assert!(MAX_TOOL_RESULT_TOKENS < DEFAULT_PROMPT_TOKEN_BUDGET);
 /// What every call pays before the user has said a word: the system prompt plus the tool
 /// declarations. Measured against the shipped assets, and pinned there —
 /// `context/cost_tests.rs` fails if the real prefix drifts away from this figure. The system
-/// prompt is 963 of it, the 12 tool declarations the rest.
-pub const FIXED_PROMPT_OVERHEAD_TOKENS: usize = 3_347;
+/// prompt is 963 of it, the 11 tool declarations the rest.
+pub const FIXED_PROMPT_OVERHEAD_TOKENS: usize = 3_476;
 
 /// What one `image_facts` row costs at the corpus' average OCR length.
 pub const IMAGE_FACTS_TOKENS_PER_FILE: usize = 269;

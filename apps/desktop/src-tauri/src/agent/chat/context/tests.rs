@@ -252,7 +252,7 @@ fn old_tool_result_elides_to_a_typed_stub_and_prose_survives() {
     let big_listing = json!({ "big_folders": ["Movies 210 GB", "Photos 88 GB"] });
     let transcript = [
         user("turn 0", 1_000),
-        assistant_tool_call("old", ToolId::LargestDirs, json!({ "path": "/" }), 1_010),
+        assistant_tool_call("old", ToolId::ListDir, json!({ "path": "/", "sortBy": "size" }), 1_010),
         tool_result("old", big_listing.clone(), 1_020),
         assistant_text("The big folders are Movies and Photos.", 1_030),
         user("turn 1", 2_000),
@@ -260,7 +260,7 @@ fn old_tool_result_elides_to_a_typed_stub_and_prose_survives() {
         user("turn 2", 3_000),
         assistant_text("answer 2", 3_010),
         user("turn 3 (latest)", 4_000),
-        assistant_tool_call("new", ToolId::ListDir, json!({ "path": "/x" }), 4_010),
+        assistant_tool_call("new", ToolId::ListPaneFiles, json!({}), 4_010),
         tool_result("new", json!({ "entries": 5 }), 4_020),
     ];
 
@@ -272,10 +272,7 @@ fn old_tool_result_elides_to_a_typed_stub_and_prose_survives() {
     };
     assert!(old.elided, "the old tool result must be elided");
     assert_eq!(old.content["elided_tool_result"], true);
-    assert_eq!(
-        old.content["tool"], "largest_dirs",
-        "the stub names the tool it came from"
-    );
+    assert_eq!(old.content["tool"], "list_dir", "the stub names the tool it came from");
     assert!(
         old.content["approx_tokens"].as_u64().is_some_and(|n| n > 0),
         "the stub carries a token-size hint"

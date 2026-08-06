@@ -33,12 +33,11 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
 - **`list_pane_files`** (`read/pane_listing.rs`) — up to 200 compact rows from the focused pane's existing Rust
   listing cache. It uses the current selection when present, otherwise the whole folder, and returns the exact volume
   ID plus one shared parent path for `propose_rename_plan`. It never queries the index or starts a filesystem listing.
-- **`list_dir`** (`read/listing.rs`) — a directory's immediate children (`indexing::list_dir_children`, a new
-  path-based helper added beside `get_dir_stats`) plus its recursive size stats (`get_dir_stats`) and a `Coverage`
-  block. `Ok(None)` children ⇒ typed "not in index" / "no index", distinguished by whether the volume is indexed.
-- **`largest_dirs`** (`read/listing.rs`) — the subdirectories under a path, ranked by recursive size. **No index query
-  does this**: the handler lists the child dirs, batches `get_dir_stats` over them (`get_dir_stats_batch`), and sorts
-  here. Files and symlinks are skipped (only real dirs are size-rankable).
+- **`list_dir`** (`read/listing.rs`, shared `[AiClient, Agent]`) — a directory's immediate children
+  (`indexing::list_dir_children`, a path-based helper beside `get_dir_stats`) plus its own recursive size stats
+  (`get_dir_stats`) and a `Coverage` block. `Ok(None)` children ⇒ typed "not in index" / "no index", distinguished by
+  whether the volume is indexed. Ordered by `sortBy` (`name` / `size` / `modified`) and paged by `limit` / `offset`;
+  `type` narrows to files or folders. **`sortBy: "size"` is the disk-usage answer** — see § One tool, both questions.
 - **`important_folders`** (`read/importance.rs`) — top-N or above-threshold across scored volumes, reusing
   `mcp::resources::importance::{snapshot_top, snapshot_threshold, snapshot_overview}` (which read every scored volume,
   including offline ones). The overview carries each volume's current generation for staleness.
@@ -63,6 +62,28 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
   is never read as an empty one. Privacy: this is the widest derived-content egress the agent has (full recognized
   text, not a snippet) — same consent gate, same copy.
 
+## One tool, both questions (`list_dir`)
+
+"What's in this folder" and "where is my disk space going" are one query with two orderings, so they're one tool. A
+second by-size tool would have overlapped it on every axis but the sort, and an agent facing two near-identical listing
+tools guesses.
+
+Three properties make the size ordering an honest disk-usage answer:
+
+- **Files and folders rank together.** A folder's `size` is its RECURSIVE total from `dir_stats`, not its inode size, so
+  it's comparable with a file's. A folders-only ranking hides the case that motivated this: a single ~900 GB sparse
+  VM disk image outweighing every folder on the volume.
+- **Unknown sorts last, both directions.** A folder with no `dir_stats` row is unknown, not empty. Leading a `desc`
+  ranking with it claims "biggest"; leading `asc` claims "smallest". Both are claims the index can't back, so
+  `compare_unknown_last` pins it to the tail either way.
+- **The enrichment order follows the sort.** Ranking by size needs every child folder's size BEFORE the sort, so the
+  `dir_stats_batch` covers the whole folder; any other order pages first and enriches only the surviving rows, so
+  browsing a 20k-entry folder costs one small batch. Identical rows either way — only the lookup count differs.
+
+`offset`/`limit` paging rides on a total order (the sort key, ties broken by name), which is what makes "resume with
+`offset + returned`" safe: an unstable order would silently skip or double-count rows, and double-counting a folder is
+double-counting its bytes.
+
 ## The honesty (coverage) contract
 
 `read/listing.rs::coverage` is the single builder for index freshness honesty: it reuses `status_token` +
@@ -75,7 +96,7 @@ the flags spec §2.4 makes load-bearing; the system prompt requires the model to
 
 Every result that carries a LIST is cut to `agent::chat::budget::MAX_TOOL_RESULT_TOKENS` through
 `mcp::executor::fit_to_result_budget`, and reports `total` / `returned` / `truncated` so the model can say what it saw
-and ask for the rest. It applies to `list_dir` (children), `largest_dirs` (ranked rows), `list_pane_files` (entries, on
+and ask for the rest. It applies to `list_dir` (children, under the caller's own `limit`), `list_pane_files` (entries, on
 top of its 200-row cap), `image_facts` (per-path rows, on top of the 2,000-char per-file text cap),
 `search_photos` (hits), and the `operations_*` pages.
 

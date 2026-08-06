@@ -598,7 +598,7 @@ async fn end_to_end_multi_tool_turn_dispatches_and_answers() {
         Program::Tools {
             calls: vec![
                 (ToolId::ListDir, json!({ "path": "/a" })),
-                (ToolId::LargestDirs, json!({ "path": "/b" })),
+                (ToolId::ListVolumes, json!({})),
             ],
             usage: AgentUsage::default(),
         },

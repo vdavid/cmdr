@@ -64,14 +64,6 @@
   "@askCmdr.tool.listDir.done": {
     "sourceHash": "5746fef"
   },
-  "askCmdr.tool.largestDirs.doing": "Buscando las carpetas más grandes",
-  "@askCmdr.tool.largestDirs.doing": {
-    "sourceHash": "c5f2cc0"
-  },
-  "askCmdr.tool.largestDirs.done": "Se encontraron las carpetas más grandes",
-  "@askCmdr.tool.largestDirs.done": {
-    "sourceHash": "a2f3de3"
-  },
   "askCmdr.tool.importantFolders.doing": "Buscando tus carpetas importantes",
   "@askCmdr.tool.importantFolders.doing": {
     "sourceHash": "866aa38"

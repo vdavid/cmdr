@@ -1196,6 +1196,56 @@
         "type": "object"
       },
       "name": "image_facts"
+    },
+    {
+      "description": "List a folder's children from the drive index, plus its own recursive size total. Sort by name, size, or modified; page with limit/offset. sortBy size ranks files and folders together by space used, to find where space goes. Index-only, never the disk.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "description": "How many children to return (default 50, max 1000). A page may still come back shorter if the rows wouldn't fit one tool result.",
+            "type": "integer"
+          },
+          "offset": {
+            "description": "Skip this many children before the page. Resume with offset + returned.",
+            "type": "integer"
+          },
+          "order": {
+            "description": "Sort direction. Defaults to 'desc' for size and modified (biggest and newest first), 'asc' for name.",
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "type": "string"
+          },
+          "path": {
+            "description": "Absolute or ~-relative folder path to list. To find where space is going, start at a volume root or ~ with sortBy 'size', then call again on the biggest child to drill in. Every answer carries a coverage block (index freshness) and marks any size that is only a lower bound, so report those caveats rather than stating a total the index can't back.",
+            "type": "string"
+          },
+          "sortBy": {
+            "description": "Order the children. 'size' ranks files and folders together by the space they use (a folder by its recursive total), which is how you find where disk space is going. Default 'name'.",
+            "enum": [
+              "name",
+              "size",
+              "modified"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "description": "Keep only files or only folders. Omit for both.",
+            "enum": [
+              "file",
+              "dir"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "type": "object"
+      },
+      "name": "list_dir"
     }
   ]
 }

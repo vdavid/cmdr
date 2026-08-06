@@ -238,8 +238,6 @@ export type MessageKey =
   | 'askCmdr.tool.imageFacts.done'
   | 'askCmdr.tool.importantFolders.doing'
   | 'askCmdr.tool.importantFolders.done'
-  | 'askCmdr.tool.largestDirs.doing'
-  | 'askCmdr.tool.largestDirs.done'
   | 'askCmdr.tool.listDir.doing'
   | 'askCmdr.tool.listDir.done'
   | 'askCmdr.tool.listVolumes.doing'

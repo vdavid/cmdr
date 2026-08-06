@@ -151,9 +151,6 @@ pub enum ToolId {
     /// Up to 200 entries from the focused pane's current backend listing cache,
     /// scoped to the selection when present.
     ListPaneFiles,
-    /// The largest subdirectories under a path, by recursive size (batches dir
-    /// stats and sorts).
-    LargestDirs,
     /// The most important folders across scored volumes (top-N or above a
     /// threshold), offline-capable.
     ImportantFolders,
@@ -185,11 +182,10 @@ impl ToolId {
     /// Every known read-only variant, in wire order. Excludes [`ToolId::Unrecognized`]
     /// by design (it's the refusal case, never a view entry). The 1:1 structural test
     /// asserts these map exactly onto `agent_tool_view()`.
-    pub const KNOWN: [ToolId; 12] = [
+    pub const KNOWN: [ToolId; 11] = [
         ToolId::AppState,
         ToolId::ListDir,
         ToolId::ListPaneFiles,
-        ToolId::LargestDirs,
         ToolId::ImportantFolders,
         ToolId::FolderImportance,
         ToolId::ListVolumes,
@@ -207,7 +203,6 @@ impl ToolId {
             ToolId::AppState => "app_state",
             ToolId::ListDir => "list_dir",
             ToolId::ListPaneFiles => "list_pane_files",
-            ToolId::LargestDirs => "largest_dirs",
             ToolId::ImportantFolders => "important_folders",
             ToolId::FolderImportance => "folder_importance",
             ToolId::ListVolumes => "list_volumes",
@@ -229,7 +224,6 @@ impl ToolId {
             "app_state" => ToolId::AppState,
             "list_dir" => ToolId::ListDir,
             "list_pane_files" => ToolId::ListPaneFiles,
-            "largest_dirs" => ToolId::LargestDirs,
             "important_folders" => ToolId::ImportantFolders,
             "folder_importance" => ToolId::FolderImportance,
             "list_volumes" => ToolId::ListVolumes,
