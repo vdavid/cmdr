@@ -58,7 +58,7 @@
         | 'components-status-badge'
         | 'components-date-label'
         | 'components-shortcut-chip'
-        | 'components-commandbox'
+        | 'components-copybox'
         | 'components-empty-states'
         | 'graphics'
         | 'graphics-icons'

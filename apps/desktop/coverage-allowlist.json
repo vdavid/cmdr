@@ -313,7 +313,7 @@
     "text-size.svelte.ts": {
       "reason": "Pure compoundScale tested in text-size.svelte.test.ts; remainder is Tauri invoke/listen + DOM style glue + Svelte $state"
     },
-    "ui/CommandBox.svelte": {
+    "ui/CopyBox.svelte": {
       "reason": "Simple UI component, clipboard + 2s timeout"
     },
     "ui/toast/ToastContainer.svelte": {

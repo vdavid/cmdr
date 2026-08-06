@@ -237,7 +237,11 @@ test.describe('Dialog body inset', () => {
       // Settings- and viewer-hosted rows render over the main window here, but the
       // panel geometry is the dialog's own, so they're worth measuring all the same.
       if (entry.status !== 'ready') continue
-      const state = entry.states[0]
+      // `.at(0)`, not `[0]`: a registry row may carry NO states (`states: []`),
+      // which indexing can't express without `noUncheckedIndexedAccess` — so the
+      // guard below reads as unreachable to the type checker and gets linted
+      // away, taking a real crash guard with it.
+      const state = entry.states.at(0)
       if (!state) continue
 
       await openGalleryState(page, entry.dialogId, state.id, fixtures)
