@@ -4,7 +4,8 @@ In-memory filename search + AI query translation. **One volume per search, and t
 (`resolve_target`), not just the UI: ❌ no fan-out, it's the only way a search can silently omit a drive. A scope routes
 to the volume that owns it; unscoped means the boot volume.
 
-`execute.rs` routes and runs (index-only, live, MCP); `live.rs` the run registry and `ResultStream`, with the event
+`execute.rs` routes and runs the index-only search, `execute/live_run.rs` the live one (dialog and MCP) over
+`execute/coverage.rs`'s model; `live.rs` the run registry and `ResultStream`, with the event
 family and the one-shot fold in `live/CLAUDE.md`; `engine.rs` scans the arena (`index.rs`, per volume via `volumes.rs`); `matcher.rs`, `excludes.rs`, `ranking.rs` judge
 and order a row; `types.rs` / `query.rs` the data, `history.rs` recent searches, `ai/` NL translation (`ai/CLAUDE.md`).
 

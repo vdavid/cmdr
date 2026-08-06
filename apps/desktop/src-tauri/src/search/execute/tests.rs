@@ -5,9 +5,11 @@
 
 use std::collections::HashMap;
 
+use super::coverage::coverage_kind;
 use super::*;
 use crate::search::engine;
 use crate::search::index::{SearchEntry, SearchIndex};
+use crate::search::live::CoverageKind;
 use crate::search::ranking::ImportanceWeights;
 use crate::search::types::{PatternType, SearchResultEntry};
 use cmdr_index::ROOT_VOLUME_ID;

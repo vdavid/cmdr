@@ -23,10 +23,11 @@ use cmdr_fs::volume::{InMemoryVolume, Volume};
 use cmdr_index::testing::host::{FakeVolumeProvider, test_lock};
 use cmdr_index::{CoverageDimension, Index, NoopEventSink};
 
+use super::super::live_run::run_live_blocking;
 use super::*;
 use crate::ignore_poison::IgnorePoison;
 use crate::search::live::events::CollectorSearchEventSink;
-use crate::search::live::{self, AnswerEnding, CoverageKind, RunOrigin, SearchPhase, WalkEnding};
+use crate::search::live::{self, AnswerEnding, CoverageKind, RunOrigin, SearchPhase, SearchRunCoverage, WalkEnding};
 
 /// A platform-appropriate mount root: read routing only sends a path to a
 /// per-mount index under an external-mount prefix, and those differ per OS.

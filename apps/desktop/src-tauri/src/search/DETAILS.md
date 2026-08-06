@@ -271,10 +271,17 @@ whole point of the milestone) while `Failed` is a `SearchRunError::IndexUnreadab
 A scope that spans two volumes is NOT one of these: it's a hard `Err` from `resolve_target`, because there's no volume
 to return partial results from.
 
-## A live search (`execute.rs::run_live_blocking`, `live.rs`)
+## A live search (`execute/live_run.rs::run_live_blocking`, `live.rs`)
 
 The milestone the whole coverage concept was built for: on a folder the index doesn't cover, a search **walks it**
 rather than reporting a gap. `docs/specs/unindexed-search-plan.md` is the plan; this is what landed.
+
+Three files, split along what a run decides before it emits anything: `execute.rs` routes (`resolve_target`) and owns
+the covered half both paths share; `execute/coverage.rs` holds the coverage model (`CoverageQuestion`,
+`UnreadableGround`, `coverage_of`, `coverage_scopes`, `coverage_kind`, `arena_for_coverage`), which is decided against
+the index alone and says nothing about reporting; `execute/live_run.rs` is the run itself (`start_live`,
+`run_live_collected`, `run_live_blocking`, `groundwork`, `wait_for_the_other_walk`). `start_live`,
+`run_live_collected`, and the two `AGENT_WAIT_*` budgets re-export through `execute` so callers keep one path.
 
 ### The shape
 
