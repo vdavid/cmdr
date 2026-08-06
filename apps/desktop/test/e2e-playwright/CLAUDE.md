@@ -14,12 +14,13 @@ run on macOS (native) and Linux (Docker); platform differences (Ctrl vs Meta) ri
 
 ## Must-knows
 
-- **Run only the spec you're iterating on.** The full suite takes ~10 min and a broken test takes the app down with it,
-  cascading connection-error failures into later specs. `pnpm test:e2e:playwright <spec-path>` filters by file, `--grep`
-  by name. ❌ Keep the script's `--project=tauri` in the `=` form: with a space, playwright's multi-value `--project`
-  swallows the spec path. DETAILS.md § "Running a single spec".
+- **Run only the spec you're iterating on.** The full suite takes ~10 min and one broken test cascades connection
+  errors into the rest. `pnpm test:e2e:playwright <spec-path>` filters by file, `--grep` by name; ❌ keep
+  `--project=tauri` in the `=` form (a space swallows the spec path). DETAILS.md § "Running a single spec".
 - **Scattered failures across unrelated specs, different every run, mean machine saturation, not a regression**: re-run
   the failing slow checks one at a time before believing them. DETAILS.md § "Slow-check results are unreliable".
+- **The instance INDEXES its fixture tree at launch**, so ❌ "rows appeared" doesn't prove a WALK: a spec needing one
+  takes the index away first (`search-walk-ground.ts`).
 - **`npx playwright test` alone fails with `ECONNREFUSED`.** The suite doesn't launch the app; it connects to a running
   one over the socket. Use `pnpm check desktop-e2e-playwright` (full lifecycle), or launch manually and ALWAYS pair it
   with `; pkill -f 'target.*Cmdr'` (`;`, not `&&`, so cleanup runs on failure too): nothing else stops the main process.
@@ -45,8 +46,8 @@ run on macOS (native) and Linux (Docker); platform differences (Ctrl vs Meta) ri
 - **The clipboard is mocked, not real** under the `playwright-e2e` feature: `Cmd+C/X/V` go through the same IPC but the
   bytes live in a Rust `Mutex`, not `NSPasteboard`. `pbpaste` won't see test contents; read mock state through the
   clipboard IPC commands (`src-tauri/src/clipboard/CLAUDE.md`).
-- **`tauri-plugin-store` stores read your REAL store files unless redirected**, so a locally-flipped setting leaks in.
-  `getStore()` resolves through `resolveStorePath(name)`, which a `CMDR_DATA_DIR` instance redirects to isolated data. A
-  persisted-UI-state spec passing in CI but failing locally usually means a stale value in your real store.
+- **`tauri-plugin-store` reads your REAL store files unless redirected** (`getStore()` → `resolveStorePath`, which a
+  `CMDR_DATA_DIR` instance isolates), so a persisted-UI-state spec that passes in CI but fails locally usually means a
+  stale value in your own store.
 
 Read `DETAILS.md` before any non-trivial work here: editing, planning, reorganizing, or advising.

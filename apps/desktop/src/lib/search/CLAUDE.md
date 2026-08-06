@@ -27,10 +27,8 @@ backend in `src-tauri/src/search/`.
 - **"Open in pane" during a live walk KEEPS the walk** (`walk-handoff.svelte.ts`): the close must NAME it
   (`releaseSearchIndex(handedOffRunId())`) or it dies as the pane appears, silently. Its toast is prop-free (a replaced
   toast keeps old props); reopening ADOPTS via `source.resume`, ❌ never re-runs.
-- **A snapshot mutation needs BOTH the `mutationTick` bump and a REPLACED stored object**: snapshots aren't `$state` by
-  design, so the tick is what wakes `SearchResultsView` — but a `$derived` that recomputes to the same reference tells
-  the deriveds below it nothing, so a walk appending rows in place left the pane frozen on the rows it opened with. ❌
-  Don't write into a stored snapshot; `store.set` a copy.
+- **❌ Never write into a stored snapshot**: `store.set` a copy and bump `mutationTick`, or the `$derived` stays on one
+  reference, propagates nothing, and freezes a handed-off pane.
 - **An EMPTY scope box means the CURRENT FOLDER** (the volume root when the pane has none behind it), resolved per run
   in `buildRunQuery()`. ❌ Never write that path into `scope` state, or every recent search bakes in a machine-specific
   path. The two rungs (`⌥C` folder, `⌥V` volume) are popover-only, ❌ not global: they collide with the mode chips.

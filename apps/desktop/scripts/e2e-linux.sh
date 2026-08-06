@@ -598,6 +598,13 @@ else
             # same flag on its app launch; keep them in sync.
             export CMDR_E2E_ASK_CMDR_FAKE=1
 
+            # Pause a search cover walk before each directory read, so the live-walk
+            # specs (search-live, search-walk-handoff) have a window to watch results
+            # arrive in. They walk a directory CHAIN, so this is a per-level floor no
+            # parallelism can shorten. Cover walks only; background indexing is
+            # untouched. The macOS harness sets the same value; keep them in sync.
+            export CMDR_E2E_WALK_THROTTLE_MS=100
+
             # Isolated data dir, shared by the app (writes settings.json there
             # via the CMDR_DATA_DIR precedence) and the test runner (specs that
             # assert on persisted state, for example

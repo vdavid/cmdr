@@ -455,11 +455,12 @@ func startTauriApp(binaryPath string, s shardSpec) (*appHandle, error) {
 		// resolve_agent_llm runs in the app, not the Playwright runner.
 		"CMDR_E2E_ASK_CMDR_FAKE=1",
 		// Pause a search's cover walk before each directory read, so a spec can watch
-		// a snapshot pane grow mid-walk instead of racing a fixture that finishes in
-		// milliseconds (search-walk-handoff.spec.ts). Cover walks only, so background
-		// indexing is untouched; the walker reads up to eight directories at once, so
-		// the wall-clock cost on the fixture tree is a fraction of this per directory.
-		"CMDR_E2E_WALK_THROTTLE_MS=25",
+		// results arrive and a snapshot pane grow mid-walk instead of racing ground
+		// that finishes in milliseconds (search-live + search-walk-handoff). Cover
+		// walks only, so background indexing is untouched. Those specs walk a directory
+		// CHAIN, which no walker parallelism can overlap, so this is a per-directory
+		// floor rather than an average: 30 levels can't finish in under three seconds.
+		"CMDR_E2E_WALK_THROTTLE_MS=100",
 	)
 	// Only the MTP shard registers the virtual MTP device. Non-MTP shards skip
 	// the startup wipe-and-recreate of the shared backing dir

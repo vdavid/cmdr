@@ -39,6 +39,31 @@ export async function openSearchDialog(tauriPage: PageLike): Promise<void> {
   await tauriPage.waitForSelector(SEARCH_OVERLAY, 3000)
 }
 
+/**
+ * Presses ⌘N (the dialog's "new search") and waits until nothing is running.
+ *
+ * The dialog's state survives close + reopen by design, so it reopens holding an
+ * earlier spec's query, scope, and mode — and re-running that query is something it
+ * may do on its own. For a live-walk spec that matters twice over: the leftover run
+ * would satisfy every "a walk is going" assertion that follows, and the run under
+ * test would be a second one nobody looked at. Waiting for the Stop button to be
+ * gone AND the list to be empty is what makes the next Enter the only run on screen.
+ */
+export async function resetSearchDialog(tauriPage: PageLike): Promise<void> {
+  await tauriPage.evaluate(`(function(){
+        var overlay = document.querySelector(${JSON.stringify(SEARCH_OVERLAY)});
+        if (overlay) overlay.dispatchEvent(new KeyboardEvent('keydown', { key: 'n', metaKey: true, bubbles: true, cancelable: true }));
+    })()`)
+  const quiet = await pollUntil(
+    tauriPage,
+    async () =>
+      (await tauriPage.count(`${SEARCH_OVERLAY} .status-stop`)) === 0 &&
+      (await tauriPage.count(`${SEARCH_OVERLAY} .result-row`)) === 0,
+    10000,
+  )
+  if (!quiet) throw new Error('search dialog still had a run going 10s after ⌘N')
+}
+
 /** Closes the dialog with Escape (the canonical close path) and waits for it to unmount. */
 export async function closeSearchDialog(tauriPage: PageLike): Promise<void> {
   await pressKey(tauriPage, 'Escape')
