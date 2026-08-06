@@ -14,6 +14,7 @@
 //!    that ground as covered. Without the invalidation the answer is empty, and
 //!    nothing anywhere says so.
 
+use std::future::Future;
 use std::sync::Arc;
 
 use cmdr_fs::entry::FileEntry;
@@ -39,7 +40,12 @@ const VOLUME_ID: &str = "live-search-e2e";
 /// The drive: two branches, so one can be walked while the other is still
 /// unknown to the index.
 fn drive(root: &str) -> Arc<dyn Volume> {
-    let entries = vec![
+    Arc::new(InMemoryVolume::with_entries("Live search", drive_entries(root)).with_root(root))
+}
+
+/// What's on it.
+fn drive_entries(root: &str) -> Vec<FileEntry> {
+    vec![
         FileEntry::new("a".into(), format!("{root}/a"), true, false),
         FileEntry::new("nested".into(), format!("{root}/a/nested"), true, false),
         FileEntry {
@@ -63,8 +69,83 @@ fn drive(root: &str) -> Arc<dyn Volume> {
             size: Some(33),
             ..FileEntry::new("three.txt".into(), format!("{root}/b/three.txt"), false, false)
         },
-    ];
-    Arc::new(InMemoryVolume::with_entries("Live search", entries).with_root(root))
+    ]
+}
+
+/// The same drive with ONE listing that blocks until the test lets it go.
+///
+/// That's what holds a walk — and with it, its frontier claim — open for as long
+/// as a second search needs to meet it. A walk over an in-memory drive is
+/// otherwise over before anything else can observe it.
+struct GatedDrive {
+    inner: InMemoryVolume,
+    gate: std::path::PathBuf,
+    reached: std::sync::atomic::AtomicBool,
+    released: tokio::sync::Notify,
+}
+
+impl GatedDrive {
+    fn new(root: &str, gate: &str) -> Self {
+        Self {
+            inner: InMemoryVolume::with_entries("Live search", drive_entries(root)).with_root(root),
+            gate: std::path::PathBuf::from(gate),
+            reached: std::sync::atomic::AtomicBool::new(false),
+            released: tokio::sync::Notify::new(),
+        }
+    }
+
+    /// Block until the walk has parked on the gated listing.
+    fn wait_until_reached(&self) {
+        cmdr_fs::testing::wait_until(std::time::Duration::from_secs(10), "the walk to reach the gate", || {
+            self.reached.load(std::sync::atomic::Ordering::SeqCst)
+        });
+    }
+
+    /// A permit stored before the walk reaches the gate is still honored, so the
+    /// test can't lose by releasing early.
+    fn release(&self) {
+        self.released.notify_one();
+    }
+}
+
+/// The future every `Volume` method hands back.
+type Fut<'a, T> = std::pin::Pin<Box<dyn Future<Output = T> + Send + 'a>>;
+
+impl Volume for GatedDrive {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+    fn root(&self) -> &std::path::Path {
+        self.inner.root()
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn list_directory<'a>(
+        &'a self,
+        path: &'a std::path::Path,
+        on_progress: Option<&'a (dyn Fn(cmdr_fs::volume::ListingProgress) + Sync)>,
+    ) -> Fut<'a, Result<Vec<FileEntry>, cmdr_fs::volume::VolumeError>> {
+        Box::pin(async move {
+            if path == self.gate {
+                self.reached.store(true, std::sync::atomic::Ordering::SeqCst);
+                self.released.notified().await;
+            }
+            self.inner.list_directory(path, on_progress).await
+        })
+    }
+    fn get_metadata<'a>(
+        &'a self,
+        path: &'a std::path::Path,
+    ) -> Fut<'a, Result<FileEntry, cmdr_fs::volume::VolumeError>> {
+        self.inner.get_metadata(path)
+    }
+    fn exists<'a>(&'a self, path: &'a std::path::Path) -> Fut<'a, bool> {
+        self.inner.exists(path)
+    }
+    fn is_directory<'a>(&'a self, path: &'a std::path::Path) -> Fut<'a, Result<bool, cmdr_fs::volume::VolumeError>> {
+        self.inner.is_directory(path)
+    }
 }
 
 /// What one live search over `scope` came back with.
@@ -113,6 +194,12 @@ fn search(run_id: &str, scope: &str) -> Answer {
 
 /// Run one live search over `scope` for `pattern`, to completion.
 fn search_for(run_id: &str, scope: &str, pattern: &str) -> Answer {
+    search_watched(run_id, scope, pattern, &CollectorSearchEventSink::default())
+}
+
+/// The same, into a sink the caller keeps — so a test can watch the run's events
+/// arrive rather than only reading them once it's over.
+fn search_watched(run_id: &str, scope: &str, pattern: &str, sink: &CollectorSearchEventSink) -> Answer {
     let query = pattern_query_for(scope, pattern);
     let target = Target {
         volume_id: VOLUME_ID.to_string(),
@@ -120,8 +207,7 @@ fn search_for(run_id: &str, scope: &str, pattern: &str) -> Answer {
         from_scope: true,
     };
     let run = live::register(run_id, VOLUME_ID, RunOrigin::Dialog);
-    let sink = CollectorSearchEventSink::default();
-    run_live_blocking(query, target, &run, &sink);
+    run_live_blocking(query, target, &run, sink);
     live::deregister(run_id);
 
     let progress = sink.progress.lock_ignore_poison();
@@ -295,6 +381,91 @@ fn a_scoped_search_answers_with_its_own_folder_whether_or_not_the_drive_is_index
     assert_eq!(converged.walk, WalkEnding::NothingToWalk);
     assert_eq!(converged.paths, indexed.paths, "and it stays the same answer");
     assert_eq!(converged.match_count, indexed.match_count);
+
+    volumes::forget_volume_for_test(VOLUME_ID);
+    let _ = index.forget_volume(VOLUME_ID);
+}
+
+#[test]
+fn a_run_whose_whole_scope_another_walk_claimed_waits_for_it_rather_than_answering_empty() {
+    // Two searches over the same uncovered folder: one walk takes the ground and
+    // the other is told it's taken (`cover/live.rs` — two walkers over one
+    // directory orphan each other's subtrees, so only one may have it). The one
+    // that loses used to finish immediately, having walked nothing, and present as
+    // "No files found" under a note promising the files would turn up in a moment.
+    // They never turned up in that run.
+    //
+    // Nothing of the scope is covered here, so there is nothing to show while
+    // waiting and nothing lost by waiting: the run holds until the ground is
+    // free, and answers from what the other walk wrote.
+    let _serialized = test_lock();
+    let _one_run_at_a_time = live::test_registry_lock();
+    let data = tempfile::tempdir().expect("index data dir");
+    let _search_data = volumes::install_data_dir_for_test(data.path());
+    let root = format!("{MOUNT_PREFIX}/{VOLUME_ID}");
+    let scope = format!("{root}/a");
+
+    let gated = Arc::new(GatedDrive::new(&root, &scope));
+    let volumes = FakeVolumeProvider::shared();
+    volumes
+        .register(VOLUME_ID, Arc::clone(&gated) as Arc<dyn Volume>)
+        .mark_network(&root);
+    let (index, _installed) = Index::builder()
+        .data_dir(data.path())
+        .volumes(Arc::clone(&volumes) as Arc<_>)
+        .events(NoopEventSink::shared())
+        .install_for_test();
+
+    // Somebody else's walk takes the scope and parks inside it. Its claim is taken
+    // on THIS thread before `cover` returns, so there is no race to lose.
+    let held = index
+        .cover(
+            VOLUME_ID,
+            vec![scope.clone()],
+            CoverageDimension::Listing,
+            tokio_util::sync::CancellationToken::new(),
+        )
+        .expect("the drive is walkable");
+    gated.wait_until_reached();
+
+    // The search that lost the race, on a thread of its own because it is
+    // expected to wait rather than answer.
+    let searched_scope = scope.clone();
+    let watched = Arc::new(CollectorSearchEventSink::default());
+    let sink = Arc::clone(&watched);
+    let searcher = std::thread::spawn(move || search_watched("claim-race", &searched_scope, "txt", &sink));
+
+    // Wait until it has asked about the ground more than once — which only a run
+    // that is WAITING for it does. A run that answered instead reaches its
+    // terminal event here and never announces coverage twice.
+    cmdr_fs::testing::wait_until(
+        std::time::Duration::from_secs(10),
+        "the run to wait for the ground another walk is covering",
+        || {
+            watched
+                .progress
+                .lock_ignore_poison()
+                .iter()
+                .filter(|event| event.phase == SearchPhase::ResolvingCoverage)
+                .count()
+                > 1
+        },
+    );
+
+    // Let the other walk finish. Its rows land in the same index, which is where
+    // the waiting run reads them from.
+    gated.release();
+    while held.next_batch().is_some() {}
+    let outcome = held.finish();
+    assert!(!outcome.cancelled, "the other walk ran to the end");
+
+    let answer = searcher.join().expect("the waiting run finishes");
+    assert_eq!(
+        answer.paths,
+        vec![format!("{root}/a/nested/two.txt"), format!("{root}/a/one.txt")],
+        "the run that waited answers with what the other walk wrote, not with nothing"
+    );
+    assert_eq!(answer.match_count, 2);
 
     volumes::forget_volume_for_test(VOLUME_ID);
     let _ = index.forget_volume(VOLUME_ID);

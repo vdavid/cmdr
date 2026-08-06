@@ -151,6 +151,15 @@ pub struct CoverageMap {
     /// Which state of the index this answer describes. Honor the answer only while
     /// the snapshot you're serving the covered half from still matches.
     pub token: CoverageToken,
+    /// The [`frontier`](Self::frontier) roots a walk on this volume is covering
+    /// right now, so a caller can tell "nobody has been here" from "somebody is
+    /// here already". Only one walk may have a patch of ground (two allocate
+    /// different ids for the same names and orphan each other's subtrees), so a
+    /// caller whose whole frontier is listed here has nothing to walk: waiting for
+    /// that walk is what gets it an answer, where walking anyway would corrupt one.
+    /// ⚠️ A reading, not a reservation: it can go stale immediately, and the walk
+    /// request stays the authority on what a walk actually took.
+    pub being_walked: Vec<String>,
 }
 
 /// One directory's verdict during the descent.
@@ -218,6 +227,7 @@ pub(crate) fn coverage_on_volume(
         permission_denied: Vec::new(),
         declined: Vec::new(),
         token: CoverageToken::UNINDEXED,
+        being_walked: Vec::new(),
     };
 
     let Some(pool) = get_read_pool_for(volume_id) else {
@@ -275,6 +285,9 @@ pub(crate) fn coverage_for_scope(
         permission_denied,
         declined,
         token,
+        // Filled by `Index::coverage`, which sits above the walks: this half is a
+        // read of one database, and who is walking right now is process state.
+        being_walked: Vec::new(),
     })
 }
 

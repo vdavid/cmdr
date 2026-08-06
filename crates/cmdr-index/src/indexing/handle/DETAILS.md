@@ -70,6 +70,12 @@ deduplication unnecessary anywhere in the search path, rather than a hash set no
 it only work if callers were never written against a single implied dimension, and adding the parameter later means
 touching every one of them.
 
+**`CoverageMap::being_walked` is a FIELD, not a seventh promise.** Which frontier roots a walk is covering right now
+isn't in any database — it's the in-flight claims — so `Index::coverage` fills it after the read query returns, above
+the layer that must not import lifecycle state. A `Vec<String>` on a type the surface already carries costs no ceiling,
+the same argument M8's two unreadable lists took. What it buys: a caller can tell "nobody has been here" from "somebody
+is here already" and wait rather than answer empty, without a method of its own.
+
 **Six root promises** came with it. `CoverageMap`, `CoverageToken`, and `CoverageDimension` are the read half's;
 `CoverWalk`, `CoveredEntry`, and `CoverOutcome` are the walk's, and each earns its place by being something a host
 genuinely can't do without:
@@ -78,22 +84,21 @@ genuinely can't do without:
   it can't be a plain `Receiver` because finishing (join, and the totals that come back) is part of the contract.
   **Stopping it is NOT on this type**: a `Receiver` is `!Sync`, so the handle stays on the one thread that reads it,
   while the decision to stop belongs to a closing dialog or a quitting app somewhere else. So `cover` takes the
-  `CancellationToken`, the caller keeps a clone, and there is exactly one way to stop a walk from anywhere
-  (2026-08-05).
+  `CancellationToken`, the caller keeps a clone, and there is exactly one way to stop a walk from anywhere (2026-08-05).
 - **`CoveredEntry`** — one entry the walk found. This type crossing the boundary IS the design: Decision 3 keeps the
   matcher in `search/` and the scan in `indexing/`, so what crosses is data, not a predicate. It carries the entry's own
   pre-dedup sizes, because a result row showing a hardlinked file as 0 bytes would be wrong.
 - **`CoverOutcome`** — what the walk covered, and whether somebody stopped it. The search dialog's terminal states are
   exactly that distinction, and neither of them is a failure.
 
-**Why standing a cold volume's index up is NOT a method of its own** (2026-08-05). A drive nobody ever indexed has
-no database, no epoch, no writer, and no entry to resolve a scan root against, so `cover` used to refuse it — the one
-case that made the whole concept useless where it's needed most. The obvious move was a fifth call ("prepare this
-volume", "ensure an index"), and it would have been a mistake twice over: it makes every caller responsible for a
-sequencing rule the index can enforce itself, and it names an internal (an `IndexManager` exists) rather than something
-the caller wants. `cover` already writes to disk and already means "make the index able to answer for this"; a volume
-with nothing to write into is a case of that, not a different question. So the bootstrap is behind `cover`, the surface
-stays at 38 methods and 50 root promises, and **neither ceiling moved for the cold bootstrap**.
+**Why standing a cold volume's index up is NOT a method of its own** (2026-08-05). A drive nobody ever indexed has no
+database, no epoch, no writer, and no entry to resolve a scan root against, so `cover` used to refuse it — the one case
+that made the whole concept useless where it's needed most. The obvious move was a fifth call ("prepare this volume",
+"ensure an index"), and it would have been a mistake twice over: it makes every caller responsible for a sequencing rule
+the index can enforce itself, and it names an internal (an `IndexManager` exists) rather than something the caller
+wants. `cover` already writes to disk and already means "make the index able to answer for this"; a volume with nothing
+to write into is a case of that, not a different question. So the bootstrap is behind `cover`, the surface stays at 38
+methods and 50 root promises, and **neither ceiling moved for the cold bootstrap**.
 
 The cost, stated plainly: `cover` on a cold drive creates a database and registers the volume, which is a bigger side
 effect than the name suggests. That is bounded by what it stands up — a writer and nothing else, no scan, no watcher —
@@ -202,10 +207,10 @@ is supposed to BE the surface.
 - **50 root promises** — the names `lib.rs` exports, `pub mod` included. 44 at the audit, plus coverage's six types (the
   read half's three on 2026-08-05, the walk half's three the same day).
 - **40 methods on `Index`** — the 36 above plus `Index::builder`, which the headline number treats as the constructor
-  rather than a call, plus `cover`, which took the slot reserved for it by name, plus the disk-footprint pair below.
-  The cold-volume bootstrap took none of it: it went behind `cover` rather than becoming a method (above, "Why
-  standing a cold volume's index up is NOT a method of its own"). No reserved slot is left, so the next method has to be
-  argued the way these were.
+  rather than a call, plus `cover`, which took the slot reserved for it by name, plus the disk-footprint pair below. The
+  cold-volume bootstrap took none of it: it went behind `cover` rather than becoming a method (above, "Why standing a
+  cold volume's index up is NOT a method of its own"). No reserved slot is left, so the next method has to be argued the
+  way these were.
 - **17 public modules** and **156 public items inside them** — the surface the root re-exports don't capture, which is
   where `media_index` and `importance` live. Unchanged: the coverage module is `pub(crate)`, reaching a host only
   through the handle and the root re-exports.

@@ -116,6 +116,25 @@ impl Drop for Claim {
     }
 }
 
+/// Which of `frontier`'s roots a walk on this volume is covering RIGHT NOW.
+///
+/// The same overlap rule [`Claim::take`] would apply, asked without taking
+/// anything — so a caller can find out that the ground it wants is spoken for
+/// before it commits to a walk that would take none of it. ❌ Not a reservation
+/// and not a promise: the answer can go stale the moment it's read, which is why
+/// `Claim::take` stays the authority and reports what it left behind.
+pub(in crate::indexing) fn ground_being_walked(volume_id: &str, frontier: &[String]) -> Vec<String> {
+    let live = in_flight().lock_ignore_poison();
+    let Some(claimed) = live.get(volume_id) else {
+        return Vec::new();
+    };
+    frontier
+        .iter()
+        .filter(|root| claimed.iter().any(|held| overlaps(held, root)))
+        .cloned()
+        .collect()
+}
+
 /// Whether walking one of these two roots would cover any of the other's ground.
 fn overlaps(a: &str, b: &str) -> bool {
     a == b || is_strict_descendant(a, b) || is_strict_descendant(b, a)
@@ -146,6 +165,30 @@ mod tests {
         );
         assert_eq!(second.mine(), ["/c", "/bc"]);
         assert_eq!(second.deferred(), ["/a", "/b/deep", "/"]);
+    }
+
+    /// Asking who holds ground answers by the same overlap rule, and takes
+    /// nothing — which is what lets a search find out that walking would get it
+    /// nothing BEFORE it commits to a walk.
+    #[test]
+    fn ground_a_walk_holds_can_be_asked_about_without_taking_it() {
+        assert!(
+            ground_being_walked("ask-vol", &["/a".to_string()]).is_empty(),
+            "nobody is walking a volume with no walk on it"
+        );
+
+        let held = Claim::take("ask-vol", vec!["/a".to_string()]);
+        assert_eq!(
+            ground_being_walked("ask-vol", &["/a/inner".to_string(), "/b".to_string()]),
+            ["/a/inner"],
+            "a descendant of a claimed root is being walked; a sibling isn't"
+        );
+
+        drop(held);
+        assert!(
+            ground_being_walked("ask-vol", &["/a".to_string()]).is_empty(),
+            "and the answer follows the walk out"
+        );
     }
 
     /// Claims are per volume: the same path on two drives is two different

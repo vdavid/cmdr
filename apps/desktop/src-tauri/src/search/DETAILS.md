@@ -221,7 +221,8 @@ rather than reporting a gap. `docs/specs/unindexed-search-plan.md` is the plan; 
 ### The shape
 
 1. **Ask what's uncovered** — `Index::coverage(volume, scope, Listing)` per scope path, merged. Frontier roots plus the
-   directories nothing will walk, plus a `CoverageToken` naming the state of the index the answer describes.
+   directories nothing will walk, plus a `CoverageToken` naming the state of the index the answer describes, plus which
+   of those roots another walk is covering right now (`being_walked`).
 2. **Load the arena** — after step 1, deliberately (below).
 3. **The covered half** — `search_covered_half`, the identical engine pass `run_blocking` runs. The frontier is exactly
    the ground the arena has nothing to say about, so an unfiltered pass over the scope IS the covered half; nothing
@@ -229,6 +230,20 @@ rather than reporting a gap. `docs/specs/unindexed-search-plan.md` is the plan; 
 4. **Walk the rest** — `Index::cover(volume, frontier, Listing, token)`, batches judged by the same `CompiledQuery` an
    arena row gets plus the same `ExcludeRules` (`excludes.rs`), streamed out through `ResultStream`.
 5. **A terminal event**, with what the run could not answer for.
+
+Steps 1–3 are one repeatable unit (`groundwork`), because nothing has been emitted by the end of them. That is what
+lets a run which would answer with NOTHING AT ALL wait instead: no rows and no count from the index, and every frontier
+root already claimed by a walk in flight (`another_walk_owns_the_whole_answer`). Only one walk may have a patch of
+ground (`cover/live.rs`), so such a run has nothing to show and nothing it may walk; it used to finish on the spot
+reading as "no files found", under a note promising the files would turn up in a moment. It now waits for that walk
+(`wait_for_the_other_walk`: the COVERAGE question only, 200 ms apart — reloading the arena per poll would rebuild a
+multi-second snapshot for nothing), then redoes the groundwork once and answers from what the walk wrote. That redo
+reloads the arena on a token mismatch without consulting the walk mark (`AfterAnotherWalk::Yes`): a run that watched a
+walk end knows rows landed, and the mark is a global one-shot somebody else may have taken.
+
+❌ Not when the index answered with something: those rows are worth showing now, and holding them back for somebody
+else's frontier would break Decision 11's promise that a refined query keeps what its predecessor covered. That run
+reports `still_covering`, which is true for it.
 
 The partition covers the frontier ROOT itself, not only what's inside it. A walk reports a directory's contents, so a
 frontier root the index had no row for would be the one entry neither half emits — and a scope root matches its own
@@ -263,7 +278,9 @@ walk it isn't allowed to stop, and the arena mark has to keep pace with rows it'
 covered comes back to the next query from the index, not from a replay buffer.
 
 Ground a live walk already holds is reported as `still_covering` rather than walked twice (one walk per patch of
-ground, `lifecycle/cover/live.rs`); those rows reach the same index, so it means "these arrive a bit later".
+ground, `lifecycle/cover/live.rs`); those rows reach the same index, so it means "these arrive a bit later" — for a run
+that has other ground to show. A run whose WHOLE scope is somebody else's waits for it instead of saying that (step 1
+above): with nothing to show and nothing to walk, "a bit later" would have meant "not in this run".
 
 Superseding is scoped by `RunOrigin`, because it only makes sense for an asker that RETYPES. The dialog is one such
 asker; an MCP call is not. So a `Dialog` run supersedes the dialog's previous run and nothing else, and closing the

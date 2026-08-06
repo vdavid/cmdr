@@ -438,13 +438,20 @@ impl Index {
     ///
     /// Cheap by design: the descent stops at every covered subtree instead of
     /// walking into it, so a fully indexed drive answers in one row lookup.
+    ///
+    /// The answer also says which of those directories a walk is covering right
+    /// now ([`CoverageMap::being_walked`]), which the database can't know: only
+    /// one walk may have a patch of ground, so a caller whose whole frontier is
+    /// already somebody's has nothing to walk and everything to gain by waiting.
     pub fn coverage(
         &self,
         volume_id: &str,
         scope_path: &str,
         dimension: CoverageDimension,
     ) -> Result<CoverageMap, IndexError> {
-        crate::indexing::read::coverage::coverage_on_volume(volume_id, scope_path, dimension).map_err(Into::into)
+        let mut map = crate::indexing::read::coverage::coverage_on_volume(volume_id, scope_path, dimension)?;
+        map.being_walked = cover::ground_being_walked(volume_id, &map.frontier);
+        Ok(map)
     }
 
     /// Which state of a volume's index is current right now.

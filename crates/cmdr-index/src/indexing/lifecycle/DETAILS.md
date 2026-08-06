@@ -376,7 +376,9 @@ three levels, each closing a case the one above it can't see.
    `cover::start` claims each root on the caller's thread, skips any that overlaps a live one in either direction
    (component-aware, so `/a/bc` is not inside `/a/b`), and reports the skipped ones as
    `CoverWalk::covered_by_another_walk`. The claim is owned by the walk thread, so the ground frees up on the completion
-   path, the cancel path, and a panic alike.
+   path, the cancel path, and a panic alike. `ground_being_walked` answers the same question without taking anything,
+   which is what `Index::coverage` reports as `CoverageMap::being_walked`: a caller can then tell that a walk would get
+   it nothing BEFORE committing to one, and wait for the walk that holds the ground instead of answering empty.
 
 The deferred caller loses nothing durable: the other walk's rows land in the same index, and Decision 12 makes them
 visible to the very next query — which is exactly how Decision 11 already says a superseded query recovers its
@@ -460,12 +462,12 @@ guesses in three cases: a chain running through a FILE row (the stale file→dir
 on — parenting under a file id orphans everything below), a path that isn't a directory any more, and a symlink (stored,
 never descended into, so a walk rooted below one would attribute another directory's contents to it).
 
-A root the chain had to CREATE is also emitted to the walk's consumer, once, ahead of its listing (`cover.rs::emit_root`,
-counted in `entries_found` / `dirs_found` so what a consumer saw and what the walk added stay one number). Why: a walk
-reports a directory's CONTENTS, and a reader of the index answers for rows the index already held, so a row this walk
-invented is one nobody else will ever report — which made a search scoped to a folder answer with that folder over an
-indexed drive and not over an unindexed one. ❌ The ancestors above it are NOT emitted: the frontier is cut inside
-whoever's scope asked for the walk, so anything above the root is outside it.
+A root the chain had to CREATE is also emitted to the walk's consumer, once, ahead of its listing
+(`cover.rs::emit_root`, counted in `entries_found` / `dirs_found` so what a consumer saw and what the walk added stay
+one number). Why: a walk reports a directory's CONTENTS, and a reader of the index answers for rows the index already
+held, so a row this walk invented is one nobody else will ever report — which made a search scoped to a folder answer
+with that folder over an indexed drive and not over an unindexed one. ❌ The ancestors above it are NOT emitted: the
+frontier is cut inside whoever's scope asked for the walk, so anything above the root is outside it.
 
 ## Vanished-volume scan abort (`scan_completion.rs`)
 

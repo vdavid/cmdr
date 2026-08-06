@@ -319,53 +319,98 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
     let mut stream = ResultStream::new(run, sink, &query);
     stream.announce(SearchPhase::ResolvingCoverage);
 
-    // 1. What the index can't answer for, and which state of the index that
-    //    answer describes. Asked BEFORE the arena is loaded, so an arena loaded
-    //    after it holds every row it calls covered.
+    // 1-3. What the index can't answer for, what it CAN, and where the volume
+    //      lives — the whole of what a run works out before it emits anything, so
+    //      a run that would have emitted nothing can do it again after waiting.
     let scopes = coverage_scopes(&target);
-    let question = coverage_of(&target.volume_id, &scopes);
-
-    // 2. The arena the answer is honored against (Decision 12).
-    let loaded = match arena_for_coverage(&target.volume_id, &question.tokens) {
-        VolumeLoad::Loaded(loaded) => Some(loaded),
-        // Not an error and not a gap any more: a volume with no index is exactly
-        // what the walk stands one up for. Nothing is covered, so the frontier
-        // (the scope itself) is the whole answer.
-        VolumeLoad::NotIndexed => None,
-        VolumeLoad::Failed(e) => {
-            log::warn!("Live search: volume '{}' isn't searchable: {e}", target.volume_id);
-            stream.fail(
-                SearchRunError::IndexUnreadable,
-                "Cmdr can't read this drive's index. Re-indexing the drive fixes it.".to_string(),
-            );
+    let mut ground = match groundwork(&query, &target, &scopes, run, AfterAnotherWalk::No) {
+        Ok(ground) => ground,
+        Err((error, message)) => {
+            stream.fail(error, message);
             return;
         }
     };
-
-    // 3. The covered half, from the arena, exactly as a non-live search reads it.
-    //    Skipped outright for a run somebody stopped while that arena was loading:
-    //    the wait is seconds on a big drive, and a scan nobody will see is the
-    //    cheapest work there is to not do.
-    let mut unresolved_scopes = Vec::new();
-    if let Some(loaded) = loaded.as_deref().filter(|_| !run.is_cancelled()) {
-        let limit = query.limit.min(1000) as usize;
-        match search_covered_half(&query, &target, loaded, limit) {
-            Ok(half) => {
-                unresolved_scopes = half.unresolved_scopes;
-                stream.add_indexed(half.entries, half.total);
-            }
-            Err(message) => {
-                stream.fail(SearchRunError::Query, message);
+    // 4. Ask for the walk — which is also the only trustworthy answer to "is this
+    //    ground somebody else's?", because a claim is taken inside `cover` and
+    //    nothing read earlier can see it. Two searches started a moment apart come
+    //    out of one arena load together and arrive here microseconds apart.
+    //
+    //    A run that gets none of the ground AND had nothing from the index would
+    //    answer with nothing at all, so instead it waits for the walk that holds
+    //    the ground and works the whole thing out again. Nothing has gone out yet,
+    //    so that costs the answer nothing and says nothing twice.
+    let mut started = None;
+    loop {
+        if ground.question.frontier.is_empty() || run.is_cancelled() {
+            break;
+        }
+        // A live walk refuses a query that narrows nothing, whatever the arena
+        // would have allowed: the arena's cost is knowable and a filesystem's
+        // isn't (`matcher.rs`). Refusing the RUN rather than answering from the
+        // index alone is the honest half — a confident-looking list that silently
+        // skipped the unindexed ground is what this effort exists to remove.
+        let compiled = match CompiledQuery::compile(&query, Evaluator::LiveWalk) {
+            Ok(compiled) => compiled,
+            Err(e) => {
+                stream.fail(SearchRunError::Query, e.to_string());
                 return;
+            }
+        };
+        match index().cover(
+            &target.volume_id,
+            ground.question.frontier.clone(),
+            CoverageDimension::Listing,
+            run.cancel_token(),
+        ) {
+            Ok(walk) => {
+                let deferred = walk.covered_by_another_walk().to_vec();
+                if deferred.len() < ground.question.frontier.len() || !index_gave_nothing(&ground) {
+                    started = Some((walk, deferred, compiled));
+                    break;
+                }
+                // It took no ground at all, and there's nothing to show meanwhile.
+                // `finish` rather than a drop: it claimed nothing, so this only
+                // closes the session it opened and joins its thread.
+                let _ = walk.finish();
+                wait_for_the_other_walk(&target.volume_id, &scopes, run, &mut stream);
+                if run.is_cancelled() {
+                    break;
+                }
+                match groundwork(&query, &target, &scopes, run, AfterAnotherWalk::Yes) {
+                    Ok(next) => ground = next,
+                    Err((error, message)) => {
+                        stream.fail(error, message);
+                        return;
+                    }
+                }
+            }
+            Err(e) => {
+                // Nothing to walk with: the drive isn't mounted, or it's mid-scan
+                // (in which case the scan is covering that ground anyway). Either
+                // way this run's answer is a lower bound and says so.
+                log::warn!("Live search: can't walk '{}': {e}", target.volume_id);
+                break;
             }
         }
     }
+    let unwalkable = started.is_none() && !ground.question.frontier.is_empty() && !run.is_cancelled();
 
-    // 4. The rest, walked live.
-    let mount_root = loaded
-        .as_deref()
-        .and_then(|loaded| loaded.mount_root.clone())
-        .or_else(|| volumes::registry_mount_root(&target.volume_id));
+    let Groundwork {
+        question,
+        half,
+        mount_root,
+    } = ground;
+
+    // 5. The covered half goes out now: it was computed against the arena the
+    //    coverage answer describes (Decision 12), and asking for the walk first is
+    //    what makes the wait above possible without ever emitting twice.
+    let mut unresolved_scopes = Vec::new();
+    if let Some(half) = half {
+        unresolved_scopes = half.unresolved_scopes;
+        stream.add_indexed(half.entries, half.total);
+    }
+
+    // 6. The rest, walked live.
     // The scope paths the walk is about to answer for itself, in the canonical
     // form both halves speak.
     let walked_scopes: std::collections::HashSet<&String> =
@@ -400,13 +445,18 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
         target_volume_id: target.volume_id.clone(),
     };
 
-    // Nothing left to walk, or nobody left waiting for it. The stopped case ends
-    // here rather than starting a walk that would be cancelled on its first check
-    // — and, on a drive with no index, would have stood one up on the way.
-    // `finish` relabels the ending when the run was stopped.
-    if question.frontier.is_empty() || run.is_cancelled() {
+    // Nothing left to walk, or nobody left waiting for it, or nothing to walk it
+    // with. The stopped case ends here rather than starting a walk that would be
+    // cancelled on its first check — and, on a drive with no index, would have
+    // stood one up on the way. `finish` relabels the ending when the run was
+    // stopped.
+    let Some((walk, still_covering, compiled)) = started else {
         let coverage = report(
-            WalkEnding::NothingToWalk,
+            if unwalkable {
+                WalkEnding::Interrupted
+            } else {
+                WalkEnding::NothingToWalk
+            },
             question.unreadable,
             Vec::new(),
             stream.capped(),
@@ -414,45 +464,8 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
         );
         stream.finish(coverage);
         return;
-    }
-
-    // A live walk refuses a query that narrows nothing, whatever the arena would
-    // have allowed: the arena's cost is knowable and a filesystem's isn't
-    // (`matcher.rs`). Refusing the RUN rather than answering from the index alone
-    // is the honest half — a confident-looking list that silently skipped the
-    // unindexed ground is what this whole effort exists to remove.
-    let compiled = match CompiledQuery::compile(&query, Evaluator::LiveWalk) {
-        Ok(compiled) => compiled,
-        Err(e) => {
-            stream.fail(SearchRunError::Query, e.to_string());
-            return;
-        }
     };
     let excludes = ExcludeRules::from_query(&query, compiled.case_insensitive());
-
-    let walk = match index().cover(
-        &target.volume_id,
-        question.frontier.clone(),
-        CoverageDimension::Listing,
-        run.cancel_token(),
-    ) {
-        Ok(walk) => walk,
-        Err(e) => {
-            // Nothing to walk with: the drive isn't mounted, or it's mid-scan (in
-            // which case the scan is covering that ground anyway). Either way this
-            // run's answer is a lower bound and says so.
-            log::warn!("Live search: can't walk '{}': {e}", target.volume_id);
-            let coverage = report(
-                WalkEnding::Interrupted,
-                question.unreadable,
-                Vec::new(),
-                stream.capped(),
-                false,
-            );
-            stream.finish(coverage);
-            return;
-        }
-    };
 
     // The arena behind this search is out of date from here on. Marked at the
     // START, not on the first batch: a walk can write rows it never emits — the
@@ -462,7 +475,6 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
     // arena that predates them.
     volumes::mark_walked_behind(&target.volume_id);
 
-    let still_covering = walk.covered_by_another_walk().to_vec();
     let attempted_roots = question.frontier.len().saturating_sub(still_covering.len());
     let home_dir = dirs::home_dir().map(|home| home.to_string_lossy().into_owned());
     let judge = WalkJudge {
@@ -545,6 +557,138 @@ struct CoverageQuestion {
     /// The token each answer carried. All of them have to match the arena's for
     /// the covered half to be trustworthy (Decision 12).
     tokens: Vec<CoverageToken>,
+    /// The frontier roots another walk is covering as this was read. This run
+    /// can't have them: one walk per patch of ground, or the two orphan each
+    /// other's subtrees.
+    being_walked: Vec<String>,
+}
+
+/// How often a run waiting on somebody else's walk asks whether it's done.
+///
+/// Short enough that a quick walk isn't followed by an idle pause, long enough
+/// that a walk of a whole NAS doesn't pay for a coverage query every frame. The
+/// query itself is a row lookup on a scope nothing has listed.
+const OTHER_WALK_POLL: std::time::Duration = std::time::Duration::from_millis(200);
+
+/// Everything a live run works out before it emits anything.
+///
+/// Grouped because that is exactly the repeatable part: no row has gone out, so a
+/// run that finds it has nothing to say can do all of it again a moment later
+/// without saying anything twice ([`another_walk_owns_the_whole_answer`]).
+struct Groundwork {
+    /// What the index can't answer for, and which state of it that describes.
+    question: CoverageQuestion,
+    /// What the index CAN answer, ready to emit. `None` when the volume has no
+    /// index at all, or when the run was stopped before the arena landed.
+    half: Option<CoveredHalf>,
+    /// Where the volume is mounted, for the walk's own path work.
+    mount_root: Option<String>,
+}
+
+/// Whether this groundwork is being redone after watching somebody else's walk
+/// end, which is its own reason to trust nothing the arena holds.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum AfterAnotherWalk {
+    No,
+    Yes,
+}
+
+/// Ask the coverage question, load the arena the answer is honored against
+/// (Decision 12: in that order, so the arena holds every row the answer calls
+/// covered), and run the covered half over it.
+///
+/// The covered half is skipped outright for a run somebody stopped while that
+/// arena was loading: the wait is seconds on a big drive, and a scan nobody will
+/// see is the cheapest work there is to not do.
+fn groundwork(
+    query: &SearchQuery,
+    target: &Target,
+    scopes: &[String],
+    run: &LiveRun,
+    after: AfterAnotherWalk,
+) -> Result<Groundwork, (SearchRunError, String)> {
+    let question = coverage_of(&target.volume_id, scopes);
+
+    let loaded = match arena_for_coverage(&target.volume_id, &question.tokens, after) {
+        VolumeLoad::Loaded(loaded) => Some(loaded),
+        // Not an error and not a gap any more: a volume with no index is exactly
+        // what the walk stands one up for. Nothing is covered, so the frontier
+        // (the scope itself) is the whole answer.
+        VolumeLoad::NotIndexed => None,
+        VolumeLoad::Failed(e) => {
+            log::warn!("Live search: volume '{}' isn't searchable: {e}", target.volume_id);
+            return Err((
+                SearchRunError::IndexUnreadable,
+                "Cmdr can't read this drive's index. Re-indexing the drive fixes it.".to_string(),
+            ));
+        }
+    };
+
+    let half = match loaded.as_deref().filter(|_| !run.is_cancelled()) {
+        Some(loaded) => Some(
+            search_covered_half(query, target, loaded, query.limit.min(1000) as usize)
+                .map_err(|message| (SearchRunError::Query, message))?,
+        ),
+        None => None,
+    };
+
+    Ok(Groundwork {
+        mount_root: loaded
+            .as_deref()
+            .and_then(|loaded| loaded.mount_root.clone())
+            .or_else(|| volumes::registry_mount_root(&target.volume_id)),
+        question,
+        half,
+    })
+}
+
+/// Whether the index gave this run nothing at all: no rows, and no count.
+///
+/// Half of the reason to wait for somebody else's walk (the other half is that
+/// the walk request came back holding no ground). ❌ A run the index DID answer
+/// for never waits: those rows are worth showing now, and holding them back for
+/// somebody else's frontier would break Decision 11's promise that a refined
+/// query keeps what its predecessor covered. That run reports `still_covering`
+/// and says the rest arrives later, which is true for it.
+fn index_gave_nothing(ground: &Groundwork) -> bool {
+    ground
+        .half
+        .as_ref()
+        .is_none_or(|half| half.entries.is_empty() && half.total == 0)
+}
+
+/// Whether there IS uncovered ground and every bit of it belongs to a walk
+/// already running — the cheap question the wait loop re-asks.
+fn every_frontier_root_is_another_walks(question: &CoverageQuestion) -> bool {
+    !question.frontier.is_empty()
+        && question
+            .frontier
+            .iter()
+            .all(|root| question.being_walked.contains(root))
+}
+
+/// Wait until the ground this run needs stops being another walk's.
+///
+/// ❌ The coverage question only, never the arena: rebuilding a multi-second
+/// snapshot of a big drive on every poll would cost more than the walk it's
+/// waiting for. The full groundwork runs ONCE, after this returns.
+///
+/// It ends when the ground is free — the other walk finished, or stopped and left
+/// a smaller frontier behind — or when somebody stops this run. ❌ No deadline:
+/// the only alternative to waiting is the empty answer this exists to remove, and
+/// every caller can stop it. Escape and the dialog closing cancel; an agent's wait
+/// is its own transport budget, and past it the reply says the walk is still
+/// going.
+fn wait_for_the_other_walk(volume_id: &str, scopes: &[String], run: &LiveRun, stream: &mut ResultStream<'_>) {
+    log::debug!("Live search: '{volume_id}' is being walked by another search; waiting for it");
+    loop {
+        // Say so every turn: the run is working, and this is the phase it's in.
+        stream.announce(SearchPhase::ResolvingCoverage);
+        std::thread::sleep(OTHER_WALK_POLL);
+        if run.is_cancelled() || !every_frontier_root_is_another_walks(&coverage_of(volume_id, scopes)) {
+            return;
+        }
+    }
 }
 
 /// Ask the index what it can't answer for, over every scope path in turn.
@@ -553,12 +697,14 @@ fn coverage_of(volume_id: &str, scopes: &[String]) -> CoverageQuestion {
         frontier: Vec::new(),
         unreadable: UnreadableGround::default(),
         tokens: Vec::new(),
+        being_walked: Vec::new(),
     };
     for scope in scopes {
         match index().coverage(volume_id, scope, CoverageDimension::Listing) {
             Ok(map) => {
                 question.unreadable.extend(&map);
                 question.frontier.extend(map.frontier);
+                question.being_walked.extend(map.being_walked);
                 question.tokens.push(map.token);
             }
             Err(e) => {
@@ -573,6 +719,8 @@ fn coverage_of(volume_id: &str, scopes: &[String]) -> CoverageQuestion {
     }
     question.frontier.sort_unstable();
     question.frontier.dedup();
+    question.being_walked.sort_unstable();
+    question.being_walked.dedup();
     question.unreadable.settle();
     question
 }
@@ -606,7 +754,7 @@ fn coverage_scopes(target: &Target) -> Vec<String> {
 /// front of nearly every search, which is the regression `volumes::get_loaded`
 /// documents removing once already. What's left uncovered is ordinary index lag,
 /// which search has always had.
-fn arena_for_coverage(volume_id: &str, tokens: &[CoverageToken]) -> VolumeLoad {
+fn arena_for_coverage(volume_id: &str, tokens: &[CoverageToken], after: AfterAnotherWalk) -> VolumeLoad {
     let load = volumes::ensure_volume(volume_id);
     let VolumeLoad::Loaded(ref loaded) = load else {
         return load;
@@ -616,7 +764,11 @@ fn arena_for_coverage(volume_id: &str, tokens: &[CoverageToken]) -> VolumeLoad {
         volumes::take_walked_behind(volume_id);
         return load;
     }
-    if !volumes::take_walked_behind(volume_id) {
+    // A run that WATCHED another walk end doesn't need the mark to know a walk
+    // wrote rows: it waited for that walk, and its own reason for waiting was
+    // that the rows would be there afterwards. The mark is a global one-shot, so
+    // whoever else consumed it must not cost this run the reload.
+    if after == AfterAnotherWalk::No && !volumes::take_walked_behind(volume_id) {
         return load;
     }
     // Loaded strictly after the coverage answer was taken, so it holds every row

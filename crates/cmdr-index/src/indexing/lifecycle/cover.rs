@@ -589,6 +589,7 @@ mod live;
 
 pub(crate) use bootstrap::{NoCoverContext, context_for_walk};
 use live::Claim;
+pub(in crate::indexing) use live::ground_being_walked;
 
 #[cfg(test)]
 mod network_tests;
