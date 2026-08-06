@@ -376,8 +376,12 @@ When the directory has a parent entry shown at index 0, frontend indices are off
 - **MTP move is interleaved copy + delete per file.** Moves involving MTP volumes copy and then delete each file
   individually (not copy-all-then-delete-all). Minimizes duplicates on partial failure: if it fails mid-way, only the
   current file exists in both places. The progress UI shows three stages (Scanning → Copying → Removing source). If copy
-  succeeds but delete fails, the user keeps files in both places (safer than losing data). Rollback is hidden during the
-  delete phase since the copy is already done.
+  succeeds but delete fails, the user keeps files in both places (safer than losing data).
+- **A cross-volume move can't be rolled back at all**, and this dialog doesn't know it yet: it disables Rollback only
+  for a SAME-volume move, so on a cross-volume one it still offers a button whose click only cancels (the driver treats
+  `RollingBack` exactly like `Stopped` and reports `rolled_back: false`). The backend now publishes the real verdict as
+  `supportsRollback` on the operation snapshot, which the Transfers window reads; pointing this dialog at the same flag
+  is the open fix. See `src-tauri/src/file_system/write_operations/DETAILS.md` § "Rollback availability".
 - **Dry-run conflict sampling.** If >200 conflicts, `DryRunResult.conflicts` contains a random sample. Check
   `conflictsSampled: true` and `conflictsTotal` for the exact count.
 - **Progress dialog edge case.** Same-FS move completes so fast that the complete event may fire before the dialog

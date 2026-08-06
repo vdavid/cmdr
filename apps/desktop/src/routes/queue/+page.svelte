@@ -14,6 +14,7 @@
     import {
         cancelOperation,
         cancelOperations,
+        cancelWriteOperation,
         pauseAll,
         pauseOperation,
         resumeAll,
@@ -75,6 +76,21 @@
             await cancelOperation(operationId)
         } catch (error) {
             log.warn('Failed to cancel operation {operationId}: {error}', { operationId, error: String(error) })
+        }
+    }
+
+    /**
+     * Cancel AND undo what the operation already wrote. This is the write-op
+     * intent switch (`cancelWriteOperation(id, rollback = true)`), NOT the
+     * manager-level `cancelOperation`: only the former can ask a running op to
+     * delete its partial destination. The row offers it solely where the
+     * backend's snapshot says the op is reversible.
+     */
+    async function rollbackRow(operationId: string): Promise<void> {
+        try {
+            await cancelWriteOperation(operationId, true)
+        } catch (error) {
+            log.warn('Failed to roll back operation {operationId}: {error}', { operationId, error: String(error) })
         }
     }
 
@@ -224,6 +240,7 @@
                         onPauseResume={() =>
                             void pauseResumeRow(row.snapshot.operationId, row.snapshot.status === 'paused')}
                         onCancel={() => void cancelRow(row.snapshot.operationId)}
+                        onRollback={() => void rollbackRow(row.snapshot.operationId)}
                     />
                 {/each}
             </ul>

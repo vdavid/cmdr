@@ -72,16 +72,20 @@ export function tierClassForUnit(unit: string): string {
  * So a 349-byte file shown as `"0.00 MB"` still tier-colors as `size-bytes` —
  * the user's at-a-glance "how big is this" signal stays meaningful even when
  * every row uses the same fixed unit.
+ *
+ * `opts.rounded` drops the fraction digits, for a live readout where the number
+ * changes several times a second (see `formatFileSizeWithFormat`). It doesn't
+ * apply to `'bytes'` mode, which has no fraction digits to drop.
  */
 export function formatSizeForDisplay(
   bytes: number,
-  opts: { unit: FileSizeUnit; format: FileSizeFormat },
+  opts: { unit: FileSizeUnit; format: FileSizeFormat; rounded?: boolean },
 ): { value: string; tierClass: string }[] {
   if (opts.unit === 'bytes') {
     return formatSizeTriads(bytes)
   }
   const forced = fixedUnitFor(opts.unit)
-  const formatted = formatFileSizeWithFormat(bytes, opts.format, forced ?? undefined)
+  const formatted = formatFileSizeWithFormat(bytes, opts.format, forced ?? undefined, opts.rounded)
   if (forced) {
     return [{ value: formatted, tierClass: sizeTierClasses[dynamicTierIndex(bytes, opts.format)] }]
   }

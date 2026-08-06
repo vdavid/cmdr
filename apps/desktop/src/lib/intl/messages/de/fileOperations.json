@@ -413,10 +413,6 @@
   "@fileOperations.transferProgress.stageScanning": {
     "sourceHash": "474ad81"
   },
-  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Wird kopiert} move {Wird bewegt} compress {Wird komprimiert} delete {Wird gelöscht} other {Wird in den Papierkorb bewegt}}",
-  "@fileOperations.transferProgress.stageActive": {
-    "sourceHash": "f45924a"
-  },
   "fileOperations.transferProgress.warningFileOverFolder": "Das Ziel existiert und ist ein <strong>Ordner</strong>. Du bist dabei, es mit einer <strong>Datei</strong> desselben Namens zu überschreiben. Der gesamte Inhalt des Zielordners würde gelöscht und durch die Datei ersetzt. Was möchtest du tun?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
     "sourceHash": "c560c0f"
@@ -510,9 +506,10 @@
     "sourceHash": "c591f55",
     "sameAsSourceJustification": "Style guide glossary: rollback -> Rollback (kept loanword; MS terminology keeps 'Rollback', standard DE dev/file-op term). Matches the existing rollback strings in the de catalog."
   },
-  "fileOperations.transferProgress.progressSize": "Größe",
-  "@fileOperations.transferProgress.progressSize": {
-    "sourceHash": "1af8519"
+  "fileOperations.transferProgress.progressBytes": "Bytes",
+  "@fileOperations.transferProgress.progressBytes": {
+    "sourceHash": "4d80003",
+    "sameAsSourceJustification": "'Byte(s)' is the German unit noun too (Duden: das Byte, die Bytes); macOS DE uses 'Bytes'."
   },
   "fileOperations.transferProgress.progressItems": "Objekte",
   "@fileOperations.transferProgress.progressItems": {

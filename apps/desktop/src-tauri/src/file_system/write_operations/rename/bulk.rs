@@ -110,6 +110,9 @@ pub(crate) fn start_bulk_rename(
         lanes,
         volume_ids,
         summary,
+        // A rename moves no bytes: cancelling stops before the next name, and
+        // the ones already renamed stay renamed.
+        supports_rollback: false,
     };
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
     let events_for_task = Arc::clone(&events);

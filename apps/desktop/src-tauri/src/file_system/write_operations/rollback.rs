@@ -159,6 +159,9 @@ fn spawn_managed_inverse(
         lanes,
         volume_ids,
         summary: OperationSummaryText::default(),
+        // This IS the reversal. Offering to roll back a rollback would ask the
+        // engine to re-apply what the person just chose to undo.
+        supports_rollback: false,
     };
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(0)));
 

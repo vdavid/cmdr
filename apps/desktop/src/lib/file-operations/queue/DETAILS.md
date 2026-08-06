@@ -41,6 +41,9 @@ spinner and an animated bar; `'paused'` shows a static bar and the Paused label.
 
 - `operations: OperationRow[]` — reactive; each `OperationRow` is
   `{ snapshot: OperationSnapshot, progress: WriteProgressEvent | null }`. Ordered as the backend emits them.
+- `supportsRollback` on each snapshot — whether cancelling can also undo what the op wrote, decided per spawn path in
+  the backend (`write_operations/DETAILS.md` § "Rollback availability"). The row shows Rollback on exactly that set, so
+  this window and the progress dialog can't disagree about which transfers are reversible.
 - `hasRunning: boolean` — any op with `status === 'running'` (gates "Pause all").
 - `hasPaused: boolean` — any op with `status === 'paused'` (gates "Resume all").
 - `init(): Promise<void>` — subscribes to both streams, then seeds from `list_operations`. Subscribe-before-seed so a
@@ -56,6 +59,11 @@ The progress-dialog Queue button and the auto-queue surfacing open the window vi
 store. Don't fork a second opener or store.
 
 ## Row layout
+
+A row's actions are Pause/Resume, Cancel, and — on a reversible op only — Rollback, styled `danger` exactly like the
+progress dialog's, since the same click deletes the same files. Rollback hides again once the op IS rolling back, which
+the row reads off the live `write-progress` phase: rollback is an `OperationIntent`, so the lifecycle status stays
+`running` throughout, and the status cell shows "Rolling back..." instead.
 
 A row is a five-column grid whose chrome (select, type icon, source→dest summary, status, actions) sits on line 1, with
 the shared `../TransferProgressReadout.svelte` spanning line 2 from the summary column to the end. The readout gets the

@@ -26,7 +26,8 @@ Backend: `apps/desktop/src-tauri/src/file_system/write_operations/transfer/CLAUD
   loop: with 50k files that's 5-10 s vs ~1 ms.
 - **Same-volume move disables Rollback and skips the deep scan preview** (source and dest the SAME non-default volume;
   the backend rename-merges server-side, zero-byte, no rollback). `DEFAULT_VOLUME_ID` is excluded, so local→local keeps
-  both. Affordances disable with a tooltip; plain Cancel and the cheap conflict check stay live.
+  both. Affordances disable with a tooltip; plain Cancel and the cheap conflict check stay live. ⚠️ A CROSS-volume move
+  can't roll back either, and this dialog doesn't know yet (the backend now says so via `supports_rollback`): DETAILS.
 - **Speed and ETA are backend-owned, SHARED with the Transfers window** via `../progress-readout.ts` + `$lib/units`. ❌
   No second instantaneous rate here; `ScanThroughput` is SCAN-phase only. The bars themselves are shared too:
   `../TransferProgressReadout.svelte` renders the dual bars, amounts, percents, rates, and time left for BOTH surfaces.
@@ -48,7 +49,7 @@ Backend: `apps/desktop/src-tauri/src/file_system/write_operations/transfer/CLAUD
 - **`data-scan-state` on `.scan-stats`** is E2E's only race-free "counting done" signal; `DeleteDialog` mirrors it.
 - **Compress (the third mode) swaps the conflict-policy UI for a dest-exists overwrite check**, and its auto-confirm
   (MCP) path must NEVER silently overwrite.
-- **MTP move interleaves copy + delete per file**, so Rollback hides during the delete phase.
+- **MTP move interleaves copy + delete per file** (the copy is done once the delete phase starts).
 - **Pause/Resume and the "Paused" title follow the `operations-changed` snapshot status, never `is_running`.** Queue and
   the dialog-scoped F2 are FRONTEND-ONLY: set `backgrounded`, open the queue window, unmount via `onQueue` without
   cancelling — that flag also makes `onDestroy` skip its safety-net cancel.

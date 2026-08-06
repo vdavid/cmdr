@@ -736,15 +736,6 @@
     "screenshot": "conflict-dialog.png"
   },
 
-  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to trash}}",
-  "@fileOperations.transferProgress.stageActive": {
-    "description": "Label of the second step chip in the progress dialog's two-step indicator: the operation in progress, in the -ing form. No trailing ellipsis (this is a step chip, not the title).",
-    "placeholders": {
-      "gerund": "the operation: copy, move, delete, or trash"
-    },
-    "screenshot": "conflict-dialog.png"
-  },
-
   "fileOperations.transferProgress.warningFileOverFolder": "The target exists and is a <strong>folder</strong>. You''re about to overwrite it with a <strong>file</strong> by the same name. All contents of the target folder would be deleted and replaced by the file. What to do?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
     "description": "Red warning shown in the conflict step when a file would replace a same-named folder, deleting the folder's contents. <strong> wraps the emphasized words 'folder' and 'file'. Keep it stark; this is a destructive action.",
@@ -893,10 +884,11 @@
     "screenshot": "conflict-dialog.png"
   },
 
-  "fileOperations.transferProgress.progressSize": "Size",
-  "@fileOperations.transferProgress.progressSize": {
-    "description": "Label for the byte-progress bar in the progress dialog (how many bytes done out of total). Short label.",
-    "screenshot": "conflict-dialog.png"
+  "fileOperations.transferProgress.progressBytes": "Bytes",
+  "@fileOperations.transferProgress.progressBytes": {
+    "description": "Label for the bytes-progress bar in the transfer progress dialog (how many bytes are done out of the total), sitting directly above the file-count bar labelled \"Files\". \"Bytes\" is the unit of data, and pairs with that label; keep it short, it sits in a narrow column.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.progressItems": "Items",

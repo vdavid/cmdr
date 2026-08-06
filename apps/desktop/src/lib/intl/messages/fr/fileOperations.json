@@ -414,10 +414,6 @@
   "@fileOperations.transferProgress.stageScanning": {
     "sourceHash": "474ad81"
   },
-  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Copie} move {Déplacement} compress {Compression} delete {Suppression} other {Placement dans la corbeille}}",
-  "@fileOperations.transferProgress.stageActive": {
-    "sourceHash": "f45924a"
-  },
   "fileOperations.transferProgress.warningFileOverFolder": "La cible existe et c''est un <strong>dossier</strong>. Vous êtes sur le point de l''écraser avec un <strong>fichier</strong> portant le même nom. Tout le contenu du dossier cible serait supprimé et remplacé par le fichier. Que faire ?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
     "sourceHash": "c560c0f"
@@ -510,9 +506,9 @@
   "@fileOperations.transferProgress.conflictRollback": {
     "sourceHash": "c591f55"
   },
-  "fileOperations.transferProgress.progressSize": "Taille",
-  "@fileOperations.transferProgress.progressSize": {
-    "sourceHash": "1af8519"
+  "fileOperations.transferProgress.progressBytes": "Octets",
+  "@fileOperations.transferProgress.progressBytes": {
+    "sourceHash": "4d80003"
   },
   "fileOperations.transferProgress.progressItems": "Éléments",
   "@fileOperations.transferProgress.progressItems": {

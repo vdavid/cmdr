@@ -32,6 +32,7 @@ fn descriptor(op_id: &str, lanes: Vec<&str>) -> OperationDescriptor {
         lanes: lanes.into_iter().map(LaneKey::new).collect(),
         volume_ids: vec![],
         summary: OperationSummaryText::default(),
+        supports_rollback: true,
     }
 }
 
@@ -44,6 +45,7 @@ fn instant_descriptor(op_id: &str, op_type: WriteOperationType, volume_ids: Vec<
         lanes: vec![],
         volume_ids,
         summary: OperationSummaryText::default(),
+        supports_rollback: false,
     }
 }
 
@@ -732,6 +734,7 @@ async fn run_instant_does_not_reserve_a_lane() {
         lanes: vec![LaneKey::new(lane.as_str())],
         volume_ids: vec![],
         summary: OperationSummaryText::default(),
+        supports_rollback: false,
     };
     let h = tokio::spawn(async move {
         manager()

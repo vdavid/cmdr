@@ -271,6 +271,9 @@ fn rename_descriptor(from: &Path, to: &Path, volume_id: &str) -> OperationDescri
             source: Some(name(from)),
             destination: Some(name(to)),
         },
+        // An instant metadata op has no partial state, and no cancel path that
+        // could catch it mid-flight.
+        supports_rollback: false,
     }
 }
 

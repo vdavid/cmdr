@@ -413,10 +413,6 @@
   "@fileOperations.transferProgress.stageScanning": {
     "sourceHash": "474ad81"
   },
-  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Másolás} move {Áthelyezés} compress {Tömörítés} delete {Törlés} other {Áthelyezés a Kukába}}",
-  "@fileOperations.transferProgress.stageActive": {
-    "sourceHash": "f45924a"
-  },
   "fileOperations.transferProgress.warningFileOverFolder": "A cél létezik, és egy <strong>mappa</strong>. Egy azonos nevű <strong>fájllal</strong> készülsz felülírni. A célmappa teljes tartalma törlődne, és a fájl lépne a helyébe. Mi legyen?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
     "sourceHash": "c560c0f"
@@ -509,9 +505,9 @@
   "@fileOperations.transferProgress.conflictRollback": {
     "sourceHash": "c591f55"
   },
-  "fileOperations.transferProgress.progressSize": "Méret",
-  "@fileOperations.transferProgress.progressSize": {
-    "sourceHash": "1af8519"
+  "fileOperations.transferProgress.progressBytes": "Bájtok",
+  "@fileOperations.transferProgress.progressBytes": {
+    "sourceHash": "4d80003"
   },
   "fileOperations.transferProgress.progressItems": "Elemek",
   "@fileOperations.transferProgress.progressItems": {

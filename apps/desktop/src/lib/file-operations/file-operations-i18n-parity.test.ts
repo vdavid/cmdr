@@ -189,14 +189,13 @@ describe('transfer progress dialog chrome (en)', () => {
     expect(tString('fileOperations.transferProgress.titleFlushing')).toBe('Writing the last piece...')
   })
 
-  it('resolves the active-phase title and stage labels per operation', () => {
+  it('resolves the active-phase title per operation, and the scanning banner', () => {
     expect(t('fileOperations.transferProgress.titleActive', { gerund: 'copy' })).toBe('Copying...')
     expect(t('fileOperations.transferProgress.titleActive', { gerund: 'move' })).toBe('Moving...')
     expect(t('fileOperations.transferProgress.titleActive', { gerund: 'delete' })).toBe('Deleting...')
     expect(t('fileOperations.transferProgress.titleActive', { gerund: 'trash' })).toBe('Moving to trash...')
+    // The only phase banner left: while it copies, the title says so already.
     expect(tString('fileOperations.transferProgress.stageScanning')).toBe('Scanning')
-    expect(t('fileOperations.transferProgress.stageActive', { gerund: 'copy' })).toBe('Copying')
-    expect(t('fileOperations.transferProgress.stageActive', { gerund: 'trash' })).toBe('Moving to trash')
   })
 
   it('resolves the conflict comparison labels and annotations', () => {
@@ -240,7 +239,8 @@ describe('transfer progress dialog chrome (en)', () => {
   })
 
   it('resolves the progress labels, aria, ETA, and SMB note', () => {
-    expect(tString('fileOperations.transferProgress.progressSize')).toBe('Size')
+    // "Bytes", not "Size": it pairs with the "Files" bar right under it.
+    expect(tString('fileOperations.transferProgress.progressBytes')).toBe('Bytes')
     expect(tString('fileOperations.transferProgress.progressItems')).toBe('Items')
     expect(tString('fileOperations.transferProgress.progressFiles')).toBe('Files')
     expect(tString('fileOperations.transferProgress.sizeProgressAria')).toBe('Size progress')

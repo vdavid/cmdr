@@ -413,10 +413,6 @@
   "@fileOperations.transferProgress.stageScanning": {
     "sourceHash": "474ad81"
   },
-  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Kopierar} move {Flyttar} compress {Komprimerar} delete {Raderar} other {Flyttar till papperskorgen}}",
-  "@fileOperations.transferProgress.stageActive": {
-    "sourceHash": "f45924a"
-  },
   "fileOperations.transferProgress.warningFileOverFolder": "Målet finns och är en <strong>mapp</strong>. Du är på väg att skriva över det med en <strong>fil</strong> med samma namn. Allt innehåll i målmappen skulle raderas och ersättas av filen. Vad vill du göra?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
     "sourceHash": "c560c0f"
@@ -509,9 +505,9 @@
   "@fileOperations.transferProgress.conflictRollback": {
     "sourceHash": "c591f55"
   },
-  "fileOperations.transferProgress.progressSize": "Storlek",
-  "@fileOperations.transferProgress.progressSize": {
-    "sourceHash": "1af8519"
+  "fileOperations.transferProgress.progressBytes": "Byte",
+  "@fileOperations.transferProgress.progressBytes": {
+    "sourceHash": "4d80003"
   },
   "fileOperations.transferProgress.progressItems": "Objekt",
   "@fileOperations.transferProgress.progressItems": {

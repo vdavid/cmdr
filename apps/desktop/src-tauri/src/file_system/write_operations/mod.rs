@@ -227,6 +227,10 @@ where
         lanes,
         volume_ids,
         summary,
+        // A local copy/move writes NEW files it can delete again on rollback
+        // (`CopyTransaction` / `MoveTransaction`). A delete or trash has nothing
+        // to put back, and everything else that reaches here is neither.
+        supports_rollback: matches!(operation_type, WriteOperationType::Copy | WriteOperationType::Move),
     };
 
     let events_for_op = Arc::clone(&events);
@@ -519,6 +523,8 @@ pub async fn delete_files_start(
             lanes: vec![lane],
             volume_ids: vec![volume_id_str.clone()],
             summary: path_summary(&sources, None),
+            // Deleted is deleted; there's nothing for a rollback to put back.
+            supports_rollback: false,
         };
 
         let events_for_op = Arc::clone(&events);

@@ -24,6 +24,7 @@ function snapshot(
     status,
     source: '/src/file',
     destination: '/dst/file',
+    supportsRollback: true,
     ...over,
   }
 }

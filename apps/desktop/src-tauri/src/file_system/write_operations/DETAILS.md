@@ -261,7 +261,35 @@ Independently, the archive-edit tests still give each op its OWN lane (`archive_
 
 ### Lifecycle status and `operations-changed`
 
-`LifecycleStatus` (Queued/Running/Paused/Done/Cancelled/Failed) lives on the manager record. Admission and settle set Queued/Running and removal-on-terminal; the pause/resume path sets the `Paused`↔`Running` flip (see [Pause / resume](#pause--resume)). It is distinct from `WriteOperationPhase` (the progress phase) and `OperationIntent` (the cancel/rollback machine). The `operations-changed` typed event carries a THIN snapshot (`Vec<OperationSnapshot>`: id, type, status, source/dest summary), emitted from `spawn_managed` / `on_settled` / `cancel_if_queued` / `set_paused`. It deliberately excludes 200 ms progress — the queue window reads the per-file `write-progress` stream for live bars. `init_operation_event_emitter(app)` wires the emitter at startup (`lib.rs`), mirroring `init_busy_volume_emitter`.
+`LifecycleStatus` (Queued/Running/Paused/Done/Cancelled/Failed) lives on the manager record. The snapshot also carries
+`supports_rollback` (see below). Admission and settle set Queued/Running and removal-on-terminal; the pause/resume path sets the `Paused`↔`Running` flip (see [Pause / resume](#pause--resume)). It is distinct from `WriteOperationPhase` (the progress phase) and `OperationIntent` (the cancel/rollback machine). The `operations-changed` typed event carries a THIN snapshot (`Vec<OperationSnapshot>`: id, type, status, source/dest summary), emitted from `spawn_managed` / `on_settled` / `cancel_if_queued` / `set_paused`. It deliberately excludes 200 ms progress — the queue window reads the per-file `write-progress` stream for live bars. `init_operation_event_emitter(app)` wires the emitter at startup (`lib.rs`), mirroring `init_busy_volume_emitter`.
+
+### Rollback availability (`supports_rollback`)
+
+`OperationDescriptor::supports_rollback` says whether cancelling this op can also UNDO what it has written
+(`cancel_write_operation(id, rollback = true)`), and it rides through to `OperationSnapshot` so the queue window can
+offer Rollback on exactly the rows the progress dialog would. It's on the snapshot because the Transfers window is its
+own webview: it never sees the source/destination volume ids the dialog decides from, and two surfaces disagreeing about
+whether an operation is reversible is the kind of drift that ends with a button that lies.
+
+Every construction site states its own verdict (a struct literal, so a new spawn path can't forget to decide):
+
+- **`true`** — local copy/move via `start_write_operation` (`CopyTransaction` deletes the copies it made;
+  `MoveTransaction` renames them back), and volume copy (`volume/cleanup.rs` deletes the destination copies).
+- **`false`** — delete and trash (the files are already gone; there's nothing to put back); a SAME-volume move (a
+  server-side rename-merge that stops without reversing); a CROSS-volume move, which copies and deletes the source per
+  file and whose driver treats `RollingBack` exactly like `Stopped`, reporting `rolled_back: false`; archive edits (an
+  all-or-nothing temp+rename rewrite); instant metadata ops; and the operation-log rollback's own inverse op (rolling
+  back a rollback would re-apply what the person just undid).
+
+⚠️ The progress DIALOG doesn't read this flag yet: it decides from the volume ids it holds, disabling Rollback only for
+a same-volume move. So it still offers Rollback on a cross-volume move, where the click only cancels. Pointing the
+dialog at this flag (or teaching the cross-volume move driver to reverse) is the fix; until then, the Transfers window
+is the honest one.
+
+The flag is a property of the op's STRATEGY, so it never changes over the op's life. Whether Rollback is offered *right
+now* is the UI's call on top of it: the queue row also requires a running/paused op that isn't already rolling back
+(which it reads from the live `write-progress` phase, since rollback is an `OperationIntent`, not a `LifecycleStatus`).
 
 ### IPC
 

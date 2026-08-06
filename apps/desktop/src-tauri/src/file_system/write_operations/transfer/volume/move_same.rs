@@ -102,6 +102,10 @@ pub(super) async fn move_within_same_volume(
         lanes: vec![lane],
         volume_ids: vec![volume_id],
         summary,
+        // A same-volume move is a server-side rename-merge with no rollback:
+        // it stops without reversing and reports `rolled_back: false`. The
+        // progress dialog disables Rollback for exactly this case.
+        supports_rollback: false,
     };
 
     let events_for_op = Arc::clone(&events);

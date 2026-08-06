@@ -158,6 +158,12 @@ pub async fn move_between_volumes(
         lanes,
         volume_ids: vec![source_volume_id, dest_volume_id],
         summary,
+        // A cross-volume move copies and deletes the source PER FILE, and this
+        // driver never reverses: its `PostLoopIntent::Cancelled` arm treats
+        // Stopped and RollingBack alike, leaving what's at the destination
+        // alone and reporting `rolled_back: false` (see the arm below). Undoing
+        // it would also mean re-creating source files it has already deleted.
+        supports_rollback: false,
     };
 
     let events_for_op = Arc::clone(&events);

@@ -113,6 +113,8 @@ pub(crate) struct OperationDescriptor {
     pub volume_ids: Vec<String>,
     /// Short source→dest summary for the queue window. Best-effort.
     pub summary: OperationSummaryText,
+    /// Whether cancelling this op can also UNDO what it wrote. DETAILS § "Rollback availability".
+    pub supports_rollback: bool,
 }
 
 /// Best-effort human-readable source/destination summary for the queue window.
@@ -152,6 +154,8 @@ pub struct OperationSnapshot {
     pub status: LifecycleStatus,
     pub source: Option<String>,
     pub destination: Option<String>,
+    /// See [`OperationDescriptor::supports_rollback`].
+    pub supports_rollback: bool,
 }
 
 /// Typed `operations-changed` Tauri event carrying the thin registry snapshot
@@ -209,6 +213,7 @@ impl ManagerInner {
                 status: rec.status,
                 source: rec.descriptor.summary.source.clone(),
                 destination: rec.descriptor.summary.destination.clone(),
+                supports_rollback: rec.descriptor.supports_rollback,
             })
             .collect()
     }

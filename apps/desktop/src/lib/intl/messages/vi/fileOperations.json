@@ -412,10 +412,6 @@
   "@fileOperations.transferProgress.stageScanning": {
     "sourceHash": "474ad81"
   },
-  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Đang sao chép} move {Đang di chuyển} compress {Đang nén} delete {Đang xóa} other {Đang chuyển vào thùng rác}}",
-  "@fileOperations.transferProgress.stageActive": {
-    "sourceHash": "f45924a"
-  },
   "fileOperations.transferProgress.warningFileOverFolder": "Đích đã tồn tại và là một <strong>thư mục</strong>. Bạn sắp ghi đè nó bằng một <strong>tệp</strong> trùng tên. Toàn bộ nội dung của thư mục đích sẽ bị xóa và thay bằng tệp đó. Làm gì đây?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
     "sourceHash": "c560c0f"
@@ -508,9 +504,9 @@
   "@fileOperations.transferProgress.conflictRollback": {
     "sourceHash": "c591f55"
   },
-  "fileOperations.transferProgress.progressSize": "Kích thước",
-  "@fileOperations.transferProgress.progressSize": {
-    "sourceHash": "1af8519"
+  "fileOperations.transferProgress.progressBytes": "Byte",
+  "@fileOperations.transferProgress.progressBytes": {
+    "sourceHash": "4d80003"
   },
   "fileOperations.transferProgress.progressItems": "Mục",
   "@fileOperations.transferProgress.progressItems": {

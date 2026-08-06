@@ -411,10 +411,6 @@
   "@fileOperations.transferProgress.stageScanning": {
     "sourceHash": "474ad81"
   },
-  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {正在拷贝} move {正在移动} compress {正在压缩} delete {正在删除} other {正在移到废纸篓}}",
-  "@fileOperations.transferProgress.stageActive": {
-    "sourceHash": "f45924a"
-  },
   "fileOperations.transferProgress.warningFileOverFolder": "目标已存在，是一个<strong>文件夹</strong>。你即将用同名的<strong>文件</strong>覆盖它。目标文件夹的全部内容会被删除，并由该文件取代。要怎么做？",
   "@fileOperations.transferProgress.warningFileOverFolder": {
     "sourceHash": "c560c0f"
@@ -507,9 +503,9 @@
   "@fileOperations.transferProgress.conflictRollback": {
     "sourceHash": "c591f55"
   },
-  "fileOperations.transferProgress.progressSize": "大小",
-  "@fileOperations.transferProgress.progressSize": {
-    "sourceHash": "1af8519"
+  "fileOperations.transferProgress.progressBytes": "字节",
+  "@fileOperations.transferProgress.progressBytes": {
+    "sourceHash": "4d80003"
   },
   "fileOperations.transferProgress.progressItems": "项目",
   "@fileOperations.transferProgress.progressItems": {

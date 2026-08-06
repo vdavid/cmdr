@@ -79,22 +79,30 @@ export function unitLabel(unit: 'kB' | 'MB' | 'GB', format: FileSizeFormat): str
  * `bytes` mode is not handled here — callers route raw-byte rendering through
  * `formatSizeTriads` for the colored triad treatment.
  *
+ * `rounded` drops the fraction digits ("7 GB", not "7.09 GB"). It's for a
+ * LIVE readout, where a number that changes several times a second is easier to
+ * read coarse — the transfer progress bars are the case it exists for. A size
+ * someone compares or copies keeps its decimals.
+ *
  * @param byteCount Number of bytes
  * @param format 'binary' uses 1024-based (KB/MB/GB), 'si' uses 1000-based (kB/MB/GB)
  * @param forceUnit Optional fixed unit to render in
+ * @param rounded Render whole units, no fraction digits
  */
 export function formatFileSizeWithFormat(
   byteCount: number,
   format: FileSizeFormat,
   forceUnit?: 'kB' | 'MB' | 'GB',
+  rounded = false,
 ): string {
   const base = baseFor(format)
   const units = format === 'binary' ? binaryUnits : siUnits
+  const formatScaled = rounded ? formatSizeInteger : formatSizeDecimal
 
   if (forceUnit) {
     const power = forceUnit === 'kB' ? 1 : forceUnit === 'MB' ? 2 : 3
     const value = byteCount / base ** power
-    return `${formatSizeDecimal(value)} ${unitLabel(forceUnit, format)}`
+    return `${formatScaled(value)} ${unitLabel(forceUnit, format)}`
   }
 
   let value = byteCount
@@ -105,8 +113,8 @@ export function formatFileSizeWithFormat(
   }
 
   // Sub-base values render as a bare integer (matching the old `String(value)`);
-  // anything scaled into kB+ shows two fraction digits.
-  const valueStr = unitIndex === 0 ? formatSizeInteger(value) : formatSizeDecimal(value)
+  // anything scaled into kB+ shows two fraction digits unless `rounded`.
+  const valueStr = unitIndex === 0 ? formatSizeInteger(value) : formatScaled(value)
   return `${valueStr} ${units[unitIndex]}`
 }
 

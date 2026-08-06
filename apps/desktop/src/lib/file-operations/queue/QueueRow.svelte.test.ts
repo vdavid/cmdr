@@ -17,6 +17,7 @@ function buildRow(
   status: OperationSnapshot['status'],
   opType: OperationSnapshot['operationType'] = 'copy',
   progress: WriteProgressEvent | null = null,
+  supportsRollback = false,
 ): OperationRow {
   return {
     snapshot: {
@@ -25,6 +26,7 @@ function buildRow(
       status,
       source: '/Users/me/Documents/report.pdf',
       destination: '/Volumes/Backup/report.pdf',
+      supportsRollback,
     },
     progress,
     etaSecondsDisplay: progress?.etaSeconds == null ? null : seconds(progress.etaSeconds),
@@ -34,11 +36,28 @@ function buildRow(
 let target: HTMLElement
 let instance: ReturnType<typeof mount> | undefined
 
-function render(props: ComponentProps<typeof QueueRow>) {
+/** The row's callbacks default to no-ops, so each test names only the ones it
+ *  asserts on. */
+function render(props: Partial<ComponentProps<typeof QueueRow>> & { row: OperationRow }) {
   target = document.createElement('ul')
   document.body.appendChild(target)
-  instance = mount(QueueRow, { target, props })
+  instance = mount(QueueRow, {
+    target,
+    props: {
+      selected: false,
+      onToggleSelect: () => {},
+      onPauseResume: () => {},
+      onCancel: () => {},
+      onRollback: () => {},
+      ...props,
+    },
+  })
   flushSync()
+}
+
+/** The Rollback button, found by its label (it carries no aria-label). */
+function rollbackButton(): HTMLButtonElement | null {
+  return [...target.querySelectorAll('button')].find((b) => b.textContent.includes('Rollback')) ?? null
 }
 
 beforeEach(() => {
@@ -151,6 +170,44 @@ describe('QueueRow', () => {
       expect(label).toBe(expected)
       if (instance) void unmount(instance)
     }
+  })
+
+  it('offers Rollback only where the backend says the op can be reversed', () => {
+    const onRollback = vi.fn()
+    render({ row: buildRow('running', 'copy', null, true), onRollback })
+    rollbackButton()?.click()
+    expect(onRollback).toHaveBeenCalledOnce()
+
+    // A same-volume move / delete / trash reports `supportsRollback: false`;
+    // offering it would promise an undo the backend can't perform.
+    if (instance) void unmount(instance)
+    render({ row: buildRow('running', 'move', null, false) })
+    expect(rollbackButton()).toBeNull()
+  })
+
+  it('a queued op has no Rollback: nothing has been written to undo', () => {
+    render({ row: buildRow('queued', 'copy', null, true) })
+    expect(target.querySelector('[aria-label="Cancel this transfer"]')).not.toBeNull()
+    expect(rollbackButton()).toBeNull()
+  })
+
+  it('a rolling-back op says so and drops Rollback, keeping Cancel to stop it', () => {
+    // Rollback is an INTENT, not a lifecycle state: the snapshot still says
+    // `running`, and only the live progress phase reveals it.
+    const progress: WriteProgressEvent = {
+      operationId: 'op-1',
+      operationType: 'copy',
+      phase: 'rolling_back',
+      currentFile: 'report.pdf',
+      filesDone: 1,
+      filesTotal: 4,
+      bytesDone: 25,
+      bytesTotal: 100,
+    }
+    render({ row: buildRow('running', 'copy', progress, true) })
+    expect(target.querySelector('.status-text')?.textContent.trim()).toBe('Rolling back...')
+    expect(rollbackButton()).toBeNull()
+    expect(target.querySelector('[aria-label="Cancel this transfer"]')).not.toBeNull()
   })
 
   it('exposes the lifecycle status as a data attribute for E2E', () => {

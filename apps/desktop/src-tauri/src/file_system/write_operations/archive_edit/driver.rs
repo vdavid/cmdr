@@ -125,6 +125,9 @@ pub(crate) async fn archive_edit_start(
         // Mark the parent drive busy while editing (the manager drops `root`).
         volume_ids: vec![request.parent_volume_id.clone()],
         summary: request.summary,
+        // A zip edit is a whole-archive temp+rename rewrite: it either lands or
+        // it doesn't, so there's no half-written state to reverse.
+        supports_rollback: false,
     };
 
     let events_for_op = Arc::clone(&events);

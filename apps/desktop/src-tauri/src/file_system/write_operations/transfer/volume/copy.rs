@@ -199,6 +199,9 @@ pub async fn copy_between_volumes(
         lanes,
         volume_ids: vec![source_volume_id, dest_volume_id],
         summary,
+        // Every file this writes is a NEW one at the destination, so cancelling
+        // with rollback can delete them again (`cleanup.rs`).
+        supports_rollback: true,
     };
 
     // Deferred start: the manager spawns this only once both lanes are free.

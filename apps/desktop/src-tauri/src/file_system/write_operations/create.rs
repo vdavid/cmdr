@@ -247,6 +247,9 @@ pub(super) fn instant_descriptor(
             source: Some(name.to_string()),
             destination: None,
         },
+        // An instant metadata op has no partial state, and no cancel path that
+        // could catch it mid-flight.
+        supports_rollback: false,
     }
 }
 

@@ -413,10 +413,6 @@
   "@fileOperations.transferProgress.stageScanning": {
     "sourceHash": "474ad81"
   },
-  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Bezig met kopiëren} move {Bezig met verplaatsen} compress {Bezig met comprimeren} delete {Bezig met verwijderen} other {Naar prullenmand verplaatsen}}",
-  "@fileOperations.transferProgress.stageActive": {
-    "sourceHash": "f45924a"
-  },
   "fileOperations.transferProgress.warningFileOverFolder": "Het doel bestaat en is een <strong>map</strong>. Je staat op het punt het te overschrijven met een <strong>bestand</strong> met dezelfde naam. De volledige inhoud van de doelmap zou worden verwijderd en vervangen door het bestand. Wat wil je doen?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
     "sourceHash": "c560c0f"
@@ -509,9 +505,10 @@
   "@fileOperations.transferProgress.conflictRollback": {
     "sourceHash": "c591f55"
   },
-  "fileOperations.transferProgress.progressSize": "Grootte",
-  "@fileOperations.transferProgress.progressSize": {
-    "sourceHash": "1af8519"
+  "fileOperations.transferProgress.progressBytes": "Bytes",
+  "@fileOperations.transferProgress.progressBytes": {
+    "sourceHash": "4d80003",
+    "sameAsSourceJustification": "'Byte(s)' is the Dutch unit noun too (Van Dale: de byte, de bytes); macOS NL uses 'Bytes'."
   },
   "fileOperations.transferProgress.progressItems": "Onderdelen",
   "@fileOperations.transferProgress.progressItems": {

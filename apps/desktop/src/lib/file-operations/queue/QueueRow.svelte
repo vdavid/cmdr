@@ -17,9 +17,12 @@
         onToggleSelect: () => void
         onPauseResume: () => void
         onCancel: () => void
+        /** Cancel AND delete what this op has already written. Offered only on
+         *  rows the backend says can be reversed (`supportsRollback`). */
+        onRollback: () => void
     }
 
-    const { row, selected, onToggleSelect, onPauseResume, onCancel }: Props = $props()
+    const { row, selected, onToggleSelect, onPauseResume, onCancel, onRollback }: Props = $props()
 
     const snapshot = $derived(row.snapshot)
     const progress = $derived(row.progress)
@@ -35,8 +38,22 @@
 
     const typeIcon = $derived(operationTypeIcon(snapshot.operationType))
 
+    /** The backend switched this op to undoing what it wrote. The lifecycle
+     *  status stays `running` throughout (rollback is an INTENT, not a
+     *  lifecycle state), so the live progress phase is the only signal. */
+    const isRollingBack = $derived(progress?.phase === 'rolling_back')
+
+    /** Rollback is offered on exactly the operations the backend can reverse
+     *  (`supportsRollback`), and only while there's still something running to
+     *  reverse. Same affordance the progress dialog shows, same wording. */
+    const canRollback = $derived(snapshot.supportsRollback && (isRunning || isPaused) && !isRollingBack)
+
     const label = $derived(tString('queue.row.label', { type: snapshot.operationType }))
-    const statusLabel = $derived(tString('queue.row.status', { status }))
+    const statusLabel = $derived(
+        isRollingBack
+            ? tString('fileOperations.transferProgress.titleRollingBack')
+            : tString('queue.row.status', { status }),
+    )
 
     /** The dual-bar readout shows once there's something to fill either bar.
      *  Instant ops (rename, create folder/file) emit no `write-progress` at all,
@@ -120,6 +137,18 @@
                     {tString('queue.row.cancel')}
                 </span>
             </Button>
+        {/if}
+        {#if canRollback}
+            <!-- Danger, like the progress dialog's: the same click deletes the
+                 same files, so it can't read as gentler here. -->
+            <span use:tooltip={tString('fileOperations.transferProgress.rollbackTooltip')}>
+                <Button variant="danger" size="mini" onclick={onRollback}>
+                    <span class="btn-inner">
+                        <Icon name="rotate-ccw" size={13} />
+                        {tString('fileOperations.transferProgress.conflictRollback')}
+                    </span>
+                </Button>
+            </span>
         {/if}
     </div>
 

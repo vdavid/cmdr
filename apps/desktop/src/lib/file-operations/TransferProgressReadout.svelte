@@ -1,6 +1,6 @@
 <!--
-    The dual-bar progress readout: a size bar and a count bar, each with its
-    done/total, percent, and rate, plus one time-left cell shared by both.
+    The dual-bar progress readout: a bytes bar and a count bar, each with its
+    done/total, percent, and rate, over one time-left line shared by both.
 
     ONE widget serves both surfaces that show a running write operation — the
     copy/move/delete progress dialog and the Transfers window's rows — so the two
@@ -10,9 +10,9 @@
 
     Every readout cell is a FIXED-width column sized for its own worst case, so
     the bars' width follows the window and nothing shifts as digits come and go
-    ("9.99 GB" → "10.00 GB", "99%" → "100%"). The time cell right-aligns for the
-    same reason: the phrase switches between "1h 8m left" and "56m 24s left" as
-    an estimate firms up, and only its left edge may move.
+    ("9 GB" → "10 GB", "(99%)" → "(100%)"). The time left gets its own row under
+    the bars, which both keeps the bars wide and lets the estimate switch between
+    "1h 8m left" and "56m 24s left" without moving anything above it.
 -->
 <script lang="ts">
     import ProgressBar from '$lib/ui/ProgressBar.svelte'
@@ -25,7 +25,7 @@
 
     interface Props {
         bytesDone: number
-        /** Zero (unknown total) hides the size row; the count row always shows. */
+        /** Zero (unknown total) hides the bytes row; the count row always shows. */
         bytesTotal: number
         filesDone: number
         filesTotal: number
@@ -58,7 +58,7 @@
 
     const isCompact = $derived(density === 'compact')
 
-    const hasSizeRow = $derived(bytesTotal > 0)
+    const hasBytesRow = $derived(bytesTotal > 0)
     const bytePercent = $derived(calculatePercentage(bytesDone, bytesTotal))
     const filePercent = $derived(calculatePercentage(filesDone, filesTotal))
 
@@ -87,71 +87,55 @@
 </script>
 
 <div class="progress-readout" class:compact={isCompact}>
-    <div class="bars">
-        {#if hasSizeRow}
-            {#if !isCompact}
-                <span class="bar-label">{tString('fileOperations.transferProgress.progressSize')}</span>
-            {/if}
-            <ProgressBar
-                value={bytesDone / bytesTotal}
-                size={isCompact ? 'sm' : 'md'}
-                ariaLabel={tString('fileOperations.transferProgress.sizeProgressAria')}
-            />
-            <span class="amount"><Size bytes={bytesDone} /> / <Size bytes={bytesTotal} /></span>
-            <span class="percent">{formatNumber(bytePercent)}%</span>
-            <span class="rate">
-                {#if byteRate !== null}<Trans
-                        key="fileOperations.shared.byteRate"
-                        snippets={{ size: byteRateSize }}
-                    />{/if}
-            </span>
-        {/if}
-
+    {#if hasBytesRow}
         {#if !isCompact}
-            <span class="bar-label">{countLabel}</span>
+            <span class="bar-label">{tString('fileOperations.transferProgress.progressBytes')}</span>
         {/if}
         <ProgressBar
-            value={filesTotal > 0 ? filesDone / filesTotal : 0}
+            value={bytesDone / bytesTotal}
             size={isCompact ? 'sm' : 'md'}
-            ariaLabel={tString('fileOperations.transferProgress.fileProgressAria')}
+            ariaLabel={tString('fileOperations.transferProgress.sizeProgressAria')}
         />
-        <span class="amount">{formatNumber(filesDone)} / {formatNumber(filesTotal)}</span>
-        <span class="percent">{formatNumber(filePercent)}%</span>
-        <span class="rate">{fileRateText ?? ''}</span>
-    </div>
+        <span class="amount"><Size bytes={bytesDone} rounded /> / <Size bytes={bytesTotal} rounded /></span>
+        <span class="percent">({formatNumber(bytePercent)}%)</span>
+        <span class="rate">
+            {#if byteRate !== null}<Trans key="fileOperations.shared.byteRate" snippets={{ size: byteRateSize }} />{/if}
+        </span>
+    {/if}
 
-    <!-- Rendered even while empty: the cell holds its width so the bars don't
-         resize the moment the estimator warms up and the text appears. -->
+    {#if !isCompact}
+        <span class="bar-label">{countLabel}</span>
+    {/if}
+    <ProgressBar
+        value={filesTotal > 0 ? filesDone / filesTotal : 0}
+        size={isCompact ? 'sm' : 'md'}
+        ariaLabel={tString('fileOperations.transferProgress.fileProgressAria')}
+    />
+    <span class="amount">{formatNumber(filesDone)} / {formatNumber(filesTotal)}</span>
+    <span class="percent">({formatNumber(filePercent)}%)</span>
+    <span class="rate">{fileRateText ?? ''}</span>
+
+    <!-- Rendered even while empty (see `.time:empty` below): the line holds its
+         height so the readout doesn't grow a row, and shove everything under it
+         down, the moment the estimator warms up. -->
     <span class="time" class:stalled={stall !== null}>{timeText ?? ''}</span>
 </div>
 
-{#snippet byteRateSize(children: import('svelte').Snippet)}<Size bytes={byteRate ?? 0} />{@render children()}{/snippet}
+{#snippet byteRateSize(children: import('svelte').Snippet)}<Size bytes={byteRate ?? 0} rounded />{@render children()}{/snippet}
 
 <style>
     .progress-readout {
         /* Column widths in `ch` (the digit width of the current font), each
-           sized for the widest string that column can hold: "999.99 GB /
-           999.99 GB", "100%", "999.99 MB/s", "59m 59s left". `minmax` rather
-           than a hard width so a rarer outlier (a terabyte pair, a stall
-           notice) grows instead of clipping. */
-        --spacing-readout-amount: 20ch;
-        --spacing-readout-percent: 5.5ch;
-        --spacing-readout-rate: 11ch;
-        --spacing-readout-time: 12ch;
+           sized for the widest string that column can hold: "999 GB / 999 GB",
+           "(100%)", "999 MB/s". `minmax` rather than a hard width so a rarer
+           outlier (a byte-scale pair) grows instead of clipping. */
+        --spacing-readout-amount: 16ch;
+        --spacing-readout-percent: 6.5ch;
+        --spacing-readout-rate: 9ch;
         /* Below this the bar reads as a smudge rather than progress, so it's
            the window's min width that gives way, not the bar. */
         --spacing-readout-bar-min: 80px;
 
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-        font-size: var(--font-size-sm);
-        font-variant-numeric: tabular-nums;
-    }
-
-    .bars {
-        flex: 1;
-        min-width: 0;
         display: grid;
         grid-template-columns:
             auto
@@ -161,23 +145,21 @@
             minmax(var(--spacing-readout-rate), auto);
         align-items: center;
         gap: var(--spacing-xs) var(--spacing-sm);
+        font-size: var(--font-size-sm);
+        font-variant-numeric: tabular-nums;
     }
 
     /* A list row drops the row labels: the units in the amounts already say
        which bar is which, and the space buys back bar width. */
-    .compact .bars {
+    .progress-readout.compact {
+        --spacing-readout-bar-min: 64px;
+
         grid-template-columns:
             minmax(var(--spacing-readout-bar-min), 1fr)
             minmax(var(--spacing-readout-amount), auto)
             minmax(var(--spacing-readout-percent), auto)
             minmax(var(--spacing-readout-rate), auto);
-        gap: var(--spacing-xs);
-    }
-
-    .compact {
-        --spacing-readout-bar-min: 64px;
-
-        gap: var(--spacing-xs);
+        gap: var(--spacing-xxs) var(--spacing-xs);
     }
 
     .bar-label {
@@ -186,24 +168,26 @@
 
     .amount,
     .percent,
-    .rate,
-    .time {
+    .rate {
         white-space: nowrap;
         text-align: right;
-    }
-
-    .amount,
-    .percent {
         color: var(--color-text-secondary);
     }
 
-    .rate {
-        color: var(--color-text-secondary);
-    }
-
+    /* Its own row under the bars: the bars get the width back, and an estimate
+       firming up from "1h 8m left" to "56m 24s left" moves nothing else. */
     .time {
-        min-width: var(--spacing-readout-time);
+        grid-column: 1 / -1;
+        justify-self: end;
+        white-space: nowrap;
         color: var(--color-text-tertiary);
+    }
+
+    /* A no-break space keeps the empty line's box, so the readout's height is
+       the same before and after the estimator has something to say. A CSS
+       escape, not an invisible character in the markup. */
+    .time:empty::before {
+        content: '\a0';
     }
 
     /* A stalled readout is the one thing on the row worth noticing. */

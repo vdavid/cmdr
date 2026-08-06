@@ -26,23 +26,32 @@ temp+rename rewrite), surfaced through the same transfer/queue UI as any write:
 
 ## `TransferProgressReadout.svelte`
 
-The dual-bar readout — a size bar and a count bar, each with its amount, percent, and rate, plus one time-left cell — is
-ONE component rendered by both surfaces that show a running write op: `TransferProgressDialog` (copy/move/delete/trash)
-and the Transfers window's `QueueRow`. It owns layout only; the numbers are single-sourced by `progress-readout.ts`
-(speed, ETA) and `$lib/units` (text), and the strings by the `fileOperations.transferProgress.*` catalog keys.
+The dual-bar readout — a bytes bar and a count bar, each with its amount, percent, and rate, over one shared time-left
+line — is ONE component rendered by both surfaces that show a running write op: `TransferProgressDialog`
+(copy/move/delete/trash) and the Transfers window's `QueueRow`. It owns layout only; the numbers are single-sourced by
+`progress-readout.ts` (speed, ETA) and `$lib/units` (text), and the strings by the `fileOperations.transferProgress.*`
+catalog keys.
 
-- **Two densities, one layout.** `comfortable` (the dialog) labels each bar "Size" / "Files" (or "Items" for trash);
+- **Two densities, one layout.** `comfortable` (the dialog) labels each bar "Bytes" / "Files" (or "Items" for trash);
   `compact` (a list row) drops the labels — the units in the amounts already say which bar is which — and takes the 4 px
   bar. Nothing else differs, so the two surfaces can't drift apart in what they show.
-- **Every readout cell is a fixed-width column**, sized in `ch` for the widest string it can hold ("999.99 GB / 999.99
-  GB", "100%", "999.99 MB/s", "59m 59s left"). This is the point of the component, not a detail: the bars' width then
-  depends only on the window, and nothing shifts as digits come and go ("9.99 GB" → "10.00 GB", "99%" → "100%", a
-  minute-boundary ETA dropping its seconds). The columns are `minmax(…, auto)` so a rarer outlier (a terabyte pair, a
-  stall notice) grows instead of clipping. The time cell renders even while empty, so the estimator warming up doesn't
-  resize the bars.
+- **Every readout cell is a fixed-width column**, sized in `ch` for the widest string it can hold ("999 GB / 999 GB",
+  "(100%)", "999 MB/s"). This is the point of the component, not a detail: the bars' width then depends only on the
+  window, and nothing shifts as digits come and go. The columns are `minmax(…, auto)` so a rarer outlier (a byte-scale
+  pair) grows instead of clipping.
+- **Live sizes are ROUNDED** (`<Size rounded>`, "7 GB" not "7.09 GB"), amounts and speed alike. A number that changes
+  several times a second doesn't earn decimals nobody can read at that rate; a size column, where people compare and
+  copy values, still gets them. Rounding is half-up, so a nearly-finished transfer can read "23 GB / 23 GB" — the
+  percent beside it is what stays exact.
+- **The time left has its own row**, spanning the grid and right-aligned. It keeps the bars wide, and lets an estimate
+  firm up from "1h 8m left" to "56m 24s left" without moving anything above it. The row renders even while empty (a
+  `:empty::before` no-break space), so the estimator warming up doesn't shove the rest of the dialog down.
 - **The bar column has a min width** (80 px, 64 px compact), below which a bar reads as a smudge rather than progress.
   Whatever hosts the readout owes it that width: it's why the Transfers window's `MIN_WIDTH` is what it is
   (`queue/queue-window.ts`) and why the progress dialog is 580 px wide.
+- **The dialog has no "Copying" chip.** A phase banner renders for SCANNING only, where nothing else on screen says what
+  the wait is for. During the copy the title says "Copying...", the bars are labelled, and a third copy of the word
+  earned nothing but height.
 - **A stalled transfer's notice displaces the time left**, in both surfaces, from the same `transfer/transfer-stall.ts`
   verdict. The dialog additionally shows the explanatory stall block underneath.
 - **Speed and ETA describe a transfer that's moving**, so a caller passes `null` for all three while paused, and the

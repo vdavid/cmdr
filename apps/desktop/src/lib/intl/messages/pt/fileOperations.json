@@ -413,10 +413,6 @@
   "@fileOperations.transferProgress.stageScanning": {
     "sourceHash": "474ad81"
   },
-  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Copiando} move {Movendo} compress {Comprimindo} delete {Apagando} other {Movendo para o Lixo}}",
-  "@fileOperations.transferProgress.stageActive": {
-    "sourceHash": "f45924a"
-  },
   "fileOperations.transferProgress.warningFileOverFolder": "O destino já existe e é uma <strong>pasta</strong>. Você está prestes a substituí-la por um <strong>arquivo</strong> com o mesmo nome. Todo o conteúdo da pasta de destino seria excluído e substituído pelo arquivo. O que deseja fazer?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
     "sourceHash": "c560c0f"
@@ -509,9 +505,10 @@
   "@fileOperations.transferProgress.conflictRollback": {
     "sourceHash": "c591f55"
   },
-  "fileOperations.transferProgress.progressSize": "Tamanho",
-  "@fileOperations.transferProgress.progressSize": {
-    "sourceHash": "1af8519"
+  "fileOperations.transferProgress.progressBytes": "Bytes",
+  "@fileOperations.transferProgress.progressBytes": {
+    "sourceHash": "4d80003",
+    "sameAsSourceJustification": "'Byte(s)' is the Portuguese unit noun too; macOS PT uses 'Bytes'."
   },
   "fileOperations.transferProgress.progressItems": "Itens",
   "@fileOperations.transferProgress.progressItems": {

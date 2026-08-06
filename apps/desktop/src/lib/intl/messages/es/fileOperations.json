@@ -412,10 +412,6 @@
   "@fileOperations.transferProgress.stageScanning": {
     "sourceHash": "474ad81"
   },
-  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Copiando} move {Moviendo} compress {Comprimiendo} delete {Eliminando} other {Moviendo a la papelera}}",
-  "@fileOperations.transferProgress.stageActive": {
-    "sourceHash": "f45924a"
-  },
   "fileOperations.transferProgress.warningFileOverFolder": "El destino existe y es una <strong>carpeta</strong>. Estás a punto de sobrescribirla con un <strong>archivo</strong> del mismo nombre. Todo el contenido de la carpeta de destino se eliminaría y se sustituiría por el archivo. ¿Qué quieres hacer?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
     "sourceHash": "c560c0f"
@@ -508,9 +504,10 @@
   "@fileOperations.transferProgress.conflictRollback": {
     "sourceHash": "c591f55"
   },
-  "fileOperations.transferProgress.progressSize": "Tamaño",
-  "@fileOperations.transferProgress.progressSize": {
-    "sourceHash": "1af8519"
+  "fileOperations.transferProgress.progressBytes": "Bytes",
+  "@fileOperations.transferProgress.progressBytes": {
+    "sourceHash": "4d80003",
+    "sameAsSourceJustification": "'Byte(s)' is the Spanish unit noun too (RAE: el byte, los bytes); macOS ES uses 'Bytes'."
   },
   "fileOperations.transferProgress.progressItems": "Elementos",
   "@fileOperations.transferProgress.progressItems": {

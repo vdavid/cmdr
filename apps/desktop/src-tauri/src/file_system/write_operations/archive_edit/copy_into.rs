@@ -569,6 +569,9 @@ async fn archive_copy_into_start(
             source: summary_source,
             destination: None,
         },
+        // A zip edit is a whole-archive temp+rename rewrite: it either lands or
+        // it doesn't, so there's no half-written state to reverse.
+        supports_rollback: false,
     };
 
     let events_for_op = Arc::clone(&events);

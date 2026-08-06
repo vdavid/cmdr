@@ -116,6 +116,9 @@ pub(crate) async fn route_archive_move_out(
         lanes,
         volume_ids: vec![source_volume_id.clone(), dest_volume_id],
         summary,
+        // Moving OUT of a zip rewrites the archive to drop the entries: that
+        // rewrite is all-or-nothing, so there's nothing partial to reverse.
+        supports_rollback: false,
     };
 
     let events_for_op = Arc::clone(&events);

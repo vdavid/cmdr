@@ -3254,6 +3254,21 @@ export const commands = {
    */
   installUpdate: () => typedError<null, string>(__TAURI_INVOKE('install_update')),
   /**
+   *  Debug-only: makes sure the dialog gallery's throwaway fixture directory
+   *  exists under the app data dir, and returns its path plus the landmarks inside
+   *  it the gallery addresses by name.
+   *
+   *  Idempotent, so the Debug window can call it on every trigger. The tree itself
+   *  (and why the disk-backed dialogs need a real one) lives in `dev_fixtures`.
+   *
+   *  Present in dev AND E2E builds (a release build with `playwright-e2e`), because
+   *  the gallery is a test instrument: `dialog-inset.spec.ts` measures every dialog
+   *  through it, and five of them do real work on mount. Absent from a shipped build,
+   *  which has neither.
+   */
+  createDialogGalleryFixtures: () =>
+    typedError<DialogGalleryFixtures, IpcError>(__TAURI_INVOKE('create_dialog_gallery_fixtures')),
+  /**
    *  Debug-only escape hatch: build the bundle and write it to the app data dir as a `.zip`.
    *  Helpful when iterating on the redactor or the manifest format.
    */
@@ -3268,16 +3283,6 @@ export const commands = {
    */
   previewFriendlyError: (errorCode: number | null, variant: string | null, providerPath: string | null) =>
     typedError<ListingError, string>(__TAURI_INVOKE('preview_friendly_error', { errorCode, variant, providerPath })),
-  /**
-   *  Debug-only: makes sure the dialog gallery's throwaway fixture directory
-   *  exists under the app data dir, and returns its path plus the landmarks inside
-   *  it the gallery addresses by name.
-   *
-   *  Idempotent, so the Debug window can call it on every trigger. The tree itself
-   *  (and why the disk-backed dialogs need a real one) lives in `dev_fixtures`.
-   */
-  createDialogGalleryFixtures: () =>
-    typedError<DialogGalleryFixtures, IpcError>(__TAURI_INVOKE('create_dialog_gallery_fixtures')),
 }
 
 /** Events */
@@ -6716,6 +6721,8 @@ export type OperationSnapshot = {
   status: LifecycleStatus
   source: string | null
   destination: string | null
+  // See [`OperationDescriptor::supports_rollback`].
+  supportsRollback: boolean
 }
 
 // Current status of an operation for query APIs.

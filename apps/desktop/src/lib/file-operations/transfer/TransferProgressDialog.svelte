@@ -4,7 +4,6 @@
     type Initiator } from '$lib/tauri-commands'
     import type {
         TransferOperationType,
-        WriteOperationPhase,
         WriteOperationError,
         SortColumn,
         SortOrder,
@@ -205,28 +204,6 @@
      *  a reason that isn't deliberate. Drives the ETA line off the screen. */
     const stall = $derived(stallNoticeFor(progress.activity))
 
-    // Progress stages for visualization; the active phase label adapts to operation type.
-    const activePhaseId = $derived<WriteOperationPhase>(
-        operationType === 'delete' ? 'deleting' : operationType === 'trash' ? 'trashing' : 'copying',
-    )
-    const stages = $derived<{ id: WriteOperationPhase; label: string }[]>([
-        { id: 'scanning', label: tString('fileOperations.transferProgress.stageScanning') },
-        { id: activePhaseId, label: tString('fileOperations.transferProgress.stageActive', { gerund: gerundKind }) },
-    ])
-
-    function getStageStatus(stageId: WriteOperationPhase): 'done' | 'active' | 'pending' {
-        // During rollback OR the closing flush, keep the active phase
-        // (copying/moving) marked as still active — flushing is the tail of the
-        // copy, not a separate stage chip, so both map back to `activePhaseId`.
-        const effectivePhase = phase === 'rolling_back' || phase === 'flushing' ? activePhaseId : phase
-        const currentIndex = stages.findIndex((s) => s.id === effectivePhase)
-        const stageIndex = stages.findIndex((s) => s.id === stageId)
-
-        if (stageIndex < currentIndex) return 'done'
-        if (stageIndex === currentIndex) return 'active'
-        return 'pending'
-    }
-
     /** Any command modifier or Shift: `⇧F2` and `⌘F2` are other combos, not Queue. */
     function hasModifier(event: KeyboardEvent): boolean {
         return event.metaKey || event.ctrlKey || event.altKey || event.shiftKey
@@ -371,30 +348,17 @@
             />
         {/if}
 
-        <!-- Progress stages -->
-        <div class="progress-stages">
-            {#each stages as stage (stage.id)}
-                {@const status = getStageStatus(stage.id)}
-                <div class="stage" class:done={status === 'done'} class:active={status === 'active'}>
-                    <div class="stage-indicator">
-                        {#if status === 'done'}
-                            <span class="checkmark">&#10003;</span>
-                        {:else if status === 'active'}
-                            <Spinner size="sm" />
-                        {:else}
-                            <span class="dot"></span>
-                        {/if}
-                    </div>
-                    <span>{stage.label}</span>
-                </div>
-                {#if stage.id !== stages[stages.length - 1].id}
-                    <div class="stage-connector" class:done={status === 'done'}></div>
-                {/if}
-            {/each}
-        </div>
-
         {#if phase === 'scanning'}
-            <!-- Scanning phase: tallies, throughput, current dir/file. -->
+            <!-- Scanning phase: what's happening, then tallies, throughput, and
+                 the current dir/file. There's no matching banner for the active
+                 phase: the bars, their labels, and the dialog title already say
+                 what's going on, so a "Copying" chip under a "Copying..." title
+                 is just a second copy of the word. -->
+            <div class="phase-banner">
+                <Spinner size="sm" />
+                <span>{tString('fileOperations.transferProgress.stageScanning')}</span>
+            </div>
+
             <div class="scan-wait-section">
                 <ScanPhaseBody
                     {sourceFolderPath}
@@ -553,61 +517,16 @@
         gap: var(--spacing-sm);
     }
 
-    /* Progress stages */
-    .progress-stages {
+    /* Says what the dialog is busy with while it's something other than the
+       obvious. Scanning only — see the markup. */
+    .phase-banner {
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: var(--spacing-md) 0;
-        gap: var(--spacing-sm);
-    }
-
-    .stage {
-        display: flex;
-        align-items: center;
         gap: var(--spacing-xs);
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-sm);
-        transition: color var(--transition-slow);
-    }
-
-    .stage.active {
+        padding: var(--spacing-md) 0;
         color: var(--color-accent-text);
-    }
-
-    .stage.done {
-        color: var(--color-allow);
-    }
-
-    .stage-indicator {
-        width: 18px;
-        height: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .checkmark {
-        font-size: var(--font-size-md);
-        font-weight: 600;
-    }
-
-    .dot {
-        width: 8px;
-        height: 8px;
-        border-radius: var(--radius-full);
-        background: var(--color-text-tertiary);
-    }
-
-    .stage-connector {
-        width: 24px;
-        height: 2px;
-        background: var(--color-border-strong);
-        transition: background var(--transition-slow);
-    }
-
-    .stage-connector.done {
-        background: var(--color-allow);
+        font-size: var(--font-size-sm);
     }
 
     /* Gutter around the shared dual-bar readout; the readout owns its own

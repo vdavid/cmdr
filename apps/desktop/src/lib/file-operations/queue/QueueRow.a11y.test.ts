@@ -14,6 +14,7 @@ function row(
   status: OperationSnapshot['status'],
   opType: OperationSnapshot['operationType'] = 'copy',
   progress: WriteProgressEvent | null = null,
+  supportsRollback = false,
 ): OperationRow {
   return {
     snapshot: {
@@ -22,6 +23,7 @@ function row(
       status,
       source: '/Users/me/Documents/report.pdf',
       destination: opType === 'delete' || opType === 'trash' ? null : '/Volumes/Backup/report.pdf',
+      supportsRollback,
     },
     progress,
     etaSecondsDisplay: progress?.etaSeconds == null ? null : seconds(progress.etaSeconds),
@@ -51,7 +53,14 @@ async function mountRow(r: OperationRow, selected = false): Promise<HTMLElement>
   document.body.appendChild(list)
   mount(QueueRow, {
     target: list,
-    props: { row: r, selected, onToggleSelect: () => {}, onPauseResume: () => {}, onCancel: () => {} },
+    props: {
+      row: r,
+      selected,
+      onToggleSelect: () => {},
+      onPauseResume: () => {},
+      onCancel: () => {},
+      onRollback: () => {},
+    },
   })
   await tick()
   return list
@@ -75,6 +84,13 @@ describe('QueueRow a11y', () => {
 
   it('a selected delete row has no a11y violations', async () => {
     const list = await mountRow(row('running', 'delete', runningProgress), true)
+    await expectNoA11yViolations(list)
+  })
+
+  // The Rollback button is the row's one danger-styled control, and the only
+  // one whose accessible name comes from its label rather than an aria-label.
+  it('a rollbackable copy row has no a11y violations', async () => {
+    const list = await mountRow(row('running', 'copy', runningProgress, true))
     await expectNoA11yViolations(list)
   })
 })
