@@ -150,7 +150,11 @@ export function livePhaseLabel(phase: QueryStreamPhase): string {
  *      counting, and a live count-only run can over-count its overlap).
  *   2. Ended short (stopped, or the drive went away) → the counts plus the admission
  *      that Cmdr didn't finish. The reason lives in the consumer's own note.
- *   3. Ended capped → the rows stopped at the cap while the count carried on past it.
+ *   3. Ended capped, with matches BEHIND the cap → the rows stopped at the cap while
+ *      the count carried on past it. A run whose matches total exactly the cap
+ *      reports `capped` too (the flag is "the cap was reached"), and there is nothing
+ *      behind that last row, so it takes rule 4 instead — same guard the snapshot
+ *      label uses (`search/snapshot-store.svelte.ts::labelFor`).
  *   4. Ended covered → `''`, so the caller falls back to its ordinary result line.
  */
 export function liveStatusLine(view: LiveRunView, shownCount: number): string {
@@ -170,7 +174,7 @@ export function liveStatusLine(view: LiveRunView, shownCount: number): string {
       totalText: formatInteger(view.matchCount),
     })
   }
-  if (view.capped) {
+  if (view.capped && shownCount < view.matchCount) {
     return tString('queryUi.results.live.capped', {
       shownText: formatInteger(shownCount),
       totalText: formatInteger(view.matchCount),

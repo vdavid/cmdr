@@ -117,6 +117,15 @@ describe('liveStatusLine', () => {
   it('leaves a covered run to the ordinary result line', () => {
     expect(liveStatusLine(view({ running: false }), 12)).toBe('')
   })
+
+  it('does not claim truncation when the run stopped exactly ON the cap', () => {
+    // `capped` is "the row cap was reached", which is true the moment the last row
+    // fits, so a run whose matches happen to total exactly the cap reports it. There
+    // is nothing behind that row, and "Showing the first 30 of 30 matches" reads as
+    // if there were. Found end to end: the live-walk E2E searches a 30-file tree
+    // through the dialog's 30-row cap.
+    expect(liveStatusLine(view({ running: false, capped: true, matchCount: 30 }), 30)).toBe('')
+  })
 })
 
 describe('liveWalkProgress and livePhaseLabel', () => {
