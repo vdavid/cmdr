@@ -76,9 +76,7 @@ interface FixtureDirPayload {
  * one.
  */
 async function createFixtureDir(main: TauriPage): Promise<FixtureDirPayload> {
-  return main.evaluate<FixtureDirPayload>(
-    `window.__TAURI_INTERNALS__.invoke('create_dialog_gallery_fixtures', {})`,
-  )
+  return main.evaluate<FixtureDirPayload>(`window.__TAURI_INTERNALS__.invoke('create_dialog_gallery_fixtures', {})`)
 }
 
 /**
@@ -271,14 +269,7 @@ export async function captureGalleryDialogs(
         skipped.push(`gallery-redundant:${label}`)
         continue
       }
-      const outcome = await captureGalleryState(
-        main,
-        entry.dialogId,
-        state.id,
-        stateFixtures,
-        report,
-        alreadyCovered,
-      )
+      const outcome = await captureGalleryState(main, entry.dialogId, state.id, stateFixtures, report, alreadyCovered)
       if (outcome === 'captured') captured += 1
       else if (outcome === 'redundant') {
         redundant.push(label)

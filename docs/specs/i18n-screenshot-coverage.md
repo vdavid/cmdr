@@ -7,8 +7,8 @@ keys (56%) at `c1710d66c` to **2046 / 2743 (75%)**: 1178 direct (up from 910) an
 68 surfaces with three dead passes to **133 surfaces, 0 failed, every pass green**.
 
 Areas now fully covered: `ai`, `crashReporter`, `errors`, `mtp`, `queryUi`, `search`, `shortcuts`, `updates`, `viewer`.
-Biggest remaining gaps: `settings` (226 uncoupled, mostly `settings.mediaIndex` behind conditional UI),
-`fileExplorer` (147), `askCmdr` (76).
+Biggest remaining gaps: `settings` (226 uncoupled, mostly `settings.mediaIndex` behind conditional UI), `fileExplorer`
+(147), `askCmdr` (76).
 
 Area docs to read first: `apps/desktop/src/lib/intl/messages/DETAILS.md` § Screenshots, `docs/guides/i18n.md` §
 Screenshots, `apps/desktop/test/e2e-playwright/CLAUDE.md` (overlay-closing rules, the `ensureAppReady` focus contract),
@@ -19,9 +19,9 @@ Screenshots, `apps/desktop/test/e2e-playwright/CLAUDE.md` (overlay-closing rules
 **Drive the dialog gallery from its registry instead of hand-staging dialogs.** `DIALOG_GALLERY_ENTRIES`
 (`src/lib/dialog-gallery/gallery-registry.ts`) already enumerates every registered soft dialog with its reviewable
 states, and the main window already listens for `debug-open-gallery-dialog` to open any `(dialogId, stateId)` with
-fixtures wired. `apps/desktop/test/e2e-playwright/i18n-capture-gallery.ts` walks that registry, so a dialog gets a translator
-screenshot the day it gets a gallery row. The `dialog-gallery-coverage` check already fails when a registered dialog has
-no row, which makes the whole chain self-maintaining.
+fixtures wired. `apps/desktop/test/e2e-playwright/i18n-capture-gallery.ts` walks that registry, so a dialog gets a
+translator screenshot the day it gets a gallery row. The `dialog-gallery-coverage` check already fails when a registered
+dialog has no row, which makes the whole chain self-maintaining.
 
 Three limits the pass keeps, all about not lying to translators:
 

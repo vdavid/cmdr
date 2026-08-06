@@ -173,4 +173,3 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
       'as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated.',
   },
 ]
-

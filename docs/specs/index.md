@@ -12,10 +12,10 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       `DIALOG_GALLERY_ENTRIES` instead of hand-staging each dialog, which needed the gallery's gate widened from
       `import.meta.env.DEV` to `DEV || __CMDR_I18N_CAPTURE__` (the capture binary's frontend is a production Vite
       build). Also added: the transfer-queue window, four Ask Cmdr states, acknowledgements, the pane volume chooser,
-      and representative mappings that took `queryUi`, `search`, `updates`, and `viewer` to 100%. The `shortcuts`
-      window was never broken; its skip blamed a tauri-playwright eval hang when the window was simply missing from the
-      generated `playwright.json` capability. Keep the doc for its gotchas and the remaining gaps
-      (`settings.mediaIndex` first).
+      and representative mappings that took `queryUi`, `search`, `updates`, and `viewer` to 100%. The `shortcuts` window
+      was never broken; its skip blamed a tauri-playwright eval hang when the window was simply missing from the
+      generated `playwright.json` capability. Keep the doc for its gotchas and the remaining gaps (`settings.mediaIndex`
+      first).
 - [ ] 2026-08-04 `size-only-subtrees-plan.md` - SPECCED, not started. Store a folder's TOTALS instead of a row per file,
       for subtrees where nobody wants the files. Cmdr indexes folders; files are an input to a folder's totals. Measured
       on David's index: `target/` holds **982,486 files (13.9% of the whole 7.09 M-row index)** and produced **93% of an

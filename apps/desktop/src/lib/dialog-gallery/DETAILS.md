@@ -53,9 +53,9 @@ consumes it inside the existing `if (import.meta.env.DEV || __CMDR_I18N_CAPTURE_
 focuses the main window **from the main window's own side**: the Debug window's capability set is minimal and permission
 failures are silent, so it must not try to push focus itself.
 
-`lib/dialog-gallery/` is NOT exempt from `cmdr/no-raw-tauri-invoke` / `no-raw-bindings-import`, which is why a
-fixture's IPC is called from `DebugDialogsPanel.svelte` (an exempt path) and ferried in the event payload rather than
-invoked here. The capture driver is a test file, outside those rules, so it calls the command directly.
+`lib/dialog-gallery/` is NOT exempt from `cmdr/no-raw-tauri-invoke` / `no-raw-bindings-import`, which is why a fixture's
+IPC is called from `DebugDialogsPanel.svelte` (an exempt path) and ferried in the event payload rather than invoked
+here. The capture driver is a test file, outside those rules, so it calls the command directly.
 
 **Gotcha: that focus call needs `core:window:allow-set-focus` in `capabilities/default.json`.** The main window's
 capability didn't grant it, so `focusMainWindow()` rejected and the previewed dialog opened BEHIND the Debug window,
@@ -63,9 +63,10 @@ which reads as a dialog bug rather than a permissions one (Tauri permission fail
 swallowed the rejection). It now logs the failure. Same call serves the confirmation-dialog focus request, so that path
 was broken too.
 
-`routes/(main)/+layout.svelte` mounts `DialogGallery.svelte` inside `{#if import.meta.env.DEV || __CMDR_I18N_CAPTURE__}`,
-alongside the other always-mounted dialogs (`crash-report`, `error-report`, `feedback`, `mtp-permission`,
-`ptpcamerad`). Not `+page.svelte`: it's already over its `file-length` allowlist entry.
+`routes/(main)/+layout.svelte` mounts `DialogGallery.svelte` inside
+`{#if import.meta.env.DEV || __CMDR_I18N_CAPTURE__}`, alongside the other always-mounted dialogs (`crash-report`,
+`error-report`, `feedback`, `mtp-permission`, `ptpcamerad`). Not `+page.svelte`: it's already over its `file-length`
+allowlist entry.
 
 `+page.svelte` still reads `isGalleryDialogOpen()` in `isModalDialogOpen()`. Without it, global shortcuts fire behind
 the previewed dialog, which looks like a dialog bug and would poison the review. That call is the only thing the
@@ -105,9 +106,9 @@ literals in `apps/desktop/build/`):
 - **Absent**: `DialogGallery.svelte`, every `fixtures/` module, `disk-fixture.ts`, `store-seeding.ts`, and the two
   preview modules — so are the dialog imports the harness would otherwise have added to the main-window graph. The
   `{#if import.meta.env.DEV || __CMDR_I18N_CAPTURE__}` in `+layout.svelte` is what does it (Vite inlines both flags, and
-  a production build has neither). Markers checked:
-  `Cmdr paused indexing because the drive is running on battery.` (`fixtures/alert.ts`) and
-  `Dialog gallery has no fixture for` (the harness's own warning). Neither appears anywhere under `build/`.
+  a production build has neither). Markers checked: `Cmdr paused indexing because the drive is running on battery.`
+  (`fixtures/alert.ts`) and `Dialog gallery has no fixture for` (the harness's own warning). Neither appears anywhere
+  under `build/`.
 - **Present**: `gallery-registry.ts`'s row copy and `DebugDialogsPanel.svelte`, inside the Debug route's own lazily
   loaded node chunk (`build/_app/immutable/nodes/<n>.*.js`) — where `DebugErrorPreviewPanel`, the closed-tabs panel, and
   the rest of that window already were. `routes/debug/` is a real SvelteKit route with no production exclusion, so it

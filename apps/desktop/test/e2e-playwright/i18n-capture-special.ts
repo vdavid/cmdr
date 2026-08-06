@@ -86,7 +86,11 @@ export async function captureMainDialogs(
   // what renders the jump links, the section headings, and the full-texts line
   // (`licensing.acknowledgements.*`). The spinner branch would record only
   // `.loading` and shoot a nearly empty dialog.
-  await dialogSurface('acknowledgements', 'app.acknowledgements', '[data-dialog-id="acknowledgements"] .packages-scroll')
+  await dialogSurface(
+    'acknowledgements',
+    'app.acknowledgements',
+    '[data-dialog-id="acknowledgements"] .packages-scroll',
+  )
 }
 
 /** Files per staged source dir: enough that a copy stays Running through the shot. */
