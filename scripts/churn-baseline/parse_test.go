@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -132,6 +134,44 @@ func TestUnderAny(t *testing.T) {
 	}
 	if underAny("/a/target", nil) {
 		t.Error("underAny with no roots should be false")
+	}
+}
+
+// The two path splits are independent and must not cross wires: a rebuild counts
+// toward the repo split, the scope split, both, or neither, purely by its path.
+// Row counts are powers of two so a bucket landing in the wrong field shows up as
+// a wrong total rather than a plausible one.
+func TestTailerSplitsWritesByPath(t *testing.T) {
+	tailer := &Tailer{
+		repoPrefix: "/repo",
+		scopeRoots: []string{"/repo/target", "/elsewhere/cache"},
+		eventWork:  newEventWork(),
+		writerRoll: newWriterRollup(),
+		writerCPU:  newWriterCPU(),
+	}
+	var log strings.Builder
+	for _, c := range []struct {
+		path  string
+		added int
+	}{
+		{"/repo/src", 1},             // ours, out of scope
+		{"/repo/target/debug", 2},    // ours, in scope
+		{"/elsewhere/cache/pkg", 4},  // in scope, not ours
+		{"/somebody/else/target", 8}, // neither
+	} {
+		fmt.Fprintf(&log, "MustScanSubDirs: reconcile complete for %s (+%d -0 ~0, 1ms)\n", c.path, c.added)
+	}
+	tailer.drain(bufio.NewReader(strings.NewReader(log.String())))
+
+	got := tailer.snapshot()
+	if got.Writes.Rebuilds != 4 || got.Writes.Total() != 15 {
+		t.Errorf("all writes = %+v, Total = %d; want 4 rebuilds totalling 15", got.Writes, got.Writes.Total())
+	}
+	if got.RepoWrite.Rebuilds != 2 || got.RepoWrite.Total() != 3 {
+		t.Errorf("repo writes = %+v, Total = %d; want 2 rebuilds totalling 3", got.RepoWrite, got.RepoWrite.Total())
+	}
+	if got.ScopeWrite.Rebuilds != 2 || got.ScopeWrite.Total() != 6 {
+		t.Errorf("scope writes = %+v, Total = %d; want 2 rebuilds totalling 6", got.ScopeWrite, got.ScopeWrite.Total())
 	}
 }
 

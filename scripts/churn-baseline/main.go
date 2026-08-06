@@ -18,9 +18,10 @@
 // that instrument and not `sample`), phys_footprint (see Footprint for why not
 // vmmap), index rows written as the app's own reconcile summaries report them,
 // and log bytes. Rows are attributed by path: inside the churned repo, inside a
-// marked subtree, or neither. The attribution matters because several build trees
-// churn on this machine at once (agents in sibling worktrees) and the app
-// reconciles all of them, so a single total folds somebody else's build in.
+// subtree named with -scope-roots, or neither. The attribution matters because
+// several build trees churn on this machine at once (agents in sibling worktrees)
+// and the app reconciles all of them, so a single total folds somebody else's
+// build in.
 //
 // It also reports the index WRITER THREAD's own CPU (see WriterCPU), read off the
 // app's stall-probe heartbeat. Whole-process CPU is too coarse for any claim about
@@ -34,8 +35,8 @@
 // Flags: -repo (the repo to churn; its `target/` is what the app re-indexes),
 // -touch (file to touch, relative to -repo), -build (cargo args), -idle / -churn
 // (phase durations), -interval (sample period), -exe (app binary path), -log
-// (cmdr.log path), -marked-roots (a file of CACHEDIR.TAG subtree roots, one per
-// line, from `index-size-probe rows --json`), -label.
+// (cmdr.log path), -scope-roots (a file of subtree roots, one per line, whose
+// rows get counted separately), -label.
 //
 // # Re-running it after a change lands
 //
@@ -69,17 +70,17 @@ func main() {
 
 func run() error {
 	var (
-		repo      = flag.String("repo", "", "Rust repo to churn (required); its target/ is what the app re-indexes")
-		touchRel  = flag.String("touch", "crates/cmdr-fs/src/lib.rs", "file to touch each iteration, relative to -repo")
-		buildArgs = flag.String("build", "build --workspace", "cargo arguments for one churn iteration")
-		settleFor = flag.Duration("settle", 3*time.Minute, "wait before measuring, so earlier activity's indexing drains out of the idle phase")
-		idleFor   = flag.Duration("idle", 5*time.Minute, "control phase with no churn")
-		churnFor  = flag.Duration("churn", 20*time.Minute, "churn phase")
-		interval  = flag.Duration("interval", 5*time.Second, "sample period")
-		exePath   = flag.String("exe", "/Applications/Cmdr.app/Contents/MacOS/Cmdr", "app executable to watch, matched as a full path")
-		logPath   = flag.String("log", defaultLogPath(), "cmdr.log to follow")
-		label     = flag.String("label", "", "a label recorded in the output")
-		markedFin = flag.String("marked-roots", "", "file of CACHEDIR.TAG subtree roots, one per line; rebuilds inside them are counted separately")
+		repo           = flag.String("repo", "", "Rust repo to churn (required); its target/ is what the app re-indexes")
+		touchRel       = flag.String("touch", "crates/cmdr-fs/src/lib.rs", "file to touch each iteration, relative to -repo")
+		buildArgs      = flag.String("build", "build --workspace", "cargo arguments for one churn iteration")
+		settleFor      = flag.Duration("settle", 3*time.Minute, "wait before measuring, so earlier activity's indexing drains out of the idle phase")
+		idleFor        = flag.Duration("idle", 5*time.Minute, "control phase with no churn")
+		churnFor       = flag.Duration("churn", 20*time.Minute, "churn phase")
+		interval       = flag.Duration("interval", 5*time.Second, "sample period")
+		exePath        = flag.String("exe", "/Applications/Cmdr.app/Contents/MacOS/Cmdr", "app executable to watch, matched as a full path")
+		logPath        = flag.String("log", defaultLogPath(), "cmdr.log to follow")
+		label          = flag.String("label", "", "a label recorded in the output")
+		scopeRootsFile = flag.String("scope-roots", "", "file of subtree roots, one per line; rows written inside them are counted separately")
 	)
 	flag.Parse()
 
@@ -105,11 +106,11 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	markedRoots, err := readMarkedRoots(*markedFin)
+	scopeRoots, err := readScopeRoots(*scopeRootsFile)
 	if err != nil {
 		return err
 	}
-	tailer := &Tailer{path: *logPath, repoPrefix: *repo, markedRoots: markedRoots, eventWork: newEventWork(), writerRoll: newWriterRollup(), writerCPU: newWriterCPU()}
+	tailer := &Tailer{path: *logPath, repoPrefix: *repo, scopeRoots: scopeRoots, eventWork: newEventWork(), writerRoll: newWriterRollup(), writerCPU: newWriterCPU()}
 	tailDone := make(chan struct{})
 	go tailer.follow(tailDone)
 	defer close(tailDone)
@@ -127,7 +128,7 @@ func run() error {
 		AppEnv:     readMeasurementEnv(pid),
 		SampleSecs: interval.Seconds(),
 	}
-	report.MarkedRoots = len(markedRoots)
+	report.ScopeRoots = len(scopeRoots)
 	report.TargetFiles, report.TargetDirs = countTree(filepath.Join(*repo, "target"))
 	fmt.Fprintf(os.Stderr, "Churned target/: %d files, %d dirs\n\n", report.TargetFiles, report.TargetDirs)
 
@@ -189,16 +190,16 @@ func countTree(root string) (int64, int64) {
 	return files, dirs
 }
 
-// readMarkedRoots loads the subtree roots to classify against. An empty path
-// means the caller didn't ask for the split, which is not an error: the CPU and
-// memory numbers stand on their own.
-func readMarkedRoots(path string) ([]string, error) {
+// readScopeRoots loads the subtree roots to classify against, one absolute path
+// per line. An empty path means the caller didn't ask for the split, which is not
+// an error: the CPU and memory numbers stand on their own.
+func readScopeRoots(path string) ([]string, error) {
 	if path == "" {
 		return nil, nil
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("-marked-roots %s: %w", path, err)
+		return nil, fmt.Errorf("-scope-roots %s: %w", path, err)
 	}
 	var roots []string
 	for _, line := range strings.Split(string(data), "\n") {
@@ -270,16 +271,17 @@ type Phase struct {
 	// churned repo. The gap between them is other build trees on this machine,
 	// and it is the honest uncertainty on AppCPUSeconds, which cannot be split.
 	//
-	// MarkedWrites is the one an after-run has to move: rows written inside a
-	// `CACHEDIR.TAG` subtree are exactly the rows the feature stops writing.
+	// ScopeWrites counts the rows that landed under -scope-roots, whatever the
+	// caller pointed it at. It is the number to watch when a change is supposed to
+	// move the writes in one part of the tree and leave the rest alone.
 	Writes         RowWrites       `json:"row_writes_all"`
 	RepoWrites     RowWrites       `json:"row_writes_in_churned_repo"`
-	MarkedWrites   RowWrites       `json:"row_writes_in_marked_subtrees"`
+	ScopeWrites    RowWrites       `json:"row_writes_in_scoped_subtrees"`
 	RowsTotal      int64           `json:"rows_written_total"`
 	RowsInRepo     int64           `json:"rows_written_in_churned_repo"`
-	RowsInMarked   int64           `json:"rows_written_in_marked_subtrees"`
+	RowsInScope    int64           `json:"rows_written_in_scoped_subtrees"`
 	RepoRowShare   float64         `json:"share_of_rows_in_churned_repo"`
-	MarkedRowShare float64         `json:"share_of_rows_in_marked_subtrees"`
+	ScopeRowShare  float64         `json:"share_of_rows_in_scoped_subtrees"`
 	Aggregate      AggregateWrites `json:"dir_stats_aggregate_writes"`
 	EventWork      EventWork       `json:"event_work"`
 	WriterRoll     WriterRollup    `json:"writer_messages"`
@@ -365,10 +367,10 @@ loop:
 		FootprintPeak:  peak,
 		Writes:         logDelta.Writes,
 		RepoWrites:     logDelta.RepoWrite,
-		MarkedWrites:   logDelta.MarkedWrit,
+		ScopeWrites:    logDelta.ScopeWrite,
 		RowsTotal:      logDelta.Writes.Total(),
 		RowsInRepo:     logDelta.RepoWrite.Total(),
-		RowsInMarked:   logDelta.MarkedWrit.Total(),
+		RowsInScope:    logDelta.ScopeWrite.Total(),
 		Aggregate:      logDelta.Aggregate,
 		EventWork:      logDelta.EventWork,
 		WriterRoll:     logDelta.WriterRoll,
@@ -382,10 +384,10 @@ loop:
 	}
 	p.derive(elapsed, driver)
 	fmt.Fprintf(os.Stderr,
-		"[%s] done: %.1fs wall, app CPU %.1fs (%.1f%% of one core), %d rows (%d ours, %d marked), "+
+		"[%s] done: %.1fs wall, app CPU %.1fs (%.1f%% of one core), %d rows (%d ours, %d in scope), "+
 			"%d builds, %d writer msgs (root writer thread %.1fs CPU, %.1f%% of the app's), "+
 			"%d anchors coalesced, %d events skipped, %.1f MB log\n\n",
-		name, p.WallSeconds, p.AppCPUSeconds, p.AppCPUPercent, p.RowsTotal, p.RowsInRepo, p.RowsInMarked,
+		name, p.WallSeconds, p.AppCPUSeconds, p.AppCPUPercent, p.RowsTotal, p.RowsInRepo, p.RowsInScope,
 		p.Builds, p.WriterMsgs, float64(p.WriterCPUMs)/1000, 100*p.WriterCPUShare,
 		p.EventWork.CoalescedAnchors, p.EventWork.SkippedEvents,
 		float64(p.LogBytes)/(1<<20))
@@ -426,7 +428,7 @@ func (p *Phase) derive(elapsed time.Duration, driver *churnDriver) {
 		p.CPUMsPerRow = 1000 * p.AppCPUSeconds / float64(p.RowsTotal)
 		p.LogBytesPerRow = float64(p.LogBytes) / float64(p.RowsTotal)
 		p.RepoRowShare = float64(p.RowsInRepo) / float64(p.RowsTotal)
-		p.MarkedRowShare = float64(p.RowsInMarked) / float64(p.RowsTotal)
+		p.ScopeRowShare = float64(p.RowsInScope) / float64(p.RowsTotal)
 	}
 }
 
@@ -511,9 +513,9 @@ type Report struct {
 	WriterBaseline   int64 `json:"writer_messages_at_start"`
 	WriterBaselineOK bool  `json:"writer_baseline_established"`
 
-	// MarkedRoots is how many CACHEDIR.TAG subtrees the marked/unmarked split knew
+	// ScopeRoots is how many subtree roots the in-scope/out-of-scope split knew
 	// about; 0 means the split was not asked for and its numbers are meaningless.
-	MarkedRoots int `json:"marked_roots_supplied"`
+	ScopeRoots int `json:"scope_roots_supplied"`
 
 	// The churned `target/` tree as it stood when the run started. A re-run
 	// against a tree of a different size is not a comparison, and these two

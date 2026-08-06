@@ -25,10 +25,11 @@ type Tailer struct {
 	// app reconciles all of them, and counting the lot as "what our churn cost"
 	// would inflate the baseline by an amount that varies run to run.
 	repoPrefix string
-	// markedRoots are the `CACHEDIR.TAG` subtree roots, so a rebuild can be counted
-	// as inside or outside the set the feature will change. That ratio is the
-	// plan's central claim, and it is the one number an after-run must move.
-	markedRoots []string
+	// scopeRoots are subtree roots the caller cares about, so a rebuild can be
+	// counted as inside or outside that set. It answers "how much of this churn
+	// landed where I was asking about" for a set that `repoPrefix` can't express:
+	// several trees at once, or one directory inside a repo.
+	scopeRoots []string
 
 	// partial holds a line the app hadn't finished writing when we caught up; it
 	// is prepended to the next read so a split write is never parsed as two lines.
@@ -40,7 +41,7 @@ type Tailer struct {
 	rotations  int
 	writes     RowWrites // every rebuild the app reported
 	repoWrite  RowWrites // only rebuilds under repoPrefix
-	markedWrit RowWrites // only rebuilds inside a marked subtree
+	scopeWrite RowWrites // only rebuilds inside one of scopeRoots
 	aggregate  AggregateWrites
 	eventWork  EventWork
 	writerRoll WriterRollup
@@ -54,7 +55,7 @@ type Snapshot struct {
 	Rotations  int
 	Writes     RowWrites
 	RepoWrite  RowWrites
-	MarkedWrit RowWrites
+	ScopeWrite RowWrites
 	Aggregate  AggregateWrites
 	EventWork  EventWork
 	WriterRoll WriterRollup
@@ -80,7 +81,7 @@ func (t *Tailer) snapshot() Snapshot {
 		Rotations:  t.rotations,
 		Writes:     t.writes,
 		RepoWrite:  t.repoWrite,
-		MarkedWrit: t.markedWrit,
+		ScopeWrite: t.scopeWrite,
 		Aggregate:  t.aggregate,
 		EventWork:  eventWork,
 		WriterRoll: writerRoll,
@@ -96,7 +97,7 @@ func (s Snapshot) sub(o Snapshot) Snapshot {
 		Rotations:  s.Rotations - o.Rotations,
 		Writes:     s.Writes.sub(o.Writes),
 		RepoWrite:  s.RepoWrite.sub(o.RepoWrite),
-		MarkedWrit: s.MarkedWrit.sub(o.MarkedWrit),
+		ScopeWrite: s.ScopeWrite.sub(o.ScopeWrite),
 		Aggregate:  s.Aggregate.sub(o.Aggregate),
 		EventWork:  s.EventWork.sub(o.EventWork),
 		WriterRoll: s.WriterRoll.sub(o.WriterRoll),
@@ -172,8 +173,8 @@ func (t *Tailer) drain(reader *bufio.Reader) int64 {
 			if t.repoPrefix != "" && strings.HasPrefix(b.Path, t.repoPrefix) {
 				t.repoWrite.add(b)
 			}
-			if underAny(b.Path, t.markedRoots) {
-				t.markedWrit.add(b)
+			if underAny(b.Path, t.scopeRoots) {
+				t.scopeWrite.add(b)
 			}
 		} else if a, ok := parseAggregateLine(line); ok {
 			t.aggregate.add(a)

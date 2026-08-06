@@ -107,4 +107,6 @@ Both are committed and generic, so a re-measurement is a re-run:
   Usage is in `docs/tooling/index-query.md`. It carries no trace of this proposal: any subtree it reports on is named
   with `--scope`, so re-measuring the slice above means passing those paths rather than re-deriving them from tags.
 - `scripts/churn-baseline`: CPU, memory, rows written, and log volume across an idle control and a churn phase, with the
-  root writer thread's own CPU read off its heartbeat.
+  root writer thread's own CPU read off its heartbeat. It carries no trace of this proposal either: the subtrees whose
+  rows it counts separately are named with `-scope-roots` (a file of paths, one per line), so reproducing the split
+  above means listing those paths.
