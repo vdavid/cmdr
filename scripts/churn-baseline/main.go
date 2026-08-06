@@ -36,7 +36,8 @@
 // -touch (file to touch, relative to -repo), -build (cargo args), -idle / -churn
 // (phase durations), -interval (sample period), -exe (app binary path), -log
 // (cmdr.log path), -scope-roots (a file of subtree roots, one per line, whose
-// rows get counted separately), -label.
+// rows get counted separately; `index-size-probe rows` names the heavy ones),
+// -label.
 //
 // # Re-running it after a change lands
 //
