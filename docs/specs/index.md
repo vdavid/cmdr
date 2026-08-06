@@ -6,6 +6,11 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
+- [ ] 2026-08-06 `i18n-screenshot-coverage.md` - SPECCED, not started. Translators see a screenshot per string; coverage
+      is **1549 / 2743 keys (56%)** and the capture run is not green (three of four passes die in `ensureAppReady`, a
+      regression somewhere in `46bfaf7b1..63be2dc3d`). **18 of 33 registered soft dialogs** have no surface, and the
+      Transfers window plus Ask Cmdr (140 uncoupled keys) are unvisited. The lever is driving the capture from
+      `DIALOG_GALLERY_ENTRIES` instead of hand-staging each dialog.
 - [ ] 2026-08-04 `size-only-subtrees-plan.md` - SPECCED, not started. Store a folder's TOTALS instead of a row per file,
       for subtrees where nobody wants the files. Cmdr indexes folders; files are an input to a folder's totals. Measured
       on David's index: `target/` holds **982,486 files (13.9% of the whole 7.09 M-row index)** and produced **93% of an
