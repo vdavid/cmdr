@@ -32,10 +32,10 @@ actively searching.
 
 On the real index: **81 681 multi-link inode families, and 92.2% of them have partners in a DIFFERENT directory.**
 
-The index's dedup rule is a global one: an `entries` + `idx_inode` lookup that stores `logical_size = NULL` for a
-repeat inode, so the bytes are counted once across the whole volume. **Per-directory summing cannot reproduce that**,
-because for nine families in ten the other names live somewhere else entirely. Any future design that deletes file rows
-has to solve this first, and "sum within the folder" is not the solution.
+The index's dedup rule is a global one: an `entries` + `idx_inode` lookup that stores `logical_size = NULL` for a repeat
+inode, so the bytes are counted once across the whole volume. **Per-directory summing cannot reproduce that**, because
+for nine families in ten the other names live somewhere else entirely. Any future design that deletes file rows has to
+solve this first, and "sum within the folder" is not the solution.
 
 The cheaper alternative was checked and also fails: **55.3% of file rows under marked subtrees are multi-link members**,
 so "keep rows only for multi-link files" keeps most of the rows and saves close to nothing.
@@ -106,5 +106,5 @@ Both are committed and generic, so a re-measurement is a re-run:
 
 - `cargo run -p index-query --bin index-size-probe`: rows, bytes, fan-out, size distribution, and vacuum-reclaim, all
   safe against the live index.
-- `scripts/churn-baseline`: CPU, memory, rows written, and log volume across an idle control and a churn phase, with
-  the root writer thread's own CPU read off its heartbeat.
+- `scripts/churn-baseline`: CPU, memory, rows written, and log volume across an idle control and a churn phase, with the
+  root writer thread's own CPU read off its heartbeat.
