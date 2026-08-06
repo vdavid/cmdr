@@ -15,45 +15,92 @@
  * propagates cleanly. New area files in `en` are created; orphan locale files are
  * left alone (rare; warned).
  *
+ * ## Why a kept key's `sourceHash` is NEVER refreshed here
+ *
+ * The stored hash records which English value a translation was made from, and
+ * the stale check (`i18n-check-stale.ts`) is the only thing that tells a
+ * translator "this locale owes you a re-translation" after a copy edit. Refreshing
+ * it on sync would clear that warning without anyone having re-translated, which
+ * is exactly the silent drift the `sourceHash` mechanism exists to prevent. So a
+ * routine sync moves KEYS, never the translation state attached to them.
+ *
+ * The legitimate "English changed but the translation is still accurate" case is
+ * an explicit, human-judged act: `--restamp <key>` (repeatable). It refreshes that
+ * key's hash and DROPS `reviewed` / `sameAsSourceJustification`, both of which
+ * vouched for the OLD English value and have to be re-earned.
+ *
  * Idempotent: re-running on an already-synced locale is a no-op diff. Unlike
  * gen-locale-skeleton.ts (which scaffolds a fresh locale and refuses to clobber),
  * this MERGES into a translated locale and preserves its work.
  *
  * Run: node scripts/sync-locale-keys.ts <tag> [<tag> …]   (omit tags = every non-en locale)
- * Pass `--messages-root <dir>` to point at a fixture.
+ * Pass `--messages-root <dir>` to point at a fixture, `--restamp <key>` to refresh
+ * one key's stored hash across the synced locales.
  */
 
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { parseArgs } from 'node:util'
 import { isMetadataKey, listLocales, readLocaleFiles, resolveMessagesRoot, sourceHash } from './i18n-catalog-lib.ts'
 
 const SOURCE_LOCALE = 'en'
 
 /**
+ * `@key` fields that vouch for one specific English value and so can't outlive it:
+ * a restamp drops them, and the stale check flags them while they're still attached
+ * to a stale key. See `messages/DETAILS.md` § `@key` metadata schema.
+ */
+const SOURCE_BOUND_META: ReadonlySet<string> = new Set(['reviewed', 'sameAsSourceJustification'])
+
+/**
+ * Restamps one `@key` block: the hash becomes `currentHash` and every source-bound
+ * vouch is dropped. Rebuilt rather than mutated so field order stays stable.
+ */
+function restampMeta(meta: Record<string, unknown>, currentHash: string): Record<string, unknown> {
+  const kept = Object.entries(meta).filter(([field]) => !SOURCE_BOUND_META.has(field))
+  return { ...Object.fromEntries(kept), sourceHash: currentHash }
+}
+
+/**
  * Merges ONE area file's keys: builds the synced `out` object (en order) and the
- * added/kept/dropped counts. Existing translations + their `@key` fields are kept
- * verbatim (only the `sourceHash` is re-stamped from the current English value);
- * en keys missing from the locale are added as English skeletons; locale keys no
- * longer in en are dropped (counted, not carried).
+ * added/kept/dropped/restamped counts. An existing translation is carried over with
+ * its `@key` block untouched; en keys missing from the locale are added as English
+ * skeletons; locale keys no longer in en are dropped (counted, not carried).
+ *
+ * A key named in `restampKeys` is the exception: its stored hash is refreshed from
+ * the current English and its source-bound metadata dropped. That only counts as a
+ * restamp when the hash actually moved, so a typo'd or already-fresh key reports
+ * honestly instead of looking like it did something.
  * @param en a parsed `en/<area>.json`
  * @param existing the locale's current parsed `<area>.json` (`{}` if absent)
+ * @param restampKeys message keys whose stored hash the caller deliberately refreshes
  */
 function mergeAreaFile(
   en: Record<string, unknown>,
   existing: Record<string, unknown>,
-): { out: Record<string, unknown>; added: number; kept: number; dropped: number } {
+  restampKeys: ReadonlySet<string>,
+): { out: Record<string, unknown>; added: number; kept: number; dropped: number; restamped: string[] } {
   const out: Record<string, unknown> = {}
   let added = 0
   let kept = 0
   let dropped = 0
+  const restamped: string[] = []
   for (const [key, value] of Object.entries(en)) {
     if (isMetadataKey(key) || typeof value !== 'string') continue
     const metaKey = `@${key}`
     if (key in existing) {
       out[key] = existing[key]
-      // Re-stamp the hash from the current English value so it can't drift; keep any other @key fields (e.g. reviewed).
-      const existingMeta = typeof existing[metaKey] === 'object' && existing[metaKey] ? existing[metaKey] : {}
-      out[metaKey] = { ...existingMeta, sourceHash: sourceHash(value) }
+      const existingMeta: Record<string, unknown> =
+        typeof existing[metaKey] === 'object' && existing[metaKey] !== null
+          ? { ...(existing[metaKey] as Record<string, unknown>) }
+          : {}
+      const currentHash = sourceHash(value)
+      const shouldRestamp = restampKeys.has(key) && existingMeta['sourceHash'] !== currentHash
+      if (shouldRestamp) restamped.push(key)
+      const meta = shouldRestamp ? restampMeta(existingMeta, currentHash) : existingMeta
+      // No empty `@key: {}` blocks: a key that never carried metadata keeps carrying
+      // none, and the stale check calls out the missing hash rather than sync inventing one.
+      if (Object.keys(meta).length > 0) out[metaKey] = meta
       kept++
     } else {
       out[key] = value
@@ -66,34 +113,53 @@ function mergeAreaFile(
     if (isMetadataKey(key)) continue
     if (!(key in en)) dropped++
   }
-  return { out, added, kept, dropped }
+  return { out, added, kept, dropped, restamped }
+}
+
+/** Options for `syncLocale`. */
+export interface SyncLocaleOptions {
+  /** override the `messages/` root (for tests) */
+  messagesRoot?: string
+  /** message keys whose stored `sourceHash` to deliberately refresh (see the module docblock) */
+  restampKeys?: Iterable<string>
+}
+
+/** What one locale's sync did. `restampedKeys` lists only keys whose hash actually moved. */
+export interface SyncLocaleResult {
+  added: number
+  kept: number
+  dropped: number
+  restamped: number
+  restampedKeys: string[]
+  files: number
 }
 
 /**
- * Syncs ONE locale's catalog to `en`. Returns per-file counts of added/kept/dropped keys.
+ * Syncs ONE locale's catalog to `en`: key parity in `en` order, translations and
+ * their `@key` blocks preserved, plus any deliberate `restampKeys` refresh.
  */
-export function syncLocale(
-  tag: string,
-  opts: { messagesRoot?: string } = {},
-): { added: number; kept: number; dropped: number; files: number } {
+export function syncLocale(tag: string, opts: SyncLocaleOptions = {}): SyncLocaleResult {
   if (tag === SOURCE_LOCALE) throw new Error(`Refusing to sync the source locale '${SOURCE_LOCALE}'.`)
   const root = resolveMessagesRoot(opts.messagesRoot)
   const enFiles = readLocaleFiles(SOURCE_LOCALE, root)
   const localeDir = join(root, tag)
+  const restampKeys = new Set(opts.restampKeys ?? [])
   let added = 0
   let kept = 0
   let dropped = 0
   let files = 0
+  const restampedKeys = new Set<string>()
   for (const name of Object.keys(enFiles).sort()) {
     const en = enFiles[name]
     const localePath = join(localeDir, name)
     const existing: Record<string, unknown> = existsSync(localePath)
       ? (JSON.parse(readFileSync(localePath, 'utf8')) as Record<string, unknown>)
       : {}
-    const merged = mergeAreaFile(en, existing)
+    const merged = mergeAreaFile(en, existing, restampKeys)
     added += merged.added
     kept += merged.kept
     dropped += merged.dropped
+    for (const key of merged.restamped) restampedKeys.add(key)
     writeFileSync(localePath, JSON.stringify(merged.out, null, 2) + '\n', 'utf8')
     files++
   }
@@ -105,19 +171,56 @@ export function syncLocale(
         console.warn(`  warning: ${tag}/${f} has no matching en/ file (left in place)`)
     }
   }
-  return { added, kept, dropped, files }
+  return { added, kept, dropped, restamped: restampedKeys.size, restampedKeys: [...restampedKeys].sort(), files }
+}
+
+/** The parsed CLI arguments. */
+export interface SyncArgs {
+  tags: string[]
+  messagesRoot: string | undefined
+  restampKeys: string[]
+}
+
+/**
+ * Parses the CLI arguments: positional locale tags, `--messages-root <dir>`, and a
+ * repeatable `--restamp <key>`.
+ * @param argv `process.argv.slice(2)`
+ */
+export function parseSyncArgs(argv: string[]): SyncArgs {
+  const { values, positionals } = parseArgs({
+    args: argv,
+    options: {
+      'messages-root': { type: 'string' },
+      restamp: { type: 'string', multiple: true },
+    },
+    allowPositionals: true,
+  })
+  return { tags: positionals, messagesRoot: values['messages-root'], restampKeys: values.restamp ?? [] }
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const argv = process.argv.slice(2)
-  const rootFlag = argv.indexOf('--messages-root')
-  const messagesRoot = rootFlag !== -1 ? argv[rootFlag + 1] : undefined
-  let tags = argv.filter((a, i) => !a.startsWith('--') && i !== (rootFlag !== -1 ? rootFlag + 1 : -1))
-  if (tags.length === 0) tags = listLocales(messagesRoot).filter((l) => l !== SOURCE_LOCALE)
+  const args = parseSyncArgs(process.argv.slice(2))
+  const { messagesRoot, restampKeys } = args
+  const tags = args.tags.length > 0 ? args.tags : listLocales(messagesRoot).filter((l) => l !== SOURCE_LOCALE)
+  const restampedAnywhere = new Set<string>()
   for (const tag of tags) {
-    const { added, kept, dropped, files } = syncLocale(tag, { messagesRoot })
+    const {
+      added,
+      kept,
+      dropped,
+      restamped,
+      restampedKeys: done,
+      files,
+    } = syncLocale(tag, { messagesRoot, restampKeys })
+    for (const key of done) restampedAnywhere.add(key)
+    const restampNote = restamped > 0 ? `, ${String(restamped)} restamped` : ''
     console.log(
-      `Synced ${tag}/: +${String(added)} new (English, to translate), ${String(kept)} kept, -${String(dropped)} dropped, across ${String(files)} files.`,
+      `Synced ${tag}/: +${String(added)} new (English, to translate), ${String(kept)} kept, -${String(dropped)} dropped${restampNote}, across ${String(files)} files.`,
     )
+  }
+  for (const key of restampKeys) {
+    if (!restampedAnywhere.has(key)) {
+      console.warn(`  warning: nothing to restamp for '${key}' (no locale had it stale: misspelled, or already fresh)`)
+    }
   }
 }

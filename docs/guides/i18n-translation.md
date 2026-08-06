@@ -218,11 +218,19 @@ The routine maintenance loop, run for every change that adds or edits user-facin
    key union.
 2. **Propagate the keys to every locale**: run `node apps/desktop/scripts/sync-locale-keys.ts` (all locales) — it adds
    each new `en` key as an English skeleton with the correct `@key.sourceHash`, drops keys you removed, and preserves
-   existing translations. Then, for each locale, read its style guide and translate the new/changed keys in place (the
-   coverage check lists exactly what's still English).
+   existing translations. It moves KEYS only: a kept key's `@key` block, `sourceHash` included, is never rewritten, so
+   syncing can't clear a staleness warning that nobody has answered. Then, for each locale, read its style guide and
+   translate the new/changed keys in place (the coverage check lists exactly what's still English).
 3. **Run the checks** (same set as step 5 above). `desktop-i18n-stale` is the safety net here: editing an `en` value
    changes its hash, so EVERY locale's translation of that key reads as stale until re-translated and re-hashed. You
    can't silently leave a locale behind on a copy edit: the stale warning lists exactly which keys each locale owes.
+   When you re-translate a key, update its `@key.sourceHash` in the same edit. **When an `en` edit doesn't change the
+   meaning** ("is larger" → "may be larger", where every locale already used a modal form), the translations are still
+   accurate and only the stored hash needs to catch up. Refresh it with
+   `node apps/desktop/scripts/sync-locale-keys.ts --restamp <key>` (repeatable, applies across every locale). Check each
+   locale's value first: this is the one command that clears a warning without a translation changing, so it belongs in
+   its own commit with the per-locale reasoning in the message. It drops `reviewed` and `sameAsSourceJustification` on
+   the keys it touches: both vouched for the old English and have to be re-earned.
 4. **Human-review (optional)** the changed strings and set `@key.reviewed: true` again if a reviewer is available (the
    stale check reset it when the source changed). Not a gate — the re-translated strings ship without it.
 
