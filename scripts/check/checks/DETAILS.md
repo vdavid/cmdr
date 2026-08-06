@@ -770,7 +770,20 @@ the cargo-audit role on the Rust side.
 wrapped in `#[cfg(target_os = "macos")]`. CI catches this after push, but the check catches it locally and instantly. It
 parses `Cargo.toml` for macOS-only crate names, detects module-level gating (for example,
 `#[cfg(target_os = "macos")] mod foo;` in `lib.rs` makes everything inside `foo` inherently safe), and scans remaining
-files for ungated `use` statements.
+files for ungated references.
+
+Three things that detection has to get right, each learned from a miss:
+
+- **Any `crate::` reference counts, not just `use` lines.** A `use`-only scan reads `unsafe { libc::geteuid() }` as
+  nothing at all, which is how a `#[cfg(unix)]` test in `cmdr-fs` reached macOS-only `libc` and broke the Linux lane
+  with a green local run. Trailing `//` comments are stripped first so a SAFETY note explaining a gated call isn't
+  itself reported.
+- **A crate declared unconditionally too isn't macOS-only.** `tar` is macOS-only for production extraction and an
+  all-target `[dev-dependencies]` so the tarball-building test compiles everywhere; counting it would report five
+  perfectly fine test lines.
+- **The gate walk balances brackets rather than pattern-matching continuation lines.** The gate can sit above a
+  multi-line `#[cfg_attr(feature = "testing", allow(...))]`, whose inner `)` lines match no enumerable shape; stopping
+  there reports the most carefully gated code in the tree (`thread_qos.rs`).
 
 **Decision**: `bare-poll` check to catch silently-passing E2E tests. **Why**: Cmdr's `pollUntil` helper (and its
 wrappers `pollFs`, `pollUntilValue`, `pollActiveMode`, `pollOverlayGone`, `pollFocusedPane`) returns `false` on timeout

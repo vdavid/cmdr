@@ -114,11 +114,19 @@ type violation struct {
 
 // extractMacOSCrateModules parses Cargo.toml and returns the set of Rust module names
 // (hyphens converted to underscores) for crates declared under [target.'cfg(target_os = "macos")'.dependencies].
+//
+// A crate ALSO declared unconditionally (in `[dependencies]` or `[dev-dependencies]`) is
+// left out: it links on every target through that second declaration, so naming it
+// outside a gate breaks nothing. `tar` is the live example, macOS-only for production
+// extraction and an all-target dev-dependency so the tarball-building test compiles in
+// the Linux lane.
 func extractMacOSCrateModules(cargoPath string) (map[string]bool, error) {
 	var cargo map[string]any
 	if _, err := toml.DecodeFile(cargoPath, &cargo); err != nil {
 		return nil, err
 	}
+
+	allTargets := allTargetDepNames(cargo)
 
 	// Navigate: target -> cfg(target_os = "macos") -> dependencies
 	targetSection, ok := cargo["target"]
@@ -150,10 +158,29 @@ func extractMacOSCrateModules(cargoPath string) (map[string]bool, error) {
 
 	modules := make(map[string]bool, len(depsMap))
 	for crateName := range depsMap {
+		if allTargets[crateName] {
+			continue
+		}
 		moduleName := strings.ReplaceAll(crateName, "-", "_")
 		modules[moduleName] = true
 	}
 	return modules, nil
+}
+
+// allTargetDepNames collects the crate names a manifest declares for every target, from
+// the unconditional `[dependencies]` and `[dev-dependencies]` tables.
+func allTargetDepNames(cargo map[string]any) map[string]bool {
+	names := map[string]bool{}
+	for _, table := range []string{"dependencies", "dev-dependencies"} {
+		deps, ok := cargo[table].(map[string]any)
+		if !ok {
+			continue
+		}
+		for crateName := range deps {
+			names[crateName] = true
+		}
+	}
+	return names
 }
 
 // modDeclPattern matches cfg-gated module declarations: optional visibility, then mod <name>;
@@ -240,8 +267,33 @@ func findCfgGatedModules(lines []string) []string {
 	return result
 }
 
-// usePattern matches `use <ident>::` with optional visibility and leading whitespace.
-var usePattern = regexp.MustCompile(`^\s*(?:pub(?:\s*\((?:crate|super)\))?\s+)?use\s+(\w+)::`)
+// crateRefPattern matches every path-qualified reference to a crate root on a line:
+// `use libc::…` and a bare `unsafe { libc::geteuid() }` alike. Matching only `use` lines
+// would miss the inline form, which compiles on macOS and breaks the Linux build with
+// nothing red locally.
+var crateRefPattern = regexp.MustCompile(`\b(\w+)::`)
+
+// lineCommentPattern strips a `//` comment (including `///` and `//!`) so prose naming a
+// macOS-only crate doesn't read as a use of it. Block comments aren't stripped: naming a
+// crate path inside one is rare enough to fix by rewording.
+var lineCommentPattern = regexp.MustCompile(`//.*$`)
+
+// macOSCratesReferencedOn returns the macOS-only crates a line reaches for, each at most
+// once, in first-appearance order so violations stay stably ordered.
+func macOSCratesReferencedOn(line string, macOSModules map[string]bool) []string {
+	code := lineCommentPattern.ReplaceAllString(line, "")
+	var found []string
+	seen := map[string]bool{}
+	for _, m := range crateRefPattern.FindAllStringSubmatch(code, -1) {
+		name := m[1]
+		if !macOSModules[name] || seen[name] {
+			continue
+		}
+		seen[name] = true
+		found = append(found, name)
+	}
+	return found
+}
 
 // scanForUngatedUses walks all .rs files, skipping gated files, and checks that
 // uses of macOS-only crates are properly gated. Returns violations and the count of
@@ -270,19 +322,12 @@ func scanForUngatedUses(rootDir, srcDir string, macOSModules map[string]bool, ga
 
 		lines := strings.Split(string(data), "\n")
 		for i, line := range lines {
-			matches := usePattern.FindStringSubmatch(line)
-			if matches == nil {
-				continue
-			}
-			crateName := matches[1]
-			if !macOSModules[crateName] {
-				continue
-			}
-
-			// Found a use of a macOS-only crate. Check if it's properly gated.
-			if hasMacOSCfgAttribute(lines, i) {
-				gatedUseCount++
-			} else {
+			for _, crateName := range macOSCratesReferencedOn(line, macOSModules) {
+				// Found a use of a macOS-only crate. Check if it's properly gated.
+				if hasMacOSCfgAttribute(lines, i) {
+					gatedUseCount++
+					continue
+				}
 				relPath, relErr := filepath.Rel(rootDir, path)
 				if relErr != nil {
 					relPath = path
@@ -320,10 +365,25 @@ func hasMacOSCfgAttribute(lines []string, lineIdx int) bool {
 // hasDirectCfgAttribute checks whether a macOS cfg attribute appears directly above lineIdx,
 // separated only by blank lines and other attributes.
 func hasDirectCfgAttribute(lines []string, lineIdx int) bool {
+	// Brackets still open once a line has been read. While this is positive we're in the
+	// middle of a multi-line attribute, whatever the line happens to look like: the inner
+	// `)` of a nested `#[cfg_attr(feature = "x", allow(...))]` is a shape no list of line
+	// forms can enumerate, and stopping there reads a gated item as ungated.
+	openBrackets := 0
+
 	for j := lineIdx - 1; j >= 0; j-- {
 		trimmed := strings.TrimSpace(lines[j])
 
 		if trimmed == "" {
+			continue
+		}
+
+		openBrackets += strings.Count(trimmed, ")") + strings.Count(trimmed, "]") -
+			strings.Count(trimmed, "(") - strings.Count(trimmed, "[")
+		if openBrackets < 0 {
+			openBrackets = 0
+		}
+		if openBrackets > 0 {
 			continue
 		}
 

@@ -128,6 +128,59 @@ serde = "1.0"
 	}
 }
 
+// A crate declared macOS-only for production AND unconditionally for tests links on
+// every target, so naming it outside a gate breaks nothing. `tar` is the live case.
+func TestExtractMacOSCrateModules_AllTargetDeclarationWins(t *testing.T) {
+	dir := t.TempDir()
+	cargoPath := filepath.Join(dir, "Cargo.toml")
+	content := `
+[package]
+name = "test"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+tar = "0.4"
+core-foundation = "0.10.1"
+
+[dev-dependencies]
+tar = "0.4"
+`
+	if err := os.WriteFile(cargoPath, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	modules, err := extractMacOSCrateModules(cargoPath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if modules["tar"] {
+		t.Error("tar is reachable on every target through [dev-dependencies]; it must not count as macOS-only")
+	}
+	if !modules["core_foundation"] {
+		t.Error("core_foundation is macOS-only and must still count")
+	}
+}
+
+// A gate separated from its item by a multi-line `#[cfg_attr(...)]` still gates it. The
+// nested `)` lines match no recognizable attribute-continuation shape, and reading the
+// item as ungated would report the most carefully gated code in the tree.
+func TestHasMacOSCfgAttribute_AcrossAMultiLineCfgAttr(t *testing.T) {
+	lines := []string{
+		`#[cfg(target_os = "macos")]`,
+		`#[cfg_attr(`,
+		`    feature = "testing",`,
+		`    allow(`,
+		`        dead_code,`,
+		`        reason = "the wrapper no-ops (in a consumer's test build)"`,
+		`    )`,
+		`)]`,
+		`fn set_thread_qos_macos(class: QosClass) {`,
+		`    let qos = libc::qos_class_t::QOS_CLASS_UTILITY;`,
+	}
+	if !hasMacOSCfgAttribute(lines, 9) {
+		t.Error("expected the macOS gate above the multi-line cfg_attr to be found")
+	}
+}
+
 func TestExtractMacOSCrateModules_HyphenToUnderscore(t *testing.T) {
 	dir := t.TempDir()
 	cargoPath := filepath.Join(dir, "Cargo.toml")
@@ -489,6 +542,110 @@ fn main() {}
 	}
 	if !strings.Contains(err.Error(), "ungated") {
 		t.Errorf("expected error to mention the violating file, got: %v", err)
+	}
+}
+
+// A macOS-only crate reached through a path-qualified call rather than a `use`
+// statement is the shape that broke the Linux build: `unsafe { libc::geteuid() }` in a
+// `#[cfg(unix)]` test compiled fine on macOS and only failed in CI.
+func TestRunCfgGate_PathQualifiedCallReportsViolation(t *testing.T) {
+	root := t.TempDir()
+	seedCfgGateWorkspaceRoot(t, root)
+	srcDir := filepath.Join(root, "apps", "desktop", "src-tauri", "src")
+	if err := os.MkdirAll(srcDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	cargoDir := filepath.Join(root, "apps", "desktop", "src-tauri")
+	cargoContent := `
+[package]
+name = "test-app"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+core-foundation = "0.10.1"
+`
+	if err := os.WriteFile(filepath.Join(cargoDir, "Cargo.toml"), []byte(cargoContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	libContent := `mod inline;
+`
+	if err := os.WriteFile(filepath.Join(srcDir, "lib.rs"), []byte(libContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// No `use` line anywhere: the crate is only ever named at the call site.
+	rsContent := `#[cfg(unix)]
+fn probe() -> u32 {
+    unsafe { core_foundation::base::CFGetTypeID() }
+}
+`
+	if err := os.WriteFile(filepath.Join(srcDir, "inline.rs"), []byte(rsContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := &CheckContext{RootDir: root}
+	_, err := RunCfgGate(ctx)
+	if err == nil {
+		t.Fatal("expected error for ungated path-qualified use of a macOS crate")
+	}
+	if !strings.Contains(err.Error(), "core_foundation") {
+		t.Errorf("expected error to mention core_foundation, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "inline.rs:3") {
+		t.Errorf("expected error to point at the call site, got: %v", err)
+	}
+}
+
+// Prose naming a macOS-only crate is not a use of it. Without this, every SAFETY
+// comment explaining a gated call would report as a violation of its own.
+func TestRunCfgGate_CrateNamedInACommentIsNotAUse(t *testing.T) {
+	root := t.TempDir()
+	seedCfgGateWorkspaceRoot(t, root)
+	srcDir := filepath.Join(root, "apps", "desktop", "src-tauri", "src")
+	if err := os.MkdirAll(srcDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	cargoDir := filepath.Join(root, "apps", "desktop", "src-tauri")
+	cargoContent := `
+[package]
+name = "test-app"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+core-foundation = "0.10.1"
+`
+	if err := os.WriteFile(filepath.Join(cargoDir, "Cargo.toml"), []byte(cargoContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	libContent := `mod prose;
+`
+	if err := os.WriteFile(filepath.Join(srcDir, "lib.rs"), []byte(libContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	rsContent := `//! Portability notes for this module.
+//!
+//! On macOS the same answer comes from core_foundation::base::CFGetTypeID.
+
+/// Falls back to a std probe; core_foundation::base is macOS-only.
+fn probe() -> bool {
+    // core_foundation::base::CFGetTypeID would work here on macOS.
+    true // and core_foundation::base is still not linked
+}
+`
+	if err := os.WriteFile(filepath.Join(srcDir, "prose.rs"), []byte(rsContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := &CheckContext{RootDir: root}
+	result, err := RunCfgGate(ctx)
+	if err != nil {
+		t.Fatalf("expected success, got error: %v", err)
+	}
+	if result.Code != ResultSuccess {
+		t.Errorf("expected success result, got %v: %s", result.Code, result.Message)
 	}
 }
 
