@@ -31,7 +31,7 @@ const ROWS: usize = 100_000;
 #[test]
 fn a_search_entry_stays_forty_bytes() {
     assert_eq!(
-        std::mem::size_of::<SearchEntry>(),
+        size_of::<SearchEntry>(),
         ENTRY_BYTES,
         "the search arena holds one of these per file (~6 M rows), so every byte here is ~6 MB of \
          peak memory. An `Option<u64>` field costs 16 B for a value that needs 8 — encode it with \

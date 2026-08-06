@@ -13,6 +13,10 @@
 //! # The unscoped fan-out: several volumes' arenas, one after another vs all at once.
 //! CMDR_SEARCH_BENCH_DBS="/path/index-root.db,/path/index-smb-a.db,/path/index-smb-b.db" \
 //!   cargo test -p cmdr --lib search::bench::bench_volume_fanout -- --ignored --nocapture
+//!
+//! # What a loaded arena actually costs, in heap bytes and in process RSS.
+//! CMDR_SEARCH_BENCH_DB="/path/index-root.db" \
+//!   cargo test -p cmdr --lib search::bench::bench_arena_bytes -- --ignored --nocapture
 //! ```
 //!
 //! Phases are isolated by differencing whole `search_ranked` runs rather than by
@@ -354,6 +358,78 @@ fn bench_volume_fanout() {
         pluralize(paths.len() as u64, "volume"),
         pluralize_with(serial_total as u64, "entry", "entries"),
     );
+}
+
+/// This process's resident set in bytes, as the kernel reports it.
+fn process_rss_bytes() -> u64 {
+    std::process::Command::new("ps")
+        .args(["-o", "rss=", "-p", &std::process::id().to_string()])
+        .output()
+        .ok()
+        .and_then(|out| String::from_utf8(out.stdout).ok())
+        .and_then(|s| s.trim().parse::<u64>().ok())
+        .map(|kib| kib * 1024)
+        .unwrap_or(0)
+}
+
+/// What one loaded arena costs, measured rather than derived from `size_of`.
+///
+/// Two numbers, because neither alone is the whole answer:
+///
+/// - **Heap bytes held** ([`heap_bytes_held`]) is exact and reproducible: it's the
+///   requested `Layout` sizes the built `SearchIndex` still holds, so a rerun on the
+///   same DB gives the same figure. Compare THIS across a change to the row's shape.
+/// - **Process RSS** confirms the heap delta actually reaches resident memory. It's
+///   noisier (page cache for the DB read lands in it too) and it's measured under the
+///   test binary's `System`-backed counting allocator, not the mimalloc the shipping
+///   app uses, so ❌ don't quote it as the app's footprint.
+///
+/// Point it at a SNAPSHOT of a real index rather than the live file if you're comparing
+/// two builds: the boot volume's index gains rows by the second, and a row count that
+/// moved between runs is a difference the arena shape didn't cause.
+#[test]
+#[ignore = "benchmark; needs CMDR_SEARCH_BENCH_DB pointing at a real index-*.db"]
+#[allow(
+    clippy::print_stderr,
+    reason = "an ignored measurement harness prints its table to stderr for `--nocapture`; it never runs in the app or CI"
+)]
+fn bench_arena_bytes() {
+    use crate::test_support::heap_bytes_held;
+
+    let Ok(db) = std::env::var("CMDR_SEARCH_BENCH_DB") else {
+        eprintln!("CMDR_SEARCH_BENCH_DB not set; skipping");
+        return;
+    };
+    let pool = ReadPool::new(db.clone().into()).expect("open index DB");
+
+    let rss_before = process_rss_bytes();
+    let t = Instant::now();
+    let (index, heap) = heap_bytes_held(|| load_search_index(&pool, &AtomicBool::new(false)).expect("load index"));
+    let load = t.elapsed();
+    let rss_after = process_rss_bytes();
+
+    let rows = index.entries.len() as f64;
+    let mb = |bytes: i64| bytes as f64 / (1024.0 * 1024.0);
+    eprintln!(
+        "\n{db}\n  {} loaded in {load:.2?}\n  \
+         size_of::<SearchEntry>() = {} B\n  \
+         arena heap held:  {:>9.1} MB  ({:.1} B a row)\n    \
+         of which entries: {:>9.1} MB\n    \
+         names + id map:   {:>9.1} MB\n  \
+         process RSS:      {:>9.1} MB → {:.1} MB (Δ {:.1} MB)\n",
+        pluralize_with(index.entries.len() as u64, "entry", "entries"),
+        size_of::<SearchEntry>(),
+        mb(heap),
+        heap as f64 / rows,
+        mb((index.entries.capacity() * size_of::<SearchEntry>()) as i64),
+        mb(heap) - mb((index.entries.capacity() * size_of::<SearchEntry>()) as i64),
+        rss_before as f64 / (1024.0 * 1024.0),
+        rss_after as f64 / (1024.0 * 1024.0),
+        (rss_after as f64 - rss_before as f64) / (1024.0 * 1024.0),
+    );
+
+    // Keep the arena alive past the RSS read above.
+    assert!(!index.entries.is_empty(), "the index should hold rows");
 }
 
 /// Load an importance weight map straight from an `importance-*.db` file (the
