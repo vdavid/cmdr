@@ -51,7 +51,9 @@ the shared `extract_metadata` primitive at `../metadata.rs` (documented in the [
   `FIRMLINKED_SYSTEM_PREFIXES` allowlist, `JUNK_BASENAMES`, `PSEUDO_FS_BASENAMES`, the `ExclusionScope` /
   `ExclusionTier` types, `should_exclude`, `e2e_allowlist_path`, `is_canonicalization_alias`, and `default_exclusions`
   (`#[cfg(test)]` only). Re-exported at `crate::indexing` level so existing `scanner::should_exclude` callers are
-  unchanged. It's the single exclusion gate for every code path (scanner, reconcile, watch verification, verifier).
+  unchanged. It's the single exclusion gate for every code path (scanner, reconcile, watch verification, verifier). Its
+  tests live in `exclusions_tests.rs`, pulled in as `exclusions`'s own `tests` child module via `#[path]` so they keep
+  reaching the module's private helpers.
 - **tests.rs** — the scanner-driver test module.
 
 E2E scan restriction: when `CMDR_E2E_START_PATH` is set, `should_exclude` restricts scanning to the fixture path, its
