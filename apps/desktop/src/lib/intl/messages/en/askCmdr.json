@@ -290,39 +290,48 @@
   },
   "askCmdr.consent.intro": "Ask Cmdr sends your questions to the AI provider you choose, using your own API key. Here’s exactly what leaves your Mac when you chat:",
   "@askCmdr.consent.intro": {
-    "description": "Opening paragraph of the Ask Cmdr consent screen, before the list of what gets sent. Ends with a colon introducing the list. The apostrophe is U+2019."
+    "description": "Opening paragraph of the Ask Cmdr consent screen, before the list of what gets sent. Ends with a colon introducing the list. The apostrophe is U+2019.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "askCmdr.consent.item.messages": "Your messages",
   "@askCmdr.consent.item.messages": {
-    "description": "First item in the Ask Cmdr consent list of what leaves the Mac: the text the user types. Short noun phrase, sentence case."
+    "description": "First item in the Ask Cmdr consent list of what leaves the Mac: the text the user types. Short noun phrase, sentence case.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "askCmdr.consent.item.names": "The names and paths of files and folders Cmdr looks at to answer you",
   "@askCmdr.consent.item.names": {
-    "description": "Consent list item: the file and folder names and paths Cmdr reads to answer. Never the file contents. Sentence case, no period."
+    "description": "Consent list item: the file and folder names and paths Cmdr reads to answer. Never the file contents. Sentence case, no period.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "askCmdr.consent.item.sizes": "Their sizes and dates",
   "@askCmdr.consent.item.sizes": {
-    "description": "Consent list item: the sizes and dates of those files and folders. Short noun phrase, sentence case."
+    "description": "Consent list item: the sizes and dates of those files and folders. Short noun phrase, sentence case.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "askCmdr.consent.item.envelope": "What you’re looking at right now: your current folder, cursor, selection, and connected drives",
   "@askCmdr.consent.item.envelope": {
-    "description": "Consent list item describing the app-state envelope sent with each question: the current folder, cursor position, selection, and connected drives. Sentence case, no period. The apostrophe is U+2019."
+    "description": "Consent list item describing the app-state envelope sent with each question: the current folder, cursor position, selection, and connected drives. Sentence case, no period. The apostrophe is U+2019.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "askCmdr.consent.item.attachments": "Any file or folder you attach to a question, by its name and path only",
   "@askCmdr.consent.item.attachments": {
-    "description": "Consent list item: files or folders the user attaches to a question are sent by reference (name and path), never their contents. Sentence case, no period."
+    "description": "Consent list item: files or folders the user attaches to a question are sent by reference (name and path), never their contents. Sentence case, no period.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "askCmdr.consent.noContents": "Cmdr doesn’t send the files themselves: no file contents, no photos, no thumbnails. Photo search is the one thing that reaches inside your images, and only when you have it search them: the text Cmdr recognized inside the matching photos and their tags go to your provider so it can find them. Ask Cmdr only looks and speaks; it never changes anything.",
   "@askCmdr.consent.noContents": {
-    "description": "Reassurance paragraph on the Ask Cmdr consent screen: the files themselves (contents, photos, thumbnails) are never sent; the one exception is photo search, which sends image-derived text (recognized text and tags) when used; and the assistant is read-only. The apostrophes are U+2019."
+    "description": "Reassurance paragraph on the Ask Cmdr consent screen: the files themselves (contents, photos, thumbnails) are never sent; the one exception is photo search, which sends image-derived text (recognized text and tags) when used; and the assistant is read-only. The apostrophes are U+2019.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "askCmdr.consent.local": "Your chats stay on your Mac, in a local database you can open and read. You pick the provider and model, and you can see what each conversation costs.",
   "@askCmdr.consent.local": {
-    "description": "Paragraph on the Ask Cmdr consent screen: chats are stored locally and the user controls the provider, model, and cost visibility."
+    "description": "Paragraph on the Ask Cmdr consent screen: chats are stored locally and the user controls the provider, model, and cost visibility.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "askCmdr.consent.logsNote": "If you turn on LLM call logging in Advanced settings, Cmdr also saves each request and reply to a folder on your Mac. Those logs stay local too, never sent anywhere.",
   "@askCmdr.consent.logsNote": {
-    "description": "Smaller note on the Ask Cmdr consent screen about the optional local LLM call log (the logLlmCalls setting): the logs are written to a local folder and never transmitted."
+    "description": "Smaller note on the Ask Cmdr consent screen about the optional local LLM call log (the logLlmCalls setting): the logs are written to a local folder and never transmitted.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "askCmdr.consent.accept": "Turn on Ask Cmdr",
   "@askCmdr.consent.accept": {

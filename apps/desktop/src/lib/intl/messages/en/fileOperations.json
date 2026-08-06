@@ -273,7 +273,8 @@
 
   "fileOperations.transferDialog.toggleCompress": "Compress",
   "@fileOperations.transferDialog.toggleCompress": {
-    "description": "Label of the segmented-control option that sets the operation to compress (pack the selected files into a new zip). Short control label, sits next to Copy and Move."
+    "description": "Label of the segmented-control option that sets the operation to compress (pack the selected files into a new zip). Short control label, sits next to Copy and Move.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferDialog.sourceGroupTitle": "From",
@@ -290,7 +291,8 @@
 
   "fileOperations.transferDialog.operationAria": "Action",
   "@fileOperations.transferDialog.operationAria": {
-    "description": "Accessibility label for the Copy / Move / Compress segmented control at the top of the transfer dialog (screen-reader only). Names what the group chooses, not any one option."
+    "description": "Accessibility label for the Copy / Move / Compress segmented control at the top of the transfer dialog (screen-reader only). Names what the group chooses, not any one option.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferDialog.destVolumeAria": "Destination volume",

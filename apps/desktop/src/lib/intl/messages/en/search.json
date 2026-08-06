@@ -292,7 +292,8 @@
   "search.runTitle": "Search, including folders that aren''t indexed yet",
   "@search.runTitle": {
     "description": "Tooltip and accessibility label for the run button next to the search input, in filename and regex modes. It names what pressing it does that typing alone doesn't: the app searches beyond its index, reading folders it hasn't indexed, which can take a while and so only happens when the user asks for it.",
-    "placeholders": {}
+    "placeholders": {},
+    "screenshot": "search-dialog.png"
   },
   "search.coverage.pressEnter": "Press Enter and Cmdr will look through it now.",
   "@search.coverage.pressEnter": {

@@ -110,7 +110,7 @@
     "placeholders": {
       "label": "the name of the field this button adjusts, e.g. \"Custom timeout\""
     },
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-appearance-listing.png"
   },
   "ui.numberInput.increase": "Increase {label}",
   "@ui.numberInput.increase": {
@@ -118,6 +118,6 @@
     "placeholders": {
       "label": "the name of the field this button adjusts, e.g. \"Custom timeout\""
     },
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-appearance-listing.png"
   }
 }

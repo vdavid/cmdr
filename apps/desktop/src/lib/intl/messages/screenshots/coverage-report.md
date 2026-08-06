@@ -12,37 +12,39 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 1461 / 2244 keys have a screenshot (65%):** 844 direct (38%) and 617 representative (27%). 783 remain
+**Total: 1549 / 2743 keys have a screenshot (56%):** 910 direct (33%) and 639 representative (23%). 1194 remain
 uncoupled.
 
 | Area           | Direct | Representative | Uncoupled | Total | Any % |
 | -------------- | -----: | -------------: | --------: | ----: | ----: |
-| ai             |      0 |            100 |         0 |   100 |  100% |
+| ai             |      0 |            101 |         0 |   101 |  100% |
+| askCmdr        |      9 |              0 |       140 |   149 |    6% |
 | commandPalette |      3 |              0 |         3 |     6 |   50% |
-| commands       |    128 |              0 |        38 |   166 |   77% |
-| common         |      0 |              0 |         1 |     1 |    0% |
-| crashReporter  |      0 |             15 |         0 |    15 |  100% |
-| downloads      |     10 |              0 |        24 |    34 |   29% |
-| errorReporter  |     10 |              0 |        25 |    35 |   29% |
-| errors         |      3 |            343 |         0 |   346 |  100% |
-| feedback       |      7 |              0 |         7 |    14 |   50% |
-| fileExplorer   |     91 |             82 |       143 |   316 |   55% |
-| fileOperations |     69 |              0 |        77 |   146 |   47% |
+| commands       |    132 |              0 |        40 |   172 |   77% |
+| common         |      0 |              0 |         2 |     2 |    0% |
+| crashReporter  |      0 |             14 |         0 |    14 |  100% |
+| downloads      |     10 |              0 |        26 |    36 |   28% |
+| errorReporter  |     10 |              0 |        24 |    34 |   29% |
+| errors         |      3 |            358 |         0 |   361 |  100% |
+| feedback       |      7 |              0 |         6 |    13 |   54% |
+| fileExplorer   |     95 |             89 |       165 |   349 |   53% |
+| fileOperations |     71 |              0 |        98 |   169 |   42% |
 | goToPath       |      5 |              0 |         5 |    10 |   50% |
-| indexing       |     23 |              0 |        20 |    43 |   53% |
-| licensing      |     23 |              0 |        74 |    97 |   24% |
+| indexing       |     27 |              0 |        32 |    59 |   46% |
+| licensing      |     36 |              0 |        71 |   107 |   34% |
 | lowDiskSpace   |      0 |              0 |         5 |     5 |    0% |
 | main           |      0 |              0 |         2 |     2 |    0% |
 | mtp            |      5 |             17 |         0 |    22 |  100% |
 | notifications  |      0 |              0 |         1 |     1 |    0% |
 | onboarding     |     63 |             32 |        30 |   125 |   76% |
-| queryUi        |     49 |              0 |       103 |   152 |   32% |
-| queue          |      0 |              0 |        19 |    19 |    0% |
-| search         |      8 |              0 |         5 |    13 |   62% |
-| settings       |    279 |              0 |       107 |   386 |   72% |
+| operationLog   |      0 |              0 |        37 |    37 |    0% |
+| queryUi        |     44 |              0 |       122 |   166 |   27% |
+| queue          |      0 |              0 |        18 |    18 |    0% |
+| search         |      9 |              0 |        44 |    53 |   17% |
+| settings       |    309 |              0 |       227 |   536 |   58% |
 | shortcuts      |     26 |             28 |         0 |    54 |  100% |
-| transfer       |      0 |              0 |        10 |    10 |    0% |
-| ui             |      7 |              0 |        12 |    19 |   37% |
+| transfer       |      2 |              0 |        10 |    12 |   17% |
+| ui             |      9 |              0 |        12 |    21 |   43% |
 | updates        |      0 |              0 |        10 |    10 |    0% |
-| viewer         |     31 |              0 |        60 |    91 |   34% |
+| viewer         |     31 |              0 |        62 |    93 |   33% |
 | whatsNew       |      4 |              0 |         2 |     6 |   67% |

@@ -32,7 +32,7 @@
   "queryUi.bar.runTitle.default": "Run search",
   "@queryUi.bar.runTitle.default": {
     "description": "Tooltip and accessibility label for the run button next to the search input in filename and regex modes.",
-    "screenshot": "search-dialog.png"
+    "screenshot": "select-dialog.png"
   },
   "queryUi.bar.runHint": "Press Enter to search",
   "@queryUi.bar.runHint": {
@@ -612,7 +612,8 @@
   },
   "queryUi.filters.countOnly.tooltip": "Show just how many files match, not the list",
   "@queryUi.filters.countOnly.tooltip": {
-    "description": "Tooltip on the 'Count only' toggle in the search filter strip, explaining what turning it on does."
+    "description": "Tooltip on the 'Count only' toggle in the search filter strip, explaining what turning it on does.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.filters.scope.includesSystemFolders": "includes system folders",
   "@queryUi.filters.scope.includesSystemFolders": {
@@ -869,6 +870,7 @@
   },
   "queryUi.scope.currentFolder": "Current folder",
   "@queryUi.scope.currentFolder": {
-    "description": "Name of the default search scope on the 'Search in' chip, shown when the user hasn't picked a scope: the search covers the folder open in the active pane. Distinct from queryUi.scope.useCurrentFolder, which is the button that sets it. Short: it renders as a chip value."
+    "description": "Name of the default search scope on the 'Search in' chip, shown when the user hasn't picked a scope: the search covers the folder open in the active pane. Distinct from queryUi.scope.useCurrentFolder, which is the button that sets it. Short: it renders as a chip value.",
+    "screenshot": "search-dialog.png"
   }
 }

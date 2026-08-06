@@ -26,7 +26,8 @@
   },
   "commands.appAcknowledgements.label": "Acknowledgements…",
   "@commands.appAcknowledgements.label": {
-    "description": "Command palette and Cmdr-menu label for the dialog crediting the open-source libraries Cmdr is built on. The trailing ellipsis is the macOS convention for an item that opens a dialog."
+    "description": "Command palette and Cmdr-menu label for the dialog crediting the open-source libraries Cmdr is built on. The trailing ellipsis is the macOS convention for an item that opens a dialog.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.appLicenseKey.seeDetails.label": "See license details",
   "@commands.appLicenseKey.seeDetails.label": {
@@ -113,7 +114,8 @@
   },
   "commands.askCmdrToggle.label": "Ask Cmdr",
   "@commands.askCmdrToggle.label": {
-    "description": "Command name that opens or closes the Ask Cmdr chat rail, where the user chats with an AI about their files. Appears in the command palette and the View menu. \"Ask Cmdr\" is the product name; keep it as-is."
+    "description": "Command name that opens or closes the Ask Cmdr chat rail, where the user chats with an AI about their files. Appears in the command palette and the View menu. \"Ask Cmdr\" is the product name; keep it as-is.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.askCmdrToggle.description": "Chat with an AI about your files, drives, and history",
   "@commands.askCmdrToggle.description": {

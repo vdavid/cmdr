@@ -436,8 +436,15 @@ async function waitForToastSettled(page: TauriPage): Promise<void> {
     .toBeTruthy()
 }
 
-/** Closes every open toast by clicking its `.toast-close`, then waits for them to clear. */
-async function dismissAllToasts(page: TauriPage): Promise<void> {
+/**
+ * Closes every open toast by clicking its `.toast-close`, then waits for them to clear.
+ *
+ * Exported because the run also has to clear toasts it never staged: the virtual MTP
+ * device announces itself on its own schedule, so its connect toast can land after the
+ * MTP surface already cleaned up, and whatever is on screen when the test ends trips the
+ * harness's leak guard. The spec calls this once more before it finishes.
+ */
+export async function dismissAllToasts(page: TauriPage): Promise<void> {
   await page.evaluate(`(function(){
     var toasts = document.querySelectorAll('.toast');
     for (var i = 0; i < toasts.length; i++) {

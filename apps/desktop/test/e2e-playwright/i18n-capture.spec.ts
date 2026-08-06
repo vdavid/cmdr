@@ -44,6 +44,7 @@ import {
   skippedPath,
   viewerFixturePath,
   captureCall,
+  dismissAllToasts,
   keysFor,
   settlePaint,
   focusWindow,
@@ -584,6 +585,12 @@ test.describe('i18n screenshot capture', () => {
     )
     if (failed.length > 0) console.warn(`[i18n-capture] FAILED surfaces: ${failed.join(', ')}`)
     if (skipped.length > 0) console.warn(`[i18n-capture] SKIPPED surfaces (documented gaps): ${skipped.join(', ')}`)
+
+    // Clear anything still on screen before the harness's leak guard runs. Surface
+    // helpers clean up after themselves, but the virtual MTP device announces itself
+    // on its own schedule, so its connect toast can arrive after the MTP surface is
+    // done and strand the run on a toast no surface staged.
+    await dismissAllToasts(main).catch(() => {})
 
     // Fail the test (non-zero) only on UNEXPECTED failures, but only AFTER
     // writing the report and attempting every surface, so partial progress is

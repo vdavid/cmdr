@@ -180,16 +180,18 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
     // The Ask Cmdr model-override hint renders conditionally, so it keeps a precise
     // note explaining the screenshot may not show it (more specific than the `ai.` rule below).
     prefix: 'ai.cloud.askCmdrOverrideHint',
-    screenshot: 'settings-ai.png',
-    note: 'The hint renders under the model picker in the Settings > AI section pictured here (only while the Ask Cmdr override is set, so the screenshot may not show it).',
+    screenshot: 'settings-ai-ask-cmdr.png',
+    note: 'The hint renders under the model picker in the Settings > AI > Ask Cmdr subsection pictured here (only while the Ask Cmdr override is set, so the screenshot may not show it).',
   },
   {
-    // AI provider/cloud connection states render in the Settings > AI section.
+    // AI provider/cloud connection states render in the Settings > AI > Provider subsection.
+    // Settings > AI is captured as three separate surfaces (provider, Ask Cmdr, MCP server);
+    // the provider one is where connection state lives, so it's the honest stand-in.
     prefix: 'ai.',
-    screenshot: 'settings-ai.png',
+    screenshot: 'settings-ai-provider.png',
     note:
-      'AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section ' +
-      'pictured here (and inline near AI actions). This shows the AI settings area for context.',
+      'AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider ' +
+      'subsection pictured here (and inline near AI actions). This shows the AI provider settings for context.',
   },
   {
     prefix: 'onboarding.cloudSetup.',

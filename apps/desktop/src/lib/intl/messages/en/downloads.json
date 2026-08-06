@@ -227,7 +227,7 @@
     "placeholders": {
       "binding": "the system-wide shortcut keys (e.g. ⌃⌥⌘J)"
     },
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-behavior-notifications.png"
   },
 
   "downloads.toggleDescription.unbound": "Jump to your most recent download from any app.",

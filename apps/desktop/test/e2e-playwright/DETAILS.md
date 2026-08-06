@@ -396,6 +396,11 @@ Toasts auto-dismiss after 4 seconds if `dismissal: 'transient'` (the default), o
 - **Persistent toasts (AI download, update-ready, Quick Look hint)**: must be dismissed; assert on a stable fragment of
   the message. The Quick Look hint that fires on first Space press, for example, is asserted with
   `expectAndDismissToast(tauriPage, 'Space')` in `app.spec.ts`.
+- **Toasts nothing in the test triggered**: a device announcing itself fires on ITS schedule, not the test's, so the
+  toast can land after whatever staged that area already cleaned up, and strand the run on something no step asked for.
+  The virtual MTP device's connect toast does exactly this to the i18n capture run, which is why
+  `i18n-capture.spec.ts` clears toasts once more at the very end rather than relying on per-surface cleanup. A test that
+  merely runs long enough for a background event to fire needs the same end-of-test sweep.
 
 ## Gotchas
 

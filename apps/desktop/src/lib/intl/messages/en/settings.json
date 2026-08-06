@@ -454,23 +454,28 @@
 
   "settings.fileOperations.pasteClipboardAsFile.label": "Paste clipboard content as a file",
   "@settings.fileOperations.pasteClipboardAsFile.label": {
-    "description": "Settings label for what ⌘V (paste) does in a folder when the clipboard holds pasteable content (text, an image, or a PDF) rather than copied files. \"⌘V\" is the macOS paste shortcut glyph; keep it."
+    "description": "Settings label for what ⌘V (paste) does in a folder when the clipboard holds pasteable content (text, an image, or a PDF) rather than copied files. \"⌘V\" is the macOS paste shortcut glyph; keep it.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.pasteClipboardAsFile.description": "What ⌘V does in a folder when the clipboard holds text, an image, or a PDF instead of copied files.",
   "@settings.fileOperations.pasteClipboardAsFile.description": {
-    "description": "Settings description under the label. Explains that this controls pasting non-file clipboard content (like a screenshot or copied text) into the current folder as a new file. \"⌘V\" is the macOS paste shortcut glyph; keep it."
+    "description": "Settings description under the label. Explains that this controls pasting non-file clipboard content (like a screenshot or copied text) into the current folder as a new file. \"⌘V\" is the macOS paste shortcut glyph; keep it.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Do nothing",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
-    "description": "Paste-as-file option: pressing ⌘V with non-file clipboard content does nothing (the previous behavior). Radio-button label. \"⌘V\" is the macOS paste shortcut; keep any glyph."
+    "description": "Paste-as-file option: pressing ⌘V with non-file clipboard content does nothing (the previous behavior). Radio-button label. \"⌘V\" is the macOS paste shortcut; keep any glyph.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.pasteClipboardAsFile.opt.createFile": "Create file",
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFile": {
-    "description": "Paste-as-file option: pressing ⌘V creates a new file from the clipboard content, but does not start renaming it. Radio-button label."
+    "description": "Paste-as-file option: pressing ⌘V creates a new file from the clipboard content, but does not start renaming it. Radio-button label.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": "Create and rename",
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
-    "description": "Paste-as-file option: pressing ⌘V creates a new file from the clipboard content and immediately starts an inline rename so the user can name it. Radio-button label. This is the default."
+    "description": "Paste-as-file option: pressing ⌘V creates a new file from the clipboard content and immediately starts an inline rename so the user can name it. Radio-button label. This is the default.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
 
   "settings.archives.enterBehavior.label": "Opening archives and bundles",
@@ -537,12 +542,12 @@
   "settings.indexing.enabled.label": "Drive indexing",
   "@settings.indexing.enabled.label": {
     "description": "Label for the background drive-indexing toggle. In Settings > Behavior > File system watching.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-indexing-drive-indexing.png"
   },
   "settings.indexing.enabled.description": "Index your drive in the background for instant directory sizes.",
   "@settings.indexing.enabled.description": {
     "description": "Help text for the drive-indexing toggle. \"directory sizes\" = folder sizes; indexing precomputes them so they show instantly.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-indexing-drive-indexing.png"
   },
 
   "settings.mediaIndex.card": "Image search",
@@ -617,7 +622,8 @@
   },
   "settings.mediaIndex.cards.enable": "Enable indexing",
   "@settings.mediaIndex.cards.enable": {
-    "description": "Title of the first Image indexing settings card, holding the master on/off toggle, the privacy note, and live progress. In Settings > Indexing > Image indexing."
+    "description": "Title of the first Image indexing settings card, holding the master on/off toggle, the privacy note, and live progress. In Settings > Indexing > Image indexing.",
+    "screenshot": "settings-indexing-image-indexing.png"
   },
   "settings.mediaIndex.cards.folders": "Folders to index",
   "@settings.mediaIndex.cards.folders": {
@@ -632,15 +638,18 @@
     "description": "Heading above the live per-drive image-indexing progress shown in the Enable indexing card while a pass is running (each drive lists how many images are done, plus a rate and time estimate)."
   },
   "@settings.mediaIndex.privacyNote": {
-    "description": "Privacy reassurance shown in Settings > AI > Image search, under the master toggle. Clarifies that this AI feature is on-device only, unlike the provider-backed AI features. \"Mac\" is the Apple computer; \"Vision\" is Apple''s framework name (do not translate); \"API key\" is a credential for a cloud AI provider."
+    "description": "Privacy reassurance shown in Settings > AI > Image search, under the master toggle. Clarifies that this AI feature is on-device only, unlike the provider-backed AI features. \"Mac\" is the Apple computer; \"Vision\" is Apple''s framework name (do not translate); \"API key\" is a credential for a cloud AI provider.",
+    "screenshot": "settings-indexing-image-indexing.png"
   },
   "settings.mediaIndex.enabled.label": "Index image contents",
   "@settings.mediaIndex.enabled.label": {
-    "description": "Label for the toggle that turns on reading the text inside images (OCR) so you can search it. Off by default. In Settings > AI > Image search."
+    "description": "Label for the toggle that turns on reading the text inside images (OCR) so you can search it. Off by default. In Settings > AI > Image search.",
+    "screenshot": "settings-indexing-image-indexing.png"
   },
   "settings.mediaIndex.enabled.description": "Read the text inside your images so you can search it. Runs on your Mac and never leaves it. Covers local drives for now.",
   "@settings.mediaIndex.enabled.description": {
-    "description": "Help text under the \"Index image contents\" toggle. Reassures the user this is on-device (nothing is uploaded) and scopes it to local drives (network drives come later). \"OCR\" is not used in the copy on purpose; keep it plain."
+    "description": "Help text under the \"Index image contents\" toggle. Reassures the user this is on-device (nothing is uploaded) and scopes it to local drives (network drives come later). \"OCR\" is not used in the copy on purpose; keep it plain.",
+    "screenshot": "settings-indexing-image-indexing.png"
   },
   "settings.mediaIndex.showFileStatusIcons.label": "Show status badges on image files",
   "@settings.mediaIndex.showFileStatusIcons.label": {
@@ -898,22 +907,22 @@
   "settings.indexing.askForEachDrive.label": "Ask for each drive",
   "@settings.indexing.askForEachDrive.label": {
     "description": "Label for the toggle that controls whether Cmdr asks, the first time you open a network share or USB device, if you''d like to index it. In Settings > Behavior > File system watching.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-indexing-drive-indexing.png"
   },
   "settings.indexing.askForEachDrive.description": "When you first open a network share or device, ask whether to index it.",
   "@settings.indexing.askForEachDrive.description": {
     "description": "Help text for the \"Ask for each drive\" toggle. Indexing of external drives is off by default; this asks per drive the first time you open it.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-indexing-drive-indexing.png"
   },
   "settings.indexing.staleNotify.label": "Notify me if any external drive index goes stale",
   "@settings.indexing.staleNotify.label": {
     "description": "Label for the toggle that controls whether Cmdr shows a one-time explanation the first time an external drive''s index may be out of date (because the drive was disconnected). In Settings > Behavior > File system watching.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-indexing-drive-indexing.png"
   },
   "settings.indexing.staleNotify.description": "You''ll still see the yellow status if you turn this off.",
   "@settings.indexing.staleNotify.description": {
     "description": "Help text under the stale-notification toggle, reassuring that the yellow drive-index status dot stays visible even with the notification turned off.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-indexing-drive-indexing.png"
   },
   "settings.indexing.masterOffNote": "Drive indexing is off, so no drive is indexed and folder sizes stay hidden. Each drive keeps its own on or off choice, ready for when you turn this back on.",
   "@settings.indexing.masterOffNote": {
@@ -928,22 +937,22 @@
   "settings.indexing.reEnableNotifications.label": "Re-enable notifications for all drives",
   "@settings.indexing.reEnableNotifications.label": {
     "description": "Label for the row holding the button that clears every per-drive \"Don''t ask again\" silence, so Cmdr will ask about indexing each drive again.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-indexing-drive-indexing.png"
   },
   "settings.indexing.reEnableNotifications.button": "Re-enable",
   "@settings.indexing.reEnableNotifications.button": {
     "description": "Button that clears every per-drive \"Don''t ask again\" silence. Short label; sits in a row next to its description.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-indexing-drive-indexing.png"
   },
   "settings.indexing.reEnableNotifications.description": "Ask again about indexing each drive you turned the prompt off for.",
   "@settings.indexing.reEnableNotifications.description": {
     "description": "Help text under the \"Re-enable notifications for all drives\" button, explaining it undoes the per-drive \"Don''t ask again\" choices.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-indexing-drive-indexing.png"
   },
   "settings.indexing.reEnableNotifications.disabledTooltip": "You haven''t turned off the prompt for any drive yet.",
   "@settings.indexing.reEnableNotifications.disabledTooltip": {
     "description": "Tooltip on the disabled \"Re-enable\" button, shown when the user hasn''t silenced the first-connect prompt for any drive (so there''s nothing to re-enable).",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-indexing-drive-indexing.png"
   },
   "settings.indexing.silencedDrives.label": "Silenced drive prompts",
   "@settings.indexing.silencedDrives.label": {
@@ -965,38 +974,38 @@
   "settings.behavior.fileSystemWatching.downloadsNotifications.label": "Notify on downloads",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.label": {
     "description": "Label for the picker controlling how new downloads are announced. In Settings > Behavior > File system watching, on the \"Downloads notifications\" card.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-behavior-notifications.png"
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.description": "How to surface new files arriving in your Downloads folder.",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.description": {
     "description": "Help text for the downloads-notifications setting. \"Downloads\" is the macOS folder name; use the OS's localized folder name. \"surface\" here means show/announce.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-behavior-notifications.png"
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": "In-app",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": {
     "description": "Downloads-notification option: show notifications inside Cmdr only. Short toggle-button label.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-behavior-notifications.png"
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "macOS",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": {
     "description": "Downloads-notification option: use macOS system notifications. \"macOS\" is a brand name; keep it. Short toggle-button label.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-behavior-notifications.png"
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": "Both",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": {
     "description": "Downloads-notification option: use both in-app and macOS notifications. Short toggle-button label.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-behavior-notifications.png"
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.neither": "Neither",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.neither": {
     "description": "Downloads-notification option: no download notifications at all. Short toggle-button label.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-behavior-notifications.png"
   },
 
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Go to latest download",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "description": "Label for the toggle enabling a system-wide hotkey that jumps to the newest download. On the \"Downloads\" card in Settings > Behavior > File system watching.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-behavior-notifications.png"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Press ⌃⌥⌘J from any app to jump to your most recent download. Requires Full Disk Access.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
@@ -1033,38 +1042,38 @@
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": "Low disk space warning",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": {
     "description": "Label for the picker controlling how a low-free-space warning is shown. On the \"Low disk space\" card in Settings > Behavior > File system watching.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-behavior-notifications.png"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "How to warn you when your startup disk runs low on free space.",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": {
     "description": "Help text for the low-disk-space setting. \"startup disk\" is the macOS term for the boot drive; use the OS's localized term.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-behavior-notifications.png"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": "In-app",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": {
     "description": "Low-disk-space option: warn inside Cmdr only. Short toggle-button label.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-behavior-notifications.png"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "macOS",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": {
     "description": "Low-disk-space option: use a macOS system notification. \"macOS\" is a brand name; keep it. Short toggle-button label.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-behavior-notifications.png"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": "Off",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": {
     "description": "Low-disk-space option: no warning. Short toggle-button label.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-behavior-notifications.png"
   },
 
   "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": "Warning threshold",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": {
     "description": "Label for the number input setting the free-space percentage that triggers the low-disk warning. On the \"Low disk space\" card.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-behavior-notifications.png"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "Warn when free space drops below this percent of your startup disk.",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": {
     "description": "Help text for the low-disk-space threshold. \"startup disk\" is the macOS boot-drive term; use the OS's localized term.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-behavior-notifications.png"
   },
 
   "settings.search.autoApply.label": "Auto-apply searches",
@@ -1081,27 +1090,27 @@
   "settings.ai.provider.label": "Provider",
   "@settings.ai.provider.label": {
     "description": "Label for the AI provider picker (off / cloud / local). In the Settings > AI section. Short label.",
-    "screenshot": "settings-ai.png"
+    "screenshot": "settings-ai-provider.png"
   },
   "settings.ai.provider.description": "Choose how AI features are powered.",
   "@settings.ai.provider.description": {
     "description": "Help text for the AI provider setting. \"AI\" = artificial intelligence.",
-    "screenshot": "settings-ai.png"
+    "screenshot": "settings-ai-provider.png"
   },
   "settings.ai.provider.opt.off": "Off",
   "@settings.ai.provider.opt.off": {
     "description": "AI provider option: AI features disabled. Short toggle-button label.",
-    "screenshot": "settings-ai.png"
+    "screenshot": "settings-ai-provider.png"
   },
   "settings.ai.provider.opt.cloud": "Cloud AI",
   "@settings.ai.provider.opt.cloud": {
     "description": "AI provider option: use a cloud AI service via the user's own API key. \"AI\" = artificial intelligence. Short toggle-button label.",
-    "screenshot": "settings-ai.png"
+    "screenshot": "settings-ai-provider.png"
   },
   "settings.ai.provider.opt.local": "Local LLM",
   "@settings.ai.provider.opt.local": {
     "description": "AI provider option: run a model locally on-device. \"LLM\" = large language model; keep the abbreviation or use the locale's standard equivalent. Short toggle-button label.",
-    "screenshot": "settings-ai.png"
+    "screenshot": "settings-ai-provider.png"
   },
 
   "settings.ai.cloudProvider.label": "Service",
@@ -1323,34 +1332,34 @@
   "settings.developer.mcpEnabled.label": "Enable MCP server",
   "@settings.developer.mcpEnabled.label": {
     "description": "Label for the toggle starting the MCP server. \"MCP\" = Model Context Protocol; keep the abbreviation. In Settings > Developer > MCP server.",
-    "screenshot": "settings-developer-mcp-server.png"
+    "screenshot": "settings-ai-mcp-server.png"
   },
   "settings.developer.mcpEnabled.description": "Start a Model Context Protocol server for AI assistant integration.",
   "@settings.developer.mcpEnabled.description": {
     "description": "Help text for the MCP-server toggle. \"Model Context Protocol\" is a standard name; keep it (it is what MCP abbreviates). \"AI\" = artificial intelligence.",
-    "screenshot": "settings-developer-mcp-server.png"
+    "screenshot": "settings-ai-mcp-server.png"
   },
 
   "settings.developer.mcpPort.label": "Port",
   "@settings.developer.mcpPort.label": {
     "description": "Label for the MCP-server network port number input. \"Port\" is a networking term. In Settings > Developer > MCP server. Short label.",
-    "screenshot": "settings-developer-mcp-server.png"
+    "screenshot": "settings-ai-mcp-server.png"
   },
   "settings.developer.mcpPort.description": "Preferred port for the MCP server. Leave at 0 to let the OS pick an ephemeral port (recommended; the actual port is shown below when running). Pin a specific port if external tooling needs it.",
   "@settings.developer.mcpPort.description": {
     "description": "Help text for the MCP-port input. \"MCP\" = Model Context Protocol (keep it). \"port\" and \"ephemeral port\" are networking terms; \"0\" is a literal value meaning auto-pick. \"OS\" = operating system.",
-    "screenshot": "settings-developer-mcp-server.png"
+    "screenshot": "settings-ai-mcp-server.png"
   },
 
   "settings.developer.verboseLogging.label": "Verbose console output (developer)",
   "@settings.developer.verboseLogging.label": {
     "description": "Label for the verbose-logging toggle. \"console\" = the developer log output; \"(developer)\" marks it as an advanced/dev option. In Settings > Developer > Logging.",
-    "screenshot": "settings-developer-logging.png"
+    "screenshot": "settings-advanced.png"
   },
   "settings.developer.verboseLogging.description": "Bumps the dev terminal and browser devtools console to debug level. The on-disk log file always captures debug detail regardless, so error reports are unaffected by this toggle. RUST_LOG always wins for the terminal.",
   "@settings.developer.verboseLogging.description": {
     "description": "Help text for the verbose-logging toggle, aimed at developers. \"RUST_LOG\" is a literal environment-variable name; keep it exactly. \"devtools\", \"debug level\", and \"terminal\" are developer terms. \"wins\" here means takes precedence over this toggle.",
-    "screenshot": "settings-developer-logging.png"
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.updates.autoCheck.label": "Automatically check for updates",
@@ -1617,11 +1626,13 @@
 
   "settings.advanced.logLlmCalls.label": "Log AI model calls",
   "@settings.advanced.logLlmCalls.label": {
-    "description": "Advanced-section label for the toggle that writes every AI model request and response to a local folder for debugging. \"AI model\" refers to the LLM (large language model) the user's AI features talk to."
+    "description": "Advanced-section label for the toggle that writes every AI model request and response to a local folder for debugging. \"AI model\" refers to the LLM (large language model) the user's AI features talk to.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.advanced.logLlmCalls.description": "Save every AI request and response to a local folder (llm-logs) for debugging. These files stay on your Mac and include the file names and paths Cmdr sends to your provider.",
   "@settings.advanced.logLlmCalls.description": {
-    "description": "Help text for the log-AI-model-calls toggle (advanced). \"llm-logs\" is a literal folder name, keep it exactly. \"Cmdr\" is the app name, keep it. \"provider\" = the AI provider the user chose (OpenAI, Anthropic, etc.). The point is that logging is local-only and never transmitted."
+    "description": "Help text for the log-AI-model-calls toggle (advanced). \"llm-logs\" is a literal folder name, keep it exactly. \"Cmdr\" is the app name, keep it. \"provider\" = the AI provider the user chose (OpenAI, Anthropic, etc.). The point is that logging is local-only and never transmitted.",
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.advanced.serviceResolveTimeout.label": "Service resolve timeout",
@@ -1780,7 +1791,8 @@
   },
   "settings.section.archives": "Archives",
   "@settings.section.archives": {
-    "description": "Settings subsection title under Behavior: Archives. Covers what pressing Enter does on archive files and macOS app bundles. Sidebar and page heading."
+    "description": "Settings subsection title under Behavior: Archives. Covers what pressing Enter does on archive files and macOS app bundles. Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.behavior.doubleClickPaneNavigatesToParent.label": "Double-click the pane background to go up a folder",
   "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
@@ -1817,11 +1829,13 @@
   },
   "settings.section.driveIndexing": "Drive indexing",
   "@settings.section.driveIndexing": {
-    "description": "Settings subsection title under Indexing: Drive indexing (the background file-system indexer that scans drives so search finds files fast). Sidebar and page heading."
+    "description": "Settings subsection title under Indexing: Drive indexing (the background file-system indexer that scans drives so search finds files fast). Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.imageIndexing": "Image indexing",
   "@settings.section.imageIndexing": {
-    "description": "Settings subsection title under Indexing: Image indexing (on-device search of the text inside images, via OCR). Sidebar and page heading. Keep short; match the card title \"settings.mediaIndex.card\"."
+    "description": "Settings subsection title under Indexing: Image indexing (on-device search of the text inside images, via OCR). Sidebar and page heading. Keep short; match the card title \"settings.mediaIndex.card\".",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.ai": "AI",
   "@settings.section.ai": {
@@ -1830,15 +1844,18 @@
   },
   "settings.section.aiProvider": "Provider",
   "@settings.section.aiProvider": {
-    "description": "Settings subsection title under AI: Provider (which AI backend the app uses). Sidebar and page heading. Keep short."
+    "description": "Settings subsection title under AI: Provider (which AI backend the app uses). Sidebar and page heading. Keep short.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.askCmdr": "Ask Cmdr",
   "@settings.section.askCmdr": {
-    "description": "Top-level Settings section title: Ask Cmdr (the read-only chat rail). This is the product name; keep it as-is."
+    "description": "Top-level Settings section title: Ask Cmdr (the read-only chat rail). This is the product name; keep it as-is.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.askCmdr.intro": "Chat with an AI about your files, drives, and history. Ask Cmdr is read-only: it reads names, paths, and sizes to answer, and never changes anything.",
   "@settings.askCmdr.intro": {
-    "description": "Intro paragraph at the top of the Ask Cmdr settings section."
+    "description": "Intro paragraph at the top of the Ask Cmdr settings section.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.status.on": "Ask Cmdr is on",
   "@settings.askCmdr.status.on": {
@@ -1846,7 +1863,8 @@
   },
   "settings.askCmdr.status.off": "Ask Cmdr is off",
   "@settings.askCmdr.status.off": {
-    "description": "Status line in Ask Cmdr settings when the feature is turned off. Sentence case, no period."
+    "description": "Status line in Ask Cmdr settings when the feature is turned off. Sentence case, no period.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.status.onSince": "On since {date}",
   "@settings.askCmdr.status.onSince": {
@@ -1857,7 +1875,8 @@
   },
   "settings.askCmdr.turnOn": "Turn on Ask Cmdr",
   "@settings.askCmdr.turnOn": {
-    "description": "Button that opts into and turns on Ask Cmdr from settings. Starts with a verb. Sentence case."
+    "description": "Button that opts into and turns on Ask Cmdr from settings. Starts with a verb. Sentence case.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.turnOff": "Turn off Ask Cmdr",
   "@settings.askCmdr.turnOff": {
@@ -1865,11 +1884,13 @@
   },
   "settings.askCmdr.disclosure.title": "What Ask Cmdr sends",
   "@settings.askCmdr.disclosure.title": {
-    "description": "Heading of the collapsible block in Ask Cmdr settings that shows exactly what leaves the Mac (the same copy as the opt-in screen). Sentence case."
+    "description": "Heading of the collapsible block in Ask Cmdr settings that shows exactly what leaves the Mac (the same copy as the opt-in screen). Sentence case.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.provider.title": "Provider and model",
   "@settings.askCmdr.provider.title": {
-    "description": "Heading of the provider/model group in Ask Cmdr settings. Sentence case."
+    "description": "Heading of the provider/model group in Ask Cmdr settings. Sentence case.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.provider.shared": "Ask Cmdr uses the AI provider and key you set up in Settings › AI ({provider}).",
   "@settings.askCmdr.provider.shared": {
@@ -1880,31 +1901,38 @@
   },
   "settings.askCmdr.provider.off": "Turn on an AI provider in Settings › AI to use Ask Cmdr.",
   "@settings.askCmdr.provider.off": {
-    "description": "Hint shown in Ask Cmdr settings when no AI provider is enabled, pointing the user to the AI settings section. The › is a right-pointing angle separating the settings path."
+    "description": "Hint shown in Ask Cmdr settings when no AI provider is enabled, pointing the user to the AI settings section. The › is a right-pointing angle separating the settings path.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.interactiveModel.label": "Ask Cmdr model",
   "@settings.askCmdr.interactiveModel.label": {
-    "description": "Label for the text field where the user picks a dedicated model for Ask Cmdr. Sentence case."
+    "description": "Label for the text field where the user picks a dedicated model for Ask Cmdr. Sentence case.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.interactiveModel.description": "The model Ask Cmdr chats with. Leave blank to use the same model as Cmdr’s other AI features. Example: claude-sonnet-4-5",
   "@settings.askCmdr.interactiveModel.description": {
-    "description": "Help text under the Ask Cmdr model field. Explains that blank falls back to the shared AI model, and gives an example model id. The example id and the apostrophe (U+2019) stay as written; do not translate the example id."
+    "description": "Help text under the Ask Cmdr model field. Explains that blank falls back to the shared AI model, and gives an example model id. The example id and the apostrophe (U+2019) stay as written; do not translate the example id.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.interactiveModel.placeholder": "Same as Cmdr’s AI",
   "@settings.askCmdr.interactiveModel.placeholder": {
-    "description": "Placeholder text in the empty Ask Cmdr model field, signalling that blank means the shared AI model is used. The apostrophe is U+2019."
+    "description": "Placeholder text in the empty Ask Cmdr model field, signalling that blank means the shared AI model is used. The apostrophe is U+2019.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.chatMemorySize.label": "Chat memory size",
   "@settings.askCmdr.chatMemorySize.label": {
-    "description": "Label for the picker that sets how much of an Ask Cmdr conversation is sent to the model with each message. Sentence case."
+    "description": "Label for the picker that sets how much of an Ask Cmdr conversation is sent to the model with each message. Sentence case.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.chatMemorySize.description": "How much of the conversation Cmdr sends to the model. Automatic follows your model’s known limit.",
   "@settings.askCmdr.chatMemorySize.description": {
-    "description": "Help text under the chat memory size picker. Explains what the setting does and that the Automatic option follows the context window Cmdr knows the chosen model to have. \"Automatic\" here refers to the first option in the same picker, so use the same wording as that option. The apostrophe is U+2019."
+    "description": "Help text under the chat memory size picker. Explains what the setting does and that the Automatic option follows the context window Cmdr knows the chosen model to have. \"Automatic\" here refers to the first option in the same picker, so use the same wording as that option. The apostrophe is U+2019.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.chatMemorySize.opt.auto": "Automatic (recommended)",
   "@settings.askCmdr.chatMemorySize.opt.auto": {
-    "description": "First option in the chat memory size picker: let Cmdr follow the context window it knows the chosen model to have, instead of a fixed number of tokens. The other options are plain token counts. Sentence case."
+    "description": "First option in the chat memory size picker: let Cmdr follow the context window it knows the chosen model to have, instead of a fixed number of tokens. The other options are plain token counts. Sentence case.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.chatMemorySize.overWindow": "Your model may refuse a message this long. Cmdr keeps the value you set.",
   "@settings.askCmdr.chatMemorySize.overWindow": {
@@ -1912,11 +1940,13 @@
   },
   "settings.askCmdr.spend.title": "Spending",
   "@settings.askCmdr.spend.title": {
-    "description": "Heading of the spend/usage group in Ask Cmdr settings (per-day token use and estimated cost). Sentence case."
+    "description": "Heading of the spend/usage group in Ask Cmdr settings (per-day token use and estimated cost). Sentence case.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.spend.empty": "No usage yet. Your token use and estimated cost will show up here.",
   "@settings.askCmdr.spend.empty": {
-    "description": "Empty state under the Ask Cmdr spending heading before any chat has run."
+    "description": "Empty state under the Ask Cmdr spending heading before any chat has run.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.spend.disclaimer": "These are estimates. Your provider bills you directly, so check your provider’s dashboard for the exact amount.",
   "@settings.askCmdr.spend.disclaimer": {
@@ -1949,67 +1979,83 @@
   },
   "settings.navigationAndFileOps.card.operationLog": "Operation log",
   "@settings.navigationAndFileOps.card.operationLog": {
-    "description": "Heading of the Operation log card (file-operation history and undo retention limits) in Settings > Behavior > Navigation & file ops."
+    "description": "Heading of the Operation log card (file-operation history and undo retention limits) in Settings > Behavior > Navigation & file ops.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.operationLog.intro": "Cmdr logs your file operations so you can review your history and undo actions. Choose how long to keep the log and how much disk space it can use.",
   "@settings.operationLog.intro": {
-    "description": "Intro paragraph at the top of the Operation log card in Settings > Behavior > Navigation & file ops. Explains what the log is; the two settings below control retention. \"Cmdr\" is the product name; do not translate it."
+    "description": "Intro paragraph at the top of the Operation log card in Settings > Behavior > Navigation & file ops. Explains what the log is; the two settings below control retention. \"Cmdr\" is the product name; do not translate it.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.operationLog.maxAge.label": "Keep history for",
   "@settings.operationLog.maxAge.label": {
-    "description": "Label for the picker that sets how long operation-log history is kept, in Settings > Operation log."
+    "description": "Label for the picker that sets how long operation-log history is kept, in Settings > Operation log.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.operationLog.maxAge.description": "How long Cmdr keeps logged operations before automatically removing the oldest ones.",
   "@settings.operationLog.maxAge.description": {
-    "description": "Help text under the retention-age picker (settings.operationLog.maxAge.label)."
+    "description": "Help text under the retention-age picker (settings.operationLog.maxAge.label).",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.operationLog.maxAge.opt.forever": "Forever",
   "@settings.operationLog.maxAge.opt.forever": {
-    "description": "Age-limit option: never remove entries by age (only the size limit applies)."
+    "description": "Age-limit option: never remove entries by age (only the size limit applies).",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.operationLog.maxAge.opt.days30": "30 days",
   "@settings.operationLog.maxAge.opt.days30": {
-    "description": "Retention-age option: 30 days. The numeral is literal."
+    "description": "Retention-age option: 30 days. The numeral is literal.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.operationLog.maxAge.opt.days90": "90 days",
   "@settings.operationLog.maxAge.opt.days90": {
-    "description": "Retention-age option: 90 days. The numeral is literal."
+    "description": "Retention-age option: 90 days. The numeral is literal.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.operationLog.maxAge.opt.year1": "1 year",
   "@settings.operationLog.maxAge.opt.year1": {
-    "description": "Retention-age option: 1 year. The numeral is literal."
+    "description": "Retention-age option: 1 year. The numeral is literal.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.operationLog.maxSize.label": "Maximum size",
   "@settings.operationLog.maxSize.label": {
-    "description": "Label for the picker that sets the operation log's maximum size on disk, in Settings > Operation log."
+    "description": "Label for the picker that sets the operation log's maximum size on disk, in Settings > Operation log.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.operationLog.maxSize.description": "The most disk space the operation log can use. When it fills up, Cmdr removes the oldest operations first.",
   "@settings.operationLog.maxSize.description": {
-    "description": "Help text under the size-limit picker (settings.operationLog.maxSize.label)."
+    "description": "Help text under the size-limit picker (settings.operationLog.maxSize.label).",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.operationLog.maxSize.opt.mb100": "100 MB",
   "@settings.operationLog.maxSize.opt.mb100": {
-    "description": "Size-limit option: 100 MB. The numeral and unit (MB) are literal."
+    "description": "Size-limit option: 100 MB. The numeral and unit (MB) are literal.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.operationLog.maxSize.opt.mb250": "250 MB",
   "@settings.operationLog.maxSize.opt.mb250": {
-    "description": "Size-limit option: 250 MB. The numeral and unit (MB) are literal."
+    "description": "Size-limit option: 250 MB. The numeral and unit (MB) are literal.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.operationLog.maxSize.opt.gb1": "1 GB",
   "@settings.operationLog.maxSize.opt.gb1": {
-    "description": "Size-limit option: 1 GB. The numeral and unit (GB) are literal."
+    "description": "Size-limit option: 1 GB. The numeral and unit (GB) are literal.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.operationLog.maxSize.opt.gb2": "2 GB",
   "@settings.operationLog.maxSize.opt.gb2": {
-    "description": "Size-limit option: 2 GB. The numeral and unit (GB) are literal."
+    "description": "Size-limit option: 2 GB. The numeral and unit (GB) are literal.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.operationLog.maxSize.opt.gb3": "3 GB",
   "@settings.operationLog.maxSize.opt.gb3": {
-    "description": "Size-limit option: 3 GB. The numeral and unit (GB) are literal."
+    "description": "Size-limit option: 3 GB. The numeral and unit (GB) are literal.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.operationLog.maxSize.opt.gb5": "5 GB",
   "@settings.operationLog.maxSize.opt.gb5": {
-    "description": "Size-limit option: 5 GB. The numeral and unit (GB) are literal."
+    "description": "Size-limit option: 5 GB. The numeral and unit (GB) are literal.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.section.mcpServer": "MCP server",
   "@settings.section.mcpServer": {
@@ -2109,7 +2155,7 @@
   "settings.control.resetToDefault": "Reset to default",
   "@settings.control.resetToDefault": {
     "description": "Tooltip and aria-label for the per-setting reset button, which restores a setting to its default value. Keep concise.",
-    "screenshot": "settings-developer-mcp-server.png"
+    "screenshot": "settings-ai-mcp-server.png"
   },
   "settings.control.restartRequired": "Restart required",
   "@settings.control.restartRequired": {
@@ -2122,7 +2168,7 @@
   "settings.control.customOption": "Custom...",
   "@settings.control.customOption": {
     "description": "Dropdown option that lets the user enter a custom value. The trailing ellipsis signals further input follows; keep an ellipsis.",
-    "screenshot": "settings-file-systems-smb.png"
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.control.customPrefix": "Custom: {value}",
   "@settings.control.customPrefix": {
@@ -2247,7 +2293,7 @@
   "settings.ai.providerAria": "AI provider",
   "@settings.ai.providerAria": {
     "description": "aria-label for the AI-provider radio group (screen-reader only). \"AI\" = artificial intelligence.",
-    "screenshot": "settings-ai.png"
+    "screenshot": "settings-ai-provider.png"
   },
   "settings.ai.loading": "Loading...",
   "@settings.ai.loading": {
@@ -2273,7 +2319,7 @@
   "settings.fileSystemWatching.indexSize": "Index size",
   "@settings.fileSystemWatching.indexSize": {
     "description": "Label for how much disk every drive index takes up together, shown on the indexing card in Settings > Behavior > File system watching.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-indexing-drive-indexing.png"
   },
   "settings.fileSystemWatching.clearing": "Clearing...",
   "@settings.fileSystemWatching.clearing": {
@@ -2282,7 +2328,7 @@
   "settings.fileSystemWatching.clearIndex": "Clear index",
   "@settings.fileSystemWatching.clearIndex": {
     "description": "Button text that deletes every drive index. Pairs with the in-progress \"Clearing...\" state.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-indexing-drive-indexing.png"
   },
   "settings.fileSystemWatching.noIndex": "No index",
   "@settings.fileSystemWatching.noIndex": {
@@ -2291,17 +2337,17 @@
   "settings.fileSystemWatching.clearIndexDescription": "Deletes every drive's index. Indexing builds it again, and so does searching a folder Cmdr hasn't indexed.",
   "@settings.fileSystemWatching.clearIndexDescription": {
     "description": "Help text under the Clear index button explaining what clearing does.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-indexing-drive-indexing.png"
   },
   "settings.fileSystemWatching.cardDownloads": "Downloads",
   "@settings.fileSystemWatching.cardDownloads": {
     "description": "Heading of the Downloads card in Settings > Behavior > File system watching. The card groups two Downloads-folder features: new-download notifications and the go-to-latest-download global shortcut. \"Downloads\" is the macOS folder name; use the OS's localized folder name.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-behavior-notifications.png"
   },
   "settings.fileSystemWatching.cardLowDiskSpace": "Low disk space",
   "@settings.fileSystemWatching.cardLowDiskSpace": {
     "description": "Heading of the low-disk-space card in Settings > Behavior > File system watching.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-behavior-notifications.png"
   },
   "settings.appearance.card.language": "Language",
   "@settings.appearance.card.language": {
@@ -2397,7 +2443,7 @@
   "settings.fileSystemWatching.globalShortcutHint": "Change the shortcut under Keyboard shortcuts → Go to latest download (global).",
   "@settings.fileSystemWatching.globalShortcutHint": {
     "description": "Hint pointing to where the global shortcut is edited. The \"→\" arrow joins a navigation path; keep it. \"Keyboard shortcuts\" is the Cmdr settings section name and \"Go to latest download (global)\" is the shortcut's name there; translate both consistently with their use elsewhere.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "screenshot": "settings-behavior-notifications.png"
   },
 
   "settings.network.localNetworkAccessLabel": "{localNetwork} access",
@@ -2486,7 +2532,7 @@
   "settings.logging.openLogFile": "Open log file",
   "@settings.logging.openLogFile": {
     "description": "Button that opens the app's log file. In Settings > Developer > Logging.",
-    "screenshot": "settings-developer-logging.png"
+    "screenshot": "settings-advanced.png"
   },
   "settings.logging.copied": "Copied!",
   "@settings.logging.copied": {
@@ -2495,13 +2541,13 @@
   "settings.logging.copyDiagnostics": "Copy diagnostic info",
   "@settings.logging.copyDiagnostics": {
     "description": "Button that copies diagnostic information to the clipboard. Briefly becomes \"Copied!\" after use.",
-    "screenshot": "settings-developer-logging.png"
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.mcp.checkPort": "Check port",
   "@settings.mcp.checkPort": {
     "description": "Button that tests whether the configured MCP server port is available. \"port\" is a networking term. In Settings > Developer > MCP server.",
-    "screenshot": "settings-developer-mcp-server.png"
+    "screenshot": "settings-ai-mcp-server.png"
   },
   "settings.mcp.runningOnPort": "Server is running on port {runningPort}",
   "@settings.mcp.runningOnPort": {
@@ -2509,12 +2555,12 @@
     "placeholders": {
       "runningPort": "the actual network port number the server bound to, e.g. \"52341\""
     },
-    "screenshot": "settings-developer-mcp-server.png"
+    "screenshot": "settings-ai-mcp-server.png"
   },
   "settings.mcp.ephemeral": "(ephemeral)",
   "@settings.mcp.ephemeral": {
     "description": "Suffix appended after the running port to mark it as an OS-picked temporary port. \"ephemeral\" is a networking term for an auto-assigned short-lived port. Keep the parentheses.",
-    "screenshot": "settings-developer-mcp-server.png"
+    "screenshot": "settings-ai-mcp-server.png"
   },
   "settings.mcp.portInUseFallback": "(port {port} was in use)",
   "@settings.mcp.portInUseFallback": {
