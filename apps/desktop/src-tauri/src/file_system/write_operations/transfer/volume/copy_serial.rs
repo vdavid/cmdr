@@ -393,7 +393,9 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                             &dest_item_path.display().to_string(),
                         )
                     });
-                    let probe_handle = task_probe.as_ref().map(super::super::transfer_probe::TaskProbeHandle::probe);
+                    let probe_handle = task_probe
+                        .as_ref()
+                        .map(super::super::transfer_probe::TaskProbeHandle::probe);
 
                     let copy_fut = copy_single_path(
                         &source_volume,
@@ -413,7 +415,11 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                     // copy, so `stream_pipe_file` and `CheckpointStream`
                     // record their phases with no signature threading.
                     let copy_result = match probe_handle {
-                        Some(probe) => super::super::transfer_probe::CURRENT_TASK_PROBE.scope(probe, copy_fut).await,
+                        Some(probe) => {
+                            super::super::transfer_probe::CURRENT_TASK_PROBE
+                                .scope(probe, copy_fut)
+                                .await
+                        }
                         None => copy_fut.await,
                     };
                     match copy_result {
@@ -434,12 +440,9 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                             let source_overwrote = replace_after_write.is_some() || created.any_overwrote();
                             let landed_path = match replace_after_write {
                                 Some(orig) => {
-                                    if let Err(e) = super::conflict::finalize_safe_replace(
-                                        &dest_volume,
-                                        &dest_item_path,
-                                        &orig,
-                                    )
-                                    .await
+                                    if let Err(e) =
+                                        super::conflict::finalize_safe_replace(&dest_volume, &dest_item_path, &orig)
+                                            .await
                                     {
                                         return Err(map_volume_error(&source_path.display().to_string(), e));
                                     }

@@ -3,9 +3,9 @@
 //! multi-chunk with progress, mid-file cancel, empty file, missing source,
 //! streaming-route selection, and recursive directory copy).
 
-use crate::file_system::write_operations::state::OperationIntent;
 use super::test_support::make_state;
 use super::*;
+use crate::file_system::write_operations::state::OperationIntent;
 use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};

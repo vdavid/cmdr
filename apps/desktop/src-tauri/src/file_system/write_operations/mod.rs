@@ -152,8 +152,8 @@ pub(crate) use transfer::volume::move_within_same_volume_with_progress;
 pub(crate) use types::CollectorEventSink;
 
 // Re-export volume copy types and functions
-pub use transfer::volume::{copy_between_volumes, scan_for_volume_copy};
 pub use transfer::volume::move_between_volumes;
+pub use transfer::volume::{copy_between_volumes, scan_for_volume_copy};
 pub use types::{VolumeCopyConfig, VolumeCopyScanResult};
 // Copy/move INTO a zip: the command layer routes an archive destination here
 // (the whole transfer becomes one `{ add }` changeset) instead of the per-file

@@ -24,7 +24,9 @@ use super::super::staged_write::StagedWrite;
 // this module's API) name the staging choice without a second import path.
 use super::super::retry;
 pub(super) use super::super::staged_write::WriteStaging;
-use super::super::transfer_probe::{TaskPhase, arm_current_task_stall_abort, note_task_retry, set_task_bytes, set_task_phase};
+use super::super::transfer_probe::{
+    TaskPhase, arm_current_task_stall_abort, note_task_retry, set_task_bytes, set_task_phase,
+};
 use super::conflict::{ResolvedConflict, resolve_volume_conflict};
 use super::preflight::SourceHint;
 use super::transfer_error::{AtPath, PathedVolumeError};

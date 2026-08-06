@@ -520,7 +520,9 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                 // Held for the task's whole life; dropping it (completion,
                 // abort, panic) removes the row from the in-flight table.
                 let task_probe = task_probe;
-                let probe_handle = task_probe.as_ref().map(super::super::transfer_probe::TaskProbeHandle::probe);
+                let probe_handle = task_probe
+                    .as_ref()
+                    .map(super::super::transfer_probe::TaskProbeHandle::probe);
                 // Per-task `last_file_bytes` tracks bytes reported for the
                 // file this task is copying; deltas roll up into the
                 // shared `bytes_done_a` so the throttle emits an aggregate.
@@ -582,7 +584,11 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                 // `stream_pipe_file` and `CheckpointStream` can record their
                 // phases without threading a handle through every signature.
                 let result = match probe_handle {
-                    Some(probe) => super::super::transfer_probe::CURRENT_TASK_PROBE.scope(probe, copy_fut).await,
+                    Some(probe) => {
+                        super::super::transfer_probe::CURRENT_TASK_PROBE
+                            .scope(probe, copy_fut)
+                            .await
+                    }
                     None => copy_fut.await,
                 };
                 let created_files = std::mem::take(&mut *created.files.lock_ignore_poison());
@@ -615,9 +621,7 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                         // the original). It must survive as a recoverable
                         // `.cmdr-tmp-*` artifact, NOT be cleaned.
                         if let Some(orig) = replace_after_write_owned {
-                            if let Err(e) =
-                                super::conflict::finalize_safe_replace(&dst_vol, &dest_owned, &orig).await
-                            {
+                            if let Err(e) = super::conflict::finalize_safe_replace(&dst_vol, &dest_owned, &orig).await {
                                 // Finalize is file→file only (safe-replace),
                                 // so there's no directory ledger to carry.
                                 return Err(CopyTaskFailure {
@@ -887,7 +891,10 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
     // Drain whatever's left on cancel/error. On success, `in_flight` is
     // already empty. On abort, drop cancels the remaining futures (F10).
     if let Some(probe) = op_probe.as_ref() {
-        probe.set_driver_phase(super::super::transfer_probe::DriverPhase::PostLoop, "draining in-flight");
+        probe.set_driver_phase(
+            super::super::transfer_probe::DriverPhase::PostLoop,
+            "draining in-flight",
+        );
     }
     drop(in_flight);
 

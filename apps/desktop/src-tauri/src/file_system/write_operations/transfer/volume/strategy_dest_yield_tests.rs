@@ -26,14 +26,14 @@
 //! WIRING (opt-in gate, floor, cap, cancel-awareness, byte-exact resume) is
 //! covered end to end.
 
-use crate::file_system::write_operations::state::cancel_write_operation;
-use crate::file_system::write_operations::test_support::TestOperationGuard;
 use super::super::transfer_error::PathedVolumeError;
 use super::test_support::{
     AutoYieldTuningGuard, ForegroundBusyDest, PanicIfProbedDest, REL_CHUNK, REL_TOTAL, RelLog, ReleasingSource,
     make_state, park_holds_at, rel_expected_bytes,
 };
 use super::*;
+use crate::file_system::write_operations::state::cancel_write_operation;
+use crate::file_system::write_operations::test_support::TestOperationGuard;
 use crate::test_support::wait_until_async;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};

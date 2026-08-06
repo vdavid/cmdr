@@ -27,7 +27,9 @@ use uuid::Uuid;
 use super::super::super::conflict::ApplyToAll;
 use super::super::super::journal;
 use super::super::super::manager;
-use super::super::super::state::{OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status};
+use super::super::super::state::{
+    OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status,
+};
 use super::super::super::types::{
     OperationEventSink, VolumeCopyConfig, VolumeCopyScanResult, WriteCancelledEvent, WriteCompleteEvent,
     WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
@@ -784,39 +786,38 @@ pub(crate) async fn copy_volumes_with_progress(
         // The `FuturesUnordered` sliding window, in `volume/copy_concurrent.rs`.
         // Everything it needs is already on hand here; the ledger Arcs are cloned
         // in, so the post-loop below keeps reading the same counters.
-        let outcome =
-            super::copy_concurrent::drive_transfer_concurrent(super::copy_concurrent::ConcurrentCopy {
-                events: Arc::clone(&events),
-                operation_id,
-                state,
-                source_volume: Arc::clone(&source_volume),
-                source_paths,
-                dest_volume: Arc::clone(&dest_volume),
-                dest_path,
-                config,
-                concurrency,
-                dest_dir_is_ours,
-                dest_index: &dest_index,
-                pre_skip_paths: &pre_skip_paths,
-                source_hints: &source_hints,
-                total_files,
-                total_bytes,
-                progress_interval,
-                journal_volumes: &journal_volumes,
-                op_probe: &op_probe,
-                files_done_atomic: Arc::clone(&files_done_atomic),
-                atomic_bytes_done: Arc::clone(&atomic_bytes_done),
-                files_skipped_atomic: Arc::clone(&files_skipped_atomic),
-                bytes_skipped_atomic: Arc::clone(&bytes_skipped_atomic),
-                last_progress_mutex: Arc::clone(&last_progress_mutex),
-                apply_to_all_cell: Arc::clone(&apply_to_all_cell),
-                copied_paths: Arc::clone(&copied_paths),
-                created_dirs: Arc::clone(&created_dirs),
-                in_flight_partials: Arc::clone(&in_flight_partials),
-                deep_skipped_files: Arc::clone(&deep_skipped_files),
-                deep_skipped_bytes: Arc::clone(&deep_skipped_bytes),
-            })
-            .await?;
+        let outcome = super::copy_concurrent::drive_transfer_concurrent(super::copy_concurrent::ConcurrentCopy {
+            events: Arc::clone(&events),
+            operation_id,
+            state,
+            source_volume: Arc::clone(&source_volume),
+            source_paths,
+            dest_volume: Arc::clone(&dest_volume),
+            dest_path,
+            config,
+            concurrency,
+            dest_dir_is_ours,
+            dest_index: &dest_index,
+            pre_skip_paths: &pre_skip_paths,
+            source_hints: &source_hints,
+            total_files,
+            total_bytes,
+            progress_interval,
+            journal_volumes: &journal_volumes,
+            op_probe: &op_probe,
+            files_done_atomic: Arc::clone(&files_done_atomic),
+            atomic_bytes_done: Arc::clone(&atomic_bytes_done),
+            files_skipped_atomic: Arc::clone(&files_skipped_atomic),
+            bytes_skipped_atomic: Arc::clone(&bytes_skipped_atomic),
+            last_progress_mutex: Arc::clone(&last_progress_mutex),
+            apply_to_all_cell: Arc::clone(&apply_to_all_cell),
+            copied_paths: Arc::clone(&copied_paths),
+            created_dirs: Arc::clone(&created_dirs),
+            in_flight_partials: Arc::clone(&in_flight_partials),
+            deep_skipped_files: Arc::clone(&deep_skipped_files),
+            deep_skipped_bytes: Arc::clone(&deep_skipped_bytes),
+        })
+        .await?;
         last_dest_path = outcome.last_dest_path;
         copy_error = outcome.copy_error;
         // Sync counters for post-loop reporting.
