@@ -230,6 +230,12 @@ rather than reporting a gap. `docs/specs/unindexed-search-plan.md` is the plan; 
    arena row gets plus the same `ExcludeRules` (`excludes.rs`), streamed out through `ResultStream`.
 5. **A terminal event**, with what the run could not answer for.
 
+The partition covers the frontier ROOT itself, not only what's inside it. A walk reports a directory's contents, so a
+frontier root the index had no row for would be the one entry neither half emits — and a scope root matches its own
+query as readily as anything under it (the arena's include filter passes an entry that IS an include root). So
+`cover.rs` emits a root it had to materialize, once, before its listing. A root the index already held belongs to the
+covered half instead, which is why it isn't emitted twice.
+
 ### Decision 12: the arena and the coverage answer have to be in step
 
 A coverage answer that calls a subtree covered is a **promise the arena holds its rows**. A walk that wrote rows behind

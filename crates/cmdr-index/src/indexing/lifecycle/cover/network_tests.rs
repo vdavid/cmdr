@@ -351,19 +351,21 @@ fn a_walk_over_a_share_covers_the_folder_it_was_pointed_at() {
 
     assert!(!outcome.cancelled, "the walk ran to the end");
     assert_eq!(outcome.roots_covered, 1);
-    assert_eq!(outcome.entries_found, 3, "one.txt, inner/, inner/two.txt");
-    assert_eq!(outcome.dirs_found, 1, "inner/ is the only directory among them");
+    assert_eq!(outcome.entries_found, 4, "scope/ itself, one.txt, inner/, inner/two.txt");
+    assert_eq!(outcome.dirs_found, 2, "scope/ and inner/");
 
     let mut emitted: Vec<String> = entries.iter().map(|e| e.path.to_string_lossy().to_string()).collect();
     emitted.sort();
     assert_eq!(
         emitted,
         vec![
+            scope.clone(),
             share.path("scope/inner"),
             share.path("scope/inner/two.txt"),
             share.path("scope/one.txt")
         ],
-        "every entry the walk wrote reached the consumer"
+        "every entry the walk wrote reached the consumer, the frontier root included: \
+         its row is the walk's to report, and a search scoped to it answers with it"
     );
     let one = entries
         .iter()
@@ -502,7 +504,11 @@ fn the_walk_overlaps_its_listings_within_the_pacer_budget() {
     );
 
     let (_, outcome) = share.cover(&share.path("scope"));
-    assert_eq!(outcome.dirs_found, subdirs, "every subdirectory was walked");
+    assert_eq!(
+        outcome.dirs_found,
+        subdirs + 1,
+        "every subdirectory was walked, plus the frontier root's own row"
+    );
 
     let max_in_flight = volume.max_in_flight.load(Ordering::SeqCst);
     assert!(
@@ -639,10 +645,13 @@ fn a_same_name_sibling_keeps_the_first_row_rather_than_orphaning_a_subtree() {
 
     let (entries, outcome) = share.cover(&scope);
 
-    assert_eq!(outcome.entries_found, 2, "dup/ once, and its child once");
+    assert_eq!(outcome.entries_found, 3, "the frontier root, dup/ once, and its child once");
     let mut emitted: Vec<String> = entries.iter().map(|e| e.path.to_string_lossy().to_string()).collect();
     emitted.sort();
-    assert_eq!(emitted, [share.path("scope/dup"), share.path("scope/dup/child.txt")]);
+    assert_eq!(
+        emitted,
+        [scope.clone(), share.path("scope/dup"), share.path("scope/dup/child.txt")]
+    );
     assert_eq!(
         share.child_ids(&scope).len(),
         1,
@@ -683,7 +692,11 @@ fn a_nas_system_dir_is_indexed_but_never_walked_into() {
 
     let (entries, outcome) = share.cover(&scope);
 
-    assert_eq!(outcome.entries_found, 2, "real.txt and the snapshot dir's own row");
+    assert_eq!(
+        outcome.entries_found,
+        3,
+        "the frontier root, real.txt, and the snapshot dir's own row"
+    );
     let emitted: Vec<String> = entries.iter().map(|e| e.path.to_string_lossy().to_string()).collect();
     assert!(
         !emitted.iter().any(|p| p.contains("huge.bin")),
@@ -727,8 +740,12 @@ fn a_frontier_rooted_at_a_nas_system_dir_is_refused_rather_than_walked() {
 
     let (entries, outcome) = share.cover(&snapshot);
 
-    assert!(entries.is_empty(), "not one round trip's worth of it was walked");
-    assert_eq!(outcome.entries_found, 0);
+    // The directory itself is a row like any other — an indexed NAS holds one for
+    // it too, and a search that matches its name finds it — so it reaches the
+    // consumer. What must not is anything INSIDE it.
+    let emitted: Vec<String> = entries.iter().map(|e| e.path.to_string_lossy().to_string()).collect();
+    assert_eq!(emitted, [snapshot.clone()], "not one round trip's worth of it was walked");
+    assert_eq!(outcome.entries_found, 1, "the snapshot directory's own row, and nothing under it");
     assert!(
         share.coverage(&snapshot).frontier.is_empty(),
         "and it isn't handed back to the next search either"
@@ -845,7 +862,10 @@ fn a_frontier_root_that_will_not_list_covers_nothing() {
     let (entries, outcome) = drain(share.walk(&scope).0);
 
     assert_eq!(outcome.roots_covered, 0, "nothing was covered");
-    assert!(entries.is_empty());
+    // The folder's own row is materialized before anything is listed, so it goes
+    // out; its CONTENTS are what the refusal costs.
+    let emitted: Vec<String> = entries.iter().map(|e| e.path.to_string_lossy().to_string()).collect();
+    assert_eq!(emitted, [scope.clone()], "and nothing inside it was read");
     assert_eq!(
         share.coverage(&scope).frontier,
         [scope],
@@ -914,8 +934,13 @@ fn a_big_directory_arrives_in_bounded_batches() {
     }
     let outcome = walk.finish();
 
-    assert_eq!(outcome.entries_found, count as u64);
-    assert_eq!(sizes.iter().sum::<usize>(), count, "every entry reached the consumer");
+    // The frontier root rides with them, in a batch of its own before the rest.
+    assert_eq!(outcome.entries_found, count as u64 + 1);
+    assert_eq!(
+        sizes.iter().sum::<usize>(),
+        count + 1,
+        "every entry reached the consumer"
+    );
     assert!(sizes.len() > 1, "in more than one batch (got {sizes:?})");
     assert!(
         sizes.iter().all(|size| *size <= 2000),
@@ -992,12 +1017,16 @@ fn a_walk_over_a_phone_covers_the_folder_it_was_pointed_at() {
     );
 
     assert!(!outcome.cancelled);
-    assert_eq!(outcome.entries_found, 2, "Camera/ and the photo in it");
+    assert_eq!(outcome.entries_found, 3, "DCIM/ itself, Camera/, and the photo in it");
     let mut emitted: Vec<String> = entries.iter().map(|e| e.path.to_string_lossy().to_string()).collect();
     emitted.sort();
     assert_eq!(
         emitted,
-        [tree.path("DCIM/Camera"), tree.path("DCIM/Camera/IMG_0001.jpg")]
+        [
+            scope.clone(),
+            tree.path("DCIM/Camera"),
+            tree.path("DCIM/Camera/IMG_0001.jpg")
+        ]
     );
 
     cmdr_fs::testing::wait_until(

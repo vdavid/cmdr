@@ -81,8 +81,14 @@ struct Answer {
 
 /// The one query every search below runs, scoped to `scope`.
 fn query_for(scope: &str) -> SearchQuery {
+    pattern_query_for(scope, "txt")
+}
+
+/// The same query under a caller's own pattern, for the searches that have to
+/// match something other than the drive's files.
+fn pattern_query_for(scope: &str, pattern: &str) -> SearchQuery {
     SearchQuery {
-        name_pattern: Some("txt".to_string()),
+        name_pattern: Some(pattern.to_string()),
         pattern_type: PatternType::Glob,
         min_size: None,
         max_size: None,
@@ -102,7 +108,12 @@ fn query_for(scope: &str) -> SearchQuery {
 /// Run one live search over `scope`, to completion, and report what the frontend
 /// would have seen.
 fn search(run_id: &str, scope: &str) -> Answer {
-    let query = query_for(scope);
+    search_for(run_id, scope, "txt")
+}
+
+/// Run one live search over `scope` for `pattern`, to completion.
+fn search_for(run_id: &str, scope: &str, pattern: &str) -> Answer {
+    let query = pattern_query_for(scope, pattern);
     let target = Target {
         volume_id: VOLUME_ID.to_string(),
         include_paths: vec![scope.to_string()],
@@ -223,6 +234,67 @@ fn an_agent_search_walks_the_same_ground_and_gets_the_same_union() {
     assert_eq!(settled(&again.ending).walk, WalkEnding::NothingToWalk);
     assert_eq!(again.paths, whole.paths);
     assert_eq!(again.dirs_found, 0, "an index-served answer walked nothing");
+
+    volumes::forget_volume_for_test(VOLUME_ID);
+    let _ = index.forget_volume(VOLUME_ID);
+}
+
+#[test]
+fn a_scoped_search_answers_with_its_own_folder_whether_or_not_the_drive_is_indexed() {
+    // The definition of done, on the folder the user pointed at: the same result
+    // set indexed or not. A scope root matches its own query as readily as
+    // anything under it, and the index has always answered with it — the walk
+    // writes its row (`ensure_walkable`) and used to emit every entry BUT that
+    // one, so the same search answered "1 result" over an indexed drive and "no
+    // files found" over an unindexed one, then "1 result" again once its own walk
+    // had been through. Three answers to one question, one search apart.
+    let _serialized = test_lock();
+    let _one_run_at_a_time = live::test_registry_lock();
+    let data = tempfile::tempdir().expect("index data dir");
+    let _search_data = volumes::install_data_dir_for_test(data.path());
+    let root = format!("{MOUNT_PREFIX}/{VOLUME_ID}");
+    let scope = format!("{root}/a/nested");
+
+    let volumes = FakeVolumeProvider::shared();
+    volumes.register(VOLUME_ID, drive(&root)).mark_network(&root);
+    let (index, _installed) = Index::builder()
+        .data_dir(data.path())
+        .volumes(Arc::clone(&volumes) as Arc<_>)
+        .events(NoopEventSink::shared())
+        .install_for_test();
+
+    // 1. Indexed. One search covers the branch, so the next one reads `nested`
+    //    out of the arena like any other row.
+    let covering = search("scope-root-covering", &format!("{root}/a"));
+    assert_eq!(covering.walk, WalkEnding::Completed);
+    let indexed = search_for("scope-root-indexed", &scope, "nested");
+    assert_eq!(indexed.walk, WalkEnding::NothingToWalk, "the branch is covered");
+    assert_eq!(
+        indexed.paths,
+        vec![scope.clone()],
+        "the scope root matches its own query"
+    );
+    assert_eq!(indexed.match_count, 1);
+
+    // 2. Unindexed. The drive forgets everything it learned, so the same search
+    //    runs over ground nothing has ever listed.
+    volumes::forget_volume_for_test(VOLUME_ID);
+    index.forget_volume(VOLUME_ID).expect("the drive forgets its index");
+    let unindexed = search_for("scope-root-unindexed", &scope, "nested");
+    assert_eq!(unindexed.walk, WalkEnding::Completed, "and it walked to the end");
+    assert_eq!(
+        unindexed.paths, indexed.paths,
+        "an unindexed drive answers the same question the same way"
+    );
+    assert_eq!(unindexed.match_count, indexed.match_count);
+
+    // 3. And again, now that walk has covered the ground: the third answer to one
+    //    question, which is what makes a difference look like a bug in whatever
+    //    the user did in between.
+    let converged = search_for("scope-root-converged", &scope, "nested");
+    assert_eq!(converged.walk, WalkEnding::NothingToWalk);
+    assert_eq!(converged.paths, indexed.paths, "and it stays the same answer");
+    assert_eq!(converged.match_count, indexed.match_count);
 
     volumes::forget_volume_for_test(VOLUME_ID);
     let _ = index.forget_volume(VOLUME_ID);

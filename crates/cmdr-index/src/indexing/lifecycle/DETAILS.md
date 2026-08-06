@@ -460,6 +460,13 @@ guesses in three cases: a chain running through a FILE row (the stale file→dir
 on — parenting under a file id orphans everything below), a path that isn't a directory any more, and a symlink (stored,
 never descended into, so a walk rooted below one would attribute another directory's contents to it).
 
+A root the chain had to CREATE is also emitted to the walk's consumer, once, ahead of its listing (`cover.rs::emit_root`,
+counted in `entries_found` / `dirs_found` so what a consumer saw and what the walk added stay one number). Why: a walk
+reports a directory's CONTENTS, and a reader of the index answers for rows the index already held, so a row this walk
+invented is one nobody else will ever report — which made a search scoped to a folder answer with that folder over an
+indexed drive and not over an unindexed one. ❌ The ancestors above it are NOT emitted: the frontier is cut inside
+whoever's scope asked for the walk, so anything above the root is outside it.
+
 ## Vanished-volume scan abort (`scan_completion.rs`)
 
 A drive yanked mid-scan makes the local scan's ROOT unlistable: the fresh guarded-walker scan detects `dirs_read == 0`

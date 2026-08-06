@@ -333,9 +333,24 @@ fn walk_roots(
         // that isn't only a cold volume's problem: a folder created since its
         // parent was last listed has no row on a fully indexed drive either. Give
         // the walk the chain it needs, without claiming a listing for any of it.
-        if let Err(e) = bootstrap::ensure_walkable(context, ground, root) {
-            log::warn!("Cover: can't walk {path}: {e}");
-            continue;
+        match bootstrap::ensure_walkable(context, ground, root) {
+            Err(e) => {
+                log::warn!("Cover: can't walk {path}: {e}");
+                continue;
+            }
+            // A root this walk had to create is a row no index reader has ever
+            // seen, and a walk reports a directory's CONTENTS — so unless it goes
+            // out here, the one entry a scoped search can never answer with is the
+            // folder the user scoped to. A root the index already held is already
+            // the reader's to report, and emitting it again would double it.
+            Ok(bootstrap::RootRow::Created(snapshot)) => {
+                emit_root(root, &snapshot, sender);
+                // Counted with the rows the walk itself writes, so "what the
+                // consumer saw" and "what this walk added" stay the same number.
+                outcome.entries_found += 1;
+                outcome.dirs_found += 1;
+            }
+            Ok(bootstrap::RootRow::Existing) => {}
         }
         // A partial walk's totals count exactly as much as a complete one's, so
         // both arms hand the same summary to the same accumulation and only the
@@ -356,6 +371,28 @@ fn walk_roots(
         }
     }
     outcome
+}
+
+/// Hand a frontier root itself to the consumer, in the shape every other
+/// discovered entry arrives in.
+///
+/// A batch of one, because there is one of them per root and it goes out before
+/// the root's listing does — the folder, then what's inside it, which is the order
+/// a reader expects. ❌ Its ancestors don't come with it: they're above whatever
+/// scope asked for the walk.
+fn emit_root(root: &Path, snapshot: &MetadataSnapshot, sender: &SyncSender<Vec<CoveredEntry>>) {
+    // A dropped receiver means the consumer stopped listening (a superseded
+    // query), which is not this walk's business: it keeps filling the index.
+    let _ = sender.send(vec![CoveredEntry {
+        path: root.to_path_buf(),
+        is_directory: true,
+        // `stat_directory` answers `None` for a symlink rather than describing
+        // one, so a root that got here is a real directory.
+        is_symlink: false,
+        logical_size: snapshot.logical_size,
+        physical_size: snapshot.physical_size,
+        modified_at: snapshot.modified_at,
+    }]);
 }
 
 /// How a volume's ground gets read.

@@ -447,7 +447,14 @@ fn a_frontier_path_with_no_row_is_materialized_and_walked() {
     f.writer.flush_blocking().expect("flush");
 
     assert_eq!(outcome.roots_covered, 1, "the walk reached ground it had no row for");
-    assert_eq!(entries.len(), 1, "and delivered what it found there");
+    let mut emitted: Vec<String> = entries.iter().map(|e| e.path.to_string_lossy().to_string()).collect();
+    emitted.sort();
+    assert_eq!(
+        emitted,
+        [f.path("fresh/deeper"), f.path("fresh/deeper/found.txt")],
+        "and delivered what it found there, plus the folder it had to materialize: \
+         nothing else will ever report that row to whoever asked for the walk"
+    );
     assert!(
         f.listed_epoch(&f.path("fresh/deeper")) > 0,
         "the walked node is covered"
@@ -746,7 +753,7 @@ fn a_cold_volume_bootstraps_and_claims_only_what_it_walked() {
     let outcome = drive.cover(&scope);
     assert!(!outcome.cancelled);
     assert_eq!(outcome.roots_covered, 1, "the scope was covered");
-    assert_eq!(outcome.entries_found, 2, "inner/ and inner/found.txt");
+    assert_eq!(outcome.entries_found, 3, "scope/ itself, inner/, and inner/found.txt");
 
     let whole_volume = drive.coverage(&volume_root);
     assert_eq!(
@@ -905,7 +912,7 @@ fn a_search_walks_a_drive_with_the_master_switch_off() {
     let outcome = drive.cover(&scope);
     assert!(!outcome.cancelled);
     assert_eq!(outcome.roots_covered, 1, "the search got the walk it asked for");
-    assert_eq!(outcome.entries_found, 2, "inner/ and inner/found.txt");
+    assert_eq!(outcome.entries_found, 3, "scope/ itself, inner/, and inner/found.txt");
 
     assert_eq!(
         drive.scans_started(),
@@ -934,7 +941,7 @@ fn a_search_walks_a_drive_the_user_turned_indexing_off_for() {
 
     let outcome = drive.cover(&drive.path("scope"));
     assert_eq!(outcome.roots_covered, 1, "the search still got its answer");
-    assert_eq!(outcome.entries_found, 1);
+    assert_eq!(outcome.entries_found, 2, "scope/ itself and found.txt");
     assert_eq!(drive.scans_started(), 0, "with no scan of the drive behind it");
 }
 

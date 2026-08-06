@@ -16,6 +16,7 @@ use std::path::{Path, PathBuf};
 
 use super::{CoverContext, Ground};
 use crate::indexing::host::volumes::MountFacts;
+use crate::indexing::metadata::MetadataSnapshot;
 use crate::indexing::lifecycle::state::{self, Activation};
 use crate::indexing::store::{IndexStore, ROOT_ID, resolve_path};
 use crate::indexing::volume::{IndexVolumeKind, ROOT_VOLUME_ID};
@@ -255,6 +256,21 @@ impl std::fmt::Display for NotWalkable {
     }
 }
 
+/// What the bootstrap found at a frontier root, which is what decides whether
+/// anyone else has already spoken for it.
+///
+/// A row the index already held is a row the arena answers from, so a search's
+/// covered half has it. A row this walk had to create is one nothing but the walk
+/// can report — and the walk lists a directory's CONTENTS, so without this the
+/// frontier root would be the one entry under a scope that no half of a live
+/// search ever emits.
+pub(super) enum RootRow {
+    /// The index already held it.
+    Existing,
+    /// This walk created it, carrying what a listing would show for it.
+    Created(MetadataSnapshot),
+}
+
 /// Make sure `root` has an `entries` row for the walk to start from,
 /// materializing the chain from the volume root down to it.
 ///
@@ -263,7 +279,12 @@ impl std::fmt::Display for NotWalkable {
 /// only for ground the index has never seen, and it goes through the volume's
 /// one writer (never a direct insert), so the ids stay the writer's to allocate
 /// and a row that already exists is upserted rather than duplicated.
-pub(super) fn ensure_walkable(context: &CoverContext, ground: &Ground, root: &Path) -> Result<(), NotWalkable> {
+///
+/// Only the root's own row is reported back. The ancestors above it are outside
+/// whatever scope asked for this walk (the frontier is cut inside the scope, so
+/// the shallowest node it can name is the scope root itself), and a caller that
+/// reported them would answer with folders nobody searched.
+pub(super) fn ensure_walkable(context: &CoverContext, ground: &Ground, root: &Path) -> Result<RootRow, NotWalkable> {
     let absolute = context.space.absolute(&root.to_string_lossy());
     let index_relative = context
         .space
@@ -276,7 +297,7 @@ pub(super) fn ensure_walkable(context: &CoverContext, ground: &Ground, root: &Pa
         .map_err(|e| NotWalkable::Store(e.to_string()))?
         .is_some()
     {
-        return Ok(());
+        return Ok(RootRow::Existing);
     }
 
     // The absolute path is rebuilt alongside the index chain, so each row the
@@ -285,8 +306,11 @@ pub(super) fn ensure_walkable(context: &CoverContext, ground: &Ground, root: &Pa
     // `/` for the boot disk, the mount point for every other kind.
     let mut on_disk = PathBuf::from(context.space.volume_root_string());
     let mut parent_id = ROOT_ID;
-    for component in index_relative.split('/').filter(|c| !c.is_empty()) {
+    let mut root_row = RootRow::Existing;
+    let mut components = index_relative.split('/').filter(|c| !c.is_empty()).peekable();
+    while let Some(component) = components.next() {
         on_disk.push(component);
+        let is_root = components.peek().is_none();
         parent_id = match IndexStore::resolve_component(&conn, parent_id, component)
             .map_err(|e| NotWalkable::Store(e.to_string()))?
         {
@@ -296,10 +320,16 @@ pub(super) fn ensure_walkable(context: &CoverContext, ground: &Ground, root: &Pa
                 }
                 id
             }
-            None => create_directory_row(context, ground, &conn, parent_id, component, &on_disk)?,
+            None => {
+                let (id, snapshot) = create_directory_row(context, ground, &conn, parent_id, component, &on_disk)?;
+                if is_root {
+                    root_row = RootRow::Created(snapshot);
+                }
+                id
+            }
         };
     }
-    Ok(())
+    Ok(root_row)
 }
 
 /// Whether an existing row is a directory. A missing row here is a row deleted
@@ -310,7 +340,8 @@ fn is_directory_row(conn: &rusqlite::Connection, id: i64) -> Result<bool, NotWal
         .is_some_and(|row| row.is_directory))
 }
 
-/// Add one directory of the chain, and hand back its id.
+/// Add one directory of the chain, and hand back its id and what a listing of it
+/// would have shown.
 ///
 /// `UpsertEntryV2` rather than an insert, because the writer resolves it by
 /// `(parent_id, name)`: a row that arrives from somewhere else in the meantime is
@@ -324,7 +355,7 @@ fn create_directory_row(
     parent_id: i64,
     name: &str,
     on_disk: &Path,
-) -> Result<i64, NotWalkable> {
+) -> Result<(i64, MetadataSnapshot), NotWalkable> {
     let snapshot = ground
         .stat_directory(on_disk)
         .ok_or_else(|| NotWalkable::NotADirectoryOnDisk(on_disk.to_path_buf()))?;
@@ -346,7 +377,8 @@ fn create_directory_row(
         .writer
         .flush_blocking()
         .map_err(|e| NotWalkable::Store(e.to_string()))?;
-    IndexStore::resolve_component(conn, parent_id, name)
+    let id = IndexStore::resolve_component(conn, parent_id, name)
         .map_err(|e| NotWalkable::Store(e.to_string()))?
-        .ok_or_else(|| NotWalkable::Store(format!("{} is still absent after its own upsert", on_disk.display())))
+        .ok_or_else(|| NotWalkable::Store(format!("{} is still absent after its own upsert", on_disk.display())))?;
+    Ok((id, snapshot))
 }
