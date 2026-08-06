@@ -331,9 +331,10 @@ index loads, so the re-run still lands.
 
 `QueryDialog.svelte.test.ts` (orchestrator) pins the title rendering, primary + secondary action callbacks, ⌘N / ⌘H, the
 IME guard, and the `lastDialogEvent` ownership. `QueryDialog.a11y.test.ts` runs axe-core across loading / index-ready /
-AI-on against a minimal Search-shaped config. Search's full integration tests live in
-`lib/search/SearchDialog.svelte.test.ts` and `lib/search/SearchDialog.a11y.test.ts` and they mount QueryDialog through
-the Search wrapper.
+AI-on against a minimal Search-shaped config. Search's full integration tests live in the
+`lib/search/SearchDialog.<concern>.svelte.test.ts` family (session, shortcuts, ai, auto-apply, open-in-pane, scope,
+images, coverage, handoff) plus `lib/search/SearchDialog.a11y.test.ts`, and they mount QueryDialog through the Search
+wrapper.
 
 The four controller modules carry their own suites (`query-runner.test.ts`, `recent-popover.test.ts`,
 `query-shortcuts.test.ts`, `result-actions.test.ts`), which is where a rule is cheapest to pin: the nothing-to-run

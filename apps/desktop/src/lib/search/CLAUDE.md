@@ -3,10 +3,12 @@
 File search dialog: filename (glob/regex), size, date, scope, plus AI mode. First consumer of `../query-ui/CLAUDE.md`;
 backend in `src-tauri/src/search/`.
 
-`SearchDialog.svelte` builds a `QueryDialogConfig` for `lib/query-ui/QueryDialog.svelte` and owns the Search-only glue
-(index lifecycle, coverage honesty, the live transport, AI filter writes, snapshot promotion, recent searches,
-analytics) with zero orchestration; `search-state.svelte.ts` is the state façade over `snapshot-store`,
-`searchable-folder`, `search-target-volume`, and `SearchResultsView.svelte`; `CoverageNote.svelte` and
+`SearchDialog.svelte` only wires a `QueryDialogConfig` for `lib/query-ui/QueryDialog.svelte`; the Search-only glue is
+one module per job: `search-lifecycle.svelte.ts` (index prepare/release + the readiness gate),
+`search-runners.ts` (the one-shot and live paths + the query builder they share), `ai-translate.ts` (the AI's filter
+writes), `coverage-cta.svelte.ts` (what may be offered over a gap), `snapshot-promotion.ts` ("Open in pane" + the
+recent-search writes), `search-run-tracking.ts` (the analytics clock). `search-state.svelte.ts` is the state façade over
+`snapshot-store`, `searchable-folder`, `search-target-volume`, and `SearchResultsView.svelte`; `CoverageNote.svelte` and
 `ImageSearchResults.svelte` bracket the results.
 
 ## Must-knows

@@ -53,37 +53,52 @@ and the `recent-items/` family) lives in `../query-ui/CLAUDE.md`, over the app-w
   rows it opened with while its toast counted to 24. Every mutator therefore `store.set`s a REPLACED entry
   (`appendSnapshotEntries`, `removeEntryFromAllSnapshots`), and `SearchResultsView.svelte.test.ts` pins it by appending
   to a mounted view and counting rows.
+- **The mounted-dialog tests share one fixture, `test-search-dialog-harness.ts`.** Mounting SearchDialog means standing
+  up its whole IPC surface plus the settings and stores it reads, so the spies, the live-run fake, and the
+  mount/teardown helpers live there and each `SearchDialog.<concern>.svelte.test.ts` reaches them with
+  `vi.mock('$lib/…', async () => (await import('./test-search-dialog-harness')).xMock())`. The dynamic import inside the
+  factory is what keeps import order and hoisting out of it. ❌ Nothing in the harness may import a mocked module (or
+  `SearchDialog.svelte` / `search-state.svelte`) at module scope: the factories load the harness, so such an import
+  would ask for the module whose factory is still running. `SearchDialog.coverage.*` and `SearchDialog.handoff.*` keep
+  their own fakes deliberately, since each drives different live-run behavior.
 
 ## Search wrapper
 
-`SearchDialog.svelte` no longer carries the dialog orchestration. The overlay, keyboard contract, IME guard, auto-apply
-gates, `lastDialogEvent` writes, the `⏎` ownership swap, the title bar, the chip strip, the AI prompt strip, the results
-table, the recent-items dropdown, and the empty state all live in `../query-ui/QueryDialog.svelte`. The Search wrapper
-builds a [`QueryDialogConfig`](../query-ui/query-dialog-config.ts) for Search and mounts QueryDialog with it.
+`SearchDialog.svelte` carries neither the dialog orchestration nor the glue. The overlay, keyboard contract, IME guard,
+auto-apply gates, `lastDialogEvent` writes, the `⏎` ownership swap, the title bar, the chip strip, the AI prompt strip,
+the results table, the recent-items dropdown, and the empty state all live in `../query-ui/QueryDialog.svelte`. The
+Search wrapper builds a [`QueryDialogConfig`](../query-ui/query-dialog-config.ts) for Search and mounts QueryDialog with
+it.
 
-What the wrapper still owns (Search-specific glue):
+Everything Search-specific sits in a module beside it, one per job, each unit-tested on its own:
 
-- `prepareSearchIndex` on mount, `releaseSearchIndex` on destroy, the `search-index-ready` listener (and the
-  auto-run-after-index-ready hook, which fires only when the volume that landed is the one being searched).
-- The coverage note: clearing it per run, writing the answer's typed gaps into it, and the per-drive indexing offer that
-  answers an uncovered one.
-- `translateAi` callback: calls `translate_search_query` IPC and applies the AI's filter writes (`size`, `date`, scope,
+- **`search-lifecycle.svelte.ts`** — `prepareSearchIndex` on mount, `releaseSearchIndex` (naming the handed-off run) on
+  destroy, the `search-index-ready` listener and the auto-run-after-index-ready hook (which fires only when the volume
+  that landed is the one being searched), the per-target readiness gate below, and the system-dir exclude tooltip
+  (`getSystemDirExcludes`, escaped into HTML by the pure `system-dir-tooltip.ts`).
+- **`search-runners.ts`** — both run paths and the `buildRunQuery` they share (bar + filters + AI pattern + the scope,
+  whose parse is async): `runQuery` is the one-shot index answer the debounce takes, `streamingSource` is every run the
+  user asked for. It also writes the coverage note on both paths, cleared before the ask and filled from the answer.
+- **`search-run-tracking.ts`** — the run clock and the one `search_used` event per run, plus the two CTA events. The
+  vocabulary is `search-analytics.ts`; this is the wiring.
+- **`ai-translate.ts`** — calls `translate_search_query` and applies the AI's filter writes (`size`, `date`, scope,
   `caseSensitive`, `excludeSystemDirs`, Pattern chip + label). Returns `{ caveat, highlightedFields }` to QueryDialog.
-- `runQuery` callback: calls `buildSearchQuery()` from the helper, layers the AI pattern when in AI mode, calls
-  `parse_search_scope` (async) and merges, calls `searchFiles` IPC, returns `{ entries, totalCount }`.
-- Primary action: "Show all in main window" (⌥⏎) — builds the `SearchSnapshot`, mints an id, pins via
-  `setLastAttemptId`, persists the recent-search entry (the only call site that adds), hands the id to the host, closes
-  the dialog.
-- Secondary action: "Go to file" (⏎) — routes through `onNavigate` to close the dialog and navigate the active pane to
-  the cursor row.
-- Recent-search adapter + key (the only seam where Search-specific fields like `scope` / `excludeSystemDirs` leak into
-  the chip's tooltip).
-- `onClearState`: wires ⌘N to the `clearSearchState()` facade (core + extras).
-- System-dir exclude tooltip loader (`getSystemDirExcludes` IPC).
-- Live AI-provider subscription so the AI chip appears / disappears with the setting.
+- **`coverage-cta.svelte.ts`** — reads the note and decides what may be OFFERED over it: the per-drive indexing offer,
+  the Full Disk Access route (with its quiet TCC probe), and the `search_cta_offered` reporting.
+- **`snapshot-promotion.ts`** — "Show all in main window" (⌥⏎): builds the `SearchSnapshot`, mints an id, pins via
+  `setLastAttemptId`, hands a still-running walk to `walk-handoff.svelte.ts`, and persists the recent-search entry. It
+  and "Go to file" are the only two call sites that add to recent searches.
+- **`recent-search-adapter.ts`** — the row adapter + key (the only seam where Search-specific fields like `scope` /
+  `excludeSystemDirs` leak into the chip's tooltip), plus pick (LOADS, never runs) and remove.
 
-The wrapper has no line-count target; its size is what Search-specific glue costs. It does not own the overlay element,
-the keyboard handler, the IME guard, the auto-apply debounce, the popover toggle, or any other orchestration concern.
+What's left in the wrapper: the props, the `QueryDialogConfig`, the two snippets (coverage note, image grid), the
+"Go to file" / path-pill / row-menu exits through `onNavigate`, `onClearState` wiring ⌘N to `clearSearchState()`, and
+the live AI-provider subscription so the AI chip appears / disappears with the setting. It does not own the overlay
+element, the keyboard handler, the IME guard, the auto-apply debounce, the popover toggle, or any other orchestration
+concern.
+
+The wrapper holds the two locals a run outlives: `liveRun` (the run in flight, plain and not `$state` — it changes per
+batch and nothing renders it) and `handedOffRun` (the run a pane is now fed by, so the close can name it).
 
 The route (`+page.svelte`) mounts SearchDialog with its props: `onNavigate`, `onClose`, `scopePresets`, `searchVolume`,
 `onShowAllInMainWindow`.
@@ -94,7 +109,8 @@ Both searches now cover ONE volume, and each picks it differently.
 
 **Filename search covers the scope's volume**, at most one (`src-tauri/src/search/CLAUDE.md`). The frontend's job is to
 make sure a scope always exists: an empty box means the focused pane's current folder, resolved at run time in
-`runSearch()` from `defaultScope`, so it follows the pane rather than freezing at dialog-open time.
+`buildRunQuery()` (`search-runners.ts`) from `defaultScope`, so it follows the pane rather than freezing at
+dialog-open time.
 
 **One volume answers every "which drive?" question the dialog has**, so there's one prop for it: `searchVolume`, the
 focused pane's current volume. `+page.svelte` passes `searchVolume={getFocusedPaneSearchTargetVolume()}` (in
@@ -146,9 +162,9 @@ search in that session silently did nothing.
 
 ### The coverage note
 
-`runSearch()` clears the note before the IPC and writes the answer's `uncoveredScopes` / `unresolvedScopes` /
-`targetVolumeId` into it after (`coverageNoteFrom`), so the note always belongs to the run on screen and a run that
-throws can't leave a stale caveat under a fresh answer. A LIVE run does the same through its source's `onCoverage`
+The one-shot path (`search-runners.ts`) clears the note before the IPC and writes the answer's `uncoveredScopes` /
+`unresolvedScopes` / `targetVolumeId` into it after (`coverageNoteFrom`), so the note always belongs to the run on
+screen and a run that throws can't leave a stale caveat under a fresh answer. A LIVE run does the same through its source's `onCoverage`
 (`null` on start, the terminal answer at the end); what it fills in is § The live search. `CoverageNote.svelte` renders
 it through QueryDialog's `resultsNotice` slot, directly above the results it qualifies. Both lists are checked
 independently rather than as an either/or: they're mutually exclusive today by construction, and a reader that assumed
@@ -302,7 +318,7 @@ Search-only contracts (cross-consumer ones live in `../query-ui/CLAUDE.md`):
 ## Scope: a two-rung ladder (Search-only)
 
 The scope box takes comma-separated folder paths with a `!` prefix for exclusions, parsed via the `parseSearchScope()`
-IPC call in `runSearch()` (async, so not part of `buildSearchQuery()`). Selection has no scope row (a selection runs
+IPC call in `buildRunQuery()` (async, so not part of `buildSearchQuery()`). Selection has no scope row (a selection runs
 against a single in-memory folder), so `FilterChips.svelte` accepts a `scopeChipVisible` prop that Selection passes as
 `false`; the `⌥I` (open scope popover) and `⌥C` / `⌥V` (inside the popover) shortcuts are suppressed in that case.
 
@@ -314,7 +330,7 @@ A search covers at most one volume, so the popover offers exactly two rungs, bot
 
 ### The empty box means the current folder
 
-An empty box is NOT "everywhere": `runSearch()` sends `defaultScope.path` as the sole include path, which is the current
+An empty box is NOT "everywhere": `buildRunQuery()` sends `defaultScope.path` as the sole include path, which is the current
 folder, or the volume root when the pane has no real folder behind it. Three consequences worth knowing:
 
 - The Search-in chip renders the default's NAME ("Current folder" / "This volume") with `configured: false`, so it shows
@@ -435,9 +451,9 @@ there are no results:
 
 - **"Go to file"** (⏎): closes the dialog and navigates the active pane to the cursor row's parent folder, focusing the
   file. Routes through the dialog's existing `onNavigate(path)` callback.
-- **"Show all in main window"** (⌥A): the primary action. The handler in `SearchDialog.svelte::showAllInMainWindow`
-  builds a `SearchSnapshot`, pins it via `setLastAttemptId`, adds the query to recent searches (the sole call site for
-  that), hands the snapshot id to the host, and closes the dialog. The host routes the active pane to
+- **"Show all in main window"** (⌥A): the primary action. `snapshot-promotion.ts::promoteResultsToPane` builds a
+  `SearchSnapshot`, pins it via `setLastAttemptId`, and adds the query to recent searches; the wrapper hands the
+  snapshot id to the host and closes the dialog. The host routes the active pane to
   `search-results://<id>`. State is preserved across close + reopen, so `⌘F` reopens to the same results.
 
 Both buttons are hidden (not just disabled) on empty/idle state. Empty + idle inputs disable both (index not ready).
@@ -445,7 +461,7 @@ Both buttons are hidden (not just disabled) on empty/idle state. Empty + idle in
 ## "Open in pane"
 
 Click on the footer's "Open in pane" button promotes the current result set into a real pane view via the
-`search-results://<id>` virtual volume. The handler in `SearchDialog.svelte::openInPane`:
+`search-results://<id>` virtual volume. `snapshot-promotion.ts::promoteResultsToPane`:
 
 1. Builds a `SearchSnapshot` from live state (`getResults()` / `getMode()` / `getQuery()` / filters / scope / flags).
 2. Mints a fresh id via `nextSnapshotId()` and stores via `getOrCreate(id, snapshot)`.
@@ -453,10 +469,11 @@ Click on the footer's "Open in pane" button promotes the current result set into
 4. Calls `addRecentSearch(historyEntry)`. **This is the one and only call site that adds to recent searches** (per plan
    §3.5: auto-applies and Enter-runs don't pollute the history). For AI mode, the entry's `query` carries the original
    natural-language prompt (via `getLastAiPrompt()`), not the AI's translated pattern.
-5. Calls `onOpenInPane?.(id)` to hand off to the host (`+page.svelte` → `DualPaneExplorer.openSearchSnapshotInPane`),
+5. Returns the id, and the wrapper hands it to the host via `onShowAllInMainWindow?.(id)` (`+page.svelte` → `DualPaneExplorer.openSearchSnapshotInPane`),
    which routes through the `navigate({ to: { snapshot }, source: 'user' })` transaction so pinned-tab fork / focus /
    history-push all apply uniformly.
-6. Closes the dialog. State is preserved (module-level `$state` survives unmount); ⌘F reopens to the same place.
+6. The wrapper closes the dialog. State is preserved (module-level `$state` survives unmount); ⌘F reopens to the same
+   place.
 
 The label shown in the pane breadcrumb (and the snapshot's `label` field) is built by
 `snapshot-label.ts::buildSnapshotLabel`:
@@ -605,7 +622,7 @@ shortcut path can't accidentally route a copy/move INTO a snapshot.
 explicit design call. The 1,000-entry budget stays signal-rich (results worth acting on) instead of polluted with every
 keystroke-debounced auto-apply. Auto-apply fires on a 1 s debounce — adding every fire would turn the history into a
 high-frequency log of false starts. The Rust IPC accepts any entry; the gate is the frontend's single `addRecentSearch`
-call site in `SearchDialog.svelte::openInPane`.
+call site in `snapshot-promotion.ts::persistRecentSearch`, reached only from the two actions above.
 
 **Decision**: "Open in pane" promotes to the `search-results` virtual volume, not a special FilePane mode. **Why**: We
 already had the precedent: the `network` browser is a `volumeId` the FilePane special- cases, not a forked pane
