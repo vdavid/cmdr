@@ -15,16 +15,16 @@ Both figures come from `search::bench::bench_arena_bytes`, run under `--release`
 `test_support`'s `System`-backed counting allocator, not the mimalloc the app ships, so the DIFFERENCE is what carries;
 the absolute numbers aren't the app's footprint.
 
-| | before | after | Δ |
-| --- | --- | --- | --- |
-| `size_of::<SearchEntry>()` | 56 B | 40 B | −16 B |
-| arena heap held | 689.5 MiB | 597.2 MiB | −92.3 MiB (−13.4%) |
-| of which the entries `Vec` | 322.9 MiB | 230.6 MiB | −92.3 MiB (−28.6%) |
-| names arena + `id_to_index` | 366.6 MiB | 366.6 MiB | unchanged |
+|                                 | before    | after     | Δ                  |
+| ------------------------------- | --------- | --------- | ------------------ |
+| `size_of::<SearchEntry>()`      | 56 B      | 40 B      | −16 B              |
+| arena heap held                 | 689.5 MiB | 597.2 MiB | −92.3 MiB (−13.4%) |
+| of which the entries `Vec`      | 322.9 MiB | 230.6 MiB | −92.3 MiB (−28.6%) |
+| names arena + `id_to_index`     | 366.6 MiB | 366.6 MiB | unchanged          |
 | process RSS, one arena resident | 705.0 MiB | 613.0 MiB | −92.0 MiB (−13.1%) |
 
-**The two instruments agree with each other and with the arithmetic** (6,045,549 × 16 B = 92.25 MiB), which is the
-point of running both: the heap figure is thread-local and exact, and the RSS figure says it reaches real memory. Both
+**The two instruments agree with each other and with the arithmetic** (6,045,549 × 16 B = 92.25 MiB), which is the point
+of running both: the heap figure is thread-local and exact, and the RSS figure says it reaches real memory. Both
 reproduce to 0.1 MB across runs.
 
 ## Latency: no measurable change
@@ -49,8 +49,8 @@ answer over 6.0 M real rows, the 934,793 NULL-size ones included.
 ## The method, which is the reusable part
 
 - **Compare two BINARIES, not two runs.** `cargo test --release` overwrites the same test binary, so numbers taken
-  minutes apart on a shared machine are comparing the machine's mood. Build one side, `cp
-  target/release/deps/cmdr_lib-<hash>` aside, build the other, then run the two alternately.
+  minutes apart on a shared machine are comparing the machine's mood. Build one side,
+  `cp target/release/deps/cmdr_lib-<hash>` aside, build the other, then run the two alternately.
 - **Build both sides' bench from the SAME source.** The pre-change side was produced by restoring `search/` to the base
   commit and copying the new bench file over it, with only its three `OptU64` lines reverted — so the harness is
   identical and only the thing under test differs.
@@ -64,7 +64,6 @@ answer over 6.0 M real rows, the 934,793 NULL-size ones included.
 
 ## What's still on the table
 
-`id_to_index` is the larger remaining item and is **not** a free win — see
-`size-only-subtrees-rejected-2026-08-06.md` § The search arena for why it has to be measured on the latency axis first.
-The names arena plus `id_to_index` is 366.6 MiB of the 597.2 MiB an arena now costs, so that's where the next real
-lever is.
+`id_to_index` is the larger remaining item and is **not** a free win — see `size-only-subtrees-rejected-2026-08-06.md` §
+The search arena for why it has to be measured on the latency axis first. The names arena plus `id_to_index` is 366.6
+MiB of the 597.2 MiB an arena now costs, so that's where the next real lever is.

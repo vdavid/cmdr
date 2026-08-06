@@ -74,8 +74,8 @@ fn an_arena_row_costs_the_struct_and_nothing_more() {
     let budget = (ENTRY_BYTES + 1) * ROWS;
     assert!(
         bytes as usize <= budget,
-        "the arena holds {bytes} B across {ROWS} rows ({:.1} B each), past the {budget} B budget. \
-         A per-row heap allocation (an owned filename, a boxed field) is what this catches.",
+        "the arena holds {bytes} B across the {ROWS}-row corpus ({:.1} B each), past the {budget} B \
+         budget. A per-row heap allocation (an owned filename, a boxed field) is what this catches.",
         bytes as f64 / ROWS as f64,
     );
 }
