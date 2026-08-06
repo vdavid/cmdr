@@ -22,22 +22,28 @@
 
   "fileOperations.delete.noTrashWarningStrong": "This volume doesn''t support trash.",
   "@fileOperations.delete.noTrashWarningStrong": {
-    "description": "Bold lead of a warning banner in the delete dialog, shown on volumes (FAT32, SMB, etc.) that have no trash. Followed by fileOperations.delete.noTrashWarningRest in the same sentence."
+    "description": "Bold lead of a warning banner in the delete dialog, shown on volumes (FAT32, SMB, etc.) that have no trash. Followed by fileOperations.delete.noTrashWarningRest in the same sentence.",
+    "screenshot": "delete-confirmation-no-trash-support.png"
   },
 
   "fileOperations.delete.noTrashWarningRest": "Files will be permanently deleted.",
   "@fileOperations.delete.noTrashWarningRest": {
-    "description": "Second half of the no-trash warning banner, following fileOperations.delete.noTrashWarningStrong. Tells the user the delete is permanent on this volume."
+    "description": "Second half of the no-trash warning banner, following fileOperations.delete.noTrashWarningStrong. Tells the user the delete is permanent on this volume.",
+    "screenshot": "delete-confirmation-no-trash-support.png"
   },
 
   "fileOperations.delete.archiveWarningStrong": "There''s no trash inside an archive.",
   "@fileOperations.delete.archiveWarningStrong": {
-    "description": "Bold lead of a warning banner in the delete dialog, shown when deleting items from inside a zip archive (Cmdr browses zips like folders). Followed by fileOperations.delete.archiveWarningRest in the same sentence. \"archive\" = a zip file."
+    "description": "Bold lead of a warning banner in the delete dialog, shown when deleting items from inside a zip archive (Cmdr browses zips like folders). Followed by fileOperations.delete.archiveWarningRest in the same sentence. \"archive\" = a zip file.",
+    "screenshot": "delete-confirm.png",
+    "screenshotNote": "The delete confirmation dialog, pictured here. Your string is one of its variants: a different item count, an archive or symlink warning, or the progress line it shows while scanning."
   },
 
   "fileOperations.delete.archiveWarningRest": "These items will be removed from the zip for good.",
   "@fileOperations.delete.archiveWarningRest": {
-    "description": "Second half of the archive delete warning banner, following fileOperations.delete.archiveWarningStrong. Tells the user the delete is permanent because a zip has no trash."
+    "description": "Second half of the archive delete warning banner, following fileOperations.delete.archiveWarningStrong. Tells the user the delete is permanent because a zip has no trash.",
+    "screenshot": "delete-confirm.png",
+    "screenshotNote": "The delete confirmation dialog, pictured here. Your string is one of its variants: a different item count, an archive or symlink warning, or the progress line it shows while scanning."
   },
 
   "fileOperations.delete.trashSwitch": "Move to trash",
@@ -52,7 +58,9 @@
     "placeholders": {
       "countText": "how many extra items, formatted for display (e.g. 1,234)",
       "count": "the same number of extra items (drives the singular/plural form of the noun)"
-    }
+    },
+    "screenshot": "delete-confirm.png",
+    "screenshotNote": "The delete confirmation dialog, pictured here. Your string is one of its variants: a different item count, an archive or symlink warning, or the progress line it shows while scanning."
   },
 
   "fileOperations.delete.scanFile": "{count, plural, one {file} other {files}}",
@@ -78,7 +86,9 @@
     "description": "Live scan throughput in the delete dialog: files processed per second. '/s' means per second.",
     "placeholders": {
       "rateText": "the files-per-second rate, formatted for display (e.g. 1,200)"
-    }
+    },
+    "screenshot": "delete-confirm.png",
+    "screenshotNote": "The delete confirmation dialog, pictured here. Your string is one of its variants: a different item count, an archive or symlink warning, or the progress line it shows while scanning."
   },
 
   "fileOperations.delete.confirmDelete": "Delete",
@@ -95,7 +105,9 @@
 
   "fileOperations.delete.titleCursorFile": "Delete 1 file under cursor",
   "@fileOperations.delete.titleCursorFile": {
-    "description": "Delete dialog title when deleting the single file the cursor is on (nothing multi-selected). 'under cursor' means the highlighted row."
+    "description": "Delete dialog title when deleting the single file the cursor is on (nothing multi-selected). 'under cursor' means the highlighted row.",
+    "screenshot": "delete-confirm.png",
+    "screenshotNote": "The delete confirmation dialog, pictured here. Your string is one of its variants: a different item count, an archive or symlink warning, or the progress line it shows while scanning."
   },
 
   "fileOperations.delete.titleCursorFolder": "Delete 1 folder under cursor",
@@ -106,7 +118,9 @@
 
   "fileOperations.delete.titleFallback": "Delete",
   "@fileOperations.delete.titleFallback": {
-    "description": "Delete dialog title used when there is nothing to count (empty selection). Just the verb."
+    "description": "Delete dialog title used when there is nothing to count (empty selection). Just the verb.",
+    "screenshot": "delete-confirm.png",
+    "screenshotNote": "The delete confirmation dialog, pictured here. Your string is one of its variants: a different item count, an archive or symlink warning, or the progress line it shows while scanning."
   },
 
   "fileOperations.delete.titleSelected": "Delete {phrase}",
@@ -114,7 +128,8 @@
     "description": "Delete dialog title for a multi-item selection. {phrase} is the already-built count phrase (e.g. '3 selected files and 1 folder').",
     "placeholders": {
       "phrase": "the pre-rendered counts phrase, e.g. '3 selected files and 1 folder'"
-    }
+    },
+    "screenshot": "delete-confirmation-trash-many.png"
   },
 
   "fileOperations.delete.selectedFilesPart": "{countText} selected {count, plural, one {file} other {files}}",
@@ -123,7 +138,8 @@
     "placeholders": {
       "countText": "how many files (plain number, not grouped)",
       "count": "the same number of files (drives the singular/plural noun)"
-    }
+    },
+    "screenshot": "delete-confirmation-trash-many.png"
   },
 
   "fileOperations.delete.foldersPart": "{countText} {count, plural, one {folder} other {folders}}",
@@ -132,12 +148,15 @@
     "placeholders": {
       "countText": "how many folders (plain number, not grouped)",
       "count": "the same number of folders (drives the singular/plural noun)"
-    }
+    },
+    "screenshot": "delete-confirmation-trash-many.png"
   },
 
   "fileOperations.delete.symlinkNoticeSingle": "This item is a symlink. Only the link will be deleted, not its target.",
   "@fileOperations.delete.symlinkNoticeSingle": {
-    "description": "Notice in the delete dialog when the only selected item is a symbolic link. Reassures that the link is removed, not the file it points to. 'symlink'/'target' are filesystem terms."
+    "description": "Notice in the delete dialog when the only selected item is a symbolic link. Reassures that the link is removed, not the file it points to. 'symlink'/'target' are filesystem terms.",
+    "screenshot": "delete-confirm.png",
+    "screenshotNote": "The delete confirmation dialog, pictured here. Your string is one of its variants: a different item count, an archive or symlink warning, or the progress line it shows while scanning."
   },
 
   "fileOperations.delete.symlinkNoticeMany": "Your selection includes {countText} {count, plural, one {symlink} other {symlinks}}. Only the links themselves will be deleted, not their targets.",
@@ -146,7 +165,9 @@
     "placeholders": {
       "countText": "how many symlinks (plain number, not grouped)",
       "count": "the same number of symlinks (drives the singular/plural noun)"
-    }
+    },
+    "screenshot": "delete-confirm.png",
+    "screenshotNote": "The delete confirmation dialog, pictured here. Your string is one of its variants: a different item count, an archive or symlink warning, or the progress line it shows while scanning."
   },
 
   "fileOperations.mkfile.title": "New file",
@@ -220,22 +241,26 @@
 
   "fileOperations.mkdir.aiSuggestionsAria": "AI suggestions",
   "@fileOperations.mkdir.aiSuggestionsAria": {
-    "description": "Accessibility label for the region listing AI-generated folder-name suggestions (screen-reader only). 'AI' is the common abbreviation."
+    "description": "Accessibility label for the region listing AI-generated folder-name suggestions (screen-reader only). 'AI' is the common abbreviation.",
+    "screenshot": "mkdir-confirmation-empty.png"
   },
 
   "fileOperations.mkdir.aiSuggestionsHeader": "AI suggestions:",
   "@fileOperations.mkdir.aiSuggestionsHeader": {
-    "description": "Heading shown above the AI-generated folder-name suggestion chips in the new-folder dialog. 'AI' is the common abbreviation."
+    "description": "Heading shown above the AI-generated folder-name suggestion chips in the new-folder dialog. 'AI' is the common abbreviation.",
+    "screenshot": "mkdir-confirmation-empty.png"
   },
 
   "fileOperations.shared.conflictExistsFolder": "There is already a folder by this name in this folder.",
   "@fileOperations.shared.conflictExistsFolder": {
-    "description": "Inline validation error in the new-file and new-folder dialogs when the typed name matches an existing folder in the current directory."
+    "description": "Inline validation error in the new-file and new-folder dialogs when the typed name matches an existing folder in the current directory.",
+    "screenshot": "mkdir-confirmation-conflict.png"
   },
 
   "fileOperations.shared.conflictExistsFile": "There is already a file by this name in this folder.",
   "@fileOperations.shared.conflictExistsFile": {
-    "description": "Inline validation error in the new-file and new-folder dialogs when the typed name matches an existing file in the current directory."
+    "description": "Inline validation error in the new-file and new-folder dialogs when the typed name matches an existing file in the current directory.",
+    "screenshot": "new-file-confirmation-conflict.png"
   },
 
   "fileOperations.shared.byteRate": "<size></size>/s",
@@ -250,7 +275,8 @@
     "placeholders": {
       "a": "the first part (the files count phrase)",
       "b": "the second part (the folders count phrase)"
-    }
+    },
+    "screenshot": "delete-confirmation-trash-many.png"
   },
 
   "fileOperations.shared.scanningTooltip": "Scanning…",
@@ -383,7 +409,8 @@
 
   "fileOperations.transferDialog.mergeInfoSingle": "1 folder will merge with an existing folder",
   "@fileOperations.transferDialog.mergeInfoSingle": {
-    "description": "Informational line in the transfer dialog when exactly one same-named folder exists at the destination and will be merged (not replaced). Neutral, not a warning."
+    "description": "Informational line in the transfer dialog when exactly one same-named folder exists at the destination and will be merged (not replaced). Neutral, not a warning.",
+    "screenshot": "transfer-confirmation-copy-single.png"
   },
 
   "fileOperations.transferDialog.mergeInfoMany": "{countText} folders will merge with existing folders",
@@ -391,7 +418,8 @@
     "description": "Informational line in the transfer dialog when several same-named folders exist at the destination and will be merged. Neutral, not a warning.",
     "placeholders": {
       "countText": "how many folders will merge, formatted for display (e.g. 1,234)"
-    }
+    },
+    "screenshot": "transfer-confirmation-copy.png"
   },
 
   "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {file already exists. What do you want to do with it?} other {files already exist. What do you want to do with them?}}",
@@ -488,7 +516,8 @@
     "placeholders": {
       "countText": "how many folders (plain number, not grouped)",
       "count": "the same number of folders (drives the singular/plural noun)"
-    }
+    },
+    "screenshot": "transfer-confirmation-copy.png"
   },
 
   "fileOperations.transferDialog.pathErrorSubfolder": "Can''t {verb, select, copy {copy} other {move}} \"{name}\" into its own subfolder",
@@ -521,7 +550,8 @@
 
   "fileOperations.transferDialog.confirmMove": "Move",
   "@fileOperations.transferDialog.confirmMove": {
-    "description": "Primary confirm button in the transfer dialog when the operation is move. Control label."
+    "description": "Primary confirm button in the transfer dialog when the operation is move. Control label.",
+    "screenshot": "transfer-confirmation-move.png"
   },
 
   "fileOperations.transferDialog.confirmCompress": "Compress",
@@ -563,52 +593,72 @@
 
   "fileOperations.transferProgress.scanTitleCopy": "Verifying before copy...",
   "@fileOperations.transferProgress.scanTitleCopy": {
-    "description": "Progress-dialog title while counting files before a copy, so the user knows why the app is walking the folder tree. Keep the trailing ellipsis."
+    "description": "Progress-dialog title while counting files before a copy, so the user knows why the app is walking the folder tree. Keep the trailing ellipsis.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.scanTitleMove": "Verifying before move...",
   "@fileOperations.transferProgress.scanTitleMove": {
-    "description": "Progress-dialog title while counting files before a move. Keep the trailing ellipsis."
+    "description": "Progress-dialog title while counting files before a move. Keep the trailing ellipsis.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.scanTitleCompress": "Verifying before compressing...",
   "@fileOperations.transferProgress.scanTitleCompress": {
-    "description": "Progress-dialog title while counting files before compressing them into a new zip. Keep the trailing ellipsis."
+    "description": "Progress-dialog title while counting files before compressing them into a new zip. Keep the trailing ellipsis.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.scanTitleDelete": "Counting items to delete...",
   "@fileOperations.transferProgress.scanTitleDelete": {
-    "description": "Progress-dialog title while counting items before a permanent delete. Keep the trailing ellipsis."
+    "description": "Progress-dialog title while counting items before a permanent delete. Keep the trailing ellipsis.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.scanTitleTrash": "Counting items to trash...",
   "@fileOperations.transferProgress.scanTitleTrash": {
-    "description": "Progress-dialog title while counting items before moving them to trash. Keep the trailing ellipsis."
+    "description": "Progress-dialog title while counting items before moving them to trash. Keep the trailing ellipsis.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.rollbackUnavailableTooltip": "Rollback is not available for same-volume moves",
   "@fileOperations.transferProgress.rollbackUnavailableTooltip": {
-    "description": "Tooltip on the disabled Rollback button. A move within one disk/device renames in place and can't be undone step by step. 'Rollback' means undoing the operation so far."
+    "description": "Tooltip on the disabled Rollback button. A move within one disk/device renames in place and can't be undone step by step. 'Rollback' means undoing the operation so far.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.titleRollingBack": "Rolling back...",
   "@fileOperations.transferProgress.titleRollingBack": {
-    "description": "Progress-dialog title while undoing a cancelled copy/move (deleting the partial files it created). Keep the trailing ellipsis."
+    "description": "Progress-dialog title while undoing a cancelled copy/move (deleting the partial files it created). Keep the trailing ellipsis.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.titleCancelling": "Cancelling...",
   "@fileOperations.transferProgress.titleCancelling": {
-    "description": "Progress-dialog title right after the user cancels, while the operation stops. Keep the trailing ellipsis."
+    "description": "Progress-dialog title right after the user cancels, while the operation stops. Keep the trailing ellipsis.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.titleCancellingSlow": "Cancelling... (finishing USB transfers)",
   "@fileOperations.transferProgress.titleCancellingSlow": {
-    "description": "Progress-dialog title shown when cancellation takes a moment because an in-flight USB transfer must finish first. Keep the trailing ellipsis on the first part. 'USB' is the connection type."
+    "description": "Progress-dialog title shown when cancellation takes a moment because an in-flight USB transfer must finish first. Keep the trailing ellipsis on the first part. 'USB' is the connection type.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.close": "Close",
   "@fileOperations.transferProgress.close": {
-    "description": "Button on the copy/move progress dialog that closes the window while the transfer is still finishing in the background. Shown once cancelling is under way, so the person never has to wait for a slow device to respond. Keep it short; it sits next to Cancel."
+    "description": "Button on the copy/move progress dialog that closes the window while the transfer is still finishing in the background. Shown once cancelling is under way, so the person never has to wait for a slow device to respond. Keep it short; it sits next to Cancel.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.stallNotice": "No progress for {duration}",
@@ -616,22 +666,30 @@
     "description": "Replaces the time-left text when a transfer has stopped moving, so we stop showing a countdown we no longer believe. Appears on both surfaces that show a running transfer: the copy/move/delete progress dialog and the rows of the Transfers window. {duration} is a formatted length of time such as '45s' or '2m 30s'.",
     "placeholders": {
       "duration": { "content": "$1", "example": "45s" }
-    }
+    },
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.stallWaitingDestination": "Waiting for the destination to respond.",
   "@fileOperations.transferProgress.stallWaitingDestination": {
-    "description": "Explains a stalled copy/move: the drive, share, or phone being written TO has stopped accepting data. Sits under the 'No progress for X' line."
+    "description": "Explains a stalled copy/move: the drive, share, or phone being written TO has stopped accepting data. Sits under the 'No progress for X' line.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.stallWaitingSource": "Waiting for the source to respond.",
   "@fileOperations.transferProgress.stallWaitingSource": {
-    "description": "Explains a stalled copy/move: the drive, share, or phone being read FROM has stopped producing data. Sits under the 'No progress for X' line."
+    "description": "Explains a stalled copy/move: the drive, share, or phone being read FROM has stopped producing data. Sits under the 'No progress for X' line.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.stallUnknown": "The transfer has stopped moving. Cancel it, or leave it running in the background.",
   "@fileOperations.transferProgress.stallUnknown": {
-    "description": "Explains a stalled copy/move when nothing identifies the cause, and points at the two ways out. Conversational; never use the words 'error' or 'failed'."
+    "description": "Explains a stalled copy/move when nothing identifies the cause, and points at the two ways out. Conversational; never use the words 'error' or 'failed'.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.stallInFlight": "{count, plural, one {# file is still open} other {# files are still open}} and may already be partly written.",
@@ -639,12 +697,16 @@
     "description": "Shown on a stalled copy/move. Explains why the finished-files counter can read lower than what the person sees at the destination: files still open have data written but aren't counted as done yet. {count} is how many are open.",
     "placeholders": {
       "count": { "content": "$1", "example": "5" }
-    }
+    },
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.stallLogHint": "The log has the details.",
   "@fileOperations.transferProgress.stallLogHint": {
-    "description": "Closing line of the stalled-transfer notice, pointing the person at Cmdr's log file for specifics."
+    "description": "Closing line of the stalled-transfer notice, pointing the person at Cmdr's log file for specifics.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.titleConflict": "File already exists",
@@ -685,17 +747,23 @@
 
   "fileOperations.transferProgress.warningFileOverFolder": "The target exists and is a <strong>folder</strong>. You''re about to overwrite it with a <strong>file</strong> by the same name. All contents of the target folder would be deleted and replaced by the file. What to do?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
-    "description": "Red warning shown in the conflict step when a file would replace a same-named folder, deleting the folder's contents. <strong> wraps the emphasized words 'folder' and 'file'. Keep it stark; this is a destructive action."
+    "description": "Red warning shown in the conflict step when a file would replace a same-named folder, deleting the folder's contents. <strong> wraps the emphasized words 'folder' and 'file'. Keep it stark; this is a destructive action.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.existingFolderLabel": "Existing (folder):",
   "@fileOperations.transferProgress.existingFolderLabel": {
-    "description": "Row label in the conflict comparison for the item already at the destination, when it is a folder. Keep the trailing colon."
+    "description": "Row label in the conflict comparison for the item already at the destination, when it is a folder. Keep the trailing colon.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.existingFileLabel": "Existing (file):",
   "@fileOperations.transferProgress.existingFileLabel": {
-    "description": "Row label in the conflict comparison for the item already at the destination, when it is a file (and the incoming item is a folder). Keep the trailing colon."
+    "description": "Row label in the conflict comparison for the item already at the destination, when it is a file (and the incoming item is a folder). Keep the trailing colon.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.existingLabel": "Existing:",
@@ -706,12 +774,16 @@
 
   "fileOperations.transferProgress.newFolderLabel": "New (folder):",
   "@fileOperations.transferProgress.newFolderLabel": {
-    "description": "Row label in the conflict comparison for the incoming item, when it is a folder. Keep the trailing colon."
+    "description": "Row label in the conflict comparison for the incoming item, when it is a folder. Keep the trailing colon.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.newFileLabel": "New (file):",
   "@fileOperations.transferProgress.newFileLabel": {
-    "description": "Row label in the conflict comparison for the incoming item, when it is a file (and the existing item is a folder). Keep the trailing colon."
+    "description": "Row label in the conflict comparison for the incoming item, when it is a file (and the existing item is a folder). Keep the trailing colon.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.newLabel": "New:",
@@ -722,7 +794,9 @@
 
   "fileOperations.transferProgress.sizeUnknown": "(unknown)",
   "@fileOperations.transferProgress.sizeUnknown": {
-    "description": "Placeholder shown in the conflict comparison where a size would go but the app couldn't determine it (e.g. a folder's size with no index). Keep the parentheses."
+    "description": "Placeholder shown in the conflict comparison where a size would go but the app couldn't determine it (e.g. a folder's size with no index). Keep the parentheses.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.annotationLarger": "(larger)",
@@ -739,7 +813,9 @@
 
   "fileOperations.transferProgress.smallerDisabledTooltip": "Can''t compare: target folder size is unknown.",
   "@fileOperations.transferProgress.smallerDisabledTooltip": {
-    "description": "Tooltip on the disabled 'Overwrite all smaller' button when the destination is a folder whose size is unknown, so a size comparison isn't possible. The dash is an en dash."
+    "description": "Tooltip on the disabled 'Overwrite all smaller' button when the destination is a folder whose size is unknown, so a size comparison isn't possible. The dash is an en dash.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.conflictSkip": "Skip",
@@ -780,12 +856,16 @@
 
   "fileOperations.transferProgress.conflictOverwriteFolderWithFile": "Overwrite folder with file",
   "@fileOperations.transferProgress.conflictOverwriteFolderWithFile": {
-    "description": "Conflict button for a file-over-folder clash: replace this existing folder (and its contents) with the incoming file. Destructive; the label spells out the swap."
+    "description": "Conflict button for a file-over-folder clash: replace this existing folder (and its contents) with the incoming file. Destructive; the label spells out the swap.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.conflictOverwriteFoldersWithFiles": "Overwrite folders with files",
   "@fileOperations.transferProgress.conflictOverwriteFoldersWithFiles": {
-    "description": "Conflict button for file-over-folder clashes: replace every clashing folder with the incoming file of the same name. Destructive; the label spells out the swap."
+    "description": "Conflict button for file-over-folder clashes: replace every clashing folder with the incoming file of the same name. Destructive; the label spells out the swap.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.conflictOverwriteAllSmaller": "Overwrite all smaller",
@@ -802,7 +882,9 @@
 
   "fileOperations.transferProgress.conflictCancel": "Cancel",
   "@fileOperations.transferProgress.conflictCancel": {
-    "description": "Button in the conflict step that stops the whole operation. Short control label."
+    "description": "Button in the conflict step that stops the whole operation. Short control label.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.conflictRollback": "Rollback",
@@ -819,7 +901,9 @@
 
   "fileOperations.transferProgress.progressItems": "Items",
   "@fileOperations.transferProgress.progressItems": {
-    "description": "Label for the count-progress bar during a trash operation, where the unit is mixed items. Short label."
+    "description": "Label for the count-progress bar during a trash operation, where the unit is mixed items. Short label.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.progressFiles": "Files",
@@ -845,12 +929,16 @@
     "description": "Estimated time left, shown next to the progress bars, for example \"2m 30s left\". Appears on both surfaces that show a running transfer: the copy/move/delete progress dialog and the rows of the Transfers window. It sits in a narrow fixed-width cell, so keep it short. The duration comes in ready-made.",
     "placeholders": {
       "duration": "the estimated time left, already formatted (e.g. 2m 30s)"
-    }
+    },
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.smbNativeNote": "This share uses the system connection. Cancel and rollback may be delayed.",
   "@fileOperations.transferProgress.smbNativeNote": {
-    "description": "Note during a transfer to an operating-system-mounted SMB share, warning that cancel and rollback may lag. 'Rollback' means undoing the work so far."
+    "description": "Note during a transfer to an operating-system-mounted SMB share, warning that cancel and rollback may lag. 'Rollback' means undoing the work so far.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.rollbackTooltip": "Cancel and delete any partial target files created",
@@ -861,7 +949,9 @@
 
   "fileOperations.transferProgress.titlePaused": "Paused",
   "@fileOperations.transferProgress.titlePaused": {
-    "description": "Title of the progress dialog while the transfer is paused. The user paused it and can resume it; nothing is being copied right now. Short status word."
+    "description": "Title of the progress dialog while the transfer is paused. The user paused it and can resume it; nothing is being copied right now. Short status word.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.pause": "Pause",
@@ -872,7 +962,9 @@
 
   "fileOperations.transferProgress.resume": "Resume",
   "@fileOperations.transferProgress.resume": {
-    "description": "Button on the progress dialog, shown while the transfer is paused, that resumes it. Toggles back from \"Pause\". Short control label."
+    "description": "Button on the progress dialog, shown while the transfer is paused, that resumes it. Toggles back from \"Pause\". Short control label.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.pauseAria": "Pause this transfer",
@@ -883,7 +975,9 @@
 
   "fileOperations.transferProgress.resumeAria": "Resume this transfer",
   "@fileOperations.transferProgress.resumeAria": {
-    "description": "Screen-reader label for the Resume button on the progress dialog (the visible button shows only \"Resume\")."
+    "description": "Screen-reader label for the Resume button on the progress dialog (the visible button shows only \"Resume\").",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.queue": "Queue",
@@ -909,7 +1003,9 @@
     "description": "Quiet toast shown when a new copy/move/delete can''t start right away because another transfer is busy on the same drive, so it waits in the queue. The queue window comes forward at the same time.",
     "placeholders": {
       "countText": "preformatted count phrase of transfers ahead, for example \"1 transfer\" or \"3 transfers\""
-    }
+    },
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# transfer} other {# transfers}}",
@@ -917,17 +1013,22 @@
     "description": "Count phrase of how many transfers are ahead of a newly-queued one, slotted into the queued toast (for example \"1 transfer\" or \"3 transfers\").",
     "placeholders": {
       "count": "how many transfers are ahead in the queue"
-    }
+    },
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.backgroundedToast": "Still running in the background. Find it in the transfer queue.",
   "@fileOperations.transferProgress.backgroundedToast": {
-    "description": "Quiet toast shown after the user sends a running transfer to the background (via the Queue button or F2). The transfer keeps going; the queue window comes forward to manage it."
+    "description": "Quiet toast shown after the user sends a running transfer to the background (via the Queue button or F2). The transfer keeps going; the queue window comes forward to manage it.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.errorDialog.technicalDetails": "Technical details",
   "@fileOperations.errorDialog.technicalDetails": {
-    "description": "Toggle that expands raw, developer-facing details (paths, error codes) below a friendly transfer-error message. Control label."
+    "description": "Toggle that expands raw, developer-facing details (paths, error codes) below a friendly transfer-error message. Control label.",
+    "screenshot": "transfer-error-source_not_found.png"
   },
 
   "fileOperations.errorDialog.technicalDetailsAria": "Technical error details",
@@ -937,12 +1038,14 @@
 
   "fileOperations.errorDialog.retry": "Retry",
   "@fileOperations.errorDialog.retry": {
-    "description": "Button that re-attempts a failed copy/move/delete. Shown for errors worth trying again. Short control label."
+    "description": "Button that re-attempts a failed copy/move/delete. Shown for errors worth trying again. Short control label.",
+    "screenshot": "transfer-error-cancelled.png"
   },
 
   "fileOperations.errorDialog.close": "Close",
   "@fileOperations.errorDialog.close": {
-    "description": "Button that dismisses the transfer-error dialog. Short control label."
+    "description": "Button that dismisses the transfer-error dialog. Short control label.",
+    "screenshot": "transfer-error-source_not_found.png"
   },
 
   "fileOperations.errorDialog.tooLargeAndMore": "and {countText} more {count, plural, one {file} other {files}}",
@@ -956,12 +1059,14 @@
 
   "fileOperations.archivePassword.title": "Password needed",
   "@fileOperations.archivePassword.title": {
-    "description": "Title of the dialog that asks for an encrypted archive''s password before copying or moving files out of it. Shown the first time (no wrong attempt yet). Short heading."
+    "description": "Title of the dialog that asks for an encrypted archive''s password before copying or moving files out of it. Shown the first time (no wrong attempt yet). Short heading.",
+    "screenshot": "archive-password-first-attempt.png"
   },
 
   "fileOperations.archivePassword.retryTitle": "That didn''t work",
   "@fileOperations.archivePassword.retryTitle": {
-    "description": "Title of the archive-password dialog when the password the user just entered was rejected, so they''re being asked again. Friendly and light, not scolding. Avoid the words \"error\" and \"failed\". Short heading."
+    "description": "Title of the archive-password dialog when the password the user just entered was rejected, so they''re being asked again. Friendly and light, not scolding. Avoid the words \"error\" and \"failed\". Short heading.",
+    "screenshot": "archive-password-wrong-attempt.png"
   },
 
   "fileOperations.archivePassword.message": "<archive>{name}</archive> is password-protected. Enter its password to unlock it.",
@@ -969,7 +1074,8 @@
     "description": "Body of the archive-password dialog, shown the first time. Names the archive being unlocked. <archive> wraps the archive filename, which is styled (bold); keep the tag around the name only. \"unlock\" pairs with the Unlock button.",
     "placeholders": {
       "name": "the archive filename, e.g. photos.zip"
-    }
+    },
+    "screenshot": "archive-password-first-attempt.png"
   },
 
   "fileOperations.archivePassword.retryMessage": "That password didn''t unlock <archive>{name}</archive>. Give it another go.",
@@ -977,22 +1083,26 @@
     "description": "Body of the archive-password dialog after a rejected password, asking the user to try again. Friendly and encouraging, not scolding. Avoid the words \"error\" and \"failed\". <archive> wraps the archive filename, which is styled (bold); keep the tag around the name only.",
     "placeholders": {
       "name": "the archive filename, e.g. photos.zip"
-    }
+    },
+    "screenshot": "archive-password-wrong-attempt.png"
   },
 
   "fileOperations.archivePassword.inputAria": "Archive password",
   "@fileOperations.archivePassword.inputAria": {
-    "description": "Accessible label for the masked password input in the archive-password dialog (there is no visible label next to the field). Short."
+    "description": "Accessible label for the masked password input in the archive-password dialog (there is no visible label next to the field). Short.",
+    "screenshot": "archive-password-first-attempt.png"
   },
 
   "fileOperations.archivePassword.placeholder": "Password",
   "@fileOperations.archivePassword.placeholder": {
-    "description": "Placeholder text inside the empty masked password input in the archive-password dialog. Short."
+    "description": "Placeholder text inside the empty masked password input in the archive-password dialog. Short.",
+    "screenshot": "archive-password-first-attempt.png"
   },
 
   "fileOperations.archivePassword.unlock": "Unlock",
   "@fileOperations.archivePassword.unlock": {
-    "description": "Primary button in the archive-password dialog that submits the entered password and retries the copy/move. Short control label, active verb."
+    "description": "Primary button in the archive-password dialog that submits the entered password and retries the copy/move. Short control label, active verb.",
+    "screenshot": "archive-password-first-attempt.png"
   },
 
   "fileOperations.validation.disallowedChars": "{kind, select, folder {Folder name can''t contain \"/\" or null characters} other {Filename can''t contain \"/\" or null characters}}",
@@ -1018,7 +1128,8 @@
       "kind": "what is being named: \"folder\" for a folder, anything else for a file",
       "byteCount": "how many bytes the typed name currently uses (e.g. 260)",
       "maxBytes": "the maximum bytes allowed for one name (e.g. 255)"
-    }
+    },
+    "screenshot": "mkdir-confirmation-too-long.png"
   },
 
   "fileOperations.validation.pathTooLong": "Full path is too long ({byteCount}/{maxBytes} bytes)",

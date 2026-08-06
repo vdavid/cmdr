@@ -1,35 +1,43 @@
 {
   "askCmdr.title": "Ask Cmdr",
   "@askCmdr.title": {
-    "description": "Title of the Ask Cmdr chat rail, where the user chats with an AI about their files. This is the product name; keep it as-is."
+    "description": "Title of the Ask Cmdr chat rail, where the user chats with an AI about their files. This is the product name; keep it as-is.",
+    "screenshot": "ask-cmdr-consent.png"
   },
   "askCmdr.close": "Close Ask Cmdr",
   "@askCmdr.close": {
-    "description": "Accessible label for the button that closes the Ask Cmdr chat rail. Sentence case."
+    "description": "Accessible label for the button that closes the Ask Cmdr chat rail. Sentence case.",
+    "screenshot": "ask-cmdr-consent.png"
   },
   "askCmdr.newChat": "New chat",
   "@askCmdr.newChat": {
-    "description": "Label for the button that starts a fresh Ask Cmdr conversation. Sentence case."
+    "description": "Label for the button that starts a fresh Ask Cmdr conversation. Sentence case.",
+    "screenshot": "ask-cmdr-empty.png"
   },
   "askCmdr.empty.title": "Ask about your files",
   "@askCmdr.empty.title": {
-    "description": "Heading of the Ask Cmdr rail's empty state, shown before the first message. Sentence case."
+    "description": "Heading of the Ask Cmdr rail's empty state, shown before the first message. Sentence case.",
+    "screenshot": "ask-cmdr-empty.png"
   },
   "askCmdr.empty.hint": "Cmdr can look at what you’re browsing, your drives, and your file history to answer. It only reads names, paths, and sizes, never file contents.",
   "@askCmdr.empty.hint": {
-    "description": "Explanatory text in the Ask Cmdr rail's empty state, describing what the assistant can see. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Explanatory text in the Ask Cmdr rail's empty state, describing what the assistant can see. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "ask-cmdr-empty.png"
   },
   "askCmdr.composer.placeholder": "Ask about your files…",
   "@askCmdr.composer.placeholder": {
-    "description": "Placeholder text in the Ask Cmdr message input box. Ends with an ellipsis character (…)."
+    "description": "Placeholder text in the Ask Cmdr message input box. Ends with an ellipsis character (…).",
+    "screenshot": "ask-cmdr-empty.png"
   },
   "askCmdr.composer.send": "Send message",
   "@askCmdr.composer.send": {
-    "description": "Accessible label for the button that sends the typed Ask Cmdr message. Sentence case."
+    "description": "Accessible label for the button that sends the typed Ask Cmdr message. Sentence case.",
+    "screenshot": "ask-cmdr-empty.png"
   },
   "askCmdr.composer.stop": "Stop",
   "@askCmdr.composer.stop": {
-    "description": "Label for the button that stops the assistant while it is answering. Sentence case."
+    "description": "Label for the button that stops the assistant while it is answering. Sentence case.",
+    "screenshot": "ask-cmdr-chat.png"
   },
   "askCmdr.thinking": "Thinking…",
   "@askCmdr.thinking": {
@@ -202,23 +210,28 @@
   },
   "askCmdr.threads.open": "Chats",
   "@askCmdr.threads.open": {
-    "description": "Accessible label and tooltip for the rail header button that opens the list of past Ask Cmdr chats. Sentence case."
+    "description": "Accessible label and tooltip for the rail header button that opens the list of past Ask Cmdr chats. Sentence case.",
+    "screenshot": "ask-cmdr-empty.png"
   },
   "askCmdr.sessions.title": "Chats",
   "@askCmdr.sessions.title": {
-    "description": "Heading of the Ask Cmdr panel listing the user's past chats. Sentence case."
+    "description": "Heading of the Ask Cmdr panel listing the user's past chats. Sentence case.",
+    "screenshot": "ask-cmdr-sessions.png"
   },
   "askCmdr.sessions.back": "Back to chat",
   "@askCmdr.sessions.back": {
-    "description": "Accessible label for the button that closes the chats list and returns to the active conversation. Sentence case."
+    "description": "Accessible label for the button that closes the chats list and returns to the active conversation. Sentence case.",
+    "screenshot": "ask-cmdr-sessions.png"
   },
   "askCmdr.sessions.searchPlaceholder": "Search your chats…",
   "@askCmdr.sessions.searchPlaceholder": {
-    "description": "Placeholder in the box that searches across all past Ask Cmdr chats. Ends with an ellipsis character (…)."
+    "description": "Placeholder in the box that searches across all past Ask Cmdr chats. Ends with an ellipsis character (…).",
+    "screenshot": "ask-cmdr-sessions.png"
   },
   "askCmdr.sessions.searchLabel": "Search chats",
   "@askCmdr.sessions.searchLabel": {
-    "description": "Accessible label for the Ask Cmdr chats search input. Sentence case."
+    "description": "Accessible label for the Ask Cmdr chats search input. Sentence case.",
+    "screenshot": "ask-cmdr-sessions.png"
   },
   "askCmdr.sessions.empty": "No chats yet",
   "@askCmdr.sessions.empty": {
@@ -234,7 +247,8 @@
   },
   "askCmdr.sessions.showArchived": "Show archived",
   "@askCmdr.sessions.showArchived": {
-    "description": "Toggle that switches the chats list to show archived conversations. Sentence case."
+    "description": "Toggle that switches the chats list to show archived conversations. Sentence case.",
+    "screenshot": "ask-cmdr-sessions.png"
   },
   "askCmdr.sessions.hideArchived": "Hide archived",
   "@askCmdr.sessions.hideArchived": {
@@ -250,7 +264,8 @@
   },
   "askCmdr.sessions.rename": "Rename",
   "@askCmdr.sessions.rename": {
-    "description": "Accessible label for the button that renames a chat in the list. Sentence case."
+    "description": "Accessible label for the button that renames a chat in the list. Sentence case.",
+    "screenshot": "ask-cmdr-sessions.png"
   },
   "askCmdr.sessions.renameLabel": "Chat title",
   "@askCmdr.sessions.renameLabel": {
@@ -258,7 +273,8 @@
   },
   "askCmdr.sessions.archive": "Archive",
   "@askCmdr.sessions.archive": {
-    "description": "Accessible label for the button that archives a chat (hides it from the active list, no delete). Sentence case."
+    "description": "Accessible label for the button that archives a chat (hides it from the active list, no delete). Sentence case.",
+    "screenshot": "ask-cmdr-sessions.png"
   },
   "askCmdr.sessions.unarchive": "Unarchive",
   "@askCmdr.sessions.unarchive": {
@@ -270,7 +286,8 @@
   },
   "askCmdr.composer.attach": "Ask about selection",
   "@askCmdr.composer.attach": {
-    "description": "Button in the composer that attaches the file or folder selected in the active pane, so the user can ask about it. Sentence case."
+    "description": "Button in the composer that attaches the file or folder selected in the active pane, so the user can ask about it. Sentence case.",
+    "screenshot": "ask-cmdr-empty.png"
   },
   "askCmdr.composer.dropHint": "Drop to attach",
   "@askCmdr.composer.dropHint": {
@@ -278,7 +295,8 @@
   },
   "askCmdr.composer.providerOff": "Turn on an AI provider in settings to start chatting.",
   "@askCmdr.composer.providerOff": {
-    "description": "Inline hint shown under the Ask Cmdr composer when no AI provider is turned on, so the Send button is disabled. Points the user at settings to turn one on. Friendly and actionable; avoids the words error and failed."
+    "description": "Inline hint shown under the Ask Cmdr composer when no AI provider is turned on, so the Send button is disabled. Points the user at settings to turn one on. Friendly and actionable; avoids the words error and failed.",
+    "screenshot": "ask-cmdr-empty.png"
   },
   "askCmdr.attachment.remove": "Remove attachment",
   "@askCmdr.attachment.remove": {
@@ -286,60 +304,63 @@
   },
   "askCmdr.consent.title": "Talk to Cmdr about your files",
   "@askCmdr.consent.title": {
-    "description": "Heading of the one-time opt-in screen shown before the first Ask Cmdr chat. Warm and inviting. Sentence case."
+    "description": "Heading of the one-time opt-in screen shown before the first Ask Cmdr chat. Warm and inviting. Sentence case.",
+    "screenshot": "ask-cmdr-consent.png"
   },
   "askCmdr.consent.intro": "Ask Cmdr sends your questions to the AI provider you choose, using your own API key. Here’s exactly what leaves your Mac when you chat:",
   "@askCmdr.consent.intro": {
     "description": "Opening paragraph of the Ask Cmdr consent screen, before the list of what gets sent. Ends with a colon introducing the list. The apostrophe is U+2019.",
-    "screenshot": "settings-ai-ask-cmdr.png"
+    "screenshot": "ask-cmdr-consent.png"
   },
   "askCmdr.consent.item.messages": "Your messages",
   "@askCmdr.consent.item.messages": {
     "description": "First item in the Ask Cmdr consent list of what leaves the Mac: the text the user types. Short noun phrase, sentence case.",
-    "screenshot": "settings-ai-ask-cmdr.png"
+    "screenshot": "ask-cmdr-consent.png"
   },
   "askCmdr.consent.item.names": "The names and paths of files and folders Cmdr looks at to answer you",
   "@askCmdr.consent.item.names": {
     "description": "Consent list item: the file and folder names and paths Cmdr reads to answer. Never the file contents. Sentence case, no period.",
-    "screenshot": "settings-ai-ask-cmdr.png"
+    "screenshot": "ask-cmdr-consent.png"
   },
   "askCmdr.consent.item.sizes": "Their sizes and dates",
   "@askCmdr.consent.item.sizes": {
     "description": "Consent list item: the sizes and dates of those files and folders. Short noun phrase, sentence case.",
-    "screenshot": "settings-ai-ask-cmdr.png"
+    "screenshot": "ask-cmdr-consent.png"
   },
   "askCmdr.consent.item.envelope": "What you’re looking at right now: your current folder, cursor, selection, and connected drives",
   "@askCmdr.consent.item.envelope": {
     "description": "Consent list item describing the app-state envelope sent with each question: the current folder, cursor position, selection, and connected drives. Sentence case, no period. The apostrophe is U+2019.",
-    "screenshot": "settings-ai-ask-cmdr.png"
+    "screenshot": "ask-cmdr-consent.png"
   },
   "askCmdr.consent.item.attachments": "Any file or folder you attach to a question, by its name and path only",
   "@askCmdr.consent.item.attachments": {
     "description": "Consent list item: files or folders the user attaches to a question are sent by reference (name and path), never their contents. Sentence case, no period.",
-    "screenshot": "settings-ai-ask-cmdr.png"
+    "screenshot": "ask-cmdr-consent.png"
   },
   "askCmdr.consent.noContents": "Cmdr doesn’t send the files themselves: no file contents, no photos, no thumbnails. Photo search is the one thing that reaches inside your images, and only when you have it search them: the text Cmdr recognized inside the matching photos and their tags go to your provider so it can find them. Ask Cmdr only looks and speaks; it never changes anything.",
   "@askCmdr.consent.noContents": {
     "description": "Reassurance paragraph on the Ask Cmdr consent screen: the files themselves (contents, photos, thumbnails) are never sent; the one exception is photo search, which sends image-derived text (recognized text and tags) when used; and the assistant is read-only. The apostrophes are U+2019.",
-    "screenshot": "settings-ai-ask-cmdr.png"
+    "screenshot": "ask-cmdr-consent.png"
   },
   "askCmdr.consent.local": "Your chats stay on your Mac, in a local database you can open and read. You pick the provider and model, and you can see what each conversation costs.",
   "@askCmdr.consent.local": {
     "description": "Paragraph on the Ask Cmdr consent screen: chats are stored locally and the user controls the provider, model, and cost visibility.",
-    "screenshot": "settings-ai-ask-cmdr.png"
+    "screenshot": "ask-cmdr-consent.png"
   },
   "askCmdr.consent.logsNote": "If you turn on LLM call logging in Advanced settings, Cmdr also saves each request and reply to a folder on your Mac. Those logs stay local too, never sent anywhere.",
   "@askCmdr.consent.logsNote": {
     "description": "Smaller note on the Ask Cmdr consent screen about the optional local LLM call log (the logLlmCalls setting): the logs are written to a local folder and never transmitted.",
-    "screenshot": "settings-ai-ask-cmdr.png"
+    "screenshot": "ask-cmdr-consent.png"
   },
   "askCmdr.consent.accept": "Turn on Ask Cmdr",
   "@askCmdr.consent.accept": {
-    "description": "Primary button on the Ask Cmdr consent screen that opts in and unlocks the chat. Starts with a verb. Sentence case."
+    "description": "Primary button on the Ask Cmdr consent screen that opts in and unlocks the chat. Starts with a verb. Sentence case.",
+    "screenshot": "ask-cmdr-consent.png"
   },
   "askCmdr.consent.decline": "Not now",
   "@askCmdr.consent.decline": {
-    "description": "Secondary button on the Ask Cmdr consent screen that closes the rail without opting in. Sentence case."
+    "description": "Secondary button on the Ask Cmdr consent screen that closes the rail without opting in. Sentence case.",
+    "screenshot": "ask-cmdr-consent.png"
   },
   "askCmdr.cost.tokens": "{countText} {count, plural, one {token} other {tokens}}",
   "@askCmdr.cost.tokens": {
@@ -351,11 +372,13 @@
       "count": {
         "content": "The raw token count as an integer, used only to pick the singular or plural word."
       }
-    }
+    },
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "askCmdr.cost.free": "free, on-device",
   "@askCmdr.cost.free": {
-    "description": "Cost readout for a chat answered entirely by the local on-device model: it costs nothing. Lowercase, shown after the token count."
+    "description": "Cost readout for a chat answered entirely by the local on-device model: it costs nothing. Lowercase, shown after the token count.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "askCmdr.cost.estimate": "about {amount}",
   "@askCmdr.cost.estimate": {
@@ -376,27 +399,33 @@
   },
   "askCmdr.renameReview.title": "Review file renames",
   "@askCmdr.renameReview.title": {
-    "description": "Title of the modal where the user reviews an Ask Cmdr rename proposal before files change."
+    "description": "Title of the modal where the user reviews an Ask Cmdr rename proposal before files change.",
+    "screenshot": "bulk-rename-review-all-allowed.png"
   },
   "askCmdr.renameReview.description": "Cmdr will rename only the files you allow.",
   "@askCmdr.renameReview.description": {
-    "description": "Short explanation under the bulk rename review title. Reassures the user that denied rows will not change."
+    "description": "Short explanation under the bulk rename review title. Reassures the user that denied rows will not change.",
+    "screenshot": "bulk-rename-review-all-allowed.png"
   },
   "askCmdr.renameReview.originalName": "Current name",
   "@askCmdr.renameReview.originalName": {
-    "description": "Column heading for the original file name in the bulk rename review table."
+    "description": "Column heading for the original file name in the bulk rename review table.",
+    "screenshot": "bulk-rename-review-all-allowed.png"
   },
   "askCmdr.renameReview.newName": "New name",
   "@askCmdr.renameReview.newName": {
-    "description": "Column heading for the proposed file name in the bulk rename review table."
+    "description": "Column heading for the proposed file name in the bulk rename review table.",
+    "screenshot": "bulk-rename-review-all-allowed.png"
   },
   "askCmdr.renameReview.whyThisName": "Why this name",
   "@askCmdr.renameReview.whyThisName": {
-    "description": "Column heading for the rightmost bulk rename review column, which shows what each proposed name is based on."
+    "description": "Column heading for the rightmost bulk rename review column, which shows what each proposed name is based on.",
+    "screenshot": "bulk-rename-review-all-allowed.png"
   },
   "askCmdr.renameReview.preview": "Preview",
   "@askCmdr.renameReview.preview": {
-    "description": "Heading for the narrow thumbnail column in the bulk rename review table. Shown to screen readers only; the column itself is too narrow for a visible label."
+    "description": "Heading for the narrow thumbnail column in the bulk rename review table. Shown to screen readers only; the column itself is too narrow for a visible label.",
+    "screenshot": "bulk-rename-review-all-allowed.png"
   },
   "askCmdr.renameReview.openPreview": "Open {name}",
   "@askCmdr.renameReview.openPreview": {
@@ -405,11 +434,13 @@
       "name": {
         "content": "The file's current name."
       }
-    }
+    },
+    "screenshot": "bulk-rename-review-all-allowed.png"
   },
   "askCmdr.renameReview.openPreviewTooltip": "Open the file to check the name (Space)",
   "@askCmdr.renameReview.openPreviewTooltip": {
-    "description": "Tooltip on the per-row thumbnail button in the bulk rename review. Names the keyboard shortcut that opens the focused row's file."
+    "description": "Tooltip on the per-row thumbnail button in the bulk rename review. Names the keyboard shortcut that opens the focused row's file.",
+    "screenshot": "bulk-rename-review-all-allowed.png"
   },
   "askCmdr.renameReview.editName": "New name for {name}",
   "@askCmdr.renameReview.editName": {
@@ -418,35 +449,43 @@
       "name": {
         "content": "The file's current name."
       }
-    }
+    },
+    "screenshot": "bulk-rename-review-all-allowed.png"
   },
   "askCmdr.renameReview.nameRejected": "Cmdr can’t use that name. Try a different one.",
   "@askCmdr.renameReview.nameRejected": {
-    "description": "Per-row message shown when the name the user typed in the bulk rename review is not a usable filename, so the row went back to the name it had. Conversational and actionable; never the words error or failed. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Per-row message shown when the name the user typed in the bulk rename review is not a usable filename, so the row went back to the name it had. Conversational and actionable; never the words error or failed. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "bulk-rename-review-edited-names.png"
   },
   "askCmdr.renameReview.evidence.imageText": "Text in the image",
   "@askCmdr.renameReview.evidence.imageText": {
-    "description": "Label above a quote of the text Cmdr recognized inside the image, shown as the reason for a proposed name."
+    "description": "Label above a quote of the text Cmdr recognized inside the image, shown as the reason for a proposed name.",
+    "screenshot": "bulk-rename-review-why-this-name.png"
   },
   "askCmdr.renameReview.evidence.imageTags": "What Cmdr sees in the image",
   "@askCmdr.renameReview.evidence.imageTags": {
-    "description": "Label above the image tags Cmdr recognized, shown as the reason for a proposed name."
+    "description": "Label above the image tags Cmdr recognized, shown as the reason for a proposed name.",
+    "screenshot": "bulk-rename-review-why-this-name.png"
   },
   "askCmdr.renameReview.evidence.filename": "The old name",
   "@askCmdr.renameReview.evidence.filename": {
-    "description": "Label shown when a proposed name comes from the file's existing name, with nothing read from inside the file."
+    "description": "Label shown when a proposed name comes from the file's existing name, with nothing read from inside the file.",
+    "screenshot": "bulk-rename-review-some-blocked.png"
   },
   "askCmdr.renameReview.evidence.metadata": "File details, not contents",
   "@askCmdr.renameReview.evidence.metadata": {
-    "description": "Label shown when a proposed name comes only from metadata like the date or size. It must read as an honest limit: nothing inside the file was read."
+    "description": "Label shown when a proposed name comes only from metadata like the date or size. It must read as an honest limit: nothing inside the file was read.",
+    "screenshot": "bulk-rename-review-all-allowed.png"
   },
   "askCmdr.renameReview.evidence.userInstruction": "What you asked for",
   "@askCmdr.renameReview.evidence.userInstruction": {
-    "description": "Label shown when a proposed name follows a naming rule the user stated in the chat."
+    "description": "Label shown when a proposed name follows a naming rule the user stated in the chat.",
+    "screenshot": "bulk-rename-review-why-this-name.png"
   },
   "askCmdr.renameReview.evidence.userEdited": "You typed this name",
   "@askCmdr.renameReview.evidence.userEdited": {
-    "description": "Label shown in the bulk rename review when the user replaced the proposed name with one they typed themselves. The row then carries no evidence at all, and never the model’s."
+    "description": "Label shown in the bulk rename review when the user replaced the proposed name with one they typed themselves. The row then carries no evidence at all, and never the model’s.",
+    "screenshot": "bulk-rename-review-edited-names.png"
   },
   "askCmdr.renameReview.coverage": "Matched {matchedText} of {totalText} characters",
   "@askCmdr.renameReview.coverage": {
@@ -458,31 +497,38 @@
       "totalText": {
         "content": "How many characters Cmdr read in the image, preformatted."
       }
-    }
+    },
+    "screenshot": "bulk-rename-review-why-this-name.png"
   },
   "askCmdr.renameReview.coverageThin": "That’s a small part of the text Cmdr read here. Open the file to check the name.",
   "@askCmdr.renameReview.coverageThin": {
-    "description": "Tooltip and accessible label on the warning marker beside a thin coverage figure in the bulk rename review. Tells the user the quote covers only a sliver of the recognized text, so the name deserves a look at the file itself. Never says the name is wrong: Cmdr cannot know that. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Tooltip and accessible label on the warning marker beside a thin coverage figure in the bulk rename review. Tells the user the quote covers only a sliver of the recognized text, so the name deserves a look at the file itself. Never says the name is wrong: Cmdr cannot know that. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "bulk-rename-review-why-this-name.png"
   },
   "askCmdr.renameReview.allow": "Allow",
   "@askCmdr.renameReview.allow": {
-    "description": "Button that lets one proposed file rename proceed."
+    "description": "Button that lets one proposed file rename proceed.",
+    "screenshot": "bulk-rename-review-all-allowed.png"
   },
   "askCmdr.renameReview.deny": "Deny",
   "@askCmdr.renameReview.deny": {
-    "description": "Button that prevents one proposed file rename from proceeding."
+    "description": "Button that prevents one proposed file rename from proceeding.",
+    "screenshot": "bulk-rename-review-all-allowed.png"
   },
   "askCmdr.renameReview.allowAll": "Allow all",
   "@askCmdr.renameReview.allowAll": {
-    "description": "Button that allows every currently reviewable rename in the proposal."
+    "description": "Button that allows every currently reviewable rename in the proposal.",
+    "screenshot": "bulk-rename-review-all-allowed.png"
   },
   "askCmdr.renameReview.denyAll": "Deny all",
   "@askCmdr.renameReview.denyAll": {
-    "description": "Button that denies every rename in the proposal."
+    "description": "Button that denies every rename in the proposal.",
+    "screenshot": "bulk-rename-review-all-allowed.png"
   },
   "askCmdr.renameReview.cancel": "Cancel",
   "@askCmdr.renameReview.cancel": {
-    "description": "Button that closes the bulk rename review and discards its proposal without renaming files."
+    "description": "Button that closes the bulk rename review and discards its proposal without renaming files.",
+    "screenshot": "bulk-rename-review-all-allowed.png"
   },
   "askCmdr.renameReview.rename": "Rename {count, plural, one {# file} other {# files}}",
   "@askCmdr.renameReview.rename": {
@@ -491,63 +537,78 @@
       "count": {
         "content": "The number of allowed rename rows."
       }
-    }
+    },
+    "screenshot": "bulk-rename-review-all-allowed.png"
   },
   "askCmdr.renameReview.blocked": "This rename needs attention before it can continue.",
   "@askCmdr.renameReview.blocked": {
-    "description": "Generic per-row message when backend preflight blocks a proposed rename."
+    "description": "Generic per-row message when backend preflight blocks a proposed rename.",
+    "screenshot": "bulk-rename-review-some-blocked.png"
   },
   "askCmdr.renameReview.overwriteBadge": "(overwrite!)",
   "@askCmdr.renameReview.overwriteBadge": {
-    "description": "Compact red warning badge beside a proposed filename when another file already occupies that name. Keep the parentheses and exclamation mark."
+    "description": "Compact red warning badge beside a proposed filename when another file already occupies that name. Keep the parentheses and exclamation mark.",
+    "screenshot": "bulk-rename-review-some-blocked.png"
   },
   "askCmdr.renameReview.overwriteTooltip": "Another file already uses this name and isn''t part of this rename plan. This rename is blocked to protect it.",
   "@askCmdr.renameReview.overwriteTooltip": {
-    "description": "Accessible tooltip for the overwrite warning badge. Explains that the existing file is outside the rename plan and will not be replaced."
+    "description": "Accessible tooltip for the overwrite warning badge. Explains that the existing file is outside the rename plan and will not be replaced.",
+    "screenshot": "bulk-rename-review-some-blocked.png"
   },
   "askCmdr.renameReview.sourceMissingBadge": "(doesn''t exist)",
   "@askCmdr.renameReview.sourceMissingBadge": {
-    "description": "Compact red warning badge beside a bulk rename row whose proposed source file does not exist. Keep the parentheses."
+    "description": "Compact red warning badge beside a bulk rename row whose proposed source file does not exist. Keep the parentheses.",
+    "screenshot": "bulk-rename-review-some-blocked.png"
   },
   "askCmdr.renameReview.sourceMissingTooltip": "This source file no longer exists. It may have been deleted or renamed outside Cmdr.",
   "@askCmdr.renameReview.sourceMissingTooltip": {
-    "description": "Accessible tooltip for the missing-source warning badge. Explains that the row is blocked because its original file is gone."
+    "description": "Accessible tooltip for the missing-source warning badge. Explains that the row is blocked because its original file is gone.",
+    "screenshot": "bulk-rename-review-some-blocked.png"
   },
   "askCmdr.renameReview.extensionBadge": "(extension)",
   "@askCmdr.renameReview.extensionBadge": {
-    "description": "Compact yellow warning badge beside a proposed filename when the rename changes, adds, or removes its filename extension. Keep the parentheses."
+    "description": "Compact yellow warning badge beside a proposed filename when the rename changes, adds, or removes its filename extension. Keep the parentheses.",
+    "screenshot": "bulk-rename-review-some-blocked.png"
   },
   "askCmdr.renameReview.extensionTooltip": "Extension changed. The file contents will not be converted.",
   "@askCmdr.renameReview.extensionTooltip": {
-    "description": "Accessible tooltip for the extension-change warning badge in the bulk rename review. Explains that renaming an extension does not convert the file format."
+    "description": "Accessible tooltip for the extension-change warning badge in the bulk rename review. Explains that renaming an extension does not convert the file format.",
+    "screenshot": "bulk-rename-review-some-blocked.png"
   },
   "askCmdr.renameReview.cycleBadge": "(cycle)",
   "@askCmdr.renameReview.cycleBadge": {
-    "description": "Compact yellow warning badge beside each proposed rename that belongs to a dependency cycle. Keep the parentheses."
+    "description": "Compact yellow warning badge beside each proposed rename that belongs to a dependency cycle. Keep the parentheses.",
+    "screenshot": "bulk-rename-review-some-blocked.png"
   },
   "askCmdr.renameReview.cycleTooltip": "Rename cycle. Cmdr will use one temporary name while rotating these files.",
   "@askCmdr.renameReview.cycleTooltip": {
-    "description": "Accessible tooltip for the rename-cycle warning badge. Explains that Cmdr needs one temporary filename to rotate the files safely."
+    "description": "Accessible tooltip for the rename-cycle warning badge. Explains that Cmdr needs one temporary filename to rotate the files safely.",
+    "screenshot": "bulk-rename-review-some-blocked.png"
   },
   "askCmdr.renameReview.nothingReadBadge": "(nothing read)",
   "@askCmdr.renameReview.nothingReadBadge": {
-    "description": "Compact badge beside a proposed filename in the bulk rename review when Cmdr read nothing inside the file, so the name rests on the old name, the file details, or the user’s instruction. Keep the parentheses."
+    "description": "Compact badge beside a proposed filename in the bulk rename review when Cmdr read nothing inside the file, so the name rests on the old name, the file details, or the user’s instruction. Keep the parentheses.",
+    "screenshot": "bulk-rename-review-all-allowed.png"
   },
   "askCmdr.renameReview.nothingReadTooltip": "Cmdr read nothing inside this file. This name comes from the old name, the file’s details, or what you asked for.",
   "@askCmdr.renameReview.nothingReadTooltip": {
-    "description": "Accessible tooltip for the nothing-read badge in the bulk rename review. It must stay an honest limit: nothing inside the file was read. Never soften it into something reassuring. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Accessible tooltip for the nothing-read badge in the bulk rename review. It must stay an honest limit: nothing inside the file was read. Never soften it into something reassuring. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "bulk-rename-review-all-allowed.png"
   },
   "askCmdr.renameReview.nameKeptBadge": "(name kept)",
   "@askCmdr.renameReview.nameKeptBadge": {
-    "description": "Compact badge beside a proposed filename in the bulk rename review when Cmdr kept the file’s current name because it read nothing inside the file. Keep the parentheses."
+    "description": "Compact badge beside a proposed filename in the bulk rename review when Cmdr kept the file’s current name because it read nothing inside the file. Keep the parentheses.",
+    "screenshot": "bulk-rename-review-edited-names.png"
   },
   "askCmdr.renameReview.nameKeptTooltip": "Cmdr kept the current name and read nothing inside this file.",
   "@askCmdr.renameReview.nameKeptTooltip": {
-    "description": "Accessible tooltip for the name-kept badge in the bulk rename review. Says both halves plainly: the name did not change, and nothing inside the file was read. Never soften it."
+    "description": "Accessible tooltip for the name-kept badge in the bulk rename review. Says both halves plainly: the name did not change, and nothing inside the file was read. Never soften it.",
+    "screenshot": "bulk-rename-review-edited-names.png"
   },
   "askCmdr.renameReview.expired": "This review expired. Ask Cmdr to prepare it again.",
   "@askCmdr.renameReview.expired": {
-    "description": "Message when the short-lived server-side rename proposal has expired."
+    "description": "Message when the short-lived server-side rename proposal has expired.",
+    "screenshot": "bulk-rename-review-expired.png"
   },
   "askCmdr.renameReview.status": "{allowed, plural, one {# rename allowed} other {# renames allowed}}; {blocked, plural, one {# blocked} other {# blocked}}",
   "@askCmdr.renameReview.status": {
@@ -559,7 +620,8 @@
       "blocked": {
         "content": "The number of rows blocked by preflight."
       }
-    }
+    },
+    "screenshot": "bulk-rename-review-all-allowed.png"
   },
   "askCmdr.renameUndo.applied": "Renamed {countText} {count, plural, one {file} other {files}}.",
   "@askCmdr.renameUndo.applied": {
@@ -779,10 +841,12 @@
   },
   "askCmdr.context.label": "How full this chat is",
   "@askCmdr.context.label": {
-    "description": "Accessible label for the chat's context-usage gauge in the rail footer."
+    "description": "Accessible label for the chat's context-usage gauge in the rail footer.",
+    "screenshot": "ask-cmdr-chat.png"
   },
   "askCmdr.context.tooltip": "{usedText} of {budgetText} tokens used (estimated)",
   "@askCmdr.context.tooltip": {
-    "description": "Tooltip on the context-usage gauge. usedText and budgetText are preformatted numbers (with thousands separators). Both are chars/4 estimates, never a tokenizer's count, so the copy says so."
+    "description": "Tooltip on the context-usage gauge. usedText and budgetText are preformatted numbers (with thousands separators). Both are chars/4 estimates, never a tokenizer's count, so the copy says so.",
+    "screenshot": "ask-cmdr-chat.png"
   }
 }

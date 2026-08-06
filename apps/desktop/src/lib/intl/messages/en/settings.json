@@ -1859,7 +1859,8 @@
   },
   "settings.askCmdr.status.on": "Ask Cmdr is on",
   "@settings.askCmdr.status.on": {
-    "description": "Status line in Ask Cmdr settings when the feature is turned on. Sentence case, no period."
+    "description": "Status line in Ask Cmdr settings when the feature is turned on. Sentence case, no period.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.status.off": "Ask Cmdr is off",
   "@settings.askCmdr.status.off": {
@@ -1871,7 +1872,8 @@
     "description": "Smaller line under the status showing when the user turned Ask Cmdr on. date is a preformatted date string.",
     "placeholders": {
       "date": { "content": "The date the user turned Ask Cmdr on, already formatted for the locale." }
-    }
+    },
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.turnOn": "Turn on Ask Cmdr",
   "@settings.askCmdr.turnOn": {
@@ -1880,7 +1882,8 @@
   },
   "settings.askCmdr.turnOff": "Turn off Ask Cmdr",
   "@settings.askCmdr.turnOff": {
-    "description": "Button that turns Ask Cmdr off from settings (chats are kept). Starts with a verb. Sentence case."
+    "description": "Button that turns Ask Cmdr off from settings (chats are kept). Starts with a verb. Sentence case.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.disclosure.title": "What Ask Cmdr sends",
   "@settings.askCmdr.disclosure.title": {
@@ -1950,7 +1953,8 @@
   },
   "settings.askCmdr.spend.disclaimer": "These are estimates. Your provider bills you directly, so check your provider’s dashboard for the exact amount.",
   "@settings.askCmdr.spend.disclaimer": {
-    "description": "Small print under the Ask Cmdr spend list: the costs shown are estimates, not the provider's actual bill. The apostrophe is U+2019."
+    "description": "Small print under the Ask Cmdr spend list: the costs shown are estimates, not the provider's actual bill. The apostrophe is U+2019.",
+    "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.section.fileSystems": "File systems",
   "@settings.section.fileSystems": {

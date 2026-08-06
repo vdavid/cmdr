@@ -1,49 +1,59 @@
 {
   "licensing.acknowledgements.srTitle": "Acknowledgements",
   "@licensing.acknowledgements.srTitle": {
-    "description": "Title of the Acknowledgements dialog, which lists the open-source libraries Cmdr is built on. Opened from the Cmdr menu on macOS, Help on Linux."
+    "description": "Title of the Acknowledgements dialog, which lists the open-source libraries Cmdr is built on. Opened from the Cmdr menu on macOS, Help on Linux.",
+    "screenshot": "acknowledgements.png"
   },
   "licensing.acknowledgements.note": "Look at how long this list is! I deeply appreciate the work of the creators and maintainers of all these libs that Cmdr builds on.",
   "@licensing.acknowledgements.note": {
-    "description": "First paragraph of David's (the developer's) personal thank-you note at the top of the Acknowledgements dialog. Warm and informal; 'libs' is deliberate shorthand for 'libraries'. Keep the personal first-person voice."
+    "description": "First paragraph of David's (the developer's) personal thank-you note at the top of the Acknowledgements dialog. Warm and informal; 'libs' is deliberate shorthand for 'libraries'. Keep the personal first-person voice.",
+    "screenshot": "acknowledgements.png"
   },
   "licensing.acknowledgements.thanks": "Thank you all for your contributions to the OSS world! ❤️",
   "@licensing.acknowledgements.thanks": {
-    "description": "Second paragraph of the thank-you note. 'OSS' means open-source software; expand it if your language has no common abbreviation. The heart emoji is part of the message and should be kept."
+    "description": "Second paragraph of the thank-you note. 'OSS' means open-source software; expand it if your language has no common abbreviation. The heart emoji is part of the message and should be kept.",
+    "screenshot": "acknowledgements.png"
   },
   "licensing.acknowledgements.signature": "David",
   "@licensing.acknowledgements.signature": {
-    "description": "Signature under the thank-you note. This is the developer's first name; do not translate or transliterate unless your language requires a different script."
+    "description": "Signature under the thank-you note. This is the developer's first name; do not translate or transliterate unless your language requires a different script.",
+    "screenshot": "acknowledgements.png"
   },
   "licensing.acknowledgements.rustHeading": "Rust crates ({count, number})",
   "@licensing.acknowledgements.rustHeading": {
     "description": "Heading above the list of Rust dependencies. 'crates' is the Rust ecosystem's word for packages; keep it if it is used untranslated in your language.",
     "placeholders": {
       "count": "how many Rust crates ship in the app, e.g. 650"
-    }
+    },
+    "screenshot": "acknowledgements.png"
   },
   "licensing.acknowledgements.npmHeading": "npm packages ({count, number})",
   "@licensing.acknowledgements.npmHeading": {
     "description": "Heading above the list of JavaScript dependencies. 'npm' is a product name and stays lowercase and untranslated.",
     "placeholders": {
       "count": "how many npm packages ship in the app, e.g. 125"
-    }
+    },
+    "screenshot": "acknowledgements.png"
   },
   "licensing.acknowledgements.jumpToRust": "Jump to Rust crates",
   "@licensing.acknowledgements.jumpToRust": {
-    "description": "Label of a button in the Acknowledgements dialog, above the scrollable package list. Pressing it scrolls the Rust crates section into view. 'Rust' is a product name and stays untranslated. Keep it short: it shares one row with the npm button, each taking half the width."
+    "description": "Label of a button in the Acknowledgements dialog, above the scrollable package list. Pressing it scrolls the Rust crates section into view. 'Rust' is a product name and stays untranslated. Keep it short: it shares one row with the npm button, each taking half the width.",
+    "screenshot": "acknowledgements.png"
   },
   "licensing.acknowledgements.jumpToNpm": "Jump to npm packages",
   "@licensing.acknowledgements.jumpToNpm": {
-    "description": "Label of a button in the Acknowledgements dialog, above the scrollable package list. Pressing it scrolls the npm packages section into view. 'npm' is a product name and stays lowercase and untranslated. Keep it short: it shares one row with the Rust button, each taking half the width."
+    "description": "Label of a button in the Acknowledgements dialog, above the scrollable package list. Pressing it scrolls the npm packages section into view. 'npm' is a product name and stays lowercase and untranslated. Keep it short: it shares one row with the Rust button, each taking half the width.",
+    "screenshot": "acknowledgements.png"
   },
   "licensing.acknowledgements.fullTexts": "The full license texts ship with Cmdr in <notices>THIRD-PARTY-NOTICES.md</notices>.",
   "@licensing.acknowledgements.fullTexts": {
-    "description": "Footnote at the bottom of the Acknowledgements dialog. THIRD-PARTY-NOTICES.md is a filename and must not be translated. The <notices> tag turns the filename into a link to that file on GitHub, so keep the tag wrapped around exactly the filename and nowhere else."
+    "description": "Footnote at the bottom of the Acknowledgements dialog. THIRD-PARTY-NOTICES.md is a filename and must not be translated. The <notices> tag turns the filename into a link to that file on GitHub, so keep the tag wrapped around exactly the filename and nowhere else.",
+    "screenshot": "acknowledgements.png"
   },
   "licensing.acknowledgements.loading": "Loading the list…",
   "@licensing.acknowledgements.loading": {
-    "description": "Shown with a spinner for the moment it takes to load the dependency list after the Acknowledgements dialog opens."
+    "description": "Shown with a spinner for the moment it takes to load the dependency list after the Acknowledgements dialog opens.",
+    "screenshot": "acknowledgements.png"
   },
   "licensing.about.srTitle": "About Cmdr",
   "@licensing.about.srTitle": {
@@ -139,37 +149,37 @@
   "licensing.commercialReminder.title": "Thanks for using Cmdr!",
   "@licensing.commercialReminder.title": {
     "description": "Title of the periodic reminder modal shown to personal-license users. Warm and grateful, not nagging. 'Cmdr' is the product name; do NOT translate.",
-    "screenshot": "commercial-reminder.png"
+    "screenshot": "commercial-reminder-default.png"
   },
   "licensing.commercialReminder.usingPersonal": "You''re using a Personal license.",
   "@licensing.commercialReminder.usingPersonal": {
     "description": "First line of the commercial-reminder modal stating the current license tier. 'Personal' is a license tier name; keep it capitalized and consistent with the other license labels.",
-    "screenshot": "commercial-reminder.png"
+    "screenshot": "commercial-reminder-default.png"
   },
   "licensing.commercialReminder.askCommercial": "If you''re using Cmdr at work, please get a Commercial license to stay compliant.",
   "@licensing.commercialReminder.askCommercial": {
     "description": "Body of the commercial-reminder modal politely asking work users to buy a commercial license. 'Cmdr' is the product name; 'Commercial' is a license tier name.",
-    "screenshot": "commercial-reminder.png"
+    "screenshot": "commercial-reminder-default.png"
   },
   "licensing.commercialReminder.priceInfo": "Commercial licenses are $59/year/user and support continued development.",
   "@licensing.commercialReminder.priceInfo": {
     "description": "Supporting line in the commercial-reminder modal giving the price and framing it as support for development. Keep the price '$59/year/user' literal (currency and amount must not change).",
-    "screenshot": "commercial-reminder.png"
+    "screenshot": "commercial-reminder-default.png"
   },
   "licensing.commercialReminder.declinePersonal": "I only use Cmdr<break></break>for personal purposes",
   "@licensing.commercialReminder.declinePersonal": {
     "description": "Secondary (dismiss) button in the commercial-reminder modal, for users who only use the app personally. <break> is an inline line break for two-line layout in a narrow button; place it at a sensible wrap point for the target language. 'Cmdr' is the product name.",
-    "screenshot": "commercial-reminder.png"
+    "screenshot": "commercial-reminder-default.png"
   },
   "licensing.commercialReminder.getCommercial": "Get commercial license",
   "@licensing.commercialReminder.getCommercial": {
     "description": "Primary button in the commercial-reminder modal that opens the pricing page. Keep it short (a button).",
-    "screenshot": "commercial-reminder.png"
+    "screenshot": "commercial-reminder-default.png"
   },
   "licensing.expiration.title": "Your commercial license has expired",
   "@licensing.expiration.title": {
     "description": "Title of the modal shown once when a commercial subscription has expired.",
-    "screenshot": "expiration.png"
+    "screenshot": "expiration-organization.png"
   },
   "licensing.expiration.orgName": "License for: <strong>{org}</strong>",
   "@licensing.expiration.orgName": {
@@ -177,7 +187,7 @@
     "placeholders": {
       "org": "the licensed organization name"
     },
-    "screenshot": "expiration.png"
+    "screenshot": "expiration-organization.png"
   },
   "licensing.expiration.message": "Your commercial subscription expired on <strong>{date}</strong>.",
   "@licensing.expiration.message": {
@@ -185,22 +195,22 @@
     "placeholders": {
       "date": "the expiry date, already formatted for the user's locale (e.g. March 1, 2026)"
     },
-    "screenshot": "expiration.png"
+    "screenshot": "expiration-organization.png"
   },
   "licensing.expiration.info": "Cmdr is now running in personal use mode. If you''re still using it for work, please renew your license.",
   "@licensing.expiration.info": {
     "description": "Reassuring follow-up in the expiration modal explaining the app keeps working (now in personal mode) and inviting renewal. 'Cmdr' is the product name; do NOT translate.",
-    "screenshot": "expiration.png"
+    "screenshot": "expiration-organization.png"
   },
   "licensing.expiration.renew": "Renew license",
   "@licensing.expiration.renew": {
     "description": "Primary button in the expiration modal that opens the renewal page. Keep it short (a button).",
-    "screenshot": "expiration.png"
+    "screenshot": "expiration-organization.png"
   },
   "licensing.expiration.continue": "Continue in personal mode",
   "@licensing.expiration.continue": {
     "description": "Secondary button in the expiration modal that dismisses it and keeps the app in personal mode. Keep it short (a button).",
-    "screenshot": "expiration.png"
+    "screenshot": "expiration-organization.png"
   },
   "licensing.dialog.loading": "Loading...",
   "@licensing.dialog.loading": {
@@ -209,7 +219,9 @@
   },
   "licensing.dialog.detailsTitle": "License details",
   "@licensing.dialog.detailsTitle": {
-    "description": "Title of the license dialog when an existing license is present (shows its details)."
+    "description": "Title of the license dialog when an existing license is present (shows its details).",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.enterTitle": "Enter license key",
   "@licensing.dialog.enterTitle": {
@@ -221,91 +233,129 @@
     "description": "Warning banner in the license-details view shown when a stored key was later rejected by the server during re-validation. <supportEmail> wraps the inline support-email link.",
     "placeholders": {
       "email": "the support email address (shown as the link text), e.g. hello@getcmdr.com"
-    }
+    },
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.labelType": "License type",
   "@licensing.dialog.labelType": {
-    "description": "Row label in the license-details view for the license type. Pairs with the type value (e.g. 'Commercial subscription')."
+    "description": "Row label in the license-details view for the license type. Pairs with the type value (e.g. 'Commercial subscription').",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.labelOrganization": "Organization",
   "@licensing.dialog.labelOrganization": {
-    "description": "Row label in the license-details view for the licensed organization name."
+    "description": "Row label in the license-details view for the licensed organization name.",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.labelValidity": "Validity",
   "@licensing.dialog.labelValidity": {
-    "description": "Row label in the license-details view for the license validity/expiry status."
+    "description": "Row label in the license-details view for the license validity/expiry status.",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.labelKey": "License key",
   "@licensing.dialog.labelKey": {
-    "description": "Row label in the license-details view for the short license-key code."
+    "description": "Row label in the license-details view for the short license-key code.",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.typeCommercialPerpetual": "Commercial perpetual",
   "@licensing.dialog.typeCommercialPerpetual": {
-    "description": "License-type value shown in the details view for a one-time perpetual commercial license. 'Commercial' is a license tier name."
+    "description": "License-type value shown in the details view for a one-time perpetual commercial license. 'Commercial' is a license tier name.",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.typeCommercialSubscription": "Commercial subscription",
   "@licensing.dialog.typeCommercialSubscription": {
-    "description": "License-type value shown in the details view for a recurring commercial subscription. 'Commercial' is a license tier name."
+    "description": "License-type value shown in the details view for a recurring commercial subscription. 'Commercial' is a license tier name.",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.validityNotYetVerified": "Not yet verified",
   "@licensing.dialog.validityNotYetVerified": {
-    "description": "Validity value shown (in yellow) for a commercial license whose server check hasn't completed yet. Paired with the hint about verifying within a few days."
+    "description": "Validity value shown (in yellow) for a commercial license whose server check hasn't completed yet. Paired with the hint about verifying within a few days.",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.validityPerpetualUntil": "Perpetual: updates until {date}",
   "@licensing.dialog.validityPerpetualUntil": {
     "description": "Validity value for a perpetual license that includes updates until a given date. The colon separates 'Perpetual' from the updates clause; keep a similar separator.",
     "placeholders": {
       "date": "the updates-cutoff date, already formatted for the user's locale (e.g. June 15, 2026)"
-    }
+    },
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.validityPerpetual": "Perpetual",
   "@licensing.dialog.validityPerpetual": {
-    "description": "Validity value for a perpetual license with no known updates-cutoff date."
+    "description": "Validity value for a perpetual license with no known updates-cutoff date.",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.validityValidUntil": "Valid until {date}",
   "@licensing.dialog.validityValidUntil": {
     "description": "Validity value for a commercial subscription valid until a given date.",
     "placeholders": {
       "date": "the expiry date, already formatted for the user's locale (e.g. June 15, 2026)"
-    }
+    },
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.validityActive": "Active",
   "@licensing.dialog.validityActive": {
-    "description": "Validity value for a commercial license that is active with no specific expiry date shown."
+    "description": "Validity value for a commercial license that is active with no specific expiry date shown.",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.validityExpiredOn": "Expired on {date}",
   "@licensing.dialog.validityExpiredOn": {
     "description": "Validity value (in red) for a license that has expired.",
     "placeholders": {
       "date": "the expiry date, already formatted for the user's locale (e.g. June 15, 2026)"
-    }
+    },
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.pendingHint": "We''ll verify with the server automatically within {days} days.",
   "@licensing.dialog.pendingHint": {
     "description": "Hint under the 'Not yet verified' validity row reassuring the user the app will re-check automatically soon. Always 2 or more days in practice, so plain plural is fine.",
     "placeholders": {
       "days": "the number of days until automatic re-verification (currently 7)"
-    }
+    },
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.useDifferentKey": "Use a different key",
   "@licensing.dialog.useDifferentKey": {
-    "description": "Secondary button in the license-details view that starts the deactivate/re-enter flow. Keep it short (a button)."
+    "description": "Secondary button in the license-details view that starts the deactivate/re-enter flow. Keep it short (a button).",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.close": "Close",
   "@licensing.dialog.close": {
-    "description": "Primary button that closes the license dialog. Keep it short (a button)."
+    "description": "Primary button that closes the license dialog. Keep it short (a button).",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.resetConfirm": "This will deactivate your current license on this device. You can reactivate anytime with a valid key.",
   "@licensing.dialog.resetConfirm": {
-    "description": "Confirmation copy shown before deactivating the current license. Reassures the user it's reversible."
+    "description": "Confirmation copy shown before deactivating the current license. Reassures the user it's reversible.",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.cancel": "Cancel",
   "@licensing.dialog.cancel": {
-    "description": "Secondary button that backs out of an action in the license dialog (reset confirmation, key entry). Keep it short (a button)."
+    "description": "Secondary button that backs out of an action in the license dialog (reset confirmation, key entry). Keep it short (a button).",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.continue": "Continue",
   "@licensing.dialog.continue": {
-    "description": "Primary button confirming the license-deactivation step. Keep it short (a button)."
+    "description": "Primary button confirming the license-deactivation step. Keep it short (a button).",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.enterPrompt": "Paste your license key from the email you received after purchase. Don''t have one yet? <getLicense>Get a license</getLicense>.",
   "@licensing.dialog.enterPrompt": {
@@ -323,21 +373,27 @@
     "placeholders": {
       "count": "how many times activation was attempted (always 3 or more here)",
       "email": "the support email address (shown as the link text), e.g. hello@getcmdr.com"
-    }
+    },
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.serverInvalidHelp": "If you believe this is a mistake, email us at <supportEmail>{email}</supportEmail> and we''ll sort it out.",
   "@licensing.dialog.serverInvalidHelp": {
     "description": "Help text shown after a server-rejected key (fewer than 3 attempts) inviting the user to contact support. <supportEmail> wraps the inline support-email link.",
     "placeholders": {
       "email": "the support email address (shown as the link text), e.g. hello@getcmdr.com"
-    }
+    },
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.genericHelp": "If you need help, contact us at <supportEmail>{email}</supportEmail>.",
   "@licensing.dialog.genericHelp": {
     "description": "Generic help text shown under an activation error inviting the user to contact support. <supportEmail> wraps the inline support-email link.",
     "placeholders": {
       "email": "the support email address (shown as the link text), e.g. hello@getcmdr.com"
-    }
+    },
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.cancelButton": "Cancel",
   "@licensing.dialog.cancelButton": {
@@ -346,15 +402,21 @@
   },
   "licensing.dialog.checking": "Checking...",
   "@licensing.dialog.checking": {
-    "description": "Primary-button label while re-checking a previously server-rejected key. A transient progress state with a trailing ellipsis."
+    "description": "Primary-button label while re-checking a previously server-rejected key. A transient progress state with a trailing ellipsis.",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.tryAgain": "Try again",
   "@licensing.dialog.tryAgain": {
-    "description": "Primary-button label to retry activation after a failure. Keep it short (a button)."
+    "description": "Primary-button label to retry activation after a failure. Keep it short (a button).",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.activating": "Activating...",
   "@licensing.dialog.activating": {
-    "description": "Primary-button label while a license key is being activated. A transient progress state with a trailing ellipsis."
+    "description": "Primary-button label while a license key is being activated. A transient progress state with a trailing ellipsis.",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.activate": "Activate",
   "@licensing.dialog.activate": {
@@ -363,48 +425,66 @@
   },
   "licensing.dialog.activatedToast": "License activated. Thanks for your support! ❤️",
   "@licensing.dialog.activatedToast": {
-    "description": "Success toast shown after activating a license when no organization name is known. Warm and grateful; keep the heart emoji."
+    "description": "Success toast shown after activating a license when no organization name is known. Warm and grateful; keep the heart emoji.",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.activatedToastNamed": "Welcome aboard, {org}! Thanks for your support. ❤️",
   "@licensing.dialog.activatedToastNamed": {
     "description": "Success toast shown after activating a license when an organization name is known. Warm and welcoming; keep the heart emoji.",
     "placeholders": {
       "org": "the licensed organization name"
-    }
+    },
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.networkFallbackError": "Couldn''t verify your license with the server. Please try again later.",
   "@licensing.dialog.networkFallbackError": {
-    "description": "Error shown when the server can't be reached and the license type doesn't allow an optimistic fallback. Conversational; never use the words 'error' or 'failed'."
+    "description": "Error shown when the server can't be reached and the license type doesn't allow an optimistic fallback. Conversational; never use the words 'error' or 'failed'.",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.expiredOnError": "This license expired on {date}.",
   "@licensing.dialog.expiredOnError": {
     "description": "Inline error shown when the entered key is valid but the subscription has expired.",
     "placeholders": {
       "date": "the expiry date, already formatted for the user's locale (e.g. June 15, 2026)"
-    }
+    },
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.expiredOnHelp": "You can renew your subscription or purchase a new license at getcmdr.com.",
   "@licensing.dialog.expiredOnHelp": {
-    "description": "Help text under the expired-key error pointing to the website to renew or buy. 'getcmdr.com' is a domain and must NOT be translated."
+    "description": "Help text under the expired-key error pointing to the website to renew or buy. 'getcmdr.com' is a domain and must NOT be translated.",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.serverInvalidError": "We know this key but when we checked it with our payment provider, it didn''t recognize it. This can happen if the purchase was refunded or not cleared.",
   "@licensing.dialog.serverInvalidError": {
-    "description": "Inline error shown when a key is cryptographically valid but the payment provider doesn't recognize the transaction (e.g. refunded). Conversational and non-blaming; never use the words 'error' or 'failed'."
+    "description": "Inline error shown when a key is cryptographically valid but the payment provider doesn't recognize the transaction (e.g. refunded). Conversational and non-blaming; never use the words 'error' or 'failed'.",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.emptyKeyError": "Please enter a license key",
   "@licensing.dialog.emptyKeyError": {
-    "description": "Inline error shown when the user tries to activate with an empty key field."
+    "description": "Inline error shown when the user tries to activate with an empty key field.",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.mailtoSubject": "License key issue",
   "@licensing.dialog.mailtoSubject": {
-    "description": "Prefilled subject line of the support email opened from the license dialog's contact links."
+    "description": "Prefilled subject line of the support email opened from the license dialog's contact links.",
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.dialog.mailtoBody": "Hi,\n\nI''m having trouble activating my license key:\n{key}\n\n",
   "@licensing.dialog.mailtoBody": {
     "description": "Prefilled body of the support email opened from the license dialog's contact links. Keep the literal newline escapes (\\n) for line breaks; {key} is filled in with the user's license key.",
     "placeholders": {
       "key": "the license key the user entered (or their stored short code)"
-    }
+    },
+    "screenshot": "license-key-dialog.png",
+    "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
   "licensing.error.badSignature": "This license key failed our signature verification, meaning that it doesn''t look like a valid key.",
   "@licensing.error.badSignature": {

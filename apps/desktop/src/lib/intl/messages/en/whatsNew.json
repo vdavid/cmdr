@@ -6,7 +6,8 @@
   },
   "whatsNew.dialog.empty": "Nothing to see here yet. New changes will show up here after an update.",
   "@whatsNew.dialog.empty": {
-    "description": "Empty-state message in the What's new dialog when there are no changelog entries to show (reachable only via manual reopen)."
+    "description": "Empty-state message in the What's new dialog when there are no changelog entries to show (reachable only via manual reopen).",
+    "screenshot": "whats-new-empty.png"
   },
   "whatsNew.dialog.seeFullChangelog": "See full changelog",
   "@whatsNew.dialog.seeFullChangelog": {

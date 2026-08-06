@@ -1,7 +1,8 @@
 {
   "ui.alertDialog.defaultButton": "OK",
   "@ui.alertDialog.defaultButton": {
-    "description": "Default label for the single dismiss button in a generic alert dialog, used when the caller passes no custom button text. A confirmation/acknowledgement, like the standard OK button."
+    "description": "Default label for the single dismiss button in a generic alert dialog, used when the caller passes no custom button text. A confirmation/acknowledgement, like the standard OK button.",
+    "screenshot": "alert-short.png"
   },
 
   "ui.modalDialog.close": "Close",
@@ -36,11 +37,13 @@
 
   "ui.commandBox.copyAria": "Copy command to clipboard",
   "@ui.commandBox.copyAria": {
-    "description": "aria-label for the copy button next to a shown terminal command. Copies the command text to the clipboard."
+    "description": "aria-label for the copy button next to a shown terminal command. Copies the command text to the clipboard.",
+    "screenshot": "mtp-permission-default.png"
   },
   "ui.commandBox.copy": "Copy",
   "@ui.commandBox.copy": {
-    "description": "Resting label of the copy button next to a shown terminal command. Tight button; keep short."
+    "description": "Resting label of the copy button next to a shown terminal command. Tight button; keep short.",
+    "screenshot": "mtp-permission-default.png"
   },
   "ui.commandBox.copied": "Copied!",
   "@ui.commandBox.copied": {

@@ -42,7 +42,8 @@
 
   "onboarding.wizard.finish": "Finish",
   "@onboarding.wizard.finish": {
-    "description": "Primary button on the last onboarding step that completes onboarding. Short control label."
+    "description": "Primary button on the last onboarding step that completes onboarding. Short control label.",
+    "screenshot": "onboarding-step-4-optional.png"
   },
 
   "onboarding.wizard.restart": "Restart Cmdr",
@@ -560,7 +561,8 @@
 
   "onboarding.stepOptional.footer.start": "Start using Cmdr",
   "@onboarding.stepOptional.footer.start": {
-    "description": "Primary footer button on the final optional-setup step that completes onboarding and opens the app. \"Cmdr\" is the product name and stays untranslated. Note there is no exclamation mark here, unlike the similar button on the previous step."
+    "description": "Primary footer button on the final optional-setup step that completes onboarding and opens the app. \"Cmdr\" is the product name and stays untranslated. Note there is no exclamation mark here, unlike the similar button on the previous step.",
+    "screenshot": "onboarding-step-4-optional.png"
   },
 
   "onboarding.stepOptional.title": "You''re almost ready",

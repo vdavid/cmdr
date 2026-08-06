@@ -1514,52 +1514,62 @@
   },
   "fileExplorer.renameConflict.title": "A file with this name already exists",
   "@fileExplorer.renameConflict.title": {
-    "description": "Title of the dialog shown when renaming a file to a name that already exists in the folder."
+    "description": "Title of the dialog shown when renaming a file to a name that already exists in the folder.",
+    "screenshot": "rename-conflict-newer-and-larger.png"
   },
   "fileExplorer.renameConflict.description": "\"{name}\" already exists in this folder. What would you like to do?",
   "@fileExplorer.renameConflict.description": {
     "description": "Body of the rename-conflict dialog, naming the existing file and asking how to proceed. {name} is the existing file''s name, shown in quotes.",
     "placeholders": {
       "name": "the name of the existing file that would be overwritten"
-    }
+    },
+    "screenshot": "rename-conflict-newer-and-larger.png"
   },
   "fileExplorer.renameConflict.yours": "{name} (yours)",
   "@fileExplorer.renameConflict.yours": {
     "description": "Header of the card showing the file the user is renaming (the new one) in the rename-conflict comparison. {name} is the file name; \"(yours)\" marks it as the user''s incoming file.",
     "placeholders": {
       "name": "the name of the file being renamed (the user''s file)"
-    }
+    },
+    "screenshot": "rename-conflict-newer-and-larger.png"
   },
   "fileExplorer.renameConflict.existing": "{name} (existing)",
   "@fileExplorer.renameConflict.existing": {
     "description": "Header of the card showing the file already in the folder in the rename-conflict comparison. {name} is the file name; \"(existing)\" marks it as the one already there.",
     "placeholders": {
       "name": "the name of the existing file already in the folder"
-    }
+    },
+    "screenshot": "rename-conflict-newer-and-larger.png"
   },
   "fileExplorer.renameConflict.size": "Size",
   "@fileExplorer.renameConflict.size": {
-    "description": "Metadata label for a file''s size in the rename-conflict comparison cards."
+    "description": "Metadata label for a file''s size in the rename-conflict comparison cards.",
+    "screenshot": "rename-conflict-newer-and-larger.png"
   },
   "fileExplorer.renameConflict.modified": "Modified",
   "@fileExplorer.renameConflict.modified": {
-    "description": "Metadata label for a file''s last-modified date in the rename-conflict comparison cards."
+    "description": "Metadata label for a file''s last-modified date in the rename-conflict comparison cards.",
+    "screenshot": "rename-conflict-newer-and-larger.png"
   },
   "fileExplorer.renameConflict.overwriteTrash": "Overwrite and trash old file",
   "@fileExplorer.renameConflict.overwriteTrash": {
-    "description": "Primary button in the rename-conflict dialog: replace the existing file, moving the old one to the trash (recoverable)."
+    "description": "Primary button in the rename-conflict dialog: replace the existing file, moving the old one to the trash (recoverable).",
+    "screenshot": "rename-conflict-newer-and-larger.png"
   },
   "fileExplorer.renameConflict.overwriteDelete": "Overwrite and delete old file",
   "@fileExplorer.renameConflict.overwriteDelete": {
-    "description": "Destructive button in the rename-conflict dialog: replace the existing file, permanently deleting the old one (not recoverable)."
+    "description": "Destructive button in the rename-conflict dialog: replace the existing file, permanently deleting the old one (not recoverable).",
+    "screenshot": "rename-conflict-newer-and-larger.png"
   },
   "fileExplorer.renameConflict.cancel": "Cancel",
   "@fileExplorer.renameConflict.cancel": {
-    "description": "Button in the rename-conflict dialog that abandons the rename entirely."
+    "description": "Button in the rename-conflict dialog that abandons the rename entirely.",
+    "screenshot": "rename-conflict-newer-and-larger.png"
   },
   "fileExplorer.renameConflict.continueRenaming": "Continue renaming",
   "@fileExplorer.renameConflict.continueRenaming": {
-    "description": "Button in the rename-conflict dialog that returns to editing the name so the user can choose a different one."
+    "description": "Button in the rename-conflict dialog that returns to editing the name so the user can choose a different one.",
+    "screenshot": "rename-conflict-newer-and-larger.png"
   },
   "fileExplorer.extensionChange.title": "Change file extension?",
   "@fileExplorer.extensionChange.title": {
@@ -1643,28 +1653,33 @@
   },
   "fileExplorer.navigation.groupFavorites": "Favorites",
   "@fileExplorer.navigation.groupFavorites": {
-    "description": "Section heading in the volume switcher dropdown for the user''s pinned favorite folders."
+    "description": "Section heading in the volume switcher dropdown for the user''s pinned favorite folders.",
+    "screenshot": "pane-volume-chooser.png"
   },
   "fileExplorer.navigation.groupVolumes": "Volumes",
   "@fileExplorer.navigation.groupVolumes": {
-    "description": "Section heading in the volume switcher dropdown for the main and attached disk volumes."
+    "description": "Section heading in the volume switcher dropdown for the main and attached disk volumes.",
+    "screenshot": "pane-volume-chooser.png"
   },
   "fileExplorer.navigation.groupCloud": "Cloud",
   "@fileExplorer.navigation.groupCloud": {
-    "description": "Section heading in the volume switcher dropdown for cloud-storage drives (for example iCloud, Dropbox)."
+    "description": "Section heading in the volume switcher dropdown for cloud-storage drives (for example iCloud, Dropbox).",
+    "screenshot": "pane-volume-chooser.png"
   },
   "fileExplorer.navigation.groupMobile": "Mobile",
   "@fileExplorer.navigation.groupMobile": {
-    "description": "Section heading in the volume switcher dropdown for connected phones and cameras (MTP devices)."
+    "description": "Section heading in the volume switcher dropdown for connected phones and cameras (MTP devices).",
+    "screenshot": "pane-volume-chooser.png"
   },
   "fileExplorer.navigation.groupNetwork": "Network",
   "@fileExplorer.navigation.groupNetwork": {
-    "description": "Section heading in the volume switcher dropdown for network locations (shared servers and mounted shares)."
+    "description": "Section heading in the volume switcher dropdown for network locations (shared servers and mounted shares).",
+    "screenshot": "pane-volume-chooser.png"
   },
   "fileExplorer.navigation.networkVolume": "Network",
   "@fileExplorer.navigation.networkVolume": {
     "description": "Name of the virtual Network entry in the volume switcher, which opens the network browser. Also shown as the current volume''s name in the breadcrumb when browsing the network.",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "pane-volume-chooser.png"
   },
   "fileExplorer.navigation.networkVolumeDisabled": "Network (disabled)",
   "@fileExplorer.navigation.networkVolumeDisabled": {
@@ -1688,7 +1703,8 @@
     "placeholders": {
       "path": "the file-system path the favorite points to",
       "reorder": "the keyboard reorder shortcut, e.g. ⌥↑ / ⌥↓ on macOS (do not translate; these are key names)"
-    }
+    },
+    "screenshot": "pane-volume-chooser.png"
   },
   "fileExplorer.navigation.renameFavoriteAriaLabel": "Rename favorite",
   "@fileExplorer.navigation.renameFavoriteAriaLabel": {
@@ -1716,7 +1732,8 @@
   },
   "fileExplorer.navigation.connectionTooltipSystem": "Using system connection. Use the \"Connect directly for faster access\" menu item for faster access.",
   "@fileExplorer.navigation.connectionTooltipSystem": {
-    "description": "Hover tooltip on the connection indicator of a network volume mounted via the OS (slower path), pointing the user at the menu item that upgrades to a direct connection. The quoted menu item label must match the menu item exactly."
+    "description": "Hover tooltip on the connection indicator of a network volume mounted via the OS (slower path), pointing the user at the menu item that upgrades to a direct connection. The quoted menu item label must match the menu item exactly.",
+    "screenshot": "pane-volume-chooser.png"
   },
   "fileExplorer.navigation.connectDirectly": "Connect directly for faster access",
   "@fileExplorer.navigation.connectDirectly": {
@@ -1751,7 +1768,8 @@
   },
   "fileExplorer.navigation.readOnlyTooltip": "Read-only",
   "@fileExplorer.navigation.readOnlyTooltip": {
-    "description": "Hover tooltip on the lock icon marking a read-only volume in the breadcrumb and volume switcher."
+    "description": "Hover tooltip on the lock icon marking a read-only volume in the breadcrumb and volume switcher.",
+    "screenshot": "pane-volume-chooser.png"
   },
   "fileExplorer.navigation.volumeOptionsTooltip": "Volume options",
   "@fileExplorer.navigation.volumeOptionsTooltip": {
@@ -1763,7 +1781,7 @@
     "placeholders": {
       "name": "the display name of the volume to eject"
     },
-    "screenshot": "mtp-browse.png"
+    "screenshot": "pane-volume-chooser.png"
   },
   "fileExplorer.navigation.ejectBusyTooltip": "Can''t eject while operations are in progress on this device",
   "@fileExplorer.navigation.ejectBusyTooltip": {
@@ -1830,7 +1848,7 @@
   "fileExplorer.navigation.driveIndex.tooltipDisabled": "Indexing is off for this drive. Turn it on to see folder sizes and search here.",
   "@fileExplorer.navigation.driveIndex.tooltipDisabled": {
     "description": "Hover tooltip on the gray drive-index dot, shown when a drive isn''t indexed. Invites the user to turn indexing on for folder sizes and search.",
-    "screenshot": "mtp-browse.png"
+    "screenshot": "pane-volume-chooser.png"
   },
   "fileExplorer.navigation.driveIndex.tooltipFresh": "Indexed and up to date. Last indexed {date}, took {duration}.",
   "@fileExplorer.navigation.driveIndex.tooltipFresh": {
@@ -1864,7 +1882,7 @@
       "remaining": "whole hours until the next scheduled full check, as a raw number, used only to pick the plural branch (never below 1)",
       "remainingText": "the same remaining-hour count, already formatted for the reader (e.g. 6)"
     },
-    "screenshot": "commercial-reminder.png"
+    "screenshot": "onboarding-fda-denied.png"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "macOS lost track of file system changes {count, plural, one {once} other {{countText} times}}, so a few folder sizes might be slightly off. It''s usually caches full of small files, and the check running right now will put them right.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {

@@ -4,24 +4,34 @@
     "description": "Line in the menu-triggered update-check toast shown when the check failed, prefixing the raw error detail.",
     "placeholders": {
       "message": "the underlying error message text from the failed update check"
-    }
+    },
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
   "updates.checkToast.sendErrorReport": "Send error report",
   "@updates.checkToast.sendErrorReport": {
-    "description": "Button in the update-check toast that opens the error-report flow after a failed update check. Tight mini button."
+    "description": "Button in the update-check toast that opens the error-report flow after a failed update check. Tight mini button.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
 
   "updates.toast.available": "New version available. Restart to update.",
   "@updates.toast.available": {
-    "description": "Body of the persistent toast prompting the user to restart and apply a downloaded update."
+    "description": "Body of the persistent toast prompting the user to restart and apply a downloaded update.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
   "updates.toast.later": "Later",
   "@updates.toast.later": {
-    "description": "Button that dismisses the update-available toast without restarting now. Tight mini button."
+    "description": "Button that dismisses the update-available toast without restarting now. Tight mini button.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
   "updates.toast.restart": "Restart",
   "@updates.toast.restart": {
-    "description": "Button that restarts the app immediately to apply the downloaded update. Tight mini button."
+    "description": "Button that restarts the app immediately to apply the downloaded update. Tight mini button.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
 
   "updates.status.noUpdates": "No updates found. Current version: v{version}",
@@ -29,11 +39,15 @@
     "description": "Status line after a successful update check that found nothing newer, reporting the current version. The v prefix before the version number is literal.",
     "placeholders": {
       "version": "the current app version number (for example 0.23.1)"
-    }
+    },
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
   "updates.status.checking": "Checking…",
   "@updates.status.checking": {
-    "description": "Status line shown while an update check is in progress. Ends with a single ellipsis character."
+    "description": "Status line shown while an update check is in progress. Ends with a single ellipsis character.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
   "updates.status.downloading": "Update found, downloading v{next} (current: v{prev})…",
   "@updates.status.downloading": {
@@ -41,7 +55,9 @@
     "placeholders": {
       "next": "the new version being downloaded (for example 0.24.0)",
       "prev": "the currently installed version (for example 0.23.1)"
-    }
+    },
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
   "updates.status.installing": "Installing v{next} (current: v{prev})…",
   "@updates.status.installing": {
@@ -49,13 +65,17 @@
     "placeholders": {
       "next": "the new version being installed (for example 0.24.0)",
       "prev": "the currently installed version (for example 0.23.1)"
-    }
+    },
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
   "updates.status.ready": "Update v{next} ready. Restart to apply.",
   "@updates.status.ready": {
     "description": "Status line shown when an update is downloaded and ready, prompting a restart. The v prefix is literal.",
     "placeholders": {
       "next": "the ready-to-install version (for example 0.24.0)"
-    }
+    },
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   }
 }

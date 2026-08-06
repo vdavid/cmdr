@@ -2,43 +2,37 @@
   "crashReporter.dialog.title": "Send crash report?",
   "@crashReporter.dialog.title": {
     "description": "Title of the dialog shown on the next launch after Cmdr crashed, asking permission to send a crash report.",
-    "screenshot": "error-report.png",
-    "screenshotNote": "The crash-report dialog (shown after the app quit unexpectedly) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
+    "screenshot": "crash-report-panic.png"
   },
 
   "crashReporter.dialog.body": "Cmdr quit unexpectedly last time. Here''s a crash report with details that can help fix this.",
   "@crashReporter.dialog.body": {
     "description": "Main explanation in the crash-report dialog. Reassuring and matter-of-fact. \"Cmdr\" is the product name (do not translate).",
-    "screenshot": "error-report.png",
-    "screenshotNote": "The crash-report dialog (shown after the app quit unexpectedly) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
+    "screenshot": "crash-report-panic.png"
   },
 
   "crashReporter.dialog.privacyNote": "It includes the app version, macOS version, and which part of the code crashed. No file names or personal data.",
   "@crashReporter.dialog.privacyNote": {
     "description": "Privacy reassurance in the crash-report dialog, listing what the report contains and confirming it has no personal data. \"macOS\" is Apple's OS name (do not translate).",
-    "screenshot": "error-report.png",
-    "screenshotNote": "The crash-report dialog (shown after the app quit unexpectedly) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
+    "screenshot": "crash-report-panic.png"
   },
 
   "crashReporter.dialog.reportIdLabel": "Report ID:",
   "@crashReporter.dialog.reportIdLabel": {
     "description": "Label before the short crash-report identifier. The identifier itself follows in a code-styled badge and is not part of this string.",
-    "screenshot": "error-report.png",
-    "screenshotNote": "The crash-report dialog (shown after the app quit unexpectedly) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
+    "screenshot": "crash-report-panic.png"
   },
 
   "crashReporter.dialog.reportIdHelp": "Mention this if you reach out about the issue.",
   "@crashReporter.dialog.reportIdHelp": {
     "description": "Small helper line under the crash-report ID, telling the user to quote the ID if they contact support.",
-    "screenshot": "error-report.png",
-    "screenshotNote": "The crash-report dialog (shown after the app quit unexpectedly) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
+    "screenshot": "crash-report-panic.png"
   },
 
   "crashReporter.dialog.showDetails": "Show report details",
   "@crashReporter.dialog.showDetails": {
     "description": "Toggle that expands a panel showing the raw crash-report JSON. Preceded by a disclosure triangle.",
-    "screenshot": "error-report.png",
-    "screenshotNote": "The crash-report dialog (shown after the app quit unexpectedly) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
+    "screenshot": "crash-report-panic.png"
   },
 
   "crashReporter.dialog.copy": "Copy",
@@ -58,22 +52,19 @@
   "crashReporter.dialog.alwaysSend": "Always send crash reports",
   "@crashReporter.dialog.alwaysSend": {
     "description": "Label for a checkbox that opts the user into sending future crash reports automatically without asking.",
-    "screenshot": "error-report.png",
-    "screenshotNote": "The crash-report dialog (shown after the app quit unexpectedly) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
+    "screenshot": "crash-report-panic.png"
   },
 
   "crashReporter.dialog.dismiss": "Dismiss",
   "@crashReporter.dialog.dismiss": {
     "description": "Button that closes the crash-report dialog without sending. Keep it short (a tight button).",
-    "screenshot": "error-report.png",
-    "screenshotNote": "The crash-report dialog (shown after the app quit unexpectedly) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
+    "screenshot": "crash-report-panic.png"
   },
 
   "crashReporter.dialog.send": "Send report",
   "@crashReporter.dialog.send": {
     "description": "Primary button that sends the crash report. Keep it short (a tight button).",
-    "screenshot": "error-report.png",
-    "screenshotNote": "The crash-report dialog (shown after the app quit unexpectedly) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
+    "screenshot": "crash-report-panic.png"
   },
 
   "crashReporter.dialog.sending": "Sending...",

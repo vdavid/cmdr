@@ -1615,13 +1615,11 @@
   "errors.write.sourceNotFound.suggestion": "It may have been moved, renamed, or deleted. Try refreshing the file list.",
   "@errors.write.sourceNotFound.title": {
     "description": "Title of the copy/move/delete error dialog when the source item is gone. Plain text. Uses a contraction (\"Couldn't\").",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-source_not_found.png"
   },
   "@errors.write.sourceNotFound.message.copy": {
     "description": "Body of the copy/move/delete error dialog when the source item is gone (copy variant). Plain text. This is a raw errors.* string (no ICU), so phrase the copy action naturally for this language.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-source_not_found.png"
   },
   "@errors.write.sourceNotFound.message.move": {
     "description": "Body of the copy/move/delete error dialog when the source item is gone (move variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move action naturally for this language.",
@@ -1640,8 +1638,7 @@
   },
   "@errors.write.sourceNotFound.suggestion": {
     "description": "Recovery suggestion when the source item is gone, shown in the copy/move/delete error dialog. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-source_not_found.png"
   },
 
   "errors.write.destinationExists.title": "File already exists",
@@ -1649,18 +1646,15 @@
   "errors.write.destinationExists.suggestion": "Choose a different name or location, or delete the existing file first.",
   "@errors.write.destinationExists.title": {
     "description": "Title of the copy/move error dialog when a file with the same name already exists at the destination. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-destination_exists.png"
   },
   "@errors.write.destinationExists.message": {
     "description": "Body of the copy/move error dialog when a same-named file already exists at the destination. Plain text. Uses a contraction (\"There's\").",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-destination_exists.png"
   },
   "@errors.write.destinationExists.suggestion": {
     "description": "Recovery suggestion when a same-named file already exists at the destination. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-destination_exists.png"
   },
 
   "errors.write.sameLocation.title.copy": "Can't copy to the same location",
@@ -1674,18 +1668,15 @@
   },
   "@errors.write.sameLocation.title.move": {
     "description": "Title of the copy/move error dialog when source and destination are identical (move variant). Plain text. Uses a contraction (\"Can't\"). This is a raw errors.* string (no ICU). Only copy and move reach this error (delete and trash have no destination).",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-same_location.png"
   },
   "@errors.write.sameLocation.message": {
     "description": "Body of the copy/move error dialog when source and destination are identical. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-same_location.png"
   },
   "@errors.write.sameLocation.suggestion": {
     "description": "Recovery suggestion when source and destination are identical. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-same_location.png"
   },
 
   "errors.write.destinationInsideSource.title.copy": "Can't copy a folder into itself",
@@ -1701,8 +1692,7 @@
   },
   "@errors.write.destinationInsideSource.title.move": {
     "description": "Title of the copy/move error dialog when the destination is inside the folder being copied/moved (move variant). Plain text. Uses a contraction (\"Can't\"). This is a raw errors.* string (no ICU). Only copy and move reach this error (delete and trash have no destination).",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-destination_inside_source.png"
   },
   "@errors.write.destinationInsideSource.message.copy": {
     "description": "Body of the copy/move error dialog when the destination is inside the source folder (copy variant). Plain text. Uses a contraction (\"You're\"). This is a raw errors.* string (no ICU). Only copy and move reach this error (delete and trash have no destination).",
@@ -1711,8 +1701,7 @@
   },
   "@errors.write.destinationInsideSource.message.move": {
     "description": "Body of the copy/move error dialog when the destination is inside the source folder (move variant). Plain text. Uses a contraction (\"You're\"). This is a raw errors.* string (no ICU). Only copy and move reach this error (delete and trash have no destination).",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-destination_inside_source.png"
   },
   "@errors.write.destinationInsideSource.suggestion.copy": {
     "description": "Recovery suggestion when the destination is inside the source folder (copy variant). Plain text. This is a raw errors.* string (no ICU). Only copy and move reach this error (delete and trash have no destination).",
@@ -1721,8 +1710,7 @@
   },
   "@errors.write.destinationInsideSource.suggestion.move": {
     "description": "Recovery suggestion when the destination is inside the source folder (move variant). Plain text. This is a raw errors.* string (no ICU). Only copy and move reach this error (delete and trash have no destination).",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-destination_inside_source.png"
   },
 
   "errors.write.symlinkLoop.title": "Link loop detected",
@@ -1730,18 +1718,15 @@
   "errors.write.symlinkLoop.suggestion": "The folder structure contains circular references. You may need to remove some symbolic links.",
   "@errors.write.symlinkLoop.title": {
     "description": "Title of the copy/move error dialog when symbolic links form an infinite loop. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-symlink_loop.png"
   },
   "@errors.write.symlinkLoop.message": {
     "description": "Body of the copy/move error dialog when symbolic links form an infinite loop. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-symlink_loop.png"
   },
   "@errors.write.symlinkLoop.suggestion": {
     "description": "Recovery suggestion when symbolic links form an infinite loop. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-symlink_loop.png"
   },
 
   "errors.write.cancelled.title.copy": "Copy cancelled",
@@ -1755,8 +1740,7 @@
   "errors.write.cancelled.suggestion": "You can try again when ready.",
   "@errors.write.cancelled.title.copy": {
     "description": "Title of the copy/move/delete error dialog when the user cancelled the operation (copy variant). Plain text. This is a raw errors.* string (no ICU), so phrase the copy action naturally for this language.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-cancelled.png"
   },
   "@errors.write.cancelled.title.move": {
     "description": "Title of the copy/move/delete error dialog when the user cancelled the operation (move variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move action naturally for this language.",
@@ -1775,8 +1759,7 @@
   },
   "@errors.write.cancelled.message.copy": {
     "description": "Body of the copy/move/delete error dialog when the operation was cancelled (copy variant). Plain text. This is a raw errors.* string (no ICU), so phrase the copy action naturally for this language.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-cancelled.png"
   },
   "@errors.write.cancelled.message.move": {
     "description": "Body of the copy/move/delete error dialog when the operation was cancelled (move variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move action naturally for this language.",
@@ -1795,8 +1778,7 @@
   },
   "@errors.write.cancelled.suggestion": {
     "description": "Recovery suggestion when the operation was cancelled. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-cancelled.png"
   },
 
   "errors.write.deviceDisconnected.title": "Device disconnected",
@@ -1807,13 +1789,11 @@
   "errors.write.deviceDisconnected.suggestion": "Make sure the device is properly connected and try again.",
   "@errors.write.deviceDisconnected.title": {
     "description": "Title of the copy/move/delete error dialog when the device disconnected mid-operation. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-device_disconnected.png"
   },
   "@errors.write.deviceDisconnected.message.copy": {
     "description": "Body of the copy/move/delete error dialog when the device disconnected mid-operation (copy variant). Plain text. This is a raw errors.* string (no ICU). The action name reads as a noun here (\"during the copy\"), so phrase it naturally for this language.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-device_disconnected.png"
   },
   "@errors.write.deviceDisconnected.message.move": {
     "description": "Body of the copy/move/delete error dialog when the device disconnected mid-operation (move variant). Plain text. This is a raw errors.* string (no ICU). The action name reads as a noun here (\"during the move\"), so phrase it naturally for this language.",
@@ -1832,8 +1812,7 @@
   },
   "@errors.write.deviceDisconnected.suggestion": {
     "description": "Recovery suggestion when the device disconnected mid-operation. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-device_disconnected.png"
   },
 
   "errors.write.trashNotSupported.title": "Trash not supported",
@@ -1841,21 +1820,18 @@
   "errors.write.trashNotSupported.suggestion": "Use {deletePermanentlyKey} to delete permanently instead.",
   "@errors.write.trashNotSupported.title": {
     "description": "Title of the delete error dialog when a volume doesn't support moving files to the trash. Plain text. \"Trash\" is the macOS feature name.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-trash_not_supported.png"
   },
   "@errors.write.trashNotSupported.message": {
     "description": "Body of the delete error dialog when a volume doesn't support the trash. Plain text. Uses a contraction (\"doesn't\").",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-trash_not_supported.png"
   },
   "@errors.write.trashNotSupported.suggestion": {
     "description": "Recovery suggestion when a volume doesn't support the trash, pointing at the delete-permanently shortcut. Plain text.",
     "placeholders": {
       "deletePermanentlyKey": "the keyboard shortcut for deleting permanently, e.g. \"⇧F8\" on macOS or \"Shift+F8\" elsewhere; do NOT translate the glyphs or key names"
     },
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-trash_not_supported.png"
   },
 
   "errors.write.connectionInterrupted.title": "Connection interrupted",
@@ -1863,18 +1839,15 @@
   "errors.write.connectionInterrupted.suggestion": "Check your connection and try again. If copying to a network location, ensure the server is reachable.",
   "@errors.write.connectionInterrupted.title": {
     "description": "Title of the copy/move error dialog when a network connection dropped mid-operation. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-connection_interrupted.png"
   },
   "@errors.write.connectionInterrupted.message": {
     "description": "Body of the copy/move error dialog when a network connection dropped mid-operation. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-connection_interrupted.png"
   },
   "@errors.write.connectionInterrupted.suggestion": {
     "description": "Recovery suggestion when a network connection dropped mid-operation. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-connection_interrupted.png"
   },
 
   "errors.write.readError.title.copy": "Copy failed",
@@ -1885,8 +1858,7 @@
   "errors.write.readError.suggestion": "Try again. If the problem persists, check the technical details below.",
   "@errors.write.readError.title.copy": {
     "description": "Title of the copy/move/delete error dialog when reading the source item itself failed (copy variant). Plain text. This is a raw errors.* string (no ICU), so phrase the copy action naturally for this language.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-read_error.png"
   },
   "@errors.write.readError.title.move": {
     "description": "Title of the copy/move/delete error dialog when reading the source item itself failed (move variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move action naturally for this language.",
@@ -1905,13 +1877,11 @@
   },
   "@errors.write.readError.message": {
     "description": "Body of the copy/move/delete error dialog when reading the source failed. Plain text. Uses a contraction (\"Couldn't\").",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-read_error.png"
   },
   "@errors.write.readError.suggestion": {
     "description": "Recovery suggestion when reading the source failed. Plain text. \"technical details below\" refers to an expandable section in the same dialog.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-read_error.png"
   },
 
   "errors.write.writeError.title.copy": "Copy failed",
@@ -1922,8 +1892,7 @@
   "errors.write.writeError.suggestion": "Try again. If the problem persists, check the technical details below.",
   "@errors.write.writeError.title.copy": {
     "description": "Title of the copy/move/delete error dialog when writing to the destination failed (copy variant). Plain text. This is a raw errors.* string (no ICU), so phrase the copy action naturally for this language.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-write_error.png"
   },
   "@errors.write.writeError.title.move": {
     "description": "Title of the copy/move/delete error dialog when writing to the destination failed (move variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move action naturally for this language.",
@@ -1942,13 +1911,11 @@
   },
   "@errors.write.writeError.message": {
     "description": "Body of the copy/move/delete error dialog when writing to the destination failed. Plain text. Uses a contraction (\"Couldn't\").",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-write_error.png"
   },
   "@errors.write.writeError.suggestion": {
     "description": "Recovery suggestion when writing to the destination failed. Plain text. \"technical details below\" refers to an expandable section in the same dialog.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-write_error.png"
   },
 
   "errors.write.nameTooLong.title": "Name too long",
@@ -1956,18 +1923,15 @@
   "errors.write.nameTooLong.suggestion": "Try renaming the file to use a shorter name.",
   "@errors.write.nameTooLong.title": {
     "description": "Title of the copy/move error dialog when the file name exceeds the destination's length limit. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-name_too_long.png"
   },
   "@errors.write.nameTooLong.message": {
     "description": "Body of the copy/move error dialog when the file name is too long for the destination. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-name_too_long.png"
   },
   "@errors.write.nameTooLong.suggestion": {
     "description": "Recovery suggestion when the file name is too long for the destination. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-name_too_long.png"
   },
 
   "errors.write.invalidName.title": "Invalid file name",
@@ -1975,8 +1939,7 @@
   "errors.write.invalidName.suggestion": "Rename it to something shorter and plainer, then try again. Some servers also refuse reserved names like CON, NUL, or LPT1.",
   "@errors.write.invalidName.title": {
     "description": "Title of the copy/move error dialog when the file name has characters the destination file system rejects. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-invalid_name.png"
   },
   "@errors.write.invalidName.message": {
     "description": "Body of the copy/move error dialog when the destination can't store the file's name. Plain text. \"the server turned it away\" means the server rejected the name itself rather than reporting that the file is missing.",
@@ -1985,13 +1948,11 @@
         "description": "The full path of the file that couldn't be written, inserted verbatim. Do not translate or reformat it."
       }
     },
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-invalid_name.png"
   },
   "@errors.write.invalidName.suggestion": {
     "description": "Recovery suggestion when the destination can't store the file's name. Plain text. CON, NUL, and LPT1 are reserved Windows device names; keep them as-is, do NOT translate them.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-invalid_name.png"
   },
 
   "errors.write.ioError.title.copy": "Copy failed",
@@ -2005,8 +1966,7 @@
   "errors.write.ioError.suggestion": "Try again. If the problem persists, check the technical details below.",
   "@errors.write.ioError.title.copy": {
     "description": "Title of the copy/move/delete error dialog for a generic I/O failure with a recognized variant (copy variant). Plain text. This is a raw errors.* string (no ICU), so phrase the copy action naturally for this language.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-io_error.png"
   },
   "@errors.write.ioError.title.move": {
     "description": "Title of the copy/move/delete error dialog for a generic I/O failure with a recognized variant (move variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move action naturally for this language.",
@@ -2025,8 +1985,7 @@
   },
   "@errors.write.ioError.message.copy": {
     "description": "Body of the copy/move/delete error dialog for a generic I/O failure with a recognized variant (copy variant). Plain text. Uses a contraction (\"Couldn't\"). This is a raw errors.* string (no ICU), so phrase the copy action naturally for this language.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-io_error.png"
   },
   "@errors.write.ioError.message.move": {
     "description": "Body of the copy/move/delete error dialog for a generic I/O failure with a recognized variant (move variant). Plain text. Uses a contraction (\"Couldn't\"). This is a raw errors.* string (no ICU), so phrase the move action naturally for this language.",
@@ -2045,8 +2004,7 @@
   },
   "@errors.write.ioError.suggestion": {
     "description": "Recovery suggestion for a generic I/O failure. Plain text. \"technical details below\" refers to an expandable section in the same dialog.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-io_error.png"
   },
 
   "errors.write.permissionDenied.title": "Couldn't access this location",
@@ -2059,8 +2017,7 @@
   "errors.write.permissionDenied.suggestion.default": "Check that you have write access to the destination folder. You may need to unlock the device or change folder permissions.",
   "@errors.write.permissionDenied.title": {
     "description": "Title of the copy/move/delete error dialog when the user lacks permission at the target location. Plain text. Uses a contraction (\"Couldn't\").",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-permission_denied.png"
   },
   "@errors.write.permissionDenied.message.copy": {
     "description": "Body of the copy/move/delete error dialog when the user lacks permission (copy variant). Plain text. Uses a contraction (\"don't\"). This is a raw errors.* string (no ICU), so phrase the copy action naturally for this language.",
@@ -2074,8 +2031,7 @@
   },
   "@errors.write.permissionDenied.message.delete": {
     "description": "Body of the copy/move/delete error dialog when the user lacks permission (delete variant). Plain text. Uses a contraction (\"don't\"). This is a raw errors.* string (no ICU), so phrase the delete action naturally for this language.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-permission_denied.png"
   },
   "@errors.write.permissionDenied.message.trash": {
     "description": "Body of the copy/move/delete error dialog when the user lacks permission (trash variant). Plain text. Uses a contraction (\"don't\"). This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
@@ -2084,8 +2040,7 @@
   },
   "@errors.write.permissionDenied.suggestion.deleteMac": {
     "description": "Recovery suggestion for a permission failure during delete/trash on macOS. Plain text. \"Finder\" and \"Get Info\" are macOS feature names; the menu path \"Get Info > uncheck Locked\" is literal; do NOT translate them.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-permission_denied.png"
   },
   "@errors.write.permissionDenied.suggestion.deleteOther": {
     "description": "Recovery suggestion for a permission failure during delete/trash on non-macOS. Plain text. \"chmod\" is a command name; do NOT translate it.",
@@ -2103,8 +2058,7 @@
   "errors.write.insufficientSpace.suggestion": "Free up some space on the destination by deleting unnecessary files, or choose a different location.",
   "@errors.write.insufficientSpace.title": {
     "description": "Title of the copy/move error dialog when the destination volume is out of space. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-insufficient_space.png"
   },
   "@errors.write.insufficientSpace.message": {
     "description": "Body of the copy/move error dialog when the destination is out of space. Plain text.",
@@ -2112,13 +2066,11 @@
       "required": "the formatted size needed, colorized HTML markup (e.g. a span wrapping \"1.0 GB\"); do NOT translate the markup or the size",
       "available": "the formatted size currently free, colorized HTML markup (e.g. a span wrapping \"512.0 MB\"); do NOT translate the markup or the size"
     },
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-insufficient_space.png"
   },
   "@errors.write.insufficientSpace.suggestion": {
     "description": "Recovery suggestion when the destination is out of space. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-insufficient_space.png"
   },
 
   "errors.write.filesTooLargeForFilesystem.title.one": "File too large for this drive",
@@ -2128,13 +2080,11 @@
   "errors.write.filesTooLargeForFilesystem.suggestion": "To store files this large, use a drive formatted as exFAT, which has no such limit.",
   "@errors.write.filesTooLargeForFilesystem.title.one": {
     "description": "Title of the copy/move error dialog when exactly one file is too large for the destination's FAT32 filesystem. Plain text. FAT32 is a filesystem-format name; keep it as-is.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-files_too_large_for_filesystem-single.png"
   },
   "@errors.write.filesTooLargeForFilesystem.title.many": {
     "description": "Title of the copy/move error dialog when several files are too large for the destination's FAT32 filesystem. Plain text. FAT32 is a filesystem-format name; keep it as-is.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-files_too_large_for_filesystem.png"
   },
   "@errors.write.filesTooLargeForFilesystem.message.one": {
     "description": "Body of the copy/move error dialog when one file is too large for the destination's FAT32 filesystem. Plain text with interpolated HTML size markup. FAT32 is a filesystem-format name; keep it as-is.",
@@ -2143,8 +2093,7 @@
       "size": "the file's formatted size, colorized HTML markup (e.g. a span wrapping \"5.0 GB\"); do NOT translate the markup or the size",
       "maxSize": "the filesystem's maximum file size, colorized HTML markup (e.g. a span wrapping \"4.0 GB\"); do NOT translate the markup or the size"
     },
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-files_too_large_for_filesystem-single.png"
   },
   "@errors.write.filesTooLargeForFilesystem.message.many": {
     "description": "Body of the copy/move error dialog when several files are too large for the destination's FAT32 filesystem. Plain text with an interpolated count and HTML size markup. FAT32 is a filesystem-format name; keep it as-is.",
@@ -2152,13 +2101,11 @@
       "count": "the number of files that are too large (a plain integer)",
       "maxSize": "the filesystem's maximum file size, colorized HTML markup (e.g. a span wrapping \"4.0 GB\"); do NOT translate the markup or the size"
     },
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-files_too_large_for_filesystem.png"
   },
   "@errors.write.filesTooLargeForFilesystem.suggestion": {
     "description": "Recovery suggestion when files are too large for the destination's FAT32 filesystem. Plain text. exFAT is a filesystem-format name; keep it as-is.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-files_too_large_for_filesystem.png"
   },
 
   "errors.write.readOnlyDevice.title": "Read-only device",
@@ -2166,21 +2113,18 @@
   "errors.write.readOnlyDevice.suggestion": "Choose a different destination that supports writing.",
   "@errors.write.readOnlyDevice.title": {
     "description": "Title of the copy/move error dialog when the destination device is read-only. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-read_only_device.png"
   },
   "@errors.write.readOnlyDevice.message": {
     "description": "Body of the copy/move error dialog when the destination device is read-only. Plain text.",
     "placeholders": {
       "deviceName": "the device's name (HTML-escaped), or a fallback phrase like \"The target device\" when the name is unknown; leads the sentence"
     },
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-read_only_device.png"
   },
   "@errors.write.readOnlyDevice.suggestion": {
     "description": "Recovery suggestion when the destination device is read-only. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-read_only_device.png"
   },
 
   "errors.write.readOnlyDevice.fallbackName": "The target device",
@@ -2196,18 +2140,15 @@
   "errors.write.fileLocked.suggestion.other": "The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again.",
   "@errors.write.fileLocked.title": {
     "description": "Title of the delete error dialog when the file is locked. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-file_locked.png"
   },
   "@errors.write.fileLocked.message": {
     "description": "Body of the delete error dialog when the file is locked. Plain text. Uses a contraction (\"can't\").",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-file_locked.png"
   },
   "@errors.write.fileLocked.suggestion.mac": {
     "description": "Recovery suggestion for a locked file on macOS. Plain text. \"Finder\" and \"Get Info\" are macOS feature names; the menu path \"Get Info > uncheck Locked\" is literal; do NOT translate them.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-file_locked.png"
   },
   "@errors.write.fileLocked.suggestion.other": {
     "description": "Recovery suggestion for a locked file on non-macOS. Plain text. \"chmod\" is a command name; do NOT translate it.",
@@ -2220,18 +2161,15 @@
   "errors.write.deletePending.suggestion": "Wait a moment and try again. Once the last handle closes, the file disappears. If it sticks around, close any other apps that might have it open.",
   "@errors.write.deletePending.title": {
     "description": "Title of the delete error dialog when a file is marked for deletion on the server but still held open. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-delete_pending.png"
   },
   "@errors.write.deletePending.message": {
     "description": "Body of the delete error dialog when a file is marked for deletion but a handle is keeping it alive. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-delete_pending.png"
   },
   "@errors.write.deletePending.suggestion": {
     "description": "Recovery suggestion when a file is marked for deletion but still held open. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-delete_pending.png"
   },
 
   "errors.write.fallback.title.copy": "Copy failed",
@@ -2245,8 +2183,7 @@
   "errors.write.fallback.suggestion": "Try again, or check the technical details below for more information.",
   "@errors.write.fallback.title.copy": {
     "description": "Title of the copy/move/delete error dialog for an unrecognized failure, the catch-all (copy variant). Plain text. This is a raw errors.* string (no ICU), so phrase the copy action naturally for this language.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-archive_needs_password.png"
   },
   "@errors.write.fallback.title.move": {
     "description": "Title of the copy/move/delete error dialog for an unrecognized failure, the catch-all (move variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move action naturally for this language.",
@@ -2265,8 +2202,7 @@
   },
   "@errors.write.fallback.message.copy": {
     "description": "Body of the copy/move/delete error dialog for an unrecognized failure (copy variant). Plain text. \"error occurred\" is internal-ish but kept for the catch-all. This is a raw errors.* string (no ICU), so phrase the copy action naturally for this language.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-archive_needs_password.png"
   },
   "@errors.write.fallback.message.move": {
     "description": "Body of the copy/move/delete error dialog for an unrecognized failure (move variant). Plain text. \"error occurred\" is internal-ish but kept for the catch-all. This is a raw errors.* string (no ICU), so phrase the move action naturally for this language.",
@@ -2285,7 +2221,6 @@
   },
   "@errors.write.fallback.suggestion": {
     "description": "Recovery suggestion for an unrecognized failure. Plain text. \"technical details below\" refers to an expandable section in the same dialog.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-archive_needs_password.png"
   }
 }

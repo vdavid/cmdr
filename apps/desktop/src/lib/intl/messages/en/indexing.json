@@ -292,22 +292,26 @@
 
   "indexing.staleDialog.title": "This drive''s index may be out of date",
   "@indexing.staleDialog.title": {
-    "description": "Title of the one-time dialog shown the first time any external drive''s index goes stale (the drive was disconnected, so changes may have been missed). Never use the words ''error'' or ''failed''."
+    "description": "Title of the one-time dialog shown the first time any external drive''s index goes stale (the drive was disconnected, so changes may have been missed). Never use the words ''error'' or ''failed''.",
+    "screenshot": "drive-index-stale-default.png"
   },
   "indexing.staleDialog.body": "While {name} was disconnected, files on it may have changed. Folder sizes and search results might be a bit off until you rescan. The yellow status next to the drive always shows when this happens, and a rescan refreshes it.",
   "@indexing.staleDialog.body": {
     "description": "Body of the one-time stale-drive dialog, explaining that the drive may have changed while disconnected, that the yellow status flags it, and that a rescan refreshes it. Calm and reassuring; active voice.",
     "placeholders": {
       "name": "the drive''s display name (e.g. Backups)"
-    }
+    },
+    "screenshot": "drive-index-stale-default.png"
   },
   "indexing.staleDialog.neverShowAgain": "Never show again",
   "@indexing.staleDialog.neverShowAgain": {
-    "description": "Button in the one-time stale-drive dialog that turns off this notification for good (the yellow status still shows). Sentence case."
+    "description": "Button in the one-time stale-drive dialog that turns off this notification for good (the yellow status still shows). Sentence case.",
+    "screenshot": "drive-index-stale-default.png"
   },
   "indexing.staleDialog.close": "Close",
   "@indexing.staleDialog.close": {
-    "description": "Button in the one-time stale-drive dialog that dismisses it without changing the notification setting."
+    "description": "Button in the one-time stale-drive dialog that dismisses it without changing the notification setting.",
+    "screenshot": "drive-index-stale-default.png"
   },
 
   "indexing.enrich.label": "Image indexing",
