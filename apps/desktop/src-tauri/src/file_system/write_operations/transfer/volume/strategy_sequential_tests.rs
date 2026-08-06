@@ -7,7 +7,7 @@
 //! tar is sequential-access, so it takes the one-pass path); the destination is
 //! an `InMemoryVolume`, so the write lands through the normal `write_from_stream`.
 
-use super::super::volume_transfer_error::PathedVolumeError;
+use super::super::transfer_error::PathedVolumeError;
 use super::test_support::make_state;
 use super::*;
 use std::io::Write;
@@ -19,7 +19,7 @@ use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume
 use crate::file_system::volume::{InMemoryVolume, Volume, VolumeError};
 use cmdr_fs::volume::host::VolumeHost;
 
-use super::super::super::state::OperationIntent;
+use crate::file_system::write_operations::state::OperationIntent;
 use crate::test_support::TestDir;
 
 /// A tar entry to build into a fixture.

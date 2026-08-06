@@ -20,8 +20,8 @@ use super::super::conflict::ApplyToAll;
 use super::super::manager::{self, ManagedTaskGuard, OperationDescriptor, OperationSummaryText};
 use super::super::scratch_dir::ScratchDir;
 use super::super::state::{WriteOperationState, WriteSettledGuard};
-use super::super::transfer::volume_copy::delete_volume_path_recursive;
-use super::super::transfer::volume_strategy::pull_path_to_local;
+use super::super::transfer::volume::delete_volume_path_recursive;
+use super::super::transfer::volume::pull_path_to_local;
 use super::super::types::{
     ConflictResolution, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError,
     WriteOperationStartResult, WriteOperationType,

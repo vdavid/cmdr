@@ -14,9 +14,9 @@ use crate::ignore_poison::IgnorePoison;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use super::super::conflict::{ApplyToAll, apply_to_all_effective, apply_to_all_record};
-use super::super::state::WriteOperationState;
-use super::super::types::{
+use super::super::super::conflict::{ApplyToAll, apply_to_all_effective, apply_to_all_record};
+use super::super::super::state::WriteOperationState;
+use super::super::super::types::{
     ConflictResolution, OperationEventSink, VolumeCopyConfig, WriteConflictEvent, WriteOperationError,
 };
 use crate::file_system::volume::{Volume, VolumeError};
@@ -125,7 +125,7 @@ pub(super) async fn resolve_volume_conflict(
             // the dispatch mutex would otherwise acquire it next and emit a fresh
             // `write-conflict` that no one will ever answer (the dialog is tearing
             // down) — a hang. Bail with `Cancelled` before emitting anything.
-            if super::super::state::is_cancelled(&state.intent) {
+            if super::super::super::state::is_cancelled(&state.intent) {
                 return Err(WriteOperationError::Cancelled {
                     message: "Operation cancelled by user".to_string(),
                 });
@@ -436,7 +436,7 @@ async fn apply_volume_conflict_resolution(
                 // Cross-type (file→folder or folder→file): clear the dest first.
                 if dest_is_dir {
                     // File→folder overwrite: recursively delete the dest folder.
-                    if let Err(e) = super::volume_copy::delete_volume_path_recursive(dest_volume, dest_path).await {
+                    if let Err(e) = super::cleanup::delete_volume_path_recursive(dest_volume, dest_path).await {
                         log::warn!(
                             "apply_volume_conflict_resolution(Overwrite): recursive delete of folder {} stopped at {}: {}",
                             dest_path.display(),

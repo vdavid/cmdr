@@ -29,20 +29,20 @@ use std::time::{Duration, Instant};
 use futures_util::StreamExt;
 use futures_util::stream::FuturesUnordered;
 
-use super::super::conflict::ApplyToAll;
-use super::super::journal;
-use super::super::state::{WriteOperationState, is_cancelled, load_intent, update_operation_status};
-use super::super::types::{
+use super::super::super::conflict::ApplyToAll;
+use super::super::super::journal;
+use super::super::super::state::{WriteOperationState, is_cancelled, load_intent, update_operation_status};
+use super::super::super::types::{
     OperationEventSink, VolumeCopyConfig, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
 };
-use super::dest_name_index::{DestLookup, DestNameIndex};
-use super::transfer_driver::make_concurrent_per_file_progress;
-use super::transfer_probe::OperationProbe;
-use super::volume_conflict::resolve_volume_conflict;
-use super::volume_copy::cancel_drain_deadline;
-use super::volume_preflight::SourceHint;
-use super::volume_strategy::copy_single_path;
-use super::volume_transfer_error::WriteFailure;
+use super::super::dest_name_index::{DestLookup, DestNameIndex};
+use super::super::transfer_driver::make_concurrent_per_file_progress;
+use super::super::transfer_probe::OperationProbe;
+use super::conflict::resolve_volume_conflict;
+use super::copy::cancel_drain_deadline;
+use super::preflight::SourceHint;
+use super::strategy::copy_single_path;
+use super::transfer_error::WriteFailure;
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 
@@ -375,7 +375,7 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                         // name it as the step in progress.
                         if let Some(probe) = op_probe.as_ref() {
                             probe.set_driver_phase(
-                                super::transfer_probe::DriverPhase::PreparingNext,
+                                super::super::transfer_probe::DriverPhase::PreparingNext,
                                 &format!("#{source_index} {}", dest_item_path.display()),
                             );
                         }
@@ -520,7 +520,7 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                 // Held for the task's whole life; dropping it (completion,
                 // abort, panic) removes the row from the in-flight table.
                 let task_probe = task_probe;
-                let probe_handle = task_probe.as_ref().map(super::transfer_probe::TaskProbeHandle::probe);
+                let probe_handle = task_probe.as_ref().map(super::super::transfer_probe::TaskProbeHandle::probe);
                 // Per-task `last_file_bytes` tracks bytes reported for the
                 // file this task is copying; deltas roll up into the
                 // shared `bytes_done_a` so the throttle emits an aggregate.
@@ -530,13 +530,13 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                 let last_file_bytes = Arc::new(AtomicU64::new(0));
                 // Per-source rollback ledger: the files this task streams
                 // and the dirs it newly creates inside a directory source.
-                let created = super::volume_strategy::CreatedPaths::default();
+                let created = super::strategy::CreatedPaths::default();
                 // Deep merge children are never top-level sources, so the
                 // resolver never keys into per-source hints for them — an
                 // empty map is correct (and avoids capturing the function's
                 // `source_hints` into the `'static` task).
                 let merge_hints: HashMap<PathBuf, SourceHint> = HashMap::new();
-                let merge_ctx = super::volume_strategy::MergeCtx {
+                let merge_ctx = super::strategy::MergeCtx {
                     events: &*events_task,
                     operation_id: &merge_op_id,
                     config: &merge_config,
@@ -576,13 +576,13 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                     &on_file_progress,
                     &on_file_complete,
                     Some(&merge_ctx),
-                    super::volume_strategy::staging_for(&replace_after_write_owned),
+                    super::strategy::staging_for(&replace_after_write_owned),
                 );
                 // Bind this task's probe as a task-local for the whole copy, so
                 // `stream_pipe_file` and `CheckpointStream` can record their
                 // phases without threading a handle through every signature.
                 let result = match probe_handle {
-                    Some(probe) => super::transfer_probe::CURRENT_TASK_PROBE.scope(probe, copy_fut).await,
+                    Some(probe) => super::super::transfer_probe::CURRENT_TASK_PROBE.scope(probe, copy_fut).await,
                     None => copy_fut.await,
                 };
                 let created_files = std::mem::take(&mut *created.files.lock_ignore_poison());
@@ -616,7 +616,7 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                         // `.cmdr-tmp-*` artifact, NOT be cleaned.
                         if let Some(orig) = replace_after_write_owned {
                             if let Err(e) =
-                                super::volume_conflict::finalize_safe_replace(&dst_vol, &dest_owned, &orig).await
+                                super::conflict::finalize_safe_replace(&dst_vol, &dest_owned, &orig).await
                             {
                                 // Finalize is file→file only (safe-replace),
                                 // so there's no directory ledger to carry.
@@ -690,7 +690,7 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
         // waiting for tasks" from "the driver is stuck preparing the next
         // source", which the log could not tell apart.
         if let Some(probe) = op_probe.as_ref() {
-            probe.set_driver_phase(super::transfer_probe::DriverPhase::AwaitingTasks, "");
+            probe.set_driver_phase(super::super::transfer_probe::DriverPhase::AwaitingTasks, "");
         }
 
         // Observing the user's intent HERE is what makes Cancel and Rollback
@@ -887,7 +887,7 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
     // Drain whatever's left on cancel/error. On success, `in_flight` is
     // already empty. On abort, drop cancels the remaining futures (F10).
     if let Some(probe) = op_probe.as_ref() {
-        probe.set_driver_phase(super::transfer_probe::DriverPhase::PostLoop, "draining in-flight");
+        probe.set_driver_phase(super::super::transfer_probe::DriverPhase::PostLoop, "draining in-flight");
     }
     drop(in_flight);
 

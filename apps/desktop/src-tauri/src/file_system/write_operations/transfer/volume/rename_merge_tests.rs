@@ -17,10 +17,10 @@
 //! (CI) and macOS. The case-fold tests use a dedicated case-insensitive wrapper
 //! so they're portable regardless of the host filesystem's case sensitivity.
 
-use super::conflict_responder_test_support::{
+use super::super::conflict_responder_test_support::{
     ConflictResponderSink, file_conflict_count, folder_conflict_count_any_dir,
 };
-use super::volume_move_same::move_within_same_volume_with_progress;
+use super::move_same::move_within_same_volume_with_progress;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{LocalPosixVolume, Volume, VolumeError};
 use crate::file_system::write_operations::state::{WriteOperationState, cancel_write_operation};

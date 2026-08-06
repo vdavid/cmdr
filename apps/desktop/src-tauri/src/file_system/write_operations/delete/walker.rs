@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 
 use super::super::scan::{SourceItemTracker, scan_sources, take_cached_scan_result};
 use super::super::state::{WriteOperationState, update_operation_status};
-use super::super::transfer::volume_copy::map_volume_error;
+use super::super::transfer::volume::map_volume_error;
 use super::super::types::{
     DryRunResult, IoResultExt, OperationEventSink, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
     WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,

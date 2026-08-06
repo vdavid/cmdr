@@ -16,7 +16,7 @@
 use super::test_support::{make_state, make_state_with_interval_ms};
 use super::*;
 use crate::file_system::volume::InMemoryVolume;
-use crate::file_system::write_operations::transfer::volume_move_same::move_within_same_volume_with_progress;
+use super::super::move_same::move_within_same_volume_with_progress;
 use crate::file_system::write_operations::types::{CollectorEventSink, ConflictResolution};
 
 /// Happy-path same-volume rename: files end up at their new paths via `Volume::rename`.

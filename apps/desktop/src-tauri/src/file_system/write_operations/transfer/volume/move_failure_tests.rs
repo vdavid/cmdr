@@ -11,7 +11,7 @@
 //! Shared fixtures and the `MoveRenameFailsDestVolume` double live in
 //! `volume_move_test_support.rs` (`super::test_support`).
 
-use super::super::volume_strategy::test_support::{FlakyDest, UndeletableSource};
+use super::super::strategy::test_support::{FlakyDest, UndeletableSource};
 use super::test_support::{MoveRenameFailsDestVolume, config_default, make_state};
 use super::*;
 use crate::file_system::volume::{InMemoryVolume, VolumeError};

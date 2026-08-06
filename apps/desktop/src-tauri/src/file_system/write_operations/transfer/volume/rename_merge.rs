@@ -42,11 +42,11 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use super::super::conflict::ApplyToAll;
-use super::super::state::{WriteOperationState, is_cancelled};
-use super::super::types::{OperationEventSink, VolumeCopyConfig, WriteOperationError};
-use super::volume_conflict::{ResolvedConflict, resolve_volume_conflict};
-use super::volume_copy::map_volume_error;
+use super::super::super::conflict::ApplyToAll;
+use super::super::super::state::{WriteOperationState, is_cancelled};
+use super::super::super::types::{OperationEventSink, VolumeCopyConfig, WriteOperationError};
+use super::conflict::{ResolvedConflict, resolve_volume_conflict};
+use super::transfer_error::map_volume_error;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;

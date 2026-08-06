@@ -16,9 +16,9 @@
 //!   double records every open and counts any (now-unexpected) `cancel_and_release`,
 //!   so no real device is needed. Includes a no-pause sanity case.
 
-use super::super::super::state::{OperationIntent, cancel_write_operation, load_intent};
-use super::super::super::test_support::TestOperationGuard;
-use super::super::volume_transfer_error::PathedVolumeError;
+use crate::file_system::write_operations::state::{OperationIntent, cancel_write_operation, load_intent};
+use crate::file_system::write_operations::test_support::TestOperationGuard;
+use super::super::transfer_error::PathedVolumeError;
 use super::test_support::{
     REL_CHUNK, REL_TOTAL, RelLog, ReleasingSource, SLOW_CHUNK_COUNT, SLOW_CHUNK_SIZE, SlowSource, make_state,
     park_holds_at, rel_expected_bytes,

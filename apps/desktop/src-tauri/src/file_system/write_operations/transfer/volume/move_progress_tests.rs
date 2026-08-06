@@ -14,7 +14,7 @@
 use super::test_support::{make_state_with_interval_ms, make_volumes};
 use super::*;
 use crate::file_system::volume::InMemoryVolume;
-use crate::file_system::write_operations::transfer::volume_move_same::move_within_same_volume_with_progress;
+use super::super::move_same::move_within_same_volume_with_progress;
 use crate::file_system::write_operations::types::CollectorEventSink;
 
 /// Cross-volume move emits `bytes_total > 0` on every Copying-phase progress

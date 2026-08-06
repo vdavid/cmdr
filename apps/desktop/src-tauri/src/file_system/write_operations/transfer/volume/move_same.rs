@@ -14,23 +14,23 @@ use std::sync::Arc;
 use std::time::Duration;
 use uuid::Uuid;
 
-use super::super::conflict::ApplyToAll;
-use super::super::journal;
-use super::super::manager;
-use super::super::state::WriteOperationState;
-use super::super::types::{
+use super::super::super::conflict::ApplyToAll;
+use super::super::super::journal;
+use super::super::super::manager;
+use super::super::super::state::WriteOperationState;
+use super::super::super::types::{
     OperationEventSink, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
     WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
 };
-use super::transfer_driver::{
+use super::super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, TransferContext, TransferOutcome,
     build_pre_skip_set, drive_transfer_serial_async,
 };
-use super::volume_conflict::resolve_volume_conflict;
-use super::volume_move::{FetchFut, ResolveFut, TransferFut};
-use super::volume_preflight::{SourceHint, top_level_move_hints};
-use super::volume_rename_merge::{RenameMergeCtx, rename_merge_directory};
-use super::volume_transfer_error::map_volume_error;
+use super::conflict::resolve_volume_conflict;
+use super::r#move::{FetchFut, ResolveFut, TransferFut};
+use super::preflight::{SourceHint, top_level_move_hints};
+use super::rename_merge::{RenameMergeCtx, rename_merge_directory};
+use super::transfer_error::map_volume_error;
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 use crate::operation_log::types::OpKind;
@@ -188,7 +188,7 @@ fn journal_same_volume_moved_item(
     source: &Path,
     dest: &Path,
     size: Option<i64>,
-    buffered: Option<&super::super::journal_search::BufferedLeaves>,
+    buffered: Option<&super::super::super::journal_search::BufferedLeaves>,
 ) {
     let Some((src_vol, dst_vol)) = journal_volumes else {
         return;
@@ -207,7 +207,7 @@ fn journal_same_volume_moved_item(
         crate::operation_log::types::ItemOutcome::Done,
     );
     if let Some(buf) = buffered {
-        super::super::journal_search::persist_and_note(op_id, src_vol, source, dst_vol, Some(dest), buf);
+        super::super::super::journal_search::persist_and_note(op_id, src_vol, source, dst_vol, Some(dest), buf);
     }
 }
 
@@ -488,10 +488,10 @@ pub(crate) async fn move_within_same_volume_with_progress(
                     };
                     let row_size = hint.and_then(|h| (!h.is_directory).then_some(h.size as i64));
                     let buffered_leaves = journal_volumes.as_ref().filter(|_| source_is_dir).map(|(src_vol, _)| {
-                        super::super::journal_search::enumerate_subtree_for_search(
+                        super::super::super::journal_search::enumerate_subtree_for_search(
                             src_vol,
                             &source_path,
-                            super::super::journal_search::SEARCH_LEAF_CAP,
+                            super::super::super::journal_search::SEARCH_LEAF_CAP,
                         )
                     });
                     // Deep-merge overwrites cross to this record point through the

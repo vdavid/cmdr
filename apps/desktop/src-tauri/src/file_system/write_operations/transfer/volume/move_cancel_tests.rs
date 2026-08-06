@@ -15,7 +15,7 @@ use super::test_support::{
 };
 use super::*;
 use crate::file_system::volume::InMemoryVolume;
-use crate::file_system::write_operations::transfer::volume_move_same::move_within_same_volume_with_progress;
+use super::super::move_same::move_within_same_volume_with_progress;
 use crate::file_system::write_operations::types::CollectorEventSink;
 
 /// Cancellation between sources stops further transfers and emits `write-cancelled`.

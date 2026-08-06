@@ -8,7 +8,7 @@
 
 use std::path::{Path, PathBuf};
 
-use super::super::types::{WriteErrorEvent, WriteOperationError, WriteOperationType};
+use super::super::super::types::{WriteErrorEvent, WriteOperationError, WriteOperationType};
 use crate::file_system::volume::VolumeError;
 
 /// A write-operation failure carrying the typed `WriteOperationError` the FE renders

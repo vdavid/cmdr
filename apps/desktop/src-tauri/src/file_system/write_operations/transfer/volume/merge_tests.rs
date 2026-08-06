@@ -9,7 +9,7 @@
 //! exactly as in production. Shared fixtures `make_state` / `make_volumes` live in
 //! `volume_copy_tests.rs` (`super::tests`).
 
-use super::super::conflict_responder_test_support::{
+use super::super::super::conflict_responder_test_support::{
     ConflictResponderSink, file_conflict_count, folder_conflict_count_both_dirs,
 };
 use super::tests::{make_state, make_volumes};

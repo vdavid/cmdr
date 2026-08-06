@@ -17,7 +17,7 @@ use crate::file_system::write_operations::test_support::TestOperationGuard;
 use crate::file_system::write_operations::types::{CollectorEventSink, ConflictResolution};
 use std::pin::Pin as StdPin;
 
-use super::super::conflict_responder_test_support::{ConflictResponderSink, file_conflict_count};
+use super::super::super::conflict_responder_test_support::{ConflictResponderSink, file_conflict_count};
 
 /// A destination that fails the first `fail_writes` writes of ONE named file and
 /// otherwise behaves exactly like the `InMemoryVolume` it wraps.

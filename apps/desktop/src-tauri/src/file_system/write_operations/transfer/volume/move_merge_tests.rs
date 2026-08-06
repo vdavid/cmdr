@@ -13,11 +13,11 @@
 //! Shared fixtures live in `volume_move_test_support.rs`
 //! (`super::test_support`); the merge fixture trees are local to this file.
 
-use super::super::conflict_responder_test_support::{ConflictResponderSink, folder_conflict_count_both_dirs};
+use super::super::super::conflict_responder_test_support::{ConflictResponderSink, folder_conflict_count_both_dirs};
 use super::test_support::{make_state_with_interval_ms, make_volumes};
 use super::*;
 use crate::file_system::volume::InMemoryVolume;
-use crate::file_system::write_operations::transfer::volume_move_same::move_within_same_volume_with_progress;
+use super::super::move_same::move_within_same_volume_with_progress;
 use crate::file_system::write_operations::types::{CollectorEventSink, ConflictResolution};
 
 /// A folder move that MERGES must keep the source of every child it skipped.

@@ -24,32 +24,24 @@ use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 use uuid::Uuid;
 
-use super::super::conflict::ApplyToAll;
-use super::super::journal;
-use super::super::manager;
-use super::super::state::{OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status};
-use super::super::types::{
+use super::super::super::conflict::ApplyToAll;
+use super::super::super::journal;
+use super::super::super::manager;
+use super::super::super::state::{OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status};
+use super::super::super::types::{
     OperationEventSink, VolumeCopyConfig, VolumeCopyScanResult, WriteCancelledEvent, WriteCompleteEvent,
     WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
     WriteProgressEvent,
 };
-use super::dest_name_index::DestNameIndex;
-use super::transfer_driver::build_pre_skip_set;
-use super::volume_preflight::scan_volume_sources;
+use super::super::dest_name_index::DestNameIndex;
+use super::super::transfer_driver::build_pre_skip_set;
+use super::preflight::scan_volume_sources;
 use crate::file_system::volume::{DirectoryCreation, SourceItemInfo, Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 use crate::operation_log::types::OpKind;
 
-// The transfer-error plumbing (`WriteFailure`, `map_volume_error`,
-// `write_error_event_from`) lives in `volume_transfer_error`, and the volume
-// cleanup/rollback helpers in `volume_cleanup`. Re-exported at their original
-// `volume_copy::` paths so the sibling modules that still import them from here
-// (`volume_preflight`, `volume_rename_merge`, `volume_conflict`) keep resolving.
-pub(in crate::file_system::write_operations) use super::volume_cleanup::delete_volume_path_recursive;
-use super::volume_cleanup::volume_rollback_with_progress;
-pub(crate) use super::volume_transfer_error::WriteFailure;
-pub(in crate::file_system::write_operations) use super::volume_transfer_error::map_volume_error;
-use super::volume_transfer_error::write_error_event_from;
+use super::cleanup::{delete_volume_path_recursive, volume_rollback_with_progress};
+use super::transfer_error::{WriteFailure, write_error_event_from};
 
 /// How long a cancelled or rolled-back operation waits for its in-flight copy
 /// tasks to wind down before abandoning them.
@@ -157,7 +149,7 @@ pub async fn copy_between_volumes(
         // Pass the real `Volume::lane_key()`s so the operation manager
         // serializes against the same mount (two copies to one USB disk wait).
         let lanes = vec![source_volume.lane_key(), dest_volume.lane_key()];
-        return super::super::copy_files_start(
+        return super::super::super::copy_files_start(
             events,
             absolute_sources,
             absolute_dest,
@@ -532,7 +524,7 @@ pub(crate) async fn copy_volumes_with_progress(
     // left here. Staging means an interrupted transfer leaves a recognizable temp
     // rather than a truncated file at a real name; this is what eventually takes
     // them away. One listing, age-gated so a live transfer's temp is never touched.
-    let dest_listing = super::volume_cleanup::reap_stale_transfer_temps(&dest_volume, dest_path).await;
+    let dest_listing = super::cleanup::reap_stale_transfer_temps(&dest_volume, dest_path).await;
 
     // That listing is also the answer to "which top-level names are already
     // taken?", which the concurrent spawn loop otherwise asks one
@@ -771,7 +763,7 @@ pub(crate) async fn copy_volumes_with_progress(
     // the same answer, and `TransferActivity` (which the UI reads to stop showing
     // a confident ETA) is derived from this table. Dropping the guard at the end
     // of this function deregisters the operation and stops the watchdog.
-    let probe_guard = Some(super::transfer_probe::register_operation(
+    let probe_guard = Some(super::super::transfer_probe::register_operation(
         operation_id,
         // The serial path runs exactly one source at a time.
         if use_concurrent_path { concurrency } else { 1 },
@@ -786,14 +778,14 @@ pub(crate) async fn copy_volumes_with_progress(
     ));
     let op_probe = probe_guard
         .as_ref()
-        .map(super::transfer_probe::OperationProbeGuard::probe);
+        .map(super::super::transfer_probe::OperationProbeGuard::probe);
 
     if use_concurrent_path {
         // The `FuturesUnordered` sliding window, in `volume_copy_concurrent.rs`.
         // Everything it needs is already on hand here; the ledger Arcs are cloned
         // in, so the post-loop below keeps reading the same counters.
         let outcome =
-            super::volume_copy_concurrent::drive_transfer_concurrent(super::volume_copy_concurrent::ConcurrentCopy {
+            super::copy_concurrent::drive_transfer_concurrent(super::copy_concurrent::ConcurrentCopy {
                 events: Arc::clone(&events),
                 operation_id,
                 state,
@@ -835,7 +827,7 @@ pub(crate) async fn copy_volumes_with_progress(
     } else {
         // One source at a time, in `volume_copy_serial.rs`: too few sources to be
         // worth spawning tasks, or a backend that admits one operation at a time.
-        let outcome = super::volume_copy_serial::drive_transfer_serial(super::volume_copy_serial::SerialCopy {
+        let outcome = super::copy_serial::drive_transfer_serial(super::copy_serial::SerialCopy {
             events: Arc::clone(&events),
             operation_id,
             state,
@@ -936,7 +928,7 @@ pub(crate) async fn copy_volumes_with_progress(
     // tasks the driver abandoned mid-write: their futures were dropped, so
     // nothing else will. A temp whose write finished is already off this list, so
     // committed data is never in scope here.
-    super::volume_cleanup::clean_abandoned_staged_writes(&dest_volume, state).await;
+    super::cleanup::clean_abandoned_staged_writes(&dest_volume, state).await;
 
     // Decide between rollback and cancel.
     if intent == OperationIntent::RollingBack {
@@ -1041,44 +1033,44 @@ pub(crate) async fn copy_volumes_with_progress(
 // `make_volumes` from `tests` (`super::tests`). The bench suite is a single
 // `#[ignore]`d, network-gated test.
 #[cfg(test)]
-#[path = "volume_copy_bench.rs"]
+#[path = "copy_bench.rs"]
 mod bench;
 #[cfg(test)]
-#[path = "volume_copy_cancel_tests.rs"]
+#[path = "copy_cancel_tests.rs"]
 mod cancel_tests;
 #[cfg(test)]
-#[path = "volume_copy_concurrency_bench.rs"]
+#[path = "copy_concurrency_bench.rs"]
 mod concurrency_bench;
 #[cfg(test)]
-#[path = "volume_copy_concurrent_tests.rs"]
+#[path = "copy_concurrent_tests.rs"]
 mod concurrent_tests;
 #[cfg(test)]
-#[path = "volume_copy_crashsafe_tests.rs"]
+#[path = "copy_crashsafe_tests.rs"]
 mod crashsafe_tests;
 #[cfg(test)]
-#[path = "volume_copy_extract_out_tests.rs"]
+#[path = "copy_extract_out_tests.rs"]
 mod extract_out_tests;
 #[cfg(test)]
-#[path = "volume_merge_tests.rs"]
+#[path = "merge_tests.rs"]
 mod merge_tests;
 #[cfg(test)]
-#[path = "volume_copy_precheck_tests.rs"]
+#[path = "copy_precheck_tests.rs"]
 mod precheck_tests;
 #[cfg(test)]
-#[path = "volume_copy_retry_tests.rs"]
+#[path = "copy_retry_tests.rs"]
 mod retry_tests;
 #[cfg(test)]
-#[path = "volume_copy_rollback_tests.rs"]
+#[path = "copy_rollback_tests.rs"]
 mod rollback_tests;
 #[cfg(test)]
-#[path = "volume_copy_staged_write_tests.rs"]
+#[path = "copy_staged_write_tests.rs"]
 mod staged_write_tests;
 #[cfg(test)]
-#[path = "volume_copy_tests.rs"]
+#[path = "copy_tests.rs"]
 mod tests;
 #[cfg(test)]
-#[path = "volume_copy_wedge_test_support.rs"]
+#[path = "copy_wedge_test_support.rs"]
 mod wedge_test_support;
 #[cfg(test)]
-#[path = "volume_copy_window_tests.rs"]
+#[path = "copy_window_tests.rs"]
 mod window_tests;

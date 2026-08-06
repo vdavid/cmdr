@@ -143,17 +143,17 @@ pub(crate) use validation::{
 // directly against a real SMB backend instead of the full Tauri path.
 #[cfg(test)]
 #[allow(unused_imports, reason = "Used by the volume-journal capture tests")]
-pub(crate) use transfer::volume_move::move_volumes_with_progress;
+pub(crate) use transfer::volume::move_volumes_with_progress;
 #[cfg(test)]
 #[allow(unused_imports, reason = "Used by SMB integration tests in file_system::volume::smb")]
-pub(crate) use transfer::volume_move_same::move_within_same_volume_with_progress;
+pub(crate) use transfer::volume::move_within_same_volume_with_progress;
 #[cfg(test)]
 #[allow(unused_imports, reason = "Used by SMB integration tests in file_system::volume::smb")]
 pub(crate) use types::CollectorEventSink;
 
 // Re-export volume copy types and functions
-pub use transfer::volume_copy::{copy_between_volumes, scan_for_volume_copy};
-pub use transfer::volume_move::move_between_volumes;
+pub use transfer::volume::{copy_between_volumes, scan_for_volume_copy};
+pub use transfer::volume::move_between_volumes;
 pub use types::{VolumeCopyConfig, VolumeCopyScanResult};
 // Copy/move INTO a zip: the command layer routes an archive destination here
 // (the whole transfer becomes one `{ add }` changeset) instead of the per-file
@@ -173,7 +173,7 @@ pub(crate) use archive_edit::route_archive_move_out;
 // The cross-volume copy body, reused as the extract phase of an out-of-zip MOVE
 // (`route_archive_move_out`). Not spawn-managed itself — it runs inside the
 // move-out op's deferred under the move op's id/state/sink.
-pub(crate) use transfer::volume_copy::copy_volumes_with_progress;
+pub(crate) use transfer::volume::copy_volumes_with_progress;
 // The remote zip-edit orchestration (pull-local, apply, upload, swap). Exposed at
 // crate scope for the live-SMB / MTP integration suites, which drive the real
 // mechanism against a real remote volume. The managed driver reaches it directly

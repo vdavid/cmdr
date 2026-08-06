@@ -3,7 +3,7 @@
 //! multi-chunk with progress, mid-file cancel, empty file, missing source,
 //! streaming-route selection, and recursive directory copy).
 
-use super::super::super::state::OperationIntent;
+use crate::file_system::write_operations::state::OperationIntent;
 use super::test_support::make_state;
 use super::*;
 use std::path::Path;

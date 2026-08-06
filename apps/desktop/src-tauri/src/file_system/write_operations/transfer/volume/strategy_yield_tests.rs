@@ -17,9 +17,9 @@
 //! that does NOT opt into foreground-yield never yields, and that a yield-capable
 //! source with nothing pending never self-yields.
 
-use super::super::super::state::{OperationIntent, cancel_write_operation, load_intent};
-use super::super::super::test_support::TestOperationGuard;
-use super::super::volume_transfer_error::PathedVolumeError;
+use crate::file_system::write_operations::state::{OperationIntent, cancel_write_operation, load_intent};
+use crate::file_system::write_operations::test_support::TestOperationGuard;
+use super::super::transfer_error::PathedVolumeError;
 use super::test_support::{
     AutoYieldTuningGuard, NeverPendingYieldSource, PARK_WINDOW, REL_CHUNK, REL_TOTAL, RelLog, ReleasingSource,
     YieldingSource, make_state, park_holds_at, rel_expected_bytes,

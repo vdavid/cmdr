@@ -10,9 +10,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use super::super::state::{OperationIntent, WriteOperationState, load_intent, update_operation_status};
-use super::super::types::{OperationEventSink, WriteOperationPhase, WriteOperationType, WriteProgressEvent};
-use super::volume_transfer_error::{AtPath, PathedVolumeError};
+use super::super::super::state::{OperationIntent, WriteOperationState, load_intent, update_operation_status};
+use super::super::super::types::{OperationEventSink, WriteOperationPhase, WriteOperationType, WriteProgressEvent};
+use super::transfer_error::{AtPath, PathedVolumeError};
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::Volume;
 use crate::ignore_poison::IgnorePoison;

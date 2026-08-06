@@ -23,18 +23,9 @@ pub(super) mod retry;
 pub(super) mod staged_write;
 pub(super) mod transfer_driver;
 pub(super) mod transfer_probe;
-pub(super) mod volume_cleanup;
-pub(super) mod volume_conflict;
-pub(super) mod volume_copy;
-pub(super) mod volume_copy_concurrent;
-pub(super) mod volume_copy_serial;
-pub(super) mod volume_move;
-pub(super) mod volume_move_same;
-pub(super) mod volume_preflight;
-pub(super) mod volume_rename_merge;
-pub(super) mod volume_sequential_extract;
-pub(super) mod volume_strategy;
-pub(super) mod volume_transfer_error;
+/// Cross-volume copy + move. A facade: `volume/mod.rs` re-exports what outside
+/// code calls, and every module under it is private to that directory.
+pub(super) mod volume;
 
 // Re-export for the nested integration tests below (and to mirror the
 // pre-split `write_operations::CopyTransaction` test path).
@@ -56,5 +47,3 @@ mod move_integration_test;
 mod transaction_integration_test;
 #[cfg(test)]
 mod type_mismatch_rename_tests;
-#[cfg(test)]
-mod volume_rename_merge_tests;

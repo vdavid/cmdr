@@ -15,19 +15,19 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
 
-use super::super::conflict::ApplyToAll;
-use super::super::state::WriteOperationState;
-use super::super::types::{OperationEventSink, VolumeCopyConfig, WriteOperationError};
-use super::checkpoint_stream::CheckpointStream;
-use super::staged_write::StagedWrite;
+use super::super::super::conflict::ApplyToAll;
+use super::super::super::state::WriteOperationState;
+use super::super::super::types::{OperationEventSink, VolumeCopyConfig, WriteOperationError};
+use super::super::checkpoint_stream::CheckpointStream;
+use super::super::staged_write::StagedWrite;
 // Re-exported so the sibling test modules (and any future caller reached through
 // this module's API) name the staging choice without a second import path.
-use super::retry;
-pub(super) use super::staged_write::WriteStaging;
-use super::transfer_probe::{TaskPhase, arm_current_task_stall_abort, note_task_retry, set_task_bytes, set_task_phase};
-use super::volume_conflict::{ResolvedConflict, resolve_volume_conflict};
-use super::volume_preflight::SourceHint;
-use super::volume_transfer_error::{AtPath, PathedVolumeError};
+use super::super::retry;
+pub(super) use super::super::staged_write::WriteStaging;
+use super::super::transfer_probe::{TaskPhase, arm_current_task_stall_abort, note_task_retry, set_task_bytes, set_task_phase};
+use super::conflict::{ResolvedConflict, resolve_volume_conflict};
+use super::preflight::SourceHint;
+use super::transfer_error::{AtPath, PathedVolumeError};
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{Volume, VolumeError, VolumeReadStream};
 use crate::ignore_poison::IgnorePoison;
@@ -258,7 +258,7 @@ pub(super) async fn copy_single_path(
     staging: WriteStaging,
 ) -> Result<u64, PathedVolumeError> {
     // Check cancellation up front.
-    if super::super::state::is_cancelled(&state.intent) {
+    if super::super::super::state::is_cancelled(&state.intent) {
         return Err(VolumeError::Cancelled("Operation cancelled by user".to_string())).at(source_path);
     }
 
@@ -269,7 +269,7 @@ pub(super) async fn copy_single_path(
         // the stream once. Random-access sources (a folder on any real FS, a plain
         // `.tar`, a zip) keep the per-entry walk below — zero regression.
         if source_volume.extraction_is_sequential(source_path) {
-            return Box::pin(super::volume_sequential_extract::extract_sequential_subtree(
+            return Box::pin(super::sequential_extract::extract_sequential_subtree(
                 source_volume,
                 source_path,
                 dest_volume,
@@ -379,7 +379,7 @@ pub(in crate::file_system::write_operations) async fn pull_path_to_local(
     // scratch dir, so per-file rollback bookkeeping is moot.
     let created = CreatedPaths::default();
     let on_progress = |_written: u64, _total: u64| {
-        if super::super::state::is_cancelled(&state.intent) {
+        if super::super::super::state::is_cancelled(&state.intent) {
             ControlFlow::Break(())
         } else {
             ControlFlow::Continue(())
@@ -567,7 +567,7 @@ async fn stream_pipe_file(
             // report it as one: the post-loop keys `write-cancelled` off a
             // `Cancelled`-shaped error, and a transport error in its place would
             // log the user's own click as a failed transfer.
-            Err(e) if retry::is_retryable(&e) && super::super::state::is_cancelled(&state.intent) => {
+            Err(e) if retry::is_retryable(&e) && super::super::super::state::is_cancelled(&state.intent) => {
                 staged.abandon(dest_volume).await;
                 return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
             }
@@ -680,7 +680,7 @@ pub(super) async fn copy_directory_streaming(
     // but instead of streaming each file's bytes, record its resolved destination
     // in the plan and leave the byte write to the caller's single decode pass.
     // `None` ⇒ normal streaming copy.
-    plan: Option<&super::volume_sequential_extract::ExtractPlan>,
+    plan: Option<&super::sequential_extract::ExtractPlan>,
 ) -> Result<u64, PathedVolumeError> {
     note_pending_for_local_dest(dest_volume, dest_path);
 
@@ -746,7 +746,7 @@ pub(super) async fn copy_directory_streaming(
     let mut total_bytes = 0u64;
 
     for entry in &entries {
-        if super::super::state::is_cancelled(&state.intent) {
+        if super::super::super::state::is_cancelled(&state.intent) {
             return Err(VolumeError::Cancelled("Operation cancelled by user".to_string())).at(source_path);
         }
 
@@ -831,7 +831,7 @@ pub(super) async fn copy_directory_streaming(
         if let Some(plan) = plan {
             plan.record(
                 child_source,
-                super::volume_sequential_extract::PlannedWrite {
+                super::sequential_extract::PlannedWrite {
                     dest_path: write_dest,
                     replace_after_write,
                 },
@@ -859,7 +859,7 @@ pub(super) async fn copy_directory_streaming(
         // the temp is preserved as committed data (see `finalize_safe_replace`).
         let recorded = match replace_after_write {
             Some(orig) => {
-                super::volume_conflict::finalize_safe_replace(dest_volume, &write_dest, &orig)
+                super::conflict::finalize_safe_replace(dest_volume, &write_dest, &orig)
                     .await
                     .at(&child_source)?;
                 // A deep-merge child that replaced an existing dest file: record
@@ -971,32 +971,32 @@ async fn resolve_merge_child(
 }
 
 #[cfg(test)]
-#[path = "volume_strategy_copy_tests.rs"]
+#[path = "strategy_copy_tests.rs"]
 mod copy_tests;
 #[cfg(test)]
-#[path = "volume_strategy_dest_yield_tests.rs"]
+#[path = "strategy_dest_yield_tests.rs"]
 mod dest_yield_tests;
 #[cfg(test)]
-#[path = "volume_strategy_pause_tests.rs"]
+#[path = "strategy_pause_tests.rs"]
 mod pause_tests;
 #[cfg(test)]
-#[path = "volume_strategy_retry_tests.rs"]
+#[path = "strategy_retry_tests.rs"]
 mod retry_tests;
 #[cfg(test)]
-#[path = "volume_strategy_sequential_tests.rs"]
+#[path = "strategy_sequential_tests.rs"]
 mod sequential_tests;
 #[cfg(test)]
-#[path = "volume_strategy_single_shot_tests.rs"]
+#[path = "strategy_single_shot_tests.rs"]
 mod single_shot_tests;
 #[cfg(test)]
-#[path = "volume_strategy_stale_handle_tests.rs"]
+#[path = "strategy_stale_handle_tests.rs"]
 mod stale_handle_tests;
 // `pub(super)` so sibling test modules under `transfer` (notably
 // `volume_move_failure_tests`) reuse the same doubles instead of hand-rolling
 // their own.
 #[cfg(test)]
-#[path = "volume_strategy_test_support.rs"]
+#[path = "strategy_test_support.rs"]
 pub(super) mod test_support;
 #[cfg(test)]
-#[path = "volume_strategy_yield_tests.rs"]
+#[path = "strategy_yield_tests.rs"]
 mod yield_tests;

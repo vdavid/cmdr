@@ -14,12 +14,12 @@ use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use super::super::state::WriteOperationState;
-use super::staged_write::StagedWrite;
-use super::volume_strategy::{
+use super::super::super::state::WriteOperationState;
+use super::super::staged_write::StagedWrite;
+use super::strategy::{
     CreatedPaths, MergeCtx, copy_directory_streaming, note_pending_for_local_dest, resolve_staging, staging_for,
 };
-use super::volume_transfer_error::{AtPath, PathedVolumeError};
+use super::transfer_error::{AtPath, PathedVolumeError};
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 
@@ -114,7 +114,7 @@ pub(super) async fn extract_sequential_subtree(
         .at(source_path)?;
     let mut total_bytes = 0u64;
     while let Some(file) = extractor.next_file().await.at(source_path)? {
-        if super::super::state::is_cancelled(&state.intent) {
+        if super::super::super::state::is_cancelled(&state.intent) {
             return Err(VolumeError::Cancelled("Operation cancelled by user".to_string())).at(source_path);
         }
         // Not in the plan ⇒ the file was skipped by conflict resolution (or isn't
@@ -152,7 +152,7 @@ pub(super) async fn extract_sequential_subtree(
         // path): the temp holds the complete new bytes; swap it over the original.
         let recorded = match planned.replace_after_write {
             Some(orig) => {
-                super::volume_conflict::finalize_safe_replace(dest_volume, &planned.dest_path, &orig)
+                super::conflict::finalize_safe_replace(dest_volume, &planned.dest_path, &orig)
                     .await
                     .at(&file.source_path)?;
                 orig

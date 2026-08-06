@@ -30,13 +30,13 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Instant;
 
-use super::super::scan::take_cached_scan_result;
-use super::super::state::{WriteOperationState, is_cancelled};
-use super::super::types::{
+use super::super::super::scan::take_cached_scan_result;
+use super::super::super::state::{WriteOperationState, is_cancelled};
+use super::super::super::types::{
     OperationEventSink, VolumeCopyConfig, WriteCancelledEvent, WriteOperationError, WriteOperationPhase,
     WriteOperationType, WriteProgressEvent,
 };
-use super::volume_copy::WriteFailure;
+use super::transfer_error::WriteFailure;
 use crate::file_system::volume::{ListingProgress, Volume};
 use crate::ignore_poison::IgnorePoison;
 

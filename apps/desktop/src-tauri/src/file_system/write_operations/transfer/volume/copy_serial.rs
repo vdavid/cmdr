@@ -24,21 +24,21 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
-use super::super::conflict::ApplyToAll;
-use super::super::journal;
-use super::super::state::WriteOperationState;
-use super::super::types::{
+use super::super::super::conflict::ApplyToAll;
+use super::super::super::journal;
+use super::super::super::state::WriteOperationState;
+use super::super::super::types::{
     OperationEventSink, VolumeCopyConfig, WriteOperationError, WriteOperationPhase, WriteOperationType,
 };
-use super::transfer_driver::{
+use super::super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, SerialLeafProgress, TransferContext,
     TransferOutcome, drive_transfer_serial_async,
 };
-use super::transfer_probe::OperationProbe;
-use super::volume_conflict::resolve_volume_conflict;
-use super::volume_preflight::SourceHint;
-use super::volume_strategy::copy_single_path;
-use super::volume_transfer_error::{WriteFailure, map_volume_error};
+use super::super::transfer_probe::OperationProbe;
+use super::conflict::resolve_volume_conflict;
+use super::preflight::SourceHint;
+use super::strategy::copy_single_path;
+use super::transfer_error::{WriteFailure, map_volume_error};
 use crate::file_system::volume::Volume;
 use crate::ignore_poison::IgnorePoison;
 
@@ -367,13 +367,13 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                     // Per-source rollback ledger: the files this transfer
                     // streams and the dirs it newly creates inside a
                     // directory source.
-                    let created = super::volume_strategy::CreatedPaths::default();
+                    let created = super::strategy::CreatedPaths::default();
 
                     // Merge context: deep file clashes inside a merged
                     // directory honor the file policy via the resolver,
                     // sharing the op-wide apply-to-all latch with the
                     // top-level dispatch.
-                    let merge_ctx = super::volume_strategy::MergeCtx {
+                    let merge_ctx = super::strategy::MergeCtx {
                         events: &*events,
                         operation_id: &operation_id,
                         config: &config_for_merge,
@@ -393,7 +393,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                             &dest_item_path.display().to_string(),
                         )
                     });
-                    let probe_handle = task_probe.as_ref().map(super::transfer_probe::TaskProbeHandle::probe);
+                    let probe_handle = task_probe.as_ref().map(super::super::transfer_probe::TaskProbeHandle::probe);
 
                     let copy_fut = copy_single_path(
                         &source_volume,
@@ -407,13 +407,13 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                         &on_file_progress,
                         &on_file_complete,
                         Some(&merge_ctx),
-                        super::volume_strategy::staging_for(&replace_after_write),
+                        super::strategy::staging_for(&replace_after_write),
                     );
                     // Bind this source's probe as a task-local for the whole
                     // copy, so `stream_pipe_file` and `CheckpointStream`
                     // record their phases with no signature threading.
                     let copy_result = match probe_handle {
-                        Some(probe) => super::transfer_probe::CURRENT_TASK_PROBE.scope(probe, copy_fut).await,
+                        Some(probe) => super::super::transfer_probe::CURRENT_TASK_PROBE.scope(probe, copy_fut).await,
                         None => copy_fut.await,
                     };
                     match copy_result {
@@ -434,7 +434,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                             let source_overwrote = replace_after_write.is_some() || created.any_overwrote();
                             let landed_path = match replace_after_write {
                                 Some(orig) => {
-                                    if let Err(e) = super::volume_conflict::finalize_safe_replace(
+                                    if let Err(e) = super::conflict::finalize_safe_replace(
                                         &dest_volume,
                                         &dest_item_path,
                                         &orig,

@@ -14,26 +14,26 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 use uuid::Uuid;
 
-use super::super::conflict::ApplyToAll;
-use super::super::journal;
-use super::super::manager;
-use super::super::state::WriteOperationState;
-use super::super::types::{
+use super::super::super::conflict::ApplyToAll;
+use super::super::super::journal;
+use super::super::super::manager;
+use super::super::super::state::WriteOperationState;
+use super::super::super::types::{
     OperationEventSink, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
     WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
 };
-use super::transfer_driver::{
+use super::super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, SerialLeafProgress, TransferContext,
     TransferOutcome, build_pre_skip_set, drive_transfer_serial_async,
 };
-use super::volume_cleanup::delete_volume_path_recursive_preserving;
-use super::volume_conflict::resolve_volume_conflict;
+use super::cleanup::delete_volume_path_recursive_preserving;
+use super::conflict::resolve_volume_conflict;
 // The same-volume rename path lives in `volume_move_same`; the dispatcher below
 // routes to its entry point.
-use super::volume_move_same::move_within_same_volume;
-use super::volume_preflight::{SourceHint, scan_volume_sources};
-use super::volume_strategy::copy_single_path;
-use super::volume_transfer_error::{AtPath, WriteFailure, map_volume_error, write_error_event_from};
+use super::move_same::move_within_same_volume;
+use super::preflight::{SourceHint, scan_volume_sources};
+use super::strategy::copy_single_path;
+use super::transfer_error::{AtPath, WriteFailure, map_volume_error, write_error_event_from};
 use crate::file_system::volume::Volume;
 use crate::ignore_poison::IgnorePoison;
 use crate::operation_log::types::OpKind;
@@ -112,7 +112,7 @@ pub async fn move_between_volumes(
         // ejectable destination busy while it runs, plus the real
         // `Volume::lane_key()`s so the manager serializes against the mount.
         let lanes = vec![source_volume.lane_key(), dest_volume.lane_key()];
-        return super::super::move_files_start(
+        return super::super::super::move_files_start(
             events,
             absolute_sources,
             absolute_dest,
@@ -527,12 +527,12 @@ pub(crate) async fn move_volumes_with_progress(
                     // rollback reverses renames / cleans staging separately, but
                     // the operation-log capture harvests it below for the per-leaf
                     // journal rows.
-                    let created = super::volume_strategy::CreatedPaths::default();
+                    let created = super::strategy::CreatedPaths::default();
                     // Merge context: when a source folder lands on a same-named
                     // dest folder, deep file clashes inside honor the file policy
                     // (Stop-wait, latch, conditional reduce, type mismatches) —
                     // the same granularity the top-level move already has.
-                    let merge_ctx = super::volume_strategy::MergeCtx {
+                    let merge_ctx = super::strategy::MergeCtx {
                         events: &*events,
                         operation_id: &operation_id,
                         config: &config_for_merge,
@@ -552,7 +552,7 @@ pub(crate) async fn move_volumes_with_progress(
                         &on_file_progress,
                         &on_file_complete,
                         Some(&merge_ctx),
-                        super::volume_strategy::staging_for(&replace_after_write),
+                        super::strategy::staging_for(&replace_after_write),
                     )
                     .await
                     {
@@ -594,7 +594,7 @@ pub(crate) async fn move_volumes_with_progress(
                     // intact, and the new data survives in the temp.
                     if let Some(orig) = replace_after_write
                         && let Err(e) =
-                            super::volume_conflict::finalize_safe_replace(&dest_volume, &dest_item_path, &orig).await
+                            super::conflict::finalize_safe_replace(&dest_volume, &dest_item_path, &orig).await
                         {
                             log::warn!(
                                 target: "move",
@@ -690,7 +690,7 @@ pub(crate) async fn move_volumes_with_progress(
     // serial driver's own error path usually cleans up as it goes; this covers
     // whatever it couldn't reach. A temp whose write COMPLETED is already off the
     // list, so committed data is never in scope.
-    super::volume_cleanup::clean_abandoned_staged_writes(&dest_volume, state).await;
+    super::cleanup::clean_abandoned_staged_writes(&dest_volume, state).await;
 
     match outcome.intent {
         PostLoopIntent::Completed => {
@@ -738,23 +738,23 @@ pub(crate) async fn move_volumes_with_progress(
 // Shared fixtures and doubles live in `test_support`, which they all reach
 // through `super::test_support`.
 #[cfg(test)]
-#[path = "volume_move_cancel_tests.rs"]
+#[path = "move_cancel_tests.rs"]
 mod cancel_tests;
 #[cfg(test)]
-#[path = "volume_move_failure_tests.rs"]
+#[path = "move_failure_tests.rs"]
 mod failure_tests;
 #[cfg(test)]
-#[path = "volume_move_merge_tests.rs"]
+#[path = "move_merge_tests.rs"]
 mod merge_tests;
 #[cfg(test)]
-#[path = "volume_move_progress_tests.rs"]
+#[path = "move_progress_tests.rs"]
 mod progress_tests;
 #[cfg(test)]
-#[path = "volume_move_same_tests.rs"]
+#[path = "move_same_tests.rs"]
 mod same_tests;
 #[cfg(test)]
-#[path = "volume_move_test_support.rs"]
+#[path = "move_test_support.rs"]
 mod test_support;
 #[cfg(test)]
-#[path = "volume_move_tests.rs"]
+#[path = "move_tests.rs"]
 mod tests;

@@ -29,10 +29,10 @@ pub(super) fn make_state() -> Arc<WriteOperationState> {
 /// Byte-offset flavor of the shared [`super::super::super::test_support::park_holds_at`],
 /// so the copy suites can hand it an `AtomicU64` directly.
 pub(super) async fn park_holds_at(seen: &std::sync::atomic::AtomicU64, what: &str) -> u64 {
-    super::super::super::test_support::park_holds_at(|| seen.load(Ordering::SeqCst), what).await
+    crate::file_system::write_operations::test_support::park_holds_at(|| seen.load(Ordering::SeqCst), what).await
 }
 
-pub(super) use super::super::super::test_support::PARK_WINDOW;
+pub(super) use crate::file_system::write_operations::test_support::PARK_WINDOW;
 
 // ========================================================================
 // Gated chunked source (mid-file pause): a multi-chunk volume copy whose

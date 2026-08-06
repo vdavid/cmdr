@@ -1,3 +1,4 @@
+use super::super::transfer_error::map_volume_error;
 use super::*;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{CopyScanResult, InMemoryVolume, ListingProgress, LocalPosixVolume};
@@ -1922,7 +1923,7 @@ async fn delete_volume_path_recursive_removes_single_file() {
 /// the user selected and tells them nothing they can act on.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn delete_volume_path_recursive_reports_the_leaf_that_refused() {
-    use super::super::volume_strategy::test_support::UndeletableSource;
+    use super::super::strategy::test_support::UndeletableSource;
 
     let vol = UndeletableSource::new(
         "doomed.txt",
