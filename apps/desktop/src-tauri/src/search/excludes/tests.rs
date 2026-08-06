@@ -91,6 +91,20 @@ fn case_folding_comes_from_the_compiled_query_both_ways() {
     assert!(sensitive.excludes_walked("/p/Archive/out.o", None));
 }
 
+#[test]
+fn an_uppercase_directory_on_disk_is_excluded_under_a_case_insensitive_query() {
+    // The set is KEYED through `fold`, so the lookup has to fold the same way. Off
+    // macOS `normalize_for_comparison` is a deliberate no-op, so a lookup that
+    // reached for it directly compared a raw name against a lowercased key: every
+    // system exclude with a capital in it (`Caches`, `Logs`, `WebKit`, `.Trash`)
+    // silently stopped excluding anything there.
+    let rules = ExcludeRules::from_query(&with_excludes(&["caches"]), true);
+    assert!(rules.excludes_walked("/p/Library/Caches/thing.db", None));
+
+    let tier = ExcludeRules::from_query(&query(), true);
+    assert!(tier.excludes_walked("/p/Library/Caches/thing.db", None), "the system tier too");
+}
+
 // ── User excludes: globs and path prefixes ───────────────────────────
 
 #[test]

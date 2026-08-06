@@ -103,10 +103,15 @@ impl ExcludeRules {
     /// Runs per ancestor per candidate on the arena's hot path, so the
     /// case-sensitive branch borrows rather than folding a copy of every name it
     /// is asked about.
+    ///
+    /// ❌ The insensitive branch goes through [`Self::fold`], never
+    /// `normalize_for_comparison` alone: the set is KEYED through `fold`, and off
+    /// macOS that normalize is a no-op, so a raw lookup would compare an unfolded
+    /// name against a lowercased key and match nothing with a capital in it.
     pub(crate) fn excludes_dir_name(&self, name: &str) -> bool {
         if !self.exact_names.is_empty() {
             let excluded = if self.case_insensitive {
-                self.exact_names.contains(&store::normalize_for_comparison(name))
+                self.exact_names.contains(&self.fold(name))
             } else {
                 self.exact_names.contains(name)
             };
