@@ -42,7 +42,8 @@ own listing cache, never the index. Its one real coupling is folder `recursiveSi
 
 David's governing principle: **the drive being indexed or not must not produce a behavioral difference, only a speed
 difference.** This is the register of where this plan does not reach that, so the deferrals are visible rather than
-buried. It is meant to be complete; anything found later belongs here.
+buried. It is meant to be complete; anything found later belongs here — 14 through 16 were added by the closing audit,
+which found the register claiming completeness while three live states were missing from it.
 
 1. **An interrupted walk is narrower.** Cancel, drive disconnect, and app quit each end a walk early and yield a
    strictly smaller result set than the indexed run. This is the difference people meet most often, so M6 labels the
@@ -95,6 +96,22 @@ buried. It is meant to be complete; anything found later belongs here.
     the index already holds children for writes through the serial reconcile, which takes no live consumer, so what it
     ADDS lands in the index without streaming. The next query sees it (the arena mark is set when the walk starts, not
     when it emits). Rare, and the ground is genuinely covered afterwards. Found in M5.
+14. **Ground another search is walking answers narrower, and says so** (`still_covering`). Only one walk may cover a
+    patch of ground, so a second search over the same folder is told what it left alone; those rows reach the index and
+    the next search picks them up, but not that one. The case where it cost the run its WHOLE answer is closed — a run
+    with nothing from the index and no ground of its own now waits for the walk that holds it — so what's left is a run
+    that has index rows to show and a claimed frontier: it answers with the covered half, labels the rest, and is
+    narrower than the same search over an indexed drive. Found by the closing audit.
+15. **A volume mid-full-scan isn't walked at all, and the run reports `Interrupted`.** The scan owns the writer and is
+    covering that ground anyway (M3c's gate), so the search answers from whatever the index already holds and says the
+    walk was interrupted — narrower than the indexed answer, and worded as though something went wrong rather than "your
+    drive is busy indexing itself". Verified over MCP in M9. Found by the closing audit.
+16. **A broad query answers on a fully indexed scope and fails the whole run on one with any frontier.** The arena
+    evaluator allows a query that narrows nothing below 100k rows; the live evaluator refuses outright, and refusing
+    takes the RUN with it (M4, deliberately: answering from the index alone over uncovered ground is the
+    confident-looking half-answer this plan exists to remove). So the same query is an error on an unindexed drive and a
+    result list on an indexed one — the starkest difference in this register, and the one a user is most likely to read
+    as a bug. Found by the closing audit.
 
 ## Decisions
 
@@ -755,6 +772,33 @@ runs (`0 → 34 → 91 → 124 → 169 → 200` over three seconds, sampled insi
   indexed") rather than handing back a lower bound shaped like a complete listing. `> 0`, not "at the current epoch",
   matching the descent rule.
 
+**The two defects the closing audit found, both closed.**
+
+- **A scoped search answered with the folder itself when the drive was indexed and not when it wasn't**, then with it
+  again once its own walk had been through: three answers to one question, one search apart, which reads as a bug in
+  whatever the user did in between. The frontier ROOT was the one entry neither half of a live run emitted — a walk
+  reports a directory's CONTENTS, and the root's row is written by `ensure_walkable` where nothing but an index reader
+  would ever report it. `ensure_walkable` now says whether it had to create that row, and `cover.rs` emits a root it
+  created, once, ahead of that root's listing (a root the index already held stays the covered half's to report, so
+  nothing doubles). ❌ Its materialized ancestors do NOT go out: they're above whatever scope asked for the walk. Pinned
+  by the three-way test (indexed / unindexed / unindexed-then-repeated) in `live_e2e.rs`.
+- **`open_search_dialog autoRun: true` reliably showed an empty dialog on uncovered ground.** Two live runs fired a
+  millisecond apart, and the second — the one the dialog renders — found its ground claimed by the first one's walk and
+  walked nothing. Traced in the running app (a stack trace at every `startLiveRun` and every `setRunOnMount(true)`), ❌
+  not the arena-load race the open item above blamed. Two producers of one one-shot flag: the prefill's `autoRun`, and
+  `QueryDialog`'s reopen-with-results path, which arms it in `onMount` from `lastRunQuery` — after the prefill's run has
+  already fired and cleared it. A prefill now clears `lastRunQuery` (it REPLACES the session, results and all), so the
+  caller's `autoRun` is the whole decision in both directions: `false` no longer runs the prefill anyway.
+- **And the run that loses a claim race no longer presents as "no results".** A run that gets NO ground from
+  `Index::cover` and had nothing from the index would answer with nothing at all under a note promising the files would
+  turn up in a moment; it now waits for the walk that holds the ground and works the whole thing out again (`groundwork`
+  groups everything before the first row, so the retry can't say anything twice). ⚠️ The check has to sit after the walk
+  REQUEST: a claim is taken inside `cover`, and two searches started 150 ms apart come out of one arena load together —
+  an earlier `CoverageMap::being_walked` check read empty in the app every time. Both halves are needed, so a run with
+  index rows to show still shows them and reports `still_covering` (register 14). `Index::cover` on a retry reloads the
+  arena without consulting the walk mark: a run that watched a walk end knows rows landed, and the mark is a global
+  one-shot somebody else may have taken.
+
 **Verified after the closing pass.** The macOS Playwright lane is green (269 tests across 3 shards) and the Linux Docker
 lane is green (279 tests) — the first full Linux run of this effort, and the specs the lead reported failing there pass,
 including the `search-recent` flake, which turned out to be my restore handing the drive back "fresh" but not yet able
@@ -783,14 +827,31 @@ the next reader isn't misled by the message.
   argued in the check: root promises 44 → 50 and `Index` methods 35 → 40. There is no headroom left, by design.
 - **A prefilled query that arrives while the arena is loading never runs, and nobody is told.** `QueryDialog`'s
   `runOnMount` effect clears its flag and then runs only `if (config.isIndexReady && …)`; when readiness lands a moment
-  later, nothing re-fires. The comment calls it deliberate ("the user hits Enter to fire when ready"), and for a person
-  looking at the dialog that reads fine. For the MCP `open_search_dialog` `autoRun: true` path it doesn't: the tool
-  returns OK and the agent gets an empty dialog with no signal. It's also what made `search-recent` flake on the Linux
-  lane behind a rescan. Recommendation: keep the flag set until either the run fires or readiness resolves to "no index
-  is coming". Not changed here — it's a behavior choice in a shared dialog, not a defect.
+  later, nothing re-fires for the prefill itself (Search's own `search-index-ready` listener re-arms the flag, so the
+  run does land when that event comes). The comment calls it deliberate ("the user hits Enter to fire when ready"), and
+  for a person looking at the dialog that reads fine. It's also what made `search-recent` flake on the Linux lane behind
+  a rescan. Recommendation: keep the flag set until either the run fires or readiness resolves to "no index is coming".
+  Not changed here — it's a behavior choice in a shared dialog, not a defect. ⚠️ **This is NOT what made
+  `open_search_dialog autoRun: true` show an empty dialog**, which is what this item used to blame. That was a
+  double-run (the prefill's own run plus the reopen-with-results path arming the same one-shot flag after it had fired),
+  and it's fixed: a prefill now clears `lastRunQuery`, since it replaces the session the reopen path exists to restore.
+- **The handoff toast counts far past what the pane can hold.** The dialog asks for `limit: 30`; `ResultStream` stops
+  emitting rows at the cap while `match_count` keeps climbing, so a walk handed to a pane can report "35,287 matches so
+  far" over 30 rows, and `labelFor` only annotates "(first N of M)" once M passes 10,000. Nothing is lost — the count is
+  true and the cap is deliberate (a stopped walk would freeze the count at a number that never becomes true) — but the
+  toast and the pane disagree by three orders of magnitude with no words about it. Left alone deliberately: whether the
+  handoff should raise its limit, label the gap sooner, or say "showing the first 30" is a product call, not a defect.
 - Four `CLAUDE.md` files the closing pass touched sit 3–7 words over the 600-word soft budget after three trimming
   rounds (`lib/search`, `test/e2e-playwright`, `indexing/read`, `indexing/scanner`), each carrying one new guardrail.
   Warn-only, and ❌ no allowlist was touched. Trim further, or leave.
+
+**Verified in the running app (the closing defects).** With the boot drive fully indexed and a fresh tree beside it: a
+scoped MCP `search` over a folder nothing had listed returned the folder itself plus its file (`2 of 2`), and the same
+search again — now index-served — returned the same two. `open_search_dialog autoRun: true` over uncovered ground now
+fires ONE run (one `cover`, one engine pass, no "leaving frontier root(s) to the walk already covering them") and the
+dialog renders `2 of 2 results`, where before it rendered none. Two MCP searches fired 150 ms apart over the same
+4,081-folder unwalked tree both come back with the same rows: one walks, the other waits for it and answers from the
+index — before the fix the second returned "No files found" under the still-covering note.
 
 **When this lands**: the ~120 MB dev data dir at `~/Library/Application Support/com.veszelovszki.cmdr-dev-unindexsearch`
 holds a walk-built index from M10's live verification, and drive indexing is back ON there, so it re-scans on its own.

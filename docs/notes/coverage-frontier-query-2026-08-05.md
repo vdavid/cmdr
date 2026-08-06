@@ -29,8 +29,8 @@ before anything was built on top of it, so a later regression has a number to co
 | release | 19.1 ms                    | **5.43 ms**          | 5.24 – 5.56 ms   |
 | debug   | (not separately taken)     | 16.78 ms             | 16.59 – 17.06 ms |
 
-Frontier: **373 directories**. Unreadable: 0 (at the time of this measurement nothing stamped the marker yet; the
-cover walk does now).
+Frontier: **373 directories**. Unreadable: 0 (at the time of this measurement nothing stamped the marker yet; the cover
+walk does now).
 
 ## Why it's fast, and what it actually scales with
 

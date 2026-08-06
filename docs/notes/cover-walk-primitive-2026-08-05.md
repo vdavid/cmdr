@@ -1,9 +1,9 @@
 # Which primitive covers a search frontier, 2026-08-05
 
-The cover-walk work in `docs/specs/unindexed-search-plan.md` had one real decision in it: whether a search-driven walk over a coverage
-frontier should run on the **parallel guarded walker** (`scanner::scan_subtree`) or the **serial reconcile**
-(`reconcile::reconcile_subtree`). The plan said to decide it by measurement on a representative frontier rather than by
-either of the two published full-volume numbers. This is that measurement.
+The cover-walk work in `docs/specs/unindexed-search-plan.md` had one real decision in it: whether a search-driven walk
+over a coverage frontier should run on the **parallel guarded walker** (`scanner::scan_subtree`) or the **serial
+reconcile** (`reconcile::reconcile_subtree`). The plan said to decide it by measurement on a representative frontier
+rather than by either of the two published full-volume numbers. This is that measurement.
 
 **Answer: the parallel walker, at every size, with no row shortfall.** It is 3.2–5.8x faster and wrote exactly the same
 number of rows as the serial reconcile on all four trees.
@@ -82,8 +82,8 @@ window. Same tree: **3.92 ms**. Pinned by
 - **If the serial reconcile stops being the repair path.** It is still used, for a frontier node the index already holds
   rows under, where the parallel walker's fresh ids would collide (`lifecycle/cover.rs`). If that case is ever closed
   another way, the serial path leaves the cover story entirely.
-- **On network volumes.** Neither number here transfers: SMB and MTP walk over the `Volume` trait, where the wire
-  is the bottleneck, and the parallelism question is a different one.
+- **On network volumes.** Neither number here transfers: SMB and MTP walk over the `Volume` trait, where the wire is the
+  bottleneck, and the parallelism question is a different one.
 
 ## What the volume-boundary probe costs (added 2026-08-05)
 
