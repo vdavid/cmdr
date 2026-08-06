@@ -119,6 +119,17 @@ pub struct SearchRunCoverage {
     pub capped: bool,
     /// The ONE volume this run covered, as routing resolved it.
     pub target_volume_id: String,
+    /// How many matches an exclusion rule kept out of the count: the
+    /// system/build/cache tier (on unless the query turns it off) plus any `!`
+    /// excludes in the scope.
+    ///
+    /// Coverage, not a statistic: the defaults are right for "find my invoice"
+    /// and exactly wrong for "where is my disk space going", where the caches ARE
+    /// the answer. A caller that can't see this number reads a filtered count as
+    /// the whole truth. Counted across BOTH halves — the arena scan and the walk
+    /// — so a live run doesn't under-report it.
+    #[serde(default)]
+    pub hidden_by_excludes: u32,
 }
 
 /// A batch of results, plus where the run has got to.

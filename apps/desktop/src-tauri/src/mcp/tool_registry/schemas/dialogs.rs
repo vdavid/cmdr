@@ -76,7 +76,7 @@ pub fn open_search_dialog_schema() -> Value {
             },
             "excludeSystemDirs": {
                 "type": "boolean",
-                "description": "Exclude system/build/cache folders (node_modules, .git, Caches, etc.)"
+                "description": "Exclude system/build/cache folders (node_modules, .git, Caches, etc.). Defaults on; turn it off for disk-space questions, where those folders are usually the answer."
             },
             "autoRun": {
                 "type": "boolean",

@@ -618,7 +618,15 @@ mod tests {
         };
         let children: Vec<ChildEntry> = (0..20_000).map(child).collect();
         let page = sort_and_page(children, &opts);
-        let result = build_list_dir("/downloads", Some(page), None, true, Some(Freshness::Fresh), no_space(), &opts);
+        let result = build_list_dir(
+            "/downloads",
+            Some(page),
+            None,
+            true,
+            Some(Freshness::Fresh),
+            no_space(),
+            &opts,
+        );
 
         let rows = result.children.as_ref().expect("an indexed listing");
         assert_eq!(result.total, Some(20_000), "the honest denominator survives");
@@ -636,7 +644,15 @@ mod tests {
     fn a_normal_folder_listing_is_returned_whole() {
         let opts = ListOptions::default();
         let page = sort_and_page((0..30).map(child).collect(), &opts);
-        let result = build_list_dir("/photos", Some(page), None, true, Some(Freshness::Fresh), no_space(), &opts);
+        let result = build_list_dir(
+            "/photos",
+            Some(page),
+            None,
+            true,
+            Some(Freshness::Fresh),
+            no_space(),
+            &opts,
+        );
         assert_eq!(result.total, Some(30));
         assert_eq!(result.returned, Some(30));
         assert!(!result.truncated);
@@ -646,7 +662,15 @@ mod tests {
     fn unindexed_volume_returns_typed_no_index_not_a_wrong_zero() {
         // children None + not enabled ⇒ "off" + a "not indexed" note, never an
         // empty-but-authoritative listing.
-        let result = build_list_dir("/nas/share", None, None, false, None, no_space(), &ListOptions::default());
+        let result = build_list_dir(
+            "/nas/share",
+            None,
+            None,
+            false,
+            None,
+            no_space(),
+            &ListOptions::default(),
+        );
         assert_eq!(result.coverage.index_status, "off");
         assert!(!result.coverage.authoritative);
         assert!(result.coverage.note.as_deref().unwrap().contains("isn't indexed"));

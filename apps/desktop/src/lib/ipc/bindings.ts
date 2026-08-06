@@ -7733,6 +7733,18 @@ export type SearchResult = {
    *  pure-engine wrapper).
    */
   targetVolumeId?: string
+  /**
+   *  How many matches an exclusion rule kept out of `total_count`: the
+   *  system/build/cache tier (on unless `exclude_system_dirs: Some(false)`) plus
+   *  any `!` excludes in the scope.
+   *
+   *  Typed, and reported rather than swallowed. The default exclusions are right
+   *  for "find my invoice" and exactly wrong for "where is my disk space going",
+   *  where the caches ARE the answer — so a caller that doesn't know it's seeing
+   *  a filtered count would state a wrong conclusion confidently. Zero when
+   *  nothing was hidden.
+   */
+  hiddenByExcludes?: number
 }
 
 export type SearchResultEntry = {
@@ -7814,6 +7826,18 @@ export type SearchRunCoverage = {
   capped: boolean
   // The ONE volume this run covered, as routing resolved it.
   targetVolumeId: string
+  /**
+   *  How many matches an exclusion rule kept out of the count: the
+   *  system/build/cache tier (on unless the query turns it off) plus any `!`
+   *  excludes in the scope.
+   *
+   *  Coverage, not a statistic: the defaults are right for "find my invoice"
+   *  and exactly wrong for "where is my disk space going", where the caches ARE
+   *  the answer. A caller that can't see this number reads a filtered count as
+   *  the whole truth. Counted across BOTH halves — the arena scan and the walk
+   *  — so a live run doesn't under-report it.
+   */
+  hiddenByExcludes?: number
 }
 
 /**

@@ -82,6 +82,17 @@ pub struct SearchResult {
     /// pure-engine wrapper).
     #[serde(default)]
     pub target_volume_id: String,
+    /// How many matches an exclusion rule kept out of `total_count`: the
+    /// system/build/cache tier (on unless `exclude_system_dirs: Some(false)`) plus
+    /// any `!` excludes in the scope.
+    ///
+    /// Typed, and reported rather than swallowed. The default exclusions are right
+    /// for "find my invoice" and exactly wrong for "where is my disk space going",
+    /// where the caches ARE the answer — so a caller that doesn't know it's seeing
+    /// a filtered count would state a wrong conclusion confidently. Zero when
+    /// nothing was hidden.
+    #[serde(default)]
+    pub hidden_by_excludes: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
@@ -161,6 +172,7 @@ mod tests {
             uncovered_scopes: Vec::new(),
             unresolved_scopes: Vec::new(),
             target_volume_id: "root".to_string(),
+            hidden_by_excludes: 0,
         };
         let json = serde_json::to_string(&result).unwrap();
         assert!(json.contains("totalCount"));

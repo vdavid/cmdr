@@ -193,8 +193,9 @@ fn measure(label: &str, index: &SearchIndex, weights: &ImportanceWeights, patter
     let empty = ImportanceWeights::empty();
 
     let t = Instant::now();
-    let (_, total) = search_ranked(index, &query(pattern, pattern_type.clone(), true), &empty, "")
-        .expect("count-only search should succeed");
+    let total = search_ranked(index, &query(pattern, pattern_type.clone(), true), &empty, "")
+        .expect("count-only search should succeed")
+        .total_count;
     let scan = t.elapsed();
 
     let t = Instant::now();

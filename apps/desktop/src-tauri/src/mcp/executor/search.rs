@@ -136,7 +136,7 @@ pub fn format_search_results(rows: &[SearchResultEntry], total_count: u32, limit
 /// rendered that the dialog didn't, and the reason an agent can't read an empty
 /// list as "there's nothing there": each line says which ground the answer
 /// doesn't speak for, and what would open it.
-fn coverage_note(answer: &LiveAnswer) -> Option<String> {
+fn coverage_note(answer: &LiveAnswer, system_dirs_excluded: bool) -> Option<String> {
     let mut notes = Vec::new();
 
     if let AnswerEnding::Settled(coverage) = &answer.ending {
@@ -160,6 +160,29 @@ fn coverage_note(answer: &LiveAnswer) -> Option<String> {
                 "Note: another search is already walking {}, so this run left it alone. Those results land in the index; run this search again to pick them up.",
                 coverage.still_covering.join(", ")
             ));
+        }
+        if coverage.hidden_by_excludes > 0 {
+            // The count is filtered and nothing else on the wire says so. It's the
+            // difference between "27 files match" and "27, plus 400 inside caches" —
+            // and for a disk-space question the hidden ones ARE usually the answer.
+            // The advice only fits while the default tier is still on: with it
+            // already off, everything hidden came from the caller's own `!` excludes.
+            let (matches, are) = if coverage.hidden_by_excludes == 1 {
+                ("match", "is")
+            } else {
+                ("matches", "are")
+            };
+            notes.push(if system_dirs_excluded {
+                format!(
+                    "Note: {} more {} {} inside excluded folders and NOT in the count above: the system, cache, and build tier (node_modules, .git, Caches, …) that's hidden by default, plus any ! excludes in the scope. Pass excludeSystemDirs: false to include the default tier — do that when you're asking where disk space is going, because those folders are usually the answer.",
+                    coverage.hidden_by_excludes, matches, are
+                )
+            } else {
+                format!(
+                    "Note: {} more {} {} inside the ! excludes in the scope, and NOT in the count above.",
+                    coverage.hidden_by_excludes, matches, are
+                )
+            });
         }
         if coverage.abandoned_ground {
             notes.push(
@@ -353,7 +376,7 @@ pub async fn execute_search(params: &Value) -> ToolResult {
     } else {
         format_search_results(&answer.entries, answer.match_count, limit)
     };
-    let output = match coverage_note(&answer) {
+    let output = match coverage_note(&answer, exclude_system_dirs != Some(false)) {
         Some(note) => format!("{note}\n\n{body}"),
         None => body,
     };
@@ -528,7 +551,9 @@ pub async fn execute_ai_search(params: &Value) -> ToolResult {
         .as_deref()
         .map(|c| format!("Note: {c}\n"))
         .unwrap_or_default();
-    let coverage_line = coverage_note(&answer).map(|n| format!("{n}\n")).unwrap_or_default();
+    let coverage_line = coverage_note(&answer, translate_result.query.exclude_system_dirs != Some(false))
+        .map(|n| format!("{n}\n"))
+        .unwrap_or_default();
     let output = format!(
         "{} hits\n\nInterpreted query: {interpreted}\n{caveat_line}{coverage_line}\n{formatted}",
         answer.match_count
@@ -559,6 +584,7 @@ mod tests {
             abandoned_ground: false,
             capped: false,
             target_volume_id: volume.to_string(),
+            hidden_by_excludes: 0,
         }
     }
 
@@ -578,7 +604,40 @@ mod tests {
         // answer has none, and a line per search would train an agent to skip
         // them all.
         let settled = answer(AnswerEnding::Settled(Box::new(covered("naspi"))), 0);
-        assert_eq!(coverage_note(&settled), None);
+        assert_eq!(coverage_note(&settled, true), None);
+    }
+
+    #[test]
+    fn matches_hidden_by_the_default_exclusions_are_never_silent() {
+        // The failure this prevents: "27 files match" over a machine where 400 more
+        // sit in node_modules and Caches. Silently filtering a COUNT is how an agent
+        // states a wrong conclusion confidently, and a disk-space question is
+        // answered mostly by the folders the defaults hide.
+        let coverage = SearchRunCoverage {
+            hidden_by_excludes: 400,
+            ..covered("root")
+        };
+        let note = coverage_note(&answer(AnswerEnding::Settled(Box::new(coverage)), 0), true)
+            .expect("a filtered count always says so");
+        assert!(note.contains("400"), "{note}");
+        assert!(
+            note.contains("excludeSystemDirs"),
+            "the way to see them is named: {note}"
+        );
+    }
+
+    #[test]
+    fn with_the_default_tier_already_off_the_note_stops_advising_it() {
+        // Everything hidden then came from the caller's own `!` excludes, and
+        // telling them to pass a flag they already passed is noise.
+        let coverage = SearchRunCoverage {
+            hidden_by_excludes: 3,
+            ..covered("root")
+        };
+        let note = coverage_note(&answer(AnswerEnding::Settled(Box::new(coverage)), 0), false)
+            .expect("hidden matches are still reported");
+        assert!(note.contains('3'), "{note}");
+        assert!(!note.contains("excludeSystemDirs"), "{note}");
     }
 
     #[test]
@@ -594,7 +653,7 @@ mod tests {
             declined: vec!["/Volumes/naspi/@eaDir".to_string()],
             ..covered("naspi")
         };
-        let note = coverage_note(&answer(AnswerEnding::Settled(Box::new(coverage)), 12))
+        let note = coverage_note(&answer(AnswerEnding::Settled(Box::new(coverage)), 12), true)
             .expect("unreadable ground is always reported");
         assert!(note.contains("/Users/dave/Documents"), "{note}");
         assert!(note.contains("/Volumes/naspi/@eaDir"), "{note}");
@@ -622,7 +681,8 @@ mod tests {
     fn a_walk_still_running_says_so_and_says_what_to_do_about_it() {
         // The one thing an agent must not do with a partial answer is read it as
         // complete. It names the drive, the work so far, and the two ways on.
-        let note = coverage_note(&answer(AnswerEnding::StillWalking, 480)).expect("a partial answer always says so");
+        let note =
+            coverage_note(&answer(AnswerEnding::StillWalking, 480), true).expect("a partial answer always says so");
         assert!(note.contains("still walking"), "{note}");
         assert!(note.contains("naspi") && note.contains("480"), "{note}");
         assert!(note.contains("again") && note.contains("maxWaitSeconds"), "{note}");
@@ -636,7 +696,7 @@ mod tests {
             ..covered("naspi")
         };
         let note =
-            coverage_note(&answer(AnswerEnding::Settled(Box::new(coverage)), 3)).expect("a short answer says so");
+            coverage_note(&answer(AnswerEnding::Settled(Box::new(coverage)), 3), true).expect("a short answer says so");
         assert!(note.contains("lower bound"), "{note}");
     }
 

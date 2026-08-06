@@ -46,7 +46,7 @@ pub fn search_schema() -> Value {
             },
             "excludeSystemDirs": {
                 "type": "boolean",
-                "description": "Exclude system/build/cache folders (node_modules, .git, Caches, etc). Default: true"
+                "description": "Exclude system/build/cache folders (node_modules, .git, Caches, etc). Default: true. Turn it OFF for disk-space questions: those folders are usually where the space went. The result says how many matches this hid."
             },
             "countOnly": {
                 "type": "boolean",

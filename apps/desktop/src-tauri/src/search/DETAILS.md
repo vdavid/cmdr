@@ -200,6 +200,31 @@ field:
   there is a root the walk declines. No filesystem probe inside routing, which would be a network-hang hazard on a
   scope pointing at a dead mount.
 
+### Honesty: `hidden_by_excludes`
+
+The third typed honesty field, and the only one that fires on a search that worked perfectly. It counts matches an
+exclusion rule kept out of `total_count`: the system/build/cache tier (`SYSTEM_DIR_EXCLUDES`, on unless the query sets
+`exclude_system_dirs: Some(false)`) plus any `!` excludes in the scope.
+
+**Why a filtered count needs to say so.** The defaults are right for "find my invoice" and exactly wrong for "where is
+my disk space going", where `node_modules`, `Caches`, and `.git` ARE the answer. A caller that can't see the number
+reads "27 files match" as the whole truth and states a wrong conclusion confidently; with it, MCP renders "27, plus 400
+more inside system, cache, and build folders" and names the flag that reveals them
+(`mcp/executor/search.rs::coverage_note`).
+
+Counted across BOTH halves of a live run, or it would under-report the very case the walk exists for: the arena scan
+counts in `engine::search_ranked` (via `ScopeVerdict::Excluded`) and rides back on `engine::Ranked`; the walk counts in
+`WalkJudge::consume` via `ResultStream::note_excluded`. `ResultStream::finish` stamps the merged total onto
+`SearchRunCoverage`, the one place that has seen both.
+
+**A match outside the include roots is NOT counted.** Scope is the question, not a filter over the answer — the user
+asked about somewhere else, so those aren't results they could reveal by flipping a flag. That's why
+`ScopeFilter::verdict` is three-way (`Inside` / `Excluded` / `OutsideRoots`) rather than a bool.
+
+The counter is a relaxed `AtomicU32` rather than a rayon fold, because `filter().collect()` on an indexed parallel
+iterator preserves arena order and the ranking's tie-break rides on it; a fold/reduce would make equal-ranked results
+non-deterministic to save an increment that only fires on an excluded match.
+
 `target_volume_id` rides alongside: the ONE volume routing picked. The dialog acts on it rather than re-deriving a
 volume from the scope path, which would fork routing (an SMB id keys on the ADDRESS; cloud drives route to `root`) and
 could offer to index the wrong drive when the user typed a scope on another one.

@@ -102,7 +102,7 @@ fn plain_query(stem: &str) -> SearchQuery {
 fn ranked(index: &SearchIndex, query: &SearchQuery, prefix: &str) -> Vec<SearchResultEntry> {
     engine::search_ranked(index, query, &ImportanceWeights::empty(), prefix)
         .expect("search_ranked")
-        .0
+        .entries
 }
 
 /// A hand-built directory result, for the size post-filter (the engine never
@@ -244,7 +244,11 @@ fn count_only_returns_an_exact_total_and_no_rows() {
     let mut query = plain_query("report");
     query.count_only = true;
 
-    let (ranked, vtotal) = engine::search_ranked(&vol, &query, &ImportanceWeights::empty(), "").expect("search_ranked");
+    let engine::Ranked {
+        entries: ranked,
+        total_count: vtotal,
+        ..
+    } = engine::search_ranked(&vol, &query, &ImportanceWeights::empty(), "").expect("search_ranked");
     assert!(
         ranked.is_empty(),
         "count-only returns no rows without a directory size filter"

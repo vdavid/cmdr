@@ -146,6 +146,7 @@ pub(crate) fn run_blocking(query: SearchQuery) -> Result<SearchResult, String> {
         uncovered_scopes: Vec::new(),
         unresolved_scopes: half.unresolved_scopes,
         target_volume_id: target.volume_id,
+        hidden_by_excludes: half.hidden_by_excludes,
     })
 }
 
@@ -158,6 +159,8 @@ struct CoveredHalf {
     entries: Vec<SearchResultEntry>,
     total: u32,
     unresolved_scopes: Vec<String>,
+    /// Matches the exclusion rules kept out of `total` (`engine::Ranked`).
+    hidden_by_excludes: u32,
 }
 
 /// Run the engine over `loaded` and finish the result: resolve the scope to entry
@@ -191,7 +194,11 @@ fn search_covered_half(
 
     let weights = volumes::weights_for(&target.volume_id);
     let prefix = loaded.mount_root.as_deref().unwrap_or("");
-    let (mut entries, mut total) = engine::search_ranked(&loaded.index, &vq, &weights, prefix)?;
+    let engine::Ranked {
+        mut entries,
+        total_count: mut total,
+        hidden_by_excludes,
+    } = engine::search_ranked(&loaded.index, &vq, &weights, prefix)?;
 
     if query.count_only {
         // Count-only: an exact total, no rows. `entries` holds the matching directories
@@ -218,6 +225,7 @@ fn search_covered_half(
         entries,
         total,
         unresolved_scopes,
+        hidden_by_excludes,
     })
 }
 
@@ -407,7 +415,7 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
     let mut unresolved_scopes = Vec::new();
     if let Some(half) = half {
         unresolved_scopes = half.unresolved_scopes;
-        stream.add_indexed(half.entries, half.total);
+        stream.add_indexed(half.entries, half.total, half.hidden_by_excludes);
     }
 
     // 6. The rest, walked live.
@@ -443,6 +451,9 @@ fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &d
         abandoned_ground,
         capped,
         target_volume_id: target.volume_id.clone(),
+        // Stamped by the stream on the way out (`ResultStream::finish`), which is
+        // the only place that has seen BOTH halves' exclusion drops.
+        hidden_by_excludes: 0,
     };
 
     // Nothing left to walk, or nobody left waiting for it, or nothing to walk it
@@ -791,6 +802,7 @@ fn uncovered_result(target: Target) -> SearchResult {
         },
         unresolved_scopes: Vec::new(),
         target_volume_id: target.volume_id,
+        hidden_by_excludes: 0,
     }
 }
 

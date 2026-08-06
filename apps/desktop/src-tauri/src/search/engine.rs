@@ -46,7 +46,13 @@ impl ScopeFilter {
 
     /// Check if an entry at `entry_idx` passes the scope filter by walking
     /// the ancestor chain in the in-memory index.
-    fn matches(&self, index: &SearchIndex, entry_idx: usize) -> bool {
+    ///
+    /// Three-way, not a bool: an entry the EXCLUDES dropped is a match the user
+    /// would have seen with different settings, and saying how many were dropped
+    /// is the difference between "no results" and "27 results, 400 more inside
+    /// caches". An entry outside the include roots was never in scope and is not
+    /// worth counting.
+    fn verdict(&self, index: &SearchIndex, entry_idx: usize) -> ScopeVerdict {
         let entry = &index.entries[entry_idx];
 
         // Include check: walk ancestors and check if any is in include_ids
@@ -67,7 +73,7 @@ impl ScopeFilter {
                 }
             }
             if !found {
-                return false;
+                return ScopeVerdict::OutsideRoots;
             }
         }
 
@@ -78,7 +84,7 @@ impl ScopeFilter {
             // index stores mount-relative paths.
             let path = apply_path_prefix(&self.path_prefix, &reconstruct_path_from_index(index, entry.id));
             if self.excludes.excludes_path(&path) {
-                return false;
+                return ScopeVerdict::Excluded;
             }
         }
 
@@ -93,7 +99,7 @@ impl ScopeFilter {
                     Some(&idx) => {
                         let ancestor = &index.entries[idx];
                         if ancestor.is_directory && self.excludes.excludes_dir_name(index.name(ancestor)) {
-                            return false;
+                            return ScopeVerdict::Excluded;
                         }
                         current_id = ancestor.parent_id;
                     }
@@ -102,8 +108,21 @@ impl ScopeFilter {
             }
         }
 
-        true
+        ScopeVerdict::Inside
     }
+}
+
+/// Why the scope filter kept or dropped an entry that already matched the query.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ScopeVerdict {
+    /// In scope, not excluded: a result.
+    Inside,
+    /// An exclusion rule dropped it — the system/cache tier, or a `!` exclude in
+    /// the scope. Counted, because the user can turn the first one off.
+    Excluded,
+    /// Outside the include roots. The user asked about somewhere else, so this
+    /// isn't a hidden result.
+    OutsideRoots,
 }
 
 /// Pre-resolve scope filter data from the query.
@@ -149,14 +168,29 @@ pub(crate) fn search(
     query: &SearchQuery,
     weights: &ImportanceWeights,
 ) -> Result<super::types::SearchResult, String> {
-    let (entries, total_count) = search_ranked(index, query, weights, "")?;
+    let ranked = search_ranked(index, query, weights, "")?;
     Ok(super::types::SearchResult {
-        entries,
-        total_count,
+        entries: ranked.entries,
+        total_count: ranked.total_count,
         uncovered_scopes: Vec::new(),
         unresolved_scopes: Vec::new(),
         target_volume_id: String::new(),
+        hidden_by_excludes: ranked.hidden_by_excludes,
     })
+}
+
+/// What one volume's scan produced: the ranked rows, how many matched, and how
+/// many matches an exclusion rule kept out of that count.
+pub(crate) struct Ranked {
+    /// The ranked rows, already truncated to the query's effective limit.
+    pub(crate) entries: Vec<SearchResultEntry>,
+    /// Every entry that matched and survived the filters.
+    pub(crate) total_count: u32,
+    /// Matches an exclusion rule dropped: the system/build/cache tier (on unless
+    /// the query turns it off) plus any `!` excludes in the scope. Reported rather
+    /// than swallowed — a disk-usage question asked with the default exclusions is
+    /// answered mostly by the folders they hide.
+    pub(crate) hidden_by_excludes: u32,
 }
 
 /// Execute a search against ONE volume's index and return the ranked, path-built
@@ -174,7 +208,7 @@ pub(crate) fn search_ranked(
     query: &SearchQuery,
     weights: &ImportanceWeights,
     path_prefix: &str,
-) -> Result<(Vec<SearchResultEntry>, u32), String> {
+) -> Result<Ranked, String> {
     let t = std::time::Instant::now();
 
     // The per-entry predicates, plus the broad-query guard this arena's size earns.
@@ -189,6 +223,13 @@ pub(crate) fn search_ranked(
 
     // Pre-resolve scope filter
     let scope_filter = prepare_scope_filter(query, case_insensitive, path_prefix);
+
+    // How many query-matching entries an exclusion rule dropped. Counted with a
+    // relaxed atomic rather than a fold, because `filter().collect()` on an
+    // indexed parallel iterator preserves arena order and the ranking's tie-break
+    // rides on it; a fold/reduce would silently make equal-ranked results
+    // non-deterministic. The increment only fires on an excluded match.
+    let hidden_by_excludes = std::sync::atomic::AtomicU32::new(0);
 
     // Parallel scan: collect matching indices
     let matching_indices: Vec<usize> = index
@@ -211,8 +252,15 @@ pub(crate) fn search_ranked(
             }
 
             // Scope filter (ancestor walk): only for entries passing all other filters
-            if scope_filter.is_active() && !scope_filter.matches(index, *i) {
-                return false;
+            if scope_filter.is_active() {
+                match scope_filter.verdict(index, *i) {
+                    ScopeVerdict::Inside => {}
+                    ScopeVerdict::Excluded => {
+                        hidden_by_excludes.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        return false;
+                    }
+                    ScopeVerdict::OutsideRoots => return false,
+                }
             }
 
             true
@@ -221,6 +269,7 @@ pub(crate) fn search_ranked(
         .collect();
 
     let total_count = matching_indices.len() as u32;
+    let hidden_by_excludes = hidden_by_excludes.into_inner();
 
     let has_size_filter = query.min_size.is_some() || query.max_size.is_some();
     let dirs_included = query.is_directory != Some(false);
@@ -264,7 +313,11 @@ pub(crate) fn search_ranked(
             total_count,
             t.elapsed()
         );
-        return Ok((entries, total_count));
+        return Ok(Ranked {
+            entries,
+            total_count,
+            hidden_by_excludes,
+        });
     }
 
     // Keep only `limit` entries. When size filters are active and directories are
@@ -299,7 +352,11 @@ pub(crate) fn search_ranked(
         entries.len(),
         t.elapsed()
     );
-    Ok((entries, total_count))
+    Ok(Ranked {
+        entries,
+        total_count,
+        hidden_by_excludes,
+    })
 }
 
 /// Prepend a volume's mount-root prefix to an index-reconstructed path.

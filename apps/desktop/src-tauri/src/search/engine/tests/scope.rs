@@ -177,6 +177,61 @@ fn search_with_exclude_pattern() {
 }
 
 #[test]
+fn an_excluded_match_is_counted_not_just_dropped() {
+    // The failure this prevents: a filtered count presented as the whole truth.
+    // `pkg.json` matched the query and only the exclusion kept it out, so the
+    // answer owes the caller that number — MCP turns it into "N more inside
+    // system, cache, and build folders". A match that was never in scope is NOT
+    // counted here (see the include-roots case below).
+    let index = make_scope_test_index();
+    let query = SearchQuery {
+        name_pattern: None,
+        pattern_type: PatternType::Glob,
+        min_size: None,
+        max_size: None,
+        modified_after: None,
+        modified_before: None,
+        is_directory: Some(false),
+        include_paths: None,
+        exclude_dir_names: Some(vec!["node_modules".to_string()]),
+        include_path_ids: None,
+        count_only: false,
+        limit: 30,
+        case_sensitive: None,
+        exclude_system_dirs: Some(false),
+    };
+    let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
+    assert_eq!(result.total_count, 2, "the excluded row stays out of the results");
+    assert_eq!(result.hidden_by_excludes, 1, "and is reported rather than swallowed");
+}
+
+#[test]
+fn a_match_outside_the_include_roots_is_not_counted_as_hidden() {
+    // Scope is the question, not a filter over the answer: the user asked about
+    // `projects`, so files elsewhere aren't "hidden matches" they could reveal by
+    // flipping a flag. Only exclusions are.
+    let index = make_scope_test_index();
+    let query = SearchQuery {
+        name_pattern: None,
+        pattern_type: PatternType::Glob,
+        min_size: None,
+        max_size: None,
+        modified_after: None,
+        modified_before: None,
+        is_directory: Some(false),
+        include_paths: Some(vec!["/Users/alice/projects".to_string()]),
+        exclude_dir_names: None,
+        include_path_ids: Some(vec![4]),
+        count_only: false,
+        limit: 30,
+        case_sensitive: None,
+        exclude_system_dirs: Some(false),
+    };
+    let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
+    assert_eq!(result.hidden_by_excludes, 0);
+}
+
+#[test]
 fn search_with_include_and_exclude() {
     let index = make_scope_test_index();
     let query = SearchQuery {

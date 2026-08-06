@@ -239,6 +239,11 @@ pub(crate) struct ResultStream<'a> {
     /// keeps the two halves apart — the tree partition is.
     seen: HashSet<u64>,
     dirs_found: u64,
+    /// Matches an exclusion rule dropped, across BOTH halves: the arena scan's
+    /// count arrives with the covered half, the walk's is counted here as batches
+    /// are judged. Stamped onto the coverage in [`finish`](Self::finish), the one
+    /// place that has seen both.
+    hidden_by_excludes: u32,
     current_path: Option<String>,
     last_emit: Instant,
 }
@@ -256,6 +261,7 @@ impl<'a> ResultStream<'a> {
             match_count: 0,
             seen: HashSet::with_capacity(limit.min(BATCH_ROWS)),
             dirs_found: 0,
+            hidden_by_excludes: 0,
             current_path: None,
             last_emit: Instant::now(),
         }
@@ -278,9 +284,11 @@ impl<'a> ResultStream<'a> {
         self.emit(phase, Vec::new());
     }
 
-    /// Take the covered half: the engine's ranked rows and its exact total.
-    pub(crate) fn add_indexed(&mut self, entries: Vec<SearchResultEntry>, total: u32) {
+    /// Take the covered half: the engine's ranked rows, its exact total, and how
+    /// many matches its exclusion rules dropped.
+    pub(crate) fn add_indexed(&mut self, entries: Vec<SearchResultEntry>, total: u32, hidden_by_excludes: u32) {
         self.match_count = total;
+        self.hidden_by_excludes = self.hidden_by_excludes.saturating_add(hidden_by_excludes);
         for entry in entries {
             self.seen.insert(hash_path(&entry.path));
             if self.emitted < self.limit {
@@ -292,6 +300,12 @@ impl<'a> ResultStream<'a> {
             }
         }
         self.flush(SearchPhase::ReadingIndex);
+    }
+
+    /// Note one walked match an exclusion rule dropped, so the walked half of a
+    /// live run reports its hidden matches the way the arena half does.
+    pub(crate) fn note_excluded(&mut self) {
+        self.hidden_by_excludes = self.hidden_by_excludes.saturating_add(1);
     }
 
     /// Take one match the walk found. Counted always; shown while there's room.
@@ -378,6 +392,7 @@ impl<'a> ResultStream<'a> {
         if self.run.is_cancelled() {
             coverage.walk = WalkEnding::Cancelled;
         }
+        coverage.hidden_by_excludes = self.hidden_by_excludes;
         self.flush(match coverage.walk {
             WalkEnding::NothingToWalk => SearchPhase::ReadingIndex,
             _ => SearchPhase::Walking,
@@ -453,6 +468,7 @@ impl WalkJudge<'_> {
             }
             let path = entry.path.to_string_lossy();
             if self.excludes.excludes_walked(&path, self.volume_root) {
+                stream.note_excluded();
                 continue;
             }
             stream.add_walked(live_result_entry(&entry, &path, self.home_dir));
