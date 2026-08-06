@@ -98,8 +98,8 @@ frontier is cut inside whoever's scope asked for the walk, so anything above the
 
 ## Where a cover test goes
 
-Four test files, split by the harness a test needs rather than by what it asserts; a test that reaches for the wrong
-one pays for a whole fixture it doesn't use.
+Four test files, split by the harness a test needs rather than by what it asserts; a test that reaches for the wrong one
+pays for a whole fixture it doesn't use.
 
 - `tests.rs` — the temp-tree `Fixture`: an index that already exists, over a real directory the LOCAL walker reads off
   the disk. Frontier materialization, the non-virgin repair, claims, and cancellation live here.

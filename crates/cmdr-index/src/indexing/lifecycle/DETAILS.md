@@ -11,14 +11,14 @@ concurrently without corrupting each other. Every invariant below holds independ
 - **state.rs** (+ the `state/` submodules) — the lifecycle/registry CORE: the `IndexPhase` enum, the per-volume
   `INDEX_REGISTRY` (`Mutex<HashMap<VolumeId, IndexInstance>>`), and the thin registry helpers that hand a `Running`
   manager's writer, cover context, or branch-coverage calls out. Everything that ACTS on the registry sits one file
-  down, one job each, and `state.rs` re-exports all of it, so `state::<anything>` remains the only path any caller
-  uses (`state/` is private):
+  down, one job each, and `state.rs` re-exports all of it, so `state::<anything>` remains the only path any caller uses
+  (`state/` is private):
   - `auto_start.rs` — the two pure launch-policy predicates (settings, plus the FDA gate).
   - `reservation.rs` — `try_reserve_initializing_phase` (the lock-first `(absent) -> Initializing` check-and-set that
     carries the one-writer-per-DB contract), `is_initializing_phase`, and the test-only reservation helper.
   - `startup.rs` — `start_indexing_for`, the choke point every transport funnels through, plus `Activation`,
-    `start_indexing`, and the three per-transport `*_inner` entry points. `walk_database.rs` holds the two things only
-    a `WriterOnly` start does: evict an index whose coverage this build refuses, and stamp/seed the empty one that
+    `start_indexing`, and the three per-transport `*_inner` entry points. `walk_database.rs` holds the two things only a
+    `WriterOnly` start does: evict an index whose coverage this build refuses, and stamp/seed the empty one that
     replaces it.
   - `teardown.rs` — `stop_indexing`, `clear_index`, `clear_every_index`, `reset_to_not_indexed`,
     `disable_drive_index_persist_intent`, `remove_instance_and_handles`, and `stop_all_indexing`, all sharing the
@@ -32,14 +32,15 @@ concurrently without corrupting each other. Every invariant below holds independ
     `failure.rs`).
   - `tests.rs` — the registry-level lifecycle tests.
 
-  A volume's IDENTITY (`VolumeId`, `ROOT_VOLUME_ID`, `IndexVolumeKind`) is
-  deliberately NOT here: it's the leaf `../volume.rs`, so path routing, the transports, and the bus can name a volume
-  without importing the registry. Nothing below `lifecycle` imports `lifecycle::state` — a volume's read handles and its
-  stop token are pushed DOWN to the code that needs them (both sections below), which is what keeps that statable.
-  Public lifecycle API (all take a `volume_id`): `start_indexing()` → `start_indexing_for(app, "root", "/")`,
-  `stop_indexing`, `clear_index`, `force_scan`, `stop_scan`, `is_active`, `trigger_verification`, plus `init()`,
-  `should_auto_start_indexing()`, and `stop_all_indexing` (the memory watchdog's target). The path→volume routing and
-  the read-only query surface moved OUT to `../paths` and `../read`.
+  A volume's IDENTITY (`VolumeId`, `ROOT_VOLUME_ID`, `IndexVolumeKind`) is deliberately NOT here: it's the leaf
+  `../volume.rs`, so path routing, the transports, and the bus can name a volume without importing the registry. Nothing
+  below `lifecycle` imports `lifecycle::state` — a volume's read handles and its stop token are pushed DOWN to the code
+  that needs them (both sections below), which is what keeps that statable. Public lifecycle API (all take a
+  `volume_id`): `start_indexing()` → `start_indexing_for(app, "root", "/")`, `stop_indexing`, `clear_index`,
+  `force_scan`, `stop_scan`, `is_active`, `trigger_verification`, plus `init()`, `should_auto_start_indexing()`, and
+  `stop_all_indexing` (the memory watchdog's target). The path→volume routing and the read-only query surface moved OUT
+  to `../paths` and `../read`.
+
 - **manager.rs** — `IndexManager`, the central per-volume coordinator, plus the LOCAL scan path and the shared dispatch.
   Owns the SQLite store (reads), the writer thread (writes), the scanner handle, and the FSEvents watcher.
   `resume_or_scan` / `force_rescan` dispatch by TYPED `IndexVolumeKind`: a trait-scanned (SMB/MTP) volume routes to
@@ -65,12 +66,12 @@ concurrently without corrupting each other. Every invariant below holds independ
 - **cover.rs** (+ `cover/bootstrap.rs`, `cover/live.rs`, and four test files split by harness: `cover/tests.rs` over a
   temp tree with an index, `cover/cold_drive_tests.rs` over a drive with none through the public handle,
   `cover/network_tests.rs` over the `Volume` trait, `cover/bench.rs` for the `#[ignore]`d primitive measurement) — the
-  SEARCH-driven
-  walk, the write half of the coverage concept whose read half is `../read/coverage.rs`. `Index::cover` resolves a
-  `CoverContext` (the volume, its writer, its path space, its kind) here, spawns one Utility-QoS thread, and walks each
-  frontier root the coverage answer named — through the local guarded walker or the volume's own `Volume`, whichever the
-  kind calls for (`Ground`). `bootstrap` is everything that has to exist first: an index on a volume that has none, and
-  an `entries` row for a path the index has never seen. `live` is which roots are already being walked. Detail below.
+  SEARCH-driven walk, the write half of the coverage concept whose read half is `../read/coverage.rs`. `Index::cover`
+  resolves a `CoverContext` (the volume, its writer, its path space, its kind) here, spawns one Utility-QoS thread, and
+  walks each frontier root the coverage answer named — through the local guarded walker or the volume's own `Volume`,
+  whichever the kind calls for (`Ground`). `bootstrap` is everything that has to exist first: an index on a volume that
+  has none, and an `entries` row for a path the index has never seen. `live` is which roots are already being walked.
+  Detail below.
 - **scan_completion.rs** — the post-scan handler: the vanished-volume abort and the LOCAL failure→Stale arm (below).
 - **freshness.rs** — the `Fresh`/`Stale`/`Scanning`/`Failed` transition table (`Freshness::on`) +
   `initial_freshness_on_launch`.

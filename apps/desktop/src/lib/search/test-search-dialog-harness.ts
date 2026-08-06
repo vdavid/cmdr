@@ -87,9 +87,7 @@ export const searchFilesStreamingMock = vi.fn(async (query: unknown, runId: stri
   return { runId, targetVolumeId: 'root' }
 })
 
-export const translateSearchQueryMock = vi.fn(() =>
-  Promise.resolve({ display: {}, query: {} } as TranslateResult),
-)
+export const translateSearchQueryMock = vi.fn(() => Promise.resolve({ display: {}, query: {} } as TranslateResult))
 
 export const addRecentSearchMock = vi.fn(() => Promise.resolve())
 
@@ -280,9 +278,7 @@ export function unmountAllDialogs(): void {
   }
 }
 
-export async function mountDialog(
-  opts: MountDialogOptions = {},
-): Promise<{ overlay: Element; cleanup: () => void }> {
+export async function mountDialog(opts: MountDialogOptions = {}): Promise<{ overlay: Element; cleanup: () => void }> {
   const { default: SearchDialog } = await import('./SearchDialog.svelte')
   const target = document.createElement('div')
   document.body.appendChild(target)

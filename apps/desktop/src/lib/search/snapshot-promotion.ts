@@ -23,7 +23,12 @@ import {
   getScope,
   getTotalCount,
 } from './search-state.svelte'
-import { getOrCreate as createSnapshot, nextSnapshotId, setLastAttemptId, type SearchSnapshot } from './snapshot-store.svelte'
+import {
+  getOrCreate as createSnapshot,
+  nextSnapshotId,
+  setLastAttemptId,
+  type SearchSnapshot,
+} from './snapshot-store.svelte'
 import { buildSnapshotLabel } from './snapshot-label'
 import { handOffWalk } from './walk-handoff.svelte'
 

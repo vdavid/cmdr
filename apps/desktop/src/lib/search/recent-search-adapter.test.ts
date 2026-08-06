@@ -18,13 +18,12 @@ vi.mock('$lib/tauri-commands', () => ({
   getRecentSearches: getRecentSearchesMock,
 }))
 
+import { activateHistoryEntry, removeHistoryEntry, searchRecentAdapter, searchRecentKey } from './recent-search-adapter'
 import {
-  activateHistoryEntry,
-  removeHistoryEntry,
-  searchRecentAdapter,
-  searchRecentKey,
-} from './recent-search-adapter'
-import { getRecentSearchesList, resetRecentSearchesForTests, setRecentSearchesList } from './recent-searches-state.svelte'
+  getRecentSearchesList,
+  resetRecentSearchesForTests,
+  setRecentSearchesList,
+} from './recent-searches-state.svelte'
 import { clearSearchState, getMode, getQuery, getScope, searchQueryState } from './search-state.svelte'
 
 function entry(overrides: Partial<HistoryEntry> = {}): HistoryEntry {

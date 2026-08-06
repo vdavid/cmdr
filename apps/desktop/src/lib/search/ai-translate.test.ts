@@ -79,9 +79,7 @@ describe('applyAiTranslationToState', () => {
   })
 
   it('writes case sensitivity and only ever turns the system-dir exclusion OFF', () => {
-    const changed = applyAiTranslationToState(
-      answer({ query: { caseSensitive: true, excludeSystemDirs: false } }),
-    )
+    const changed = applyAiTranslationToState(answer({ query: { caseSensitive: true, excludeSystemDirs: false } }))
     expect(getCaseSensitive()).toBe(true)
     expect(getExcludeSystemDirs()).toBe(false)
     expect(changed).toEqual(expect.arrayContaining(['caseSensitive', 'excludeSystemDirs']))

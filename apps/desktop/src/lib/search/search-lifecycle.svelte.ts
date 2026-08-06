@@ -154,10 +154,7 @@ export function createSearchLifecycle(deps: SearchLifecycleDeps): SearchLifecycl
 
     getSystemDirExcludes()
       .then((dirs) => {
-        systemDirExcludeTooltip = buildSystemDirExcludeTooltip(
-          dirs,
-          tString('search.systemDirExclude.heading'),
-        )
+        systemDirExcludeTooltip = buildSystemDirExcludeTooltip(dirs, tString('search.systemDirExclude.heading'))
       })
       .catch(() => {})
   }

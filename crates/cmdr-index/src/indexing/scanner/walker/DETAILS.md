@@ -2,9 +2,8 @@
 
 The hang-tolerant engine behind every local walk, and the macOS bulk reader it enumerates with. `mod.rs` holds the
 caller-facing types and readers, `engine.rs` the walk driver and its scheduling machinery, `bulk_read.rs` the macOS
-`getattrlistbulk` reader. Read this before any
-non-trivial work here: editing, planning, reorganizing, or advising. The scan driver that calls it, and the exclusion
-policy it applies, are `../CLAUDE.md` and `../DETAILS.md`.
+`getattrlistbulk` reader. Read this before any non-trivial work here: editing, planning, reorganizing, or advising. The
+scan driver that calls it, and the exclusion policy it applies, are `../CLAUDE.md` and `../DETAILS.md`.
 
 ## The engine
 
@@ -28,8 +27,8 @@ is offline, which froze the whole scan.
 - **Per-subtree give-up budget.** The per-dir watchdog abandons ONE hung dir at a time, so a dead mount that fails on
   every read (a disconnected File Provider returning `ETIMEDOUT`/`os error 60` per descendant, e.g. a MacDroid phone's
   `/proc/*/task/*/fd`) still cost one abandon PER DESCENDANT — hundreds/thousands of probes and a log flood. The give-up
-  budget bounds that structurally: every read carries a `SubtreeBudget` (`engine.rs`) shared by the children of
-  ONE successfully-listed directory. Each failed read (timeout OR IO error) increments it; any successful sibling read
+  budget bounds that structurally: every read carries a `SubtreeBudget` (`engine.rs`) shared by the children of ONE
+  successfully-listed directory. Each failed read (timeout OR IO error) increments it; any successful sibling read
   resets it; when it reaches `WalkConfig::give_up_after` (`DEFAULT_GIVE_UP_AFTER = 32`, mirroring the network scanner's
   `CONSECUTIVE_FAILURE_ABORT`) the budget is **given up** (sticky) — the trip is logged ONCE (subtree path + count), and
   every still-queued sibling sharing that budget is pruned unread by a pre-read check in `run_worker` (no probe, no

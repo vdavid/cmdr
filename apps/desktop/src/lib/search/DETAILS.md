@@ -91,11 +91,10 @@ Everything Search-specific sits in a module beside it, one per job, each unit-te
 - **`recent-search-adapter.ts`** — the row adapter + key (the only seam where Search-specific fields like `scope` /
   `excludeSystemDirs` leak into the chip's tooltip), plus pick (LOADS, never runs) and remove.
 
-What's left in the wrapper: the props, the `QueryDialogConfig`, the two snippets (coverage note, image grid), the
-"Go to file" / path-pill / row-menu exits through `onNavigate`, `onClearState` wiring ⌘N to `clearSearchState()`, and
-the live AI-provider subscription so the AI chip appears / disappears with the setting. It does not own the overlay
-element, the keyboard handler, the IME guard, the auto-apply debounce, the popover toggle, or any other orchestration
-concern.
+What's left in the wrapper: the props, the `QueryDialogConfig`, the two snippets (coverage note, image grid), the "Go to
+file" / path-pill / row-menu exits through `onNavigate`, `onClearState` wiring ⌘N to `clearSearchState()`, and the live
+AI-provider subscription so the AI chip appears / disappears with the setting. It does not own the overlay element, the
+keyboard handler, the IME guard, the auto-apply debounce, the popover toggle, or any other orchestration concern.
 
 The wrapper holds the two locals a run outlives: `liveRun` (the run in flight, plain and not `$state` — it changes per
 batch and nothing renders it) and `handedOffRun` (the run a pane is now fed by, so the close can name it).
@@ -109,8 +108,8 @@ Both searches now cover ONE volume, and each picks it differently.
 
 **Filename search covers the scope's volume**, at most one (`src-tauri/src/search/CLAUDE.md`). The frontend's job is to
 make sure a scope always exists: an empty box means the focused pane's current folder, resolved at run time in
-`buildRunQuery()` (`search-runners.ts`) from `defaultScope`, so it follows the pane rather than freezing at
-dialog-open time.
+`buildRunQuery()` (`search-runners.ts`) from `defaultScope`, so it follows the pane rather than freezing at dialog-open
+time.
 
 **One volume answers every "which drive?" question the dialog has**, so there's one prop for it: `searchVolume`, the
 focused pane's current volume. `+page.svelte` passes `searchVolume={getFocusedPaneSearchTargetVolume()}` (in
@@ -164,11 +163,11 @@ search in that session silently did nothing.
 
 The one-shot path (`search-runners.ts`) clears the note before the IPC and writes the answer's `uncoveredScopes` /
 `unresolvedScopes` / `targetVolumeId` into it after (`coverageNoteFrom`), so the note always belongs to the run on
-screen and a run that throws can't leave a stale caveat under a fresh answer. A LIVE run does the same through its source's `onCoverage`
-(`null` on start, the terminal answer at the end); what it fills in is § The live search. `CoverageNote.svelte` renders
-it through QueryDialog's `resultsNotice` slot, directly above the results it qualifies. Both lists are checked
-independently rather than as an either/or: they're mutually exclusive today by construction, and a reader that assumed
-so would go silent if that changed.
+screen and a run that throws can't leave a stale caveat under a fresh answer. A LIVE run does the same through its
+source's `onCoverage` (`null` on start, the terminal answer at the end); what it fills in is § The live search.
+`CoverageNote.svelte` renders it through QueryDialog's `resultsNotice` slot, directly above the results it qualifies.
+Both lists are checked independently rather than as an either/or: they're mutually exclusive today by construction, and
+a reader that assumed so would go silent if that changed.
 
 The per-drive offer ("Index this drive") shows only for an **uncovered** gap (an unresolved path is on a drive that's
 already indexed, so there's nothing to turn on), only for a drive the live volume list can name, and never for a drive
@@ -330,8 +329,8 @@ A search covers at most one volume, so the popover offers exactly two rungs, bot
 
 ### The empty box means the current folder
 
-An empty box is NOT "everywhere": `buildRunQuery()` sends `defaultScope.path` as the sole include path, which is the current
-folder, or the volume root when the pane has no real folder behind it. Three consequences worth knowing:
+An empty box is NOT "everywhere": `buildRunQuery()` sends `defaultScope.path` as the sole include path, which is the
+current folder, or the volume root when the pane has no real folder behind it. Three consequences worth knowing:
 
 - The Search-in chip renders the default's NAME ("Current folder" / "This volume") with `configured: false`, so it shows
   where the search goes without offering an × to clear something the user never set. `Chip` renders `value` whenever
@@ -453,8 +452,8 @@ there are no results:
   file. Routes through the dialog's existing `onNavigate(path)` callback.
 - **"Show all in main window"** (⌥A): the primary action. `snapshot-promotion.ts::promoteResultsToPane` builds a
   `SearchSnapshot`, pins it via `setLastAttemptId`, and adds the query to recent searches; the wrapper hands the
-  snapshot id to the host and closes the dialog. The host routes the active pane to
-  `search-results://<id>`. State is preserved across close + reopen, so `⌘F` reopens to the same results.
+  snapshot id to the host and closes the dialog. The host routes the active pane to `search-results://<id>`. State is
+  preserved across close + reopen, so `⌘F` reopens to the same results.
 
 Both buttons are hidden (not just disabled) on empty/idle state. Empty + idle inputs disable both (index not ready).
 
@@ -469,9 +468,10 @@ Click on the footer's "Open in pane" button promotes the current result set into
 4. Calls `addRecentSearch(historyEntry)`. **This is the one and only call site that adds to recent searches** (per plan
    §3.5: auto-applies and Enter-runs don't pollute the history). For AI mode, the entry's `query` carries the original
    natural-language prompt (via `getLastAiPrompt()`), not the AI's translated pattern.
-5. Returns the id, and the wrapper hands it to the host via `onShowAllInMainWindow?.(id)` (`+page.svelte` → `DualPaneExplorer.openSearchSnapshotInPane`),
-   which routes through the `navigate({ to: { snapshot }, source: 'user' })` transaction so pinned-tab fork / focus /
-   history-push all apply uniformly.
+5. Returns the id, and the wrapper hands it to the host via `onShowAllInMainWindow?.(id)` (`+page.svelte` →
+   `DualPaneExplorer.openSearchSnapshotInPane`), which routes through the
+   `navigate({ to: { snapshot }, source: 'user' })` transaction so pinned-tab fork / focus / history-push all apply
+   uniformly.
 6. The wrapper closes the dialog. State is preserved (module-level `$state` survives unmount); ⌘F reopens to the same
    place.
 

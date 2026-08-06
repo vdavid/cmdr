@@ -3,8 +3,8 @@
 How a per-volume index is born, lives, transitions, and dies. Every invariant here holds PER volume id.
 
 `state.rs` the registry + `IndexPhase` machine, with a job per file under `state/` (start, teardown, scan control,
-queries, freshness bridge, failure supervisor) re-exported so `state::*` stays the one path; `manager.rs`
-(+ `manager/start.rs`) the per-volume coordinator; `network_scan.rs` the SMB/MTP trait scan; `scan_completion.rs`;
+queries, freshness bridge, failure supervisor) re-exported so `state::*` stays the one path; `manager.rs` (+
+`manager/start.rs`) the per-volume coordinator; `network_scan.rs` the SMB/MTP trait scan; `scan_completion.rs`;
 `progress_reporter.rs` + `partial_agg.rs` the 500 ms progress pump; `cover.rs` the search-driven walk, with its
 bootstrap and ground-claiming rules in `cover/CLAUDE.md`; `freshness.rs`, `failure.rs`, `master.rs`, `lifecycle_bus.rs`.
 
