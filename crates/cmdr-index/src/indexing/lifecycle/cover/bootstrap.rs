@@ -16,8 +16,8 @@ use std::path::{Path, PathBuf};
 
 use super::{CoverContext, Ground};
 use crate::indexing::host::volumes::MountFacts;
-use crate::indexing::metadata::MetadataSnapshot;
 use crate::indexing::lifecycle::state::{self, Activation};
+use crate::indexing::metadata::MetadataSnapshot;
 use crate::indexing::store::{IndexStore, ROOT_ID, resolve_path};
 use crate::indexing::volume::{IndexVolumeKind, ROOT_VOLUME_ID};
 use crate::indexing::writer::WriteMessage;

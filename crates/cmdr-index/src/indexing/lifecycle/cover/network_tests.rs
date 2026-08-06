@@ -351,7 +351,10 @@ fn a_walk_over_a_share_covers_the_folder_it_was_pointed_at() {
 
     assert!(!outcome.cancelled, "the walk ran to the end");
     assert_eq!(outcome.roots_covered, 1);
-    assert_eq!(outcome.entries_found, 4, "scope/ itself, one.txt, inner/, inner/two.txt");
+    assert_eq!(
+        outcome.entries_found, 4,
+        "scope/ itself, one.txt, inner/, inner/two.txt"
+    );
     assert_eq!(outcome.dirs_found, 2, "scope/ and inner/");
 
     let mut emitted: Vec<String> = entries.iter().map(|e| e.path.to_string_lossy().to_string()).collect();
@@ -645,12 +648,19 @@ fn a_same_name_sibling_keeps_the_first_row_rather_than_orphaning_a_subtree() {
 
     let (entries, outcome) = share.cover(&scope);
 
-    assert_eq!(outcome.entries_found, 3, "the frontier root, dup/ once, and its child once");
+    assert_eq!(
+        outcome.entries_found, 3,
+        "the frontier root, dup/ once, and its child once"
+    );
     let mut emitted: Vec<String> = entries.iter().map(|e| e.path.to_string_lossy().to_string()).collect();
     emitted.sort();
     assert_eq!(
         emitted,
-        [scope.clone(), share.path("scope/dup"), share.path("scope/dup/child.txt")]
+        [
+            scope.clone(),
+            share.path("scope/dup"),
+            share.path("scope/dup/child.txt")
+        ]
     );
     assert_eq!(
         share.child_ids(&scope).len(),
@@ -693,8 +703,7 @@ fn a_nas_system_dir_is_indexed_but_never_walked_into() {
     let (entries, outcome) = share.cover(&scope);
 
     assert_eq!(
-        outcome.entries_found,
-        3,
+        outcome.entries_found, 3,
         "the frontier root, real.txt, and the snapshot dir's own row"
     );
     let emitted: Vec<String> = entries.iter().map(|e| e.path.to_string_lossy().to_string()).collect();
@@ -744,8 +753,15 @@ fn a_frontier_rooted_at_a_nas_system_dir_is_refused_rather_than_walked() {
     // it too, and a search that matches its name finds it — so it reaches the
     // consumer. What must not is anything INSIDE it.
     let emitted: Vec<String> = entries.iter().map(|e| e.path.to_string_lossy().to_string()).collect();
-    assert_eq!(emitted, [snapshot.clone()], "not one round trip's worth of it was walked");
-    assert_eq!(outcome.entries_found, 1, "the snapshot directory's own row, and nothing under it");
+    assert_eq!(
+        emitted,
+        std::slice::from_ref(&snapshot),
+        "not one round trip's worth of it was walked"
+    );
+    assert_eq!(
+        outcome.entries_found, 1,
+        "the snapshot directory's own row, and nothing under it"
+    );
     assert!(
         share.coverage(&snapshot).frontier.is_empty(),
         "and it isn't handed back to the next search either"
@@ -865,7 +881,7 @@ fn a_frontier_root_that_will_not_list_covers_nothing() {
     // The folder's own row is materialized before anything is listed, so it goes
     // out; its CONTENTS are what the refusal costs.
     let emitted: Vec<String> = entries.iter().map(|e| e.path.to_string_lossy().to_string()).collect();
-    assert_eq!(emitted, [scope.clone()], "and nothing inside it was read");
+    assert_eq!(emitted, std::slice::from_ref(&scope), "and nothing inside it was read");
     assert_eq!(
         share.coverage(&scope).frontier,
         [scope],
