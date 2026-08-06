@@ -2,6 +2,8 @@
 //! and paging rules. All pure over resolved inputs — no index, no filesystem.
 
 use super::*;
+use crate::mcp::resources::volumes::VolumeSpace;
+use crate::search::format_size;
 
 fn dir_stats(size: u64, complete: bool, stale: bool, pending: bool) -> DirStats {
     DirStats {
@@ -34,35 +36,29 @@ fn stale_index_reads_stale_and_says_so() {
 }
 
 fn child(index: usize) -> ChildEntry {
-    ChildEntry {
-        name: format!("some-reasonably-long-file-name-{index}.jpeg"),
-        is_directory: false,
-        is_symlink: false,
-        size: Some(1_234_567),
-        size_is_lower_bound: false,
-        modified: Some(1_700_000_000),
-    }
+    ChildEntry::new(
+        format!("some-reasonably-long-file-name-{index}.jpeg"),
+        false,
+        false,
+        Some(1_234_567),
+        false,
+        Some(1_700_000_000),
+    )
 }
 
 /// A named row with a size, for the ordering tests.
 fn row(name: &str, is_directory: bool, size: Option<u64>) -> ChildEntry {
-    ChildEntry {
-        name: name.to_string(),
-        is_directory,
-        is_symlink: false,
-        size,
-        size_is_lower_bound: false,
-        modified: size,
-    }
+    ChildEntry::new(name.to_string(), is_directory, false, size, false, size)
+}
+
+/// A named folder row whose size is only a lower bound.
+fn lower_bound_row(name: &str, size: u64) -> ChildEntry {
+    ChildEntry::new(name.to_string(), true, false, Some(size), true, None)
 }
 
 /// A volume block with no space known: the default for tests that aren't about space.
 fn no_space() -> VolumeBlock {
-    VolumeBlock {
-        id: "root".to_string(),
-        total_bytes: None,
-        available_bytes: None,
-    }
+    VolumeBlock::new("root".to_string(), None)
 }
 
 fn page_of(children: Vec<ChildEntry>) -> Page {
@@ -195,15 +191,366 @@ fn a_listing_names_its_volume_and_how_full_it_is() {
         None,
         true,
         Some(Freshness::Fresh),
-        VolumeBlock {
-            id: "root".to_string(),
-            total_bytes: Some(2_000_000_000_000),
-            available_bytes: Some(214_300_000_000),
-        },
+        VolumeBlock::new(
+            "root".to_string(),
+            Some(VolumeSpace {
+                total_bytes: 2_000_000_000_000,
+                available_bytes: 214_300_000_000,
+            }),
+        ),
         &ListOptions::default(),
     );
     assert_eq!(result.volume.id, "root");
     assert_eq!(result.volume.available_bytes, Some(214_300_000_000));
+    // The raw pair is what arithmetic needs; the human pair is what a sentence needs,
+    // and the agent can't compute one from the other.
+    assert_eq!(
+        result.volume.total_human.as_deref(),
+        Some(format_size(2_000_000_000_000)).as_deref()
+    );
+    assert_eq!(
+        result.volume.available_human.as_deref(),
+        Some(format_size(214_300_000_000)).as_deref()
+    );
+}
+
+#[test]
+fn an_unwatched_volume_has_no_human_space_either() {
+    // Present exactly when the byte counterparts are: a "0 B" free would read as a
+    // full disk.
+    let result = build_list_dir(
+        "/Users/x",
+        Some(page_of(vec![])),
+        None,
+        true,
+        Some(Freshness::Fresh),
+        no_space(),
+        &ListOptions::default(),
+    );
+    assert_eq!(result.volume.total_human, None);
+    assert_eq!(result.volume.available_human, None);
+}
+
+// ── Human-readable forms ──────────────────────────────────────────────────
+
+#[test]
+fn a_lower_bound_size_carries_the_symbol_inside_the_string() {
+    // The anti-lying property: the `≥` lives INSIDE `sizeHuman`, so a model that
+    // quotes the string cannot present a lower bound as an exact total, however it
+    // treats the separate `sizeIsLowerBound` flag.
+    let stats = dir_stats(2_000_000_000_000, false, false, false);
+    let result = build_list_dir(
+        "/Users/x",
+        Some(page_of(vec![lower_bound_row("archive", 1_000_000_000_000)])),
+        Some(&stats),
+        true,
+        Some(Freshness::Fresh),
+        no_space(),
+        &ListOptions::default(),
+    );
+    let rows = result.children.as_ref().expect("an indexed listing");
+    let human = rows[0].size_human.as_deref().expect("a known size");
+    assert!(human.starts_with("≥ "), "a lower-bound child reads '{human}'");
+    assert!(result.size.as_ref().unwrap().recursive_size_human.starts_with("≥ "));
+}
+
+#[test]
+fn an_exact_size_carries_no_symbol() {
+    let stats = dir_stats(1_024, true, false, false);
+    let result = build_list_dir(
+        "/Users/x",
+        Some(page_of(vec![row("a-file", false, Some(1_024))])),
+        Some(&stats),
+        true,
+        Some(Freshness::Fresh),
+        no_space(),
+        &ListOptions::default(),
+    );
+    let rows = result.children.as_ref().expect("an indexed listing");
+    assert_eq!(rows[0].size_human.as_deref(), Some("1 KB"));
+    assert_eq!(result.size.unwrap().recursive_size_human, "1 KB");
+}
+
+#[test]
+fn an_unknown_size_has_no_human_form_rather_than_zero_bytes() {
+    // A folder with no `dir_stats` row is unknown, not empty. A rendered "0 B"
+    // would be a number the index can't back.
+    let result = build_list_dir(
+        "/Users/x",
+        Some(page_of(vec![row("mystery", true, None)])),
+        None,
+        true,
+        Some(Freshness::Fresh),
+        no_space(),
+        &ListOptions::default(),
+    );
+    let rows = result.children.as_ref().expect("an indexed listing");
+    assert_eq!(rows[0].size, None);
+    assert_eq!(rows[0].size_human, None);
+}
+
+#[test]
+fn a_modified_epoch_comes_with_the_date_it_means() {
+    let result = build_list_dir(
+        "/Users/x",
+        Some(page_of(vec![child(0)])),
+        None,
+        true,
+        Some(Freshness::Fresh),
+        no_space(),
+        &ListOptions::default(),
+    );
+    let rows = result.children.as_ref().expect("an indexed listing");
+    assert_eq!(rows[0].modified, Some(1_700_000_000));
+    assert_eq!(rows[0].modified_human.as_deref(), Some("2023-11-14"));
+    // No timestamp, no date: nothing invented for a row the index has no mtime for.
+    let no_mtime = row("x", false, None);
+    assert_eq!(no_mtime.modified_human, None);
+}
+
+// ── The remainder ─────────────────────────────────────────────────────────
+
+/// A page of `limit` rows out of five known-size children totalling 660 bytes,
+/// inside a folder whose own recursive total is `folder_total`.
+fn five_child_page(limit: usize, folder_stats: &DirStats) -> ListDirResult {
+    let opts = ListOptions {
+        limit,
+        ..Default::default()
+    };
+    let page = sort_and_page(
+        vec![
+            row("a", false, Some(100)),
+            row("b", false, Some(200)),
+            row("c", false, Some(300)),
+            row("d", false, Some(50)),
+            row("e", false, Some(10)),
+        ],
+        &opts,
+    );
+    build_list_dir(
+        "/p",
+        Some(page),
+        Some(folder_stats),
+        true,
+        Some(Freshness::Fresh),
+        no_space(),
+        &opts,
+    )
+}
+
+#[test]
+fn the_remainder_says_what_the_rows_it_did_not_show_add_up_to() {
+    // Two of five children returned. The model can't subtract reliably, so the
+    // answer carries what the other three come to.
+    let stats = dir_stats(1_000, true, false, false);
+    let result = five_child_page(2, &stats);
+    let rem = result.remainder.expect("three children weren't shown");
+    assert_eq!(rem.count, 3);
+    assert_eq!(rem.bytes, 700, "1,000 total minus the 300 on this page");
+    assert_eq!(rem.human, format_size(700));
+    assert!(!rem.is_approximate);
+}
+
+#[test]
+fn the_remainder_is_omitted_when_this_page_is_the_whole_folder() {
+    // Nothing beyond the page ⇒ no remainder object at all, rather than a zero the
+    // model would have to interpret.
+    let stats = dir_stats(1_000, true, false, false);
+    let result = five_child_page(5, &stats);
+    assert_eq!(result.returned, Some(5));
+    assert!(result.remainder.is_none());
+}
+
+#[test]
+fn the_remainder_is_omitted_when_a_returned_child_size_is_unknown() {
+    // With an unknown in the subtraction we can't speak: a wrong remainder is worse
+    // than none.
+    let opts = ListOptions {
+        limit: 2,
+        ..Default::default()
+    };
+    let stats = dir_stats(1_000, true, false, false);
+    let page = sort_and_page(
+        vec![
+            row("a", true, None),
+            row("b", false, Some(200)),
+            row("c", false, Some(300)),
+        ],
+        &opts,
+    );
+    let result = build_list_dir(
+        "/p",
+        Some(page),
+        Some(&stats),
+        true,
+        Some(Freshness::Fresh),
+        no_space(),
+        &opts,
+    );
+    assert_eq!(result.returned, Some(2));
+    assert!(result.remainder.is_none(), "an unknown size silences the remainder");
+}
+
+#[test]
+fn the_remainder_is_omitted_without_a_folder_total_to_subtract_from() {
+    let opts = ListOptions {
+        limit: 2,
+        ..Default::default()
+    };
+    let page = sort_and_page(
+        vec![
+            row("a", false, Some(1)),
+            row("b", false, Some(2)),
+            row("c", false, Some(3)),
+        ],
+        &opts,
+    );
+    let result = build_list_dir("/p", Some(page), None, true, Some(Freshness::Fresh), no_space(), &opts);
+    assert!(result.remainder.is_none());
+}
+
+#[test]
+fn the_remainder_is_approximate_when_the_folder_total_is_a_lower_bound() {
+    // Bounds run in BOTH directions here (an understated folder total pulls the
+    // remainder down, an understated child pushes it up), so the flag claims no
+    // direction and the string wears a `~`, not a `≥`.
+    let stats = dir_stats(1_000, false, false, false);
+    let result = five_child_page(2, &stats);
+    let rem = result.remainder.expect("three children weren't shown");
+    assert!(rem.is_approximate);
+    assert!(
+        rem.human.starts_with("~ "),
+        "an approximate remainder reads '{}'",
+        rem.human
+    );
+    assert!(!rem.human.contains('≥'), "no direction is claimed");
+}
+
+#[test]
+fn the_remainder_is_approximate_when_a_returned_child_is_a_lower_bound() {
+    let opts = ListOptions {
+        limit: 1,
+        ..Default::default()
+    };
+    let stats = dir_stats(1_000, true, false, false);
+    let page = sort_and_page(
+        vec![lower_bound_row("a-archive", 100), row("b", false, Some(200))],
+        &opts,
+    );
+    let result = build_list_dir(
+        "/p",
+        Some(page),
+        Some(&stats),
+        true,
+        Some(Freshness::Fresh),
+        no_space(),
+        &opts,
+    );
+    let rem = result.remainder.expect("one child wasn't shown");
+    assert_eq!(rem.count, 1);
+    assert!(rem.is_approximate);
+}
+
+#[test]
+fn the_remainder_never_goes_below_zero() {
+    // A lower-bound folder total can be smaller than the children we already listed.
+    let stats = dir_stats(100, false, false, false);
+    let result = five_child_page(2, &stats);
+    let rem = result.remainder.expect("three children weren't shown");
+    assert_eq!(rem.bytes, 0);
+    assert!(rem.is_approximate);
+}
+
+#[test]
+fn a_filtered_listing_has_no_remainder_at_all() {
+    // With `type` narrowing the rows, `count` would be "folders not shown" while the
+    // folder's recursive total still counts every loose file: two different
+    // populations in one sentence. Omit rather than mislead.
+    let opts = ListOptions {
+        limit: 1,
+        type_filter: Some(TypeFilter::Dirs),
+        ..Default::default()
+    };
+    let stats = dir_stats(1_000, true, false, false);
+    let page = sort_and_page(
+        vec![
+            row("a-folder", true, Some(100)),
+            row("b-folder", true, Some(200)),
+            row("c-file", false, Some(700)),
+        ],
+        &opts,
+    );
+    let result = build_list_dir(
+        "/p",
+        Some(page),
+        Some(&stats),
+        true,
+        Some(Freshness::Fresh),
+        no_space(),
+        &opts,
+    );
+    assert_eq!(result.total, Some(2));
+    assert!(result.remainder.is_none());
+}
+
+#[test]
+fn the_wire_shape_carries_every_spoken_field_in_camel_case() {
+    // What the model actually reads. Params are camelCase across every tool, so a
+    // snake_case slip here is a field an agent pattern-matches past.
+    let opts = ListOptions {
+        sort_by: SortBy::Size,
+        order: Order::Desc,
+        limit: 2,
+        ..Default::default()
+    };
+    let stats = dir_stats(2_000_000_000_000, false, false, false);
+    let page = sort_and_page(
+        vec![
+            lower_bound_row("Photos", 1_900_000_000_000),
+            row("clip.mov", false, Some(4_500_000_000)),
+            row("notes.txt", false, Some(2_048)),
+        ],
+        &opts,
+    );
+    let result = build_list_dir(
+        "/Users/x/Media",
+        Some(page),
+        Some(&stats),
+        true,
+        Some(Freshness::Fresh),
+        VolumeBlock::new(
+            "root".to_string(),
+            Some(VolumeSpace {
+                total_bytes: 2_000_000_000_000,
+                available_bytes: 214_300_000_000,
+            }),
+        ),
+        &opts,
+    );
+    let json = serde_json::to_value(&result).unwrap();
+    assert_eq!(json["size"]["recursiveSizeHuman"], "≥ 1.8 TB");
+    assert_eq!(json["volume"]["totalHuman"], "1.8 TB");
+    assert_eq!(json["volume"]["availableHuman"], "199.6 GB");
+    assert_eq!(json["children"][0]["sizeHuman"], "≥ 1.7 TB");
+    assert_eq!(json["children"][1]["sizeHuman"], "4.2 GB");
+    assert_eq!(json["remainder"]["count"], 1);
+    assert_eq!(json["remainder"]["isApproximate"], true);
+    // A row with no mtime carries no `modifiedHuman` key at all.
+    assert!(json["children"][0].get("modifiedHuman").is_none());
+}
+
+#[test]
+fn an_unindexed_folder_has_no_remainder() {
+    let result = build_list_dir(
+        "/nas/share",
+        None,
+        None,
+        false,
+        None,
+        no_space(),
+        &ListOptions::default(),
+    );
+    assert!(result.remainder.is_none());
 }
 
 // ── Ordering and paging ───────────────────────────────────────────────────

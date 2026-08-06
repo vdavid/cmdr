@@ -38,6 +38,8 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
   (`get_dir_stats`) and a `Coverage` block. `Ok(None)` children ⇒ typed "not in index" / "no index", distinguished by
   whether the volume is indexed. Ordered by `sortBy` (`name` / `size` / `modified`) and paged by `limit` / `offset`;
   `type` narrows to files or folders. **`sortBy: "size"` is the disk-usage answer** — see § One tool, both questions.
+  Every number also arrives spoken (`sizeHuman`, `modifiedHuman`, `recursiveSizeHuman`, `totalHuman` /
+  `availableHuman`) and a paged answer carries a `remainder` — see § Numbers arrive already spoken.
 - **`important_folders`** (`read/importance.rs`) — top-N or above-threshold across scored volumes, reusing
   `mcp::resources::importance::{snapshot_top, snapshot_threshold, snapshot_overview}` (which read every scored volume,
   including offline ones). The overview carries each volume's current generation for staleness.
@@ -46,6 +48,8 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
   Unscored. Offline-capable.
 - **`list_volumes`** (`read/volumes.rs`) — every volume with `indexStatus` (`fresh`/`scanning`/`stale`/`off`) and, for
   SMB, `smbConnectionState` (`direct`/`os_mount`/`disconnected`), straight from `snapshot_volumes` so tokens can't drift.
+  Space rides along as `totalBytes` / `availableBytes` plus `totalHuman` / `availableHuman`, each pair present exactly
+  when the poller has a reading (the same pair `cmdr://state`'s `volumes:` renders; see `mcp/DETAILS.md`).
 - **`operations_list` / `operations_get`** — the shipped executors (`mcp/executor/operation_log.rs`), shared into the
   agent view unchanged (their schemas + coverage flags already fit an agent reader).
 - **`search_photos`** (`mcp/executor/photos.rs`, shared `[AiClient, Agent]`) — photo search by description (CLIP),
@@ -91,6 +95,54 @@ double-counting its bytes.
 authoritative or the path isn't indexed. `SizeStats::from_dir_stats` carries the exact-vs-lower-bound / stale / updating
 / has-symlinks flags verbatim from `DirStats`. Importance staleness is `asOfGeneration < recomputeGeneration`. These are
 the flags spec §2.4 makes load-bearing; the system prompt requires the model to voice them.
+
+**A caveat that lives only in a sibling flag is a caveat the model can shed.** A flag is honest only while the reader
+carries it alongside the number, and an agent restating "1.8 TB" has already dropped `sizeIsLowerBound: true`. So the
+qualifier rides INSIDE the human string (next section), and the flag stays for anything that branches on it.
+
+## Numbers arrive already spoken
+
+The Ask Cmdr agent can't run a script, so every number it might state out loud is formatted before it crosses the wire:
+raw bytes and epochs make a model do arithmetic it does unreliably. Each raw field keeps a formatted twin — never one
+instead of the other, since the raw value is what anything downstream computes with:
+
+- `ChildEntry.sizeHuman` / `modifiedHuman`, present exactly when `size` / `modified` are. An unknown size gets NO
+  string: a `"0 B"` would read as an empty folder, which is the wrong-zero the whole coverage contract exists to
+  prevent.
+- `SizeStats.recursiveSizeHuman` (always present, the folder's own total).
+- `VolumeBlock.totalHuman` / `availableHuman`, present exactly when their byte counterparts are.
+- `ListDirResult.remainder` (below).
+
+**Uncertainty is inside the string.** `≥ 1.8 TB` when the number can only be higher (a lower bound), `~ 40 GB` when the
+error runs in both directions. `human_size` / `qualified_size` (`read/listing.rs`) are the one place that decides;
+`ChildEntry::new` / `set_size` are the only ways to set a size, so the number and its string can't drift apart.
+
+**One formatter, `search::format_size` + `format_timestamp`.** ❌ Never a second one: two would round differently and
+the same folder would read two sizes across two surfaces. Like the `search` results table, this path does NOT consult
+the user's SI-vs-binary units setting; MCP/agent output stays internally consistent instead of tracking a UI preference.
+
+### The remainder: what the page didn't show
+
+A paged listing can say what the rows it left out add up to: `{ count, bytes, human, isApproximate }`, where `count` is
+`total - returned` and `bytes` is the folder's own `recursiveSize` minus the sizes on this page (saturating). Without
+it, "the other 3,000 files" is a number the model can only invent.
+
+`isApproximate`, deliberately not `isLowerBound`: the bounds run in BOTH directions. An understated folder total pulls
+the remainder down, an understated child size pushes it up, and both can be in play at once, so naming a direction
+would be false precision. Its string wears `~`, never `≥`.
+
+**Omitted rather than guessed** (`remainder()`), because the model would state a wrong one as fact:
+
+- `count == 0` — this page is the whole folder; a zero would only invite interpretation.
+- Any returned child has an unknown size. It's missing from the subtraction, so the difference silently absorbs it.
+- No `dir_stats` total for the folder to subtract from.
+- A `type` filter is active: `count` would be "folders not shown" while the recursive total still counts every loose
+  file, so the pair would describe two populations in one sentence ("the other 3 folders come to 40 GB", where 38 GB of
+  it is files that were never in the running).
+
+Rejected: a `summary` sentence field. A model reuses such a string verbatim, which makes it user-facing copy needing
+review in every state (scanning, unindexed, lower-bound, empty) — and Cmdr's rule is that human-facing text is
+human-written (`AGENTS.md` § Principles, "Humans to humans").
 
 ## The size contract: a result never outgrows the caller's context
 

@@ -19,6 +19,14 @@
 //! `stale` / `off`, only `fresh` authoritative), a typed "no index" / "not in
 //! index" state instead of a wrong empty listing, and each size's exact-vs-
 //! lower-bound / stale / updating flags straight from `DirStats`.
+//!
+//! **Every number arrives already spoken.** The agent can't run a script, so each
+//! raw value has a formatted twin ([`ChildEntry::size_human`],
+//! [`SizeStats::recursive_size_human`], the [`VolumeBlock`] pair) and a paged
+//! listing carries a [`Remainder`] for the rows it didn't show. Raw and human
+//! both, never one instead of the other: the raw value is what anything
+//! downstream computes with. Uncertainty rides INSIDE the string (`≥`, `~`), so a
+//! quoted figure can't shed its caveat.
 
 use serde::Serialize;
 use serde_json::Value;
@@ -27,7 +35,9 @@ use tauri::{AppHandle, Runtime};
 use super::{expand_tilde, join_child_path};
 use crate::index_host::index;
 use crate::mcp::resources::indexing::status_token;
+use crate::mcp::resources::volumes::VolumeSpace;
 use crate::mcp::{ToolError, ToolResult};
+use crate::search::{format_size, format_timestamp};
 use cmdr_index::Freshness;
 use cmdr_index::store::DirStats;
 
@@ -79,7 +89,37 @@ pub(crate) fn coverage(enabled: bool, freshness: Option<Freshness>, indexed: boo
     }
 }
 
+/// A size string the model can quote verbatim, with any uncertainty INSIDE the
+/// string: `≥` when the number can only be higher (a lower bound), `~` when the
+/// error runs in both directions.
+///
+/// The qualifier is part of the string rather than only a neighbouring flag
+/// because the agent restates what a tool hands it. Given `"1.8 TB"` plus
+/// `sizeIsLowerBound: true`, a model that quotes the number and drops the flag has
+/// stated an exact total the index can't back; given `"≥ 1.8 TB"` it physically
+/// can't. The flag stays too, for anything that branches on it.
+fn qualified_size(bytes: u64, qualifier: Option<&str>) -> String {
+    match qualifier {
+        Some(q) => format!("{q} {}", format_size(bytes)),
+        None => format_size(bytes),
+    }
+}
+
+/// A size for a model to read out: `format_size`, carrying `≥` when it's only a
+/// lower bound. Single-sourced on the `search` table's formatter, so a size reads
+/// the same wherever it surfaces (and, like that table, it doesn't consult the
+/// user's SI-vs-binary setting — MCP output stays internally consistent).
+pub(crate) fn human_size(bytes: u64, is_lower_bound: bool) -> String {
+    qualified_size(bytes, is_lower_bound.then_some("≥"))
+}
+
 /// One child row, shaped for the model.
+///
+/// Every raw number has a spoken twin (`size` / `size_human`, `modified` /
+/// `modified_human`), because the agent can't run arithmetic: it can't turn
+/// 1,975,684,321,280 into "1.8 TB" or an epoch into a date without guessing. Build
+/// rows through [`ChildEntry::new`] / [`ChildEntry::set_size`] so the pair can't
+/// drift apart.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChildEntry {
@@ -95,12 +135,53 @@ pub struct ChildEntry {
     /// never a wrong zero.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<u64>,
+    /// `size`, spelled out (`"4.2 GB"`, or `"≥ 1.8 TB"` when it's a lower bound).
+    /// Absent exactly when `size` is: an unknown size gets no string, never a
+    /// `"0 B"` that would read as an empty folder.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub size_human: Option<String>,
     /// `true` when a folder's `size` is a lower bound (some subtree was never
     /// fully listed), so the model says "at least" rather than stating a total.
     #[serde(skip_serializing_if = "crate::agent::tools::read::is_false")]
     pub size_is_lower_bound: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub modified: Option<u64>,
+    /// `modified` as a date (`"2023-11-14"`). Absent exactly when `modified` is.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub modified_human: Option<String>,
+}
+
+impl ChildEntry {
+    /// Build a row, deriving both spoken forms from the raw values so the two can
+    /// never disagree.
+    pub(crate) fn new(
+        name: String,
+        is_directory: bool,
+        is_symlink: bool,
+        size: Option<u64>,
+        size_is_lower_bound: bool,
+        modified: Option<u64>,
+    ) -> Self {
+        Self {
+            name,
+            is_directory,
+            is_symlink,
+            size,
+            size_human: size.map(|b| human_size(b, size_is_lower_bound)),
+            size_is_lower_bound,
+            modified,
+            modified_human: modified.map(format_timestamp),
+        }
+    }
+
+    /// Replace the size (and its lower-bound flag), re-deriving `size_human`. The
+    /// only way to change a size after construction — assigning the field alone
+    /// would leave the string behind, stating the old number.
+    fn set_size(&mut self, size: Option<u64>, is_lower_bound: bool) {
+        self.size = size;
+        self.size_human = size.map(|b| human_size(b, is_lower_bound));
+        self.size_is_lower_bound = is_lower_bound;
+    }
 }
 
 /// What a listing is ordered by. `Size` is the disk-usage question; the other two
@@ -226,6 +307,9 @@ impl ListOptions {
 #[serde(rename_all = "camelCase")]
 pub struct SizeStats {
     pub recursive_size: u64,
+    /// `recursive_size`, spelled out — with `≥` inside the string when it's a lower
+    /// bound, so a quoted total can't pass for an exact one.
+    pub recursive_size_human: String,
     pub recursive_file_count: u64,
     pub recursive_dir_count: u64,
     /// `true` when `recursive_size` is a lower bound, not an exact total (some
@@ -243,6 +327,7 @@ impl SizeStats {
     fn from_dir_stats(s: &DirStats) -> Self {
         Self {
             recursive_size: s.recursive_size,
+            recursive_size_human: human_size(s.recursive_size, !s.recursive_size_complete),
             recursive_file_count: s.recursive_file_count,
             recursive_dir_count: s.recursive_dir_count,
             size_is_lower_bound: !s.recursive_size_complete,
@@ -267,8 +352,95 @@ pub struct VolumeBlock {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub total_bytes: Option<u64>,
+    /// `total_bytes`, spelled out. Present exactly when its byte counterpart is.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total_human: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub available_bytes: Option<u64>,
+    /// `available_bytes`, spelled out. Present exactly when its byte counterpart is.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub available_human: Option<String>,
+}
+
+impl VolumeBlock {
+    /// Build the block from the poller's space reading, deriving the spoken forms.
+    /// No space known ⇒ all four fields absent, never a zero that reads as a full
+    /// disk.
+    pub(crate) fn new(id: String, space: Option<VolumeSpace>) -> Self {
+        Self {
+            id,
+            total_bytes: space.map(|s| s.total_bytes),
+            total_human: space.map(|s| format_size(s.total_bytes)),
+            available_bytes: space.map(|s| s.available_bytes),
+            available_human: space.map(|s| format_size(s.available_bytes)),
+        }
+    }
+}
+
+/// What the rows this page did NOT return add up to, so a paged answer can account
+/// for the whole folder without the model subtracting anything.
+///
+/// Present only when it can be stated truthfully; see [`remainder`] for the four
+/// cases that omit it.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Remainder {
+    /// Children beyond this page: `total - returned`.
+    pub count: usize,
+    /// The folder's own recursive total minus the sizes on this page.
+    pub bytes: u64,
+    /// `bytes`, spelled out, carrying `~` when `is_approximate`.
+    pub human: String,
+    /// `true` when the folder total or any returned child is a lower bound.
+    ///
+    /// Deliberately NOT `is_lower_bound`: the bounds run in both directions here.
+    /// An understated folder total pulls the remainder DOWN, an understated child
+    /// size pushes it UP, and the two can be in play at once — so the figure is
+    /// uncertain in an unknown direction, and naming one would be false precision.
+    pub is_approximate: bool,
+}
+
+/// What the un-returned children add up to, or `None` when that can't be said
+/// honestly. A wrong remainder is worse than none: the model would state it as
+/// fact.
+///
+/// Omitted when:
+///
+/// - `count == 0` — this page is the whole folder, so there's nothing to account
+///   for and a zero would only invite interpretation.
+/// - Any returned child has an unknown size. It's missing from the subtraction, so
+///   the difference silently absorbs it and overstates what's left.
+/// - The folder has no `dir_stats` total to subtract from (caller-side: the
+///   `stats` argument is `None`).
+/// - A `type` filter is active. `count` would then be "folders not shown" while
+///   the folder's recursive total still counts every loose file, so the pair would
+///   describe two different populations in one sentence ("the other 3 folders come
+///   to 40 GB", where 38 GB of it is files that were never in the running).
+fn remainder(stats: &DirStats, rows: &[ChildEntry], total: usize, opts: &ListOptions) -> Option<Remainder> {
+    if opts.type_filter.is_some() {
+        return None;
+    }
+    let count = total.saturating_sub(rows.len());
+    if count == 0 {
+        return None;
+    }
+    let mut shown: u64 = 0;
+    let mut is_approximate = !stats.recursive_size_complete;
+    for row in rows {
+        // An unknown size ends the whole remainder: `?` returns `None` from here.
+        let size = row.size?;
+        shown = shown.saturating_add(size);
+        is_approximate |= row.size_is_lower_bound;
+    }
+    // Saturating: a lower-bound folder total can be smaller than the children we
+    // already listed, and a negative remainder isn't a thing to report.
+    let bytes = stats.recursive_size.saturating_sub(shown);
+    Some(Remainder {
+        count,
+        bytes,
+        human: qualified_size(bytes, is_approximate.then_some("~")),
+        is_approximate,
+    })
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -297,6 +469,10 @@ pub struct ListDirResult {
     /// budget, or both cut it.
     #[serde(skip_serializing_if = "crate::agent::tools::read::is_false")]
     pub truncated: bool,
+    /// What the children this page didn't return add up to. Absent whenever it
+    /// can't be stated honestly (see [`remainder`]).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub remainder: Option<Remainder>,
     /// The order the rows are actually in. Echoed so a model that asked for a size
     /// ranking can trust the top row is the biggest.
     pub sorted_by: &'static str,
@@ -383,6 +559,10 @@ pub(crate) fn build_list_dir(
         (Some(total), Some(returned)) => opts.offset.saturating_add(returned) < total,
         _ => false,
     };
+    let remainder = match (fitted.as_ref(), total, stats) {
+        (Some(fitted), Some(total), Some(stats)) => remainder(stats, &fitted.items, total, opts),
+        _ => None,
+    };
     ListDirResult {
         path: path.to_string(),
         coverage: coverage(enabled, freshness, indexed),
@@ -392,6 +572,7 @@ pub(crate) fn build_list_dir(
         returned,
         offset: opts.offset,
         truncated,
+        remainder,
         sorted_by: opts.sort_by.token(),
         children: fitted.map(|f| f.items),
     }
@@ -436,11 +617,7 @@ pub async fn execute_list_dir<R: Runtime>(_app: &AppHandle<R>, params: &Value) -
             Some(page_with_folder_sizes(&path, children, &opts)?)
         }
     };
-    let volume = VolumeBlock {
-        id: status.volume_id.clone(),
-        total_bytes: space.map(|s| s.total_bytes),
-        available_bytes: space.map(|s| s.available_bytes),
-    };
+    let volume = VolumeBlock::new(status.volume_id.clone(), space);
     let result = build_list_dir(
         &path,
         page,
@@ -495,13 +672,10 @@ fn with_folder_sizes(path: &str, mut children: Vec<ChildEntry>) -> Result<Vec<Ch
         .map_err(|e| ToolError::internal(e.to_string()))?;
     for (&i, stats) in dir_indices.iter().zip(stats) {
         match stats {
-            Some(stats) => {
-                children[i].size = Some(stats.recursive_size);
-                children[i].size_is_lower_bound = !stats.recursive_size_complete;
-            }
+            Some(stats) => children[i].set_size(Some(stats.recursive_size), !stats.recursive_size_complete),
             // No stats row: the index knows the folder but not its total. Say
             // nothing rather than pass its inode size off as a total.
-            None => children[i].size = None,
+            None => children[i].set_size(None, false),
         }
     }
     Ok(children)
@@ -523,14 +697,14 @@ fn required_path(params: &Value) -> Result<String, ToolError> {
 /// row's fields. A folder's `size` starts as its own logical size and is replaced
 /// by the recursive total in [`with_folder_sizes`]; a file's is already final.
 fn child_from_row(row: &cmdr_index::store::EntryRow) -> ChildEntry {
-    ChildEntry {
-        name: row.name.clone(),
-        is_directory: row.is_directory,
-        is_symlink: row.is_symlink,
-        size: row.logical_size,
-        size_is_lower_bound: false,
-        modified: row.modified_at,
-    }
+    ChildEntry::new(
+        row.name.clone(),
+        row.is_directory,
+        row.is_symlink,
+        row.logical_size,
+        false,
+        row.modified_at,
+    )
 }
 
 #[cfg(test)]
