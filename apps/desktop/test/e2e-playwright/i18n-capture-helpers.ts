@@ -11,10 +11,13 @@
  * here. Split out purely for the file-length budget; behavior is unchanged.
  */
 
+import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect } from './fixtures.js'
 import { getFixtureRoot } from './helpers.js'
+import { assessImageContent } from './i18n-capture-png.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
 /**
@@ -209,37 +212,206 @@ export async function keysFor(page: TauriPage, surface: string): Promise<string[
   return dump[surface] ?? []
 }
 
+/** Frames `settlePaint` waits for: one to apply the DOM change, one to composite it. */
+const SETTLE_FRAMES = 2
+
+/**
+ * Upper bound on `waitForFrames`, and the ONLY thing that keeps a paused window
+ * from hanging the eval forever. It is a bail-out, never the readiness signal:
+ * `waitForFrames` reports WHICH of the two happened, and a bail-out means the
+ * compositor never advanced, which is exactly the state that produces a stale
+ * frame. A foreground window delivers its frames in ~16 ms each, so the ceiling
+ * costs nothing when things work.
+ */
+const FRAME_WAIT_TIMEOUT_MS = 1000
+
+/**
+ * Waits for `frames` real animation frames on `page`. Returns true when they all
+ * landed, false when the timeout bailed out first.
+ *
+ * A delivered `requestAnimationFrame` callback is the observable proof that the
+ * compositor is running for this window: macOS pauses rAF on a window that isn't
+ * being composited (occluded or backgrounded), which is the same condition that
+ * makes the native screenshot return a stale frame. So "frames landed" and "the
+ * screenshot will show the current UI" are the same state, and a false here is an
+ * early warning that the shot is about to be wrong.
+ */
+async function waitForFrames(page: TauriPage, frames: number, timeoutMs: number): Promise<boolean> {
+  return page.evaluate<boolean>(`new Promise(function(resolve) {
+    var left = ${String(frames)};
+    var done = false;
+    var finish = function(ok) { if (!done) { done = true; resolve(ok); } };
+    var tick = function() {
+      left -= 1;
+      if (left <= 0) finish(true); else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    setTimeout(function() { finish(false); }, ${String(timeoutMs)});
+  })`)
+}
+
 /**
  * Waits for the webview to composite a fresh frame before a native screenshot.
  * The native (CoreGraphics) capture grabs the window's last COMPOSITED frame,
  * which lags a just-applied DOM change (a freshly-opened modal), so without this
  * the modal can be missing from the image.
  *
- * Resolves on the next animation frame, BUT races a short timeout: `requestAnimationFrame`
- * is throttled/paused on a window that isn't foreground (in E2E, child windows
- * are ordered to the back), where it would otherwise never fire and hang the
- * eval. The timeout is a safety net, not the primary signal: a foreground window
- * resolves on the real frame in ~16 ms.
+ * Returns whether real frames landed (true) or the timeout bailed out (false).
+ * ❌ Don't drop that return value on the floor: swallowing it is what let a whole
+ * run of stale frames pass as green. `shoot()` logs it next to the blank verdict,
+ * which is what makes a failure legible instead of mysterious.
  */
-export async function settlePaint(page: TauriPage): Promise<void> {
-  await page.evaluate(`new Promise(function(resolve) {
-    var done = false;
-    var finish = function() { if (!done) { done = true; resolve(true); } };
-    requestAnimationFrame(function() { requestAnimationFrame(finish); });
-    setTimeout(finish, 500);
-  })`)
+export async function settlePaint(page: TauriPage): Promise<boolean> {
+  return waitForFrames(page, SETTLE_FRAMES, FRAME_WAIT_TIMEOUT_MS)
 }
 
 /**
- * Brings a separate window frontmost via `plugin:window|set_focus`. Needed both
- * to unstall a window's occluded-throttled async `onMount` (settings/shortcuts
- * gate content on it) and so macOS composites the current frame for the native
- * screenshot. `core:window:allow-set-focus` is granted in each window's
- * capability.
+ * Brings a window frontmost via `plugin:window|set_focus`. Needed both to unstall
+ * a window's occluded-throttled async `onMount` (settings/shortcuts gate content
+ * on it) and so macOS composites the current frame for the native screenshot.
+ * `core:window:allow-set-focus` is granted in each window's capability.
  */
 export async function focusWindow(page: TauriPage, label: string): Promise<void> {
   const labelJson = JSON.stringify(label)
   await page.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:window|set_focus', { label: ${labelJson} })`)
+}
+
+/**
+ * Whether the focus QUERY is usable at all. `core:window:allow-is-focused` is
+ * granted only in the E2E capture build (`src-tauri/build.rs` writes it into the
+ * generated `playwright.json`), so an app built without the feature rejects the
+ * invoke. One rejection turns the query off for the rest of the run rather than
+ * paying a rejected IPC per shot; the pixel check still guards every image.
+ */
+let focusQuerySupported = true
+
+/** Reads whether window `label` currently holds focus; null when unknowable. */
+async function queryFocused(page: TauriPage, label: string): Promise<boolean | null> {
+  if (!focusQuerySupported) return null
+  const labelJson = JSON.stringify(label)
+  try {
+    return await page.evaluate<boolean>(
+      `window.__TAURI_INTERNALS__.invoke('plugin:window|is_focused', { label: ${labelJson} })`,
+    )
+  } catch (err) {
+    focusQuerySupported = false
+    console.warn(
+      `[i18n-capture] can't query window focus (${err instanceof Error ? err.message : String(err)}); ` +
+        `falling back to the screenshot content check alone`,
+    )
+    return null
+  }
+}
+
+/** How long to wait for a `set_focus` to actually make the window key, and how often to re-ask. */
+const FOCUS_TIMEOUT_MS = 2000
+const FOCUS_POLL_MS = 50
+
+/**
+ * Brings window `label` frontmost and waits until it REPORTS that it holds focus,
+ * rather than assuming `set_focus` took effect. Returns the confirmed state, or
+ * null when the app can't answer.
+ *
+ * Being frontmost is what makes macOS composite the window, and the composited
+ * frame is what the native screenshot reads. Every shot goes through here.
+ */
+export async function ensureFrontmost(page: TauriPage, label: string): Promise<boolean | null> {
+  await focusWindow(page, label).catch(() => {})
+  const deadline = Date.now() + FOCUS_TIMEOUT_MS
+  for (;;) {
+    const focused = await queryFocused(page, label)
+    if (focused !== false) return focused // focused, or unknowable: stop either way
+    if (Date.now() >= deadline) return false
+    await new Promise((resolve) => setTimeout(resolve, FOCUS_POLL_MS))
+  }
+}
+
+/** Attempts a surface's shot gets before the surface is failed outright. */
+const SHOT_ATTEMPTS = 3
+
+/** Frames a retry waits for, and its ceiling: more room than the first attempt. */
+const RETRY_FRAMES = 6
+const RETRY_FRAME_TIMEOUT_MS = 3000
+
+/** sha1 of each written PNG → the surface that wrote it first, for the stale-frame warning. */
+const shotFingerprints = new Map<string, string>()
+
+/**
+ * Thrown when `shoot` cannot get real content into the PNG. Its own type so a
+ * caller that treats a staging failure as a documented skip (the dialog gallery)
+ * can still treat an unphotographable surface as a real failure.
+ */
+export class BlankShotError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'BlankShotError'
+  }
+}
+
+/**
+ * Takes ONE verified native screenshot of `page`'s window into `screenshot`.
+ *
+ * The contract every caller relies on: when this returns, a real image of the
+ * CURRENT UI is on disk. When it can't get one, it throws, and the surface lands
+ * in `capture-failed.json` and fails the run.
+ *
+ * How it gets there, in order of how much each step is trusted:
+ *  1. Make the window frontmost and CONFIRM it (`ensureFrontmost`), because macOS
+ *     doesn't composite a window that isn't, and an uncomposited window hands the
+ *     capture whatever frame it last drew (usually the empty startup window).
+ *  2. Wait for real animation frames (`settlePaint`), which only arrive while the
+ *     compositor is running for this window.
+ *  3. Decode the PNG that actually landed and check it carries content. This is
+ *     the authoritative step: 1 and 2 are the best available proxies, but the
+ *     pixels are the thing we're promising, so the pixels are what we verify.
+ *
+ * ❌ Never replace any of this with "wait N seconds and hope". A run once wrote 31
+ * blank images with the DOM fully correct, every gate passed, and a green result;
+ * only the image bytes could have caught it.
+ */
+export async function shoot(page: TauriPage, windowLabel: string, screenshot: string): Promise<void> {
+  const path = join(screenshotsDir, screenshot)
+  const tries: string[] = []
+  for (let attempt = 1; attempt <= SHOT_ATTEMPTS; attempt++) {
+    const frontmost = await ensureFrontmost(page, windowLabel)
+    // A retry gives the compositor a longer run of frames: the usual reason a
+    // first attempt comes back blank is that focus had only just landed.
+    const painted =
+      attempt === 1 ? await settlePaint(page) : await waitForFrames(page, RETRY_FRAMES, RETRY_FRAME_TIMEOUT_MS)
+    await page.screenshot({ path })
+    const written = readFileSync(path)
+    const verdict = assessImageContent(written)
+    if (verdict.ok) {
+      if (attempt > 1) console.log(`[i18n-capture] ${screenshot}: real content on attempt ${String(attempt)}`)
+      warnOnDuplicateFrame(screenshot, written)
+      return
+    }
+    const state =
+      `window '${windowLabel}' frontmost=${frontmost === null ? 'unknown' : String(frontmost)}, ` +
+      `frames=${painted ? 'delivered' : 'TIMED OUT (compositor stalled)'}`
+    tries.push(`attempt ${String(attempt)}: ${verdict.reason} [${state}]`)
+    console.warn(`[i18n-capture] ${screenshot}: ${verdict.reason} [${state}]; re-focusing and re-shooting`)
+  }
+  throw new BlankShotError(
+    `no real content in ${screenshot} after ${String(SHOT_ATTEMPTS)} attempts. ${tries.join(' | ')}. ` +
+      `A blank shot means the window never composited the frame the capture reads.`,
+  )
+}
+
+/**
+ * Warns when a shot is byte-identical to an earlier surface's shot. That's the
+ * OTHER shape of a stale frame: not blank, just the previous surface's picture
+ * captured again because the window never re-composited. A warning rather than a
+ * failure, since two surfaces could in principle look the same.
+ */
+function warnOnDuplicateFrame(screenshot: string, written: Buffer): void {
+  const digest = createHash('sha1').update(written).digest('hex')
+  const first = shotFingerprints.get(digest)
+  if (first !== undefined && first !== screenshot) {
+    console.warn(`[i18n-capture] ${screenshot} is pixel-identical to ${first}: likely a stale (re-captured) frame`)
+    return
+  }
+  shotFingerprints.set(digest, screenshot)
 }
 
 /**
@@ -346,10 +518,9 @@ export interface StagedSurface {
   /** The page whose capture sink + screenshot this surface uses. */
   page: TauriPage
   /**
-   * Window label to `set_focus` before the shot. Separate (occluded) windows
-   * need it so macOS composites the current frame into the backing store the
-   * native capture reads. Omit for overlays on the already-foreground main
-   * window (the new-folder + About dialogs).
+   * Label of the WINDOW this surface lives in, when it isn't the main window.
+   * `shoot` brings it frontmost before the capture. Omit for surfaces hosted on
+   * the main window (every overlay, dialog, and toast), which default to `main`.
    */
   focusLabel?: string
 }
@@ -394,20 +565,12 @@ export async function captureSurface(
     // window, else `main`). No-op outside the worst-case pass.
     const windowLabel = focusLabel ?? 'main'
     await stressLayoutIfWorstCase(page, windowLabel)
-    // Bring the window frontmost so macOS composites the CURRENT frame into the
-    // backing store the native capture reads, else an occluded window yields a
-    // blank frame. Separate windows always need this; the MAIN window also needs
-    // it in the worst-case pass, where it can be occluded (and the resize+zoom
-    // relayout makes a stale-frame grab more likely). In the default pass the main
-    // window stays foreground, so we keep the prior behavior (focus only separate
-    // windows) to avoid churn. `core:window:allow-set-focus` for `main` is granted
-    // only in the E2E capture build (build.rs `playwright.json`). Best-effort: a
-    // focus hiccup must not fail the surface, the worst case is a blank frame the
-    // DOM clip scan still covers. The `settlePaint` below waits for the composited
-    // frame AFTER focus + the relayout. See `stressLayoutIfWorstCase`.
-    if (focusLabel !== undefined || isWorstCasePass) await focusWindow(page, windowLabel).catch(() => {})
-    await settlePaint(page)
-    await page.screenshot({ path: join(screenshotsDir, screenshot) })
+    // `shoot` owns focus, paint settling, and verifying the pixels that landed.
+    // The MAIN window needs the focus step as much as a separate window does: it
+    // loses key status to every settings/viewer/shortcuts window the run opens,
+    // and macOS then hands the capture a stale frame for every main-window surface
+    // that follows. That's what produced a run of blank dialogs.
+    await shoot(page, windowLabel, screenshot)
     report[label] = { screenshot, keys: await keysFor(page, label) }
     await scanForClipping(page, label)
     console.log(`[i18n-capture] ${label}: ${String(report[label].keys.length)} keys → ${screenshot}`)
@@ -514,8 +677,7 @@ export async function captureToastSurface(
     // identity) before the native capture, which composites the last frame and
     // would otherwise grab a half-faded or already-gone toast.
     await waitForToastSettled(main)
-    await settlePaint(main)
-    await main.screenshot({ path: join(screenshotsDir, screenshot) })
+    await shoot(main, 'main', screenshot)
     report[label] = { screenshot, keys: await keysFor(main, label) }
     await scanForClipping(main, label)
     console.log(`[i18n-capture] ${label}: ${String(report[label].keys.length)} keys → ${screenshot}`)
@@ -580,8 +742,7 @@ export async function captureErrorPaneExample(
     // Worst-case pass: max zoom + min window so the error title/explanation/
     // suggestion fight the tightest pane. No-op outside the worst-case pass.
     await stressLayoutIfWorstCase(main, 'main')
-    await settlePaint(main)
-    await main.screenshot({ path: join(screenshotsDir, screenshot) })
+    await shoot(main, 'main', screenshot)
     report[label] = { screenshot, keys: await keysFor(main, label) }
     await scanForClipping(main, label)
     console.log(`[i18n-capture] ${label}: ${String(report[label].keys.length)} keys → ${screenshot}`)

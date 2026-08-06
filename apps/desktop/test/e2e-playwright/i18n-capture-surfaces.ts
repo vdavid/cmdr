@@ -41,8 +41,8 @@ import {
   focusWindow,
   keysFor,
   settlePaint,
+  shoot,
   scanForClipping,
-  screenshotsDir,
   isOverflowPass,
   overflowLocale,
 } from './i18n-capture-helpers.js'
@@ -791,9 +791,7 @@ export async function captureIndexingGallery(
     const sectionHeight = await main.evaluate<number>(scrollSectionToTop)
     if (sectionHeight > orig.h) await setSize(orig.w, sectionHeight)
     await main.evaluate(scrollSectionToTop)
-    await focusWindow(main, 'main').catch(() => {})
-    await settlePaint(main)
-    await main.screenshot({ path: join(screenshotsDir, screenshot) })
+    await shoot(main, 'main', screenshot)
     report[label] = { screenshot, keys: await keysFor(main, label) }
     await scanForClipping(main, label)
     console.log(`[i18n-capture] ${label}: ${String(report[label].keys.length)} keys → ${screenshot}`)
@@ -807,8 +805,9 @@ export async function captureIndexingGallery(
         return true;
       })()`)
       if (!present) continue
-      await settlePaint(main)
-      await main.screenshot({ path: join(screenshotsDir, `indexing-tile-${id}.png`) })
+      // Review-only PNGs (no report entry), but they go through the same verified
+      // shot: a blank tile image is as useless to a translator as a blank surface.
+      await shoot(main, 'main', `indexing-tile-${id}.png`)
     }
   } catch (err) {
     failed.push(label)

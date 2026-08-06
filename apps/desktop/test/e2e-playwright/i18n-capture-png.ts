@@ -28,20 +28,24 @@ export interface DecodedPng {
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 
-/**
- * Decodes an 8-bit RGBA non-interlaced PNG (what the native capture writes) into
- * raw pixels. Throws on any other flavor rather than guessing: a silently
- * mis-decoded image would make the blankness verdict meaningless.
- */
-export function decodePng(buf: Buffer): DecodedPng {
+/** Bytes per pixel in the one format we accept (RGBA8). */
+const BPP = 4
+
+/** The header fields we care about, plus the concatenated compressed pixel data. */
+interface PngParts {
+  width: number
+  height: number
+  depth: number
+  colorType: number
+  interlace: number
+  idat: Buffer[]
+}
+
+/** Walks the chunk stream, collecting IHDR fields and every IDAT payload. */
+function parseChunks(buf: Buffer): PngParts {
   if (buf.length < 8 || !buf.subarray(0, 8).equals(PNG_SIGNATURE)) throw new Error('not a PNG (bad signature)')
-  let width = 0
-  let height = 0
-  let depth = 0
-  let colorType = 0
-  let interlace = 0
+  const parts: PngParts = { width: 0, height: 0, depth: 0, colorType: 0, interlace: 0, idat: [] }
   let sawHeader = false
-  const idatParts: Buffer[] = []
   let offset = 8
   while (offset + 8 <= buf.length) {
     const length = buf.readUInt32BE(offset)
@@ -49,33 +53,88 @@ export function decodePng(buf: Buffer): DecodedPng {
     const data = buf.subarray(offset + 8, offset + 8 + length)
     if (data.length < length) throw new Error(`truncated ${type} chunk`)
     if (type === 'IHDR') {
-      width = data.readUInt32BE(0)
-      height = data.readUInt32BE(4)
-      depth = data[8]
-      colorType = data[9]
-      interlace = data[12]
+      parts.width = data.readUInt32BE(0)
+      parts.height = data.readUInt32BE(4)
+      parts.depth = data[8]
+      parts.colorType = data[9]
+      parts.interlace = data[12]
       sawHeader = true
     } else if (type === 'IDAT') {
-      idatParts.push(data)
+      parts.idat.push(data)
     } else if (type === 'IEND') {
       break
     }
     offset += 12 + length // length + type + data + CRC
   }
   if (!sawHeader) throw new Error('no IHDR chunk')
+  if (parts.idat.length === 0) throw new Error('no IDAT chunks')
+  return parts
+}
+
+/** The PNG spec's Paeth predictor: whichever neighbor the gradient points at. */
+function paeth(left: number, up: number, upLeft: number): number {
+  const estimate = left + up - upLeft
+  const dLeft = Math.abs(estimate - left)
+  const dUp = Math.abs(estimate - up)
+  const dUpLeft = Math.abs(estimate - upLeft)
+  if (dLeft <= dUp && dLeft <= dUpLeft) return left
+  return dUp <= dUpLeft ? up : upLeft
+}
+
+/**
+ * Reverses one row's filter in place. `cur` is the row being reconstructed (its
+ * already-decoded bytes are the "left" neighbors), `prev` the row above, empty on
+ * the first row so the spec's zero-neighbor rule falls out naturally.
+ */
+function unfilterRow(filter: number, line: Buffer, cur: Buffer, prev: Buffer, rowIndex: number): void {
+  const stride = cur.length
+  if (filter === 0) {
+    line.copy(cur)
+    return
+  }
+  for (let i = 0; i < stride; i++) {
+    const left = i >= BPP ? cur[i - BPP] : 0
+    const up = prev[i]
+    const upLeft = i >= BPP ? prev[i - BPP] : 0
+    let predictor: number
+    switch (filter) {
+      case 1:
+        predictor = left
+        break
+      case 2:
+        predictor = up
+        break
+      case 3:
+        predictor = (left + up) >> 1
+        break
+      case 4:
+        predictor = paeth(left, up, upLeft)
+        break
+      default:
+        throw new Error(`unknown row filter ${String(filter)} on row ${String(rowIndex)}`)
+    }
+    cur[i] = (line[i] + predictor) & 255
+  }
+}
+
+/**
+ * Decodes an 8-bit RGBA non-interlaced PNG (what the native capture writes) into
+ * raw pixels. Throws on any other flavor rather than guessing: a silently
+ * mis-decoded image would make the blankness verdict meaningless.
+ */
+export function decodePng(buf: Buffer): DecodedPng {
+  const { width, height, depth, colorType, interlace, idat } = parseChunks(buf)
   if (depth !== 8 || colorType !== 6 || interlace !== 0) {
     throw new Error(
       `unsupported PNG: depth ${String(depth)}, color type ${String(colorType)}, interlace ${String(interlace)}`,
     )
   }
-  if (idatParts.length === 0) throw new Error('no IDAT chunks')
-
-  const raw = inflateSync(Buffer.concat(idatParts))
-  const bytesPerPixel = 4
-  const stride = width * bytesPerPixel
+  const raw = inflateSync(Buffer.concat(idat))
+  const stride = width * BPP
   if (raw.length < height * (stride + 1)) throw new Error('IDAT shorter than the declared image')
 
   const pixels = Buffer.alloc(height * stride)
+  const firstRowNeighbors = Buffer.alloc(stride) // all zeros: the spec's "no row above"
   let read = 0
   for (let y = 0; y < height; y++) {
     const filter = raw[read]
@@ -83,40 +142,8 @@ export function decodePng(buf: Buffer): DecodedPng {
     const line = raw.subarray(read, read + stride)
     read += stride
     const cur = pixels.subarray(y * stride, (y + 1) * stride)
-    const prevStart = (y - 1) * stride
-    switch (filter) {
-      case 0: // None
-        line.copy(cur)
-        break
-      case 1: // Sub
-        for (let i = 0; i < stride; i++) cur[i] = (line[i] + (i >= bytesPerPixel ? cur[i - bytesPerPixel] : 0)) & 255
-        break
-      case 2: // Up
-        for (let i = 0; i < stride; i++) cur[i] = (line[i] + (y > 0 ? pixels[prevStart + i] : 0)) & 255
-        break
-      case 3: // Average
-        for (let i = 0; i < stride; i++) {
-          const left = i >= bytesPerPixel ? cur[i - bytesPerPixel] : 0
-          const up = y > 0 ? pixels[prevStart + i] : 0
-          cur[i] = (line[i] + ((left + up) >> 1)) & 255
-        }
-        break
-      case 4: // Paeth
-        for (let i = 0; i < stride; i++) {
-          const left = i >= bytesPerPixel ? cur[i - bytesPerPixel] : 0
-          const up = y > 0 ? pixels[prevStart + i] : 0
-          const upLeft = y > 0 && i >= bytesPerPixel ? pixels[prevStart + i - bytesPerPixel] : 0
-          const estimate = left + up - upLeft
-          const dLeft = Math.abs(estimate - left)
-          const dUp = Math.abs(estimate - up)
-          const dUpLeft = Math.abs(estimate - upLeft)
-          const predictor = dLeft <= dUp && dLeft <= dUpLeft ? left : dUp <= dUpLeft ? up : upLeft
-          cur[i] = (line[i] + predictor) & 255
-        }
-        break
-      default:
-        throw new Error(`unknown row filter ${String(filter)} on row ${String(y)}`)
-    }
+    const prev = y > 0 ? pixels.subarray((y - 1) * stride, y * stride) : firstRowNeighbors
+    unfilterRow(filter, line, cur, prev, y)
   }
   return { width, height, pixels }
 }

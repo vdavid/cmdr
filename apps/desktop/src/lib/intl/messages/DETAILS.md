@@ -184,6 +184,23 @@ What's where, and what's tracked:
 - The `@key.screenshot` / `@key.screenshotNote` refs in `en/*.json`: **tracked.** Written line-surgically (only those
   two fields change; the coupler has a value-safety test covering both).
 
+### Every shot is verified before the run can go green
+
+The native screenshot reads the window's last COMPOSITED CoreGraphics frame, and macOS doesn't composite a window that
+isn't frontmost. A backgrounded window therefore photographs as the empty startup frame while every other signal looks
+healthy: the DOM is right, the `waitForSelector` gates pass, the key dump is full, and the report records a surface that
+is really a dark rectangle with three traffic lights. **A run once wrote 31 such images and reported success**, so the
+harness now proves each image instead of assuming it:
+
+- Every capture goes through `shoot()` in `test/e2e-playwright/i18n-capture-helpers.ts`. ❌ Never call
+  `page.screenshot()` directly from the harness; that path skips the whole guard.
+- `shoot()` brings the target window frontmost and CONFIRMS it (`plugin:window|is_focused`, granted only in the E2E
+  capture build), waits for real animation frames (rAF is delivered only while the window is being composited), then
+  decodes the PNG that landed and checks it carries content (`i18n-capture-png.ts`, unit-tested). Failure re-focuses,
+  waits longer, and re-shoots; after three attempts the surface goes to `capture-failed.json` and fails the run.
+- ❌ Don't relax or remove the pixel check, and ❌ don't "fix" a blank surface with a longer sleep. The DOM being correct
+  is exactly the state in which this bug ships blank images, so only the image bytes can catch it.
+
 ### Direct vs representative couplings
 
 The coupler writes screenshots in two passes:

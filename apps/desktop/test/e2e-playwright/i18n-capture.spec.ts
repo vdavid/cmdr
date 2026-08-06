@@ -427,7 +427,7 @@ test.describe('i18n screenshot capture', () => {
     // is photographed only when it resolves a key nothing else recorded, so a
     // faithful capture of the production path always beats a gallery preview of
     // the same dialog. See `i18n-capture-gallery.ts` for the two limits it keeps.
-    await captureGalleryDialogs(main, report, skipped)
+    await captureGalleryDialogs(main, report, failed, skipped)
 
     // ── Documented skips deferred beyond the mock-staged surfaces ─────────────
     // These surfaces need backend state / events we can't fake from the frontend

@@ -38,16 +38,15 @@
  * can't tell those apart tells you nothing.
  */
 
-import { join } from 'node:path'
 import { expect } from './fixtures.js'
 import { ensureAppReady, dismissOverlay } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 import {
   type SurfaceEntry,
+  BlankShotError,
   captureCall,
   keysFor,
-  screenshotsDir,
-  settlePaint,
+  shoot,
   scanForClipping,
   stressLayoutIfWorstCase,
   isOverflowPass,
@@ -143,8 +142,14 @@ async function closePreview(main: TauriPage, dialogId: string): Promise<void> {
   }
 }
 
-/** What one attempted gallery state did, so the caller can tally without re-deriving it. */
-type StateOutcome = 'captured' | 'redundant' | 'unavailable'
+/**
+ * What one attempted gallery state did, so the caller can tally without
+ * re-deriving it. `unavailable` is a documented gap (the preview needs conditions
+ * this environment lacks); `failed` is a state that DID open but couldn't be
+ * photographed, which must reach `capture-failed.json` and fail the run rather
+ * than blend into the skip list.
+ */
+type StateOutcome = 'captured' | 'redundant' | 'unavailable' | 'failed'
 
 /**
  * Stages, measures, and (if it earns it) photographs ONE gallery state.
@@ -180,9 +185,8 @@ async function captureGalleryState(
     if (novel.length === 0) return 'redundant'
 
     await stressLayoutIfWorstCase(main, 'main')
-    await settlePaint(main)
     const screenshot = `${label}.png`
-    await main.screenshot({ path: join(screenshotsDir, screenshot) })
+    await shoot(main, 'main', screenshot)
     report[label] = { screenshot, keys }
     for (const key of keys) alreadyCovered.add(key)
     await scanForClipping(main, label)
@@ -193,7 +197,16 @@ async function captureGalleryState(
     // states need conditions this environment doesn't have (a mounted external
     // drive for the stale-index explainer, say). It lands in the TRACKED skip
     // list, so a state that stops opening shows up in the diff.
-    console.warn(`[i18n-capture] gallery ${label} SKIPPED: ${err instanceof Error ? err.message : String(err)}`)
+    //
+    // A shot this pass COULD NOT PHOTOGRAPH is a different animal: the dialog
+    // opened, its keys were read, and only the image is bad. Skipping that would
+    // hide a blank PNG behind a "documented gap" label, so it fails instead.
+    const detail = err instanceof Error ? err.message : String(err)
+    if (err instanceof BlankShotError) {
+      console.warn(`[i18n-capture] gallery ${label} FAILED: ${detail}`)
+      return 'failed'
+    }
+    console.warn(`[i18n-capture] gallery ${label} SKIPPED: ${detail}`)
     return 'unavailable'
   } finally {
     await closePreview(main, dialogId)
@@ -226,6 +239,7 @@ function unshootableReason(entry: (typeof DIALOG_GALLERY_ENTRIES)[number], hasFi
 export async function captureGalleryDialogs(
   main: TauriPage,
   report: Record<string, SurfaceEntry>,
+  failed: string[],
   skipped: string[],
 ): Promise<void> {
   await ensureAppReady(main)
@@ -274,6 +288,8 @@ export async function captureGalleryDialogs(
       else if (outcome === 'redundant') {
         redundant.push(label)
         skipped.push(`gallery-redundant:${label}`)
+      } else if (outcome === 'failed') {
+        failed.push(label)
       } else {
         skipped.push(`gallery-unavailable:${label}`)
       }

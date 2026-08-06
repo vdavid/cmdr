@@ -158,6 +158,17 @@ Only the layout facts that none of those carry live here:
   non-MTP spec that way needlessly serializes it). `i18n-capture.spec.ts` is excluded from every normal lane (`all` /
   `mtp` / `non-mtp`) and runs only under its own `i18n-capture` shard kind via `pnpm i18n:capture`: it's a screenshot
   driver, not a pass/fail suite.
+- **The capture harness photographs through `shoot()`, and `shoot()` verifies the pixels.** The native screenshot
+  returns the window's last COMPOSITED frame, and macOS composites only a frontmost window, so a backgrounded window
+  yields the empty startup frame with every other signal healthy (DOM correct, selectors matched, keys recorded). A run
+  once wrote 31 blank images and reported success. `shoot()` (in `i18n-capture-helpers.ts`) therefore: brings the target
+  window frontmost and CONFIRMS it via `plugin:window|is_focused`; waits for real animation frames (`settlePaint`
+  returns whether frames arrived or the bail-out timer fired, because rAF is delivered only while the window is being
+  composited); then decodes the written PNG and rejects a uniform / content-free image (`i18n-capture-png.ts`, a
+  dependency-free RGBA8 reader with unit tests). It re-focuses and re-shoots up to three times, then throws a
+  `BlankShotError`, which puts the surface in `capture-failed.json` and fails the run. ❌ No `page.screenshot()` calls
+  in the harness outside `shoot()`, ❌ no relaxing the pixel check, and ❌ no fixing a blank surface with a longer sleep:
+  a correct DOM is precisely the state this bug ships blank images in.
 - **Cargo features gate whole groups.** Every spec needs `playwright-e2e` (it's what grants the plugin's IPC
   permissions); the `mtp*` specs additionally need `virtual-mtp`; `smb.spec.ts` needs `smb-e2e` plus Docker (smb2's
   consumer containers).
