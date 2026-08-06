@@ -20,7 +20,12 @@ pub fn inject_listing_error(volume_id: String, error_code: i32) -> Result<(), St
 ///
 /// Idempotent, so the Debug window can call it on every trigger. The tree itself
 /// (and why the disk-backed dialogs need a real one) lives in `dev_fixtures`.
-#[cfg(debug_assertions)]
+///
+/// Present in dev AND E2E builds (a release build with `playwright-e2e`), because
+/// the gallery is a test instrument: `dialog-inset.spec.ts` measures every dialog
+/// through it, and five of them do real work on mount. Absent from a shipped build,
+/// which has neither.
+#[cfg(any(debug_assertions, feature = "playwright-e2e"))]
 #[tauri::command]
 #[specta::specta]
 pub async fn create_dialog_gallery_fixtures(

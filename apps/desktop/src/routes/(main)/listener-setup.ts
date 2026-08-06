@@ -416,11 +416,12 @@ export async function setupDialogListeners(ctx: ListenerSetupContext): Promise<v
     }),
   )
 
-  // Debug instruments: error injection and the soft-dialog gallery. Compiled in
-  // for dev AND the i18n screenshot-capture build (which drives gallery states to
-  // photograph dialogs), and nowhere else. Both flags are Vite build-time
-  // constants, so the whole block drops out of a production bundle.
-  if (import.meta.env.DEV || __CMDR_I18N_CAPTURE__) {
+  // Debug instruments: error injection and the soft-dialog gallery. Compiled in for
+  // dev, the i18n screenshot-capture build, and the E2E build (the last two drive
+  // gallery states — one to photograph dialogs, one to measure them), and nowhere
+  // else. Both flags are Vite build-time constants, so the whole block drops out of a
+  // production bundle.
+  if (import.meta.env.DEV || __CMDR_DIALOG_GALLERY__) {
     await listenTauri('debug-inject-error', (event) => {
       const { pane, friendly } = event.payload as { pane: 'left' | 'right'; friendly: FriendlyError }
       getExplorer()?.injectError(pane, friendly)

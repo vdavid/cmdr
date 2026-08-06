@@ -695,7 +695,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::file_system::inject_listing_error,
         #[cfg(debug_assertions)]
         crate::commands::file_system::preview_friendly_error,
-        #[cfg(debug_assertions)]
+        #[cfg(any(debug_assertions, feature = "playwright-e2e"))]
         crate::commands::file_system::create_dialog_gallery_fixtures,
         crate::commands::clipboard::copy_files_to_clipboard,
         crate::commands::clipboard::cut_files_to_clipboard,

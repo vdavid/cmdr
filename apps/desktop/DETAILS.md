@@ -162,6 +162,12 @@ failures):
 - Svelte: `cd apps/desktop && pnpm vitest run -t "<test_name>"`
 - Playwright: see `test/e2e-playwright/DETAILS.md` § "Running a single spec".
 
+Every E2E binary carries the dialog gallery: `test:e2e:playwright:build` and the Linux Docker build set
+`CMDR_E2E_BUILD=1`, which turns on the `__CMDR_DIALOG_GALLERY__` Vite define, and the fixture command behind it compiles
+under `feature = "playwright-e2e"` as well as `debug_assertions`. That's what lets `dialog-inset.spec.ts` measure every
+registered dialog without staging any of them; a production build sets neither and drops the whole harness. Full
+reasoning: `src/lib/dialog-gallery/DETAILS.md`.
+
 Suites: Vitest unit tests (`test/`), Playwright E2E (`test/e2e-playwright/`, see its `test/e2e-playwright/CLAUDE.md`),
 Linux Docker E2E (`test/e2e-linux/`, see its `test/e2e-linux/CLAUDE.md` including the Ubuntu test VM). Docker SMB
 fixtures: 14 Samba containers (guest, auth, readonly, slow, flaky, unicode, deep nesting, etc.); start with

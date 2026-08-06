@@ -24,6 +24,13 @@ const port = envPort ? Number(envPort) : 1420
 // `src/lib/intl/messages.svelte.ts` and `docs/specs/i18n-screenshots-plan.md`.
 const i18nCaptureBuild = process.env.CMDR_I18N_CAPTURE_BUILD === '1'
 
+// Every build that carries the dialog gallery: the capture build (which photographs
+// gallery states for translators) and the E2E build (whose `dialog-inset.spec.ts`
+// measures every dialog through it). Set by `test:e2e:playwright:build` and by the
+// Linux Docker build; a production build sets neither, so the harness and every
+// dialog it imports still drop out of the shipped bundle.
+const e2eBuild = process.env.CMDR_E2E_BUILD === '1'
+
 // Dev-only label of which working tree this session runs against (worktree slug, "main", or
 // the worktree directory name), set by the wrapper (scripts/tauri-wrapper.js). The dev-mode
 // title bar wraps it around the window title so side-by-side worktree windows are tellable
@@ -36,6 +43,7 @@ export default defineConfig(async () => ({
 
   define: {
     __CMDR_I18N_CAPTURE__: JSON.stringify(i18nCaptureBuild),
+    __CMDR_DIALOG_GALLERY__: JSON.stringify(i18nCaptureBuild || e2eBuild),
     __CMDR_WORKTREE_LABEL__: JSON.stringify(worktreeLabel),
   },
 

@@ -19,9 +19,8 @@ translators.
 ## Must-knows
 
 - **A design-review instrument must not lie.** ❌ Never add a `preview` prop or a dev-only branch to a dialog component:
-  you'd stop reviewing the shipping component. Pass real props, seed the real store, or emit the real event. A dialog
-  you can't reach honestly gets `status: 'not-triggerable'` and a TRUE reason, ❌ never a technical excuse for one
-  that's merely unwired (`search`).
+  you'd stop reviewing the shipping one. Pass real props, seed the real store, or emit the real event. A dialog you
+  can't reach honestly gets `status: 'not-triggerable'` and a TRUE reason, ❌ never a technical excuse.
 - **The dialogs render in the MAIN window**, mounted from `routes/(main)/+layout.svelte` (never `+page.svelte`, already
   over its file-length entry). A Debug-window copy would report a phantom open dialog to the Rust `SoftDialogTracker`
   and lose the two-pane backdrop.
@@ -30,8 +29,9 @@ translators.
 - **The harness, its fixtures, and the dialogs they pull in tree-shake out of prod**; `gallery-registry.ts` doesn't (it
   rides the Debug route's chunk). Keep `gallery-state.svelte.ts`, the only module `+page.svelte` imports,
   dependency-free: no registry, no fixtures, no dialog imports.
-- **The gate is `import.meta.env.DEV || __CMDR_I18N_CAPTURE__`** (`+layout.svelte`, `listener-setup.ts`). ❌ Never
-  narrow a site to `DEV`: the capture build is a prod Vite build, so the dialog screenshots go silently to zero.
+- **The gate is `import.meta.env.DEV || __CMDR_DIALOG_GALLERY__`** (`+layout.svelte`, `listener-setup.ts`), the define
+  every capture AND E2E build sets. ❌ Never narrow a site to `DEV` or to `__CMDR_I18N_CAPTURE__`: both of those builds
+  are prod Vite builds, so the dialog screenshots go silently to zero and `dialog-inset.spec.ts` stops measuring.
 - **Adding a soft dialog means adding a gallery row**, enforced by `dialog-gallery-coverage` (id presence only), and
   **its fixture record belongs in `fixtures/index.ts`**: harness and `fixtures.test.ts` both read `fixtureRecords`, so
   "state id ↔ fixture key" drift is a test failure, not a dead button.
@@ -46,6 +46,5 @@ translators.
   with a preview branch.
 - **`mkdir-confirmation` / `new-file-confirmation` need a pane-owned `listingId`, not a path**, and they really WRITE,
   which is what the fixture directory protects. ❌ Never fabricate an id: the conflict check then fails SILENTLY.
-  `DeleteDialog` / `TransferDialog` take `onConfirm` as a prop and perform nothing, so a no-op there is harmless.
 
 Adding an entry, the open mechanisms, the gap rows, and the transport: `DETAILS.md`.

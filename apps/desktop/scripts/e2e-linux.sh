@@ -321,7 +321,10 @@ docker run --rm \
         # --config: point frontendDist at the container-private adapter output
         # (CMDR_FRONTEND_BUILD_DIR above; see the volume comment at the top) so the
         # embed reads the dir THIS build wrote, not the bind-mounted host build/.
-        pnpm tauri build --ci --target "$LINUX_TARGET" --no-bundle --config "{\"build\":{\"frontendDist\":\"../.svelte-kit/linux-build\"}}" -- --features playwright-e2e,virtual-mtp,smb-e2e
+        # CMDR_E2E_BUILD=1 bakes in the dialog gallery (the `__CMDR_DIALOG_GALLERY__`
+        # Vite define) that `dialog-inset.spec.ts` drives; without it that spec skips
+        # and this lane silently stops covering dialog layout.
+        CMDR_E2E_BUILD=1 pnpm tauri build --ci --target "$LINUX_TARGET" --no-bundle --config "{\"build\":{\"frontendDist\":\"../.svelte-kit/linux-build\"}}" -- --features playwright-e2e,virtual-mtp,smb-e2e
 
         # Write the target triple so the host script can find the binary
         echo "$LINUX_TARGET" > /target/.linux-target

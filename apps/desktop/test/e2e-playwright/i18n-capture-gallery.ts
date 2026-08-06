@@ -14,8 +14,8 @@
  * gets a gallery row, with no change here.
  *
  * `+layout.svelte` and `listener-setup.ts` gate the gallery on
- * `import.meta.env.DEV || __CMDR_I18N_CAPTURE__`. This capture build sets the
- * second flag; a production build sets neither. See
+ * `import.meta.env.DEV || __CMDR_DIALOG_GALLERY__`. The capture build sets that
+ * define, so does every E2E build; a production build sets neither. See
  * `src/lib/dialog-gallery/DETAILS.md`.
  *
  * Two deliberate limits, both about not lying to translators:

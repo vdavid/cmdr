@@ -27,15 +27,13 @@
  * Every dialog is measured in ONE test and reported together: a per-dialog test
  * would stop at the first failure, and the useful output here is the whole list.
  *
- * ❗ **It needs a gallery-carrying binary, which the standard E2E lane does NOT
- * build.** The gallery's gate is `import.meta.env.DEV || __CMDR_I18N_CAPTURE__`
- * and the disk-backed rows' fixture command is `#[cfg(debug_assertions)]`; a plain
- * `pnpm test:e2e:playwright:build` binary is a release build with neither. Against
- * one, this test SKIPS with the build recipe rather than reporting phantom
- * failures. The build that satisfies it is the capture build (`pnpm i18n:capture
- * --build` makes the same one). Giving the normal lane a gallery would mean a
- * build-time E2E define plus widening that Rust cfg — a deliberate call, not a
- * side effect of this spec.
+ * ❗ **It needs a gallery-carrying binary.** Every E2E build makes one:
+ * `CMDR_E2E_BUILD=1` (set by `test:e2e:playwright:build` and the Linux Docker
+ * build) turns on the `__CMDR_DIALOG_GALLERY__` define, and the disk-backed rows'
+ * fixture command compiles under `feature = "playwright-e2e"` as well as
+ * `debug_assertions`. A hand-rolled build that sets neither leaves this test
+ * nothing to measure: locally it SKIPS with the recipe, but under CI it FAILS,
+ * because a silent skip there would read as coverage that isn't happening.
  *
  * ❗ A full-bleed section (a divider or scroll region that deliberately reaches
  * the panel edge, cancelling the inset with a negative inline margin) is a real
@@ -216,17 +214,15 @@ test.describe('Dialog body inset', () => {
   test('every dialog’s first body section lines up with its title', async ({ tauriPage }) => {
     const page = tauriPage as TauriPage
 
-    // The gallery is baked in only where its gate is on (`import.meta.env.DEV ||
-    // __CMDR_I18N_CAPTURE__`), so a plain E2E binary has no listener to answer the
-    // trigger and every dialog would read as "didn't open". Skip loudly with the
-    // build recipe rather than reporting 30 phantom failures.
+    // No gallery in this binary means no listener to answer the trigger, and every
+    // dialog would read as "didn't open". Locally that's a build to redo, so skip
+    // with the recipe; in CI it's the whole check quietly not running, so fail.
     const galleryLive = await probeGallery(page)
-    test.skip(
-      !galleryLive,
-      'This binary carries no dialog gallery. Build one that does:\n' +
-        '  CMDR_I18N_CAPTURE_BUILD=1 node scripts/tauri-wrapper.ts build --no-bundle --target $(rustc -vV | grep host | cut -d" " -f2) ' +
-        '-- --features playwright-e2e,virtual-mtp --config profile.release.debug-assertions=true',
-    )
+    const noGallery =
+      'This binary carries no dialog gallery (`CMDR_E2E_BUILD=1` sets the ' +
+      '`__CMDR_DIALOG_GALLERY__` define). Rebuild with `pnpm test:e2e:playwright:build`.'
+    if (!galleryLive && process.env.CI) throw new Error(noGallery)
+    test.skip(!galleryLive, noGallery)
 
     const fixtures = await createFixtureDir(page)
     if (fixtures === null) {

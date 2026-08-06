@@ -321,8 +321,22 @@ pub(super) fn collect_debug_types(types: &mut Types) -> Vec<Function> {
     collect_functions![
         crate::commands::error_reporter::save_error_report_to_disk,
         crate::commands::file_system::preview_friendly_error,
-        crate::commands::file_system::create_dialog_gallery_fixtures,
     ](types)
+}
+
+/// The dialog gallery's fixture command, which outlives `debug_assertions`: an E2E
+/// build is a RELEASE build, and `dialog-inset.spec.ts` drives the gallery there.
+/// Its own collector rather than a wider `collect_debug_types`, so the other two
+/// debug commands stay out of the E2E binary, and so neither collector can claim it
+/// twice in a dev build.
+#[cfg(any(debug_assertions, feature = "playwright-e2e"))]
+pub(super) fn collect_dialog_gallery_types(types: &mut Types) -> Vec<Function> {
+    use specta::function::collect_functions;
+    collect_functions![crate::commands::file_system::create_dialog_gallery_fixtures,](types)
+}
+#[cfg(not(any(debug_assertions, feature = "playwright-e2e")))]
+pub(super) fn collect_dialog_gallery_types(_types: &mut Types) -> Vec<Function> {
+    vec![]
 }
 
 // MTP commands (macOS + Linux)
@@ -613,6 +627,7 @@ pub(super) fn collect_all_types(types: &mut Types) -> Vec<Function> {
     all.extend(collect_permission_types(types));
     all.extend(collect_updater_types(types));
     all.extend(collect_e2e_types(types));
+    all.extend(collect_dialog_gallery_types(types));
     #[cfg(debug_assertions)]
     all.extend(collect_debug_types(types));
     all
