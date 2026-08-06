@@ -3,8 +3,9 @@
 //! Every volume renders through one uniform shape so agents stop guessing which
 //! entries carry ids or what a bare string meant: `name`, `id`, and `kind`
 //! (`local` / `smb` / `mtp` / `virtual`) always, plus the present-when-known
-//! `filesystem`, `readOnly`, `ejectable`, `indexStatus`, `smbConnectionState`, and
-//! `totalBytes` / `availableBytes`.
+//! `filesystem`, `readOnly`, `ejectable`, `indexStatus`, `smbConnectionState`,
+//! `totalBytes` / `availableBytes`, and their spelled-out twins `totalHuman` /
+//! `availableHuman`.
 //!
 //! Same snapshot-then-format split as `resources/indexing.rs`: [`build_volumes_yaml`]
 //! is pure over a `&[VolumeSummary]` so the formatting is unit-testable without a
@@ -16,6 +17,7 @@
 
 use super::indexing::status_token;
 use crate::index_host::index;
+use crate::search::format_size;
 
 /// A volume's transport kind, the coarse routing hint an agent reads first.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -124,11 +126,18 @@ fn push_volume(lines: &mut Vec<String>, v: &VolumeSummary) {
     if let Some(state) = v.smb_connection_state {
         lines.push(format!("    smbConnectionState: {}", state));
     }
-    // Raw bytes, not a formatted size: the reader does its own arithmetic ("is
-    // 40 GB of downloads worth deleting"), and a pre-rounded "1.4 TB" loses that.
+    // Raw bytes AND a formatted size, never one instead of the other. The raw pair
+    // is what a reader does arithmetic with ("is 40 GB of downloads worth
+    // deleting"), and a pre-rounded "1.4 TB" would lose that; the human pair is
+    // what a reader who can't run a script states out loud, and dividing by 1,024
+    // in its head is where it invents numbers. Formatted through
+    // `search::format_size`, the one formatter (so a size reads the same here as in
+    // the `search` table).
     if let Some(space) = v.space {
         lines.push(format!("    totalBytes: {}", space.total_bytes));
+        lines.push(format!("    totalHuman: {}", format_size(space.total_bytes)));
         lines.push(format!("    availableBytes: {}", space.available_bytes));
+        lines.push(format!("    availableHuman: {}", format_size(space.available_bytes)));
     }
 }
 
@@ -321,6 +330,11 @@ mod tests {
         let yaml = build_volumes_yaml(&[v]);
         assert!(yaml.contains("totalBytes: 2000000000000"));
         assert!(yaml.contains("availableBytes: 214300000000"));
+        // Beside the bytes, not instead of them: a reader that has to state the number
+        // out loud can't divide by 1,024 reliably, and one doing arithmetic still has
+        // the exact value.
+        assert!(yaml.contains(&format!("totalHuman: {}", format_size(2_000_000_000_000))));
+        assert!(yaml.contains(&format!("availableHuman: {}", format_size(214_300_000_000))));
     }
 
     #[test]
@@ -330,6 +344,8 @@ mod tests {
         let yaml = build_volumes_yaml(&[local("Backup HD", "volumes-backup")]);
         assert!(!yaml.contains("totalBytes"));
         assert!(!yaml.contains("availableBytes"));
+        assert!(!yaml.contains("totalHuman"));
+        assert!(!yaml.contains("availableHuman"));
     }
 
     #[test]

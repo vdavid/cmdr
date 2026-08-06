@@ -13,6 +13,7 @@ use tauri::{AppHandle, Runtime};
 
 use crate::mcp::resources::volumes::{VolumeSummary, snapshot_volumes};
 use crate::mcp::{ToolError, ToolResult};
+use crate::search::format_size;
 
 /// One volume as the agent sees it. The honesty-bearing fields are `index_status`
 /// (`fresh` / `scanning` / `stale` / `off` — only `fresh` is authoritative) and
@@ -41,10 +42,18 @@ pub struct VolumeSnapshot {
     /// watching this volume, never guessed.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub total_bytes: Option<u64>,
+    /// `total_bytes` spelled out (`"2 TB"`). Present exactly when its byte
+    /// counterpart is: the agent can't divide by 1,024, so a capacity it has to
+    /// state out loud arrives already formatted.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total_human: Option<String>,
     /// Free bytes, as last polled. Paired with `total_bytes` — both present or
     /// both absent.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub available_bytes: Option<u64>,
+    /// `available_bytes` spelled out. Present exactly when its byte counterpart is.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub available_human: Option<String>,
 }
 
 /// Map the shipped [`VolumeSummary`] snapshot into the agent's typed result. Pure,
@@ -62,7 +71,9 @@ pub(crate) fn to_volume_snapshots(summaries: &[VolumeSummary]) -> Vec<VolumeSnap
             index_status: v.index_status.map(|s| s.to_string()),
             smb_connection_state: v.smb_connection_state.map(|s| s.to_string()),
             total_bytes: v.space.map(|s| s.total_bytes),
+            total_human: v.space.map(|s| format_size(s.total_bytes)),
             available_bytes: v.space.map(|s| s.available_bytes),
+            available_human: v.space.map(|s| format_size(s.available_bytes)),
         })
         .collect()
 }
@@ -81,7 +92,7 @@ pub async fn execute_list_volumes<R: Runtime>(_app: &AppHandle<R>, _params: &Val
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mcp::resources::volumes::VolumeKind;
+    use crate::mcp::resources::volumes::{VolumeKind, VolumeSpace};
 
     fn summary(
         name: &str,
@@ -116,6 +127,37 @@ mod tests {
         assert_eq!(out[1].kind, "local");
         assert_eq!(out[1].index_status.as_deref(), Some("off"));
         assert_eq!(out[1].smb_connection_state, None);
+    }
+
+    #[test]
+    fn space_carries_a_human_form_beside_the_bytes() {
+        // The agent can't divide by 1,024 reliably, so "how full is it" has to arrive
+        // already spelled out; the raw bytes stay for anything that needs arithmetic.
+        let mut v = summary("Macintosh HD", VolumeKind::Local, Some("fresh"), None);
+        v.space = Some(VolumeSpace {
+            total_bytes: 2_000_000_000_000,
+            available_bytes: 214_300_000_000,
+        });
+        let out = to_volume_snapshots(&[v]);
+        assert_eq!(out[0].total_bytes, Some(2_000_000_000_000));
+        assert_eq!(
+            out[0].total_human.as_deref(),
+            Some(format_size(2_000_000_000_000)).as_deref()
+        );
+        assert_eq!(
+            out[0].available_human.as_deref(),
+            Some(format_size(214_300_000_000)).as_deref()
+        );
+    }
+
+    #[test]
+    fn an_unwatched_volume_omits_the_human_form_too() {
+        // Present exactly when the byte counterparts are: "0 B free" would read as a
+        // full disk.
+        let out = to_volume_snapshots(&[summary("Backup HD", VolumeKind::Local, Some("off"), None)]);
+        assert_eq!(out[0].total_bytes, None);
+        assert_eq!(out[0].total_human, None);
+        assert_eq!(out[0].available_human, None);
     }
 
     #[test]
