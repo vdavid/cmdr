@@ -2616,6 +2616,7 @@ export type MessageKey =
   | 'transfer.split.clean'
   | 'transfer.split.skipped'
   | 'transfer.trash'
+  | 'ui.alertDialog.copyPathAria'
   | 'ui.alertDialog.defaultButton'
   | 'ui.combobox.emptyText'
   | 'ui.combobox.loadingSuggestions'

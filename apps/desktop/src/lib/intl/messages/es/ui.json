@@ -3,6 +3,10 @@
   "@ui.alertDialog.defaultButton": {
     "sourceHash": "565339b"
   },
+  "ui.alertDialog.copyPathAria": "Copiar la ruta al portapapeles",
+  "@ui.alertDialog.copyPathAria": {
+    "sourceHash": "333608a"
+  },
   "ui.modalDialog.close": "Cerrar",
   "@ui.modalDialog.close": {
     "sourceHash": "7d9eb7a"

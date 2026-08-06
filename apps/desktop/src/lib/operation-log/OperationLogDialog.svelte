@@ -196,7 +196,6 @@
     .body {
         display: flex;
         flex-direction: column;
-        padding: 0 var(--spacing-xl) var(--spacing-xl);
         max-height: calc(100vh - 2 * var(--spacing-2xl) - var(--titlebar-height));
         min-height: 0;
     }

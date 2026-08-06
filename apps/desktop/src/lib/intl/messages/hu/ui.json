@@ -4,6 +4,10 @@
     "sourceHash": "565339b",
     "sameAsSourceJustification": "'OK' is the universal affirmative/dismiss control label, kept verbatim in Hungarian UI. Matches fileOperations.button.ok / mtp.connectedToast.ok."
   },
+  "ui.alertDialog.copyPathAria": "Útvonal másolása a vágólapra",
+  "@ui.alertDialog.copyPathAria": {
+    "sourceHash": "333608a"
+  },
   "ui.modalDialog.close": "Bezárás",
   "@ui.modalDialog.close": {
     "sourceHash": "7d9eb7a"

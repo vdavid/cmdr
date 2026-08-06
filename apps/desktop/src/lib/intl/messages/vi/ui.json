@@ -4,6 +4,10 @@
     "sourceHash": "565339b",
     "sameAsSourceJustification": "macOS Vietnamese uses 'OK' verbatim for the default dismiss button (AppKit vi shows 'OK', no 'Dong y'); kept as-is."
   },
+  "ui.alertDialog.copyPathAria": "Sao chép đường dẫn vào bảng nhớ tạm",
+  "@ui.alertDialog.copyPathAria": {
+    "sourceHash": "333608a"
+  },
   "ui.modalDialog.close": "Đóng",
   "@ui.modalDialog.close": {
     "sourceHash": "7d9eb7a"

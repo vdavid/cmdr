@@ -547,7 +547,7 @@
 <style>
     /* Scan wait section (wraps the ScanPhaseBody child during the scan phases) */
     .scan-wait-section {
-        padding: var(--spacing-md) var(--spacing-xl) var(--spacing-lg);
+        padding: var(--spacing-md) 0 var(--spacing-lg);
         display: flex;
         flex-direction: column;
         gap: var(--spacing-sm);
@@ -558,7 +558,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: var(--spacing-md) var(--spacing-xl);
+        padding: var(--spacing-md) 0;
         gap: var(--spacing-sm);
     }
 
@@ -613,7 +613,6 @@
     /* Gutter around the shared dual-bar readout; the readout owns its own
        internal widths. */
     .progress-section {
-        padding: 0 var(--spacing-xl);
         margin-bottom: var(--spacing-md);
     }
 
@@ -656,19 +655,18 @@
 
     /* Current file */
     .current-file {
-        padding: var(--spacing-sm) var(--spacing-xl);
+        padding: var(--spacing-sm) var(--spacing-md);
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
         overflow: hidden;
         white-space: nowrap;
         background: var(--color-bg-tertiary);
-        margin: 0 var(--spacing-lg);
         border-radius: var(--radius-sm);
     }
 
     /* Buttons */
     .smb-native-note {
-        margin: 0 var(--spacing-xl);
+        margin: 0;
         padding: var(--spacing-xs) var(--spacing-sm);
         font-size: var(--font-size-xs);
         color: var(--color-warning-text);
@@ -681,7 +679,8 @@
         gap: var(--spacing-md);
         justify-content: flex-end;
         flex-wrap: wrap;
-        padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-xl);
+        /* Last row in a footerless body: the body's own inset supplies the gap below. */
+        padding: var(--spacing-lg) 0 0;
     }
 
     /* Icon + label inside the Pause/Resume and Queue buttons. */

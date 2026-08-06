@@ -4,6 +4,10 @@
     "sourceHash": "565339b",
     "sameAsSourceJustification": "'OK' is the universal affirmative, identical in Swedish (macOS uses 'OK'). Deliberately identical."
   },
+  "ui.alertDialog.copyPathAria": "Kopiera sökväg till urklipp",
+  "@ui.alertDialog.copyPathAria": {
+    "sourceHash": "333608a"
+  },
   "ui.modalDialog.close": "Stäng",
   "@ui.modalDialog.close": {
     "sourceHash": "7d9eb7a"

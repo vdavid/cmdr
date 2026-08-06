@@ -476,6 +476,11 @@
        region) cancels it locally with a negative inline margin. */
     .modal-body {
         padding: 0 var(--spacing-dialog);
+        /* A path, a URL, or a long filename has no break opportunity inside its last
+           segment, so without this it overflows the inset and runs to the panel edge.
+           `anywhere` (not `break-word`) also lets the token shrink the min-content
+           width, so a flex/grid child can't be widened by it either. */
+        overflow-wrap: anywhere;
     }
 
     /* Footerless dialogs: the body owns the bottom padding the footer would give. */

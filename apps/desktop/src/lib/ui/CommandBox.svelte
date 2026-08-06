@@ -1,7 +1,7 @@
 <script lang="ts">
     /**
-     * Copyable terminal command display.
-     * Monospace command string with a one-click Copy button and "Copied!" feedback.
+     * Copyable monospace text: a terminal command by default, or any other string
+     * a user needs verbatim (a path). One-click Copy with "Copied!" feedback.
      */
     import { copyToClipboard } from '$lib/tauri-commands'
     import Button from './Button.svelte'
@@ -10,9 +10,17 @@
     interface Props {
         /** The command to display and copy. */
         command: string
+        /**
+         * Rendered instead of `command` when the full string is too long to show
+         * (a shortened form with an ellipsis). Copy still carries the WHOLE
+         * `command`: the cap protects the layout, and the clipboard has none.
+         */
+        displayText?: string
+        /** aria-label for the Copy button. Defaults to the terminal-command wording. */
+        copyAriaLabel?: string
     }
 
-    const { command }: Props = $props()
+    const { command, displayText, copyAriaLabel }: Props = $props()
 
     let copied = $state(false)
 
@@ -30,8 +38,13 @@
 </script>
 
 <div class="command-box">
-    <code class="command">{command}</code>
-    <Button variant="secondary" size="mini" onclick={handleCopy} aria-label={tString('ui.commandBox.copyAria')}>
+    <code class="command">{displayText ?? command}</code>
+    <Button
+        variant="secondary"
+        size="mini"
+        onclick={handleCopy}
+        aria-label={copyAriaLabel ?? tString('ui.commandBox.copyAria')}
+    >
         {copied ? tString('ui.commandBox.copied') : tString('ui.commandBox.copy')}
     </Button>
 </div>

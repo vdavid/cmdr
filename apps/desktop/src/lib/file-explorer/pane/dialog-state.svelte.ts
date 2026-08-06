@@ -76,6 +76,8 @@ export interface NewFileDialogPropsData {
 export interface AlertDialogPropsData {
   title: string
   message: string
+  /** A path the alert is about, shown as a copyable block instead of inside `message`. */
+  path?: string
 }
 
 export interface TransferErrorPropsData {
@@ -302,8 +304,8 @@ export function createDialogState(deps: DialogStateDeps) {
 
     // --- Methods to open dialogs (called from DualPaneExplorer) ---
 
-    showAlert(title: string, message: string) {
-      alertDialogProps = { title, message }
+    showAlert(title: string, message: string, path?: string) {
+      alertDialogProps = { title, message, path }
       showAlertDialog = true
     },
 

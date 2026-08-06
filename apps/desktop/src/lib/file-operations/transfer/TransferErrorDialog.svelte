@@ -144,10 +144,9 @@
     }
 
     .details-section {
-        padding: 0 var(--spacing-xl) var(--spacing-lg);
+        padding: var(--spacing-md) 0 var(--spacing-lg);
         border-top: 1px solid var(--color-border-strong);
         margin-top: var(--spacing-xs);
-        padding-top: var(--spacing-md);
     }
 
     .details-toggle {

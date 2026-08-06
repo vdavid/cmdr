@@ -191,7 +191,12 @@
 {/if}
 
 {#if showAlertDialog && alertDialogProps}
-    <AlertDialog title={alertDialogProps.title} message={alertDialogProps.message} onClose={onAlertClose} />
+    <AlertDialog
+        title={alertDialogProps.title}
+        message={alertDialogProps.message}
+        path={alertDialogProps.path}
+        onClose={onAlertClose}
+    />
 {/if}
 
 {#if showTransferErrorDialog && transferErrorProps}

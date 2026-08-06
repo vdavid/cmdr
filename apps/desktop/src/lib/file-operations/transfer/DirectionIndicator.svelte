@@ -43,7 +43,6 @@
         align-items: center;
         justify-content: flex-start;
         gap: var(--spacing-md);
-        padding: 0 var(--spacing-xl);
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
     }

@@ -3,6 +3,10 @@
   "@ui.alertDialog.defaultButton": {
     "sourceHash": "565339b"
   },
+  "ui.alertDialog.copyPathAria": "拷贝路径到剪贴板",
+  "@ui.alertDialog.copyPathAria": {
+    "sourceHash": "333608a"
+  },
   "ui.modalDialog.close": "关闭",
   "@ui.modalDialog.close": {
     "sourceHash": "7d9eb7a"

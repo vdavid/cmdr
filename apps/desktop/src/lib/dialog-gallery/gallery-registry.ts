@@ -100,6 +100,7 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
       { id: 'long', label: 'Long message' },
       { id: 'custom-button', label: 'Custom button label' },
       { id: 'long-unbroken-path', label: 'Unbreakable long path' },
+      { id: 'path-past-display-cap', label: 'Path past the display cap' },
     ],
   },
 

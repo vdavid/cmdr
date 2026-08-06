@@ -44,7 +44,7 @@
 
 <style>
     .error-content {
-        padding: 0 var(--spacing-xl) var(--spacing-lg);
+        padding-bottom: var(--spacing-lg);
     }
 
     .message {

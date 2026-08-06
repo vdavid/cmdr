@@ -510,6 +510,7 @@ All dialogs use `ModalDialog.svelte`.
 | Edge              | 1px `--color-dialog-border-outer` + inset 1px `--color-dialog-border-inner` | macOS draws a panel edge as two hairlines: darker outside, lighter inside                            |
 | Drop shadow       | `--shadow-dialog` (three layers, down-only)                                 | Lifts the panel off the app the way a floating macOS panel casts                                     |
 | Max content width | 480px                                                                       | Optimal line length (~60 chars at 14px body)                                                         |
+| Alert width       | 420px, or 630px when it carries a `path`                                    | A sentence or two needs no more; a path is one long unbreakable string, and width buys back lines    |
 
 **Three surfaces, one relationship.** The panel is `--color-bg-dialog`; a grouped block on it (`SectionCard`, a details
 box) is `--color-bg-secondary` and reads as RAISED; a content well (the query dialogs' result list) is
@@ -520,9 +521,15 @@ strips paint no background of their own; separate them with spacing, or at most 
 horizontal inset (`--spacing-dialog`) matches the title bar and footer on every dialog, so a new body section can't
 forget it and hang off the panel edge. The title bar's bottom padding supplies the gap above the body; the footer
 supplies the gap below, and a footerless dialog gets the same inset as bottom padding on the body instead. ❌ A body
-section must never re-add `--spacing-dialog` of its own — that's a double inset. A block that genuinely has to reach the
-panel edge cancels the inset locally with a negative inline margin (`margin-inline: calc(var(--spacing-dialog) * -1)`),
-so the exception is visible where it applies. The opt-ins:
+section must never re-add a horizontal inset of its own, in ANY token — that's a double inset, and it reads as text that
+starts further in than the title above it and the buttons below it. A block that genuinely has to reach the panel edge
+cancels the inset locally with a negative inline margin (`margin-inline: calc(var(--spacing-dialog) * -1)`), so the
+exception is visible where it applies. `dialog-inset.spec.ts` walks the dialog gallery and measures it.
+
+The body also carries `overflow-wrap: anywhere`, so a path, a URL, or a long filename wraps instead of running past the
+inset to the panel edge. A path a dialog is ABOUT (rather than one mentioned in passing) belongs in a `CommandBox`,
+where it's monospace, selectable, and copyable; `AlertDialog`'s `path` prop does that and widens the panel to 1.5× for
+it. The opt-ins:
 
 - `resizable`: lets the user drag the bottom-right corner to resize the dialog (default off). Turn it on for dialogs
   that host resizable content like review lists; the body region grows and scrolls, and the caller still passes the

@@ -197,7 +197,6 @@
         display: flex;
         flex-direction: column;
         flex: 1 1 auto;
-        padding: 0 var(--spacing-xl) var(--spacing-xl);
         min-height: 0;
     }
 

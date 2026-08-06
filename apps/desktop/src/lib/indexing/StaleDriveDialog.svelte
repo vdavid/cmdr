@@ -69,11 +69,9 @@
     >
         {#snippet title()}{tString('indexing.staleDialog.title')}{/snippet}
 
-        <div class="body">
-            <p id="drive-index-stale-body" class="description">
-                {t('indexing.staleDialog.body', { name: staleVolumeName })}
-            </p>
-        </div>
+        <p id="drive-index-stale-body" class="description">
+            {t('indexing.staleDialog.body', { name: staleVolumeName })}
+        </p>
 
         {#snippet footer()}
             <Button variant="secondary" onclick={neverShowAgain}>
@@ -87,10 +85,6 @@
 {/if}
 
 <style>
-    .body {
-        padding: 0 var(--spacing-xl);
-    }
-
     .description {
         margin: 0 0 var(--spacing-md);
         color: var(--color-text-primary);

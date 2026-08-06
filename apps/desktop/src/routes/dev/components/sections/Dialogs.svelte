@@ -187,7 +187,7 @@
     }
 
     .dp-titlebar {
-        padding: var(--spacing-xl) var(--spacing-xl) var(--spacing-md);
+        padding: var(--spacing-dialog) var(--spacing-dialog) var(--spacing-md);
     }
 
     .dp-title {
@@ -199,7 +199,7 @@
     }
 
     .dp-body {
-        padding: 0 var(--spacing-xl) var(--spacing-xl);
+        padding: 0 var(--spacing-dialog) var(--spacing-dialog);
     }
 
     .dp-message {
@@ -235,10 +235,6 @@
         background: transparent;
         color: var(--color-text-secondary);
         border: 1px solid var(--color-border);
-    }
-
-    .real-body {
-        padding: 0 var(--spacing-xl);
     }
 
     .real-body p {

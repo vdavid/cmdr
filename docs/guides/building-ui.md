@@ -18,7 +18,8 @@ don't add a focus trap yourself: the primitive already does all of it.
 - Register the dialog: add its id to `SOFT_DIALOG_REGISTRY` and pass it as `ModalDialog`'s `dialogId` (an unregistered
   id is a TypeScript error). This feeds the Rust MCP backend's "available dialogs".
 - Optional props: `resizable` (user-draggable resize), `fillBody` (fixed-height frame), and the rest, documented in
-  `../design-system.md` § Dialogs. The body's side inset is NOT one of them: `ModalDialog` always owns it.
+  `../design-system.md` § Dialogs. The body's side inset is NOT one of them: `ModalDialog` always owns it, in any token
+  (`dialog-inset.spec.ts` measures every gallery dialog and fails on a section that re-pays it).
 - Add it to the dialog gallery: Debug > Soft dialogs lists every registered soft dialog and opens it with fixture data,
   which is how the dialogs get design-reviewed. A new dialog needs a row (enforced by the `dialog-gallery-coverage`
   check); see `apps/desktop/src/lib/dialog-gallery/CLAUDE.md`.

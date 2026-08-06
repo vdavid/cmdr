@@ -122,7 +122,7 @@
 <style>
     .description {
         margin: 0;
-        padding: 0 var(--spacing-xl) var(--spacing-lg);
+        padding-bottom: var(--spacing-lg);
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
         line-height: 1.5;
@@ -131,7 +131,7 @@
     .file-comparison {
         display: flex;
         gap: var(--spacing-md);
-        padding: 0 var(--spacing-xl) var(--spacing-lg);
+        padding-bottom: var(--spacing-lg);
     }
 
     .file-card {
@@ -185,10 +185,11 @@
         display: flex;
         gap: var(--spacing-md);
         justify-content: flex-end;
-        padding: 0 var(--spacing-xl) var(--spacing-sm);
+        padding-bottom: var(--spacing-sm);
     }
 
+    /* The last row: the body's footerless inset supplies the gap below it. */
     .secondary-row {
-        padding-bottom: var(--spacing-xl);
+        padding-bottom: 0;
     }
 </style>

@@ -92,12 +92,18 @@ primary action last (rightmost). Pass buttons via the `footer` snippet — `Moda
 that owns the right-alignment, gap, and the dialog's bottom padding, so callers don't hand-roll a button-row. The title
 bar's padding, the footer's, and the body's side inset all come from ONE token (`--spacing-dialog`), so title, body, and
 buttons line up flush at the same inset and nothing crowds the title or the action row. **The body inset is not
-opt-outable**: there is no `padded` prop, and a body section must never re-add `--spacing-dialog` of its own (that's
-double inset). A block that genuinely needs to reach the panel edge cancels the inset locally with a negative inline
-margin, so the exception is visible at the one place it applies instead of the rule being off for the whole dialog. A
-dialog with a custom button layout (multiple rows, a left-side helper, equal-width buttons) keeps its buttons in
-`children` and right-aligns them itself; genuinely centered content (spinners, progress bars, numeric readouts, hero
-panels like `AboutWindow`) stays centered.
+opt-outable**: there is no `padded` prop, and a body section must never re-add a horizontal inset of its OWN, in any
+token (that's a double inset; the offenders that drifted in all paid it with `--spacing-xl`, which is why grepping for
+`--spacing-dialog` found none of them). A block that genuinely needs to reach the panel edge cancels the inset locally
+with a negative inline margin, so the exception is visible at the one place it applies instead of the rule being off for
+the whole dialog. `dialog-inset.spec.ts` measures it: it walks the dialog gallery and compares the CONTENT edges (rect +
+border + padding, so a padded `<p>` can't pass on its box alone) of each title and its first body section.
+
+**The body wraps unbreakable tokens** (`overflow-wrap: anywhere`). A path, a URL, or a long filename has no break
+opportunity inside its last segment, so without it the string overflows the inset and runs to the panel edge. A dialog
+with a custom button layout (multiple rows, a left-side helper, equal-width buttons) keeps its buttons in `children` and
+right-aligns them itself; genuinely centered content (spinners, progress bars, numeric readouts, hero panels like
+`AboutWindow`) stays centered.
 
 **The panel must never become a containing block for `position: fixed`.** The drag offset rides on `left` / `top`
 against the panel's own `position: relative`. ❌ Don't move it to a `transform`, and don't add `filter`,
@@ -155,6 +161,23 @@ dark mode where a light-mode-strength shadow would be invisible against the canv
 The overlay element receives `tabindex="-1"` and is focused on mount so Escape/keydown events are captured without a
 visible focus ring on the scrim. The overlay also carries `use:trapFocus={{ onEscape: onclose }}` (see § "Focus
 trapping" below), so every `ModalDialog` consumer gets Tab containment and the Escape fallback for free.
+
+## AlertDialog
+
+`AlertDialog.svelte`: the one-action alert (`ModalDialog` + a single primary button, `role="alertdialog"`). Props:
+`title`, `message`, optional `path`, optional `buttonText` (defaults to "OK"), `onClose`. Enter and the button both
+close it. `showAlert(title, message, path?)` on the pane dialog state is how the app raises one.
+
+**A path goes in `path`, never inside `message`.** When an alert is ABOUT a path (too long, gone, unreadable), that path
+is the payload the user has to act on: it renders under the message in a `CommandBox`, so it's monospace, selectable,
+and copyable, instead of being a wall of unbreakable text mid-sentence. Passing `path` also switches the panel from
+`WIDTH_PX` (420px) to `PATH_WIDTH_PX` (630px, 1.5×): the payload is one long unbreakable string, so every extra pixel is
+one less wrapped line.
+
+**The path display is capped at 1000 characters, middle-truncated**, keeping the filename (the tail carries the
+meaning). macOS tops out at 1024 bytes per path, so the cap only bites a pathological string that would otherwise
+stretch the dialog into a wall of text. Copy still carries the WHOLE path: the cap protects the layout, and the
+clipboard has none.
 
 ## Focus trapping (`focus-trap.ts`)
 
@@ -741,9 +764,15 @@ hover handlers no-op for them.
 
 ## CommandBox
 
-`CommandBox.svelte`: monospace terminal command with a one-click Copy button and 2-second "Copied!" feedback. Takes a
-single `command` string prop. Handles clipboard internally (`copyToClipboard` with `navigator.clipboard` fallback).
-Parent controls spacing via its own wrapper. Used in `PtpcameradDialog`, `MtpPermissionDialog`, and `ShareBrowser`.
+`CommandBox.svelte`: monospace copyable text with a one-click Copy button and 2-second "Copied!" feedback. A terminal
+command by default, but it also carries any string a user needs verbatim (`AlertDialog`'s path). Handles clipboard
+internally (`copyToClipboard` with `navigator.clipboard` fallback). Parent controls spacing via its own wrapper. Used in
+`PtpcameradDialog`, `MtpPermissionDialog`, `ShareBrowser`, and `AlertDialog`.
+
+Props: `command` (displayed and copied), `displayText` (rendered INSTEAD of `command`, for a caller that shortens a long
+string; Copy still carries the whole `command`, because the cap protects the layout and the clipboard has none), and
+`copyAriaLabel` (defaults to the terminal-command wording; a non-command caller passes its own, since "Copy command to
+clipboard" would be a lie to a screen reader).
 
 ## Size
 

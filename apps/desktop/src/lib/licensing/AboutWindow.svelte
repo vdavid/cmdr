@@ -103,50 +103,48 @@
         <span class="sr-only">{tString('licensing.about.srTitle')}</span>
     {/snippet}
 
-    <div class="about-body">
-        <div class="about-content">
-            <div class="app-icon">
-                <span class="icon-text">⌘</span>
-            </div>
-
-            <p class="app-name">{tString('licensing.about.appName')}</p>
-            <p class="app-tagline">{tString('licensing.about.tagline')}</p>
-
-            <div class="version-info">
-                <span class="version">{tString('licensing.about.version', { version })}</span>
-                <p class="beta-note">
-                    <Trans key="licensing.about.betaNote" snippets={{ github }} />
-                </p>
-            </div>
-
-            <div class="license-info">
-                <p class="license-description">{getLicenseDescription()}</p>
-            </div>
-
-            <p class="ai-attribution">{tString('licensing.about.aiAttribution')}</p>
-
-            <div class="links">
-                <a href="https://getcmdr.com" onclick={handleLinkClick('https://getcmdr.com')}
-                    >{tString('licensing.about.linkWebsite')}</a
-                >
-                {#if shouldShowLicenseLink()}
-                    <span class="separator">•</span>
-                    <a href="https://getcmdr.com/pricing" onclick={handleLinkClick('https://getcmdr.com/pricing')}
-                        >{tString('licensing.about.linkGetLicense')}</a
-                    >
-                {/if}
-                <span class="separator">•</span>
-                <a href="https://github.com/vdavid/cmdr" onclick={handleLinkClick('https://github.com/vdavid/cmdr')}
-                    >{tString('licensing.about.linkGithub')}</a
-                >
-                <span class="separator">•</span>
-                <a href="https://discord.gg/4BVafBneKJ" onclick={handleLinkClick('https://discord.gg/4BVafBneKJ')}
-                    >{tString('licensing.about.linkDiscord')}</a
-                >
-            </div>
-
-            <p class="copyright">{tString('licensing.about.copyright')}</p>
+    <div class="about-content">
+        <div class="app-icon">
+            <span class="icon-text">⌘</span>
         </div>
+
+        <p class="app-name">{tString('licensing.about.appName')}</p>
+        <p class="app-tagline">{tString('licensing.about.tagline')}</p>
+
+        <div class="version-info">
+            <span class="version">{tString('licensing.about.version', { version })}</span>
+            <p class="beta-note">
+                <Trans key="licensing.about.betaNote" snippets={{ github }} />
+            </p>
+        </div>
+
+        <div class="license-info">
+            <p class="license-description">{getLicenseDescription()}</p>
+        </div>
+
+        <p class="ai-attribution">{tString('licensing.about.aiAttribution')}</p>
+
+        <div class="links">
+            <a href="https://getcmdr.com" onclick={handleLinkClick('https://getcmdr.com')}
+                >{tString('licensing.about.linkWebsite')}</a
+            >
+            {#if shouldShowLicenseLink()}
+                <span class="separator">•</span>
+                <a href="https://getcmdr.com/pricing" onclick={handleLinkClick('https://getcmdr.com/pricing')}
+                    >{tString('licensing.about.linkGetLicense')}</a
+                >
+            {/if}
+            <span class="separator">•</span>
+            <a href="https://github.com/vdavid/cmdr" onclick={handleLinkClick('https://github.com/vdavid/cmdr')}
+                >{tString('licensing.about.linkGithub')}</a
+            >
+            <span class="separator">•</span>
+            <a href="https://discord.gg/4BVafBneKJ" onclick={handleLinkClick('https://discord.gg/4BVafBneKJ')}
+                >{tString('licensing.about.linkDiscord')}</a
+            >
+        </div>
+
+        <p class="copyright">{tString('licensing.about.copyright')}</p>
     </div>
 </ModalDialog>
 
@@ -161,10 +159,6 @@
         clip-path: inset(50%);
         white-space: nowrap;
         border: 0;
-    }
-
-    .about-body {
-        padding: 0 var(--spacing-2xl) var(--spacing-2xl);
     }
 
     .about-content {

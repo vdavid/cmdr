@@ -4,6 +4,10 @@
     "sourceHash": "565339b",
     "sameAsSourceJustification": "'OK' is the standard DE default-dismiss-button label, identical to English (macOS DE uses 'OK')."
   },
+  "ui.alertDialog.copyPathAria": "Pfad in die Zwischenablage kopieren",
+  "@ui.alertDialog.copyPathAria": {
+    "sourceHash": "333608a"
+  },
   "ui.modalDialog.close": "Schließen",
   "@ui.modalDialog.close": {
     "sourceHash": "7d9eb7a"
