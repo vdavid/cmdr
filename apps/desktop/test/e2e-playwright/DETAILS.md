@@ -176,6 +176,13 @@ Only the layout facts that none of those carry live here:
   call resolves finds a missing or half-written file. `shoot()` waits for `isCompletePng` (the file's own IEND
   terminator) instead, and shoots each attempt to its own `.staged-N` path so a slow write from a rejected attempt can
   never land on top of a good image.
+- **A surface's readiness gate must name CONTENT, and it's re-proven at shot time.** Two separate traps. First, gating
+  on a container that holds both a spinner and the loaded content passes while the spinner is still up:
+  `acknowledgements` shipped a picture of "Loading the list…" that way. Name the thing only the loaded state renders (a
+  package row, not the scroll box). Second, staging runs several steps before the shutter, and a surface can fall back
+  to a loading state in between, so `StagedSurface.readySelector` re-checks the same selector immediately before
+  `shoot()` and fails the surface loudly if it no longer holds. `dialogSurface` and `mainOverlay` pass their wait
+  selector through automatically; hand-rolled stages should too when their content arrives asynchronously.
 - **The i18n capture pass sets a generous `test.setTimeout`** (~90s clean, the rest is headroom for a disturbed run's
   retries). On timeout Playwright destroys the plugin socket, so every remaining surface fails with `Not connected`,
   which reads like an app crash and hides the blank-frame message that actually explains the run. Raise it as surfaces

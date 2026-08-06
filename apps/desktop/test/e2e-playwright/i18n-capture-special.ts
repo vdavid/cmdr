@@ -52,7 +52,9 @@ export async function captureMainDialogs(
 
   // Opens one main-window ModalDialog by command, captures it, dismisses it.
   // `waitSelector` should name something the dialog only renders once it has the
-  // content its copy describes, not just its shell.
+  // content its copy describes, not just its shell. It's handed back as the
+  // `readySelector` too, so the same condition is re-proven in the frame that
+  // actually gets photographed rather than only at open time.
   const dialogSurface = async (label: string, commandId: string, waitSelector: string): Promise<void> => {
     await captureSurface(label, report, failed, async () => {
       await captureCall(main, 'reset')
@@ -60,7 +62,7 @@ export async function captureMainDialogs(
       await captureCall<boolean>(main, 'enable')
       await dispatchMenuCommand(main, commandId)
       await main.waitForSelector(waitSelector, 5000)
-      return { page: main }
+      return { page: main, readySelector: waitSelector }
     })
     await dismissOverlay(main).catch(() => {})
     await captureCall(main, 'disable').catch(() => {})
@@ -80,16 +82,20 @@ export async function captureMainDialogs(
   // Feedback dialog (`feedback.send`). Opens directly; renders `feedback.dialog.*`.
   await dialogSurface('feedback', 'feedback.send', '[data-dialog-id="feedback"]')
 
-  // Acknowledgements dialog (`app.acknowledgements`). It reads the generated
-  // third-party notices asynchronously and shows a spinner until they land, so we
-  // wait for the package list rather than the dialog shell: the loaded branch is
-  // what renders the jump links, the section headings, and the full-texts line
-  // (`licensing.acknowledgements.*`). The spinner branch would record only
-  // `.loading` and shoot a nearly empty dialog.
+  // Acknowledgements dialog (`app.acknowledgements`). It loads the generated
+  // third-party notices from an `import()` that settles over an unknown number of
+  // macrotasks, showing a spinner until they land, so we gate on a real PACKAGE
+  // ROW: the loaded branch is what renders the jump links, section headings, and
+  // the full-texts line (`licensing.acknowledgements.*`).
+  //
+  // ❗ `.packages-scroll` is NOT enough, even though it lives in the loaded branch:
+  // it once passed while the shot still caught "Loading the list…". `.package-list
+  // li` is the signal the component's own tests poll for (`licensing/DETAILS.md` §
+  // Testing gotcha), and `captureSurface` re-checks it at shot time.
   await dialogSurface(
     'acknowledgements',
     'app.acknowledgements',
-    '[data-dialog-id="acknowledgements"] .packages-scroll',
+    '[data-dialog-id="acknowledgements"] .package-list li',
   )
 }
 

@@ -481,6 +481,19 @@ export interface StagedSurface {
    * the main window (every overlay, dialog, and toast), which default to `main`.
    */
   focusLabel?: string
+  /**
+   * A selector that must STILL match immediately before the shot. Pass the same
+   * content selector the staging waited on.
+   *
+   * Staging proves a surface was ready at SOME earlier moment; this proves it's
+   * ready in the frame we actually photograph, which is the only moment that
+   * matters. The acknowledgements dialog shipped a picture of its "Loading the
+   * list…" spinner while its report entry recorded the loaded state's keys,
+   * exactly because the two moments were allowed to differ. ❗ Name something the
+   * LOADED state renders (a package row), never the container that holds both a
+   * spinner and the content.
+   */
+  readySelector?: string
 }
 
 /**
@@ -509,7 +522,7 @@ export async function captureSurface(
 ): Promise<void> {
   const screenshot = `${label}.png`
   try {
-    const { page, focusLabel } = await stage()
+    const { page, focusLabel, readySelector } = await stage()
     // Overflow pass: each separate WebviewWindow (settings, viewer, shortcuts)
     // has its own locale source, so set the pseudolocale on whatever page this
     // surface captures against. Idempotent on `main` (already switched in the
@@ -523,6 +536,12 @@ export async function captureSurface(
     // window, else `main`). No-op outside the worst-case pass.
     const windowLabel = focusLabel ?? 'main'
     await stressLayoutIfWorstCase(page, windowLabel)
+    // Re-prove readiness in the frame we're about to photograph. Staging ran
+    // several steps ago and only proved the surface was ready THEN; anything
+    // since (a re-render, an async remount, a state that fell back to a spinner)
+    // can have undone it, and the resulting image looks plausible enough to ship.
+    // Throwing here fails the surface loudly instead.
+    if (readySelector !== undefined) await page.waitForSelector(readySelector, 5000)
     // `shoot` owns focus, paint settling, and verifying the pixels that landed.
     // The MAIN window needs the focus step as much as a separate window does: it
     // loses key status to every settings/viewer/shortcuts window the run opens,

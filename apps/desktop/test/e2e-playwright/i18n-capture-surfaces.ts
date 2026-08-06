@@ -215,6 +215,8 @@ export async function captureMainOverlays(
   // Stages one main-window overlay: enable+setSurface, run the surface-specific
   // `open` (returns its wait selector), let `captureSurface` shoot it, then
   // dismiss + disable. `dismissOverlay` no-ops (caught) for non-overlay surfaces.
+  // The wait selector doubles as the `readySelector`, so the same condition is
+  // re-proven in the frame that gets photographed, not just at open time.
   const mainOverlay = async (label: string, open: () => Promise<string>): Promise<void> => {
     await captureSurface(label, report, failed, async () => {
       await captureCall(main, 'reset')
@@ -222,7 +224,7 @@ export async function captureMainOverlays(
       await captureCall<boolean>(main, 'enable')
       const waitSelector = await open()
       await main.waitForSelector(waitSelector, 5000)
-      return { page: main }
+      return { page: main, readySelector: waitSelector }
     })
     await dismissOverlay(main).catch(() => {})
     await captureCall(main, 'disable').catch(() => {})
