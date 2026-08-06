@@ -362,7 +362,8 @@ fn cross_fs_move_dir_merge_skip_child_preserves_source_child() {
 //     survive at the dest, source deleted.
 //
 // Single-file and dir-with-one-skipped-child shapes both appear. The volume
-// move axis lives in `volume_move_tests.rs` (InMemoryVolume harness). Cells we
+// move axis lives in the `volume_move_*_tests.rs` suites (InMemoryVolume
+// harness), `volume_move_tests.rs` first. Cells we
 // cannot exercise in a tempdir (two real filesystems for a genuine cross-FS
 // move) are simulated by calling `move_with_staging` directly, the same seam
 // the existing cross-FS tests use.

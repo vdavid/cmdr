@@ -992,7 +992,8 @@ mod single_shot_tests;
 #[path = "volume_strategy_stale_handle_tests.rs"]
 mod stale_handle_tests;
 // `pub(super)` so sibling test modules under `transfer` (notably
-// `volume_move_tests`) reuse the same doubles instead of hand-rolling their own.
+// `volume_move_failure_tests`) reuse the same doubles instead of hand-rolling
+// their own.
 #[cfg(test)]
 #[path = "volume_strategy_test_support.rs"]
 pub(super) mod test_support;

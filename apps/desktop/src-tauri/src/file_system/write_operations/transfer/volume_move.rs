@@ -733,6 +733,28 @@ pub(crate) async fn move_volumes_with_progress(
     }
 }
 
+// The move suite is split by subject: cross-volume (`tests`), same-volume
+// rename, cancel, failure/error-naming, progress reporting, and folder merge.
+// Shared fixtures and doubles live in `test_support`, which they all reach
+// through `super::test_support`.
+#[cfg(test)]
+#[path = "volume_move_cancel_tests.rs"]
+mod cancel_tests;
+#[cfg(test)]
+#[path = "volume_move_failure_tests.rs"]
+mod failure_tests;
+#[cfg(test)]
+#[path = "volume_move_merge_tests.rs"]
+mod merge_tests;
+#[cfg(test)]
+#[path = "volume_move_progress_tests.rs"]
+mod progress_tests;
+#[cfg(test)]
+#[path = "volume_move_same_tests.rs"]
+mod same_tests;
+#[cfg(test)]
+#[path = "volume_move_test_support.rs"]
+mod test_support;
 #[cfg(test)]
 #[path = "volume_move_tests.rs"]
 mod tests;

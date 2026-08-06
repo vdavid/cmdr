@@ -297,7 +297,7 @@ pub(in crate::file_system::write_operations) async fn delete_volume_path_recursi
 /// to it), and a skipped child never landed at the destination: the source copy
 /// is the ONLY copy. An unconditional recursive sweep of the source folder
 /// therefore destroys exactly the data the user declined to move. Pinned by
-/// `volume_move_tests.rs::move_folder_merge_never_loses_a_byte_under_every_policy`.
+/// `volume_move_merge_tests.rs::move_folder_merge_never_loses_a_byte_under_every_policy`.
 ///
 /// A directory is deleted only once its whole subtree is gone, so preserving one
 /// leaf keeps its entire ancestor spine. A child that FAILS to delete counts as
