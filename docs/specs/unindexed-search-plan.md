@@ -755,14 +755,14 @@ runs (`0 → 34 → 91 → 124 → 169 → 200` over three seconds, sampled insi
   indexed") rather than handing back a lower bound shaped like a complete listing. `> 0`, not "at the current epoch",
   matching the descent rule.
 
-**Verified after the closing pass.** The macOS Playwright lane is green (269 tests across 3 shards) and the Linux
-Docker lane is green (279 tests) — the first full Linux run of this effort, and the specs the lead reported failing
-there pass, including the `search-recent` flake, which turned out to be my restore handing the drive back "fresh" but
-not yet able to answer. ⚠️ `rust-tests` reports 56–79 tests killed at the 8 s nextest cap; that is CONTENTION, not this
-work: `cargo test -p cmdr-index --lib` is 1,346/1,346 green, each flagged test passes alone in ~1.2 s, and the same
-four index tests time out identically on the pre-change tree (controlled by checking the changed files out at
-`046b9c7a7^` and re-running). ⚠️ Two duration warns are new and warn-only: the live-walk tests take 6.1 s / 6.3 s on
-macOS and 2.7 s / 3.6 s on Linux, because a walk somebody can watch is the point. ❌ No allowlist entry added.
+**Verified after the closing pass.** The macOS Playwright lane is green (269 tests across 3 shards) and the Linux Docker
+lane is green (279 tests) — the first full Linux run of this effort, and the specs the lead reported failing there pass,
+including the `search-recent` flake, which turned out to be my restore handing the drive back "fresh" but not yet able
+to answer. ⚠️ `rust-tests` reports 56–79 tests killed at the 8 s nextest cap; that is CONTENTION, not this work:
+`cargo test -p cmdr-index --lib` is 1,346/1,346 green, each flagged test passes alone in ~1.2 s, and the same four index
+tests time out identically on the pre-change tree (controlled by checking the changed files out at `046b9c7a7^` and
+re-running). ⚠️ Two duration warns are new and warn-only: the live-walk tests take 6.1 s / 6.3 s on macOS and 2.7 s /
+3.6 s on Linux, because a walk somebody can watch is the point. ❌ No allowlist entry added.
 
 **Attribution.** M7's Open-in-pane handoff fix (the `handedOffRunId()` change and `SearchDialog.handoff.svelte.test.ts`)
 is INSIDE commit `0253ba91d`, whose message is about analytics: that agent ran `git add -A` over another agent's dirty
@@ -781,6 +781,13 @@ the next reader isn't misled by the message.
   which now says clearing takes EVERY drive's index.
 - `index-crate-isolation`'s ceilings were raised twice inside this effort, both with David's standing say-so and both
   argued in the check: root promises 44 → 50 and `Index` methods 35 → 40. There is no headroom left, by design.
+- **A prefilled query that arrives while the arena is loading never runs, and nobody is told.** `QueryDialog`'s
+  `runOnMount` effect clears its flag and then runs only `if (config.isIndexReady && …)`; when readiness lands a moment
+  later, nothing re-fires. The comment calls it deliberate ("the user hits Enter to fire when ready"), and for a person
+  looking at the dialog that reads fine. For the MCP `open_search_dialog` `autoRun: true` path it doesn't: the tool
+  returns OK and the agent gets an empty dialog with no signal. It's also what made `search-recent` flake on the Linux
+  lane behind a rescan. Recommendation: keep the flag set until either the run fires or readiness resolves to "no index
+  is coming". Not changed here — it's a behavior choice in a shared dialog, not a defect.
 - Four `CLAUDE.md` files the closing pass touched sit 3–7 words over the 600-word soft budget after three trimming
   rounds (`lib/search`, `test/e2e-playwright`, `indexing/read`, `indexing/scanner`), each carrying one new guardrail.
   Warn-only, and ❌ no allowlist was touched. Trim further, or leave.
