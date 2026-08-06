@@ -249,9 +249,9 @@
   "@fileOperations.transferDialog.mergeInfoMany": {
     "sourceHash": "6d734ce"
   },
-  "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {arquivo já existe} many {arquivos já existem} other {arquivos já existem}}",
+  "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {arquivo já existe. O que você quer fazer com ele?} many {arquivos já existem. O que você quer fazer com eles?} other {arquivos já existem. O que você quer fazer com eles?}}",
   "@fileOperations.transferDialog.conflictsSummary": {
-    "sourceHash": "e3ae41e"
+    "sourceHash": "f93d158"
   },
   "fileOperations.transferDialog.policySkip": "{count, plural, one {Ignorar} many {Ignorar todos} other {Ignorar todos}}",
   "@fileOperations.transferDialog.policySkip": {

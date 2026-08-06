@@ -250,9 +250,9 @@
   "@fileOperations.transferDialog.mergeInfoMany": {
     "sourceHash": "6d734ce"
   },
-  "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {fichier existe déjà} many {fichiers existent déjà} other {fichiers existent déjà}}",
+  "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {fichier existe déjà. Que voulez-vous en faire ?} many {fichiers existent déjà. Que voulez-vous en faire ?} other {fichiers existent déjà. Que voulez-vous en faire ?}}",
   "@fileOperations.transferDialog.conflictsSummary": {
-    "sourceHash": "e3ae41e"
+    "sourceHash": "f93d158"
   },
   "fileOperations.transferDialog.policySkip": "{count, plural, one {Ignorer} many {Tout ignorer} other {Tout ignorer}}",
   "@fileOperations.transferDialog.policySkip": {

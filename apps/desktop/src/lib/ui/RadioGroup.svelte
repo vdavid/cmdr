@@ -31,6 +31,13 @@
         disabled?: boolean
         /** `vertical` stacks the options; `horizontal` lays them in a wrapping row. */
         orientation?: 'vertical' | 'horizontal'
+        /**
+         * Lays the options out in this many equal full-width columns, filling row by row
+         * (5 options over 3 columns read as 3 + 2). Overrides `orientation`. Use it when a
+         * wrapping row would break at an arbitrary place and leave the options looking
+         * scattered; the grid gives them a shared left edge per column.
+         */
+        columns?: number
         /** Accessible name for the group root. */
         ariaLabel?: string
         /**
@@ -54,6 +61,7 @@
         onValueChange,
         disabled = false,
         orientation = 'vertical',
+        columns,
         ariaLabel,
         footer,
         itemTrailing,
@@ -69,10 +77,23 @@
 </script>
 
 <RadioGroup.Root {value} onValueChange={handleValueChange} {disabled} aria-label={ariaLabel}>
-    <div class="radio-group" class:horizontal={orientation === 'horizontal'}>
+    <div
+        class="radio-group"
+        class:horizontal={orientation === 'horizontal' && columns === undefined}
+        class:grid={columns !== undefined}
+        style={columns === undefined ? undefined : `grid-template-columns: repeat(${String(columns)}, minmax(0, 1fr))`}
+    >
         {#each items as item (item.value)}
             <div class="radio-row">
-                <RadioGroup.Item value={item.value} class="radio-item" disabled={disabled || item.disabled}>
+                <!-- The described case is a DATA ATTRIBUTE, not a second class: a
+                     computed `class` string hides the name from the unused-CSS
+                     scanner, which then reads every `.radio-*` rule as dead. -->
+                <RadioGroup.Item
+                    value={item.value}
+                    class="radio-item"
+                    data-described={item.description ? 'true' : undefined}
+                    disabled={disabled || item.disabled}
+                >
                     <RadioGroup.ItemControl class="radio-control" />
                     <RadioGroup.ItemText class="radio-text">
                         <span class="radio-label">{item.label}</span>
@@ -119,9 +140,23 @@
         gap: var(--spacing-md);
     }
 
+    /* Equal columns filling the full width, so a leftover row (5 options over 3
+       columns) still lines its options up under the ones above. The track list is
+       inline (the count is a prop): `repeat(n, minmax(0, 1fr))`, `minmax` rather
+       than a bare `1fr` so a long label wraps inside its column instead of widening
+       the whole grid. */
+    .radio-group.grid {
+        display: grid;
+        gap: var(--spacing-xs) var(--spacing-md);
+    }
+
+    /* A plain option centers its dot on its label: with `flex-start` a single-line
+       label sits visibly high against the 16px control, which reads as sloppy across
+       a row of options. Only a described option top-aligns (`[data-described]`),
+       because there the dot belongs beside the LABEL line, not the block's middle. */
     :global(.radio-item) {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         gap: var(--spacing-sm);
         padding: var(--spacing-xs) 0;
         cursor: default;
@@ -129,6 +164,10 @@
            own row, not the window shell. See `Switch.svelte`'s `.switch-root`
            for the full why (the shell-scroll-under-traffic-lights bug). */
         position: relative;
+    }
+
+    :global(.radio-item[data-described]) {
+        align-items: flex-start;
     }
 
     :global(.radio-item[data-disabled]) {
@@ -145,8 +184,13 @@
         border-radius: var(--radius-full);
         background: var(--color-bg-primary);
         flex-shrink: 0;
-        margin-top: var(--spacing-xxs);
         transition: all var(--transition-base);
+    }
+
+    /* Nudges the dot onto the label's optical middle when a description stacks
+       below it, which `align-items: flex-start` alone leaves a hair high. */
+    :global(.radio-item[data-described] .radio-control) {
+        margin-top: var(--spacing-xxs);
     }
 
     :global(.radio-control[data-state='checked']) {

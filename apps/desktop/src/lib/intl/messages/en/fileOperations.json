@@ -392,9 +392,9 @@
     }
   },
 
-  "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {file already exists} other {files already exist}}",
+  "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {file already exists. What do you want to do with it?} other {files already exist. What do you want to do with them?}}",
   "@fileOperations.transferDialog.conflictsSummary": {
-    "description": "Summary in the transfer dialog of how many destination files clash with the ones being transferred. The whole verb phrase agrees with the count ('1 file already exists' / '3 files already exist').",
+    "description": "Summary in the transfer dialog of how many destination files clash with the ones being transferred, followed by the question the options below it answer. Both the verb phrase and the pronoun agree with the count ('1 file already exists. What do you want to do with it?' / '3 files already exist. What do you want to do with them?').",
     "placeholders": {
       "countText": "how many clashing files, formatted for display (e.g. 1,234)",
       "count": "the same number (drives the singular/plural verb phrase)"

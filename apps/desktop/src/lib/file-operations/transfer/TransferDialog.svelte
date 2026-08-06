@@ -504,84 +504,78 @@
     dialogId="transfer-confirmation"
     onclose={handleCancel}
     containerStyle="width: 500px"
-    padded={false}
     growDownward
 >
     {#snippet title()}{dialogTitle}{/snippet}
 
     <div class="dialog-body">
-        <!-- Copy / Move / Compress -->
-        <div class="operation-toggle">
-            <ToggleGroup
-                semantics="toggles"
-                value={activeOperationType}
-                options={operationOptions}
-                onChange={(next: string) => (activeOperationType = next as TransferOperationType)}
-                ariaLabel={tString('fileOperations.transferDialog.operationAria')}
-                fullWidth
-            />
-        </div>
+        <!-- Copy / Move / Compress. `fullWidth` so the segmented control spans the
+             same column as the fields below it. -->
+        <ToggleGroup
+            semantics="toggles"
+            value={activeOperationType}
+            options={operationOptions}
+            onChange={(next: string) => (activeOperationType = next as TransferOperationType)}
+            ariaLabel={tString('fileOperations.transferDialog.operationAria')}
+            fullWidth
+        />
 
         <!-- Where the items come from: the full source path, middle-shortened when
              it's too long for the row (the tail carries the meaning). -->
-        <div class="source-group">
-            <SectionCard label={tString('fileOperations.transferDialog.sourceGroupTitle')}>
-                <!-- The action writes the text and carries the full path as its `title`. -->
-                <div class="source-path" use:useShortenMiddle={{ text: sourceFolderPath, preferBreakAt: '/' }}></div>
-            </SectionCard>
-        </div>
+        <SectionCard label={tString('fileOperations.transferDialog.sourceGroupTitle')}>
+            <!-- The action writes the text and carries the full path as its `title`. -->
+            <div class="source-path" use:useShortenMiddle={{ text: sourceFolderPath, preferBreakAt: '/' }}></div>
+        </SectionCard>
 
         <!-- Where the items go: volume, then the editable path on that volume. -->
-        <div class="target-group">
-            <SectionCard label={tString('fileOperations.transferDialog.targetGroupTitle')}>
-                <div class="target-card-body">
-                    <div class="volume-selector">
-                        <div class="volume-select">
-                            <Select
-                                items={volumeItems}
-                                value={selectedVolumeId}
-                                ariaLabel={tString('fileOperations.transferDialog.destVolumeAria')}
-                                onChange={(id: string) => {
-                                    selectedVolumeId = id
-                                }}
-                            />
-                        </div>
-                        {#if volumeSpace}
-                            <span class="space-info">{spaceInfoText}</span>
-                        {/if}
-                    </div>
-
-                    {#if selectedVolume?.smbConnectionState === 'os_mount'}
-                        <p class="smb-native-note">
-                            {tString('fileOperations.transferDialog.smbNativeNote')}
-                        </p>
-                    {/if}
-
-                    <div class="path-input-group">
-                        <TextInput
-                            bind:inputElement={pathInputRef}
-                            bind:value={editedPath}
-                            invalid={!!pathError}
-                            warning={!!targetWarning}
-                            ariaLabel={tString('fileOperations.transferDialog.destPathAria')}
-                            aria-describedby={pathError
-                                ? 'transfer-path-error'
-                                : targetWarning
-                                  ? 'transfer-path-warning'
-                                  : undefined}
-                            spellcheck={false}
-                            autocomplete="off"
-                            onkeydown={handleInputKeydown}
+        <SectionCard label={tString('fileOperations.transferDialog.targetGroupTitle')}>
+            <div class="target-card-body">
+                <div class="volume-selector">
+                    <div class="volume-select">
+                        <Select
+                            items={volumeItems}
+                            value={selectedVolumeId}
+                            ariaLabel={tString('fileOperations.transferDialog.destVolumeAria')}
+                            onChange={(id: string) => {
+                                selectedVolumeId = id
+                            }}
                         />
-                        {#if pathError}
-                            <p id="transfer-path-error" class="path-error" role="alert">{pathError}</p>
-                        {:else if targetWarning}
-                            <p id="transfer-path-warning" class="path-warning">{targetWarning}</p>
-                        {/if}
                     </div>
+                    {#if volumeSpace}
+                        <span class="space-info">{spaceInfoText}</span>
+                    {/if}
                 </div>
-            </SectionCard>
-        </div>
+
+                {#if selectedVolume?.smbConnectionState === 'os_mount'}
+                    <p class="smb-native-note">
+                        {tString('fileOperations.transferDialog.smbNativeNote')}
+                    </p>
+                {/if}
+
+                <div class="path-input-group">
+                    <TextInput
+                        bind:inputElement={pathInputRef}
+                        bind:value={editedPath}
+                        invalid={!!pathError}
+                        warning={!!targetWarning}
+                        ariaLabel={tString('fileOperations.transferDialog.destPathAria')}
+                        aria-describedby={pathError
+                            ? 'transfer-path-error'
+                            : targetWarning
+                              ? 'transfer-path-warning'
+                              : undefined}
+                        spellcheck={false}
+                        autocomplete="off"
+                        onkeydown={handleInputKeydown}
+                    />
+                    {#if pathError}
+                        <p id="transfer-path-error" class="path-error" role="alert">{pathError}</p>
+                    {:else if targetWarning}
+                        <p id="transfer-path-warning" class="path-warning">{targetWarning}</p>
+                    {/if}
+                </div>
+            </div>
+        </SectionCard>
 
         <!-- Scan stats (live counting) -->
         <div class="scan-stats" data-scan-state={scanState}>
@@ -638,7 +632,9 @@
                 >
             </div>
         {:else if totalConflictCount > 0 || mergeFolderCount > 0}
-            <div class="conflicts-section">
+            <!-- A warning-toned card, not a full-bleed band: it's one more block in the
+             dialog's column, so it obeys the same inset as the fields above it. -->
+            <SectionCard tone="warning">
                 <!-- Folder merges are informational, never a question: same-named
                  folders always merge silently. Surfaced so a user who didn't
                  expect a same-named folder at the dest gets a visible cue. -->
@@ -667,7 +663,7 @@
                         items={conflictPolicyItems}
                         value={conflictPolicy}
                         onValueChange={(v) => (conflictPolicy = v as ConflictResolution)}
-                        orientation="horizontal"
+                        columns={3}
                     />
                 </div>
 
@@ -685,7 +681,7 @@
                         </span>
                     </p>
                 {/if}
-            </div>
+            </SectionCard>
         {/if}
     </div>
 
@@ -700,20 +696,18 @@
 
 <style>
     /* Uniform vertical rhythm: every top-level section is a flex-column child, so a
-       single `gap` sets equal spacing between all of them. Each section keeps its own
-       `--spacing-dialog` side inset (matching the title bar and footer). */
+       single `gap` sets equal spacing between all of them. The side inset is
+       `ModalDialog`'s. */
     .dialog-body {
         display: flex;
         flex-direction: column;
         gap: var(--spacing-lg);
     }
 
-    /* "Source" and "Target" are the dialog's two halves: where the items are now and
-       where they're going. Both are framed by the house `ui/SectionCard`; these
-       wrappers only supply the dialog's side inset, which the card doesn't carry. */
-    .source-group,
-    .target-group {
-        padding: 0 var(--spacing-dialog);
+    /* `SectionCard` carries its own bottom margin for stacked use (Settings); here the
+       column's `gap` owns every gap, so the cards drop it and can't double up. */
+    .dialog-body > :global(.section-card-wrap) {
+        margin-bottom: 0;
     }
 
     /* A block, not a flex child: `useShortenMiddle` measures `clientWidth`, so the
@@ -794,7 +788,6 @@
         align-items: center;
         justify-content: flex-end;
         gap: var(--spacing-sm);
-        padding: 0 var(--spacing-dialog);
         font-size: var(--font-size-sm);
     }
 
@@ -836,7 +829,6 @@
         align-items: center;
         justify-content: flex-start;
         gap: var(--spacing-sm);
-        padding: 0 var(--spacing-dialog);
         font-size: var(--font-size-sm);
     }
 
@@ -844,18 +836,13 @@
         color: var(--color-text-tertiary);
     }
 
-    /* Conflicts section */
-    .conflicts-section {
-        padding: 0 var(--spacing-dialog) var(--spacing-md);
-        border-top: 1px solid var(--color-border-strong);
-        margin-top: var(--spacing-xs);
-        padding-top: var(--spacing-md);
-    }
-
+    /* The question the card asks. Plain text color: the card's warning tint already
+       carries the "pay attention" signal, and coloring the sentence too made it read
+       as an error rather than a choice to make. */
     .conflicts-summary {
         margin: 0 0 var(--spacing-md);
         font-size: var(--font-size-md);
-        color: var(--color-warning);
+        color: var(--color-text-primary);
         font-weight: 500;
     }
 
@@ -893,27 +880,19 @@
     }
 
     /* Wrapper hook for the policy radios (E2E + component tests target
-       `.conflict-policy`); `RadioGroup` owns the option layout. The column flex
-       stretches the group to full width so its horizontal options wrap. */
+       `.conflict-policy`); `RadioGroup` owns the option layout (`columns={3}`, so the
+       five options fill the card as 3 + 2). The column flex stretches the group to
+       full width, which is what gives those three columns something to divide. */
     .conflict-policy {
         display: flex;
         flex-direction: column;
     }
 
-    /* Compress-only block. Carries the `--spacing-dialog` side inset its two children
-       don't (they're also used where the parent insets them), and stacks them with
-       the same rhythm as the dialog body. */
+    /* Compress-only block: stacks its two children with the dialog body's rhythm,
+       and gives the mode switch one element to slide. */
     .compress-extras {
         display: flex;
         flex-direction: column;
         gap: var(--spacing-lg);
-        padding: 0 var(--spacing-dialog);
-    }
-
-    /* Copy / Move / Compress segmented control. Only the side inset lives here; the
-       control itself is the `ui/ToggleGroup` primitive, full-width so it spans the
-       same column as the fields below it. */
-    .operation-toggle {
-        padding: 0 var(--spacing-dialog);
     }
 </style>

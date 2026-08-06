@@ -249,9 +249,9 @@
   "@fileOperations.transferDialog.mergeInfoMany": {
     "sourceHash": "6d734ce"
   },
-  "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {fil finns redan} other {filer finns redan}}",
+  "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {fil finns redan. Vad vill du göra med den?} other {filer finns redan. Vad vill du göra med dem?}}",
   "@fileOperations.transferDialog.conflictsSummary": {
-    "sourceHash": "e3ae41e"
+    "sourceHash": "f93d158"
   },
   "fileOperations.transferDialog.policySkip": "{count, plural, one {Hoppa över} other {Hoppa över alla}}",
   "@fileOperations.transferDialog.policySkip": {

@@ -249,9 +249,9 @@
   "@fileOperations.transferDialog.mergeInfoMany": {
     "sourceHash": "6d734ce"
   },
-  "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {Datei existiert bereits} other {Dateien existieren bereits}}",
+  "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {Datei existiert bereits. Was möchtest du damit machen?} other {Dateien existieren bereits. Was möchtest du damit machen?}}",
   "@fileOperations.transferDialog.conflictsSummary": {
-    "sourceHash": "e3ae41e"
+    "sourceHash": "f93d158"
   },
   "fileOperations.transferDialog.policySkip": "{count, plural, one {Überspringen} other {Alle überspringen}}",
   "@fileOperations.transferDialog.policySkip": {

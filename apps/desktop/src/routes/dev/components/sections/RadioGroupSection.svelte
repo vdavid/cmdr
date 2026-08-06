@@ -30,6 +30,16 @@
         { value: 'comfortable', label: 'Comfortable' },
         { value: 'spacious', label: 'Spacious' },
     ]
+
+    let gridValue = $state('stop')
+
+    const gridOptions: RadioItem[] = [
+        { value: 'skip', label: 'Skip all' },
+        { value: 'overwrite', label: 'Overwrite all' },
+        { value: 'overwrite_smaller', label: 'Overwrite all smaller' },
+        { value: 'overwrite_older', label: 'Overwrite all older' },
+        { value: 'stop', label: 'Ask for each' },
+    ]
 </script>
 
 <SectionCard id="components-radio-group" label="Radio group">
@@ -57,6 +67,11 @@
                 orientation="horizontal"
                 ariaLabel="UI density"
             />
+        </div>
+
+        <div class="cell">
+            <p class="caption">Three columns (5 options fill 3 + 2)</p>
+            <RadioGroup items={gridOptions} bind:value={gridValue} columns={3} ariaLabel="Conflict policy" />
         </div>
     </div>
 </SectionCard>

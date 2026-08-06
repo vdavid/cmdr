@@ -249,9 +249,9 @@
   "@fileOperations.transferDialog.mergeInfoMany": {
     "sourceHash": "6d734ce"
   },
-  "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {bestand bestaat al} other {bestanden bestaan al}}",
+  "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {bestand bestaat al. Wat wil je ermee doen?} other {bestanden bestaan al. Wat wil je ermee doen?}}",
   "@fileOperations.transferDialog.conflictsSummary": {
-    "sourceHash": "e3ae41e"
+    "sourceHash": "f93d158"
   },
   "fileOperations.transferDialog.policySkip": "{count, plural, one {Sla over} other {Sla alles over}}",
   "@fileOperations.transferDialog.policySkip": {

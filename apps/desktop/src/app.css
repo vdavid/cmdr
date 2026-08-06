@@ -158,6 +158,11 @@
   /* Same reasoning as `--color-error-text`: the brand `--color-warning` at `#e65100`
      clocks ~3.3:1 on the warning tint; this darker variant meets AA. */
   --color-warning-text: #9a3412;
+  /* Neutral-informational tint, the third tone beside warning and error (see
+     `SectionCard`'s `tone`). Plain hex rather than a `color-mix`, so the
+     `@supports not` fallback blocks below don't need an entry for it. */
+  --color-info-bg: #eff6ff;
+  --color-info-border: #bfdbfe;
   /* Positive/"added" green for text on tinted chip backgrounds. Darker than
      `--color-allow` (#2e7d32 only reaches ~4:1 on a light chip); this meets AA
      on the Keyboard-shortcuts help window's subtle green chip. */
@@ -704,6 +709,9 @@
     /* Opaque sibling for full-surface uses; see light-mode comment. */
     --color-warning-bg-solid: color-mix(in srgb, var(--color-warning) 15%, var(--color-bg-secondary));
     --color-warning-text: #fdba74;
+    /* Informational tint; see light-mode comment. */
+    --color-info-bg: #1e293b;
+    --color-info-border: #1e3a5f;
     /* Light-on-dark "added" green (see light-mode comment); bright enough for AA
        on the dark green-tinted chip. */
     --color-shortcut-added: #66bb6a;

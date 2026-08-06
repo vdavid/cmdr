@@ -1,3 +1,13 @@
+<script lang="ts" module>
+    /**
+     * A card's tone. `neutral` is the plain grouping surface; the other three tint the
+     * fill and border to mark a block as informational, cautionary, or destructive.
+     * The tone colors the SURFACE only: text inside keeps its normal color, so a tinted
+     * card doesn't turn into a wall of colored type.
+     */
+    export type SectionCardTone = 'neutral' | 'info' | 'warning' | 'error'
+</script>
+
 <script lang="ts">
     import type { Snippet } from 'svelte'
 
@@ -15,10 +25,12 @@
          * visual cue. Default `false` (attribute omitted entirely).
          */
         gated?: boolean
+        /** Tints the card's fill and border. Default `neutral` (the plain grouping surface). */
+        tone?: SectionCardTone
         children: Snippet
     }
 
-    const { label, badge, id, gated = false, children }: Props = $props()
+    const { label, badge, id, gated = false, tone = 'neutral', children }: Props = $props()
 </script>
 
 <section class="section-card-wrap" {id} data-gated={gated ? 'true' : undefined}>
@@ -28,7 +40,7 @@
             {#if badge}{@render badge()}{/if}
         </div>
     {/if}
-    <div class="section-card">
+    <div class="section-card" data-tone={tone}>
         {@render children()}
     </div>
 </section>
@@ -63,6 +75,24 @@
         border-radius: var(--radius-lg);
         padding: var(--spacing-lg);
         border: 1px solid var(--color-border-subtle);
+    }
+
+    /* Toned cards. Each uses the OPAQUE tint token, not the translucent one: a card
+       often sits on a modal panel, and a translucent fill lets the window behind it
+       bleed through. Border and fill only; text inside keeps its own color. */
+    .section-card[data-tone='info'] {
+        background: var(--color-info-bg);
+        border-color: var(--color-info-border);
+    }
+
+    .section-card[data-tone='warning'] {
+        background: var(--color-warning-bg-solid);
+        border-color: var(--color-warning);
+    }
+
+    .section-card[data-tone='error'] {
+        background: var(--color-error-bg);
+        border-color: var(--color-error-border);
     }
 
     /* Gated cards dim their content. Inner controls own their own `disabled`

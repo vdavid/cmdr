@@ -35,6 +35,21 @@
         </div>
 
         <div>
+            <p class="example-caption">Tones (info / warning / error)</p>
+            <div class="inner-wrap">
+                <SectionCard label="Info" tone="info">
+                    <p class="placeholder">Something worth knowing.</p>
+                </SectionCard>
+                <SectionCard label="Warning" tone="warning">
+                    <p class="placeholder">Something worth a second look.</p>
+                </SectionCard>
+                <SectionCard label="Error" tone="error">
+                    <p class="placeholder">Something that went wrong.</p>
+                </SectionCard>
+            </div>
+        </div>
+
+        <div>
             <p class="example-caption">Gated (dimmed when a gate is closed)</p>
             <div class="inner-wrap">
                 <SectionCard label="Gated card" gated>
@@ -59,8 +74,9 @@
     }
 
     /* Nested cards: give them a tertiary background so they stand out against the
-       outer SectionCard's secondary surface. */
-    .inner-wrap :global(.section-card) {
+       outer SectionCard's secondary surface. Neutral only, so the toned examples
+       below keep the tint they're there to show. */
+    .inner-wrap :global(.section-card[data-tone='neutral']) {
         background: var(--color-bg-tertiary);
     }
 

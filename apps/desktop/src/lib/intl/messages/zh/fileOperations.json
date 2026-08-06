@@ -247,9 +247,9 @@
   "@fileOperations.transferDialog.mergeInfoMany": {
     "sourceHash": "6d734ce"
   },
-  "fileOperations.transferDialog.conflictsSummary": "{countText} 个{count, plural, other {文件已存在}}",
+  "fileOperations.transferDialog.conflictsSummary": "{countText} 个{count, plural, other {文件已存在。你想怎么处理？}}",
   "@fileOperations.transferDialog.conflictsSummary": {
-    "sourceHash": "e3ae41e"
+    "sourceHash": "f93d158"
   },
   "fileOperations.transferDialog.policySkip": "{count, plural, other {全部跳过}}",
   "@fileOperations.transferDialog.policySkip": {

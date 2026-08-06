@@ -55,12 +55,15 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
    - Validates path structure via `validateDirectoryPath()` from `$lib/utils/filename-validation` (empty, absolute, null
      bytes, length limits), then checks logical constraints (subfolder, same location).
    - Optional dry-run scan to detect conflicts upfront. Shows sampled conflicts (max 200) with streaming progress.
-   - User makes conflict decisions before operation starts via a wrap-friendly flexbox of radios: "Skip all", "Overwrite
-     all", "Overwrite all smaller", "Overwrite all older", "Ask for each". When `totalConflictCount === 1`, the radio
-     labels drop "all" ("Skip", "Overwrite", "Overwrite if smaller", "Overwrite if older") and "Ask for each" becomes
-     "Ask later" since a single conflict can't be asked "for each". The conditional policies map to the typed
-     `ConflictResolution` variants `overwrite_smaller` / `overwrite_older`. See the BE doc § "Key patterns and gotchas
-     (shared)" for the strict-comparison / fail-closed contract.
+   - User makes conflict decisions before operation starts, inside a `warning`-toned `SectionCard`: the count and the
+     question it raises ("3 files already exist. What do you want to do with them?") in normal text color, over five
+     radios laid out `columns={3}` so they fill the card's width as 3 + 2 rather than wrapping wherever the labels
+     happen to run out. The options are "Skip all", "Overwrite all", "Overwrite all smaller", "Overwrite all older",
+     "Ask for each". When `totalConflictCount === 1`, the radio labels drop "all" ("Skip", "Overwrite", "Overwrite if
+     smaller", "Overwrite if older") and "Ask for each" becomes "Ask later" since a single conflict can't be asked "for
+     each". The conditional policies map to the typed `ConflictResolution` variants `overwrite_smaller` /
+     `overwrite_older`. See the BE doc § "Key patterns and gotchas (shared)" for the strict-comparison / fail-closed
+     contract.
    - **Folders always merge; the upfront check classifies collisions.** The conflict check (`conflicts.check()`, from
      `transfer-conflict-check.svelte.ts`) runs on mount **in parallel with the scan preview** (it's one cheap dest
      listing, not the recursive byte scan — `conflictCheckPromise` is assigned synchronously in `onMount` BEFORE the
@@ -260,13 +263,13 @@ The user-visible differences from copy/move:
 - **The Copy / Move / Compress row is the `ui/ToggleGroup` primitive** (`semantics: 'toggles'`, `fullWidth`), wrapped in
   a `.operation-toggle` div that supplies only the side inset. `toggles`, not `tabs`: the row picks a stored value and
   has no tab panels, so AT should hear "toggle button, Compress, pressed" rather than a promised "tab 1 of 3". E2E and
-  unit tests select its cells as `.operation-toggle .tg-item`, and the active one as `.tg-item[data-state='on']` (the
-  `tabs` branch marks it with `.is-active` instead).
-- **Both compress-only blocks live in one `.compress-extras` wrapper** that owns their `--spacing-xl` side inset (the
-  dialog runs `padded={false}`, so every body section insets itself) and gives the mode switch a single element to
-  `transition:slide`. The dialog passes `growDownward` to `ModalDialog` so the extra height extends downward instead of
-  re-centering the whole dialog mid-switch (`lib/ui/DETAILS.md` § ModalDialog). The slide duration is 0 under
-  `prefers-reduced-motion` and 0 before the first paint, so opening straight into Compress doesn't animate.
+  unit tests select its cells as `.tg-root .tg-item`, and the active one as `.tg-item[data-state='on']` (the `tabs`
+  branch marks it with `.is-active` instead).
+- **Both compress-only blocks live in one `.compress-extras` wrapper** that stacks them on the dialog body's rhythm and
+  gives the mode switch a single element to `transition:slide`. The dialog passes `growDownward` to `ModalDialog` so the
+  extra height extends downward instead of re-centering the whole dialog mid-switch (`lib/ui/DETAILS.md` § ModalDialog).
+  The slide duration is 0 under `prefers-reduced-motion` and 0 before the first paint, so opening straight into Compress
+  doesn't animate.
 
 ### Same-FS move optimization
 

@@ -214,7 +214,7 @@ beforeEach(() => {
 
 /** Clicks the Copy/Move segmented toggle option by its label. */
 function clickToggle(target: HTMLElement, label: 'Copy' | 'Move'): void {
-  const buttons = Array.from(target.querySelectorAll<HTMLButtonElement>('.operation-toggle .tg-item'))
+  const buttons = Array.from(target.querySelectorAll<HTMLButtonElement>('.tg-root .tg-item'))
   const btn = buttons.find((b) => b.textContent.trim() === label)
   if (!btn) throw new Error(`toggle option "${label}" not found`)
   btn.click()
@@ -315,7 +315,9 @@ describe('TransferDialog folder-merge classification', () => {
     // assert on the singular noun + the normalized text rather than the exact
     // whitespace between them.
     const summary = target.querySelector('.conflicts-summary')
-    expect(summary?.textContent.replace(/\s+/g, ' ').trim()).toBe('1 file already exists')
+    expect(summary?.textContent.replace(/\s+/g, ' ').trim()).toBe(
+      '1 file already exists. What do you want to do with it?',
+    )
     expect(target.textContent).toContain('1 folder will merge with an existing folder')
   })
 })

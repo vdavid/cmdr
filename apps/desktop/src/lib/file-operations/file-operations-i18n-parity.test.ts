@@ -129,10 +129,10 @@ describe('transfer dialog chrome (en)', () => {
       '1,234 folders will merge with existing folders',
     )
     expect(t('fileOperations.transferDialog.conflictsSummary', { countText: '1', count: 1 })).toBe(
-      '1 file already exists',
+      '1 file already exists. What do you want to do with it?',
     )
     expect(t('fileOperations.transferDialog.conflictsSummary', { countText: '3', count: 3 })).toBe(
-      '3 files already exist',
+      '3 files already exist. What do you want to do with them?',
     )
   })
 
