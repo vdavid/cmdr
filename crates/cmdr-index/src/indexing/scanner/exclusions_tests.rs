@@ -243,8 +243,8 @@ fn a_truncating_walk_stamps_the_policy_through_the_writer() {
 
     // What `lifecycle/manager/start.rs` and `lifecycle/network_scan.rs` send
     // before a fresh walk.
-    let writer = crate::indexing::writer::IndexWriter::spawn(&db_path, crate::NoopEventSink::shared())
-        .expect("spawn writer");
+    let writer =
+        crate::indexing::writer::IndexWriter::spawn(&db_path, crate::NoopEventSink::shared()).expect("spawn writer");
     writer.send(WriteMessage::TruncateData).expect("truncate");
     writer.send(exclusion_policy_stamp_message()).expect("stamp");
     writer.flush_blocking().expect("flush");
