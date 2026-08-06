@@ -3,6 +3,7 @@
 //! inode lookup that backs hardlink dedup.
 
 use super::*;
+use rusqlite::params;
 
 #[test]
 fn root_sentinel_exists() {

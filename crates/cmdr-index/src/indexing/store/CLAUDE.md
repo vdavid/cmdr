@@ -1,10 +1,11 @@
 # Index store (SQLite)
 
-The `IndexStore` handle and per-volume SQLite schema for the drive indexer. `mod.rs` (schema + `platform_case` collation
-
-- `IndexStore` + data types), `connection.rs` (open/recreate + factories), `entries.rs` (entry-tree CRUD), `dir_tree.rs`
-  (the compact directory projection whole-index walks rebuild paths from), `dir_stats.rs`, `meta.rs`, `tests/`. Parent
-  pipeline: `../CLAUDE.md`.
+The `IndexStore` handle and per-volume SQLite schema for the drive indexer. `mod.rs` (the hub: `IndexStore`, the data
+types, and the re-exports every `store::X` path resolves through), `schema.rs` (version + `meta` keys + DDL + pragmas),
+`errors.rs` (`IndexStoreError` + its classification, `IndexFailure`, `UnreadableCause`), `paths.rs` (path↔id),
+`collation.rs` (`platform_case`), `connection.rs` (open/recreate + factories), `entries.rs` (entry-tree CRUD),
+`dir_tree.rs` (the compact directory projection whole-index walks rebuild paths from), `dir_stats.rs`, `meta.rs`,
+`tests/`. Parent pipeline: `../CLAUDE.md`.
 
 ## Must-knows
 

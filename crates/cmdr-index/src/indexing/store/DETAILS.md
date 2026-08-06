@@ -6,15 +6,25 @@ its columns lives in `../writer/DETAILS.md` § "Honest sizes", and the broader i
 
 ## Module structure
 
-The `IndexStore` read/write handle and SQLite schema, split into a `store/` submodule by concern. `mod.rs` holds the
-shared core: the schema (integer-keyed entries with `name_folded` on all platforms, `inode` for hardlink dedup,
-`dir_stats` by entry_id, `meta`), `platform_case` collation, DDL/pragmas/reset, the path helpers (`resolve_path`,
-`reconstruct_path*`), the `IndexStore` struct + `with_savepoint`, and the data types (`EntryRow`, `DirStats`,
-`DirStatsById`, `ScanContext`, `IndexStatus`, `ScanCalibration`, `IndexStoreError`); the `tests` module lives in the
-sibling `tests/`, one themed module per concern.
+The `IndexStore` read/write handle and SQLite schema, split into a `store/` submodule by concern. `mod.rs` is the hub:
+the `IndexStore` struct + `with_savepoint`, the data types (`EntryRow`, `DirStats`, `DirStatsById`, `ScanContext`,
+`IndexStatus`, `ScanCalibration`), and the submodule declarations plus the re-exports that keep every existing
+`store::X` path working. The `tests` module lives in the sibling `tests/`, one themed module per concern.
 
-The `impl IndexStore` block is divided into four sibling files (each `impl IndexStore { … }` over the struct above,
-pulling shared items via `use super::*`):
+Four leaf layers carry no `IndexStore` methods at all:
+
+- `schema.rs`: `SCHEMA_VERSION`, the `meta` key constants (`CURRENT_EPOCH_KEY`, `LEDGER_HEAL_KEY`,
+  `SYSTEM_DIR_EXCLUSIONS_KEY`, `EXCLUSION_POLICY_KEY`), `ROOT_ID` / `ROOT_PARENT_ID`, the table DDL (integer-keyed
+  entries with `name_folded` on all platforms, `inode` for hardlink dedup, `dir_stats` by entry_id, `meta`),
+  `create_tables` / `ensure_root_sentinel` / `reset_schema`, and `apply_pragmas`.
+- `errors.rs`: `IndexStoreError` and its SQLite classification (fatal / transient / corruption / primary-key conflict),
+  the typed `IndexFailure` the `Failed` phase carries, and `UnreadableCause`.
+- `paths.rs`: `resolve_scan_root`, `resolve_path`, `resolve_path_under`, `reconstruct_path`,
+  `reconstruct_path_from_map`.
+- `collation.rs`: `register_platform_case_collation`, `platform_case_compare`, `normalize_for_comparison`.
+
+The `impl IndexStore` block is divided into four more sibling files (each `impl IndexStore { … }` over the struct in
+`mod.rs`, pulling shared items via `use super::*`):
 
 - `connection.rs`: open/recreate, connection factories, DB-size + status reads, the `pub(super)` `read_meta_value`
   helper.
@@ -270,7 +280,7 @@ defect was paying it once per row instead of once per statement.
 
 **Why the cache capacity is load-bearing, not a tuning knob.** `rusqlite`'s statement cache is an LRU keyed by SQL text
 with `STATEMENT_CACHE_DEFAULT_CAPACITY = 16`, and this store alone holds **38** `prepare_cached` sites (`entries.rs` 25,
-`dir_stats.rs` 6, `meta.rs` 5, `mod.rs` 1, `connection.rs` 1). A writer working across them would evict and re-compile
+`dir_stats.rs` 6, `meta.rs` 5, `paths.rs` 1, `connection.rs` 1). A writer working across them would evict and re-compile
 statements it was about to reuse, reintroducing exactly the cost `prepare_cached` removes, **with no error and no
 failing test to show for it**. `sqlite_util::apply_statement_cache` sets 64 on write connections beside
 `apply_page_cache`, so the two role-splits are set in one place. ⚠️ Raise it when the `prepare_cached` count approaches

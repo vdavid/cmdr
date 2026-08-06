@@ -1,8 +1,14 @@
 //! SQLite store for the drive index.
 //!
 //! One DB file per indexed volume. Uses WAL mode for concurrent reads.
-//! All writes go through a dedicated writer thread (see `writer.rs`);
-//! this module provides the schema, read queries, and static write helpers.
+//! All writes go through a dedicated writer thread (see `writer.rs`).
+//!
+//! This file is the hub: the row and status types, the `IndexStore` handle
+//! itself, and the submodules that carry everything else. The DDL, pragmas, and
+//! `meta` keys are in `schema.rs`, the typed failures in `errors.rs`, path↔id
+//! resolution in `paths.rs`, and the `platform_case` folding in `collation.rs`;
+//! the `impl IndexStore` block is split by concern across `connection.rs`,
+//! `entries.rs`, `dir_stats.rs`, and `meta.rs`.
 //!
 //! ## Schema v2: integer-keyed parent-child tree
 //!
@@ -12,115 +18,50 @@
 //! - **macOS**: case-insensitive + NFD normalization (matching APFS)
 //! - **Linux**: binary comparison (matching ext4/btrfs)
 
-use rusqlite::{Connection, params};
+use rusqlite::Connection;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
 
-// Bump to invalidate on-disk indexes (the cache is disposable: a mismatch deletes
-// the DB file + recreates it fresh, no migration). v16 makes that marker a
-// `entries.unreadable_cause`, so a directory nothing will read says WHY: the OS
-// refused us (which granting Full Disk Access fixes) or we refuse it on purpose (a
-// NAS snapshot tree). The two are different sentences, and a boolean couldn't tell
-// them apart.
-const SCHEMA_VERSION: &str = "16";
+// ── Submodules ───────────────────────────────────────────────────────
+//
+// The `impl IndexStore` block lives across `connection` / `entries` /
+// `dir_stats` / `meta` (grouped by concern); each is `impl IndexStore { … }`
+// over the struct defined below and pulls shared items in via `use super::*`.
+// The four leaf layers below it hold no `IndexStore` methods at all.
+mod connection;
+mod dir_stats;
+mod entries;
+mod meta;
 
-/// Meta key for the per-volume epoch counter (TEXT, like all meta values).
-///
-/// Bumped on every continuity break; a scan/reconcile *stamps* listed dirs with
-/// the current epoch but does not bump it. Absent ⇒ treat as epoch 1 (a volume
-/// with no recorded epoch behaves as "all current", not "all stale"). See the
-/// "Honest sizes" model in `indexing/DETAILS.md`.
-pub(crate) const CURRENT_EPOCH_KEY: &str = "current_epoch";
+mod collation;
+mod errors;
+mod paths;
+mod schema;
 
-/// Meta key marking that this DB's `dir_stats` are known to agree with `entries`:
-/// a full aggregate rebuilt them and nothing has knowingly drifted them since.
-/// Present ⇒ a later launch skips the heal; absent ⇒ the aggregates are UNPAID
-/// (pre-ledger drift, or a bulk walk that suppressed propagation and never ran
-/// its terminal aggregate) and the next launch heals them via the writer-side
-/// latch. Only presence matters (the value is a marker). See
-/// `indexing/DETAILS.md` § "The dir_stats ledger".
-pub(crate) const LEDGER_HEAL_KEY: &str = "aggregates_rebuilt_for_ledger";
+// Not part of the `impl IndexStore` split: a compact in-memory PROJECTION of the
+// directory rows, built from `for_each_directory`. It lives beside that query
+// because the two are designed for each other.
+mod dir_tree;
+pub(crate) use dir_tree::{ARENA_FULL, DirTree};
 
-/// Meta key recording WHICH NAS system-dir exclusion list this DB was BUILT
-/// against (the value is the list's fingerprint), written when a network scan
-/// truncates. Absent or stale ⇒ the index may still carry rows beneath a directory
-/// today's scanner refuses to walk, so the next load rebuilds it from scratch.
-/// Storing the fingerprint rather than a bare "done" flag is what makes GROWING
-/// the list re-arm every existing index. See
-/// `indexing/network_scanner/DETAILS.md` § "NAS snapshot/system dirs aren't recursed".
-pub(crate) const SYSTEM_DIR_EXCLUSIONS_KEY: &str = "system_dir_exclusions_built_for";
-
-/// Meta key recording WHICH scan-exclusion policy this DB was BUILT against (the
-/// value is the policy's fingerprint), written right after a truncating full walk.
-///
-/// A policy-excluded directory gets no `entries` row at all, so it drives nothing
-/// to `0` and its parents read as fully covered. That is correct only while the
-/// policy is the one the rows were written under: if a release REMOVES an entry,
-/// the subtrees it used to skip stay row-less, their parents still read as
-/// covered, and they become permanently invisible to search with nothing to
-/// re-walk them. Absent or stale ⇒ every coverage claim in this DB is unknown, so
-/// [`crate::indexing::read::coverage`] hands the whole scope to the walk. Storing
-/// the fingerprint rather than a bare flag is what makes CHANGING the policy
-/// re-arm every existing index. Same shape as [`SYSTEM_DIR_EXCLUSIONS_KEY`], which
-/// covers the NAS list; this one covers the local tiers.
-pub(crate) const EXCLUSION_POLICY_KEY: &str = "exclusion_policy_built_for";
-
-/// Root entry sentinel ID. All top-level entries have `parent_id = ROOT_ID`.
-pub const ROOT_ID: i64 = 1;
-
-/// Parent ID of the root sentinel. No row with this ID exists in the DB.
-const ROOT_PARENT_ID: i64 = 0;
+pub use collation::{normalize_for_comparison, register_platform_case_collation};
+pub use errors::{IndexFailure, IndexStoreError, UnreadableCause};
+pub(crate) use paths::resolve_path_under;
+pub use paths::{resolve_path, resolve_scan_root};
+pub use schema::ROOT_ID;
+pub(crate) use schema::{CURRENT_EPOCH_KEY, EXCLUSION_POLICY_KEY, LEDGER_HEAL_KEY, SYSTEM_DIR_EXCLUSIONS_KEY};
+// Store-internal, reached by the submodules above through their `use super::*`.
+#[cfg(test)]
+use collation::platform_case_compare;
+use paths::reconstruct_path;
+#[cfg(test)]
+use paths::reconstruct_path_from_map;
+#[cfg(test)]
+use schema::{ROOT_PARENT_ID, reset_schema};
+use schema::{SCHEMA_VERSION, apply_pragmas, create_tables};
 
 // ── Types ────────────────────────────────────────────────────────────
-
-/// Why nothing is going to read into a directory: the domain of
-/// `entries.unreadable_cause`.
-///
-/// The absence of a cause is `None`, so the column's `0` means "something may yet
-/// read this" — which is what every ordinary row carries and what a successful
-/// listing restores (`mark_dirs_listed` clears the column).
-///
-/// It's a CAUSE rather than a flag because the two reach the user as different
-/// sentences: one is a permission they can grant, the other is a decision Cmdr
-/// made for them. Telling them apart from the paths alone would mean matching
-/// folder names, which `.claude/rules/no-string-matching.md` forbids and which
-/// would break the moment a NAS vendor renamed a directory.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum UnreadableCause {
-    /// A walk tried to read it and the OS refused (permission denied). The
-    /// durable, user-fixable case: on macOS, granting Full Disk Access and
-    /// searching again heals it, because the successful listing clears the mark.
-    Denied,
-    /// No walk will read it at all, by Cmdr's own choice: a NAS snapshot
-    /// directory, whose per-snapshot hardlinked copies both whole-volume scanners
-    /// refuse on purpose (44 TB reported on a 10 TB volume). Nothing for the user
-    /// to fix; it's recorded so a short answer can say why it's short.
-    Declined,
-}
-
-impl UnreadableCause {
-    /// The stored integer, with `0` for "no cause".
-    fn to_stored(cause: Option<Self>) -> i64 {
-        match cause {
-            None => 0,
-            Some(Self::Denied) => 1,
-            Some(Self::Declined) => 2,
-        }
-    }
-
-    /// The cause a stored integer names. An unknown value reads as
-    /// [`Denied`](Self::Denied): it can only come from a future schema this build
-    /// doesn't know, and "a folder Cmdr can't read" is the truthful half of every
-    /// cause there could be.
-    pub fn from_stored(stored: i64) -> Option<Self> {
-        match stored {
-            0 => None,
-            2 => Some(Self::Declined),
-            _ => Some(Self::Denied),
-        }
-    }
-}
 
 /// Dir stats keyed by path string. Used at the IPC boundary and by
 /// the IPC boundary (frontend expects path-keyed dir stats).
@@ -209,58 +150,6 @@ pub struct EntryRow {
     /// The filesystem's inode, when the volume's are trustworthy. What makes a
     /// rename detectable as a rename rather than a delete plus an add.
     pub inode: Option<u64>,
-}
-
-/// Resolve the entry id to use as a scan's root, seeding the `ROOT` sentinel for
-/// a volume-root scan.
-///
-/// For a volume-root scan the root is always `ROOT_ID` (the sentinel is created
-/// if absent). For a subtree scan the root's actual entry id is resolved from the
-/// DB, erroring if it isn't indexed yet (for example a subtree scan racing an
-/// ongoing full scan; the full scan will cover it).
-///
-/// Shared by both scanners. The network (SMB/MTP) `network_scanner` wraps it in a
-/// [`ScanContext`] path→id map (its serial BFS resolves parents by path); the
-/// local scanner carries `parent_id` through its parallel walk and needs only the
-/// root id from here.
-pub fn resolve_scan_root(conn: &Connection, root: &Path, is_volume_root: bool) -> Result<i64, IndexStoreError> {
-    if is_volume_root {
-        // Only volume-root scans create the sentinel; subtree scans run after the
-        // full scan already inserted it, and their connection may be read-only or
-        // contending with the writer thread's write lock.
-        ensure_root_sentinel(conn)?;
-        return Ok(ROOT_ID);
-    }
-
-    let root_str = root.to_string_lossy();
-    if let Some(id) = resolve_path(conn, &root_str)? {
-        return Ok(id);
-    }
-
-    // Diagnose which component is missing by walking the path.
-    let stripped = root_str.strip_prefix('/').unwrap_or(&root_str);
-    let mut current_id = ROOT_ID;
-    for component in stripped.split('/') {
-        if component.is_empty() {
-            continue;
-        }
-        match IndexStore::resolve_component(conn, current_id, component) {
-            Ok(Some(id)) => current_id = id,
-            Ok(None) => {
-                log::debug!(
-                    "resolve_scan_root: resolve_path({root_str}) failed at component \"{component}\" (parent_id={current_id})"
-                );
-                break;
-            }
-            Err(e) => {
-                log::debug!(
-                    "resolve_scan_root: resolve_path({root_str}) errored at component \"{component}\" (parent_id={current_id}): {e}"
-                );
-                break;
-            }
-        }
-    }
-    Err(IndexStoreError::Sqlite(rusqlite::Error::QueryReturnedNoRows))
 }
 
 /// Mutable context held during a network (SMB/MTP) scan for assigning parent IDs.
@@ -414,431 +303,6 @@ impl ScanCalibrationSet {
     }
 }
 
-// ── Errors ───────────────────────────────────────────────────────────
-
-/// Why an index database operation didn't work.
-#[derive(Debug)]
-pub enum IndexStoreError {
-    /// SQLite refused the statement or the file.
-    Sqlite(rusqlite::Error),
-    /// The database file itself couldn't be read, written, or removed.
-    Io(std::io::Error),
-    /// The on-disk DB carries a different `schema_version` than this build. The
-    /// cache is disposable, so `IndexStore::open` recreates the file fresh
-    /// (delete + recreate, reclaiming disk) rather than migrating. Carries the
-    /// found vs expected versions for a clean upgrade log (not a corruption
-    /// warning). Raised by `try_open` before the store is constructed, so its
-    /// connection drops before `delete_and_recreate` opens a new one.
-    SchemaMismatch {
-        /// The `schema_version` the file on disk carries.
-        found: String,
-        /// The one this build writes.
-        expected: &'static str,
-    },
-}
-
-impl From<rusqlite::Error> for IndexStoreError {
-    fn from(err: rusqlite::Error) -> Self {
-        IndexStoreError::Sqlite(err)
-    }
-}
-
-impl From<std::io::Error> for IndexStoreError {
-    fn from(err: std::io::Error) -> Self {
-        IndexStoreError::Io(err)
-    }
-}
-
-impl std::fmt::Display for IndexStoreError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            IndexStoreError::Sqlite(e) => write!(f, "SQLite error: {e}"),
-            IndexStoreError::Io(e) => write!(f, "I/O error: {e}"),
-            IndexStoreError::SchemaMismatch { found, expected } => {
-                write!(f, "schema version mismatch (found {found}, expected {expected})")
-            }
-        }
-    }
-}
-
-impl std::error::Error for IndexStoreError {}
-
-/// A fatal storage failure that stopped a volume's index: the SQLite result codes
-/// that classified the DB as unusable (a dead disk, a corrupt file, a full or
-/// read-only volume). Carried on the `IndexPhase::Failed` phase (see `lifecycle/state.rs`)
-/// and surfaced to the UI and logs so the failure is specific.
-///
-/// `code` is the primary SQLite result code (for example `SQLITE_IOERR` = 10);
-/// `extended_code` is the extended code (for example `SQLITE_IOERR_WRITE`),
-/// preserved because [`IndexStoreError`]'s `Display` flattens it away.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct IndexFailure {
-    /// The primary SQLite result code, for example `SQLITE_IOERR` = 10.
-    pub code: i32,
-    /// The extended result code, for example `SQLITE_IOERR_WRITE`.
-    pub extended_code: i32,
-}
-
-impl IndexStoreError {
-    /// The SQLite `(primary ErrorCode, extended result code)` when this wraps a
-    /// `SqliteFailure`. `None` for non-SQLite errors and for `rusqlite` errors that
-    /// carry no ffi code (for example `QueryReturnedNoRows`).
-    ///
-    /// Classify on THIS, never on the `Display` string (`no-string-matching`):
-    /// `Display` writes only `SQLite error: {e}` and drops the numeric extended
-    /// code that distinguishes a transient lock from a dead disk.
-    pub fn sqlite_code(&self) -> Option<(rusqlite::ErrorCode, i32)> {
-        match self {
-            IndexStoreError::Sqlite(rusqlite::Error::SqliteFailure(e, _)) => Some((e.code, e.extended_code)),
-            _ => None,
-        }
-    }
-
-    /// Whether this is a FATAL storage-class error: the DB is unusable and every
-    /// subsequent read and write will fail the same way, so the index must stop and
-    /// fail rather than retry forever (the 12,700-warning livelock this guards
-    /// against). Transient contention (`SQLITE_BUSY` / `SQLITE_LOCKED`) is
-    /// deliberately NOT fatal: the busy handler already backs those off. Classified
-    /// on the typed primary `ErrorCode`.
-    pub fn is_fatal_storage_error(&self) -> bool {
-        use rusqlite::ErrorCode::{CannotOpen, DatabaseCorrupt, DiskFull, NotADatabase, ReadOnly, SystemIoFailure};
-        matches!(
-            self.sqlite_code(),
-            Some((
-                SystemIoFailure     // SQLITE_IOERR*
-                    | DatabaseCorrupt   // SQLITE_CORRUPT
-                    | CannotOpen        // SQLITE_CANTOPEN
-                    | DiskFull          // SQLITE_FULL
-                    | ReadOnly          // SQLITE_READONLY
-                    | NotADatabase, // SQLITE_NOTADB
-                _
-            ))
-        )
-    }
-
-    /// Whether this is TRANSIENT lock contention: another connection (or another
-    /// process) held the lock, or the WAL locking protocol needs another attempt.
-    /// The DB itself is fine, so the only correct response is to back off and try
-    /// again, never to throw the index away. `IndexStore::open` retries on this.
-    pub fn is_transient_lock_error(&self) -> bool {
-        use rusqlite::ErrorCode::{DatabaseBusy, DatabaseLocked, FileLockingProtocolFailed};
-        matches!(
-            self.sqlite_code(),
-            Some((
-                DatabaseBusy        // SQLITE_BUSY
-                    | DatabaseLocked    // SQLITE_LOCKED
-                    | FileLockingProtocolFailed, // SQLITE_PROTOCOL
-                _
-            ))
-        )
-    }
-
-    /// Whether the file is positively PROVEN unusable: the bytes aren't a SQLite
-    /// database (`SQLITE_NOTADB`) or its B-tree is broken (`SQLITE_CORRUPT*`).
-    ///
-    /// This is the ONLY class that justifies `IndexStore::open` deleting the DB.
-    /// It's deliberately narrower than [`is_fatal_storage_error`]: a full disk, a
-    /// read-only volume, or a momentary `SQLITE_IOERR` also stop the index, but
-    /// they leave a perfectly good index on disk that a later launch can reuse, so
-    /// deleting on those would destroy a 6.9M-entry index (tens of minutes to
-    /// rebuild) over an environment problem. Anything unrecognized fails loudly
-    /// rather than deleting.
-    ///
-    /// [`is_fatal_storage_error`]: Self::is_fatal_storage_error
-    pub fn indicates_corruption(&self) -> bool {
-        use rusqlite::ErrorCode::{DatabaseCorrupt, NotADatabase};
-        matches!(self.sqlite_code(), Some((DatabaseCorrupt | NotADatabase, _)))
-    }
-
-    /// Whether this is a PRIMARY KEY conflict on `entries.id`
-    /// (`SQLITE_CONSTRAINT_PRIMARYKEY`, extended code 1555): the writer's shared
-    /// ID counter fell behind the table's real `MAX(id)`, so the id it handed out
-    /// is already taken. That's self-healing (resync the counter from the DB and
-    /// retry with a fresh id), which is exactly why it's classified apart from
-    /// `SQLITE_CONSTRAINT_UNIQUE` (2067), the `(parent_id, name_folded)` conflict.
-    /// A UNIQUE conflict means the NAME is already in the table (a real duplicate,
-    /// a case-folding collision, a racing writer); retrying that one under a fresh
-    /// id would insert a duplicate row, so it must never heal. Both share the
-    /// primary `ErrorCode::ConstraintViolation`, so only the extended code tells
-    /// them apart.
-    pub fn is_primary_key_conflict(&self) -> bool {
-        matches!(
-            self.sqlite_code(),
-            Some((rusqlite::ErrorCode::ConstraintViolation, extended))
-                if extended == rusqlite::ffi::SQLITE_CONSTRAINT_PRIMARYKEY
-        )
-    }
-
-    /// The typed [`IndexFailure`] for the `Failed` phase, if this is a fatal
-    /// storage error (else `None`). The primary code is the low byte of the
-    /// extended code, matching SQLite's `SQLITE_IOERR == extended & 0xFF`.
-    pub fn as_index_failure(&self) -> Option<IndexFailure> {
-        if !self.is_fatal_storage_error() {
-            return None;
-        }
-        self.sqlite_code().map(|(_, extended_code)| IndexFailure {
-            code: extended_code & 0xFF,
-            extended_code,
-        })
-    }
-}
-
-// ── Platform-case collation ──────────────────────────────────────────
-
-/// Register the `platform_case` collation on a connection.
-///
-/// Must be called on every connection before any table creation or query,
-/// because custom collations are not persisted in the DB file.
-pub fn register_platform_case_collation(conn: &Connection) -> Result<(), IndexStoreError> {
-    conn.create_collation("platform_case", platform_case_compare)?;
-    Ok(())
-}
-
-/// Compare two strings using the platform's filesystem case/normalization rules.
-///
-/// - **macOS**: NFD-normalize then case-fold (matching APFS behavior).
-/// - **Linux**: binary comparison (matching ext4/btrfs).
-#[cfg(target_os = "macos")]
-fn platform_case_compare(a: &str, b: &str) -> std::cmp::Ordering {
-    use unicode_normalization::UnicodeNormalization;
-    let a_norm: String = a.nfd().collect::<String>().to_lowercase();
-    let b_norm: String = b.nfd().collect::<String>().to_lowercase();
-    a_norm.cmp(&b_norm)
-}
-
-#[cfg(not(target_os = "macos"))]
-fn platform_case_compare(a: &str, b: &str) -> std::cmp::Ordering {
-    a.cmp(b)
-}
-
-/// Normalize a string for case-insensitive comparison.
-#[cfg(target_os = "macos")]
-pub fn normalize_for_comparison(s: &str) -> String {
-    use unicode_normalization::UnicodeNormalization;
-    s.nfd().collect::<String>().to_lowercase()
-}
-
-/// Normalize a string for case-insensitive comparison.
-///
-/// Case- and form-sensitive off macOS, where the filesystem is: two names that
-/// differ in case are two different files, so folding them would merge rows that
-/// are genuinely distinct.
-#[cfg(not(target_os = "macos"))]
-pub fn normalize_for_comparison(s: &str) -> String {
-    s.to_string()
-}
-
-// ── Schema ───────────────────────────────────────────────────────────
-
-const CREATE_TABLES_SQL: &str = "
-    CREATE TABLE IF NOT EXISTS entries (
-        id            INTEGER PRIMARY KEY,
-        parent_id     INTEGER NOT NULL,
-        name          TEXT    NOT NULL COLLATE platform_case,
-        name_folded   TEXT    NOT NULL DEFAULT '',
-        is_directory  INTEGER NOT NULL DEFAULT 0,
-        is_symlink    INTEGER NOT NULL DEFAULT 0,
-        logical_size  INTEGER,
-        physical_size INTEGER,
-        modified_at   INTEGER,
-        inode         INTEGER,
-        listed_epoch  INTEGER NOT NULL DEFAULT 0,
-        unreadable_cause INTEGER NOT NULL DEFAULT 0
-    );
-
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_parent_name_folded ON entries (parent_id, name_folded);
-    CREATE INDEX IF NOT EXISTS idx_inode ON entries (inode);
-
-    CREATE TABLE IF NOT EXISTS dir_stats (
-        entry_id                 INTEGER PRIMARY KEY,
-        recursive_logical_size   INTEGER NOT NULL DEFAULT 0,
-        recursive_physical_size  INTEGER NOT NULL DEFAULT 0,
-        recursive_file_count     INTEGER NOT NULL DEFAULT 0,
-        recursive_dir_count      INTEGER NOT NULL DEFAULT 0,
-        recursive_has_symlinks   INTEGER NOT NULL DEFAULT 0,
-        min_subtree_epoch        INTEGER NOT NULL DEFAULT 0
-    );
-
-    CREATE TABLE IF NOT EXISTS meta (
-        key   TEXT PRIMARY KEY,
-        value TEXT NOT NULL
-    ) WITHOUT ROWID;
-";
-
-/// Insert the root sentinel entry if it doesn't exist.
-fn ensure_root_sentinel(conn: &Connection) -> Result<(), IndexStoreError> {
-    conn.execute(
-        "INSERT OR IGNORE INTO entries (id, parent_id, name, name_folded, is_directory) VALUES (?1, ?2, '', '', 1)",
-        params![ROOT_ID, ROOT_PARENT_ID],
-    )?;
-    Ok(())
-}
-
-/// Apply WAL-mode pragmas for performance.
-///
-/// The page-cache budget is role-dependent and shared with every other store; see
-/// [`cmdr_fs::sqlite_util::apply_page_cache`].
-fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), IndexStoreError> {
-    // busy_timeout: when another connection holds the write lock, retry for up
-    // to 5s instead of returning SQLITE_BUSY immediately. Applies to every open
-    // (read and write) because even read-only connections in WAL mode touch the
-    // -shm file at startup and can briefly race a writer. Without this, the
-    // live event loop was dying on its initial open under transient contention,
-    // dropping the FSEvents receiver and silently stopping live index updates
-    // for the rest of the session.
-    //
-    // FIRST, before anything that takes a lock: `journal_mode = WAL` and the root
-    // sentinel insert both need one, and a busy handler that isn't installed yet
-    // can't back them off.
-    conn.execute_batch(
-        "PRAGMA busy_timeout = 5000;
-         PRAGMA synchronous = NORMAL;",
-    )?;
-    cmdr_fs::sqlite_util::apply_page_cache(conn, readonly)?;
-    cmdr_fs::sqlite_util::apply_statement_cache(conn, readonly);
-    if !readonly {
-        conn.execute_batch(
-            "PRAGMA auto_vacuum = INCREMENTAL;
-             PRAGMA journal_mode = WAL;",
-        )?;
-        // WAL/checkpoint cadence hardening (write connection only; read-only
-        // connections never commit or checkpoint, so these would be no-ops there).
-        //
-        // With `synchronous = NORMAL` + WAL, ordinary commits don't fsync — the
-        // fsync barriers happen at CHECKPOINT time (fsync the WAL, copy pages into
-        // the main DB, fsync the main DB; an F_FULLFSYNC each on APFS). SQLite's
-        // default `wal_autocheckpoint` of 1 000 pages (~4 MiB) fires a PASSIVE
-        // checkpoint inline on the committing connection every ~4 MiB of WAL, so a
-        // big finalize (the `ComputeAllAggregates` write loop commits ~464 chunked
-        // autocommit transactions) crosses that boundary many times and turns
-        // finalize into an fsync storm. That is the most likely trigger of the
-        // `SQLITE_IOERR` the root index hit mid-scan and never recovered from; the
-        // confirm path is the primary+extended SQLite code now logged when a fatal
-        // storage error trips `IndexPhase::Failed`. Raise the threshold to 4 000
-        // pages (~16 MiB, matching the write connection's
-        // `sqlite_util::WRITE_PAGE_CACHE_KIB` page cache) so implicit checkpoints
-        // fire ~4x less often (fewer fsync barriers) while the WAL between them
-        // stays small enough to keep reads fast. That pairing is why the write
-        // budget is 16 MiB: change one and reconsider the other. It's write-side
-        // only — read connections never commit or checkpoint, which is why they
-        // hold no dirty-page window and run the smaller `READ_PAGE_CACHE_KIB`.
-        //
-        // `journal_size_limit` caps the on-disk `-wal` file after a checkpoint
-        // resets it: a backstop for the window between the 30 s
-        // `wal_checkpoint(TRUNCATE)` maintenance ticks (`writer/maintenance.rs`)
-        // and the explicit post-scan checkpoint. 64 MiB gives 4x headroom over the
-        // autocheckpoint size so the file is reused in place in steady state (no
-        // trim/regrow churn), yet a pathological burst — or a long-lived reader
-        // blocking checkpoints — can't strand a multi-hundred-MiB `-wal`.
-        conn.execute_batch(
-            "PRAGMA wal_autocheckpoint = 4000;
-             PRAGMA journal_size_limit = 67108864;",
-        )?;
-    }
-    Ok(())
-}
-
-/// Create tables if they don't exist and insert root sentinel.
-fn create_tables(conn: &Connection) -> Result<(), IndexStoreError> {
-    conn.execute_batch(CREATE_TABLES_SQL)?;
-    ensure_root_sentinel(conn)?;
-    Ok(())
-}
-
-/// Drop all index tables and recreate them from scratch.
-///
-/// Test-only: the live schema-mismatch path recreates the DB FILE (zero
-/// freelist) via `IndexStore::delete_and_recreate`, not a DROP on the live file.
-/// This stays only for the `#[cfg(test)]` `clear_all` helper.
-#[cfg(test)]
-fn reset_schema(conn: &Connection) -> Result<(), IndexStoreError> {
-    conn.execute_batch(
-        "DROP TABLE IF EXISTS entries;
-         DROP TABLE IF EXISTS dir_stats;
-         DROP TABLE IF EXISTS meta;",
-    )?;
-    create_tables(conn)?;
-    conn.execute(
-        "INSERT OR REPLACE INTO meta (key, value) VALUES (?1, ?2)",
-        params!["schema_version", SCHEMA_VERSION],
-    )?;
-    Ok(())
-}
-
-// ── Path reconstruction helpers ──────────────────────────────────────
-
-/// Reconstruct the full path for an entry by walking up the parent chain.
-///
-/// Returns `/` for the root sentinel itself, and `/component/component/...`
-/// for all other entries.
-fn reconstruct_path(conn: &Connection, entry_id: i64) -> Result<String, IndexStoreError> {
-    if entry_id == ROOT_ID {
-        return Ok("/".to_string());
-    }
-
-    let mut components = Vec::new();
-    let mut current_id = entry_id;
-
-    loop {
-        if current_id == ROOT_ID || current_id == ROOT_PARENT_ID {
-            break;
-        }
-        let mut stmt = conn.prepare_cached("SELECT parent_id, name FROM entries WHERE id = ?1")?;
-        let (parent_id, name): (i64, String) =
-            stmt.query_row(params![current_id], |row| Ok((row.get(0)?, row.get(1)?)))?;
-        components.push(name);
-        current_id = parent_id;
-    }
-
-    components.reverse();
-    Ok(format!("/{}", components.join("/")))
-}
-
-/// Resolve a path string to an entry ID by walking component-by-component from
-/// the index root (`ROOT_ID`).
-///
-/// Returns `None` if any component along the path doesn't exist. The path must be
-/// absolute (starting with `/`). For a `root` (local-disk) index `ROOT_ID` is `/`,
-/// so an absolute filesystem path resolves directly. For a network/MTP index
-/// `ROOT_ID` is the volume root, so a mount-absolute path must be mapped into the
-/// volume's index path space first (see [`crate::indexing::paths::routing::index_read_path`]).
-pub fn resolve_path(conn: &Connection, path: &str) -> Result<Option<i64>, IndexStoreError> {
-    resolve_path_under(conn, ROOT_ID, path)
-}
-
-/// Resolve a path RELATIVE to a given root entry id by walking
-/// component-by-component from `root_id`.
-///
-/// Returns `None` if any component doesn't exist under that root. A leading `/`
-/// on `relative_path` is treated as relative to `root_id` (NOT the index root),
-/// and an empty path (`""` or `"/"`) resolves to `root_id` itself.
-///
-/// This is the root-relative generalization of [`resolve_path`] (which is just
-/// `resolve_path_under(conn, ROOT_ID, path)`). It exists because a network/MTP
-/// index is rooted at the VOLUME root rather than `/`: once a mount-absolute hot
-/// path has had its volume-root prefix stripped to a relative remainder, this
-/// walks that remainder from the index's `ROOT_ID`.
-pub(crate) fn resolve_path_under(
-    conn: &Connection,
-    root_id: i64,
-    relative_path: &str,
-) -> Result<Option<i64>, IndexStoreError> {
-    let trimmed = relative_path.strip_suffix('/').unwrap_or(relative_path);
-
-    let mut current_id = root_id;
-    for component in trimmed.strip_prefix('/').unwrap_or(trimmed).split('/') {
-        if component.is_empty() {
-            continue;
-        }
-        match IndexStore::resolve_component(conn, current_id, component)? {
-            Some(id) => current_id = id,
-            None => return Ok(None),
-        }
-    }
-    Ok(Some(current_id))
-}
-
 // ── IndexStore ───────────────────────────────────────────────────────
 
 /// Read-oriented handle to the index database.
@@ -875,50 +339,6 @@ where
             Err(e)
         }
     }
-}
-
-// ── IndexStore impl (split across submodules) ────────────────────────
-//
-// The `impl IndexStore` block lives across these submodules (pure code
-// movement, grouped by concern). Each is `impl IndexStore { … }` over the
-// struct defined above and pulls shared items in via `use super::*`.
-mod connection;
-mod dir_stats;
-mod entries;
-mod meta;
-
-// Not part of the `impl IndexStore` split: a compact in-memory PROJECTION of the
-// directory rows, built from `for_each_directory`. It lives beside that query
-// because the two are designed for each other.
-mod dir_tree;
-pub(crate) use dir_tree::{ARENA_FULL, DirTree};
-
-/// Reconstruct a path from an in-memory map of `id -> (parent_id, name)`.
-/// More efficient than DB queries when reconstructing many paths.
-#[cfg(test)]
-fn reconstruct_path_from_map(entry_id: i64, map: &std::collections::HashMap<i64, (i64, &str)>) -> String {
-    if entry_id == ROOT_ID {
-        return "/".to_string();
-    }
-
-    let mut components = Vec::new();
-    let mut current_id = entry_id;
-
-    loop {
-        if current_id == ROOT_ID || current_id == ROOT_PARENT_ID {
-            break;
-        }
-        match map.get(&current_id) {
-            Some((parent_id, name)) => {
-                components.push(*name);
-                current_id = *parent_id;
-            }
-            None => break,
-        }
-    }
-
-    components.reverse();
-    format!("/{}", components.join("/"))
 }
 
 // ── Tests ────────────────────────────────────────────────────────────
