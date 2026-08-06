@@ -121,7 +121,7 @@ the keyboard skip and the mouse not-allowed cursor are both correct without extr
 
 On macOS the Option key remaps `event.key` to typographic glyphs (Option+S → `ß`, Option+M → `µ`), so `altLetter()`
 matches on `event.code` (`KeyS`, `KeyM`, …) first and falls back to `event.key` for synthesized test events. Same trick
-lives in `SearchDialog.svelte::matchKey` for the mode-chip ⌥A / ⌥F / ⌥R shortcuts.
+lives in `query-shortcuts.ts::matchKey`, which the mode-chip ⌥A / ⌥F / ⌥R shortcuts route through.
 
 ## Chip-side behavior
 
