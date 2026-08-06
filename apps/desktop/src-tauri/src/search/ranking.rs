@@ -454,7 +454,7 @@ pub(crate) fn rank_indices(
     let key_for = |memo: &mut std::collections::HashMap<i64, f64>, idx: usize| {
         let entry = &index.entries[idx];
         let band = classify_match(index.name(entry), stem, case_insensitive);
-        let recency = entry.modified_at.unwrap_or(0);
+        let recency = entry.modified_at.get().unwrap_or(0);
         let boosted_recency = if no_weights {
             recency as f64
         } else {

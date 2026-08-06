@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use super::coverage::coverage_kind;
 use super::*;
 use crate::search::engine;
-use crate::search::index::{SearchEntry, SearchIndex};
+use crate::search::index::{OptU64, SearchEntry, SearchIndex};
 use crate::search::live::CoverageKind;
 use crate::search::ranking::ImportanceWeights;
 use crate::search::types::{PatternType, SearchResultEntry};
@@ -37,8 +37,8 @@ fn index_of(files: &[(&str, &str, u64)]) -> SearchIndex {
         name_offset: r_off,
         name_len: r_len,
         is_directory: true,
-        size: None,
-        modified_at: None,
+        size: OptU64::NONE,
+        modified_at: OptU64::NONE,
     }];
     for (dir, file, modified_at) in files {
         let (d_off, d_len) = arena_push(&mut names, dir);
@@ -50,8 +50,8 @@ fn index_of(files: &[(&str, &str, u64)]) -> SearchIndex {
             name_offset: d_off,
             name_len: d_len,
             is_directory: true,
-            size: None,
-            modified_at: Some(1),
+            size: OptU64::NONE,
+            modified_at: OptU64::new(Some(1)),
         });
         entries.push(SearchEntry {
             id: dir_id + 1,
@@ -59,8 +59,8 @@ fn index_of(files: &[(&str, &str, u64)]) -> SearchIndex {
             name_offset: f_off,
             name_len: f_len,
             is_directory: false,
-            size: Some(10),
-            modified_at: Some(*modified_at),
+            size: OptU64::new(Some(10)),
+            modified_at: OptU64::new(Some(*modified_at)),
         });
     }
     let mut id_to_index = HashMap::new();

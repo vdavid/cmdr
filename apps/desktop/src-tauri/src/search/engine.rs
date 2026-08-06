@@ -278,8 +278,8 @@ pub(crate) fn search_ranked(
             if !compiled.matches(&Candidate {
                 name: index.name(entry),
                 is_directory: entry.is_directory,
-                size: entry.size,
-                modified_at: entry.modified_at,
+                size: entry.size.get(),
+                modified_at: entry.modified_at.get(),
             }) {
                 return false;
             }
@@ -396,10 +396,10 @@ fn sort_indices(
                 if entry.is_directory {
                     dir_sizes.and_then(|sizes| sizes.get(entry.id))
                 } else {
-                    entry.size
+                    entry.size.get()
                 }
             }
-            SearchSort::Modified => entry.modified_at,
+            SearchSort::Modified => entry.modified_at.get(),
             SearchSort::Relevance => None,
         }
     };
@@ -452,8 +452,8 @@ fn build_result_entry(index: &SearchIndex, idx: usize, path_prefix: &str, home_d
         path,
         parent_path,
         is_directory: entry.is_directory,
-        size: entry.size,
-        modified_at: entry.modified_at,
+        size: entry.size.get(),
+        modified_at: entry.modified_at.get(),
         icon_id,
         entry_id: entry.id,
     }

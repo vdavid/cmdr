@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use super::*;
-use crate::search::index::SearchEntry;
+use crate::search::index::{OptU64, SearchEntry};
 
 mod count;
 mod filters;
@@ -40,8 +40,8 @@ pub(super) fn make_test_index() -> SearchIndex {
             name_offset: offsets[0].0,
             name_len: offsets[0].1,
             is_directory: true,
-            size: None,
-            modified_at: None,
+            size: OptU64::NONE,
+            modified_at: OptU64::NONE,
         },
         SearchEntry {
             id: 2,
@@ -49,8 +49,8 @@ pub(super) fn make_test_index() -> SearchIndex {
             name_offset: offsets[1].0,
             name_len: offsets[1].1,
             is_directory: true,
-            size: None,
-            modified_at: Some(1000),
+            size: OptU64::NONE,
+            modified_at: OptU64::new(Some(1000)),
         },
         SearchEntry {
             id: 3,
@@ -58,8 +58,8 @@ pub(super) fn make_test_index() -> SearchIndex {
             name_offset: offsets[2].0,
             name_len: offsets[2].1,
             is_directory: true,
-            size: None,
-            modified_at: Some(2000),
+            size: OptU64::NONE,
+            modified_at: OptU64::new(Some(2000)),
         },
         SearchEntry {
             id: 4,
@@ -67,8 +67,8 @@ pub(super) fn make_test_index() -> SearchIndex {
             name_offset: offsets[3].0,
             name_len: offsets[3].1,
             is_directory: false,
-            size: Some(1_000_000),
-            modified_at: Some(3000),
+            size: OptU64::new(Some(1_000_000)),
+            modified_at: OptU64::new(Some(3000)),
         },
         SearchEntry {
             id: 5,
@@ -76,8 +76,8 @@ pub(super) fn make_test_index() -> SearchIndex {
             name_offset: offsets[4].0,
             name_len: offsets[4].1,
             is_directory: false,
-            size: Some(5_000_000),
-            modified_at: Some(4000),
+            size: OptU64::new(Some(5_000_000)),
+            modified_at: OptU64::new(Some(4000)),
         },
         SearchEntry {
             id: 6,
@@ -85,8 +85,8 @@ pub(super) fn make_test_index() -> SearchIndex {
             name_offset: offsets[5].0,
             name_len: offsets[5].1,
             is_directory: false,
-            size: Some(500),
-            modified_at: Some(5000),
+            size: OptU64::new(Some(500)),
+            modified_at: OptU64::new(Some(5000)),
         },
         SearchEntry {
             id: 7,
@@ -94,8 +94,8 @@ pub(super) fn make_test_index() -> SearchIndex {
             name_offset: offsets[6].0,
             name_len: offsets[6].1,
             is_directory: true,
-            size: None,
-            modified_at: Some(1500),
+            size: OptU64::NONE,
+            modified_at: OptU64::new(Some(1500)),
         },
         SearchEntry {
             id: 8,
@@ -103,8 +103,8 @@ pub(super) fn make_test_index() -> SearchIndex {
             name_offset: offsets[7].0,
             name_len: offsets[7].1,
             is_directory: false,
-            size: Some(2_000_000),
-            modified_at: Some(6000),
+            size: OptU64::new(Some(2_000_000)),
+            modified_at: OptU64::new(Some(6000)),
         },
     ];
     let mut id_to_index = HashMap::new();

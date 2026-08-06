@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 
 use super::*;
-use crate::search::index::{SearchEntry, SearchIndex};
+use crate::search::index::{OptU64, SearchEntry, SearchIndex};
 
 // ── Index builder ─────────────────────────────────────────────────────────
 
@@ -38,8 +38,8 @@ fn build_index(specs: &[Spec]) -> SearchIndex {
         name_offset: root.0,
         name_len: root.1,
         is_directory: true,
-        size: None,
-        modified_at: None,
+        size: OptU64::NONE,
+        modified_at: OptU64::NONE,
     }];
     for s in specs {
         let (off, len) = arena_push(&mut names, s.name);
@@ -49,8 +49,8 @@ fn build_index(specs: &[Spec]) -> SearchIndex {
             name_offset: off,
             name_len: len,
             is_directory: s.is_directory,
-            size: None,
-            modified_at: s.modified_at,
+            size: OptU64::NONE,
+            modified_at: OptU64::new(s.modified_at),
         });
     }
     let mut id_to_index = HashMap::new();
@@ -371,7 +371,7 @@ fn empty_weights_within_band_is_pure_recency() {
     rank(&index, &mut matching, "report", false, &weights);
     let recencies: Vec<u64> = matching
         .iter()
-        .map(|&i| index.entries[i].modified_at.unwrap())
+        .map(|&i| index.entries[i].modified_at.get().unwrap())
         .collect();
     assert_eq!(recencies, vec![300, 200, 100], "within-band order is pure recency DESC");
 }

@@ -34,7 +34,7 @@ use cmdr_index::ReadPool;
 use cmdr_index::store::ROOT_ID;
 
 use super::engine::search_ranked;
-use super::index::{SearchEntry, SearchIndex, load_search_index};
+use super::index::{OptU64, SearchEntry, SearchIndex, load_search_index};
 use super::ranking::ImportanceWeights;
 use super::types::{PatternType, SearchQuery};
 
@@ -87,12 +87,12 @@ fn build_synthetic_index(n: usize) -> SearchIndex {
             name_offset,
             name_len,
             is_directory: is_dir,
-            size: if is_dir {
+            size: OptU64::new(if is_dir {
                 None
             } else {
                 Some((i as u64 * 7919) % 50_000_000)
-            },
-            modified_at: Some(1_600_000_000 + (i as u64 * 613) % 60_000_000),
+            }),
+            modified_at: OptU64::new(Some(1_600_000_000 + (i as u64 * 613) % 60_000_000)),
         });
     };
 

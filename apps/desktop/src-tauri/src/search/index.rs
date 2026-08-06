@@ -10,8 +10,78 @@ use crate::index_host::index;
 use crate::pluralize::pluralize_with;
 use cmdr_index::ReadPool;
 
+#[cfg(test)]
+mod memory_tests;
+
+// ── An optional u64 that costs eight bytes ───────────────────────────
+
+/// A `u64` that may be absent, in eight bytes instead of `Option<u64>`'s sixteen.
+///
+/// **Why it exists.** A `u64` uses every one of its bit patterns, so `Option<u64>` has
+/// no niche to hide `None` in and Rust adds a whole discriminant word. Two of those in
+/// [`SearchEntry`] were 32 of its 56 bytes, for two values needing 8 each — and the
+/// arena holds one entry per file on the volume (6.0 M rows on David's boot disk), so
+/// that padding alone was ~97 MB of resident memory whenever someone searched.
+///
+/// **Why `u64::MAX` can't collide with a real value.** Both values this wraps come out
+/// of SQLite `INTEGER` columns, which are SIGNED 64-bit, so the index physically cannot
+/// store or return anything above `i64::MAX` — `u64::MAX` is a full bit outside the
+/// representable range, not merely an implausible value in it. It's unreachable on the
+/// physics too: `u64::MAX` bytes is 16 EiB, twice APFS's own 8 EiB per-file ceiling, and
+/// `u64::MAX` seconds is ~5.8 × 10^11 years after 1970.
+///
+/// ❌ **Don't "simplify" this back to `Option<u64>`.** The 16 bytes it costs are real
+/// and the encoding is invisible from outside: nothing can read the sentinel, because
+/// [`get`](Self::get) is the only way in.
+///
+/// **`None` is meaningful in both fields and must survive exactly.** `size` is NULL for
+/// every 2nd+ name of a hardlinked inode (the index counts an inode's bytes once, on one
+/// name, and stores NULL on the rest — 934,793 of 6.0 M rows on David's disk), so
+/// collapsing `None` into `0` would quietly change what folder totals and size filters
+/// report on a hardlink-heavy tree. `modified_at` is NULL where the time is unknown.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct OptU64(u64);
+
+impl OptU64 {
+    /// The absent value.
+    pub const NONE: Self = Self(u64::MAX);
+
+    /// Encode an optional value.
+    ///
+    /// `Some(u64::MAX)` would encode as absent, which is why the type's doc comment
+    /// argues at length that no such value can reach here. The `debug_assert` catches a
+    /// future caller that finds a way; it compiles out of the shipping build, which
+    /// matters because this runs once per row per arena load.
+    #[inline]
+    pub fn new(value: Option<u64>) -> Self {
+        debug_assert!(
+            value != Some(u64::MAX),
+            "u64::MAX is OptU64's absent marker, so a real u64::MAX would read back as None. \
+             SQLite INTEGER columns are signed, so this shouldn't be reachable from the index."
+        );
+        Self(value.unwrap_or(u64::MAX))
+    }
+
+    /// Decode back to an `Option<u64>`. The only way to read one.
+    #[inline]
+    pub fn get(self) -> Option<u64> {
+        (self.0 != u64::MAX).then_some(self.0)
+    }
+}
+
+/// Prints like the `Option<u64>` it stands for, so a debug dump of an arena row never
+/// shows a bare `18446744073709551615` for "unknown".
+impl std::fmt::Debug for OptU64 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Debug::fmt(&self.get(), f)
+    }
+}
+
 // ── Search entry (in-memory representation) ──────────────────────────
 
+/// One row of the arena, 40 bytes. See [`OptU64`] before adding a field: the arena holds
+/// one of these per file on the volume, so a byte here is megabytes of peak footprint,
+/// and `search/index/memory_tests.rs` pins the size.
 #[derive(Debug)]
 pub struct SearchEntry {
     pub id: i64,
@@ -19,8 +89,11 @@ pub struct SearchEntry {
     pub name_offset: u32, // byte offset into SearchIndex.names
     pub name_len: u16,    // byte length (max filename 255 chars = up to 765 bytes UTF-8)
     pub is_directory: bool,
-    pub size: Option<u64>,
-    pub modified_at: Option<u64>,
+    /// Apparent size in bytes, absent for a directory (its recursive size lives in
+    /// `dir_stats`) and for every 2nd+ name of a hardlinked inode.
+    pub size: OptU64,
+    /// Last-modified time in seconds since the Unix epoch, absent where unknown.
+    pub modified_at: OptU64,
 }
 
 // ── Search index ─────────────────────────────────────────────────────
@@ -118,8 +191,8 @@ pub(crate) fn load_search_index(pool: &ReadPool, cancel: &AtomicBool) -> Result<
                 name_offset,
                 name_len,
                 is_directory,
-                size: logical_size,
-                modified_at,
+                size: OptU64::new(logical_size),
+                modified_at: OptU64::new(modified_at),
             });
             row_count += 1;
         }
@@ -152,6 +225,144 @@ mod tests {
     use cmdr_index::store::{IndexStore, ROOT_ID};
 
     use super::*;
+
+    // ── The sentinel encoding ────────────────────────────────────────
+
+    /// Every value the index can hold must survive the eight-byte encoding unchanged,
+    /// `None` included and `0` above all: a zero-byte file is a real thing, and reading
+    /// it back as "size unknown" would let it slip through a size filter.
+    #[test]
+    fn every_representable_value_survives_the_round_trip() {
+        assert_eq!(OptU64::new(None).get(), None);
+        assert_eq!(OptU64::NONE.get(), None);
+
+        for value in [
+            0,                   // an empty file, and a folder modified at the epoch
+            1,                   // the smallest non-empty file
+            512,                 // one block
+            1_700_000_000,       // a plausible mtime
+            994_663_481_856,     // the largest file on David's disk (2026-08-06)
+            u32::MAX as u64,     // where a 32-bit size would have wrapped
+            u32::MAX as u64 + 1, // and just past it
+            i64::MAX as u64,     // the largest value a SQLite INTEGER can hold
+            u64::MAX - 1,        // and the largest this encoding can hold at all
+        ] {
+            assert_eq!(
+                OptU64::new(Some(value)).get(),
+                Some(value),
+                "{value} should survive the round trip"
+            );
+        }
+    }
+
+    /// A hardlink-deduped row (NULL `logical_size`) has to read back as `None`, not as
+    /// `0`. The index counts an inode's bytes once and stores NULL on every other name,
+    /// so collapsing the two would change what folder totals and size filters report on
+    /// a hardlink-heavy tree — silently, and only on the rows nobody looks at twice.
+    #[test]
+    fn a_hardlink_deduped_row_loads_back_as_unknown_size() {
+        let dir = tempfile::tempdir().expect("failed to create temp dir");
+        let db_path = dir.path().join("test-index.db");
+        let _store = IndexStore::open(&db_path).expect("failed to open store");
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+
+        // Two names for one inode, the way the scanner writes them: the first carries the
+        // bytes, the second carries NULL. Plus an empty file, which is NOT the same thing.
+        let inode = Some(4_242_424_242);
+        IndexStore::insert_entry_v2(
+            &conn,
+            ROOT_ID,
+            "first-link",
+            false,
+            false,
+            Some(4096),
+            Some(4096),
+            Some(1),
+            inode,
+        )
+        .unwrap();
+        IndexStore::insert_entry_v2(&conn, ROOT_ID, "second-link", false, false, None, None, Some(1), inode).unwrap();
+        IndexStore::insert_entry_v2(&conn, ROOT_ID, "empty.txt", false, false, Some(0), Some(0), None, None).unwrap();
+
+        let pool = ReadPool::new(db_path).unwrap();
+        let index = load_search_index(&pool, &AtomicBool::new(false)).unwrap();
+        let size_of = |name: &str| {
+            index
+                .entries
+                .iter()
+                .find(|e| index.name(e) == name)
+                .unwrap_or_else(|| panic!("{name} should be in the arena"))
+                .size
+                .get()
+        };
+
+        assert_eq!(
+            size_of("first-link"),
+            Some(4096),
+            "the name carrying the bytes keeps them"
+        );
+        assert_eq!(
+            size_of("second-link"),
+            None,
+            "a deduped name is sizeless, not zero-sized"
+        );
+        assert_eq!(
+            size_of("empty.txt"),
+            Some(0),
+            "an empty file is zero-sized, not sizeless"
+        );
+    }
+
+    /// A NULL `modified_at` is "unknown", and must not read back as the epoch: the
+    /// ranker treats unknown as oldest-possible, and `sortBy: modified` sorts unknown
+    /// keys last rather than pretending they're from 1970.
+    #[test]
+    fn an_unknown_modified_time_loads_back_as_none() {
+        let dir = tempfile::tempdir().expect("failed to create temp dir");
+        let db_path = dir.path().join("test-index.db");
+        let _store = IndexStore::open(&db_path).expect("failed to open store");
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+
+        IndexStore::insert_entry_v2(
+            &conn,
+            ROOT_ID,
+            "undated.txt",
+            false,
+            false,
+            Some(7),
+            Some(7),
+            None,
+            None,
+        )
+        .unwrap();
+        IndexStore::insert_entry_v2(
+            &conn,
+            ROOT_ID,
+            "epoch.txt",
+            false,
+            false,
+            Some(7),
+            Some(7),
+            Some(0),
+            None,
+        )
+        .unwrap();
+
+        let pool = ReadPool::new(db_path).unwrap();
+        let index = load_search_index(&pool, &AtomicBool::new(false)).unwrap();
+        let modified = |name: &str| {
+            index
+                .entries
+                .iter()
+                .find(|e| index.name(e) == name)
+                .unwrap_or_else(|| panic!("{name} should be in the arena"))
+                .modified_at
+                .get()
+        };
+
+        assert_eq!(modified("undated.txt"), None, "an unknown time stays unknown");
+        assert_eq!(modified("epoch.txt"), Some(0), "a real epoch timestamp isn't 'unknown'");
+    }
 
     // ── Integration test: load from real SQLite DB ───────────────────
 

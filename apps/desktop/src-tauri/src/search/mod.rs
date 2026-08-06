@@ -27,7 +27,7 @@ pub(crate) mod volumes;
 pub use types::{ParsedScope, PatternType, SearchQuery, SearchResult, SearchResultEntry, SearchSort};
 
 // index.rs
-pub use index::{SearchEntry, SearchIndex};
+pub use index::{OptU64, SearchEntry, SearchIndex};
 
 // volumes.rs (per-volume registry + dialog lifecycle)
 pub(crate) use volumes::{

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use super::*;
-use crate::search::index::SearchEntry;
+use crate::search::index::{OptU64, SearchEntry};
 use crate::search::types::PatternType;
 
 // ── Scope filtering in search ───────────────────────────────────
@@ -32,8 +32,8 @@ fn make_scope_test_index() -> SearchIndex {
             name_offset: offsets[0].0,
             name_len: offsets[0].1,
             is_directory: true,
-            size: None,
-            modified_at: None,
+            size: OptU64::NONE,
+            modified_at: OptU64::NONE,
         },
         SearchEntry {
             id: 2,
@@ -41,8 +41,8 @@ fn make_scope_test_index() -> SearchIndex {
             name_offset: offsets[1].0,
             name_len: offsets[1].1,
             is_directory: true,
-            size: None,
-            modified_at: Some(1000),
+            size: OptU64::NONE,
+            modified_at: OptU64::new(Some(1000)),
         },
         SearchEntry {
             id: 3,
@@ -50,8 +50,8 @@ fn make_scope_test_index() -> SearchIndex {
             name_offset: offsets[2].0,
             name_len: offsets[2].1,
             is_directory: true,
-            size: None,
-            modified_at: Some(2000),
+            size: OptU64::NONE,
+            modified_at: OptU64::new(Some(2000)),
         },
         SearchEntry {
             id: 4,
@@ -59,8 +59,8 @@ fn make_scope_test_index() -> SearchIndex {
             name_offset: offsets[3].0,
             name_len: offsets[3].1,
             is_directory: true,
-            size: None,
-            modified_at: Some(3000),
+            size: OptU64::NONE,
+            modified_at: OptU64::new(Some(3000)),
         },
         SearchEntry {
             id: 9,
@@ -68,8 +68,8 @@ fn make_scope_test_index() -> SearchIndex {
             name_offset: offsets[4].0,
             name_len: offsets[4].1,
             is_directory: false,
-            size: Some(1000),
-            modified_at: Some(4000),
+            size: OptU64::new(Some(1000)),
+            modified_at: OptU64::new(Some(4000)),
         },
         SearchEntry {
             id: 10,
@@ -77,8 +77,8 @@ fn make_scope_test_index() -> SearchIndex {
             name_offset: offsets[5].0,
             name_len: offsets[5].1,
             is_directory: true,
-            size: None,
-            modified_at: Some(5000),
+            size: OptU64::NONE,
+            modified_at: OptU64::new(Some(5000)),
         },
         SearchEntry {
             id: 11,
@@ -86,8 +86,8 @@ fn make_scope_test_index() -> SearchIndex {
             name_offset: offsets[6].0,
             name_len: offsets[6].1,
             is_directory: false,
-            size: Some(500),
-            modified_at: Some(6000),
+            size: OptU64::new(Some(500)),
+            modified_at: OptU64::new(Some(6000)),
         },
         SearchEntry {
             id: 12,
@@ -95,8 +95,8 @@ fn make_scope_test_index() -> SearchIndex {
             name_offset: offsets[7].0,
             name_len: offsets[7].1,
             is_directory: true,
-            size: None,
-            modified_at: Some(7000),
+            size: OptU64::NONE,
+            modified_at: OptU64::new(Some(7000)),
         },
         SearchEntry {
             id: 13,
@@ -104,8 +104,8 @@ fn make_scope_test_index() -> SearchIndex {
             name_offset: offsets[8].0,
             name_len: offsets[8].1,
             is_directory: false,
-            size: Some(200),
-            modified_at: Some(8000),
+            size: OptU64::new(Some(200)),
+            modified_at: OptU64::new(Some(8000)),
         },
     ];
     let mut id_to_index = HashMap::new();
@@ -308,8 +308,8 @@ fn make_newline_dir_index() -> SearchIndex {
             name_offset: offsets[0].0,
             name_len: offsets[0].1,
             is_directory: true,
-            size: None,
-            modified_at: None,
+            size: OptU64::NONE,
+            modified_at: OptU64::NONE,
         },
         SearchEntry {
             id: 2,
@@ -317,8 +317,8 @@ fn make_newline_dir_index() -> SearchIndex {
             name_offset: offsets[1].0,
             name_len: offsets[1].1,
             is_directory: true,
-            size: None,
-            modified_at: Some(1000),
+            size: OptU64::NONE,
+            modified_at: OptU64::new(Some(1000)),
         },
         SearchEntry {
             id: 3,
@@ -326,8 +326,8 @@ fn make_newline_dir_index() -> SearchIndex {
             name_offset: offsets[2].0,
             name_len: offsets[2].1,
             is_directory: false,
-            size: Some(10),
-            modified_at: Some(2000),
+            size: OptU64::new(Some(10)),
+            modified_at: OptU64::new(Some(2000)),
         },
     ];
     let mut id_to_index = HashMap::new();
