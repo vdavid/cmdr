@@ -103,8 +103,8 @@ be O(n²) if the copy engine read it entry-by-entry (each `open_read_stream` re-
 a one-pass extractor (`Volume::open_sequential_extract` → `ArchiveIndex::open_subtree_extract`) that decodes the stream
 ONCE. The extractor mechanism lives in `src/read/DETAILS.md` § "One-pass subtree extract"; the copy-engine dispatch
 (create dirs from the tree, then a single decode pass for the files) lives in
-`apps/desktop/src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "One-pass sequential extract". A plain
-`.tar` and zip are random-access and keep the per-entry path unchanged.
+`apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/DETAILS.md` § "One-pass sequential extract". A
+plain `.tar` and zip are random-access and keep the per-entry path unchanged.
 
 ### Decision: `get_space_info` delegates to the parent volume
 

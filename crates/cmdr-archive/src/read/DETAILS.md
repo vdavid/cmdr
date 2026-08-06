@@ -247,7 +247,7 @@ make it correct and bounded:
   their tree sizes so they match `scan_for_copy` totals). Directories — synthetic ones with no archive entry, and empty
   explicit ones — carry no bytes, so the copy engine creates the destination folders from the tree and reserves the one
   decode pass for byte-carrying entries (see the copy planner in
-  `apps/desktop/src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "One-pass sequential extract").
+  `apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/DETAILS.md` § "One-pass sequential extract").
 - **Early stop.** `stream_subtree` removes each delivered path from `wanted` and returns the moment it empties, so a
   subtree near the front of a large archive doesn't decode the tail. A not-wanted entry is still skipped through the one
   decoder (compressed tar) or read to a sink (7z solid block) — the honest single-pass cost of reaching later members.
