@@ -1,84 +1,63 @@
-//! `index-size-probe`: where a real drive index's rows and bytes actually go,
-//! and how many bytes a given slice of rows would give back.
+//! `index-size-probe`: what a real drive index is full of, and what a `VACUUM`
+//! would give back.
 //!
 //! Ad-hoc structural questions about a multi-gigabyte index that no query in the
-//! app answers: how rows and pages split across tables and indexes, how a subtree's
-//! children fan out, how file sizes are distributed, and what deleting a class of
-//! rows reclaims once the freelist is vacuumed away. Every subcommand emits JSON
-//! (`--json`), so two runs diff.
-//!
-//! The row slice it works on is **the file rows under `CACHEDIR.TAG`-marked
-//! subtrees**: on a developer machine that's the build-output-and-cache share of
-//! the index, which is the interesting slice for "what is this index full of".
+//! app answers: how rows and pages split across tables and indexes, where in the
+//! tree the rows and bytes actually sit, how directories fan out, how file sizes
+//! are distributed, and how many bytes the freelist is sitting on. Every
+//! subcommand emits JSON (`--json`), so two runs diff.
 //!
 //! ## Subcommands
 //!
 //! ```text
-//! index-size-probe rows <index.db> [--json]
-//! index-size-probe distribution <index.db> [--json]
-//! index-size-probe vacuum-probe <index.db> <scratch-copy.db> [--json]
+//! index-size-probe rows <index.db> [--scope <path>] [--json]
+//! index-size-probe distribution <index.db> [--scope <path>] [--json]
+//! index-size-probe vacuum-probe <index.db> <scratch-copy.db> [--scope <path>] [--json]
 //! ```
 //!
-//! `rows` is READ-ONLY and safe against the live index: whole-index totals, the
-//! marked subtree set, the rows and bytes under it (in total and per root), plus a
-//! `dbstat` page attribution that estimates a per-row on-disk cost without
-//! mutating anything.
+//! `rows` is READ-ONLY: on-disk file sizes, whole-index totals, a per-child
+//! breakdown of where the rows and bytes sit, plus a `dbstat` page attribution that
+//! estimates a per-row on-disk cost without mutating anything.
 //!
-//! `distribution` reports fan-out and file-size distribution inside the marked set,
+//! `distribution` is READ-ONLY: directory fan-out and the file-size distribution,
 //! both computed from the per-file rows.
 //!
-//! `vacuum-probe` is also safe against the live index: it reads the source
+//! `vacuum-probe` is safe against the live index as well: it reads the source
 //! read-only via `VACUUM INTO` and does all its damage to the scratch copy, whose
-//! path it refuses if that sits inside an app data directory. On the copy it
-//! deletes exactly the marked set's file rows, VACUUMs, and reports the difference.
-//! That is the defensible per-row number on disk; `dbstat` is the estimate.
+//! path it refuses if that sits inside an app data directory. Compacting the copy
+//! measures what a `VACUUM` would reclaim from the live file. Given a `--scope` it
+//! then deletes exactly that subtree's file rows and vacuums again, which is the
+//! defensible per-row number on disk; `dbstat` is the estimate.
 //!
-//! Marked roots are enumerated FROM THE INDEX (every `CACHEDIR.TAG` row), then the
-//! signature line is verified on disk. Enumerating from the index answers "how many
-//! INDEXED rows are these", where a filesystem walk would also count tags inside
-//! excluded subtrees (`node_modules`, `.git`, ...) that cost no rows. Nested roots
-//! are collapsed so a `target/` inside a marked tree isn't counted twice.
-//!
-//! ⚠️ **The signature check here is first-line equality, which is stricter than the
-//! standard.** `CACHEDIR.TAG` specifies the first 43 BYTES; 6 of 31 real tag files
-//! on the author's machine repeat the signature with no newline between, so a
-//! prefix test is the correct one. Kept as-is because a probe that under-counts
-//! visibly is safer than one that guesses, but don't copy this predicate into
-//! product code. See `docs/notes/size-only-subtrees-rejected-2026-08-06.md`.
+//! `--scope <path>` narrows a subcommand to one subtree, written as an absolute
+//! path (the index's volume root is stripped off it for a non-`/` volume). Without
+//! it, every subcommand covers the whole index.
 
 use std::collections::BTreeMap;
-use std::io::{BufRead, BufReader};
 use std::path::Path;
 
-use cmdr_index::store::{normalize_for_comparison, register_platform_case_collation};
+use cmdr_index::store::{ROOT_ID, register_platform_case_collation, resolve_path};
 use rusqlite::{Connection, OpenFlags};
 
-/// The `CACHEDIR.TAG` first line that makes a directory a declared cache.
-/// <https://bford.info/cachedir/>
-const CACHEDIR_SIGNATURE: &str = "Signature: 8a477f597d28d172789f06886806bc55";
-
-/// Root entry sentinel: every top-level entry's `parent_id`. Mirrors
-/// `cmdr_index::store::ROOT_ID`, which isn't re-exported for tools.
-const ROOT_ID: i64 = 1;
-
 fn main() {
-    let args: Vec<String> = std::env::args().collect();
-    let json = args.iter().any(|a| a == "--json");
-    let positional: Vec<&String> = args[1..].iter().filter(|a| !a.starts_with("--")).collect();
+    let argv: Vec<String> = std::env::args().collect();
+    let args = match parse_args(&argv[1..]) {
+        Ok(args) => args,
+        Err(e) => {
+            eprintln!("index-size-probe: {e}\n\n{}", usage(&argv[0]));
+            std::process::exit(2);
+        }
+    };
+    let scope = args.scope.as_deref();
 
-    let result = match positional.as_slice() {
-        [cmd, db] if *cmd == "rows" => run_rows(Path::new(db.as_str()), json),
-        [cmd, db] if *cmd == "distribution" => run_distribution(Path::new(db.as_str()), json),
-        [cmd, src, scratch] if *cmd == "vacuum-probe" => {
-            run_vacuum_probe(Path::new(src.as_str()), Path::new(scratch.as_str()), json)
+    let result = match args.positional.as_slice() {
+        [cmd, db] if cmd == "rows" => run_rows(Path::new(db), scope, args.json),
+        [cmd, db] if cmd == "distribution" => run_distribution(Path::new(db), scope, args.json),
+        [cmd, src, scratch] if cmd == "vacuum-probe" => {
+            run_vacuum_probe(Path::new(src), Path::new(scratch), scope, args.json)
         }
         _ => {
-            eprintln!(
-                "Usage:\n  {0} rows <index.db> [--json]\n  \
-                 {0} distribution <index.db> [--json]\n  \
-                 {0} vacuum-probe <index.db> <scratch-copy.db> [--json]",
-                args[0]
-            );
+            eprintln!("{}", usage(&argv[0]));
             std::process::exit(2);
         }
     };
@@ -88,32 +67,81 @@ fn main() {
     }
 }
 
+fn usage(program: &str) -> String {
+    format!(
+        "Usage:\n  {program} rows <index.db> [--scope <path>] [--json]\n  \
+         {program} distribution <index.db> [--scope <path>] [--json]\n  \
+         {program} vacuum-probe <index.db> <scratch-copy.db> [--scope <path>] [--json]"
+    )
+}
+
+struct Args {
+    positional: Vec<String>,
+    scope: Option<String>,
+    json: bool,
+}
+
+/// Split flags off the positionals. `--scope` takes a value, so "anything not
+/// starting with `--` is positional" would swallow its path as a subcommand
+/// argument.
+fn parse_args(argv: &[String]) -> Result<Args, String> {
+    let mut args = Args {
+        positional: Vec::new(),
+        scope: None,
+        json: false,
+    };
+    let mut rest = argv.iter();
+    while let Some(arg) = rest.next() {
+        match arg.as_str() {
+            "--json" => args.json = true,
+            "--scope" => {
+                let path = rest.next().ok_or_else(|| "--scope needs a path".to_string())?;
+                args.scope = Some(path.clone());
+            }
+            other if other.starts_with("--scope=") => {
+                args.scope = other.strip_prefix("--scope=").map(str::to_string);
+            }
+            other if other.starts_with("--") => return Err(format!("unknown flag {other}")),
+            other => args.positional.push(other.to_string()),
+        }
+    }
+    Ok(args)
+}
+
 // ── Subcommand: rows ─────────────────────────────────────────────────
 
-fn run_rows(db: &Path, json: bool) -> Result<(), String> {
+fn run_rows(db: &Path, scope: Option<&str>, json: bool) -> Result<(), String> {
     let conn = open_read_only(db)?;
+    begin_snapshot(&conn)?;
+    let volume_path = meta_value(&conn, "volume_path").unwrap_or_else(|| "/".to_string());
+    let scope = Scope::resolve(&conn, &volume_path, scope)?;
     let files = file_sizes(db);
     let totals = whole_index_totals(&conn)?;
-    let volume_path = meta_value(&conn, "volume_path").unwrap_or_else(|| "/".to_string());
-    let roots = marked_roots(&conn, &volume_path)?;
-    let under = rows_under(&conn, &roots)?;
     let pages = dbstat_pages(&conn);
+    // A whole-index scope would only restate the totals above, so it stays quiet.
+    let scoped = if scope.is_whole_index() {
+        None
+    } else {
+        Some(rows_under(&conn, &scope)?)
+    };
 
     let mut out = Doc::new();
     out.str("subcommand", "rows");
     out.str("db_path", &db.display().to_string());
     out.str("volume_path", &volume_path);
+    out.str("scope_path", &scope.path);
     files.emit(&mut out);
     totals.emit(&mut out);
-    roots_summary(&roots).emit(&mut out);
-    under.emit(&mut out);
+    if let Some(under) = &scoped {
+        under.emit(&mut out);
+    }
     for (name, (bytes, count)) in &pages {
         out.num(&format!("dbstat_{name}_bytes"), *bytes);
         out.num(&format!("dbstat_{name}_pages"), *count);
     }
     // The estimate: what one entry row costs across the table and both indexes it
-    // sits in. `dir_stats` is excluded because it is keyed per DIRECTORY, and the
-    // slice measured here is file rows, whose directories stay.
+    // sits in. `dir_stats` is excluded because it is keyed per DIRECTORY, so it
+    // doesn't scale with the file rows this attributes bytes to.
     let per_row_bytes: i64 = ["entries", "idx_parent_name_folded", "idx_inode"]
         .iter()
         .filter_map(|n| pages.get(*n).map(|(b, _)| *b))
@@ -121,62 +149,37 @@ fn run_rows(db: &Path, json: bool) -> Result<(), String> {
     if totals.entries > 0 {
         let est = per_row_bytes as f64 / totals.entries as f64;
         out.real("dbstat_bytes_per_entry_row_estimate", est);
-        out.real("dbstat_marked_file_rows_bytes_estimate", est * under.files as f64);
+        if let Some(under) = &scoped {
+            out.real("dbstat_scope_file_rows_bytes_estimate", est * under.files as f64);
+        }
     }
-    out.table(
-        "per_root",
-        per_root_stats(&conn, &roots)
-            .into_iter()
-            .map(|(path, u)| {
-                vec![
-                    ("path".to_string(), format!("\"{}\"", escape(&path))),
-                    ("file_rows".to_string(), u.files.to_string()),
-                    ("dir_rows".to_string(), u.dirs.to_string()),
-                    ("logical_bytes".to_string(), u.logical_bytes.to_string()),
-                ]
-            })
-            .collect(),
-    );
+    out.table("per_child", child_stats(&conn, &scope)?);
     out.finish(json);
     Ok(())
 }
 
 // ── Subcommand: distribution ─────────────────────────────────────────
 
-/// Fan-out and file-size distribution INSIDE the marked set.
+/// Fan-out and file-size distribution.
 ///
 /// Fan-out is what sizes any per-directory batching window: a re-list-on-event
 /// design is cheap at the median and only bites on the handful of directories in
 /// the tail. The size buckets say where the BYTES live against where the ROWS
 /// live; on a real index those are completely different places, which is worth
 /// knowing before optimizing for either.
-fn run_distribution(db: &Path, json: bool) -> Result<(), String> {
+fn run_distribution(db: &Path, scope: Option<&str>, json: bool) -> Result<(), String> {
     let conn = open_read_only(db)?;
+    begin_snapshot(&conn)?;
     let volume_path = meta_value(&conn, "volume_path").unwrap_or_else(|| "/".to_string());
-    let roots = marked_roots(&conn, &volume_path)?;
-    if roots.kept.is_empty() {
-        return Err("no marked roots; nothing to distribute".to_string());
-    }
-    let ids = roots
-        .kept
-        .iter()
-        .map(|r| r.id.to_string())
-        .collect::<Vec<_>>()
-        .join(",");
-    let descent = format!(
-        "WITH RECURSIVE sub(id, is_dir) AS (
-             SELECT id, is_directory FROM entries WHERE id IN ({ids})
-             UNION ALL
-             SELECT c.id, c.is_directory FROM entries c JOIN sub s ON c.parent_id = s.id WHERE s.is_dir = 1
-         )"
-    );
+    let scope = Scope::resolve(&conn, &volume_path, scope)?;
+    let row_set = scope.row_set();
 
     let mut out = Doc::new();
     out.str("subcommand", "distribution");
     out.str("db_path", &db.display().to_string());
-    roots_summary(&roots).emit(&mut out);
-    fanout(&conn, &descent)?.emit(&mut out);
-    size_buckets(&conn, &descent, &mut out)?;
+    out.str("scope_path", &scope.path);
+    fanout(&conn, &row_set)?.emit(&mut out);
+    size_buckets(&conn, &row_set, &mut out)?;
     out.finish(json);
     Ok(())
 }
@@ -207,12 +210,12 @@ impl Fanout {
     }
 }
 
-fn fanout(conn: &Connection, descent: &str) -> Result<Fanout, String> {
+fn fanout(conn: &Connection, row_set: &str) -> Result<Fanout, String> {
     let sql = format!(
-        "{descent}
-         SELECT count(*) FROM entries c
-           WHERE c.parent_id IN (SELECT id FROM sub WHERE is_dir = 1)
-           GROUP BY c.parent_id"
+        "{row_set}
+         SELECT count(*) FROM entries c JOIN sub s ON c.parent_id = s.id
+          WHERE s.is_dir = 1
+          GROUP BY c.parent_id"
     );
     let mut stmt = conn.prepare(&sql).map_err(|e| format!("preparing fan-out: {e}"))?;
     let mut counts: Vec<i64> = stmt
@@ -223,7 +226,7 @@ fn fanout(conn: &Connection, descent: &str) -> Result<Fanout, String> {
     counts.sort_unstable();
     let n = counts.len();
     if n == 0 {
-        return Err("no directories with children under the marked set".to_string());
+        return Err("no directories with children in scope".to_string());
     }
     let pct = |p: f64| counts[((n as f64 * p) as usize).min(n - 1)];
     Ok(Fanout {
@@ -242,9 +245,9 @@ fn fanout(conn: &Connection, descent: &str) -> Result<Fanout, String> {
 /// Decade-wide size buckets. `null` is the hardlink-dedup marker and gets its own
 /// bucket rather than being folded into zero: a deduped repeat is a real file that
 /// deliberately carries no bytes, not a zero-byte file.
-fn size_buckets(conn: &Connection, descent: &str, out: &mut Doc) -> Result<(), String> {
+fn size_buckets(conn: &Connection, row_set: &str, out: &mut Doc) -> Result<(), String> {
     let sql = format!(
-        "{descent}
+        "{row_set}
          SELECT CASE
                   WHEN e.logical_size IS NULL THEN '0_null_hardlink_deduped'
                   WHEN e.logical_size = 0 THEN '1_zero'
@@ -280,7 +283,7 @@ fn size_buckets(conn: &Connection, descent: &str, out: &mut Doc) -> Result<(), S
 
 // ── Subcommand: vacuum-probe ─────────────────────────────────────────
 
-fn run_vacuum_probe(source: &Path, scratch: &Path, json: bool) -> Result<(), String> {
+fn run_vacuum_probe(source: &Path, scratch: &Path, scope: Option<&str>, json: bool) -> Result<(), String> {
     guard_not_live(scratch)?;
     for suffix in ["", "-wal", "-shm"] {
         let mut p = scratch.as_os_str().to_os_string();
@@ -294,42 +297,49 @@ fn run_vacuum_probe(source: &Path, scratch: &Path, json: bool) -> Result<(), Str
     // running app is a torn read, and stopping the app to copy it costs a rescan.
     let src = open_read_only(source)?;
     let volume_path = meta_value(&src, "volume_path").unwrap_or_else(|| "/".to_string());
+    let on_disk = file_sizes(source);
     src.execute("VACUUM INTO ?1", [scratch.to_string_lossy().as_ref()])
         .map_err(|e| format!("VACUUM INTO {}: {e}", scratch.display()))?;
     drop(src);
-    let size_full = file_len(scratch);
+    let compacted = file_len(scratch);
 
     let conn = open_read_write(scratch)?;
-    let roots = marked_roots(&conn, &volume_path)?;
-    let totals_before = whole_index_totals(&conn)?;
-    let deleted = delete_file_rows_under(&conn, &roots)?;
-    vacuum(&conn)?;
-    let size_reduced = file_len(scratch);
-    let totals_after = whole_index_totals(&conn)?;
+    let scope = Scope::resolve(&conn, &volume_path, scope)?;
+    let totals = whole_index_totals(&conn)?;
 
     let mut out = Doc::new();
     out.str("subcommand", "vacuum-probe");
     out.str("source_db", &source.display().to_string());
     out.str("scratch_db", &scratch.display().to_string());
     out.str("volume_path", &volume_path);
-    roots_summary(&roots).emit(&mut out);
-    out.num("entries_before", totals_before.entries);
-    out.num("entries_after", totals_after.entries);
-    out.num("file_rows_deleted", deleted);
-    out.num("vacuumed_bytes_before", size_full);
-    out.num("vacuumed_bytes_after", size_reduced);
-    out.num("vacuumed_bytes_reclaimed", size_full - size_reduced);
-    if deleted > 0 {
-        out.real(
-            "measured_bytes_per_file_row",
-            (size_full - size_reduced) as f64 / deleted as f64,
-        );
+    out.str("scope_path", &scope.path);
+    on_disk.emit(&mut out);
+    totals.emit(&mut out);
+    out.num("compacted_bytes", compacted);
+    // Against the whole footprint, sidecars included: a real `VACUUM` checkpoints
+    // the WAL into the main file, so that is what the live install gets back.
+    out.num("vacuum_reclaimable_bytes", on_disk.total() - compacted);
+    if totals.entries > 0 {
+        out.real("compacted_bytes_per_row", compacted as f64 / totals.entries as f64);
     }
-    if totals_before.entries > 0 {
-        out.real(
-            "vacuumed_bytes_per_row_whole_index",
-            size_full as f64 / totals_before.entries as f64,
-        );
+
+    // The scoped arm: what one class of rows is worth on disk, measured rather than
+    // attributed. Unscoped there is nothing to delete, and the reclaim number above
+    // is the whole answer.
+    if !scope.is_whole_index() {
+        let deleted = delete_file_rows(&conn, &scope)?;
+        vacuum(&conn)?;
+        let after = file_len(scratch);
+        out.num("scope_file_rows_deleted", deleted);
+        out.num("entries_after_delete", whole_index_totals(&conn)?.entries);
+        out.num("bytes_after_delete", after);
+        out.num("delete_reclaimed_bytes", compacted - after);
+        if deleted > 0 {
+            out.real(
+                "measured_bytes_per_file_row",
+                (compacted - after) as f64 / deleted as f64,
+            );
+        }
     }
     out.finish(json);
     Ok(())
@@ -400,10 +410,9 @@ fn whole_index_totals(conn: &Connection) -> Result<Totals, String> {
     })
 }
 
-/// On-disk bytes for the DB and its sidecars. The WAL is reported separately and
-/// NOT folded in: an uncheckpointed WAL is real disk use but is slack, not index
-/// content, and folding the two would make the before/after comparison depend on
-/// when the app last checkpointed.
+/// On-disk bytes for the DB and its sidecars, each reported on its own. An
+/// uncheckpointed WAL is real disk use but is slack rather than index content, so
+/// a reader comparing two indexes wants to see the split and not just the sum.
 struct Files {
     db: i64,
     wal: i64,
@@ -411,11 +420,15 @@ struct Files {
 }
 
 impl Files {
+    fn total(&self) -> i64 {
+        self.db + self.wal + self.shm
+    }
+
     fn emit(&self, out: &mut Doc) {
         out.num("db_bytes", self.db);
         out.num("wal_bytes", self.wal);
         out.num("shm_bytes", self.shm);
-        out.num("on_disk_bytes_total", self.db + self.wal + self.shm);
+        out.num("on_disk_bytes_total", self.total());
     }
 }
 
@@ -459,152 +472,71 @@ fn dbstat_pages(conn: &Connection) -> BTreeMap<String, (i64, i64)> {
     map
 }
 
-// ── Marked roots ─────────────────────────────────────────────────────
+// ── Scope ────────────────────────────────────────────────────────────
 
-struct Root {
+/// The subtree a subcommand works on. [`ROOT_ID`] means the whole index, which is
+/// both the default and what `--scope` on the volume root resolves to.
+struct Scope {
     id: i64,
     path: String,
 }
 
-/// Why a `CACHEDIR.TAG` row in the index did NOT become a marked root. Split out
-/// rather than lumped, because the three causes mean different things: a gone tag
-/// is index staleness, a bad signature is a tool writing a non-standard file, and
-/// an unresolvable path is real index drift.
-#[derive(Default)]
-struct Rejected {
-    tag_gone_on_disk: usize,
-    signature_mismatch: usize,
-    path_unresolvable: usize,
-}
-
-struct RootsSummary {
-    verified: usize,
-    collapsed_nested: usize,
-    tags_in_index: usize,
-    rejected: Rejected,
-    paths: Vec<String>,
-}
-
-impl RootsSummary {
-    fn emit(&self, out: &mut Doc) {
-        out.num("cachedir_tag_rows_in_index", self.tags_in_index as i64);
-        out.num("marked_roots_verified", self.verified as i64);
-        out.num("marked_roots_collapsed_nested", self.collapsed_nested as i64);
-        out.num("rejected_tag_gone_on_disk", self.rejected.tag_gone_on_disk as i64);
-        out.num("rejected_signature_mismatch", self.rejected.signature_mismatch as i64);
-        out.num("rejected_path_unresolvable", self.rejected.path_unresolvable as i64);
-        out.list("marked_root_paths", &self.paths);
-    }
-}
-
-fn roots_summary(roots: &Roots) -> RootsSummary {
-    RootsSummary {
-        verified: roots.kept.len(),
-        collapsed_nested: roots.collapsed,
-        tags_in_index: roots.tags_in_index,
-        rejected: Rejected {
-            tag_gone_on_disk: roots.rejected.tag_gone_on_disk,
-            signature_mismatch: roots.rejected.signature_mismatch,
-            path_unresolvable: roots.rejected.path_unresolvable,
-        },
-        paths: roots.kept.iter().map(|r| r.path.clone()).collect(),
-    }
-}
-
-struct Roots {
-    kept: Vec<Root>,
-    collapsed: usize,
-    tags_in_index: usize,
-    rejected: Rejected,
-}
-
-fn marked_roots(conn: &Connection, volume_path: &str) -> Result<Roots, String> {
-    let folded = normalize_for_comparison("CACHEDIR.TAG");
-    let mut stmt = conn
-        .prepare("SELECT parent_id FROM entries WHERE name_folded = ?1 AND is_directory = 0")
-        .map_err(|e| format!("preparing tag query: {e}"))?;
-    let parent_ids: Vec<i64> = stmt
-        .query_map([&folded], |r| r.get::<_, i64>(0))
-        .map_err(|e| format!("querying tags: {e}"))?
-        .flatten()
-        .collect();
-    let tags_in_index = parent_ids.len();
-
-    let mut candidates: Vec<Root> = Vec::new();
-    let mut rejected = Rejected::default();
-    for id in parent_ids {
-        let Some(path) = resolve_path(conn, id, volume_path) else {
-            rejected.path_unresolvable += 1;
-            continue;
+impl Scope {
+    /// Resolve `--scope` to an indexed entry. The argument is an absolute
+    /// filesystem path; an index of a mounted volume is rooted at its
+    /// `volume_path`, so that prefix comes off before the walk down the tree.
+    fn resolve(conn: &Connection, volume_path: &str, scope: Option<&str>) -> Result<Self, String> {
+        let Some(scope) = scope else {
+            return Ok(Scope {
+                id: ROOT_ID,
+                path: volume_path.to_string(),
+            });
         };
-        match read_first_line(&Path::new(&path).join("CACHEDIR.TAG")) {
-            None => rejected.tag_gone_on_disk += 1,
-            Some(line) if line == CACHEDIR_SIGNATURE => candidates.push(Root { id, path }),
-            Some(_) => rejected.signature_mismatch += 1,
+        let trimmed = scope.trim_end_matches('/');
+        let relative = trimmed
+            .strip_prefix(volume_path.trim_end_matches('/'))
+            .unwrap_or(trimmed);
+        let path = if trimmed.is_empty() {
+            volume_path.to_string()
+        } else {
+            trimmed.to_string()
+        };
+        match resolve_path(conn, relative) {
+            Ok(Some(id)) => Ok(Scope { id, path }),
+            Ok(None) => Err(format!(
+                "{path} is not indexed here (this index is rooted at {volume_path})"
+            )),
+            Err(e) => Err(format!("resolving {path}: {e}")),
         }
     }
 
-    // Collapse nested roots: a `target/` inside an already-marked tree is not a
-    // second slice of rows and must not be double-counted. Nesting is common, not a
-    // corner case (10 of the author's 60 tags were under `~/.cache/uv` alone).
-    candidates.sort_by(|a, b| a.path.cmp(&b.path));
-    let mut kept: Vec<Root> = Vec::new();
-    for c in candidates {
-        let nested = kept
-            .last()
-            .is_some_and(|prev| c.path.starts_with(&format!("{}/", prev.path.trim_end_matches('/'))));
-        if !nested {
-            kept.push(c);
-        }
+    fn is_whole_index(&self) -> bool {
+        self.id == ROOT_ID
     }
-    let rejected_total = rejected.tag_gone_on_disk + rejected.signature_mismatch + rejected.path_unresolvable;
-    let collapsed = tags_in_index - rejected_total - kept.len();
-    Ok(Roots {
-        kept,
-        collapsed,
-        tags_in_index,
-        rejected,
-    })
-}
 
-/// The file's first line, trimmed of its line ending. `None` when the file can't
-/// be opened or read. Only the first line matters: that's what the `CACHEDIR.TAG`
-/// standard specifies, and it keeps this one small read per candidate.
-fn read_first_line(file: &Path) -> Option<String> {
-    let f = std::fs::File::open(file).ok()?;
-    let mut line = String::new();
-    BufReader::new(f).read_line(&mut line).ok()?;
-    Some(line.trim_end_matches(['\r', '\n']).to_string())
-}
-
-/// Rebuild an entry's absolute path by walking `parent_id` up to the root
-/// sentinel. Returns `None` on a broken chain, which is drift worth counting
-/// rather than a reason to stop.
-fn resolve_path(conn: &Connection, id: i64, volume_path: &str) -> Option<String> {
-    let mut parts: Vec<String> = Vec::new();
-    let mut current = id;
-    // Bounded so a cyclic chain can't hang the tool; no real path is this deep.
-    for _ in 0..512 {
-        if current == ROOT_ID {
-            let mut path = volume_path.trim_end_matches('/').to_string();
-            for part in parts.iter().rev() {
-                path.push('/');
-                path.push_str(part);
-            }
-            return Some(path);
+    /// A `WITH` prefix binding `sub(id, is_dir)` to the rows in scope, for a query
+    /// that goes on to join `entries` back on `sub.id`.
+    ///
+    /// Whole-index is a plain scan rather than a descent from the root sentinel:
+    /// cheaper, and it also catches rows whose parent chain is broken, which is
+    /// drift a diagnostic wants to see rather than silently walk past.
+    fn row_set(&self) -> String {
+        if self.is_whole_index() {
+            return "WITH sub(id, is_dir) AS (SELECT id, is_directory FROM entries)".to_string();
         }
-        let (parent, name) = conn
-            .query_row("SELECT parent_id, name FROM entries WHERE id = ?1", [current], |r| {
-                Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?))
-            })
-            .ok()?;
-        parts.push(name);
-        current = parent;
+        format!(
+            "WITH RECURSIVE sub(id, is_dir) AS (
+                 SELECT id, is_directory FROM entries WHERE id = {}
+                 UNION ALL
+                 SELECT c.id, c.is_directory FROM entries c JOIN sub s ON c.parent_id = s.id
+                   WHERE s.is_dir = 1
+             )",
+            self.id
+        )
     }
-    None
 }
 
-// ── Rows under the marked set ────────────────────────────────────────
+// ── Rows in scope ────────────────────────────────────────────────────
 
 struct Under {
     files: i64,
@@ -616,71 +548,27 @@ struct Under {
 
 impl Under {
     fn emit(&self, out: &mut Doc) {
-        out.num("marked_file_rows", self.files);
-        out.num("marked_dir_rows", self.dirs);
-        out.num("marked_logical_bytes", self.logical_bytes);
-        out.num("marked_physical_bytes", self.physical_bytes);
-        out.num("marked_files_with_null_logical_size", self.null_logical_files);
+        out.num("scope_file_rows", self.files);
+        out.num("scope_dir_rows", self.dirs);
+        out.num("scope_logical_bytes", self.logical_bytes);
+        out.num("scope_physical_bytes", self.physical_bytes);
+        out.num("scope_files_with_null_logical_size", self.null_logical_files);
     }
 }
 
-/// Per-root rows and bytes, biggest first. The whole-set totals hide whether the
-/// win is spread across the marked set or concentrated in three directories, and
-/// that difference is what decides how much the `CACHEDIR.TAG` policy is worth.
-fn per_root_stats(conn: &Connection, roots: &Roots) -> Vec<(String, Under)> {
-    let mut out: Vec<(String, Under)> = roots
-        .kept
-        .iter()
-        .filter_map(|r| {
-            let one = Roots {
-                kept: vec![Root {
-                    id: r.id,
-                    path: r.path.clone(),
-                }],
-                collapsed: 0,
-                tags_in_index: 0,
-                rejected: Rejected::default(),
-            };
-            rows_under(conn, &one).ok().map(|u| (r.path.clone(), u))
-        })
-        .collect();
-    out.sort_by_key(|(_, u)| -u.files);
-    out
-}
-
-/// One recursive descent over every marked subtree at once. The seed rows are the
-/// marked ROOTS, which are directories and stay in the index, so they're
-/// subtracted from the directory count.
-fn rows_under(conn: &Connection, roots: &Roots) -> Result<Under, String> {
-    if roots.kept.is_empty() {
-        return Ok(Under {
-            files: 0,
-            dirs: 0,
-            logical_bytes: 0,
-            physical_bytes: 0,
-            null_logical_files: 0,
-        });
-    }
-    let ids = roots
-        .kept
-        .iter()
-        .map(|r| r.id.to_string())
-        .collect::<Vec<_>>()
-        .join(",");
+/// One descent over the scope. A scoped descent seeds on the scope root itself,
+/// which is a directory the subtree's own count shouldn't claim, so it comes back
+/// off the directory total.
+fn rows_under(conn: &Connection, scope: &Scope) -> Result<Under, String> {
     let sql = format!(
-        "WITH RECURSIVE sub(id, is_dir, lsize, psize) AS (
-             SELECT id, is_directory, logical_size, physical_size FROM entries WHERE id IN ({ids})
-             UNION ALL
-             SELECT c.id, c.is_directory, c.logical_size, c.physical_size
-               FROM entries c JOIN sub s ON c.parent_id = s.id
-               WHERE s.is_dir = 1
-         )
-         SELECT sum(is_dir = 0),
-                sum(is_dir = 1),
-                sum(CASE WHEN is_dir = 0 THEN coalesce(lsize, 0) ELSE 0 END),
-                sum(CASE WHEN is_dir = 0 THEN coalesce(psize, 0) ELSE 0 END),
-                sum(is_dir = 0 AND lsize IS NULL)
-           FROM sub"
+        "{}
+         SELECT sum(s.is_dir = 0),
+                sum(s.is_dir = 1),
+                sum(CASE WHEN s.is_dir = 0 THEN coalesce(e.logical_size, 0) ELSE 0 END),
+                sum(CASE WHEN s.is_dir = 0 THEN coalesce(e.physical_size, 0) ELSE 0 END),
+                sum(s.is_dir = 0 AND e.logical_size IS NULL)
+           FROM sub s JOIN entries e ON e.id = s.id",
+        scope.row_set()
     );
     let row = conn
         .query_row(&sql, [], |r| {
@@ -692,43 +580,67 @@ fn rows_under(conn: &Connection, roots: &Roots) -> Result<Under, String> {
                 r.get::<_, Option<i64>>(4)?.unwrap_or(0),
             ))
         })
-        .map_err(|e| format!("walking marked subtrees: {e}"))?;
+        .map_err(|e| format!("walking {}: {e}", scope.path))?;
+    let seed_dirs = i64::from(!scope.is_whole_index());
     Ok(Under {
         files: row.0,
-        dirs: row.1 - roots.kept.len() as i64,
+        dirs: row.1 - seed_dirs,
         logical_bytes: row.2,
         physical_bytes: row.3,
         null_logical_files: row.4,
     })
 }
 
-/// Delete exactly the measured slice: file rows at any depth under a marked root.
-/// Directory rows and their `dir_stats` stay, so what the VACUUM reclaims is
-/// attributable to file rows alone.
-fn delete_file_rows_under(conn: &Connection, roots: &Roots) -> Result<i64, String> {
-    if roots.kept.is_empty() {
-        return Ok(0);
-    }
-    let ids = roots
-        .kept
-        .iter()
-        .map(|r| r.id.to_string())
-        .collect::<Vec<_>>()
-        .join(",");
+/// Rows and bytes per immediate child directory of the scope, biggest first. A
+/// single total hides whether the weight is spread over the tree or concentrated
+/// in three directories, and that difference is what "what is this index full of"
+/// is really asking. Run it again with `--scope` on the biggest child to descend.
+fn child_stats(conn: &Connection, scope: &Scope) -> Result<Vec<Record>, String> {
+    let mut stmt = conn
+        .prepare("SELECT id, name FROM entries WHERE parent_id = ?1 AND is_directory = 1")
+        .map_err(|e| format!("preparing child query: {e}"))?;
+    let children: Vec<(i64, String)> = stmt
+        .query_map([scope.id], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?)))
+        .map_err(|e| format!("querying children: {e}"))?
+        .flatten()
+        .collect();
+
+    let mut stats: Vec<(String, Under)> = children
+        .into_iter()
+        .filter_map(|(id, name)| {
+            let child = Scope {
+                id,
+                path: format!("{}/{name}", scope.path.trim_end_matches('/')),
+            };
+            let under = rows_under(conn, &child).ok()?;
+            Some((child.path, under))
+        })
+        .collect();
+    stats.sort_by_key(|(_, u)| -u.files);
+    Ok(stats
+        .into_iter()
+        .map(|(path, u)| {
+            vec![
+                ("path".to_string(), format!("\"{}\"", escape(&path))),
+                ("file_rows".to_string(), u.files.to_string()),
+                ("dir_rows".to_string(), u.dirs.to_string()),
+                ("logical_bytes".to_string(), u.logical_bytes.to_string()),
+            ]
+        })
+        .collect())
+}
+
+/// Delete exactly the measured slice: file rows at any depth in scope. Directory
+/// rows and their `dir_stats` stay, so what the VACUUM reclaims is attributable to
+/// file rows alone.
+fn delete_file_rows(conn: &Connection, scope: &Scope) -> Result<i64, String> {
     let sql = format!(
-        "DELETE FROM entries WHERE id IN (
-             WITH RECURSIVE sub(id, is_dir) AS (
-                 SELECT id, is_directory FROM entries WHERE id IN ({ids})
-                 UNION ALL
-                 SELECT c.id, c.is_directory FROM entries c JOIN sub s ON c.parent_id = s.id
-                   WHERE s.is_dir = 1
-             )
-             SELECT id FROM sub WHERE is_dir = 0
-         )"
+        "DELETE FROM entries WHERE id IN ({} SELECT id FROM sub WHERE is_dir = 0)",
+        scope.row_set()
     );
     conn.execute(&sql, [])
         .map(|n| n as i64)
-        .map_err(|e| format!("deleting marked file rows: {e}"))
+        .map_err(|e| format!("deleting file rows under {}: {e}", scope.path))
 }
 
 // ── SQLite plumbing ──────────────────────────────────────────────────
@@ -738,6 +650,17 @@ fn open_read_only(db: &Path) -> Result<Connection, String> {
         .map_err(|e| format!("opening {} read-only: {e}", db.display()))?;
     register_platform_case_collation(&conn).map_err(|e| format!("registering collation: {e}"))?;
     Ok(conn)
+}
+
+/// Pin one snapshot for a whole read-only run. The app keeps writing to the live
+/// index while the probe reads it, and a run fires one query per child directory,
+/// so without this the per-child rows wouldn't add up to the totals printed above
+/// them. Costs the app nothing but a deferred WAL checkpoint: readers don't block
+/// the writer. Not for the `vacuum-probe` source, since `VACUUM INTO` refuses to
+/// run inside a transaction.
+fn begin_snapshot(conn: &Connection) -> Result<(), String> {
+    conn.execute_batch("BEGIN")
+        .map_err(|e| format!("starting read snapshot: {e}"))
 }
 
 fn open_read_write(db: &Path) -> Result<Connection, String> {
@@ -764,7 +687,6 @@ type Record = Vec<(String, String)>;
 /// Flat on purpose: the before and after runs get diffed key by key.
 struct Doc {
     fields: Vec<(String, String)>,
-    lists: Vec<(String, Vec<String>)>,
     /// Lists of records, each already rendered as `key: value` pairs.
     tables: Vec<(String, Vec<Record>)>,
 }
@@ -773,7 +695,6 @@ impl Doc {
     fn new() -> Self {
         Doc {
             fields: Vec::new(),
-            lists: Vec::new(),
             tables: Vec::new(),
         }
     }
@@ -785,9 +706,6 @@ impl Doc {
     }
     fn real(&mut self, k: &str, v: f64) {
         self.fields.push((k.to_string(), format!("{v:.2}")));
-    }
-    fn list(&mut self, k: &str, v: &[String]) {
-        self.lists.push((k.to_string(), v.to_vec()));
     }
     fn table(&mut self, k: &str, rows: Vec<Record>) {
         self.tables.push((k.to_string(), rows));
@@ -802,18 +720,6 @@ impl Doc {
                     println!(",");
                 }
                 print!("  \"{k}\": {v}");
-                first = false;
-            }
-            for (k, items) in &self.lists {
-                if !first {
-                    println!(",");
-                }
-                let body = items
-                    .iter()
-                    .map(|i| format!("    \"{}\"", escape(i)))
-                    .collect::<Vec<_>>()
-                    .join(",\n");
-                print!("  \"{k}\": [\n{body}\n  ]");
                 first = false;
             }
             for (k, rows) in &self.tables {
@@ -841,12 +747,6 @@ impl Doc {
         let width = self.fields.iter().map(|(k, _)| k.len()).max().unwrap_or(0);
         for (k, v) in &self.fields {
             println!("{k:width$}  {}", v.trim_matches('"'));
-        }
-        for (k, items) in &self.lists {
-            println!("{k} ({}):", items.len());
-            for i in items {
-                println!("  {i}");
-            }
         }
         for (k, rows) in &self.tables {
             println!("{k} ({}):", rows.len());

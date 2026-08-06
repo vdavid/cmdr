@@ -52,8 +52,7 @@ of the whole resource effort, which is recognize and throttle. The machinery alr
 
 **2. `CACHEDIR.TAG` needs a PREFIX test, not first-line equality.** The standard specifies the first 43 bytes. Of 31
 real tag files on this machine, **6 carry the signature twice with no newline between**, so an equality test on the
-first line rejects them. `crates/index-query/src/bin/index-size-probe.rs` still uses equality and says so; don't copy
-that predicate into product code.
+first line rejects them. Anything that ever detects these tags has to read the first 43 bytes and compare a prefix.
 
 ## The search arena: the most valuable surviving lead
 
@@ -105,6 +104,7 @@ Reference material if anyone picks it up:
 Both are committed and generic, so a re-measurement is a re-run:
 
 - `cargo run -p index-query --bin index-size-probe`: rows, bytes, fan-out, size distribution, and vacuum-reclaim, all
-  safe against the live index.
+  safe against the live index. It carries no trace of this proposal: any subtree it reports on is named with `--scope`,
+  so re-measuring the slice above means passing the paths rather than re-deriving them from tags.
 - `scripts/churn-baseline`: CPU, memory, rows written, and log volume across an idle control and a churn phase, with the
   root writer thread's own CPU read off its heartbeat.
