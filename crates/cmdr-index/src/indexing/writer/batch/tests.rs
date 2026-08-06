@@ -203,7 +203,7 @@ fn close_forgets_a_batch_that_was_rolled_back_underneath_it() {
     conn.execute_batch("ROLLBACK").expect("something rolled it back");
     assert!(conn.is_autocommit(), "the transaction is gone");
 
-    let mut probe = ProbeStats::new();
+    let mut probe = ProbeStats::new("test-volume");
     let signal = IndexFailureSignal::new(crate::NoopEventSink::shared());
     let mut deferred = false;
     batch.close(&conn, &mut probe, &signal, &mut deferred);

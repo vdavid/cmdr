@@ -561,6 +561,21 @@ turned into ~60. The same rule runs in the reconciler's live loop (`../watch/eve
 `IDLE_HEARTBEAT_BEATS`), which also dropped from INFO to DEBUG: a heartbeat is not a noteworthy lifecycle event, and the
 file sink is Debug either way.
 
+**The heartbeat names its volume and carries the writer thread's own CPU.** Every volume runs its own writer thread on
+the same log target, so without `volume_id` three interleaved heartbeats are indistinguishable in a bundle — which made
+the stall probe itself ambiguous. `writer_cpu_ms_total` is `cmdr_fs::thread_cpu::current_thread_cpu_time`
+(`CLOCK_THREAD_CPUTIME_ID`), and it is the ONE cumulative number on the line: everything else resets after the beat, so
+a measurement window is the difference of two heartbeats. It's cumulative on purpose. A rate would be the wrong
+instrument here for a measured reason: a 20-second `sample` once put a thread at 45% of CPU that a cumulative reading
+refuted at 3.4%. It's also the only way to get this quantity at all, since macOS `ps -M` reports per-thread cumulative
+CPU but no thread names, so the writer thread can't be picked out from outside the process. Note it is CPU BURNED, where
+the `time_in_*` numbers are wall-clock time spent in a region, waiting included.
+
+**❌ Don't reword `ProbeStats::heartbeat_line` alone.** `scripts/churn-baseline/parse.go` scrapes `volume_id` and
+`writer_cpu_ms_total` off it, so the field names are a contract across two languages and a rename would zero the
+harness's column. The exact text is pinned on both sides (a Rust test asserts the string, the Go test carries it
+verbatim with a log prefix), so the tests catch it — change the two together.
+
 **The busy handler logs per episode.** The writer's SQLite busy handler (`mod.rs::spawn`) emits ONE
 `stall_probe::sqlite_busy` line per contention episode, not per retry: "writer waited 340 ms over 27 attempts…", or
 "writer gave up… after 260 ms over 52 attempts" once it passes `BUSY_GIVE_UP_ATTEMPT` (50, ~255 ms at 5 ms a retry).

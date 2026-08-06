@@ -840,7 +840,7 @@ fn a_fatal_storage_error_stops_the_writer_and_trips_the_signal() {
 /// hour; it now speaks once a minute instead.
 #[test]
 fn an_idle_writer_heartbeat_stays_quiet_until_the_idle_interval() {
-    let probe = ProbeStats::new();
+    let probe = ProbeStats::new("test-volume");
     assert!(
         !probe.heartbeat_is_worth_logging(0, Duration::from_secs(5)),
         "an empty queue with no work done says nothing worth a line"
@@ -855,10 +855,34 @@ fn an_idle_writer_heartbeat_stays_quiet_until_the_idle_interval() {
 /// queued work with nothing draining is exactly what a reader is hunting for.
 #[test]
 fn a_stalled_writer_heartbeat_always_logs() {
-    let probe = ProbeStats::new();
+    let probe = ProbeStats::new("test-volume");
     assert!(
         probe.heartbeat_is_worth_logging(1, Duration::from_secs(5)),
         "a non-empty queue with zero progress is the stall this probe reports"
+    );
+}
+
+/// The heartbeat's field names are a cross-language contract:
+/// `scripts/churn-baseline/parse.go` scrapes `volume_id` and the cumulative
+/// `writer_cpu_ms_total` off this line to attribute CPU to the writer THREAD,
+/// which macOS won't do from outside the process. Renaming a field here would
+/// silently zero that column in the harness's JSON, with no error on either side,
+/// so the exact text is pinned. Change it only together with the Go regex, whose
+/// own test carries this string verbatim.
+#[test]
+fn the_heartbeat_line_carries_the_fields_the_churn_harness_scrapes() {
+    let mut probe = ProbeStats::new("root");
+    probe.messages_processed = 271;
+    probe.transaction_commits = 12;
+    probe.time_in_recv = Duration::from_millis(4_312);
+    probe.time_in_processing = Duration::from_millis(603);
+    probe.time_in_commit = Duration::from_millis(88);
+    assert_eq!(
+        probe.heartbeat_line(3, Duration::from_millis(5_004), 41_231),
+        "heartbeat volume_id=root queue_depth=3 since_last_heartbeat_ms=5004 \
+         messages_processed_since_last_heartbeat=271 transaction_commits_since_last_heartbeat=12 \
+         time_in_recv_ms=4312 time_in_processing_ms=603 time_in_commit_ms=88 \
+         writer_cpu_ms_total=41231"
     );
 }
 
@@ -866,7 +890,7 @@ fn a_stalled_writer_heartbeat_always_logs() {
 /// other half of what the probe is read for.
 #[test]
 fn a_working_writer_heartbeat_always_logs() {
-    let mut probe = ProbeStats::new();
+    let mut probe = ProbeStats::new("test-volume");
     probe.messages_processed = 4;
     assert!(
         probe.heartbeat_is_worth_logging(0, Duration::from_secs(5)),

@@ -30,6 +30,7 @@ pub mod process_memory;
 pub mod sqlite_util;
 pub mod staging;
 pub mod tcc_paths;
+pub mod thread_cpu;
 pub mod thread_qos;
 pub mod volume;
 
