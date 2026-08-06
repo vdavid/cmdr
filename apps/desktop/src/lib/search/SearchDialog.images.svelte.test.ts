@@ -10,6 +10,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { tick } from 'svelte'
+import SearchDialog from './SearchDialog.svelte'
 import { setQuery } from './search-state.svelte'
 import {
   mediaSearchOcrMock,
@@ -17,6 +18,7 @@ import {
   mountDialog,
   resetSearchDialogTest,
   unmountAllDialogs,
+  useSearchDialog,
 } from './test-search-dialog-harness'
 
 vi.mock('$lib/tauri-commands', async () => (await import('./test-search-dialog-harness')).tauriCommandsMock())
@@ -24,6 +26,8 @@ vi.mock('../../routes/viewer/media-view', async () => (await import('./test-sear
 vi.mock('$lib/settings', async () => (await import('./test-search-dialog-harness')).settingsMock())
 vi.mock('$lib/indexing', async () => (await import('./test-search-dialog-harness')).indexingMock())
 vi.mock('$lib/icon-cache', async () => (await import('./test-search-dialog-harness')).iconCacheMock())
+
+useSearchDialog(SearchDialog)
 
 afterEach(unmountAllDialogs)
 
