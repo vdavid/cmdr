@@ -26,7 +26,7 @@
     import StatusBadgeSection from './sections/StatusBadgeSection.svelte'
     import DateLabelSection from './sections/DateLabelSection.svelte'
     import ShortcutChipSection from './sections/ShortcutChip.svelte'
-    import CommandBoxSection from './sections/CommandBoxSection.svelte'
+    import CopyBoxSection from './sections/CopyBoxSection.svelte'
     import EmptyStates from './sections/EmptyStates.svelte'
 
     interface Props {
@@ -193,7 +193,7 @@
         <StatusBadgeSection />
         <DateLabelSection />
         <ShortcutChipSection />
-        <CommandBoxSection />
+        <CopyBoxSection />
         <EmptyStates />
     </div>
 {/if}

@@ -32,16 +32,16 @@
   "@ui.combobox.showSuggestions": {
     "sourceHash": "a80b6a6"
   },
-  "ui.commandBox.copyAria": "Befehl in die Zwischenablage kopieren",
-  "@ui.commandBox.copyAria": {
+  "ui.copyBox.copyAria": "Befehl in die Zwischenablage kopieren",
+  "@ui.copyBox.copyAria": {
     "sourceHash": "334c24c"
   },
-  "ui.commandBox.copy": "Kopieren",
-  "@ui.commandBox.copy": {
+  "ui.copyBox.copy": "Kopieren",
+  "@ui.copyBox.copy": {
     "sourceHash": "e21f935"
   },
-  "ui.commandBox.copied": "Kopiert!",
-  "@ui.commandBox.copied": {
+  "ui.copyBox.copied": "Kopiert!",
+  "@ui.copyBox.copied": {
     "sourceHash": "ea61bc1"
   },
   "ui.shortcutChip.customizeAria": "Kurzbefehl für {commandName} anpassen",

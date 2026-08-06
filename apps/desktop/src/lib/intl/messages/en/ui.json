@@ -40,19 +40,19 @@
     "description": "aria-label for the chevron button that opens a combobox's suggestion dropdown."
   },
 
-  "ui.commandBox.copyAria": "Copy command to clipboard",
-  "@ui.commandBox.copyAria": {
-    "description": "aria-label for the copy button next to a shown terminal command. Copies the command text to the clipboard.",
+  "ui.copyBox.copyAria": "Copy command to clipboard",
+  "@ui.copyBox.copyAria": {
+    "description": "aria-label for the Copy button in a CopyBox, the box that shows a string to copy verbatim. This is the DEFAULT, used where the string is a terminal command; a caller showing something else (a file path) passes its own label. Screen-reader-only.",
     "screenshot": "mtp-permission-default.png"
   },
-  "ui.commandBox.copy": "Copy",
-  "@ui.commandBox.copy": {
-    "description": "Resting label of the copy button next to a shown terminal command. Tight button; keep short.",
+  "ui.copyBox.copy": "Copy",
+  "@ui.copyBox.copy": {
+    "description": "Resting label of the Copy button next to a string shown for copying (a terminal command, a file path). Tight button; keep short.",
     "screenshot": "mtp-permission-default.png"
   },
-  "ui.commandBox.copied": "Copied!",
-  "@ui.commandBox.copied": {
-    "description": "Brief confirmation shown on the copy button right after the command was copied, replacing the word Copy for a couple of seconds. Tight button; keep short."
+  "ui.copyBox.copied": "Copied!",
+  "@ui.copyBox.copied": {
+    "description": "Brief confirmation shown on the Copy button right after the string was copied, replacing the word Copy for a couple of seconds. Tight button; keep short."
   },
 
   "ui.shortcutChip.customizeAria": "Customize the {commandName} shortcut",

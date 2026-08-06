@@ -21,7 +21,7 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
 - **`Chip.svelte`**: Small pill button: filter chip (popover trigger + × clear) or recent pill (badge + truncate)
 - **`LinkButton.svelte`**: Link-styled `<button>` (default) or `<a>` (with `href`); the only sanctioned
   `cursor: pointer`
-- **`CommandBox.svelte`**: Copyable terminal command (monospace + Copy button)
+- **`CopyBox.svelte`**: Copyable monospace text, a command or a path (+ Copy button)
 - **`LoadingIcon.svelte`**: Animated spinner with progressive status text
 - **`AlertDialog.svelte`**: Single-action confirmation dialog built on `ModalDialog`
 - **`ProgressBar.svelte`**: Reusable progress bar (just the bar, no labels or layout)
@@ -169,8 +169,8 @@ trapping" below), so every `ModalDialog` consumer gets Tab containment and the E
 close it. `showAlert(title, message, path?)` on the pane dialog state is how the app raises one.
 
 **A path goes in `path`, never inside `message`.** When an alert is ABOUT a path (too long, gone, unreadable), that path
-is the payload the user has to act on: it renders under the message in a `CommandBox`, so it's monospace, selectable,
-and copyable, instead of being a wall of unbreakable text mid-sentence. Passing `path` also switches the panel from
+is the payload the user has to act on: it renders under the message in a `CopyBox`, so it's monospace, selectable, and
+copyable, instead of being a wall of unbreakable text mid-sentence. Passing `path` also switches the panel from
 `WIDTH_PX` (420px) to `PATH_WIDTH_PX` (630px, 1.5×): the payload is one long unbreakable string, so every extra pixel is
 one less wrapped line.
 
@@ -762,17 +762,18 @@ to read the toast:
 `HOVER_LEAVE_GRACE_MS` is exported from `toast/index.ts` for any future tuning. Persistent toasts have no timer and the
 hover handlers no-op for them.
 
-## CommandBox
+## CopyBox
 
-`CommandBox.svelte`: monospace copyable text with a one-click Copy button and 2-second "Copied!" feedback. A terminal
-command by default, but it also carries any string a user needs verbatim (`AlertDialog`'s path). Handles clipboard
-internally (`copyToClipboard` with `navigator.clipboard` fallback). Parent controls spacing via its own wrapper. Used in
-`PtpcameradDialog`, `MtpPermissionDialog`, `ShareBrowser`, and `AlertDialog`.
+`CopyBox.svelte`: monospace copyable text with a one-click Copy button and 2-second "Copied!" feedback. A terminal
+command in three of its four call sites, a filesystem path in the fourth, and the name says the JOB (hand the user a
+string to copy verbatim) rather than one payload. Handles clipboard internally (`copyToClipboard` with
+`navigator.clipboard` fallback). Parent controls spacing via its own wrapper. Used in `PtpcameradDialog`,
+`MtpPermissionDialog`, `ShareBrowser`, and `AlertDialog`.
 
-Props: `command` (displayed and copied), `displayText` (rendered INSTEAD of `command`, for a caller that shortens a long
-string; Copy still carries the whole `command`, because the cap protects the layout and the clipboard has none), and
-`copyAriaLabel` (defaults to the terminal-command wording; a non-command caller passes its own, since "Copy command to
-clipboard" would be a lie to a screen reader).
+Props: `text` (displayed and copied), `displayText` (rendered INSTEAD of `text`, for a caller that shortens a long
+string; Copy still carries the whole `text`, because the cap protects the layout and the clipboard has none), and
+`copyAriaLabel` (defaults to the terminal-command wording, which is what three of the four callers want; a path caller
+passes its own, since "Copy command to clipboard" would be a lie to a screen reader).
 
 ## Size
 

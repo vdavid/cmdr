@@ -1,34 +1,34 @@
 <script lang="ts">
     /**
-     * Copyable monospace text: a terminal command by default, or any other string
-     * a user needs verbatim (a path). One-click Copy with "Copied!" feedback.
+     * Copyable monospace text: a terminal command, a filesystem path, anything a
+     * user needs verbatim. One-click Copy with "Copied!" feedback.
      */
     import { copyToClipboard } from '$lib/tauri-commands'
     import Button from './Button.svelte'
     import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
-        /** The command to display and copy. */
-        command: string
+        /** The text to display and copy. */
+        text: string
         /**
-         * Rendered instead of `command` when the full string is too long to show
-         * (a shortened form with an ellipsis). Copy still carries the WHOLE
-         * `command`: the cap protects the layout, and the clipboard has none.
+         * Rendered instead of `text` when the full string is too long to show (a
+         * shortened form with an ellipsis). Copy still carries the WHOLE `text`:
+         * the cap protects the layout, and the clipboard has none.
          */
         displayText?: string
         /** aria-label for the Copy button. Defaults to the terminal-command wording. */
         copyAriaLabel?: string
     }
 
-    const { command, displayText, copyAriaLabel }: Props = $props()
+    const { text, displayText, copyAriaLabel }: Props = $props()
 
     let copied = $state(false)
 
     async function handleCopy() {
         try {
-            await copyToClipboard(command)
+            await copyToClipboard(text)
         } catch {
-            await navigator.clipboard.writeText(command)
+            await navigator.clipboard.writeText(text)
         }
         copied = true
         setTimeout(() => {
@@ -37,20 +37,20 @@
     }
 </script>
 
-<div class="command-box">
-    <code class="command">{displayText ?? command}</code>
+<div class="copy-box">
+    <code class="text">{displayText ?? text}</code>
     <Button
         variant="secondary"
         size="mini"
         onclick={handleCopy}
-        aria-label={copyAriaLabel ?? tString('ui.commandBox.copyAria')}
+        aria-label={copyAriaLabel ?? tString('ui.copyBox.copyAria')}
     >
-        {copied ? tString('ui.commandBox.copied') : tString('ui.commandBox.copy')}
+        {copied ? tString('ui.copyBox.copied') : tString('ui.copyBox.copy')}
     </Button>
 </div>
 
 <style>
-    .command-box {
+    .copy-box {
         display: flex;
         align-items: stretch;
         gap: var(--spacing-sm);
@@ -60,7 +60,7 @@
         padding: var(--spacing-md);
     }
 
-    .command {
+    .text {
         flex: 1;
         font-family: var(--font-mono);
         font-size: var(--font-size-sm);

@@ -6,7 +6,7 @@
     import { onMount } from 'svelte'
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
-    import CommandBox from '$lib/ui/CommandBox.svelte'
+    import CopyBox from '$lib/ui/CopyBox.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import type { AuthMode, NetworkHost, ShareInfo, ShareListError } from '../types'
     import {
@@ -178,7 +178,8 @@
                 size: null,
                 recursiveSize: null,
                 modified: null,
-                recursiveSizePending: null,            }))
+                recursiveSizePending: null,
+            }))
 
             const state: PaneState = {
                 path: `smb://${host.ipAddress ?? host.name}/`,
@@ -546,10 +547,12 @@
     {:else if error && !showLoginForm}
         <div class="error-state">
             <div class="error-icon"><Icon name="circle-alert" size={32} aria-hidden="true" /></div>
-            <div class="error-title">{tString('fileExplorer.network.share.connectFailedTitle', { hostName: host.name })}</div>
+            <div class="error-title">
+                {tString('fileExplorer.network.share.connectFailedTitle', { hostName: host.name })}
+            </div>
             <div class="error-message">{error.message || error.type}</div>
             {#if error.type === 'missing_dependency' && error.installCommand}
-                <CommandBox command={error.installCommand} />
+                <CopyBox text={error.installCommand} />
                 <div class="error-actions">
                     <Button variant="secondary" onclick={handleRetry}>{tString('fileExplorer.network.retry')}</Button>
                     <Button variant="secondary" onclick={onBack}>{tString('fileExplorer.network.back')}</Button>

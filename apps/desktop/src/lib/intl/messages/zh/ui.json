@@ -31,16 +31,16 @@
   "@ui.combobox.showSuggestions": {
     "sourceHash": "a80b6a6"
   },
-  "ui.commandBox.copyAria": "将命令拷贝到剪贴板",
-  "@ui.commandBox.copyAria": {
+  "ui.copyBox.copyAria": "将命令拷贝到剪贴板",
+  "@ui.copyBox.copyAria": {
     "sourceHash": "334c24c"
   },
-  "ui.commandBox.copy": "拷贝",
-  "@ui.commandBox.copy": {
+  "ui.copyBox.copy": "拷贝",
+  "@ui.copyBox.copy": {
     "sourceHash": "e21f935"
   },
-  "ui.commandBox.copied": "已拷贝！",
-  "@ui.commandBox.copied": {
+  "ui.copyBox.copied": "已拷贝！",
+  "@ui.copyBox.copied": {
     "sourceHash": "ea61bc1"
   },
   "ui.shortcutChip.customizeAria": "自定义 {commandName} 快捷键",

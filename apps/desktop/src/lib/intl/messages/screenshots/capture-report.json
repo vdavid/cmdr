@@ -6303,8 +6303,8 @@
       "mtp.permissionDialog.helpText",
       "mtp.permissionDialog.retry",
       "mtp.permissionDialog.title",
-      "ui.commandBox.copy",
-      "ui.commandBox.copyAria",
+      "ui.copyBox.copy",
+      "ui.copyBox.copyAria",
       "ui.modalDialog.close"
     ]
   },
@@ -6362,8 +6362,8 @@
       "mtp.ptpcameradDialog.inUseBy",
       "mtp.ptpcameradDialog.retry",
       "mtp.ptpcameradDialog.title",
-      "ui.commandBox.copy",
-      "ui.commandBox.copyAria",
+      "ui.copyBox.copy",
+      "ui.copyBox.copyAria",
       "ui.modalDialog.close"
     ]
   },
@@ -6421,8 +6421,8 @@
       "mtp.ptpcameradDialog.inUseGeneric",
       "mtp.ptpcameradDialog.retry",
       "mtp.ptpcameradDialog.title",
-      "ui.commandBox.copy",
-      "ui.commandBox.copyAria",
+      "ui.copyBox.copy",
+      "ui.copyBox.copyAria",
       "ui.modalDialog.close"
     ]
   },

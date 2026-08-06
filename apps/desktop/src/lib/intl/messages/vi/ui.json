@@ -32,16 +32,16 @@
   "@ui.combobox.showSuggestions": {
     "sourceHash": "a80b6a6"
   },
-  "ui.commandBox.copyAria": "Sao chép lệnh vào bảng nhớ tạm",
-  "@ui.commandBox.copyAria": {
+  "ui.copyBox.copyAria": "Sao chép lệnh vào bảng nhớ tạm",
+  "@ui.copyBox.copyAria": {
     "sourceHash": "334c24c"
   },
-  "ui.commandBox.copy": "Sao chép",
-  "@ui.commandBox.copy": {
+  "ui.copyBox.copy": "Sao chép",
+  "@ui.copyBox.copy": {
     "sourceHash": "e21f935"
   },
-  "ui.commandBox.copied": "Đã sao chép!",
-  "@ui.commandBox.copied": {
+  "ui.copyBox.copied": "Đã sao chép!",
+  "@ui.copyBox.copied": {
     "sourceHash": "ea61bc1"
   },
   "ui.shortcutChip.customizeAria": "Tùy chỉnh phím tắt {commandName}",

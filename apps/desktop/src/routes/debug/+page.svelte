@@ -113,7 +113,7 @@
                 { id: 'components-status-badge', label: 'Status badge' },
                 { id: 'components-date-label', label: 'Date label' },
                 { id: 'components-shortcut-chip', label: 'Shortcut chip' },
-                { id: 'components-commandbox', label: 'CommandBox' },
+                { id: 'components-copybox', label: 'CopyBox' },
                 { id: 'components-empty-states', label: 'Empty states' },
             ],
         },

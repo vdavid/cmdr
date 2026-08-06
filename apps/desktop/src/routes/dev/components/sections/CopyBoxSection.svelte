@@ -1,6 +1,6 @@
 <script lang="ts">
     import SectionCard from '$lib/ui/SectionCard.svelte'
-    import CommandBox from '$lib/ui/CommandBox.svelte'
+    import CopyBox from '$lib/ui/CopyBox.svelte'
 
     const shortCommand = 'sudo killall ptpcamerad'
     const longCommand =
@@ -11,12 +11,12 @@
     const shortenedPath = '/Volumes/Naspolya/media/…/DSC09241_edited_final_v3_reallyfinal.arw'
 </script>
 
-<SectionCard id="components-commandbox" label="CommandBox">
+<SectionCard id="components-copybox" label="CopyBox">
     <div class="stack">
-        <CommandBox command={shortCommand} />
-        <CommandBox command={longCommand} />
-        <CommandBox command={path} />
-        <CommandBox command={path} displayText={shortenedPath} />
+        <CopyBox text={shortCommand} />
+        <CopyBox text={longCommand} />
+        <CopyBox text={path} />
+        <CopyBox text={path} displayText={shortenedPath} />
     </div>
 </SectionCard>
 

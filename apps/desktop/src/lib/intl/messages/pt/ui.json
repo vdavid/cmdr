@@ -32,16 +32,16 @@
   "@ui.combobox.showSuggestions": {
     "sourceHash": "a80b6a6"
   },
-  "ui.commandBox.copyAria": "Copiar comando para a área de transferência",
-  "@ui.commandBox.copyAria": {
+  "ui.copyBox.copyAria": "Copiar comando para a área de transferência",
+  "@ui.copyBox.copyAria": {
     "sourceHash": "334c24c"
   },
-  "ui.commandBox.copy": "Copiar",
-  "@ui.commandBox.copy": {
+  "ui.copyBox.copy": "Copiar",
+  "@ui.copyBox.copy": {
     "sourceHash": "e21f935"
   },
-  "ui.commandBox.copied": "Copiado!",
-  "@ui.commandBox.copied": {
+  "ui.copyBox.copied": "Copiado!",
+  "@ui.copyBox.copied": {
     "sourceHash": "ea61bc1"
   },
   "ui.shortcutChip.customizeAria": "Personalizar o atalho de {commandName}",

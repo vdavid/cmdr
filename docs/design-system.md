@@ -527,9 +527,9 @@ cancels the inset locally with a negative inline margin (`margin-inline: calc(va
 exception is visible where it applies. `dialog-inset.spec.ts` walks the dialog gallery and measures it.
 
 The body also carries `overflow-wrap: anywhere`, so a path, a URL, or a long filename wraps instead of running past the
-inset to the panel edge. A path a dialog is ABOUT (rather than one mentioned in passing) belongs in a `CommandBox`,
-where it's monospace, selectable, and copyable; `AlertDialog`'s `path` prop does that and widens the panel to 1.5× for
-it. The opt-ins:
+inset to the panel edge. A path a dialog is ABOUT (rather than one mentioned in passing) belongs in a `CopyBox`, where
+it's monospace, selectable, and copyable; `AlertDialog`'s `path` prop does that and widens the panel to 1.5× for it. The
+opt-ins:
 
 - `resizable`: lets the user drag the bottom-right corner to resize the dialog (default off). Turn it on for dialogs
   that host resizable content like review lists; the body region grows and scrolls, and the caller still passes the

@@ -2,7 +2,7 @@
     import { onMount } from 'svelte'
     import { getPtpcameradWorkaroundCommand } from '$lib/tauri-commands'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
-    import CommandBox from '$lib/ui/CommandBox.svelte'
+    import CopyBox from '$lib/ui/CopyBox.svelte'
     import Button from '$lib/ui/Button.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { tString } from '$lib/intl/messages.svelte'
@@ -66,7 +66,7 @@
 
         <div class="command-wrapper">
             {#if workaroundCommand}
-                <CommandBox command={workaroundCommand} />
+                <CopyBox text={workaroundCommand} />
             {/if}
         </div>
 

@@ -1,6 +1,6 @@
 <script lang="ts">
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
-    import CommandBox from '$lib/ui/CommandBox.svelte'
+    import CopyBox from '$lib/ui/CopyBox.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { tString } from '$lib/intl/messages.svelte'
 
@@ -40,7 +40,7 @@
         <p class="explanation">{tString('mtp.permissionDialog.explanation')}</p>
 
         <div class="command-wrapper">
-            <CommandBox command={installCommand} />
+            <CopyBox text={installCommand} />
         </div>
 
         <p class="help-text">{tString('mtp.permissionDialog.helpText')}</p>

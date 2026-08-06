@@ -1,7 +1,7 @@
 <script lang="ts">
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
-    import CommandBox from '$lib/ui/CommandBox.svelte'
+    import CopyBox from '$lib/ui/CopyBox.svelte'
     import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
@@ -68,11 +68,7 @@
 
     {#if path !== undefined}
         <div class="path">
-            <CommandBox
-                command={path}
-                displayText={displayPath}
-                copyAriaLabel={tString('ui.alertDialog.copyPathAria')}
-            />
+            <CopyBox text={path} displayText={displayPath} copyAriaLabel={tString('ui.alertDialog.copyPathAria')} />
         </div>
     {/if}
 
