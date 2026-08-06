@@ -573,19 +573,7 @@ a_new_attempt_gets_a_fresh_signal_and_a_fresh_budget}` and, end to end,
 `volume_strategy_retry_tests::the_watchdog_ends_a_wedged_write_and_the_file_runs_again` (a write that never returns,
 never errors, and never reports a byte; the watchdog ends it and the retry lands the file).
 
-### Progress stays honest across a retry
-
-An attempt restarts at byte zero, so a file's own counter legitimately goes backwards. What the user sees must not, and
-the operation's total must not double-count. Both paths therefore report a file's HIGH-WATER mark:
-
-- **Concurrent** (`make_concurrent_per_file_progress`): `last_file_bytes.fetch_max(...)`, ❌ never `swap`. A `swap`
-  lowers the watermark on a restart and then credits the whole re-streamed prefix a second time — a silent over-count
-  and a Size bar that reaches 100% before the copy does.
-- **Serial** (`SerialLeafProgress`): a `leaf_high_water` for the in-flight leaf, reset in `on_leaf_complete` so the
-  next (possibly much smaller) leaf measures from its own first byte. `on_leaf_complete` still adds the leaf's exact
-  size once, so the end number is exact whatever the attempt count.
-
-The file counter needs nothing: `on_file_complete` fires only after `stream_pipe_file` returns `Ok`.
+How progress stays honest across a retry, on both drivers: `transfer_driver/DETAILS.md`.
 
 ### Seeing it in a log
 

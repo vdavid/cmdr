@@ -5,8 +5,8 @@ intent, cancel/rollback, ETA, the conflict mutex, settle: `../CLAUDE.md`. Fronte
 `apps/desktop/src/lib/file-operations/transfer/CLAUDE.md`.
 
 Local-FS lives in `copy/` (+ `CopyTransaction` rollback), `move_op.rs`, and `copy_strategy.rs`; volume work in
-`volume_*.rs`, where `volume_copy.rs` runs the phases and drives ONE of `volume_copy_{concurrent,serial}.rs`. File map:
-`DETAILS.md` § Files.
+`volume_*.rs`, where `volume_copy.rs` runs the phases and drives ONE of `volume_copy_{concurrent,serial}.rs`. All four
+cores run through the shared scaffolding in `transfer_driver/CLAUDE.md`. File map: `DETAILS.md` § Files.
 
 ## Merge and conflicts
 
@@ -45,8 +45,5 @@ Local-FS lives in `copy/` (+ `CopyTransaction` rollback), `move_op.rs`, and `cop
 - **Retry is per-FILE, ONLY inside `stream_pipe_file`** (`retry.rs`): ❌ never higher, ❌ never on a `Cancelled`. **The
   stall watchdog is GATED and inert** (`connection_liveness() == Dead` AND `STALL_ABORT_AFTER`, and nothing answers
   `Dead` today), so ❌ never collapse the AND.
-- **Progress is HIGH-WATER per file** (`fetch_max`, ❌ not `swap`), so a retry neither double-counts nor reverses the
-  bar.
-
 Semantics, flows, decisions, and the staging/retry/auto-yield/stall contracts: `DETAILS.md`. Read it before any
 non-trivial work here: editing, planning, reorganizing, or advising.
