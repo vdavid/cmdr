@@ -16,6 +16,11 @@ Playwright (Node.js) --Unix socket--> tauri-plugin-playwright (Rust)
 Same tests run on macOS and Linux. Platform differences (Ctrl vs Meta) are handled by a single `CTRL_OR_META` constant
 in `helpers.ts`.
 
+The fixed points: `playwright.config.ts` (config + shard projects), `fixtures.ts` (the `test` / `expect` the specs
+import, the per-test overlay-leak guard), `global-setup.ts` / `global-teardown.ts` (the filesystem fixture tree and the
+window-title decoration), and `helpers.ts`, a thin re-export of the themed modules in `helpers/`. A spec's FILENAME
+picks its shard (§ Files).
+
 ## Window-title decoration
 
 `fixtures.ts` wraps each test in `beforeEach`/`afterEach` hooks that update the main window's OS title via the standard
@@ -506,6 +511,13 @@ debouncer backlog accumulates — each spec passes in isolation, so it reads lik
 focused-yet-empty. `ensureAppReady` calls `flush_file_watcher` then re-confirms the left pane is populated, so the app
 is quiescent by return; `moveCursorToFile` polls for the target rather than reading once. Don't revert either to a
 one-shot read (see the comments at both sites in `helpers/app-lifecycle.ts` and `helpers/cursor.ts`).
+
+**Gotcha**: "Rows appeared" does NOT prove a live walk. **Why**: the E2E instance indexes its fixture tree at launch
+(`CMDR_E2E_START_PATH` narrows the scope, so the tree is covered within seconds), and a search over covered ground reads
+the index instead of walking. A spec asserting rows is satisfied either way, silently, which is how two walk specs once
+proved nothing. A spec that needs a real walk takes the index away first through the same two per-drive actions a user
+has (turn indexing off for the drive, then forget its index): `search-walk-ground.ts` owns that setup and the reasoning
+behind it.
 
 **Gotcha**: The clipboard is mocked, not real. **Why**: E2E builds compile with the `playwright-e2e` Cargo feature,
 which swaps the real `NSPasteboard` interop for an in-process mock store

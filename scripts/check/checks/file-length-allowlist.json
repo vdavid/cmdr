@@ -52,6 +52,7 @@
     "apps/desktop/src/lib/file-explorer/navigation/VolumeBreadcrumb.svelte": 1639,
     "apps/desktop/src/lib/file-explorer/pane/DualPaneExplorer.svelte": 1450,
     "apps/desktop/src/lib/file-explorer/pane/FilePane.svelte": 1971,
+    "apps/desktop/src/lib/file-explorer/pane/dialog-state.svelte.ts": 801,
     "apps/desktop/src/lib/file-explorer/pane/drag-drop-controller.svelte.test.ts": 814,
     "apps/desktop/src/lib/file-explorer/pane/file-operation-commands.test.ts": 846,
     "apps/desktop/src/lib/file-explorer/pane/volume-breadcrumb.test.ts": 802,
