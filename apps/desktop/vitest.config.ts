@@ -21,6 +21,10 @@ export default defineConfig({
       'scripts/**/*.test.{js,ts}',
       'eslint-plugins/**/*.test.js',
       'test/e2e-shared/**/*.test.ts',
+      // The Playwright suite's specs are `*.spec.ts` and never run here; only its
+      // PURE helper modules carry `*.test.ts` unit tests (the screenshot
+      // blank-detector), which need no browser and no running app.
+      'test/e2e-playwright/**/*.test.ts',
     ],
     // happy-dom over jsdom: its per-file DOM-environment setup is roughly half
     // the cost (the dominant phase for our ~3300 tests), ~22% faster on a plain
