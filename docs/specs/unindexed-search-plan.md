@@ -725,10 +725,10 @@ runs (`0 → 34 → 91 → 124 → 169 → 200` over three seconds, sampled insi
 
 - **Both live-walk specs rested on a false premise, and the feature's headline had no working end-to-end coverage.**
   "The E2E instance runs against a fresh `CMDR_DATA_DIR`, so the fixture tree is uncovered ground and Enter WALKS it" is
-  wrong: `CMDR_E2E_START_PATH` narrows the boot scan to the fixture root
-  (`scanner/exclusions.rs::e2e_allowlist_path`), and `Scan: complete (42 entries, 9 dirs)` lands ~100 ms after launch.
-  So `search-live` passed VACUOUSLY (rows appear, no Stop button, "results", no note — all equally true of an
-  index-served run) and `search-walk-handoff` failed outright, with no walk to outlive the dialog.
+  wrong: `CMDR_E2E_START_PATH` narrows the boot scan to the fixture root (`scanner/exclusions.rs::e2e_allowlist_path`),
+  and `Scan: complete (42 entries, 9 dirs)` lands ~100 ms after launch. So `search-live` passed VACUOUSLY (rows appear,
+  no Stop button, "results", no note — all equally true of an index-served run) and `search-walk-handoff` failed
+  outright, with no walk to outlive the dialog.
 - **The fix is a spec-level premise, not a product change**: `test/e2e-playwright/search-walk-ground.ts` takes the index
   away through the two per-drive actions a user has (`indexing disable` + `forget`, then re-reads `cmdr://indexing` to
   prove it's gone) and builds a directory CHAIN as ground. The chain is what makes the timing honest rather than

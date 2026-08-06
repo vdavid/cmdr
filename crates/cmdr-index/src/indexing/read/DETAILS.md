@@ -111,13 +111,13 @@ mutate registry state.
   The path form resolves the volume from a listing path (the always-visible active-drive badge); the id form is keyed by
   `volume.id` (the per-drive dropdown rows). Both return the same shape. `next_sweep_due_at` is computed here so the
   sweep-window length stays in the policy module (owned by `../reconcile/DETAILS.md`), not duplicated in the frontend.
-- `list_dir_children(path)` — the immediate children a directory's rows describe, for the agent's `list_dir` tool.
-  ⚠️ It answers `None` for a directory that has a ROW but no LISTING (`listed_epoch == 0`), not just for one with no row:
-  rows sit under an unlisted directory routinely (FSEvents verification upserts children without marking their parent
-  listed, and the cover walk materializes a frontier path's ancestor chain at epoch 0), and they are a lower bound on
-  what is there. A `Vec<EntryRow>` carries nowhere to say so, and the consumer's contract is that a lower-bound read has
-  to say so, hence "not indexed" rather than a partial listing. `> 0` rather than "at the current epoch" matches the
-  coverage descent rule: an old listing is stale, not absent (Decision 5 trusts it).
+- `list_dir_children(path)` — the immediate children a directory's rows describe, for the agent's `list_dir` tool. ⚠️ It
+  answers `None` for a directory that has a ROW but no LISTING (`listed_epoch == 0`), not just for one with no row: rows
+  sit under an unlisted directory routinely (FSEvents verification upserts children without marking their parent listed,
+  and the cover walk materializes a frontier path's ancestor chain at epoch 0), and they are a lower bound on what is
+  there. A `Vec<EntryRow>` carries nowhere to say so, and the consumer's contract is that a lower-bound read has to say
+  so, hence "not indexed" rather than a partial listing. `> 0` rather than "at the current epoch" matches the coverage
+  descent rule: an old listing is stale, not absent (Decision 5 trusts it).
 - `get_dir_stats(path)` / `get_dir_stats_batch(paths)` — resolve the volume via `routing::volume_id_for_local_path`,
   delegate to `*_on_volume`, and read dir aggregates off the volume's `ReadPool` (mapping the path via
   `routing::index_read_path`). `dir_stats_from` derives the same `{complete, stale}` booleans as enrichment;

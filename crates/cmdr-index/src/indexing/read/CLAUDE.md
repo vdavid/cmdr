@@ -42,9 +42,9 @@ Serve recursive sizes, index status, and coverage back to the app. Everything he
   fallback).
 - `coverage.rs` — the search frontier (`Index::coverage`), the descent rule, `CoverageToken`. Read-only; the WALK is
   `../lifecycle/cover.rs`.
-- `queries.rs` — the IPC read surface (`get_status`, `get_volume_index_status*`, `get_dir_stats*`,
-  `list_dir_children`); no registry mutation. ⚠️ An UNLISTED directory's rows aren't its contents, so
-  `list_dir_children` answers `None` there.
+- `queries.rs` — the IPC read surface (`get_status`, `get_volume_index_status*`, `get_dir_stats*`, `list_dir_children`);
+  no registry mutation. ⚠️ An UNLISTED directory's rows aren't its contents, so `list_dir_children` answers `None`
+  there.
 - `expected_totals.rs` — index-derived copy/move/delete progress denominators.
 - `pending_sizes.rs` — the "size updating" hourglass `PendingSizes` marked-set + its held-roots tier.
 - `handles.rs` — the volume-keyed tables both handles live in, and their leaf-lock discipline.

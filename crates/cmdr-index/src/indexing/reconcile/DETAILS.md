@@ -444,13 +444,13 @@ Corrections publish on the lifecycle bus under the volume they were read from. P
 it does a full `read_dir` of the navigated directory and diffs it against the DB, correcting additions, deletions,
 dir↔file type changes, and size/mtime drift, and it fully `scan_subtree`s directories new to the index — so it genuinely
 keeps the directory the user is looking at correct, on whichever volume they're looking at. The verifier's own
-`should_exclude` gate covers the directory it hands over; the structural policy INSIDE that subtree is
-`scan_subtree`'s (every walk applies it, `../scanner/DETAILS.md` § `WalkPolicy`), which is what stops a newly discovered
-`/Library` from bringing `/Library/Caches` into an index no boot scan would have put it in. But it lists **ONE level**:
-an existing subdirectory is compared by name/size/mtime only, so a change deep inside a subtree the user never opens is
-invisible to it, and the stale bytes stay in every ancestor until a sweep. It also only ever covers directories someone
-NAVIGATES to. Those gaps are what the sweep scope and the coalesce count answer. An MTP volume gets nothing from it
-either way: `mtp://` paths have no POSIX `read_dir`, so the disk half bails and the pass is inert.
+`should_exclude` gate covers the directory it hands over; the structural policy INSIDE that subtree is `scan_subtree`'s
+(every walk applies it, `../scanner/DETAILS.md` § `WalkPolicy`), which is what stops a newly discovered `/Library` from
+bringing `/Library/Caches` into an index no boot scan would have put it in. But it lists **ONE level**: an existing
+subdirectory is compared by name/size/mtime only, so a change deep inside a subtree the user never opens is invisible to
+it, and the stale bytes stay in every ancestor until a sweep. It also only ever covers directories someone NAVIGATES to.
+Those gaps are what the sweep scope and the coalesce count answer. An MTP volume gets nothing from it either way:
+`mtp://` paths have no POSIX `read_dir`, so the disk half bails and the pass is inert.
 
 **Every detached walk here runs on a token handed IN, never one looked up.** `maybe_verify` takes the volume's child
 token from `state::trigger_verification` (which already holds the instance), and the subtree-rescan drain takes it from

@@ -14,9 +14,9 @@ run on macOS (native) and Linux (Docker); platform differences (Ctrl vs Meta) ri
 
 ## Must-knows
 
-- **Run only the spec you're iterating on.** The full suite takes ~10 min and one broken test cascades connection
-  errors into the rest. `pnpm test:e2e:playwright <spec-path>` filters by file, `--grep` by name; ❌ keep
-  `--project=tauri` in the `=` form (a space swallows the spec path). DETAILS.md § "Running a single spec".
+- **Run only the spec you're iterating on.** The full suite takes ~10 min and one broken test cascades connection errors
+  into the rest. `pnpm test:e2e:playwright <spec-path>` filters by file, `--grep` by name; ❌ keep `--project=tauri` in
+  the `=` form (a space swallows the spec path). DETAILS.md § "Running a single spec".
 - **Scattered failures across unrelated specs, different every run, mean machine saturation, not a regression**: re-run
   the failing slow checks one at a time before believing them. DETAILS.md § "Slow-check results are unreliable".
 - **The instance INDEXES its fixture tree at launch**, so ❌ "rows appeared" doesn't prove a WALK: a spec needing one
