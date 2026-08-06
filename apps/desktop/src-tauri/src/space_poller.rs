@@ -29,6 +29,7 @@ use tauri_specta::Event;
 
 use crate::file_system::volume::DEFAULT_VOLUME_ID;
 use crate::file_system::volume::manager::get_volume_manager;
+use crate::ignore_poison::IgnorePoison;
 
 /// Global app handle for emitting events.
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
@@ -89,9 +90,27 @@ struct WatchEntry {
 }
 
 #[derive(Clone)]
-struct CachedSpace {
-    total_bytes: u64,
-    available_bytes: u64,
+pub(crate) struct CachedSpace {
+    pub(crate) total_bytes: u64,
+    pub(crate) available_bytes: u64,
+}
+
+/// The last polled capacity and free space for a volume, if the poller has any.
+///
+/// A READ of the poll cache, never a fresh `statfs`. That's the point: the MCP
+/// resources and the agent's read tools answer "how full is this drive" without
+/// a syscall that a hung NAS could park them on for two minutes
+/// (`agent/tools/CLAUDE.md`: handlers read stores, never the filesystem).
+///
+/// A volume has an entry while something is watching it: the boot volume
+/// permanently (the low-disk-space watcher, on by default), and any volume a pane
+/// is showing. Nothing watching ⇒ `None`, which callers render as absent rather
+/// than as a guessed zero. Widening this beyond the watched set means widening
+/// what the poller watches, not reaching for `statfs` here.
+pub(crate) fn cached_space(volume_id: &str) -> Option<CachedSpace> {
+    let cache = LAST_SPACE.get()?;
+    let map = cache.lock_ignore_poison();
+    map.get(volume_id).cloned()
 }
 
 /// Typed `volume-space-changed` Tauri event. The struct name kebab-cases to the

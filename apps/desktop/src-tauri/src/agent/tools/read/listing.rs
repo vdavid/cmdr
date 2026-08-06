@@ -255,11 +255,29 @@ impl SizeStats {
 
 // ── list_dir ──────────────────────────────────────────────────────────────────
 
+/// The volume the listed folder sits on, and how full it is.
+///
+/// Rides along on every listing because a size is only actionable next to a
+/// capacity: "Downloads is 40 GB" means something different on a drive with 2 TB
+/// free than on one with 8 GB. Absent space (nothing watching the volume) is
+/// reported as absent, never as zero.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VolumeBlock {
+    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total_bytes: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub available_bytes: Option<u64>,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListDirResult {
     pub path: String,
     pub coverage: Coverage,
+    /// Which volume this folder is on, with its capacity and free space.
+    pub volume: VolumeBlock,
     /// This folder's own recursive totals: what "how big is this folder" asks.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<SizeStats>,
@@ -352,6 +370,7 @@ pub(crate) fn build_list_dir(
     stats: Option<&DirStats>,
     enabled: bool,
     freshness: Option<Freshness>,
+    volume: VolumeBlock,
     opts: &ListOptions,
 ) -> ListDirResult {
     let indexed = page.is_some();
@@ -367,6 +386,7 @@ pub(crate) fn build_list_dir(
     ListDirResult {
         path: path.to_string(),
         coverage: coverage(enabled, freshness, indexed),
+        volume,
         size: stats.map(SizeStats::from_dir_stats),
         total,
         returned,
@@ -407,6 +427,7 @@ pub async fn execute_list_dir<R: Runtime>(_app: &AppHandle<R>, params: &Value) -
         .dir_stats(&path)
         .map_err(|e| ToolError::internal(e.to_string()))?;
     let status = index().volume_status_for_path(&path);
+    let space = crate::mcp::resources::volumes::space_summary(&status.volume_id);
 
     let page = match rows {
         None => None,
@@ -415,7 +436,20 @@ pub async fn execute_list_dir<R: Runtime>(_app: &AppHandle<R>, params: &Value) -
             Some(page_with_folder_sizes(&path, children, &opts)?)
         }
     };
-    let result = build_list_dir(&path, page, stats.as_ref(), status.enabled, status.freshness, &opts);
+    let volume = VolumeBlock {
+        id: status.volume_id.clone(),
+        total_bytes: space.map(|s| s.total_bytes),
+        available_bytes: space.map(|s| s.available_bytes),
+    };
+    let result = build_list_dir(
+        &path,
+        page,
+        stats.as_ref(),
+        status.enabled,
+        status.freshness,
+        volume,
+        &opts,
+    );
     serde_json::to_value(&result).map_err(|e| ToolError::internal(e.to_string()))
 }
 
@@ -556,6 +590,15 @@ mod tests {
         }
     }
 
+    /// A volume block with no space known: the default for tests that aren't about space.
+    fn no_space() -> VolumeBlock {
+        VolumeBlock {
+            id: "root".to_string(),
+            total_bytes: None,
+            available_bytes: None,
+        }
+    }
+
     fn page_of(children: Vec<ChildEntry>) -> Page {
         let total = children.len();
         Page { rows: children, total }
@@ -575,7 +618,7 @@ mod tests {
         };
         let children: Vec<ChildEntry> = (0..20_000).map(child).collect();
         let page = sort_and_page(children, &opts);
-        let result = build_list_dir("/downloads", Some(page), None, true, Some(Freshness::Fresh), &opts);
+        let result = build_list_dir("/downloads", Some(page), None, true, Some(Freshness::Fresh), no_space(), &opts);
 
         let rows = result.children.as_ref().expect("an indexed listing");
         assert_eq!(result.total, Some(20_000), "the honest denominator survives");
@@ -593,7 +636,7 @@ mod tests {
     fn a_normal_folder_listing_is_returned_whole() {
         let opts = ListOptions::default();
         let page = sort_and_page((0..30).map(child).collect(), &opts);
-        let result = build_list_dir("/photos", Some(page), None, true, Some(Freshness::Fresh), &opts);
+        let result = build_list_dir("/photos", Some(page), None, true, Some(Freshness::Fresh), no_space(), &opts);
         assert_eq!(result.total, Some(30));
         assert_eq!(result.returned, Some(30));
         assert!(!result.truncated);
@@ -603,7 +646,7 @@ mod tests {
     fn unindexed_volume_returns_typed_no_index_not_a_wrong_zero() {
         // children None + not enabled ⇒ "off" + a "not indexed" note, never an
         // empty-but-authoritative listing.
-        let result = build_list_dir("/nas/share", None, None, false, None, &ListOptions::default());
+        let result = build_list_dir("/nas/share", None, None, false, None, no_space(), &ListOptions::default());
         assert_eq!(result.coverage.index_status, "off");
         assert!(!result.coverage.authoritative);
         assert!(result.coverage.note.as_deref().unwrap().contains("isn't indexed"));
@@ -620,6 +663,7 @@ mod tests {
             None,
             true,
             Some(Freshness::Fresh),
+            no_space(),
             &ListOptions::default(),
         );
         assert_eq!(result.coverage.index_status, "fresh");
@@ -642,12 +686,34 @@ mod tests {
             Some(&stats),
             true,
             Some(Freshness::Fresh),
+            no_space(),
             &ListOptions::default(),
         );
         let size = result.size.unwrap();
         assert!(size.size_is_lower_bound);
         assert!(size.size_is_updating);
         assert_eq!(size.recursive_size, 1_000);
+    }
+
+    #[test]
+    fn a_listing_names_its_volume_and_how_full_it_is() {
+        // A folder size is only actionable next to the drive's free space, so the
+        // volume block rides along on every listing rather than costing a second call.
+        let result = build_list_dir(
+            "/Users/x",
+            Some(page_of(vec![])),
+            None,
+            true,
+            Some(Freshness::Fresh),
+            VolumeBlock {
+                id: "root".to_string(),
+                total_bytes: Some(2_000_000_000_000),
+                available_bytes: Some(214_300_000_000),
+            },
+            &ListOptions::default(),
+        );
+        assert_eq!(result.volume.id, "root");
+        assert_eq!(result.volume.available_bytes, Some(214_300_000_000));
     }
 
     // ── Ordering and paging ───────────────────────────────────────────────────
@@ -758,7 +824,7 @@ mod tests {
             ..Default::default()
         };
         let page = sort_and_page((0..10).map(child).collect(), &opts);
-        let result = build_list_dir("/p", Some(page), None, true, Some(Freshness::Fresh), &opts);
+        let result = build_list_dir("/p", Some(page), None, true, Some(Freshness::Fresh), no_space(), &opts);
         assert_eq!(result.returned, Some(2));
         assert_eq!(result.offset, 8);
         assert!(!result.truncated);

@@ -38,6 +38,10 @@ For adding or changing tools, see `docs/guides/mcp-development.md`.
 - **Action tools wait for a typed ack before returning `OK`** (1500 ms budget, 5 s for nav). `OK` means "the FE accepted
   the dispatched action," not "the operation completed"; poll `await` for completion. Don't return `OK` without waiting
   for the ack (a stalled FE silently drops it). Details in `executor/CLAUDE.md`.
+- **Volume capacity/free comes from the space poller's CACHE, never a `statfs` here** (`volumes::space_summary`). A
+  resource read or tool call must not be able to block for 30–120 s on a hung network mount. The cache holds every
+  volume something watches (the boot volume always, plus whatever the panes show); anything else reports no space at
+  all rather than a stale or guessed number. Widen the poller's watch list, don't reach for a syscall.
 - **`cmdr://state` and `cmdr://logs` redact through `crate::redact::redact_line`** before serialization (state's
   `recentErrors` `path`/`message`, every returned log line). A loopback caller has no filesystem read, so redaction is
   the only thing keeping home paths / SMB URIs / emails out. Don't remove it. `cmdr://logs` `filter` matches the RAW

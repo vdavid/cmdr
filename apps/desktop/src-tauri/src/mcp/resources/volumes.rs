@@ -3,7 +3,8 @@
 //! Every volume renders through one uniform shape so agents stop guessing which
 //! entries carry ids or what a bare string meant: `name`, `id`, and `kind`
 //! (`local` / `smb` / `mtp` / `virtual`) always, plus the present-when-known
-//! `filesystem`, `readOnly`, `ejectable`, `indexStatus`, and `smbConnectionState`.
+//! `filesystem`, `readOnly`, `ejectable`, `indexStatus`, `smbConnectionState`, and
+//! `totalBytes` / `availableBytes`.
 //!
 //! Same snapshot-then-format split as `resources/indexing.rs`: [`build_volumes_yaml`]
 //! is pure over a `&[VolumeSummary]` so the formatting is unit-testable without a
@@ -73,6 +74,32 @@ pub(crate) struct VolumeSummary {
     pub index_status: Option<&'static str>,
     /// SMB connection state (`direct` / `os_mount` / `disconnected`); `None` off SMB.
     pub smb_connection_state: Option<&'static str>,
+    /// Capacity and free space, from the space poller's cache. `None` when nothing
+    /// is watching this volume — see [`space_summary`] for why that isn't a
+    /// `statfs` here.
+    pub space: Option<VolumeSpace>,
+}
+
+/// A volume's capacity and free space, as last polled.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct VolumeSpace {
+    pub total_bytes: u64,
+    pub available_bytes: u64,
+}
+
+/// The volume's capacity/free from the poller's cache, never a fresh `statfs`.
+///
+/// "How full is this drive" must not be able to block a resource read or a tool
+/// call: `statfs` on a hung network mount waits 30–120 s, and `cmdr://state` is
+/// read constantly. The poller already holds a live value for every volume
+/// something is watching (the boot volume always, plus whatever the panes show),
+/// which covers the volume a disk-space question is actually about. Anything
+/// unwatched reports no space at all rather than a stale or guessed number.
+pub(crate) fn space_summary(volume_id: &str) -> Option<VolumeSpace> {
+    crate::space_poller::cached_space(volume_id).map(|s| VolumeSpace {
+        total_bytes: s.total_bytes,
+        available_bytes: s.available_bytes,
+    })
 }
 
 /// Push one volume's YAML block. `name`, `id`, and `kind` always render; the rest
@@ -96,6 +123,12 @@ fn push_volume(lines: &mut Vec<String>, v: &VolumeSummary) {
     }
     if let Some(state) = v.smb_connection_state {
         lines.push(format!("    smbConnectionState: {}", state));
+    }
+    // Raw bytes, not a formatted size: the reader does its own arithmetic ("is
+    // 40 GB of downloads worth deleting"), and a pre-rounded "1.4 TB" loses that.
+    if let Some(space) = v.space {
+        lines.push(format!("    totalBytes: {}", space.total_bytes));
+        lines.push(format!("    availableBytes: {}", space.available_bytes));
     }
 }
 
@@ -169,6 +202,7 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
                 ejectable: Some(loc.is_ejectable),
                 index_status: Some(index_status_token(&status)),
                 smb_connection_state,
+                space: space_summary(&loc.id),
             });
         }
         // The `Network` browser root is a synthetic navigation target, not a
@@ -182,6 +216,7 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
             ejectable: None,
             index_status: None,
             smb_connection_state: None,
+            space: None,
         });
     }
     #[cfg(not(target_os = "macos"))]
@@ -196,6 +231,7 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
             ejectable: None,
             index_status: Some(status_token(status.enabled, status.freshness)),
             smb_connection_state: None,
+            space: space_summary(cmdr_index::ROOT_VOLUME_ID),
         });
     }
 
@@ -224,13 +260,14 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
                 let status = index().volume_status(&volume_id);
                 out.push(VolumeSummary {
                     name,
-                    id: volume_id,
+                    id: volume_id.clone(),
                     kind: VolumeKind::Mtp,
                     filesystem: None,
                     read_only: Some(storage.is_read_only),
                     ejectable: Some(true),
                     index_status: Some(index_status_token(&status)),
                     smb_connection_state: None,
+                    space: space_summary(&volume_id),
                 });
             }
         }
@@ -253,6 +290,7 @@ mod tests {
             ejectable: Some(false),
             index_status: Some("fresh"),
             smb_connection_state: None,
+            space: None,
         }
     }
 
@@ -272,6 +310,29 @@ mod tests {
     }
 
     #[test]
+    fn a_watched_volume_carries_capacity_and_free_space() {
+        // The pair is what makes a size answer actionable: "40 GB" reads
+        // differently against 2 TB free than against 8 GB.
+        let mut v = local("Macintosh HD", "root");
+        v.space = Some(VolumeSpace {
+            total_bytes: 2_000_000_000_000,
+            available_bytes: 214_300_000_000,
+        });
+        let yaml = build_volumes_yaml(&[v]);
+        assert!(yaml.contains("totalBytes: 2000000000000"));
+        assert!(yaml.contains("availableBytes: 214300000000"));
+    }
+
+    #[test]
+    fn an_unwatched_volume_omits_space_rather_than_reporting_zero() {
+        // Nothing is polling it, so we don't know. A rendered `availableBytes: 0`
+        // would read as a full disk.
+        let yaml = build_volumes_yaml(&[local("Backup HD", "volumes-backup")]);
+        assert!(!yaml.contains("totalBytes"));
+        assert!(!yaml.contains("availableBytes"));
+    }
+
+    #[test]
     fn smb_volume_carries_connection_state_and_kind() {
         let smb = VolumeSummary {
             name: "naspi".to_string(),
@@ -282,6 +343,7 @@ mod tests {
             ejectable: Some(true),
             index_status: Some("stale"),
             smb_connection_state: Some("direct"),
+            space: None,
         };
         let yaml = build_volumes_yaml(&[smb]);
         assert!(yaml.contains("kind: smb"));
@@ -301,6 +363,7 @@ mod tests {
             ejectable: Some(true),
             index_status: Some("off"),
             smb_connection_state: None,
+            space: None,
         };
         let yaml = build_volumes_yaml(&[mtp]);
         assert!(yaml.contains("kind: mtp"));
@@ -321,6 +384,7 @@ mod tests {
             ejectable: None,
             index_status: None,
             smb_connection_state: None,
+            space: None,
         };
         let yaml = build_volumes_yaml(&[network]);
         assert_eq!(
@@ -340,6 +404,7 @@ mod tests {
             ejectable: None,
             index_status: None,
             smb_connection_state: None,
+            space: None,
         };
         let yaml = build_volumes_yaml(&[local("Macintosh HD", "root"), network]);
         // Every entry leads with name / id / kind, in order.

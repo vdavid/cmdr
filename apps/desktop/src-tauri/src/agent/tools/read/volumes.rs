@@ -37,6 +37,14 @@ pub struct VolumeSnapshot {
     /// SMB connection state: `direct` / `os_mount` / `disconnected`. Absent off SMB.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub smb_connection_state: Option<String>,
+    /// The volume's capacity in bytes, as last polled. Absent when nothing is
+    /// watching this volume, never guessed.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total_bytes: Option<u64>,
+    /// Free bytes, as last polled. Paired with `total_bytes` — both present or
+    /// both absent.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub available_bytes: Option<u64>,
 }
 
 /// Map the shipped [`VolumeSummary`] snapshot into the agent's typed result. Pure,
@@ -53,6 +61,8 @@ pub(crate) fn to_volume_snapshots(summaries: &[VolumeSummary]) -> Vec<VolumeSnap
             ejectable: v.ejectable,
             index_status: v.index_status.map(|s| s.to_string()),
             smb_connection_state: v.smb_connection_state.map(|s| s.to_string()),
+            total_bytes: v.space.map(|s| s.total_bytes),
+            available_bytes: v.space.map(|s| s.available_bytes),
         })
         .collect()
 }
@@ -88,6 +98,7 @@ mod tests {
             ejectable: None,
             index_status,
             smb_connection_state: smb,
+            space: None,
         }
     }
 
