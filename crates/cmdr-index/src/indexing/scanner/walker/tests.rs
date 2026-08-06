@@ -8,7 +8,9 @@
 use super::*;
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::Mutex as StdMutex;
-use std::sync::atomic::AtomicI64;
+use std::sync::atomic::{AtomicBool, AtomicI64};
+use std::time::Instant;
+use tokio_util::sync::CancellationToken;
 
 // ── Mock filesystem + reader ─────────────────────────────────────────
 

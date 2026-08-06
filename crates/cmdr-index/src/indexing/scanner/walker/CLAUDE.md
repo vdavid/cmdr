@@ -5,6 +5,9 @@ disconnected File Provider mount blocks `readdir` forever: a condemned read is A
 unmarked, a replacement worker spawned), so a hung dir costs one worker for one timeout, never the scan. The scan driver
 and the exclusion policy are `../CLAUDE.md`.
 
+`mod.rs` is the caller-facing surface (`DirTask`, `DirVisitor`, `WalkConfig`, `WalkStats`, the readers); `engine.rs`
+runs the walk (`walk`, the worker pool, the watchdog, `SubtreeBudget`); `bulk_read.rs` is the macOS reader.
+
 ## Must-knows
 
 - **Never rayon.** Workers are dedicated 8 MB-stack OS threads: File Provider reads descend XPC chains that overflow
