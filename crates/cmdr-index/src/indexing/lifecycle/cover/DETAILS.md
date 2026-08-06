@@ -95,3 +95,21 @@ one number). Why: a walk reports a directory's CONTENTS, and a reader of the ind
 held, so a row this walk invented is one nobody else will ever report — which made a search scoped to a folder answer
 with that folder over an indexed drive and not over an unindexed one. ❌ The ancestors above it are NOT emitted: the
 frontier is cut inside whoever's scope asked for the walk, so anything above the root is outside it.
+
+## Where a cover test goes
+
+Four test files, split by the harness a test needs rather than by what it asserts; a test that reaches for the wrong
+one pays for a whole fixture it doesn't use.
+
+- `tests.rs` — the temp-tree `Fixture`: an index that already exists, over a real directory the LOCAL walker reads off
+  the disk. Frontier materialization, the non-virgin repair, claims, and cancellation live here.
+- `cold_drive_tests.rs` — the `ColdDrive` harness: a drive with NO index, driven through the public `Index` handle so
+  the walk runs the real activation. Bootstrap, freshness, branches, and the two switches are here, because those are
+  only observable from outside.
+- `network_tests.rs` — the `Volume`-trait half, over an `InMemoryVolume` and the hand-rolled backends in
+  `test_support.rs`. Touches no disk at all.
+- `bench.rs` — the `#[ignore]`d parallel-vs-serial primitive measurement
+  (`docs/notes/cover-walk-primitive-2026-08-05.md`).
+
+`test_support.rs` holds what more than one of them needs: `drain`, and (from `network_tests.rs`) the `Share` harness
+plus the instrumented `Volume` doubles. A fixture only one file uses stays in that file.

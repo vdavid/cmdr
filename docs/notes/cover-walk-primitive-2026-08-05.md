@@ -10,7 +10,7 @@ number of rows as the serial reconcile on all four trees.
 
 ## Method
 
-`indexing::lifecycle::cover::tests::measure_cover_primitives`, `#[ignore]`d, run in release:
+`indexing::lifecycle::cover::bench::measure_cover_primitives`, `#[ignore]`d, run in release:
 
 ```sh
 CMDR_COVER_BENCH_ROOT=/Applications \

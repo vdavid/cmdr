@@ -592,6 +592,12 @@ use live::Claim;
 pub(in crate::indexing) use live::ground_being_walked;
 
 #[cfg(test)]
+mod bench;
+#[cfg(test)]
+mod cold_drive_tests;
+#[cfg(test)]
 mod network_tests;
+#[cfg(test)]
+mod test_support;
 #[cfg(test)]
 mod tests;

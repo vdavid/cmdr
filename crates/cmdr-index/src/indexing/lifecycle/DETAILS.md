@@ -62,7 +62,10 @@ concurrently without corrupting each other. Every invariant below holds independ
   heal latch. If the rebuild can't start (share unmounted, scan already running) we log and keep serving the existing
   index; nothing stamps the DB until a rebuild actually truncates, so the next load re-arms. Triggers, name list, and
   the stamp are canonical in `../network_scanner/DETAILS.md` § "NAS snapshot/system dirs aren't recursed".
-- **cover.rs** (+ `cover/bootstrap.rs`, `cover/live.rs`, `cover/tests.rs`, `cover/network_tests.rs`) — the SEARCH-driven
+- **cover.rs** (+ `cover/bootstrap.rs`, `cover/live.rs`, and four test files split by harness: `cover/tests.rs` over a
+  temp tree with an index, `cover/cold_drive_tests.rs` over a drive with none through the public handle,
+  `cover/network_tests.rs` over the `Volume` trait, `cover/bench.rs` for the `#[ignore]`d primitive measurement) — the
+  SEARCH-driven
   walk, the write half of the coverage concept whose read half is `../read/coverage.rs`. `Index::cover` resolves a
   `CoverContext` (the volume, its writer, its path space, its kind) here, spawns one Utility-QoS thread, and walks each
   frontier root the coverage answer named — through the local guarded walker or the volume's own `Volume`, whichever the
@@ -487,7 +490,7 @@ drive the user can see. The veto keeps real teeth anyway, and this is where they
 (`master::branch_watch_allowed`), so what a search walked there stays covered and served but stops being kept current
 the moment the app stops. ❌ It is NOT re-walked — the walk marked those directories listed, so the frontier never
 offers them again and Decision 5 trusts them as covered-but-stale. ❌ Don't turn either switch back into a gate on
-`WriterOnly`; `cover::tests::a_search_walks_a_drive_with_the_master_switch_off` guards it, and
+`WriterOnly`; `cover::cold_drive_tests::a_search_walks_a_drive_with_the_master_switch_off` guards it, and
 `a_vetoed_drive_is_walked_and_left_unwatched` guards the other half.
 
 Enforcement is one choke point: `start_indexing_for`, which all four transports funnel through, refuses an

@@ -412,7 +412,7 @@ this search, so it shows what Cmdr had found by then."
   replaying from the stored `last_event_id` or bumping the epoch when it can't. `master::branch_watch_allowed` is the
   gate (master switch + `user_disabled`, NOT `persisted_scan_completed` — a searcher never opted the drive in). Linux
   watches the branches themselves, macOS the volume root. Proved end to end by a real `DriveWatcher` on a real drive
-  (`cover::tests::a_change_inside_a_walked_branch_reaches_the_index_and_one_beside_it_does_not`).
+  (`cover::cold_drive_tests::a_change_inside_a_walked_branch_reaches_the_index_and_one_beside_it_does_not`).
 
 - **M0** (`2d17845cd`, `d711ebc7c`, `0b60a3f05`, `d4d433b1d`): the one-volume ceiling as a typed
   `ScopeError::SpansMultipleVolumes` at the API, the fan-out deleted (k-way merge, `ColdVolumePolicy`,
