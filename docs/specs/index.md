@@ -6,11 +6,16 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
-- [ ] 2026-08-06 `i18n-screenshot-coverage.md` - SPECCED, not started. Translators see a screenshot per string; coverage
-      is **1549 / 2743 keys (56%)** and the capture run is not green (three of four passes die in `ensureAppReady`, a
-      regression somewhere in `46bfaf7b1..63be2dc3d`). **18 of 33 registered soft dialogs** have no surface, and the
-      Transfers window plus Ask Cmdr (140 uncoupled keys) are unvisited. The lever is driving the capture from
-      `DIALOG_GALLERY_ENTRIES` instead of hand-staging each dialog.
+- [x] 2026-08-06 `i18n-screenshot-coverage.md` - SHIPPED. Translators see a screenshot per string; coverage went from
+      **1549 / 2743 keys (56%)** to **2046 / 2743 (75%)**, with direct (precise) captures up from 910 to 1178, and the
+      run from 68 surfaces with three dead passes to **133 surfaces, 0 failed**. The lever was driving the capture from
+      `DIALOG_GALLERY_ENTRIES` instead of hand-staging each dialog, which needed the gallery's gate widened from
+      `import.meta.env.DEV` to `DEV || __CMDR_I18N_CAPTURE__` (the capture binary's frontend is a production Vite
+      build). Also added: the transfer-queue window, four Ask Cmdr states, acknowledgements, the pane volume chooser,
+      and representative mappings that took `queryUi`, `search`, `updates`, and `viewer` to 100%. The `shortcuts`
+      window was never broken; its skip blamed a tauri-playwright eval hang when the window was simply missing from the
+      generated `playwright.json` capability. Keep the doc for its gotchas and the remaining gaps
+      (`settings.mediaIndex` first).
 - [ ] 2026-08-04 `size-only-subtrees-plan.md` - SPECCED, not started. Store a folder's TOTALS instead of a row per file,
       for subtrees where nobody wants the files. Cmdr indexes folders; files are an input to a folder's totals. Measured
       on David's index: `target/` holds **982,486 files (13.9% of the whole 7.09 M-row index)** and produced **93% of an
