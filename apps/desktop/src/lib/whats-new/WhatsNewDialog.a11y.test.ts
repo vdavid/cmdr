@@ -104,6 +104,53 @@ describe('WhatsNewDialog', () => {
     expect(target.querySelector('.entries li code')?.textContent).toBe('code')
   })
 
+  it('keeps every release collapsed until its toggle is clicked', async () => {
+    setReleases(sampleReleases, false)
+    const target = await mountDialog()
+
+    const toggles = Array.from(target.querySelectorAll<HTMLButtonElement>('.details-toggle'))
+    expect(toggles).toHaveLength(2)
+    expect(toggles.every((t) => t.getAttribute('aria-expanded') === 'false')).toBe(true)
+
+    const regions = Array.from(target.querySelectorAll('.details'))
+    expect(regions.every((r) => r.classList.contains('expanded'))).toBe(false)
+    // Collapsed detail is out of the tab order and the a11y tree.
+    expect(regions.every((r) => r.hasAttribute('inert'))).toBe(true)
+
+    toggles[0].click()
+    await tick()
+
+    expect(toggles[0].getAttribute('aria-expanded')).toBe('true')
+    expect(regions[0].classList.contains('expanded')).toBe(true)
+    expect(regions[0].hasAttribute('inert')).toBe(false)
+    // The other release stays collapsed: each one opens on its own.
+    expect(toggles[1].getAttribute('aria-expanded')).toBe('false')
+    expect(regions[1].hasAttribute('inert')).toBe(true)
+
+    toggles[0].click()
+    await tick()
+    expect(toggles[0].getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('points each toggle at the detail region it controls', async () => {
+    setReleases(sampleReleases, false)
+    const target = await mountDialog()
+
+    for (const toggle of target.querySelectorAll<HTMLButtonElement>('.details-toggle')) {
+      const controlled = toggle.getAttribute('aria-controls')
+      expect(controlled).toBeTruthy()
+      expect(target.querySelector(`#${CSS.escape(controlled ?? '')}`)).not.toBeNull()
+    }
+  })
+
+  it('expanded render has no a11y violations', async () => {
+    setReleases(sampleReleases, false)
+    const target = await mountDialog()
+    target.querySelector<HTMLButtonElement>('.details-toggle')?.click()
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
   it('shows the empty state with the changelog link when there are no releases', async () => {
     setReleases([], true)
     const target = await mountDialog()

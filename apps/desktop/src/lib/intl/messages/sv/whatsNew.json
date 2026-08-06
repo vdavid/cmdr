@@ -7,6 +7,14 @@
   "@whatsNew.dialog.empty": {
     "sourceHash": "31a5a2e"
   },
+  "whatsNew.dialog.showMore": "Visa mer",
+  "@whatsNew.dialog.showMore": {
+    "sourceHash": "f5c9bd1"
+  },
+  "whatsNew.dialog.showLess": "Visa mindre",
+  "@whatsNew.dialog.showLess": {
+    "sourceHash": "94ea9b1"
+  },
   "whatsNew.dialog.seeFullChangelog": "Visa hela ändringsloggen",
   "@whatsNew.dialog.seeFullChangelog": {
     "sourceHash": "66a59ed"

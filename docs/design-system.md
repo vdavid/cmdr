@@ -36,6 +36,12 @@ Hover and focus variants are derived, not hardcoded, because the base color is d
 over a gold folder icon), where plain `--color-accent` would blend in. It flips direction by scheme: darker than the
 accent in light mode, lighter in dark mode.
 
+**Accent-colored TEXT always uses `--color-accent-text`, never `--color-accent`.** That's the one accent variant
+darkened far enough to clear 4.5:1 on a light background (a pale user accent, say Apple Yellow, fails AA as plain text),
+and it's what `LinkButton` and every accent label, link, and disclosure toggle uses. `--color-accent` is for fills,
+borders, and focus rings, where the 3:1 non-text threshold applies. Hover doesn't lighten accent text: the lighter
+`--color-accent-hover` drops below AA, so state comes from the underline or the surface, not the color.
+
 The folder color setting (System Settings > Appearance > Folder color) is separate from the accent color. We use the
 accent (theme) color for interactive UI chrome. This matches macOS intent: accent is for controls, folder tint is
 cosmetic.

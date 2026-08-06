@@ -9,6 +9,16 @@
     "description": "Empty-state message in the What's new dialog when there are no changelog entries to show (reachable only via manual reopen).",
     "screenshot": "whats-new-empty.png"
   },
+  "whatsNew.dialog.showMore": "Show more",
+  "@whatsNew.dialog.showMore": {
+    "description": "Button in the What's new dialog that expands one release's detailed change lists (Added, Changed, Fixed), which are collapsed by default.",
+    "screenshot": "whats-new.png"
+  },
+  "whatsNew.dialog.showLess": "Show less",
+  "@whatsNew.dialog.showLess": {
+    "description": "Button in the What's new dialog that collapses one release's detailed change lists again. The expanded counterpart of whatsNew.dialog.showMore.",
+    "screenshot": "whats-new.png"
+  },
   "whatsNew.dialog.seeFullChangelog": "See full changelog",
   "@whatsNew.dialog.seeFullChangelog": {
     "description": "Link in the What's new dialog that opens the full online changelog in the browser.",

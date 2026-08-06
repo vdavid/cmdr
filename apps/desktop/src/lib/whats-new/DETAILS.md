@@ -22,6 +22,29 @@ current version and acts on `decideWhatsNew`:
 `compareVersions` compares numerically per component: a string compare would order `0.10.0` before `0.9.0` and misread
 an upgrade as a downgrade.
 
+## Reading shape (highlights first, details on demand)
+
+A release shows its heading and its lead, and nothing else: the Added / Changed / Fixed / Security lists sit behind a
+per-release "Show more" toggle, collapsed on every open (the dialog mounts fresh each time, so nothing persists). A
+five-release slice therefore reads as five headlines rather than a hundred entries, and each release opens on its own.
+Releases with no sections render no toggle at all.
+
+How the pieces hold together:
+
+- **The disclosure animates via a `0fr → 1fr` grid row**, not a `max-height` guess, so the transition is the content's
+  real height with no snap at the end. The inner element clips (`overflow: hidden`), which is also why any spacing
+  inside it must be a MARGIN: padding on the clipped box would survive the collapse as a visible sliver.
+- **`inert` carries the collapsed state to assistive tech and the tab order.** `hidden` / `display: none` would kill the
+  animation (no layout to interpolate), and leaving it plain would let Tab walk into invisible links.
+- **The panel is capped at 90% of the window** (`fillBody` + a `max-height` in `containerStyle`), so a collapsed slice
+  shrink-wraps to a short dialog and an expanded one scrolls inside `.scroll-area` instead of overflowing. The dialog
+  stays vertically centered while it grows, so the toggle moves under the cursor; accepted deliberately over pinning the
+  top edge (`growDownward`), which drops the panel off-center.
+- **Markers are typographic, not `<Icon>`s.** Bullets and the `▸` / `▾` disclosure triangle are text glyphs in a
+  fixed-width grid column, so they align with each other by the same font metrics and wrapped lines hang under the first
+  line's text. An SVG icon carries transparent padding that reads as misalignment, and a ROTATED glyph pivots around its
+  box rather than its ink, so the marker swaps instead of rotating.
+
 ## Lead rendering
 
 The dialog renders each release's `lead` through `snarkdown` inside a `<div class="lead">` (NOT a `<p>`). A lead can be

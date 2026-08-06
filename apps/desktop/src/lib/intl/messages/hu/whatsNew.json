@@ -7,6 +7,14 @@
   "@whatsNew.dialog.empty": {
     "sourceHash": "31a5a2e"
   },
+  "whatsNew.dialog.showMore": "Több megjelenítése",
+  "@whatsNew.dialog.showMore": {
+    "sourceHash": "f5c9bd1"
+  },
+  "whatsNew.dialog.showLess": "Kevesebb megjelenítése",
+  "@whatsNew.dialog.showLess": {
+    "sourceHash": "94ea9b1"
+  },
   "whatsNew.dialog.seeFullChangelog": "Teljes változásnapló megtekintése",
   "@whatsNew.dialog.seeFullChangelog": {
     "sourceHash": "66a59ed"

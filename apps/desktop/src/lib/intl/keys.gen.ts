@@ -2744,5 +2744,7 @@ export type MessageKey =
   | 'whatsNew.dialog.empty'
   | 'whatsNew.dialog.optOut'
   | 'whatsNew.dialog.seeFullChangelog'
+  | 'whatsNew.dialog.showLess'
+  | 'whatsNew.dialog.showMore'
   | 'whatsNew.dialog.title'
   | 'whatsNew.optOutToast'

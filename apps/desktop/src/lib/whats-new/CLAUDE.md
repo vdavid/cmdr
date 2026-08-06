@@ -17,6 +17,10 @@ into a typed model; this frontend decides when to show it and renders it.
 
 - **The lead renders in a `<div>`, never a `<p>`.** A lead can be block markdown (a numbered list → `<ol>`), invalid
   inside a `<p>`. Don't revert it.
+- **Only the lead shows up front**; each release's Added / Changed / Fixed lists hide behind a "Show more" toggle,
+  collapsed on every open. The disclosure animates a `0fr → 1fr` grid row and clips with `overflow: hidden`, so spacing
+  inside it must be a MARGIN (padding survives the collapse as a visible sliver), and the collapsed region carries
+  `inert`, never `hidden`. Shape + rationale: `DETAILS.md` § Reading shape.
 - **`isOnboarded` discriminates fresh-install from inaugural-showcase** (both have no `lastSeenVersion`). Backwards, and
   either every fresh install eats a popup or the release shipping the feature never demos it. It lives outside the
   settings registry, so `+page.svelte` passes it in.
