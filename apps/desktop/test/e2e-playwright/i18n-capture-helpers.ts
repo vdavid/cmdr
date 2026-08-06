@@ -243,8 +243,13 @@ export async function focusWindow(page: TauriPage, label: string): Promise<void>
   await page.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:window|set_focus', { label: ${labelJson} })`)
 }
 
-/** Attempts a surface's shot gets before the surface is failed outright. */
+/**
+ * Attempts a surface's shot gets before the surface is failed outright.
+ * `SHOT_ATTEMPTS_WORD` is the same number spelled out for the failure copy (house
+ * style spells one through nine); keep the two in sync.
+ */
 const SHOT_ATTEMPTS = 3
+const SHOT_ATTEMPTS_WORD = 'three'
 
 /**
  * How long to wait for a requested screenshot to actually become a whole file on
@@ -299,19 +304,18 @@ export class BlankShotError extends Error {
 }
 
 /**
- * What a reader (agent or human) needs to know the moment a capture comes back
- * blank. The cause is almost never the app or the harness: macOS stops
- * compositing a window that isn't frontmost, so anyone clicking into another app
- * mid-run leaves the capture reading a stale, pre-paint frame. Lead with that, so
- * nobody spends an afternoon hunting a bug in Cmdr.
+ * What a reader (agent or human) needs the moment a capture comes back blank:
+ * the FIX first, then why. The cause is almost never the app or the harness —
+ * macOS stops compositing a window that isn't frontmost, so anyone clicking into
+ * another app mid-run leaves the capture reading a stale, pre-paint frame — so
+ * say that plainly and stop someone hunting a bug in Cmdr that isn't there.
  *
  * DRAFT (David reviews human-facing copy).
  */
 const BLANK_SHOT_EXPLANATION =
-  'This is almost certainly NOT a bug in Cmdr or in the harness: macOS stops compositing a window that ' +
-  'is not frontmost, so the capture reads a stale frame from before the UI painted. It usually means the ' +
-  'computer was in use while the run was going. Leave the machine alone while `pnpm i18n:capture` runs, ' +
-  'then re-run it.'
+  'Leave the machine alone while `pnpm i18n:capture` runs, then re-run. macOS stops compositing a window ' +
+  "that isn't frontmost, so the capture reads a stale frame from before the UI painted; it usually means " +
+  'the computer was in use during the run, not that Cmdr or the harness is broken.'
 
 /**
  * Takes ONE verified native screenshot of `page`'s window into `screenshot`.
@@ -363,7 +367,7 @@ export async function shoot(page: TauriPage, windowLabel: string, screenshot: st
     for (const stagePath of staging) rmSync(stagePath, { force: true })
   }
   throw new BlankShotError(
-    `captured a blank frame for '${screenshot}' after ${String(SHOT_ATTEMPTS)} tries. ` +
+    `Captured a blank frame for \`${screenshot}\` after ${SHOT_ATTEMPTS_WORD} tries. ` +
       `${BLANK_SHOT_EXPLANATION} (${tries.join('; ')})`,
   )
 }

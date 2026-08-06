@@ -23,6 +23,13 @@ in `DETAILS.md`. Feature must-knows in the colocated `CLAUDE.md`s.
 - **Run Playwright E2E via `pnpm check desktop-e2e-playwright`** (full lifecycle: build, launch, run, teardown). Raw
   `npx playwright test` fails with `ECONNREFUSED` — the suite connects to a running app over a socket, it doesn't launch
   one. Single-spec iteration and the manual launch+`pkill` recipe: `test/e2e-playwright/CLAUDE.md`.
+- **Gating behavior on an automated run? Call `isE2eRun()` from `$lib/app-mode`, ❌ never `getAppMode() === 'e2e'`.**
+  There are four app modes (`prod` / `dev` / `e2e` / `capture`, driving the plain / pink `DEV MODE` / blue `E2E MODE` /
+  yellow `SCREENSHOT` title bars), and `capture` is a REFINEMENT of `e2e`, not an alternative: the i18n screenshot run
+  is an E2E run that also photographs each surface, driven by the same harness events. Comparing to `'e2e'` alone
+  silently switches your gate off in a capture build, which is how you'd break the screenshot run without touching it.
+  `getAppMode()` is for the VISUAL marker only. Modes and the capture run's rules: `test/e2e-playwright/DETAILS.md` §
+  App modes.
 - **Investigating high memory? `vmmap`'s `IOAccelerator` rows are the RUST HEAP, not GPU memory.** mimalloc tags its
   arenas with VM tag 100, which macOS names `VM_MEMORY_IOACCELERATOR`; conversely the `MALLOC_*` zones are NOT Cmdr's
   heap (mimalloc isn't a registered zone, so `malloc_zone_statistics` is blind to it). Mistaking this sends you
