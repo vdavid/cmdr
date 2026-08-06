@@ -6,9 +6,9 @@
 //! `write_operations/` ended up carrying the same scaffolding around different
 //! transfer cores:
 //!
-//! - `volume_copy.rs::copy_volumes_with_progress` (cross-volume copy, async)
-//! - `volume_move.rs::move_between_volumes` (cross-volume move, async)
-//! - `volume_move.rs::move_within_same_volume` (same-volume rename, async)
+//! - `volume/copy.rs::copy_volumes_with_progress` (cross-volume copy, async)
+//! - `volume/move.rs::move_between_volumes` (cross-volume move, async)
+//! - `volume/move.rs::move_within_same_volume` (same-volume rename, async)
 //! - `copy.rs::copy_files_with_progress_inner` (local-FS copy, sync inside `spawn_blocking`)
 //!
 //! This driver owns that scaffolding once:
@@ -166,7 +166,7 @@ pub(super) struct TransferContext<'a> {
     /// File→file safe-replace target. When `Some(orig)`, `dest_path` is a temp
     /// sibling: after a successful streaming write, the closure must finalize by
     /// deleting `orig` and renaming `dest_path` → `orig` (see
-    /// `volume_conflict::finalize_safe_replace`). `None` ⇒ write `dest_path`
+    /// `volume::conflict::finalize_safe_replace`). `None` ⇒ write `dest_path`
     /// directly. Only set by the async driver from
     /// `ConflictDecision::Proceed`; always `None` for the sync driver and for
     /// no-conflict paths.
@@ -385,7 +385,7 @@ pub(super) enum ConflictDecision {
     /// `Some(orig)`, `dest_path` is a temp sibling the closure streams into,
     /// and after a successful write the closure must finalize by deleting
     /// `orig` and renaming the temp into place (see
-    /// `volume_conflict::finalize_safe_replace`). `None` ⇒ write `dest_path`
+    /// `volume::conflict::finalize_safe_replace`). `None` ⇒ write `dest_path`
     /// directly. The driver passes `dest_path` through `TransferContext`
     /// unchanged; only the closure acts on `replace_after_write`, so the driver
     /// stays agnostic to the safe-replace mechanism.

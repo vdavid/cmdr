@@ -1,11 +1,11 @@
-//! Crash-safety / safe-replace tests for `volume_copy`, split out of
-//! `volume_copy_tests.rs` to keep each suite focused. These cover the
+//! Crash-safety / safe-replace tests for `volume::copy`, split out of
+//! `volume/copy_tests.rs` to keep each suite focused. These cover the
 //! cross-volume file→file Overwrite safe-replace guarantee: the original
 //! destination must survive a mid-stream read/write or finalize-rename
 //! failure. The Volume test doubles below (`FailAfterOneChunkStream`,
 //! `FailingReadSourceVolume`, `RenameFailsDestVolume`) model those failures.
 //!
-//! Shared fixtures `make_state` / `make_volumes` live in `volume_copy_tests.rs`
+//! Shared fixtures `make_state` / `make_volumes` live in `volume/copy_tests.rs`
 //! (`super::tests`) so they aren't duplicated.
 
 use super::tests::{make_state, make_volumes};

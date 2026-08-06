@@ -572,7 +572,7 @@ async fn async_driver_progress_accounting_sums_correctly() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn async_driver_skip_counters_zero_when_nothing_skipped() {
     // No conflicts, no bulk-skip: skip counters stay at zero so the
-    // volume_copy completion log keeps its terse form.
+    // `volume::copy` completion log keeps its terse form.
     let op_id = unique_op_id("async-skip-counters-zero");
     let state = make_state();
     let _op_guard = install_state(&op_id, Arc::clone(&state));
@@ -906,7 +906,7 @@ async fn driver_future_is_send_across_spawn() {
     let op_id_clone = op_id.clone();
     let state_clone = Arc::clone(&state);
     // Mimic production: the closures capture a reference to an Arc that lives
-    // in the outer spawn'd future scope. This matches volume_copy's pattern of
+    // in the outer spawn'd future scope. This matches `volume::copy`'s pattern of
     // closing over `&dest_volume` (an `Arc<dyn Volume>`).
     let shared: Arc<AtomicUsize> = Arc::new(AtomicUsize::new(0));
     let task = tokio::spawn(async move {

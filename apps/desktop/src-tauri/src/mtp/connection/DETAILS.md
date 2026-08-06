@@ -170,7 +170,7 @@ The recovery, split across two layers because the data stream is single-use:
   constant, so a top-level folder like `/Documents` heals with a single re-list of `/`. The method then returns
   `MtpConnectionError::StaleParentHandle { dest_folder }` (→ `VolumeError::StaleDestinationHandle`). It does NOT retry
   the upload itself — the `data_stream` was moved into `Storage::upload` and consumed.
-- **Transfer engine (`write_operations/transfer/volume_strategy.rs::stream_pipe_file`)**: owns the retry because it can
+- **Transfer engine (`write_operations/transfer/volume/strategy.rs::stream_pipe_file`)**: owns the retry because it can
   re-open the source. On `VolumeError::StaleDestinationHandle` it re-opens the source stream and re-runs
   `write_from_stream` once (`retried` budget of 1). Safe to restart the whole file: the rejection lands before any
   source byte is read or destination byte written, so no progress double-counts and no partial lingers (on

@@ -290,7 +290,7 @@ async fn predecessor_is_superseded_not_unmounted() {
 /// an `Arc` to the volume before an upgrade keeps working on it afterwards.
 ///
 /// This is the real-world failure it pins. A copy to a NAS held `src_vol` /
-/// `dst_vol` clones (`volume_copy.rs`) while a redundant SMB upgrade
+/// `dst_vol` clones (`volume/copy.rs`) while a redundant SMB upgrade
 /// replaced the volume; the swap called `on_unmount` on the predecessor,
 /// which dropped the smb2 session, and the running copy died with
 /// `DeviceDisconnected` on a connection that was demonstrably healthy.

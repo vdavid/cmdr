@@ -97,7 +97,7 @@ fn stall_abort_override() -> Option<Duration> {
 
 /// Shortens the stall-abort window for the current thread, restoring it on drop,
 /// so a suite can watch the watchdog end a wedge without waiting out three
-/// minutes. Mirrors `volume_copy::wedge_test_support::CancelDrainGuard`.
+/// minutes. Mirrors `volume::copy::wedge_test_support::CancelDrainGuard`.
 #[cfg(test)]
 pub(super) struct StallAbortGuard {
     prev: Option<Duration>,
@@ -796,7 +796,7 @@ impl Drop for TaskProbeHandle {
 
 tokio::task_local! {
     /// The probe for the copy task currently being polled. Set by
-    /// `volume_copy`'s task body; read by anything nested inside it.
+    /// `volume::copy`'s task body; read by anything nested inside it.
     pub(super) static CURRENT_TASK_PROBE: Arc<TaskProbe>;
 }
 

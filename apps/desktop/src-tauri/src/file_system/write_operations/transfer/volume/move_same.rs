@@ -3,7 +3,7 @@
 //! A same-volume move transfers zero bytes — each top-level item is renamed
 //! into the destination (MTP MoveObject is one USB command), directory clashes
 //! rename-merge child by child. The cross-volume path and the move dispatcher
-//! live in `volume_move`; this module holds the rename body, its background
+//! live in `volume::r#move`; this module holds the rename body, its background
 //! task wrapper, and the per-item operation-log journaling.
 
 use std::collections::HashMap;

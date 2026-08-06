@@ -113,6 +113,8 @@ All under `apps/desktop/src-tauri/src/`.
   shared state machine, the operation manager (queue + lane admission), `OperationEventSink`, Settle contract
 - `file_system/write_operations/transfer/`: Copy + move pipelines: conflict resolution, transfer driver, platform copies
   (`copyfile(3)` / `copy_file_range(2)` / chunked)
+- `file_system/write_operations/transfer/volume/`: The cross-volume (Local ↔ MTP ↔ SMB ↔ archive) copy/move engine
+  behind a facade module
 - `file_system/write_operations/delete/`: Delete walker, trash, oracle-aware delete semantics
 - `file_system/volume/`: `VolumeManager` plus the `backends/` umbrella, re-exporting the `Volume` trait and its types
   from `crates/cmdr-fs/`. Checklist + capability matrix for new backends

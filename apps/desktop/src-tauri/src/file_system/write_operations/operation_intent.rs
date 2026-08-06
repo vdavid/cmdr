@@ -63,7 +63,7 @@ pub(crate) fn is_cancelled(intent: &AtomicU8) -> bool {
 /// existing `is_cancelled` check so the data-safety ordering — cancel/skip
 /// before any destructive call — is preserved). The cross-volume streaming copy
 /// path parks at a finer grain too: BETWEEN CHUNKS, via the `CheckpointStream`
-/// wrapper in `transfer/volume_strategy.rs`, so a paused single large file (e.g.
+/// wrapper in `transfer/volume/strategy.rs`, so a paused single large file (e.g.
 /// MTP→local) stops mid-stream instead of streaming to completion. It is
 /// **orthogonal to** [`OperationIntent`]: pausing never perturbs the validated
 /// `Running → RollingBack/Stopped` transitions. Cancellation ALWAYS wins over

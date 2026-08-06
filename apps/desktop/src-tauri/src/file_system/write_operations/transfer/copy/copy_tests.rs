@@ -1,7 +1,7 @@
 //! Unit tests for `copy_files_with_progress_inner` (local-FS copy).
 //!
 //! Drives the sink-based inner function directly with a `CollectorEventSink`
-//! against a real tempdir, the same shape `volume_copy_tests.rs` uses against
+//! against a real tempdir, the same shape `volume/copy_tests.rs` uses against
 //! `InMemoryVolume`.
 
 use super::*;

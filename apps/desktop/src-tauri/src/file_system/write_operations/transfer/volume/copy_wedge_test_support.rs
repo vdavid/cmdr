@@ -379,7 +379,7 @@ pub(super) fn cancel_drain_override() -> Option<Duration> {
 /// drop, so a suite can watch the abandon path fire without waiting out the
 /// production window.
 ///
-/// Thread-local, like `volume_strategy`'s `AutoYieldTuningGuard`: the driver runs
+/// Thread-local, like `volume::strategy`'s `AutoYieldTuningGuard`: the driver runs
 /// inline on the test's own task (these tests `.await` it rather than spawning),
 /// so it reads this thread's value.
 pub(super) struct CancelDrainGuard {

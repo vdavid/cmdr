@@ -1,5 +1,5 @@
 //! Tests for the one-pass sequential-archive extraction path in
-//! `volume_strategy.rs` (`copy_single_path` → `extract_sequential_subtree`):
+//! `volume/strategy.rs` (`copy_single_path` → `extract_sequential_subtree`):
 //! nested-subtree correctness through the plan + single-decode data pass, the
 //! random-vs-sequential routing gate, and cancellation between members.
 //!

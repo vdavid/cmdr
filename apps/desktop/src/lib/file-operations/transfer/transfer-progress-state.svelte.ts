@@ -174,7 +174,7 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
    *  the dialog would otherwise stay at "Cancelling…" forever.
    *
    *  Sits deliberately ABOVE the backend's `CANCEL_DRAIN_DEADLINE` (15 s, in
-   *  `transfer/volume_copy.rs`), which is the point by which a cancelled
+   *  `transfer/volume/copy.rs`), which is the point by which a cancelled
    *  transfer is guaranteed to emit its terminal event. Firing first would
    *  make the dialog report `0 files processed` moments before the backend
    *  reported the real number. The user never has to sit through this window:

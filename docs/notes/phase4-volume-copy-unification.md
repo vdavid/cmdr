@@ -18,7 +18,7 @@ Three stages on `main`, each its own commit and green-light gate:
 
 1. **P4.1: Unify the trait.** Remove `export_to_local` / `import_from_local`. Ensure all backends (`LocalPosixVolume`,
    `SmbVolume`, `MtpVolume`, `InMemoryVolume`) implement `open_read_stream` + `write_from_stream`. Refactor
-   `volume_copy.rs::copy_single_path` (or equivalent inner dispatch) to two cases:
+   `volume/copy.rs::copy_single_path` (or equivalent inner dispatch) to two cases:
    `LocalPosixVolume↔LocalPosixVolume same APFS` → clonefile; else → generic streaming pipe. **No concurrency changes**
    Per-file semantics are behavior-equivalent to pre-refactor.
 2. **P4.2: Add concurrency at the copy engine.** Introduce `Volume::max_concurrent_ops()` (default `1`). `SmbVolume`
@@ -55,7 +55,7 @@ methods for no benefit, (c) spreads concurrency logic across path 2 methods when
 Consolidating to one streaming path (plus the APFS clone fast path) means:
 
 - New backends implement `open_read_stream` + `write_from_stream` and get copy-to-anywhere for free.
-- Concurrency lives in one place (`volume_copy.rs`), not duplicated across `export_to_local` / `import_from_local` /
+- Concurrency lives in one place (`volume/copy.rs`), not duplicated across `export_to_local` / `import_from_local` /
   `copy_volumes_with_progress`.
 - One place to add features (resume, checksums, progress, cancellation) affects all copy directions.
 
@@ -66,7 +66,7 @@ driver.
 ## The unified design in one paragraph
 
 Every `Volume` implements `open_read_stream(path)` and `write_from_stream(path, stream)` (they already do; we just stop
-bypassing them via `export_to_local` / `import_from_local`). The `volume_copy.rs::copy_single_path` function becomes:
+bypassing them via `export_to_local` / `import_from_local`). The `volume/copy.rs::copy_single_path` function becomes:
 (1) if source and destination are both `LocalPosixVolume` on the same APFS volume, delegate to the existing
 `copy_single_item` which will clonefile; (2) otherwise, open a read stream on the source, write it to the destination
 via `write_from_stream`, stream-by-stream, with the existing cancellation / progress / conflict logic wrapping the pipe.
@@ -78,7 +78,7 @@ streams via `FuturesUnordered`; backends that can't parallelize (MTP over USB) r
 ### F1: `export_to_local` / `import_from_local` removal
 
 - **Choice**: big-bang in P4.1, no deprecation.
-- **Why**: Only consumer is `volume_copy.rs`; we control both sides. Deprecation adds maintenance burden. CHANGELOG
+- **Why**: Only consumer is `volume/copy.rs`; we control both sides. Deprecation adds maintenance burden. CHANGELOG
   documents.
 
 ### F2: `supports_export` capability flag
@@ -182,15 +182,15 @@ streams via `FuturesUnordered`; backends that can't parallelize (MTP over USB) r
 
 ### F19: Cross-volume streaming migration
 
-- **Choice**: `volume_copy.rs::copy_single_path` dispatches on
+- **Choice**: `volume/copy.rs::copy_single_path` dispatches on
   `(src.local_path().is_some() && dst.local_path().is_some() && is_same_apfs)` → clone; else → streaming. Both
-  `export_to_local` and `import_from_local` call sites in `volume_copy.rs` get replaced with the streaming branch.
+  `export_to_local` and `import_from_local` call sites in `volume/copy.rs` get replaced with the streaming branch.
 - **Why**: One dispatch point, one diff, easy to review.
 
 ### F20: Volume trait method removal order
 
 - **Choice**: Remove `export_to_local` / `import_from_local` AFTER every caller migrated. Callers are all in
-  `volume_copy.rs`; other crates don't use them.
+  `volume/copy.rs`; other crates don't use them.
 - **Why**: No downstream ripple beyond cmdr itself.
 
 ## Migration plan (concrete)
@@ -202,12 +202,12 @@ streams via `FuturesUnordered`; backends that can't parallelize (MTP over USB) r
    kept, same semantics).
 2. **Remove implementations**: `LocalPosixVolume::export_to_local` (becomes `std::fs::copy` via `copy.rs`),
    `SmbVolume::export_to_local` / `import_from_local` (becomes open_read_stream + write_from_stream usage by
-   `volume_copy.rs`), `MtpVolume::export_to_local` / `import_from_local` (same), `InMemoryVolume` (already uses
+   `volume/copy.rs`), `MtpVolume::export_to_local` / `import_from_local` (same), `InMemoryVolume` (already uses
    streaming). Net line delta: negative (each backend loses 50-200 LOC).
 3. **Verify streaming methods work on every backend**: each of the four backends has `open_read_stream` and
    `write_from_stream` implemented. `LocalPosixVolume`: add them if not present; they wrap `std::fs::File` +
    `tokio::task::spawn_blocking` for the blocking reads/writes.
-4. **Rewrite `volume_copy.rs::copy_single_path`**:
+4. **Rewrite `volume/copy.rs::copy_single_path`**:
    ```rust
    async fn copy_single_path(src_vol, src_path, dst_vol, dst_path, …) -> Result<u64> {
        if both_are_local_posix_same_apfs(&src_vol, &dst_vol) {
@@ -219,7 +219,7 @@ streams via `FuturesUnordered`; backends that can't parallelize (MTP over USB) r
    ```
    `stream_pipe` opens a read stream, drives chunks through the destination's `write_from_stream`, reports progress per
    chunk, checks cancellation between chunks.
-5. **Keep `volume_copy.rs::copy_volumes_with_progress` shape**. Internal `copy_single_path` is the only thing that
+5. **Keep `volume/copy.rs::copy_volumes_with_progress` shape**. Internal `copy_single_path` is the only thing that
    changes. Outer scan/conflict/progress flow stays.
 6. **Update `src/file_system/volume/CLAUDE.md`**: trait table, capability table, "how to add a new volume" checklist
    collapses from "3 copy methods" to "2 stream methods."
@@ -245,7 +245,7 @@ Implementation notes:
 1. **Add trait method** `fn max_concurrent_ops(&self) -> usize { 1 }` to `Volume`.
 2. **Implement overrides** on each backend: `SmbVolume` reads setting (via a global or `AppHandle`), returns `10`
    default; `LocalPosixVolume` returns `num_cpus::get().clamp(4, 16)`; others stay default.
-3. **Rewrite `volume_copy.rs` inner loop** from `for path in source_paths { copy_single_path(…).await }` to:
+3. **Rewrite `volume/copy.rs` inner loop** from `for path in source_paths { copy_single_path(…).await }` to:
    ```rust
    let concurrency = src_vol.max_concurrent_ops().min(dst_vol.max_concurrent_ops()).min(32);
    let mut in_flight = FuturesUnordered::new();

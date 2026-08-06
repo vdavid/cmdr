@@ -14,7 +14,7 @@
 //!
 //! Lives at the `transfer/` level because two sibling suites need it:
 //! `transfer_probe_tests.rs` (the watchdog in isolation) and
-//! `volume_strategy_retry_tests.rs` (the wedge-to-retry handoff end to end).
+//! `volume/strategy_retry_tests.rs` (the wedge-to-retry handoff end to end).
 
 use std::future::Future;
 use std::path::Path;

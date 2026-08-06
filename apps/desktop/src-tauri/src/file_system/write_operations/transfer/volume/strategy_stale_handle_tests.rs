@@ -1,4 +1,4 @@
-//! Stale-destination-handle retry test for `volume_strategy.rs`'s
+//! Stale-destination-handle retry test for `volume/strategy.rs`'s
 //! `copy_single_path`.
 //!
 //! `stream_pipe_file` retries once on `VolumeError::StaleDestinationHandle` (a

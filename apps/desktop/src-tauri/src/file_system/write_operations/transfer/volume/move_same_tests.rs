@@ -3,15 +3,15 @@
 //! skip, and destination auto-create.
 //!
 //! A same-volume move renames rather than copies, so the promises differ from
-//! the cross-volume ones in `volume_move_tests.rs`: a Skip leaves both sides
+//! the cross-volume ones in `volume/move_tests.rs`: a Skip leaves both sides
 //! exactly where they were, and Overwrite routes through
 //! `apply_volume_conflict_resolution` because `InMemoryVolume::rename` honors
 //! `force = false`.
 //!
-//! Cancel lives in `volume_move_cancel_tests.rs`, byte tallies in
-//! `volume_move_progress_tests.rs`, and folder merges in
-//! `volume_move_merge_tests.rs`. Shared fixtures live in
-//! `volume_move_test_support.rs` (`super::test_support`).
+//! Cancel lives in `volume/move_cancel_tests.rs`, byte tallies in
+//! `volume/move_progress_tests.rs`, and folder merges in
+//! `volume/move_merge_tests.rs`. Shared fixtures live in
+//! `volume/move_test_support.rs` (`super::test_support`).
 
 use super::test_support::{make_state, make_state_with_interval_ms};
 use super::*;

@@ -28,7 +28,7 @@ use super::super::transfer_driver::{
 };
 use super::cleanup::delete_volume_path_recursive_preserving;
 use super::conflict::resolve_volume_conflict;
-// The same-volume rename path lives in `volume_move_same`; the dispatcher below
+// The same-volume rename path lives in `volume::move_same`; the dispatcher below
 // routes to its entry point.
 use super::move_same::move_within_same_volume;
 use super::preflight::{SourceHint, scan_volume_sources};
@@ -38,7 +38,7 @@ use crate::file_system::volume::Volume;
 use crate::ignore_poison::IgnorePoison;
 use crate::operation_log::types::OpKind;
 
-// The driver-closure future-shape aliases are shared with `volume_move_same`
+// The driver-closure future-shape aliases are shared with `volume::move_same`
 // (which imports them from here), so they're `pub(super)` rather than private.
 /// Per-call future shape for the driver's `dest_meta_fetcher` closure.
 pub(super) type FetchFut<'a> = Pin<Box<dyn Future<Output = Option<u64>> + Send + 'a>>;
@@ -263,7 +263,7 @@ pub(crate) async fn move_volumes_with_progress(
     // apply. A move into an already-existing dest is a no-op create.
     // The move pipeline is serial per source, so it has no use for the
     // `DirectoryCreation` answer the copy driver reads (see
-    // `volume_copy.rs`, Phase 0.5).
+    // `volume/copy.rs`, Phase 0.5).
     dest_volume
         .create_directory_all(dest_path)
         .await
@@ -336,7 +336,7 @@ pub(crate) async fn move_volumes_with_progress(
     // Closure captures: `config` and `operation_id` clone cheaply; `events`
     // is already an `Arc<dyn OperationEventSink>` on entry, so each closure
     // `Arc::clone(&events)`s into its environment. See
-    // `volume_copy::copy_volumes_with_progress` for the full rationale.
+    // `volume::copy::copy_volumes_with_progress` for the full rationale.
     let config_owned: VolumeCopyConfig = config.clone();
     let operation_id_owned: String = operation_id.to_string();
 
@@ -350,7 +350,7 @@ pub(crate) async fn move_volumes_with_progress(
     // Children a deep merge skipped. The driver only sees TOP-LEVEL sources, so
     // without this fold a folder move that skipped half its children would
     // report "0 skipped" — and the completion toast would read as if everything
-    // moved. Mirrors `volume_copy_serial.rs`'s `deep_skipped_files`.
+    // moved. Mirrors `volume/copy_serial.rs`'s `deep_skipped_files`.
     let deep_skipped_files = Arc::new(AtomicUsize::new(0));
 
     let outcome = drive_transfer_serial_async(

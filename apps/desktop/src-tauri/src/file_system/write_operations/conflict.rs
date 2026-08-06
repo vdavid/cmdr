@@ -162,7 +162,7 @@ pub(super) fn resolve_conflict(
             // available the instant the event is in the responder's hands. The
             // lock guard is released as the statement ends — never held across
             // the emit or the recv. Mirrors the volume-side Stop branch in
-            // `transfer/volume_conflict.rs`.
+            // `transfer/volume/conflict.rs`.
             let (tx, rx) = tokio::sync::oneshot::channel();
             *state.conflict_resolution_tx.lock_ignore_poison() = Some(tx);
 
@@ -174,7 +174,7 @@ pub(super) fn resolve_conflict(
             // safety net; sender-drop is strictly better).
             // `blocking_recv` because this local-FS conflict path is synchronous
             // and runs inside `spawn_blocking`, so it blocks its blocking-pool
-            // thread on the oneshot. The async volume path (`transfer/volume_conflict.rs`)
+            // thread on the oneshot. The async volume path (`transfer/volume/conflict.rs`)
             // uses `rx.await` instead.
             match rx.blocking_recv() {
                 Ok(response) => {

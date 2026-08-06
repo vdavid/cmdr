@@ -1,4 +1,4 @@
-//! Pause/resume tests for `volume_strategy.rs`'s `copy_single_path`.
+//! Pause/resume tests for `volume/strategy.rs`'s `copy_single_path`.
 //!
 //! Two pause shapes:
 //!

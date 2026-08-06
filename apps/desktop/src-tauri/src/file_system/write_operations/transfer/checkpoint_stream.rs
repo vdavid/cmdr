@@ -1,6 +1,6 @@
 //! The between-window cooperative checkpoint for cross-volume streaming copies.
 //!
-//! `CheckpointStream` is a `VolumeReadStream` decorator that `volume_strategy`'s
+//! `CheckpointStream` is a `VolumeReadStream` decorator that `volume::strategy`'s
 //! `stream_pipe_file` wraps the source stream in. Its `next_chunk()` runs a
 //! checkpoint once per chunk (park-while-paused, foreground auto-yield, then a
 //! cooperative `yield_now`) before delegating — the sync per-chunk `on_progress`
@@ -98,19 +98,19 @@ pub(super) struct CheckpointStream {
     last_resume_offset: u64,
     /// Quiet window the auto-yield waits for before starting the next window.
     /// Field (not a bare constant) so tests can set it ≈ 0 for determinism;
-    /// defaults to `FOREGROUND_YIELD_DEBOUNCE` (see `volume_strategy`).
+    /// defaults to `FOREGROUND_YIELD_DEBOUNCE` (see `volume::strategy`).
     foreground_debounce: Duration,
     /// Bytes the transfer must advance after a resume before honoring the next
     /// foreground yield. Field (not a bare constant) so tests can set a small
     /// floor for determinism; defaults to `MIN_PROGRESS_FLOOR_BYTES` (see
-    /// `volume_strategy`).
+    /// `volume::strategy`).
     min_progress_floor: u64,
     /// Hard cap on a SINGLE destination-side park. Load-bearing data-safety bound:
     /// the upload holds an open SMB write handle across the park, so it must
     /// resume (and write, keeping the handle warm) at least this often even under
     /// continuous browsing. Field (not a bare constant) so tests can set it small
     /// for determinism; defaults to `DEST_FOREGROUND_YIELD_HARD_CAP` (see
-    /// `volume_strategy`). ❌ Don't turn this into an unbounded wait; see
+    /// `volume::strategy`). ❌ Don't turn this into an unbounded wait; see
     /// `dest_park_continues` and `Volume::supports_foreground_yield_as_destination`.
     dest_yield_hard_cap: Duration,
 }
@@ -142,7 +142,7 @@ impl VolumeReadStream for CheckpointStream {
 impl CheckpointStream {
     /// Wrap `inner` with the between-window checkpoint. `foreground_debounce`,
     /// `min_progress_floor`, and `dest_yield_hard_cap` come from
-    /// `volume_strategy::auto_yield_tuning()` (the production constants, or a test
+    /// `volume::strategy::auto_yield_tuning()` (the production constants, or a test
     /// override); `bytes_yielded` and `last_resume_offset` start at 0 (a fresh
     /// open at offset 0).
     pub(super) fn new(

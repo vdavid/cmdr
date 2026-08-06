@@ -8,7 +8,7 @@
 //! than jump at the end; and a directory source has to account its inner files
 //! against a live aggregate, not a frozen snapshot.
 //!
-//! Shared fixtures live in `volume_move_test_support.rs`
+//! Shared fixtures live in `volume/move_test_support.rs`
 //! (`super::test_support`).
 
 use super::test_support::{make_state_with_interval_ms, make_volumes};
@@ -274,7 +274,7 @@ async fn cross_volume_move_emits_intra_file_progress() {
 /// time, because every inner file emitted against a frozen
 /// `bytes_done_so_far = 0` / `files_done_so_far = 0` snapshot.
 ///
-/// Twin of `volume_copy::tests::test_cross_volume_copy_directory_source_progress_is_leaf_granular`,
+/// Twin of `volume::copy::tests::test_cross_volume_copy_directory_source_progress_is_leaf_granular`,
 /// guarding the move path (`SerialLeafProgress` is shared, but the move wires
 /// it separately and sets `emit_per_source_milestone: false`).
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

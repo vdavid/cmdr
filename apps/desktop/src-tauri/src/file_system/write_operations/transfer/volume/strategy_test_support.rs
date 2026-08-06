@@ -1,10 +1,10 @@
-//! Shared fixtures and test doubles for the `volume_strategy.rs` test suites
-//! (`volume_strategy_copy_tests.rs`, `volume_strategy_pause_tests.rs`,
-//! `volume_strategy_yield_tests.rs`, `volume_strategy_stale_handle_tests.rs`).
+//! Shared fixtures and test doubles for the `volume/strategy.rs` test suites
+//! (`volume/strategy_copy_tests.rs`, `volume/strategy_pause_tests.rs`,
+//! `volume/strategy_yield_tests.rs`, `volume/strategy_stale_handle_tests.rs`).
 //!
 //! Holds the custom `Volume` / `VolumeReadStream` doubles every suite shares
 //! plus the auto-yield tuning override. Items are `pub(super)` so the sibling
-//! test modules (all children of the `volume_strategy` module) can reach them
+//! test modules (all children of the `volume::strategy` module) can reach them
 //! through `super::test_support::…`. The override is also read by
 //! `super::auto_yield_tuning()` in test builds.
 
@@ -26,7 +26,7 @@ pub(super) fn make_state() -> Arc<WriteOperationState> {
     Arc::new(WriteOperationState::new(Duration::from_millis(200)))
 }
 
-/// Byte-offset flavor of the shared [`super::super::super::test_support::park_holds_at`],
+/// Byte-offset flavor of the shared [`crate::file_system::write_operations::test_support::park_holds_at`],
 /// so the copy suites can hand it an `AtomicU64` directly.
 pub(super) async fn park_holds_at(seen: &std::sync::atomic::AtomicU64, what: &str) -> u64 {
     crate::file_system::write_operations::test_support::park_holds_at(|| seen.load(Ordering::SeqCst), what).await

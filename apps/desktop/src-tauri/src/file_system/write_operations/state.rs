@@ -103,7 +103,7 @@ pub struct WriteOperationState {
     /// a temp that is no longer listed here must never be swept. What remains
     /// after the driver's loop is exactly the set of half-written partials whose
     /// tasks were dropped mid-flight (a cancel that abandoned a wedged task);
-    /// `transfer::volume_cleanup::clean_abandoned_staged_writes` removes them.
+    /// `transfer::volume::cleanup::clean_abandoned_staged_writes` removes them.
     ///
     /// Empty for local-FS operations, which stage through `overwrite.rs` instead.
     pub in_flight_temps: std::sync::Mutex<Vec<PathBuf>>,

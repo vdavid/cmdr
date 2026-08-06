@@ -3,7 +3,7 @@
 //! `WriteFailure` carries the typed `WriteOperationError` the FE renders from,
 //! and `map_volume_error` / `write_error_event_from` translate an originating
 //! `VolumeError` into that typed shape and the outgoing `WriteErrorEvent`. Kept
-//! in its own module so both `volume_copy` and `volume_move` depend on it
+//! in its own module so both `volume::copy` and `volume::r#move` depend on it
 //! rather than on each other.
 
 use std::path::{Path, PathBuf};
@@ -93,7 +93,7 @@ impl<T> AtPath<T> for Result<T, VolumeError> {
 }
 
 /// Builds a `WriteErrorEvent` from a `WriteFailure`. The FE renders all copy and
-/// classification from the typed `error`. Shared by `volume_move` and `volume_copy`.
+/// classification from the typed `error`. Shared by `volume::r#move` and `volume::copy`.
 pub(super) fn write_error_event_from(
     operation_id: String,
     operation_type: WriteOperationType,

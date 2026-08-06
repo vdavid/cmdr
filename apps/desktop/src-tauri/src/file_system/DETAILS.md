@@ -47,7 +47,7 @@ minted outside any operation (the local safe-overwrite's two files) passes `None
 returns.
 
 **Known gap.** A leftover only becomes visible on the next fetch, and nothing forces one at settle. In practice
-`transfer/volume_cleanup.rs::clean_abandoned_staged_writes` deletes the leftovers and that delete fires a watcher event,
+`transfer/volume/cleanup.rs::clean_abandoned_staged_writes` deletes the leftovers and that delete fires a watcher event,
 so the pane updates on its own; the gap is the narrow case where the DELETE also fails. An immediate reveal would need
 the volume-path to display-path mapping the name-keyed registry deliberately avoids.
 

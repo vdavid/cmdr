@@ -429,7 +429,7 @@ async fn test_multi_file_copy_progress_tracking() {
 /// regression there fails this test (and its move twin) loudly.
 ///
 /// `source_paths.len() < 3` forces `use_concurrent_path = false`
-/// (see `volume_copy.rs` § `use_concurrent_path` selection), so this
+/// (see `volume/copy.rs` § `use_concurrent_path` selection), so this
 /// exercises the serial-driver `on_file_progress` site. Two files (rather
 /// than one) so the second file's emits show `files_done = 1` after the
 /// first file completes — making "files axis advances across files" pin
@@ -604,7 +604,7 @@ async fn test_cross_volume_copy_directory_source_progress_is_leaf_granular() {
 /// closure gets extracted into a shared helper.
 ///
 /// `source_paths.len() >= 3` AND `InMemoryVolume::max_concurrent_ops()`
-/// returning 32 force `use_concurrent_path = true` (see `volume_copy.rs`
+/// returning 32 force `use_concurrent_path = true` (see `volume/copy.rs`
 /// § `use_concurrent_path` selection), so this exercises the per-task
 /// `on_file_progress` site that the helper must continue to satisfy.
 ///
@@ -1737,7 +1737,7 @@ async fn test_pre_known_conflicts_ignored_outside_skip_mode() {
 /// flow against `LocalPosixVolume` on tmpfile to catch any divergence.
 ///
 /// Note: when both volumes are local, `copy_between_volumes` short-circuits to
-/// `copy_files_start` (see `volume_copy.rs:97`), so the bulk-skip code path
+/// `copy_files_start` (see `volume/copy.rs:97`), so the bulk-skip code path
 /// exercised here is the one in `copy.rs::copy_files_with_progress` — covering
 /// task 3 (local↔local copy fix) at the same time.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

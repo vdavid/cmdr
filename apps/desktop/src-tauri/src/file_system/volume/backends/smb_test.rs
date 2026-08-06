@@ -193,7 +193,7 @@ fn map_smb_error_io() {
 #[test]
 fn map_smb_error_already_exists() {
     // STATUS_OBJECT_NAME_COLLISION (returned by Create when the name exists) must
-    // surface as AlreadyExists so the volume_strategy merge-directory path can
+    // surface as AlreadyExists so the `volume::strategy` merge-directory path can
     // swallow it instead of bubbling a generic IO error to the user.
     let err = smb2::Error::Protocol {
         status: smb2::types::status::NtStatus::OBJECT_NAME_COLLISION,

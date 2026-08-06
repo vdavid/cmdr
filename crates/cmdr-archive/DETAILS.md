@@ -109,7 +109,7 @@ ONCE. The extractor mechanism lives in `src/read/DETAILS.md` § "One-pass subtre
 ### Decision: `get_space_info` delegates to the parent volume
 
 **Why**: An archive isn't a disk with its own free space. The pre-copy space check
-(`apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume_copy.rs`) blocks a copy when
+(`apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/copy.rs`) blocks a copy when
 `dest.available_bytes < total_bytes`, so reporting zeros (or `available = 0`) would read as "disk full" and block a
 paste with a spurious message instead of the correct read-only / `NotSupported` outcome. Any archive edit (temp+rename)
 is built on the parent drive, so the parent's free space is the honest constraint AND a non-blocking answer. Delegating
@@ -223,7 +223,7 @@ password to read its metadata; zip and content-encrypted 7z ignore it at parse).
 
 - The EXTRACT path (a copy whose source is inside the archive) for any encrypted archive — riding
   `WriteOperationError::ArchiveNeedsPassword { path, wrong_attempt }` (mapped in
-  `apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume_copy.rs`'s `map_volume_error`), so the
+  `apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/copy.rs`'s `map_volume_error`), so the
   frontend dispatches its password dialog and, after `set_archive_password`, retries the copy.
 - The BROWSE/listing path for a HEADER-encrypted 7z (even listing fails) —
   `crates/cmdr-fs/src/volume/friendly_error/volume_error.rs` maps `NeedsPassword` to

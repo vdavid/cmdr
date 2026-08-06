@@ -1,4 +1,4 @@
-//! Foreground auto-yield tests for `volume_strategy.rs`'s `copy_single_path`.
+//! Foreground auto-yield tests for `volume/strategy.rs`'s `copy_single_path`.
 //!
 //! A RUNNING (not paused) MTP→local copy must, when foreground work pends on the
 //! source device, stop starting the next window, wait for foreground to drain

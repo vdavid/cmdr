@@ -1,7 +1,7 @@
 //! A write the destination lands in ONE shot needs no `.cmdr-tmp-*` staging.
 //!
 //! Staging exists so a killed transfer can't leave a byte-incomplete file at the
-//! user's real filename (`volume_copy_staged_write_tests.rs`). A write that goes
+//! user's real filename (`volume/copy_staged_write_tests.rs`). A write that goes
 //! out as a single indivisible frame has no such moment, so it skips the staging
 //! and the extra rename round trip that lands it.
 //!

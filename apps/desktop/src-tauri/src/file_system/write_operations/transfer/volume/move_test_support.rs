@@ -1,12 +1,12 @@
-//! Shared fixtures and doubles for the `volume_move` suites: the operation
+//! Shared fixtures and doubles for the `volume::r#move` suites: the operation
 //! state and the `InMemoryVolume` pair every test starts from, a sink that
 //! cancels the operation the moment the first file lands, and a destination
 //! volume whose `rename` always fails.
 //!
-//! The suites that reach for these: `volume_move_tests.rs` (cross-volume),
-//! `volume_move_same_tests.rs` (same-volume rename),
-//! `volume_move_cancel_tests.rs`, `volume_move_failure_tests.rs`,
-//! `volume_move_progress_tests.rs`, and `volume_move_merge_tests.rs`.
+//! The suites that reach for these: `volume/move_tests.rs` (cross-volume),
+//! `volume/move_same_tests.rs` (same-volume rename),
+//! `volume/move_cancel_tests.rs`, `volume/move_failure_tests.rs`,
+//! `volume/move_progress_tests.rs`, and `volume/move_merge_tests.rs`.
 
 use super::*;
 use crate::file_system::volume::{InMemoryVolume, VolumeError};

@@ -41,9 +41,9 @@ Total: **5 RTTs per file on the read side, 0 on the write side** (local destinat
 Source of the two stat probes:
 
 - The first compound `stat` comes from `scan_for_copy` (`smb.rs:246`) called by `copy_volumes_with_progress` at
-  `volume_copy.rs:338` during the pre-flight scan phase: it totals file counts and bytes to seed the progress model.
+  `volume/copy.rs:338` during the pre-flight scan phase: it totals file counts and bytes to seed the progress model.
 - The second compound `stat` comes from `is_directory` (`smb.rs:691`) called by `copy_single_path` at
-  `volume_strategy.rs:42`, which branches between the file-streaming and directory-recursion paths.
+  `volume/strategy.rs:42`, which branches between the file-streaming and directory-recursion paths.
 
 Both are 1 RTT each (the smb2 `Tree::stat` helper packs CREATE + two QueryInfo + CLOSE into a single compound request),
 but they're redundant for the copy: the scan phase already knows per-file size and `is_directory`, and the streaming
@@ -165,7 +165,7 @@ capacity 4.
 Write side (`write_from_stream`) uses `FileWriter`: CREATE → N×WRITE → FLUSH → CLOSE. For a 10 KB file that fits in one
 WRITE: **4 RTTs** (CREATE + WRITE + FLUSH + CLOSE).
 
-End-to-end read-and-write pipe through `volume_strategy.rs::stream_pipe_file` for a 10 KB Local→SMB or SMB→Local copy:
+End-to-end read-and-write pipe through `volume/strategy.rs::stream_pipe_file` for a 10 KB Local→SMB or SMB→Local copy:
 source 3 RTTs + dest 4 RTTs on independent connections. With 137 ms RTT: 3×137 + 4×137 = 959 ms/file serial. At 10-way
 concurrency that's ~96 ms/file effective, but the measurement shows ~260 ms/file. The RTT count alone doesn't fully
 explain the number (see "needs measurement" section below).
@@ -253,12 +253,12 @@ Medium-high confidence that RTTs are the primary cost, but not 100%. Back-of-env
   260 ms/file it'd take thousands of hops to matter, which is not plausible.
 - **Progress event throttling.** 200 ms throttle is per-operation, not per-file, so it doesn't stall per-file work.
 - **Volume scan phase.** `copy_single_path` calls `source_volume.is_directory(source_path)` per file
-  (`volume_strategy.rs:42`). For SMB that's a `get_metadata` → CREATE+QueryInfo+CLOSE, which on the current code is
+  (`volume/strategy.rs:42`). For SMB that's a `get_metadata` → CREATE+QueryInfo+CLOSE, which on the current code is
   likely another 1–3 RTTs per file that isn't in the "transfer" budget. Worth double-checking the pre-flight cost
   separately.
 
 What I'd measure to be sure: run one small SMB copy with `RUST_LOG=smb2::client::connection=debug` and count `execute` /
-`execute_compound` calls per file. Separately instrument the `volume_strategy::copy_single_path` entry/exit and
+`execute_compound` calls per file. Separately instrument the `volume::strategy::copy_single_path` entry/exit and
 source-volume stat calls. If the real wire count per file is 7 (3 read + 4 write), Option 1 is the right fix. If it's
 higher (say 10+, including a pre-flight stat or is_directory probe), also look at removing those probes from the hot
 path.

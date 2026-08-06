@@ -3,7 +3,7 @@
 //! One source at a time, taken when the batch is too small to be worth spawning
 //! tasks (fewer than three sources) or when a backend reports
 //! `max_concurrent_ops() == 1` (MTP always does). The window-driven counterpart
-//! is `volume_copy_concurrent.rs`.
+//! is `volume/copy_concurrent.rs`.
 //!
 //! The per-iteration scaffolding — cancellation check, pre-skip, conflict
 //! detect/resolve, skip accounting, the paired progress emit — belongs to the
@@ -157,7 +157,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
     let created_dirs_for_closure = Arc::clone(&created_dirs);
     let source_hints_arc: Arc<HashMap<PathBuf, SourceHint>> = Arc::new(std::mem::take(&mut source_hints));
     // Operation-wide leaf-file counter for the File progress bar (see the
-    // matching note in `volume_move`): the driver's `files_done` counts
+    // matching note in `volume::r#move`): the driver's `files_done` counts
     // top-level sources, but the bar's denominator is the preflight LEAF
     // count, so `SerialLeafProgress` bumps this once per inner file.
     let leaf_files_done = Arc::new(AtomicUsize::new(bulk_skip_files));

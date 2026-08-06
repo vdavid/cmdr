@@ -169,8 +169,8 @@ The eight back-edges removed, all carrying only `get_volume_manager`: `archive_e
 `write_operations/create.rs:30`, `write_operations/paste_clipboard.rs:20`, `mtp/connection/mod.rs:47`.
 
 **Note the refuted hypothesis, so nobody re-derives it:** `write_operations` does NOT depend on MTP. The only `Mtp`
-tokens under `write_operations/` are four doc comments (`scan_preview.rs:68,674`, `transfer/volume_copy.rs:465`,
-`transfer/volume_preflight.rs:304`). `transfer/` is transport-agnostic as documented. There is no transport leak.
+tokens under `write_operations/` are four doc comments (`scan_preview.rs:68,674`, `transfer/volume/copy.rs:465`,
+`transfer/volume/preflight.rs:304`). `transfer/` is transport-agnostic as documented. There is no transport leak.
 
 **Tests:** the existing suite. ~20 real lines changed, so a red test means a real move error. **Docs:**
 `file_system/CLAUDE.md` + `DETAILS.md`, `volume/DETAILS.md`. **Checks:** `pnpm check --include-slow`.

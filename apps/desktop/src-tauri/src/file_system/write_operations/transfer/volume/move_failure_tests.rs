@@ -9,7 +9,7 @@
 //! copy phase and the source-delete phase.
 //!
 //! Shared fixtures and the `MoveRenameFailsDestVolume` double live in
-//! `volume_move_test_support.rs` (`super::test_support`).
+//! `volume/move_test_support.rs` (`super::test_support`).
 
 use super::super::strategy::test_support::{FlakyDest, UndeletableSource};
 use super::test_support::{MoveRenameFailsDestVolume, config_default, make_state};

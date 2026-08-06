@@ -8,7 +8,7 @@
 //! from the source, with nothing sitting on both sides or neither.
 //!
 //! Shared fixtures and the `CancelAfterFirstSink` double live in
-//! `volume_move_test_support.rs` (`super::test_support`).
+//! `volume/move_test_support.rs` (`super::test_support`).
 
 use super::test_support::{
     CancelAfterFirstSink, config_default, make_state, make_state_with_interval_ms, make_volumes,
@@ -31,7 +31,7 @@ async fn cross_volume_move_cancel_between_sources_emits_cancelled_event() {
     let events = Arc::new(CollectorEventSink::new());
     let state = make_state();
     // Pre-cancel before the loop runs: every iteration sees the cancel at the
-    // top check. Uses the existing convention in `volume_copy_tests.rs` of a
+    // top check. Uses the existing convention in `volume/copy_tests.rs` of a
     // direct `intent.store` for the simulated cancel; the public-path
     // `cancel_write_operation` requires the state to be in the cache, which
     // the outer wrapper (not under test here) is responsible for.

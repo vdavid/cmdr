@@ -24,7 +24,7 @@ hides), and it's the evidence behind two guardrails in
 
 ## Method
 
-`volume_copy_concurrency_bench.rs` (`#[ignore]`d, in
+`volume/copy_concurrency_bench.rs` (`#[ignore]`d, in
 `apps/desktop/src-tauri/src/file_system/write_operations/transfer/`). Its module docs carry the full rationale; the
 load-bearing parts for reading these numbers:
 
@@ -95,7 +95,7 @@ Reading it:
 "The window stopped helping" and "the window was never the bottleneck" bend a curve identically, so the curve alone
 can't choose between them. The floor measurement can.
 
-`volume_copy.rs`'s concurrent spawn loop awaits `dest_volume.get_metadata(&dest_item_path)` once per top-level source,
+`volume/copy.rs`'s concurrent spawn loop awaits `dest_volume.get_metadata(&dest_item_path)` once per top-level source,
 **on the driver task, before the file's task is spawned** (the `PreparingNext` phase, the call that was the driver's
 last log line in the 2026-07-31 wedge). On SMB that's one round trip per file that no window width can overlap: a batch
 of N files carries a hard floor of `N x RTT` however wide the window gets.
@@ -273,7 +273,7 @@ code.
 
 ### Where the change goes
 
-`volume_copy.rs`, the concurrent spawn loop (the `dest_volume.get_metadata(&dest_item_path).await` at the
+`volume/copy.rs`, the concurrent spawn loop (the `dest_volume.get_metadata(&dest_item_path).await` at the
 `PreparingNext` phase). Three shapes, cheapest first:
 
 - **(a) Skip probes that are provably misses.** The driver _already receives_ the destination's conflicting names as
@@ -316,7 +316,7 @@ They share this driver, so the blast radius has to be checked, and it cuts diffe
 
 - **MTP never reaches this code today**, and that's load-bearing. `MtpVolume::max_concurrent_ops()` is 1, so
   `concurrency` is 1, so `use_concurrent_path` is false and the serial driver runs instead. But an MTP listing is
-  pathologically expensive: `volume_copy.rs` already documents an MTP `scan_for_copy` costing ~18 s for 1046 photos on a
+  pathologically expensive: `volume/copy.rs` already documents an MTP `scan_for_copy` costing ~18 s for 1046 photos on a
   cold cache. **So if this fix is written into the concurrent spawn loop it can't touch MTP, and if it's refactored into
   shared conflict-resolution instead, it turns one cheap probe into an 18-second directory listing on a phone.** Keep it
   in the concurrent loop, or gate it explicitly per backend. This is the single most important scoping constraint on the
@@ -334,7 +334,7 @@ They share this driver, so the blast radius has to be checked, and it cuts diffe
   its share of the best run collapses from 74% toward single digits.
 - **`pnpm check rust-integration-tests`** must stay green, M4.4's `MIN_PEAK_IN_FLIGHT` untouched (it's a floor so the
   formula can change; don't weaken it to make something pass).
-- **`volume_merge_tests.rs` is the correctness net**, plus a new case for the staleness risk: a destination file that
+- **`volume/merge_tests.rs` is the correctness net**, plus a new case for the staleness risk: a destination file that
   appears after the batch's listing but before that file is written must still be treated as a conflict.
 - Worth measuring over Tailscale as well as LAN, since the whole effect is `N x RTT` and WAN is where it's largest.
 
@@ -342,7 +342,7 @@ They share this driver, so the blast radius has to be checked, and it cuts diffe
 
 Two changes landed, and neither is the one M4.3 specified:
 
-1. **A LOCAL volume's `max_concurrent_ops` no longer bounds a REMOTE peer** (`transfer_concurrency` in `volume_copy.rs`,
+1. **A LOCAL volume's `max_concurrent_ops` no longer bounds a REMOTE peer** (`transfer_concurrency` in `volume/copy.rs`,
    on the new `Volume::operations_are_local()`). The defect from "the sweep prices" above.
 2. **The per-file destination probe is skipped for a destination directory the operation itself created**
    (`Volume::create_directory_all` now reports `DirectoryCreation::{Created, AlreadyExisted}`). NOT option (a), (b), or

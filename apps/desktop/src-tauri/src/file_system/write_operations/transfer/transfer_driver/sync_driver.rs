@@ -130,7 +130,7 @@ where
         // data-safety ordering holds) while the op is paused. Returns
         // immediately if cancelled — the next loop iteration's `is_cancelled`
         // check then bails. This is the BETWEEN-FILES boundary; the cross-volume
-        // streaming path also parks BETWEEN CHUNKS (`volume_strategy.rs`
+        // streaming path also parks BETWEEN CHUNKS (`volume/strategy.rs`
         // `CheckpointStream`). The local-FS sync chunk loop
         // (`chunked_copy.rs`) is the one path that still pauses only between
         // files — it receives just the cancel atom, not the `PauseGate` (see

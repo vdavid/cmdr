@@ -13,7 +13,7 @@ use super::types::WriteOperationError;
 ///
 /// Only `errno` and `ErrorKind` are consulted — never the formatted message.
 /// Backend errors (SMB, MTP, etc.) are typed and flow through
-/// `transfer/volume_copy.rs::map_volume_error`, so this function only sees
+/// `transfer/volume/copy.rs::map_volume_error`, so this function only sees
 /// `std::io::Error` values produced by local-FS calls, which always carry a
 /// `raw_os_error()` on Unix. Pre-fix the function had a lowercase-substring
 /// fallback (`"disconnect"`, `"read-only"`, `"connection"`, `"operation not

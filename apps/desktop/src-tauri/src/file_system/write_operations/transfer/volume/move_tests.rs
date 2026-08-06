@@ -3,15 +3,15 @@
 //! pre-known-conflict bulk skip, and destination auto-create.
 //!
 //! These drive the sink-based inner function directly with a
-//! `CollectorEventSink` + `InMemoryVolume`, mirroring `volume_copy_tests.rs`.
+//! `CollectorEventSink` + `InMemoryVolume`, mirroring `volume/copy_tests.rs`.
 //! Tests target the data-safety invariants the bulk-skip / per-iter skip
 //! work introduced: pre-known-conflict bulk skip lands before any destructive
 //! call, and skipped conflicts bump `files_done` so the bar doesn't stall.
 //!
-//! The rest of the move suite: `volume_move_same_tests.rs` (same-volume
-//! rename), `volume_move_cancel_tests.rs`, `volume_move_failure_tests.rs`,
-//! `volume_move_progress_tests.rs`, and `volume_move_merge_tests.rs`. Shared
-//! fixtures and doubles live in `volume_move_test_support.rs`
+//! The rest of the move suite: `volume/move_same_tests.rs` (same-volume
+//! rename), `volume/move_cancel_tests.rs`, `volume/move_failure_tests.rs`,
+//! `volume/move_progress_tests.rs`, and `volume/move_merge_tests.rs`. Shared
+//! fixtures and doubles live in `volume/move_test_support.rs`
 //! (`super::test_support`).
 
 use super::test_support::{make_state, make_state_with_interval_ms, make_volumes};

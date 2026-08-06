@@ -211,7 +211,7 @@ listings, and media enrichment's parallel prefetch reads.
 **Why**: Keeping the session in one `Mutex<Option<(SmbClient, Tree)>>` would force the streaming-read producer and the compound read/write fast-paths to hold the mutex for the entire transfer, serializing every concurrent copy through it. `smb2::Connection` is `Clone` (cheap `Arc::clone`, all clones multiplex frames over one SMB session), so splitting the Tree out lets us briefly lock the client, clone its `Connection`, and release the lock, then drive `Tree::download` / `Tree::read_file_compound` / `Tree::write_file_compound` on the cloned `Connection` with no lock held. N concurrent copies on one `SmbVolume` pipeline N operations over the single session instead of queuing on the mutex. Tree lives in a `RwLock` because we only take read locks in the hot path (cloning an `Arc<Tree>`) and only write on disconnect. The streaming-write path uses the same clone-and-release shape (see the `write_from_stream` Decision below), so the client mutex is never held across I/O.
 
 **Decision**: `SmbVolume::local_path()` returns `None`
-**Why**: `local_path()` is checked in `volume_copy.rs` to decide whether to use native OS copy APIs. If SmbVolume returned `Some(mount_path)`, copies would go through the slow OS mount, which is exactly what we're trying to avoid. `root()` still returns the mount path for frontend path resolution.
+**Why**: `local_path()` is checked in `volume/copy.rs` to decide whether to use native OS copy APIs. If SmbVolume returned `Some(mount_path)`, copies would go through the slow OS mount, which is exactly what we're trying to avoid. `root()` still returns the mount path for frontend path resolution.
 
 **Decision**: SmbVolume background watcher runs on a dedicated smb2 session, not a clone of the volume's main connection
 **Why**: smb2 0.10 made `Watcher` `'static` (owns a `Connection` clone), so technically the watcher could share the volume's session via `clone_session`. Empirically it can't: stacking the watcher's CHANGE_NOTIFY long-polls on the same TCP session as heavy concurrent writes wedges Samba — `smb_integration_concurrent_streaming_writes_no_deadlock` hangs against `smb-consumer-maxreadsize` (64 KB max read/write, 8 concurrent writers, 200 × 1 MB files). The dedicated session keeps the watcher's traffic out of the writers' way at the cost of a separate TCP+auth. What we *do* keep from the new API: the watcher is `'static` (no borrow on the watcher task's `client`), and the pipelining (one CHANGE_NOTIFY pre-issued so events during consumer processing don't fall in a re-arm gap). Stat calls for new/modified files still go through `VolumeManager::get(volume_id).get_metadata(...)` (the main session), so the cmdr-side `notify_mutation` cache patch from our own writes lands first regardless.
@@ -275,7 +275,7 @@ Tests: `smb_watcher/archive_refresh_test.rs` (a Modified `.zip` event refreshes 
 **The invariant: a superseded volume keeps serving its holders.** The `VolumeManager` is not the only owner of a
 `Volume`. Anything that resolved the id earlier holds an `Arc` for the whole duration of its work:
 
-- a running transfer clones `src_vol` / `dst_vol` into every per-file task (`write_operations::transfer::volume_copy`),
+- a running transfer clones `src_vol` / `dst_vol` into every per-file task (`write_operations::transfer::volume::copy`),
 - the file viewer holds an open `VolumeReadStream`,
 - an in-flight listing, a conflict scan, and a preflight walk each hold one,
 - the indexer holds one across a scan session.

@@ -5,13 +5,17 @@ intent, cancel/rollback, ETA, the conflict mutex, settle: `../CLAUDE.md`. Fronte
 `apps/desktop/src/lib/file-operations/transfer/CLAUDE.md`.
 
 Local-FS lives in `copy/` (+ `CopyTransaction` rollback), `move_op.rs`, and `copy_strategy.rs`; volume work in
-`volume_*.rs`, where `volume_copy.rs` runs the phases and drives ONE of `volume_copy_{concurrent,serial}.rs`. All four
-cores run through the shared scaffolding in `transfer_driver/CLAUDE.md`. File map: `DETAILS.md` § Files.
+`volume/`, where `copy.rs` runs the phases and drives ONE of `copy_{concurrent,serial}.rs`. All four cores run through
+the shared scaffolding in `transfer_driver/CLAUDE.md`. File map: `DETAILS.md` § Files.
+
+- **`volume/` is a facade: reach it only as `transfer::volume::<item>`**, never `volume::copy::…`. Every module under
+  `volume/` is private to it; a new outside caller adds a re-export to `volume/mod.rs`. That is also what keeps
+  `volume/move.rs`'s `r#move` escape from leaking.
 
 ## Merge and conflicts
 
 - **The merge invariant**: a merge never deletes or overwrites a dest file the source doesn't shadow — every policy,
-  backend, and cancel/rollback/retry mid-merge (`volume_merge_tests.rs`).
+  backend, and cancel/rollback/retry mid-merge (`volume/merge_tests.rs`).
 - **Dir-vs-dir is NEVER a conflict**; only files prompt. **Overwrite means merge for dirs, replace for files**, enforced
   at the `apply_volume_conflict_resolution` call site, ❌ not by `Volume::delete`. ❌ It is NOT reversible.
 - **A MOVE's source sweep spares every child the merge skipped** (`delete_volume_path_recursive_preserving`): a skipped

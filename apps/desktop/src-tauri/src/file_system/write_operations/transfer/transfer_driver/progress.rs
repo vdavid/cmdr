@@ -12,8 +12,8 @@ use crate::ignore_poison::IgnorePoison;
 use super::emit_progress_and_status;
 
 /// Leaf-granular progress accounting for the **serial** transfer paths
-/// (`volume_copy::copy_volumes_with_progress` serial path and
-/// `volume_move::move_volumes_with_progress`, one source in flight at a time).
+/// (`volume::copy::copy_volumes_with_progress` serial path and
+/// `volume::r#move::move_volumes_with_progress`, one source in flight at a time).
 ///
 /// A single top-level source can expand to many leaf files (a directory copies
 /// its whole subtree through ONE `copy_single_path` call, reusing ONE
@@ -171,7 +171,7 @@ impl SerialLeafProgress {
 /// to detect volumes that never invoked `on_progress` and credit the
 /// file's bytes to the aggregate as a compensation.
 ///
-/// Used by: `volume_copy::copy_volumes_with_progress` concurrent path.
+/// Used by: `volume::copy::copy_volumes_with_progress` concurrent path.
 #[allow(
     clippy::too_many_arguments,
     reason = "matches WriteProgressEvent shape + per-task cross-file delta tracking"

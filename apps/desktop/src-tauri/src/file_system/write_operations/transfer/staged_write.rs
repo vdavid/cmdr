@@ -12,7 +12,7 @@
 //! their data.
 //!
 //! **Who stages.** The conflict layer already mints a temp for a file→file
-//! Overwrite (`volume_conflict::temp_sibling_path`) and lands it itself, so a
+//! Overwrite (`volume::conflict::temp_sibling_path`) and lands it itself, so a
 //! write onto one of those is [`WriteStaging::AlreadyStaged`] and passes through
 //! untouched — staging it again would only produce a `foo.cmdr-tmp-A.cmdr-tmp-B`.
 //! A write the DESTINATION lands in one indivisible shot is
@@ -223,7 +223,7 @@ impl StagedWrite {
 /// Moves a completed temp onto `final_path`.
 ///
 /// Renames FIRST, and only clears `final_path` if that fails. The conflict
-/// layer's `volume_conflict::finalize_safe_replace` is the other way round
+/// layer's `volume::conflict::finalize_safe_replace` is the other way round
 /// because there the original is known to be in the way; here it usually isn't (a fresh
 /// copy, or a conflict the resolver already cleared), and a speculative delete
 /// would spend one extra round trip per file on SMB and MTP for nothing. The

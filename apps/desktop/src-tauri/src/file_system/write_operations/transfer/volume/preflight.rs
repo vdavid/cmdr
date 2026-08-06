@@ -1,6 +1,6 @@
 //! Shared preflight scan for volume copy and move.
 //!
-//! Both `copy_volumes_with_progress` and the two `volume_move` paths need the
+//! Both `copy_volumes_with_progress` and the two `volume::r#move` paths need the
 //! same thing before the per-source loop runs: total file count, total byte
 //! count, and a per-path `is_directory` / size map (the "hints" the loop reads
 //! to skip re-probing each source). Previously only copy did this; move

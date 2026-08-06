@@ -214,7 +214,7 @@ ways). Touches `mtp-rs` (first-party). Stretch from the original plan; only wort
 
 ## 10. Dev-side debt (warns and tight margins)
 
-- `file-length` growth warns needing trim-or-consent: `transfer/volume_copy_tests.rs` (2461 lines, allowlist 2102),
+- `file-length` growth warns needing trim-or-consent: `transfer/volume/copy_tests.rs` (2461 lines, allowlist 2102),
   `app.css` (1579, allowlist 1202), `indexing/manager.rs` (1289, allowlist 1147), `listing/caching_test.rs` (1304,
   allowlist 1168), plus ~14 unlisted files newly over 800. Split/trim where it's an architecture win; otherwise ask
   David for allowlist consent explicitly.

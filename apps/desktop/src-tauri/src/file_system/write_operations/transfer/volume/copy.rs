@@ -781,7 +781,7 @@ pub(crate) async fn copy_volumes_with_progress(
         .map(super::super::transfer_probe::OperationProbeGuard::probe);
 
     if use_concurrent_path {
-        // The `FuturesUnordered` sliding window, in `volume_copy_concurrent.rs`.
+        // The `FuturesUnordered` sliding window, in `volume/copy_concurrent.rs`.
         // Everything it needs is already on hand here; the ledger Arcs are cloned
         // in, so the post-loop below keeps reading the same counters.
         let outcome =
@@ -825,7 +825,7 @@ pub(crate) async fn copy_volumes_with_progress(
         files_skipped = files_skipped_atomic.load(Ordering::Relaxed);
         bytes_skipped = bytes_skipped_atomic.load(Ordering::Relaxed);
     } else {
-        // One source at a time, in `volume_copy_serial.rs`: too few sources to be
+        // One source at a time, in `volume/copy_serial.rs`: too few sources to be
         // worth spawning tasks, or a backend that admits one operation at a time.
         let outcome = super::copy_serial::drive_transfer_serial(super::copy_serial::SerialCopy {
             events: Arc::clone(&events),
@@ -1028,7 +1028,7 @@ pub(crate) async fn copy_volumes_with_progress(
     }))
 }
 
-// The `volume_copy_tests.rs` suite was split for size. The crash-safety and
+// The `volume/copy_tests.rs` suite was split for size. The crash-safety and
 // rollback suites live in their own files; both share `make_state` /
 // `make_volumes` from `tests` (`super::tests`). The bench suite is a single
 // `#[ignore]`d, network-gated test.

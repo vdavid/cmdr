@@ -582,7 +582,7 @@ async fn connect_target() -> Target {
 ///
 /// The concurrent spawn loop awaits `dest_volume.get_metadata(dest_item_path)`
 /// once per top-level source, **on the driver, before the task is spawned**
-/// (`volume_copy.rs`, the `PreparingNext` phase — the call that was the last
+/// (`volume/copy.rs`, the `PreparingNext` phase — the call that was the last
 /// driver log line in the 2026-07-31 wedge). On SMB that is one round trip per
 /// file that no window width can overlap, so a batch of N files carries a hard
 /// floor of `N × RTT` however wide the window gets.

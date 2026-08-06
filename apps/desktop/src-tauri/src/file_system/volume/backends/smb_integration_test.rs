@@ -692,7 +692,7 @@ async fn smb_integration_scan_pool_opens_lists_and_closes() {
 /// retiring a volume must leave its session alive for whoever still holds it.
 ///
 /// A running copy holds `Arc<dyn Volume>` clones of its source and destination
-/// (`volume_copy.rs`) for the whole transfer. A redundant upgrade replacing the
+/// (`volume/copy.rs`) for the whole transfer. A redundant upgrade replacing the
 /// volume mid-copy used to call `on_unmount` on the predecessor, dropping the
 /// smb2 session under the copy and killing it with `DeviceDisconnected` on a
 /// connection that was still healthy. `on_superseded` retires the id, not the

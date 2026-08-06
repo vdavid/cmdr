@@ -232,7 +232,7 @@ Numbers + the cap-tuning rationale: `docs/notes/operation-log-capture-bench.md`.
 - **The single `move_to_trash_sync` in `rename.rs`** goes through `trash::trash_single_journaled`, journaling a one-item
   trash op that mirrors the batch path (in-trash dest + drive-index search leaves).
 - **Volume (SMB / MTP) copy/move/delete + volume `run_instant`** journal through the same seam, but under the REAL
-  volume id (not `"root"`). They spawn through their own `volume_copy.rs` / `volume_move.rs` / delete-walker deferreds,
+  volume id (not `"root"`). They spawn through their own `volume/copy.rs` / `volume/move.rs` / delete-walker deferreds,
   so each deferred brackets the op with `journal::open_volume_op` / `finalize_op` and the per-item record points call the
   `record_volume_*` siblings of the local helpers. The record points inside the shared `copy_volumes_with_progress` /
   `move_volumes_with_progress` bodies read the `(source_volume_id, dest_volume_id)` off `WriteOperationState::journal_volumes`

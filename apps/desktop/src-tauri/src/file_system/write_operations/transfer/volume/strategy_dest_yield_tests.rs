@@ -1,4 +1,4 @@
-//! DESTINATION-side foreground auto-yield tests for `volume_strategy.rs`'s
+//! DESTINATION-side foreground auto-yield tests for `volume/strategy.rs`'s
 //! `copy_single_path` (the UPLOAD path: local → SMB).
 //!
 //! A RUNNING (not paused) copy WRITING to a share the user is browsing must,

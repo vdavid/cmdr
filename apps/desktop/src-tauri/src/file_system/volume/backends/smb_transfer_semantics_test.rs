@@ -498,7 +498,7 @@ async fn smb_integration_compress_local_files_onto_the_share() {
 ///
 /// This is the 2026-08-01 failure verbatim. A 3 GB copy to the NAS was underway,
 /// holding `Arc<dyn Volume>` clones of its source and destination
-/// (`volume_copy.rs` clones them into every per-file task). A redundant SMB
+/// (`volume/copy.rs` clones them into every per-file task). A redundant SMB
 /// upgrade pass fired, `register_replacing_predecessor` called `on_unmount` on
 /// the predecessor, the smb2 session was dropped out from under the copy, and the
 /// operation died with `DeviceDisconnected` on a connection that was demonstrably

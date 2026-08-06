@@ -1,6 +1,6 @@
 //! The matching rule, on its own.
 //!
-//! `volume_copy_listing_precheck_tests.rs` proves the driver honours these
+//! `volume/copy_precheck_tests.rs` proves the driver honours these
 //! answers end to end against a case- and normalization-insensitive
 //! destination; this file pins the rule itself, including the cases that must
 //! concede a probe rather than claim a name is free.

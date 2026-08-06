@@ -1,4 +1,4 @@
-//! Tests for `volume_strategy.rs`'s `copy_single_path`: basic local→local copy,
+//! Tests for `volume/strategy.rs`'s `copy_single_path`: basic local→local copy,
 //! cancellation, and the cross-volume streaming-copy path (single file,
 //! multi-chunk with progress, mid-file cancel, empty file, missing source,
 //! streaming-route selection, and recursive directory copy).

@@ -1,7 +1,7 @@
 //! What a per-file retry (`retry.rs`) must not disturb, driven through the real
 //! `copy_volumes_with_progress` pipeline.
 //!
-//! The retry itself is pinned in `volume_strategy_retry_tests.rs`. These two
+//! The retry itself is pinned in `volume/strategy_retry_tests.rs`. These two
 //! cover the operation-level invariants a retry sits inside, because they are the
 //! ones whose failure mode is silent: a merge that quietly loses a dest-only
 //! file, and a transfer that asks the user the same question twice.

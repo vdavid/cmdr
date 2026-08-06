@@ -346,7 +346,7 @@ pub trait Volume: Send + Sync {
     /// loosened.
     ///
     /// For recursive deletes, callers should walk the tree themselves and call
-    /// `delete` per leaf. See `delete_volume_path_recursive` in `volume_copy.rs`.
+    /// `delete` per leaf. See `delete_volume_path_recursive` in `volume/copy.rs`.
     ///
     /// Default: `NotSupported`.
     fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
@@ -541,7 +541,7 @@ pub trait Volume: Send + Sync {
     /// `std::fs`) and would answer `false` here.
     ///
     /// The transfer driver reads it to size its concurrency window
-    /// (`write_operations/transfer/volume_copy.rs::transfer_concurrency`). A
+    /// (`write_operations/transfer/volume/copy.rs::transfer_concurrency`). A
     /// local volume's [`max_concurrent_ops`](Self::max_concurrent_ops) is a
     /// CPU-core heuristic that has nothing to say about how many requests a
     /// network peer should carry, so it isn't allowed to bound one; a remote
@@ -719,7 +719,7 @@ pub trait Volume: Send + Sync {
     /// when a directory of the same name already exists at the path.
     ///
     /// The scan-as-you-merge folder-merge walker
-    /// (`write_operations/transfer/volume_strategy.rs`) uses the `AlreadyExists`
+    /// (`write_operations/transfer/volume/strategy.rs`) uses the `AlreadyExists`
     /// result as the signal that a destination level PRE-EXISTED and must be
     /// merged into (list it once, resolve clashing children) rather than created
     /// fresh. Default `true` covers LocalPosix (`std::fs::create_dir` →

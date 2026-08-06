@@ -7,10 +7,10 @@
 //! child never reached the destination, so its source copy is the only one that
 //! exists. The matrix here drives every file policy (including the Stop-mode
 //! answers) over both implementations: the cross-volume copy+delete
-//! (`volume_move.rs`) and the same-volume rename-merge
-//! (`volume_rename_merge.rs`).
+//! (`volume/move.rs`) and the same-volume rename-merge
+//! (`volume/rename_merge.rs`).
 //!
-//! Shared fixtures live in `volume_move_test_support.rs`
+//! Shared fixtures live in `volume/move_test_support.rs`
 //! (`super::test_support`); the merge fixture trees are local to this file.
 
 use super::super::super::conflict_responder_test_support::{ConflictResponderSink, folder_conflict_count_both_dirs};
@@ -276,7 +276,7 @@ async fn assert_move_merge_preserved_everything(
 /// dest-only file must survive untouched.
 ///
 /// The copy pipeline has this matrix
-/// (`volume_merge_tests.rs::merge_never_deletes_unshadowed_dest_files_under_every_policy`);
+/// (`volume/merge_tests.rs::merge_never_deletes_unshadowed_dest_files_under_every_policy`);
 /// the move pipeline had no folder-merge coverage at all, which is how the
 /// source-sweep hole survived.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -325,7 +325,7 @@ async fn move_folder_merge_never_loses_a_byte_under_every_policy() {
 
 /// The same no-byte-lost matrix for the SAME-volume move, which is a recursive
 /// rename-merge rather than copy+delete — a completely separate implementation
-/// (`volume_rename_merge.rs`) with the same promises to keep.
+/// (`volume/rename_merge.rs`) with the same promises to keep.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn same_volume_move_folder_merge_never_loses_a_byte_under_every_policy() {
     for (policy, scripted) in MOVE_MERGE_POLICIES {

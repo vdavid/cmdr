@@ -86,7 +86,7 @@ pub(super) async fn resolve_volume_conflict(
     // lookup, no `write-conflict` emit, no Stop prompt: a source folder landing
     // on an existing same-named dest folder always merges into it. The configured
     // file policy governs every clash INSIDE the merge (handled per-child by the
-    // scan-as-you-merge walker in `volume_strategy.rs`), not the folder itself.
+    // scan-as-you-merge walker in `volume/strategy.rs`), not the folder itself.
     // We hand back the dest path as the merge target with no safe-replace
     // finalize, exactly the same outcome `apply_volume_conflict_resolution`
     // produces for a same-type-dir Overwrite — but reached without consulting

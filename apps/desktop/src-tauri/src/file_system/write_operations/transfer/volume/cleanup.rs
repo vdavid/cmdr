@@ -2,8 +2,8 @@
 //!
 //! `volume_rollback_with_progress` reverses copied files (with reverse-progress
 //! events) on cancel/failure, and `delete_volume_path_recursive` clears a file
-//! or directory tree off a volume. Both are shared by `volume_copy` and
-//! `volume_move`, so they live here rather than inside either operation module.
+//! or directory tree off a volume. Both are shared by `volume::copy` and
+//! `volume::r#move`, so they live here rather than inside either operation module.
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -225,7 +225,7 @@ pub(super) async fn clean_abandoned_staged_writes(volume: &Arc<dyn Volume>, stat
 ///
 /// **Returns the listing it already paid for**, minus the temps it reaped, so
 /// the copy driver can answer its top-level conflict pre-check from it instead
-/// of one `get_metadata` round trip per source (`volume_copy.rs`, and
+/// of one `get_metadata` round trip per source (`volume/copy.rs`, and
 /// `DETAILS.md` § "Answering the pre-check from one listing"). `None` means the
 /// listing itself failed — ❌ never read that as "the destination is empty".
 pub(super) async fn reap_stale_transfer_temps(volume: &Arc<dyn Volume>, dir: &Path) -> Option<Vec<FileEntry>> {
@@ -297,7 +297,7 @@ pub(in crate::file_system::write_operations) async fn delete_volume_path_recursi
 /// to it), and a skipped child never landed at the destination: the source copy
 /// is the ONLY copy. An unconditional recursive sweep of the source folder
 /// therefore destroys exactly the data the user declined to move. Pinned by
-/// `volume_move_merge_tests.rs::move_folder_merge_never_loses_a_byte_under_every_policy`.
+/// `volume/move_merge_tests.rs::move_folder_merge_never_loses_a_byte_under_every_policy`.
 ///
 /// A directory is deleted only once its whole subtree is gone, so preserving one
 /// leaf keeps its entire ancestor spine. A child that FAILS to delete counts as
