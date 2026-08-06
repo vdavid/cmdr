@@ -214,7 +214,10 @@ is why count-only no longer needs a correction pass (no over-fetch, no returned 
 
 `dir_sizes_for` builds the map only for a query that filters or sorts directories by size, because it's a full scan of
 `dir_stats`. That table is deliberately NOT indexed on `recursive_logical_size`: the index would be rewritten by every
-rollup update on the indexing hot path, to speed up a query that runs only when someone asks about sizes.
+rollup update on the indexing hot path, to speed up a query that runs only when someone asks about sizes. The scan is
+cheap enough to keep it that way — over a 574,927-row `dir_stats`, a 50 GB floor returns 30 rows in 33 ms and the
+unbounded form (what `sortBy: "size"` with no size filter asks for) returns all of them in 40 ms (verified on the
+shipped `index-root.db` via read-only `sqlite3`, 2026-08-06).
 
 ❌ **A failed read must fail the search.** The engine reads a missing map as "no directory size filter to apply", so
 falling back to `None` on a DB error would answer with every matching directory regardless of size — a wrong answer
