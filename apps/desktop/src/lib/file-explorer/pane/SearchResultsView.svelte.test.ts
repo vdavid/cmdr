@@ -1,7 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import SearchResultsView from './SearchResultsView.svelte'
-import { _resetForTesting, getOrCreate, type SearchSnapshot } from '$lib/search/snapshot-store.svelte'
+import {
+  _resetForTesting,
+  appendSnapshotEntries,
+  getOrCreate,
+  type SearchSnapshot,
+} from '$lib/search/snapshot-store.svelte'
 import type { SearchResultEntry } from '$lib/ipc/bindings'
 import type { FileEntry } from '../types'
 
@@ -124,6 +129,39 @@ describe('SearchResultsView', () => {
     await tick()
     // The snapshot-missing pane shouldn't appear when the id resolves.
     expect(target.querySelector('.snapshot-missing')).toBeNull()
+    target.remove()
+  })
+
+  it('grows when a still-running walk appends to the snapshot it is rendering', async () => {
+    // "Open in pane" hands a pane a snapshot the walk is still filling
+    // (`search/walk-handoff.svelte.ts`). The rows land through
+    // `appendSnapshotEntries`; this is the only tier that can say whether they reach
+    // the screen. Found end to end: the pane kept the two rows it opened with while
+    // the toast counted up to 24.
+    const id = 'sr-growing'
+    getOrCreate(id, makeSnapshot(id, [makeEntry('alpha.txt')]))
+
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(SearchResultsView, {
+      target,
+      props: {
+        path: `search-results://${id}`,
+        cursorIndex: 0,
+        isFocused: true,
+        sortBy: 'name',
+        sortOrder: 'ascending',
+        onNavigate: () => {},
+        onSelect: () => {},
+      },
+    })
+    await tick()
+    const rowsAtOpen = target.querySelectorAll('.file-entry').length
+    expect(rowsAtOpen).toBeGreaterThan(0)
+
+    appendSnapshotEntries(id, [makeEntry('beta.txt'), makeEntry('gamma.txt')], 3)
+    await tick()
+    expect(target.querySelectorAll('.file-entry').length).toBe(rowsAtOpen + 2)
     target.remove()
   })
 

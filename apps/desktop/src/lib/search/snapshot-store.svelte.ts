@@ -85,13 +85,20 @@ let nextId = 1
 let lastAttemptId: string | null = null
 
 /**
- * Monotonic mutation tick bumped whenever a stored snapshot's `entries` array is
- * mutated in place (currently only `removeEntryFromAllSnapshots`). Components
- * that render a snapshot's entries can subscribe to this via `getMutationTick()`
- * to re-derive after a cross-snapshot delete. We don't push reactivity into the
- * `Map` itself — keeping snapshots non-reactive is part of the design (see
- * module header) — but `mutationTick` IS a `$state` cell because it's the one
- * place where consumers need to subscribe.
+ * Monotonic mutation tick bumped whenever a stored snapshot changes: a walk
+ * appending rows to a pane that's still filling ([`appendSnapshotEntries`]) or a
+ * delete removing one everywhere ([`removeEntryFromAllSnapshots`]). Components that
+ * render a snapshot's entries subscribe via `getMutationTick()`. We don't push
+ * reactivity into the `Map` itself — keeping snapshots non-reactive is part of the
+ * design (see module header) — but `mutationTick` IS a `$state` cell because it's
+ * the one place where consumers need to subscribe.
+ *
+ * ⚠️ **The tick alone is not enough, and every mutator REPLACES its stored object**
+ * for the other half. A subscriber's `$derived` re-runs on the tick, but its VALUE
+ * is whatever `getSnapshot` hands back, and a derived that recomputes to the same
+ * object reference propagates nothing to the deriveds downstream of it — so a pane
+ * whose rows come from `snapshot.entries` would keep rendering the rows it opened
+ * with. That's exactly what a handed-off pane did while its toast counted up.
  *
  * The tick is bumped at most once per `removeEntryFromAllSnapshots` call,
  * regardless of how many snapshots changed: consumers should re-derive in
@@ -167,13 +174,17 @@ export function appendSnapshotEntries(id: string, entries: SearchResultEntry[], 
   const stored = store.get(id)
   if (!stored) return false
   const room = SNAPSHOT_ENTRIES_CAP - stored.entries.length
-  if (room > 0 && entries.length > 0) {
-    // A fresh array rather than a push: reactive consumers derive off `entries`, and
-    // an in-place mutation of the same reference is exactly what they can't see.
-    stored.entries = [...stored.entries, ...entries.slice(0, room)]
-  }
-  stored.totalCount = Math.max(stored.totalCount, totalCount)
-  stored.label = labelFor(stored.baseLabel, stored.entries.length, stored.totalCount)
+  // A fresh array rather than a push, and a fresh ENTRY rather than a field write:
+  // reactive consumers derive off the stored object, and a derived that recomputes
+  // to the same reference tells the deriveds below it nothing changed.
+  const grown = room > 0 && entries.length > 0 ? [...stored.entries, ...entries.slice(0, room)] : stored.entries
+  const grownTotal = Math.max(stored.totalCount, totalCount)
+  store.set(id, {
+    ...stored,
+    entries: grown,
+    totalCount: grownTotal,
+    label: labelFor(stored.baseLabel, grown.length, grownTotal),
+  })
   mutationTick += 1
   return true
 }
@@ -233,7 +244,8 @@ export function removeEntryFromAllSnapshots(path: string): string[] {
   for (const [id, entry] of store.entries()) {
     const filtered = entry.entries.filter((e) => e.path !== path)
     if (filtered.length !== entry.entries.length) {
-      entry.entries = filtered
+      // Replaced, not written into, for the reason on `mutationTick`.
+      store.set(id, { ...entry, entries: filtered })
       mutatedIds.push(id)
     }
   }

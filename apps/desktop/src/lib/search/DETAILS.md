@@ -43,9 +43,16 @@ results table, empty state, and the `recent-items/` family) lives in `../query-u
   capability shim, so don't add one.
 - **`snapshot-store.svelte.ts` carries the `.svelte.ts` extension for ONE `$state` cell**, `mutationTick`. The snapshot
   map itself is deliberately plain module state, because consumers read snapshots imperatively at render time and
-  nothing should re-render when the map changes; the tick exists only so a rendered snapshot can subscribe to a
-  cross-snapshot delete. Keep new reactivity out of the map: wrap `getSnapshot` results in a `$derived` at the call site
-  instead.
+  nothing should re-render when the map changes; the tick exists so a rendered snapshot can subscribe to a change under
+  it (a cross-snapshot delete, or a still-running walk appending rows to a pane it was handed). Keep new reactivity out
+  of the map: wrap `getSnapshot` results in a `$derived` at the call site instead.
+- **The tick alone doesn't get a change onto the screen, and that gap shipped once.** `SearchResultsView`'s
+  `snapshot = $derived(void getMutationTick(), getSnapshot(id))` re-runs on the bump, but its VALUE is the stored
+  object; a mutator that wrote into that object left the derived recomputing to the same reference, and Svelte stops
+  propagation there, so `entries = $derived(snapshot.entries.map(...))` never re-ran. A handed-off pane held the two
+  rows it opened with while its toast counted to 24. Every mutator therefore `store.set`s a REPLACED entry
+  (`appendSnapshotEntries`, `removeEntryFromAllSnapshots`), and `SearchResultsView.svelte.test.ts` pins it by appending
+  to a mounted view and counting rows.
 
 ## Search wrapper
 
