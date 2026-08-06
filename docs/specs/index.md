@@ -16,23 +16,6 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       was never broken; its skip blamed a tauri-playwright eval hang when the window was simply missing from the
       generated `playwright.json` capability. Keep the doc for its gotchas and the remaining gaps (`settings.mediaIndex`
       first).
-- [ ] 2026-08-04 `size-only-subtrees-plan.md` - SPECCED, not started. Store a folder's TOTALS instead of a row per file,
-      for subtrees where nobody wants the files. Cmdr indexes folders; files are an input to a folder's totals. Measured
-      on David's index: `target/` holds **982,486 files (13.9% of the whole 7.09 M-row index)** and produced **93% of an
-      eight-hour window's rescan anchors**, while importance already scores **0** rows there (the `.claude`
-      dot-directory floors the subtree, not a denylist). So the drive index is the entire cost. The design's first
-      problem is that **FSEvents carries no old size**: per-file rows ARE the memory a delete or modify diffs against,
-      so dropping them naively drifts the aggregate silently. The fix moves the memory up one level, adding DIRECT
-      totals to `dir_stats` (which today is entirely recursive), so any event resolves as
-      `delta = fresh_direct - stored_direct` off the directory's own row, with create/modify/delete/rename collapsing
-      into one subtraction. The second problem is fan-out: naive re-listing turns an O(1) update into O(children).
-      Measured, that bites **9 directories** out of 13,771 (mean fan-out 16.4, max 95,143), and coalescing per directory
-      beats today's path hardest on exactly the pathological one. Two facts from the size distribution shape it: **2,219
-      files (1%) hold 71% of the bytes** while 42,974 sub-1-KB files hold 8 MB, and **41% of files are
-      hardlink-deduped**, which makes the dedup rule load-bearing for any direct sum. Marking is a `SizeOnlyPolicy` seam
-      shipping ONE rule, `CACHEDIR.TAG` (cargo writes one into every `target/`), which reads a declaration the owning
-      tool publishes rather than a path denylist; later rules (low importance, all-binary, measured churn) are designed
-      for but not built.
 - [ ] 2026-08-03 `resource-use-plan.md` - PARTLY SHIPPED. Cut idle CPU and RAM: prod v0.37.0 burned 110 min of CPU over
       9.1 h (about 20% of a core, sustained) at a 1.78 GB footprint while idle, writing 141,072 log lines in six hours.
       **The plan's value is mostly in what it got WRONG and how**, so read § M0 before trusting any number in it: four
@@ -57,7 +40,9 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       log volume, and the 643 MB `MALLOC_LARGE`, which is the primary memory unknown now that page-cache overflow is
       shown to land only in `MALLOC_SMALL` and the search arena is shown to drop correctly.
 
-- [ ] 2026-08-04 `unindexed-search-plan.md` - IN EXECUTION. A search returns the same files indexed or not, only slower,
+- [x] 2026-08-04 `unindexed-search-plan.md` - SHIPPED (all eleven milestones on local `main`); doc kept for its
+      decisions and its register of accepted indexed-versus-not differences. A search returns the same files indexed or
+      not, only slower,
       on every volume kind (local, SMB, MTP, and whatever comes next), by walking the uncovered part live and writing
       what it finds into the drive index. Made reachable by capping a search at ONE volume: fan-out was the only way a
       search could quietly omit a drive, so removing it deletes machinery (k-way merge, cold-volume deferral,

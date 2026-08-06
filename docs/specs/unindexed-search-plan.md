@@ -1,7 +1,8 @@
 # Search that covers the folder you picked, indexed or not
 
-**Status**: IN EXECUTION. M0 through M7 have landed; M8 is next. See § Execution status before resuming. **Owner**:
-David. **Date**: 2026-08-03.
+**Status**: SHIPPED. All eleven milestones (M0–M11) landed and merged to local `main`; nothing here is pending. Keep the
+doc for its decisions, its 13-item register of accepted indexed-versus-not differences, and § Execution status's record
+of what each milestone actually did. **Owner**: David. **Date**: 2026-08-03.
 
 Indexing stays optional. A search that runs to completion returns the same files with or without an index, only slower,
 on every volume kind: local, SMB, MTP, and whatever comes next. The walk that fills the gap writes what it finds into
@@ -284,7 +285,7 @@ coverage API must not assume a single dimension.
 
 ## Execution status
 
-All eleven milestones landed. Branch `worktree-david+unindexed-search-exec`; M0–M5 are on local `main`.
+All eleven milestones landed and are merged to local `main`. The execution branch and its worktree are gone.
 
 **M10, item by item:**
 

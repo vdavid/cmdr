@@ -11,8 +11,15 @@
 //! `a_queued_run_of_live_mutations_commits_once_instead_of_once_per_message`, which
 //! counts SQLite's own commits.
 //!
+//! ⚠️ **Run it `--release`, and never quote a debug number as what the app pays.**
+//! Cmdr ships release with thin LTO, where this probe measures **4.6x cheaper** than
+//! under a plain `cargo test`. A debug figure from here was once carried into a
+//! feature proposal as the shipped per-row cost and made a whole effort look worth
+//! building; see `docs/notes/size-only-subtrees-rejected-2026-08-06.md`. The line the
+//! probe prints names its own build profile so a pasted number carries its provenance.
+//!
 //! ```sh
-//! cargo test -p cmdr-index --lib writer_upsert_throughput -- --ignored --nocapture
+//! cargo test --release -p cmdr-index --lib writer_upsert_throughput -- --ignored --nocapture
 //! ```
 
 #![allow(
@@ -80,8 +87,16 @@ fn writer_upsert_throughput() {
     let elapsed = started.elapsed();
 
     let per_row = elapsed / ROWS as u32;
+    // The build profile is ON the line, not left to whoever pastes it: a debug number
+    // from this probe is 4.6x the shipped cost, and one has already been quoted as if
+    // it were what the app pays.
+    let profile = if cfg!(debug_assertions) {
+        "DEBUG build — NOT what the app pays, re-run --release before quoting"
+    } else {
+        "release build"
+    };
     // allowed-pluralize-noun: ROWS is a 20,000 constant, never 1
-    eprintln!("IndexWriter UpsertEntryV2: {ROWS} rows in {elapsed:?} ({per_row:?} per row)");
+    eprintln!("IndexWriter UpsertEntryV2: {ROWS} rows in {elapsed:?} ({per_row:?} per row) [{profile}]");
 
     // The only real assertion: the rows landed. The number above is the point.
     let conn = IndexStore::open_write_connection(&db_path).expect("read-back conn");

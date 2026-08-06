@@ -9,8 +9,15 @@
 //! on a shared machine is a flake generator. It prints, and `--ignored` keeps it out
 //! of the default run.
 //!
+//! ⚠️ **Run it `--release`, and never quote a debug number as what the app pays.**
+//! Cmdr ships release with thin LTO; the sibling writer probe measures 4.6x cheaper
+//! there than under a plain `cargo test`, and a debug figure carried into a feature
+//! proposal as the shipped per-row cost once made a whole effort look worth building
+//! (`docs/notes/size-only-subtrees-rejected-2026-08-06.md`). The printed line names its
+//! own build profile so a pasted number carries its provenance.
+//!
 //! ```sh
-//! cargo test -p cmdr-index --lib insert_throughput_probe -- --ignored --nocapture
+//! cargo test --release -p cmdr-index --lib insert_throughput_probe -- --ignored --nocapture
 //! ```
 
 #![allow(
@@ -55,8 +62,15 @@ fn insert_entry_v2_with_id_throughput() {
     let elapsed = started.elapsed();
 
     let per_row = elapsed / ROWS as u32;
+    // The build profile is ON the line, not left to whoever pastes it: see the module
+    // doc for the debug number that got quoted as the shipped cost.
+    let profile = if cfg!(debug_assertions) {
+        "DEBUG build — NOT what the app pays, re-run --release before quoting"
+    } else {
+        "release build"
+    };
     // allowed-pluralize-noun: ROWS is a 20,000 constant, never 1
-    eprintln!("insert_entry_v2_with_id: {ROWS} rows in {elapsed:?} ({per_row:?} per row)");
+    eprintln!("insert_entry_v2_with_id: {ROWS} rows in {elapsed:?} ({per_row:?} per row) [{profile}]");
 
     // The only real assertion: the rows landed. The number above is the point.
     let count: i64 = conn
