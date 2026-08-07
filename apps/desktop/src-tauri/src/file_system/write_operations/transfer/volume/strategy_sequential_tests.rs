@@ -145,7 +145,7 @@ async fn sequential_extract_materializes_a_nested_subtree() {
     let bytes = copy_single_path(
         &source,
         &fixture.inner("docs"),
-        true, // source is a directory
+        Some(true), // source is a directory
         None,
         &dest,
         Path::new("/out"),
@@ -216,7 +216,7 @@ async fn sequential_extract_lands_empty_dirs_and_symlinks() {
     copy_single_path(
         &source,
         &fixture.inner("docs"),
-        true,
+        Some(true),
         None,
         &dest,
         Path::new("/out"),
@@ -270,7 +270,7 @@ async fn sequential_extract_cancels_between_members() {
     let result = copy_single_path(
         &source,
         &fixture.inner("docs"),
-        true,
+        Some(true),
         None,
         &dest,
         Path::new("/out"),

@@ -65,7 +65,7 @@ async fn streaming_copy_parks_mid_file_while_paused_then_resumes() {
         copy_single_path(
             &source_drv,
             Path::new("/big.bin"),
-            false,
+            Some(false),
             None,
             &dest_drv,
             Path::new("/big.bin"),
@@ -151,7 +151,7 @@ async fn streaming_copy_cancel_while_paused_mid_file_unblocks() {
         copy_single_path(
             &source_drv,
             Path::new("/big.bin"),
-            false,
+            Some(false),
             None,
             &dest_drv,
             Path::new("big.bin"),
@@ -246,7 +246,7 @@ async fn paused_mtp_copy_parks_in_place_then_resumes_byte_exact() {
         copy_single_path(
             &source_drv,
             Path::new("/movie.bin"),
-            false,
+            Some(false),
             None,
             &dest_drv,
             Path::new("movie.bin"),
@@ -350,7 +350,7 @@ async fn paused_mtp_copy_cancel_while_paused_keeps_no_partial() {
         copy_single_path(
             &source_drv,
             Path::new("/movie.bin"),
-            false,
+            Some(false),
             None,
             &dest_drv,
             Path::new("movie.bin"),
@@ -436,7 +436,7 @@ async fn unpaused_mtp_copy_streams_straight_through() {
     let bytes = copy_single_path(
         &source,
         Path::new("/movie.bin"),
-        false,
+        Some(false),
         None,
         &dest,
         Path::new("movie.bin"),

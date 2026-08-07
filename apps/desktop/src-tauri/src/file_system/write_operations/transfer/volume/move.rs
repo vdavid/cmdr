@@ -32,7 +32,7 @@ use super::conflict::resolve_volume_conflict;
 // routes to its entry point.
 use super::move_same::move_within_same_volume;
 use super::preflight::{SourceHint, scan_volume_sources};
-use super::strategy::copy_single_path;
+use super::strategy::{copy_single_path, resolve_source_is_directory};
 use super::transfer_error::{AtPath, WriteFailure, map_volume_error, write_error_event_from};
 use crate::file_system::volume::Volume;
 use crate::ignore_poison::IgnorePoison;
@@ -496,15 +496,18 @@ pub(crate) async fn move_volumes_with_progress(
                 let replace_after_write = ctx.replace_after_write.map(Path::to_path_buf);
                 let bytes_done_so_far = ctx.bytes_done_so_far;
                 Box::pin(async move {
-                    // Use the cached scan hint for type + size. Falls back to
-                    // a per-source `is_directory` probe if the hint is missing
-                    // (cached preview without per-path data, or future
-                    // backends that don't populate it).
+                    // Use the cached scan hint for type + size. A missing hint
+                    // means UNKNOWN, so it falls back to a per-source
+                    // `is_directory` probe (a cached preview without per-path
+                    // data, or a future backend that doesn't populate it).
                     let hint = source_hints.get(&source_path).copied();
-                    let source_is_dir = match hint {
-                        Some(h) => h.is_directory,
-                        None => source_volume.is_directory(&source_path).await.unwrap_or(false),
-                    };
+                    let source_is_dir =
+                        match resolve_source_is_directory(&source_volume, &source_path, hint.map(|h| h.is_directory))
+                            .await
+                        {
+                            Ok(is_dir) => is_dir,
+                            Err(e) => return Err(map_volume_error(&source_path.display().to_string(), e)),
+                        };
                     let source_size_hint = hint.and_then(|h| (!h.is_directory).then_some(h.size));
 
                     let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
@@ -549,7 +552,7 @@ pub(crate) async fn move_volumes_with_progress(
                     let bytes = match copy_single_path(
                         &source_volume,
                         &source_path,
-                        source_is_dir,
+                        Some(source_is_dir),
                         source_size_hint,
                         &dest_volume,
                         &dest_item_path,

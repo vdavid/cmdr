@@ -69,7 +69,7 @@ async fn auto_yield_parks_before_next_window_then_resumes_byte_exact() {
                 copy_single_path(
                     &source_drv,
                     Path::new("/movie.bin"),
-                    false,
+                    Some(false),
                     None,
                     &dest_drv,
                     Path::new("movie.bin"),
@@ -181,7 +181,7 @@ async fn auto_yield_debounces_a_burst_into_one_park() {
                 copy_single_path(
                     &source_drv,
                     Path::new("/movie.bin"),
-                    false,
+                    Some(false),
                     None,
                     &dest_drv,
                     Path::new("movie.bin"),
@@ -286,7 +286,7 @@ async fn auto_yield_min_progress_floor_prevents_starvation() {
                 copy_single_path(
                     &source_drv,
                     Path::new("/movie.bin"),
-                    false,
+                    Some(false),
                     None,
                     &dest_drv,
                     Path::new("movie.bin"),
@@ -379,7 +379,7 @@ async fn auto_yield_cancel_while_yielding_keeps_no_partial() {
                 copy_single_path(
                     &source_drv,
                     Path::new("/movie.bin"),
-                    false,
+                    Some(false),
                     None,
                     &dest_drv,
                     Path::new("movie.bin"),
@@ -469,7 +469,7 @@ async fn non_mtp_source_never_auto_yields_for_foreground() {
     let bytes = copy_single_path(
         &source,
         Path::new("/movie.bin"),
-        false,
+        Some(false),
         None,
         &dest,
         Path::new("movie.bin"),
@@ -522,7 +522,7 @@ async fn yield_capable_source_with_no_foreground_pending_never_self_yields() {
                 copy_single_path(
                     &source_drv,
                     Path::new("/movie.bin"),
-                    false,
+                    Some(false),
                     None,
                     &dest_drv,
                     Path::new("movie.bin"),

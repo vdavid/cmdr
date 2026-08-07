@@ -41,8 +41,8 @@ use super::super::transfer_probe::OperationProbe;
 use super::conflict::resolve_volume_conflict;
 use super::copy::cancel_drain_deadline;
 use super::preflight::SourceHint;
-use super::strategy::copy_single_path;
-use super::transfer_error::WriteFailure;
+use super::strategy::{copy_single_path, resolve_source_is_directory};
+use super::transfer_error::{WriteFailure, map_volume_error};
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 
@@ -316,6 +316,23 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                 continue;
             }
 
+            // Is this source a directory? Resolved ONCE per source, here, from
+            // the preflight hint — or by probing when there is none (a LOCAL
+            // scan preview completes with an empty `per_path`, so a real
+            // directory can arrive hintless). Three things downstream read this
+            // answer and all three break on a wrong one: the conflict resolver,
+            // `copy_single_path`'s streaming branch, and — the data-safety one —
+            // the `in_flight_partials` gate below, which keeps a merged
+            // destination directory out of the post-loop's recursive sweep.
+            let source_hint = source_hints.get(source_path).copied();
+            let source_is_dir =
+                resolve_source_is_directory(&source_volume, source_path, source_hint.map(|hint| hint.is_directory))
+                    .await
+                    .map_err(|e| WriteFailure::synthetic(map_volume_error(&source_path.display().to_string(), e)))?;
+            // Sizes stay hint-only: a missing size just means no SMB compound
+            // fast path, never a wrong branch, so it isn't worth a probe.
+            let source_size_hint = source_hint.and_then(|hint| (!hint.is_directory).then_some(hint.size));
+
             // Resolve destination path + conflict synchronously.
             let mut dest_item_path = if let Some(name) = source_path.file_name() {
                 dest_path.join(name)
@@ -384,17 +401,10 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                 }
             };
             if let Some(dest_meta) = existing_dest_meta {
-                // Reuse the per-source hint from the scan instead of re-statting.
-                let source_hint = source_hints.get(source_path).copied();
-                let source_is_dir = source_hint.map(|h| h.is_directory).unwrap_or(false);
-                // Pass file sizes to `resolve_volume_conflict` so it doesn't
-                // re-scan to populate the conflict dialog (an MTP `scan_for_copy`
-                // lists the parent dir, ~18 s for 1046 photos on a cold cache).
-                let source_size_hint = source_hint.and_then(|h| (!h.is_directory).then_some(h.size));
-                // `Some` only when the preflight actually produced a hint, so
-                // `resolve_volume_conflict` keeps its trait-call fallback for
-                // the no-hint case instead of trusting a defaulted `false`.
-                let source_is_directory_hint = source_hint.map(|h| h.is_directory);
+                // The type and size come from the scan (or the one probe above),
+                // never a re-stat: an MTP `scan_for_copy` lists the parent dir,
+                // ~18 s for 1046 photos on a cold cache.
+                let source_is_directory_hint = Some(source_is_dir);
                 let dest_size_hint = dest_meta.size;
                 log::debug!(
                     "copy_volumes_with_progress: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
@@ -467,9 +477,6 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                 dest_item_path.display()
             );
 
-            let hint = source_hints.get(source_path).copied().unwrap_or_default();
-            let source_is_dir_hint = hint.is_directory;
-
             // Mark this destination as in-flight so cancel/error can clean it
             // up — but ONLY for a FILE source. A DIRECTORY source's dest is a
             // (possibly pre-existing, merged) dir whose cleanup path is
@@ -482,7 +489,7 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
             // in-flight `.cmdr-tmp-<uuid>` for the backend writer's abort to
             // clean; never the merged root.) Pinned by
             // `cancel_mid_merge_stream_concurrent_preserves_preexisting_dest_file`.
-            if !source_is_dir_hint {
+            if !source_is_dir {
                 in_flight_partials.lock_ignore_poison().push(dest_item_path.clone());
             }
 
@@ -498,7 +505,6 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
             let dest_owned = dest_item_path.clone();
             let replace_after_write_owned = replace_after_write.clone();
             let file_name_owned = file_name.clone();
-            let source_size_hint = if hint.is_directory { None } else { Some(hint.size) };
             // Per-task merge context: deep file clashes inside a directory
             // source landing on a merged dest honor the file policy, sharing
             // the op-wide apply-to-all latch with every other task and the
@@ -569,7 +575,7 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                 let copy_fut = copy_single_path(
                     &src_vol,
                     &source_owned,
-                    source_is_dir_hint,
+                    Some(source_is_dir),
                     source_size_hint,
                     &dst_vol,
                     &dest_owned,
@@ -655,7 +661,7 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                         Ok(CopyTaskSuccess {
                             partial_path: dest_owned.clone(),
                             recorded_path: dest_owned,
-                            source_is_dir: source_is_dir_hint,
+                            source_is_dir,
                             bytes,
                             overwrote: task_overwrote,
                             created_files,
@@ -677,7 +683,7 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
                         reported_path: e.path,
                         error: e.error,
                         cleanup_temp: true,
-                        source_is_dir: source_is_dir_hint,
+                        source_is_dir,
                         created_files,
                         created_dirs,
                     }),

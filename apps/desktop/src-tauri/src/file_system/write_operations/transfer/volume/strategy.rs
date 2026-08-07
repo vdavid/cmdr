@@ -222,6 +222,32 @@ impl CreatedPaths {
     }
 }
 
+/// Answers "is this top-level source a directory?" from the preflight hint,
+/// probing the source volume only when there is no hint.
+///
+/// **A missing hint means UNKNOWN, never "file".** A completed scan preview can
+/// carry no per-source data at all, and defaulting to `false` there streams a
+/// directory as a file AND tells both drivers the destination path is a
+/// sweepable partial — which, for a directory merged into the user's own dest
+/// folder, means a recursive delete of their data on any failure.
+///
+/// ❌ Don't probe when a hint IS present: a hinted 15k-source MTP copy would pay
+/// 15k parent listings (~2 minutes of stalled dialog) for an answer the scan
+/// already has.
+///
+/// `Err` only when the source can't be stat'd at all (it's gone, or unreadable),
+/// which the caller surfaces as that source's failure rather than guessing.
+pub(super) async fn resolve_source_is_directory(
+    source_volume: &Arc<dyn Volume>,
+    source_path: &Path,
+    hint: Option<bool>,
+) -> Result<bool, VolumeError> {
+    match hint {
+        Some(known) => Ok(known),
+        None => source_volume.is_directory(source_path).await,
+    }
+}
+
 /// Copies a single path from source volume to destination volume.
 ///
 /// Dispatches on two cases:
@@ -230,6 +256,9 @@ impl CreatedPaths {
 ///   this function isn't called for that case).
 /// - Otherwise → generic streaming pipe via `open_read_stream` + `write_from_stream`, walking
 ///   directories recursively so the user can cancel between files.
+///
+/// `source_is_directory` is `None` when the caller has no preflight hint; see
+/// [`resolve_source_is_directory`] for why that must not collapse to `false`.
 #[allow(
     clippy::too_many_arguments,
     reason = "Cross-volume copy needs source/dest volumes, paths, the source type hint, the size hint, shared state, the rollback ledger, and two progress callbacks. Bundling into a struct adds ceremony without cleaning anything up."
@@ -237,7 +266,7 @@ impl CreatedPaths {
 pub(super) async fn copy_single_path(
     source_volume: &Arc<dyn Volume>,
     source_path: &Path,
-    source_is_directory: bool,
+    source_is_directory: Option<bool>,
     source_size_hint: Option<u64>,
     dest_volume: &Arc<dyn Volume>,
     dest_path: &Path,
@@ -263,6 +292,10 @@ pub(super) async fn copy_single_path(
     if super::super::super::state::is_cancelled(&state.intent) {
         return Err(VolumeError::Cancelled("Operation cancelled by user".to_string())).at(source_path);
     }
+
+    let source_is_directory = resolve_source_is_directory(source_volume, source_path, source_is_directory)
+        .await
+        .at(source_path)?;
 
     if source_is_directory {
         // A sequential source (compressed tar / solid 7z) would re-decode the
@@ -391,7 +424,8 @@ pub(in crate::file_system::write_operations) async fn pull_path_to_local(
     copy_single_path(
         source_volume,
         source_path,
-        source_is_directory,
+        // The caller probed the source itself, so this is a known answer.
+        Some(source_is_directory),
         // No size hint: the stream reports the REAL length, so a source whose
         // listed metadata size lies still pulls its true bytes.
         None,

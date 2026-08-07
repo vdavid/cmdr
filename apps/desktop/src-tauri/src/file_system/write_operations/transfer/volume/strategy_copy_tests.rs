@@ -31,7 +31,7 @@ async fn test_copy_single_path_local_to_local() {
     let bytes = copy_single_path(
         &source,
         Path::new("source.txt"),
-        false,
+        Some(false),
         None,
         &dest,
         Path::new("dest.txt"),
@@ -67,7 +67,7 @@ async fn test_copy_single_path_cancelled() {
     let result = copy_single_path(
         &source,
         Path::new("source.txt"),
-        false,
+        Some(false),
         None,
         &dest,
         Path::new("dest.txt"),
@@ -101,7 +101,7 @@ async fn test_streaming_copy_single_file() {
     let bytes = copy_single_path(
         &source,
         Path::new("/photo.jpg"),
-        false,
+        Some(false),
         None,
         &dest,
         Path::new("/photo.jpg"),
@@ -137,7 +137,7 @@ async fn test_streaming_copy_large_file_with_progress() {
     let bytes = copy_single_path(
         &source,
         Path::new("/big.bin"),
-        false,
+        Some(false),
         None,
         &dest,
         Path::new("/big.bin"),
@@ -188,7 +188,7 @@ async fn test_streaming_copy_cancel_mid_file() {
     let result = copy_single_path(
         &source,
         Path::new("/big.bin"),
-        false,
+        Some(false),
         None,
         &dest,
         Path::new("/big.bin"),
@@ -223,7 +223,7 @@ async fn test_streaming_copy_empty_file() {
     let bytes = copy_single_path(
         &source,
         Path::new("/empty.txt"),
-        false,
+        Some(false),
         None,
         &dest,
         Path::new("/empty.txt"),
@@ -250,7 +250,7 @@ async fn test_streaming_copy_nonexistent_source_fails() {
     let result = copy_single_path(
         &source,
         Path::new("/nope.txt"),
-        false,
+        Some(false),
         None,
         &dest,
         Path::new("/nope.txt"),
@@ -288,7 +288,7 @@ async fn test_streaming_copy_uses_streaming_for_non_local_volumes() {
     let bytes = copy_single_path(
         &source,
         Path::new("/test.txt"),
-        false,
+        Some(false),
         None,
         &dest,
         Path::new("/test.txt"),
@@ -332,7 +332,7 @@ async fn test_streaming_copy_directory_recursive() {
     let bytes = copy_single_path(
         &source,
         Path::new("/docs"),
-        true,
+        Some(true),
         None,
         &dest,
         Path::new("/docs"),

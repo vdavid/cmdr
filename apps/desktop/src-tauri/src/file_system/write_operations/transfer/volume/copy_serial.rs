@@ -217,16 +217,15 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                     // and saves an MTP parent listing per conflicting
                     // source.
                     let source_hint = source_hints.get(&source_path_owned).copied();
-                    let source_is_dir = source_hint.map(|h| h.is_directory).unwrap_or(false);
                     let source_size_hint = source_hint.and_then(|h| (!h.is_directory).then_some(h.size));
                     // `Some` only when the preflight produced a hint, so the
                     // resolver keeps its trait-call fallback rather than
                     // trusting a defaulted `false`.
                     let source_is_directory_hint = source_hint.map(|h| h.is_directory);
                     log::debug!(
-                        "copy_volumes_with_progress: conflict detected at {} (source_is_dir={})",
+                        "copy_volumes_with_progress: conflict detected at {} (source_is_directory_hint={:?})",
                         initial_dest_owned.display(),
-                        source_is_dir,
+                        source_is_directory_hint,
                     );
                     // Take the apply-to-all latch into a stack local for
                     // the `&mut`-bounded resolver, then store it back.
@@ -333,9 +332,25 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                         dest_item_path.display()
                     );
 
-                    let hint = source_hints.get(&source_path).copied().unwrap_or_default();
-                    let source_is_dir_hint = hint.is_directory;
-                    let source_size_hint = if hint.is_directory { None } else { Some(hint.size) };
+                    // No hint means UNKNOWN, not "file": a local scan preview
+                    // completes with an empty `per_path`, so this map can be
+                    // empty for a real directory source. Resolve it ONCE here —
+                    // `copy_single_path` needs it to pick the streaming branch,
+                    // and the ledger/cleanup branches below need the same
+                    // answer, or a failed directory copy sweeps the merged dest
+                    // ROOT and takes the user's dest-only files with it.
+                    let hint = source_hints.get(&source_path).copied();
+                    let source_is_dir = match super::strategy::resolve_source_is_directory(
+                        &source_volume,
+                        &source_path,
+                        hint.map(|h| h.is_directory),
+                    )
+                    .await
+                    {
+                        Ok(is_dir) => is_dir,
+                        Err(e) => return Err(map_volume_error(&source_path.display().to_string(), e)),
+                    };
+                    let source_size_hint = hint.and_then(|h| (!h.is_directory).then_some(h.size));
 
                     // Per-file intra-progress: a fresh per-source
                     // throttle mutex (the serial-path closure outlives
@@ -400,7 +415,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                     let copy_fut = copy_single_path(
                         &source_volume,
                         &source_path,
-                        source_is_dir_hint,
+                        Some(source_is_dir),
                         source_size_hint,
                         &dest_volume,
                         &dest_item_path,
@@ -457,7 +472,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                             // destroy dest-only files. For a FILE source,
                             // record the landed path (the original after a
                             // safe-replace, else the dest); never the temp.
-                            if source_is_dir_hint {
+                            if source_is_dir {
                                 let files = std::mem::take(&mut *created.files.lock_ignore_poison());
                                 let dirs = std::mem::take(&mut *created.dirs.lock_ignore_poison());
                                 // Journal the per-leaf rows under the REAL volume
@@ -525,7 +540,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                             // survives. A FILE source keeps `last_dest_cell`
                             // pointing at its single partial dest/temp — a
                             // genuine partial that's safe to remove.
-                            if source_is_dir_hint {
+                            if source_is_dir {
                                 *last_dest_cell.lock_ignore_poison() = None;
                                 let files = std::mem::take(&mut *created.files.lock_ignore_poison());
                                 let dirs = std::mem::take(&mut *created.dirs.lock_ignore_poison());

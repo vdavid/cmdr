@@ -34,7 +34,7 @@ async fn stream_pipe_file_retries_once_on_stale_destination_handle() {
     let bytes = copy_single_path(
         &source,
         Path::new("a.txt"),
-        false,
+        Some(false),
         None,
         &dest,
         Path::new("a.txt"),

@@ -85,7 +85,7 @@ async fn dest_yield_parks_before_next_write_then_resumes_byte_exact() {
                 copy_single_path(
                     &source_drv,
                     Path::new("/movie.bin"),
-                    false,
+                    Some(false),
                     None,
                     &dest_drv,
                     Path::new("movie.bin"),
@@ -189,7 +189,7 @@ async fn dest_yield_hard_cap_bounds_the_park_under_continuous_browsing() {
                 copy_single_path(
                     &source_drv,
                     Path::new("/movie.bin"),
-                    false,
+                    Some(false),
                     None,
                     &dest_drv,
                     Path::new("movie.bin"),
@@ -266,7 +266,7 @@ async fn dest_yield_cancel_while_parked_returns_cancelled_promptly() {
                 copy_single_path(
                     &source_drv,
                     Path::new("/movie.bin"),
-                    false,
+                    Some(false),
                     None,
                     &dest_drv,
                     Path::new("movie.bin"),
@@ -357,7 +357,7 @@ async fn non_opting_dest_never_dest_yields() {
     let bytes = copy_single_path(
         &source,
         Path::new("/movie.bin"),
-        false,
+        Some(false),
         None,
         &dest,
         Path::new("movie.bin"),

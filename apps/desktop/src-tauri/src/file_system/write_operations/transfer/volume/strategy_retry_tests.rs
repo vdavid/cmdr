@@ -52,7 +52,7 @@ async fn copy_one(
     copy_single_path(
         source,
         Path::new("/a.txt"),
-        false,
+        Some(false),
         None,
         dest,
         Path::new(dest_path),
@@ -305,7 +305,7 @@ async fn a_retried_child_is_recorded_in_the_rollback_ledger_exactly_once() {
     copy_single_path(
         &source,
         Path::new("/tree"),
-        true,
+        Some(true),
         None,
         &dest,
         Path::new("/tree"),

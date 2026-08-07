@@ -145,7 +145,7 @@ async fn copy_one(
     copy_single_path(
         &source,
         Path::new("/notes.txt"),
-        false,
+        Some(false),
         None,
         &dest,
         dest_path,
