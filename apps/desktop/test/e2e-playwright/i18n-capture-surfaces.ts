@@ -44,7 +44,7 @@ import {
   shoot,
 } from './i18n-capture-helpers.js'
 import { isOverflowPass, overflowLocale } from './i18n-capture-config.js'
-import { scanForClipping } from './i18n-capture-frame.js'
+import { CROP_PADDING_TIGHT_CSS_PX, scanForClipping } from './i18n-capture-frame.js'
 
 /**
  * Every Settings section to capture, in capture (coupling) order. `path` is the
@@ -824,7 +824,10 @@ export async function captureIndexingGallery(
       // Cropped to the tile: as full-window shots these 13 were near-identical
       // pictures of the same page, which is the opposite of what a per-tile review
       // image is for.
-      await shoot(main, 'main', `indexing-tile-${id}.png`, { cropSelector: tile })
+      await shoot(main, 'main', `indexing-tile-${id}.png`, {
+        cropSelector: tile,
+        cropPadding: CROP_PADDING_TIGHT_CSS_PX,
+      })
     }
   } catch (err) {
     failed.push(label)

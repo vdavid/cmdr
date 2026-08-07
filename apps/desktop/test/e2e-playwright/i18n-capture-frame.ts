@@ -36,8 +36,15 @@ import type { CropRect } from './i18n-capture-png.js'
  * Breathing room around a cropped element, in CSS px. A dialog's drop shadow and
  * the pane behind it are part of reading the shot as a dialog rather than a
  * floating rectangle, and shaving a shadow mid-blur reads as a hard edge.
+ *
+ * ❗ Padding wider than the gap between an element and its neighbors pulls those
+ * neighbors into frame. That's fine for a dialog floating over the file panes,
+ * and wrong inside a grid: `CROP_PADDING_TIGHT_CSS_PX` is for elements packed
+ * next to each other (the indexing tiles sit in a `--spacing-lg` / 16px grid
+ * gap, so 24px of padding reached 8px into the tile beside it).
  */
 export const CROP_PADDING_CSS_PX = 24
+export const CROP_PADDING_TIGHT_CSS_PX = 8
 
 /**
  * Resolves a selector LIST to the first entry that matches, page-side. A surface
@@ -83,14 +90,18 @@ export interface CropGeometry {
  * layout coordinates is only meaningful while the webview and the image share an
  * origin and a scale.
  */
-export async function measureCropGeometry(page: TauriPage, selector: FrameSelector): Promise<CropGeometry | null> {
+export async function measureCropGeometry(
+  page: TauriPage,
+  selector: FrameSelector,
+  paddingCssPx: number = CROP_PADDING_CSS_PX,
+): Promise<CropGeometry | null> {
   return page.evaluate<CropGeometry | null>(`(function(){
     var el = ${firstMatchExpression(selectorList(selector))};
     if (!el) return null;
     var r = el.getBoundingClientRect();
     if (r.width <= 0 || r.height <= 0) return null;
     var d = window.devicePixelRatio || 1;
-    var p = ${String(CROP_PADDING_CSS_PX)};
+    var p = ${String(paddingCssPx)};
     return {
       rect: {
         left: (r.left - p) * d,
@@ -143,9 +154,16 @@ async function measureFit(page: TauriPage, selector: FrameSelector): Promise<Fit
         continue;
       }
       if (s.overflowY === 'hidden' || s.overflowY === 'clip') {
+        var cls = (typeof el.className === 'string') ? el.className : '';
+        // Visually-hidden accessibility nodes clip BY DESIGN: the standard
+        // 'sr-only' pattern collapses the box to a 1px clip rect, so every one of
+        // them looks like unreachable content and none of them is. Reporting them
+        // buries the real finding this scan exists for. Same exclusion the
+        // overflow pass's clip scan makes.
+        if (/\\bsr-only\\b/.test(cls) || el.id === 'svelte-announcer') continue;
+        if (el.clientWidth <= 1 || el.clientHeight <= 1) continue;
         var sel = el.tagName.toLowerCase();
         if (el.id) sel += '#' + el.id;
-        var cls = (typeof el.className === 'string') ? el.className : '';
         var short = cls.trim().split(/\\s+/).slice(0, 2).join('.');
         if (short) sel += '.' + short;
         unreachable.push(sel + ' (+' + String(Math.round(over)) + 'px)');
@@ -262,6 +280,23 @@ export async function fitWindowToContent(
     if (latest.need <= 1) break
     await setZoom(page, step)
     zoom = step
+    await settle(page)
+    await growRounds()
+  }
+
+  // ❗ Zooming out only earns its keep if it actually DELIVERS the whole surface.
+  // A settings section that is simply long (the shortcut list runs thousands of
+  // px past the display) is still cut off at 75 %, so keeping the reduced zoom
+  // would hand a translator smaller text AND a clipped image: strictly worse than
+  // the honest 100 % shot. So a ladder that never achieved fit is rolled all the
+  // way back, and the surface is photographed at real size with its residual.
+  if (latest.need > 1 && zoom !== DEFAULT_UI_ZOOM) {
+    console.log(
+      `[i18n-capture] fit: ${String(zoom)}% still left ${String(latest.need)}px unshown, so this surface goes ` +
+        'back to 100% — a smaller-AND-clipped image helps nobody',
+    )
+    await setZoom(page, DEFAULT_UI_ZOOM)
+    zoom = DEFAULT_UI_ZOOM
     await settle(page)
     await growRounds()
   }

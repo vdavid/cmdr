@@ -186,6 +186,12 @@ export interface ShotOptions {
    */
   cropSelector?: FrameSelector
   /**
+   * Padding around `cropSelector`, in CSS px. Defaults to the roomy dialog value;
+   * pass `CROP_PADDING_TIGHT_CSS_PX` for an element packed beside its neighbors,
+   * where roomy padding just frames the neighbors too.
+   */
+  cropPadding?: number
+  /**
    * Toast texts this surface deliberately staged. Anything else in the toast
    * layer is a stray: dismissed before the shot, and grounds for a re-shoot if it
    * turns up during one. Defaults to none, which is right for nearly every
@@ -212,12 +218,13 @@ async function cropIfRequested(
   imageWidth: number,
   imageHeight: number,
   cropSelector: FrameSelector | undefined,
+  cropPadding: number | undefined,
 ): Promise<Buffer | null> {
   if (cropSelector === undefined) return null
   // The overflow passes exist to show text colliding with the window's edges, so
   // cropping away the edges would defeat them.
   if (isOverflowPass) return null
-  const geometry = await measureCropGeometry(page, cropSelector)
+  const geometry = await measureCropGeometry(page, cropSelector, cropPadding)
   if (geometry === null) return null
   if (geometry.expectedImageWidth !== imageWidth || geometry.expectedImageHeight !== imageHeight) {
     throw new Error(
@@ -305,7 +312,7 @@ interface ShotAttempt {
  * retry loop stays about retrying and each gate reads as its own step.
  */
 async function attemptShot(page: TauriPage, stagePath: string, options: ShotOptions): Promise<ShotAttempt> {
-  const { cropSelector, expectedToasts = [] } = options
+  const { cropSelector, cropPadding, expectedToasts = [] } = options
   const miss = (problem: string): ShotAttempt => ({ bytes: null, cropped: null, problem })
 
   // Precondition: the toast layer holds exactly what this surface staged. A toast
@@ -340,7 +347,7 @@ async function attemptShot(page: TauriPage, stagePath: string, options: ShotOpti
     return miss('the staged toast was gone before the shutter (it auto-dismissed)')
   }
 
-  const cropped = await cropIfRequested(page, written, verdict.width, verdict.height, cropSelector)
+  const cropped = await cropIfRequested(page, written, verdict.width, verdict.height, cropSelector, cropPadding)
   return { bytes: written, cropped, problem: '' }
 }
 
