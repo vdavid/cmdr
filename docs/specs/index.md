@@ -6,6 +6,28 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
+- [ ] 2026-08-08 `copy-move-safety-hardening-plan.md` - Generalize the three lessons of `7046e9dbb` + `bf6d896b3` (a
+      cross-volume copy that streamed directories as files and could recursively delete the user's merged destination
+      folder, latent for three months) into types, guards, and checks. **P1** makes the preview cache truthful: split
+      `scan.rs`'s 1,462 lines with no allowlist bump, bind a cached scan to the sources it was asked for (a
+      `preview_id` currently authorizes deleting whatever the PREVIEW walked — the local delete never re-reads its own
+      `sources` — which is the same unverified-fact shape on the one op with no rollback, and it was on nobody's list),
+      add the `files > 0 && per_path == 0` canary, name the two cache shapes with constructors, remove `Default` from
+      `SourceHint` so the compiler enforces the rule, and decide each remaining belief-default — of which
+      `conflict.rs:80`'s `unwrap_or(false)` is real: a wrong `false` routes a folder clash into the cross-type branch
+      that recursively deletes the destination folder, the exact opposite of the intent its own comment states. **P2**
+      splits `cleanup.rs`'s recursive delete by INTENT (`delete_written_file` / `prune_created_dir_if_empty` /
+      `remove_tree(why: TreeRemoval)`), so the cleanup path physically cannot recurse. **P3** extracts the no-byte-lost
+      oracle the merge suites already share, teaches `InMemoryVolume` to lie about metadata as a first-class fault
+      class, and adds a 3-tier ~39-cell grid plus three real-SMB cells and two new Go checks. Three findings reshape
+      the brief: compress, trash, and rename consume no preview cache at all (only copy, move, delete do — six
+      pipelines); `Volume::delete` is non-recursive by trait contract, so the delete walker's wrong-`is_dir` guess
+      under-deletes rather than destroys; and the oracle already exists twice. Carries four pushbacks with reasoning:
+      the proposed `DirectoryCreation::Created` newtype guards the SAFE case and is itself a backend-supplied belief;
+      the literal coverage grid is ~360 cells of which most are meaningless because `InMemoryVolume` can't distinguish
+      local from SMB from MTP; `hint-unwrap-or-default` can't see the value type it's predicated on and would ship with
+      zero findings (the compiler already does it exactly); and `scan_sources_internal` should NOT adopt the per-path
+      helper. SPECCED, not started.
 - [x] 2026-08-06 `i18n-screenshot-coverage.md` - SHIPPED. Translators see a screenshot per string; coverage went from
       **1549 / 2743 keys (56%)** to **2046 / 2743 (75%)**, with direct (precise) captures up from 910 to 1178, and the
       run from 68 surfaces with three dead passes to **133 surfaces, 0 failed**. The lever was driving the capture from
