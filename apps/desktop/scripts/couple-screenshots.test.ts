@@ -7,6 +7,8 @@ import {
   renderCoverageReport,
   representativeFor,
   buildCouplings,
+  buildSurfaceReview,
+  renderSurfaceReview,
   REPRESENTATIVE_SCREENSHOTS,
 } from './couple-screenshots.ts'
 
@@ -336,5 +338,69 @@ describe('renderCoverageReport', () => {
     expect(md.toLowerCase()).toContain('partial')
     // It explains what a representative coupling is (honesty).
     expect(md.toLowerCase()).toContain('representative')
+  })
+})
+
+describe('buildSurfaceReview', () => {
+  it('flags a surface whose every key another surface also has', () => {
+    const review = buildSurfaceReview({
+      broad: { screenshot: 'broad.png', keys: ['a.one', 'a.two'] },
+      narrow: { screenshot: 'narrow.png', keys: ['a.one', 'a.two', 'a.three'] },
+      alone: { screenshot: 'alone.png', keys: ['b.only'] },
+    })
+    expect(review.surfaces).toBe(3)
+    expect(review.redundant.map((r) => r.surface)).toEqual(['broad'])
+    expect(review.redundant[0]).toEqual({ surface: 'broad', screenshot: 'broad.png', keys: 2 })
+  })
+
+  it('does not flag a surface that owns even one key alone', () => {
+    const review = buildSurfaceReview({
+      a: { screenshot: 'a.png', keys: ['x.shared', 'x.mine'] },
+      b: { screenshot: 'b.png', keys: ['x.shared'] },
+    })
+    expect(review.redundant.map((r) => r.surface)).toEqual(['b'])
+  })
+
+  it('leaves a keyless surface out of the redundant list rather than calling it redundant', () => {
+    // A surface that recorded nothing is a staging problem to investigate, not a
+    // duplicate to prune, and saying "it adds no unique key" would be misleading.
+    const review = buildSurfaceReview({ empty: { screenshot: 'empty.png', keys: [] } })
+    expect(review.redundant).toEqual([])
+  })
+
+  it('reports the surfaces captured at a reduced UI zoom', () => {
+    const review = buildSurfaceReview({
+      tall: { screenshot: 'tall.png', keys: ['a.one'], uiZoom: 80 },
+      normal: { screenshot: 'normal.png', keys: ['a.two'], uiZoom: 100 },
+      unset: { screenshot: 'unset.png', keys: ['a.three'] },
+    })
+    expect(review.reducedZoom).toEqual([{ surface: 'tall', screenshot: 'tall.png', uiZoom: 80 }])
+  })
+})
+
+describe('renderSurfaceReview', () => {
+  it('reads as a suggestion, not a delete order', () => {
+    const md = renderSurfaceReview(
+      buildSurfaceReview({
+        broad: { screenshot: 'broad.png', keys: ['a.one'] },
+        narrow: { screenshot: 'narrow.png', keys: ['a.one', 'a.two'] },
+      }),
+    )
+    expect(md).toContain('`broad` (1 key, none unique)')
+    expect(md).toContain('NOT an automatic delete')
+  })
+
+  it('says plainly when nothing needs attention', () => {
+    const md = renderSurfaceReview(buildSurfaceReview({ only: { screenshot: 'only.png', keys: ['a.one'] } }))
+    expect(md).toContain('Every captured surface is the only source of at least one key.')
+    expect(md).toContain('Every surface fit the display at 100% zoom')
+  })
+
+  it('warns that a reduced-zoom image shows smaller text than a user sees', () => {
+    const md = renderSurfaceReview(
+      buildSurfaceReview({ tall: { screenshot: 'tall.png', keys: ['a.one'], uiZoom: 75 } }),
+    )
+    expect(md).toContain('`tall`: captured at 75% zoom')
+    expect(md).toContain('smaller')
   })
 })

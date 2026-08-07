@@ -70,6 +70,13 @@ export function fileForKey(key: string): string {
 export interface CaptureSurface {
   screenshot: string
   keys: string[]
+  /**
+   * The UI zoom the driver had to photograph this surface at, present only when
+   * it isn't the default 100%. Written by the capture driver for a surface too
+   * tall to fit the display at full window height; surfaced in the coverage
+   * report so a translator doesn't read that image as "this is the real size".
+   */
+  uiZoom?: number
 }
 
 /** The capture report: surface name → its screenshot + recorded keys. */
@@ -265,6 +272,108 @@ export function renderCoverageReport(report: CoverageReport): string {
     lines.push(
       `| ${a.area} | ${String(a.direct)} | ${String(a.representative)} | ${String(a.uncoupled)} | ${String(a.total)} | ${pct(a.direct + a.representative, a.total)} |`,
     )
+  }
+  lines.push('')
+  return lines.join('\n')
+}
+
+/** A captured surface that resolved no key some other captured surface didn't. */
+export interface RedundantSurface {
+  surface: string
+  screenshot: string
+  /** How many keys it recorded (all of them shared with other surfaces). */
+  keys: number
+}
+
+/** A surface the driver had to shrink the UI for, because it wouldn't fit the display. */
+export interface ReducedZoomSurface {
+  surface: string
+  screenshot: string
+  uiZoom: number
+}
+
+/** The per-SURFACE review notes that ride along with the per-KEY coverage table. */
+export interface SurfaceReview {
+  /** Captured surfaces in the run. */
+  surfaces: number
+  redundant: RedundantSurface[]
+  reducedZoom: ReducedZoomSurface[]
+}
+
+/**
+ * Pure: reviews the capture report itself, rather than the catalog.
+ *
+ * Two things a human wants to know after a run and can't see from the coverage
+ * table. First, which surfaces contributed NO unique key: the surface set grows
+ * every time a dialog does, and nothing shrinks it, so without this the pruning
+ * only happens when someone thinks to look. Second, which surfaces the driver
+ * had to shrink the UI to photograph, since those images show text smaller than a
+ * user sees it.
+ */
+export function buildSurfaceReview(report: CaptureReport): SurfaceReview {
+  const surfaceCount = new Map<string, number>()
+  for (const { keys } of Object.values(report)) {
+    for (const key of new Set(keys)) surfaceCount.set(key, (surfaceCount.get(key) ?? 0) + 1)
+  }
+  const redundant: RedundantSurface[] = []
+  const reducedZoom: ReducedZoomSurface[] = []
+  for (const [surface, entry] of Object.entries(report)) {
+    if (entry.keys.length > 0 && entry.keys.every((key) => (surfaceCount.get(key) ?? 0) > 1)) {
+      redundant.push({ surface, screenshot: entry.screenshot, keys: entry.keys.length })
+    }
+    if (entry.uiZoom !== undefined && entry.uiZoom !== 100) {
+      reducedZoom.push({ surface, screenshot: entry.screenshot, uiZoom: entry.uiZoom })
+    }
+  }
+  return { surfaces: Object.keys(report).length, redundant, reducedZoom }
+}
+
+/**
+ * Renders the surface review as the tail of the coverage report. Deliberately
+ * worded as something to consider, not a verdict: a surface that adds no unique
+ * key can still be the clearest CONTEXT for a key that several surfaces share.
+ *
+ * DRAFT (David reviews human-facing copy).
+ */
+export function renderSurfaceReview(review: SurfaceReview): string {
+  const lines = ['## Surfaces to review', '']
+  lines.push(
+    `The run captured ${String(review.surfaces)} surfaces. This section is regenerated every run, so it stays ` +
+      'true as the UI changes.',
+  )
+  lines.push('')
+  lines.push(`### No unique keys (${String(review.redundant.length)})`)
+  lines.push('')
+  if (review.redundant.length === 0) {
+    lines.push('Every captured surface is the only source of at least one key.')
+  } else {
+    lines.push(
+      'Every key on these surfaces also renders on another captured surface, so dropping one costs no coverage: ' +
+        'its keys would simply couple to whichever surface keeps them. Worth considering, NOT an automatic delete. ' +
+        'A surface can be the clearest picture of a key several surfaces share, and being the clearest is reason ' +
+        'enough to keep it. To drop one, remove its staging (or add it to `DROPPED_GALLERY_STATES` for a gallery ' +
+        'state) in `test/e2e-playwright/`.',
+    )
+    lines.push('')
+    for (const { surface, keys } of [...review.redundant].sort((a, b) => b.keys - a.keys)) {
+      lines.push(`- \`${surface}\` (${String(keys)} key${keys === 1 ? '' : 's'}, none unique)`)
+    }
+  }
+  lines.push('')
+  lines.push(`### Captured at a reduced UI zoom (${String(review.reducedZoom.length)})`)
+  lines.push('')
+  if (review.reducedZoom.length === 0) {
+    lines.push('Every surface fit the display at 100% zoom, so every image shows text at its real size.')
+  } else {
+    lines.push(
+      '❗ These surfaces are taller than the display allows even with the window grown to full height, so the ' +
+        'driver reduced the UI zoom to fit the whole surface in frame. **The text in these images is smaller ' +
+        'than what a user sees.** Judge length against the other screenshots, not these.',
+    )
+    lines.push('')
+    for (const { surface, uiZoom } of [...review.reducedZoom].sort((a, b) => a.surface.localeCompare(b.surface))) {
+      lines.push(`- \`${surface}\`: captured at ${String(uiZoom)}% zoom`)
+    }
   }
   lines.push('')
   return lines.join('\n')
@@ -638,7 +747,9 @@ function main() {
   // remain uncoupled.
   const coverage = buildCoverageReport(directKeys, representativeKeys, keysByArea)
   const coveragePath = join(messagesRoot, 'screenshots', 'coverage-report.md')
-  writeFileSync(coveragePath, renderCoverageReport(coverage))
+  // The per-key table, then the per-SURFACE review (redundant surfaces, reduced
+  // zoom). One tracked artifact, so a reviewer reads both in the same diff.
+  writeFileSync(coveragePath, renderCoverageReport(coverage) + '\n' + renderSurfaceReview(buildSurfaceReview(report)))
   console.log(
     `Wrote coverage report: ${String(coverage.direct)} direct + ${String(coverage.representative)} representative ` +
       `/ ${String(coverage.total)} keys → ${coveragePath}`,

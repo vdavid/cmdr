@@ -169,12 +169,25 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
       'update toasts appear while that check runs. Version numbers are substituted, not translated.',
   },
   {
-    // Viewer chrome, load errors, and status-bar copy all belong to this window.
+    // Viewer chrome, load errors, media labels, and status-bar copy all belong to
+    // this one window, so a single shot of it stands in for all of them. It points
+    // at the find-bar state because that's the viewer surface the capture run keeps
+    // (the plain-chrome, image, and PDF states resolved nothing the others didn't).
     prefix: 'viewer.',
-    screenshot: 'viewer.png',
+    screenshot: 'viewer-search.png',
     note:
-      'The file viewer window, pictured here. Your string is part of its chrome (title, toolbar, status bar) or one of the ' +
-      'messages it shows in place of content when a file can’t be loaded.',
+      'The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, ' +
+      'status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of ' +
+      'content when a file can’t be loaded.',
+  },
+  {
+    // The operation log's other states (loading, empty, load error) are the same
+    // dialog with a different body.
+    prefix: 'operationLog.',
+    screenshot: 'operation-log-more-pages.png',
+    note:
+      'The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, ' +
+      'empty, or a load error), which render in this same dialog in place of the list.',
   },
   {
     // The shortcuts window reuses the Settings keyboard-shortcuts list layout.
