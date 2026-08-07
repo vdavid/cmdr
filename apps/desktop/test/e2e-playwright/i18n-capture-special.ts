@@ -360,8 +360,6 @@ export async function captureViewerSubsurfaces(
     return
   }
   const textFixture = join(startRoot, 'left', 'file-a.txt')
-  const imageFixture = join(startRoot, 'left', 'sample.png')
-  const pdfFixture = join(startRoot, 'left', 'sample.pdf')
 
   // Opens a viewer window on `filePath`, runs `prep` (the surface-specific
   // trigger), captures under `label`, and closes the window. Each window has its
@@ -445,15 +443,11 @@ export async function captureViewerSubsurfaces(
     }
   }
 
-  // Image media view: open `sample.png`. Renders `viewer.image.*` /
-  // `viewer.media.*` / the image status-bar hint. The image element mounts inside
-  // `.media-image`.
-  await viewerSurface('viewer-image', imageFixture, '.media-image', async () => {
-    // No trigger: opening the image fixture renders media mode directly.
-  })
-
-  // PDF media view: open `sample.pdf`. Renders `viewer.pdf.*` / `viewer.media.*`.
-  await viewerSurface('viewer-pdf', pdfFixture, '.media-pdf', async () => {
-    // No trigger: opening the PDF fixture renders media mode directly.
-  })
+  // ❌ No `viewer-image` / `viewer-pdf` surfaces. A picture of a rendered PNG or
+  // the first page of a PDF is nearly all fixture and almost no copy: between them
+  // they carried five keys (`viewer.kind.image`, `viewer.media.dimensions`,
+  // `viewer.statusBar.hint.image`, `viewer.kind.pdf`, `viewer.pdf.loading`), each
+  // a short label in the toolbar or status bar. Those five now ride the `viewer.`
+  // representative in `scripts/representative-screenshots.ts`, which points at the
+  // viewer window itself, where they render in the same two places.
 }

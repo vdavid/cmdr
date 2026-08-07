@@ -47,12 +47,30 @@ import {
   captureCall,
   keysFor,
   shoot,
-  scanForClipping,
   stressLayoutIfWorstCase,
-  isOverflowPass,
-  overflowLocale,
+  fitSurfaceWindow,
+  recordFit,
 } from './i18n-capture-helpers.js'
+import { DEFAULT_UI_ZOOM, isOverflowPass, overflowLocale } from './i18n-capture-config.js'
+import { scanForClipping } from './i18n-capture-frame.js'
 import { DIALOG_GALLERY_ENTRIES } from '../../src/lib/dialog-gallery/gallery-registry.js'
+
+/**
+ * Gallery states DROPPED on review, each with the surface that already carries
+ * its copy. The "novel keys" rule below can't catch these on its own: each one
+ * WAS novel when it ran, and only a later surface made it redundant, so the run
+ * order alone decides which of an overlapping pair wins. Naming the loser here
+ * makes that a decision instead of an accident.
+ *
+ * The run reports every zero-unique surface it produces (see the coverage
+ * report's own section), so this list is how a reviewer acts on that report.
+ */
+const DROPPED_GALLERY_STATES: Record<string, string> = {
+  'operation-log-populated': 'operation-log-more-pages covers every key it has',
+  'operation-log-loading': 'a spinner; its one key reads fine against the populated log',
+  'alert-short': 'the other alert states carry the same dialog with more copy',
+  'commercial-reminder-default': 'the license pass captures the real commercial-reminder modal',
+}
 
 /** The landmark set `create_dialog_gallery_fixtures` returns (camelCase over IPC). */
 interface FixtureDirPayload {
@@ -186,10 +204,26 @@ async function captureGalleryState(
 
     await stressLayoutIfWorstCase(main, 'main')
     const screenshot = `${label}.png`
-    await shoot(main, 'main', screenshot)
+    // Every gallery preview is a bounded fixture, so a scrolling body here means
+    // "cut off", not "long by design": grow the window until the whole dialog is
+    // in frame, then crop to the dialog itself. The file panes behind a soft
+    // dialog are the same in all ~40 of these images and tell a translator
+    // nothing.
+    // A `ModalDialog` puts `data-dialog-id` on its full-window OVERLAY with the
+    // frame inside; the onboarding wizard puts it on the panel. Prefer the inner
+    // frame, fall back to the element carrying the id.
+    const dialog = [`[data-dialog-id="${dialogId}"] .modal-dialog`, `[data-dialog-id="${dialogId}"]`]
+    const fit = await fitSurfaceWindow(main, 'main', dialog)
+    try {
+      await shoot(main, 'main', screenshot, { cropSelector: dialog })
+      await scanForClipping(main, label)
+    } finally {
+      recordFit(label, fit)
+      await fit?.restore()
+    }
     report[label] = { screenshot, keys }
+    if (fit && fit.outcome.zoom !== DEFAULT_UI_ZOOM) report[label].uiZoom = fit.outcome.zoom
     for (const key of keys) alreadyCovered.add(key)
-    await scanForClipping(main, label)
     console.log(`[i18n-capture] ${label}: ${String(keys.length)} keys (${String(novel.length)} new) → ${screenshot}`)
     return 'captured'
   } catch (err) {
@@ -281,6 +315,12 @@ export async function captureGalleryDialogs(
       // A hand-staged surface already owns this name; never overwrite its PNG.
       if (label in report) {
         skipped.push(`gallery-redundant:${label}`)
+        continue
+      }
+      const droppedBecause = DROPPED_GALLERY_STATES[label]
+      if (droppedBecause !== undefined) {
+        skipped.push(`gallery-redundant:${label}`)
+        console.log(`[i18n-capture] gallery ${label} dropped: ${droppedBecause}.`)
         continue
       }
       const outcome = await captureGalleryState(main, entry.dialogId, state.id, stateFixtures, report, alreadyCovered)

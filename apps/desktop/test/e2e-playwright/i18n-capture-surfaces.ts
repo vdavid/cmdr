@@ -42,10 +42,9 @@ import {
   keysFor,
   settlePaint,
   shoot,
-  scanForClipping,
-  isOverflowPass,
-  overflowLocale,
 } from './i18n-capture-helpers.js'
+import { isOverflowPass, overflowLocale } from './i18n-capture-config.js'
+import { scanForClipping } from './i18n-capture-frame.js'
 
 /**
  * Every Settings section to capture, in capture (coupling) order. `path` is the
@@ -169,7 +168,10 @@ export async function captureSettingsWindow(
           payload: ${sectionJson}
         })`)
         await settingsPage.waitForSelector(`[data-section-id="${section.sectionId}"]`, 5000)
-        return { page: settingsPage, focusLabel: 'settings' }
+        // The tallest sections (Advanced, Drive indexing) run off the bottom of
+        // the default settings window; grow the window so the whole section is in
+        // the shot rather than shrinking the text a translator has to judge.
+        return { page: settingsPage, focusLabel: 'settings', fitSelector: '.settings-content-wrapper' }
       })
     }
     await captureCall(settingsPage, 'disable')
@@ -254,24 +256,11 @@ export async function captureMainOverlays(
     return '[data-dialog-id="delete-confirmation"]'
   })
 
-  // Rename: the inline editor (F2 → `file.rename`), NOT a modal. The input
-  // mounts in-pane, so `dismissOverlay` (which only knows overlay selectors)
-  // can't close it. Cancel the editor explicitly with a synthetic Escape.
-  await captureSurface('rename-dialog', report, failed, async () => {
-    await captureCall(main, 'reset')
-    await captureCall(main, 'setSurface', 'rename-dialog')
-    await captureCall<boolean>(main, 'enable')
-    await skipParentEntry(main)
-    await dispatchMenuCommand(main, 'file.rename')
-    await main.waitForSelector('.rename-input', 5000)
-    return { page: main }
-  })
-  await main.evaluate(`(function(){
-    var el = document.querySelector('.rename-input');
-    if (el) el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-  })()`)
-  await expect.poll(async () => (await main.count('.rename-input')) === 0, { timeout: 3000 }).toBeTruthy()
-  await captureCall(main, 'disable').catch(() => {})
+  // ❌ No `rename-dialog` surface. The inline rename editor renders no copy of
+  // its own (it's a bare input in the pane), so every key it recorded belonged to
+  // the chrome around it and every one of them is captured elsewhere. The
+  // `extension-change` surface below reaches the same editor and shows the dialog
+  // that actually has words in it.
 
   // Extension-change confirmation: rename to a MEANINGFULLY different extension
   // (default `fileOperations.allowFileExtensionChanges` is "ask"). `.txt` → a
@@ -511,6 +500,15 @@ export async function captureEmptyPane(
   await captureCall(main, 'disable').catch(() => {})
 }
 
+/**
+ * Room to leave above content scrolled to the top of the main window, in CSS px.
+ * The macOS traffic lights are drawn by the OS over the webview's top-left, and
+ * the `/dev/*` routes have no title bar of their own to sit under them, so
+ * anything parked at scroll position 0 collides with the three buttons.
+ * `--titlebar-height` is 29px; this is that plus a hair.
+ */
+const TITLE_BAR_INSET_PX = 40
+
 /** Loop bound for the onboarding step walk (a couple over the step count so a no-op click can't spin). */
 const ONBOARDING_STEP_BOUND = 6
 
@@ -590,7 +588,10 @@ export async function captureOnboardingWizard(
           await main.waitForSelector(`${WIZARD} .step-shell`, 5000)
           await captureCall(main, 'setSurface', label)
           await captureCall(main, 'rerender')
-          return { page: main }
+          // The AI, beta, and optional steps outgrow the wizard panel at the
+          // default window size; the panel is a viewport fraction, so a taller
+          // window is a taller panel.
+          return { page: main, fitSelector: '[data-dialog-id="onboarding"]' }
         })
       }
       // Advance to the next step; the final step's button finishes + unmounts.
@@ -780,15 +781,25 @@ export async function captureIndexingGallery(
     await captureCall(main, 'rerender')
     // The drive-indexing section is the LAST catalog section, so a top-of-PAGE shot
     // would frame the icons/spinners sections instead. Scroll `#graphics-drive-indexing`
-    // to the top of the viewport and size the window to the SECTION's own height, so the
-    // native window-frame capture frames exactly the checklist states. Re-scroll after
-    // the resize (it reflows the scroll position).
+    // just under the title-bar strip and size the window to the SECTION's own height,
+    // so the native window-frame capture frames exactly the checklist states.
+    // `TITLE_BAR_INSET_PX` is what keeps the first tile clear of the traffic lights:
+    // this route has no title bar of its own to sit under them. Re-scroll after the
+    // resize (it reflows the scroll position).
     const orig = await main.evaluate<{ w: number; h: number }>(`({ w: window.innerWidth, h: window.innerHeight })`)
     const scrollSectionToTop = `(function(){
       var el = document.getElementById('graphics-drive-indexing');
       if (!el) return 0;
       el.scrollIntoView({ block: 'start', behavior: 'auto' });
-      return Math.ceil(el.getBoundingClientRect().height) + 32;
+      var scroller = el.parentElement;
+      while (scroller) {
+        var s = getComputedStyle(scroller);
+        if (/(auto|scroll)/.test(s.overflowY) && scroller.scrollHeight > scroller.clientHeight) break;
+        scroller = scroller.parentElement;
+      }
+      scroller = scroller || document.scrollingElement || document.documentElement;
+      scroller.scrollTop -= ${String(TITLE_BAR_INSET_PX)};
+      return Math.ceil(el.getBoundingClientRect().height) + ${String(TITLE_BAR_INSET_PX)} + 32;
     })()`
     const sectionHeight = await main.evaluate<number>(scrollSectionToTop)
     if (sectionHeight > orig.h) await setSize(orig.w, sectionHeight)
@@ -800,16 +811,20 @@ export async function captureIndexingGallery(
     await setSize(orig.w, orig.h)
     await settlePaint(main)
     for (const id of tileIds) {
+      const tile = `#graphics-drive-indexing-${id}`
       const present = await main.evaluate<boolean>(`(function(){
-        var el = document.querySelector('#graphics-drive-indexing-${id}');
+        var el = document.querySelector('${tile}');
         if (!el) return false;
-        el.scrollIntoView({ block: 'start', behavior: 'auto' });
+        el.scrollIntoView({ block: 'center', behavior: 'auto' });
         return true;
       })()`)
       if (!present) continue
       // Review-only PNGs (no report entry), but they go through the same verified
       // shot: a blank tile image is as useless to a translator as a blank surface.
-      await shoot(main, 'main', `indexing-tile-${id}.png`)
+      // Cropped to the tile: as full-window shots these 13 were near-identical
+      // pictures of the same page, which is the opposite of what a per-tile review
+      // image is for.
+      await shoot(main, 'main', `indexing-tile-${id}.png`, { cropSelector: tile })
     }
   } catch (err) {
     failed.push(label)

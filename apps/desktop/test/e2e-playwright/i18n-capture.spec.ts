@@ -31,7 +31,6 @@ import {
   ensureAppReady,
   dismissAllToasts,
   dismissOverlay,
-  openViewerWindow,
   closeScopedWindow,
   dispatchMenuCommand,
   MKDIR_DIALOG,
@@ -39,21 +38,23 @@ import {
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 import {
   type SurfaceEntry,
-  screenshotsDir,
-  reportPath,
-  failedPath,
-  skippedPath,
-  viewerFixturePath,
   captureCall,
   settlePaint,
   focusWindow,
   captureSurface,
   captureErrorPaneExample,
+  fitFindings,
+} from './i18n-capture-helpers.js'
+import {
+  screenshotsDir,
+  reportPath,
+  failedPath,
+  skippedPath,
   isOverflowPass,
   isWorstCasePass,
   overflowLocale,
-  clipFindings,
-} from './i18n-capture-helpers.js'
+} from './i18n-capture-config.js'
+import { clipFindings } from './i18n-capture-frame.js'
 import {
   captureSettingsWindow,
   captureMainOverlays,
@@ -155,6 +156,29 @@ async function switchToOverflowLocaleIfNeeded(page: TauriPage): Promise<void> {
   if (!isOverflowPass) return
   await captureCall(page, 'setLocale', overflowLocale)
   await settlePaint(page)
+}
+
+/**
+ * Logs what growing windows to fit their surfaces turned up.
+ *
+ * The zoom column also lands in `capture-report.json` (and from there in the
+ * coverage report), because a translator has to know when an image shows smaller
+ * text than a user sees. The `unreachable` column stays a log line: it's a
+ * possible UI BUG (a box clipping content nothing can scroll into view), which
+ * belongs in front of whoever ran the capture, not in a translator's artifact.
+ */
+function logFitFindings(): void {
+  const entries = Object.entries(fitFindings).sort((a, b) => a[0].localeCompare(b[0]))
+  if (entries.length === 0) return
+  for (const [surface, fit] of entries) {
+    const notes = [
+      fit.grewBy > 0 ? `window grew ${String(fit.grewBy)}px` : '',
+      fit.zoom !== 100 ? `captured at ${String(fit.zoom)}% zoom` : '',
+      fit.residual > 0 ? `still ${String(fit.residual)}px short` : '',
+      fit.unreachable.length > 0 ? `UNREACHABLE content in ${fit.unreachable.join(', ')}` : '',
+    ].filter(Boolean)
+    console.log(`[i18n-capture] fit ${surface}: ${notes.join('; ')}`)
+  }
 }
 
 /**
@@ -336,27 +360,15 @@ test.describe('i18n screenshot capture', () => {
     // ── Surface 3 + 4..N: Settings window (every section) ─────────────────────
     await captureSettingsWindow(main, report, failed)
 
-    // ── Surface: file viewer window ──────────────────────────────────────────
-    // Its own restricted WebviewWindow (own webview context + sink). Opened on a
-    // real fixture file via the production `open-file-viewer` event. Default
-    // text-viewer chrome only (toolbar + status bar); media/search are later.
-    let viewer: TauriPage | undefined
-    let viewerLabel: string | undefined
-    await captureSurface('viewer', report, failed, async () => {
-      viewer = await openViewerWindow(main, viewerFixturePath())
-      viewerLabel = viewer.targetWindow
-      if (!viewerLabel) throw new Error('viewer page has no targetWindow label')
-      await viewer.waitForSelector('.viewer-container[data-window-ready="loaded"]', 15000)
-      await captureCall(viewer, 'reset')
-      await captureCall<boolean>(viewer, 'enable')
-      return { page: viewer, focusLabel: viewerLabel }
-    })
-    if (viewer && viewerLabel) await closeScopedWindow(main, viewer, viewerLabel).catch(() => {})
-
-    // ── Viewer subsurfaces (search, context menu, pickers, media) ─────────────
-    // Each opens its own viewer window on a fixture file (text or media) and
-    // captures a distinct viewer state. Run right after the base `viewer` surface
-    // so viewer keys couple narrow (per-state) before any broader surface.
+    // ── Viewer subsurfaces (search, context menu, pickers) ────────────────────
+    // Each opens its own viewer window (own webview context + sink) on a fixture
+    // file and captures a distinct viewer state.
+    //
+    // ❌ There's no plain `viewer` surface any more. It photographed the default
+    // text chrome, which is the same chrome every state below already shows, so it
+    // resolved not one key the others don't. `viewer-search` runs first and takes
+    // the shared viewer keys; it's also what the `viewer.` representative points
+    // at for the states nothing captures.
     await captureViewerSubsurfaces(main, report, failed, skipped)
 
     // ── Surface: About dialog (main window overlay) ──────────────────────────
@@ -577,6 +589,7 @@ test.describe('i18n screenshot capture', () => {
     )
     if (failed.length > 0) console.warn(`[i18n-capture] FAILED surfaces: ${failed.join(', ')}`)
     if (skipped.length > 0) console.warn(`[i18n-capture] SKIPPED surfaces (documented gaps): ${skipped.join(', ')}`)
+    logFitFindings()
 
     // Clear anything still on screen before the harness's leak guard runs. Surface
     // helpers clean up after themselves, but the virtual MTP device announces itself
