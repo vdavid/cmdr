@@ -274,7 +274,17 @@ export async function fitWindowToContent(
   }
 
   const restore = async (): Promise<void> => {
-    if (zoom !== DEFAULT_UI_ZOOM) await setZoom(page, DEFAULT_UI_ZOOM).catch(() => {})
+    if (zoom !== DEFAULT_UI_ZOOM) {
+      // ❗ Not swallowed: the zoom is a cross-window app SETTING, so a failed
+      // restore leaves every later surface silently captured at this reduced
+      // zoom, with only this one surface's report entry admitting it.
+      await setZoom(page, DEFAULT_UI_ZOOM).catch((err: unknown) => {
+        console.warn(
+          `[i18n-capture] could not restore the UI zoom to ${String(DEFAULT_UI_ZOOM)}%; later surfaces may be ` +
+            `captured at ${String(zoom)}%: ${err instanceof Error ? err.message : String(err)}`,
+        )
+      })
+    }
     await setWindowSize(page, windowLabel, originalWidth, originalHeight).catch(() => {})
     await settle(page)
   }
