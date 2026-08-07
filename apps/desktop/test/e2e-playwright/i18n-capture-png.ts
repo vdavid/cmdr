@@ -11,13 +11,19 @@
  * contract: `i18n-capture-helpers.ts`'s `shoot()` verifies every written PNG here
  * and refuses to record a surface it can't photograph. ❌ Don't remove this check.
  *
+ * It also owns the ENCODE side, because the harness crops some surfaces (soft
+ * dialogs, toasts, the indexing tiles) to their element bounds after the native
+ * capture writes the full window: `@srsholmes/tauri-playwright`'s `screenshot()`
+ * takes a path and nothing else, so the framing has to happen on our side, on
+ * the bytes.
+ *
  * Pure Node (no browser, no running app), so `i18n-capture-png.test.ts` unit-tests
  * it directly. Hand-rolled rather than pulling in `sharp`/`pngjs`: the capture
  * writes exactly one PNG flavor (8-bit RGBA, non-interlaced), which is ~60 lines
  * of `zlib.inflateSync` plus the five row filters.
  */
 
-import { inflateSync } from 'node:zlib'
+import { deflateSync, inflateSync } from 'node:zlib'
 
 /** A decoded image: RGBA8 pixels, row-major, 4 bytes per pixel. */
 export interface DecodedPng {
@@ -164,6 +170,131 @@ export function decodePng(buf: Buffer): DecodedPng {
     unfilterRow(filter, line, cur, prev, y)
   }
   return { width, height, pixels }
+}
+
+/** CRC-32 (the PNG chunk checksum), so an encoded file is valid to every reader. */
+function crc32(buf: Buffer): number {
+  let c = 0xffffffff
+  for (const byte of buf) {
+    c ^= byte
+    for (let k = 0; k < 8; k++) c = c & 1 ? (c >>> 1) ^ 0xedb88320 : c >>> 1
+  }
+  return (c ^ 0xffffffff) >>> 0
+}
+
+/** Wraps a payload in the PNG chunk frame: length, type, data, CRC. */
+function encodeChunk(type: string, data: Buffer): Buffer {
+  const length = Buffer.alloc(4)
+  length.writeUInt32BE(data.length)
+  const body = Buffer.concat([Buffer.from(type, 'ascii'), data])
+  const crc = Buffer.alloc(4)
+  crc.writeUInt32BE(crc32(body))
+  return Buffer.concat([length, body, crc])
+}
+
+/** Applies one row filter, the inverse of `unfilterRow`. */
+function filterRow(filter: number, cur: Buffer, prev: Buffer, out: Buffer): void {
+  for (let i = 0; i < cur.length; i++) {
+    const left = i >= BPP ? cur[i - BPP] : 0
+    const up = prev[i]
+    const upLeft = i >= BPP ? prev[i - BPP] : 0
+    let predictor: number
+    switch (filter) {
+      case 0:
+        predictor = 0
+        break
+      case 1:
+        predictor = left
+        break
+      case 2:
+        predictor = up
+        break
+      case 3:
+        predictor = (left + up) >> 1
+        break
+      case 4:
+        predictor = paeth(left, up, upLeft)
+        break
+      default:
+        throw new Error(`unknown row filter ${String(filter)}`)
+    }
+    out[i] = (cur[i] - predictor) & 255
+  }
+}
+
+/**
+ * Encodes RGBA8 pixels as an 8-bit RGBA non-interlaced PNG: the same flavor the
+ * native capture writes, so a cropped image is byte-compatible with everything
+ * downstream (including `decodePng` and the blank check).
+ *
+ * `filter` picks the per-row filter. The default (0, "None") is what the crop
+ * path uses: these images are a few hundred KB and deflate well without it. The
+ * other four exist so the decoder's branches can be exercised from a test with
+ * real bytes rather than a second hand-rolled encoder.
+ */
+export function encodePng(width: number, height: number, pixels: Buffer, filter = 0): Buffer {
+  const stride = width * BPP
+  const raw = Buffer.alloc(height * (stride + 1))
+  const zeroRow = Buffer.alloc(stride) // the spec's "no row above" for row 0
+  for (let y = 0; y < height; y++) {
+    const cur = pixels.subarray(y * stride, (y + 1) * stride)
+    const prev = y > 0 ? pixels.subarray((y - 1) * stride, y * stride) : zeroRow
+    raw[y * (stride + 1)] = filter
+    filterRow(filter, cur, prev, raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1)))
+  }
+  const ihdr = Buffer.alloc(13)
+  ihdr.writeUInt32BE(width, 0)
+  ihdr.writeUInt32BE(height, 4)
+  ihdr[8] = 8 // bit depth
+  ihdr[9] = 6 // color type: RGBA
+  return Buffer.concat([
+    PNG_SIGNATURE,
+    encodeChunk('IHDR', ihdr),
+    encodeChunk('IDAT', deflateSync(raw)),
+    encodeChunk('IEND', Buffer.alloc(0)),
+  ])
+}
+
+/** A crop window in IMAGE pixels (already scaled by the device pixel ratio). */
+export interface CropRect {
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
+/**
+ * The smallest crop worth writing, in image pixels. A rect under this is a
+ * measurement gone wrong (a collapsed element, a stale rect), and a 3-pixel PNG
+ * helps nobody, so the caller keeps the full window instead.
+ */
+export const MIN_CROP_SIDE = 16
+
+/**
+ * Returns `bytes` cropped to `rect`, re-encoded as the same PNG flavor. The rect
+ * is CLAMPED to the image, so a padded rect that runs past an edge yields the
+ * edge rather than an error, and returns null when the clamped rect is degenerate
+ * (smaller than `MIN_CROP_SIDE` on either side) so the caller can keep the
+ * uncropped image rather than ship a sliver.
+ */
+export function cropPng(bytes: Buffer, rect: CropRect): Buffer | null {
+  const image = decodePng(bytes)
+  const left = Math.max(0, Math.min(image.width, Math.round(rect.left)))
+  const top = Math.max(0, Math.min(image.height, Math.round(rect.top)))
+  const right = Math.max(left, Math.min(image.width, Math.round(rect.left + rect.width)))
+  const bottom = Math.max(top, Math.min(image.height, Math.round(rect.top + rect.height)))
+  const width = right - left
+  const height = bottom - top
+  if (width < MIN_CROP_SIDE || height < MIN_CROP_SIDE) return null
+
+  const srcStride = image.width * BPP
+  const dstStride = width * BPP
+  const pixels = Buffer.alloc(height * dstStride)
+  for (let y = 0; y < height; y++) {
+    const srcStart = (top + y) * srcStride + left * BPP
+    image.pixels.copy(pixels, y * dstStride, srcStart, srcStart + dstStride)
+  }
+  return encodePng(width, height, pixels)
 }
 
 /**

@@ -3,36 +3,45 @@
  * (`i18n-capture.spec.ts`).
  *
  * Holds the reusable primitives every surface group leans on: the capture-sink
- * RPC (`captureCall` / `keysFor`), the paint/focus settling helpers, the
- * report-path constants, the shared types, and the two surface-capturing engines
+ * RPC (`captureCall` / `keysFor`), the paint/focus settling helpers, the shutter
+ * (`shoot`), the shared types, and the two surface-capturing engines
  * (`captureSurface` for reactive mounted markup, `captureToastSurface` for
  * snapshot-resolved toasts). The per-group capture functions live in
  * `i18n-capture-surfaces.ts` and the orchestration in the spec; both import from
- * here. Split out purely for the file-length budget; behavior is unchanged.
+ * here.
+ *
+ * Its neighbors, split out for the file-length budget: `i18n-capture-config.ts`
+ * (which pass is running, where artifacts go), `i18n-capture-frame.ts` (window
+ * framing, fitting, toast hygiene, the clip scan), and `i18n-capture-png.ts`
+ * (decode, encode, crop, the blank check).
  */
 
-import { readFileSync, renameSync, rmSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { expect } from './fixtures.js'
 import { dismissAllToasts, getFixtureRoot } from './helpers.js'
-import { assessImageContent, isCompletePng } from './i18n-capture-png.js'
+import { assessImageContent, cropPng, isCompletePng } from './i18n-capture-png.js'
+import {
+  DEFAULT_UI_ZOOM,
+  MAX_UI_ZOOM,
+  isOverflowPass,
+  isWorstCasePass,
+  overflowLocale,
+  screenshotsDir,
+} from './i18n-capture-config.js'
+import {
+  clearStrayToasts,
+  fitWindowToContent,
+  measureCropGeometry,
+  readToastSignature,
+  scanForClipping,
+  selectorList,
+  straysIn,
+  type FitOutcome,
+  type FrameSelector,
+  type WindowFit,
+} from './i18n-capture-frame.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
-
-/**
- * Fixture file the viewer opens. `CMDR_E2E_START_PATH` points at the shared E2E
- * fixture tree (set by the checker before this spec runs); `left/file-a.txt`
- * exists there. Throw rather than fall back to a bogus path so a missing env var
- * surfaces as itself, not a confusing ENOENT in the viewer. Mirrors how
- * `accessibility.spec.ts` resolves its viewer fixture.
- */
-export function viewerFixturePath(): string {
-  const root = process.env.CMDR_E2E_START_PATH
-  if (!root) {
-    throw new Error('CMDR_E2E_START_PATH env var is not set; fixtures must be created before running this spec')
-  }
-  return join(root, 'left', 'file-a.txt')
-}
 
 interface CaptureApi {
   enable: () => boolean
@@ -43,156 +52,6 @@ interface CaptureApi {
   rerender: () => void
   setLocale: (tag: string | null) => void
   setTextSize: (percent: number) => Promise<void>
-}
-
-const here = dirname(fileURLToPath(import.meta.url))
-const baseScreenshotsDir = join(here, '..', '..', 'src', 'lib', 'intl', 'messages', 'screenshots')
-
-/**
- * The locale this run captures in for OVERFLOW review (the pseudolocale `en-XA`),
- * or empty for the normal English coupling capture. Set by the orchestrator via
- * `CMDR_I18N_OVERFLOW_LOCALE`. When set, the run is an overflow pass: screenshots
- * land in a SEPARATE `overflow/` dir (so they never overwrite the coupling
- * screenshots), the driver switches the app to this locale before capturing, and
- * each surface gets a DOM clip-overflow scan. An overflow pass never touches the
- * coupling artifacts (`capture-report.json` / `@key.screenshot`).
- */
-export const overflowLocale = process.env.CMDR_I18N_OVERFLOW_LOCALE ?? ''
-export const isOverflowPass = overflowLocale !== ''
-
-/**
- * Worst-case overflow pass (overflow pass only): on top of the pseudolocale, the
- * driver maxes the UI zoom (`MAX_UI_ZOOM`) and resizes each captured window to
- * its minimum allowed size before the shot + clip scan, the maximal-overflow
- * scenario a translator must fit. Set by the orchestrator via
- * `CMDR_I18N_WORST_CASE`. No effect outside an overflow pass.
- */
-export const isWorstCasePass = isOverflowPass && process.env.CMDR_I18N_WORST_CASE === '1'
-
-/**
- * The largest UI zoom the app offers (the `appearance.textSize` percentage; the
- * `view.zoom.set150` preset is the ceiling). The worst-case pass drives the app
- * to this before capturing so layout is stressed at max zoom AND inflated text.
- */
-export const MAX_UI_ZOOM = 150
-
-/**
- * Where screenshots land this run: the coupling dir for a normal pass, a
- * dedicated `overflow/` subdir for an overflow pass, and a further
- * `overflow/worst-case/` subdir for the worst-case pass (all gitignored), so the
- * three never overwrite each other.
- */
-export const screenshotsDir = isWorstCasePass
-  ? join(baseScreenshotsDir, 'overflow', 'worst-case')
-  : isOverflowPass
-    ? join(baseScreenshotsDir, 'overflow')
-    : baseScreenshotsDir
-export const reportPath = join(screenshotsDir, 'capture-report.json')
-/** Sibling list of surfaces that FAILED to capture this run (coverage honesty). */
-export const failedPath = join(screenshotsDir, 'capture-failed.json')
-/** Sibling list of surfaces deliberately SKIPPED (documented harness gaps). */
-export const skippedPath = join(screenshotsDir, 'capture-skipped.json')
-
-/**
- * One element flagged by the clip-overflow scan: a text-bearing node whose
- * content is cut off by its own box (its scroll size exceeds its client size
- * while `overflow` clips). Best-effort heuristic, not proof of a visible defect.
- */
-export interface ClipFinding {
-  /** A short CSS-ish path to the element (tag + id/classes), for the report. */
-  selector: string
-  /** The clipped text content (trimmed, capped), so the reviewer can spot it. */
-  text: string
-  /** Horizontal overflow in px (`scrollWidth - clientWidth`), 0 if none. */
-  overflowX: number
-  /** Vertical overflow in px (`scrollHeight - clientHeight`), 0 if none. */
-  overflowY: number
-}
-
-/** surface label → the clip findings detected on it (empty array = clean). */
-export const clipFindings: Record<string, ClipFinding[]> = {}
-
-/**
- * Scans the page's DOM for text that its own box clips, and records the findings
- * under `label`. The heuristic: a text-bearing element whose `scrollWidth >
- * clientWidth` (or `scrollHeight > clientHeight`) by more than a small tolerance,
- * AND whose computed `overflow` in that axis hides/clips the spill (so the text
- * is actually cut off, not scrollable into view). We skip naturally-scrollable
- * containers (`auto`/`scroll`), visually-hidden accessibility nodes (`sr-only` /
- * the announcer, which always clip by design), and elements with no direct text.
- * This finds the common pseudolocale failures: a truncated button/label/header
- * where +40% text no longer fits. It is a HEURISTIC: it can miss a clip that an
- * ancestor masks, and can flag a deliberately-ellipsized label (which may be
- * acceptable design). Treat the report as a list of spots to eyeball, not a hard
- * pass/fail. No-op outside an overflow pass.
- */
-export async function scanForClipping(page: TauriPage, label: string): Promise<void> {
-  if (!isOverflowPass) return
-  try {
-    const findings = await page.evaluate<ClipFinding[]>(`(function() {
-      var TOL = 1; // sub-pixel rounding tolerance
-      var out = [];
-      var nodes = document.querySelectorAll('body *');
-      for (var i = 0; i < nodes.length; i++) {
-        var el = nodes[i];
-        // Only text-bearing elements: at least one direct, non-whitespace text node.
-        var hasText = false;
-        for (var c = 0; c < el.childNodes.length; c++) {
-          var n = el.childNodes[c];
-          if (n.nodeType === 3 && n.textContent && n.textContent.trim() !== '') { hasText = true; break; }
-        }
-        if (!hasText) continue;
-        var s = getComputedStyle(el);
-        if (s.display === 'none' || s.visibility === 'hidden' || parseFloat(s.opacity) === 0) continue;
-        // Skip visually-hidden accessibility nodes: the standard 'sr-only' /
-        // screen-reader-announcer pattern collapses the box to a 1px clip-rect, so
-        // it ALWAYS "clips" its text by design and is never seen by a user. Flagging
-        // it is pure noise that buries real overflow. Detect it by the conventional
-        // class names AND by the tell-tale tiny clip box (clientW/H <= 1px).
-        var cls = (typeof el.className === 'string') ? el.className : '';
-        if (/\\bsr-only\\b/.test(cls) || el.id === 'svelte-announcer') continue;
-        if (el.clientWidth <= 1 || el.clientHeight <= 1) continue;
-        var ofx = el.scrollWidth - el.clientWidth;
-        var ofy = el.scrollHeight - el.clientHeight;
-        // Only count an axis whose overflow is hidden/clipped/ellipsed (text is
-        // actually cut off). 'auto'/'scroll' means the user can reach it, 'visible'
-        // means it spills (a layout-break, caught separately below).
-        var clipsX = (s.overflowX === 'hidden' || s.overflowX === 'clip' || s.textOverflow === 'ellipsis');
-        var clipsY = (s.overflowY === 'hidden' || s.overflowY === 'clip');
-        var hitX = ofx > TOL && clipsX;
-        var hitY = ofy > TOL && clipsY;
-        if (!hitX && !hitY) continue;
-        // Build a short selector for the report.
-        var sel = el.tagName.toLowerCase();
-        if (el.id) sel += '#' + el.id;
-        if (cls) {
-          var selCls = cls.trim().split(/\\s+/).slice(0, 3).join('.');
-          if (selCls) sel += '.' + selCls;
-        }
-        var txt = (el.textContent || '').trim().replace(/\\s+/g, ' ');
-        if (txt.length > 80) txt = txt.slice(0, 80) + '…';
-        out.push({ selector: sel, text: txt, overflowX: hitX ? ofx : 0, overflowY: hitY ? ofy : 0 });
-      }
-      // De-dup identical (selector,text) rows an ancestor + child can both produce.
-      var seen = {};
-      var dedup = [];
-      for (var k = 0; k < out.length; k++) {
-        var key = out[k].selector + '|' + out[k].text;
-        if (seen[key]) continue;
-        seen[key] = true;
-        dedup.push(out[k]);
-      }
-      return dedup;
-    })()`)
-    clipFindings[label] = findings
-    if (findings.length > 0) {
-      console.warn(`[i18n-overflow] ${label}: ${String(findings.length)} clipped element(s)`)
-    }
-  } catch {
-    // Best-effort: a window that closed mid-scan, or whose eval didn't come back,
-    // just gets no findings rather than failing the run.
-    clipFindings[label] ??= []
-  }
 }
 
 /** Calls a method on the webview's `window.__cmdrI18nCapture`, returns its result. */
@@ -317,6 +176,60 @@ const BLANK_SHOT_EXPLANATION =
   "that isn't frontmost, so the capture reads a stale frame from before the UI painted; it usually means " +
   'the computer was in use during the run, not that Cmdr or the harness is broken.'
 
+/** Per-shot framing and hygiene knobs. Every field is optional; the defaults suit a plain window shot. */
+export interface ShotOptions {
+  /**
+   * Crop the written PNG to this element's bounds (plus padding) instead of
+   * keeping the whole window. Used for the surfaces where the window frame is
+   * noise rather than context: the registry-driven soft dialogs, toasts, and the
+   * per-tile indexing review images. Everything else keeps its window on purpose.
+   */
+  cropSelector?: FrameSelector
+  /**
+   * Toast texts this surface deliberately staged. Anything else in the toast
+   * layer is a stray: dismissed before the shot, and grounds for a re-shoot if it
+   * turns up during one. Defaults to none, which is right for nearly every
+   * surface.
+   */
+  expectedToasts?: string[]
+}
+
+/**
+ * Crops the already-verified `bytes` to `cropSelector`, or returns null to keep
+ * the full window (nothing matched, the rect was degenerate, or this is an
+ * overflow pass, where the window's own edges are the point of the image).
+ *
+ * ❗ The rect comes from `getBoundingClientRect() * devicePixelRatio`, which maps
+ * 1:1 onto image pixels only while the webview covers the whole window with no
+ * chrome offset. That's true because Cmdr draws its own title bar inside the
+ * webview (the traffic lights sit on the `.title-bar` element) — and it's checked
+ * here rather than assumed, because a silently-shifted crop would frame the wrong
+ * thing in every affected screenshot at once.
+ */
+async function cropIfRequested(
+  page: TauriPage,
+  bytes: Buffer,
+  imageWidth: number,
+  imageHeight: number,
+  cropSelector: FrameSelector | undefined,
+): Promise<Buffer | null> {
+  if (cropSelector === undefined) return null
+  // The overflow passes exist to show text colliding with the window's edges, so
+  // cropping away the edges would defeat them.
+  if (isOverflowPass) return null
+  const geometry = await measureCropGeometry(page, cropSelector)
+  if (geometry === null) return null
+  if (geometry.expectedImageWidth !== imageWidth || geometry.expectedImageHeight !== imageHeight) {
+    throw new Error(
+      `Cannot crop to \`${selectorList(cropSelector).join(' / ')}\`: the window's image is ${String(imageWidth)}x${String(imageHeight)} but ` +
+        `the webview measures ${String(geometry.expectedImageWidth)}x${String(geometry.expectedImageHeight)}. ` +
+        'Layout coordinates only map onto image pixels while the webview covers the whole window; ' +
+        'something now draws outside it, so every crop rect would be offset. Fix the mapping or stop cropping.',
+    )
+  }
+  return cropPng(bytes, geometry.rect)
+}
+
 /**
  * Takes ONE verified native screenshot of `page`'s window into `screenshot`.
  *
@@ -324,16 +237,23 @@ const BLANK_SHOT_EXPLANATION =
  * CURRENT UI is on disk. When it can't get one, it throws, and the surface lands
  * in `capture-failed.json` and fails the run.
  *
- * Per attempt: bring the window to the front (`set_focus`), settle the paint,
- * shoot, wait for the WHOLE PNG to land on disk (the capture's write outlives its
- * command), then decode it and check it carries content. The pixels are the only
- * real guard — the focus and settle steps are the remedy, not the proof.
+ * Per attempt: bring the window to the front (`set_focus`), clear any toast the
+ * surface didn't stage, settle the paint, shoot, wait for the WHOLE PNG to land on
+ * disk (the capture's write outlives its command), then decode it and check it
+ * carries content AND that no unstaged toast arrived while the shutter was open.
+ * The pixels are the only real guard — the focus and settle steps are the remedy,
+ * not the proof.
  *
  * ❌ Never replace the pixel check with "wait N seconds and hope". A run once
  * wrote 31 blank images with the DOM fully correct, every gate passed, and a green
  * result; only the image bytes could have caught it.
  */
-export async function shoot(page: TauriPage, windowLabel: string, screenshot: string): Promise<void> {
+export async function shoot(
+  page: TauriPage,
+  windowLabel: string,
+  screenshot: string,
+  options: ShotOptions = {},
+): Promise<void> {
   const path = join(screenshotsDir, screenshot)
   const tries: string[] = []
   // Each attempt shoots to its OWN staging file and only the winner is renamed
@@ -348,20 +268,17 @@ export async function shoot(page: TauriPage, windowLabel: string, screenshot: st
       // retry leans on: whatever stole the front position (usually someone using
       // the computer), asking for it back is what can fix the next attempt.
       await focusWindow(page, windowLabel).catch(() => {})
-      await settlePaint(page)
-      const written = await screenshotToFile(page, stagePath)
-      const verdict = written === null ? null : assessImageContent(written)
-      if (verdict !== null && verdict.ok) {
-        renameSync(stagePath, path)
+      const result = await attemptShot(page, stagePath, options)
+      if (result.bytes !== null) {
+        if (result.cropped === null) renameSync(stagePath, path)
+        else writeFileSync(path, result.cropped)
         if (attempt > 1) console.log(`[i18n-capture] ${screenshot}: real content on attempt ${String(attempt)}`)
         return
       }
-      const problem =
-        verdict === null
-          ? `the capture never finished writing a PNG (waited ${String(SHOT_FILE_TIMEOUT_MS)} ms)`
-          : verdict.reason
-      tries.push(`attempt ${String(attempt)}: ${problem}`)
-      console.warn(`[i18n-capture] ${screenshot}: ${problem}; re-focusing window '${windowLabel}' and re-shooting`)
+      tries.push(`attempt ${String(attempt)}: ${result.problem}`)
+      console.warn(
+        `[i18n-capture] ${screenshot}: ${result.problem}; re-focusing window '${windowLabel}' and re-shooting`,
+      )
     }
   } finally {
     for (const stagePath of staging) rmSync(stagePath, { force: true })
@@ -370,6 +287,61 @@ export async function shoot(page: TauriPage, windowLabel: string, screenshot: st
     `Captured a blank frame for \`${screenshot}\` after ${SHOT_ATTEMPTS_WORD} tries. ` +
       `${BLANK_SHOT_EXPLANATION} (${tries.join('; ')})`,
   )
+}
+
+/** One attempt's verdict: the accepted bytes (plus any crop), or the reason to re-shoot. */
+interface ShotAttempt {
+  /** The verified full-window PNG, or null when this attempt didn't earn one. */
+  bytes: Buffer | null
+  /** The cropped replacement to write, or null to keep the staged full-window file. */
+  cropped: Buffer | null
+  /** Why this attempt failed; empty when it succeeded. */
+  problem: string
+}
+
+/**
+ * Runs ONE attempt: clear strays, settle, shoot, verify the pixels, verify no
+ * toast gate-crashed the frame, and frame the result. Split out of `shoot` so the
+ * retry loop stays about retrying and each gate reads as its own step.
+ */
+async function attemptShot(page: TauriPage, stagePath: string, options: ShotOptions): Promise<ShotAttempt> {
+  const { cropSelector, expectedToasts = [] } = options
+  const miss = (problem: string): ShotAttempt => ({ bytes: null, cropped: null, problem })
+
+  // Precondition: the toast layer holds exactly what this surface staged. A toast
+  // nothing here asked for (the virtual MTP device announcing itself) would
+  // otherwise be photographed over the surface.
+  try {
+    await clearStrayToasts(page, expectedToasts)
+  } catch (err) {
+    return miss(`a stray toast would not dismiss: ${err instanceof Error ? err.message : String(err)}`)
+  }
+
+  await settlePaint(page)
+  const written = await screenshotToFile(page, stagePath)
+  if (written === null) {
+    return miss(`the capture never finished writing a PNG (waited ${String(SHOT_FILE_TIMEOUT_MS)} ms)`)
+  }
+  const verdict = assessImageContent(written)
+  if (!verdict.ok) return miss(verdict.reason)
+
+  // Postcondition, and the half that actually makes this airtight: a toast can
+  // appear BETWEEN the precondition and the shutter, which is exactly how a
+  // half-faded toast ended up over unrelated dialogs.
+  const live = await readToastSignature(page)
+  const late = straysIn(live, expectedToasts)
+  if (late.length > 0) return miss(`a toast nothing staged appeared mid-shot (${late.join('; ')})`)
+  // The mirror image, and the reason it's checked here rather than trusted: a
+  // TRANSIENT toast auto-dismisses on its own clock, so a toast surface can lose
+  // the very thing it exists to photograph between staging and the shutter. The
+  // crop would then frame an empty layer and quietly fall back to a picture of
+  // the file panes under a `toast-…` filename.
+  if (expectedToasts.length > 0 && live.length === 0) {
+    return miss('the staged toast was gone before the shutter (it auto-dismissed)')
+  }
+
+  const cropped = await cropIfRequested(page, written, verdict.width, verdict.height, cropSelector)
+  return { bytes: written, cropped, problem: '' }
 }
 
 /**
@@ -469,6 +441,53 @@ export async function stressLayoutIfWorstCase(page: TauriPage, label: string): P
 export interface SurfaceEntry {
   screenshot: string
   keys: string[]
+  /**
+   * The UI zoom this surface was photographed at, present ONLY when it isn't the
+   * default 100%. A surface that couldn't fit on the display even at full window
+   * height is captured smaller, and the coverage report says so, so a translator
+   * doesn't read that image as "this is how big the text is".
+   */
+  uiZoom?: number
+}
+
+/** What fitting achieved per surface, for the run's report. Empty for surfaces that needed no fitting. */
+export const fitFindings: Record<string, FitOutcome> = {}
+
+/**
+ * Grows `windowLabel` so `selector`'s content fits before the shot, wiring the
+ * shared paint-settle and the production zoom path into the pure fitting loop.
+ * No-op (null) in the worst-case overflow pass, which deliberately shrinks every
+ * window to its minimum: growing it back would erase exactly what that pass is
+ * for.
+ *
+ * OPT-IN per surface, not automatic for every dialog: some surfaces scroll BY
+ * DESIGN (the command palette lists every command), and growing a window until
+ * such a list fits would produce a screen-tall window that shows nothing useful.
+ * Callers name the surfaces where scrolling means "cut off".
+ */
+export async function fitSurfaceWindow(
+  page: TauriPage,
+  windowLabel: string,
+  selector: FrameSelector,
+): Promise<WindowFit | null> {
+  if (isWorstCasePass) return null
+  return fitWindowToContent(page, windowLabel, selector, settlePaint, async (target, percent) => {
+    await captureCall(target, 'setTextSize', String(percent))
+  })
+}
+
+/** Records a fit outcome under `label` when it did anything worth reporting. */
+export function recordFit(label: string, fit: WindowFit | null): void {
+  if (fit === null) return
+  const { grewBy, zoom, residual, unreachable } = fit.outcome
+  if (grewBy === 0 && zoom === DEFAULT_UI_ZOOM && residual === 0 && unreachable.length === 0) return
+  fitFindings[label] = fit.outcome
+  if (zoom !== DEFAULT_UI_ZOOM) {
+    console.warn(`[i18n-capture] ${label}: captured at ${String(zoom)}% UI zoom (it doesn't fit this display at 100%)`)
+  }
+  if (unreachable.length > 0) {
+    console.warn(`[i18n-capture] ${label}: content clipped with no way to scroll it: ${unreachable.join(', ')}`)
+  }
 }
 
 /** What a surface's `stage` step hands back to `captureSurface`. */
@@ -494,6 +513,13 @@ export interface StagedSurface {
    * spinner and the content.
    */
   readySelector?: string
+  /**
+   * Grow the window until THIS element's content stops scrolling, so the shot
+   * isn't cut off at the bottom. Name the surface's own frame (the
+   * `.modal-dialog`, the settings content pane), and only where scrolling means
+   * "cut off" rather than "this list is long by design". See `fitSurfaceWindow`.
+   */
+  fitSelector?: FrameSelector
 }
 
 /**
@@ -522,7 +548,7 @@ export async function captureSurface(
 ): Promise<void> {
   const screenshot = `${label}.png`
   try {
-    const { page, focusLabel, readySelector } = await stage()
+    const { page, focusLabel, readySelector, fitSelector } = await stage()
     // Overflow pass: each separate WebviewWindow (settings, viewer, shortcuts)
     // has its own locale source, so set the pseudolocale on whatever page this
     // surface captures against. Idempotent on `main` (already switched in the
@@ -542,14 +568,27 @@ export async function captureSurface(
     // can have undone it, and the resulting image looks plausible enough to ship.
     // Throwing here fails the surface loudly instead.
     if (readySelector !== undefined) await page.waitForSelector(readySelector, 5000)
-    // `shoot` owns focus, paint settling, and verifying the pixels that landed.
-    // The MAIN window needs the focus step as much as a separate window does: it
-    // loses key status to every settings/viewer/shortcuts window the run opens,
-    // and macOS then hands the capture a stale frame for every main-window surface
-    // that follows. That's what produced a run of blank dialogs.
-    await shoot(page, windowLabel, screenshot)
+    // Grow the window so a surface taller than its frame isn't photographed cut
+    // off at the bottom. Restored right after the shot so the next surface starts
+    // from the same window as every other run.
+    const fit = fitSelector === undefined ? null : await fitSurfaceWindow(page, windowLabel, fitSelector)
+    try {
+      // `shoot` owns focus, paint settling, and verifying the pixels that landed.
+      // The MAIN window needs the focus step as much as a separate window does: it
+      // loses key status to every settings/viewer/shortcuts window the run opens,
+      // and macOS then hands the capture a stale frame for every main-window surface
+      // that follows. That's what produced a run of blank dialogs.
+      await shoot(page, windowLabel, screenshot)
+      // Scan while the window is still the one that got photographed, so a clip
+      // finding always describes the image next to it in the report.
+      await scanForClipping(page, label)
+    } finally {
+      recordFit(label, fit)
+      await fit?.restore()
+    }
+    const zoom = fit?.outcome.zoom ?? DEFAULT_UI_ZOOM
     report[label] = { screenshot, keys: await keysFor(page, label) }
-    await scanForClipping(page, label)
+    if (zoom !== DEFAULT_UI_ZOOM) report[label].uiZoom = zoom
     console.log(`[i18n-capture] ${label}: ${String(report[label].keys.length)} keys → ${screenshot}`)
   } catch (err) {
     failed.push(label)
@@ -635,7 +674,13 @@ export async function captureToastSurface(
     // identity) before the native capture, which composites the last frame and
     // would otherwise grab a half-faded or already-gone toast.
     await waitForToastSettled(main)
-    await shoot(main, 'main', screenshot)
+    // Whatever is in the toast layer NOW is what this surface staged; `shoot`
+    // treats anything else that turns up as a stray and re-shoots. Reading it here
+    // (rather than counting) means an unrelated device toast can't pass as ours.
+    const expectedToasts = await readToastSignature(main)
+    // Crop to the toast layer: a toast is a small card in a corner, and the file
+    // panes behind it are noise a translator has to hunt through.
+    await shoot(main, 'main', screenshot, { expectedToasts, cropSelector: '.toast-container' })
     report[label] = { screenshot, keys: await keysFor(main, label) }
     await scanForClipping(main, label)
     console.log(`[i18n-capture] ${label}: ${String(report[label].keys.length)} keys → ${screenshot}`)

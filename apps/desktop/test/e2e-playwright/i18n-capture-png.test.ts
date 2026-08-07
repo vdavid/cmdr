@@ -1,76 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { deflateSync } from 'node:zlib'
 import {
   decodePng,
+  encodePng,
+  cropPng,
   isCompletePng,
   assessImageContent,
+  MIN_CROP_SIDE,
   MIN_DISTINCT_COLORS,
   MIN_CONTENT_FRACTION,
 } from './i18n-capture-png.js'
-
-/** CRC-32 (the PNG chunk checksum), so the fixtures below are real PNG bytes. */
-function crc32(buf: Buffer): number {
-  let c = 0xffffffff
-  for (const byte of buf) {
-    c ^= byte
-    for (let k = 0; k < 8; k++) c = c & 1 ? (c >>> 1) ^ 0xedb88320 : c >>> 1
-  }
-  return (c ^ 0xffffffff) >>> 0
-}
-
-function chunk(type: string, data: Buffer): Buffer {
-  const len = Buffer.alloc(4)
-  len.writeUInt32BE(data.length)
-  const body = Buffer.concat([Buffer.from(type, 'ascii'), data])
-  const crc = Buffer.alloc(4)
-  crc.writeUInt32BE(crc32(body))
-  return Buffer.concat([len, body, crc])
-}
-
-/**
- * Encodes an 8-bit RGBA non-interlaced PNG, the exact shape the native capture
- * writes. `filterType` picks the per-row filter so the decoder's five branches
- * are all exercised (filter 0 stores raw bytes; the others are re-derived here
- * the same way the spec defines them).
- */
-function encodePng(width: number, height: number, pixels: Buffer, filterType = 0): Buffer {
-  const stride = width * 4
-  const rows: Buffer[] = []
-  for (let y = 0; y < height; y++) {
-    const cur = pixels.subarray(y * stride, (y + 1) * stride)
-    const prev = y > 0 ? pixels.subarray((y - 1) * stride, y * stride) : Buffer.alloc(stride)
-    const line = Buffer.alloc(stride)
-    for (let i = 0; i < stride; i++) {
-      const a = i >= 4 ? cur[i - 4] : 0
-      const b = prev[i]
-      const c = i >= 4 ? prev[i - 4] : 0
-      let predictor = 0
-      if (filterType === 1) predictor = a
-      else if (filterType === 2) predictor = b
-      else if (filterType === 3) predictor = (a + b) >> 1
-      else if (filterType === 4) {
-        const p = a + b - c
-        const pa = Math.abs(p - a)
-        const pb = Math.abs(p - b)
-        const pc = Math.abs(p - c)
-        predictor = pa <= pb && pa <= pc ? a : pb <= pc ? b : c
-      }
-      line[i] = (cur[i] - predictor) & 255
-    }
-    rows.push(Buffer.concat([Buffer.from([filterType]), line]))
-  }
-  const ihdr = Buffer.alloc(13)
-  ihdr.writeUInt32BE(width, 0)
-  ihdr.writeUInt32BE(height, 4)
-  ihdr[8] = 8 // bit depth
-  ihdr[9] = 6 // color type: RGBA
-  return Buffer.concat([
-    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-    chunk('IHDR', ihdr),
-    chunk('IDAT', deflateSync(Buffer.concat(rows))),
-    chunk('IEND', Buffer.alloc(0)),
-  ])
-}
 
 /** An all-one-color canvas: what a never-composited window looks like. */
 function solid(width: number, height: number, rgb: [number, number, number]): Buffer {
@@ -129,6 +67,70 @@ describe('isCompletePng', () => {
   it('rejects an empty or tiny file', () => {
     expect(isCompletePng(Buffer.alloc(0))).toBe(false)
     expect(isCompletePng(Buffer.from([0x89, 0x50]))).toBe(false)
+  })
+})
+
+describe('cropPng', () => {
+  /** A canvas whose every pixel encodes its own (x, y), so a crop is verifiable. */
+  function coordinates(width: number, height: number): Buffer {
+    const pixels = Buffer.alloc(width * height * 4)
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const i = (y * width + x) * 4
+        pixels[i] = x & 255
+        pixels[i + 1] = y & 255
+        pixels[i + 2] = (x + y) & 255
+        pixels[i + 3] = 255
+      }
+    }
+    return pixels
+  }
+
+  it('returns exactly the requested window of pixels', () => {
+    const source = encodePng(80, 60, coordinates(80, 60))
+    const cropped = cropPng(source, { left: 20, top: 17, width: 40, height: 30 })
+    expect(cropped).not.toBeNull()
+    const decoded = decodePng(cropped as Buffer)
+    expect(decoded.width).toBe(40)
+    expect(decoded.height).toBe(30)
+    for (const [x, y] of [
+      [0, 0],
+      [39, 29],
+      [21, 12],
+    ]) {
+      const i = (y * 40 + x) * 4
+      expect([decoded.pixels[i], decoded.pixels[i + 1]], `pixel ${String(x)},${String(y)}`).toEqual([
+        (20 + x) & 255,
+        (17 + y) & 255,
+      ])
+    }
+  })
+
+  it('clamps a rect that runs past the edges instead of failing', () => {
+    // The caller pads the element rect so shadows and borders survive, which
+    // routinely pushes it outside the window on a dialog near an edge.
+    const source = encodePng(50, 40, coordinates(50, 40))
+    const cropped = cropPng(source, { left: -10, top: -10, width: 100, height: 100 })
+    const decoded = decodePng(cropped as Buffer)
+    expect(decoded.width).toBe(50)
+    expect(decoded.height).toBe(40)
+  })
+
+  it('refuses a degenerate rect rather than writing a sliver', () => {
+    const source = encodePng(50, 40, coordinates(50, 40))
+    expect(cropPng(source, { left: 0, top: 0, width: MIN_CROP_SIDE - 1, height: 30 })).toBeNull()
+    expect(cropPng(source, { left: 48, top: 0, width: 40, height: 30 })).toBeNull() // clamps to 2px wide
+  })
+
+  it('produces a whole PNG the blank check still accepts', () => {
+    // A crop is what a translator ends up looking at, so it has to survive the
+    // same pipeline as a full capture: complete file, decodable, real content.
+    const width = 300
+    const height = 200
+    const pixels = coordinates(width, height)
+    const cropped = cropPng(encodePng(width, height, pixels), { left: 10, top: 10, width: 200, height: 150 })
+    expect(isCompletePng(cropped as Buffer)).toBe(true)
+    expect(assessImageContent(cropped as Buffer).ok).toBe(true)
   })
 })
 
