@@ -29,6 +29,10 @@ same-volume), the merge/staging engine (`strategy.rs`, `sequential_extract.rs`),
   `strategy.rs::resolve_staging`; ❌ single-shot-ness earns an exemption, NEVER smallness.
 - **Cleanup and rollback for a DIRECTORY source are per-FILE, never the dir root**: a merge holds pre-existing dest
   files, so a recursive root delete is silent data loss.
+- **A missing `source_hints` entry means UNKNOWN, ❌ never "file"**, and the RESOLVED answer (not the raw hint) drives
+  the cleanup/ledger branch. Ask `strategy.rs::resolve_source_is_directory`. A defaulted `false` streams a directory as
+  a file AND lets a failed copy recursively delete the merged dest ROOT. ❌ Don't probe where a hint EXISTS (15k MTP
+  sources = 15k listings). `DETAILS.md` § "A missing source hint means unknown".
 - **Cross-FS move deletes sources AFTER `flush_created_destinations`, preserving Skipped ones.** Same-volume move is a
   rename-merge with top-level hints only, never a subtree walk.
 

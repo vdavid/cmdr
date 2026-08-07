@@ -59,11 +59,14 @@ pub(super) struct SourceHint {
 
 /// Result of a preflight scan over a set of source paths.
 ///
-/// `source_hints` is keyed by the caller's input path verbatim. Paths missing
-/// from the map (for example because a cached local-FS preview didn't carry
-/// per-path data) get the `SourceHint::default()` treatment in the per-iter
-/// loop: `is_directory = false`, `size = 0`. Downstream call sites handle that
-/// case the same way as before this module existed.
+/// `source_hints` is keyed by the caller's input path verbatim. A path missing
+/// from the map means **unknown**, ❌ never "a file of size 0": the per-iter
+/// loops resolve the type through `strategy::resolve_source_is_directory`
+/// (which probes) and simply pass no size hint. `SourceHint::default()` claims
+/// `is_directory: false`, so reading it for an absent key streams directories as
+/// files and defeats the cleanup guard that keeps a failed copy from recursively
+/// deleting a merged destination directory. `DETAILS.md` § "A missing source
+/// hint means unknown".
 #[derive(Debug, Clone)]
 pub(super) struct VolumePreflight {
     pub total_files: usize,

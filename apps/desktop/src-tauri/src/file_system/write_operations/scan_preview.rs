@@ -11,7 +11,7 @@ use std::time::{Duration, Instant};
 
 use uuid::Uuid;
 
-use super::scan::{SubtreeTotals, WalkContext, scan_subtree_with_oracle, sort_files, walk_dir_recursive};
+use super::scan::{SubtreeTotals, WalkContext, scan_subtree_with_oracle, sort_files, walk_sources_with_per_path};
 use super::state::{
     CachedScanResult, FileInfo, SCAN_PREVIEW_RESULTS, SCAN_PREVIEW_STATE, ScanPreviewState, insert_scan_result,
     release_scan_result,
@@ -189,6 +189,11 @@ fn run_scan_preview(
         (None, None)
     };
 
+    // One `CopyScanResult` per top-level source, filled by the walk below. The
+    // copy engine reads it back as its `source_hints`, so a source that isn't in
+    // here reaches the drivers as "unknown" and costs them a stat probe.
+    let mut per_path: Vec<(PathBuf, CopyScanResult)> = Vec::new();
+
     let result: Result<(), String> = (|| {
         // Cheap per-file hook: a channel push, so it never delays the walk. A
         // dropped receiver (worker gone) just drops the sample (best-effort). The
@@ -225,22 +230,18 @@ fn run_scan_preview(
         // Local FS scan preview uses the "root" volume ID. The oracle short-circuits
         // any subtree currently open in a pane with a live FSEvents watcher.
         let volume_id = Some(crate::file_system::volume::DEFAULT_VOLUME_ID);
-        for source in &sources {
-            let source_root = source.parent().unwrap_or(source);
-            walk_dir_recursive(
-                source,
-                source_root,
-                &mut files,
-                &mut dirs,
-                &mut total_bytes,
-                &mut dedup_bytes,
-                &mut last_progress_time,
-                &mut visited,
-                &mut seen_inodes,
-                volume_id,
-                &ctx,
-            )?;
-        }
+        per_path = walk_sources_with_per_path(
+            &sources,
+            &mut files,
+            &mut dirs,
+            &mut total_bytes,
+            &mut dedup_bytes,
+            &mut last_progress_time,
+            &mut visited,
+            &mut seen_inodes,
+            volume_id,
+            &ctx,
+        )?;
         Ok(())
     })();
 
@@ -278,7 +279,7 @@ fn run_scan_preview(
                         file_count,
                         total_bytes,
                         dedup_bytes,
-                        per_path: Vec::new(),
+                        per_path,
                         estimated_compressed_bytes: estimate.clone(),
                         inserted_at: Instant::now(),
                     },

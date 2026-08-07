@@ -44,6 +44,84 @@ pub(super) struct WalkContext<'a, E> {
     pub(super) on_file: Option<OnFileHook<'a>>,
 }
 
+/// Walks every top-level source in turn, accumulating the shared tallies AND
+/// one `CopyScanResult` per source.
+///
+/// The per-source breakdown is what a cross-volume copy or a volume delete
+/// reads back as its `source_hints` / fast-path data: whether each selected item
+/// is a directory, and how big it is. Without it every source arrives at the
+/// copy drivers as "unknown", and they pay a stat probe apiece to find out.
+///
+/// Everything else matches [`walk_dir_recursive`], which does the actual
+/// walking; this only brackets each source with a before/after snapshot of the
+/// shared counters.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Mirrors walk_dir_recursive's parameter list, which threads the shared tallies through the recursion"
+)]
+pub(super) fn walk_sources_with_per_path<E>(
+    sources: &[PathBuf],
+    files: &mut Vec<FileInfo>,
+    dirs: &mut Vec<PathBuf>,
+    total_bytes: &mut u64,
+    dedup_bytes: &mut u64,
+    last_progress_time: &mut Instant,
+    visited: &mut HashSet<PathBuf>,
+    seen_inodes: &mut HashSet<u64>,
+    volume_id: Option<&str>,
+    ctx: &WalkContext<'_, E>,
+) -> Result<Vec<(PathBuf, CopyScanResult)>, E> {
+    let mut per_path = Vec::with_capacity(sources.len());
+    for source in sources {
+        let source_root = source.parent().unwrap_or(source);
+        let files_before = files.len();
+        let dirs_before = dirs.len();
+        let total_bytes_before = *total_bytes;
+        let dedup_bytes_before = *dedup_bytes;
+
+        walk_dir_recursive(
+            source,
+            source_root,
+            files,
+            dirs,
+            total_bytes,
+            dedup_bytes,
+            last_progress_time,
+            visited,
+            seen_inodes,
+            volume_id,
+            ctx,
+        )?;
+
+        // `walk_dir_recursive` pushes a directory onto `dirs` before it
+        // descends, so the slot at `dirs_before` holds this source itself
+        // exactly when the source is a directory. A file leaves it untouched,
+        // and so does a symlink to a directory — which is right: a transfer
+        // never dereferences one, it copies the link.
+        let top_level_is_directory = dirs.get(dirs_before).is_some_and(|dir| dir == source);
+
+        per_path.push((
+            source.clone(),
+            CopyScanResult {
+                file_count: files.len() - files_before,
+                // Descendants only. `Volume::scan_for_copy` excludes the
+                // top-level path from its own `dir_count`, and these results
+                // are read interchangeably with its.
+                dir_count: dirs.len() - dirs_before - usize::from(top_level_is_directory),
+                total_bytes: *total_bytes - total_bytes_before,
+                // `seen_inodes` spans all sources (a hardlink crossing two
+                // selected roots counts once, matching the aggregate), so a
+                // later source's share can read low when it shares an inode
+                // with an earlier one. Informational only; `total_bytes` is
+                // what the copy reserves and fills against.
+                dedup_bytes: *dedup_bytes - dedup_bytes_before,
+                top_level_is_directory,
+            },
+        ));
+    }
+    Ok(per_path)
+}
+
 /// Recursively walks a directory tree, collecting files and directories.
 ///
 /// Shared walker used by both scan preview and write operation scanning.
@@ -1012,6 +1090,99 @@ mod tests {
             created: 0,
             is_symlink: false,
         }
+    }
+
+    /// A `WalkContext` with no oracle, no cancellation, and no progress: the
+    /// per-source accounting is what's under test, not the callbacks.
+    fn plain_walk_context<'a>() -> WalkContext<'a, String> {
+        WalkContext {
+            progress_interval: Duration::from_secs(3600),
+            is_cancelled: &|| false,
+            on_io_error: &|_, e| e.to_string(),
+            on_cancelled: &|| "Cancelled".to_string(),
+            on_symlink_loop: &|path| format!("Symlink loop detected: {}", path.display()),
+            on_progress: &|_, _, _, _, _| {},
+            on_file: None,
+        }
+    }
+
+    fn walk_for_test(sources: &[PathBuf]) -> Vec<(PathBuf, CopyScanResult)> {
+        let mut files = Vec::new();
+        let mut dirs = Vec::new();
+        let mut total_bytes = 0u64;
+        let mut dedup_bytes = 0u64;
+        let mut last_progress_time = Instant::now();
+        let mut visited = HashSet::new();
+        let mut seen_inodes = HashSet::new();
+        walk_sources_with_per_path(
+            sources,
+            &mut files,
+            &mut dirs,
+            &mut total_bytes,
+            &mut dedup_bytes,
+            &mut last_progress_time,
+            &mut visited,
+            &mut seen_inodes,
+            None,
+            &plain_walk_context(),
+        )
+        .expect("the fixture tree walks cleanly")
+    }
+
+    /// The local walk must report each top-level source's own type and totals.
+    ///
+    /// A completed preview with no per-source data leaves the cross-volume copy
+    /// drivers guessing, and their guess used to be "file" — which streamed a
+    /// directory and let a failed copy sweep the destination folder.
+    #[test]
+    fn walk_reports_type_and_totals_per_top_level_source() {
+        let dir = crate::test_support::TestDir::new("scan-per-path");
+        let root: &Path = &dir;
+        fs::write(root.join("loose.txt"), b"12345").unwrap();
+        fs::create_dir(root.join("album")).unwrap();
+        fs::write(root.join("album/one.bin"), b"aaaa").unwrap();
+        fs::create_dir(root.join("album/inner")).unwrap();
+        fs::write(root.join("album/inner/two.bin"), b"bbbbbb").unwrap();
+
+        let sources = vec![root.join("loose.txt"), root.join("album")];
+        let per_path = walk_for_test(&sources);
+
+        assert_eq!(per_path.len(), 2, "one entry per top-level source, in input order");
+
+        let (loose_path, loose) = &per_path[0];
+        assert_eq!(loose_path, &sources[0]);
+        assert!(!loose.top_level_is_directory);
+        assert_eq!(loose.file_count, 1);
+        assert_eq!(loose.dir_count, 0);
+        // The real size, not the 0 a directory reports. SMB's one-round-trip
+        // compound write only engages above 0.
+        assert_eq!(loose.total_bytes, 5);
+
+        let (album_path, album) = &per_path[1];
+        assert_eq!(album_path, &sources[1]);
+        assert!(album.top_level_is_directory);
+        assert_eq!(album.file_count, 2);
+        // Descendants only: `inner`, never `album` itself.
+        assert_eq!(album.dir_count, 1);
+        assert_eq!(album.total_bytes, 10);
+    }
+
+    /// A symlink is copied as a link, never dereferenced, so it counts as a
+    /// FILE source even when it points at a directory.
+    #[test]
+    fn walk_reports_a_symlinked_directory_source_as_a_file() {
+        let dir = crate::test_support::TestDir::new("scan-per-path-symlink");
+        let root: &Path = &dir;
+        fs::create_dir(root.join("real")).unwrap();
+        fs::write(root.join("real/inside.txt"), b"xyz").unwrap();
+        std::os::unix::fs::symlink(root.join("real"), root.join("link")).unwrap();
+
+        let per_path = walk_for_test(&[root.join("link")]);
+
+        assert_eq!(per_path.len(), 1);
+        assert!(!per_path[0].1.top_level_is_directory);
+        assert_eq!(per_path[0].1.file_count, 1);
+        assert_eq!(per_path[0].1.dir_count, 0);
     }
 
     #[test]
