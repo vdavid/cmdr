@@ -183,6 +183,24 @@ Only the layout facts that none of those carry live here:
   call resolves finds a missing or half-written file. `shoot()` waits for `isCompletePng` (the file's own IEND
   terminator) instead, and shoots each attempt to its own `.staged-N` path so a slow write from a rejected attempt can
   never land on top of a good image.
+- **The plugin's `screenshot()` takes a path and NOTHING else**, so there is no clip option to pass and every crop
+  happens on our side, on the bytes (`cropPng` in `i18n-capture-png.ts`). The crop rect is
+  `getBoundingClientRect() * devicePixelRatio` and maps 1:1 onto image pixels only because Cmdr draws its own title bar
+  inside the webview (the traffic lights sit on the `.title-bar` element), so the webview covers the window with no
+  chrome offset. `shoot()` ASSERTS that against the PNG's real dimensions: if it ever stops holding, every crop would be
+  offset at once, so it fails loudly instead. Only the soft dialogs, toasts, and `indexing-tile-*` images are cropped;
+  everything else keeps its window deliberately, and nothing is cropped in an overflow pass (those exist to show text
+  meeting the window's edges).
+- **A toast the surface didn't stage is a re-shoot, not a caveat.** A device announcing itself fires on its own clock,
+  so a toast can appear BETWEEN the pre-shot check and the shutter and be photographed mid-slide-in, translucent, over
+  an unrelated dialog. `shoot()` requires the toast layer to hold exactly what the surface staged before AND after the
+  shot; the AFTER check is the half that makes it airtight. Dismissal waits for the node to DETACH, which is exact
+  (`ToastItem` has no exit transition), never for a duration.
+- **A window GROWS to fit a surface; the zoom only comes down when the display runs out.** `fitSurfaceWindow` measures a
+  named element's scroll overflow and grows the window until it fits, so a dialog isn't photographed cut off.
+  Translators judge text at its real size, so zooming out is the last resort, and any surface captured under 100 %
+  records `uiZoom` in the report. ❗ It's opt-in per surface (`StagedSurface.fitSelector`): a surface that scrolls BY
+  DESIGN (the command palette) would otherwise grow a screen-tall window showing nothing.
 - **A surface's readiness gate must name CONTENT, and it's re-proven at shot time.** Two separate traps. First, gating
   on a container that holds both a spinner and the loaded content passes while the spinner is still up:
   `acknowledgements` shipped a picture of "Loading the list…" that way. Name the thing only the loaded state renders (a
