@@ -71,13 +71,13 @@ skip the one the user is already looking at in full.
   paths release EARLY because `onQueue` is optional, so the modal may stay mounted after the handoff.
 - The delete/trash path comes free: `DeleteDialog` drives the same state machine.
 - A SECOND slot, `setForegroundFailureId` / `getForegroundFailureId`, names the failure the foreground
-  `TransferErrorDialog` is showing. It exists because of ordering, not taste: the progress dialog releases the first slot
-  as it unmounts, and the backend's retained failure row only reaches the snapshot after that, so a single slot is
+  `TransferErrorDialog` is showing. It exists because of ordering, not taste: the progress dialog releases the first
+  slot as it unmounts, and the backend's retained failure row only reaches the snapshot after that, so a single slot is
   already empty when the ambient surfaces get their chance to double-report.
   `pane/dialog-state.svelte.ts::handleTransferError` reads the first slot while the dialog still holds it and claims the
   second; `handleTransferErrorClose` releases it and calls `dismissFailedOperation(id)`, so a failure the user has read
-  and closed leaves nothing behind in the queue. Full reasoning:
-  `apps/desktop/src/lib/status-corner/DETAILS.md` § "Why the foreground handover needs two slots".
+  and closed leaves nothing behind in the queue. Full reasoning: `apps/desktop/src/lib/status-corner/DETAILS.md` § "Why
+  the foreground handover needs two slots".
 
 Decisions:
 

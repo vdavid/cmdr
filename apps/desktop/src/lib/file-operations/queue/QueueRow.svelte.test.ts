@@ -36,10 +36,7 @@ function buildRow(
 
 /** A retained failure as the backend hands it over: settled, unrollbackable,
  *  carrying the typed error that stopped it. */
-function buildFailedRow(
-  error: WriteOperationError,
-  opType: OperationSnapshot['operationType'] = 'copy',
-): OperationRow {
+function buildFailedRow(error: WriteOperationError, opType: OperationSnapshot['operationType'] = 'copy'): OperationRow {
   const failed = buildRow('failed', opType)
   return { ...failed, snapshot: { ...failed.snapshot, error } }
 }

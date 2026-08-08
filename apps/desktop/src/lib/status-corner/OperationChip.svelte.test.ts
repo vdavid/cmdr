@@ -259,9 +259,7 @@ describe('OperationChip', () => {
     expect(chip()?.querySelector('.chip-label')?.textContent).toBe("Couldn't finish")
     // No bar: there's no progress left to describe.
     expect(target.querySelector('[role="progressbar"]')).toBeNull()
-    expect(chip()?.getAttribute('aria-label')).toBe(
-      "1 operation couldn't finish. Open the operation queue to see why.",
-    )
+    expect(chip()?.getAttribute('aria-label')).toBe("1 operation couldn't finish. Open the operation queue to see why.")
   })
 
   it('counts several failures in the corner', () => {

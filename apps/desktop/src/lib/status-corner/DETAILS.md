@@ -6,8 +6,8 @@ Depth for `CLAUDE.md`. Up: `apps/desktop/src/CLAUDE.md`.
 
 - `StatusCorner.svelte`: the row. One optional `children` snippet, then `OperationChip`, then `IndexingStatusIndicator`.
 - `OperationChip.svelte`: the corner chip (markup, copy, and the settle timer), in either of its two states.
-- `operation-chip.ts`: pure — what the corner has to say (`pickChipState`), which operation it previews, how full its bar
-  is, and the destination name its tooltip uses.
+- `operation-chip.ts`: pure — what the corner has to say (`pickChipState`), which operation it previews, how full its
+  bar is, and the destination name its tooltip uses.
 - `operation-failure-watch.svelte.ts`: the main window's failure notice — which failures get a toast, which are left to
   the dialog already showing them, and what a burst collapses into.
 - `OperationFailedToastContent.svelte` / `OperationFailuresToastContent.svelte`: one failure's notice, and the summary a
@@ -21,7 +21,8 @@ Depth for `CLAUDE.md`. Up: `apps/desktop/src/CLAUDE.md`.
 - `OperationChip.a11y.test.ts`: tier-3 axe pass, running and paused.
 - `operation-failure-watch.svelte.test.ts`: one toast per failure, no double-toast on a re-emitted snapshot, both
   suppression paths, and the collapse past three.
-- `OperationFailedToastContent.svelte.test.ts` (+ both toasts' `.a11y.test.ts`): the wording, the reason, and the action.
+- `OperationFailedToastContent.svelte.test.ts` (+ both toasts' `.a11y.test.ts`): the wording, the reason, and the
+  action.
 
 ## Layout model
 
@@ -74,8 +75,8 @@ before it was done. Live work wins — a `triangle-alert` glyph, "Couldn't finis
 shown only when nothing is running or paused.
 
 It exists because of what happens otherwise: dismiss the toast with the queue window closed, and the main window carries
-zero trace that anything went wrong, which is the exact bug this corner was built to fix. It stays deliberately narrow (a
-count and a glyph, no list, no reason) so it reads as a mark, not a notification centre. Clicking it opens the queue,
+zero trace that anything went wrong, which is the exact bug this corner was built to fix. It stays deliberately narrow
+(a count and a glyph, no list, no reason) so it reads as a mark, not a notification centre. Clicking it opens the queue,
 same as the progress state. The failure the foreground error dialog is showing is left to that dialog
 (`getForegroundFailureId()`).
 
@@ -146,15 +147,15 @@ new one. It's a reaction to the snapshot the window already subscribes to: no ne
   interpolating variants (`invalid_name`, `read_only_device`) carry paths and device names with no length limit; three
   lines covers every stock message, so in practice nothing is cut. The full reason, the suggestion, and the Dismiss live
   on the queue row, one press away.
-- **The toast's title is NOT the pipeline's title.** `queue.failureToast.title` selects on the operation type
-  ("Couldn't finish copying"), because the catalog's own titles say "Copy failed" and the house never writes "failed" or
-  "error" at a user. The body below it is the pipeline's, unchanged.
+- **The toast's title is NOT the pipeline's title.** `queue.failureToast.title` selects on the operation type ("Couldn't
+  finish copying"), because the catalog's own titles say "Copy failed" and the house never writes "failed" or "error" at
+  a user. The body below it is the pipeline's, unchanged.
 - **Past three, they collapse into one summary.** Mechanical, not aesthetic: a toast stack full of persistent toasts
   silently drops new arrivals (`lib/ui/CLAUDE.md`), so an unbounded burst would lose failures. The summary carries a
   dedup id and reads its count off the store rather than a prop, because the toast store's dedup path replaces content
-  and level but NOT props — a prop-carried count would freeze at whatever the fourth failure saw. Reading live also keeps
-  it honest as the user clears rows. `toastGroup: 'operation-failure'` (cap `MAX_FAILURE_TOASTS + 1`, pure backstop)
-  keeps a burst from evicting unrelated toasts.
+  and level but NOT props — a prop-carried count would freeze at whatever the fourth failure saw. Reading live also
+  keeps it honest as the user clears rows. `toastGroup: 'operation-failure'` (cap `MAX_FAILURE_TOASTS + 1`, pure
+  backstop) keeps a burst from evicting unrelated toasts.
 - **Announced ids are remembered, and forgotten when the row leaves.** A re-emitted snapshot can't double-toast, and the
   set can't grow for the life of the process. Operation ids are never reused, so forgetting one can't resurrect it.
   Suppressed failures count as announced: they were reported, just not by us, and must not get a late toast when the
@@ -170,8 +171,8 @@ failure row only reaches the snapshot AFTER that (the backend emits `write-error
 By then the slot is empty and the corner would happily announce a failure the user is reading in the dialog in front of
 them.
 
-So `dialog-state.svelte.ts`'s `handleTransferError` reads the slot while the progress dialog still holds it and hands the
-id to `setForegroundFailureId`. Both the chip and the toast check both slots. Closing the error dialog releases the
+So `dialog-state.svelte.ts`'s `handleTransferError` reads the slot while the progress dialog still holds it and hands
+the id to `setForegroundFailureId`. Both the chip and the toast check both slots. Closing the error dialog releases the
 second slot AND calls `dismissFailedOperation(id)`, so the common case — a foreground failure the user read and closed —
 leaves nothing behind in the queue.
 

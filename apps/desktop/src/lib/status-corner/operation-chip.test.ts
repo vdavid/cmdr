@@ -153,11 +153,7 @@ describe('pickChipOperation', () => {
 
 /** A retained failure as it arrives on the snapshot. */
 function failedRow(operationId = 'gone'): OperationRow {
-  return row(
-    { operationId, status: 'failed', error: { type: 'source_not_found', path: '/gone.txt' } },
-    null,
-    null,
-  )
+  return row({ operationId, status: 'failed', error: { type: 'source_not_found', path: '/gone.txt' } }, null, null)
 }
 
 describe('pickChipState', () => {

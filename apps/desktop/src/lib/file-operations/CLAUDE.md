@@ -17,7 +17,8 @@ file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete)
   time-left cell) shared by the progress dialog and the queue rows. Two densities, one layout.
 - `scan-throughput.ts`: rolling-window scan-rate estimator (see below).
 - `foreground-operation.svelte.ts`: two module-scoped slots naming what the foreground owns — the operation its progress
-  dialog is running, and the failure its error dialog is showing — so ambient main-window surfaces stay quiet about both.
+  dialog is running, and the failure its error dialog is showing — so ambient main-window surfaces stay quiet about
+  both.
 
 ## Must-knows
 

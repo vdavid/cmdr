@@ -11,9 +11,11 @@ vi.mock('$lib/file-operations/queue/queue-window', () => ({
   openQueueWindow: (): Promise<void> => openQueueWindow(),
 }))
 
-const dismissToast = vi.fn()
+const dismissToast = vi.fn<(id: string) => void>()
 vi.mock('$lib/ui/toast', () => ({
-  dismissToast: (id: string) => dismissToast(id),
+  dismissToast: (id: string): void => {
+    dismissToast(id)
+  },
 }))
 
 import OperationFailedToastContent from './OperationFailedToastContent.svelte'

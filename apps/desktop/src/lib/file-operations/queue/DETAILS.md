@@ -98,9 +98,9 @@ durable surface for them: it survives a dismissed toast, a closed window, and a 
   abbreviates; it points here for the rest.
 - **Dismissal is explicit, always.** Per-row Dismiss → `dismiss_failed_operation`; the toolbar's "Dismiss all" (shown
   only when `failureCount > 1`) → `dismiss_all_failed_operations`; and closing `TransferErrorDialog` for a foreground
-  failure, which the user has by definition just read
-  (`apps/desktop/src/lib/status-corner/DETAILS.md` § "Why the foreground handover needs two slots"). Nothing else drops
-  a failed row — the whole feature exists for the user who was away from the keyboard.
+  failure, which the user has by definition just read (`apps/desktop/src/lib/status-corner/DETAILS.md` § "Why the
+  foreground handover needs two slots"). Nothing else drops a failed row — the whole feature exists for the user who was
+  away from the keyboard.
 - **The main window's half of this** (the persistent failure toast and the corner chip's failure state) lives in
   `apps/desktop/src/lib/status-corner/CLAUDE.md`. Both render `failure-reason.ts`, so the three surfaces can't describe
   one failure three ways.
@@ -189,8 +189,8 @@ the MAIN window, which already holds those perms — nothing to add there (see `
   the catalog has no arm for) and the null-for-a-live-row contract.
 - `QueueRow.svelte.test.ts`: per-status controls (Pause vs Resume vs queued vs failed), click wiring, the select
   checkbox, the live bar from a progress event, the failed row's reason across two error variants and two operation
-  types, and the `data-status` / `data-operation-id` E2E hooks. The readout's own behavior
-  (both bars, percents, rates, time left, stall) is covered once, in `../TransferProgressReadout.svelte.test.ts`.
+  types, and the `data-status` / `data-operation-id` E2E hooks. The readout's own behavior (both bars, percents, rates,
+  time left, stall) is covered once, in `../TransferProgressReadout.svelte.test.ts`.
 - `QueueRow.a11y.test.ts`: axe over the row in running / paused / queued / selected states.
 - E2E: `test/e2e-playwright/operation-queue.spec.ts` — two same-lane ops → one Running + one Queued, cancel the queued,
   pause + resume the running; plus the retention contract: a copy fails with NO queue window open, the window opens on
