@@ -1,7 +1,7 @@
 /**
  * Unit tests for the shared-fixture drift guard (`fixture-manifest.ts`).
  *
- * The guard is what the E2E suite's global `afterEach` runs to name the spec
+ * The guard is what the E2E suite's post-test leak guard runs to name the spec
  * that dirtied `left/` + `right/`, so these tests pin the two properties that
  * make it worth having: it catches every mutation shape the specs make
  * (add / remove / rename / overwrite / archive edit / truncate), and its
@@ -81,6 +81,17 @@ describe('diffFixtureTree', () => {
     expect(diff?.changed).toEqual(['left/sample.zip'])
   })
 
+  it('says WHAT changed, so the report explains itself', () => {
+    const root = makeRoot('reasons')
+    fs.rmSync(path.join(root, 'left/sub-dir'), { recursive: true })
+    fs.writeFileSync(path.join(root, 'left/sub-dir'), 'not a dir any more')
+    fs.writeFileSync(path.join(root, 'left/file-a.txt'), 'A'.repeat(100))
+
+    const diff = diffFixtureTree(root)
+    expect(diff?.reasons['left/sub-dir']).toBe('dir → file')
+    expect(diff?.reasons['left/file-a.txt']).toBe('size 1024 → 100')
+  })
+
   it('catches a shortened bulk .dat by size', () => {
     const root = makeRoot('bulk')
     // Replace, never truncate: the bulk files are HARDLINKS into the shared
@@ -138,10 +149,10 @@ describe('describeFixtureTreeDiff', () => {
 
     const diff = diffFixtureTree(root)
     expect(diff).not.toBeNull()
-    const text = describeFixtureTreeDiff(diff ?? { added: [], removed: [], changed: [] })
+    const text = describeFixtureTreeDiff(diff ?? { added: [], removed: [], changed: [], reasons: {} })
     expect(text).toContain('added: right/copied.txt')
     expect(text).toContain('removed: left/file-b.txt')
-    expect(text).toContain('changed: left/file-a.txt')
+    expect(text).toContain('changed: left/file-a.txt (content differs)')
   })
 })
 
