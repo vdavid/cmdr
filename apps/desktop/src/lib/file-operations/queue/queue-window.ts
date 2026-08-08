@@ -33,12 +33,19 @@ const log = getAppLogger('queue')
  *  inline progress bars; resizable, with the list scrolling inside.
  *
  *  The minimum is set by one row's contents, not by taste: a row's readout
- *  columns (amount, percent, rate, time left) are fixed-width, and below this
- *  the progress bars they sit beside squeeze down to nothing. Shrink the
- *  minimum only alongside `TransferProgressReadout`'s compact columns. */
-const BASE_WIDTH = 660
+ *  columns (bar label, amount, percent, rate, time left) are fixed-width, and
+ *  below this the progress bars they sit beside squeeze down to nothing. Shrink
+ *  the minimum only alongside `TransferProgressReadout`'s compact columns.
+ *
+ *  Both numbers carry 80 px for the "Bytes" / "Files" label column in front of
+ *  each bar. That column is `auto`, so it costs whatever the locale's longer
+ *  word measures plus one 4 px gap: 36 px in English, 70 px in Dutch
+ *  ("Onderdelen", the widest of the ten locales), 71 px in the `en-XA`
+ *  pseudo-locale (measured in the queue webview at `--font-size-sm`; macOS
+ *  15.5, 2026-08-09). 80 px covers the worst of those with room to spare. */
+const BASE_WIDTH = 740
 const BASE_HEIGHT = 480
-const MIN_WIDTH = 540
+const MIN_WIDTH = 620
 const MIN_HEIGHT = 280
 
 /**

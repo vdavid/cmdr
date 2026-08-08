@@ -13,6 +13,9 @@
     ("9 GB" → "10 GB", "(99%)" → "(100%)"). The time left gets its own row under
     the bars, which both keeps the bars wide and lets the estimate switch between
     "1h 8m left" and "56m 24s left" without moving anything above it.
+
+    BOTH densities label their bars. The two densities differ only in the size of
+    the bar, the gaps, and the bar's floor.
 -->
 <script lang="ts">
     import ProgressBar from '$lib/ui/ProgressBar.svelte'
@@ -88,9 +91,7 @@
 
 <div class="progress-readout" class:compact={isCompact}>
     {#if hasBytesRow}
-        {#if !isCompact}
-            <span class="bar-label">{tString('fileOperations.transferProgress.progressBytes')}</span>
-        {/if}
+        <span class="bar-label">{tString('fileOperations.transferProgress.progressBytes')}</span>
         <ProgressBar
             value={bytesDone / bytesTotal}
             size={isCompact ? 'sm' : 'md'}
@@ -103,9 +104,7 @@
         </span>
     {/if}
 
-    {#if !isCompact}
-        <span class="bar-label">{countLabel}</span>
-    {/if}
+    <span class="bar-label">{countLabel}</span>
     <ProgressBar
         value={filesTotal > 0 ? filesDone / filesTotal : 0}
         size={isCompact ? 'sm' : 'md'}
@@ -149,16 +148,14 @@
         font-variant-numeric: tabular-nums;
     }
 
-    /* A list row drops the row labels: the units in the amounts already say
-       which bar is which, and the space buys back bar width. */
+    /* A list row keeps the same five columns, tightened: a thinner bar, a lower
+       bar floor, and smaller gaps. It keeps the labels too — two unlabelled bars
+       stacked in a row read as a puzzle, and the units in the amounts don't
+       answer it fast enough. The label column costs the queue window width, and
+       `queue-window.ts`'s MIN_WIDTH pays for it. */
     .progress-readout.compact {
         --spacing-readout-bar-min: 64px;
 
-        grid-template-columns:
-            minmax(var(--spacing-readout-bar-min), 1fr)
-            minmax(var(--spacing-readout-amount), auto)
-            minmax(var(--spacing-readout-percent), auto)
-            minmax(var(--spacing-readout-rate), auto);
         gap: var(--spacing-xxs) var(--spacing-xs);
     }
 

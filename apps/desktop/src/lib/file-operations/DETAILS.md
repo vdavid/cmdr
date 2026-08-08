@@ -32,9 +32,11 @@ line — is ONE component rendered by both surfaces that show a running write op
 `progress-readout.ts` (speed, ETA) and `$lib/units` (text), and the strings by the `fileOperations.transferProgress.*`
 catalog keys.
 
-- **Two densities, one layout.** `comfortable` (the dialog) labels each bar "Bytes" / "Files" (or "Items" for trash);
-  `compact` (a list row) drops the labels — the units in the amounts already say which bar is which — and takes the 4 px
-  bar. Nothing else differs, so the two surfaces can't drift apart in what they show.
+- **Two densities, one layout.** Both label each bar "Bytes" / "Files" (or "Items" for trash); `compact` (a list row)
+  differs only in taking the 4 px bar, a 64 px bar floor, and tighter gaps. Two unlabelled bars stacked in a queue row
+  read as a puzzle, and the units in the amounts don't answer it fast enough, so the row pays the label column's width
+  (`queue-window.ts`'s `MIN_WIDTH` carries it) rather than making the reader work it out. Nothing else differs, so the
+  two surfaces can't drift apart in what they show.
 - **Every readout cell is a fixed-width column**, sized in `ch` for the widest string it can hold ("999 GB / 999 GB",
   "(100%)", "999 MB/s"). This is the point of the component, not a detail: the bars' width then depends only on the
   window, and nothing shifts as digits come and go. The columns are `minmax(…, auto)` so a rarer outlier (a byte-scale
@@ -47,8 +49,9 @@ catalog keys.
   firm up from "1h 8m left" to "56m 24s left" without moving anything above it. The row renders even while empty (a
   `:empty::before` no-break space), so the estimator warming up doesn't shove the rest of the dialog down.
 - **The bar column has a min width** (80 px, 64 px compact), below which a bar reads as a smudge rather than progress.
-  Whatever hosts the readout owes it that width: it's why the operation queue window's `MIN_WIDTH` is what it is
-  (`queue/queue-window.ts`) and why the progress dialog is 580 px wide.
+  Whatever hosts the readout owes it that width, plus the `auto` label column in front of it: it's why the operation
+  queue window's `MIN_WIDTH` is what it is (`queue/queue-window.ts`, which shows the per-locale label measurements) and
+  why the progress dialog is 580 px wide.
 - **The dialog has no "Copying" chip.** A phase banner renders for SCANNING only, where nothing else on screen says what
   the wait is for. During the copy the title says "Copying...", the bars are labelled, and a third copy of the word
   earned nothing but height.

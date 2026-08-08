@@ -90,7 +90,7 @@ describe('TransferProgressReadout', () => {
     expect(target.querySelector('.time')?.classList.contains('stalled')).toBe(true)
   })
 
-  it('labels its rows in the dialog and drops the labels in a list row', () => {
+  it('labels its rows in BOTH densities, so a queue row is no more of a puzzle than the dialog', () => {
     render(halfway)
     // "Bytes", not "Size": the label pairs with the count bar under it.
     expect(texts('.bar-label')).toEqual(['Bytes', 'Files'])
@@ -99,8 +99,14 @@ describe('TransferProgressReadout', () => {
     render({ ...halfway, countKind: 'items' })
     expect(texts('.bar-label')).toEqual(['Bytes', 'Items'])
 
+    // A queue row gets the same two words. Two unlabelled bars side by side read
+    // as a puzzle, and the units in the amounts don't answer it fast enough.
     document.body.innerHTML = ''
     render({ ...halfway, density: 'compact' })
-    expect(texts('.bar-label')).toEqual([])
+    expect(texts('.bar-label')).toEqual(['Bytes', 'Files'])
+
+    document.body.innerHTML = ''
+    render({ ...halfway, density: 'compact', countKind: 'items' })
+    expect(texts('.bar-label')).toEqual(['Bytes', 'Items'])
   })
 })
