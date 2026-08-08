@@ -214,7 +214,7 @@ impl CreatedPaths {
     }
 
     /// The source paths a deep merge skipped. A MOVE passes these to
-    /// `delete_volume_path_recursive_preserving` so its source sweep spares the
+    /// `remove_tree` so its source sweep spares the
     /// children that never landed at the destination — deleting them would
     /// destroy the user's only copy.
     pub(super) fn skipped_source_paths(&self) -> std::collections::HashSet<PathBuf> {

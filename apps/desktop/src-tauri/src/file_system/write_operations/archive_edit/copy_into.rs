@@ -20,7 +20,7 @@ use super::super::conflict::ApplyToAll;
 use super::super::manager::{self, ManagedTaskGuard, OperationDescriptor, OperationSummaryText};
 use super::super::scratch_dir::ScratchDir;
 use super::super::state::{WriteOperationState, WriteSettledGuard};
-use super::super::transfer::volume::delete_volume_path_recursive;
+use super::super::transfer::volume::{TreeRemoval, remove_tree};
 use super::super::transfer::volume::pull_path_to_local;
 use super::super::types::{
     ConflictResolution, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError,
@@ -183,8 +183,16 @@ impl MaterializedSources {
         match &self.origin {
             SourceOrigin::Local => delete_move_sources(&self.absolute).await,
             SourceOrigin::Remote { volume, paths } => {
+                let nothing_to_spare = HashSet::new();
                 for path in paths {
-                    if let Err(e) = delete_volume_path_recursive(volume, path).await {
+                    if let Err(e) = remove_tree(
+                        volume,
+                        path,
+                        &nothing_to_spare,
+                        TreeRemoval::ArchiveMoveSourceAfterCommit,
+                    )
+                    .await
+                    {
                         // `e.path` is the item that actually refused (a leaf
                         // inside `path` when the source is a tree).
                         log::warn!(

@@ -26,7 +26,7 @@ use super::super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, SerialLeafProgress, TransferContext,
     TransferOutcome, build_pre_skip_set, drive_transfer_serial_async,
 };
-use super::cleanup::delete_volume_path_recursive_preserving;
+use super::cleanup::{TreeRemoval, remove_tree};
 use super::conflict::resolve_volume_conflict;
 // The same-volume rename path lives in `volume::move_same`; the dispatcher below
 // routes to its entry point.
@@ -632,7 +632,13 @@ pub(crate) async fn move_volumes_with_progress(
                     let delete_result = if source_is_dir {
                         let skipped = created.skipped_source_paths();
                         deep_skipped_files.fetch_add(skipped.len(), Ordering::Relaxed);
-                        delete_volume_path_recursive_preserving(&source_volume, &source_path, &skipped).await
+                        remove_tree(
+                            &source_volume,
+                            &source_path,
+                            &skipped,
+                            TreeRemoval::MoveSourceAfterDestinationLanded,
+                        )
+                        .await
                     } else {
                         source_volume.delete(&source_path).await.at(&source_path)
                     };

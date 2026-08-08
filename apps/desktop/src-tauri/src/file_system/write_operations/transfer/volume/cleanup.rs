@@ -1,9 +1,14 @@
 //! Volume cleanup / rollback helpers for the volume-aware copy and move paths.
+//! Shared by `volume::copy` and `volume::r#move`, so they live here rather than
+//! inside either operation module.
 //!
-//! `volume_rollback_with_progress` reverses copied files (with reverse-progress
-//! events) on cancel/failure, and `delete_volume_path_recursive` clears a file
-//! or directory tree off a volume. Both are shared by `volume::copy` and
-//! `volume::r#move`, so they live here rather than inside either operation module.
+//! **Three deletes, split by capability, and only [`remove_tree`] recurses.**
+//! Cleanup and rollback reach for [`delete_written_file`] (one node, no listing)
+//! and [`prune_created_dir_if_empty`] (empty-only, and it establishes the
+//! emptiness itself); a tree removal has to name its authorization in the type
+//! ([`TreeRemoval`]). That's what keeps a wrong "is this a directory?" belief
+//! from reaching a recursive delete: on the cleanup path there isn't one in
+//! scope. `DETAILS.md` § "Three ways to delete, and who may use each".
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -14,7 +19,7 @@ use super::super::super::state::{OperationIntent, WriteOperationState, load_inte
 use super::super::super::types::{OperationEventSink, WriteOperationPhase, WriteOperationType, WriteProgressEvent};
 use super::transfer_error::{AtPath, PathedVolumeError};
 use crate::file_system::listing::FileEntry;
-use crate::file_system::volume::Volume;
+use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 
 use cmdr_fs::staging::STAGING_TEMP_MARKER as TEMP_INFIX;
@@ -34,10 +39,13 @@ const STALE_TEMP_MIN_AGE: Duration = Duration::from_secs(60 * 60);
 ///
 /// `copied_paths` are the individual destination FILES the operation wrote (never a merged
 /// directory root). After deleting them, `created_dirs` — the directories this operation
-/// NEWLY created — are removed deepest-first with a non-recursive, empty-only delete. A
-/// directory that still holds a pre-existing sibling (a dest-only file the user already had,
-/// or a kept-partial under cancel) is left in place, so rollback never destroys data this
-/// operation didn't write.
+/// NEWLY created — are pruned deepest-first, empty-only. A directory that still holds a
+/// pre-existing sibling (a dest-only file the user already had, or a kept-partial under
+/// cancel) is left in place, so rollback never destroys data this operation didn't write.
+///
+/// Neither loop can recurse: they call [`delete_written_file`] and
+/// [`prune_created_dir_if_empty`], so a directory that reaches this ledger by mistake costs
+/// the user a leftover, never a file.
 ///
 /// Returns `true` if rollback completed fully, `false` if the user cancelled it.
 #[allow(
@@ -96,12 +104,11 @@ pub(super) async fn volume_rollback_with_progress(
             return false;
         }
 
-        // Each copied path may be a file or a directory tree, so delete recursively
-        if let Err(e) = delete_volume_path_recursive(volume, path).await {
+        // One node each: these are the FILES this operation wrote.
+        if let Err(e) = delete_written_file(volume, path).await {
             log::warn!(
-                "volume_rollback_with_progress: couldn't delete {} (under {}): {:?}",
+                "volume_rollback_with_progress: couldn't delete {}: {:?}",
                 e.path.display(),
-                path.display(),
                 e.error
             );
         }
@@ -146,26 +153,14 @@ pub(super) async fn volume_rollback_with_progress(
         }
     }
 
-    // Prune the directories this operation newly created, deepest-first, with a
-    // non-recursive empty-only delete. `created_dirs` is in creation order
-    // (shallowest first), so iterating in reverse hits leaves before their
-    // parents. A directory that still holds a pre-existing sibling (a dest-only
-    // file the user already had) won't be empty, so its `delete` fails with
-    // NotFound/IoError on real backends and we leave it standing — exactly the
-    // protection that keeps rollback from destroying untouched user data. We
-    // deliberately do NOT use `delete_volume_path_recursive` here: that would
-    // recurse into and delete those pre-existing siblings.
+    // Prune the directories this operation newly created, deepest-first.
+    // `created_dirs` is in creation order (shallowest first), so iterating in
+    // reverse empties leaves before their parents are tried.
     for dir in created_dirs.iter().rev() {
         if load_intent(&state.intent) == OperationIntent::Stopped {
             return false;
         }
-        if let Err(e) = volume.delete(dir).await {
-            log::debug!(
-                "volume_rollback_with_progress: not removing created dir {} (likely non-empty, kept): {:?}",
-                dir.display(),
-                e
-            );
-        }
+        prune_created_dir_if_empty(volume, dir).await;
     }
 
     true
@@ -176,7 +171,9 @@ pub(super) async fn volume_rollback_with_progress(
 /// one-per-in-flight-task set, already net of anything that finished.
 ///
 /// Best-effort per path: a partial that refuses to go is logged and the sweep
-/// moves on.
+/// moves on. One node each, via [`delete_written_file`] — a directory source's
+/// dest ROOT that reached this list through a driver bug is a merged folder
+/// holding the user's own files, and it must survive.
 pub(super) async fn clean_partial_writes(volume: &Arc<dyn Volume>, partials: &[PathBuf], operation_id: &str) {
     for partial_path in partials {
         log::debug!(
@@ -184,11 +181,10 @@ pub(super) async fn clean_partial_writes(volume: &Arc<dyn Volume>, partials: &[P
             partial_path.display(),
             operation_id,
         );
-        if let Err(e) = delete_volume_path_recursive(volume, partial_path).await {
+        if let Err(e) = delete_written_file(volume, partial_path).await {
             log::warn!(
-                "copy_volumes_with_progress: couldn't clean up {} of partial {}: {:?}",
+                "copy_volumes_with_progress: couldn't clean up partial {}: {:?}",
                 e.path.display(),
-                partial_path.display(),
                 e.error
             );
         }
@@ -291,47 +287,123 @@ pub(super) async fn reap_stale_transfer_temps(volume: &Arc<dyn Volume>, dir: &Pa
     Some(survivors)
 }
 
-/// Recursively deletes a file or directory on a volume, reporting the path that
-/// actually refused to go.
+/// Removes ONE destination file this operation wrote. ❌ Never recurses, never
+/// lists.
 ///
-/// For files: calls `volume.delete()` directly.
-/// For directories: lists contents, deletes children (recursing into subdirs),
-/// then deletes the directory itself. The sweep keeps going after a child fails
-/// so it clears everything it can, and it remembers the FIRST child failure with
-/// that child's own path.
+/// The only delete the rollback loop over `copied_paths` and the post-loop
+/// [`clean_partial_writes`] sweep may call. Both take their paths from a ledger
+/// of individual files, and a directory reaching either of them is a bug in the
+/// bookkeeping — one that used to cost the user a merged folder's worth of
+/// pre-existing files and now costs a leftover directory and a warn.
 ///
-/// What comes out of a directory that couldn't be emptied is that remembered
-/// child failure, ❌ never the directory's own `ENOTEMPTY`: the surviving child
-/// is the diagnosis and the parent's refusal is only its symptom, named after
-/// the folder the user selected. A directory that DID go leaves nothing behind
-/// to tell anyone about, so a child failure that raced with another deleter
-/// stays `Ok` rather than turning a finished move into a reported failure.
-pub(in crate::file_system::write_operations) async fn delete_volume_path_recursive(
-    volume: &Arc<dyn Volume>,
-    path: &Path,
-) -> Result<(), PathedVolumeError> {
-    delete_volume_path_recursive_preserving(volume, path, &HashSet::new()).await
+/// A path that's already gone is a success: the job is "make sure this isn't
+/// there", and a partial that never landed isn't worth a warn. Anything else
+/// (the `ENOTEMPTY` of a non-empty directory, a permission refusal) comes back
+/// carrying the path.
+async fn delete_written_file(volume: &Arc<dyn Volume>, path: &Path) -> Result<(), PathedVolumeError> {
+    match volume.delete(path).await {
+        Ok(()) | Err(VolumeError::NotFound(_)) => Ok(()),
+        Err(error) => Err(PathedVolumeError {
+            path: path.to_path_buf(),
+            error,
+        }),
+    }
 }
 
-/// [`delete_volume_path_recursive`], except every path in `preserve` — and every
-/// ancestor directory still holding one — survives.
+/// Removes a directory this operation created, but only once it's empty.
 ///
-/// This is what a MOVE sweeps its source folder with. A merge can resolve some
-/// deep children to Skip (the user chose Skip, or a conditional policy reduced
-/// to it), and a skipped child never landed at the destination: the source copy
-/// is the ONLY copy. An unconditional recursive sweep of the source folder
-/// therefore destroys exactly the data the user declined to move. Pinned by
+/// **Establishes the emptiness itself**, with a `list_directory`, rather than
+/// inferring it from `Volume::delete`'s no-recursion contract. Every shipping
+/// backend honors that contract and a conformance assertion holds them to it,
+/// but "the user's untouched files survive a rollback" shouldn't rest on a
+/// promise a future backend has to remember to keep. A listing that FAILS
+/// leaves the directory standing: unknown is not empty.
+///
+/// Best-effort and quiet — a directory kept because it still holds something is
+/// the normal outcome, not a failure.
+async fn prune_created_dir_if_empty(volume: &Arc<dyn Volume>, dir: &Path) {
+    match volume.list_directory(dir, None).await {
+        Ok(entries) if entries.is_empty() => {
+            if let Err(e) = volume.delete(dir).await {
+                log::debug!(
+                    "prune_created_dir_if_empty: couldn't remove empty created dir {}: {:?}",
+                    dir.display(),
+                    e
+                );
+            }
+        }
+        Ok(entries) => log::debug!(
+            "prune_created_dir_if_empty: keeping created dir {}, it still holds {} entr{}",
+            dir.display(),
+            entries.len(),
+            if entries.len() == 1 { "y" } else { "ies" }
+        ),
+        Err(e) => log::debug!(
+            "prune_created_dir_if_empty: keeping created dir {}, couldn't list it: {:?}",
+            dir.display(),
+            e
+        ),
+    }
+}
+
+/// Why a caller is allowed to take a whole tree down.
+///
+/// Fieldless on purpose, with **no `Default` and no `From<bool>`**: a recursive
+/// delete is the one thing in this directory that can remove data the user
+/// never named, so every call site writes down which authorization it holds.
+/// The three variants are the complete list; a fourth sweep has to justify
+/// itself by adding one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::file_system::write_operations) enum TreeRemoval {
+    /// A cross-type clash (a file landing on a folder) the user resolved with
+    /// Overwrite: the destination's type is wrong, so it goes before the source
+    /// materializes. `conflict.rs::apply_volume_conflict_resolution`.
+    UserChoseOverwriteAcrossTypes,
+    /// A cross-volume move sweeping its source, after
+    /// `flush_created_destinations` established that the destination landed.
+    /// Carries the merge's skipped children in `preserve`. `move.rs`.
+    MoveSourceAfterDestinationLanded,
+    /// An into-archive move removing the remote originals it pulled, after the
+    /// rewrite durably commits. `archive_edit/copy_into.rs`.
+    ArchiveMoveSourceAfterCommit,
+}
+
+/// Recursively removes a file or directory tree, sparing every path in
+/// `preserve` and every ancestor directory still holding one, and reporting the
+/// path that actually refused to go.
+///
+/// **The only recursive delete in this directory.** `why` names the
+/// authorization and rides into the log, so a tree removal says who asked for
+/// it; ❌ don't add a call site without adding the variant that describes it.
+///
+/// The `preserve` set is what a MOVE's source sweep rests on. A merge can
+/// resolve deep children to Skip (the user chose it, or a conditional policy
+/// reduced to it), and a skipped child never landed at the destination: the
+/// source copy is the ONLY copy, so an unconditional sweep destroys exactly the
+/// data the user declined to move. Pinned by
 /// `volume/move_merge_tests.rs::move_folder_merge_never_loses_a_byte_under_every_policy`.
-///
-/// A directory is deleted only once its whole subtree is gone, so preserving one
-/// leaf keeps its entire ancestor spine. A child that FAILS to delete counts as
+/// A directory goes only once its whole subtree is gone, so preserving one leaf
+/// keeps its entire ancestor spine. A child that FAILS to delete counts as
 /// preserved too — its parent still holds content, so attempting the parent
 /// would only add a misleading `ENOTEMPTY` on top of the real leaf error.
-pub(in crate::file_system::write_operations) async fn delete_volume_path_recursive_preserving(
+///
+/// For directories: lists contents, deletes children (recursing into subdirs),
+/// then deletes the directory itself. The sweep keeps going after a child fails
+/// so it clears everything it can, and it remembers the FIRST child failure
+/// with that child's own path. What comes out of a directory that couldn't be
+/// emptied is that remembered child failure, ❌ never the directory's own
+/// `ENOTEMPTY`: the surviving child is the diagnosis and the parent's refusal is
+/// only its symptom, named after the folder the user selected. A directory that
+/// DID go leaves nothing behind to tell anyone about, so a child failure that
+/// raced with another deleter stays `Ok` rather than turning a finished move
+/// into a reported failure.
+pub(in crate::file_system::write_operations) async fn remove_tree(
     volume: &Arc<dyn Volume>,
     path: &Path,
     preserve: &HashSet<PathBuf>,
+    why: TreeRemoval,
 ) -> Result<(), PathedVolumeError> {
+    log::debug!(target: "delete", "remove_tree: {} ({why:?})", path.display());
     delete_preserving_inner(volume, path, preserve).await.map(|_| ())
 }
 
@@ -381,7 +453,7 @@ async fn delete_preserving_inner(
             Err(e) => {
                 log::warn!(
                     target: "delete",
-                    "delete_volume_path_recursive: couldn't delete {}: {:?}",
+                    "remove_tree: couldn't delete {}: {:?}",
                     e.path.display(),
                     e.error
                 );
@@ -410,3 +482,7 @@ async fn delete_preserving_inner(
         }),
     }
 }
+
+#[cfg(test)]
+#[path = "cleanup_tests.rs"]
+mod tests;

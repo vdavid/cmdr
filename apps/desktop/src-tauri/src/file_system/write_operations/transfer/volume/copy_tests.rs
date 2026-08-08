@@ -1,3 +1,4 @@
+use super::super::cleanup::{TreeRemoval, remove_tree};
 use super::super::transfer_error::map_volume_error;
 use super::*;
 use crate::file_system::listing::FileEntry;
@@ -1855,15 +1856,16 @@ async fn test_scan_for_copy_batch_without_progress_still_works() {
     assert_eq!(result.aggregate.total_bytes, 5);
 }
 
-// ── delete_volume_path_recursive ──────────────────────────────────
+// ── remove_tree ───────────────────────────────────────────────────
 //
 // Regression coverage for the move-between-volumes recursive-delete fix.
 // `Volume::delete` is contractually for files or *empty* directories
 // (LocalPosix uses `std::fs::remove_dir`); cross-volume moves rely on
-// this helper to clear out the source tree depth-first.
+// this helper to clear out the source tree depth-first, which is why it
+// carries a `TreeRemoval` naming who authorized the recursion.
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn delete_volume_path_recursive_removes_nonempty_directory() {
+async fn remove_tree_removes_nonempty_directory() {
     let vol = Arc::new(InMemoryVolume::new("V"));
     vol.create_directory(Path::new("/photos")).await.unwrap();
     vol.create_file(Path::new("/photos/a.jpg"), b"a").await.unwrap();
@@ -1872,7 +1874,12 @@ async fn delete_volume_path_recursive_removes_nonempty_directory() {
     vol.create_file(Path::new("/photos/sub/c.jpg"), b"c").await.unwrap();
 
     let result: Arc<dyn Volume> = vol.clone();
-    delete_volume_path_recursive(&result, Path::new("/photos"))
+    remove_tree(
+        &result,
+        Path::new("/photos"),
+        &HashSet::new(),
+        TreeRemoval::MoveSourceAfterDestinationLanded,
+    )
         .await
         .unwrap();
 
@@ -1882,12 +1889,17 @@ async fn delete_volume_path_recursive_removes_nonempty_directory() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn delete_volume_path_recursive_removes_single_file() {
+async fn remove_tree_removes_single_file() {
     let vol = Arc::new(InMemoryVolume::new("V"));
     vol.create_file(Path::new("/file.txt"), b"hi").await.unwrap();
 
     let result: Arc<dyn Volume> = vol.clone();
-    delete_volume_path_recursive(&result, Path::new("/file.txt"))
+    remove_tree(
+        &result,
+        Path::new("/file.txt"),
+        &HashSet::new(),
+        TreeRemoval::MoveSourceAfterDestinationLanded,
+    )
         .await
         .unwrap();
 
@@ -1898,7 +1910,7 @@ async fn delete_volume_path_recursive_removes_single_file() {
 /// that leaf, not the root's own "directory not empty" — which names the folder
 /// the user selected and tells them nothing they can act on.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn delete_volume_path_recursive_reports_the_leaf_that_refused() {
+async fn remove_tree_reports_the_leaf_that_refused() {
     use super::super::strategy::test_support::UndeletableSource;
 
     let vol = UndeletableSource::new(
@@ -1917,7 +1929,12 @@ async fn delete_volume_path_recursive_reports_the_leaf_that_refused() {
         .await
         .unwrap();
 
-    let failure = delete_volume_path_recursive(&volume, Path::new("/tree"))
+    let failure = remove_tree(
+        &volume,
+        Path::new("/tree"),
+        &HashSet::new(),
+        TreeRemoval::MoveSourceAfterDestinationLanded,
+    )
         .await
         .expect_err("the leaf never deletes, so the sweep can't finish");
     assert_eq!(
@@ -1932,12 +1949,18 @@ async fn delete_volume_path_recursive_reports_the_leaf_that_refused() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn delete_volume_path_recursive_missing_path_is_ok() {
+async fn remove_tree_missing_path_is_ok() {
     // Used during move cleanup where the path may already be gone (cancelled mid-op,
     // partial state). No error.
     let vol = Arc::new(InMemoryVolume::new("V"));
     let result: Arc<dyn Volume> = vol.clone();
-    let r = delete_volume_path_recursive(&result, Path::new("/never-existed")).await;
+    let r = remove_tree(
+        &result,
+        Path::new("/never-existed"),
+        &HashSet::new(),
+        TreeRemoval::MoveSourceAfterDestinationLanded,
+    )
+    .await;
     assert!(r.is_ok(), "expected Ok, got {r:?}");
 }
 

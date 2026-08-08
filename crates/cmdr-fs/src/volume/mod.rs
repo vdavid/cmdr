@@ -353,7 +353,7 @@ pub trait Volume: Send + Sync {
     /// only). A backend that recurses fails it.
     ///
     /// For recursive deletes, callers should walk the tree themselves and call
-    /// `delete` per leaf. See `delete_volume_path_recursive` in
+    /// `delete` per leaf. See `remove_tree` in
     /// `apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/cleanup.rs`.
     ///
     /// Default: `NotSupported`.

@@ -480,7 +480,7 @@ pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result
             // Mark this destination as in-flight so cancel/error can clean it
             // up — but ONLY for a FILE source. A DIRECTORY source's dest is a
             // (possibly pre-existing, merged) dir whose cleanup path is
-            // `delete_volume_path_recursive`; recording the dir ROOT here and
+            // `remove_tree`; recording the dir ROOT here and
             // then recursively deleting it on keep-partials/rollback would
             // destroy pre-existing dest-only files (the merge invariant). A
             // directory source's cleanup is owned entirely by the per-file

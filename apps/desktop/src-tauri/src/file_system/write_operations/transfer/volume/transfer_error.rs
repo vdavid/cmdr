@@ -47,7 +47,7 @@ impl From<(VolumeError, PathBuf)> for WriteFailure {
 
 /// A `VolumeError` plus the path that actually produced it.
 ///
-/// One `copy_single_path` or `delete_volume_path_recursive` call can descend a
+/// One `copy_single_path` or `remove_tree` call can descend a
 /// whole subtree, so the failure a caller sees may come from a file thousands of
 /// entries below the top-level item the user selected. Only the walker knows
 /// which one it was, and once the error leaves it that knowledge is gone for
@@ -58,7 +58,7 @@ impl From<(VolumeError, PathBuf)> for WriteFailure {
 /// and its only honest fallback is the top-level item, which is the wrong
 /// answer for every directory transfer.
 /// Visible across `write_operations` (not just `transfer`) because
-/// `delete_volume_path_recursive` returns it and `archive_edit` calls that.
+/// `remove_tree` returns it and `archive_edit` calls that.
 #[derive(Debug, Clone)]
 pub(in crate::file_system::write_operations) struct PathedVolumeError {
     /// The item that failed, as deep in the tree as the walker got.

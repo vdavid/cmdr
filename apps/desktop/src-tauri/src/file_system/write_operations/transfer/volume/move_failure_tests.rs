@@ -143,7 +143,7 @@ async fn cross_volume_move_error_names_the_child_that_failed_not_the_selected_fo
 /// Same bug, second phase: a cross-volume move whose SOURCE DELETE trips on one
 /// file deep inside the folder must report that file, not the folder.
 ///
-/// The delete phase walks the source subtree via `delete_volume_path_recursive`,
+/// The delete phase walks the source subtree via `remove_tree`,
 /// and the only thing that reaches the caller from a real backend is the parent
 /// directory's `ENOTEMPTY` — the symptom of a child that survived, named after
 /// the folder the user selected. The child's path is the diagnosis and it exists

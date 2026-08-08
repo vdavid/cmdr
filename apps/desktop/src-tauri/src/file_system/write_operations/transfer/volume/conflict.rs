@@ -11,6 +11,7 @@
 //! - Rename: Find unique name like "file (1).txt"
 
 use crate::ignore_poison::IgnorePoison;
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -462,7 +463,18 @@ async fn apply_volume_conflict_resolution(
                 // Cross-type (file→folder or folder→file): clear the dest first.
                 if dest_is_dir {
                     // File→folder overwrite: recursively delete the dest folder.
-                    if let Err(e) = super::cleanup::delete_volume_path_recursive(dest_volume, dest_path).await {
+                    // The one recursive delete this file is allowed, and it says
+                    // so in the type: the user picked Overwrite on a clash whose
+                    // types differ.
+                    let nothing_to_spare = HashSet::new();
+                    if let Err(e) = super::cleanup::remove_tree(
+                        dest_volume,
+                        dest_path,
+                        &nothing_to_spare,
+                        super::cleanup::TreeRemoval::UserChoseOverwriteAcrossTypes,
+                    )
+                    .await
+                    {
                         log::warn!(
                             "apply_volume_conflict_resolution(Overwrite): recursive delete of folder {} stopped at {}: {}",
                             dest_path.display(),

@@ -407,6 +407,78 @@ impl Volume for FlakyDest {
 }
 
 // ========================================================================
+// A volume that lies: `delete` recurses, against the trait contract.
+// ========================================================================
+
+/// Wraps an `InMemoryVolume` but makes `delete` recursive, so a guard that
+/// leans on `Volume::delete`'s "a single file or **empty** directory" contract
+/// has something to fail against.
+///
+/// Every shipping backend honors that contract, and
+/// `cmdr_fs::volume::conformance::assert_delete_leaves_a_non_empty_dir_intact`
+/// keeps it that way. This double is for the backend that doesn't exist yet: a
+/// guard that only survives because a promise held is a guard that breaks the
+/// day someone writes a new `Volume`. Any code path that must not over-delete
+/// gets pointed at this volume and has to protect the user's data by itself.
+pub(crate) struct RecursiveDeleteVolume {
+    inner: Arc<crate::file_system::volume::InMemoryVolume>,
+}
+
+impl RecursiveDeleteVolume {
+    pub(crate) fn wrapping(inner: Arc<crate::file_system::volume::InMemoryVolume>) -> Arc<Self> {
+        Arc::new(Self { inner })
+    }
+}
+
+impl Volume for RecursiveDeleteVolume {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+    fn root(&self) -> &Path {
+        self.inner.root()
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn list_directory<'a>(
+        &'a self,
+        path: &'a Path,
+        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        self.inner.list_directory(path, on_progress)
+    }
+    fn get_metadata<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        self.inner.get_metadata(path)
+    }
+    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        self.inner.exists(path)
+    }
+    fn is_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        self.inner.is_directory(path)
+    }
+    /// Recursive delete: contractually wrong, but plausible for some backends.
+    fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            if self.inner.is_directory(path).await.unwrap_or(false) {
+                let entries = self.inner.list_directory(path, None).await?;
+                for entry in entries {
+                    let child = PathBuf::from(&entry.path);
+                    // Recurse: child might also be a non-empty directory.
+                    Box::pin(self.delete(&child)).await.ok();
+                }
+            }
+            self.inner.delete(path).await
+        })
+    }
+}
+
+// ========================================================================
 // Source that won't give up one file (the move's source-delete phase).
 // ========================================================================
 

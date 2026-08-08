@@ -6,70 +6,13 @@
 
 use super::*;
 use crate::file_system::listing::FileEntry;
-use crate::file_system::volume::{InMemoryVolume, VolumeError};
+use crate::file_system::volume::InMemoryVolume;
 use crate::file_system::write_operations::types::CollectorEventSink;
-use std::pin::Pin;
 use std::sync::Arc;
 
-/// Wraps an `InMemoryVolume` but makes `delete` recursive, simulating a future
-/// backend (or refactor) that doesn't honor the trait's "file or empty directory"
-/// contract.
-///
-/// Used to assert that `apply_volume_conflict_resolution(Overwrite)` produces a
-/// merge UX even when the underlying delete is recursive. If this volume's
-/// `delete` ever runs against a non-empty `dest_path`, the test below catches
-/// it because files unique to the dest tree disappear.
-struct RecursiveDeleteVolume {
-    inner: Arc<InMemoryVolume>,
-}
-
-impl Volume for RecursiveDeleteVolume {
-    fn name(&self) -> &str {
-        self.inner.name()
-    }
-    fn root(&self) -> &Path {
-        self.inner.root()
-    }
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-    fn list_directory<'a>(
-        &'a self,
-        path: &'a Path,
-        on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
-        self.inner.list_directory(path, on_progress)
-    }
-    fn get_metadata<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
-        self.inner.get_metadata(path)
-    }
-    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
-        self.inner.exists(path)
-    }
-    fn is_directory<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
-        self.inner.is_directory(path)
-    }
-    /// Recursive delete: contractually wrong, but plausible for some backends.
-    fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
-            if self.inner.is_directory(path).await.unwrap_or(false) {
-                let entries = self.inner.list_directory(path, None).await?;
-                for entry in entries {
-                    let child = PathBuf::from(&entry.path);
-                    // Recurse: child might also be a non-empty directory.
-                    Box::pin(self.delete(&child)).await.ok();
-                }
-            }
-            self.inner.delete(path).await
-        })
-    }
-}
+/// The recursive-delete double lives in `strategy_test_support.rs`: the cleanup
+/// suite pins `prune_created_dir_if_empty` against the same lying backend.
+use super::super::strategy::test_support::RecursiveDeleteVolume;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn dir_overwrite_must_merge_not_replace_even_with_recursive_delete() {
@@ -87,9 +30,7 @@ async fn dir_overwrite_must_merge_not_replace_even_with_recursive_delete() {
         .unwrap();
 
     // Wrap so `delete` is recursive: the dangerous future-backend scenario.
-    let dest_recursive: Arc<dyn Volume> = Arc::new(RecursiveDeleteVolume {
-        inner: Arc::clone(&inner),
-    });
+    let dest_recursive: Arc<dyn Volume> = RecursiveDeleteVolume::wrapping(Arc::clone(&inner));
 
     // Resolve an Overwrite conflict for `/photos` (source is also a directory).
     let result = apply_volume_conflict_resolution(

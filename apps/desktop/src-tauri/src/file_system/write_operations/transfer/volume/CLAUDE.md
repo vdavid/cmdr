@@ -15,8 +15,8 @@ same-volume), the merge/staging engine (`strategy.rs`, `sequential_extract.rs`),
   policy, backend, and cancel/rollback/retry mid-merge (`merge_tests.rs`).
 - **Dir-vs-dir is NEVER a conflict**; only files prompt. **Overwrite means merge for dirs, replace for files**, enforced
   at the `apply_volume_conflict_resolution` call site, ❌ not by `Volume::delete`, and NOT reversible.
-- **A MOVE's source sweep spares every child the merge skipped** (`delete_volume_path_recursive_preserving`): a
-  skipped child's source is the ONLY copy.
+- **A MOVE's source sweep spares every child the merge skipped** (`remove_tree`'s `preserve` set): a skipped child's
+  source is the ONLY copy.
 - **❌ Never fabricate a destination size for the conflict dialog**; report `None`. A fabricated `0` makes every dest
   look smaller, silently turning "Overwrite all smaller" into an unconditional overwrite.
 - **Skip the top-level dest pre-check ONLY for a dest dir THIS op created** (`DirectoryCreation::Created`), ❌ never
@@ -26,16 +26,16 @@ same-volume), the merge/staging engine (`strategy.rs`, `sequential_extract.rs`),
 
 - **A cross-volume file write stages on `.cmdr-tmp-<uuid>`**, taking its final name only after its last byte. Ask
   `strategy.rs::resolve_staging`; ❌ single-shot-ness earns an exemption, NEVER smallness.
-- **Cleanup and rollback for a DIRECTORY source are per-FILE, never the dir root**: a merge holds pre-existing dest
-  files, so a root delete is silent data loss.
-- **A missing `source_hints` entry means UNKNOWN, ❌ never "file"**, and the RESOLVED answer drives the cleanup/ledger
-  branch. Ask `strategy.rs::resolve_source_is_directory`. A defaulted `false` streams a directory as a file AND lets a
-  failed copy recursively delete the merged dest ROOT, so **`SourceHint` has no `Default`; ❌ never add one.** ❌ Don't
-  probe where a hint EXISTS (15k MTP sources = 15k listings). `DETAILS.md` § "A missing source hint means unknown".
-- **❌ A probe whose answer can select a destructive branch gets no default.** ❌ No
-  `.is_directory(…).await.unwrap_or(false)` in `conflict.rs`, `rename_merge.rs`, or `move_same.rs`: a guessed `false`
-  reaches a recursive delete of the user's dest folder. `NotFound` is an ANSWER; anything else fails the item.
-  `DETAILS.md` § "Every belief-default in this directory, decided".
+- **Only `cleanup.rs::remove_tree` recurses, and its `TreeRemoval` argument names who authorized it.** Cleanup and
+  rollback call `delete_written_file` / `prune_created_dir_if_empty` (which lists before it deletes), so a wrong belief
+  can't reach a recursive delete: there isn't one in scope. A fourth sweep adds a variant, or it doesn't happen.
+  `DETAILS.md` § "Three ways to delete, and who may use each".
+- **An unknown "is this a directory?" is ❌ never guessed.** A missing `source_hints` entry means UNKNOWN, ❌ never
+  "file" (ask `strategy.rs::resolve_source_is_directory`; the RESOLVED answer drives the cleanup/ledger branch), and ❌
+  no `.is_directory(…).await.unwrap_or(false)` here: a guessed `false` streams a directory as a file and picks the
+  destructive branch. `NotFound` is an ANSWER; anything else fails the item. **`SourceHint` has no `Default`; ❌ never
+  add one.** ❌ Don't probe where a hint EXISTS (15k MTP sources = 15k listings). `DETAILS.md` §§ "A missing source hint
+  means unknown", "Every belief-default in this directory, decided".
 - **Cross-FS move deletes sources AFTER `flush_created_destinations`, preserving Skipped ones.** Same-volume move is a
   rename-merge with top-level hints only, never a subtree walk.
 
@@ -47,8 +47,7 @@ same-volume), the merge/staging engine (`strategy.rs`, `sequential_extract.rs`),
 - **A failure carries the path it happened ON** (`transfer_error.rs::PathedVolumeError`): ❌ never re-label with the
   top-level source, ❌ never `.at()` above the frame that knows the item; a directory sweep names the first child that
   refused. `DETAILS.md` § "Naming the item that failed".
-- **A `*_tests.rs` file here is a `#[path]` CHILD of the module it pins**, so inside one `super::` is that parent and
-  `super::super::` is `volume`, one level shallower than the same text at file scope. Check which scope you're in: a
-  wrongly-deepened `super::` chain can still compile against a same-named module at the other level.
+- **A `*_tests.rs` here is a `#[path]` CHILD of the module it pins**: inside one, `super::` is that parent and
+  `super::super::` is `volume`, one level shallower than at file scope. A wrongly-deepened chain still compiles.
 
 Semantics, flows, decisions, and the rollback ledger: `DETAILS.md`. Read it before any non-trivial work here.

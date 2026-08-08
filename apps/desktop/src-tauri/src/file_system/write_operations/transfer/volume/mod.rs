@@ -31,8 +31,9 @@ mod transfer_error;
 pub use copy::{copy_between_volumes, scan_for_volume_copy};
 pub use r#move::move_between_volumes;
 
-/// The recursive source sweep a zip copy-into needs after pulling a subtree.
-pub(in crate::file_system::write_operations) use cleanup::delete_volume_path_recursive;
+/// The recursive source sweep a zip copy-into needs after pulling a subtree,
+/// plus the enum every caller names its authorization with.
+pub(in crate::file_system::write_operations) use cleanup::{TreeRemoval, remove_tree};
 /// The cross-volume copy body, reused as the extract phase of an out-of-zip
 /// move (`archive_edit`).
 pub(crate) use copy::copy_volumes_with_progress;
