@@ -15,20 +15,66 @@ unable to flake, so it says WHERE the evidence came from rather than asking anyo
 
 ## What the de-flaking pass changed (2026-08-08)
 
-Four fixes, ranked by how much of the board they clear:
+Landed:
 
-1. **No spec can inherit another's fixture tree.** `fixtures.ts`'s global `beforeEach` now runs `recreateFixtures` +
-   `flushFileWatcher` before every test. Roughly half the specs never called `recreateFixtures`, and calling it in your
-   own `beforeEach` protects you, not whoever runs after your last test. This is the class `dialog-inset` belonged to;
-   it had been fixed one spec at a time. The disk restore alone wasn't enough — the pane keeps serving its cached
-   listing until something re-reads it, which is what `flushFileWatcher` is for.
-2. **A click that never happened fails at the click.** New `clickEntryInPane` replaces the `if (entry) entry.click()`
-   idiom in `ensureAppReady` and four specs.
-3. **`selectItemsByName` is race-free and verifies its own selection** (one-snapshot index read, then an assertion that
-   the selection is exactly what was asked for).
-4. **`search-open-in-pane` resets the dialog (⌘N) before typing**, so the leftover run's rows can't satisfy its wait.
+1. **A click that never happened fails at the click.** New `clickEntryInPane` replaces the `if (entry) entry.click()`
+   idiom in `ensureAppReady` and four specs, and `app.spec`'s "moves cursor when clicking a file entry" stopped
+   `return`ing early on a short pane (a silent pass of a test that never clicked).
+2. **`selectItemsByName` is race-free and verifies its own selection**: one-snapshot index read, then an assertion that
+   the selection is exactly what was asked for.
+3. **`search-open-in-pane` resets the dialog (⌘N) before typing**, so a leftover run's rows can't satisfy its wait;
+   `typeAndRunSearch` and `setSearchInputValue` stopped swallowing a missing input.
+4. **`flushFileWatcher` after the external writes** in `archive-browsing` (×2) and `conflict-edge-cases`.
+
+Not landed, and the most important thing in this document:
+
+5. ❌ **The shared-fixture leak is diagnosed and reproducible, and five attempts to fix it all measured worse.** See §
+   The shared-fixture leak below. It is the single biggest source of E2E flake found in this pass, it is NOT fixed, and
+   the next person should start there — with the measurements, not from scratch.
 
 Detail and the evidence for each sit in the commits; the per-entry verdicts are inline below.
+
+## The shared-fixture leak — diagnosed, reproduced, NOT fixed
+
+**The defect.** The fixture tree under `left/` and `right/` is shared and mutated by every conflict, file-op, archive,
+and compress spec. `recreateFixtures` in your own `beforeEach` protects YOU, not whoever runs after your last test, and
+roughly half the specs never call it at all. So a spec landing behind a mutating one meets that spec's tree and dies
+inside `ensureAppReady` with "expected files not found" — a failure that names the VICTIM rather than the culprit and
+whose membership shifts with shard order, which is exactly what reads as saturation flake.
+
+**Reproduction (deterministic).** Run `conflict-overwrite-conditional.spec.ts` then `search-open-in-pane.spec.ts`
+against one app instance. `search-open-in-pane:272` fails every run with the left pane showing `equal.txt`, `newer.txt`,
+`older.txt`.
+
+**Why it matters more than any ranked entry.** It doesn't concentrate on one test, so it never surfaced as a ranked
+line: it surfaces as whichever spec happened to run next. Sixteen of the corpus's twenty-two "long tail" entries are
+`file-operations` / `conflict-*` / `archive-browsing` failures from ONE shard-run (`nonmtp1/1786017110`), which is
+exactly this signature: one spec dirties the tree, everything behind it fails inside `ensureAppReady`.
+
+**What was tried, and what each cost.** Measured on an M3 Max, 2026-08-08, three to four runs per variant against one
+app instance, with `archive-browsing.spec.ts` as the regression canary (baseline 3/4 green):
+
+1. Global `beforeEach` doing `recreateFixtures` + `flushFileWatcher`: leak fixed, **`archive-browsing` 0/4**. The blind
+   delete-and-rewrite gave every file a new inode each test, cutting the archive volume's watch of `sample.zip` out from
+   under the specs that mutate the zip and wait for its refresh.
+2. Same, but `recreateFixtures` made non-destructive (compare before writing, so an already-correct tree is untouched):
+   `archive-browsing` 2/4. Better, still a regression.
+3. Non-destructive restore, flush moved into `ensureAppReady` (after the panes are back on local dirs, so no archive
+   listing is active): `archive-browsing` **4/4**, but **the leak came back** — the pane still served the stale listing.
+4. Flush repeated between rounds of the readiness poll, in case the fire-and-forget `mcp-nav-to-path` was undoing a
+   single flush: leak still present, 0/4.
+5. Nav-bounce (navigate the pane to the fixture root and back, forcing a genuine directory read) plus the flush: leak
+   still present, 0/3.
+
+**The finding that blocks it.** Restoring the tree on disk is easy; making the app SEE the restore is the hard part, and
+`flush_file_watcher` does not do it for this case. Across variants 3-5 the left pane kept serving the previous spec's
+entries for the full 10 s budget through five flushes AND a navigate-away-and-back. So the gap is in how a listing gets
+replaced, not in the test helper, and closing it means touching production refresh behavior, which is beyond what a
+de-flaking pass should change on measurement this thin.
+
+**Recommended next step.** Establish first, in isolation, what actually makes a pane re-read a directory whose contents
+changed externally while it was displayed (an MCP `refresh`, a volume re-select, something else), then build the
+`beforeEach` on that primitive. Don't re-attempt the five variants above.
 
 **Scope note.** "Flake" here means the test failed while the code under it was correct. Three failures found this night
 were NOT flake and are already fixed (`§ Fixed this night`); they're kept because they are the model for the level of
@@ -119,8 +165,8 @@ Each entry: **count — spec** then the hypothesis and confidence.
 - **2 — `conflict-edge-cases.spec.ts:296` Copy with Overwrite All handles directory-over-file**: conflict spec with
   `recreateFixtures` in `beforeEach`; likely the `selectItemsByName` one-shot read described below. Confidence medium.
   - ✅ **Fixed, rungs 1 + 4.** `selectItemsByName` was indeed the one-shot read; it now waits for the whole set in one
-    snapshot and asserts the resulting selection matches. The spec also inherited the shared-fixture leak, now fixed
-    globally.
+    snapshot and asserts the resulting selection matches. This spec is also exposed to the shared-fixture leak, which
+    stays open.
 - **2 — `archive-browsing.spec.ts:459` cancelling a paste into the archive**: writes 24 MB externally then relies on the
   pane seeing it, as `compress-basic:151` did, but reaches it via `navigatePaneTo`, which re-reads, so the mechanism
   differs. Confidence low.
@@ -140,9 +186,10 @@ Each entry: **count — spec** then the hypothesis and confidence.
   individually diagnosed.
   - 🟡 **Mostly explained by the shared-fixture leak.** Sixteen of the 22 are `file-operations` / `conflict-*` /
     `archive-browsing` entries from ONE shard-run (`nonmtp1/1786017110`), the signature of a single spec dirtying the
-    tree and everything behind it failing inside `ensureAppReady` — the class the global `beforeEach` now closes.
-    `search-live:41` and `search-recent:31` are the 🟡 pre-`0fc5d250c` walk-ground cluster (`0fc5d250c` names
-    `search-recent` explicitly). The rest were not individually diagnosed and stay unclaimed rather than assumed fixed.
+    tree and everything behind it failing inside `ensureAppReady` — the shared-fixture leak, diagnosed but NOT fixed
+    (see its section above). `search-live:41` and `search-recent:31` are the 🟡 pre-`0fc5d250c` walk-ground cluster
+    (`0fc5d250c` names `search-recent` explicitly). The rest were not individually diagnosed and stay unclaimed rather
+    than assumed fixed.
 
 `conflict-dialog-matrix.spec.ts:147` does not appear above because it first failed in the final run of this night; it is
 diagnosed below and is **not** a low-confidence entry.
@@ -314,10 +361,11 @@ predictions were wrong in instructive ways.
 
 ### The biggest finding wasn't on the list
 
-Half the E2E specs never restored the shared fixture tree, so any of them landing behind a mutating spec failed inside
+Half the E2E specs never restore the shared fixture tree, so any of them landing behind a mutating spec fails inside
 `ensureAppReady` against the WRONG spec's fixtures. It never showed up as a ranked entry because it doesn't concentrate
 on one test: it shows up as whichever spec happened to run next, which reads as saturation flake and is why the corpus
-sorted sixteen such entries into an undiagnosed long tail. Reproduced 5/5, fixed globally.
+sorted sixteen such entries into an undiagnosed long tail. Reproduced deterministically; **not fixed** — five attempts
+and their measurements are in § The shared-fixture leak, and that section is where the next attempt should start.
 
 ## Appendix: the full ledger, every spec and every shard-run it failed in
 

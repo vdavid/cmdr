@@ -259,17 +259,19 @@ export async function selectItemsByName(tauriPage: PageLike, names: string[]): P
   // needed, and a genuinely wrong selection still fails.
   let lastFailure = 'no attempt completed'
   for (let attempt = 0; attempt < 3; attempt++) {
-    let found: { indices: number[] } | { missing: string[] } = { missing: names }
     const listed = await pollUntil(
       tauriPage,
-      async () => {
-        found = await findIndicesInFocusedPane(tauriPage, names)
-        return !('missing' in found)
-      },
+      async () => !('missing' in (await findIndicesInFocusedPane(tauriPage, names))),
       5000,
     )
+    // Re-read rather than capture inside the poll: a `let` assigned from a
+    // callback defeats control-flow narrowing, and the re-read costs one extra
+    // `evaluate` on the happy path. If a reload slipped in between, this attempt
+    // reports it and the next one starts over.
+    const found = await findIndicesInFocusedPane(tauriPage, names)
     if (!listed || 'missing' in found) {
-      lastFailure = `pane never listed ${'missing' in found ? found.missing.map((name) => `'${name}'`).join(', ') : '(unknown)'}`
+      const missing = 'missing' in found ? found.missing.map((name) => `'${name}'`).join(', ') : '(unknown)'
+      lastFailure = `pane never listed ${missing}`
       continue
     }
 
