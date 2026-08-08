@@ -41,6 +41,13 @@ invariants: `CLAUDE.md`. Only the layout facts neither of those carries live her
   (`GatedChunkStream`, `IncrementalDest`), which control WHEN bytes arrive and are a different axis entirely. ❌
   `FaultyVolume` over an `InMemoryVolume` can't show a half-written destination — the in-memory store buffers a whole
   file and creates it at the end — so partial-destination cells use `LocalPosixVolume`.
+- **An armed fault that never fires reads exactly like a passing test.** A cell that arms `FaultyOp::IsDirectory` on the
+  source and then lets the operation run a REAL preflight scan gets a confident `is_directory` hint in `source_hints`,
+  so `resolve_volume_conflict` takes its `Some(hint)` arm and never probes. The cell then asserts the UNFAULTED
+  behavior — for a cross-type Overwrite, the documented recursive clear of the destination — while reading as though it
+  covered the unanswerable-probe case. Two halves keep that honest: seed an empty-`per_path` preview
+  (`seed_incoherent_scan_result_for_test`) so no hint exists and the probe actually happens, and assert
+  `FaultyVolume::fault_fired(op)` so a cell that stops reaching its own fault fails instead of quietly changing subject.
 
 ### The safety oracle
 

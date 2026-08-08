@@ -309,6 +309,17 @@ impl<V: Volume + 'static> FaultyVolume<V> {
         &self.inner
     }
 
+    /// Whether the fault armed on `op` actually fired, so a test can prove its
+    /// injection reached the code under test. A fault that never fires makes the
+    /// test assert the UNFAULTED behavior while reading as though it covered the
+    /// faulted one, which is a green test covering nothing.
+    pub(crate) fn fault_fired(&self, op: FaultyOp) -> bool {
+        let Some(armed) = self.faults.get(&op) else {
+            return false;
+        };
+        self.calls.lock_ignore_poison().get(&op).copied().unwrap_or(0) >= armed.nth
+    }
+
     /// Counts this call to `op` and returns the error if it's the armed one.
     fn fault_for(&self, op: FaultyOp) -> Option<VolumeError> {
         let armed = self.faults.get(&op)?;

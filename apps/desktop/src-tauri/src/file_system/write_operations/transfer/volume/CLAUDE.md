@@ -50,6 +50,8 @@ same-volume), the merge/staging engine (`strategy.rs`, `sequential_extract.rs`),
 - **A `*_tests.rs` here is a `#[path]` CHILD of the module it pins**, so `super::` is one level shallower than at file
   scope; a wrongly-deepened chain still compiles. `DETAILS.md` § Files.
 - **Inject a wrong or missing answer with `FaultyVolume`** (`faulty_volume_test_support.rs`), ❌ never a fresh
-  forwarder; `forward_volume_methods!` writes the boilerplate, so a double's diff is only its lie.
+  forwarder; `forward_volume_methods!` writes the boilerplate, so a double's diff is only its lie. **Assert
+  `fault_fired(op)`**: a preflight hint can route the code past your fault, and the cell then asserts the UNFAULTED
+  behavior while reading as though it covered the faulted one. `DETAILS.md` § test-support files.
 
 Semantics, flows, decisions, and the rollback ledger: `DETAILS.md`. Read it before any non-trivial work here.

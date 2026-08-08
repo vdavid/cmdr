@@ -981,7 +981,7 @@ async fn smb_integration_delete_with_a_local_shaped_preview_removes_only_the_req
 async fn smb_integration_unknown_source_type_never_clears_a_share_folder() {
     use crate::file_system::write_operations::{
         CollectorEventSink, ConflictResolution, FaultyOp, FaultyVolume, VolumeCopyConfig, WriteOperationState,
-        copy_volumes_with_progress,
+        copy_volumes_with_progress, seed_incoherent_scan_result_for_test,
     };
     use std::time::Duration;
 
@@ -1006,14 +1006,24 @@ async fn smb_integration_unknown_source_type_never_clears_a_share_folder() {
         "src",
         local_dir.path().to_path_buf(),
     ));
-    let source_vol: Arc<dyn Volume> = FaultyVolume::wrapping(Arc::clone(&local_vol))
-        .failing_call(FaultyOp::IsDirectory, 1, injected_read_failure())
-        .arc();
+    let faulty = Arc::new(
+        FaultyVolume::wrapping(Arc::clone(&local_vol)).failing_call(FaultyOp::IsDirectory, 1, injected_read_failure()),
+    );
+    let source_vol: Arc<dyn Volume> = Arc::clone(&faulty) as Arc<dyn Volume>;
+
+    // The empty-`per_path` cache hit is what makes the probe happen at all: with a
+    // real scan the preflight hands the resolver a confident `is_directory: false`
+    // and `resolve_volume_conflict` never asks the source. Then the armed fault
+    // wouldn't fire and this cell would quietly assert the UNFAULTED behavior — a
+    // plain cross-type Overwrite, which is documented to clear the folder.
+    let preview_id = format!("smb-unknown-type-{}", uuid::Uuid::new_v4());
+    seed_incoherent_scan_result_for_test(preview_id.clone(), vec![PathBuf::from("swap")], 1, 13);
 
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(0)));
     let events = Arc::new(CollectorEventSink::new());
     let config = VolumeCopyConfig {
         conflict_resolution: ConflictResolution::Overwrite,
+        preview_id: Some(preview_id),
         ..VolumeCopyConfig::default()
     };
 
@@ -1028,6 +1038,12 @@ async fn smb_integration_unknown_source_type_never_clears_a_share_folder() {
         &config,
     )
     .await;
+
+    // The whole cell rests on the source being ASKED and refusing to answer.
+    assert!(
+        faulty.fault_fired(FaultyOp::IsDirectory),
+        "the source type was never probed, so this cell proved nothing about an unanswerable probe"
+    );
 
     // ❗ Whatever the operation decided, the user's folder and its contents are
     // still there. An unanswerable probe is never a licence to clear a folder.
