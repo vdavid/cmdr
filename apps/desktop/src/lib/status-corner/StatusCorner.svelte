@@ -8,6 +8,7 @@
     // most ambient); anything passed as `children` renders to its left.
     import type { Snippet } from 'svelte'
     import IndexingStatusIndicator from '$lib/indexing/IndexingStatusIndicator.svelte'
+    import OperationChip from './OperationChip.svelte'
 
     interface Props {
         /** Rendered left of the indexing hourglass. */
@@ -19,6 +20,7 @@
 
 <div class="status-corner">
     {@render children?.()}
+    <OperationChip />
     <IndexingStatusIndicator />
 </div>
 

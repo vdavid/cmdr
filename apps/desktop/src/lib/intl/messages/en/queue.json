@@ -111,5 +111,29 @@
     "placeholders": {
       "count": "how many rows are selected"
     }
+  },
+
+  "queue.chip.ariaLabel": "{label}, {percentText} percent. Open the operation queue.",
+  "@queue.chip.ariaLabel": {
+    "description": "Screen-reader label for the small progress chip in the main window''s top-right corner, which previews the operation currently running in the background. The chip is a button: pressing it opens the operation queue window, which the second sentence promises. Spell \"percent\" as a word rather than the % sign, so screen readers say it naturally.",
+    "placeholders": {
+      "label": "what the chip shows: the action word from queue.row.label (\"Copying\"), or the status word \"Paused\" when the operation is paused",
+      "percentText": "how far along the operation is, a whole number already formatted (for example 42)"
+    }
+  },
+
+  "queue.chip.tooltip": "{label}{count, plural, =0 {} one { {countText} item} other { {countText} items}}{hasDestination, select, yes { to {destination}} other {}} · {percentText}%{hasDetail, select, yes { · {detail}} other {}}",
+  "@queue.chip.tooltip": {
+    "description": "Hover tooltip on the main window''s corner progress chip, giving the detail the chip itself has no room for. Reads as one line of facts separated by middle dots, for example \"Copying 214 items to Backup · 42% · 1m 20s left\". Three parts can be missing: the item count before the first progress arrives, the destination for a delete (nothing is moving anywhere), and the trailing detail while the estimate is still warming up. Keep the middle dots as separators, and keep the whole thing to one line. \"items\" covers files and folders alike, since a copy carries both.",
+    "placeholders": {
+      "label": "the action word from queue.row.label, for example \"Copying\"; it starts the line",
+      "count": "how many items the operation covers in total; 0 means the count isn''t known yet and that clause disappears",
+      "countText": "the same count, already formatted with the locale''s digit grouping (for example 1,024)",
+      "hasDestination": "\"yes\" when the operation has a destination folder to name, anything else when it doesn''t",
+      "destination": "the destination folder''s name (not its full path), for example \"Backup\"",
+      "percentText": "how far along the operation is, a whole number already formatted (for example 42)",
+      "hasDetail": "\"yes\" when there''s a trailing detail to show, anything else when there isn''t",
+      "detail": "the trailing detail: either the time left (already formatted, for example \"1m 20s left\") or the word \"Paused\""
+    }
   }
 }

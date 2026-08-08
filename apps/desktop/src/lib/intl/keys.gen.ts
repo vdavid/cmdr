@@ -1942,6 +1942,8 @@ export type MessageKey =
   | 'queryUi.size.popover.label'
   | 'queryUi.size.unit.byte'
   | 'queryUi.size.unit.bytes'
+  | 'queue.chip.ariaLabel'
+  | 'queue.chip.tooltip'
   | 'queue.empty.body'
   | 'queue.empty.title'
   | 'queue.heading'

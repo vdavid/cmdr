@@ -3,10 +3,15 @@
         value,
         size = 'md',
         ariaLabel,
+        animated = true,
     }: {
         value: number
         size?: 'sm' | 'md'
         ariaLabel?: string
+        /** Whether the bar is MOVING. The shimmer says "something is happening",
+         *  so a bar that's halted (a paused operation) passes `false` and sits
+         *  still. Reduced motion drops the sweep regardless. */
+        animated?: boolean
     } = $props()
 
     const percent = $derived(Math.min(100, Math.round(value * 100)))
@@ -21,7 +26,7 @@
     aria-valuemax={100}
     aria-label={ariaLabel}
 >
-    <div class="fill" style="width: {widthPercent}%"></div>
+    <div class="fill" class:animated style="width: {widthPercent}%"></div>
 </div>
 
 <style>
@@ -51,18 +56,22 @@
         overflow: hidden;
     }
 
-    .fill::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(
-            45deg,
-            transparent 20%,
-            color-mix(in oklch, var(--color-accent), white 30%) 50%,
-            transparent 80%
-        );
-        background-size: 200% 100%;
-        animation: shimmer 2.5s infinite linear;
+    /* The sweep is decoration on top of the width, so it goes away entirely
+       under reduced motion — and on any bar the caller says isn't moving. */
+    @media (prefers-reduced-motion: no-preference) {
+        .fill.animated::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                45deg,
+                transparent 20%,
+                color-mix(in oklch, var(--color-accent), white 30%) 50%,
+                transparent 80%
+            );
+            background-size: 200% 100%;
+            animation: shimmer 2.5s infinite linear;
+        }
     }
 
     @keyframes shimmer {

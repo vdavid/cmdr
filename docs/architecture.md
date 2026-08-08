@@ -61,8 +61,8 @@ All under `apps/desktop/src/lib/`.
 - `ai/`: Local LLM features (folder suggestions), download flow. Runtime states only; first-launch consent owned by
   `onboarding/`
 - `indexing/`: Drive index state, events, priority triggers, scan status overlay
-- `status-corner/`: The main window's top-right ambient-status row: owns the corner placement, hosts the indexing
-  hourglass. See `apps/desktop/src/lib/status-corner/CLAUDE.md`
+- `status-corner/`: The main window's top-right ambient-status row: owns the corner placement, hosts the
+  backgrounded-operation chip and the indexing hourglass. See `apps/desktop/src/lib/status-corner/CLAUDE.md`
 - `downloads/`: Go-to-latest action, settings-gated download notifications, global shortcut bridge
 - `low-disk-space/`: Low-disk-space warning frontend: event bridge, mode/threshold helpers, Settings deep-link
 - `notifications/`: Shared macOS notification permission flow, used by `downloads/` and `low-disk-space/`

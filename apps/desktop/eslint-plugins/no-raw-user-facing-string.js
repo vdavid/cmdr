@@ -62,6 +62,7 @@ const enforcedAreaPathFragments = [
   '/lib/updates/',
   '/lib/whats-new/',
   '/lib/error-messages/',
+  '/lib/status-corner/',
   '/routes/(main)/', // top-level app chrome
   '/lib/file-explorer/',
 ]

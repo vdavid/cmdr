@@ -9,7 +9,8 @@
         'Quick horizontal jitter. Used on the volume free-space retry icon, and the inline-rename field on an invalid name.'
     const FLASH_USAGE =
         'Background blips a color once. Used on the failed space-retry row (warning), and the jumped-to shortcuts-list row (accent).'
-    const SHIMMER_USAGE = 'A highlight stripe sweeps across. Used on the progress bar fill.'
+    const SHIMMER_USAGE =
+        'A highlight stripe sweeps across. Used on the progress bar fill, and only while it is moving: reduced motion, or the bar’s "animated" prop turned off, drops it.'
     const TOAST_SLIDE_USAGE = 'Slides in from the right while fading in. Used for the toast entrance.'
     const FADE_IN_USAGE = 'Fades up from transparent. Used for the loading screen entrance.'
     const RENAME_GLOW_USAGE = 'A quick scale 1.02 to 1 pop. Used on inline-rename field activation.'

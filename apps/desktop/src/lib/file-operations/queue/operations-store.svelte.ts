@@ -52,6 +52,17 @@ export function isTerminalStatus(status: OperationSnapshot['status']): boolean {
   return TERMINAL_STATUSES.has(status)
 }
 
+/** Operation types that finish in a blink: pure metadata work that emits no
+ *  `write-progress` at all, so there's never a bar to draw for one. The queue
+ *  window still lists them (it promises completeness); ambient surfaces skip
+ *  them. Typed wire values (SNAKE_CASE), never a substring test, per
+ *  `no-string-matching`. */
+const INSTANT_OPERATION_TYPES = new Set<OperationSnapshot['operationType']>(['rename', 'create_folder', 'create_file'])
+
+export function isInstantOperation(type: OperationSnapshot['operationType']): boolean {
+  return INSTANT_OPERATION_TYPES.has(type)
+}
+
 /**
  * Creates an operations store instance. One per queue window. Call `init()`
  * after mount (it seeds from `list_operations` and subscribes to both streams)

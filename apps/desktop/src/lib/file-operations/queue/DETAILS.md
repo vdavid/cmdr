@@ -66,8 +66,13 @@ spinner and an animated bar; `'paused'` shows a static bar and the Paused label.
 - `dispose(): void` — drops both listeners. Call on window teardown.
 - `_testApplySnapshot` / `_testApplyProgress` — test seams that drive the reducers without a live backend.
 
-`isTerminalStatus(status)` (module export) is the typed terminal-set test (`done` / `cancelled` / `failed`), used by the
-page to hide settled rows. Typed set, not a string-substring test (`no-string-matching`).
+Two typed set tests sit beside the factory, both module exports, both sets rather than substring tests
+(`no-string-matching`):
+
+- `isTerminalStatus(status)` — `done` / `cancelled` / `failed`, used by the page to hide settled rows.
+- `isInstantOperation(type)` — `rename` / `create_folder` / `create_file`, the metadata ops that emit no
+  `write-progress` at all. This window still lists them (it promises completeness); ambient surfaces like the corner
+  chip skip them, since there's never a bar to draw and they're gone before the eye lands on them.
 
 The progress-dialog Queue button and the auto-queue surfacing open the window via `openQueueWindow()` and read this same
 store. Don't fork a second opener or store.
@@ -121,8 +126,8 @@ Under macOS "Reduce transparency" the window opens opaque (no material, `backgro
 page surface uses the shared `--color-bg-glass` / `--color-border-glass` tokens, which flip to opaque under
 `html.reduce-transparency` (toggled from the backend `NSWorkspace` value via `$lib/reduce-transparency`, since WKWebView
 doesn't reflect `prefers-reduced-transparency`). `prefers-color-scheme` IS reflected, so dark detection stays a media
-query. Reduced motion is honored by the shared `ProgressBar` / `Spinner` (their shimmer/spin freeze under
-`prefers-reduced-motion`).
+query. Reduced motion is honored by the shared `ProgressBar` and `Spinner`: the bar's shimmer lives inside
+`@media (prefers-reduced-motion: no-preference)` and the spinner's spin freezes through `app-utilities.css`.
 
 ## Capabilities
 

@@ -381,7 +381,9 @@ Shadows reserved for the accent glow effect only (`0 0 40px var(--color-accent-g
 150ms is the standard. Fast enough to feel instant, slow enough to be perceived. Anything slower feels sluggish in a
 keyboard-driven tool.
 
-All non-essential animation must be wrapped in `@media (prefers-reduced-motion: no-preference)`.
+All non-essential animation must be wrapped in `@media (prefers-reduced-motion: no-preference)`. `ProgressBar`'s shimmer
+is the worked example: the whole `::after` sits inside that query, and a second switch (`animated={false}`) stops it on
+a bar that isn't moving, like a paused operation's. Prop table in `apps/desktop/src/lib/ui/DETAILS.md` § ProgressBar.
 
 ### Website
 

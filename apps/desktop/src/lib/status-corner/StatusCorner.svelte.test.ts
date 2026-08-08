@@ -9,9 +9,11 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { mount, tick, createRawSnippet } from 'svelte'
+import { mount, tick, flushSync, createRawSnippet } from 'svelte'
 import StatusCorner from './StatusCorner.svelte'
 import type { VolumeIndexActivity } from '$lib/indexing/index-state.svelte'
+import type { OperationRow } from '$lib/file-operations/queue/operations-store.svelte'
+import { CHIP_SETTLE_MS } from './operation-chip'
 
 let activeVolumes: VolumeIndexActivity[] = []
 
@@ -57,6 +59,38 @@ vi.mock('$lib/media-index/enabled-volumes', () => ({
   getEnabledMediaIndexVolumeIds: () => [],
 }))
 
+// The corner mounts the operation chip itself, so the chip's inputs are stubbed
+// here too: a plain row list the test sets, and no foreground modal.
+let operationRows: OperationRow[] = []
+
+vi.mock('$lib/file-operations/queue/main-window-operations.svelte', () => ({
+  getMainWindowOperationRows: () => operationRows,
+  getMainWindowOperations: () => null,
+}))
+
+vi.mock('$lib/file-operations/foreground-operation.svelte', () => ({
+  getForegroundOperationId: () => null,
+}))
+
+vi.mock('$lib/file-operations/queue/queue-window', () => ({
+  openQueueWindow: () => Promise.resolve(),
+}))
+
+function runningCopy(): OperationRow {
+  return {
+    snapshot: {
+      operationId: 'op-1',
+      operationType: 'copy',
+      status: 'running',
+      source: '/Users/me/Documents',
+      destination: '/Volumes/Naspolya/Backup',
+      supportsRollback: true,
+    },
+    progress: null,
+    etaSecondsDisplay: null,
+  }
+}
+
 function mountCorner(children?: ReturnType<typeof createRawSnippet>): HTMLElement {
   const target = document.createElement('div')
   document.body.appendChild(target)
@@ -89,6 +123,25 @@ describe('StatusCorner', () => {
     if (!chip || !hourglass) throw new Error('expected both the child and the hourglass in the corner')
     // `DOCUMENT_POSITION_FOLLOWING` = the hourglass comes after the chip.
     expect(chip.compareDocumentPosition(hourglass) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('puts the operation chip left of the hourglass', () => {
+    vi.useFakeTimers()
+    try {
+      activeVolumes = [scanActivity('root')]
+      operationRows = [runningCopy()]
+      const target = mountCorner()
+      flushSync()
+      vi.advanceTimersByTime(CHIP_SETTLE_MS)
+      flushSync()
+      const chip = target.querySelector('.operation-chip')
+      const hourglass = target.querySelector('.indexing-status')
+      if (!chip || !hourglass) throw new Error('expected both the chip and the hourglass in the corner')
+      expect(chip.compareDocumentPosition(hourglass) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    } finally {
+      operationRows = []
+      vi.useRealTimers()
+    }
   })
 
   it('hosts the hourglass itself, so the main page mounts one corner and not two indicators', async () => {

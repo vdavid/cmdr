@@ -46,6 +46,17 @@
                 <ProgressBar value={animatedValue} size="md" ariaLabel="Animated sample" />
             </div>
         </div>
+
+        <div class="row">
+            <div class="bar-cell">
+                <span class="bar-label">size sm, animated={false}</span>
+                <ProgressBar value={staticValue} size="sm" animated={false} ariaLabel="Halted sample" />
+            </div>
+            <div class="bar-cell">
+                <span class="bar-label">size md, animated={false}</span>
+                <ProgressBar value={staticValue} size="md" animated={false} ariaLabel="Halted sample" />
+            </div>
+        </div>
     </div>
 </SectionCard>
 

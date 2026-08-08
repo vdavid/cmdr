@@ -664,12 +664,18 @@ Props:
 | `value`     | `number`       | 0–1 fractional progress                                                                     |
 | `size`      | `'sm' \| 'md'` | Bar height + radius. `sm` = 4px / `--radius-xs`, `md` = 8px / `--radius-sm`. Default `'md'` |
 | `ariaLabel` | `string?`      | Accessible label for screen readers                                                         |
+| `animated`  | `boolean?`     | Whether the bar is MOVING. Default `true`; `false` drops the shimmer                        |
 
 Uses `role="progressbar"` with `aria-valuenow` / `aria-valuemin` / `aria-valuemax`. Fill transitions via
 `transition: width 0.15s ease-out`.
 
+The shimmer (a highlight stripe sweeping the fill) says "this is moving", so it's gated twice: the whole `::after` lives
+inside `@media (prefers-reduced-motion: no-preference)`, and it only attaches to `.fill.animated`. Pass
+`animated={false}` for a bar that's stopped where it is (a paused operation) — a sweeping bar under a "Paused" label
+contradicts itself.
+
 Consumers: `IndexingStatusIndicator` (size `sm`, in the indexing tooltip), `TransferProgressDialog` (size `md`, dual
-bars for size + file count).
+bars for size + file count), `$lib/status-corner/OperationChip` (size `sm`, `animated` off while paused).
 
 ## Toast system (`toast/`)
 
