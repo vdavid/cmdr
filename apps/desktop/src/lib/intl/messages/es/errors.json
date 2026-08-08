@@ -1223,19 +1223,19 @@
   },
   "errors.write.readError.title.copy": "No se pudo copiar",
   "@errors.write.readError.title.copy": {
-    "sourceHash": "5b50e7a"
+    "sourceHash": "53b17a4"
   },
   "errors.write.readError.title.move": "No se pudo mover",
   "@errors.write.readError.title.move": {
-    "sourceHash": "55185d6"
+    "sourceHash": "3f6c20e"
   },
   "errors.write.readError.title.delete": "No se pudo eliminar",
   "@errors.write.readError.title.delete": {
-    "sourceHash": "8727e2b"
+    "sourceHash": "f73bc6b"
   },
   "errors.write.readError.title.trash": "No se pudo mover a la papelera",
   "@errors.write.readError.title.trash": {
-    "sourceHash": "cb5cbe6"
+    "sourceHash": "c2d75cc"
   },
   "errors.write.readError.message": "No se pudo leer del origen.",
   "@errors.write.readError.message": {
@@ -1247,19 +1247,19 @@
   },
   "errors.write.writeError.title.copy": "No se pudo copiar",
   "@errors.write.writeError.title.copy": {
-    "sourceHash": "5b50e7a"
+    "sourceHash": "53b17a4"
   },
   "errors.write.writeError.title.move": "No se pudo mover",
   "@errors.write.writeError.title.move": {
-    "sourceHash": "55185d6"
+    "sourceHash": "3f6c20e"
   },
   "errors.write.writeError.title.delete": "No se pudo eliminar",
   "@errors.write.writeError.title.delete": {
-    "sourceHash": "8727e2b"
+    "sourceHash": "f73bc6b"
   },
   "errors.write.writeError.title.trash": "No se pudo mover a la papelera",
   "@errors.write.writeError.title.trash": {
-    "sourceHash": "cb5cbe6"
+    "sourceHash": "c2d75cc"
   },
   "errors.write.writeError.message": "No se pudo escribir en el destino.",
   "@errors.write.writeError.message": {
@@ -1295,19 +1295,19 @@
   },
   "errors.write.ioError.title.copy": "No se pudo copiar",
   "@errors.write.ioError.title.copy": {
-    "sourceHash": "5b50e7a"
+    "sourceHash": "53b17a4"
   },
   "errors.write.ioError.title.move": "No se pudo mover",
   "@errors.write.ioError.title.move": {
-    "sourceHash": "55185d6"
+    "sourceHash": "3f6c20e"
   },
   "errors.write.ioError.title.delete": "No se pudo eliminar",
   "@errors.write.ioError.title.delete": {
-    "sourceHash": "8727e2b"
+    "sourceHash": "f73bc6b"
   },
   "errors.write.ioError.title.trash": "No se pudo mover a la papelera",
   "@errors.write.ioError.title.trash": {
-    "sourceHash": "cb5cbe6"
+    "sourceHash": "c2d75cc"
   },
   "errors.write.ioError.message.copy": "No se pudo copiar el archivo.",
   "@errors.write.ioError.message.copy": {
@@ -1323,7 +1323,7 @@
   },
   "errors.write.ioError.message.trash": "No se pudo mover el archivo a la papelera.",
   "@errors.write.ioError.message.trash": {
-    "sourceHash": "e71b09d"
+    "sourceHash": "db053da"
   },
   "errors.write.ioError.suggestion": "Vuelve a intentarlo. Si el problema continúa, revisa los detalles técnicos de abajo.",
   "@errors.write.ioError.suggestion": {
@@ -1439,35 +1439,35 @@
   },
   "errors.write.fallback.title.copy": "No se pudo copiar",
   "@errors.write.fallback.title.copy": {
-    "sourceHash": "5b50e7a"
+    "sourceHash": "53b17a4"
   },
   "errors.write.fallback.title.move": "No se pudo mover",
   "@errors.write.fallback.title.move": {
-    "sourceHash": "55185d6"
+    "sourceHash": "3f6c20e"
   },
   "errors.write.fallback.title.delete": "No se pudo eliminar",
   "@errors.write.fallback.title.delete": {
-    "sourceHash": "8727e2b"
+    "sourceHash": "f73bc6b"
   },
   "errors.write.fallback.title.trash": "No se pudo mover a la papelera",
   "@errors.write.fallback.title.trash": {
-    "sourceHash": "cb5cbe6"
+    "sourceHash": "c2d75cc"
   },
   "errors.write.fallback.message.copy": "Ocurrió un error inesperado al copiar.",
   "@errors.write.fallback.message.copy": {
-    "sourceHash": "bebd7c4"
+    "sourceHash": "271fa92"
   },
   "errors.write.fallback.message.move": "Ocurrió un error inesperado al mover.",
   "@errors.write.fallback.message.move": {
-    "sourceHash": "8340947"
+    "sourceHash": "a2cf93f"
   },
   "errors.write.fallback.message.delete": "Ocurrió un error inesperado al eliminar.",
   "@errors.write.fallback.message.delete": {
-    "sourceHash": "91de619"
+    "sourceHash": "9a08b89"
   },
   "errors.write.fallback.message.trash": "Ocurrió un error inesperado al mover a la papelera.",
   "@errors.write.fallback.message.trash": {
-    "sourceHash": "238f82d"
+    "sourceHash": "63f8393"
   },
   "errors.write.fallback.suggestion": "Vuelve a intentarlo, o revisa los detalles técnicos de abajo para más información.",
   "@errors.write.fallback.suggestion": {

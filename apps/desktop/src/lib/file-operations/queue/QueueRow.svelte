@@ -190,7 +190,7 @@
          full. The queue is the surface that promises completeness, so nothing
          is truncated here (the toast is the one that has to abbreviate).
          The pipeline's own title is left out on purpose: it would read
-         "Copy failed" right beside the status cell's "Couldn't finish". -->
+         "Couldn't copy" right beside the status cell's "Couldn't finish". -->
     {#if reason}
         <div class="reason-cell">
             <!-- eslint-disable-next-line svelte/no-at-html-tags -- markup from the typed error via `failureReasonFor`: escaped names/paths plus size tiers, no user input. Same boundary as `FallbackErrorContent`. -->

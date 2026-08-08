@@ -39,8 +39,8 @@ their left. The chip's pick-and-measure rules are pure, in `operation-chip.ts`. 
   handover) is what actually stops a double report. Check both, in the chip and in the watch.
 - **The summary toast reads its count off the store, ❌ never a prop.** The toast store's dedup path replaces content
   and level but NOT props, so a prop-carried count would freeze at the fourth failure.
-- **A failure's toast title is `queue.failureToast.title`, ❌ not the error pipeline's title**: the catalog's own titles
-  say "Copy failed", and the house never writes "failed" or "error" at a user. The explanation under it IS the
-  pipeline's.
+- **A failure's toast title is `queue.failureToast.title`, ❌ not the error pipeline's title**: the toast names the work
+  the user started ("Couldn't finish copying"), while the pipeline's title names the immediate cause and changes per
+  error class. The explanation under it IS the pipeline's.
 
 Layout model, member contract, the chip's states, and decisions: `DETAILS.md`.

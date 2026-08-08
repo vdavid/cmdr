@@ -1223,19 +1223,19 @@
   },
   "errors.write.readError.title.copy": "Det gick inte att kopiera",
   "@errors.write.readError.title.copy": {
-    "sourceHash": "5b50e7a"
+    "sourceHash": "53b17a4"
   },
   "errors.write.readError.title.move": "Det gick inte att flytta",
   "@errors.write.readError.title.move": {
-    "sourceHash": "55185d6"
+    "sourceHash": "3f6c20e"
   },
   "errors.write.readError.title.delete": "Det gick inte att radera",
   "@errors.write.readError.title.delete": {
-    "sourceHash": "8727e2b"
+    "sourceHash": "f73bc6b"
   },
   "errors.write.readError.title.trash": "Det gick inte att flytta till papperskorgen",
   "@errors.write.readError.title.trash": {
-    "sourceHash": "cb5cbe6"
+    "sourceHash": "c2d75cc"
   },
   "errors.write.readError.message": "Det gick inte att läsa från källan.",
   "@errors.write.readError.message": {
@@ -1247,19 +1247,19 @@
   },
   "errors.write.writeError.title.copy": "Det gick inte att kopiera",
   "@errors.write.writeError.title.copy": {
-    "sourceHash": "5b50e7a"
+    "sourceHash": "53b17a4"
   },
   "errors.write.writeError.title.move": "Det gick inte att flytta",
   "@errors.write.writeError.title.move": {
-    "sourceHash": "55185d6"
+    "sourceHash": "3f6c20e"
   },
   "errors.write.writeError.title.delete": "Det gick inte att radera",
   "@errors.write.writeError.title.delete": {
-    "sourceHash": "8727e2b"
+    "sourceHash": "f73bc6b"
   },
   "errors.write.writeError.title.trash": "Det gick inte att flytta till papperskorgen",
   "@errors.write.writeError.title.trash": {
-    "sourceHash": "cb5cbe6"
+    "sourceHash": "c2d75cc"
   },
   "errors.write.writeError.message": "Det gick inte att skriva till målet.",
   "@errors.write.writeError.message": {
@@ -1295,19 +1295,19 @@
   },
   "errors.write.ioError.title.copy": "Det gick inte att kopiera",
   "@errors.write.ioError.title.copy": {
-    "sourceHash": "5b50e7a"
+    "sourceHash": "53b17a4"
   },
   "errors.write.ioError.title.move": "Det gick inte att flytta",
   "@errors.write.ioError.title.move": {
-    "sourceHash": "55185d6"
+    "sourceHash": "3f6c20e"
   },
   "errors.write.ioError.title.delete": "Det gick inte att radera",
   "@errors.write.ioError.title.delete": {
-    "sourceHash": "8727e2b"
+    "sourceHash": "f73bc6b"
   },
   "errors.write.ioError.title.trash": "Det gick inte att flytta till papperskorgen",
   "@errors.write.ioError.title.trash": {
-    "sourceHash": "cb5cbe6"
+    "sourceHash": "c2d75cc"
   },
   "errors.write.ioError.message.copy": "Det gick inte att kopiera filen.",
   "@errors.write.ioError.message.copy": {
@@ -1323,7 +1323,7 @@
   },
   "errors.write.ioError.message.trash": "Det gick inte att flytta filen till papperskorgen.",
   "@errors.write.ioError.message.trash": {
-    "sourceHash": "e71b09d"
+    "sourceHash": "db053da"
   },
   "errors.write.ioError.suggestion": "Försök igen. Om problemet kvarstår, kolla de tekniska detaljerna nedan.",
   "@errors.write.ioError.suggestion": {
@@ -1439,35 +1439,35 @@
   },
   "errors.write.fallback.title.copy": "Det gick inte att kopiera",
   "@errors.write.fallback.title.copy": {
-    "sourceHash": "5b50e7a"
+    "sourceHash": "53b17a4"
   },
   "errors.write.fallback.title.move": "Det gick inte att flytta",
   "@errors.write.fallback.title.move": {
-    "sourceHash": "55185d6"
+    "sourceHash": "3f6c20e"
   },
   "errors.write.fallback.title.delete": "Det gick inte att radera",
   "@errors.write.fallback.title.delete": {
-    "sourceHash": "8727e2b"
+    "sourceHash": "f73bc6b"
   },
   "errors.write.fallback.title.trash": "Det gick inte att flytta till papperskorgen",
   "@errors.write.fallback.title.trash": {
-    "sourceHash": "cb5cbe6"
+    "sourceHash": "c2d75cc"
   },
   "errors.write.fallback.message.copy": "Något oväntat gick fel under kopieringen.",
   "@errors.write.fallback.message.copy": {
-    "sourceHash": "bebd7c4"
+    "sourceHash": "271fa92"
   },
   "errors.write.fallback.message.move": "Något oväntat gick fel under flytten.",
   "@errors.write.fallback.message.move": {
-    "sourceHash": "8340947"
+    "sourceHash": "a2cf93f"
   },
   "errors.write.fallback.message.delete": "Något oväntat gick fel under raderingen.",
   "@errors.write.fallback.message.delete": {
-    "sourceHash": "91de619"
+    "sourceHash": "9a08b89"
   },
   "errors.write.fallback.message.trash": "Något oväntat gick fel under flytten till papperskorgen.",
   "@errors.write.fallback.message.trash": {
-    "sourceHash": "238f82d"
+    "sourceHash": "63f8393"
   },
   "errors.write.fallback.suggestion": "Försök igen, eller kolla de tekniska detaljerna nedan för mer information.",
   "@errors.write.fallback.suggestion": {

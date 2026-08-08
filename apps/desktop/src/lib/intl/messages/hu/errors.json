@@ -1223,19 +1223,19 @@
   },
   "errors.write.readError.title.copy": "Nem sikerült a másolás",
   "@errors.write.readError.title.copy": {
-    "sourceHash": "5b50e7a"
+    "sourceHash": "53b17a4"
   },
   "errors.write.readError.title.move": "Nem sikerült az áthelyezés",
   "@errors.write.readError.title.move": {
-    "sourceHash": "55185d6"
+    "sourceHash": "3f6c20e"
   },
   "errors.write.readError.title.delete": "Nem sikerült a törlés",
   "@errors.write.readError.title.delete": {
-    "sourceHash": "8727e2b"
+    "sourceHash": "f73bc6b"
   },
   "errors.write.readError.title.trash": "Nem sikerült a Kukába helyezés",
   "@errors.write.readError.title.trash": {
-    "sourceHash": "cb5cbe6"
+    "sourceHash": "c2d75cc"
   },
   "errors.write.readError.message": "Nem sikerült olvasni a forrásból.",
   "@errors.write.readError.message": {
@@ -1247,19 +1247,19 @@
   },
   "errors.write.writeError.title.copy": "Nem sikerült a másolás",
   "@errors.write.writeError.title.copy": {
-    "sourceHash": "5b50e7a"
+    "sourceHash": "53b17a4"
   },
   "errors.write.writeError.title.move": "Nem sikerült az áthelyezés",
   "@errors.write.writeError.title.move": {
-    "sourceHash": "55185d6"
+    "sourceHash": "3f6c20e"
   },
   "errors.write.writeError.title.delete": "Nem sikerült a törlés",
   "@errors.write.writeError.title.delete": {
-    "sourceHash": "8727e2b"
+    "sourceHash": "f73bc6b"
   },
   "errors.write.writeError.title.trash": "Nem sikerült a Kukába helyezés",
   "@errors.write.writeError.title.trash": {
-    "sourceHash": "cb5cbe6"
+    "sourceHash": "c2d75cc"
   },
   "errors.write.writeError.message": "Nem sikerült írni a célhelyre.",
   "@errors.write.writeError.message": {
@@ -1295,19 +1295,19 @@
   },
   "errors.write.ioError.title.copy": "Nem sikerült a másolás",
   "@errors.write.ioError.title.copy": {
-    "sourceHash": "5b50e7a"
+    "sourceHash": "53b17a4"
   },
   "errors.write.ioError.title.move": "Nem sikerült az áthelyezés",
   "@errors.write.ioError.title.move": {
-    "sourceHash": "55185d6"
+    "sourceHash": "3f6c20e"
   },
   "errors.write.ioError.title.delete": "Nem sikerült a törlés",
   "@errors.write.ioError.title.delete": {
-    "sourceHash": "8727e2b"
+    "sourceHash": "f73bc6b"
   },
   "errors.write.ioError.title.trash": "Nem sikerült a Kukába helyezés",
   "@errors.write.ioError.title.trash": {
-    "sourceHash": "cb5cbe6"
+    "sourceHash": "c2d75cc"
   },
   "errors.write.ioError.message.copy": "Nem sikerült a fájl másolása.",
   "@errors.write.ioError.message.copy": {
@@ -1323,7 +1323,7 @@
   },
   "errors.write.ioError.message.trash": "Nem sikerült a fájlt a Kukába helyezni.",
   "@errors.write.ioError.message.trash": {
-    "sourceHash": "e71b09d"
+    "sourceHash": "db053da"
   },
   "errors.write.ioError.suggestion": "Próbáld újra. Ha a gond továbbra is fennáll, nézd meg lent a technikai részleteket.",
   "@errors.write.ioError.suggestion": {
@@ -1439,35 +1439,35 @@
   },
   "errors.write.fallback.title.copy": "Nem sikerült a másolás",
   "@errors.write.fallback.title.copy": {
-    "sourceHash": "5b50e7a"
+    "sourceHash": "53b17a4"
   },
   "errors.write.fallback.title.move": "Nem sikerült az áthelyezés",
   "@errors.write.fallback.title.move": {
-    "sourceHash": "55185d6"
+    "sourceHash": "3f6c20e"
   },
   "errors.write.fallback.title.delete": "Nem sikerült a törlés",
   "@errors.write.fallback.title.delete": {
-    "sourceHash": "8727e2b"
+    "sourceHash": "f73bc6b"
   },
   "errors.write.fallback.title.trash": "Nem sikerült a Kukába helyezés",
   "@errors.write.fallback.title.trash": {
-    "sourceHash": "cb5cbe6"
+    "sourceHash": "c2d75cc"
   },
   "errors.write.fallback.message.copy": "Váratlan probléma történt a másolás során.",
   "@errors.write.fallback.message.copy": {
-    "sourceHash": "bebd7c4"
+    "sourceHash": "271fa92"
   },
   "errors.write.fallback.message.move": "Váratlan probléma történt az áthelyezés során.",
   "@errors.write.fallback.message.move": {
-    "sourceHash": "8340947"
+    "sourceHash": "a2cf93f"
   },
   "errors.write.fallback.message.delete": "Váratlan probléma történt a törlés során.",
   "@errors.write.fallback.message.delete": {
-    "sourceHash": "91de619"
+    "sourceHash": "9a08b89"
   },
   "errors.write.fallback.message.trash": "Váratlan probléma történt a Kukába helyezés során.",
   "@errors.write.fallback.message.trash": {
-    "sourceHash": "238f82d"
+    "sourceHash": "63f8393"
   },
   "errors.write.fallback.suggestion": "Próbáld újra, vagy nézd meg lent a technikai részleteket a további információkért.",
   "@errors.write.fallback.suggestion": {

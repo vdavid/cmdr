@@ -1223,19 +1223,19 @@
   },
   "errors.write.readError.title.copy": "Não foi possível copiar",
   "@errors.write.readError.title.copy": {
-    "sourceHash": "5b50e7a"
+    "sourceHash": "53b17a4"
   },
   "errors.write.readError.title.move": "Não foi possível mover",
   "@errors.write.readError.title.move": {
-    "sourceHash": "55185d6"
+    "sourceHash": "3f6c20e"
   },
   "errors.write.readError.title.delete": "Não foi possível apagar",
   "@errors.write.readError.title.delete": {
-    "sourceHash": "8727e2b"
+    "sourceHash": "f73bc6b"
   },
   "errors.write.readError.title.trash": "Não foi possível mover para o Lixo",
   "@errors.write.readError.title.trash": {
-    "sourceHash": "cb5cbe6"
+    "sourceHash": "c2d75cc"
   },
   "errors.write.readError.message": "Não foi possível ler da origem.",
   "@errors.write.readError.message": {
@@ -1247,19 +1247,19 @@
   },
   "errors.write.writeError.title.copy": "Não foi possível copiar",
   "@errors.write.writeError.title.copy": {
-    "sourceHash": "5b50e7a"
+    "sourceHash": "53b17a4"
   },
   "errors.write.writeError.title.move": "Não foi possível mover",
   "@errors.write.writeError.title.move": {
-    "sourceHash": "55185d6"
+    "sourceHash": "3f6c20e"
   },
   "errors.write.writeError.title.delete": "Não foi possível apagar",
   "@errors.write.writeError.title.delete": {
-    "sourceHash": "8727e2b"
+    "sourceHash": "f73bc6b"
   },
   "errors.write.writeError.title.trash": "Não foi possível mover para o Lixo",
   "@errors.write.writeError.title.trash": {
-    "sourceHash": "cb5cbe6"
+    "sourceHash": "c2d75cc"
   },
   "errors.write.writeError.message": "Não foi possível gravar no destino.",
   "@errors.write.writeError.message": {
@@ -1295,19 +1295,19 @@
   },
   "errors.write.ioError.title.copy": "Não foi possível copiar",
   "@errors.write.ioError.title.copy": {
-    "sourceHash": "5b50e7a"
+    "sourceHash": "53b17a4"
   },
   "errors.write.ioError.title.move": "Não foi possível mover",
   "@errors.write.ioError.title.move": {
-    "sourceHash": "55185d6"
+    "sourceHash": "3f6c20e"
   },
   "errors.write.ioError.title.delete": "Não foi possível apagar",
   "@errors.write.ioError.title.delete": {
-    "sourceHash": "8727e2b"
+    "sourceHash": "f73bc6b"
   },
   "errors.write.ioError.title.trash": "Não foi possível mover para o Lixo",
   "@errors.write.ioError.title.trash": {
-    "sourceHash": "cb5cbe6"
+    "sourceHash": "c2d75cc"
   },
   "errors.write.ioError.message.copy": "Não foi possível copiar o arquivo.",
   "@errors.write.ioError.message.copy": {
@@ -1323,7 +1323,7 @@
   },
   "errors.write.ioError.message.trash": "Não foi possível mover o arquivo para o Lixo.",
   "@errors.write.ioError.message.trash": {
-    "sourceHash": "e71b09d"
+    "sourceHash": "db053da"
   },
   "errors.write.ioError.suggestion": "Tente de novo. Se o problema continuar, veja os detalhes técnicos abaixo.",
   "@errors.write.ioError.suggestion": {
@@ -1439,35 +1439,35 @@
   },
   "errors.write.fallback.title.copy": "Não foi possível copiar",
   "@errors.write.fallback.title.copy": {
-    "sourceHash": "5b50e7a"
+    "sourceHash": "53b17a4"
   },
   "errors.write.fallback.title.move": "Não foi possível mover",
   "@errors.write.fallback.title.move": {
-    "sourceHash": "55185d6"
+    "sourceHash": "3f6c20e"
   },
   "errors.write.fallback.title.delete": "Não foi possível apagar",
   "@errors.write.fallback.title.delete": {
-    "sourceHash": "8727e2b"
+    "sourceHash": "f73bc6b"
   },
   "errors.write.fallback.title.trash": "Não foi possível mover para o Lixo",
   "@errors.write.fallback.title.trash": {
-    "sourceHash": "cb5cbe6"
+    "sourceHash": "c2d75cc"
   },
   "errors.write.fallback.message.copy": "Algo inesperado aconteceu ao copiar.",
   "@errors.write.fallback.message.copy": {
-    "sourceHash": "bebd7c4"
+    "sourceHash": "271fa92"
   },
   "errors.write.fallback.message.move": "Algo inesperado aconteceu ao mover.",
   "@errors.write.fallback.message.move": {
-    "sourceHash": "8340947"
+    "sourceHash": "a2cf93f"
   },
   "errors.write.fallback.message.delete": "Algo inesperado aconteceu ao apagar.",
   "@errors.write.fallback.message.delete": {
-    "sourceHash": "91de619"
+    "sourceHash": "9a08b89"
   },
   "errors.write.fallback.message.trash": "Algo inesperado aconteceu ao mover para o Lixo.",
   "@errors.write.fallback.message.trash": {
-    "sourceHash": "238f82d"
+    "sourceHash": "63f8393"
   },
   "errors.write.fallback.suggestion": "Tente de novo, ou veja os detalhes técnicos abaixo para mais informações.",
   "@errors.write.fallback.suggestion": {

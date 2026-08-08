@@ -37,7 +37,7 @@ pause/resume/cancel/dismiss, multi-select + "Cancel selected", global pause/resu
 - **A failure's reason comes from the error pipeline, never new prose** (`failure-reason.ts` →
   `../transfer/transfer-error-messages.ts`, `getMessage()` raw lookup, per-operation variant keys). Its `message` is
   MARKUP, so it renders through `{@html}` like the dialog's body. The pipeline's own title is dropped in the row: it
-  would read "Copy failed" right beside "Couldn't finish".
+  would read "Couldn't copy" right beside "Couldn't finish".
 - **Cancel keeps partials; Rollback is the separate, opt-in undo.** Cancel maps to `cancel_operation(s)`: no rollback,
   no confirm, which is why `capabilities/queue.json` DROPS `dialog:allow-ask` and `store:default`. Rollback calls
   `cancelWriteOperation(id, true)` and shows ONLY where `supportsRollback` says so, never inferred from the type.

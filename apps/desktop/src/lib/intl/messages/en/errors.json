@@ -1850,10 +1850,10 @@
     "screenshot": "transfer-error-connection_interrupted.png"
   },
 
-  "errors.write.readError.title.copy": "Copy failed",
-  "errors.write.readError.title.move": "Move failed",
-  "errors.write.readError.title.delete": "Delete failed",
-  "errors.write.readError.title.trash": "Move to trash failed",
+  "errors.write.readError.title.copy": "Couldn't copy",
+  "errors.write.readError.title.move": "Couldn't move",
+  "errors.write.readError.title.delete": "Couldn't delete",
+  "errors.write.readError.title.trash": "Couldn't move to trash",
   "errors.write.readError.message": "Couldn't read from the source.",
   "errors.write.readError.suggestion": "Try again. If the problem persists, check the technical details below.",
   "@errors.write.readError.title.copy": {
@@ -1884,10 +1884,10 @@
     "screenshot": "transfer-error-read_error.png"
   },
 
-  "errors.write.writeError.title.copy": "Copy failed",
-  "errors.write.writeError.title.move": "Move failed",
-  "errors.write.writeError.title.delete": "Delete failed",
-  "errors.write.writeError.title.trash": "Move to trash failed",
+  "errors.write.writeError.title.copy": "Couldn't copy",
+  "errors.write.writeError.title.move": "Couldn't move",
+  "errors.write.writeError.title.delete": "Couldn't delete",
+  "errors.write.writeError.title.trash": "Couldn't move to trash",
   "errors.write.writeError.message": "Couldn't write to the destination.",
   "errors.write.writeError.suggestion": "Try again. If the problem persists, check the technical details below.",
   "@errors.write.writeError.title.copy": {
@@ -1955,14 +1955,14 @@
     "screenshot": "transfer-error-invalid_name.png"
   },
 
-  "errors.write.ioError.title.copy": "Copy failed",
-  "errors.write.ioError.title.move": "Move failed",
-  "errors.write.ioError.title.delete": "Delete failed",
-  "errors.write.ioError.title.trash": "Move to trash failed",
+  "errors.write.ioError.title.copy": "Couldn't copy",
+  "errors.write.ioError.title.move": "Couldn't move",
+  "errors.write.ioError.title.delete": "Couldn't delete",
+  "errors.write.ioError.title.trash": "Couldn't move to trash",
   "errors.write.ioError.message.copy": "Couldn't copy the file.",
   "errors.write.ioError.message.move": "Couldn't move the file.",
   "errors.write.ioError.message.delete": "Couldn't delete the file.",
-  "errors.write.ioError.message.trash": "Couldn't move to trash the file.",
+  "errors.write.ioError.message.trash": "Couldn't move the file to trash.",
   "errors.write.ioError.suggestion": "Try again. If the problem persists, check the technical details below.",
   "@errors.write.ioError.title.copy": {
     "description": "Title of the copy/move/delete error dialog for a generic I/O failure with a recognized variant (copy variant). Plain text. This is a raw errors.* string (no ICU), so phrase the copy action naturally for this language.",
@@ -2172,14 +2172,14 @@
     "screenshot": "transfer-error-delete_pending.png"
   },
 
-  "errors.write.fallback.title.copy": "Copy failed",
-  "errors.write.fallback.title.move": "Move failed",
-  "errors.write.fallback.title.delete": "Delete failed",
-  "errors.write.fallback.title.trash": "Move to trash failed",
-  "errors.write.fallback.message.copy": "An unexpected error occurred while copying.",
-  "errors.write.fallback.message.move": "An unexpected error occurred while moving.",
-  "errors.write.fallback.message.delete": "An unexpected error occurred while deleting.",
-  "errors.write.fallback.message.trash": "An unexpected error occurred while moving to trash.",
+  "errors.write.fallback.title.copy": "Couldn't copy",
+  "errors.write.fallback.title.move": "Couldn't move",
+  "errors.write.fallback.title.delete": "Couldn't delete",
+  "errors.write.fallback.title.trash": "Couldn't move to trash",
+  "errors.write.fallback.message.copy": "Something went wrong while copying.",
+  "errors.write.fallback.message.move": "Something went wrong while moving.",
+  "errors.write.fallback.message.delete": "Something went wrong while deleting.",
+  "errors.write.fallback.message.trash": "Something went wrong while moving to trash.",
   "errors.write.fallback.suggestion": "Try again, or check the technical details below for more information.",
   "@errors.write.fallback.title.copy": {
     "description": "Title of the copy/move/delete error dialog for an unrecognized failure, the catch-all (copy variant). Plain text. This is a raw errors.* string (no ICU), so phrase the copy action naturally for this language.",
@@ -2201,21 +2201,21 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.write.fallback.message.copy": {
-    "description": "Body of the copy/move/delete error dialog for an unrecognized failure (copy variant). Plain text. \"error occurred\" is internal-ish but kept for the catch-all. This is a raw errors.* string (no ICU), so phrase the copy action naturally for this language.",
+    "description": "Body of the copy/move/delete error dialog for an unrecognized failure (copy variant). Plain text. This is a raw errors.* string (no ICU), so phrase the copy action naturally for this language.",
     "screenshot": "transfer-error-archive_needs_password.png"
   },
   "@errors.write.fallback.message.move": {
-    "description": "Body of the copy/move/delete error dialog for an unrecognized failure (move variant). Plain text. \"error occurred\" is internal-ish but kept for the catch-all. This is a raw errors.* string (no ICU), so phrase the move action naturally for this language.",
+    "description": "Body of the copy/move/delete error dialog for an unrecognized failure (move variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move action naturally for this language.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.write.fallback.message.delete": {
-    "description": "Body of the copy/move/delete error dialog for an unrecognized failure (delete variant). Plain text. \"error occurred\" is internal-ish but kept for the catch-all. This is a raw errors.* string (no ICU), so phrase the delete action naturally for this language.",
+    "description": "Body of the copy/move/delete error dialog for an unrecognized failure (delete variant). Plain text. This is a raw errors.* string (no ICU), so phrase the delete action naturally for this language.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.write.fallback.message.trash": {
-    "description": "Body of the copy/move/delete error dialog for an unrecognized failure (trash variant). Plain text. \"error occurred\" is internal-ish but kept for the catch-all. This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
+    "description": "Body of the copy/move/delete error dialog for an unrecognized failure (trash variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },

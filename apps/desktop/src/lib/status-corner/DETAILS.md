@@ -147,9 +147,10 @@ new one. It's a reaction to the snapshot the window already subscribes to: no ne
   interpolating variants (`invalid_name`, `read_only_device`) carry paths and device names with no length limit; three
   lines covers every stock message, so in practice nothing is cut. The full reason, the suggestion, and the Dismiss live
   on the queue row, one press away.
-- **The toast's title is NOT the pipeline's title.** `queue.failureToast.title` selects on the operation type ("Couldn't
-  finish copying"), because the catalog's own titles say "Copy failed" and the house never writes "failed" or "error" at
-  a user. The body below it is the pipeline's, unchanged.
+- **The toast's title is NOT the pipeline's title.** `queue.failureToast.title` selects on the operation TYPE ("Couldn't
+  finish copying"), so the toast names the work the user started. The pipeline's title names the immediate cause instead
+  and changes per error class ("Not enough space", "Couldn't find the file"), which reads as a different subject in an
+  ambient notice. The body below it is the pipeline's, unchanged.
 - **Past three, they collapse into one summary.** Mechanical, not aesthetic: a toast stack full of persistent toasts
   silently drops new arrivals (`lib/ui/CLAUDE.md`), so an unbounded burst would lose failures. The summary carries a
   dedup id and reads its count off the store rather than a prop, because the toast store's dedup path replaces content

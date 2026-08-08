@@ -172,7 +172,7 @@ const cases: Case[] = [
     error: { type: 'read_error', path: '/p', message: 'm' },
     op: 'move',
     expected: {
-      title: 'Move failed',
+      title: "Couldn't move",
       message: "Couldn't read from the source.",
       suggestion: 'Try again. If the problem persists, check the technical details below.',
     },
@@ -181,7 +181,7 @@ const cases: Case[] = [
     name: 'write_error (copy)',
     error: { type: 'write_error', path: '/p', message: 'm' },
     expected: {
-      title: 'Copy failed',
+      title: "Couldn't copy",
       message: "Couldn't write to the destination.",
       suggestion: 'Try again. If the problem persists, check the technical details below.',
     },
@@ -226,7 +226,7 @@ const cases: Case[] = [
     error: { type: 'io_error', path: '/p', message: 'm' },
     op: 'delete',
     expected: {
-      title: 'Delete failed',
+      title: "Couldn't delete",
       message: "Couldn't delete the file.",
       suggestion: 'Try again. If the problem persists, check the technical details below.',
     },
@@ -429,7 +429,7 @@ const cases: Case[] = [
     error: { type: 'read_error', path: '/p', message: 'm' },
     op: 'trash',
     expected: {
-      title: 'Move to trash failed',
+      title: "Couldn't move to trash",
       message: "Couldn't read from the source.",
       suggestion: 'Try again. If the problem persists, check the technical details below.',
     },
@@ -439,7 +439,7 @@ const cases: Case[] = [
     error: { type: 'write_error', path: '/p', message: 'm' },
     op: 'move',
     expected: {
-      title: 'Move failed',
+      title: "Couldn't move",
       message: "Couldn't write to the destination.",
       suggestion: 'Try again. If the problem persists, check the technical details below.',
     },
@@ -449,7 +449,7 @@ const cases: Case[] = [
     error: { type: 'io_error', path: '/p', message: 'm' },
     op: 'copy',
     expected: {
-      title: 'Copy failed',
+      title: "Couldn't copy",
       message: "Couldn't copy the file.",
       suggestion: 'Try again. If the problem persists, check the technical details below.',
     },
@@ -459,7 +459,7 @@ const cases: Case[] = [
     error: { type: 'io_error', path: '/p', message: 'm' },
     op: 'move',
     expected: {
-      title: 'Move failed',
+      title: "Couldn't move",
       message: "Couldn't move the file.",
       suggestion: 'Try again. If the problem persists, check the technical details below.',
     },
@@ -469,8 +469,8 @@ const cases: Case[] = [
     error: { type: 'io_error', path: '/p', message: 'm' },
     op: 'trash',
     expected: {
-      title: 'Move to trash failed',
-      message: "Couldn't move to trash the file.",
+      title: "Couldn't move to trash",
+      message: "Couldn't move the file to trash.",
       suggestion: 'Try again. If the problem persists, check the technical details below.',
     },
   },
@@ -505,8 +505,8 @@ const cases: Case[] = [
     error: { type: 'totally_unknown' } as unknown as WriteOperationError,
     op: 'copy',
     expected: {
-      title: 'Copy failed',
-      message: 'An unexpected error occurred while copying.',
+      title: "Couldn't copy",
+      message: 'Something went wrong while copying.',
       suggestion: 'Try again, or check the technical details below for more information.',
     },
   },
@@ -515,8 +515,8 @@ const cases: Case[] = [
     error: { type: 'totally_unknown' } as unknown as WriteOperationError,
     op: 'move',
     expected: {
-      title: 'Move failed',
-      message: 'An unexpected error occurred while moving.',
+      title: "Couldn't move",
+      message: 'Something went wrong while moving.',
       suggestion: 'Try again, or check the technical details below for more information.',
     },
   },
@@ -525,8 +525,8 @@ const cases: Case[] = [
     error: { type: 'totally_unknown' } as unknown as WriteOperationError,
     op: 'delete',
     expected: {
-      title: 'Delete failed',
-      message: 'An unexpected error occurred while deleting.',
+      title: "Couldn't delete",
+      message: 'Something went wrong while deleting.',
       suggestion: 'Try again, or check the technical details below for more information.',
     },
   },
@@ -535,8 +535,8 @@ const cases: Case[] = [
     error: { type: 'totally_unknown' } as unknown as WriteOperationError,
     op: 'trash',
     expected: {
-      title: 'Move to trash failed',
-      message: 'An unexpected error occurred while moving to trash.',
+      title: "Couldn't move to trash",
+      message: 'Something went wrong while moving to trash.',
       suggestion: 'Try again, or check the technical details below for more information.',
     },
   },
@@ -576,7 +576,7 @@ const cases: Case[] = [
   },
 ]
 
-describe('write-error copy parity (getUserFriendlyMessage reproduces the pre-migration English byte-for-byte)', () => {
+describe('write-error copy parity (getUserFriendlyMessage renders the English catalog byte-for-byte)', () => {
   for (const c of cases) {
     it(c.name, () => {
       if (c.mac !== undefined) setMacOS(c.mac)
