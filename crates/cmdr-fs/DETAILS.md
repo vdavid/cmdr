@@ -192,10 +192,10 @@ The double is the oracle: these `Volume` contracts have to hold in it, not just 
 
 ### The shared assertions in `volume::conformance`
 
-The four contracts above that are CROSS-BACKEND live as shared assertions rather than as per-backend tests, so a
-backend can't quietly opt out of one. Each takes an already-seeded fixture, because seeding is the one part that can't
-be shared (a local volume needs a temp dir, MTP a backing dir plus a rescan, SMB a share); what the assertion checks is
-identical everywhere, which is the point.
+The four contracts above that are CROSS-BACKEND live as shared assertions rather than as per-backend tests, so a backend
+can't quietly opt out of one. Each takes an already-seeded fixture, because seeding is the one part that can't be shared
+(a local volume needs a temp dir, MTP a backing dir plus a rescan, SMB a share); what the assertion checks is identical
+everywhere, which is the point.
 
 - `assert_delete_leaves_a_non_empty_dir_intact` — the refusal that data-safety logic leans on rather than re-checking.
   This is the one MTP broke for years: it claimed the contract by implementing the trait, and nothing looked.
