@@ -42,16 +42,16 @@ Shared tooling: the Go check runner (`scripts/check/CLAUDE.md`) and dev docs (`d
 
 Full product and design values: `docs/design-principles.md`. The highest-level ones:
 
-1. **Delightful UX**, not just functional: thoughtful phrasing, real dark/light modes, OS-native everything, respect the
-   system font, theme, and `prefers-reduced-motion`.
-2. **Elegance above all**: clean architecture over hacks; we're here for the long run.
-3. **Rock solid**: never block the main thread, immediate feedback, honest progress and ETA, everything cancelable
-   (background work too), handle the hostile case (dead mount, huge dir, crash mid-operation).
-4. **Protect the user's data**: safe-overwrite (temp+rename), atomic ops where possible, design for the crash, test
+1. **Protect the user's data**: safe-overwrite (temp+rename), atomic ops where possible, design for the crash, test
    data-writing paths hard.
+2. **Rock solid**: never block the main thread, immediate feedback, honest progress and ETA, everything cancelable
+   (background work too), handle the hostile case (dead mount, huge dir, crash mid-operation).
+3. **Delightful UX**, not just functional: thoughtful phrasing, real dark/light modes, OS-native everything, respect the
+   system font, theme, and `prefers-reduced-motion`.
+4. **Humans to humans**: AI builds the internals (code); anything meeting human eyes (UI, copy, images, human docs) is
+   made or closely reviewed by a human. (Caveat: we'll human-review _translations_ much later. This is OK.)
 5. **Respect the user's resources**: minimize CPU, memory, and disk thrash.
-6. **Humans to humans**: AI builds the internals (code); anything meeting human eyes (UI, copy, images, human docs) is
-   made or closely reviewed by a human.
+6. **Elegance above all**: clean architecture over hacks; we're here for the long run.
 
 Engineering principles: smart backend / thin frontend (business logic in Rust, IPC commands are pass-throughs);
 organized by feature, not layer (component + module + tests + docs colocated); subscribe, don't poll; invest in
