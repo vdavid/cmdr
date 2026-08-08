@@ -9,15 +9,22 @@ import { test, expect } from '@playwright/test'
 test.describe('Changelog', () => {
   test('renders bare commit hashes as GitHub links', async ({ page }) => {
     await page.goto('/changelog')
-    const commitLinks = page.locator('a[href^="https://github.com/vdavid/cmdr/commit/"]')
 
-    expect(await commitLinks.count()).toBeGreaterThan(0)
+    // Pull every link's text and href in ONE evaluate, then assert in Node.
+    // Looping `locator.textContent()` / `.getAttribute()` costs two round-trips
+    // PER LINK, and the changelog only grows: at 1 606 links that loop blew the
+    // 30 s test timeout. The assertions below are unchanged and still cover every
+    // link — this only stops the test from racing the clock as we ship releases.
+    const links = await page.$$eval('a[href^="https://github.com/vdavid/cmdr/commit/"]', (nodes) =>
+      nodes.map((node) => ({ text: (node.textContent ?? '').trim(), href: node.getAttribute('href') ?? '' })),
+    )
+
+    expect(links.length).toBeGreaterThan(0)
 
     // Every commit link shows the bare hash and points at that same hash.
-    for (const link of await commitLinks.all()) {
-      const text = ((await link.textContent()) ?? '').trim()
-      expect(text).toMatch(/^[0-9a-f]{6,40}$/)
-      expect(await link.getAttribute('href')).toBe(`https://github.com/vdavid/cmdr/commit/${text}`)
+    for (const link of links) {
+      expect(link.text).toMatch(/^[0-9a-f]{6,40}$/)
+      expect(link.href).toBe(`https://github.com/vdavid/cmdr/commit/${link.text}`)
     }
   })
 
