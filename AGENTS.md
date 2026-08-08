@@ -99,6 +99,7 @@ may speak as David where deliberately personal (onboarding, About).
   `style-guide.md`, `design-principles.md`, `security.md`, `maintenance.md`.
 - `tools/`: dev tooling outside every workspace and check: `tools/intellij-plugin/`, `tools/privatesize-poc/README.md`.
 - `scripts/check/`: the Go check runner. `.github/workflows/`: CI.
+- `LINUX.md`: platform specific notes.
 
 ## Checker script
 
