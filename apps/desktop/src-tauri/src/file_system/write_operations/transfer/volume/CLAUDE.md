@@ -34,8 +34,8 @@ same-volume), the merge/staging engine (`strategy.rs`, `sequential_extract.rs`),
   "file" (ask `strategy.rs::resolve_source_is_directory`; the RESOLVED answer drives the cleanup/ledger branch), and ❌
   no `.is_directory(…).await.unwrap_or(false)` here: a guessed `false` streams a directory as a file and picks the
   destructive branch. `NotFound` is an ANSWER; anything else fails the item. **`SourceHint` has no `Default`; ❌ never
-  add one.** ❌ Don't probe where a hint EXISTS (15k MTP sources = 15k listings). `DETAILS.md` §§ "A missing source hint
-  means unknown", "Every belief-default in this directory, decided".
+  add one.** ❌ Don't probe where a hint EXISTS (15k MTP sources = 15k listings). `DETAILS.md` § "A missing source hint
+  means unknown" and § "Every belief-default in this directory, decided".
 - **Cross-FS move deletes sources AFTER `flush_created_destinations`, preserving Skipped ones.** Same-volume move is a
   rename-merge with top-level hints only, never a subtree walk.
 

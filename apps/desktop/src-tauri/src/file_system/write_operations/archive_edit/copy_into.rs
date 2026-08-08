@@ -20,8 +20,8 @@ use super::super::conflict::ApplyToAll;
 use super::super::manager::{self, ManagedTaskGuard, OperationDescriptor, OperationSummaryText};
 use super::super::scratch_dir::ScratchDir;
 use super::super::state::{WriteOperationState, WriteSettledGuard};
-use super::super::transfer::volume::{TreeRemoval, remove_tree};
 use super::super::transfer::volume::pull_path_to_local;
+use super::super::transfer::volume::{TreeRemoval, remove_tree};
 use super::super::types::{
     ConflictResolution, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError,
     WriteOperationStartResult, WriteOperationType,

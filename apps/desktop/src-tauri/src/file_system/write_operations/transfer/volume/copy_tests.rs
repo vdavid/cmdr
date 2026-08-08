@@ -1880,8 +1880,8 @@ async fn remove_tree_removes_nonempty_directory() {
         &HashSet::new(),
         TreeRemoval::MoveSourceAfterDestinationLanded,
     )
-        .await
-        .unwrap();
+    .await
+    .unwrap();
 
     assert!(!vol.exists(Path::new("/photos")).await);
     assert!(!vol.exists(Path::new("/photos/a.jpg")).await);
@@ -1900,8 +1900,8 @@ async fn remove_tree_removes_single_file() {
         &HashSet::new(),
         TreeRemoval::MoveSourceAfterDestinationLanded,
     )
-        .await
-        .unwrap();
+    .await
+    .unwrap();
 
     assert!(!vol.exists(Path::new("/file.txt")).await);
 }
@@ -1935,8 +1935,8 @@ async fn remove_tree_reports_the_leaf_that_refused() {
         &HashSet::new(),
         TreeRemoval::MoveSourceAfterDestinationLanded,
     )
-        .await
-        .expect_err("the leaf never deletes, so the sweep can't finish");
+    .await
+    .expect_err("the leaf never deletes, so the sweep can't finish");
     assert_eq!(
         failure.path,
         Path::new("/tree/nested/doomed.txt"),

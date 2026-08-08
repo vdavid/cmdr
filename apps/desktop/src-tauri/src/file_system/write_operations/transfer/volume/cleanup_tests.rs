@@ -56,7 +56,10 @@ async fn partial_sweep_leaves_a_directory_and_its_contents_alone() {
         vol.exists(Path::new("/album/keep-me.jpg")).await,
         "a directory in the partial sweep must not take the user's files with it"
     );
-    assert!(vol.exists(Path::new("/album")).await, "the merged dest directory survives");
+    assert!(
+        vol.exists(Path::new("/album")).await,
+        "the merged dest directory survives"
+    );
 }
 
 /// The same leak through the OTHER feed: `copy.rs`'s RollingBack branch pushes
@@ -96,7 +99,10 @@ async fn rollback_removes_the_files_the_copy_wrote() {
 
     roll_back(
         &volume,
-        &[PathBuf::from("/album/ours.jpg"), PathBuf::from("/album/never-landed.jpg")],
+        &[
+            PathBuf::from("/album/ours.jpg"),
+            PathBuf::from("/album/never-landed.jpg"),
+        ],
         &[],
     )
     .await;
