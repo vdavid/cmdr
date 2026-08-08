@@ -483,9 +483,14 @@ fn clearing_a_drives_index_drops_the_branches_with_the_coverage() {
     std::fs::write(drive.tree.path().join("scope/found.txt"), "x").expect("file");
 
     drive.cover(&drive.path("scope"));
-    assert!(
-        drive.persisted_branches().is_some(),
-        "precondition: a branch was written"
+    // `BranchWatch::persist` hands the meta row to the async `IndexWriter`, and
+    // `cover` only waits for the COVERAGE to read as walked. Wait for the row itself:
+    // reading the database the instant the walk returns races the writer thread, which
+    // is a race only a slow host loses (it did, on the Docker Linux lane).
+    cmdr_fs::testing::wait_until(
+        std::time::Duration::from_secs(10),
+        "the walk's branch to reach the database",
+        || drive.persisted_branches().is_some(),
     );
 
     drive.index.forget_volume(drive.volume_id).expect("clear the index");
