@@ -407,7 +407,7 @@ async fn test_handle_directory_change_detects_new_entries() {
 ///
 /// macOS reports that replacement as `Remove(Folder)` + `Create(Folder)` on the WATCH
 /// ROOT plus one `Create` per NEW child, and never a remove for the old children
-/// (verified on macOS 15.5 / `notify-debouncer-full` 0.6, by logging the raw debounced
+/// (verified on macOS 26.5.2 / `notify-debouncer-full` 0.7.0, by logging the raw debounced
 /// batch against a live pane, 2026-08-08). So a classifier that only rebases
 /// direct-child events applies the adds, learns nothing about the removals, and the
 /// vanished entries sit in the pane until the user navigates away and back.

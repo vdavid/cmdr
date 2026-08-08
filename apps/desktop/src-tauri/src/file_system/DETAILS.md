@@ -123,7 +123,8 @@ The incremental watcher path classifies each event against the cached listing, s
 names. When the watched directory is itself replaced (a `git checkout` across branches, `rsync --delete`, unzipping over
 a folder, a build regenerating its output dir), macOS names almost none of them.
 
-Measured against a live pane by logging the raw debounced batch (macOS 15.5, `notify-debouncer-full` 0.6, 2026-08-08),
+Measured against a live pane by logging the raw debounced batch (macOS 26.5.2, `notify-debouncer-full` 0.7.0,
+2026-08-08),
 `rm -rf target && mkdir target && touch gamma.txt delta.txt` delivers exactly:
 
 - `Remove(Folder)` on the watch root

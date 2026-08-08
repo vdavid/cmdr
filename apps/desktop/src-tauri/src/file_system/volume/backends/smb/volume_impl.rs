@@ -265,9 +265,14 @@ impl Volume for SmbVolume {
     }
 
     fn supports_watching(&self) -> bool {
-        // Starts as false: the existing FSEvents watcher on the OS mount
-        // point already provides change notifications. smb2-native watching
-        // can be added later as an optimization.
+        // False because nothing here watches yet, NOT because the OS mount covers
+        // it. FSEvents on an `smbfs` mount is a local-VFS notifier: it reports only
+        // what this machine wrote through the mount, and delivers nothing for a
+        // change another client makes to the share (verified on macOS 26.5.2,
+        // `notify` 8.2.0, one watcher and both write paths against a live share,
+        // 2026-08-08; see `docs/notes/silent-inertness-hunt-2026-08-08.md`).
+        // Remote changes are exactly what a share watcher is for, so smb2-native
+        // watching remains genuinely missing, not merely unoptimized.
         false
     }
 

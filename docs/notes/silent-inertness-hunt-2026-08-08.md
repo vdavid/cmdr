@@ -57,12 +57,37 @@ parent's `delete` then fails `ENOTEMPTY` rather than taking the tree. A stale li
 when it's now a directory ends the same way. That's the delete contract doing exactly the job the conformance assertion
 exists to keep it doing.
 
-**⚠️ The FSEvents half of this is unverified in both directions.** `SmbVolume::supports_watching()`
-(`backends/smb/volume_impl.rs:267`) justifies its `false` with "the existing FSEvents watcher on the OS mount point
-already provides change notifications", an undated claim about OS behavior with no measurement behind it (the project
-rule asks for `(verified on <version>, <method>, <date>)` on exactly this kind of claim). Whether FSEvents delivers
-anything for an `smbfs` mount decides whether finding 2 is real or a non-issue, and nobody has measured it. Measuring it
-is cheap: the SMB Docker stack plus `mount_smbfs` and a watcher log line.
+**✅ The FSEvents half is now measured, and it makes finding 2 real rather than contingent.**
+
+Measured 2026-08-08 on macOS 26.5.2 with `notify` 8.2.0 / `notify-debouncer-full` 0.7.0, against the live `naspi` share
+(`//david@192.168.1.111/naspi` on `/Volumes/naspi`, `smbfs`), using a standalone probe that arms the same debounced
+`RecommendedWatcher` Cmdr arms. The tightest run used ONE watcher over one 30 s deadline and both write paths:
+
+- `t=4 s`, a **remote** write bypassing the mount (`smb2 put`, confirmed landed on the share): **no event, ever.**
+- `t=14 s`, a **local** write through the mount (`touch`): `Create(File)` delivered.
+
+Two earlier runs agree: three remote mutations (two creates, one delete, all confirmed on the share) produced **zero**
+events across 40 s, while the mount's own `ls` reflected them immediately: smbfs re-reads on demand, but nothing is
+pushed. A local-write control on the same directory, same probe, delivered.
+
+**So FSEvents on `smbfs` is a local-VFS notifier, not a share notifier.** It reports what this machine did through the
+mount and is structurally blind to what any other client does, which is the case a share watcher exists for.
+
+Two consequences:
+
+1. `SmbVolume::supports_watching()`'s justification was false and is corrected in place (the `false` return was right
+   for a different reason: smb2-native watching is genuinely missing, not merely unoptimized).
+2. **Finding 2 has a sharp real instance.** An SMB share with an OS mount and no Cmdr smb2 session is served by a
+   `LocalPosixVolume` (`volumes/smb.rs:26` says so explicitly; it's what the `OsMount` badge means). That volume's
+   `supports_watching()` is an unconditional `true`, so an FSEvents watch IS armed on the mount point and
+   `listing_is_watched()` answers `true` for it, while that watcher cannot see a single remote change. The oracle then
+   hands those cached entries to the delete walker, the copy scan, and the scan preview instead of re-reading. This is
+   not a debounce window; it's a watcher that is right about "registered" and permanently blind about "delivering".
+
+**Recommended next step (not taken here, because it's a tradeoff, not a typo):** make `listing_is_watched()` answer
+`false` when the path's filesystem is a network one, so the oracle declines and the pre-flight re-reads honestly. The
+cost lands on exactly the volumes where a re-read is most expensive, which is why it wants a deliberate decision rather
+than a drive-by fix.
 
 ### 3. A delete reports "complete, 0 skipped" when directories it couldn't remove are still standing
 
