@@ -7,6 +7,7 @@
  */
 
 import { test, expect } from './fixtures.js'
+import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import {
   clickEntryInPane,
   dismissOverlay,
@@ -15,6 +16,7 @@ import {
   expectAndDismissToast,
   findFileIndex,
   focusPane,
+  getFixtureRoot,
   moveCursorToFile,
   skipParentEntry,
   pressKey,
@@ -24,6 +26,12 @@ import {
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 
 type PageLike = TauriPage | BrowserPageAdapter
+
+// The F7 test creates a folder in the shared `left/` tree; putting it back is
+// this spec's job (the post-test leak guard fails whoever leaves it dirty).
+test.afterEach(() => {
+  restoreFixtureTree(getFixtureRoot())
+})
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 

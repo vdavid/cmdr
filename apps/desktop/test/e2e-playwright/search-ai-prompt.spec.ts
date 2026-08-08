@@ -40,6 +40,10 @@ test.describe('Search dialog: AI mode never auto-applies', () => {
     await openSearchDialog(tauriPage)
 
     const aiOn = await hasAiChip(tauriPage)
+    // Close the dialog BEFORE skipping: `test.skip` throws, so an open overlay
+    // would survive the skip and eat the next spec's keystrokes (the post-test
+    // leak guard catches it, but a skip shouldn't need catching).
+    if (!aiOn) await closeSearchDialog(tauriPage)
     test.skip(!aiOn, 'AI provider is off in this fixture; AI-mode contract has no observable surface')
 
     // Switch to AI mode (⌘1 with AI on per modeForShortcutNumber). If the
@@ -47,6 +51,7 @@ test.describe('Search dialog: AI mode never auto-applies', () => {
     if ((await getActiveMode(tauriPage)) !== 'ai') {
       await pressMetaDigit(tauriPage, 1)
       const switched = await pollActiveMode(tauriPage, 'ai')
+      if (!switched) await closeSearchDialog(tauriPage)
       test.skip(!switched, 'failed to switch to AI mode; cannot validate the contract')
     }
 

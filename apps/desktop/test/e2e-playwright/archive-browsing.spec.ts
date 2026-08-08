@@ -148,6 +148,33 @@ async function navigatePaneTo(tauriPage: PageLike, pane: 'left' | 'right', targe
     })()`)
 }
 
+/**
+ * Waits until the LEFT pane is both focused and showing `targetPath`, re-requesting
+ * left focus on every pass.
+ *
+ * Navigating a pane shifts focus to it on ITS listing-complete, and `ensureAppReady`
+ * navigates the right pane too — so the right pane's shift can land after this spec's
+ * left-pane nav and leave the wrong pane focused, which reads as "the nav went to the
+ * wrong place". Re-clicking each pass outlasts that late shift, the same way
+ * `ensureAppReady`'s own focus loop does.
+ */
+async function settleFocusedPaneOnLeft(tauriPage: PageLike, targetPath: string): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        // `handlePaneClick` → `onRequestFocus` → `handleFocus('left')`, the same
+        // re-focus `ensureAppReady` uses.
+        await tauriPage.evaluate(`(function() {
+            var left = document.querySelectorAll('.file-pane')[0];
+            if (left && !left.classList.contains('is-focused')) left.click();
+        })()`)
+        return getFocusedPaneActiveTabPath()
+      },
+      { timeout: 5000 },
+    )
+    .toBe(targetPath)
+}
+
 const ENTER_MENU = '.menu-content'
 
 /**
@@ -170,7 +197,7 @@ test.describe('Archive browsing', () => {
     // left it browsing INSIDE the archive, and `ensureAppReady` doesn't reliably back
     // out of an archive volume, so start each test from a known directory.
     await navigatePaneTo(tauriPage, 'left', `${getFixtureRoot()}/left`)
-    await expect.poll(async () => getFocusedPaneActiveTabPath(), { timeout: 5000 }).toBe(`${getFixtureRoot()}/left`)
+    await settleFocusedPaneOnLeft(tauriPage, `${getFixtureRoot()}/left`)
     // Wait for the listing to actually repopulate before a test reads it. The top-level
     // beforeEach wipes and rewrites `left/`, so the path can already read `left/` (a prior
     // test ended here, making the nav a no-op) while the pane still shows the mid-refresh
@@ -205,7 +232,7 @@ test.describe('Archive browsing', () => {
 
     // Into the nested dir inside the archive.
     await enterEntry(tauriPage, 'nested')
-    await expect.poll(async () => getFocusedPaneActiveTabPath(), { timeout: 5000 }).toBe(`${zipPath}/nested`)
+    await settleFocusedPaneOnLeft(tauriPage, `${zipPath}/nested`)
     await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'deep.txt'), { timeout: 5000 }).toBeTruthy()
 
     // Backspace bubbles up to the archive root...
@@ -446,7 +473,7 @@ test.describe('Archive browsing', () => {
     // Navigating the right pane focuses it (focus follows the navigated pane), so
     // re-focus the left source pane before the F5 copy reads from it.
     await navigatePaneTo(tauriPage, 'left', `${fixtureRoot}/left`)
-    await expect.poll(async () => getFocusedPaneActiveTabPath(), { timeout: 5000 }).toBe(`${fixtureRoot}/left`)
+    await settleFocusedPaneOnLeft(tauriPage, `${fixtureRoot}/left`)
 
     const found = await moveCursorToFile(tauriPage, 'file-a.txt')
     expect(found).toBe(true)
@@ -496,7 +523,7 @@ test.describe('Archive browsing', () => {
     // re-focus the left source pane (still at `left/` from the beforeEach) before
     // cursoring the big file for the F5 copy.
     await navigatePaneTo(tauriPage, 'left', `${fixtureRoot}/left`)
-    await expect.poll(async () => getFocusedPaneActiveTabPath(), { timeout: 5000 }).toBe(`${fixtureRoot}/left`)
+    await settleFocusedPaneOnLeft(tauriPage, `${fixtureRoot}/left`)
     await expect.poll(async () => fileExistsInFocusedPane(tauriPage, bigName), { timeout: 5000 }).toBeTruthy()
     const found = await moveCursorToFile(tauriPage, bigName)
     expect(found).toBe(true)
@@ -576,7 +603,7 @@ test.describe('Archive browsing', () => {
     // Navigating the right pane focuses it (focus follows the navigated pane), so
     // re-focus the left source pane before cursoring the clashing file.
     await navigatePaneTo(tauriPage, 'left', `${fixtureRoot}/left`)
-    await expect.poll(async () => getFocusedPaneActiveTabPath(), { timeout: 5000 }).toBe(`${fixtureRoot}/left`)
+    await settleFocusedPaneOnLeft(tauriPage, `${fixtureRoot}/left`)
 
     const found = await moveCursorToFile(tauriPage, 'inner.txt')
     expect(found).toBe(true)
@@ -610,7 +637,7 @@ test.describe('Archive Enter-behavior menu', () => {
     // left it browsing INSIDE the archive, and `ensureAppReady` doesn't reliably back
     // out of an archive volume, so start each menu test from a known directory.
     await navigatePaneTo(tauriPage, 'left', `${getFixtureRoot()}/left`)
-    await expect.poll(async () => getFocusedPaneActiveTabPath(), { timeout: 5000 }).toBe(`${getFixtureRoot()}/left`)
+    await settleFocusedPaneOnLeft(tauriPage, `${getFixtureRoot()}/left`)
     // Wait for the listing to actually repopulate before a test reads it. The top-level
     // beforeEach wipes and rewrites `left/`, so the path can already read `left/` (a prior
     // test ended here, making the nav a no-op) while the pane still shows the mid-refresh
@@ -717,7 +744,7 @@ test.describe('Archive browsing — read-only tar.gz', () => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)
     await navigatePaneTo(tauriPage, 'left', `${getFixtureRoot()}/left`)
-    await expect.poll(async () => getFocusedPaneActiveTabPath(), { timeout: 5000 }).toBe(`${getFixtureRoot()}/left`)
+    await settleFocusedPaneOnLeft(tauriPage, `${getFixtureRoot()}/left`)
     // tar/7z ride the same `zip` Enter policy (backend `is_archive`), so Browse
     // steps into them too. Wait for the fixture so the watcher has caught up.
     await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'sample.tar.gz'), { timeout: 5000 }).toBeTruthy()

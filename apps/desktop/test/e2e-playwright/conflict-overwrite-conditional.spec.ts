@@ -20,7 +20,7 @@ import path from 'path'
 import { test, expect } from './fixtures.js'
 import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { dispatchMenuCommand, ensureAppReady, getFixtureRoot, TRANSFER_DIALOG } from './helpers.js'
+import { dispatchMenuCommand, ensureAppReady, expectAndDismissToast, getFixtureRoot, TRANSFER_DIALOG } from './helpers.js'
 import {
   clearFixtureDirs,
   clickConflictButton,
@@ -126,6 +126,9 @@ test.describe('Conditional conflict policies (upfront radios)', () => {
     // Larger dest → kept verbatim (500 'd's). This is the critical safety case:
     // overwriting a larger file under "Overwrite all smaller" would mean data loss.
     expect(readFile(fixtureRoot, 'right/larger.txt')).toBe('d'.repeat(500))
+    // The transfer's completion toast is user-facing contract; assert and dismiss
+    // it so it doesn't sit through the next test (the post-test leak guard).
+    await expectAndDismissToast(tauriPage, 'Copied 3 files')
   })
 
   test('Overwrite all older: only strictly-older dest is replaced', async ({ tauriPage }) => {
@@ -151,6 +154,9 @@ test.describe('Conditional conflict policies (upfront radios)', () => {
     // Newer dest → MUST be kept (the user's fresher file). Replacing it under
     // "Overwrite all older" would be data loss.
     expect(readFile(fixtureRoot, 'right/newer.txt')).toBe('dst-newer')
+    // The transfer's completion toast is user-facing contract; assert and dismiss
+    // it so it doesn't sit through the next test (the post-test leak guard).
+    await expectAndDismissToast(tauriPage, 'Copied 3 files')
   })
 })
 
@@ -183,5 +189,8 @@ test.describe('Conditional conflict policies (per-file dialog buttons)', () => {
     expect(readFile(fixtureRoot, 'right/older.txt')).toBe('src-older')
     expect(readFile(fixtureRoot, 'right/equal.txt')).toBe('dst-equal')
     expect(readFile(fixtureRoot, 'right/newer.txt')).toBe('dst-newer')
+    // The transfer's completion toast is user-facing contract; assert and dismiss
+    // it so it doesn't sit through the next test (the post-test leak guard).
+    await expectAndDismissToast(tauriPage, 'Copied 3 files')
   })
 })
