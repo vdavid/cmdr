@@ -5,6 +5,10 @@
 //! without touching the real file system.
 
 use super::{SmbConnectionState, SpaceInfo, VolumeError, VolumeReadStream};
+// The `impl Volume` moved to `in_memory/volume_impl.rs`, but the builder docs below
+// still link to the trait methods they steer.
+#[cfg(doc)]
+use super::Volume;
 use crate::entry::FileEntry;
 use crate::ignore_poison::IgnorePoison;
 use crate::ignore_poison::RwLockIgnorePoison;

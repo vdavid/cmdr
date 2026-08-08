@@ -1,7 +1,8 @@
 # Svelte frontend (`src/`)
 
 The Svelte 5 + TypeScript frontend (SvelteKit static adapter, custom CSS with design tokens). Feature must-knows live in
-each directory's colocated `CLAUDE.md`; the subsystem map is `docs/architecture.md`. These rules cover all frontend code.
+each directory's colocated `CLAUDE.md`; the subsystem map is `docs/architecture.md`. These rules cover all frontend
+code.
 
 ## Frontend rules
 

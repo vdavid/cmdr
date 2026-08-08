@@ -14,10 +14,9 @@ deliberately inherit no ratio: their rows size from the density tiers, and a rat
 
 WKWebView never reflects `@media (prefers-reduced-transparency)`, so the app can't key a frosted-glass fallback off it.
 The backend reads the `NSWorkspace` value and `$lib/reduce-transparency` (inited per window) toggles an
-`html.reduce-transparency` CLASS instead. Under that class, `app.css` § Reduced transparency flips
-`--color-bg-glass` / `--color-border-glass` to opaque, and each surface drops its `backdrop-filter` (and the `-webkit-`
-twin) via `:global(html.reduce-transparency)`. `prefers-reduced-motion` WKWebView does honor, so that one stays a media
-query.
+`html.reduce-transparency` CLASS instead. Under that class, `app.css` § Reduced transparency flips `--color-bg-glass` /
+`--color-border-glass` to opaque, and each surface drops its `backdrop-filter` (and the `-webkit-` twin) via
+`:global(html.reduce-transparency)`. `prefers-reduced-motion` WKWebView does honor, so that one stays a media query.
 
 ## Global stylesheets
 
