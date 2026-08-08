@@ -201,8 +201,10 @@ slow-timeout = { period = "20s", terminate-after = 1 }
 # coalesces a faster pair into one event). A producer thread keeps redoing that pair on a
 # fresh name until the watch delivers a matching file-level create AND removal, inside a
 # per-scenario 8 s budget, so neither the just-armed-watch drop nor a coalesced lone pair
-# can starve it. So the floor is structural, not slowness: ~7 s idle, measured 10/10 on an
-# M3 Max, 2026-08-08. 30 s covers the saturated case while keeping the hang backstop;
+# can starve it. So the floor is structural, not slowness: 4.6–14.8 s over 8 runs on an
+# M3 Max under concurrent load, 2026-08-08. The test's own shared budget is 25 s, so its
+# assertion (which names the flags and dumps the events) fires before this cap does;
+# 30 s covers the saturated case while keeping the hang backstop;
 # `real-notify` stops its five live streams from multiplying the other watcher tests'
 # starvation.
 #

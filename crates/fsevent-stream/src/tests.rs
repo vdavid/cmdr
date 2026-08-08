@@ -149,11 +149,13 @@ async fn must_receive_fs_events() {
 
 /// How long the five flag combinations get between them to have the watch deliver.
 /// ONE shared budget, not one per combination: five stacked budgets could outlast
-/// the nextest cap and turn a slow scenario into a killed process with no panic.
-/// The producer below keeps making fresh create/delete pairs the whole time, so
-/// this is a backstop for "the watch never delivers", not a guess at latency — the
-/// whole test is ~7 s idle and the pairs land in well under a second each.
-const DELIVERY_BUDGET: Duration = Duration::from_secs(20);
+/// the 30 s nextest cap and turn a slow scenario into a killed process with no
+/// panic. 25 s keeps this assertion authoritative (its message names the flags and
+/// dumps the events) with the cap as the hang backstop. The producer below keeps
+/// making fresh pairs the whole time, so this is a backstop for "the watch never
+/// delivers", not a latency guess: measured 4.6–14.8 s over 8 runs on an M3 Max
+/// under concurrent load, 2026-08-08.
+const DELIVERY_BUDGET: Duration = Duration::from_secs(25);
 
 /// One create/delete pair the producer made, and the inode it had.
 struct Probe {
