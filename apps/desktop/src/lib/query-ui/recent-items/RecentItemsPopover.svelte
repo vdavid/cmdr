@@ -33,6 +33,7 @@
     import { tString } from '$lib/intl/messages.svelte'
     import Trans from '$lib/intl/Trans.svelte'
     import Popover from '$lib/ui/Popover.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
     import { modeBadge } from './recent-items-utils'
@@ -213,7 +214,7 @@
                         class:is-cursor={index === cursor}
                         role="option"
                         aria-selected={index === cursor}
-                        title={match.view.tooltip}
+                        use:tooltip={match.view.tooltip}
                         onclick={() => {
                             cursor = index
                             pickCursorRow()

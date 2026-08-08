@@ -23,6 +23,9 @@ simple ones.
   `dialogId`, add a gallery row (type error + `dialog-gallery-coverage`). The registry feeds MCP's "available dialogs".
 - **`ModalDialog`'s overlay starts at `inset: var(--titlebar-height) 0 0 0`**, keeping the macOS title bar's window-drag
   region live. Any full-window backdrop must too.
+- **A dialog that shows a path is `resizable`** (`"horizontal"` unless something inside absorbs height), and its
+  shortened text carries `use:tooltip={{ text: full, overflowOnly: true }}` — never a native `title`. ❌ Don't put the
+  drag offset back on the `style` ATTRIBUTE: the resize grip writes the user's size there, so a re-render wipes it.
 - **Don't restyle `.btn-*` colors from a scoped feature component** (`scripts/check-btn-restyle`; one-offs need
   `/* allowed-btn-restyle: <reason> */`). `LinkButton` is the ONLY `cursor: pointer` opt-in; don't hand-roll one.
 - **Toasts**: pick a level by feedback kind, not wording; a full all-persistent stack silently drops new ones;

@@ -15,6 +15,7 @@
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import StatusBadge from '$lib/ui/StatusBadge.svelte'
     import { trapFocus } from '$lib/ui/focus-trap'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import TextInput from '$lib/ui/TextInput.svelte'
     import { tString } from '$lib/intl/messages.svelte'
 
@@ -253,7 +254,7 @@
                         tabindex={index === cursorIndex ? 0 : -1}
                         aria-selected={index === cursorIndex}
                     >
-                        <span class="command-name">
+                        <span class="command-name" use:tooltip={{ text: match.command.name, overflowOnly: true }}>
                             {#each highlightMatches(match) as segment, segIdx (segIdx)}
                                 {#if segment.highlighted}
                                     <mark class="match-highlight">{segment.text}</mark>

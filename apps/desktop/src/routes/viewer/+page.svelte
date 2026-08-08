@@ -887,6 +887,7 @@
     <h1 class="sr-only">{tString('viewer.srHeading')}</h1>
     <ViewerToolbar
         {fileName}
+        {filePath}
         kind={media.kind}
         lastMediaKind={media.lastMediaKind}
         {currentEncoding}

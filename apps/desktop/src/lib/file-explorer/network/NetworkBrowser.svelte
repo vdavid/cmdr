@@ -507,15 +507,17 @@
                 }}
                 onkeydown={() => {}}
             >
-                <span class="col-name">
+                <span class="col-name" use:tooltip={{ text: host.name, overflowOnly: true }}>
                     <span class="host-icon"><Icon name="monitor" size={16} aria-hidden="true" /></span>
                     {host.name}
                 </span>
                 <span class="col-ip" class:is-fetching={isHostResolving(host.id) && !host.ipAddress}
                     >{getIpDisplay(host)}</span
                 >
-                <span class="col-hostname" class:is-fetching={isHostResolving(host.id) && !host.hostname}
-                    >{getHostnameDisplay(host)}</span
+                <span
+                    class="col-hostname"
+                    class:is-fetching={isHostResolving(host.id) && !host.hostname}
+                    use:tooltip={{ text: getHostnameDisplay(host), overflowOnly: true }}>{getHostnameDisplay(host)}</span
                 >
                 <span
                     class="col-shares"

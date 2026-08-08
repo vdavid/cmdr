@@ -122,6 +122,11 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
         label: 'Volume without Trash',
         note: 'What MTP and most network shares look like: no toggle, permanent only.',
       },
+      {
+        id: 'long-name',
+        label: 'A name that never fits',
+        note: 'The row shortens; hovering it gives the full path, and the bottom-right grip widens the panel.',
+      },
     ],
   },
   {

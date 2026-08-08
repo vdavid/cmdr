@@ -312,7 +312,7 @@
                     <Icon name="arrow-left" size={14} aria-hidden="true" />
                     <span>{tString('search.imageResults.backToResults')}</span>
                 </button>
-                <span class="ir-title ir-title-similar">
+                <span class="ir-title ir-title-similar" use:tooltip={{ text: similarSource.storedPath, overflowOnly: true }}>
                     {tString('search.imageResults.similarTo', { name: similarSource.name })}
                 </span>
             {:else}

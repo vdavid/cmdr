@@ -44,7 +44,7 @@
 
 <div class="ai-transparency-strip" aria-label={tString('queryUi.ai.stripAria')}>
     <div class="strip-text">
-        <p class="ai-prompt">{aiPrompt}</p>
+        <p class="ai-prompt" use:tooltip={{ text: aiPrompt, overflowOnly: true }}>{aiPrompt}</p>
         <div class="ai-summary">
             <span class="ai-summary-lead">{tString('queryUi.ai.lead')}</span>
             {#if hasSummary}
@@ -52,13 +52,18 @@
                     {#if summary.pattern !== null}
                         <li>
                             <span class="ai-summary-label">{patternRowLabel(summary.patternKind)}:</span>
-                            <span class="ai-summary-value ai-summary-pattern">{summary.pattern}</span>
+                            <span
+                                class="ai-summary-value ai-summary-pattern"
+                                use:tooltip={{ text: summary.pattern, overflowOnly: true }}>{summary.pattern}</span
+                            >
                         </li>
                     {/if}
                     {#each summary.filters as filter (filter.label)}
                         <li>
                             <span class="ai-summary-label">{filter.label}:</span>
-                            <span class="ai-summary-value">{filter.value}</span>
+                            <span class="ai-summary-value" use:tooltip={{ text: filter.value, overflowOnly: true }}
+                                >{filter.value}</span
+                            >
                         </li>
                     {/each}
                 </ul>
@@ -67,7 +72,7 @@
             {/if}
         </div>
         {#if caveat}
-            <p class="ai-caveat">{caveat}</p>
+            <p class="ai-caveat" use:tooltip={{ text: caveat, overflowOnly: true }}>{caveat}</p>
         {/if}
     </div>
     <button

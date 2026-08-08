@@ -2,6 +2,7 @@
     import { dismissToast } from '$lib/ui/toast'
     import Button from '$lib/ui/Button.svelte'
     import { showInFinder } from '$lib/tauri-commands'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import { tString } from '$lib/intl/messages.svelte'
     import { getLastSavedBundlePath } from './bundle-saved-toast-state.svelte'
 
@@ -21,7 +22,9 @@
 
 <div class="content">
     <span class="message">{tString('errorReporter.bundleSavedToast.message')}</span>
-    <span class="path" title={getLastSavedBundlePath()}>{getLastSavedBundlePath()}</span>
+    <span class="path" use:tooltip={{ text: getLastSavedBundlePath(), overflowOnly: true }}
+        >{getLastSavedBundlePath()}</span
+    >
     <div class="actions">
         <Button size="mini" variant="secondary" onclick={handleDismiss}
             >{tString('errorReporter.bundleSavedToast.dismiss')}</Button

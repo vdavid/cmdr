@@ -26,6 +26,7 @@ function mountToolbar(props: {
     target,
     props: {
       fileName: 'example.txt',
+      filePath: '/Users/demo/Documents/example.txt',
       kind: props.kind ?? 'text',
       lastMediaKind: props.lastMediaKind ?? null,
       currentEncoding: 'utf8',

@@ -245,6 +245,7 @@
     onclose={handleCancel}
     ariaDescribedby={hasWarningBanner ? 'delete-warning-text' : undefined}
     containerStyle="width: 500px"
+    resizable="horizontal"
 >
     {#snippet title()}{dialogTitle}{/snippet}
 
@@ -273,20 +274,27 @@
             </div>
         {/if}
 
-        <!-- Source path -->
-        <div class="source-path">
+        <!-- Source path. The tooltip is unconditional whenever `abbreviatePath` swapped a
+             home directory for `~`, since then the line is short AND incomplete; otherwise
+             it only steps in once the line runs out of room. -->
+        <div class="source-path" use:tooltip={{ text: sourceFolderPath, overflowOnly: abbreviatedPath === sourceFolderPath }}>
             {tString('fileOperations.delete.fromPath', { path: abbreviatedPath })}
         </div>
 
         <!-- Scrollable file list -->
         <div class="file-list-container">
             <div class="file-list" role="list">
-                {#each visibleItems as item (item.name)}
+                {#each visibleItems as item, index (item.name)}
                     <div class="file-list-item" role="listitem">
                         <span class="item-icon" aria-hidden="true">
                             <Icon name={item.isDirectory ? 'folder' : 'file'} size={14} />
                         </span>
-                        <span class="item-name">{item.name}</span>
+                        <!-- `sourcePaths` is index-aligned with `sourceItems` at both call
+                             sites, so the row's own full path is what hovering reveals. -->
+                        <span
+                            class="item-name"
+                            use:tooltip={{ text: sourcePaths[index] ?? item.name, overflowOnly: true }}>{item.name}</span
+                        >
                         <span class="item-size">
                             {#if itemSizeBytes(item) != null}<Size bytes={itemSizeBytes(item)} />{/if}
                             {#if itemFileCountLabel(item)}{#if itemSizeBytes(item) != null}&nbsp;&nbsp;&nbsp;{/if}{itemFileCountLabel(

@@ -73,13 +73,23 @@ function sources(disk: GalleryDiskFixture, count: number) {
   return disk.entries.filter((entry) => entry.path !== disk.destinationDir).slice(0, count)
 }
 
+/**
+ * The one fixture entry whose name can't fit the dialog's width. The tree carries a
+ * deliberately over-long name for exactly this, so the shortening and its tooltip stay
+ * reviewable without anyone having to go find a real file with a monstrous name.
+ */
+function longestNamed(disk: GalleryDiskFixture) {
+  const all = sources(disk, disk.entries.length)
+  return all.reduce((longest, entry) => (entry.name.length > longest.name.length ? entry : longest), all[0])
+}
+
 /** The same `FileEntry` → `DeleteSourceItem` mapping the production trigger path does. */
 function deleteFixture(
   disk: GalleryDiskFixture,
   count: number,
-  options: { isPermanent: boolean; supportsTrash?: boolean },
+  options: { isPermanent: boolean; supportsTrash?: boolean; entries?: GalleryDiskFixture['entries'] },
 ): DeleteFixture {
-  const entries = sources(disk, count)
+  const entries = options.entries ?? sources(disk, count)
   return {
     sourceItems: entries.map(
       (entry): DeleteSourceItem => ({
@@ -147,6 +157,7 @@ export const deleteFixtures: Record<string, DiskFixtureBuilder<DeleteFixture> | 
   // A volume with no Trash (MTP, most network shares): the toggle is gone and
   // permanent is the only option, which is a different dialog to review.
   'no-trash-support': (disk) => deleteFixture(disk, 3, { isPermanent: true, supportsTrash: false }),
+  'long-name': (disk) => deleteFixture(disk, 1, { isPermanent: false, entries: [longestNamed(disk)] }),
 }
 
 /** Keyed by the `transfer-confirmation` entry's state ids in `gallery-registry.ts`. */

@@ -1,14 +1,15 @@
 import type { ActionReturn } from 'svelte/action'
 import { shortenMiddle, createPretextMeasure } from './shorten-middle'
+import { tooltip } from '$lib/tooltip/tooltip'
 
 export interface ShortenMiddleParams {
   text: string
   preferBreakAt?: string
   startRatio?: number
   /**
-   * When true, the native `title` tooltip is set only when truncation actually
-   * happened (so short, fully-visible text doesn't trigger a redundant tooltip).
-   * Defaults to false (previous callers always show the full text on hover).
+   * When true, the tooltip appears only when truncation actually happened (so short,
+   * fully-visible text doesn't trigger a redundant tooltip). Defaults to false: the
+   * full text is on hover whatever the width.
    */
   tooltipWhenTruncated?: boolean
 }
@@ -37,6 +38,11 @@ function readFont(node: HTMLElement): string {
  * Svelte action that truncates text in the middle to fit its container width.
  * Uses `@chenglou/pretext` for pixel-accurate measurement (loaded async).
  * Before pretext loads, the full text is shown with CSS `text-overflow: ellipsis`.
+ *
+ * The full text is always reachable on hover, through the HOUSE tooltip rather than a
+ * native `title`: the two have different delays and different chrome, and this action
+ * feeds pane rows, dialog rows, and result lists alike, which would otherwise hover
+ * three different ways.
  */
 export function useShortenMiddle(node: HTMLElement, params: ShortenMiddleParams): ActionReturn<ShortenMiddleParams> {
   let measureWidth: ((text: string) => number) | null = null
@@ -47,15 +53,11 @@ export function useShortenMiddle(node: HTMLElement, params: ShortenMiddleParams)
   node.style.textOverflow = 'ellipsis'
   node.style.whiteSpace = 'nowrap'
   node.textContent = params.text
-  if (!params.tooltipWhenTruncated) node.title = params.text
+  // Nothing is truncated yet, so `tooltipWhenTruncated` starts out with nothing to say.
+  const tip = tooltip(node, params.tooltipWhenTruncated ? '' : params.text)
 
-  function applyTitle(truncated: boolean): void {
-    if (params.tooltipWhenTruncated) {
-      if (truncated) node.title = currentText
-      else node.removeAttribute('title')
-    } else {
-      node.title = currentText
-    }
+  function applyTooltip(truncated: boolean): void {
+    tip.update?.(!params.tooltipWhenTruncated || truncated ? currentText : '')
   }
 
   function truncate() {
@@ -67,7 +69,7 @@ export function useShortenMiddle(node: HTMLElement, params: ShortenMiddleParams)
       startRatio: params.startRatio,
     })
     node.textContent = result
-    applyTitle(result !== currentText)
+    applyTooltip(result !== currentText)
   }
 
   // Load pretext, then switch from CSS fallback to pixel-accurate truncation
@@ -96,12 +98,13 @@ export function useShortenMiddle(node: HTMLElement, params: ShortenMiddleParams)
         truncate()
       } else {
         node.textContent = currentText
-        if (!params.tooltipWhenTruncated) node.title = currentText
-        else node.removeAttribute('title')
+        // Pre-pretext: nothing measured yet, so "truncated" is unknowable and false.
+        applyTooltip(false)
       }
     },
     destroy() {
       observer.disconnect()
+      tip.destroy?.()
     },
   }
 }

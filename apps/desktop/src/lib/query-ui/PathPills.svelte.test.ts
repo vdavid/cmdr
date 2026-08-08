@@ -9,6 +9,15 @@ function renderPills(path: string, onPick: (p: string) => void = () => {}) {
   return target
 }
 
+/** What hovering a pill would show. The house tooltip is a singleton, so ask for its text. */
+function pillTooltip(pill: HTMLButtonElement): string | null {
+  pill.dispatchEvent(new MouseEvent('mouseenter'))
+  vi.advanceTimersByTime(500)
+  const text = document.querySelector('.cmdr-tooltip.visible')?.textContent ?? null
+  pill.dispatchEvent(new MouseEvent('mouseleave'))
+  return text
+}
+
 describe('PathPills', () => {
   it('splits an absolute POSIX path into one pill per segment', async () => {
     const target = renderPills('/Users/dave/code')
@@ -55,10 +64,14 @@ describe('PathPills', () => {
   it('handles a relative path without a leading slash', async () => {
     const target = renderPills('docs/notes')
     await tick()
+    vi.useFakeTimers()
     const pills = Array.from(target.querySelectorAll<HTMLButtonElement>('.pill'))
     expect(pills.map((p) => p.textContent.trim())).toEqual(['docs', 'notes'])
-    expect(pills[0].title).toBe('docs')
-    expect(pills[1].title).toBe('docs/notes')
+    // Each pill hands over the ancestor path it would navigate to, through the house
+    // tooltip rather than a native `title` (which would hover unlike the rest of the app).
+    expect(pillTooltip(pills[0])).toBe('docs')
+    expect(pillTooltip(pills[1])).toBe('docs/notes')
+    vi.useRealTimers()
     target.remove()
   })
 

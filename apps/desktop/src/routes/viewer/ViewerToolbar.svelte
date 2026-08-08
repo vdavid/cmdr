@@ -23,6 +23,8 @@
     interface Props {
         /** File name shown in the flexible middle of the bar. */
         fileName: string
+        /** Full path of the open file. The title ellipsizes, so hovering it spells this out. */
+        filePath: string
         /** Detected content kind. Media kinds disable the text-only controls (encoding, tail). */
         kind: ViewerContentKind
         /**
@@ -53,6 +55,7 @@
 
     const {
         fileName,
+        filePath,
         kind,
         lastMediaKind,
         currentEncoding,
@@ -70,7 +73,9 @@
 </script>
 
 <header class="viewer-toolbar" data-tauri-drag-region>
-    <span class="viewer-toolbar-title" data-tauri-drag-region>{fileName}</span>
+    <span class="viewer-toolbar-title" data-tauri-drag-region use:tooltip={{ text: filePath, overflowOnly: true }}
+        >{fileName}</span
+    >
     <div class="viewer-toolbar-pickers">
         <!-- The toolbar stays consistent across modes: the same controls in the same
              places. Encoding and tail are text-only, so in media mode they render

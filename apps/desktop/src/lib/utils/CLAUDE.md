@@ -52,8 +52,9 @@ Small stateless utility functions. Pure, no Svelte state, safe to import from pl
 - **`'ask'` extension setting returns `ok` at validation time**; the save dialog handles the confirmation separately.
 - **`createDebounce` exposes `flush()`** (for `beforeunload` cleanup) and `createThrottle` guarantees a trailing call.
   Both are hand-rolled deliberately, not lodash.
-- **`useShortenMiddle` action takes `tooltipWhenTruncated?` (default `false`)**: when set, the native `title` applies
-  only when truncation actually trimmed the string. `VITE_CMDR_FORCE_OLD_WEBKIT=1 pnpm dev` forces the old-WebKit
+- **`useShortenMiddle` hands the full text over through the HOUSE tooltip, never a native `title`** (its delay and
+  chrome are the OS's, and this action feeds pane rows, dialog rows, and result lists alike). `tooltipWhenTruncated?`
+  (default `false`) narrows it to the case where truncation actually trimmed the string. `VITE_CMDR_FORCE_OLD_WEBKIT=1 pnpm dev` forces the old-WebKit
   fallback path on modern WebKit (see DETAILS.md and `docs/guides/releasing.md` § "Pre-release smoke test on old
   macOS").
 

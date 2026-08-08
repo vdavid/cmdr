@@ -31,6 +31,7 @@
     import { getFolderCoverageBadge } from '$lib/file-explorer/views/file-list-utils'
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
 
     const log = getAppLogger('media-index')
 
@@ -121,8 +122,10 @@
                 <li class="mi-folders-row">
                     <span class="mi-folders-icon" aria-hidden="true"><Icon name="folder" size={16} /></span>
                     <span class="mi-folders-path">
-                        <span class="mi-folders-name">{folderName(folder)}</span>
-                        <span class="mi-folders-full">{folder}</span>
+                        <span class="mi-folders-name" use:tooltip={{ text: folder, overflowOnly: true }}
+                            >{folderName(folder)}</span
+                        >
+                        <span class="mi-folders-full" use:tooltip={{ text: folder, overflowOnly: true }}>{folder}</span>
                         {#if badge}
                             <span class="mi-folders-coverage">
                                 <Icon name={badge.icon} size={12} aria-hidden="true" />

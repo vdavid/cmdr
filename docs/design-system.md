@@ -550,12 +550,17 @@ inset to the panel edge. A path a dialog is ABOUT (rather than one mentioned in 
 it's monospace, selectable, and copyable; `AlertDialog`'s `path` prop does that and widens the panel to 1.5× for it. The
 opt-ins:
 
-- `resizable`: lets the user drag the bottom-right corner to resize the dialog (default off). Turn it on for dialogs
-  that host resizable content like review lists; the body region grows and scrolls, and the caller still passes the
-  initial size via `containerStyle`. The dialog can't grow past the viewport or shrink below a usable minimum.
+- `resizable`: lets the user drag the bottom-right corner to resize the dialog (default off). **Any dialog that renders
+  a path or a filename turns this on**, because a fixed width is what forces the shortening in the first place; the body
+  region grows and scrolls, and the caller still passes the initial size via `containerStyle`. Pass `"horizontal"`
+  (rather than `true`) unless something inside actually absorbs extra height, which in practice means `fillBody` with a
+  scrolling child: otherwise a vertical drag just opens a band of dead space above the footer. The dialog can't grow
+  past the viewport, and its own content is the floor it can't shrink below. Note a `max-width` in `containerStyle`
+  pins the grip, so state an opening `width` instead.
 - `fillBody`: a fixed-height frame instead of one that grows with its content. The panel becomes a flex column, the body
   absorbs the vertical slack (as a column, so its own child can take `flex: 1 1 auto` and scroll), and the panel clips
-  to its radius. Cap the height via `containerStyle`. `resizable` brings its own version of this; don't combine.
+  to its radius. Cap the height via `containerStyle`. Combines with `resizable`, and then the inner scroll region keeps
+  ownership of the scrolling.
 - `align="top"`: drops the dialog 10vh from the top instead of centering it, the Spotlight placement for a dialog the
   user types into and reads a long list from. The query dialogs are the only users.
 - `ownsKeyboard`: hands the whole keydown contract to the consumer. `ModalDialog` still stops propagation, then forwards
@@ -769,6 +774,12 @@ with 8px margin.
 - With shortcut: `use:tooltip={{ text: "New tab", shortcut: "⌘T" }}`
 - Rich HTML: `use:tooltip={{ html: dirSizeHtml }}`
 - Overflow-only: `use:tooltip={{ text: fullPath, overflowOnly: true }}`
+
+**Shortened text always has one.** Anything that ellipsizes (CSS `text-overflow`, the `useShortenMiddle` action, or a
+JS `slice(…) + '…'`) carries `use:tooltip` with the full string, `overflowOnly: true` so a row that fits stays quiet.
+Where the visible text is abbreviated rather than cut (a home directory shown as `~`), drop `overflowOnly`: it's
+incomplete at any width. ❌ Never a native `title` for this: its delay and chrome are the OS's, so one surface would
+hover unlike every other. `useShortenMiddle` routes through this action for the same reason.
 
 **Accessibility:** Shows on focus (keyboard navigation), hides on blur/Escape. Trigger element gets `aria-describedby`
 pointing to the tooltip's unique `id`. Tooltip has `role="tooltip"`.

@@ -51,6 +51,7 @@ function mountToolbar(opts: MountOpts = {}) {
     target,
     props: {
       fileName: opts.fileName ?? 'example.txt',
+      filePath: `/Users/demo/Documents/${opts.fileName ?? 'example.txt'}`,
       kind: opts.kind ?? 'text',
       lastMediaKind: opts.lastMediaKind ?? null,
       currentEncoding: opts.currentEncoding ?? 'utf8',

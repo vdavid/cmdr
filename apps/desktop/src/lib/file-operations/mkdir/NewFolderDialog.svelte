@@ -17,6 +17,7 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import Trans from '$lib/intl/Trans.svelte'
     import { tString } from '$lib/intl/messages.svelte'
 
@@ -236,6 +237,7 @@
     dialogId="mkdir-confirmation"
     onclose={onCancel}
     containerStyle="width: 400px"
+    resizable="horizontal"
 >
     {#snippet title()}{tString('fileOperations.mkdir.title')}{/snippet}
 
@@ -288,6 +290,7 @@
                                 <button
                                     type="button"
                                     class="suggestion-item"
+                                    use:tooltip={{ text: suggestion, overflowOnly: true }}
                                     onclick={() => {
                                         selectSuggestion(suggestion)
                                     }}

@@ -7,6 +7,7 @@
 <script lang="ts">
     import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import { toolLabel, toolRefusedLabel } from './ask-cmdr-labels'
     import type { RailToolCall } from './ask-cmdr-trigger.svelte'
 
@@ -42,7 +43,7 @@
         </span>
         <span class="label">{label}</span>
         {#if tool.path}
-            <span class="path">{tool.path}</span>
+            <span class="path" use:tooltip={{ text: tool.path, overflowOnly: true }}>{tool.path}</span>
             <span class="chevron">
                 <Icon name={expanded ? 'chevron-down' : 'chevron-right'} size={13} aria-hidden="true" />
             </span>

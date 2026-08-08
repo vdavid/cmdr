@@ -9,6 +9,7 @@
     import Icon from '$lib/ui/Icon.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import { tString } from '$lib/intl/messages.svelte'
     import {
         chooseThread,
@@ -121,9 +122,13 @@
                     {#each sessionsState.hits as hit (hit.conversationId)}
                         <li>
                             <button type="button" class="row" onclick={() => void chooseThread(hit.conversationId)}>
-                                <span class="row-title">{hit.title}</span>
+                                <span class="row-title" use:tooltip={{ text: hit.title, overflowOnly: true }}
+                                    >{hit.title}</span
+                                >
                                 {#if hit.snippet}
-                                    <span class="row-snippet">{hit.snippet}</span>
+                                    <span class="row-snippet" use:tooltip={{ text: hit.snippet, overflowOnly: true }}
+                                        >{hit.snippet}</span
+                                    >
                                 {/if}
                             </button>
                         </li>
@@ -154,7 +159,9 @@
                             />
                         {:else}
                             <button type="button" class="row" onclick={() => void chooseThread(conversation.id)}>
-                                <span class="row-title">{conversation.title}</span>
+                                <span class="row-title" use:tooltip={{ text: conversation.title, overflowOnly: true }}
+                                    >{conversation.title}</span
+                                >
                                 {#if conversation.archived}
                                     <span class="archived-badge">{tString('askCmdr.sessions.archivedBadge')}</span>
                                 {/if}

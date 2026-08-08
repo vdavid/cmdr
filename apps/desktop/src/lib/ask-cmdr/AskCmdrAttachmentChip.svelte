@@ -7,6 +7,7 @@
 -->
 <script lang="ts">
     import Icon from '$lib/ui/Icon.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import { tString } from '$lib/intl/messages.svelte'
     import { attachmentBasename } from './ask-cmdr-attachments'
     import type { AttachmentRef } from '$lib/tauri-commands'
@@ -20,7 +21,7 @@
     const name = $derived(attachmentBasename(attachment.path))
 </script>
 
-<span class="chip" title={attachment.path}>
+<span class="chip" use:tooltip={attachment.path}>
     <Icon name={attachment.kind === 'folder' ? 'folder' : 'file'} size={12} aria-hidden="true" />
     <span class="chip-name">{name}</span>
     {#if onRemove}

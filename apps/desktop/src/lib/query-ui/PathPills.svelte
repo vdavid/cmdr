@@ -213,7 +213,7 @@
                 type="button"
                 class="pill"
                 tabindex="-1"
-                title={seg.fullPath}
+                use:tooltip={seg.fullPath}
                 onclick={(e) => {
                     e.stopPropagation()
                     onPick(seg.fullPath)
@@ -249,7 +249,7 @@
                 type="button"
                 class="pill"
                 tabindex="-1"
-                title={seg.fullPath}
+                use:tooltip={seg.fullPath}
                 onclick={(e) => {
                     e.stopPropagation()
                     onPick(seg.fullPath)
