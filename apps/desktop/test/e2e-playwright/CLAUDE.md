@@ -21,6 +21,10 @@ Linux (Docker), so a modifier key comes from `CTRL_OR_META`, never a hardcoded ‚
   scoped page that can't call a Tauri command is a REAL bug that route would hide.
 - **`ensureAppReady()` resets route, volume, AND directories, in that order**; without the volume reset, navigation
   silently no-ops. File-op specs also need `recreateFixtures()`: the tree is shared and they mutate it.
+- **One global `afterEach` guards TWO leaks: UI artifacts, and a dirty `left/` + `right/`.** A spec that mutates the
+  shared tree restores it (`restoreFixtureTree(getFixtureRoot())` in its own `afterEach`), or the guard fails it by
+  name with a path-level diff. ‚ùå Don't relax it: it's the only thing standing between a mutating spec and a downstream
+  victim dying inside `ensureAppReady`.
 - **"Rows appeared" doesn't prove a WALK**: the instance indexes its fixture tree at launch, so a spec needing a real
   walk takes the index away first (`search-walk-ground.ts`).
 - **Two fakes**: the clipboard is mocked (a Rust `Mutex`, not `NSPasteboard`), and `tauri-plugin-store` reads your REAL

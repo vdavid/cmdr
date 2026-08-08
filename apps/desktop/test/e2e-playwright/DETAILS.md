@@ -431,14 +431,58 @@ await expectAndDismissToast(tauriPage, 'Copy complete') // asserts + cleans up
 
 ### The safety net
 
-`fixtures.ts` runs a global `afterEach` that probes for leaked overlays + toasts. On leak:
+`fixtures.ts` runs ONE global `afterEach` covering both kinds of leak a test can hand to the next one. Per leak it:
 
-1. **Fails the offending test** with a message naming the selector and pointing at this section.
-2. **Auto-cleans** (dispatches Escape on each leaked overlay; clicks each toast's close button) so the next test starts
-   fresh. Cascade failures from leaked state never happen.
+1. **Fails the offending test** with a message naming what leaked and pointing at the rule.
+2. **Auto-cleans** (Escape on each leaked overlay, a click on each toast's close button, a surgical repair of the
+   fixture tree) so the next test starts fresh. Cascade failures from leaked state never happen.
+
+Both reports are collected and thrown together, so a test that leaks a toast AND a dirty tree says so once.
 
 This means: no defensive double-Escape cleanups in `beforeEach`s. The leak attribution points at the test that actually
 leaked, not at the next test's setup.
+
+See § "The fixture-tree leak guard" for the second probe.
+
+## The fixture-tree leak guard
+
+`left/` and `right/` are shared by every spec on a shard, and roughly half of them mutate the tree. `recreateFixtures`
+in a spec's own `beforeEach` protects that spec, never whoever runs after its LAST test, so a spec landing behind a
+mutating one meets the wrong tree and dies inside `ensureAppReady` with "expected files not found" — naming the victim,
+with membership that shifts by shard order. Sixteen of the flake corpus's twenty-two long-tail entries carry that
+signature (`docs/notes/flake-corpus-2026-08-08.md`).
+
+**What a spec owes.** Mutated `left/` or `right/`? Restore it in the spec's own `afterEach`:
+
+```ts
+import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
+
+test.afterEach(() => {
+  restoreFixtureTree(getFixtureRoot())
+})
+```
+
+`restoreFixtureTree` is surgical: it rewrites only the entries that drifted, so an untouched `sample.zip` keeps its
+inode and an archive spec's watch on it survives. On a clean tree it changes nothing at all.
+
+**What the guard checks.** `e2e-shared/fixture-manifest.ts` compares the tree on disk against the layout `fixtures.ts`
+declares: path, kind, size, and a content hash for everything under 512 KB. That catches copies, moves, renames,
+deletes, same-length overwrites, and in-place archive edits. Bulk `.dat` files are checked by size only, which is what
+the read-only-by-contract bulk tree needs. Cost on a clean tree: 0.34 ms median, 0.42 ms p95 (M3 Max, 200 runs) —
+against a 15 s per-test budget.
+
+**Why a manifest and not a restore hook.** Five variants of a global restore hook were tried and every one measured
+worse (`docs/notes/flake-corpus-2026-08-08.md` § The shared-fixture leak); the blocking finding is that a pane keeps
+serving a stale listing after a restore, through repeated `flushFileWatcher` calls and a navigate-away-and-back. A
+filesystem comparison has no pane, no watcher, and no flush in it, so that defect can't reach it. It also converts a
+victim-blaming failure into a culprit-naming one, which is the point.
+
+**Scope: `left/` and `right/` only.** That's the tree `recreateFixtures` owns and `ensureAppReady` asserts on.
+Spec-owned fixture dirs beside them (`brief-cursor-fixtures/`, `full-cursor-page-nav-fixtures/`, `git-portal-repo/`)
+are deliberately long-lived and idempotently rebuilt by their own spec, so the guard leaves them alone.
+
+**No escape hatch, on purpose.** Every mutating spec can restore, because restoring after the assertions never weakens
+them. A spec that thinks it needs an exemption is really a spec that should restore in `afterEach`.
 
 ### What about testing keyboard bindings?
 

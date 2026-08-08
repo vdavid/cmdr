@@ -8,6 +8,8 @@ binary launches (fixture creation, port-file reads, MCP client setup) lives here
 - **`fixtures.ts`**: builds the on-disk fixture tree the app opens at startup. macOS Playwright path: per-instance root
   at `/tmp/cmdr-e2e-fixtures-<instance>-<ts>/` with bulk `.dat` files hardlinked from a shared cache at
   `/tmp/cmdr-e2e-fixtures-cache/`. Linux Docker path: shared `/tmp/cmdr-e2e-<ts>/`.
+- **`fixture-manifest.ts`**: the shared-fixture drift guard. `diffFixtureTree` compares `left/` + `right/` against the
+  declared layout, `restoreFixtureTree` repairs only what drifted; the Playwright `afterEach` runs both.
 - **`port-file.ts`**: reads `<data_dir>/mcp.port` and `<data_dir>/tauri-mcp.port`. `resolveMcpPort(dataDir)` follows the
   canonical precedence and never falls back to legacy ports.
 - **`mcp-client.ts`**: lightweight MCP client wrapping `fetch` to the Cmdr MCP server (tool calls, resource reads).
@@ -31,17 +33,14 @@ binary launches (fixture creation, port-file reads, MCP client setup) lives here
 - **Bulk `.dat` files are zero-fill ASCII, hardlinked, and treated as read-only.** Tests needing real binary patterns
   must add their own fixtures or write to text files; the cache check is size-based + content-hash sampled at a few
   offsets, so arbitrary content wouldn't survive the deterministic-cache contract.
+- **❌ Never write to a bulk `.dat` IN PLACE.** They're hardlinks into the cache, so one `truncateSync` corrupts it for
+  every run on the machine and `ensureCacheBuilt` won't notice. Remove and rewrite, as `restoreBulkFile` does.
 - **Text files are full copies, recreated per test; bulk files are NOT.** `recreateFixtures()` (called in `beforeEach`
   of mutating specs) restores the text files and re-copies the committed `media-fixtures/` (`sample.png` 2×2 RGBA,
   `sample.pdf` 1 page) into `left/`; bulk files survive across tests since they're read-only.
 
-## Hardlink cache protocol
-
-The cache is built once at `/tmp/cmdr-e2e-fixtures-cache/`. Two concurrent runs both finding it missing each write to
-their own `/tmp/cmdr-e2e-fixtures-cache-tmp-<pid>/`, populate the deterministic zero-fill .dat files, verify via size +
-content check, then atomically `renameSync` to the final path; the rename loser cleans up its tmp dir. The cache's
-existence means "populated and verified," so torn writes are structurally impossible. On `EXDEV` (cross-filesystem
-hardlink), falls back to copy with a warning. Source of truth: `populateCacheIfMissing()` in `fixtures.ts`.
+The cache's build protocol (why a torn cache is structurally impossible, and the `EXDEV` fallback): `DETAILS.md` §
+"Hardlink cache protocol".
 
 ## Fixture layout
 
