@@ -393,6 +393,16 @@ tests. Use the two-helper API in `helpers.ts`:
 There is no separate "just dismiss toasts" helper on purpose: tests that trigger a user-facing toast should care that it
 appeared (the wording IS the contract), not just clean up after it.
 
+**A SOFT SHEET is not covered by either helper, and neither is the leak guard.** `dismissOverlay` walks a fixed list
+(`.ui-popover`, `.palette-overlay`, `.search-overlay`, `.modal-overlay`, `.volume-dropdown`) and the `afterEach` leak
+guard probes exactly the same five plus toasts. The onboarding wizard is a sheet: it matches none of them AND swallows
+Escape by design, so a spec that opens one and trusts `dismissOverlay` leaves it up — silently, past the guard. It then
+eats the keystrokes of every later spec on that shard: `dialog-inset.spec.ts` opening `onboarding/step-1-fda` in its
+gallery sweep is what killed four `file-operations` rename tests three specs downstream, each reporting a missing
+`.rename-input` and reading exactly like saturation flake. A spec that opens a sheet closes it the sheet's own way
+(`closeWizardIfOpen` in `onboarding.spec.ts` walks the footer's forward button to the end) and asserts it went, rather
+than swallowing the check.
+
 **Why `keyboard.press('Escape')` is bad**: it routes through the OS keyboard layer to the currently-focused element. On
 macOS that works because overlays (`ModalDialog` etc.) focus themselves on mount, so the keystroke lands on the right
 element. Under Linux Xvfb the X11 focus delivery is unreliable: the keystroke can vanish, the overlay stays open, and

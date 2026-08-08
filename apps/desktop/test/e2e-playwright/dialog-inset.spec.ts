@@ -205,6 +205,35 @@ async function probeGallery(page: TauriPage): Promise<boolean> {
   return live
 }
 
+/**
+ * Closes whatever the gallery just opened, and reports whether it actually went.
+ *
+ * Escape closes a `ModalDialog`, but a soft sheet can swallow it — the onboarding wizard
+ * does, deliberately — and a surface left up swallows the keystrokes of every spec after
+ * it on the shard. That's not hypothetical: it killed four `file-operations` rename tests
+ * three specs downstream, each reporting a missing `.rename-input`. So the fallback is the
+ * wizard's own contract (`onboarding.spec.ts`): click the footer's forward button until it
+ * unmounts. The caller fails the sweep on anything still open rather than carrying it.
+ */
+async function closeGallerySurface(page: TauriPage, dialogId: string): Promise<boolean> {
+  const selector = `[data-dialog-id="${dialogId}"]`
+  const isOpen = async (): Promise<boolean> => page.isVisible(selector).catch(() => false)
+
+  await dismissOverlay(page).catch(() => {})
+  // Four steps plus slack, matching the wizard's own bound.
+  for (let i = 0; i < 6 && (await isOpen()); i++) {
+    await page.evaluate(`(function() {
+        var btns = document.querySelectorAll('${selector} .primary-slot button');
+        if (btns.length > 0) btns[btns.length - 1].click();
+    })()`)
+    await expect
+      .poll(isOpen, { timeout: 1000 })
+      .toBeFalsy()
+      .catch(() => {})
+  }
+  return !(await isOpen())
+}
+
 test.describe('Dialog body inset', () => {
   test.describe.configure({ timeout: 180000 })
 
@@ -236,6 +265,7 @@ test.describe('Dialog body inset', () => {
 
     const misaligned: string[] = []
     const unread: string[] = []
+    const stuck: string[] = []
     let measured = 0
 
     for (const entry of DIALOG_GALLERY_ENTRIES) {
@@ -275,13 +305,9 @@ test.describe('Dialog body inset', () => {
         }
       }
 
-      await dismissOverlay(page).catch(() => {})
-      await expect
-        .poll(async () => !(await page.isVisible(`[data-dialog-id="${entry.dialogId}"]`).catch(() => false)), {
-          timeout: 3000,
-        })
-        .toBeTruthy()
-        .catch(() => {})
+      if (!(await closeGallerySurface(page, entry.dialogId))) {
+        stuck.push(`${entry.dialogId}/${state.id}`)
+      }
     }
 
     // The virtual MTP device announces itself on its own schedule, so its connect
@@ -294,6 +320,10 @@ test.describe('Dialog body inset', () => {
     console.log(`[dialog-inset] measured ${String(measured)} dialogs, ${String(unread.length)} unreadable`)
     for (const line of unread) console.log(`[dialog-inset] unread: ${line}`)
     expect(measured, 'no dialog could be measured; the gallery trigger is probably broken').toBeGreaterThan(10)
+    expect(
+      stuck,
+      `gallery surfaces still open when the sweep ended. One left up swallows every later spec's keystrokes on this shard:\n${stuck.join('\n')}`,
+    ).toEqual([])
     expect(misaligned, `dialogs whose body content doesn't line up with the title:\n${misaligned.join('\n')}`).toEqual(
       [],
     )
