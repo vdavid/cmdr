@@ -26,15 +26,42 @@ Landed:
    `typeAndRunSearch` and `setSearchInputValue` stopped swallowing a missing input.
 4. **`flushFileWatcher` after the external writes** in `archive-browsing` (×2) and `conflict-edge-cases`.
 
-Not landed, and the most important thing in this document:
+And the most important thing in this document:
 
-5. ❌ **The shared-fixture leak is diagnosed and reproducible, and five attempts to fix it all measured worse.** See §
-   The shared-fixture leak below. It is the single biggest source of E2E flake found in this pass, it is NOT fixed, and
-   the next person should start there — with the measurements, not from scratch.
+5. ✅ **The shared-fixture leak is closed** — not by a sixth restore hook (five measured worse; they're kept below) but
+   by a post-test assertion that fails the spec which dirtied the tree. See § The shared-fixture leak. Closing it also
+   turned up that the post-test leak guard had only ever run for one spec file per worker.
 
 Detail and the evidence for each sit in the commits; the per-entry verdicts are inline below.
 
-## The shared-fixture leak — diagnosed, reproduced, NOT fixed
+## The shared-fixture leak — ✅ closed by a post-test assertion
+
+**Closed 2026-08-08, from the other end: don't restore the tree for the next spec, ASSERT it and fail the spec that
+dirtied it.** The five restore-hook attempts below all tried to make the next test's world right; a manifest comparison
+in the post-test guard instead names the culprit at the moment of the leak, needs no pane, no watcher, and no flush, and
+so can't trip over the listing-replacement finding that blocked them. Every mutating spec then got a
+`restoreFixtureTree` in its own `afterEach`, which is what actually stops the leak.
+
+What landed (see `apps/desktop/test/e2e-playwright/DETAILS.md` § "The fixture-tree leak guard" for the contract):
+
+- `e2e-shared/fixture-manifest.ts`: path + kind + size, plus a content hash under 512 KB, against the layout
+  `fixtures.ts` declares. 0.34 ms median on a clean tree.
+- A surgical repair that rewrites only drifted entries, so `sample.zip` keeps its inode when a spec didn't touch it —
+  the exact thing that made variant 1 below cost `archive-browsing` 4 of 4 runs.
+- **The guard was only running for ONE SPEC FILE PER WORKER.** `test.beforeEach` / `test.afterEach` declared at module
+  scope in `fixtures.ts` attach to the suite of whichever spec file first triggered that import in the worker; every
+  other file that worker ran was unguarded. That is why the leak surfaced against `search-recent` (first file of a fresh
+  worker) rather than `mcp-queue` (mid-worker), and why leaked toasts had been passing silently for months. Both guards
+  now hang off an auto fixture. On one shard replay this took reported failures from 10 to 20, all ten additions real
+  leaks.
+- Four leaks the newly-live guard exposed are fixed at the source: `app.spec`'s F7 folder, three
+  `conflict-overwrite-conditional` toasts, `search-ai-prompt` skipping with its dialog open, and `archive-browsing`'s
+  focused-pane read racing the right pane's late focus-shift.
+
+The reproduction below now names the culprit: `conflict-overwrite-conditional` fails with a path-level diff, and
+`search-open-in-pane`, its former victim, passes.
+
+## The original diagnosis (kept for the five measured failures)
 
 **The defect.** The fixture tree under `left/` and `right/` is shared and mutated by every conflict, file-op, archive,
 and compress spec. `recreateFixtures` in your own `beforeEach` protects YOU, not whoever runs after your last test, and
@@ -72,9 +99,10 @@ entries for the full 10 s budget through five flushes AND a navigate-away-and-ba
 replaced, not in the test helper, and closing it means touching production refresh behavior, which is beyond what a
 de-flaking pass should change on measurement this thin.
 
-**Recommended next step.** Establish first, in isolation, what actually makes a pane re-read a directory whose contents
-changed externally while it was displayed (an MCP `refresh`, a volume re-select, something else), then build the
-`beforeEach` on that primitive. Don't re-attempt the five variants above.
+**Still open, and deliberately out of scope for the guard:** what makes a pane re-read a directory whose contents
+changed externally while it was displayed. `flush_file_watcher` does not, and the guard is built so it never depends on
+the answer. Anyone attacking that should establish the primitive (an MCP `refresh`, a volume re-select, something else)
+in isolation first, and not re-attempt the five variants above.
 
 **Scope note.** "Flake" here means the test failed while the code under it was correct. Three failures found this night
 were NOT flake and are already fixed (`§ Fixed this night`); they're kept because they are the model for the level of
@@ -184,10 +212,10 @@ Each entry: **count — spec** then the hypothesis and confidence.
   - ⚪ **Accepted** for the virtual-MTP half; the sheet-leak half is 🟡 resolved by `4a4840d91`.
 - **1 each — 22 further specs**: long tail, mostly `archive-browsing`, `search-*`, `conflict-*`, `mtp-*`. Not
   individually diagnosed.
-  - 🟡 **Mostly explained by the shared-fixture leak.** Sixteen of the 22 are `file-operations` / `conflict-*` /
-    `archive-browsing` entries from ONE shard-run (`nonmtp1/1786017110`), the signature of a single spec dirtying the
-    tree and everything behind it failing inside `ensureAppReady` — the shared-fixture leak, diagnosed but NOT fixed
-    (see its section above). `search-live:41` and `search-recent:31` are the 🟡 pre-`0fc5d250c` walk-ground cluster
+  - ✅ **Mostly explained by the shared-fixture leak, now closed.** Sixteen of the 22 are `file-operations` /
+    `conflict-*` / `archive-browsing` entries from ONE shard-run (`nonmtp1/1786017110`), the signature of a single spec
+    dirtying the tree and everything behind it failing inside `ensureAppReady` — the shared-fixture leak (see its
+    section above). `search-live:41` and `search-recent:31` are the 🟡 pre-`0fc5d250c` walk-ground cluster
     (`0fc5d250c` names `search-recent` explicitly). The rest were not individually diagnosed and stay unclaimed rather
     than assumed fixed.
 
@@ -361,11 +389,12 @@ predictions were wrong in instructive ways.
 
 ### The biggest finding wasn't on the list
 
-Half the E2E specs never restore the shared fixture tree, so any of them landing behind a mutating spec fails inside
+Half the E2E specs never restored the shared fixture tree, so any of them landing behind a mutating spec failed inside
 `ensureAppReady` against the WRONG spec's fixtures. It never showed up as a ranked entry because it doesn't concentrate
-on one test: it shows up as whichever spec happened to run next, which reads as saturation flake and is why the corpus
-sorted sixteen such entries into an undiagnosed long tail. Reproduced deterministically; **not fixed** — five attempts
-and their measurements are in § The shared-fixture leak, and that section is where the next attempt should start.
+on one test: it showed up as whichever spec happened to run next, which reads as saturation flake and is why the corpus
+sorted sixteen such entries into an undiagnosed long tail. Closed by the post-test manifest assertion plus a
+`restoreFixtureTree` in every mutating spec; § The shared-fixture leak carries what landed and the five restore-hook
+attempts not to repeat.
 
 ## Appendix: the full ledger, every spec and every shard-run it failed in
 
