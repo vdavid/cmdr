@@ -15,9 +15,10 @@
 use serde_json::{Value, json};
 
 use super::{ToolError, ToolResult};
+use crate::file_system::write_operations::LifecycleStatus;
 use crate::file_system::{
-    cancel_operation, cancel_operations, cancel_write_operation, list_operations, pause_all, pause_operation,
-    resume_all, resume_operation,
+    OperationSnapshot, cancel_operation, cancel_operations, cancel_write_operation, list_operations, pause_all,
+    pause_operation, resume_all, resume_operation,
 };
 
 pub async fn execute_queue(params: &Value) -> ToolResult {
@@ -106,16 +107,116 @@ fn require_operation_id(params: &Value) -> Result<String, ToolError> {
         .ok_or_else(|| ToolError::invalid_params("This action requires an 'operationId' parameter"))
 }
 
-/// Reject an id that isn't currently registered, so an agent gets an honest
-/// "unknown operationId" instead of a silent no-op (the backend treats an unknown
-/// id as a no-op). Benign race: an op that settles between this check and the
-/// call would have been a no-op anyway.
+/// Reject an id the queue can't act on, so an agent gets an honest refusal
+/// instead of a silent no-op (the backend treats an unknown id as a no-op).
+/// Benign race: an op that settles between this check and the call would have
+/// been a no-op anyway.
 fn require_operation_exists(operation_id: &str) -> Result<(), ToolError> {
-    if list_operations().iter().any(|op| op.operation_id == operation_id) {
+    if is_controllable(&list_operations(), operation_id) {
         Ok(())
     } else {
         Err(ToolError::invalid_params(format!(
             "Unknown operationId '{operation_id}': it isn't a currently queued, running, or paused operation. See cmdr://state operations."
         )))
+    }
+}
+
+/// Whether pause / resume / cancel can still do anything to this id.
+///
+/// Membership in `list_operations()` isn't the test: the snapshot also carries
+/// RETAINED FAILURES, which the queue window keeps so it can say why an
+/// operation stopped (`write_operations` DETAILS § "Retained failures"). Those
+/// ids are long over, so acting on one is precisely the silent no-op this guard
+/// exists to turn into a refusal. Typed status match, never a message test.
+fn is_controllable(operations: &[OperationSnapshot], operation_id: &str) -> bool {
+    operations
+        .iter()
+        .any(|op| op.operation_id == operation_id && op.status != LifecycleStatus::Failed)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::file_system::dismiss_failed_operation;
+    use crate::file_system::write_operations::{WriteOperationError, WriteOperationType, test_retain_failure};
+
+    fn row(operation_id: &str, status: LifecycleStatus) -> OperationSnapshot {
+        OperationSnapshot {
+            operation_id: operation_id.to_string(),
+            operation_type: WriteOperationType::Copy,
+            status,
+            source: Some("/Users/me/photos".to_string()),
+            destination: Some("Naspolya".to_string()),
+            supports_rollback: false,
+            error: None,
+        }
+    }
+
+    /// A retained failure parked in the PROCESS-GLOBAL manager, dropped again on
+    /// `Drop` so a failing assertion can't leave it behind for a sibling test
+    /// (the reasoning behind `write_operations::test_support::TestOperationGuard`).
+    struct RetainedFailureGuard(String);
+
+    impl RetainedFailureGuard {
+        fn record(operation_id: &str) -> Self {
+            test_retain_failure(
+                operation_id,
+                WriteOperationType::Copy,
+                &WriteOperationError::IoError {
+                    path: "/Users/me/photos/a.raw".to_string(),
+                    message: "disk went away".to_string(),
+                },
+            );
+            Self(operation_id.to_string())
+        }
+    }
+
+    impl Drop for RetainedFailureGuard {
+        fn drop(&mut self) {
+            dismiss_failed_operation(&self.0);
+        }
+    }
+
+    #[test]
+    fn live_operations_are_controllable() {
+        let operations = vec![
+            row("op-queued", LifecycleStatus::Queued),
+            row("op-running", LifecycleStatus::Running),
+            row("op-paused", LifecycleStatus::Paused),
+        ];
+        for id in ["op-queued", "op-running", "op-paused"] {
+            assert!(is_controllable(&operations, id), "{id} should still be actionable");
+        }
+    }
+
+    #[test]
+    fn a_retained_failure_is_not_controllable() {
+        // It's in the snapshot so the queue window can show why it stopped, but
+        // pausing or cancelling it does nothing at all.
+        let operations = vec![row("op-failed", LifecycleStatus::Failed)];
+        assert!(!is_controllable(&operations, "op-failed"));
+    }
+
+    #[test]
+    fn an_unknown_id_is_not_controllable() {
+        assert!(!is_controllable(
+            &[row("op-running", LifecycleStatus::Running)],
+            "op-other"
+        ));
+    }
+
+    #[test]
+    fn the_guard_refuses_a_retained_failure_even_though_it_is_listed() {
+        let id = format!("mcp-queue-guard-{}", std::process::id());
+        let _guard = RetainedFailureGuard::record(&id);
+
+        // The premise: the failure IS in `list_operations()`, so plain membership
+        // would wave it through and the tool would answer "OK: Cancelled …" for an
+        // operation that ended minutes ago.
+        assert!(
+            list_operations().iter().any(|op| op.operation_id == id),
+            "the retained failure should be on the snapshot"
+        );
+        assert!(require_operation_exists(&id).is_err(), "the guard must refuse it");
     }
 }

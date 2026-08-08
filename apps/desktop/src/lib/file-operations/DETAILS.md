@@ -77,7 +77,9 @@ skip the one the user is already looking at in full.
   `pane/dialog-state.svelte.ts::handleTransferError` reads the first slot while the dialog still holds it and claims the
   second; `handleTransferErrorClose` releases it and calls `dismissFailedOperation(id)`, so a failure the user has read
   and closed leaves nothing behind in the queue. Full reasoning: `apps/desktop/src/lib/status-corner/DETAILS.md` § "Why
-  the foreground handover needs two slots".
+  the foreground handover needs two slots". The slots themselves are pinned by `foreground-operation.svelte.test.ts`,
+  the handover across them by `../file-explorer/pane/dialog-state.failure-handover.svelte.test.ts` (which simulates the
+  progress dialog's unmount, so a claim made too late fails there).
 
 Decisions:
 

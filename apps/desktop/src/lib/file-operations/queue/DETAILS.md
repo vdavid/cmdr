@@ -86,6 +86,11 @@ The backend keeps a bounded list of failed operations and carries them on the sa
 with its typed `error` (`write_operations/DETAILS.md` § "Retained failures" owns the mechanism). This window is the
 durable surface for them: it survives a dismissed toast, a closed window, and a reopen.
 
+- **The row keeps its place, so the SELECTION has to let go of it.** `routes/queue/+page.svelte` prunes `selectedIds`
+  against the rows that are still `!isTerminalStatus(...)`, not against mere membership: a failure stays in the list and
+  drops its checkbox, so a tick the user made while it was running would be unclearable by hand, leaving "1 selected" on
+  screen and "Cancel selected" enabled over an operation the backend no-ops. Pinned by
+  `apps/desktop/src/routes/queue/queue-selection.svelte.test.ts`.
 - **The row.** No pause, cancel, rollback, or select checkbox — there's nothing live left to act on. A `triangle-alert`
   glyph and "Couldn't finish" in `--color-error-text`, one Dismiss button, and the reason on line 2 where the readout
   would be.
@@ -195,6 +200,9 @@ the MAIN window, which already holds those perms — nothing to add there (see `
   types, and the `data-status` / `data-operation-id` E2E hooks. The readout's own behavior (both bars, percents, rates,
   time left, stall) is covered once, in `../TransferProgressReadout.svelte.test.ts`.
 - `QueueRow.a11y.test.ts`: axe over the row in running / paused / queued / selected states.
+- `apps/desktop/src/routes/queue/queue-selection.svelte.test.ts`: the window's selection bookkeeping, driven through the
+  real page and the real store — the count and "Cancel selected" following a checked row, and letting go of one that
+  fails, leaves, or was never theirs.
 - E2E: `test/e2e-playwright/operation-queue.spec.ts` — two same-lane ops → one Running + one Queued, cancel the queued,
   pause + resume the running; plus the retention contract: a copy fails with NO queue window open, the window opens on
   the failed row and its reason, closes on Escape, reopens still showing it, and only Dismiss clears it. That spec's

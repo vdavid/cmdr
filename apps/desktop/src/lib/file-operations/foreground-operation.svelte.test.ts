@@ -1,10 +1,13 @@
 /**
- * The foreground-operation slot: which operation the progress modal currently
- * owns, so ambient surfaces can stay quiet about it.
+ * The two foreground slots: which operation the progress modal owns, and which
+ * failure its error dialog is showing, so ambient surfaces can stay quiet about
+ * both.
  *
- * What matters here is the lifecycle, not the storage: the slot must empty on
- * every route out of the dialog, and a late clear from a dialog that has already
- * handed the slot on must not silence the new owner.
+ * What matters here is the lifecycle, not the storage: the first slot must empty
+ * on every route out of the dialog, a late clear from a dialog that has already
+ * handed the slot on must not silence the new owner, and the two slots must be
+ * independent — the handover between them (`dialog-state.failure-handover`)
+ * exists precisely because the first empties before the failure surfaces.
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
@@ -12,10 +15,13 @@ import {
   setForegroundOperationId,
   getForegroundOperationId,
   clearForegroundOperation,
+  setForegroundFailureId,
+  getForegroundFailureId,
 } from './foreground-operation.svelte'
 
 beforeEach(() => {
   setForegroundOperationId(null)
+  setForegroundFailureId(null)
 })
 
 describe('foreground operation slot', () => {
@@ -52,5 +58,51 @@ describe('foreground operation slot', () => {
   it('tolerates a clear with nothing in the slot', () => {
     clearForegroundOperation('op-1')
     expect(getForegroundOperationId()).toBeNull()
+  })
+})
+
+describe('foreground failure slot', () => {
+  it('is empty when no error dialog is showing a failure', () => {
+    expect(getForegroundFailureId()).toBeNull()
+  })
+
+  it('holds the failure the error dialog took over', () => {
+    setForegroundFailureId('op-1')
+    expect(getForegroundFailureId()).toBe('op-1')
+  })
+
+  it('empties on an explicit null, which is how the dialog closing releases it', () => {
+    setForegroundFailureId('op-1')
+    setForegroundFailureId(null)
+    expect(getForegroundFailureId()).toBeNull()
+  })
+
+  it('takes the newest failure, so the dialog on screen owns the slot', () => {
+    // A second operation can fail while the first error dialog is still up: the
+    // dialog re-renders with the new error, so the slot has to follow it, or
+    // closing it would dismiss the wrong retained row.
+    setForegroundFailureId('op-1')
+    setForegroundFailureId('op-2')
+    expect(getForegroundFailureId()).toBe('op-2')
+  })
+
+  it('outlives the progress dialog releasing the operation slot', () => {
+    // The whole reason there are two slots: the progress dialog unmounts the
+    // instant the error arrives, and the retained failure row only reaches the
+    // snapshot afterwards. With the first slot empty, this one is what stops an
+    // ambient surface announcing a failure the user is already reading.
+    setForegroundOperationId('op-1')
+    setForegroundFailureId('op-1')
+
+    clearForegroundOperation('op-1')
+
+    expect(getForegroundOperationId()).toBeNull()
+    expect(getForegroundFailureId()).toBe('op-1')
+  })
+
+  it('is untouched by the operation slot moving on to the next operation', () => {
+    setForegroundFailureId('op-1')
+    setForegroundOperationId('op-2')
+    expect(getForegroundFailureId()).toBe('op-1')
   })
 })

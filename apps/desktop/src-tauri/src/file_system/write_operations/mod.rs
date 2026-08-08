@@ -173,6 +173,19 @@ pub(crate) use scan_cache::seed_incoherent_scan_result_for_test;
 )]
 pub(crate) use transfer::volume::{FaultyOp, FaultyVolume};
 
+/// Test-only: retain a failure straight in the manager, so a suite outside this
+/// module can exercise a CONSUMER of `list_operations` (the MCP `queue` guard)
+/// against a failed row without spawning a real operation. Drop it again with
+/// the ordinary [`dismiss_failed_operation`]. A function rather than a re-export
+/// of `manager::manager`: importing that name shortens `manager::manager()` to
+/// `manager()` throughout this module, and clippy's redundant-qualification fix
+/// then rewrites those call sites into something that only compiles under
+/// `cfg(test)`.
+#[cfg(test)]
+pub(crate) fn test_retain_failure(operation_id: &str, operation_type: WriteOperationType, error: &WriteOperationError) {
+    manager::manager().record_failure(operation_id, operation_type, error);
+}
+
 // Re-export volume copy types and functions
 pub use transfer::volume::move_between_volumes;
 pub use transfer::volume::{copy_between_volumes, scan_for_volume_copy};

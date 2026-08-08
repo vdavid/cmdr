@@ -26,7 +26,11 @@
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import QueueRow from '$lib/file-operations/queue/QueueRow.svelte'
-    import { createOperationsStore, isHiddenSettledStatus } from '$lib/file-operations/queue/operations-store.svelte'
+    import {
+        createOperationsStore,
+        isHiddenSettledStatus,
+        isTerminalStatus,
+    } from '$lib/file-operations/queue/operations-store.svelte'
 
     const log = getAppLogger('queue')
 
@@ -49,12 +53,17 @@
     const rows = $derived(store.operations.filter((row) => !isHiddenSettledStatus(row.snapshot.status)))
     const isEmpty = $derived(rows.length === 0)
 
-    // Selection that points at rows no longer present gets dropped so the count
-    // and "Cancel selected" stay honest as ops finish.
+    // Selection that no longer points at something cancelable gets dropped so the
+    // count and "Cancel selected" stay honest. Membership alone isn't the test: a
+    // failure STAYS in `rows` and drops its checkbox, so a tick the user made
+    // while it was running would have no way back out, and the toolbar would
+    // offer to cancel an operation that has already stopped.
     $effect(() => {
-        const liveIds = new Set(rows.map((r) => r.snapshot.operationId))
+        const cancelableIds = new Set(
+            rows.filter((r) => !isTerminalStatus(r.snapshot.status)).map((r) => r.snapshot.operationId),
+        )
         for (const id of selectedIds) {
-            if (!liveIds.has(id)) selectedIds.delete(id)
+            if (!cancelableIds.has(id)) selectedIds.delete(id)
         }
     })
 
