@@ -19,6 +19,8 @@
 
 import { createTauriTest } from '@srsholmes/tauri-playwright'
 import type { TestInfo } from '@playwright/test'
+import { recreateFixtures } from '../e2e-shared/fixtures.js'
+import { getFixtureRoot } from './helpers/core.js'
 
 // Each parallel E2E shard spawns its own Tauri instance bound to a distinct
 // Unix socket. The Go check runner sets CMDR_PLAYWRIGHT_SOCKET per shard.
@@ -61,6 +63,28 @@ async function setMainTitle(tauriPage: EvaluatablePage, title: string): Promise<
 }
 
 test.beforeEach(async ({ tauriPage }, testInfo) => {
+  // Restore the shared fixture tree before EVERY test, so no spec can inherit
+  // the tree a mutating one left behind.
+  //
+  // Doing this per-spec never held: `recreateFixtures` in your own `beforeEach`
+  // protects YOU, not whoever runs after your last test. Roughly half the specs
+  // didn't call it at all, so any of them landing behind a conflict / file-op
+  // spec met that spec's tree and failed inside `ensureAppReady` with "expected
+  // files not found" — a failure that names the victim, not the culprit, and
+  // whose membership shifts with shard order, which is exactly what reads as
+  // flake. `dialog-inset.spec.ts` was one instance of the class, fixed spec by
+  // spec; this fixes the class.
+  //
+  // Safe to do globally and cheap enough to be free (1-2 ms, measured
+  // 2026-08-08 on an M3 Max): it only touches `left/` and `right/`, preserving
+  // `left/bulk/`. Every suite that carries state across its own tests already
+  // builds it OUTSIDE those two (`brief-cursor-fixtures/`,
+  // `full-page-nav-fixtures/`, the viewer specs' own dirs), and says so at the
+  // fixture. A spec needing a different tree still wins: this hook is
+  // registered on the base test, so it runs BEFORE the spec file's own
+  // `beforeEach`.
+  recreateFixtures(getFixtureRoot())
+
   try {
     if (baseTitle === null) baseTitle = await readMainTitle(tauriPage)
     await setMainTitle(tauriPage, `${baseTitle} (Running: ${formatTestName(testInfo)})`)
