@@ -128,7 +128,7 @@ async function failOnLeaks(tauriPage: EvaluatablePage): Promise<void> {
         `Test left the shared fixture tree dirty:\n${describeFixtureTreeDiff(drift)}\n` +
           `Restore what the test mutated (a \`test.afterEach\` calling \`restoreFixtureTree(getFixtureRoot())\`, ` +
           `or \`recreateFixtures\` when the spec already rebuilds the tree). The tree has been repaired for the ` +
-          `next test. See apps/desktop/test/e2e-playwright/CLAUDE.md § "The post-test leak guard".`,
+          `next test. See apps/desktop/test/e2e-playwright/DETAILS.md § "The fixture-tree leak guard".`,
       )
     }
   } catch (err) {

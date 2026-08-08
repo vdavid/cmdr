@@ -484,7 +484,7 @@ filesystem comparison has no pane, no watcher, and no flush in it, so that defec
 victim-blaming failure into a culprit-naming one, which is the point.
 
 **Scope: `left/` and `right/` only.** That's the tree `recreateFixtures` owns and `ensureAppReady` asserts on.
-Spec-owned fixture dirs beside them (`brief-cursor-fixtures/`, `full-cursor-page-nav-fixtures/`, `git-portal-repo/`)
+Spec-owned fixture dirs beside them (`brief-cursor-fixtures/`, `full-page-nav-fixtures/`, `git-portal-repo/`)
 are deliberately long-lived and idempotently rebuilt by their own spec, so the guard leaves them alone.
 
 **No escape hatch, on purpose.** Every mutating spec can restore, because restoring after the assertions never weakens

@@ -19,7 +19,7 @@
  *
  * Scope: `left/` and `right/`, the two directories `recreateFixtures` owns and
  * `ensureAppReady` asserts on. Spec-owned fixture dirs beside them
- * (`brief-cursor-fixtures/`, `full-cursor-page-nav-fixtures/`) are deliberately
+ * (`brief-cursor-fixtures/`, `full-page-nav-fixtures/`) are deliberately
  * long-lived and are not the guard's business.
  */
 
