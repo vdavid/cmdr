@@ -238,7 +238,7 @@ pub(super) use forward_volume_methods;
 /// `Default`, deliberately: "which operation?" has no zero value, and a wrong
 /// one arms the fault somewhere the test never looks.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub(super) enum FaultyOp {
+pub(crate) enum FaultyOp {
     /// `list_directory`, `list_directory_with_cancel`, `list_directory_for_scan`.
     ListDirectory,
     /// `get_metadata`.
@@ -273,7 +273,7 @@ struct ArmedFault {
 /// Counting is per-operation and process-lifetime (the wrapper's, not the
 /// process's), so `nth: 2` means the second call to THAT operation on THIS
 /// wrapper — a shape that survives a driver reordering its other calls.
-pub(super) struct FaultyVolume<V: Volume> {
+pub(crate) struct FaultyVolume<V: Volume> {
     inner: Arc<V>,
     faults: HashMap<FaultyOp, ArmedFault>,
     calls: StdMutex<HashMap<FaultyOp, usize>>,
@@ -282,7 +282,7 @@ pub(super) struct FaultyVolume<V: Volume> {
 impl<V: Volume + 'static> FaultyVolume<V> {
     /// Wraps `inner` with no faults armed: a pure forwarder until a
     /// [`failing_call`](Self::failing_call) says otherwise.
-    pub(super) fn wrapping(inner: Arc<V>) -> Self {
+    pub(crate) fn wrapping(inner: Arc<V>) -> Self {
         Self {
             inner,
             faults: HashMap::new(),
@@ -292,20 +292,20 @@ impl<V: Volume + 'static> FaultyVolume<V> {
 
     /// Arms `op` to fail on its `nth` call (1-based) with `error`. One fault per
     /// operation; arming the same operation twice replaces the first.
-    pub(super) fn failing_call(mut self, op: FaultyOp, nth: usize, error: VolumeError) -> Self {
+    pub(crate) fn failing_call(mut self, op: FaultyOp, nth: usize, error: VolumeError) -> Self {
         assert!(nth >= 1, "failing_call: `nth` is 1-based, so 0 arms nothing");
         self.faults.insert(op, ArmedFault { nth, error });
         self
     }
 
     /// Seals the wrapper into the `Arc` every driver takes.
-    pub(super) fn arc(self) -> Arc<Self> {
+    pub(crate) fn arc(self) -> Arc<Self> {
         Arc::new(self)
     }
 
     /// The wrapped volume, so a test can still reach its own knobs
     /// (`set_stat_failing`, `set_reported_type`, …) after wrapping.
-    pub(super) fn inner(&self) -> &Arc<V> {
+    pub(crate) fn inner(&self) -> &Arc<V> {
         &self.inner
     }
 

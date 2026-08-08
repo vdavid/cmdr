@@ -251,7 +251,7 @@ pub(super) fn cached_scan_totals(preview_id: &str) -> Option<super::types::ScanP
 /// proof. ❌ Not a general-purpose seeder: everything else goes through
 /// `insert_scan_result`.
 #[cfg(test)]
-pub(super) fn seed_incoherent_scan_result_for_test(
+pub(crate) fn seed_incoherent_scan_result_for_test(
     preview_id: String,
     sources: Vec<PathBuf>,
     file_count: usize,
