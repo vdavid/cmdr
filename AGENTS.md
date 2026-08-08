@@ -97,6 +97,7 @@ may speak as David where deliberately personal (onboarding, About).
   `docs/specs/index.md` (per-development plans, periodically wiped), `docs/notes/README.md` (benchmarks and analysis),
   `style-guide.md`, `design-principles.md`, `security.md`, `maintenance.md`.
 - `scripts/check/`: the Go check runner. `.github/workflows/`: CI.
+- `LINUX.md`: platform specific notes.
 
 ## Checker script
 
