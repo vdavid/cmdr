@@ -163,12 +163,8 @@ async fn delete_honors_the_shared_non_recursion_contract() {
         .await
         .unwrap();
 
-    cmdr_fs::volume::conformance::assert_delete_leaves_a_non_empty_dir_intact(
-        &volume,
-        Path::new("album"),
-        "keep.txt",
-    )
-    .await;
+    cmdr_fs::volume::conformance::assert_delete_leaves_a_non_empty_dir_intact(&volume, Path::new("album"), "keep.txt")
+        .await;
 }
 
 #[tokio::test]

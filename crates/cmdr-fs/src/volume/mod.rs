@@ -349,8 +349,8 @@ pub trait Volume: Send + Sync {
     ///
     /// **A shared conformance assertion enforces this**, not the wording above:
     /// every backend's suite runs
-    /// [`assert_delete_leaves_a_non_empty_dir_intact`](conformance::assert_delete_leaves_a_non_empty_dir_intact).
-    /// A backend that recurses fails it.
+    /// `conformance::assert_delete_leaves_a_non_empty_dir_intact` (test builds
+    /// only). A backend that recurses fails it.
     ///
     /// For recursive deletes, callers should walk the tree themselves and call
     /// `delete` per leaf. See `delete_volume_path_recursive` in

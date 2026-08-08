@@ -1,7 +1,7 @@
 //! Shared conformance assertions every `Volume` implementation runs.
 //!
 //! A trait contract no test enforces is a comment. The promises in
-//! [`Volume`](super::Volume)'s doc comments are load-bearing for data safety,
+//! [`Volume`](crate::volume::Volume)'s doc comments are load-bearing for data safety,
 //! and a backend that talks to a device rather than to a filesystem can stop
 //! honoring one with no compile error and no visible symptom — right up until a
 //! user loses a file.
@@ -15,7 +15,7 @@ use std::path::Path;
 
 use super::Volume;
 
-/// [`Volume::delete`](super::Volume::delete) handles ONE node, so a directory
+/// [`Volume::delete`](crate::volume::Volume::delete) handles ONE node, so a directory
 /// that still holds anything is refused and left completely intact.
 ///
 /// `dir` must already exist on `volume` and hold `child_name` directly inside
@@ -47,10 +47,12 @@ pub async fn assert_delete_leaves_a_non_empty_dir_intact(volume: &dyn Volume, di
         dir.display()
     );
 
-    let after = volume
-        .list_directory(dir, None)
-        .await
-        .unwrap_or_else(|e| panic!("the refused directory {} must still be listable, got {e:?}", dir.display()));
+    let after = volume.list_directory(dir, None).await.unwrap_or_else(|e| {
+        panic!(
+            "the refused directory {} must still be listable, got {e:?}",
+            dir.display()
+        )
+    });
     assert!(
         after.iter().any(|e| e.name == child_name),
         "a refused delete must destroy nothing, but {child_name} is gone from {}; found {:?}",
