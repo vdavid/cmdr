@@ -223,8 +223,9 @@ an ETA yet, just the bare percent shows. The label span has no `white-space: now
 bound, so the label wraps within the tooltip's `max-width` (on `.cmdr-tooltip`) instead of overflowing past the
 right-anchored, viewport-clamped box and clipping off the window edge.
 
-The hourglass is a ~14px `<Icon>` (the same icon as the size-column stale indicator), `position: absolute` top/right at
-`var(--spacing-sm)`, tertiary text color, gentle opacity pulse gated behind `prefers-reduced-motion: reduce`.
+The hourglass is a ~14px `<Icon>` (the same icon as the size-column stale indicator), tertiary text color, gentle
+opacity pulse gated behind `prefers-reduced-motion: reduce`. It's an inline box: the top-right placement belongs to its
+host, `apps/desktop/src/lib/status-corner/CLAUDE.md`.
 
 ## Image-enrichment publisher
 

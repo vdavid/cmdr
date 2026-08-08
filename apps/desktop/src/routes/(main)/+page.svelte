@@ -30,7 +30,7 @@
         getFocusedPaneSearchTargetVolume,
     } from '$lib/file-explorer/pane/focused-pane-reads'
     import type { FileEntry } from '$lib/file-explorer/types'
-    import IndexingStatusIndicator from '$lib/indexing/IndexingStatusIndicator.svelte'
+    import StatusCorner from '$lib/status-corner/StatusCorner.svelte'
     import StaleDriveDialog from '$lib/indexing/StaleDriveDialog.svelte'
     import { initPathLimits } from '$lib/utils/filename-validation'
     import {
@@ -726,7 +726,7 @@
             {#if askCmdrState.renameReview}
                 <BulkRenameReviewDialog />
             {/if}
-            <IndexingStatusIndicator />
+            <StatusCorner />
             <StaleDriveDialog />
         {/if}
 

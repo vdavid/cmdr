@@ -148,15 +148,14 @@
 {/if}
 
 <style>
+    /* Placement (the corner offsets and the stacking level) belongs to
+       `$lib/status-corner/StatusCorner.svelte`, which hosts this indicator; the
+       icon only describes itself. */
     .indexing-status {
-        position: absolute;
-        top: var(--spacing-sm);
-        right: var(--spacing-sm);
         display: inline-flex;
         align-items: center;
         justify-content: center;
         color: var(--color-text-tertiary);
-        z-index: var(--z-sticky);
     }
 
     .indexing-status:focus-visible {
