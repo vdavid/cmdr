@@ -12,10 +12,11 @@ use crate::file_system::{
     cancel_all_write_operations as ops_cancel_all_write_operations, cancel_operation as ops_cancel_operation,
     cancel_operations as ops_cancel_operations, cancel_write_operation as ops_cancel_write_operation,
     copy_files_start as ops_copy_files_start, delete_files_start as ops_delete_files_start,
-    get_operation_status as ops_get_operation_status, list_active_operations as ops_list_active_operations,
-    list_operations as ops_list_operations, move_files_start as ops_move_files_start, pause_all as ops_pause_all,
-    pause_operation as ops_pause_operation, resume_all as ops_resume_all, resume_operation as ops_resume_operation,
-    trash_files_start as ops_trash_files_start,
+    dismiss_all_failed_operations as ops_dismiss_all_failed_operations,
+    dismiss_failed_operation as ops_dismiss_failed_operation, get_operation_status as ops_get_operation_status,
+    list_active_operations as ops_list_active_operations, list_operations as ops_list_operations,
+    move_files_start as ops_move_files_start, pause_all as ops_pause_all, pause_operation as ops_pause_operation,
+    resume_all as ops_resume_all, resume_operation as ops_resume_operation, trash_files_start as ops_trash_files_start,
 };
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -421,6 +422,22 @@ pub fn pause_all() {
 #[specta::specta]
 pub fn resume_all() {
     ops_resume_all();
+}
+
+/// Drops one retained failure from the snapshot (the queue row's Dismiss, and
+/// the foreground error dialog's close path). Dismissal is always explicit: a
+/// failure never expires on its own.
+#[tauri::command]
+#[specta::specta]
+pub fn dismiss_failed_operation(operation_id: String) {
+    ops_dismiss_failed_operation(&operation_id);
+}
+
+/// Drops every retained failure. Backs the queue window's "Dismiss all".
+#[tauri::command]
+#[specta::specta]
+pub fn dismiss_all_failed_operations() {
+    ops_dismiss_all_failed_operations();
 }
 
 #[cfg(test)]

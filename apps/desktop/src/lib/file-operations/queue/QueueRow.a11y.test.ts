@@ -24,6 +24,7 @@ function row(
       source: '/Users/me/Documents/report.pdf',
       destination: opType === 'delete' || opType === 'trash' ? null : '/Volumes/Backup/report.pdf',
       supportsRollback,
+      error: null,
     },
     progress,
     etaSecondsDisplay: progress?.etaSeconds == null ? null : seconds(progress.etaSeconds),

@@ -201,7 +201,15 @@ function snapshot(
   status: OperationSnapshot['status'],
   type: WriteOperationType = 'copy',
 ): OperationSnapshot {
-  return { operationId: id, operationType: type, status, source: '/s', destination: '/d', supportsRollback: true }
+  return {
+    operationId: id,
+    operationType: type,
+    status,
+    source: '/s',
+    destination: '/d',
+    supportsRollback: true,
+    error: null,
+  }
 }
 
 /** Builds the machine, runs `start()`, and drains the async startup so the

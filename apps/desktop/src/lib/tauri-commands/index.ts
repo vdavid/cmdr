@@ -244,8 +244,8 @@ export {
 } from './write-operations'
 export type { Event, UnlistenFn } from './write-operations'
 
-// Operation manager (queue window): list + pause/resume/cancel + the thin
-// `operations-changed` membership/status event.
+// Operation manager (queue window): list + pause/resume/cancel + dismissing a
+// retained failure + the thin `operations-changed` membership/status event.
 export {
   listOperations,
   cancelOperation,
@@ -254,6 +254,8 @@ export {
   resumeOperation,
   pauseAll,
   resumeAll,
+  dismissFailedOperation,
+  dismissAllFailedOperations,
   onOperationsChanged,
 } from './operations'
 export type { OperationSnapshot, OperationsChanged } from './operations'

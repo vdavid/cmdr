@@ -51,6 +51,7 @@ function snapshot(over: Partial<OperationSnapshot> = {}): OperationSnapshot {
     source: '/Users/me/Documents',
     destination: '/Volumes/Naspolya/Backup',
     supportsRollback: true,
+    error: null,
     ...over,
   }
 }

@@ -9,10 +9,13 @@
 
 use super::super::state::busy_volume_ids;
 use super::*;
+use crate::file_system::write_operations::types::WriteOperationError;
 use crate::test_support::wait_until_async;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 use tokio::sync::oneshot;
+
+mod failures;
 
 /// Deadline for every wait here. Generous on purpose: each wait has a real
 /// condition, so a healthy run satisfies it in microseconds and only a genuine

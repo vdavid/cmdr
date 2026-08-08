@@ -55,6 +55,7 @@ function snapshot(status: OperationSnapshot['status']): OperationSnapshot {
     source: '/Users/me/Documents',
     destination: '/Volumes/Naspolya/Backup',
     supportsRollback: true,
+    error: null,
   }
 }
 

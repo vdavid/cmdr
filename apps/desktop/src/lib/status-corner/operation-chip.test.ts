@@ -48,6 +48,7 @@ function row(
       source: '/Users/me/Documents',
       destination: '/Volumes/Naspolya/Backup',
       supportsRollback: true,
+      error: null,
       ...over,
     },
     progress: progressEvent === null ? null : { ...progressEvent, operationId },

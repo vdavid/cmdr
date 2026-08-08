@@ -60,7 +60,7 @@
 //! `(running manager ops' volumes) ∪ (external registrations)` with no
 //! double-maintenance. See `lifecycle/state.rs` § "Busy-volumes set".
 
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -73,7 +73,7 @@ use super::state::{
     WRITE_OPERATION_STATE, WriteOperationState, forget_operation, register_operation_status,
     unregister_operation_status,
 };
-use super::types::WriteOperationType;
+use super::types::{WriteOperationError, WriteOperationType};
 
 /// Lifecycle status of a managed operation, as shown in the queue window.
 /// `Paused` is set only by the pause/resume path (`set_paused`); the rest flow
@@ -158,6 +158,11 @@ pub struct OperationSnapshot {
     pub destination: Option<String>,
     /// See [`OperationDescriptor::supports_rollback`].
     pub supports_rollback: bool,
+    /// Why the operation stopped, on a retained `Failed` row only; `None` on
+    /// every live row. The typed variant, never rendered prose: the frontend's
+    /// `transfer-error-messages.ts` owns the wording. DETAILS § "Retained
+    /// failures".
+    pub error: Option<WriteOperationError>,
 }
 
 /// Typed `operations-changed` Tauri event carrying the thin registry snapshot
@@ -180,6 +185,13 @@ struct ManagerInner {
     /// its count is 0. A `HashMap` (not a set) keeps the door open for budgets
     /// > 1 in v2 without reshaping the reservation logic.
     lane_use: HashMap<LaneKey, usize>,
+    /// Retained failures, oldest first, capped at [`FAILURE_CAPACITY`]. The one
+    /// piece of manager state whose lifetime ISN'T "while the op runs": a
+    /// failure must outlive its record so the user can still read the reason
+    /// after the operation settled. Out-of-band on purpose — `free_and_remove`'s
+    /// removal-on-terminal discipline is untouched. DETAILS § "Retained
+    /// failures".
+    failures: VecDeque<OperationSnapshot>,
 }
 
 impl ManagerInner {
@@ -204,9 +216,19 @@ impl ManagerInner {
         }
     }
 
-    /// Builds the thin snapshot for `operations-changed`, in FIFO order.
+    /// Builds the thin snapshot for `operations-changed`: the live records in
+    /// FIFO order, then the retained failures in failure order.
+    ///
+    /// ⚠️ A failure whose record is STILL LIVE is skipped, and that's
+    /// load-bearing: `emit_error` fires inside the op's own task, before
+    /// `on_settled` removes the record, so for a moment the same operation is
+    /// both running and failed. Emitting both rows would put one `operationId`
+    /// in the list twice, and the queue window's keyed `{#each}` throws on a
+    /// duplicate key. The failure row surfaces on `on_settled`'s existing emit,
+    /// which is the honest moment anyway: until then the op hasn't stopped.
     fn snapshot(&self) -> Vec<OperationSnapshot> {
-        self.order
+        let live = self
+            .order
             .iter()
             .filter_map(|id| self.records.get(id))
             .map(|rec| OperationSnapshot {
@@ -216,14 +238,27 @@ impl ManagerInner {
                 source: rec.descriptor.summary.source.clone(),
                 destination: rec.descriptor.summary.destination.clone(),
                 supports_rollback: rec.descriptor.supports_rollback,
-            })
-            .collect()
+                error: None,
+            });
+        let settled_failures = self
+            .failures
+            .iter()
+            .filter(|failure| !self.records.contains_key(&failure.operation_id))
+            .cloned();
+        live.chain(settled_failures).collect()
     }
 }
 
 /// Lane budget per lane in v1: serialize within a lane. v2 makes this
 /// per-lane and configurable (e.g. FTP = min(5, server limit)).
 const LANE_BUDGET: usize = 1;
+
+/// How many failed operations stay readable after they settle. Mirrors
+/// `mcp::terminal_ops::CAPACITY` and its reasoning: enough that a user coming
+/// back from lunch still finds what went wrong, small enough that a busy batch
+/// session pays a bounded memory cost. Runtime-only — a restart clears them, and
+/// the operation log is where a failure lives permanently.
+const FAILURE_CAPACITY: usize = 20;
 
 /// The single coordinator. Holds the registry, the FIFO order, and the lane
 /// table under one mutex (the critical sections are tiny — register, admit,
@@ -237,6 +272,12 @@ pub(crate) struct OperationManager {
     /// the signal tests wait on instead of sleeping. `SeqCst`, and see DETAILS
     /// § "Observing an admission pass" for why.
     admission_passes: AtomicU64,
+    /// `operations-changed` broadcasts attempted, ever. Bumped at the top of
+    /// `emit_changed`, BEFORE the "no app handle" early return, so it counts in
+    /// unit tests too. Nothing in production reads it: like `admission_passes`,
+    /// it's what lets a test assert that a mutation told the windows about
+    /// itself (or, for `record_failure`, deliberately didn't).
+    emits: AtomicU64,
 }
 
 /// Global manager handle. `OnceLock` rather than `LazyLock` only because the
@@ -275,8 +316,10 @@ impl OperationManager {
                 records: HashMap::new(),
                 order: Vec::new(),
                 lane_use: HashMap::new(),
+                failures: VecDeque::new(),
             }),
             admission_passes: AtomicU64::new(0),
+            emits: AtomicU64::new(0),
         }
     }
 
@@ -560,6 +603,96 @@ impl OperationManager {
         flipped
     }
 
+    /// Retains a failed operation so its reason outlives the record. Called from
+    /// `TauriEventSink::emit_error`, next to the terminal-ops ring. Three things
+    /// it deliberately does NOT do (rationale: DETAILS § "Retained failures"):
+    ///
+    /// - **Retain a non-failure**: `write-error` also carries `Cancelled` and
+    ///   `ArchiveNeedsPassword` (a recoverable prompt). Excluded by typed
+    ///   variant, never by message text.
+    /// - **Overwrite an existing entry**: `write-error` can fire twice for one
+    ///   op, and the FIRST error is the one that stopped it.
+    /// - **Emit**: the record is still live here, see [`ManagerInner::snapshot`].
+    pub(crate) fn record_failure(
+        &self,
+        operation_id: &str,
+        operation_type: WriteOperationType,
+        error: &WriteOperationError,
+    ) {
+        if matches!(
+            error,
+            WriteOperationError::Cancelled { .. } | WriteOperationError::ArchiveNeedsPassword { .. }
+        ) {
+            return;
+        }
+
+        // Everything below runs inside this block so the lock is released before
+        // the log call: the manager's critical sections stay tiny, and a logger
+        // doing file I/O must never hold up admission.
+        {
+            let mut inner = self.inner.lock_ignore_poison();
+            if inner.failures.iter().any(|f| f.operation_id == operation_id) {
+                return;
+            }
+
+            // Prefer the live record's descriptor, so the failed row reads like the
+            // running row it replaces. It's gone only if the op settled before its
+            // own error event landed, and then the event's own type is all there is.
+            let (operation_type, source, destination) = match inner.records.get(operation_id) {
+                Some(rec) => (
+                    rec.descriptor.operation_type,
+                    rec.descriptor.summary.source.clone(),
+                    rec.descriptor.summary.destination.clone(),
+                ),
+                None => (operation_type, None, None),
+            };
+
+            if inner.failures.len() == FAILURE_CAPACITY {
+                inner.failures.pop_front();
+            }
+            inner.failures.push_back(OperationSnapshot {
+                operation_id: operation_id.to_string(),
+                operation_type,
+                status: LifecycleStatus::Failed,
+                source,
+                destination,
+                // A settled failure offers no rollback from this row: the op is over,
+                // and there's no live intent machine left to reverse it.
+                supports_rollback: false,
+                error: Some(error.clone()),
+            });
+        }
+        log::info!(target: "op_manager", "retain failure op={operation_id}");
+    }
+
+    /// Drops one retained failure and re-broadcasts. Unknown id: a no-op that
+    /// doesn't broadcast either.
+    pub(crate) fn dismiss_failure(&self, operation_id: &str) {
+        let removed = {
+            let mut inner = self.inner.lock_ignore_poison();
+            let before = inner.failures.len();
+            inner.failures.retain(|f| f.operation_id != operation_id);
+            inner.failures.len() != before
+        };
+        if removed {
+            self.emit_changed();
+        }
+    }
+
+    /// Drops every retained failure and re-broadcasts. No-op (and no broadcast)
+    /// when nothing is retained.
+    pub(crate) fn dismiss_all_failures(&self) {
+        let removed = {
+            let mut inner = self.inner.lock_ignore_poison();
+            let had_any = !inner.failures.is_empty();
+            inner.failures.clear();
+            had_any
+        };
+        if removed {
+            self.emit_changed();
+        }
+    }
+
     /// Ids of all currently `Running` (not Paused) ops, for `pause_all`.
     fn running_ids(&self) -> Vec<String> {
         let inner = self.inner.lock_ignore_poison();
@@ -634,7 +767,14 @@ impl OperationManager {
             .map(|r| r.status)
     }
 
+    /// `operations-changed` broadcasts attempted so far. See [`Self::emits`].
+    #[cfg(test)]
+    pub(crate) fn emit_count(&self) -> u64 {
+        self.emits.load(Ordering::SeqCst)
+    }
+
     fn emit_changed(&self) {
+        self.emits.fetch_add(1, Ordering::SeqCst);
         let Some(app) = OPERATIONS_APP.get() else {
             return;
         };
@@ -795,6 +935,21 @@ pub fn resume_all() {
     for id in manager().paused_ids() {
         resume_operation(&id);
     }
+}
+
+/// Drops one retained failure and re-broadcasts the snapshot. Backs
+/// `dismiss_failed_operation(id)`: the queue row's Dismiss button, and the
+/// foreground error dialog's close path for the operation it was showing.
+/// Dismissal is ALWAYS explicit — ❌ never a timer, a window close, or the next
+/// operation starting. Unknown id: a no-op.
+pub fn dismiss_failed_operation(operation_id: &str) {
+    manager().dismiss_failure(operation_id);
+}
+
+/// Drops every retained failure and re-broadcasts the snapshot. Backs
+/// `dismiss_all_failed_operations` (the queue toolbar's "Dismiss all").
+pub fn dismiss_all_failed_operations() {
+    manager().dismiss_all_failures();
 }
 
 #[cfg(test)]

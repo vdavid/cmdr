@@ -1,18 +1,20 @@
 //! The `operations:` section of `cmdr://state`: every queued, running, or paused
 //! write operation (copy / move / delete / trash / compress / archive edit) with
-//! live progress, speed, and ETA where it's running.
+//! live progress, speed, and ETA where it's running, plus any failure the user
+//! hasn't dismissed.
 //!
 //! This is the discovery surface for the `queue` tool — an agent reads it to find
 //! operation ids and their lifecycle status before pausing / resuming / cancelling.
 //!
 //! **Two-source join.** Membership + lifecycle status (`running` / `paused` /
-//! `queued`) come from the operation manager's registry (`list_operations`, whose
-//! `OperationSnapshot` carries no progress by design), while progress / speed /
-//! ETA come from the separate write-operations status cache
-//! (`get_operation_status`, the same single-source the progress dialog feeds
-//! from). Joined by operation id; a queued op simply has no progress fields, and
-//! settled ops are already gone from both sources (see `terminal_ops` for the
-//! ring that keeps their outcome for `await operation_complete`).
+//! `queued` / `failed`) come from the operation manager's registry
+//! (`list_operations`, whose `OperationSnapshot` carries no progress by design),
+//! while progress / speed / ETA come from the separate write-operations status
+//! cache (`get_operation_status`, the same single-source the progress dialog
+//! feeds from). Joined by operation id; a queued op simply has no progress
+//! fields, and so does a retained `failed` row (its op is over). Completed and
+//! cancelled ops are gone from both sources — see `terminal_ops` for the ring
+//! that keeps their outcome for `await operation_complete`.
 //!
 //! Speed and ETA are whole-run averages (`bytes_done / elapsed`), not the
 //! progress dialog's EWMA — good enough for an agent's "is it moving, roughly
@@ -42,19 +44,20 @@ pub(crate) fn snapshot_operations() -> Vec<OperationRow> {
         .collect()
 }
 
-/// The lower-case lifecycle token. Only `queued` / `running` / `paused` ever
-/// reach here — the manager removes an op on settle, so a terminal status never
-/// appears in `list_operations`.
+/// The lower-case lifecycle token. `queued` / `running` / `paused` come from a
+/// live record; `failed` comes from a retained failure the user hasn't dismissed
+/// yet (`write_operations/DETAILS.md` § "Retained failures").
 fn status_token(status: LifecycleStatus) -> &'static str {
     match status {
         LifecycleStatus::Queued => "queued",
         LifecycleStatus::Running => "running",
         LifecycleStatus::Paused => "paused",
-        // Unreachable in production (settled ops leave the registry). Rendered
-        // honestly rather than papered over if one ever slips through.
+        LifecycleStatus::Failed => "failed",
+        // Unreachable: a completed or cancelled op leaves the registry and is
+        // retained nowhere. Rendered honestly rather than papered over if one
+        // ever slips through.
         LifecycleStatus::Done => "done",
         LifecycleStatus::Cancelled => "cancelled",
-        LifecycleStatus::Failed => "failed",
     }
 }
 

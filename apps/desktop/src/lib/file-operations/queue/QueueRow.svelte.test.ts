@@ -27,6 +27,7 @@ function buildRow(
       source: '/Users/me/Documents/report.pdf',
       destination: '/Volumes/Backup/report.pdf',
       supportsRollback,
+      error: null,
     },
     progress,
     etaSecondsDisplay: progress?.etaSeconds == null ? null : seconds(progress.etaSeconds),

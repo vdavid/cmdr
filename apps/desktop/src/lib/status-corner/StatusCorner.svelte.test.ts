@@ -85,6 +85,7 @@ function runningCopy(): OperationRow {
       source: '/Users/me/Documents',
       destination: '/Volumes/Naspolya/Backup',
       supportsRollback: true,
+      error: null,
     },
     progress: null,
     etaSecondsDisplay: null,

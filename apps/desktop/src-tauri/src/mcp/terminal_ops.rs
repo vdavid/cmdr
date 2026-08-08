@@ -4,15 +4,22 @@
 //!
 //! **Why a ring at all.** The operation manager removes an op from its registry
 //! the moment it settles (removal-on-terminal, `write_operations/DETAILS.md`),
-//! and `operations-changed` fires AFTER that removal — so its snapshot never
-//! carries a terminal status (`LifecycleStatus` never reaches `Done`/`Cancelled`/
-//! `Failed` on a live record). The terminal outcome lives ONLY in the dedicated
-//! terminal events (`write-complete` / `write-cancelled` / `write-error`). So an
-//! `await operation_complete <id>` that arrives just after the op finished would
-//! find the id in neither the live set nor anywhere else and hang. This ring
-//! records those terminal events at their emit site (the `TauriEventSink`, the
-//! same emit-site pattern as `listing_errors`) so the await can report an honest
-//! terminal status instead.
+//! and `operations-changed` fires AFTER that removal — so a completed or
+//! cancelled op leaves the snapshot entirely (`LifecycleStatus` never reaches
+//! `Done`/`Cancelled` at all, on a record or on a snapshot). Their outcome lives
+//! ONLY in the dedicated terminal events (`write-complete` / `write-cancelled`).
+//! So an `await operation_complete <id>` that arrives just after the op finished
+//! would find the id in neither the live set nor anywhere else and hang. This
+//! ring records those terminal events at their emit site (the `TauriEventSink`,
+//! the same emit-site pattern as `listing_errors`) so the await can report an
+//! honest terminal status instead.
+//!
+//! A FAILED op is the one that also survives elsewhere: the manager retains it
+//! out-of-band, so `Failed` does reach the snapshot (never a live record) until
+//! the user dismisses it. This ring still records it, because the ring is the
+//! uniform answer for all three outcomes and doesn't depend on the user leaving
+//! a failure undismissed. See `write_operations/DETAILS.md` § "Retained
+//! failures".
 //!
 //! Ring-buffered to 20 entries: enough for a slow agent to catch a recent
 //! settle, small enough that a busy batch session pays a bounded memory cost. A

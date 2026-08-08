@@ -54,5 +54,8 @@ cross-cutting machinery both subdirs share.
   sources differ from the operation's; a mismatch is a cache miss, so the caller rescans. `SCAN_PREVIEW_RESULTS` is
   private to `scan_cache.rs` so nothing can seed or read past that check.
 - **Volume-aware ops must not emit `write-error` on `Cancelled`**: the inner handler already did.
+- **A FAILED op is retained out-of-band** (bounded list of 20 on the snapshot, with its typed `error`); lanes and
+  records still free exactly as before. ❌ `record_failure` must NOT emit: the record is still live, and a duplicate
+  `operationId` throws in the queue window. DETAILS § "Retained failures".
 
 Architecture, flows, decisions: `DETAILS.md`. Read before non-trivial work here.

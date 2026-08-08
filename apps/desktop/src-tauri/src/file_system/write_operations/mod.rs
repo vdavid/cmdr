@@ -98,7 +98,8 @@ pub use state::{
 // helpers back the new `list_operations` / `cancel_operation(s)` IPC.
 pub use manager::{
     LifecycleStatus, OperationSnapshot, OperationSummaryText, OperationsChanged, cancel_operation, cancel_operations,
-    init_operation_event_emitter, list_operations, pause_all, pause_operation, resume_all, resume_operation,
+    dismiss_all_failed_operations, dismiss_failed_operation, init_operation_event_emitter, list_operations, pause_all,
+    pause_operation, resume_all, resume_operation,
 };
 // Managed instant mutations (rename / mkdir / mkfile) + rename validation. The
 // thin IPC commands (`commands/rename.rs`, `commands/file_system/write_ops.rs`)

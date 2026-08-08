@@ -50,6 +50,17 @@ export async function resumeAll(): Promise<void> {
   await commands.resumeAll()
 }
 
+/** Drop one retained failure from the snapshot. Dismissal is always explicit —
+ *  a failed row waits until someone reads it, however long that takes. */
+export async function dismissFailedOperation(operationId: string): Promise<void> {
+  await commands.dismissFailedOperation(operationId)
+}
+
+/** Drop every retained failure (the queue toolbar's "Dismiss all"). */
+export async function dismissAllFailedOperations(): Promise<void> {
+  await commands.dismissAllFailedOperations()
+}
+
 /** Subscribe to the thin registry snapshot (membership + lifecycle status). The
  *  queue window reduces this into its row set. Returns an `UnlistenFn`; call it
  *  on teardown or you leak the listener. */

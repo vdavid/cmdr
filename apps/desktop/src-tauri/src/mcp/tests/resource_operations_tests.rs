@@ -14,6 +14,7 @@ fn snapshot(id: &str, status: LifecycleStatus) -> OperationSnapshot {
         source: Some("/src/photos".to_string()),
         destination: Some("/dst/photos".to_string()),
         supports_rollback: true,
+        error: None,
     }
 }
 

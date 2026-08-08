@@ -25,6 +25,9 @@ commands, and notable non-obvious placements.
 - **`write-operations.ts`**: copy/move/delete, conflict resolution, scan preview. (Size/duration formatting moved to
   `$lib/units`.)
 - **`rename.ts`**: `checkRenamePermission`, `checkRenameValidity`, `renameFile`, `moveToTrash`.
+- **`operations.ts`**: the operation manager (queue window): `listOperations`, `cancelOperation(s)`, `pauseOperation` /
+  `resumeOperation`, `pauseAll` / `resumeAll`, `dismissFailedOperation` / `dismissAllFailedOperations`, and the
+  `onOperationsChanged` membership/status event.
 - **`storage.ts`**: `listVolumes`, `getVolumeSpace`, `watchVolumeSpace` / `unwatchVolumeSpace`, `ejectVolume`,
   `getBusyVolumeIds` (bootstrap for the eject-busy gate), `onVolumeContextAction`, `onVolumeConnectionChanged` (session
   health of any connecting volume, not just SMB), `checkFullDiskAccess`, `checkFullDiskAccessQuiet`,

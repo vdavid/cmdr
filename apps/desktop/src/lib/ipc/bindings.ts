@@ -616,6 +616,14 @@ export const commands = {
   pauseAll: () => __TAURI_INVOKE<void>('pause_all'),
   // Resumes every currently-paused operation. Backs "Resume all".
   resumeAll: () => __TAURI_INVOKE<void>('resume_all'),
+  /**
+   *  Drops one retained failure from the snapshot (the queue row's Dismiss, and
+   *  the foreground error dialog's close path). Dismissal is always explicit: a
+   *  failure never expires on its own.
+   */
+  dismissFailedOperation: (operationId: string) => __TAURI_INVOKE<void>('dismiss_failed_operation', { operationId }),
+  // Drops every retained failure. Backs the queue window's "Dismiss all".
+  dismissAllFailedOperations: () => __TAURI_INVOKE<void>('dismiss_all_failed_operations'),
   // Unified copy across volume types (local, MTP, etc.). Same events as `copy_files`.
   copyBetweenVolumes: (
     sourceVolumeId: string,
@@ -6750,6 +6758,13 @@ export type OperationSnapshot = {
   destination: string | null
   // See [`OperationDescriptor::supports_rollback`].
   supportsRollback: boolean
+  /**
+   *  Why the operation stopped, on a retained `Failed` row only; `None` on
+   *  every live row. The typed variant, never rendered prose: the frontend's
+   *  `transfer-error-messages.ts` owns the wording. DETAILS § "Retained
+   *  failures".
+   */
+  error: WriteOperationError | null
 }
 
 // Current status of an operation for query APIs.

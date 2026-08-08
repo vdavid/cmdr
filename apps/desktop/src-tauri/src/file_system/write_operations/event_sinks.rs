@@ -170,6 +170,13 @@ impl OperationEventSink for TauriEventSink {
             event.operation_type,
             crate::mcp::terminal_ops::TerminalStatus::Failed,
         );
+        // Retain the failure so it outlives the record the manager is about to
+        // remove: a backgrounded operation that fails while the queue window is
+        // closed must still be able to say why. Same emit-site pattern as the
+        // ring above, and deliberately NOT in the trait or `CollectorEventSink`
+        // (test sinks stay side-effect-free). `record_failure` itself decides
+        // what counts as a failure and emits nothing.
+        super::manager::manager().record_failure(&event.operation_id, event.operation_type, &event.error);
         let _ = event.emit(&self.app);
     }
     fn emit_conflict(&self, event: WriteConflictEvent) {

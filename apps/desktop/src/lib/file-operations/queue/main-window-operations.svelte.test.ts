@@ -43,6 +43,7 @@ function snapshot(id: string, status: OperationSnapshot['status'] = 'running'): 
     source: '/src/file',
     destination: '/dst/file',
     supportsRollback: true,
+    error: null,
   }
 }
 
