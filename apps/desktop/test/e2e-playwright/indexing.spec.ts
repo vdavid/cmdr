@@ -15,6 +15,7 @@ import fs from 'fs'
 import path from 'path'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { test, expect } from './fixtures.js'
+import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import { ensureAppReady, getFixtureRoot, executeViaCommandPalette, getSizeText } from './helpers.js'
 
@@ -132,6 +133,13 @@ const NESTED_FILE_SIZE = 1024
 const EXTRA_FILE_SIZE = 10_000
 
 // ── Tests ────────────────────────────────────────────────────────────────────
+
+// Putting the shared `left/` + `right/` tree back is this spec's job: the
+// post-test leak guard fails whoever leaves it dirty, and the restore is
+// surgical, so it only rewrites what actually drifted.
+test.afterEach(() => {
+  restoreFixtureTree(getFixtureRoot())
+})
 
 test.describe('Drive indexing', () => {
   test.beforeEach(() => {

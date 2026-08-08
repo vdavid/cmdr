@@ -7,6 +7,7 @@
 
 import path from 'path'
 import { test, expect } from './fixtures.js'
+import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import {
   countTree,
@@ -51,6 +52,13 @@ const LAYOUT_B_ITEMS = ['alpha', 'bravo', 'charlie', 'delta.txt']
 
 test.beforeEach(() => {
   recreateFixtures(getFixtureRoot())
+})
+
+// Putting the shared `left/` + `right/` tree back is this spec's job: the
+// post-test leak guard fails whoever leaves it dirty, and the restore is
+// surgical, so it only rewrites what actually drifted.
+test.afterEach(() => {
+  restoreFixtureTree(getFixtureRoot())
 })
 
 test.describe('Copy with conflict policies (Layout A)', () => {

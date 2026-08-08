@@ -24,6 +24,7 @@
 import fs from 'fs'
 import path from 'path'
 import { test, expect } from './fixtures.js'
+import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import { recreateMtpFixtures, MTP_FIXTURE_ROOT } from '../e2e-shared/mtp-fixtures.js'
 import {
@@ -106,6 +107,13 @@ test.beforeEach(async ({ tauriPage }) => {
     // fixtures.ts now catches and auto-cleans any leaks at the point of leak,
     // so this defensive cleanup is no longer needed.
   }
+})
+
+// Putting the shared `left/` + `right/` tree back is this spec's job: the
+// post-test leak guard fails whoever leaves it dirty, and the restore is
+// surgical, so it only rewrites what actually drifted.
+test.afterEach(() => {
+  restoreFixtureTree(getFixtureRoot())
 })
 
 test.describe('MTP delete reuses scan preview (no double scan)', () => {

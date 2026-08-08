@@ -49,6 +49,7 @@
 import fs from 'fs'
 import path from 'path'
 import { test, expect } from './fixtures.js'
+import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import {
   dispatchMenuCommand,
@@ -124,6 +125,13 @@ function expectDirChildren(dirAbs: string, expected: string[]): void {
 
 test.beforeEach(() => {
   recreateFixtures(getFixtureRoot())
+})
+
+// Putting the shared `left/` + `right/` tree back is this spec's job: the
+// post-test leak guard fails whoever leaves it dirty, and the restore is
+// surgical, so it only rewrites what actually drifted.
+test.afterEach(() => {
+  restoreFixtureTree(getFixtureRoot())
 })
 
 // ── Axis 1: single clash × choice × clash type ───────────────────────────────

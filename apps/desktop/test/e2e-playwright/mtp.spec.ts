@@ -13,6 +13,7 @@ import fs from 'fs'
 import os from 'os'
 import path from 'path'
 import { test, expect } from './fixtures.js'
+import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import { recreateMtpFixtures, MTP_FIXTURE_ROOT } from '../e2e-shared/mtp-fixtures.js'
 import {
@@ -170,6 +171,13 @@ test.beforeEach(async ({ tauriPage }) => {
     // so this defensive cleanup is no longer needed (and would mask the leak
     // attribution if it crept back).
   }
+})
+
+// Putting the shared `left/` + `right/` tree back is this spec's job: the
+// post-test leak guard fails whoever leaves it dirty, and the restore is
+// surgical, so it only rewrites what actually drifted.
+test.afterEach(() => {
+  restoreFixtureTree(getFixtureRoot())
 })
 
 // ── Tests ────────────────────────────────────────────────────────────────────
