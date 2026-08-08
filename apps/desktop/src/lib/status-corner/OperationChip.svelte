@@ -188,8 +188,9 @@
     }
 
     /* A failure earns colour where live progress doesn't: it's the one thing in
-       the corner the user has to notice. Warning, not error, matching the failed
-       queue row — this is an ambient trace, and the toast did the shouting. */
+       the corner the user has to notice. Warning, not error, because severity
+       follows the THING: the chip only points, naming neither the operation nor
+       the reason. The toast and the failed queue row, which do both, are red. */
     .operation-chip.failed,
     .operation-chip.failed:hover {
         color: var(--color-warning-text);

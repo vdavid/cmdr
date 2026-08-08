@@ -76,9 +76,10 @@ shown only when nothing is running or paused.
 
 It exists because of what happens otherwise: dismiss the toast with the queue window closed, and the main window carries
 zero trace that anything went wrong, which is the exact bug this corner was built to fix. It stays deliberately narrow
-(a count and a glyph, no list, no reason) so it reads as a mark, not a notification centre. Clicking it opens the queue,
-same as the progress state. The failure the foreground error dialog is showing is left to that dialog
-(`getForegroundFailureId()`).
+(a count and a glyph, no list, no reason) so it reads as a mark, not a notification centre. That narrowness is also why
+it's amber where the toast and the failed queue row are red: severity follows the THING, and a surface that names
+neither the operation nor the reason only points. Clicking it opens the queue, same as the progress state. The failure
+the foreground error dialog is showing is left to that dialog (`getForegroundFailureId()`).
 
 The label reuses `queue.row.status`'s `failed` arm, so the corner and the failed row say the same two words. One string,
 `queue.chip.failed`, serves as both the tooltip and the spoken label.

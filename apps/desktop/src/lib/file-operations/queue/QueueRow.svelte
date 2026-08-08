@@ -336,10 +336,12 @@
         color: var(--color-text-tertiary);
     }
 
-    /* A failure is the one row state that earns a colour: warning, matching the
-       glyph beside it and the corner chip's failure state. */
+    /* A failure is the one row state that earns a colour, and severity follows
+       the THING, not the surface: this row names the failure and prints its
+       reason underneath, so it's error red, like the toast that does the same.
+       The corner chip stays amber because it names nothing. */
     .status-cell.failed {
-        color: var(--color-warning-text);
+        color: var(--color-error-text);
     }
 
     .actions-cell {

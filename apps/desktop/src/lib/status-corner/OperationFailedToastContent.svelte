@@ -72,7 +72,9 @@
     .glyph {
         display: inline-flex;
         flex-shrink: 0;
-        color: var(--color-warning);
+        /* Error red, matching the toast's own stripe: this notice names the
+           failure and shows its reason, so it carries the full severity. */
+        color: var(--color-error);
     }
 
     /*

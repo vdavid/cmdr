@@ -87,8 +87,11 @@ with its typed `error` (`write_operations/DETAILS.md` § "Retained failures" own
 durable surface for them: it survives a dismissed toast, a closed window, and a reopen.
 
 - **The row.** No pause, cancel, rollback, or select checkbox — there's nothing live left to act on. A `triangle-alert`
-  glyph and "Couldn't finish" in `--color-warning-text`, one Dismiss button, and the reason on line 2 where the readout
+  glyph and "Couldn't finish" in `--color-error-text`, one Dismiss button, and the reason on line 2 where the readout
   would be.
+- **Why red here and amber in the corner chip.** Severity follows the THING, not the surface. This row names the
+  operation and prints its reason, so it carries the full weight, same as the failure toast. The chip names nothing (a
+  count and a glyph), so it stays `--color-warning-text`: a pointer, not a verdict.
 - **The reason.** `failure-reason.ts` maps the snapshot onto `../transfer/transfer-error-messages.ts`. It owns exactly
   one decision the pipeline can't make: a snapshot carries the WIRE operation type (`archive_edit`, `create_folder`, …)
   while the `errors.write.*` catalog only phrases `copy` / `move` / `delete` / `trash`, so a `Record` keyed by every
