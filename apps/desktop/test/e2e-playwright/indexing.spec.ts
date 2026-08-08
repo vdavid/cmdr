@@ -222,8 +222,7 @@ test.describe('Drive indexing', () => {
 
     // Size should decrease back to exactly NESTED_FILE_SIZE
     const statsAfterDelete = await waitForExactSize(tauriPage, subDirPath, NESTED_FILE_SIZE, 60_000)
-    expect(statsAfterDelete).not.toBeNull()
-    expect(statsAfterDelete?.recursiveSize).toBe(NESTED_FILE_SIZE)
-    expect(statsAfterDelete?.recursiveFileCount).toBe(1)
+    expect(statsAfterDelete.recursiveSize).toBe(NESTED_FILE_SIZE)
+    expect(statsAfterDelete.recursiveFileCount).toBe(1)
   })
 })

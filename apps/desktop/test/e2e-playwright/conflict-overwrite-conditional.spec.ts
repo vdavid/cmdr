@@ -20,7 +20,13 @@ import path from 'path'
 import { test, expect } from './fixtures.js'
 import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { dispatchMenuCommand, ensureAppReady, expectAndDismissToast, getFixtureRoot, TRANSFER_DIALOG } from './helpers.js'
+import {
+  dispatchMenuCommand,
+  ensureAppReady,
+  expectAndDismissToast,
+  getFixtureRoot,
+  TRANSFER_DIALOG,
+} from './helpers.js'
 import {
   clearFixtureDirs,
   clickConflictButton,

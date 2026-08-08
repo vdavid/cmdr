@@ -215,9 +215,9 @@ Each entry: **count — spec** then the hypothesis and confidence.
   - ✅ **Mostly explained by the shared-fixture leak, now closed.** Sixteen of the 22 are `file-operations` /
     `conflict-*` / `archive-browsing` entries from ONE shard-run (`nonmtp1/1786017110`), the signature of a single spec
     dirtying the tree and everything behind it failing inside `ensureAppReady` — the shared-fixture leak (see its
-    section above). `search-live:41` and `search-recent:31` are the 🟡 pre-`0fc5d250c` walk-ground cluster
-    (`0fc5d250c` names `search-recent` explicitly). The rest were not individually diagnosed and stay unclaimed rather
-    than assumed fixed.
+    section above). `search-live:41` and `search-recent:31` are the 🟡 pre-`0fc5d250c` walk-ground cluster (`0fc5d250c`
+    names `search-recent` explicitly). The rest were not individually diagnosed and stay unclaimed rather than assumed
+    fixed.
 
 `conflict-dialog-matrix.spec.ts:147` does not appear above because it first failed in the final run of this night; it is
 diagnosed below and is **not** a low-confidence entry.

@@ -17,9 +17,9 @@ Same tests run on macOS and Linux. Platform differences (Ctrl vs Meta) are handl
 in `helpers.ts`.
 
 The fixed points: `playwright.config.ts` (config + shard projects), `fixtures.ts` (the `test` / `expect` the specs
-import, and the auto fixture carrying the post-test leak guard), `global-setup.ts` / `global-teardown.ts` (the filesystem fixture tree and the
-window-title decoration), and `helpers.ts`, a thin re-export of the themed modules in `helpers/`. A spec's FILENAME
-picks its shard (§ Files).
+import, and the auto fixture carrying the post-test leak guard), `global-setup.ts` / `global-teardown.ts` (the
+filesystem fixture tree and the window-title decoration), and `helpers.ts`, a thin re-export of the themed modules in
+`helpers/`. A spec's FILENAME picks its shard (§ Files).
 
 ## Window-title decoration
 
@@ -484,8 +484,8 @@ filesystem comparison has no pane, no watcher, and no flush in it, so that defec
 victim-blaming failure into a culprit-naming one, which is the point.
 
 **Scope: `left/` and `right/` only.** That's the tree `recreateFixtures` owns and `ensureAppReady` asserts on.
-Spec-owned fixture dirs beside them (`brief-cursor-fixtures/`, `full-page-nav-fixtures/`, `git-portal-repo/`)
-are deliberately long-lived and idempotently rebuilt by their own spec, so the guard leaves them alone.
+Spec-owned fixture dirs beside them (`brief-cursor-fixtures/`, `full-page-nav-fixtures/`, `git-portal-repo/`) are
+deliberately long-lived and idempotently rebuilt by their own spec, so the guard leaves them alone.
 
 **No escape hatch, on purpose.** Every mutating spec can restore, because restoring after the assertions never weakens
 them. A spec that thinks it needs an exemption is really a spec that should restore in `afterEach`.
