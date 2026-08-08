@@ -64,6 +64,26 @@ rule asks for `(verified on <version>, <method>, <date>)` on exactly this kind o
 anything for an `smbfs` mount decides whether finding 2 is real or a non-issue, and nobody has measured it. Measuring it
 is cheap: the SMB Docker stack plus `mount_smbfs` and a watcher log line.
 
+### 3. A delete reports "complete, 0 skipped" when directories it couldn't remove are still standing
+
+Both delete tails discard the directory-removal result and then emit a completion event:
+`write_operations/delete/walker.rs:231` (`let _ = fs::remove_dir(dir)`, local) and `:951`
+(`let _ = volume.delete_with_cancel(...)`, volume-backed). Each is followed by a `WriteCompleteEvent` carrying
+`files_skipped: 0` — hardcoded at `:247` and `:961` — and an `Ok(())`.
+
+The *file* loop above them is honest: a failed leaf delete propagates (`:880`, `return Err(map_volume_error(...))`), so
+by the directory phase every enumerated file is gone. What's left to fail is a directory holding something the walk
+never enumerated (a file created concurrently, one the listing filtered) or a permission refusal. In either case the
+user asked for a folder to go away, watched a progress bar finish, was told nothing was skipped, and the folder is
+still in the pane.
+
+**Blast radius: an honest-progress violation, not data loss** (nothing is destroyed that shouldn't be; the wrong thing
+is the report). Not fixed here because turning the discard into a hard failure is the wrong correction — a `.DS_Store`
+Finder recreates mid-delete would then fail the whole operation. The honest fix is to COUNT the directories that
+wouldn't go and report them, and the channel for that already exists and is wired shut: `files_skipped` on
+`WriteCompleteEvent` is a literal `0` on both paths. That's a UX call about what the completion toast should then say,
+so it's a recommendation, not a fix.
+
 ## Merely unprotected: the capability matrix
 
 The lead question was whether any *other* backend answers a capability flag wrongly. Systematically: no. Every override
@@ -164,6 +184,17 @@ Negative results, recorded so nobody re-runs them:
   `i18n-capture.spec.ts` all either call `test.skip()` (a visible skip) or `throw` on the not-found path. Only
   `indexing.spec.ts` had the fake-pass shape, and it was already unreachable.
 - **`#[should_panic]` without `expected`.** None in the tree.
+- **`let _ =` / `.ok()` in the transfer and rollback paths.** Read every site under `write_operations/` and
+  `operation_log/`: they're event emits (fire-and-forget by contract, a failed emit must never fail the mutation that
+  succeeded), best-effort partial cleanup after an already-failing operation, or display-only metadata whose `None` the
+  frontend renders as "(unknown)". `conflict.rs:185`'s `get_metadata(dest).await.ok()` looks like the dangerous shape
+  and isn't: it feeds the dialog's "(newer)" annotation, and the size that feeds
+  `reduce_volume_conditional_resolution` already carries a documented ❗ against fabricating a `0`. The one real
+  finding in this shape is (3) above.
+- **The MTP suite under plain `cargo test`.** `mtp_test.rs` goes red in subsets (a stale process-global
+  `connection_manager()` across fixtures) and green per-test. Not a defect: the checker runs `cargo nextest run`
+  (process per test), and `virtual_device.rs` documents that as the supported mode. Worth knowing before you conclude
+  the suite is broken.
 
 ## Recommended, not done
 
@@ -174,10 +205,14 @@ Negative results, recorded so nobody re-runs them:
    `supports_local_fs_access()` stay `true` — those are questions about `std::fs` reachability, and this is a question
    about cost. Not done here because "which kinds count as remote?" and "what happens when construction is on the main
    thread" are design calls, not clear-cut fixes.
-2. **Measure FSEvents on an `smbfs` mount, then act.** The answer decides whether finding 2 is real. If FSEvents is
+2. **Give the delete's directory phase the honest count it already has a field for.** Tally the directories
+   `remove_dir` / `delete_with_cancel` refused and put the number in `WriteCompleteEvent.files_skipped` instead of the
+   hardcoded `0`, so the completion toast can say "3 folders couldn't be removed" rather than nothing. ❌ Don't fail the
+   operation instead: a concurrently recreated `.DS_Store` would take the whole delete down with it.
+3. **Measure FSEvents on an `smbfs` mount, then act.** The answer decides whether finding 2 is real. If FSEvents is
    silent there, `listing_is_watched` needs the same mount-kind answer as (1), and `SmbVolume::supports_watching`'s
    comment needs replacing with the measurement. Either way the claim gets an evidence anchor instead of a belief.
-3. **The single highest-value fence: keep growing `volume::conformance`, not `checks/`.** A scanner check can only see
+4. **The single highest-value fence: keep growing `volume::conformance`, not `checks/`.** A scanner check can only see
    syntax; these are semantic promises, and the assertion-every-backend-runs shape is what caught MTP's recursing
    `delete` and is what would catch the next one. The remaining unpinned trait promises worth a look, in order:
    `read_range` returns short ONLY at EOF (a mid-file short read silently corrupts remote-archive browsing);
