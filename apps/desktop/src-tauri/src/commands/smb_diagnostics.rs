@@ -174,6 +174,12 @@ pub struct MetricsSnapshotDto {
     /// errored). Non-zero means the request never reached the server, so
     /// nothing about the server follows from it.
     pub send_failures: u64,
+    /// Stretches CMDR spent unscheduled: a laptop sleep, an App Nap, a machine
+    /// starved by a parallel build. The only counter here about us rather than
+    /// the server, and the first one to read when `response_timeouts` or the
+    /// reconnect counts spike — silence measured while the app was frozen says
+    /// nothing about the network.
+    pub scheduling_stalls: u64,
 
     // The ECHO keepalive: what tells "slow" apart from "dead".
     /// ECHO probes put on the wire. Zero on a healthy busy connection and that
@@ -281,6 +287,7 @@ impl From<smb2::ConnectionDiagnostics> for ConnectionDiagnosticsDto {
                 credit_starvations: c.metrics.credit_starvations,
                 response_timeouts: c.metrics.response_timeouts,
                 send_failures: c.metrics.send_failures,
+                scheduling_stalls: c.metrics.scheduling_stalls,
                 keepalive_probes_sent: c.metrics.keepalive_probes_sent,
                 keepalive_probes_skipped: c.metrics.keepalive_probes_skipped,
                 keepalive_failures: c.metrics.keepalive_failures,

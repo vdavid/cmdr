@@ -384,6 +384,18 @@
                         <span class="smb-value smb-value-err" class:smb-zero={m.send_failures === 0}
                             >{fmtNum(m.send_failures)}</span
                         >
+
+                        <span class="smb-label"
+                            >Scheduling stalls <span
+                                class="info-icon"
+                                use:tooltip={{
+                                    text: 'Stretches Cmdr itself spent unscheduled: a laptop sleep, an App Nap, a machine starved by another build. The only number here about us rather than the server — read it first when timeouts or reconnects spike, because silence measured while the app was frozen says nothing about the network.',
+                                }}>i</span
+                            ></span
+                        >
+                        <span class="smb-value" class:smb-zero={m.scheduling_stalls === 0}
+                            >{fmtNum(m.scheduling_stalls)}</span
+                        >
                     </div>
                 </div>
 

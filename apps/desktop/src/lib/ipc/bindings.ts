@@ -6263,6 +6263,14 @@ export type MetricsSnapshotDto = {
    */
   send_failures: number
   /**
+   *  Stretches CMDR spent unscheduled: a laptop sleep, an App Nap, a machine
+   *  starved by a parallel build. The only counter here about us rather than
+   *  the server, and the first one to read when `response_timeouts` or the
+   *  reconnect counts spike — silence measured while the app was frozen says
+   *  nothing about the network.
+   */
+  scheduling_stalls: number
+  /**
    *  ECHO probes put on the wire. Zero on a healthy busy connection and that
    *  is correct — probing only starts once the wire goes quiet with work
    *  outstanding.
