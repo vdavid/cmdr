@@ -661,6 +661,17 @@ admission pass, safe only because every manager test mints a unique `LaneKey`; a
 `handle_directory_change` tests insert into `LISTING_CACHE` by hand with a tail `remove` instead of `TestListing`, so a
 failing assertion leaks the entry (unique uuid keys keep it from poisoning anyone).
 
+**A manager counter is never scoped by a unique op id.** `emit_count()` and `admission_pass_count()` count a WHOLE
+manager's activity, so a sibling test spawning or settling ANY op moves them; a unique id, which is what keeps the
+record-and-lane assertions honest, buys nothing here. A test asserting on either drives its own manager instead of
+`manager()`: `private_manager()` for the lock-only paths, and `failures::leaked_manager()` (a `Box::leak`) when the test
+has to `spawn_managed`, which takes `&'static self` because an admitted op's task outlives every borrow. Pair it with
+`tests::gated_deferred_on`, so the synthetic op settles on the same private manager. The leak is one small struct per
+test that asks for one. An equality assertion against the global counter passes only because nextest forks per test;
+under plain `cargo test` it fails outright (`retained_failure_stays_hidden_until_the_record_settles` did).
+The two `admission_pass_count()` waits in `tests.rs` stay on the global one: they wait for GROWTH, not an equality, so a
+sibling's pass can only satisfy them early, never fail them.
+
 **New subsystem state hangs off a struct, not a `static`.** These guards are the retrofit cost of a process-global; a
 handle threaded through its callers needs none of it.
 

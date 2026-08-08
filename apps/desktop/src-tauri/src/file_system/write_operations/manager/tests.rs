@@ -64,13 +64,29 @@ fn gated_deferred(
     started: oneshot::Sender<()>,
     release: oneshot::Receiver<()>,
 ) -> Box<dyn FnOnce() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send> {
+    gated_deferred_on(manager(), op_id, started, release)
+}
+
+/// [`gated_deferred`], settling on a GIVEN manager rather than the global one,
+/// so a test that owns a private manager (`failures::leaked_manager`) can drive
+/// a full spawn-to-settle lifecycle on it.
+///
+/// The `ManagedTaskGuard` is still the global one: it's the panic net, and the
+/// happy path disarms it before settling, so it never touches the global
+/// manager here.
+fn gated_deferred_on(
+    mgr: &'static OperationManager,
+    op_id: String,
+    started: oneshot::Sender<()>,
+    release: oneshot::Receiver<()>,
+) -> Box<dyn FnOnce() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send> {
     Box::new(move || {
         Box::pin(async move {
             let guard = ManagedTaskGuard::new(op_id.clone());
             let _ = started.send(());
             let _ = release.await;
             guard.disarm();
-            manager().on_settled(&op_id);
+            mgr.on_settled(&op_id);
         })
     })
 }

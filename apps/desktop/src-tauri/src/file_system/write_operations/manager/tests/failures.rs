@@ -2,7 +2,8 @@
 //! record, so a failure landing while the queue window is closed isn't lost.
 //!
 //! Sits beside the admission/lane suite in `tests.rs` and reuses its fixtures
-//! (`unique`, `descriptor`, `gated_deferred`, `WAIT`) through `use super::*`.
+//! (`unique`, `descriptor`, `gated_deferred`(`_on`), `WAIT`) through
+//! `use super::*`.
 
 use super::*;
 
@@ -14,14 +15,11 @@ fn io_error(path: &str) -> WriteOperationError {
     }
 }
 
-/// The snapshot rows carrying `op_id`. The manager is process-global, so every
-/// assertion here scopes itself to its own unique id.
-fn rows_for(op_id: &str) -> Vec<OperationSnapshot> {
-    manager()
-        .list()
-        .into_iter()
-        .filter(|row| row.operation_id == op_id)
-        .collect()
+/// The rows of `mgr`'s snapshot carrying `op_id`. Tests on the global manager
+/// pass `manager()` and scope themselves to their own unique id; tests on a
+/// private manager pass that.
+fn rows_for(mgr: &OperationManager, op_id: &str) -> Vec<OperationSnapshot> {
+    mgr.list().into_iter().filter(|row| row.operation_id == op_id).collect()
 }
 
 /// A manager instance the test OWNS, for the assertions whose subject is the
@@ -32,12 +30,30 @@ fn private_manager() -> OperationManager {
     OperationManager::new()
 }
 
+/// A private manager that also satisfies `spawn_managed`'s `&'static self`, so
+/// a test can drive a real spawn-to-settle lifecycle in isolation. Needed by
+/// any assertion on `emit_count()`, which counts a WHOLE manager's broadcasts:
+/// on the global one, a sibling test spawning or settling an op moves it
+/// underneath the assertion.
+///
+/// Leaking is the honest price of that signature (an admitted op's task
+/// outlives every borrow), and it's bounded: one small struct per test that
+/// calls this, reclaimed at process exit.
+fn leaked_manager() -> &'static OperationManager {
+    Box::leak(Box::new(OperationManager::new()))
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn retained_failure_stays_hidden_until_the_record_settles() {
     // `emit_error` runs inside the op's own task, BEFORE `on_settled` removes
     // the record. So for a moment the op is both live and failed, and a visible
     // failure row would put one operationId in the snapshot twice — which throws
     // in the queue window's keyed `{#each}`.
+    //
+    // On a PRIVATE manager: the emit-silence assertion below is an equality on
+    // `emit_count()`, and that counter belongs to a whole manager, not to one
+    // op. Every broadcast this one makes is this test's own.
+    let mgr = leaked_manager();
     let op = unique("fail-live");
     let lane = unique("lane");
     let (started_tx, started_rx) = oneshot::channel();
@@ -48,18 +64,22 @@ async fn retained_failure_stays_hidden_until_the_record_settles() {
         source: Some("/Users/me/photos".to_string()),
         destination: Some("Naspolya".to_string()),
     };
-    manager().spawn_managed(desc, fresh_state(), gated_deferred(op.clone(), started_tx, rel_rx));
+    mgr.spawn_managed(
+        desc,
+        fresh_state(),
+        gated_deferred_on(mgr, op.clone(), started_tx, rel_rx),
+    );
     started_rx.await.expect("started");
 
-    let emits_before = manager().emit_count();
-    manager().record_failure(&op, WriteOperationType::Copy, &io_error("/Users/me/photos/a.raw"));
+    let emits_before = mgr.emit_count();
+    mgr.record_failure(&op, WriteOperationType::Copy, &io_error("/Users/me/photos/a.raw"));
 
-    let live = rows_for(&op);
+    let live = rows_for(mgr, &op);
     assert_eq!(live.len(), 1, "the retained failure must not duplicate a live op's id");
     assert_eq!(live[0].status, LifecycleStatus::Running, "the live row is unchanged");
     assert!(live[0].error.is_none(), "a live row never carries an error");
     assert_eq!(
-        manager().emit_count(),
+        mgr.emit_count(),
         emits_before,
         "record_failure must not emit; on_settled's existing emit is the correct moment"
     );
@@ -67,16 +87,14 @@ async fn retained_failure_stays_hidden_until_the_record_settles() {
     // Settle → the record goes and the retained failure takes its place.
     let _ = rel_tx.send(());
     wait_until_async(WAIT, "the failed op to settle and surface its retained row", || {
-        rows_for(&op).iter().any(|row| row.status == LifecycleStatus::Failed)
+        rows_for(mgr, &op)
+            .iter()
+            .any(|row| row.status == LifecycleStatus::Failed)
     })
     .await;
 
-    assert_eq!(
-        manager().status_of(&op),
-        None,
-        "the record itself is still removed on settle"
-    );
-    let retained = rows_for(&op);
+    assert_eq!(mgr.status_of(&op), None, "the record itself is still removed on settle");
+    let retained = rows_for(mgr, &op);
     assert_eq!(retained.len(), 1, "exactly one row per operation id, always");
     assert!(
         matches!(retained[0].error, Some(WriteOperationError::IoError { .. })),
@@ -93,8 +111,8 @@ async fn retained_failure_stays_hidden_until_the_record_settles() {
         !retained[0].supports_rollback,
         "a settled failure offers no rollback from this row"
     );
-
-    manager().dismiss_failure(&op);
+    // No `dismiss_failure` cleanup: the retained row lives on this test's own
+    // manager, where no sibling can ever see it.
 }
 
 #[test]
@@ -271,7 +289,7 @@ async fn a_failed_op_frees_its_lane_and_admits_the_next_exactly_as_before() {
         "the failed op's RECORD is gone; only the out-of-band failure row remains"
     );
     assert_eq!(
-        rows_for(&op_a).first().map(|row| row.status),
+        rows_for(manager(), &op_a).first().map(|row| row.status),
         Some(LifecycleStatus::Failed)
     );
 
@@ -306,7 +324,7 @@ async fn a_successful_operation_settles_clean_and_retains_nothing() {
     })
     .await;
     assert!(
-        rows_for(&op).is_empty(),
+        rows_for(manager(), &op).is_empty(),
         "a clean settle leaves no row behind — retention is failures-only"
     );
     assert!(
