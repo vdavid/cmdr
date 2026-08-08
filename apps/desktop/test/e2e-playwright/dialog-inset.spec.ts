@@ -42,7 +42,8 @@
  */
 
 import { test, expect } from './fixtures.js'
-import { ensureAppReady, dismissAllToasts, dismissOverlay } from './helpers.js'
+import { ensureAppReady, dismissAllToasts, dismissOverlay, getFixtureRoot } from './helpers.js'
+import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 import { DIALOG_GALLERY_ENTRIES } from '../../src/lib/dialog-gallery/gallery-registry.js'
 
@@ -208,6 +209,10 @@ test.describe('Dialog body inset', () => {
   test.describe.configure({ timeout: 180000 })
 
   test.beforeEach(async ({ tauriPage }) => {
+    // The fixture tree is shared, and the conflict specs that run just before this one
+    // replace its contents wholesale. Without the recreate, `ensureAppReady` waits out
+    // its 10 s on a left pane still showing THEIR files and the sweep never starts.
+    recreateFixtures(getFixtureRoot())
     await ensureAppReady(tauriPage)
   })
 

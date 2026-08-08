@@ -38,6 +38,7 @@ import {
   ensureAppReady,
   expectAndDismissToast,
   fileExistsInFocusedPane,
+  flushFileWatcher,
   focusPane,
   getFixtureRoot,
   moveCursorToFile,
@@ -163,6 +164,10 @@ test.describe('Compress (⌥F5)', () => {
     // populated for a single manual instance).
     const bigName = 'big-to-cancel.dat'
     fs.writeFileSync(path.join(fixtureRoot, 'left', bigName), randomBytes(24 * 1024 * 1024))
+    // The pane learns about an external write through FSEvents, which coalesces over
+    // seconds under load — past `moveCursorToFile`'s 5 s listing poll. Flushing re-reads
+    // the directory outright, so the cursor step waits on nothing.
+    await flushFileWatcher(tauriPage)
 
     const found = await moveCursorToFile(tauriPage, bigName)
     expect(found).toBe(true)
@@ -252,6 +257,8 @@ test.describe('Compress (⌥F5)', () => {
       approxBytes += word.length + 1
     }
     fs.writeFileSync(path.join(fixtureRoot, 'left', sourceName), parts.join(' '))
+    // Same reason as the cancel test above: don't race the watcher for an external write.
+    await flushFileWatcher(tauriPage)
 
     // Compress the SAME source at one level, returning the produced zip's byte
     // size. Deletes the target afterwards so the next level writes a fresh
