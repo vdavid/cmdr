@@ -329,7 +329,7 @@
             {conflictEvent}
             {isCopy}
             {isMove}
-            {isSameVolumeMove}
+            rollbackUnavailable={isSameVolumeMove}
             {isCancelling}
             {isResolvingConflict}
             onResolve={(resolution: ConflictResolution, applyToAll: boolean) => {

@@ -38,7 +38,7 @@ function mountDialog(opts: {
   conflictEvent: WriteConflictEvent
   isCopy: boolean
   isMove: boolean
-  isSameVolumeMove: boolean
+  rollbackUnavailable: boolean
 }): HTMLElement {
   const target = document.createElement('div')
   document.body.appendChild(target)
@@ -48,7 +48,7 @@ function mountDialog(opts: {
       conflictEvent: opts.conflictEvent,
       isCopy: opts.isCopy,
       isMove: opts.isMove,
-      isSameVolumeMove: opts.isSameVolumeMove,
+      rollbackUnavailable: opts.rollbackUnavailable,
       isCancelling: false,
       isResolvingConflict: false,
       onResolve: () => {},
@@ -64,7 +64,7 @@ describe('TransferConflictDialog a11y', () => {
       conflictEvent: fileConflict(),
       isCopy: true,
       isMove: false,
-      isSameVolumeMove: false,
+      rollbackUnavailable: false,
     })
     await tick()
     await expectNoA11yViolations(target)
@@ -75,7 +75,7 @@ describe('TransferConflictDialog a11y', () => {
       conflictEvent: fileConflict(),
       isCopy: false,
       isMove: true,
-      isSameVolumeMove: true,
+      rollbackUnavailable: true,
     })
     await tick()
     await expectNoA11yViolations(target)
@@ -91,7 +91,7 @@ describe('TransferConflictDialog a11y', () => {
       }),
       isCopy: true,
       isMove: false,
-      isSameVolumeMove: false,
+      rollbackUnavailable: false,
     })
     await tick()
     await expectNoA11yViolations(target)
@@ -108,7 +108,7 @@ describe('TransferConflictDialog a11y', () => {
       }),
       isCopy: false,
       isMove: true,
-      isSameVolumeMove: false,
+      rollbackUnavailable: false,
     })
     await tick()
     await expectNoA11yViolations(target)

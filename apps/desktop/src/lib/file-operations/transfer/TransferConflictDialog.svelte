@@ -17,9 +17,11 @@
         /** Operation-type flags, driving the bottom Rollback/Cancel row. */
         isCopy: boolean
         isMove: boolean
-        /** A move where source and dest are the SAME non-default volume (no backend
-         *  rollback): the Rollback affordance renders disabled with a tooltip. */
-        isSameVolumeMove: boolean
+        /** The backend can't reverse this operation (a same-volume move renames
+         *  server-side; a cross-volume one has nothing staged to undo). The
+         *  Rollback affordance renders disabled with a tooltip, and a plain
+         *  Cancel sits alongside it so there's always a way out. */
+        rollbackUnavailable: boolean
         /** Disables the cancel/rollback buttons while a cancel is in flight. */
         isCancelling: boolean
         /** Disables every resolution button while a resolution IPC is in flight. */
@@ -30,7 +32,7 @@
         onCancel: (rollback: boolean) => void
     }
 
-    const { conflictEvent, isCopy, isMove, isSameVolumeMove, isCancelling, isResolvingConflict, onResolve, onCancel }: Props =
+    const { conflictEvent, isCopy, isMove, rollbackUnavailable, isCancelling, isResolvingConflict, onResolve, onCancel }: Props =
         $props()
 
     /** Size-tier class for the "Existing" / "New" size cells. Tiers off the SAME
@@ -240,11 +242,11 @@
         </div>
     </div>
 
-    <!-- Cancel at bottom. Same-volume volume moves have no backend
-         rollback, so Rollback is DISABLED (with a tooltip) and a plain
-         Cancel sits alongside it so the user can always back out. -->
+    <!-- Cancel at bottom. An operation the backend can't reverse shows
+         Rollback DISABLED (with a tooltip) and a plain Cancel alongside it,
+         so the user can always back out. -->
     <div class="conflict-cancel">
-        {#if isSameVolumeMove}
+        {#if rollbackUnavailable}
             <button
                 class="danger-text"
                 onclick={() => { onCancel(false); }}
