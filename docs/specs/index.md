@@ -6,6 +6,26 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
+- [ ] 2026-08-09 `operation-session-plan.md` - Make the progress dialogs looking glasses instead of the process, so a
+      "Foreground" button (click a running row in the operation queue, get the rich progress dialog back) becomes
+      buildable. `createTransferProgressState` (1,294 lines) OWNS its operation: it scans, dispatches, and only then
+      learns its `operationId`, so "attach to operation X" doesn't exist. The fix is an **operation session** keyed by
+      `operationId` plus **views** that bind to one, with zero views a legal state. Three findings reshape the work.
+      **M0 comes first and is a plain defect**: `(main)/+layout.svelte:279-282` calls `cancelAllWriteOperations()` on
+      `beforeunload`, which walks the GLOBAL registry, so hot-reloading the main window stops a backgrounded transfer
+      while the queue window still renders its row; every later milestone's "the operation outlives the view" reasoning
+      is false until that lands, and quit-versus-reload needs David's call. The registry earns its place not because two
+      smoothers disagree (the EMA is deterministic; the shipped ETA bug was smoothed-versus-raw) but because smoothers
+      **started at different times** diverge, which is exactly what a late-attaching view creates, so M2 must DELETE
+      `operations-store`'s per-id smoother map rather than stack a second layer. And M5's hardest problem is birth
+      context: `OperationSnapshot` carries no `sourcePaths`, counts, or `sourcePaneSide`, yet `handleTransferComplete`
+      purges search snapshots, composes the toast, and clears selection against a pane captured at dispatch, so an
+      adopted view must degrade honestly (no pane mutation, a toast saying only what the snapshot knows). Also settles
+      the two in-dialog guards (`destroy()` and `handleCancel`'s `if (backgrounded) return`, both retiring because "the
+      modal closed" must stop meaning "cancel"), cross-window conflict ownership (a single stored oneshot sender makes
+      two windows resolving a real lost-take race), the event fan-out as a NEW module both the store and sessions
+      consume, and M6 option (b)'s false payoff (a pre-identity session does NOT remove the buffer; the fan-out does).
+      SPECCED, not started.
 - [x] 2026-08-09 `background-conflict-prompt.md` (built) - A backgrounded transfer that hits a name clash deep inside a
       merging folder used to wedge invisibly: the upfront check is top-level only, folders always merge, and the app's
       only `write-conflict` listener is the progress dialog the Queue button just unmounted, so the operation parked on
