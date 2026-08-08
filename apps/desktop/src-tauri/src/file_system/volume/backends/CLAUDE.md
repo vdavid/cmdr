@@ -5,12 +5,12 @@ checklist live in `../CLAUDE.md` + `../DETAILS.md`.
 
 ## Module map
 
-- `local_posix.rs`, `archive.rs` (a re-export of the `crates/cmdr-archive` crate, zip/tar/7z), and `mtp.rs` +
-  `mtp/` (`volume_impl`, `scan`; macOS/Linux only).
+- `local_posix.rs`, `mtp.rs` (macOS/Linux only), `archive.rs` (a re-export of the `crates/cmdr-archive` crate,
+  zip/tar/7z).
 - `smb/`: `SmbVolume` over direct async smb2, split into `events`, `state`, `mapping`, `session`, `reconnect`,
   `streams`, `scan`, `scan_pool`, `volume_impl` (the whole `impl Volume`, since a trait impl can't span files).
   `smb_watcher.rs`: background change watcher.
-- `InMemoryVolume` needs no host, so it rides with the trait in `cmdr-fs`.
+- `InMemoryVolume` isn't here — needing no host, it rides with the trait in `cmdr-fs`.
 
 ## SMB must-knows
 

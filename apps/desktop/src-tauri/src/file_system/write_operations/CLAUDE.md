@@ -1,18 +1,18 @@
 # Write operations
 
-Copy, move, delete, and trash with progress, cancellation, conflicts, and rollback (macOS and Linux): the
+Copy, move, delete, and trash with progress, cancellation, conflicts, and rollback (macOS and Linux). The
 cross-cutting machinery both subdirs share.
 
 ## Module map
 
 - Subdirs: `transfer/CLAUDE.md` (copy + move, conflict resolution, driver, backends), `delete/CLAUDE.md` (delete
   walker, trash, oracle-aware fast path).
-- Top level: `mod.rs` (public API + `start_write_operation` lifecycle), `manager.rs` + `manager/guards.rs` (registry,
-  lane admission, guards), `state.rs` (`WriteOperationRegistry`, status cache, `WriteOperationState`,
-  `CopyTransaction`, busy-volumes, settle guard), `operation_intent.rs` (`OperationIntent`, `PauseGate`),
-  `archive_edit/` (zip-edit driver), plus seven leaf modules (full inventory in DETAILS).
+- Top level: `mod.rs` (public API + `start_write_operation` lifecycle), `manager.rs` (registry + lane admission),
+  `state.rs` (`WriteOperationRegistry`, status cache, `WriteOperationState`, `CopyTransaction`, busy-volumes, settle
+  guard), `operation_intent.rs` (`OperationIntent`, `PauseGate`), `archive_edit/` (zip-edit driver), plus `scan_cache`,
+  `types`, `event_sinks`, `validation`, `conflict`, `scan`, `test_support` (full inventory in DETAILS).
   `operation_intent` + `scan_cache` re-export via `state`.
-- Frontend: `apps/desktop/src/lib/file-operations/CLAUDE.md`.
+- Frontend counterpart: `apps/desktop/src/lib/file-operations/CLAUDE.md`.
 
 ## Must-knows
 
@@ -25,7 +25,7 @@ cross-cutting machinery both subdirs share.
 - **Copy/move/delete/trash spawn through `manager::spawn_managed`; rename/mkdir/mkfile run through
   `manager::run_instant`.** A spawned op reserves a slot in each lane it touches (source AND dest), else Queued; the next
   admits on the explicit `on_settled`, NEVER in `Drop`. DETAILS § Operation manager.
-- **All blocking work runs in `spawn_blocking`** (validation included). `*_files_start` returns an `operationId`
+- **All blocking work runs in `spawn_blocking`** (including validation). `*_files_start` returns an `operationId`
   immediately (dialog opens, offers cancel).
 - **`OperationIntent` is a single `AtomicU8`** (`Running → RollingBack/Stopped`, `Stopped` terminal); never
   `state.intent.store(...)` directly. Cancel keeps copied files; Rollback deletes all in reverse. **Pause is a separate
@@ -41,7 +41,7 @@ cross-cutting machinery both subdirs share.
   `crate::volumes::get_volume_space()`. `statvfs` is Linux-only.
 - **Every scan reports two byte totals**: `total_bytes` (write footprint, copy/move) and `dedup_bytes` (`du`-equivalent,
   delete). ❌ Don't "fix" copy to the dedup'd number; it under-reserves disk space.
-- **All write ops emit via `OperationEventSink`, not `tauri::AppHandle`**: built at the IPC edge, injected.
+- **All write ops emit via `OperationEventSink`, not `tauri::AppHandle`**: built at the IPC edge, injected in.
 - **Every managed mutation journals to the operation log** (`journal.rs`, by `op_id`): a new op kind or record point
   needs an open/record/finalize bracket, else no history. Local ops use the `_local_` helpers; VOLUME (SMB/MTP) ops use
   `open_volume_op` / `record_volume_*` with the REAL volume id, never `"root"`. DETAILS § Capture.
