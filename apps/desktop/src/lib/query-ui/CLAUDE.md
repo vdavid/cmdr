@@ -36,8 +36,8 @@ Primitives shared by Search and Selection. Chips: `filter-chips/CLAUDE.md`. Cons
 - **Path pills are mouse-only, `tabindex="-1"`**: tabbable pills break the row's arrow-down flow, and `⌥←`/`⌥→` stay
   native.
 - **The Name track is MEASURED; ONE inline `grid-template-columns` feeds header AND rows** (two grids resolve `ch`
-  differently). Measure `entry.name`, never DOM text; ❌ never read `nameTrack` in that effect (a
-  measure→render→measure loop). DETAILS.md § Name column.
+  differently). Measure `entry.name`, never DOM text; ❌ never read `nameTrack` in that effect (a measure→render→measure
+  loop). DETAILS.md § Name column.
 - **Two `QueryResults` render gates.** The status bar COLLAPSES via `.is-empty` on `getStatusText()` → `''`, staying
   mounted; its `aria-live` region is the INNER span, so a live run's counters can't flood it. And `showingRows`, not
   `results.length > 0` (trips axe `aria-required-children`), gates `role="listbox"` and the header.

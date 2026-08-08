@@ -26,8 +26,8 @@ Reusable components; only silent-breakage rules live here. Ark UI backs the comp
   offset OFF the `style` attribute: the grip parks the user's size there.
 - **Don't restyle `.btn-*` colors from a scoped feature component** (`scripts/check-btn-restyle`; one-offs need
   `/* allowed-btn-restyle: <reason> */`). `LinkButton` is the ONLY `cursor: pointer` opt-in.
-- **Toasts**: pick a level by feedback kind, not wording; a full all-persistent stack silently drops new ones; pane-local
-  transient toasts need `addToastForPane(pane, …)`, or that pane's navigation won't clear them.
+- **Toasts**: pick a level by feedback kind, not wording; a full all-persistent stack silently drops new ones;
+  pane-local transient toasts need `addToastForPane(pane, …)`, or that pane's navigation won't clear them.
 - **Tooltip: keep BOTH detached-trigger guards** (`destroy()` cancels the timer; `showTooltip` / `positionTooltip` bail
   on `!el.isConnected`, never a zero-rect heuristic), else a recycled virtual-scroll row fires the 400 ms timer on a
   dead node.
