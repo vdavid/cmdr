@@ -385,6 +385,15 @@ there). (b) is the cheap tripwire for the sub-case where the entry is right but 
   `scan_cache` and give it a `pub(super)` test-only seeding helper that goes through the constructors**, so "every
   entry passed the canary" is a property of the module rather than a habit. That's the change that makes both (a) and
   (b) load-bearing; without it M1.3's `DONE when` is satisfiable while the hole stays open.
+- **Privatizing it has three consumers beyond the four seeding tests**, and none were in the original file list:
+  - `scan_preview.rs:99` — `get_scan_preview_totals` READS the static in production (it's the compress dialog's size
+    estimate). A seeding helper doesn't cover it; add a `pub(super)` read accessor in `scan_cache` that returns the
+    totals, so the lock and the map stay behind the module wall.
+  - `state.rs:26` re-exports the static via `pub use`, and `state.rs:22` documents the re-export's whole purpose as
+    keeping `state::SCAN_PREVIEW_RESULTS` paths resolving. Drop `SCAN_PREVIEW_RESULTS` from that list; the doc comment
+    above it needs the same edit, or it describes a re-export that no longer exists.
+  - `scan_preview.rs:699` removes an entry from the static directly inside a test. `release_scan_result`
+    (`scan_cache.rs:93`) already does exactly that; use it.
 - The volume preview legitimately caches `files: Vec::new()` with a populated `per_path`. The canary is one-directional:
   `files > 0 && per_path == 0`, never the reverse. It also fires on a volume batch scan that reports `total_files > 0`
   with an empty `batch.per_path` (`scan_preview.rs:411`) — harmless today, so phrase the assert as "a completed walk",
@@ -427,6 +436,7 @@ generalize is how this bug class survives.
 **Checks.** `pnpm check --fast` while iterating; `pnpm check rust-tests` at the end.
 
 **File ownership.** `write_operations/scan_cache.rs`, `write_operations/scan_preview.rs`,
+`write_operations/state.rs` (drop the `SCAN_PREVIEW_RESULTS` re-export and fix the comment above it),
 `write_operations/scan_cache_tests.rs` (new, `#[path]` sibling), ONE line each in `delete/walker.rs`,
 `transfer/move_op.rs`, `transfer/copy/mod.rs`, `transfer/volume/preflight.rs`, the four test files that seed
 `SCAN_PREVIEW_RESULTS` directly and now go through the seeding helper (`copy_tests.rs`,
@@ -434,8 +444,9 @@ generalize is how this bug class survives.
 delete / copy / move binding tests. Call it out to the M1.3/M1.4 agents: those single lines are M1.2's, everything
 else in those files is theirs.
 
-**DONE when.** No consumer can act on a preview of a different selection, `SCAN_PREVIEW_RESULTS` has no writer outside
-`scan_cache.rs`, the canary fires in dev, and all six call sites pass their real `sources`.
+**DONE when.** No consumer can act on a preview of a different selection, `SCAN_PREVIEW_RESULTS` is private to
+`scan_cache.rs` with no writer, reader, or re-export outside it, the canary fires in dev, and all six call sites pass
+their real `sources`.
 
 ## M1.3: two named constructors, so the two production shapes have names
 
@@ -481,19 +492,24 @@ that currently hand-build the struct (`copy_tests.rs`, `copy_source_hint_tests.r
 2. **The `None` arm at `walker.rs:670` is correct as written** — it forwards `is_dir_hint: None`, and
    `scan_volume_recursive` PROPAGATES the probe error (`.map_err(...)?` at `:357-360`) rather than defaulting. Leave
    it. Add a comment saying so, because it looks like the bug and isn't.
-3. **The no-preview path at `walker.rs:747-750` IS the asymmetry, and it's loss-class, not annoyance-class.**
+3. **The no-preview path at `walker.rs:747-750` IS the asymmetry, and it's an honesty defect, not a loss.**
    `volume.is_directory(source).await.unwrap_or(false)` guesses "file" on a probe error, while the cached path one
-   screen up propagates. Before Phase 0 that guess is destructive on MTP: the resulting `delete` on a directory
-   succeeds and takes the tree. After Phase 0 it degrades to a per-item failure with a confusing message. Either way,
-   route both through the same propagating resolve. Consequence: a source that can't be stat'd now fails that item
-   explicitly. Also fix the oracle-hint lookup above it: it's a listing lookup, so a miss means unknown, and it already
-   handles that correctly with `Option` — verify, don't change.
+   screen up propagates. **Don't read this as data loss** (an earlier draft did, twice): `source` here is a top-level
+   path the user selected FOR DELETION, so even on pre-Phase-0 MTP, where the resulting `delete` recurses and takes
+   the tree, it takes exactly what was asked for. What's actually broken is the accounting and the honesty: the entry
+   goes in as `VolumeDeleteEntry { is_dir: false }` (`walker.rs:769-778`), so progress counts one file and zero bytes
+   for a whole tree, and on MTP the operation reports a silent success for work it never described, while on every
+   other backend the same guess produces a confusing `ENOTEMPTY`. Route both paths through the same propagating
+   resolve anyway: the asymmetry is the defect, and M1.4's whole bar is "state, for every branch, what happens on a
+   wrong or missing fact". Consequence: a source that can't be stat'd now fails that item explicitly. Also check the
+   oracle-hint lookup above it: it's a listing lookup, so a miss means unknown, and it already handles that correctly
+   with `Option` — verify, don't change.
 
 **Intention.** Delete is the op with no rollback, so the bar is "the agent can state, for every branch, what happens
 on a wrong or missing fact". The audit is the deliverable as much as the diff. Record in `delete/DETAILS.md` what the
-`Volume::delete` non-recursion contract does and doesn't buy this walker: post-Phase-0 a wrong `is_dir` costs a
-confusing per-item failure rather than a tree, and that's a property of the conformance test, not of the trait's doc
-comment. ❌ Don't restate the contract itself here; it's single-sourced at `crates/cmdr-fs/src/volume/mod.rs`.
+`Volume::delete` non-recursion contract does and doesn't buy this walker: a wrong `is_dir` on a top-level source costs
+a lying progress count either way, and post-Phase-0 it also costs a confusing per-item failure instead of a silent
+MTP success — and that's a property of the conformance test, not of the trait's doc comment. ❌ Don't restate the contract itself here; it's single-sourced at `crates/cmdr-fs/src/volume/mod.rs`.
 
 **Landmines.**
 - `scan_volume_recursive`'s cancel contract: a recursive bail must NOT emit `write-cancelled` itself. Any new early
@@ -542,7 +558,10 @@ in tests, which is the point.
   file→folder latch" — but `unwrap_or(false)` does exactly the opposite of that stated intent. **Recommendation: make
   it `Result` and fail the conflict resolution**, which surfaces as a per-source failure rather than a destructive
   guess. Verify against Phase 2's split (M2.1) — after that split this call site is the one legitimate recursive
-  delete, so it must be the one that's certain.
+  delete, so it must be the one that's certain. **Name the second consequence site while you're here**: the same
+  branch's `else if` arm at `conflict.rs:447` calls a bare `dest_volume.delete(dest_path)` whenever `dest_is_dir`
+  answered `false`, so a probe error there recurses into a real directory on pre-Phase-0 MTP. It's the same wrong
+  belief reaching a second destructive call, and fixing the input at `:80` and `:82` is what closes both.
 - **`conflict.rs:82` / `:423`** — `dest_volume.is_directory(dest_path)`. A wrong `false` here means "treat the dest as
   a file", which routes to safe-replace (temp + rename), which fails harmlessly on a directory. Truthful-enough;
   document why and leave it.
@@ -661,10 +680,14 @@ Split `cleanup.rs`'s one recursive function into three, by capability:
   same fix, and the second one is easy to miss.
 - `prune_created_dir_if_empty(volume, &Path)` — the empty-only, deepest-first sweep rollback does for `created_dirs`.
   **It must check emptiness ITSELF (a `list_directory`), not inherit it from the `Volume::delete` contract.** Today's
-  code relies on the contract, the contract was false on MTP until Phase 0, and MTP is exactly the backend where
-  `created_dirs` can hold a directory the user already had (`create_folder` can't signal a collision, so
-  `DirectoryCreation::Created` there means "we asked", not "it wasn't there"). Phase 0 makes the contract true; this
-  makes the guard not need it. The cost is one listing per created directory on the rollback path, which is already
+  code relies on the contract and the contract was false on MTP until Phase 0. ⚠️ Note what this is NOT: `created_dirs`
+  is fed only by `CreatedPaths::record_dir`, whose call sites already pre-check existence on a backend that can't
+  signal a collision, so a pre-existing user directory gets in there only through a TOCTOU race (Phase 0's third
+  bullet has the evidence). **The reason to do this is the next backend, not this one.** Phase 0 makes the contract
+  true for the backends that exist today; this makes the guard not need it from any backend, ever, which is invariant
+  13 and the plan's own lesson 2 turned on the plan's own design. The second red test below is written against a
+  volume that lies precisely because no shipping backend can produce this red. The cost is one listing per created
+  directory on the rollback path, which is already
   the slow path and is bounded by what the operation itself created. **A guard that's one `list_directory` away from
   not depending on a promise should not depend on the promise** — that's lesson 2 of this whole effort, applied to
   the plan's own design.
