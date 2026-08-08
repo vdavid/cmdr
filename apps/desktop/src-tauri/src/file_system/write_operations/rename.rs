@@ -109,6 +109,10 @@ pub(crate) async fn rename_managed(
         false
     } else {
         match manager.get(&volume_id) {
+            // Truthful-enough default, unlike the copy/move/delete probes: this
+            // value only labels the journal row's entry type for the undo
+            // history. It reaches no destructive branch, so a mislabeled undo
+            // entry is the whole cost of getting it wrong.
             Some(v) => v.is_directory(&from).await.unwrap_or(false),
             None => false,
         }

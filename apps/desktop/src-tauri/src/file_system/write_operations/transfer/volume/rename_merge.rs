@@ -330,7 +330,20 @@ async fn apply_child_decision(
         // earlier), merge into it; otherwise rename the subtree across, clearing
         // a reserved placeholder FILE first (a directory can't `rename` over a
         // file).
-        if ctx.volume.is_directory(&write_path).await.unwrap_or(false) {
+        // ❌ Never `.unwrap_or(false)` here. A guessed `false` falls through to
+        // the `exists()` + `delete` below, so an unanswerable stat on a real
+        // destination DIRECTORY reaches a delete on the user's folder. "It isn't
+        // there" is an answer and stays one; anything else fails the item.
+        // (The resolver above now propagates the same probe, so an unanswerable
+        // dest usually fails before reaching here. This is the transient-fault
+        // residue, and defense in depth on the last destructive branch of the
+        // family.)
+        let write_path_is_dir = match ctx.volume.is_directory(&write_path).await {
+            Ok(is_dir) => is_dir,
+            Err(VolumeError::NotFound(_)) => false,
+            Err(e) => return Err(map_rename_error(&write_path, e)),
+        };
+        if write_path_is_dir {
             return Box::pin(rename_merge_directory(ctx, child_source, &write_path, note_both_halves)).await;
         }
         if ctx.volume.exists(&write_path).await {

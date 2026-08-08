@@ -472,11 +472,22 @@ pub(crate) async fn move_within_same_volume_with_progress(
                     // only when no hint reached us (cached preview without
                     // per-path data). A rename moves zero bytes, so the byte
                     // axis stays at 0 throughout — no size lookup needed.
+                    // ❌ Not `.unwrap_or(false)`. A guessed `false` sends a
+                    // folder-onto-folder collision through
+                    // `resolve_volume_conflict` instead of `rename_merge_directory`
+                    // (it degrades to a merge via `same_type_dir` rather than
+                    // destroying anything, but it's still a branch chosen on a
+                    // belief), and it mislabels the journal row's entry type.
+                    // `resolve_source_is_directory` is the one helper every
+                    // pipeline asks, and it propagates.
                     let hint = source_hints.get(&source_path).copied();
-                    let source_is_dir = match hint {
-                        Some(h) => h.is_directory,
-                        None => volume.is_directory(&source_path).await.unwrap_or(false),
-                    };
+                    let source_is_dir = super::strategy::resolve_source_is_directory(
+                        &volume,
+                        &source_path,
+                        hint.map(|h| h.is_directory),
+                    )
+                    .await
+                    .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
 
                     // Operation-log: a same-volume move is a same-FS-style move, so
                     // the top-level item is the `rollback_unit` row and the subtree's
@@ -509,7 +520,16 @@ pub(crate) async fn move_within_same_volume_with_progress(
                     // `AlreadyExists`, so walk the source level by level and
                     // rename each child into the merged destination instead.
                     // Files / cross-type clashes inside follow the file policy.
-                    if source_is_dir && volume.is_directory(&dest_item_path).await.unwrap_or(false) {
+                    // Same rule for the destination: the guard on the whole
+                    // rename-merge branch can't be decided on a guess either.
+                    // "It isn't there" IS an answer (no collision, so a plain
+                    // rename); anything else fails the item.
+                    let dest_item_is_dir = match volume.is_directory(&dest_item_path).await {
+                        Ok(is_dir) => is_dir,
+                        Err(VolumeError::NotFound(_)) => false,
+                        Err(e) => return Err(map_volume_error(&dest_item_path.display().to_string(), e)),
+                    };
+                    if source_is_dir && dest_item_is_dir {
                         let merge_ctx = RenameMergeCtx {
                             volume: &volume,
                             events: &*events,

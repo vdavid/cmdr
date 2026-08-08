@@ -654,6 +654,15 @@ pub(super) fn scan_sources(
 }
 
 /// Internal scan implementation (runs in background thread).
+///
+/// Its `ScanResult::per_path` is empty BY CONTRACT, and that's safe here for one
+/// reason: this result is returned straight to its caller and never inserted
+/// into the preview cache (`insert_scan_result` has exactly two production call
+/// sites, both in `scan_preview.rs`), so no consumer can read the empty map and
+/// mistake it for "these sources are files". ❌ Don't fill it to match
+/// `run_scan_preview`'s shape: that costs a per-source counter bracket on the
+/// local copy/move/delete hot path for a field nobody reads. If this result ever
+/// starts crossing the cache, it has to collect `per_path` first.
 #[allow(
     clippy::too_many_arguments,
     reason = "Internal helper passes through all required context"

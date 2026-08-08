@@ -54,4 +54,6 @@ pub(crate) use move_same::move_within_same_volume_with_progress;
 #[cfg(test)]
 mod rename_merge_mtp_tests;
 #[cfg(test)]
+mod rename_merge_stat_tests;
+#[cfg(test)]
 mod rename_merge_tests;

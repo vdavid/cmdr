@@ -48,7 +48,14 @@ use crate::ignore_poison::IgnorePoison;
 /// (one-RTT CREATE+READ+CLOSE) when the file fits in one READ. For move it
 /// feeds the per-source progress emit so the FE's Size bar advances in step
 /// with the Files bar.
-#[derive(Clone, Copy, Default, Debug)]
+/// ❌ No `Default`, deliberately and permanently. `SourceHint::default()` would
+/// claim `is_directory: false` — not "no information", but a confident claim
+/// about the filesystem that nobody made. A `source_hints.get(p).copied()`
+/// followed by `.unwrap_or_default()` reads as harmless and streams a directory
+/// as a file, while defeating the cleanup guard that keeps a failed copy from
+/// recursively deleting a merged destination. Absence is an `Option` all the way
+/// to a caller that can probe or fail.
+#[derive(Clone, Copy, Debug)]
 pub(super) struct SourceHint {
     pub is_directory: bool,
     /// For top-level files, the file size. For directories this stays `0`
@@ -62,11 +69,9 @@ pub(super) struct SourceHint {
 /// `source_hints` is keyed by the caller's input path verbatim. A path missing
 /// from the map means **unknown**, ❌ never "a file of size 0": the per-iter
 /// loops resolve the type through `strategy::resolve_source_is_directory`
-/// (which probes) and simply pass no size hint. `SourceHint::default()` claims
-/// `is_directory: false`, so reading it for an absent key streams directories as
-/// files and defeats the cleanup guard that keeps a failed copy from recursively
-/// deleting a merged destination directory. `DETAILS.md` § "A missing source
-/// hint means unknown".
+/// (which probes) and simply pass no size hint. `SourceHint` has no `Default`
+/// precisely so an absent key can't be turned into a confident `is_directory:
+/// false`. `DETAILS.md` § "A missing source hint means unknown".
 #[derive(Debug, Clone)]
 pub(super) struct VolumePreflight {
     pub total_files: usize,

@@ -27,7 +27,6 @@
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/move_op.rs": 856,
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/transfer_driver_async_tests.rs": 1144,
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/transfer_probe.rs": 983,
-    "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/conflict.rs": 1155,
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/copy.rs": 1083,
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/copy_concurrent.rs": 890,
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/copy_tests.rs": 2102,
