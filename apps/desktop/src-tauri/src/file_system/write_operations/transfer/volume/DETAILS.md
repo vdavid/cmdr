@@ -34,6 +34,29 @@ invariants: `CLAUDE.md`. Only the layout facts neither of those carries live her
   a same-named module at the other level.
 - **`copy_bench.rs` is `#[ignore]`d** and needs a QNAP NAS plus `SMB2_TEST_NAS_PASSWORD`, so it never runs in CI.
 
+### The safety oracle
+
+`safety_oracle.rs` states ONCE what a finished copy, move, or delete must have left behind, and every suite that asserts
+data safety routes through it (`merge_tests.rs`, `move_merge_tests.rs`, `safety_grid_tests.rs`). Three clauses:
+
+1. **No byte the user didn't approve is gone from either side** — every source file's content is readable from the
+   source tree or the destination tree. Searched by CONTENT over whole trees, ❌ never by path: Rename relocates a
+   clashing item to a `name (1)` sibling, and for a clashing DIRECTORY that shifts every file inside it. Fixture
+   contents are unique per file, so presence in the bag is an honest "the data still exists".
+2. **Every byte the user did approve is at the destination**, at the path they'd go looking for it. A caller lists only
+   the deliveries that hold under EVERY policy it drives (the source-only files); where a CLASHING file lands is a
+   policy question, and clause 1 already covers it. An operation with no destination (delete) has no clause 2, and
+   `safety_grid_tests.rs` says so per cell rather than passing an empty list and calling it covered.
+3. **Every dest-only file the source didn't shadow is untouched**, byte for byte. That's the merge invariant.
+
+**Decision**: the oracle is shared; the two merge FIXTURES stay separate. **Why**: `merge_tests.rs::make_rich_merge`
+and `move_merge_tests.rs`'s `build_merge_source_tree` / `build_merge_dest_tree` are different trees, not two spellings
+of one. The clash contents differ (`b"SRC-clash-larger"` versus `b"SRC-c"`), which is what decides whether
+`OverwriteSmaller` resolves to an overwrite on the copy suite and to a skip on the move suite, and the move fixture
+carries a second cross-type clash (`/album/swap2`). Unifying them would quietly weaken a policy assertion, which is the
+worst possible outcome for a change whose proof is "both suites stay green". ❌ Don't fold the fixtures together as a
+rider on something else; it's a policy-by-policy review of its own.
+
 ## Volume copy + move
 
 **The engine is reached through the facade.** `mod.rs` re-exports `copy_between_volumes` and `move_between_volumes` for the Tauri commands of the same name; every module under `volume/` is private to it. Both copy and move support conflict detection and resolution (Stop/Skip/Overwrite/Rename/OverwriteSmaller/OverwriteOlder) for all volume combinations (Local↔MTP, MTP↔MTP). Volume copy supports rollback (delete all copied files in reverse order with progress events, matching the local copy's `rollback_with_progress` pattern) and cancel cleanup (delete only the last partial file).

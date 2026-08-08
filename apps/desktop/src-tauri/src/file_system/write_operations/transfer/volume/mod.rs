@@ -52,6 +52,11 @@ pub(crate) use r#move::move_volumes_with_progress;
 #[allow(unused_imports, reason = "used by integration suites outside write_operations")]
 pub(crate) use move_same::move_within_same_volume_with_progress;
 
+/// The one statement of what a finished operation must have left behind, shared
+/// by the copy matrix, the move matrix, and the coverage grid.
+#[cfg(test)]
+mod safety_oracle;
+
 #[cfg(test)]
 mod rename_merge_mtp_tests;
 #[cfg(test)]

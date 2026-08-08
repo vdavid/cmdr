@@ -11,10 +11,12 @@
 //! (`volume/rename_merge.rs`).
 //!
 //! Shared fixtures live in `volume/move_test_support.rs`
-//! (`super::test_support`); the merge fixture trees are local to this file.
+//! (`super::test_support`); the merge fixture trees are local to this file, and
+//! the assertions run through `volume/safety_oracle.rs`.
 
 use super::super::super::conflict_responder_test_support::{ConflictResponderSink, folder_conflict_count_both_dirs};
 use super::super::move_same::move_within_same_volume_with_progress;
+use super::super::safety_oracle::{SafetySpec, assert_operation_was_safe};
 use super::test_support::{make_state_with_interval_ms, make_volumes};
 use super::*;
 use crate::file_system::volume::InMemoryVolume;
@@ -81,16 +83,6 @@ async fn cross_volume_move_folder_merge_keeps_the_source_of_a_skipped_deep_child
         source.exists(Path::new("/album/clash.txt")).await,
         "a deep child skipped by the conflict policy must keep its source — it never landed at the dest"
     );
-}
-
-/// Reads a whole file off a volume, or `None` when it isn't there.
-async fn try_read_all(vol: &Arc<dyn Volume>, path: &str) -> Option<Vec<u8>> {
-    let mut stream = vol.open_read_stream(Path::new(path)).await.ok()?;
-    let mut out = Vec::new();
-    while let Some(Ok(chunk)) = stream.next_chunk().await {
-        out.extend_from_slice(&chunk);
-    }
-    Some(out)
 }
 
 /// A folder-merge fixture for the move matrix: a source tree and a same-named
@@ -166,106 +158,43 @@ const MOVE_MERGE_POLICIES: &[(ConflictResolution, Option<ConflictResolution>)] =
     (ConflictResolution::Stop, Some(ConflictResolution::OverwriteOlder)),
 ];
 
-/// Every source file the cross-volume merge fixture creates, with its content.
-/// The last two are the cross-type clashes (source FILE onto a dest DIRECTORY,
-/// and a file inside a source DIRECTORY landing on a dest FILE) — a type swap
-/// replaces the destination wholesale by design, but the SOURCE side still has
-/// to survive somewhere.
+/// Every source file the merge fixture creates, relative to `/album`, with its
+/// content. The last two are the cross-type clashes (source FILE onto a dest
+/// DIRECTORY, and a file inside a source DIRECTORY landing on a dest FILE) — a
+/// type swap replaces the destination wholesale by design, but the SOURCE side
+/// still has to survive somewhere.
 const MOVE_MERGE_SOURCE_FILES: &[(&str, &[u8])] = &[
-    ("/album/fresh.txt", b"SRC-fresh"),
-    ("/album/clash.txt", b"SRC-c"),
-    ("/album/sub/fresh2.txt", b"SRC-fresh2"),
-    ("/album/sub/clash2.txt", b"SRC-c2"),
-    ("/album/swap", b"SRC-swap-file"),
-    ("/album/swap2/inner.txt", b"SRC-swap2-inner"),
+    ("/fresh.txt", b"SRC-fresh"),
+    ("/clash.txt", b"SRC-c"),
+    ("/sub/fresh2.txt", b"SRC-fresh2"),
+    ("/sub/clash2.txt", b"SRC-c2"),
+    ("/swap", b"SRC-swap-file"),
+    ("/swap2/inner.txt", b"SRC-swap2-inner"),
 ];
 
-/// Every file PATH reachable under `root`, walked recursively. Diagnostic only.
-async fn collect_paths(vol: &Arc<dyn Volume>, root: &str) -> Vec<String> {
-    let mut out = Vec::new();
-    let mut stack = vec![root.to_string()];
-    while let Some(dir) = stack.pop() {
-        let Ok(entries) = vol.list_directory(Path::new(&dir), None).await else {
-            continue;
-        };
-        for entry in entries {
-            if entry.is_directory {
-                stack.push(entry.path.clone());
-                out.push(format!("{}/", entry.path));
-            } else {
-                out.push(entry.path.clone());
-            }
-        }
-    }
-    out.sort();
-    out
-}
+/// The source-only files, which land at the destination under every policy:
+/// nothing shadows them, so no policy has a say. A clashing file's landing spot
+/// IS a policy question, so it stays with oracle clause 1.
+const MOVE_MERGE_DELIVERED: &[(&str, &[u8])] = &[("/fresh.txt", b"SRC-fresh"), ("/sub/fresh2.txt", b"SRC-fresh2")];
 
-/// Every file content reachable under `root`, walked recursively.
-///
-/// The no-byte-lost check searches whole trees rather than guessing paths: the
-/// Rename policy relocates a clashing item to a `name (1)` sibling, and for a
-/// clashing DIRECTORY that shifts every file inside it. Contents are unique per
-/// fixture file, so presence in this bag is an honest "the data still exists".
-async fn collect_contents(vol: &Arc<dyn Volume>, root: &str) -> Vec<Vec<u8>> {
-    let mut out = Vec::new();
-    let mut stack = vec![root.to_string()];
-    while let Some(dir) = stack.pop() {
-        let Ok(entries) = vol.list_directory(Path::new(&dir), None).await else {
-            continue;
-        };
-        for entry in entries {
-            if entry.is_directory {
-                stack.push(entry.path.clone());
-            } else if let Some(bytes) = try_read_all(vol, &entry.path).await {
-                out.push(bytes);
-            }
-        }
-    }
-    out
-}
+/// The dest-only files, which no policy may touch. Only the same-type merge
+/// levels: a cross-type swap replaces the dest wholesale by design, so
+/// `/album/swap`'s inner file is deliberately out of scope.
+const MOVE_MERGE_UNTOUCHED_DEST: &[(&str, &[u8])] = &[("/keep.txt", b"DEST-keep"), ("/sub/keep2.txt", b"DEST-keep2")];
 
-/// Asserts the no-byte-lost invariant plus the merge invariant over a finished
-/// move: every source file readable from one side or the other, and both
-/// dest-only files untouched.
+/// The oracle spec for a finished move over this fixture.
 ///
 /// `dest_prefix` is `""` cross-volume and `"/dest"` for the same-volume move,
 /// where both trees live on one volume.
-async fn assert_move_merge_preserved_everything(
-    source: &Arc<dyn Volume>,
-    dest: &Arc<dyn Volume>,
-    dest_prefix: &str,
-    label: &str,
-) {
-    let mut surviving = collect_contents(source, "/album").await;
-    surviving.extend(collect_contents(dest, &format!("{dest_prefix}/album")).await);
-
-    for (path, content) in MOVE_MERGE_SOURCE_FILES {
-        assert!(
-            surviving.iter().any(|c| c == content),
-            "{label}: source file {path} is gone from BOTH sides — data destroyed.\n  source tree: {:?}\n  dest tree: {:?}",
-            collect_paths(source, "/album").await,
-            collect_paths(dest, &format!("{dest_prefix}/album")).await,
-        );
+fn move_merge_spec<'a>(dest_root: &'a str, label: &'a str) -> SafetySpec<'a> {
+    SafetySpec {
+        label,
+        source_root: "/album",
+        dest_root,
+        source_files: MOVE_MERGE_SOURCE_FILES,
+        delivered: MOVE_MERGE_DELIVERED,
+        untouched_dest: MOVE_MERGE_UNTOUCHED_DEST,
     }
-
-    // THE MERGE INVARIANT: dest-only files are never touched. (Only for the
-    // same-type merge levels: a cross-type swap replaces the dest wholesale by
-    // design, so `/album/swap`'s inner file is deliberately out of scope.)
-    assert_eq!(
-        try_read_all(dest, &format!("{dest_prefix}/album/keep.txt"))
-            .await
-            .as_deref(),
-        Some(&b"DEST-keep"[..]),
-        "{label}: dest-only /album/keep.txt was clobbered"
-    );
-    assert_eq!(
-        try_read_all(dest, &format!("{dest_prefix}/album/sub/keep2.txt"))
-            .await
-            .as_deref(),
-        Some(&b"DEST-keep2"[..]),
-        "{label}: dest-only /album/sub/keep2.txt was clobbered"
-    );
 }
 
 /// THE MOVE INVARIANT, over every file policy: **no byte is ever lost**.
@@ -311,8 +240,10 @@ async fn move_folder_merge_never_loses_a_byte_under_every_policy() {
             "policy {policy:?}/{scripted:?} should complete, got {result:?}"
         );
 
-        // ❗ NO BYTE LOST, and the dest-only files survive untouched.
-        assert_move_merge_preserved_everything(&source, &dest, "", &format!("policy {policy:?}/{scripted:?}")).await;
+        // ❗ NO BYTE LOST, everything unshadowed arrived, and the dest-only
+        // files survive untouched.
+        let label = format!("policy {policy:?}/{scripted:?}");
+        assert_operation_was_safe(&source, &dest, &move_merge_spec("/album", &label)).await;
 
         // A dir-vs-dir clash never prompts, on the move path too.
         assert_eq!(
@@ -364,7 +295,7 @@ async fn same_volume_move_folder_merge_never_loses_a_byte_under_every_policy() {
 
         // Same invariants, with `/dest` prefixed onto the destination side.
         let label = format!("same-volume policy {policy:?}/{scripted:?}");
-        assert_move_merge_preserved_everything(&volume, &volume, "/dest", &label).await;
+        assert_operation_was_safe(&volume, &volume, &move_merge_spec("/dest/album", &label)).await;
         assert_eq!(
             folder_conflict_count_both_dirs(&events.inner),
             0,

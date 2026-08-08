@@ -12,6 +12,7 @@
 use super::super::super::conflict_responder_test_support::{
     ConflictResponderSink, file_conflict_count, folder_conflict_count_both_dirs,
 };
+use super::super::safety_oracle::{SafetySpec, assert_operation_was_safe};
 use super::tests::{make_state, make_volumes};
 use super::*;
 use crate::file_system::volume::Volume;
@@ -97,6 +98,39 @@ async fn make_rich_merge() -> (Arc<dyn Volume>, Arc<dyn Volume>) {
     (source, dest)
 }
 
+/// Every source file `make_rich_merge` creates, relative to `/album`. The clash
+/// contents are deliberately LARGER than their dest counterparts here (the move
+/// fixture's are smaller), which is what makes `OverwriteSmaller` resolve to an
+/// overwrite on this suite and to a skip on that one.
+const RICH_MERGE_SOURCE_FILES: &[(&str, &[u8])] = &[
+    ("/fresh.txt", b"SRC-fresh"),
+    ("/clash.txt", b"SRC-clash-larger"),
+    ("/sub/fresh2.txt", b"SRC-fresh2"),
+    ("/sub/clash2.txt", b"SRC-clash2"),
+    ("/swap", b"SRC-swap-file"),
+];
+
+/// The source-only files: nothing shadows them, so they arrive under every
+/// policy. That's the merge's whole point.
+const RICH_MERGE_DELIVERED: &[(&str, &[u8])] = &[("/fresh.txt", b"SRC-fresh"), ("/sub/fresh2.txt", b"SRC-fresh2")];
+
+/// The dest-only files, which no policy may touch. `/album/swap/inner.txt` is
+/// deliberately absent: the source shadows `/album/swap` across types, and a
+/// cross-type Overwrite replaces the destination wholesale by design.
+const RICH_MERGE_UNTOUCHED_DEST: &[(&str, &[u8])] = &[("/keep.txt", b"DEST-keep"), ("/sub/keep2.txt", b"DEST-keep2")];
+
+/// The oracle spec for a finished copy over the rich merge fixture.
+fn rich_merge_spec(label: &str) -> SafetySpec<'_> {
+    SafetySpec {
+        label,
+        source_root: "/album",
+        dest_root: "/album",
+        source_files: RICH_MERGE_SOURCE_FILES,
+        delivered: RICH_MERGE_DELIVERED,
+        untouched_dest: RICH_MERGE_UNTOUCHED_DEST,
+    }
+}
+
 // ============================================================================
 // The invariant property test
 // ============================================================================
@@ -161,29 +195,11 @@ async fn merge_never_deletes_unshadowed_dest_files_under_every_policy() {
             "policy {policy:?}/{scripted:?} should complete, got {result:?}"
         );
 
-        // THE INVARIANT: every dest-only file is byte-identical, every time.
-        assert_eq!(
-            read_all(&dest, "/album/keep.txt").await,
-            b"DEST-keep",
-            "policy {policy:?}/{scripted:?}: dest-only /album/keep.txt was clobbered"
-        );
-        assert_eq!(
-            read_all(&dest, "/album/sub/keep2.txt").await,
-            b"DEST-keep2",
-            "policy {policy:?}/{scripted:?}: dest-only /album/sub/keep2.txt was clobbered"
-        );
-
-        // Source-only files always arrive (the merge's whole point).
-        assert_eq!(
-            read_all(&dest, "/album/fresh.txt").await,
-            b"SRC-fresh",
-            "policy {policy:?}/{scripted:?}: source-only /album/fresh.txt didn't arrive"
-        );
-        assert_eq!(
-            read_all(&dest, "/album/sub/fresh2.txt").await,
-            b"SRC-fresh2",
-            "policy {policy:?}/{scripted:?}: source-only /album/sub/fresh2.txt didn't arrive"
-        );
+        // ❗ THE INVARIANT, through the shared oracle: every dest-only file is
+        // byte-identical, every source-only file arrived, and no source byte is
+        // gone from both sides.
+        let label = format!("policy {policy:?}/{scripted:?}");
+        assert_operation_was_safe(&source, &dest, &rich_merge_spec(&label)).await;
 
         // Zero folder-level prompts under EVERY policy, even Stop.
         assert_eq!(

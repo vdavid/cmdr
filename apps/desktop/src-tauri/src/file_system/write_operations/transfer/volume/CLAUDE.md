@@ -12,7 +12,8 @@ same-volume), the merge/staging engine (`strategy.rs`, `sequential_extract.rs`),
 ## Merge and conflicts
 
 - **The merge invariant**: a merge never deletes or overwrites a dest file the source doesn't shadow, under every
-  policy, backend, and cancel/rollback/retry mid-merge (`merge_tests.rs`).
+  policy, backend, and cancel/rollback/retry mid-merge (`merge_tests.rs`). Assert it through `safety_oracle.rs`'s three
+  clauses, ❌ never fresh inline asserts.
 - **Dir-vs-dir is NEVER a conflict**; only files prompt. **Overwrite means merge for dirs, replace for files**, enforced
   at the `apply_volume_conflict_resolution` call site, ❌ not by `Volume::delete`, and NOT reversible.
 - **A MOVE's source sweep spares every child the merge skipped** (`remove_tree`'s `preserve` set): a skipped child's
