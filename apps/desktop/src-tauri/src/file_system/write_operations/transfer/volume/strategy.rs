@@ -148,6 +148,8 @@ pub(super) struct MergeCtx<'a> {
 ///   creation order (shallowest first). Rollback removes these with a
 ///   non-recursive delete (empty-only on real backends), deepest first, so a
 ///   directory that still holds a pre-existing sibling survives.
+// DEFAULT-OK: an empty ledger is an operation that has created nothing yet, which is the
+// one state where rollback correctly has nothing to undo.
 #[derive(Default)]
 pub(super) struct CreatedPaths {
     pub files: Mutex<Vec<PathBuf>>,

@@ -65,6 +65,15 @@ carries a second cross-type clash (`/album/swap2`). Unifying them would quietly 
 worst possible outcome for a change whose proof is "both suites stay green". ❌ Don't fold the fixtures together as a
 rider on something else; it's a policy-by-policy review of its own.
 
+### The coverage grid
+
+`safety_grid_tests.rs` covers op × cache state × outcome (Tier A, 27 cells) and the shape axis (Tier B, 12), all
+asserted through the oracle above. **Its own module doc comment is the canonical statement** of the tier structure, the
+per-op item kinds, and — the part that matters most — the explicit "NOT covered, and why" list. That's where an agent
+adding a cell looks, so it lives there rather than being restated here and rotting. ❌ Don't add a cell without reading
+that list first: several of the combinations it names are excluded because a double genuinely can't stand in for the
+thing (no symlinks, no inodes), and adding them would assert the double rather than the code.
+
 ## Volume copy + move
 
 **The engine is reached through the facade.** `mod.rs` re-exports `copy_between_volumes` and `move_between_volumes` for the Tauri commands of the same name; every module under `volume/` is private to it. Both copy and move support conflict detection and resolution (Stop/Skip/Overwrite/Rename/OverwriteSmaller/OverwriteOlder) for all volume combinations (Local↔MTP, MTP↔MTP). Volume copy supports rollback (delete all copied files in reverse order with progress events, matching the local copy's `rollback_with_progress` pattern) and cancel cleanup (delete only the last partial file).

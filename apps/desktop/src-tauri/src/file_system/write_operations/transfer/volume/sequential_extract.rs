@@ -38,6 +38,8 @@ pub(super) struct PlannedWrite {
 /// extractor reports per member, so the data pass looks each member up directly.
 /// Interior-mutable (like [`CreatedPaths`]) because `copy_directory_streaming`
 /// threads it behind a shared `&`.
+// DEFAULT-OK: an empty plan is a first pass that hasn't planned a write yet, and an
+// absent entry already carries the meaning "skipped".
 #[derive(Default)]
 pub(super) struct ExtractPlan {
     writes: Mutex<HashMap<PathBuf, PlannedWrite>>,

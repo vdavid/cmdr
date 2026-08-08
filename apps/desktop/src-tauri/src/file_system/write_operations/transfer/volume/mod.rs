@@ -63,6 +63,10 @@ mod safety_oracle;
 #[path = "faulty_volume_test_support.rs"]
 mod faulty_volume;
 
+/// The coverage grid: op × cache state × outcome, and the shape axis.
+#[cfg(test)]
+mod safety_grid_tests;
+
 #[cfg(test)]
 mod rename_merge_mtp_tests;
 #[cfg(test)]
