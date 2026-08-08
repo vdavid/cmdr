@@ -8,7 +8,15 @@
  */
 
 import { ensureMcpClient, mcpReadResource } from '../../e2e-shared/mcp-client.js'
-import { type PageLike, LOCAL_VOLUME_NAME, flushFileWatcher, getFixtureRoot, isStateClean, pollUntil } from './core.js'
+import {
+  type PageLike,
+  LOCAL_VOLUME_NAME,
+  clickEntryInPane,
+  flushFileWatcher,
+  getFixtureRoot,
+  isStateClean,
+  pollUntil,
+} from './core.js'
 import { navigateToRoute } from './navigation.js'
 
 // ── App readiness ────────────────────────────────────────────────────────────
@@ -194,10 +202,12 @@ export async function ensureAppReady(
   await tauriPage.waitForFunction("document.querySelector('.dual-pane-explorer')?.dataset.appReady === 'true'", 10000)
 
   // Click on a file entry in the left pane to ensure focus, then focus the
-  // explorer container so keyboard events reach the handler.
+  // explorer container so keyboard events reach the handler. `clickEntryInPane`
+  // waits for the row and throws if it never renders: a swallowed click here
+  // used to surface as the cursor poll below timing out, which reads as "focus
+  // is broken" rather than "the left pane was still empty".
+  await clickEntryInPane(tauriPage, 0)
   await tauriPage.evaluate(`(function() {
-        var entry = document.querySelectorAll('.file-pane')[0]?.querySelector('.file-entry');
-        if (entry) entry.click();
         var explorer = document.querySelector('.dual-pane-explorer');
         if (explorer) explorer.focus();
     })()`)

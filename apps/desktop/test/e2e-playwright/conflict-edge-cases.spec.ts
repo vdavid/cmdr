@@ -10,6 +10,7 @@ import path from 'path'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import {
+  clickEntryInPane,
   dispatchMenuCommand,
   ensureAppReady,
   expectAndDismissToast,
@@ -330,9 +331,8 @@ test.describe('Type mismatch conflicts', () => {
       )
       .toBeTruthy()
 
+    await clickEntryInPane(tauriPage, 0)
     await tauriPage.evaluate(`(function() {
-      var entry = document.querySelectorAll('.file-pane')[0]?.querySelector('.file-entry');
-      if (entry) entry.click();
       var explorer = document.querySelector('.dual-pane-explorer');
       if (explorer) explorer.focus();
     })()`)

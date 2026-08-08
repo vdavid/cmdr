@@ -80,13 +80,19 @@ export async function closeSearchDialog(tauriPage: PageLike): Promise<void> {
  */
 export async function setSearchInputValue(tauriPage: PageLike, value: string): Promise<void> {
   const json = JSON.stringify(value)
-  await tauriPage.evaluate(`(function(){
+  // Returns whether the input was there, so a missing box fails HERE. Swallowing it
+  // leaves the dialog holding an earlier spec's query — which still runs, still lands
+  // rows, and still satisfies "results arrived", so the test goes green measuring a
+  // search nobody asked for.
+  const typed = await tauriPage.evaluate<boolean>(`(function(){
         var el = document.querySelector(${JSON.stringify(SEARCH_INPUT)});
-        if (!el) return;
+        if (!el) return false;
         el.focus();
         el.value = ${json};
         el.dispatchEvent(new Event('input', { bubbles: true }));
+        return true;
     })()`)
+  if (!typed) throw new Error(`setSearchInputValue: the search input was not on screen to receive ${json}`)
 }
 
 /**

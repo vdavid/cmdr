@@ -10,7 +10,7 @@ import fs from 'fs'
 import path from 'path'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { expect } from './fixtures.js'
-import { findFileIndex, pollUntil, TRANSFER_DIALOG } from './helpers.js'
+import { pollUntil, TRANSFER_DIALOG } from './helpers.js'
 import { ensureMcpClient, mcpCall } from '../e2e-shared/mcp-client.js'
 
 /** Union type for tauriPage (works in both Tauri and browser mode). */
@@ -179,6 +179,48 @@ export function fileExists(fixtureRoot: string, relPath: string): boolean {
 // ── UI action helpers ────────────────────────────────────────────────────────
 
 /**
+ * Reads the row index of every requested name from the focused pane in ONE
+ * evaluate, so the indices are mutually consistent: a listing reload between
+ * two per-name reads would otherwise hand back indices from two different
+ * listings, and `select` would add the wrong rows. While the pane is missing any
+ * of them it reports which ones instead of indices.
+ */
+async function findIndicesInFocusedPane(
+  tauriPage: PageLike,
+  names: string[],
+): Promise<{ indices: number[] } | { missing: string[] }> {
+  const result = await tauriPage.evaluate<{ indices: number[] } | { missing: string[] }>(`(function() {
+        var wanted = ${JSON.stringify(names)};
+        var pane = document.querySelector('.file-pane.is-focused');
+        if (!pane) return { missing: wanted };
+        var entries = pane.querySelectorAll('.file-entry');
+        var byName = {};
+        for (var i = 0; i < entries.length; i++) {
+            byName[entries[i].getAttribute('data-filename')] = i;
+        }
+        var indices = [], missing = [];
+        for (var j = 0; j < wanted.length; j++) {
+            if (byName[wanted[j]] === undefined) missing.push(wanted[j]);
+            else indices.push(byName[wanted[j]]);
+        }
+        return missing.length > 0 ? { missing: missing } : { indices: indices };
+    })()`)
+  return result
+}
+
+/** Reads the names of every selected row in the focused pane. */
+async function selectedNamesInFocusedPane(tauriPage: PageLike): Promise<string[]> {
+  return tauriPage.evaluate<string[]>(`(function() {
+        var pane = document.querySelector('.file-pane.is-focused');
+        if (!pane) return [];
+        var rows = pane.querySelectorAll('.file-entry.is-selected');
+        var names = [];
+        for (var i = 0; i < rows.length; i++) names.push(rows[i].getAttribute('data-filename'));
+        return names.sort();
+    })()`)
+}
+
+/**
  * Selects exactly the named top-level items in the focused (left) pane via the
  * MCP `select` tool (`mode: add` per item). Use this instead of `selectAll`
  * for conflict matrix tests: `selectAll` also grabs the shared `bulk/` .dat
@@ -186,18 +228,67 @@ export function fileExists(fixtureRoot: string, relPath: string): boolean {
  * unrelated files and the "Copy complete: copied N files" toast count balloons.
  * Selecting only the fixture's own items keeps the op scoped to the clash(es)
  * under test.
+ *
+ * Structurally race-free in three steps, because every conflict spec's
+ * `recreateFixtures` (beforeEach) deletes then recreates `left/` on disk and the
+ * watcher's debounced remove/create diffs can drain just AFTER `ensureAppReady`'s
+ * files-present poll, briefly emptying the pane (the same window that made
+ * `moveCursorToFile` poll instead of read once):
+ *
+ * 1. Wait for the pane to list ALL requested names, reading their indices in one
+ *    snapshot so a reload can't interleave between two per-name reads.
+ * 2. Issue the `select` calls.
+ * 3. Assert the resulting selection is EXACTLY the requested set, retrying the
+ *    whole cycle if a reload landed mid-selection. Without step 3 a listing that
+ *    reloaded between the read and the select would silently copy the wrong
+ *    files, and the spec would fail somewhere far downstream (or pass wrongly).
+ *
+ * A genuinely absent file still fails after the deadline, naming the file.
  */
 export async function selectItemsByName(tauriPage: PageLike, names: string[]): Promise<void> {
   await ensureMcpClient(tauriPage)
-  // Clear any prior selection first.
-  await mcpCall('select', { pane: 'left', count: 0 })
-  for (const name of names) {
-    const info = await findFileIndex(tauriPage, name)
-    if ('error' in info || info.targetIndex < 0) {
-      throw new Error(`selectItemsByName: '${name}' not found in focused pane`)
+  const wanted = [...names].sort()
+  const matchesWanted = (selected: string[]): boolean =>
+    selected.length === wanted.length && selected.every((name, i) => name === wanted[i])
+
+  // Three attempts, each waiting up to 5 s for the pane to list every name.
+  // 5 s is failure headroom, not an expected wait: a reload settles in well under
+  // a second even on the Docker lane, so a green run returns on the first attempt.
+  // The retries exist only for a reload landing between the index read and the
+  // select; two of them is already one more than has ever been observed to be
+  // needed, and a genuinely wrong selection still fails.
+  let lastFailure = 'no attempt completed'
+  for (let attempt = 0; attempt < 3; attempt++) {
+    let found: { indices: number[] } | { missing: string[] } = { missing: names }
+    const listed = await pollUntil(
+      tauriPage,
+      async () => {
+        found = await findIndicesInFocusedPane(tauriPage, names)
+        return !('missing' in found)
+      },
+      5000,
+    )
+    if (!listed || 'missing' in found) {
+      lastFailure = `pane never listed ${'missing' in found ? found.missing.map((name) => `'${name}'`).join(', ') : '(unknown)'}`
+      continue
     }
-    await mcpCall('select', { pane: 'left', start: info.targetIndex, count: 1, mode: 'add' })
+
+    await mcpCall('select', { pane: 'left', count: 0 })
+    for (const index of found.indices) {
+      await mcpCall('select', { pane: 'left', start: index, count: 1, mode: 'add' })
+    }
+
+    // The selection is what the op under test acts on, so confirm it landed
+    // exactly rather than assuming the `select` calls hit the rows we read.
+    const settled = await pollUntil(
+      tauriPage,
+      async () => matchesWanted(await selectedNamesInFocusedPane(tauriPage)),
+      2000,
+    )
+    if (settled) return
+    lastFailure = `selection landed on [${(await selectedNamesInFocusedPane(tauriPage)).join(', ')}] instead of [${wanted.join(', ')}]`
   }
+  throw new Error(`selectItemsByName: ${lastFailure}`)
 }
 
 /** Selects all items in the focused pane via Cmd+A / Ctrl+A. */

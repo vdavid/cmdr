@@ -8,6 +8,7 @@
 
 import { test, expect } from './fixtures.js'
 import {
+  clickEntryInPane,
   dismissOverlay,
   ensureAppReady,
   ensureExplorerFocused,
@@ -229,10 +230,14 @@ test.describe('Mouse interactions', () => {
   test('moves cursor when clicking a file entry', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
 
+    // Assert rather than `return` on a short pane: the fixture always has more
+    // than two entries, so "fewer than two rows" means the listing hadn't
+    // rendered, and returning early made that a silent pass of a test that
+    // never clicked anything.
     const leftPaneEntryCount = await tauriPage.evaluate<number>(
       `document.querySelectorAll('.file-pane')[0]?.querySelectorAll('.file-entry').length || 0`,
     )
-    if (leftPaneEntryCount < 2) return
+    expect(leftPaneEntryCount).toBeGreaterThanOrEqual(2)
 
     // Find initial cursor index so we know the click actually moved it
     const initialCursorIndex = await tauriPage.evaluate<number>(`(function() {
@@ -249,18 +254,21 @@ test.describe('Mouse interactions', () => {
 
     // Dispatch mousedown then click; the cursor movement handler is on
     // onmousedown, not onclick. Must set button:0 (handleMouseDown checks it).
-    await tauriPage.evaluate(`(function() {
+    // Returns whether the row was there: a swallowed miss would leave the
+    // cursor poll below waiting out its budget on a click nobody performed.
+    const dispatched = await tauriPage.evaluate<boolean>(`(function() {
             var pane = document.querySelectorAll('.file-pane')[0];
             var entry = pane?.querySelectorAll('.file-entry')[${String(targetIndex)}];
-            if (entry) {
-                entry.scrollIntoView({block:'center'});
-                var r = entry.getBoundingClientRect();
-                var cx = r.left + r.width/2, cy = r.top + r.height/2;
-                entry.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, button:0, clientX:cx, clientY:cy}));
-                entry.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, button:0, clientX:cx, clientY:cy}));
-                entry.dispatchEvent(new MouseEvent('click', {bubbles:true, button:0, clientX:cx, clientY:cy}));
-            }
+            if (!entry) return false;
+            entry.scrollIntoView({block:'center'});
+            var r = entry.getBoundingClientRect();
+            var cx = r.left + r.width/2, cy = r.top + r.height/2;
+            entry.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, button:0, clientX:cx, clientY:cy}));
+            entry.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, button:0, clientX:cx, clientY:cy}));
+            entry.dispatchEvent(new MouseEvent('click', {bubbles:true, button:0, clientX:cx, clientY:cy}));
+            return true;
         })()`)
+    expect(dispatched).toBe(true)
 
     // Wait for cursor to move to the clicked entry
     await expect
@@ -288,12 +296,10 @@ test.describe('Mouse interactions', () => {
     const paneCount = await tauriPage.count('.file-pane')
     expect(paneCount).toBe(2)
 
-    // Click on a file entry in the right pane
-    await tauriPage.evaluate(`(function() {
-            var pane = document.querySelectorAll('.file-pane')[1];
-            var entry = pane?.querySelector('.file-entry');
-            if (entry) entry.click();
-        })()`)
+    // Click a file entry in the right pane. `clickEntryInPane` fails at the
+    // click if the pane hasn't rendered its rows, so a missing row can't turn
+    // into an opaque focus-class timeout three lines down.
+    await clickEntryInPane(tauriPage, 1)
 
     await expect
       .poll(
@@ -312,12 +318,8 @@ test.describe('Mouse interactions', () => {
     )
     expect(rightPaneClass).toContain('is-focused')
 
-    // Click on a file entry in the left pane to transfer focus back
-    await tauriPage.evaluate(`(function() {
-            var pane = document.querySelectorAll('.file-pane')[0];
-            var entry = pane?.querySelector('.file-entry');
-            if (entry) entry.click();
-        })()`)
+    // Click a file entry in the left pane to transfer focus back
+    await clickEntryInPane(tauriPage, 0)
 
     await expect
       .poll(

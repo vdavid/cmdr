@@ -26,6 +26,7 @@ import {
   mcpSwitchPane,
 } from '../e2e-shared/mcp-client.js'
 import {
+  clickEntryInPane,
   dismissOverlay,
   ensureAppReady,
   expectAndDismissToast,
@@ -860,13 +861,7 @@ test.describe('MTP clipboard rejection', () => {
 
     // Switch focus to right pane (paste targets the focused pane).
     // Click on the right pane to ensure DOM focus matches app state.
-    await tauriPage.evaluate(`(function(){
-            var panes = document.querySelectorAll('.file-pane');
-            if (panes[1]) {
-                var entry = panes[1].querySelector('.file-entry');
-                if (entry) entry.click();
-            }
-        })()`)
+    await clickEntryInPane(tauriPage, 1)
     // Wait for the right pane to be the focused pane.
     await expect
       .poll(

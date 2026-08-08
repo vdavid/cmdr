@@ -13,6 +13,7 @@ import {
   SEARCH_OVERLAY,
   SEARCH_INPUT,
   openSearchDialog,
+  resetSearchDialog,
   scopeSearchToThisVolume,
   type PageLike,
 } from './search-helpers.js'
@@ -224,22 +225,46 @@ async function resetRightPaneToLocalIfNeeded(
  * Vitest suite, so nothing is lost by not exercising it here.)
  */
 async function typeAndRunSearch(tauriPage: PageLike, query: string): Promise<void> {
+  // ⌘N first, so the run this helper starts is the ONLY one on screen. The dialog's
+  // state survives close + reopen by design and it re-runs the carried-over query on
+  // its own, so without the reset the `OPEN_IN_PANE_BUTTON` wait below can be satisfied
+  // by the LEFTOVER run's rows. The click then lands while the run under test is still
+  // arriving — the button flickers back to `[disabled]` as `resultCount` resets — so no
+  // snapshot is created and the caller's `pollRightPaneVolumeId('search-results')`
+  // times out, reading as "nav history is broken" instead of "the click missed".
+  await resetSearchDialog(tauriPage)
+
   // The fixtures this spec matches (`file-a.txt`, …) live under `<root>/left`, but the
   // spec focuses the RIGHT pane so "Open in pane" targets it — and an unset scope now
   // means the focused pane's current folder. Widen to the volume, or the search runs in
-  // the empty `<root>/right` and the Open-in-pane button never enables.
+  // the empty `<root>/right` and the Open-in-pane button never enables. ⌘N resets the
+  // scope too, so this has to come after it.
   await scopeSearchToThisVolume(tauriPage)
-  await tauriPage.evaluate(`(function(){
+
+  // Returns whether the input was there. A swallowed miss would leave the box holding
+  // whatever an earlier spec typed and run THAT query, which still lands rows and still
+  // enables the button — a green test measuring the wrong search.
+  const typed = await tauriPage.evaluate<boolean>(`(function(){
         var el = document.querySelector(${JSON.stringify(SEARCH_INPUT)});
-        if (!el) return;
+        if (!el) return false;
         el.focus();
         el.value = ${JSON.stringify(query)};
         el.dispatchEvent(new Event('input', { bubbles: true }));
+        return true;
     })()`)
+  expect(typed).toBe(true)
+  await expect
+    .poll(
+      async () => tauriPage.evaluate<string>(`document.querySelector(${JSON.stringify(SEARCH_INPUT)})?.value ?? ''`),
+      { timeout: 3000 },
+    )
+    .toBe(query)
+
   await tauriPage.click(RUN_BUTTON)
   // The footer's "Open in pane" only enables once `resultCount > 0`. Waiting
   // for the button is the observable signal that the search ran and landed
-  // results, no magic timer.
+  // results, no magic timer. After the ⌘N above, the only run that can enable it
+  // is this one.
   await tauriPage.waitForSelector(OPEN_IN_PANE_BUTTON, 5000)
 }
 

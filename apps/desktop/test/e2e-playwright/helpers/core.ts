@@ -210,6 +210,49 @@ export async function fileExistsInPane(tauriPage: PageLike, targetName: string, 
 }
 
 /**
+ * Clicks a row in a pane (left=0, right=1), waiting for the row to exist first
+ * and THROWING if it never renders.
+ *
+ * Use this instead of the `var entry = pane.querySelector('.file-entry'); if
+ * (entry) entry.click();` idiom. That guard swallows a missing row, so "the
+ * click never happened" surfaces much later as "focus/cursor handling is
+ * broken" — a poll timing out on the effect of an action nobody performed. The
+ * pane is legitimately empty for a beat while a listing reloads (`recreateFixtures`
+ * deletes and recreates `left/`, and the watcher's debounced diffs can drain
+ * right after a files-present check), so waiting is right and assuming is not.
+ *
+ * The click is dispatched as a real `.click()` on the row, matching the gesture
+ * the swallow-guard version performed. `rowIndex` picks a later row than the
+ * first; the default (0) is the `..` parent entry in a non-root listing.
+ *
+ * 5 s is failure headroom for a listing reload under parallel-shard load, not an
+ * expected wait: a rendered pane returns on the first poll.
+ */
+export async function clickEntryInPane(tauriPage: PageLike, paneIndex: number, rowIndex = 0): Promise<void> {
+  const pane = `document.querySelectorAll('.file-pane')[${String(paneIndex)}]`
+  const row = `${pane}?.querySelectorAll('.file-entry')[${String(rowIndex)}]`
+  const rendered = await pollUntil(tauriPage, async () => tauriPage.evaluate<boolean>(`!!(${row})`), 5000)
+  if (!rendered) {
+    throw new Error(
+      `clickEntryInPane: pane ${String(paneIndex)} never rendered row ${String(rowIndex)} to click (waited 5 s)`,
+    )
+  }
+  // Re-check inside the click: the row can still vanish between the poll and
+  // here, and a silent no-op is exactly what this helper exists to prevent.
+  const clicked = await tauriPage.evaluate<boolean>(`(function() {
+        var entry = ${row};
+        if (!entry) return false;
+        entry.click();
+        return true;
+    })()`)
+  if (!clicked) {
+    throw new Error(
+      `clickEntryInPane: pane ${String(paneIndex)} row ${String(rowIndex)} disappeared between the wait and the click`,
+    )
+  }
+}
+
+/**
  * Finds the index of a file by name in the focused pane's entry list.
  * Returns the target index and total entry count, or an error object.
  */
