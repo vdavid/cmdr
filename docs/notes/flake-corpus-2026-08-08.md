@@ -300,6 +300,11 @@ Two clusters dominate, and they suggest where structural work pays:
 1. **`downloads::watcher` / `file_viewer::session` / `caching_reaper` / `local_posix` watcher tests** — real FSEvents
    delivery. `.config/nextest.toml` already sorts this family into self-healing (redo the mutation until delivered) and
    retry-carrying, and names dropping the retries as the goal.
+   - `file_system::watcher_test::entries_that_went_with_a_replaced_watch_root_leave_the_listing` joined this family on
+     2026-08-08 and belongs to it for the same reason. Its waits are already generous (30 s / 45 s), and widening them
+     further didn't take it out of the set, so the cost is arming a real FSEvents stream inside a fully parallel test
+     binary, not a tight deadline. Keeping the real stream is deliberate: a synthetic event batch would pin our own idea
+     of what macOS reports, which is the exact assumption the bug it guards was hiding in.
 2. **`walk_memory_tests` and `go_to_latest_*`** — pure compute and pure logic, which cannot race. They fail only because
    the global 8 s nextest cap is wall-clock, so a saturated machine starves them. Nothing about the TEST is wrong;
    `rust-test-contention.go`'s header documents that loosening the cap globally is the wrong fix because it costs every
