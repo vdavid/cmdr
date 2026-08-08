@@ -107,7 +107,7 @@ function generateDatFile(filePath: string, sizeMb: number): void {
  * `my-link` dangling, then `rmSync` on `my-link` does nothing. We `lstat`
  * first and call `unlinkSync` directly on symlinks so they always get removed.
  */
-function removeFixtureEntry(entry: string): void {
+export function removeFixtureEntry(entry: string): void {
   let stat: fs.Stats | undefined
   try {
     stat = fs.lstatSync(entry)
@@ -286,6 +286,78 @@ export function createFixtures(instanceId?: string): string {
 
   console.log(`Fixtures created at ${rootPath} (~170 MB${instanceId ? ', bulk hardlinked from cache' : ''})`)
   return rootPath
+}
+
+/**
+ * One entry of the pristine fixture tree, with the recipe that recreates it.
+ *
+ * `fixture-manifest.ts` turns this into the manifest the E2E leak guard
+ * compares against and into the surgical repair it runs on drift, so the
+ * layout above stays the single source of truth for both.
+ */
+export type FixtureSpecEntry =
+  | { rel: string; kind: 'dir' }
+  | { rel: string; kind: 'file'; source: { type: 'text'; content: string } }
+  | { rel: string; kind: 'file'; source: { type: 'copy'; from: string } }
+  | { rel: string; kind: 'file'; source: { type: 'bulk'; sizeMb: number } }
+
+/**
+ * Describes the pristine tree `createFixtures` / `recreateFixtures` produce.
+ *
+ * Directories come from `fixtureLayout.directories` plus every parent a text
+ * file implies, so `left/sub-dir` is in the list without being named twice.
+ */
+export function pristineFixtureEntries(): FixtureSpecEntry[] {
+  const dirs = new Set<string>(fixtureLayout.directories)
+  for (const file of fixtureLayout.textFiles) {
+    let parent = path.dirname(file.rel)
+    while (parent !== '.' && parent !== '/') {
+      dirs.add(parent)
+      parent = path.dirname(parent)
+    }
+  }
+
+  return [
+    ...[...dirs].map((rel): FixtureSpecEntry => ({ rel, kind: 'dir' })),
+    ...fixtureLayout.textFiles.map(
+      (file): FixtureSpecEntry => ({ rel: file.rel, kind: 'file', source: { type: 'text', content: file.content } }),
+    ),
+    ...mediaFixtures.map(
+      (file): FixtureSpecEntry => ({
+        rel: file.rel,
+        kind: 'file',
+        source: { type: 'copy', from: path.join(mediaFixturesDir, file.source) },
+      }),
+    ),
+    ...archiveFixtures.map(
+      (file): FixtureSpecEntry => ({
+        rel: file.rel,
+        kind: 'file',
+        source: { type: 'copy', from: path.join(archiveFixturesDir, file.source) },
+      }),
+    ),
+    ...bulkFiles().map(
+      (file): FixtureSpecEntry => ({ rel: file.rel, kind: 'file', source: { type: 'bulk', sizeMb: file.sizeMb } }),
+    ),
+  ]
+}
+
+/**
+ * Restores one bulk `.dat` file: hardlink from the shared cache when it's
+ * there, `dd` it otherwise (the Linux Docker path has no cache).
+ */
+export function restoreBulkFile(rootPath: string, rel: string, sizeMb: number): void {
+  const target = path.join(rootPath, rel)
+  fs.mkdirSync(path.dirname(target), { recursive: true })
+  fs.rmSync(target, { force: true })
+  const cacheFile = path.join(CACHE_ROOT, rel)
+  try {
+    fs.linkSync(cacheFile, target)
+    return
+  } catch {
+    // No cache (Linux Docker) or a cross-filesystem link: regenerate instead.
+  }
+  generateDatFile(target, sizeMb)
 }
 
 export function cleanupFixtures(rootPath: string): void {

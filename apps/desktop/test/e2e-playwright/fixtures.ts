@@ -19,6 +19,7 @@
 
 import { createTauriTest } from '@srsholmes/tauri-playwright'
 import type { TestInfo } from '@playwright/test'
+import { describeFixtureTreeDiff, diffFixtureTree, restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 
 // Each parallel E2E shard spawns its own Tauri instance bound to a distinct
 // Unix socket. The Go check runner sets CMDR_PLAYWRIGHT_SOCKET per shard.
@@ -77,17 +78,41 @@ test.afterEach(async ({ tauriPage }, testInfo) => {
     // See beforeEach.
   }
 
-  // Overlay + toast leak guard. Catches tests that opened a dialog, popover,
-  // dropdown, or toast without dismissing it. Without this hook, leaked UI
-  // state cascades silently into the next test's beforeEach, where the
-  // failure surfaces against the wrong test and looks like a flake.
-  //
-  // The probe runs unconditionally; if the test itself already failed,
-  // Playwright bundles the probe's findings with the original failure.
-  //
-  // Auto-clean (Escape on each overlay, click each toast's close button)
-  // runs AFTER the failure decision so the next test starts from a clean
-  // slate even when this hook fails. Leaks don't cascade.
+  // ONE post-test leak guard, two kinds of leak: UI artifacts left on screen,
+  // and a shared fixture tree left dirty. Both cascade into the NEXT test's
+  // beforeEach if unchecked, where the failure surfaces against the wrong test
+  // and reads as a flake. Both probes run unconditionally, both auto-clean
+  // AFTER the failure decision (so a leak never cascades even when this hook
+  // fails), and their messages are reported together.
+  const leakReports: string[] = []
+
+  // Fixture-tree leak. `left/` + `right/` are shared by every spec on the
+  // shard, and roughly half of them mutate the tree; `recreateFixtures` in
+  // your own beforeEach protects you, not whoever runs after your last test.
+  // A pure filesystem comparison needs no pane, no watcher, and no flush, so
+  // it names the spec that dirtied the tree instead of the one that meets it.
+  // ~0.3 ms on a clean tree (measured on an M3 Max, 2026-08-08).
+  try {
+    const fixtureRoot = process.env.CMDR_E2E_START_PATH
+    const drift = fixtureRoot === undefined ? null : diffFixtureTree(fixtureRoot)
+    if (drift && fixtureRoot !== undefined) {
+      restoreFixtureTree(fixtureRoot)
+      leakReports.push(
+        `Test left the shared fixture tree dirty:\n${describeFixtureTreeDiff(drift)}\n` +
+          `Restore what the test mutated (a \`test.afterEach\` calling \`restoreFixtureTree(getFixtureRoot())\`, ` +
+          `or \`recreateFixtures\` when the spec already rebuilds the tree). The tree has been repaired for the ` +
+          `next test. See apps/desktop/test/e2e-playwright/CLAUDE.md § "The post-test leak guard".`,
+      )
+    }
+  } catch (err) {
+    // The guard must never be the reason a run dies. A fixture root that
+    // vanished mid-test is itself worth reporting, but not worth masking the
+    // real failure with a stack trace.
+    leakReports.push(`Fixture-tree leak guard could not read the tree: ${String(err)}`)
+  }
+
+  // Overlay + toast leak. Catches tests that opened a dialog, popover,
+  // dropdown, or toast without dismissing it.
   // `tauriPage.evaluate<T>()`'s generic asserts the return type, but the call
   // actually resolves to null when the focused window was destroyed mid-test
   // (e.g. the production-binding Escape tests in viewer.spec.ts and
@@ -111,12 +136,22 @@ test.afterEach(async ({ tauriPage }, testInfo) => {
         })()`)
   } catch {
     // If the probe itself fails (e.g. the app crashed mid-test), don't
-    // mask the original failure with a probe error.
-    return
+    // mask the original failure with a probe error. The fixture report, which
+    // needs no app at all, still stands.
+    leaked = null
   }
 
-  if (!leaked || leaked.length === 0) return
+  if (leaked && leaked.length > 0) await reportAndCleanOverlayLeak(tauriPage, leaked, leakReports)
 
+  if (leakReports.length > 0) throw new Error(leakReports.join('\n\n'))
+})
+
+/** Auto-cleans the leaked overlays and toasts, and records what leaked. */
+async function reportAndCleanOverlayLeak(
+  tauriPage: EvaluatablePage,
+  leaked: string[],
+  leakReports: string[],
+): Promise<void> {
   // Auto-clean: dispatch Escape on each leaked overlay (target-phase fires
   // the overlay-bound handler in ModalDialog, bubble-phase fires
   // window-bound handlers elsewhere). Click each toast's close button.
@@ -131,13 +166,13 @@ test.afterEach(async ({ tauriPage }, testInfo) => {
             for (var i = 0; i < btns.length; i++) btns[i].click();
         })()`)
   } catch {
-    // Best-effort cleanup; the failure below is the load-bearing signal.
+    // Best-effort cleanup; the report below is the load-bearing signal.
   }
 
-  throw new Error(
+  leakReports.push(
     `Test left UI artifacts open: ${leaked.join(', ')}. ` +
       `Use dismissOverlay() to close dialogs/popovers/dropdowns, dismissAllToasts() to clear toasts ` +
       `(or click each toast's X). See apps/desktop/test/e2e-playwright/CLAUDE.md § "Closing overlays" ` +
       `for the full rule and the dispatch-on-overlay-not-document rationale.`,
   )
-})
+}
