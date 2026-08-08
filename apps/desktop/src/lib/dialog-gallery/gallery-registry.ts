@@ -125,7 +125,7 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
       {
         id: 'long-name',
         label: 'A name that never fits',
-        note: 'The row shortens; hovering it gives the full path, and the bottom-right grip widens the panel.',
+        note: 'The row shortens; hovering it gives the full path, and dragging a side edge widens the panel.',
       },
     ],
   },

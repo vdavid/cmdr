@@ -34,17 +34,18 @@
         /** Inline style string for the dialog container (sizing, colors) */
         containerStyle?: string
         /**
-         * Lets the user drag the bottom-right corner to resize the dialog. The
+         * Lets the user resize the dialog by dragging any edge or corner. The
          * body region grows and scrolls; the caller still passes the initial
          * size via `containerStyle`. Off by default. Combines with `fillBody`:
          * there the inner scroll region keeps ownership of the scrolling and
-         * only the grip and the size floors come from here.
+         * only the grab zones and the size floors come from here.
          *
          * `'horizontal'` is the right choice whenever the body has nothing to do
          * with extra height (a short form, a capped list): free vertical dragging
-         * would just open a band of dead space above the footer. Use `true` when a
-         * region inside actually absorbs the slack, which in practice means
-         * `fillBody` with a scrolling child.
+         * would just open a band of dead space above the footer. It exposes the
+         * left and right edges only. Use `true` when a region inside actually
+         * absorbs the slack, which in practice means `fillBody` with a scrolling
+         * child.
          */
         resizable?: boolean | 'horizontal'
         /**
@@ -131,6 +132,21 @@
      */
     let previousActiveElement: HTMLElement | null = null
     let heightObserver: ResizeObserver | null = null
+    /** Size the user dragged the panel to. `null` on an axis means "still content- or `containerStyle`-driven". */
+    let resizedSize = $state<{ width: number | null; height: number | null }>({ width: null, height: null })
+    /** Tears down whichever pointer drag (move or resize) is running, so a dialog closed mid-drag leaves no listeners. */
+    let stopActiveDrag: (() => void) | null = null
+
+    /**
+     * Edges first, corners last: they're siblings in the panel, so the later ones
+     * win the hit test where a corner overlaps the two edges it joins.
+     */
+    const ALL_RESIZE_DIRECTIONS = ['n', 's', 'w', 'e', 'nw', 'ne', 'sw', 'se'] as const
+    type ResizeDirection = (typeof ALL_RESIZE_DIRECTIONS)[number]
+
+    const resizeDirections = $derived<readonly ResizeDirection[]>(
+        resizable === false ? [] : resizable === 'horizontal' ? (['w', 'e'] as const) : ALL_RESIZE_DIRECTIONS,
+    )
 
     /**
      * The drag offset rides on `left` / `top` against the panel's own `position: relative`,
@@ -153,9 +169,9 @@
      * tempting "smooth out the drag" change that would bring the bug straight back.
      *
      * They're written as inline PROPERTIES from an effect, not into the `style` attribute:
-     * `resize: both` parks the user's dragged size in that same attribute, so re-rendering
-     * it (which a drag does on every mousemove) would snap a resized dialog back to its
-     * starting size mid-drag. `containerStyle` is the only thing left on the attribute.
+     * the dragged size lives in that same attribute, so re-rendering it (which a drag does
+     * on every pointer frame) would snap a resized dialog back to its starting size
+     * mid-drag. `containerStyle` is the only thing left on the attribute.
      */
     $effect(() => {
         const el = dialogElement
@@ -163,6 +179,10 @@
         // Read so that a `containerStyle` change — which rewrites the attribute and wipes
         // these properties with it — re-applies them.
         void containerStyle
+        // Only ever SET these: removing them would delete `containerStyle`'s own width or
+        // height along with ours, since both land on the same inline declaration.
+        if (resizedSize.width !== null) el.style.width = `${String(resizedSize.width)}px`
+        if (resizedSize.height !== null) el.style.height = `${String(resizedSize.height)}px`
         el.style.left = `${String(dialogPosition.x)}px`
         el.style.top = `${String(dialogPosition.y)}px`
         if (anchoredTop === null) {
@@ -223,11 +243,116 @@
             document.removeEventListener('mousemove', handleMouseMove)
             document.removeEventListener('mouseup', handleMouseUp)
             document.body.style.cursor = ''
+            stopActiveDrag = null
         }
 
         document.addEventListener('mousemove', handleMouseMove)
         document.addEventListener('mouseup', handleMouseUp)
         document.body.style.cursor = 'move'
+        stopActiveDrag = handleMouseUp
+    }
+
+    /**
+     * Height the panel can't be dragged below: its chrome, plus enough body to read
+     * a line or two. The chrome is measured rather than assumed, because a wrapped
+     * title or a footer with a leading control is taller than a one-line one.
+     */
+    function minimumPanelHeight(el: HTMLElement): number {
+        const chrome = [...el.querySelectorAll<HTMLElement>('.dialog-title-bar, .modal-footer')].reduce(
+            (total, part) => total + part.offsetHeight,
+            0,
+        )
+        const readableBody = 60
+        return chrome + readableBody
+    }
+
+    /** Resolves a computed `min-*` / `max-*` to a number; `none` and the empty string mean "no limit". */
+    function cssLength(value: string, fallback: number): number {
+        const parsed = Number.parseFloat(value)
+        return Number.isNaN(parsed) ? fallback : parsed
+    }
+
+    function clamp(value: number, min: number, max: number): number {
+        return Math.min(Math.max(value, min), max)
+    }
+
+    /**
+     * Drags one edge or corner, keeping the OPPOSITE edge where it is.
+     *
+     * That last part is the whole trick, because the panel is centered rather than
+     * absolutely placed: widening it by `growth` also slides its layout box left by
+     * `growth / 2`, so the drag offset has to pay that back. Vertically the share
+     * depends on the alignment — a centered panel drifts by half its growth, while a
+     * `growDownward` or `align="top"` panel has its top edge pinned and drifts by none,
+     * so dragging its top edge has to move the whole growth.
+     */
+    function handleResizePointerDown(event: PointerEvent, direction: ResizeDirection) {
+        const el = dialogElement
+        if (!el) return
+        // Stops the drag from selecting text across the dialog it passes over.
+        event.preventDefault()
+        // A second press (a second finger, a button chord) takes over rather than
+        // leaving the first drag's listeners running alongside this one.
+        stopActiveDrag?.()
+
+        // The band's own `cursor` is the one source for which arrow this direction shows;
+        // the body borrows it for the drag rather than repeating the mapping in script.
+        const bandCursor =
+            event.currentTarget instanceof HTMLElement ? getComputedStyle(event.currentTarget).cursor : ''
+        const rect = el.getBoundingClientRect()
+        const styles = getComputedStyle(el)
+        const startWidth = rect.width
+        const startHeight = rect.height
+        const startX = event.clientX
+        const startY = event.clientY
+        const startPosition = { ...dialogPosition }
+        const minWidth = cssLength(styles.minWidth, 0)
+        const maxWidth = cssLength(styles.maxWidth, Number.POSITIVE_INFINITY)
+        const minHeight = Math.max(cssLength(styles.minHeight, 0), minimumPanelHeight(el))
+        const maxHeight = cssLength(styles.maxHeight, Number.POSITIVE_INFINITY)
+        const verticalDrift = align === 'center' && anchoredTop === null ? 0.5 : 0
+
+        const handlePointerMove = (moveEvent: PointerEvent) => {
+            const position = { ...startPosition }
+            let { width, height } = resizedSize
+
+            if (direction.includes('w') || direction.includes('e')) {
+                const towardsEast = direction.includes('e')
+                const dx = moveEvent.clientX - startX
+                width = clamp(startWidth + (towardsEast ? dx : -dx), minWidth, maxWidth)
+                const growth = width - startWidth
+                position.x = startPosition.x + (towardsEast ? growth / 2 : -growth / 2)
+            }
+            if (direction.includes('n') || direction.includes('s')) {
+                const towardsSouth = direction.includes('s')
+                const dy = moveEvent.clientY - startY
+                height = clamp(startHeight + (towardsSouth ? dy : -dy), minHeight, maxHeight)
+                const growth = height - startHeight
+                position.y =
+                    startPosition.y + growth * (towardsSouth ? verticalDrift : -(1 - verticalDrift))
+            }
+
+            resizedSize = { width, height }
+            dialogPosition = position
+        }
+
+        const handlePointerUp = () => {
+            document.removeEventListener('pointermove', handlePointerMove)
+            document.removeEventListener('pointerup', handlePointerUp)
+            document.removeEventListener('pointercancel', handlePointerUp)
+            document.body.style.cursor = ''
+            document.body.style.userSelect = ''
+            stopActiveDrag = null
+        }
+
+        document.addEventListener('pointermove', handlePointerMove)
+        document.addEventListener('pointerup', handlePointerUp)
+        document.addEventListener('pointercancel', handlePointerUp)
+        // Hold the resize cursor for the whole drag, even where the pointer wanders off
+        // the band and over the panel's own content.
+        document.body.style.cursor = bandCursor
+        document.body.style.userSelect = 'none'
+        stopActiveDrag = handlePointerUp
     }
 
     function handleOverlayKeydown(event: KeyboardEvent) {
@@ -281,6 +406,9 @@
     })
 
     onDestroy(() => {
+        // A dialog can close mid-drag (Escape, or an operation finishing under it);
+        // without this its pointer listeners would outlive it on `document`.
+        stopActiveDrag?.()
         heightObserver?.disconnect()
         heightObserver = null
         if (growDownward) window.removeEventListener('resize', anchorToCurrentCenter)
@@ -316,7 +444,6 @@
         class="modal-dialog"
         class:dragging={isDragging}
         class:resizable={resizable !== false}
-        class:resize-horizontal={resizable === 'horizontal'}
         class:fill-body={fillBody}
         style={containerStyle}
     >
@@ -329,21 +456,41 @@
             -->
             <button class="modal-close-button" onclick={onclose} aria-label={tString('ui.modalDialog.close')} tabindex="-1">×</button>
         {/if}
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div class="dialog-title-bar" class:draggable onmousedown={handleTitleMouseDown}>
-            <h2 id={titleId}>
-                {@render title()}
-            </h2>
-        </div>
-        <div class="modal-body" class:no-footer={!footer}>
-            {@render children()}
-        </div>
-        {#if footer}
-            <div class="modal-footer">
-                {#if footerLeading}<div class="modal-footer-leading">{@render footerLeading()}</div>{/if}
-                {@render footer()}
+        <!--
+            The panel's own content, in the element that clips it to the rounded
+            corners. The clip can't live on the panel: the resize bands are panel
+            children that deliberately hang over its edge, and `overflow: hidden`
+            up there would cut them off.
+        -->
+        <div class="modal-content">
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div class="dialog-title-bar" class:draggable onmousedown={handleTitleMouseDown}>
+                <h2 id={titleId}>
+                    {@render title()}
+                </h2>
             </div>
-        {/if}
+            <div class="modal-body" class:no-footer={!footer}>
+                {@render children()}
+            </div>
+            {#if footer}
+                <div class="modal-footer">
+                    {#if footerLeading}<div class="modal-footer-leading">{@render footerLeading()}</div>{/if}
+                    {@render footer()}
+                </div>
+            {/if}
+        </div>
+        {#each resizeDirections as direction (direction)}
+            <!-- The direction rides on an attribute, not a class per edge: one static
+                 `.resize-band` class keeps both the CSS scoping and `css-unused` honest. -->
+            <div
+                class="resize-band"
+                data-direction={direction}
+                aria-hidden="true"
+                onpointerdown={(event) => {
+                    handleResizePointerDown(event, direction)
+                }}
+            ></div>
+        {/each}
     </div>
 </div>
 
@@ -393,10 +540,11 @@
         position: relative;
     }
 
-    /* Opt-in user resizing: the native corner grip lives at the bottom-right.
+    /* Opt-in user resizing: the grab bands render per exposed edge (see `.resize-band`),
+       and `'horizontal'` simply exposes fewer of them, so the height stays content-driven
+       and the panel can't be dragged into a band of empty space above the footer.
        Flex column so the body owns the slack and scrolls while title bar and
-       footer keep their intrinsic height. `overflow: hidden` both clips the
-       rounded corners and gives `resize` a scroll container to grab.
+       footer keep their intrinsic height.
        min-* keep the dialog usable when dragged small; max-* keep it inside the
        viewport (the overlay starts below the OS title bar). The caller's
        `containerStyle` still sets the initial width/height, and raises `min-width`
@@ -405,21 +553,27 @@
     .modal-dialog.resizable {
         display: flex;
         flex-direction: column;
-        resize: both;
-        overflow: hidden;
         /* No design token for this floor; it's a layout minimum, not spacing. There's
-           deliberately no `min-height` twin: the panel is a flex item, so `auto` floors
-           it at its own content and every dialog opens at its natural height instead of
-           padding itself out to a number. */
+           deliberately no `min-height` twin: every dialog opens at its natural height
+           instead of padding itself out to a number, and the drag floors itself on the
+           measured chrome (see `minimumPanelHeight`). */
         min-width: 360px;
         max-width: calc(100vw - 2 * var(--spacing-xl));
         max-height: calc(100vh - var(--titlebar-height) - 2 * var(--spacing-xl));
     }
 
-    /* Width only: the height stays content-driven, so the panel can't be dragged
-       into a band of empty space above the footer. */
-    .modal-dialog.resize-horizontal {
-        resize: horizontal;
+    /* The clipping layer, one level below the panel so the bands can hang over the
+       panel's edge. Only the two modes that own their height clip: a plain dialog is
+       sized by its content and has nothing to cut off. The panel's 1px border sits
+       outside this box, so its corner curve is a pixel tighter than the panel's. */
+    .modal-dialog.resizable > .modal-content,
+    .modal-dialog.fill-body > .modal-content {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+        border-radius: calc(var(--radius-dialog) - 1px);
     }
 
     .modal-dialog.resizable .modal-body {
@@ -429,13 +583,12 @@
     }
 
     /* `fillBody`: a fixed-height frame (the caller caps it via `containerStyle`).
-       Same flex column as `resizable`, and `overflow: hidden` so full-bleed bands
-       clip to the dialog's radius — but the body does NOT scroll here: it's a
+       Same flex column as `resizable`, and `.modal-content` clips full-bleed bands
+       to the dialog's radius — but the body does NOT scroll here: it's a
        column whose own child takes the slack and owns the scrolling. */
     .modal-dialog.fill-body {
         display: flex;
         flex-direction: column;
-        overflow: hidden;
     }
 
     .modal-dialog.fill-body .modal-body {
@@ -445,12 +598,92 @@
         flex-direction: column;
     }
 
-    /* Both at once: the grip, the floors, and the viewport caps come from `resizable`,
+    /* Both at once: the bands, the floors, and the viewport caps come from `resizable`,
        the body layout from `fillBody`. The body must NOT scroll here — its child region
        already does, and two nested scrollers means the user drags one scrollbar and the
        other one moves. */
     .modal-dialog.resizable.fill-body .modal-body {
         overflow: hidden;
+    }
+
+    /* The resize grab zones: one per exposed edge, plus the four corners when both axes
+       are free. Each straddles the panel edge (most of the band in the scrim, a sliver
+       inside), which is how a macOS window behaves and what keeps a scrollbar at the
+       body's right edge grabbable. Corners come last in the DOM so they win the hit test
+       where they overlap the two edges they join. The `cursor` here is also what the
+       body wears for the duration of the drag. */
+    .resize-band {
+        position: absolute;
+    }
+
+    .resize-band[data-direction='n'],
+    .resize-band[data-direction='s'] {
+        left: 0;
+        right: 0;
+        height: 7px;
+        cursor: ns-resize;
+    }
+
+    .resize-band[data-direction='n'] {
+        top: -4px;
+    }
+
+    .resize-band[data-direction='s'] {
+        bottom: -4px;
+    }
+
+    .resize-band[data-direction='w'],
+    .resize-band[data-direction='e'] {
+        top: 0;
+        bottom: 0;
+        width: 7px;
+        cursor: ew-resize;
+    }
+
+    .resize-band[data-direction='w'] {
+        left: -4px;
+    }
+
+    .resize-band[data-direction='e'] {
+        right: -4px;
+    }
+
+    .resize-band[data-direction='nw'],
+    .resize-band[data-direction='ne'],
+    .resize-band[data-direction='sw'],
+    .resize-band[data-direction='se'] {
+        width: 14px;
+        height: 14px;
+    }
+
+    .resize-band[data-direction='nw'],
+    .resize-band[data-direction='se'] {
+        cursor: nwse-resize;
+    }
+
+    .resize-band[data-direction='ne'],
+    .resize-band[data-direction='sw'] {
+        cursor: nesw-resize;
+    }
+
+    .resize-band[data-direction='nw'] {
+        top: -4px;
+        left: -4px;
+    }
+
+    .resize-band[data-direction='ne'] {
+        top: -4px;
+        right: -4px;
+    }
+
+    .resize-band[data-direction='sw'] {
+        bottom: -4px;
+        left: -4px;
+    }
+
+    .resize-band[data-direction='se'] {
+        bottom: -4px;
+        right: -4px;
     }
 
     /* Fixed square + `--radius-full` so the hover fill is a circle around the glyph,

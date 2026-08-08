@@ -200,8 +200,8 @@
 </ModalDialog>
 
 <style>
-    /* Fills `fillBody`'s slot so a drag on the resize grip lands in the list, not in
-       dead space above the Close button. The panel's own max-height does the capping. */
+    /* Fills `fillBody`'s slot so an edge drag lands in the list, not in dead space
+       above the Close button. The panel's own max-height does the capping. */
     .body {
         display: flex;
         flex-direction: column;

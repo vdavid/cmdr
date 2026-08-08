@@ -26,7 +26,7 @@ Primitives shared by Search and Selection. Chips: `filter-chips/CLAUDE.md`. Cons
 - **`stopPropagation()` on every dialog `keydown`** (else keys reach the explorer and trigger quick-search).
 - **All chrome is `ModalDialog`'s; never re-add it here.** Opt-ins: `align="top"`, `fillBody`, `resizable`,
   `ownsKeyboard`, `closeOnOverlayClick`, `overlayClass="search-overlay"`. ❌ Strips pad VERTICALLY only. `config.width`
-  is the OPENING width; ❌ no `max-width`, it pins the grip.
+  is the OPENING width; ❌ no `max-width`, it caps how far the edge drag can widen the panel.
 - **Three silent-failure traps.** Count-only OFF re-runs via `runFromButton()`, not `scheduleSearch()` (else a stale
   count stays); never swallow a `runQuery` rejection (it reads as "nothing matched"); never wipe state from a lifecycle
   hook (it survives unmount by design, `⌘N` being the ONLY sanctioned reset).

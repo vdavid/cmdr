@@ -22,7 +22,7 @@
      * title bar + × button, focus trap, MCP registry, focus restore). This component opts
      * into `align="top"`, `fillBody`, `resizable`, `padded={false}`, `ownsKeyboard`, and
      * `closeOnOverlayClick`; see DETAILS.md § Chrome. `config.width` is the width the panel
-     * OPENS at, not a cap: the resize grip goes wider, which is how a user reads a long path
+     * OPENS at, not a cap: an edge drag goes wider, which is how a user reads a long path
      * that the result rows shorten.
      *
      * Layout (top → bottom), three zones separated by surface + hairline:

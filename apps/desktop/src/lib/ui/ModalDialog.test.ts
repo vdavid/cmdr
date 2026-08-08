@@ -18,6 +18,30 @@ const titleSnippet = createRawSnippet(() => ({ render: () => `<span>Dialog title
 const bodySnippet = createRawSnippet(() => ({ render: () => `<p>Body.</p>` }))
 const footerSnippet = createRawSnippet(() => ({ render: () => `<button>OK</button>` }))
 
+/** The resize bands the panel exposes, in DOM order (which is also their hit-test order). */
+function bandDirections(target: HTMLElement): string[] {
+  return [...target.querySelectorAll('.resize-band')].map((band) => band.getAttribute('data-direction') ?? '')
+}
+
+/**
+ * jsdom lays nothing out, so the panel is told how big it is and the drag reads that back.
+ * 400×300 is a realistic opening size (`GoToPathDialog` opens at 460 wide).
+ */
+function givePanelSize(panel: HTMLElement, width: number, height: number) {
+  panel.getBoundingClientRect = () =>
+    ({ width, height, top: 0, left: 0, right: width, bottom: height, x: 0, y: 0 }) as DOMRect
+}
+
+/** Presses a resize band, moves the pointer by (dx, dy), and releases it. */
+async function dragBand(target: HTMLElement, direction: string, dx: number, dy: number) {
+  const band = target.querySelector(`.resize-band[data-direction='${direction}']`)
+  const [startX, startY] = [100, 100]
+  band?.dispatchEvent(new MouseEvent('pointerdown', { clientX: startX, clientY: startY, bubbles: true }))
+  document.dispatchEvent(new MouseEvent('pointermove', { clientX: startX + dx, clientY: startY + dy }))
+  document.dispatchEvent(new MouseEvent('pointerup'))
+  await tick()
+}
+
 describe('ModalDialog focus restoration', () => {
   it('restores focus to the previously focused element on destroy', async () => {
     const trigger = document.createElement('button')
@@ -85,6 +109,7 @@ describe('ModalDialog body padding and resizing', () => {
     return target
   }
 
+
   it('wraps children in a .modal-body element', () => {
     const target = mountDialog({})
     const body = target.querySelector('.modal-body')
@@ -125,19 +150,24 @@ describe('ModalDialog body padding and resizing', () => {
     target.remove()
   })
 
-  it('locks the height under resizable="horizontal", and only then', () => {
+  // `resizable="horizontal"` locks the height by exposing no band that could change it,
+  // so the panel can't be dragged into a strip of dead space above the footer.
+  it('exposes a grab band per resizable edge, with corners only when both axes are free', () => {
     const horizontal = mountDialog({ resizable: 'horizontal' })
-    const panel = horizontal.querySelector('.modal-dialog')
-    expect(panel?.classList.contains('resizable')).toBe(true)
-    expect(panel?.classList.contains('resize-horizontal')).toBe(true)
+    expect(bandDirections(horizontal)).toEqual(['w', 'e'])
     horizontal.remove()
 
     const both = mountDialog({ resizable: true })
-    expect(both.querySelector('.modal-dialog')?.classList.contains('resize-horizontal')).toBe(false)
+    // Corners last: they're siblings, so the later ones win the hit test on overlap.
+    expect(bandDirections(both)).toEqual(['n', 's', 'w', 'e', 'nw', 'ne', 'sw', 'se'])
     both.remove()
+
+    const plain = mountDialog({})
+    expect(bandDirections(plain)).toEqual([])
+    plain.remove()
   })
 
-  // `fillBody`'s inner region owns the scrolling; `resizable` only adds the grip and the
+  // `fillBody`'s inner region owns the scrolling; `resizable` only adds the bands and the
   // floors. Combining them is how the query dialogs and the operation log get resized.
   it('combines resizable with fillBody', () => {
     const target = mountDialog({ resizable: true, fillBody: true })
@@ -147,9 +177,9 @@ describe('ModalDialog body padding and resizing', () => {
     target.remove()
   })
 
-  // The resize grip parks the user's size in the panel's inline `style`, so re-rendering
-  // that attribute on every drag frame would snap a resized dialog back. Position rides on
-  // inline PROPERTIES instead, leaving the attribute to `containerStyle` alone.
+  // Every drag frame parks the user's size in the panel's inline `style`, so re-rendering
+  // that attribute would snap a resized dialog back. Size and position ride on inline
+  // PROPERTIES instead, leaving the attribute to `containerStyle` alone.
   it('keeps a user-set width across a title-bar drag', async () => {
     const target = mountDialog({ resizable: true, containerStyle: 'width: 500px' })
     const panel = target.querySelector<HTMLElement>('.modal-dialog')
@@ -165,6 +195,98 @@ describe('ModalDialog body padding and resizing', () => {
 
     expect(panel.style.width).toBe('820px')
     expect(panel.style.left).toBe('50px')
+    target.remove()
+  })
+})
+
+// The panel is CENTERED, not absolutely placed, so growing it by N slides its layout box
+// by N/2 and the drag offset has to pay that back — otherwise both edges crawl outward and
+// the one the user isn't holding drifts away from under the pointer.
+describe('ModalDialog edge resizing', () => {
+  // The `tick` matters: `bind:this` lands in an effect, so before the first flush the
+  // component has no panel to measure and a band drag would no-op.
+  async function mountResizable(props: Record<string, unknown> = {}) {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ModalDialog, {
+      target,
+      props: { titleId: 't', title: titleSnippet, children: bodySnippet, resizable: true, ...props },
+    })
+    await tick()
+    const panel = target.querySelector<HTMLElement>('.modal-dialog')
+    if (!panel) throw new Error('the panel never mounted')
+    givePanelSize(panel, 400, 300)
+    return { target, panel }
+  }
+
+  it('widens to the east and leaves the west edge where it was', async () => {
+    const { target, panel } = await mountResizable()
+    await dragBand(target, 'e', 60, 0)
+
+    expect(panel.style.width).toBe('460px')
+    expect(panel.style.left).toBe('30px')
+    expect(panel.style.height).toBe('')
+    target.remove()
+  })
+
+  it('widens to the west and leaves the east edge where it was', async () => {
+    const { target, panel } = await mountResizable()
+    await dragBand(target, 'w', -60, 0)
+
+    expect(panel.style.width).toBe('460px')
+    expect(panel.style.left).toBe('-30px')
+    target.remove()
+  })
+
+  it('grows a centered dialog upward from the north edge, bottom edge staying put', async () => {
+    const { target, panel } = await mountResizable()
+    await dragBand(target, 'n', 0, -60)
+
+    expect(panel.style.height).toBe('360px')
+    expect(panel.style.top).toBe('-30px')
+    target.remove()
+  })
+
+  it('grows a centered dialog downward from the south edge, top edge staying put', async () => {
+    const { target, panel } = await mountResizable()
+    await dragBand(target, 's', 0, 60)
+
+    expect(panel.style.height).toBe('360px')
+    expect(panel.style.top).toBe('30px')
+    target.remove()
+  })
+
+  // `align="top"` pins the panel's top edge in the layout, so it never drifts on its own:
+  // the whole growth has to come from the offset, not half of it.
+  it('moves a top-aligned dialog by its full growth when the north edge is dragged', async () => {
+    const { target, panel } = await mountResizable({ align: 'top' })
+    await dragBand(target, 'n', 0, -60)
+
+    expect(panel.style.height).toBe('360px')
+    expect(panel.style.top).toBe('-60px')
+    target.remove()
+  })
+
+  it('resizes both axes at once from a corner', async () => {
+    const { target, panel } = await mountResizable()
+    await dragBand(target, 'se', 60, 60)
+
+    expect(panel.style.width).toBe('460px')
+    expect(panel.style.height).toBe('360px')
+    expect(panel.style.left).toBe('30px')
+    expect(panel.style.top).toBe('30px')
+    target.remove()
+  })
+
+  // Dragged past the floor, the panel stops but the pointer doesn't: the offset has to stop
+  // with it, or the panel keeps sliding while its size stands still.
+  it('floors the height at the chrome plus a readable body', async () => {
+    const { target, panel } = await mountResizable()
+    await dragBand(target, 's', 0, -400)
+
+    // jsdom reports no height for the title bar or footer, so the floor is the body's 60.
+    expect(panel.style.height).toBe('60px')
+    expect(panel.style.top).toBe('-120px')
     target.remove()
   })
 })
