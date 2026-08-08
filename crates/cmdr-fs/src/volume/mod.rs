@@ -243,6 +243,21 @@ pub trait Volume: Send + Sync {
     // ========================================
 
     /// Creates a file with the given content.
+    ///
+    /// **Strict contract: must NOT clobber.** If `path` already exists, return
+    /// `VolumeError::AlreadyExists` and leave the existing file untouched; ❌
+    /// never truncate it. The New File command hands a user-typed name straight
+    /// here and renders the refusal as "that name is taken", so a backend that
+    /// overwrote instead would silently empty a file the user only meant to
+    /// name, and the command would report success. Reach for the atomic
+    /// primitive rather than a stat-then-write (`create_new(true)`, SMB's
+    /// `FileCreate` disposition), so there's no TOCTOU window either.
+    ///
+    /// **A shared conformance assertion enforces this**, not the wording above:
+    /// every backend that implements `create_file` runs
+    /// `conformance::assert_create_file_refuses_to_clobber` (test builds only).
+    ///
+    /// Default: `NotSupported`.
     fn create_file<'a>(
         &'a self,
         path: &'a Path,
@@ -291,6 +306,12 @@ pub trait Volume: Send + Sync {
     /// `Created` answer, so a backend that claims to have created a directory it
     /// merely found would turn "would have prompted" into "overwrote". When in
     /// doubt, answer `AlreadyExisted`.
+    ///
+    /// **A shared conformance assertion enforces the dangerous direction**: every
+    /// backend runs
+    /// `conformance::assert_create_directory_all_reports_an_existing_dir_honestly`
+    /// (test builds only). Answering `AlreadyExisted` for a leaf it did create is
+    /// merely slower, so that direction stays unpinned.
     fn create_directory_all<'a>(
         &'a self,
         path: &'a Path,
@@ -385,6 +406,17 @@ pub trait Volume: Send + Sync {
     /// When `force` is false, returns `AlreadyExists` if the destination exists.
     /// When `force` is true, proceeds even if the destination exists (POSIX rename
     /// silently overwrites).
+    ///
+    /// **`force == false` is a strict contract**, and it's the only thing standing
+    /// between a move and the file it would replace: every caller that hasn't yet
+    /// asked the user passes `false` and reads the refusal as "stop, there's
+    /// something here". A backend that overwrote anyway turns each of those
+    /// prompts into a destroyed file with no error to notice.
+    ///
+    /// **A shared conformance assertion enforces this**: every backend that
+    /// implements `rename` runs
+    /// `conformance::assert_rename_refuses_an_existing_destination` (test builds
+    /// only).
     fn rename<'a>(
         &'a self,
         from: &'a Path,
@@ -888,8 +920,10 @@ pub trait Volume: Send + Sync {
     /// between them, so a pause has nothing to release and just stops starting the
     /// next window. The predicate is kept as the trait extension point for a
     /// hypothetical future backend whose stream genuinely pins a resource across
-    /// the whole read; no backend currently overrides it and the copy wrapper no
-    /// longer reads it.
+    /// the whole read; the copy wrapper no longer reads it. `MtpVolume` restates
+    /// the same `false` explicitly, because "the PTP session is held only DURING
+    /// a window" is the non-obvious half of that answer and belongs next to the
+    /// windowing code.
     fn pause_releases_read_stream(&self) -> bool {
         false
     }

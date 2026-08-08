@@ -167,6 +167,63 @@ async fn delete_honors_the_shared_non_recursion_contract() {
         .await;
 }
 
+/// The shared `Volume::rename` no-clobber assertion. LocalPosix earns it with
+/// `renamex_np(RENAME_EXCL)` / `renameat2(RENAME_NOREPLACE)`, one kernel
+/// operation with no TOCTOU window — a different mechanism from every other
+/// backend's, which is the whole reason the promise is asserted rather than
+/// assumed.
+#[tokio::test]
+async fn rename_honors_the_shared_no_clobber_contract() {
+    let test_dir = TestDir::new("rename_no_clobber_conformance_test");
+    let volume = LocalPosixVolume::new("Test", &*test_dir);
+
+    volume.create_file(Path::new("source.txt"), b"source").await.unwrap();
+    volume
+        .create_file(Path::new("target.txt"), b"the user's target file")
+        .await
+        .unwrap();
+
+    cmdr_fs::volume::conformance::assert_rename_refuses_an_existing_destination(
+        &volume,
+        Path::new("source.txt"),
+        Path::new("target.txt"),
+    )
+    .await;
+}
+
+/// The shared `Volume::create_file` no-clobber assertion. LocalPosix earns it
+/// with `OpenOptions::create_new(true)`; a plain `std::fs::write` one refactor
+/// away would truncate instead, with the New File command still reporting
+/// success.
+#[tokio::test]
+async fn create_file_honors_the_shared_no_clobber_contract() {
+    let test_dir = TestDir::new("create_file_no_clobber_conformance_test");
+    let volume = LocalPosixVolume::new("Test", &*test_dir);
+
+    volume
+        .create_file(Path::new("notes.txt"), b"the user's notes")
+        .await
+        .unwrap();
+
+    cmdr_fs::volume::conformance::assert_create_file_refuses_to_clobber(&volume, Path::new("notes.txt"), b"new").await;
+}
+
+/// The shared `Volume::create_directory_all` honesty assertion, over the trait's
+/// default walk composed from LocalPosix's own `exists` + `create_directory`.
+#[tokio::test]
+async fn create_directory_all_honors_the_shared_honesty_contract() {
+    let test_dir = TestDir::new("create_directory_all_honesty_conformance_test");
+    let volume = LocalPosixVolume::new("Test", &*test_dir);
+
+    volume.create_directory(Path::new("album")).await.unwrap();
+
+    cmdr_fs::volume::conformance::assert_create_directory_all_reports_an_existing_dir_honestly(
+        &volume,
+        Path::new("album"),
+    )
+    .await;
+}
+
 #[tokio::test]
 async fn test_rename_conflict_no_force() {
     let test_dir = TestDir::new("rename_conflict_test");

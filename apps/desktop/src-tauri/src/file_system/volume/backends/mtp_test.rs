@@ -688,3 +688,94 @@ async fn bounded_window_read_assembles_byte_exact() {
         .await
         .expect("virtual-mtp disconnect should succeed");
 }
+
+/// The shared `Volume::rename` no-clobber assertion, over a real `MtpVolume`.
+///
+/// MTP is the backend with no protocol-level exclusivity to lean on: PTP has no
+/// rename-if-absent, so the refusal is a hand-written `exists` probe in front of
+/// `rename_object`. Nothing but this assertion would notice it going away — and
+/// the same protocol happily hosts two siblings with the same name, so a rename
+/// that stopped refusing wouldn't even produce a visible collision.
+#[cfg(feature = "virtual-mtp")]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn rename_honors_the_shared_no_clobber_contract() {
+    use crate::mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
+
+    let _guard = virtual_device_test_lock().lock().await;
+    let fixture = setup_virtual_mtp_device();
+    let device_id = crate::mtp::list_mtp_devices()
+        .into_iter()
+        .find(|d| d.location_id == fixture.location_id)
+        .map(|d| d.id)
+        .expect("the virtual device must appear in discovery");
+    let info = connection_manager()
+        .connect(&device_id, None)
+        .await
+        .expect("virtual-mtp connect should succeed");
+    let storage_id = info.storages.first().expect("virtual device should have storages").id;
+    let vol = MtpVolume::new(&device_id, storage_id, "Test");
+    // `resolve_path_to_handle` is cache-only, so a nested path has to be reached
+    // through its parent: root first, then Documents.
+    vol.list_directory(Path::new("/"), None)
+        .await
+        .expect("priming the root listing");
+    vol.list_directory(Path::new("/Documents"), None)
+        .await
+        .expect("priming the Documents listing");
+
+    cmdr_fs::volume::conformance::assert_rename_refuses_an_existing_destination(
+        &vol,
+        Path::new("/Documents/report.txt"),
+        Path::new("/Documents/notes.txt"),
+    )
+    .await;
+
+    connection_manager()
+        .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+        .await
+        .expect("virtual-mtp disconnect should succeed");
+}
+
+/// The shared `Volume::create_directory_all` honesty assertion, over a real
+/// `MtpVolume` — the backend the honesty question was written for.
+///
+/// MTP is the one that answers `create_directory_errors_on_existing_dir() ==
+/// false`, so the trait's default walk can't learn "it was already there" from a
+/// collision error; it has to learn it from the `exists` probe it runs first. If
+/// that probe were ever dropped as redundant, `create_folder` would make a
+/// SECOND `Documents` beside the first and the walk would report `Created` — and
+/// the transfer driver would then skip every destination conflict probe inside a
+/// folder full of the user's files.
+#[cfg(feature = "virtual-mtp")]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn create_directory_all_honors_the_shared_honesty_contract() {
+    use crate::mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
+
+    let _guard = virtual_device_test_lock().lock().await;
+    let fixture = setup_virtual_mtp_device();
+    let device_id = crate::mtp::list_mtp_devices()
+        .into_iter()
+        .find(|d| d.location_id == fixture.location_id)
+        .map(|d| d.id)
+        .expect("the virtual device must appear in discovery");
+    let info = connection_manager()
+        .connect(&device_id, None)
+        .await
+        .expect("virtual-mtp connect should succeed");
+    let storage_id = info.storages.first().expect("virtual device should have storages").id;
+    let vol = MtpVolume::new(&device_id, storage_id, "Test");
+    vol.list_directory(Path::new("/"), None)
+        .await
+        .expect("priming the root listing");
+
+    cmdr_fs::volume::conformance::assert_create_directory_all_reports_an_existing_dir_honestly(
+        &vol,
+        Path::new("/Documents"),
+    )
+    .await;
+
+    connection_manager()
+        .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+        .await
+        .expect("virtual-mtp disconnect should succeed");
+}

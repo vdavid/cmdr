@@ -201,6 +201,46 @@ async fn delete_honors_the_shared_non_recursion_contract() {
     conformance::assert_delete_leaves_a_non_empty_dir_intact(&volume, Path::new("/album"), "keep.txt").await;
 }
 
+/// The shared no-clobber assertions, over the double every other suite's
+/// fixtures stand on. Same reasoning as the delete one above: if the double
+/// stops honoring a contract, hundreds of tests keep passing while the thing
+/// they were proving quietly stops being true.
+#[tokio::test]
+async fn rename_honors_the_shared_no_clobber_contract() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_file(Path::new("/source.txt"), b"source").await.unwrap();
+    volume
+        .create_file(Path::new("/target.txt"), b"the user's target file")
+        .await
+        .unwrap();
+
+    conformance::assert_rename_refuses_an_existing_destination(
+        &volume,
+        Path::new("/source.txt"),
+        Path::new("/target.txt"),
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn create_file_honors_the_shared_no_clobber_contract() {
+    let volume = InMemoryVolume::new("Test");
+    volume
+        .create_file(Path::new("/notes.txt"), b"the user's notes")
+        .await
+        .unwrap();
+
+    conformance::assert_create_file_refuses_to_clobber(&volume, Path::new("/notes.txt"), b"new").await;
+}
+
+#[tokio::test]
+async fn create_directory_all_honors_the_shared_honesty_contract() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_directory(Path::new("/album")).await.unwrap();
+
+    conformance::assert_create_directory_all_reports_an_existing_dir_honestly(&volume, Path::new("/album")).await;
+}
+
 #[tokio::test]
 async fn test_delete_nonexistent_returns_error() {
     let volume = InMemoryVolume::new("Test");
