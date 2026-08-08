@@ -22,7 +22,7 @@
     "apps/desktop/src-tauri/src/file_system/write_operations/journal_capture_tests.rs": 941,
     "apps/desktop/src-tauri/src/file_system/write_operations/manager/tests.rs": 852,
     "apps/desktop/src-tauri/src/file_system/write_operations/rename/bulk.rs": 807,
-    "apps/desktop/src-tauri/src/file_system/write_operations/scan.rs": 1271,
+    "apps/desktop/src-tauri/src/file_system/write_operations/scan.rs": 1064,
     "apps/desktop/src-tauri/src/file_system/write_operations/state.rs": 844,
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/move_op.rs": 856,
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/transfer_driver_async_tests.rs": 1144,

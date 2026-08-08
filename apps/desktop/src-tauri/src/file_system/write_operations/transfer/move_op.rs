@@ -9,7 +9,8 @@ use super::super::cancellable::remove_dir_all_in_background;
 use super::super::conflict::{ApplyToAll, resolve_conflict};
 use super::super::durability::flush_created_destinations;
 use super::super::overwrite::safe_overwrite_dir;
-use super::super::scan::{SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result};
+use super::super::scan::{SourceItemTracker, handle_dry_run, scan_sources};
+use super::super::scan_cache::take_cached_scan_result;
 use super::super::state::{
     CopyTransaction, OperationIntent, WriteOperationState, load_intent, update_operation_status,
 };

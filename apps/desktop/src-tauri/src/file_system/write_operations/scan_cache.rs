@@ -88,6 +88,22 @@ pub(super) fn insert_scan_result(preview_id: String, result: CachedScanResult) {
     }
 }
 
+/// Tries to get cached scan results for a preview, removing them from cache.
+pub(super) fn take_cached_scan_result(preview_id: &str) -> Option<ScanResult> {
+    if let Ok(mut cache) = SCAN_PREVIEW_RESULTS.write() {
+        cache.remove(preview_id).map(|cached| ScanResult {
+            files: cached.files,
+            dirs: cached.dirs,
+            file_count: cached.file_count,
+            total_bytes: cached.total_bytes,
+            dedup_bytes: cached.dedup_bytes,
+            per_path: cached.per_path,
+        })
+    } else {
+        None
+    }
+}
+
 /// Drops the cached scan result for `preview_id`, if any. Called on dialog
 /// teardown (`release_scan_preview`) so a result that finished scanning but was
 /// never consumed by a started op doesn't linger until quit.

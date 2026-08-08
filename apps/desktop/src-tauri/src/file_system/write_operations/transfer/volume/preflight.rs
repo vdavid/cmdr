@@ -30,7 +30,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Instant;
 
-use super::super::super::scan::take_cached_scan_result;
+use super::super::super::scan_cache::take_cached_scan_result;
 use super::super::super::state::{WriteOperationState, is_cancelled};
 use super::super::super::types::{
     OperationEventSink, VolumeCopyConfig, WriteCancelledEvent, WriteOperationError, WriteOperationPhase,
