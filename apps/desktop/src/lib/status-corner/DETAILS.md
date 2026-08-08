@@ -5,15 +5,23 @@ Depth for `CLAUDE.md`. Up: `apps/desktop/src/CLAUDE.md`.
 ## What's here
 
 - `StatusCorner.svelte`: the row. One optional `children` snippet, then `OperationChip`, then `IndexingStatusIndicator`.
-- `OperationChip.svelte`: the corner progress chip (markup, copy, and the settle timer).
-- `operation-chip.ts`: pure — which operation the chip shows, how full its bar is, and the destination name its tooltip
-  uses.
+- `OperationChip.svelte`: the corner chip (markup, copy, and the settle timer), in either of its two states.
+- `operation-chip.ts`: pure — what the corner has to say (`pickChipState`), which operation it previews, how full its bar
+  is, and the destination name its tooltip uses.
+- `operation-failure-watch.svelte.ts`: the main window's failure notice — which failures get a toast, which are left to
+  the dialog already showing them, and what a burst collapses into.
+- `OperationFailedToastContent.svelte` / `OperationFailuresToastContent.svelte`: one failure's notice, and the summary a
+  burst collapses into.
 - `StatusCorner.svelte.test.ts`: the structural contract (always mounted, children and the chip render before the
   hourglass).
 - `StatusCorner.a11y.test.ts`: tier-3 axe pass, idle and populated.
-- `operation-chip.test.ts`: every visibility gate and the bar's metric, as pure data.
+- `operation-chip.test.ts`: every visibility gate, the bar's metric, and the progress-beats-failure precedence, as pure
+  data.
 - `OperationChip.svelte.test.ts`: the rendered chip, driven through a real operations store.
 - `OperationChip.a11y.test.ts`: tier-3 axe pass, running and paused.
+- `operation-failure-watch.svelte.test.ts`: one toast per failure, no double-toast on a re-emitted snapshot, both
+  suppression paths, and the collapse past three.
+- `OperationFailedToastContent.svelte.test.ts` (+ both toasts' `.a11y.test.ts`): the wording, the reason, and the action.
 
 ## Layout model
 
@@ -58,6 +66,21 @@ without a modal in front of it, and clicking it opens (or raises) the queue wind
   the status word "Paused" — a frozen bar under "Copying" is ambiguous, and the tooltip still leads with the verb.
 - **Nothing else**: no percentage text, no "+N" affix for the operations it isn't showing. Both were considered and cut
   as noise; the queue window is the surface that promises completeness.
+
+### The failure state
+
+`pickChipState` returns one of two things, never both: the progress preview above, or a mark that something stopped
+before it was done. Live work wins — a `triangle-alert` glyph, "Couldn't finish" in `--color-warning-text`, and no bar,
+shown only when nothing is running or paused.
+
+It exists because of what happens otherwise: dismiss the toast with the queue window closed, and the main window carries
+zero trace that anything went wrong, which is the exact bug this corner was built to fix. It stays deliberately narrow (a
+count and a glyph, no list, no reason) so it reads as a mark, not a notification centre. Clicking it opens the queue,
+same as the progress state. The failure the foreground error dialog is showing is left to that dialog
+(`getForegroundFailureId()`).
+
+The label reuses `queue.row.status`'s `failed` arm, so the corner and the failed row say the same two words. One string,
+`queue.chip.failed`, serves as both the tooltip and the spoken label.
 
 ### When it stays quiet
 
@@ -110,8 +133,54 @@ A real `<button>` (it does something, unlike the hourglass's `role="img"` span),
 global `button:focus-visible` ring. Its `aria-label` carries the state and the percentage plus what pressing it does;
 the bar inside is wrapped in `aria-hidden`, since announcing the same percentage twice helps nobody.
 
+## The failure notice
+
+`operation-failure-watch.svelte.ts` watches the main window's store for rows entering `failed` and raises a toast per
+new one. It's a reaction to the snapshot the window already subscribes to: no new event, no listener, no polling.
+
+- **Persistent, never a timer.** The person this is for was away from the keyboard when it happened. A modal was
+  considered and rejected: the user pressed Queue precisely to stop being blocked, a settled failure asks for no
+  decision, and a modal would steal the keystroke they were mid-way through.
+- **The toast is a PREVIEW: title, the reason's explanation, and "Show in operation queue".** It leaves out the
+  suggestion and clamps the explanation to three lines. The pipeline's prose was written for a dialog with room, and its
+  interpolating variants (`invalid_name`, `read_only_device`) carry paths and device names with no length limit; three
+  lines covers every stock message, so in practice nothing is cut. The full reason, the suggestion, and the Dismiss live
+  on the queue row, one press away.
+- **The toast's title is NOT the pipeline's title.** `queue.failureToast.title` selects on the operation type
+  ("Couldn't finish copying"), because the catalog's own titles say "Copy failed" and the house never writes "failed" or
+  "error" at a user. The body below it is the pipeline's, unchanged.
+- **Past three, they collapse into one summary.** Mechanical, not aesthetic: a toast stack full of persistent toasts
+  silently drops new arrivals (`lib/ui/CLAUDE.md`), so an unbounded burst would lose failures. The summary carries a
+  dedup id and reads its count off the store rather than a prop, because the toast store's dedup path replaces content
+  and level but NOT props — a prop-carried count would freeze at whatever the fourth failure saw. Reading live also keeps
+  it honest as the user clears rows. `toastGroup: 'operation-failure'` (cap `MAX_FAILURE_TOASTS + 1`, pure backstop)
+  keeps a burst from evicting unrelated toasts.
+- **Announced ids are remembered, and forgotten when the row leaves.** A re-emitted snapshot can't double-toast, and the
+  set can't grow for the life of the process. Operation ids are never reused, so forgetting one can't resurrect it.
+  Suppressed failures count as announced: they were reported, just not by us, and must not get a late toast when the
+  dialog that reported them closes.
+- **What's live is read off the toast store, not tracked here.** The user can dismiss a toast at any moment, and the
+  store is the only thing that knows; local bookkeeping would drift the first time one self-dismissed.
+
+### Why the foreground handover needs two slots
+
+The backend retains a failure unconditionally (it can't know a modal is up), so the frontend decides what not to
+double-report. `getForegroundOperationId()` alone can't: the progress dialog releases that slot as it unmounts, and the
+failure row only reaches the snapshot AFTER that (the backend emits `write-error` first and settles the record second).
+By then the slot is empty and the corner would happily announce a failure the user is reading in the dialog in front of
+them.
+
+So `dialog-state.svelte.ts`'s `handleTransferError` reads the slot while the progress dialog still holds it and hands the
+id to `setForegroundFailureId`. Both the chip and the toast check both slots. Closing the error dialog releases the
+second slot AND calls `dismissFailedOperation(id)`, so the common case — a foreground failure the user read and closed —
+leaves nothing behind in the queue.
+
 ## Decisions
 
+- **Why the watch lives outside a component.** A toast isn't part of the status row, so tying its lifetime to
+  `StatusCorner` would make the corner responsible for something it doesn't render. `$effect.root`, started and stopped
+  by `routes/(main)/+page.svelte` next to `initMainWindowOperations()`, keeps that honest and keeps the pass
+  (`announceFailures`) callable straight from a test.
 - **Why the chip's rules are a pure module.** Every gate is a branch that has to be provable, and a component test per
   branch would pay a mount for each. `pickChipOperation` takes rows plus the foreground id and returns a small view
   model, so the component is markup and the gates are data.

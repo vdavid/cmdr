@@ -84,6 +84,40 @@ export function destinationName(destination: string | null): string {
  * A `queued` row on its own shows nothing: it's waiting on a lane that some
  * other row already speaks for.
  */
+/**
+ * What the corner has to say, or `null` for nothing.
+ *
+ * Two states, and only ever one at a time: work in flight, or the mark left by
+ * work that stopped. Live work wins — it's the more useful readout, and the
+ * failures are still in the queue window and in their toast.
+ */
+export type ChipState = { kind: 'progress'; operation: ChipOperation } | { kind: 'failure'; count: number }
+
+/**
+ * The chip's whole decision: which operation to preview, or how many failures
+ * to mark, or nothing at all.
+ *
+ * The failure state exists so that dismissing the toast with the queue window
+ * closed doesn't leave the main window with zero trace of what happened, which
+ * is the bug this whole corner exists to fix. It's deliberately narrow: a count
+ * and a glyph, no bar, and only while nothing is in flight. `foregroundFailureId`
+ * is the failure the error dialog is already showing, which the corner leaves
+ * to it.
+ */
+export function pickChipState(
+  rows: OperationRow[],
+  foregroundOperationId: string | null,
+  foregroundFailureId: string | null,
+): ChipState | null {
+  const operation = pickChipOperation(rows, foregroundOperationId)
+  if (operation) return { kind: 'progress', operation }
+
+  const count = rows.filter(
+    (row) => row.snapshot.status === 'failed' && row.snapshot.operationId !== foregroundFailureId,
+  ).length
+  return count > 0 ? { kind: 'failure', count } : null
+}
+
 export function pickChipOperation(rows: OperationRow[], foregroundOperationId: string | null): ChipOperation | null {
   const eligible = rows.filter(
     (row) => !isInstantOperation(row.snapshot.operationType) && row.snapshot.operationId !== foregroundOperationId,

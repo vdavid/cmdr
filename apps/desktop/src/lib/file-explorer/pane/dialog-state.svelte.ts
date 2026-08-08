@@ -1,6 +1,12 @@
 import { refreshListing, type Initiator } from '$lib/tauri-commands'
 import { onDirectoryDiff, findFileIndex } from '$lib/tauri-commands'
 import { setArchivePassword, clearArchivePassword } from '$lib/tauri-commands'
+import { dismissFailedOperation } from '$lib/tauri-commands'
+import {
+  getForegroundFailureId,
+  getForegroundOperationId,
+  setForegroundFailureId,
+} from '$lib/file-operations/foreground-operation.svelte'
 import { addToast } from '$lib/ui/toast'
 import { composeTransferCompleteToast } from '$lib/file-operations/transfer/transfer-complete-toast'
 import { getAppLogger } from '$lib/logging/logger'
@@ -531,6 +537,12 @@ export function createDialogState(deps: DialogStateDeps) {
     handleTransferError(error: WriteOperationError) {
       const op = transferProgressProps?.operationType ?? 'copy'
       const opLabel = transferOpLabel(op)
+      // Read the foreground slot NOW, while the progress dialog still holds it:
+      // it releases the slot as it unmounts, a few lines down, and the backend's
+      // retained failure row only reaches the snapshot after that. Without this
+      // handover the corner chip and the failure toast would both announce a
+      // failure the user is looking at in this very dialog.
+      const failedOperationId = getForegroundOperationId()
 
       // An encrypted-archive source needs a password: intercept BEFORE the generic
       // error dialog and prompt instead. Keep `transferProgressProps` alive (only
@@ -569,6 +581,7 @@ export function createDialogState(deps: DialogStateDeps) {
       showTransferProgressDialog = false
       transferProgressProps = null
 
+      setForegroundFailureId(failedOperationId)
       transferErrorProps = { operationType: op, error }
       showTransferErrorDialog = true
     },
@@ -660,6 +673,22 @@ export function createDialogState(deps: DialogStateDeps) {
     },
 
     handleTransferErrorClose() {
+      // The user has read this one, so the copy in the operation queue has done
+      // its job: drop it. The backend retains every failure unconditionally (it
+      // can't know a dialog was up), and this is the only place that knows one
+      // was. Everything else waits for an explicit Dismiss.
+      const failedOperationId = getForegroundFailureId()
+      if (failedOperationId !== null) {
+        setForegroundFailureId(null)
+        void dismissFailedOperation(failedOperationId).catch((err: unknown) => {
+          // Nothing to recover: the row simply stays in the queue window, which
+          // is a safe place for it to be.
+          log.warn('Failed to dismiss the failed operation {operationId}: {error}', {
+            operationId: failedOperationId,
+            error: err,
+          })
+        })
+      }
       showTransferErrorDialog = false
       transferErrorProps = null
       deps.onRefocus()

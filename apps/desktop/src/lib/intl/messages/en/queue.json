@@ -128,6 +128,37 @@
     }
   },
 
+  "queue.failureToast.title": "{type, select, copy {Couldn''t finish copying} move {Couldn''t finish moving} delete {Couldn''t finish deleting} trash {Couldn''t finish moving to trash} rename {Couldn''t finish renaming} create_folder {Couldn''t finish creating the folder} create_file {Couldn''t finish creating the file} archive_edit {Couldn''t finish editing the archive} other {Couldn''t finish}}",
+  "@queue.failureToast.title": {
+    "description": "Headline of the notice that pops up in the main window when an operation running in the background stops before it''s done. The explanation underneath says why; this line only says what was interrupted. Avoid the words \"error\" and \"failed\": \"couldn''t finish\" is the house wording, and it matches the status word on the operation''s row in the queue window.",
+    "placeholders": {
+      "type": "the kind of operation: copy, move, delete, trash, rename, create_folder, create_file, or archive_edit"
+    }
+  },
+
+  "queue.failureToast.action": "Show in operation queue",
+  "@queue.failureToast.action": {
+    "description": "Button on the failure notice that opens the operation queue window, where the operation''s row carries the full reason and what to do about it. \"Operation queue\" is the window''s name; keep it identical to the window title."
+  },
+
+  "queue.failureToast.summary": "{count, plural, one {{countText} operation couldn''t finish} other {{countText} operations couldn''t finish}}",
+  "@queue.failureToast.summary": {
+    "description": "Headline of the single notice that replaces the individual ones when several operations stop in a row (more than three). It names only how many; the operation queue window lists each one with its own reason, which the button underneath opens. The count updates as more come in and as the user clears them.",
+    "placeholders": {
+      "count": "how many operations couldn''t finish",
+      "countText": "the same count, already formatted with the locale''s digit grouping (for example 1,024)"
+    }
+  },
+
+  "queue.chip.failed": "{count, plural, one {{countText} operation couldn''t finish} other {{countText} operations couldn''t finish}}. Open the operation queue to see why.",
+  "@queue.chip.failed": {
+    "description": "Screen-reader label and hover tooltip for the main window''s corner chip when it''s marking operations that stopped before they were done. The chip is a button: pressing it opens the operation queue window, which the second sentence promises. It shows this only when nothing is running; anything in flight takes the corner instead.",
+    "placeholders": {
+      "count": "how many operations couldn''t finish",
+      "countText": "the same count, already formatted with the locale''s digit grouping (for example 1,024)"
+    }
+  },
+
   "queue.chip.ariaLabel": "{label}, {percentText} percent. Open the operation queue.",
   "@queue.chip.ariaLabel": {
     "description": "Screen-reader label for the small progress chip in the main window''s top-right corner, which previews the operation currently running in the background. The chip is a button: pressing it opens the operation queue window, which the second sentence promises. Spell \"percent\" as a word rather than the % sign, so screen readers say it naturally.",

@@ -54,3 +54,26 @@ export function getForegroundOperationId(): string | null {
 export function clearForegroundOperation(id: string): void {
   if (foregroundOperationId === id) foregroundOperationId = null
 }
+
+/**
+ * The operation whose FAILURE the foreground error dialog is showing, or `null`.
+ *
+ * A second slot, and it has to be, because of the order things happen in: the
+ * progress dialog unmounts the instant the error arrives, releasing the slot
+ * above, and the failure row only reaches the snapshot afterwards (the backend
+ * emits `write-error` before it settles the record). By then the first slot is
+ * empty and an ambient surface would happily announce a failure the user is
+ * already reading. This one is claimed on the handover and released when the
+ * dialog closes.
+ */
+let foregroundFailureId = $state<string | null>(null)
+
+/** Claims the failure slot for `id`, or empties it with `null`. */
+export function setForegroundFailureId(id: string | null): void {
+  foregroundFailureId = id
+}
+
+/** The operation the foreground error dialog is showing, or `null`. Reactive. */
+export function getForegroundFailureId(): string | null {
+  return foregroundFailureId
+}

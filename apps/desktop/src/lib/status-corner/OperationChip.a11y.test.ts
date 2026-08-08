@@ -30,6 +30,7 @@ vi.mock('$lib/file-operations/queue/main-window-operations.svelte', () => ({
 
 vi.mock('$lib/file-operations/foreground-operation.svelte', () => ({
   getForegroundOperationId: () => null,
+  getForegroundFailureId: () => null,
 }))
 
 import { createOperationsStore } from '$lib/file-operations/queue/operations-store.svelte'

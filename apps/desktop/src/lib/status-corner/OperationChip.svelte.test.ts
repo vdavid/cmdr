@@ -36,8 +36,10 @@ vi.mock('$lib/file-operations/queue/main-window-operations.svelte', () => ({
 }))
 
 let foregroundOperationId: string | null = null
+let foregroundFailureId: string | null = null
 vi.mock('$lib/file-operations/foreground-operation.svelte', () => ({
   getForegroundOperationId: () => foregroundOperationId,
+  getForegroundFailureId: () => foregroundFailureId,
 }))
 
 import { createOperationsStore } from '$lib/file-operations/queue/operations-store.svelte'
@@ -54,6 +56,16 @@ function snapshot(over: Partial<OperationSnapshot> = {}): OperationSnapshot {
     error: null,
     ...over,
   }
+}
+
+/** A retained failure: settled, no progress, carrying its typed reason. */
+function failedSnapshot(operationId = 'op-1'): OperationSnapshot {
+  return snapshot({
+    operationId,
+    status: 'failed',
+    supportsRollback: false,
+    error: { type: 'source_not_found', path: '/Users/me/Documents/report.pdf' },
+  })
 }
 
 function progress(over: Partial<WriteProgressEvent> = {}): WriteProgressEvent {
@@ -94,6 +106,7 @@ beforeEach(() => {
   document.body.innerHTML = ''
   openQueueWindow.mockClear()
   foregroundOperationId = null
+  foregroundFailureId = null
   store = createOperationsStore()
 })
 
@@ -236,5 +249,42 @@ describe('OperationChip', () => {
     store?._testApplySnapshot([snapshot()])
     renderChip()
     expect(target.querySelector('.tooltip-content')?.textContent).toBe('Copying to Backup · 0%')
+  })
+
+  it('keeps an ambient trace of a failure once the toast is gone', () => {
+    // Without this, dismissing the toast with the queue window closed would
+    // leave zero sign in the main window that anything went wrong.
+    store?._testApplySnapshot([failedSnapshot()])
+    renderChip()
+    expect(chip()?.querySelector('.chip-label')?.textContent).toBe("Couldn't finish")
+    // No bar: there's no progress left to describe.
+    expect(target.querySelector('[role="progressbar"]')).toBeNull()
+    expect(chip()?.getAttribute('aria-label')).toBe(
+      "1 operation couldn't finish. Open the operation queue to see why.",
+    )
+  })
+
+  it('counts several failures in the corner', () => {
+    store?._testApplySnapshot([failedSnapshot('a'), failedSnapshot('b')])
+    renderChip()
+    expect(chip()?.getAttribute('aria-label')).toBe(
+      "2 operations couldn't finish. Open the operation queue to see why.",
+    )
+  })
+
+  it('lets a running operation win the corner over a retained failure', () => {
+    store?._testApplySnapshot([failedSnapshot('a'), snapshot({ operationId: 'b' })])
+    store?._testApplyProgress(progress({ operationId: 'b' }))
+    renderChip()
+    expect(chip()?.querySelector('.chip-label')?.textContent).toBe('Copying')
+    expect(target.querySelector('[role="progressbar"]')).not.toBeNull()
+  })
+
+  it('opens the operation queue from the failure state too', () => {
+    store?._testApplySnapshot([failedSnapshot()])
+    renderChip()
+    chip()?.click()
+    flushSync()
+    expect(openQueueWindow).toHaveBeenCalledTimes(1)
   })
 })

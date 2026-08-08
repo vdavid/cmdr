@@ -97,8 +97,13 @@ durable surface for them: it survives a dismissed toast, a closed window, and a 
   full, wrapping mid-token (an interpolated path can be arbitrarily long). The main window's toast is the surface that
   abbreviates; it points here for the rest.
 - **Dismissal is explicit, always.** Per-row Dismiss → `dismiss_failed_operation`; the toolbar's "Dismiss all" (shown
-  only when `failureCount > 1`) → `dismiss_all_failed_operations`. Nothing else drops a failed row — the whole feature
-  exists for the user who was away from the keyboard.
+  only when `failureCount > 1`) → `dismiss_all_failed_operations`; and closing `TransferErrorDialog` for a foreground
+  failure, which the user has by definition just read
+  (`apps/desktop/src/lib/status-corner/DETAILS.md` § "Why the foreground handover needs two slots"). Nothing else drops
+  a failed row — the whole feature exists for the user who was away from the keyboard.
+- **The main window's half of this** (the persistent failure toast and the corner chip's failure state) lives in
+  `apps/desktop/src/lib/status-corner/CLAUDE.md`. Both render `failure-reason.ts`, so the three surfaces can't describe
+  one failure three ways.
 
 The progress-dialog Queue button and the auto-queue surfacing open the window via `openQueueWindow()` and read this same
 store. Don't fork a second opener or store.

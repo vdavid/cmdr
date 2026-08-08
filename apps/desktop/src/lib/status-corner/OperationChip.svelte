@@ -5,22 +5,34 @@
     // lives in its tooltip, and the whole queue is one click away.
     //
     // Which operation, and every rule about when to stay quiet: `operation-chip.ts`.
+    import Icon from '$lib/ui/Icon.svelte'
     import ProgressBar from '$lib/ui/ProgressBar.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { formatInteger } from '$lib/intl/number-format'
     import { formatDuration } from '$lib/units'
     import { getMainWindowOperationRows } from '$lib/file-operations/queue/main-window-operations.svelte'
-    import { getForegroundOperationId } from '$lib/file-operations/foreground-operation.svelte'
+    import { getForegroundFailureId, getForegroundOperationId } from '$lib/file-operations/foreground-operation.svelte'
     import { openQueueWindow } from '$lib/file-operations/queue/queue-window'
-    import { CHIP_SETTLE_MS, destinationName, pickChipOperation } from './operation-chip'
+    import { CHIP_SETTLE_MS, destinationName, pickChipState } from './operation-chip'
 
-    const candidate = $derived(pickChipOperation(getMainWindowOperationRows(), getForegroundOperationId()))
-    /** Derived on its own so the settle effect below depends on WHICH operation
-     *  is up, not on its progress: a `$derived` string doesn't re-notify while
-     *  its value is unchanged, so the 200 ms progress ticks don't restart the
-     *  timer (which would keep the chip hidden forever). */
-    const candidateId = $derived(candidate?.row.snapshot.operationId ?? null)
+    const chipState = $derived(
+        pickChipState(getMainWindowOperationRows(), getForegroundOperationId(), getForegroundFailureId()),
+    )
+    /** The operation being previewed, or null in the failure state. */
+    const candidate = $derived(chipState?.kind === 'progress' ? chipState.operation : null)
+    /** Derived on its own so the settle effect below depends on WHAT is up, not
+     *  on its progress: a `$derived` string doesn't re-notify while its value is
+     *  unchanged, so the 200 ms progress ticks don't restart the timer (which
+     *  would keep the chip hidden forever). The failure state is one key
+     *  whatever the count, so a second failure can't hide the first.  */
+    const candidateId = $derived(
+        chipState === null
+            ? null
+            : chipState.kind === 'failure'
+              ? 'failure'
+              : chipState.operation.row.snapshot.operationId,
+    )
 
     /** The operation the chip has settled on. See the settle effect. */
     let settledId = $state<string | null>(null)
@@ -57,7 +69,7 @@
         }
     })
 
-    const visible = $derived(candidate !== null && settledId === candidateId)
+    const visible = $derived(chipState !== null && settledId === candidateId)
 
     /** The action word, always: "Copying", "Moving to trash". The tooltip leads
      *  with it even while paused, where the chip itself says "Paused". */
@@ -65,8 +77,21 @@
         candidate === null ? '' : tString('queue.row.label', { type: candidate.row.snapshot.operationType }),
     )
     const pausedWord = $derived(tString('queue.row.status', { status: 'paused' }))
-    const chipLabel = $derived(candidate?.paused === true ? pausedWord : verb)
+    /** The same "Couldn't finish" the failed queue row shows, so the two
+     *  surfaces can't describe the same thing with different words. */
+    const failedWord = $derived(tString('queue.row.status', { status: 'failed' }))
+    const chipLabel = $derived(
+        chipState?.kind === 'failure' ? failedWord : candidate?.paused === true ? pausedWord : verb,
+    )
     const percentText = $derived(formatInteger(candidate?.percent ?? 0))
+
+    /** One sentence for both the tooltip and the spoken label in the failure
+     *  state: the count, and the promise that clicking opens the queue. */
+    const failedText = $derived(
+        chipState?.kind !== 'failure'
+            ? ''
+            : tString('queue.chip.failed', { count: chipState.count, countText: formatInteger(chipState.count) }),
+    )
 
     /** The tooltip's trailing fact: how long is left, or that it's paused (a
      *  paused operation has no honest countdown). Absent while the backend's
@@ -83,6 +108,7 @@
     })
 
     const tooltipText = $derived.by(() => {
+        if (chipState?.kind === 'failure') return failedText
         if (candidate === null) return ''
         const count = candidate.row.progress?.filesTotal ?? 0
         const destination = destinationName(candidate.row.snapshot.destination)
@@ -98,7 +124,9 @@
         })
     })
 
-    const ariaLabel = $derived(tString('queue.chip.ariaLabel', { label: chipLabel, percentText }))
+    const ariaLabel = $derived(
+        chipState?.kind === 'failure' ? failedText : tString('queue.chip.ariaLabel', { label: chipLabel, percentText }),
+    )
 
     /** The tooltip action ADOPTS this element, and an adopted element keeps its
      *  own `hidden` attribute — so it's the inner div that's bound here, never
@@ -106,9 +134,10 @@
     let tooltipContent = $state<HTMLDivElement>()
 </script>
 
-{#if visible && candidate}
+{#if visible && chipState}
     <button
         class="operation-chip"
+        class:failed={chipState.kind === 'failure'}
         type="button"
         aria-label={ariaLabel}
         onclick={() => {
@@ -116,12 +145,19 @@
         }}
         use:tooltip={{ contentEl: tooltipContent }}
     >
+        {#if chipState.kind === 'failure'}
+            <!-- No bar: there's no progress left to describe, and the glyph is
+                 what makes the corner readable at a glance. -->
+            <Icon name="triangle-alert" size={13} />
+        {/if}
         <span class="chip-label">{chipLabel}</span>
-        <!-- The bar repeats what the aria-label already says as a percentage,
-             so screen readers hear it once. -->
-        <span class="chip-bar" aria-hidden="true">
-            <ProgressBar value={candidate.fraction} size="sm" animated={!candidate.paused} />
-        </span>
+        {#if chipState.kind === 'progress'}
+            <!-- The bar repeats what the aria-label already says as a percentage,
+                 so screen readers hear it once. -->
+            <span class="chip-bar" aria-hidden="true">
+                <ProgressBar value={chipState.operation.fraction} size="sm" animated={!chipState.operation.paused} />
+            </span>
+        {/if}
     </button>
 
     <div hidden>
@@ -149,6 +185,14 @@
     .operation-chip:hover {
         background: var(--color-tint-hover);
         color: var(--color-text-secondary);
+    }
+
+    /* A failure earns colour where live progress doesn't: it's the one thing in
+       the corner the user has to notice. Warning, not error, matching the failed
+       queue row — this is an ambient trace, and the toast did the shouting. */
+    .operation-chip.failed,
+    .operation-chip.failed:hover {
+        color: var(--color-warning-text);
     }
 
     .chip-label {

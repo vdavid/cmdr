@@ -16,24 +16,21 @@ file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete)
 - `TransferProgressReadout.svelte`: the dual-bar readout (size + count, each with amount, percent, rate, plus one
   time-left cell) shared by the progress dialog and the queue rows. Two densities, one layout.
 - `scan-throughput.ts`: rolling-window scan-rate estimator (see below).
-- `foreground-operation.svelte.ts`: the module-scoped slot naming the operation the foreground progress dialog owns, so
-  ambient main-window surfaces can stay quiet about it.
+- `foreground-operation.svelte.ts`: two module-scoped slots naming what the foreground owns — the operation its progress
+  dialog is running, and the failure its error dialog is showing — so ambient main-window surfaces stay quiet about both.
 
 ## Must-knows
 
 - **Dialog copy lives in the i18n catalog, not in the components.** Every user-facing string in the copy/move, delete,
-  new-file, and new-folder dialogs (titles, buttons, phase labels, conflict-policy labels, scan-stat nouns, notices)
-  resolves from `messages/en/fileOperations.json` via `t()`/`tString()`/`<Trans>` (`$lib/intl`). Don't hardcode copy
-  here, enforced by `cmdr/no-raw-user-facing-string` on `transfer/`, `delete/`, `mkdir/`, `mkfile/`. The transfer
-  ERROR-MESSAGE prose (`transfer-error-messages.ts`, rendered in `TransferErrorDialog`/`FallbackErrorContent`) belongs
-  to the `lib/error-messages` pipeline, so it resolves from the `errors.write.*` catalog via `getMessage()` (RAW lookup,
-  no ICU — write apostrophes normally), NOT through ICU `t()`: the strings carry interpolated paths/sizes (`escapeHtml`,
-  `colorizeSizeString`) the .ts composes. Verb-dependent messages use per-operation variant keys
-  (`errors.write.<field>.<copy|move|delete|trash>`) selected by `operationType` (NOT a slotted verb token — that was an
-  i18n anti-pattern), so each locale phrases each operation naturally. en output is parity-pinned
-  (`file-operations-i18n-parity.test.ts` + the count-phrase unit tests for dialog copy;
-  `transfer/transfer-error-messages.parity.test.ts` for the write-error copy); a copy edit lands in the catalog AND the
-  test together. See [`$lib/intl/messages/CLAUDE.md`](../intl/messages/CLAUDE.md).
+  new-file, and new-folder dialogs resolves from `messages/en/fileOperations.json` via `t()`/`tString()`/`<Trans>`
+  (`$lib/intl`); hardcoding one fails `cmdr/no-raw-user-facing-string` on `transfer/`, `delete/`, `mkdir/`, `mkfile/`.
+  The transfer ERROR-MESSAGE prose (`transfer-error-messages.ts`) belongs to the `lib/error-messages` pipeline instead:
+  the `errors.write.*` catalog via `getMessage()` (RAW lookup, no ICU — write apostrophes normally), NOT ICU `t()`,
+  because the .ts composes interpolated paths and sizes (`escapeHtml`, `colorizeSizeString`) into markup. Verb-dependent
+  messages use per-operation variant keys (`errors.write.<field>.<copy|move|delete|trash>`) selected by `operationType`,
+  never a slotted verb token (an i18n anti-pattern), so each locale phrases each operation naturally. en output is
+  parity-pinned (`file-operations-i18n-parity.test.ts`, `transfer/transfer-error-messages.parity.test.ts`): a copy edit
+  lands in the catalog AND the test together. See [`$lib/intl/messages/CLAUDE.md`](../intl/messages/CLAUDE.md).
 - **One dual-bar readout, two surfaces.** The progress dialog and the operation queue's rows both render
   `TransferProgressReadout.svelte`, so what a running operation looks like is defined once. Its readout cells are
   fixed-width by design (the bars must follow the window, not the digits), which puts a floor under whatever hosts it:
@@ -42,6 +39,11 @@ file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete)
   path — that handoff is precisely when the ambient surfaces must start speaking about the operation. Release with
   `clearForegroundOperation(id)`, never an unconditional `setForegroundOperationId(null)`: a late teardown would
   otherwise silence the next dialog's operation. DETAILS § Foreground-operation slot.
+- **An error dialog is a HANDOVER, not a release.** The progress dialog drops its slot as it unmounts, and the retained
+  failure row reaches the snapshot only afterwards, so `handleTransferError` passes the id to `setForegroundFailureId`
+  while it still can; closing the dialog releases it and dismisses the retained failure. Skip that, and the corner chip
+  and the failure toast both announce what the user is already reading. Why:
+  `apps/desktop/src/lib/status-corner/DETAILS.md`.
 - **`scan-throughput.ts` covers the scan phase only.** The backend `EtaEstimator` covers write phases, so `DeleteDialog`
   and `TransferProgressDialog` use `ScanThroughput` to show `filesPerSecond` / `bytesPerSecond` during the scan. It
   returns nulls until two samples land, clamps negative deltas to zero, and must be `reset()` between scans. Pure, no

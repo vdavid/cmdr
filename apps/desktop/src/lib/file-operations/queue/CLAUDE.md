@@ -1,8 +1,8 @@
 # Operation queue window
 
-The standalone macOS window listing every running and waiting operation, with per-row pause/resume/cancel, multi-select
-plus "Cancel selected", and global pause/resume. Opens from View > Operation queue (⌥⌘Q) or the palette. Backend:
-`apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`.
+The standalone macOS window listing every running and waiting operation, plus the ones that couldn't finish: per-row
+pause/resume/cancel/dismiss, multi-select + "Cancel selected", global pause/resume. Opens from View > Operation queue
+(⌥⌘Q) or the palette. Backend: `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`.
 
 ## Module map
 
@@ -17,47 +17,38 @@ plus "Cancel selected", and global pause/resume. Opens from View > Operation que
 
 ## Must-knows
 
-- **It's a HARD window, not a modal.** The whole point is to keep working in the main window while operations run; a
-  modal would block that. So it's a real `WebviewWindow` on the `/queue` route, sibling to Settings / Shortcuts.
-- **Progress is DEFINED with the copy dialog, not here.** Speed and ETA are the backend's; the ETA goes through
-  `createEtaSmoother()` in `../progress-readout.ts` and rows pass `row.etaSecondsDisplay`, NEVER `progress.etaSeconds`
-  (raw here while the dialog smoothed it once showed one operation as "8m 12s" in one window and "5m 46s" in the other).
-  The bars, amounts, percents, rates, and time left are `../TransferProgressReadout.svelte`, whose fixed-width columns
-  set `queue-window.ts`'s `MIN_WIDTH`: narrow past that and the bars vanish, so the two move together.
-- **Two streams, never poll** (`subscribe, don't poll`). `operations-changed` is the THIN membership + lifecycle-status
-  snapshot (the row set + each row's status); the existing per-file `write-progress` stream drives the live bars/ETA.
-  The store keys progress by `operationId` and prunes it to current snapshot membership, so a finished op's bar can't
-  linger. Don't fatten `operations-changed` with progress.
-- **Rows cover copy/move/delete/trash AND the instant ops `rename` / `create_folder` / `create_file`.** Instant ops emit
-  NO `write-progress`, so their rows are a spinner + label with no bars (`progress` stays null), usually flashing by
-  before you can read them. `QueueRow`'s icon + `queue.row.label` arms use the SNAKE_CASE wire values (`create_folder`,
-  not `createFolder`), or they fall silently to the `trash-2` / "Working" fallbacks (pure `operation-icon.ts`).
-- **A paused op still reports `is_running: true`** from the backend status query (it stays in the write-op-state map).
-  The bar-is-moving truth is the SNAPSHOT `status` (`'running'` vs `'paused'`), NEVER `is_running`. Rows read
-  `snapshot.status`.
+- **It's a HARD window, not a modal**: keeping the main window usable while operations run is the whole point. A real
+  `WebviewWindow` on `/queue`, sibling to Settings.
+- **Progress is DEFINED with the copy dialog, not here.** Rows render `../TransferProgressReadout.svelte` and pass
+  `row.etaSecondsDisplay`, NEVER `progress.etaSeconds` (raw here while the dialog smoothed it once showed one operation
+  as "8m 12s" in one window and "5m 46s" in the other). The readout's fixed-width columns set `queue-window.ts`'s
+  `MIN_WIDTH`; the two move together.
+- **Two streams, never poll.** `operations-changed` is the THIN membership + status snapshot; `write-progress` drives
+  the live bars/ETA, keyed by `operationId` and pruned to snapshot membership. ❌ Don't fatten `operations-changed`.
+- **Rows cover copy/move/delete/trash AND the instant ops** (`rename` / `create_folder` / `create_file`), which emit no
+  `write-progress`, so they're a spinner + label with no bars. `QueueRow`'s icon + `queue.row.label` arms take the
+  SNAKE_CASE wire values or fall silently to the `trash-2` / "Working" fallbacks (`operation-icon.ts`).
+- **A paused op still reports `is_running: true`.** The bar-is-moving truth is the SNAPSHOT `status`, NEVER
+  `is_running`.
 - **A failed row STAYS until someone dismisses it.** The backend retains failures out-of-band (`write_operations`
   DETAILS § "Retained failures"), the page hides only `done` / `cancelled` (`isHiddenSettledStatus`, ❌ not
-  `isTerminalStatus`), and the row's Dismiss / the toolbar's "Dismiss all" are the ONLY ways one leaves: no timer, no
-  window close, no next operation. A 40-minute copy that died while the user was at lunch must still be there.
+  `isTerminalStatus`), and Dismiss / "Dismiss all" (plus closing the error dialog that owns one) are the only ways out:
+  no timer, no window close, no next operation. A 40-minute copy that died at lunchtime must still be there.
 - **A failure's reason comes from the error pipeline, never new prose** (`failure-reason.ts` →
   `../transfer/transfer-error-messages.ts`, `getMessage()` raw lookup, per-operation variant keys). Its `message` is
-  MARKUP (escaped names, size tiers), so it renders through `{@html}` like the dialog's body does. The pipeline's own
-  title is deliberately dropped in the row: it would read "Copy failed" right beside "Couldn't finish".
-- **Cancel keeps partials; Rollback is the separate, opt-in undo.** Cancel (per-row and "Cancel selected") maps to
-  `cancel_operation(s)`: no rollback, no confirm, which is why `capabilities/queue.json` DROPS `dialog:allow-ask` and
-  `store:default`. Per-row **Rollback** calls `cancelWriteOperation(id, true)` and shows ONLY where the snapshot's
-  `supportsRollback` says so — never inferred from the operation type.
-- **Window perms fail SILENTLY.** Every Tauri call in `queue-window.ts` and `+page.svelte` is `await`ed in try/catch
-  with a `log.warn`: a missing grant must surface as a log line, not a dead window. Smoke-test with `pnpm dev` after a
-  perm change.
-- **Each child window is its own webview** with its own i18n / theme / reduce-transparency runtime, so the page inits
-  and tears down its own (`initWindowSettings`, language sync, `initAccentColor` / `initReduceTransparency` /
-  `initTextSize`), mirroring Settings / Shortcuts. `initWindowSettings()` (not `initializeSettings`) also seeds the
-  reactive layer `<Size>` reads, so sizes follow the user's binary/SI choice; see `lib/settings/CLAUDE.md`.
-- **One opener, one factory, one instance per webview.** The progress dialog's Queue button and the auto-queue surfacing
-  (a busy lane defers one) both call `openQueueWindow`. The main window holds its own store instance
-  (`main-window-operations.svelte.ts`, init/disposed by `routes/(main)/+page.svelte`); ❌ don't fork a second opener,
-  factory, or event.
+  MARKUP, so it renders through `{@html}` like the dialog's body. The pipeline's own title is dropped in the row: it
+  would read "Copy failed" right beside "Couldn't finish".
+- **Cancel keeps partials; Rollback is the separate, opt-in undo.** Cancel maps to `cancel_operation(s)`: no rollback,
+  no confirm, which is why `capabilities/queue.json` DROPS `dialog:allow-ask` and `store:default`. Rollback calls
+  `cancelWriteOperation(id, true)` and shows ONLY where `supportsRollback` says so, never inferred from the type.
+- **Window perms fail SILENTLY.** Every Tauri call here is `await`ed in try/catch with a `log.warn`, so a missing grant
+  surfaces as a log line, not a dead window. Smoke-test with `pnpm dev` after a perm change.
+- **Each child window is its own webview**, so the page inits and tears down its own i18n / theme / transparency / text
+  size. Use `initWindowSettings()` (not `initializeSettings`): it also seeds the reactive layer `<Size>` reads
+  (`lib/settings/CLAUDE.md`).
+- **One opener, one factory, one instance per webview.** The Queue button and the auto-queue surfacing both call
+  `openQueueWindow`; the main window holds its own store instance (`main-window-operations.svelte.ts`). ❌ Don't fork a
+  second one.
 
-Architecture, the store's full public API, the vibrancy/reduce-transparency model, and decision detail: `DETAILS.md`.
+Architecture, the store's full public API, retained failures, the vibrancy model, and decision detail: `DETAILS.md`.
 Read it before any non-trivial work here.

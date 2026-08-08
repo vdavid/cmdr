@@ -347,6 +347,10 @@ test.describe('Operation queue window', () => {
     // Start a copy that can't succeed, with no queue window open at all.
     await startDoomedCopy(main, fixtureRoot)
 
+    // The main window says so on its own, naming the reason: nothing else would
+    // have told the user, since no dialog owns this operation.
+    await expectAndDismissToast(main, 'no longer exists')
+
     // Open the window: the failure is waiting there, with the real reason.
     let queuePage = await openQueueWindow(main)
     await expect

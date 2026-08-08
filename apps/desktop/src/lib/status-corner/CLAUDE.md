@@ -1,9 +1,10 @@
 # Status corner
 
-The main window's top-right ambient-status row: `StatusCorner.svelte`, mounted once by `routes/(main)/+page.svelte`. It
-hosts `OperationChip.svelte` (the backgrounded-operation preview) and `$lib/indexing/IndexingStatusIndicator.svelte`
-(the hourglass), and renders any `children` to their left. The chip's pick-and-measure rules are pure, in
-`operation-chip.ts`.
+The main window's word on background work. The top-right row (`StatusCorner.svelte`, mounted once by
+`routes/(main)/+page.svelte`) hosts `OperationChip.svelte` (the backgrounded-operation preview, and the mark left when
+one couldn't finish) and `$lib/indexing/IndexingStatusIndicator.svelte` (the hourglass), rendering any `children` to
+their left. The chip's pick-and-measure rules are pure, in `operation-chip.ts`. Alongside it,
+`operation-failure-watch.svelte.ts` raises the failure toast.
 
 ## Must-knows
 
@@ -30,5 +31,16 @@ hosts `OperationChip.svelte` (the backgrounded-operation preview) and `$lib/inde
   in one window and "5m 46s" in the other.
 - **The chip waits `CHIP_SETTLE_MS` before its FIRST appearance.** Work over in a blink never flashes the corner, and
   the beat closes a race with the foreground modal's claim. A handover to the next operation is immediate.
+- **The failure toast NEVER auto-dismisses**, and past three failures they collapse into one summary. That cap is
+  mechanical: a toast stack full of persistent toasts silently DROPS new ones, so an unbounded burst would lose the very
+  failures it reports. ❌ Don't raise it, and keep `toastGroup: 'operation-failure'`.
+- **Suppression needs BOTH foreground slots.** The progress dialog releases `getForegroundOperationId()` as it unmounts,
+  and the failure row reaches the snapshot only after that, so `getForegroundFailureId()` (claimed by the error dialog's
+  handover) is what actually stops a double report. Check both, in the chip and in the watch.
+- **The summary toast reads its count off the store, ❌ never a prop.** The toast store's dedup path replaces content and
+  level but NOT props, so a prop-carried count would freeze at the fourth failure.
+- **A failure's toast title is `queue.failureToast.title`, ❌ not the error pipeline's title**: the catalog's own titles
+  say "Copy failed", and the house never writes "failed" or "error" at a user. The explanation under it IS the
+  pipeline's.
 
 Layout model, member contract, the chip's states, and decisions: `DETAILS.md`.

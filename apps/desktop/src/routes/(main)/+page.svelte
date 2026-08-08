@@ -35,6 +35,10 @@
         initMainWindowOperations,
         destroyMainWindowOperations,
     } from '$lib/file-operations/queue/main-window-operations.svelte'
+    import {
+        startOperationFailureWatch,
+        stopOperationFailureWatch,
+    } from '$lib/status-corner/operation-failure-watch.svelte'
     import StaleDriveDialog from '$lib/indexing/StaleDriveDialog.svelte'
     import { initPathLimits } from '$lib/utils/filename-validation'
     import {
@@ -396,6 +400,10 @@
         // and the same two app-wide streams the queue window subscribes to, so
         // corner status can read live operations with no new event or IPC.
         await initMainWindowOperations()
+        // Watches that store for operations that stopped before they were done,
+        // and says so. After the store, so the first snapshot has somewhere to
+        // land before anything reads it.
+        startOperationFailureWatch()
         await setupWindowFocusListener(listenerSetupCtx)
         // Native Quick Look (macOS) event wiring: `quick-look-closed` flips
         // `isOpen` on the state singleton; `quick-look-key` routes panel
@@ -430,6 +438,7 @@
         destroyShortcutDispatch()
         destroyIndexState()
         destroyMediaEnrichState()
+        stopOperationFailureWatch()
         destroyMainWindowOperations()
         if (handleKeyDown) {
             document.removeEventListener('keydown', handleKeyDown)

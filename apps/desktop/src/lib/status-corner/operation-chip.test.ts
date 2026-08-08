@@ -18,7 +18,7 @@ vi.mock('$lib/tauri-commands', () => ({
   onWriteProgress: vi.fn(() => Promise.resolve(() => {})),
 }))
 
-import { destinationName, pickChipOperation } from './operation-chip'
+import { destinationName, pickChipOperation, pickChipState } from './operation-chip'
 
 function progress(over: Partial<WriteProgressEvent> = {}): WriteProgressEvent {
   return {
@@ -148,5 +148,48 @@ describe('pickChipOperation', () => {
     const picked = pickChipOperation([row({}, progress({ bytesDone: 1500, bytesTotal: 1000 }))], null)
     expect(picked?.fraction).toBe(1)
     expect(picked?.percent).toBe(100)
+  })
+})
+
+/** A retained failure as it arrives on the snapshot. */
+function failedRow(operationId = 'gone'): OperationRow {
+  return row(
+    { operationId, status: 'failed', error: { type: 'source_not_found', path: '/gone.txt' } },
+    null,
+    null,
+  )
+}
+
+describe('pickChipState', () => {
+  it('says nothing with neither work nor failures', () => {
+    expect(pickChipState([], null, null)).toBeNull()
+  })
+
+  it('shows a retained failure once nothing is running', () => {
+    const state = pickChipState([failedRow()], null, null)
+    expect(state).toEqual({ kind: 'failure', count: 1 })
+  })
+
+  it('counts every retained failure', () => {
+    const state = pickChipState([failedRow('a'), failedRow('b')], null, null)
+    expect(state).toEqual({ kind: 'failure', count: 2 })
+  })
+
+  it('lets live work win the corner over a failure', () => {
+    // The failure is still in the queue and in its toast; the corner is one
+    // slot, and what's moving right now is the more useful readout.
+    const state = pickChipState([failedRow('a'), row({ operationId: 'b' })], null, null)
+    expect(state?.kind).toBe('progress')
+    expect(state?.kind === 'progress' && state.operation.row.snapshot.operationId).toBe('b')
+  })
+
+  it('lets a PAUSED operation win too: it is still work in flight', () => {
+    const state = pickChipState([failedRow('a'), row({ operationId: 'b', status: 'paused' })], null, null)
+    expect(state?.kind).toBe('progress')
+  })
+
+  it('stays quiet about the failure the foreground error dialog is showing', () => {
+    expect(pickChipState([failedRow('a')], null, 'a')).toBeNull()
+    expect(pickChipState([failedRow('a'), failedRow('b')], null, 'a')).toEqual({ kind: 'failure', count: 1 })
   })
 })
