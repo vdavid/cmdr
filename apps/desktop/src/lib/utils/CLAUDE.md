@@ -8,7 +8,7 @@ Small stateless utility functions. Pure, no Svelte state, safe to import from pl
 - **`confirm-dialog.ts`**: wrapper around Tauri's native dialog `ask()`.
 - **`timing.ts`**: `withTimeout`, `createDebounce`, `createThrottle`, `waitForNextPaint`.
 - **`shorten-middle.ts`**: `shortenMiddle` mid-truncation + `createPretextMeasure` factory.
-- **`shorten-middle-action.ts`**: Svelte action wrapping `shortenMiddle` with ResizeObserver + async pretext.
+- **`shorten-middle-action.ts`**: Svelte action wrapping `shortenMiddle` with ResizeObserver, async pretext, tooltip.
 - **`pluralize.ts`**: count + noun formatting ("1 user" / "3 users").
 - **`srgb-mix.ts`**: sRGB color helpers (`mixSrgb`, `withAlpha`, `readableFgOn`, …).
 - **`webkit-compat.ts`**: one-shot `color-mix()` feature detection + boot-time telemetry log.
@@ -18,18 +18,18 @@ Small stateless utility functions. Pure, no Svelte state, safe to import from pl
 ## Must-knows
 
 - **Validation runs on the frontend (pure TS), not via Rust round-trips.** Keystroke feedback needs sub-millisecond
-  latency; an IPC hop per keystroke would stutter. All rules (length, chars, conflicts) are deterministic given the
-  sibling list. Don't move validation to the backend.
+  latency; an IPC hop per keystroke would stutter. Every rule (length, chars, conflicts) is deterministic given the
+  sibling list. Don't move it to the backend.
 - **Length limits are `>= 255` bytes (name) and `>= 1024` bytes (path), strictly**, not `> 255`: the filesystem reserves
   the last byte. Byte length comes from `TextEncoder`, not `.length` (multi-byte characters).
 - **`validateConflict` is case-insensitive (APFS).** A case-only rename (`foo` → `Foo`) passes without warning. Pass
   `originalName` correctly or you get false positives.
 - **`getExtension(filename)` returns the extension WITH the dot** (`.txt`), or `''` for dotfiles without an extension
   (`.gitignore` → `''`), via `lastIndexOf('.') <= 0`.
-- **`extensionsDifferMeaningfully(oldName, newName)` decides whether an extension change needs confirmation.** Returns
-  false for case-only changes (`.JPG` → `.jpg`) and known equivalents (`.jpeg` → `.jpg`, `.md` → `.txt`); the
-  equivalence groups live in `EQUIVALENT_EXTENSION_GROUPS` in the same file. Extend that constant to add aliases. Used
-  by both `validateExtensionChange` and the rename save flow's "ask" gate.
+- **`extensionsDifferMeaningfully(oldName, newName)` decides whether an extension change needs confirmation.** False for
+  case-only changes (`.JPG` → `.jpg`) and known equivalents (`.jpeg` → `.jpg`, `.md` → `.txt`); extend
+  `EQUIVALENT_EXTENSION_GROUPS` in the same file to add aliases. Used by `validateExtensionChange` and the rename save
+  flow's "ask" gate.
 - **Use `confirmDialog` everywhere instead of `window.confirm()`** (unreliable in Tauri). It wraps Tauri's `ask()` with
   an explicit `cancelLabel: 'Cancel'`: macOS `NSAlert` only assigns Escape to a button labeled "Cancel", so without it
   Escape does nothing.
@@ -52,10 +52,9 @@ Small stateless utility functions. Pure, no Svelte state, safe to import from pl
 - **`'ask'` extension setting returns `ok` at validation time**; the save dialog handles the confirmation separately.
 - **`createDebounce` exposes `flush()`** (for `beforeunload` cleanup) and `createThrottle` guarantees a trailing call.
   Both are hand-rolled deliberately, not lodash.
-- **`useShortenMiddle` hands the full text over through the HOUSE tooltip, never a native `title`** (its delay and
-  chrome are the OS's, and this action feeds pane rows, dialog rows, and result lists alike). `tooltipWhenTruncated?`
-  (default `false`) narrows it to the case where truncation actually trimmed the string. `VITE_CMDR_FORCE_OLD_WEBKIT=1 pnpm dev` forces the old-WebKit
-  fallback path on modern WebKit (see DETAILS.md and `docs/guides/releasing.md` § "Pre-release smoke test on old
-  macOS").
+- **`useShortenMiddle` reveals the full text through the HOUSE tooltip, never a native `title`** (whose delay and chrome
+  are the OS's, and this action feeds pane rows, dialogs, and result lists alike). `tooltipWhenTruncated?` narrows it to
+  a string truncation actually trimmed. `VITE_CMDR_FORCE_OLD_WEBKIT=1 pnpm dev` forces the old-WebKit fallback path (see
+  DETAILS.md and `docs/guides/releasing.md` § "Pre-release smoke test on old macOS").
 
-Full details (full export catalogs, validator/decision rationale, the old-WebKit dev override mechanism): `DETAILS.md`.
+Full details (export catalogs, validator rationale, the old-WebKit dev override): `DETAILS.md`.

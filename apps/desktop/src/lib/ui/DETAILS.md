@@ -128,8 +128,8 @@ progress, transfer error, operation log, go to path, new file/folder, alert, and
 work. The user's dragged size lands in the panel's inline `style`, which is why the drag offset is written as inline
 PROPERTIES from an effect instead of re-rendering that attribute: rendering it would snap a resized dialog back to its
 opening size on the next mousemove. And the panel carries no `min-height` — it's a flex item, so `auto` floors it at its
-own content, which is what lets a short form opt in without padding itself out to a number. A caller whose content
-needs more than the 360px `min-width` (the progress readout's fixed columns) states its own in `containerStyle`.
+own content, which is what lets a short form opt in without padding itself out to a number. A caller whose content needs
+more than the 360px `min-width` (the progress readout's fixed columns) states its own in `containerStyle`.
 
 **`growDownward`** is for a dialog whose height changes while it's open (a mode switch revealing extra controls). The
 overlay centers with flex, so a taller body would push the title up and re-center everything under the user's eyes. With

@@ -555,8 +555,8 @@ opt-ins:
   region grows and scrolls, and the caller still passes the initial size via `containerStyle`. Pass `"horizontal"`
   (rather than `true`) unless something inside actually absorbs extra height, which in practice means `fillBody` with a
   scrolling child: otherwise a vertical drag just opens a band of dead space above the footer. The dialog can't grow
-  past the viewport, and its own content is the floor it can't shrink below. Note a `max-width` in `containerStyle`
-  pins the grip, so state an opening `width` instead.
+  past the viewport, and its own content is the floor it can't shrink below. Note a `max-width` in `containerStyle` pins
+  the grip, so state an opening `width` instead.
 - `fillBody`: a fixed-height frame instead of one that grows with its content. The panel becomes a flex column, the body
   absorbs the vertical slack (as a column, so its own child can take `flex: 1 1 auto` and scroll), and the panel clips
   to its radius. Cap the height via `containerStyle`. Combines with `resizable`, and then the inner scroll region keeps
@@ -775,11 +775,11 @@ with 8px margin.
 - Rich HTML: `use:tooltip={{ html: dirSizeHtml }}`
 - Overflow-only: `use:tooltip={{ text: fullPath, overflowOnly: true }}`
 
-**Shortened text always has one.** Anything that ellipsizes (CSS `text-overflow`, the `useShortenMiddle` action, or a
-JS `slice(…) + '…'`) carries `use:tooltip` with the full string, `overflowOnly: true` so a row that fits stays quiet.
-Where the visible text is abbreviated rather than cut (a home directory shown as `~`), drop `overflowOnly`: it's
-incomplete at any width. ❌ Never a native `title` for this: its delay and chrome are the OS's, so one surface would
-hover unlike every other. `useShortenMiddle` routes through this action for the same reason.
+**Shortened text always has one.** Anything that ellipsizes (CSS `text-overflow`, the `useShortenMiddle` action, or a JS
+`slice(…) + '…'`) carries `use:tooltip` with the full string, `overflowOnly: true` so a row that fits stays quiet. Where
+the visible text is abbreviated rather than cut (a home directory shown as `~`), drop `overflowOnly`: it's incomplete at
+any width. ❌ Never a native `title` for this: its delay and chrome are the OS's, so one surface would hover unlike
+every other. `useShortenMiddle` routes through this action for the same reason.
 
 **Accessibility:** Shows on focus (keyboard navigation), hides on blur/Escape. Trigger element gets `aria-describedby`
 pointing to the tooltip's unique `id`. Tooltip has `role="tooltip"`.
