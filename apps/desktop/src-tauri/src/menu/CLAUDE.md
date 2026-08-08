@@ -21,7 +21,9 @@ user shortcuts, and enables/disables items by focus context.
 - **Accelerator changes go remove/recreate/reinsert, not in-place** (Tauri has no `set_accelerator()`).
   `update_menu_item_accelerator` handles HashMap items; `rebuild_view_mode_items` handles the four per-pane view-mode
   CheckMenuItems (they share one ⌘1/⌘2 pair that follows the active pane). `MenuState` tracks each item's submenu and
-  index for this.
+  index for this, so **adding or moving one item shifts every `register_item` index after it** — a wrong one mangles a
+  different item on the first rebind. `register_item_positions_match_submenu_order` (in `menu_items.rs`) reads the
+  platform sources and fails on a mismatch; keep the position comments truthful alongside.
 - **CheckMenuItems (view modes, show hidden) must NOT use `"execute-command"`.** They auto-toggle their checked state on
   click, so emitting `execute-command` too would double-toggle. They emit `"settings-changed"` / `"view-mode-changed"`
   directly. Sort items emit `"menu-sort"`; close-tab and "Open with" have their own paths. Some of those are still

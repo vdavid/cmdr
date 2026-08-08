@@ -96,9 +96,11 @@ the MAIN window, which already holds those perms — nothing to add there (see `
 
 ## Opening the window
 
-- Command palette + Help menu: `queue.show` ("Show transfer queue"), handled in
+- Command palette + View menu, default ⌥⌘Q: `queue.show` ("Show transfer queue"), handled in
   `routes/(main)/command-handlers/app-dialog-handlers.ts` → `openQueueWindow()`. Wired through the full command path
-  (id, registry, handler, Rust menu mappings, both platform menu builders, the drift-test excuse).
+  (id, registry with the default shortcut, handler, Rust menu mappings, both platform menu builders, `menuCommands` so
+  a rebind syncs the accelerator). It sits immediately after "Command palette…" and before "Operation log", pairing the
+  present-tense and past-tense views of the same work.
 - The progress dialog also opens/raises it automatically when an op lands on a busy lane (auto-queue surfacing).
 
 ## Tests

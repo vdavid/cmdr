@@ -285,6 +285,10 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         true,
         Some("Cmd+Shift+P"),
     )?;
+    // Default ⌘⌥Q (rendered ⌥⌘Q by macOS). Sits next to "Operation log" so the present-tense
+    // and past-tense views of the same work read as a pair. The accelerator syncs from the
+    // `queue.show` registry shortcut; this is the initial label.
+    let queue_show_item = MenuItem::with_id(app, QUEUE_SHOW_ID, "Operation queue", true, Some("Cmd+Alt+Q"))?;
     // Default ⌘⌥L (Cmd+Opt+L). ⌥⌘O — the plan's first choice — is taken by "Show in Finder".
     // The accelerator syncs from the `log.operationLog` registry shortcut; this is the initial label.
     let operation_log_item = MenuItem::with_id(app, OPERATION_LOG_ID, "Operation log", true, Some("Cmd+Alt+L"))?;
@@ -308,6 +312,7 @@ pub(crate) fn build_menu_macos<R: Runtime>(
             &swap_panes_item,
             &PredefinedMenuItem::separator(app)?,
             &command_palette_item,
+            &queue_show_item,
             &operation_log_item,
             &ask_cmdr_item,
         ],
@@ -394,7 +399,6 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     // --- Help menu ---
     // macOS auto-adds a search field to any menu named "Help"
     let shortcuts_item = MenuItem::with_id(app, HELP_SHORTCUTS_ID, "Keyboard shortcuts", true, None::<&str>)?;
-    let queue_show_item = MenuItem::with_id(app, QUEUE_SHOW_ID, "Show transfer queue", true, None::<&str>)?;
     let whats_new_item = MenuItem::with_id(app, HELP_WHATS_NEW_ID, "What's new", true, None::<&str>)?;
     let send_feedback_item =
         MenuItem::with_id(app, HELP_SEND_FEEDBACK_ID, "Send feedback\u{2026}", true, None::<&str>)?;
@@ -411,7 +415,6 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         true,
         &[
             &shortcuts_item,
-            &queue_show_item,
             &PredefinedMenuItem::separator(app)?,
             &whats_new_item,
             &send_feedback_item,
@@ -467,12 +470,13 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     register_item(&mut items, DESELECT_FILES_ID, &deselect_files_item, &select_menu, 4);
 
     // View menu positions: full(0), brief(1), sep(2), hidden(3), sort(4), zoom(5), sep(6),
-    // switch(7), swap(8), sep(9), command(10), operation_log(11), ask_cmdr(12)
+    // switch(7), swap(8), sep(9), command(10), queue(11), operation_log(12), ask_cmdr(13)
     register_item(&mut items, SWITCH_PANE_ID, &switch_pane_item, &view_submenu, 7);
     register_item(&mut items, SWAP_PANES_ID, &swap_panes_item, &view_submenu, 8);
     register_item(&mut items, COMMAND_PALETTE_ID, &command_palette_item, &view_submenu, 10);
-    register_item(&mut items, OPERATION_LOG_ID, &operation_log_item, &view_submenu, 11);
-    register_item(&mut items, ASK_CMDR_ID, &ask_cmdr_item, &view_submenu, 12);
+    register_item(&mut items, QUEUE_SHOW_ID, &queue_show_item, &view_submenu, 11);
+    register_item(&mut items, OPERATION_LOG_ID, &operation_log_item, &view_submenu, 12);
+    register_item(&mut items, ASK_CMDR_ID, &ask_cmdr_item, &view_submenu, 13);
 
     // Sort by submenu positions: name(0), extension(1), modified(2), size(3), created(4),
     // sep(5), ascending(6), descending(7). Only the four shortcut-bound columns are
@@ -513,17 +517,16 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     register_item(&mut items, PREV_TAB_ID, &prev_tab_item, &tab_menu, 5);
     register_item(&mut items, CLOSE_OTHER_TABS_ID, &close_other_tabs_item, &tab_menu, 8);
 
-    // Help menu positions: shortcuts(0), queue_show(1), sep(2), whats_new(3), send_feedback(4), send_error_report(5)
+    // Help menu positions: shortcuts(0), sep(1), whats_new(2), send_feedback(3), send_error_report(4)
     register_item(&mut items, HELP_SHORTCUTS_ID, &shortcuts_item, &help_menu, 0);
-    register_item(&mut items, QUEUE_SHOW_ID, &queue_show_item, &help_menu, 1);
-    register_item(&mut items, HELP_WHATS_NEW_ID, &whats_new_item, &help_menu, 3);
-    register_item(&mut items, HELP_SEND_FEEDBACK_ID, &send_feedback_item, &help_menu, 4);
+    register_item(&mut items, HELP_WHATS_NEW_ID, &whats_new_item, &help_menu, 2);
+    register_item(&mut items, HELP_SEND_FEEDBACK_ID, &send_feedback_item, &help_menu, 3);
     register_item(
         &mut items,
         HELP_SEND_ERROR_REPORT_ID,
         &send_error_report_item,
         &help_menu,
-        5,
+        4,
     );
 
     // cmdr menu positions: about(0), acknowledgements(1), license(2),

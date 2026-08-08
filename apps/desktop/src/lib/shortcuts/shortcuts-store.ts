@@ -247,6 +247,8 @@ export const menuCommands = [
   'cmdr.openOnboarding',
   // Help (registered in MenuState.items so a future custom binding syncs its accelerator)
   'help.whatsNew',
+  // View > Operation queue (default ⌥⌘Q; registered so a custom binding syncs its accelerator)
+  'queue.show',
   // View > Operation log (default ⌥⌘L; registered so a custom binding syncs its accelerator)
   'log.operationLog',
   // View > Ask Cmdr (default ⌥⌘A; registered so a custom binding syncs its accelerator)

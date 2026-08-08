@@ -177,7 +177,7 @@ pub const HELP_SEND_FEEDBACK_ID: &str = "help_send_feedback";
 /// Menu item ID for "Keyboard shortcuts" (opens the read-only shortcuts help window, under the Help menu).
 pub const HELP_SHORTCUTS_ID: &str = "help_shortcuts";
 
-/// Menu item ID for "Show transfer queue" (opens the transfer-queue window, under the Help menu).
+/// Menu item ID for "Operation queue" (opens the operation-queue window, under the View menu).
 pub const QUEUE_SHOW_ID: &str = "queue_show";
 
 /// Menu item ID for "What's new" (opens the changelog popup, under the Help menu).

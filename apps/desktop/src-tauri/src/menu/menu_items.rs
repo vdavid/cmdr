@@ -347,4 +347,156 @@ mod tests {
             }
         }
     }
+
+    /// Every `register_item` position matches the item's real index in its submenu.
+    ///
+    /// `MenuState` remembers `(submenu, position)` so `update_menu_item_accelerator` can
+    /// remove-and-reinsert an item (Tauri has no `set_accelerator()`). A wrong index moves a
+    /// DIFFERENT item on the first rebind, and nothing notices until a user edits a shortcut.
+    /// Reading the source is the only guard available here: building a real menu needs AppKit
+    /// on the main thread.
+    #[test]
+    fn register_item_positions_match_submenu_order() {
+        const SOURCES: [(&str, &str); 2] = [
+            ("macos.rs", include_str!("macos.rs")),
+            ("linux.rs", include_str!("linux.rs")),
+        ];
+
+        for (name, source) in SOURCES {
+            let layouts = parse_submenu_layouts(source);
+            let registrations = parse_register_item_calls(source);
+            assert!(
+                registrations.len() > 20,
+                "{name}: only {} `register_item` calls parsed; the parser is broken, not the source",
+                registrations.len()
+            );
+
+            let mut checked = 0;
+            for (id, item, submenu, position) in &registrations {
+                // Submenus assembled by a helper (`build_zoom_submenu`, `build_sort_submenu`) have
+                // no literal item array in this file, so their order isn't checkable from here.
+                let Some(entries) = layouts.get(submenu.as_str()) else {
+                    continue;
+                };
+                let actual = entries.get(*position).map(String::as_str);
+                assert_eq!(
+                    actual,
+                    Some(item.as_str()),
+                    "{name}: `{id}` registers `{item}` at position {position} of `{submenu}`, \
+                     which actually holds {actual:?}. Fix the index AND the position comment above it."
+                );
+                checked += 1;
+            }
+            assert!(checked > 20, "{name}: only {checked} registrations were verifiable");
+        }
+    }
+
+    /// Maps each `let <name> = Submenu::with_items(…, &[…])` to its ordered item expressions.
+    fn parse_submenu_layouts(source: &str) -> HashMap<String, Vec<String>> {
+        let mut layouts = HashMap::new();
+        let mut lines = source.lines();
+        while let Some(line) = lines.next() {
+            let Some(rest) = line.trim().strip_prefix("let ") else {
+                continue;
+            };
+            let Some((submenu_name, _)) = rest.split_once(" = Submenu::with_items(") else {
+                continue;
+            };
+            // Walk to the item array, giving up if this call doesn't spell one out.
+            let mut found_array = false;
+            for inner in lines.by_ref() {
+                match inner.trim() {
+                    "&[" => {
+                        found_array = true;
+                        break;
+                    }
+                    ")?;" => break,
+                    _ => {}
+                }
+            }
+            if !found_array {
+                continue;
+            }
+            let mut entries = Vec::new();
+            for inner in lines.by_ref() {
+                let entry = inner.trim();
+                if entry == "]," {
+                    break;
+                }
+                if entry.starts_with("//") {
+                    continue;
+                }
+                entries.push(entry.trim_end_matches(',').to_string());
+            }
+            layouts.insert(submenu_name.to_string(), entries);
+        }
+        layouts
+    }
+
+    /// Pulls `(id, item expression, submenu expression, position)` out of every `register_item` call.
+    fn parse_register_item_calls(source: &str) -> Vec<(String, String, String, usize)> {
+        const CALL: &str = "register_item(";
+        let mut calls = Vec::new();
+        let mut rest = source;
+        while let Some(at) = rest.find(CALL) {
+            let after = &rest[at + CALL.len()..];
+            let Some(end) = closing_paren(after) else {
+                break;
+            };
+            let args: Vec<String> = split_top_level(&after[..end]);
+            rest = &after[end..];
+            let [_items, id, item, submenu, position] = args.as_slice() else {
+                continue;
+            };
+            let Ok(position) = position.parse::<usize>() else {
+                continue;
+            };
+            calls.push((
+                id.clone(),
+                item.clone(),
+                submenu.trim_start_matches('&').to_string(),
+                position,
+            ));
+        }
+        calls
+    }
+
+    /// Byte offset of the `)` closing the call whose arguments `text` starts.
+    fn closing_paren(text: &str) -> Option<usize> {
+        let mut depth = 0usize;
+        for (offset, character) in text.char_indices() {
+            match character {
+                '(' => depth += 1,
+                ')' if depth == 0 => return Some(offset),
+                ')' => depth -= 1,
+                _ => {}
+            }
+        }
+        None
+    }
+
+    /// Splits an argument list on depth-zero commas, dropping all whitespace.
+    fn split_top_level(args: &str) -> Vec<String> {
+        let mut parts = Vec::new();
+        let mut depth = 0usize;
+        let mut current = String::new();
+        for character in args.chars() {
+            match character {
+                '(' | '[' => depth += 1,
+                ')' | ']' => depth = depth.saturating_sub(1),
+                ',' if depth == 0 => {
+                    parts.push(std::mem::take(&mut current));
+                    continue;
+                }
+                _ => {}
+            }
+            if !character.is_whitespace() {
+                current.push(character);
+            }
+        }
+        if !current.is_empty() {
+            parts.push(current);
+        }
+        parts
+    }
 }

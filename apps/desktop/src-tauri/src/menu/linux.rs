@@ -247,6 +247,10 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         true,
         Some("Cmd+Shift+P"),
     )?;
+    // Default ⌘⌥Q, next to "Operation log" so the present-tense and past-tense views of the same
+    // work read as a pair. `q` is the free mnemonic here (L, R, h, S, w, p, C, O, A are taken).
+    // The accelerator syncs from the `queue.show` registry shortcut; this is the initial label.
+    let queue_show_item = MenuItem::with_id(app, QUEUE_SHOW_ID, "Operation &queue", true, Some("Cmd+Alt+Q"))?;
     // Default ⌘⌥L (Cmd+Opt+L). ⌥⌘O — the plan's first choice — is taken by "Reveal in file manager".
     // The accelerator syncs from the `log.operationLog` registry shortcut; this is the initial label.
     let operation_log_item = MenuItem::with_id(app, OPERATION_LOG_ID, "&Operation log", true, Some("Cmd+Alt+L"))?;
@@ -269,6 +273,7 @@ pub(crate) fn build_menu_linux<R: Runtime>(
             &swap_panes_item,
             &PredefinedMenuItem::separator(app)?,
             &command_palette_item,
+            &queue_show_item,
             &operation_log_item,
             &ask_cmdr_item,
         ],
@@ -350,7 +355,6 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     // About. `k` is the free mnemonic (A, K, t, W, f, S are taken).
     let acknowledgements_item = MenuItem::with_id(app, ACKNOWLEDGEMENTS_ID, "Ac&knowledgements", true, None::<&str>)?;
     let shortcuts_item = MenuItem::with_id(app, HELP_SHORTCUTS_ID, "&Keyboard shortcuts", true, None::<&str>)?;
-    let queue_show_item = MenuItem::with_id(app, QUEUE_SHOW_ID, "Show &transfer queue", true, None::<&str>)?;
     let whats_new_item = MenuItem::with_id(app, HELP_WHATS_NEW_ID, "&What's new", true, None::<&str>)?;
     let send_feedback_item =
         MenuItem::with_id(app, HELP_SEND_FEEDBACK_ID, "Send &feedback\u{2026}", true, None::<&str>)?;
@@ -370,7 +374,6 @@ pub(crate) fn build_menu_linux<R: Runtime>(
             &acknowledgements_item,
             &PredefinedMenuItem::separator(app)?,
             &shortcuts_item,
-            &queue_show_item,
             &whats_new_item,
             &send_feedback_item,
             &send_error_report_item,
@@ -434,12 +437,14 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     register_item(&mut items, DESELECT_FILES_ID, &deselect_files_item, &select_menu, 4);
 
     // View menu positions: left_pane_submenu(0), right_pane_submenu(1), sep(2), hidden(3),
-    // sort(4), zoom(5), sep(6), switch(7), swap(8), sep(9), palette(10), operation_log(11), ask_cmdr(12)
+    // sort(4), zoom(5), sep(6), switch(7), swap(8), sep(9), palette(10), queue(11),
+    // operation_log(12), ask_cmdr(13)
     register_item(&mut items, SWITCH_PANE_ID, &switch_pane_item, &view_submenu, 7);
     register_item(&mut items, SWAP_PANES_ID, &swap_panes_item, &view_submenu, 8);
     register_item(&mut items, COMMAND_PALETTE_ID, &command_palette_item, &view_submenu, 10);
-    register_item(&mut items, OPERATION_LOG_ID, &operation_log_item, &view_submenu, 11);
-    register_item(&mut items, ASK_CMDR_ID, &ask_cmdr_item, &view_submenu, 12);
+    register_item(&mut items, QUEUE_SHOW_ID, &queue_show_item, &view_submenu, 11);
+    register_item(&mut items, OPERATION_LOG_ID, &operation_log_item, &view_submenu, 12);
+    register_item(&mut items, ASK_CMDR_ID, &ask_cmdr_item, &view_submenu, 13);
 
     // Sort by submenu positions: name(0), extension(1), modified(2), size(3), created(4),
     // sep(5), ascending(6), descending(7).
@@ -479,18 +484,17 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     register_item(&mut items, CLOSE_OTHER_TABS_ID, &close_other_tabs_item, &tab_menu, 8);
 
     // Help menu: about(0), acknowledgements(1), separator(2), shortcuts(3),
-    // queue_show(4), whats_new(5), send_feedback(6), send_error_report(7)
+    // whats_new(4), send_feedback(5), send_error_report(6)
     register_item(&mut items, ABOUT_ID, &about_item, &help_menu, 0);
     register_item(&mut items, HELP_SHORTCUTS_ID, &shortcuts_item, &help_menu, 3);
-    register_item(&mut items, QUEUE_SHOW_ID, &queue_show_item, &help_menu, 4);
-    register_item(&mut items, HELP_WHATS_NEW_ID, &whats_new_item, &help_menu, 5);
-    register_item(&mut items, HELP_SEND_FEEDBACK_ID, &send_feedback_item, &help_menu, 6);
+    register_item(&mut items, HELP_WHATS_NEW_ID, &whats_new_item, &help_menu, 4);
+    register_item(&mut items, HELP_SEND_FEEDBACK_ID, &send_feedback_item, &help_menu, 5);
     register_item(
         &mut items,
         HELP_SEND_ERROR_REPORT_ID,
         &send_error_report_item,
         &help_menu,
-        7,
+        6,
     );
 
     Ok(MenuItems {

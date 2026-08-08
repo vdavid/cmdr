@@ -96,11 +96,15 @@ export const appCommands: CommandSource[] = [
     descriptionKey: 'commands.helpOpenShortcuts.description',
   },
   {
+    // Default ⌘⌥Q ("Q for queue"), pairing with `log.operationLog`'s ⌘⌥L next to it in
+    // the View menu. Command-then-Option order (⌘⌥) because that's what `formatKeyCombo`
+    // emits; Apple's ⌥⌘ display order would be dead on the keyboard. Pinned by
+    // `shortcuts/shortcut-vocabulary.test.ts`.
     id: 'queue.show',
     nameKey: 'commands.queueShow.label',
     scope: 'App',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: ['⌘⌥Q'],
     descriptionKey: 'commands.queueShow.description',
   },
   {

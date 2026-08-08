@@ -136,6 +136,15 @@ The frontend triggers regular-item updates via `invoke('update_menu_accelerator'
 `shortcuts-store.ts`, and triggers view-mode rebuilds via `invoke('update_view_mode_menu')` from
 `DualPaneExplorer.svelte` on focus change, swap, and any view-mode toggle.
 
+Because the position is a bare magic number, inserting or removing one item silently shifts every
+`register_item` index after it, and the damage only shows up the first time a user rebinds that
+shortcut: a DIFFERENT item gets removed and reinserted. `register_item_positions_match_submenu_order`
+in `menu_items.rs` guards it by reading `macos.rs` / `linux.rs` with `include_str!` and checking each
+registered index against the item's real slot in that submenu's `Submenu::with_items` array. Source
+parsing is the only option available: building a real menu needs AppKit on the main thread. Submenus
+assembled by a helper (`build_zoom_submenu`, `build_sort_submenu`) have no literal array in those
+files, so their registrations are skipped.
+
 ### Per-pane view modes
 
 The View menu nests two pane-scoped submenus: `View > Left pane > {Full view, Brief view}` and
