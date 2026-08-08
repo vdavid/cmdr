@@ -443,7 +443,10 @@ fn entries_that_went_with_a_replaced_watch_root_leave_the_listing() {
     // Arming an FSEvents stream is asynchronous, so prove the watch is delivering
     // before the replacement. Without this, a miss could just mean "too early".
     std::fs::write(watched.join("probe.txt"), b"p").expect("scratch dir is writable");
-    wait_until(Duration::from_secs(10), "the watch to deliver its first event", || {
+    // Generous deadlines: FSEvents delivery and the re-read both hop threads, and a
+    // saturated `rust-tests` run starves them. A satisfied wait returns immediately, so
+    // the headroom is free except when something is genuinely broken.
+    wait_until(Duration::from_secs(30), "the watch to deliver its first event", || {
         listing.entry_names().iter().any(|name| name == "probe.txt")
     });
 
@@ -453,7 +456,7 @@ fn entries_that_went_with_a_replaced_watch_root_leave_the_listing() {
     std::fs::write(watched.join("gamma.txt"), b"g").expect("scratch dir is writable");
 
     wait_until(
-        Duration::from_secs(15),
+        Duration::from_secs(45),
         "the listing to show what the replaced directory actually holds",
         || listing.entry_names() == vec!["gamma.txt".to_string()],
     );
