@@ -55,6 +55,11 @@
     "resources": [
       "resources/ai/*"
     ],
+    "linux": {
+      "deb": {
+        "desktopTemplate": "linux/cmdr.desktop.hbs"
+      }
+    },
     "macOS": {
       "bundleName": "Cmdr",
       "minimumSystemVersion": "12.0",
