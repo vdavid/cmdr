@@ -57,6 +57,36 @@ catalog keys.
 - **Speed and ETA describe a transfer that's moving**, so a caller passes `null` for all three while paused, and the
   cells go empty rather than freezing a stale number.
 
+## Foreground-operation slot
+
+`foreground-operation.svelte.ts` holds the id of the operation the foreground `TransferProgressDialog` is showing, so
+main-window surfaces that report operations ambiently (the status corner's chip, the backgrounded-failure notice) can
+skip the one the user is already looking at in full.
+
+- `setForegroundOperationId(id: string | null)`, `getForegroundOperationId(): string | null` (reactive: reading it in a
+  `$derived` / `$effect` re-runs on ownership change), `clearForegroundOperation(id: string)`.
+- `transfer-progress-state.svelte.ts` claims the slot right after the start command's response lands (after the
+  `destroyed` bail-out — a dialog that's already gone owns nothing) and releases it in `destroy()`, `handleQueue()`, and
+  `handleAutoQueued()`. `destroy()` is the catch-all for completion, cancel, error, and any other unmount; the two queue
+  paths release EARLY because `onQueue` is optional, so the modal may stay mounted after the handoff.
+- The delete/trash path comes free: `DeleteDialog` drives the same state machine.
+
+Decisions:
+
+- **A module-scoped signal, not a prop.** Prop-drilling would run `transfer-progress-state` →
+  `TransferProgressDialog` → `DialogManager` → `DualPaneExplorer` → `routes/(main)/+page.svelte`: four hops of a value
+  nobody in between cares about.
+- **Main-window-only by construction.** Module scope is per-webview, so the queue window can't see (or accidentally
+  write) this slot.
+- **One slot, not a set.** Exactly one foreground progress dialog exists at a time; a second operation either replaces
+  the dialog or auto-queues behind a busy lane. If that invariant ever breaks, reconsider the invariant rather than
+  widening the slot.
+- **Ownership-checked release.** `clearForegroundOperation(id)` no-ops unless `id` still owns the slot, so a dialog
+  tearing down after the next one claimed it can't silence the new operation.
+- **A brief unclaimed window is accepted.** The operation can register (and reach the main window's store) before the
+  start command's response returns, so an ambient surface may flash for a frame before the slot is claimed. There's no
+  id to claim before the response; the alternative would be a second identity crossing IPC.
+
 ## `scan-throughput.ts`
 
 `ScanThroughput` turns scan-event tally deltas into a calm `filesPerSecond` / `bytesPerSecond` readout over a rolling

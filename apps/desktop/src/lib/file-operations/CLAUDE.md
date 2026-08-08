@@ -16,6 +16,8 @@ file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete)
 - `TransferProgressReadout.svelte`: the dual-bar readout (size + count, each with amount, percent, rate, plus one
   time-left cell) shared by the progress dialog and the queue rows. Two densities, one layout.
 - `scan-throughput.ts`: rolling-window scan-rate estimator (see below).
+- `foreground-operation.svelte.ts`: the module-scoped slot naming the operation the foreground progress dialog owns, so
+  ambient main-window surfaces can stay quiet about it.
 
 ## Must-knows
 
@@ -36,6 +38,10 @@ file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete)
   `TransferProgressReadout.svelte`, so what a running operation looks like is defined once. Its readout cells are
   fixed-width by design (the bars must follow the window, not the digits), which puts a floor under whatever hosts it:
   the queue window's `MIN_WIDTH` and the dialog's 580 px both exist for it. Depth: `DETAILS.md`.
+- **The foreground slot is released on EVERY route out of the dialog**, including the Queue button and the auto-queue
+  path — that handoff is precisely when the ambient surfaces must start speaking about the operation. Release with
+  `clearForegroundOperation(id)`, never an unconditional `setForegroundOperationId(null)`: a late teardown would
+  otherwise silence the next dialog's operation. DETAILS § Foreground-operation slot.
 - **`scan-throughput.ts` covers the scan phase only.** The backend `EtaEstimator` covers write phases, so `DeleteDialog`
   and `TransferProgressDialog` use `ScanThroughput` to show `filesPerSecond` / `bytesPerSecond` during the scan. It
   returns nulls until two samples land, clamps negative deltas to zero, and must be `reset()` between scans. Pure, no

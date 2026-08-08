@@ -70,6 +70,7 @@ import {
 } from '$lib/tauri-commands'
 import { emit } from '@tauri-apps/api/event'
 import { openQueueWindow } from '$lib/file-operations/queue/queue-window'
+import { clearForegroundOperation, setForegroundOperationId } from '../foreground-operation.svelte'
 import { addToast } from '$lib/ui/toast'
 import type {
   TransferOperationType,
@@ -801,6 +802,12 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
         return
       }
 
+      // This dialog now owns the operation in the foreground, so ambient
+      // surfaces stay quiet about it (`../foreground-operation.svelte.ts`).
+      // Claimed after the `destroyed` bail-out above: a dialog that's already
+      // gone owns nothing.
+      setForegroundOperationId(operationId)
+
       replayBufferedEvents()
 
       // Seed this op's lifecycle status once. The manager emits
@@ -964,6 +971,11 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     if (!operationId || backgrounded) return
     log.info('Backgrounding operation to the queue window: {operationId}', { operationId })
     backgrounded = true
+    // Ownership moves to the queue window here, which is exactly when the corner
+    // and the failure notice must start speaking about this operation. Released
+    // now rather than in `destroy()`: `onQueue` is optional, so the modal may
+    // stay mounted.
+    clearForegroundOperation(operationId)
     void openQueueWindow()
     addToast(tString('fileOperations.transferProgress.backgroundedToast'), {
       level: 'info',
@@ -984,6 +996,8 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
       ahead: aheadCount,
     })
     backgrounded = true
+    // Same handoff as the manual Queue: the queue window owns it from here.
+    clearForegroundOperation(operationId)
     void openQueueWindow()
     const countText = tString('fileOperations.transferProgress.queuedToastCount', { count: aheadCount })
     addToast(tString('fileOperations.transferProgress.queuedToast', { countText }), {
@@ -1150,6 +1164,10 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
    *  live off the plain `backgrounded` / `destroyed` lets; see the module doc). */
   function destroy() {
     destroyed = true
+    // The catch-all release: completion, cancel, error, and any other unmount
+    // all land here. `clearForegroundOperation` no-ops if a later dialog already
+    // took the slot.
+    if (operationId) clearForegroundOperation(operationId)
     // Cancel scan preview if still waiting for it
     if (waitingForScan && config.previewId) {
       void cancelScanPreview(config.previewId)

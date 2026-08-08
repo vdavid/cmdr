@@ -1,8 +1,7 @@
 # Transfer (copy and move)
 
 Frontend for copy (F5), move (F6), and compress (⌥F5): destination picker, dry-run conflict scan, dual-bar progress
-dialog, error rendering. Parameterized by `operationType` so one set serves all; the progress dialog is reused by
-delete/trash too.
+dialog, error rendering. One set serves all via `operationType`; delete/trash reuse the progress dialog.
 
 Backend: `apps/desktop/src-tauri/src/file_system/write_operations/transfer/CLAUDE.md` (copy/move semantics) and
 `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md` (state machine, ETA, settle contract).
@@ -52,7 +51,7 @@ Backend: `apps/desktop/src-tauri/src/file_system/write_operations/transfer/CLAUD
 - **MTP move interleaves copy + delete per file** (the copy is done once the delete phase starts).
 - **Pause/Resume and the "Paused" title follow the `operations-changed` snapshot status, never `is_running`.** Queue and
   the dialog-scoped F2 are FRONTEND-ONLY: set `backgrounded`, open the queue window, unmount via `onQueue` without
-  cancelling — that flag also makes `onDestroy` skip its safety-net cancel.
+  cancelling — that flag also makes `onDestroy` skip its safety-net cancel, and both release the foreground slot.
 
 Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

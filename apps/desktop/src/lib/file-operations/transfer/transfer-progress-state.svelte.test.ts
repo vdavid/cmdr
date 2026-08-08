@@ -150,6 +150,7 @@ import {
 } from '$lib/tauri-commands'
 import { openQueueWindow } from '$lib/file-operations/queue/queue-window'
 import { addToast } from '$lib/ui/toast'
+import { getForegroundOperationId, setForegroundOperationId } from '../foreground-operation.svelte'
 
 /** Drains the microtask queue so the machine's `await` chains settle. Fake
  *  timers don't fake microtasks, so this works with timers active. */
@@ -227,6 +228,9 @@ beforeEach(() => {
   scanCancelledCb = null
   vi.clearAllMocks()
   vi.useFakeTimers()
+  // The slot is module-scoped, so a test that leaves an owner behind would poison
+  // the next one.
+  setForegroundOperationId(null)
 })
 
 afterEach(() => {
@@ -650,6 +654,85 @@ describe('createTransferProgressState: pause, queue, and auto-queue', () => {
     // Already backgrounded: disposal leaves the op running.
     state.destroy()
     expect(cancelWriteOperation).not.toHaveBeenCalled()
+  })
+})
+
+describe('createTransferProgressState: foreground-operation ownership', () => {
+  // The slot tells ambient surfaces (the corner chip, the failure notice) which
+  // operation the modal is already showing in full. It has to empty on EVERY
+  // route out of the dialog, and it has to empty at the moment Queue hands the
+  // operation over — that's precisely when the chip must start speaking.
+  it('claims the slot once the operation id lands', async () => {
+    await startedState()
+    expect(getForegroundOperationId()).toBe('op-1')
+  })
+
+  it('never claims the slot when the dialog is torn down before the id arrives', async () => {
+    let resolveDispatch: (r: WriteOperationStartResult) => void = () => {}
+    vi.mocked(copyBetweenVolumes).mockImplementationOnce(
+      () => new Promise<WriteOperationStartResult>((res) => (resolveDispatch = res)),
+    )
+    const state = createTransferProgressState(makeConfig())
+    state.start()
+    await flushMicro()
+    state.destroy()
+    resolveDispatch({ operationId: 'op-1', operationType: 'copy' })
+    await flushMicro()
+    expect(getForegroundOperationId()).toBeNull()
+  })
+
+  it('releases the slot on Queue, so the corner can pick the operation up', async () => {
+    const { state } = await startedState()
+    state.handleQueue()
+    expect(getForegroundOperationId()).toBeNull()
+  })
+
+  it('releases the slot when the manager auto-queues the op behind a busy lane', async () => {
+    await startedState()
+    if (!opsChangedCb) throw new Error('operations-changed subscriber never registered')
+    opsChangedCb({ operations: [snapshot('busy', 'running'), snapshot('op-1', 'queued')] })
+    expect(getForegroundOperationId()).toBeNull()
+  })
+
+  it('releases the slot when the dialog unmounts after completing', async () => {
+    const { state } = await startedState()
+    if (!completeCb) throw new Error('complete subscriber never registered')
+    completeCb({ operationId: 'op-1', operationType: 'copy', filesProcessed: 1, filesSkipped: 0, bytesProcessed: 1 })
+    vi.advanceTimersByTime(450)
+    state.destroy()
+    expect(getForegroundOperationId()).toBeNull()
+  })
+
+  it('releases the slot when the dialog unmounts after a cancel', async () => {
+    const { state } = await startedState()
+    void state.handleCancel(false)
+    await flushMicro()
+    if (!cancelledCb || !settledCb) throw new Error('cancel subscribers never registered')
+    cancelledCb({ operationId: 'op-1', operationType: 'copy', filesProcessed: 0, rolledBack: false })
+    settledCb({ operationId: 'op-1', operationType: 'copy' })
+    state.destroy()
+    expect(getForegroundOperationId()).toBeNull()
+  })
+
+  it('releases the slot when the dialog unmounts after an error', async () => {
+    const { state } = await startedState()
+    if (!errorCb) throw new Error('error subscriber never registered')
+    errorCb({
+      operationId: 'op-1',
+      operationType: 'copy',
+      error: { type: 'io_error', path: '/src/file.txt', message: 'boom' },
+    })
+    state.destroy()
+    expect(getForegroundOperationId()).toBeNull()
+  })
+
+  it('a late teardown does not release the slot the next dialog claimed', async () => {
+    const { state } = await startedState()
+    // The next operation's dialog mounts and claims the slot before this one
+    // finishes tearing down.
+    setForegroundOperationId('op-2')
+    state.destroy()
+    expect(getForegroundOperationId()).toBe('op-2')
   })
 })
 
