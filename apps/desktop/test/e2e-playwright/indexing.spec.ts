@@ -3,8 +3,10 @@
  *
  * These tests verify the full indexing pipeline: scanner → SQLite → enrichment
  * → UI rendering. They depend on the drive indexer having reached the fixture
- * directory, so each test checks for index readiness and skips gracefully if
- * the index is not available within a generous timeout.
+ * directory, so each waits on a generous deadline for the index to converge —
+ * and FAILS when it doesn't. ❌ Don't reintroduce a `console.warn('SKIPPED');
+ * return` escape hatch: an index that never converges is the defect this file
+ * exists to catch, and warn-then-return reports it as a pass.
  *
  * Size assertions are byte-exact using `get_dir_stats` IPC (logical sizes).
  * The fixture's `sub-dir/` contains exactly one file: `nested-file.txt`
@@ -53,10 +55,11 @@ async function getDirStats(tauriPage: PageLike, dirPath: string): Promise<DirSta
 }
 
 /**
- * Polls `get_dir_stats` until `recursiveFileCount > 0` or timeout.
- * Returns the stats if available, null otherwise.
+ * Polls `get_dir_stats` until `recursiveFileCount > 0`, and FAILS the test if
+ * that never happens: the `expect.poll` throws on timeout, so everything after
+ * the call has real stats. Never returns null.
  */
-async function waitForIndexData(tauriPage: PageLike, dirPath: string, timeoutMs = 500_000): Promise<DirStats | null> {
+async function waitForIndexData(tauriPage: PageLike, dirPath: string, timeoutMs = 500_000): Promise<DirStats> {
   const result: { stats: DirStats | null } = { stats: null }
   await expect
     .poll(
@@ -71,19 +74,20 @@ async function waitForIndexData(tauriPage: PageLike, dirPath: string, timeoutMs 
       { timeout: timeoutMs, intervals: [2000] },
     )
     .toBeTruthy()
-  return result.stats
+  // Non-null by construction: the poll above only passes after setting it.
+  return result.stats as DirStats
 }
 
 /**
- * Polls `get_dir_stats` until `recursiveSize` equals the expected value.
- * Returns the final stats, or null on timeout.
+ * Polls `get_dir_stats` until `recursiveSize` equals the expected value, and
+ * FAILS the test if it never converges. Never returns null.
  */
 async function waitForExactSize(
   tauriPage: PageLike,
   dirPath: string,
   expectedSize: number,
   timeoutMs = 30_000,
-): Promise<DirStats | null> {
+): Promise<DirStats> {
   const result: { stats: DirStats | null } = { stats: null }
   await expect
     .poll(
@@ -98,7 +102,8 @@ async function waitForExactSize(
       { timeout: timeoutMs, intervals: [500] },
     )
     .toBeTruthy()
-  return result.stats ?? (await getDirStats(tauriPage, dirPath))
+  // Non-null by construction: the poll above only passes after setting it.
+  return result.stats as DirStats
 }
 
 /** Switches to Full view mode (needed to see the size column). */
@@ -154,10 +159,6 @@ test.describe('Drive indexing', () => {
 
     // Wait for the index to have data for sub-dir
     const stats = await waitForIndexData(tauriPage, subDirPath)
-    if (!stats) {
-      console.warn('SKIPPED: Drive index not ready for fixture path within 500 s')
-      return
-    }
 
     // sub-dir contains exactly one file: nested-file.txt (1024 bytes)
     // Verify byte-exact logical size via IPC
@@ -179,10 +180,6 @@ test.describe('Drive indexing', () => {
     const subDirPath = path.join(fixtureRoot, 'left', 'sub-dir')
 
     const initialStats = await waitForIndexData(tauriPage, subDirPath)
-    if (!initialStats) {
-      console.warn('SKIPPED: Drive index not ready for fixture path within 500 s')
-      return
-    }
 
     // Verify initial state
     expect(initialStats.recursiveSize).toBe(NESTED_FILE_SIZE)
@@ -194,9 +191,8 @@ test.describe('Drive indexing', () => {
     // Wait for the indexing pipeline to converge to the exact expected size
     const expectedSize = NESTED_FILE_SIZE + EXTRA_FILE_SIZE
     const updatedStats = await waitForExactSize(tauriPage, subDirPath, expectedSize)
-    expect(updatedStats).not.toBeNull()
-    expect(updatedStats?.recursiveSize).toBe(expectedSize)
-    expect(updatedStats?.recursiveFileCount).toBe(2)
+    expect(updatedStats.recursiveSize).toBe(expectedSize)
+    expect(updatedStats.recursiveFileCount).toBe(2)
 
     // Verify the UI also updated (Full view)
     await ensureFullView(tauriPage)
@@ -218,23 +214,8 @@ test.describe('Drive indexing', () => {
     // Wait for the index to converge to the size including both files
     const expectedSizeWithExtra = NESTED_FILE_SIZE + EXTRA_FILE_SIZE
     const statsWithExtra = await waitForExactSize(tauriPage, subDirPath, expectedSizeWithExtra, 120_000)
-    if (!statsWithExtra) {
-      // Index might not have data yet, or hasn't picked up the extra file
-      const fallback = await waitForIndexData(tauriPage, subDirPath)
-      if (!fallback) {
-        console.warn('SKIPPED: Drive index not ready for fixture path within 500 s (fallback)')
-        return
-      }
-      // If the index has data but not the exact size, the extra file hasn't been indexed yet.
-      // Wait a bit more.
-      console.warn(
-        `Index has recursiveSize=${String(fallback.recursiveSize)}, expected ${String(expectedSizeWithExtra)}`,
-      )
-    }
-
-    expect(statsWithExtra).not.toBeNull()
-    expect(statsWithExtra?.recursiveSize).toBe(expectedSizeWithExtra)
-    expect(statsWithExtra?.recursiveFileCount).toBe(2)
+    expect(statsWithExtra.recursiveSize).toBe(expectedSizeWithExtra)
+    expect(statsWithExtra.recursiveFileCount).toBe(2)
 
     // Delete the extra file
     fs.unlinkSync(extraFile)
