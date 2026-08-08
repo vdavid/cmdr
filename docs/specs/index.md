@@ -10,18 +10,21 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       cross-volume copy that streamed directories as files and could recursively delete the user's merged destination
       folder, latent for three months) into types, guards, and checks. **P0 is urgent and goes first**: a
       claim-by-claim review found `MtpVolume::delete` recursing into non-empty directories, which the `Volume::delete`
-      trait contract forbids in bold and which three guards depend on — so rollback's created-dirs prune can wipe a
-      camera roll, since MTP's `create_folder` can't signal a collision and `DirectoryCreation::Created` there means
-      "we asked". The fix is nearly free (the MTP code already lists a folder's children before recursing, so refusing
-      costs zero USB roundtrips, and every real tree delete already walks caller-side and deletes leaf-first) plus a
-      shared conformance assertion every backend runs, rather than an opt-in `delete_tree` capability serving zero
-      callers. **P1** makes the preview cache truthful: split `scan.rs`'s 1,462 lines with no allowlist bump, bind a
+      trait contract forbids in bold and which four guards depend on. The reachable one is the same-volume move's
+      source cleanup (`rename_merge.rs:186-197`), empty-only BY DESIGN because that refusal is the ONLY thing keeping
+      a Skipped child's single copy alive — so on a phone, merging a folder onto a same-named one and choosing Skip
+      destroys exactly the file the user chose to keep, with no probe error and no race. The fix is nearly free (the
+      MTP code already lists a folder's children before recursing, so refusing costs zero USB roundtrips, and every
+      real tree delete already walks caller-side and deletes leaf-first) plus a shared conformance assertion every
+      backend runs, rather than an opt-in `delete_tree` capability serving zero callers. **P1** makes the preview
+      cache truthful: split `scan.rs`'s 1,462 lines with no allowlist bump, bind a
       cached scan to the sources it was asked for (a `preview_id` currently authorizes deleting whatever the PREVIEW
       walked — the LOCAL delete never re-reads its own `sources`, while the volume one already does — which is the
       same unverified-fact shape on the one op with no rollback), make `SCAN_PREVIEW_RESULTS` private so the
       `files > 0 && per_path == 0` canary is load-bearing, name the two cache shapes with constructors, remove
       `Default` from `SourceHint`, and decide each of the eight `is_directory(...).unwrap_or(false)` sites — of which
-      `conflict.rs:80` and `rename_merge.rs:333` are destructive. **P2** splits `cleanup.rs`'s recursive delete by
+      `conflict.rs:80` and `rename_merge.rs:333` are destructive, and `walker.rs:749`, contrary to an earlier draft,
+      is an accounting-and-honesty defect rather than a loss. **P2** splits `cleanup.rs`'s recursive delete by
       INTENT (`delete_written_file` / `prune_created_dir_if_empty` / `remove_tree(why: TreeRemoval)`) so the cleanup
       path physically cannot recurse, with the prune checking emptiness itself rather than trusting the trait. **P3**
       extracts the no-byte-lost oracle the merge suites already share (assertion only: the two fixtures are different
@@ -34,7 +37,8 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       most are meaningless because `InMemoryVolume` can't distinguish local from SMB from MTP; and
       `scan_sources_internal` should NOT adopt the per-path helper. One reversal on review: the
       `unwrap_or_default` check IS worth building, method-scoped rather than variable-scoped, because the compiler
-      catches none of the hand-written probe unwraps. SPECCED, not started.
+      catches none of the hand-written probe unwraps. Reviewed twice, claim by claim, against the code.
+      SPECCED, not started.
 - [x] 2026-08-06 `i18n-screenshot-coverage.md` - SHIPPED. Translators see a screenshot per string; coverage went from
       **1549 / 2743 keys (56%)** to **2046 / 2743 (75%)**, with direct (precise) captures up from 910 to 1178, and the
       run from 68 surfaces with three dead passes to **133 surfaces, 0 failed**. The lever was driving the capture from
