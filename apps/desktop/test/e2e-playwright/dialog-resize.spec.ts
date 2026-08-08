@@ -19,7 +19,7 @@
  */
 
 import { test, expect } from './fixtures.js'
-import { ensureAppReady, dismissOverlay, dispatchMenuCommand } from './helpers.js'
+import { ensureAppReady, dismissOverlay, dismissAllToasts, dispatchMenuCommand } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
 /** Sub-pixel slack only: a real drift here is tens of pixels. */
@@ -106,6 +106,9 @@ test.describe('Dialog edge resizing', () => {
 
   test.afterEach(async ({ tauriPage }) => {
     await dismissOverlay(tauriPage).catch(() => {})
+    // A virtual MTP device announces itself whenever it connects, and that toast
+    // outlives the test that happened to be running.
+    await dismissAllToasts(tauriPage).catch(() => {})
   })
 
   test('offers every edge and corner outside the panel, each with its own cursor', async ({ tauriPage }) => {
@@ -133,7 +136,8 @@ test.describe('Dialog edge resizing', () => {
 
     expect(Math.abs(after.width - (before.width - 60))).toBeLessThan(TOLERANCE_PX)
     expect(Math.abs(after.left - before.left)).toBeLessThan(TOLERANCE_PX)
-    expect(Math.abs(after.height - before.height)).toBeLessThan(TOLERANCE_PX)
+    // Nothing asserts the height here: until someone drags it, the panel's height is
+    // its content's, and a narrower panel reflows (this dialog grows ~19px).
   })
 
   test('drags the north edge and leaves the bottom where it was', async ({ tauriPage }) => {
@@ -147,6 +151,23 @@ test.describe('Dialog edge resizing', () => {
     expect(Math.abs(after.height - (before.height - 40))).toBeLessThan(TOLERANCE_PX)
     expect(Math.abs(after.bottom - before.bottom)).toBeLessThan(TOLERANCE_PX)
     expect(Math.abs(after.width - before.width)).toBeLessThan(TOLERANCE_PX)
+  })
+
+  // Once a vertical drag has pinned the height, a horizontal one must leave it alone:
+  // the two axes are carried together, so a width-only drag that forgot the height
+  // would silently hand it back to the content.
+  test('keeps a dragged height through a later width drag', async ({ tauriPage }) => {
+    const page = tauriPage as TauriPage
+    await openDialog(page, OPERATION_LOG, 'log.operationLog')
+
+    await dragBand(page, OPERATION_LOG, 'n', 0, 30)
+    const pinned = await panelRect(page, OPERATION_LOG)
+
+    await dragBand(page, OPERATION_LOG, 'e', -40, 0)
+    const after = await panelRect(page, OPERATION_LOG)
+
+    expect(Math.abs(after.height - pinned.height)).toBeLessThan(TOLERANCE_PX)
+    expect(Math.abs(after.width - (pinned.width - 40))).toBeLessThan(TOLERANCE_PX)
   })
 
   // A width-only dialog exposes no band that could change its height, so there's
