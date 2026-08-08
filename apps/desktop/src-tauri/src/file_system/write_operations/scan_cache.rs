@@ -29,38 +29,106 @@ pub(super) struct ScanPreviewState {
 }
 
 /// Cached result from a completed scan preview.
-#[allow(dead_code, reason = "Fields read via take_cached_scan_result")]
+///
+/// ❌ The fields are PRIVATE and stay that way: build one through
+/// `from_local_walk` or `from_volume_batch`. The two production walks emit
+/// genuinely different shapes, and a hand-written literal is how a test invents
+/// a third one that production has never once produced — which is exactly how
+/// the empty-`per_path` bug got certified by a suite full of fully-populated
+/// fixtures.
 pub(super) struct CachedScanResult {
     /// The top-level paths the preview was asked to walk. A `preview_id` proves
     /// the frontend once asked for a scan; it proves nothing about WHICH scan,
     /// so `take_cached_scan_result` refuses an entry whose sources don't match
     /// the operation's own. Without this, an operation on `/b` would happily
-    /// act on a cached preview of `/a` — and on delete, that has no rollback.
-    pub sources: Vec<PathBuf>,
-    pub files: Vec<FileInfo>,
-    pub dirs: Vec<PathBuf>,
-    pub file_count: usize,
+    /// act on a cached preview of `/a`, and on delete that has no rollback.
+    sources: Vec<PathBuf>,
+    files: Vec<FileInfo>,
+    dirs: Vec<PathBuf>,
+    file_count: usize,
     /// Write footprint (un-dedup'd). See `CopyScanResult::total_bytes`.
-    pub total_bytes: u64,
+    total_bytes: u64,
     /// `du`-equivalent source footprint (hardlinks counted once). See
     /// `CopyScanResult::dedup_bytes`.
-    pub dedup_bytes: u64,
-    /// Per-source-path scan results from volume scans. Empty for local-FS
-    /// previews (the `files` Vec already carries everything the local copy
-    /// engine needs). Populated by `run_volume_scan_preview` so the copy
-    /// pipeline's cached branch can rebuild `source_hints` without per-path
-    /// `is_directory` probes (which on MTP each list the parent dir).
-    pub per_path: Vec<(PathBuf, CopyScanResult)>,
+    dedup_bytes: u64,
+    /// Per-source-path scan results: one `CopyScanResult` per top-level source,
+    /// carrying its type and totals. The copy pipeline's cached branch rebuilds
+    /// `source_hints` from it rather than probing `is_directory` per path
+    /// (which on MTP each list the parent dir), so a source missing from here
+    /// costs a round trip and a source wrongly absent costs a wrong answer.
+    per_path: Vec<(PathBuf, CopyScanResult)>,
     /// Compressed-size estimate for a compress-mode local scan, carried so the
     /// recovery path (`get_scan_preview_totals`) can hand it back when the FE
     /// missed the complete event. `None` for copy/move and remote scans.
-    pub estimated_compressed_bytes: Option<super::types::CompressedSizeEstimate>,
+    estimated_compressed_bytes: Option<super::types::CompressedSizeEstimate>,
     /// When this result was inserted into `SCAN_PREVIEW_RESULTS`. Drives the
     /// TTL safety net (`prune_expired_scan_results`): a forgetful caller that
     /// never consumes the cache (dialog dismissed, op never started) can't leak
     /// tens of thousands of `FileInfo` unbounded — entries older than
     /// `SCAN_RESULT_TTL` are evicted on the next insert.
-    pub inserted_at: Instant,
+    inserted_at: Instant,
+}
+
+impl CachedScanResult {
+    /// The LOCAL `std::fs` walk's shape (`run_scan_preview`): a per-file
+    /// `FileInfo` list, the directories it found, one `CopyScanResult` per
+    /// top-level source, and possibly a compressed-size estimate.
+    ///
+    /// `file_count` is derived from `files`, and `inserted_at` is stamped here:
+    /// a caller passing either is one more thing to get wrong.
+    pub(super) fn from_local_walk(
+        sources: Vec<PathBuf>,
+        files: Vec<FileInfo>,
+        dirs: Vec<PathBuf>,
+        total_bytes: u64,
+        dedup_bytes: u64,
+        per_path: Vec<(PathBuf, CopyScanResult)>,
+        estimated_compressed_bytes: Option<super::types::CompressedSizeEstimate>,
+    ) -> Self {
+        // Stronger than `insert_scan_result`'s generic canary, because this
+        // constructor knows which shape it's building: a local walk that found
+        // files walked at least one source, so it recorded at least one.
+        debug_assert!(
+            files.is_empty() || !per_path.is_empty(),
+            "a local walk that found {} files must record a per-source result",
+            files.len()
+        );
+        Self {
+            sources,
+            file_count: files.len(),
+            files,
+            dirs,
+            total_bytes,
+            dedup_bytes,
+            per_path,
+            estimated_compressed_bytes,
+            inserted_at: Instant::now(),
+        }
+    }
+
+    /// The VOLUME batch scan's shape (`run_volume_scan_preview`, SMB / MTP): no
+    /// per-file list at all (consumers read `per_path`, and a delete that needs
+    /// paths recurses itself), aggregate counters, and never an estimate
+    /// (remote sources don't sample).
+    pub(super) fn from_volume_batch(
+        sources: Vec<PathBuf>,
+        file_count: usize,
+        total_bytes: u64,
+        dedup_bytes: u64,
+        per_path: Vec<(PathBuf, CopyScanResult)>,
+    ) -> Self {
+        Self {
+            sources,
+            files: Vec::new(),
+            dirs: Vec::new(),
+            file_count,
+            total_bytes,
+            dedup_bytes,
+            per_path,
+            estimated_compressed_bytes: None,
+            inserted_at: Instant::now(),
+        }
+    }
 }
 
 /// How long a cached scan result lives before the TTL safety net evicts it.
@@ -183,7 +251,23 @@ pub(super) fn cached_scan_totals(preview_id: &str) -> Option<super::types::ScanP
 /// proof. ❌ Not a general-purpose seeder: everything else goes through
 /// `insert_scan_result`.
 #[cfg(test)]
-pub(super) fn seed_incoherent_scan_result_for_test(preview_id: String, result: CachedScanResult) {
+pub(super) fn seed_incoherent_scan_result_for_test(
+    preview_id: String,
+    sources: Vec<PathBuf>,
+    file_count: usize,
+    total_bytes: u64,
+) {
+    let result = CachedScanResult {
+        sources,
+        files: Vec::new(),
+        dirs: Vec::new(),
+        file_count,
+        total_bytes,
+        dedup_bytes: total_bytes,
+        per_path: Vec::new(),
+        estimated_compressed_bytes: None,
+        inserted_at: Instant::now(),
+    };
     if let Ok(mut cache) = SCAN_PREVIEW_RESULTS.write() {
         cache.insert(preview_id, result);
     }

@@ -1286,29 +1286,22 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
     // branch takes the entry back out keyed by `preview_id`.
     use crate::file_system::volume::CopyScanResult as CSR;
     use crate::file_system::write_operations::state::{CachedScanResult, insert_scan_result};
+    let one_photo = || {
+        vec![(
+            PathBuf::from("/photo.jpg"),
+            CSR {
+                file_count: 1,
+                dir_count: 0,
+                total_bytes: 15,
+                dedup_bytes: 15,
+                top_level_is_directory: false,
+            },
+        )]
+    };
     let preview_id = "test-preview-id-skip-source-scan".to_string();
     insert_scan_result(
         preview_id.clone(),
-        CachedScanResult {
-            sources: vec![PathBuf::from("/photo.jpg")],
-            files: Vec::new(),
-            dirs: Vec::new(),
-            file_count: 1,
-            total_bytes: 15,
-            dedup_bytes: 15,
-            per_path: vec![(
-                PathBuf::from("/photo.jpg"),
-                CSR {
-                    file_count: 1,
-                    dir_count: 0,
-                    total_bytes: 15,
-                    dedup_bytes: 15,
-                    top_level_is_directory: false,
-                },
-            )],
-            estimated_compressed_bytes: None,
-            inserted_at: Instant::now(),
-        },
+        CachedScanResult::from_volume_batch(vec![PathBuf::from("/photo.jpg")], 1, 15, 15, one_photo()),
     );
 
     // Auto-resolve the conflict via Skip-all so the test doesn't hang waiting
@@ -1351,26 +1344,7 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
     // ── Stop mode with a hint: also no scan ─────────────────────────
     insert_scan_result(
         "test-preview-id-stop".to_string(),
-        CachedScanResult {
-            sources: vec![PathBuf::from("/photo.jpg")],
-            files: Vec::new(),
-            dirs: Vec::new(),
-            file_count: 1,
-            total_bytes: 15,
-            dedup_bytes: 15,
-            per_path: vec![(
-                PathBuf::from("/photo.jpg"),
-                CSR {
-                    file_count: 1,
-                    dir_count: 0,
-                    total_bytes: 15,
-                    dedup_bytes: 15,
-                    top_level_is_directory: false,
-                },
-            )],
-            estimated_compressed_bytes: None,
-            inserted_at: Instant::now(),
-        },
+        CachedScanResult::from_volume_batch(vec![PathBuf::from("/photo.jpg")], 1, 15, 15, one_photo()),
     );
     let stop_config = VolumeCopyConfig {
         conflict_resolution: ConflictResolution::Stop,

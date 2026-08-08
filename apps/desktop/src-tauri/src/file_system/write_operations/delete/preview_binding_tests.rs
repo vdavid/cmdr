@@ -11,7 +11,7 @@
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use super::super::state::{CachedScanResult, FileInfo, WriteOperationState, insert_scan_result};
 use super::super::test_support::TestOperationGuard;
@@ -46,43 +46,45 @@ fn make_state() -> Arc<WriteOperationState> {
     Arc::new(WriteOperationState::new(Duration::from_millis(10)))
 }
 
-/// Builds the shape `run_scan_preview` (the LOCAL `std::fs` walk) caches: a
-/// per-file `FileInfo` list plus one `CopyScanResult` per top-level source.
-fn local_preview_of(source_dir: &std::path::Path, files: &[PathBuf]) -> CachedScanResult {
-    let total: u64 = files
-        .iter()
-        .map(|f| fs::metadata(f).map(|m| m.len()).unwrap_or(0))
-        .sum();
-    CachedScanResult {
-        sources: vec![source_dir.to_path_buf()],
-        files: files
-            .iter()
-            .map(|f| {
-                let metadata = fs::symlink_metadata(f).expect("scanned file exists");
-                FileInfo::new(
-                    f.clone(),
-                    source_dir.parent().expect("source has a parent").to_path_buf(),
-                    &metadata,
-                )
-            })
-            .collect(),
-        dirs: vec![source_dir.to_path_buf()],
-        file_count: files.len(),
-        total_bytes: total,
-        dedup_bytes: total,
-        per_path: vec![(
-            source_dir.to_path_buf(),
+/// Builds the shape `run_scan_preview` (the LOCAL `std::fs` walk) caches over
+/// `source_dirs`: a per-file `FileInfo` list plus one `CopyScanResult` per
+/// top-level source. `files_per_source` pairs positionally with `source_dirs`.
+fn local_preview_of(
+    root: &std::path::Path,
+    source_dirs: &[PathBuf],
+    files_per_source: &[&[PathBuf]],
+) -> CachedScanResult {
+    let size_of = |f: &PathBuf| fs::metadata(f).map(|m| m.len()).unwrap_or(0);
+    let mut files = Vec::new();
+    let mut per_path = Vec::new();
+    let mut total = 0u64;
+    for (source, source_files) in source_dirs.iter().zip(files_per_source) {
+        let source_total: u64 = source_files.iter().map(size_of).sum();
+        total += source_total;
+        for f in *source_files {
+            let metadata = fs::symlink_metadata(f).expect("scanned file exists");
+            files.push(FileInfo::new(f.clone(), root.to_path_buf(), &metadata));
+        }
+        per_path.push((
+            source.clone(),
             CopyScanResult {
-                file_count: files.len(),
+                file_count: source_files.len(),
                 dir_count: 0,
-                total_bytes: total,
-                dedup_bytes: total,
+                total_bytes: source_total,
+                dedup_bytes: source_total,
                 top_level_is_directory: true,
             },
-        )],
-        estimated_compressed_bytes: None,
-        inserted_at: Instant::now(),
+        ));
     }
+    CachedScanResult::from_local_walk(
+        source_dirs.to_vec(),
+        files,
+        source_dirs.to_vec(),
+        total,
+        total,
+        per_path,
+        None,
+    )
 }
 
 /// **The destructive one.** A delete asked to remove `/keep_me` while the cache
@@ -111,7 +113,7 @@ fn a_local_delete_never_acts_on_a_preview_of_a_different_selection() {
     let preview_id = unique("stale-preview");
     insert_scan_result(
         preview_id.clone(),
-        local_preview_of(&untouched, &[untouched_file.clone()]),
+        local_preview_of(&root, std::slice::from_ref(&untouched), &[std::slice::from_ref(&untouched_file)]),
     );
 
     let op_id = unique("op");
@@ -122,7 +124,7 @@ fn a_local_delete_never_acts_on_a_preview_of_a_different_selection() {
         ..WriteOperationConfig::default()
     };
 
-    let result = delete_files_with_progress_inner(&sink, &op_id, op.state(), &[requested.clone()], &config);
+    let result = delete_files_with_progress_inner(&sink, &op_id, op.state(), std::slice::from_ref(&requested), &config);
 
     assert!(
         result.is_ok(),
@@ -157,16 +159,14 @@ fn a_local_delete_never_acts_on_a_preview_covering_more_than_was_asked_for() {
 
     // The preview walked BOTH folders; the operation asks for one.
     let preview_id = unique("superset-preview");
-    let mut cached = local_preview_of(&requested, &[requested_file.clone()]);
-    cached.sources.push(deselected.clone());
-    let deselected_metadata = fs::symlink_metadata(&deselected_file).expect("deselected file exists");
-    cached.files.push(FileInfo::new(
-        deselected_file.clone(),
-        root.to_path_buf(),
-        &deselected_metadata,
-    ));
-    cached.file_count = 2;
-    insert_scan_result(preview_id.clone(), cached);
+    insert_scan_result(
+        preview_id.clone(),
+        local_preview_of(
+            &root,
+            &[requested.clone(), deselected.clone()],
+            &[std::slice::from_ref(&requested_file), std::slice::from_ref(&deselected_file)],
+        ),
+    );
 
     let op_id = unique("op-subset");
     let op = TestOperationGuard::register_as(op_id.clone(), make_state());
@@ -176,7 +176,7 @@ fn a_local_delete_never_acts_on_a_preview_covering_more_than_was_asked_for() {
         ..WriteOperationConfig::default()
     };
 
-    let result = delete_files_with_progress_inner(&sink, &op_id, op.state(), &[requested.clone()], &config);
+    let result = delete_files_with_progress_inner(&sink, &op_id, op.state(), std::slice::from_ref(&requested), &config);
 
     assert!(result.is_ok(), "the delete must succeed: {result:?}");
     assert!(
@@ -210,14 +210,12 @@ async fn a_volume_delete_stays_bound_to_its_own_sources() {
     let preview_id = unique("vol-preview");
     insert_scan_result(
         preview_id.clone(),
-        CachedScanResult {
-            sources: vec![PathBuf::from("/foreign.txt")],
-            files: Vec::new(),
-            dirs: Vec::new(),
-            file_count: 1,
-            total_bytes: 7,
-            dedup_bytes: 7,
-            per_path: vec![(
+        CachedScanResult::from_volume_batch(
+            vec![PathBuf::from("/foreign.txt")],
+            1,
+            7,
+            7,
+            vec![(
                 PathBuf::from("/foreign.txt"),
                 CopyScanResult {
                     file_count: 1,
@@ -227,9 +225,7 @@ async fn a_volume_delete_stays_bound_to_its_own_sources() {
                     top_level_is_directory: false,
                 },
             )],
-            estimated_compressed_bytes: None,
-            inserted_at: Instant::now(),
-        },
+        ),
     );
 
     let events = Arc::new(CollectorEventSink::new());

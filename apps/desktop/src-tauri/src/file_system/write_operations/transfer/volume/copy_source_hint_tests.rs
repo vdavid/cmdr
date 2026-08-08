@@ -18,7 +18,6 @@ use super::*;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{CopyScanResult, InMemoryVolume, ListingProgress, SpaceInfo, VolumeReadStream};
 use crate::file_system::write_operations::scan_cache::seed_incoherent_scan_result_for_test;
-use crate::file_system::write_operations::state::CachedScanResult;
 use crate::file_system::write_operations::types::{CollectorEventSink, ConflictResolution, WriteConflictEvent};
 use crate::ignore_poison::IgnorePoison;
 
@@ -30,17 +29,9 @@ use crate::ignore_poison::IgnorePoison;
 fn seed_preview_without_per_path(preview_id: &str, sources: &[&str], file_count: usize, total_bytes: u64) {
     seed_incoherent_scan_result_for_test(
         preview_id.to_string(),
-        CachedScanResult {
-            sources: sources.iter().map(PathBuf::from).collect(),
-            files: Vec::new(),
-            dirs: Vec::new(),
-            file_count,
-            total_bytes,
-            dedup_bytes: total_bytes,
-            per_path: Vec::new(),
-            estimated_compressed_bytes: None,
-            inserted_at: Instant::now(),
-        },
+        sources.iter().map(PathBuf::from).collect(),
+        file_count,
+        total_bytes,
     );
 }
 

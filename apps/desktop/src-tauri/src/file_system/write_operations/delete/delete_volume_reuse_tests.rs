@@ -203,14 +203,12 @@ async fn delete_consumes_preview_id_skips_rescan() {
     // (see `run_volume_scan_preview` → `CachedScanResult`).
     insert_scan_result(
         preview_id.clone(),
-        CachedScanResult {
-            sources: vec![PathBuf::from("/a.jpg"), PathBuf::from("/b.jpg")],
-            files: Vec::new(),
-            dirs: Vec::new(),
-            file_count: 2,
-            total_bytes: 11,
-            dedup_bytes: 11,
-            per_path: vec![
+        CachedScanResult::from_volume_batch(
+            vec![PathBuf::from("/a.jpg"), PathBuf::from("/b.jpg")],
+            2,
+            11,
+            11,
+            vec![
                 (
                     PathBuf::from("/a.jpg"),
                     CopyScanResult {
@@ -232,9 +230,7 @@ async fn delete_consumes_preview_id_skips_rescan() {
                     },
                 ),
             ],
-            estimated_compressed_bytes: None,
-            inserted_at: std::time::Instant::now(),
-        },
+        ),
     );
 
     let events = Arc::new(CollectorEventSink::new());

@@ -265,17 +265,15 @@ fn run_scan_preview(
                 let dirs_count = dirs.len();
                 insert_scan_result(
                     preview_id.clone(),
-                    CachedScanResult {
+                    CachedScanResult::from_local_walk(
                         sources,
                         files,
                         dirs,
-                        file_count,
                         total_bytes,
                         dedup_bytes,
                         per_path,
-                        estimated_compressed_bytes: estimate.clone(),
-                        inserted_at: Instant::now(),
-                    },
+                        estimate.clone(),
+                    ),
                 );
 
                 // Emit completion
@@ -403,18 +401,7 @@ async fn run_volume_scan_preview(
                 // copy_between_volumes can reuse both without re-statting.
                 insert_scan_result(
                     preview_id.clone(),
-                    CachedScanResult {
-                        sources,
-                        files: Vec::new(),
-                        dirs: Vec::new(),
-                        file_count: total_files,
-                        total_bytes,
-                        dedup_bytes,
-                        per_path: batch.per_path,
-                        // Remote sources never sample: the estimate is suppressed.
-                        estimated_compressed_bytes: None,
-                        inserted_at: Instant::now(),
-                    },
+                    CachedScanResult::from_volume_batch(sources, total_files, total_bytes, dedup_bytes, batch.per_path),
                 );
 
                 let _ = ScanPreviewCompleteEvent {
@@ -672,19 +659,30 @@ mod tests {
     fn get_scan_preview_totals_returns_cached_counts_after_complete() {
         let preview_id = format!("test-{}", Uuid::new_v4());
         let source = PathBuf::from("/src");
+        // A real local-walk shape: seven files, two directories, and one
+        // per-source result. Building it through `from_local_walk` is what
+        // keeps the fixture honest — `file_count` comes from the file list, so
+        // the test can't quietly assert a count no walk would emit.
+        let files: Vec<FileInfo> = (0..7)
+            .map(|i| FileInfo {
+                path: source.join(format!("f{i}.bin")),
+                source_root: PathBuf::from("/"),
+                size: 1_763,
+                progress_bytes: 1_763,
+                modified: 0,
+                created: 0,
+                is_symlink: false,
+            })
+            .collect();
         insert_scan_result(
             preview_id.clone(),
-            CachedScanResult {
-                sources: vec![source.clone()],
-                files: Vec::new(),
-                dirs: vec![PathBuf::from("/d1"), PathBuf::from("/d2")],
-                file_count: 7,
-                total_bytes: 12_345,
-                dedup_bytes: 12_345,
-                // A completed walk that counted seven files carries a per-source
-                // result for each source; an empty map here would be the
-                // incoherent shape `insert_scan_result`'s canary rejects.
-                per_path: vec![(
+            CachedScanResult::from_local_walk(
+                vec![source.clone()],
+                files,
+                vec![source.join("d1"), source.join("d2")],
+                12_345,
+                12_345,
+                vec![(
                     source,
                     CopyScanResult {
                         file_count: 7,
@@ -694,9 +692,8 @@ mod tests {
                         top_level_is_directory: true,
                     },
                 )],
-                estimated_compressed_bytes: None,
-                inserted_at: Instant::now(),
-            },
+                None,
+            ),
         );
 
         let totals = get_scan_preview_totals(&preview_id).expect("totals should be present");

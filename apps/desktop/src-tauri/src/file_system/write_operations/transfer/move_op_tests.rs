@@ -708,7 +708,6 @@ fn cross_fs_move_preserves_empty_directories() {
 fn a_local_move_never_acts_on_a_preview_of_a_different_selection() {
     use crate::file_system::volume::CopyScanResult;
     use crate::file_system::write_operations::state::{CachedScanResult, FileInfo, insert_scan_result};
-    use std::time::Instant;
 
     let tmp = tempfile::tempdir().expect("tempdir");
     let src_dir = tmp.path().join("src");
@@ -725,14 +724,13 @@ fn a_local_move_never_acts_on_a_preview_of_a_different_selection() {
     let other_metadata = fs::symlink_metadata(&other).expect("other exists");
     insert_scan_result(
         preview_id.clone(),
-        CachedScanResult {
-            sources: vec![other.clone()],
-            files: vec![FileInfo::new(other.clone(), src_dir.clone(), &other_metadata)],
-            dirs: Vec::new(),
-            file_count: 1,
-            total_bytes: other_metadata.len(),
-            dedup_bytes: other_metadata.len(),
-            per_path: vec![(
+        CachedScanResult::from_local_walk(
+            vec![other.clone()],
+            vec![FileInfo::new(other.clone(), src_dir.clone(), &other_metadata)],
+            Vec::new(),
+            other_metadata.len(),
+            other_metadata.len(),
+            vec![(
                 other.clone(),
                 CopyScanResult {
                     file_count: 1,
@@ -742,9 +740,8 @@ fn a_local_move_never_acts_on_a_preview_of_a_different_selection() {
                     top_level_is_directory: false,
                 },
             )],
-            estimated_compressed_bytes: None,
-            inserted_at: Instant::now(),
-        },
+            None,
+        ),
     );
 
     let events = Arc::new(CollectorEventSink::new());

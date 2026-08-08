@@ -1,9 +1,10 @@
-//! Unit tests for the two things that make the scan-preview cache trustworthy:
-//! the request binding (`take_cached_scan_result` refuses an entry describing a
-//! different selection) and the coherence canary (`insert_scan_result` refuses
-//! to believe a completed walk that carries no per-source results).
+//! Unit tests for the three things that make the scan-preview cache
+//! trustworthy: the request binding (`take_cached_scan_result` refuses an entry
+//! describing a different selection), the coherence canary (`insert_scan_result`
+//! refuses to believe a completed walk that carries no per-source results), and
+//! the two named constructors that give the two production shapes names.
 //!
-//! `super::` here is `scan_cache`, so the private `SCAN_PREVIEW_RESULTS` is in
+//! `super::` here is `scan_cache`, so the private fields and statics are in
 //! reach; that's deliberate, so these tests can pin the module wall itself.
 
 use super::*;
@@ -20,19 +21,16 @@ fn one_file(bytes: u64) -> CopyScanResult {
     }
 }
 
-/// Builds a completed local-walk-shaped entry over `sources`.
+/// A completed volume-batch entry over `sources`, one top-level file each.
 fn cached_for(sources: &[&str]) -> CachedScanResult {
-    CachedScanResult {
-        sources: sources.iter().map(PathBuf::from).collect(),
-        files: Vec::new(),
-        dirs: Vec::new(),
-        file_count: sources.len(),
-        total_bytes: 10 * sources.len() as u64,
-        dedup_bytes: 10 * sources.len() as u64,
-        per_path: sources.iter().map(|s| (PathBuf::from(s), one_file(10))).collect(),
-        estimated_compressed_bytes: None,
-        inserted_at: Instant::now(),
-    }
+    let bytes = 10 * sources.len() as u64;
+    CachedScanResult::from_volume_batch(
+        paths(sources),
+        sources.len(),
+        bytes,
+        bytes,
+        sources.iter().map(|s| (PathBuf::from(s), one_file(10))).collect(),
+    )
 }
 
 fn paths(list: &[&str]) -> Vec<PathBuf> {
@@ -124,17 +122,7 @@ fn inserting_a_completed_walk_with_no_per_source_results_trips_the_canary() {
     let preview_id = unique_preview("canary");
     insert_scan_result(
         preview_id,
-        CachedScanResult {
-            sources: paths(&["/a"]),
-            files: Vec::new(),
-            dirs: Vec::new(),
-            file_count: 3,
-            total_bytes: 30,
-            dedup_bytes: 30,
-            per_path: Vec::new(),
-            estimated_compressed_bytes: None,
-            inserted_at: Instant::now(),
-        },
+        CachedScanResult::from_volume_batch(paths(&["/a"]), 3, 30, 30, Vec::new()),
     );
 }
 
@@ -150,17 +138,77 @@ fn the_canary_leaves_the_legitimate_shapes_alone() {
     let nothing_found = unique_preview("empty");
     insert_scan_result(
         nothing_found.clone(),
-        CachedScanResult {
-            sources: paths(&["/empty-dir"]),
-            files: Vec::new(),
-            dirs: vec![PathBuf::from("/empty-dir")],
-            file_count: 0,
-            total_bytes: 0,
-            dedup_bytes: 0,
-            per_path: Vec::new(),
-            estimated_compressed_bytes: None,
-            inserted_at: Instant::now(),
-        },
+        CachedScanResult::from_local_walk(
+            paths(&["/empty-dir"]),
+            Vec::new(),
+            vec![PathBuf::from("/empty-dir")],
+            0,
+            0,
+            Vec::new(),
+            None,
+        ),
     );
     assert!(take_cached_scan_result(&nothing_found, &paths(&["/empty-dir"])).is_some());
+}
+
+// ---- the two named constructors ----
+
+/// `from_local_walk` derives `file_count` from the file list it was handed, so
+/// the count and the list can't drift apart at a call site.
+#[test]
+fn from_local_walk_derives_its_file_count_from_the_files_it_walked() {
+    let file = FileInfo {
+        path: PathBuf::from("/src/one.bin"),
+        source_root: PathBuf::from("/src"),
+        size: 10,
+        progress_bytes: 10,
+        modified: 0,
+        created: 0,
+        is_symlink: false,
+    };
+    let cached = CachedScanResult::from_local_walk(
+        paths(&["/src"]),
+        vec![file],
+        paths(&["/src"]),
+        10,
+        10,
+        vec![(PathBuf::from("/src"), one_file(10))],
+        None,
+    );
+
+    assert_eq!(cached.file_count, 1);
+    assert_eq!(cached.files.len(), 1);
+}
+
+/// `from_local_walk` asserts the shape it claims: a walk that found files
+/// recorded a per-source result. Stronger than the insert-time canary, which
+/// can only speak about `file_count`. Debug builds only.
+#[test]
+#[should_panic(expected = "must record a per-source result")]
+#[cfg(debug_assertions)]
+fn from_local_walk_refuses_to_build_a_walk_that_found_files_but_no_sources() {
+    let file = FileInfo {
+        path: PathBuf::from("/src/one.bin"),
+        source_root: PathBuf::from("/src"),
+        size: 10,
+        progress_bytes: 10,
+        modified: 0,
+        created: 0,
+        is_symlink: false,
+    };
+    let _ = CachedScanResult::from_local_walk(paths(&["/src"]), vec![file], Vec::new(), 10, 10, Vec::new(), None);
+}
+
+/// `from_volume_batch` builds the remote shape: no per-file list (consumers
+/// read `per_path`, and a delete that needs paths recurses itself) and never a
+/// compress estimate, since remote sources don't sample.
+#[test]
+fn from_volume_batch_carries_no_file_list_and_no_estimate() {
+    let cached =
+        CachedScanResult::from_volume_batch(paths(&["/a"]), 4, 40, 40, vec![(PathBuf::from("/a"), one_file(40))]);
+
+    assert!(cached.files.is_empty());
+    assert!(cached.dirs.is_empty());
+    assert!(cached.estimated_compressed_bytes.is_none());
+    assert_eq!(cached.file_count, 4);
 }
