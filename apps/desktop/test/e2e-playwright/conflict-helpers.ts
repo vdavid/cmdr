@@ -12,6 +12,7 @@ import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { expect } from './fixtures.js'
 import { pollUntil, TRANSFER_DIALOG } from './helpers.js'
 import { ensureMcpClient, mcpCall } from '../e2e-shared/mcp-client.js'
+import { removeFixtureEntry } from '../e2e-shared/fixtures.js'
 
 /** Union type for tauriPage (works in both Tauri and browser mode). */
 type PageLike = TauriPage | BrowserPageAdapter
@@ -97,30 +98,6 @@ export function createTypeMismatchFixture(fixtureRoot: string): void {
   // Case 2: directory in source, file in dest
   writeFile(fixtureRoot, 'left/config/settings.json', 'source-settings')
   writeFile(fixtureRoot, 'right/config', 'dest-config')
-}
-
-/**
- * Removes a single fixture entry, including the dangling-symlink edge case.
- *
- * `fs.rmSync(p, { recursive: true, force: true })` silently no-ops on a dangling
- * symlink (target missing), because `force: true` swallows the underlying
- * ENOENT. Iterating siblings can produce exactly that state: removing
- * `link-target.txt` BEFORE `my-link` (a symlink to it) leaves `my-link`
- * dangling, then `rmSync` on `my-link` does nothing. We `lstat` first and call
- * `unlinkSync` directly on symlinks so they always get removed.
- */
-function removeFixtureEntry(entry: string): void {
-  let stat: fs.Stats | undefined
-  try {
-    stat = fs.lstatSync(entry)
-  } catch {
-    return
-  }
-  if (stat.isSymbolicLink()) {
-    fs.unlinkSync(entry)
-    return
-  }
-  fs.rmSync(entry, { recursive: true, force: true })
 }
 
 /** Removes all contents of left/ (except bulk/) and right/. */
