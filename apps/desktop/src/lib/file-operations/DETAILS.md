@@ -93,9 +93,65 @@ Decisions:
   widening the slot.
 - **Ownership-checked release.** `clearForegroundOperation(id)` no-ops unless `id` still owns the slot, so a dialog
   tearing down after the next one claimed it can't silence the new operation.
-- **A brief unclaimed window is accepted.** The operation can register (and reach the main window's store) before the
-  start command's response returns, so an ambient surface may flash for a frame before the slot is claimed. There's no
-  id to claim before the response; the alternative would be a second identity crossing IPC.
+- **The unclaimed window is announced, not hidden.** The operation registers (and reaches the main window's store, and
+  can already emit) before the start command's response returns, so there is a real span where a live operation has no
+  name here. `beginForegroundClaim()` / `endForegroundClaim()` / `isForegroundClaimPending()` mark it:
+  `startOperation()` brackets its dispatch, settling in a `finally` so the id landing, the abandoned-dialog bail-out,
+  and a thrown command all release it. Consumers that only DISPLAY can ignore it and ride out a frame's flash (the
+  corner chip does, on its settle delay); a consumer that DECIDES must defer while it's pending, because both wrong
+  answers are expensive — see "Conflict prompts" below.
+- **A counter, not a flag.** A dispatch can still be in flight when the next dialog begins its own claim (Escape during
+  dispatch abandons the first without ending it any sooner), and a flag would let the first one's teardown clear the
+  second one's claim.
+
+## Conflict prompts for operations with no dialog
+
+`operation-conflict.svelte.ts` (+ `operation-conflict-rules.ts`, `OperationConflictDialog.svelte`) is the main window's
+answer to a `write-conflict` that no progress dialog is listening for.
+
+The bug it exists for: `TransferDialog`'s upfront check is one destination listing, top level only, and a destination
+folder that already exists MERGES — so a clash on a file inside it can't be known before the operation starts. Under
+"Ask for each" the backend emits `write-conflict` and parks the operation on a oneshot. Press Queue and the progress
+dialog (the app's only listener) unmounts, and the operation waits for an answer nobody can give.
+
+The host is started and stopped by `routes/(main)/+page.svelte` next to the failure watch, listens for the life of the
+window, and on a conflict nobody owns: pauses, raises the main window, and prompts. The dialog is chrome around the same
+`TransferConflictDialog` the progress dialog embeds, resolving through the same `resolveWriteConflict(operationId,
+resolution, applyToAll)` and cancelling through the same `cancelWriteOperation(operationId, rollback)`.
+
+- **Ownership is `conflictOwner(operationId, foreground)`**, returning `here` / `foreground` / `unknown`. `unknown`
+  means a dialog is mid-dispatch: the empty slot proves nothing, so the event is HELD and re-decided when the claim
+  settles (an `$effect` reading `isForegroundClaimPending()` unconditionally). Guessing costs a double prompt or a
+  wedge; deferring costs milliseconds. ❌ Not a settle delay — that's the chip's tool, and the chip can afford to be
+  late.
+- **`operationsToPauseFor(conflictOperationId, rows)`** is how wide the pause is: today every `running` id, the asking
+  one included. `queued` and `paused` rows stay out, and the ids are remembered so the answer resumes exactly them. ❌
+  Never `pauseAll()` / `resumeAll()`: resuming everything restarts an operation the USER paused by hand.
+- **The asking operation is paused too**, though the backend already has it parked on the oneshot. The pause gate is a
+  flag read at the next between-files boundary and the operation isn't at one, so it costs nothing and buys honesty:
+  the queue window and the corner chip both read `paused`, instead of one row claiming to run with a frozen bar.
+- **Resolve lands before resume.** A resolve that doesn't land leaves the prompt up and everything paused, which is the
+  honest state for an unanswered question. The resolved operation may park for the moment before its resume arrives;
+  parking between files is what pause is for, and cancel still wins over both.
+- **One prompt at a time, in arrival order**, resuming only after the last. The backend serializes prompts within one
+  operation (`conflict_dispatch_lock` plus a single sender slot), so the queue holds at most one entry per operation; a
+  second event for one that's already queued replaces it, because `resolve_write_conflict` is keyed by operation id and
+  an answer lands on whatever that operation is parked on now.
+- **An operation dying mid-prompt** is covered three ways: the prompt's Cancel, `reconcileConflictPrompts(rows)`
+  dropping an entry whose operation left the snapshot (a queue-window cancel, a failure), and either of those releasing
+  the hold. An entry is only droppable once its operation has been SEEN live: the rows arrive on their own stream, and
+  "not there yet" must not read as "gone".
+- **The main window closing isn't a case.** It quits the app (`lib.rs`'s `CloseRequested` handler), so there's no state
+  where operations run with no window to host the prompt, and no need for a fallback host in the queue window.
+- **It raises the main window** (`getCurrentWindow().setFocus()`, self-focus — cross-window `setFocus()` doesn't
+  reliably raise on macOS), once per run of prompts, skipped under `isE2eRun()`. The path into this bug ends with the
+  queue window in front; a prompt nobody can see is the same wedge with more code. That's the opposite of the failure
+  toast's reasoning, and deliberately: a settled failure asks for no decision, a conflict holds a transfer still.
+- **No `onclose`, so no × and no Escape.** Every exit is a decision about the user's files, and the conflict body's own
+  Cancel / Rollback row is the way out. ⚠️ It follows that E2E's `ensureAppReady` Escape can't clear this dialog; only a
+  real background conflict raises it, so no automated run should meet one.
+- **`rollbackUnavailable` comes from the snapshot's `supportsRollback`**, which is more than the progress dialog knows:
+  a CROSS-volume move can't roll back either, and that dialog still derives the same-volume case itself.
 
 ## `scan-throughput.ts`
 

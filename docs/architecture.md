@@ -26,7 +26,8 @@ All under `apps/desktop/src/lib/`.
 - `file-explorer/operations/`: Pane-scoped operation hooks (delete, refresh, swap) wired into the command registry
 - `file-explorer/quick-look/`: Frontend Quick Look (Shift+Space) trigger and keyboard plumbing
 - `file-operations/`: Umbrella over `transfer/`, `delete/`, `mkdir/`, `mkfile/` dialogs (shared progress dialog) plus
-  `scan-throughput.ts`
+  `scan-throughput.ts`, the foreground-ownership slots, and the main window's conflict prompt for an operation no
+  progress dialog is showing
 - `error-messages/`: The user-facing error WORDS (titles, explanations, provider suggestions) for the
   listing/git/empty-root paths, rendered from the typed `ListingError` Rust ships; plus the markdown escaper (the XSS
   boundary). Canonical home of error copy
