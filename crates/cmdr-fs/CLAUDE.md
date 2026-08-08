@@ -37,10 +37,13 @@ original path (`crate::file_system::volume::VolumeError`, `crate::pluralize`, �
   double is the oracle. It also LIES on request (`set_stat_failing`, `set_reported_type`, `set_reported_size`,
   `set_modified_at`, `with_delete_failing`, …), so a defense against a hostile backend is testable rather than assumed.
   `DETAILS.md` § "`InMemoryVolume` honors the contracts" and § "The faults `InMemoryVolume` can be told to have".
-- **A backend's `delete` never recurses** — one file, or one EMPTY directory, everywhere. Callers turn the refusal into
-  data safety (the same-volume move keeps a Skipped child's only copy purely by letting the parent's delete fail), so a
-  backend that recurses destroys what the user chose to keep. `volume::conformance` holds the assertion that proves it;
-  every backend's suite runs it, and a new backend adds its own call.
+- **`volume::conformance` holds the promises a backend can't quietly opt out of**, one assertion each, and EVERY
+  backend's suite calls the ones it can run (a new backend adds its own calls): `delete` never recurses (one file, or
+  one EMPTY directory — the same-volume move keeps a Skipped child's only copy purely by letting the parent's delete
+  fail); `rename(force = false)` refuses an existing destination and touches neither node; `create_file` refuses rather
+  than truncates; `create_directory_all` reports a pre-existing leaf as `AlreadyExisted`, never `Created`. Each backend
+  earns each one by a DIFFERENT mechanism, which is why the promise is asserted rather than assumed. `DETAILS.md` §
+  "`InMemoryVolume` honors the contracts".
 - **Nothing here produces user-facing prose.** Errors carry typed reasons and structured params; the frontend renders
   every word. `pluralize` and `display_size` are the named exceptions.
 

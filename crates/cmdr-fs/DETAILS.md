@@ -179,14 +179,41 @@ Anyone grepping `String` in this crate and concluding the bar was abandoned shou
 
 ## `InMemoryVolume` honors the contracts data safety leans on
 
-The double is the oracle: two `Volume` contracts have to hold in it, not just on the happy path.
+The double is the oracle: these `Volume` contracts have to hold in it, not just on the happy path.
 
 - **`delete` refuses a NON-EMPTY directory** (`ENOTEMPTY`). The same-volume rename-merge preserves a skipped child's
   source purely by letting its parent's cleanup delete FAIL. A permissive `delete` disarms that whole test class.
 - **`rename` of a directory carries its whole subtree.** A same-volume move IS directory renames, so a `rename` that
   moved only the dir node made those tests pass over the exact data-loss shape they existed to catch.
+- **`rename(force = false)` refuses an existing destination**, and **`create_file` refuses an existing path**. Both are
+  no-clobber promises the real backends make, so a double that overwrote would let a clobbering caller look correct.
 
 ❌ Never relax a contract to make a test green.
+
+### The shared assertions in `volume::conformance`
+
+The four contracts above that are CROSS-BACKEND live as shared assertions rather than as per-backend tests, so a
+backend can't quietly opt out of one. Each takes an already-seeded fixture, because seeding is the one part that can't
+be shared (a local volume needs a temp dir, MTP a backing dir plus a rescan, SMB a share); what the assertion checks is
+identical everywhere, which is the point.
+
+- `assert_delete_leaves_a_non_empty_dir_intact` — the refusal that data-safety logic leans on rather than re-checking.
+  This is the one MTP broke for years: it claimed the contract by implementing the trait, and nothing looked.
+- `assert_rename_refuses_an_existing_destination` — `force` is the only thing between a move and the file it would
+  replace, and each backend earns the refusal differently (`renamex_np(RENAME_EXCL)`, an SMB `stat` plus the server's
+  `ReplaceIfExists == false`, an MTP `exists` probe, a map lookup). No shared mechanism to trust, only a shared promise.
+- `assert_create_file_refuses_to_clobber` — the New File command renders the refusal as "that name is taken", so a
+  clobbering backend silently empties a file and reports success.
+- `assert_create_directory_all_reports_an_existing_dir_honestly` — `Created` promises the leaf was empty, and the
+  transfer driver spends it by skipping the per-file destination conflict probe inside. Only the dangerous direction is
+  pinned; answering `AlreadyExisted` for a leaf you did create is merely slower, which is what the trait means by "when
+  in doubt, answer `AlreadyExisted`". MTP is the backend this matters most for: it answers
+  `create_directory_errors_on_existing_dir() == false`, so the default walk learns "already there" from its `exists`
+  probe rather than from a collision error.
+
+`InMemoryVolume`, `LocalPosixVolume`, and `SmbVolume` (Docker-gated) run all four; `MtpVolume` runs every one but
+`create_file`, which it doesn't implement. `ArchiveVolume` is read-only and pins the same ground with
+`every_mutation_is_unsupported`. A backend that adds a mutation adds the matching call.
 
 ## The faults `InMemoryVolume` can be told to have
 
