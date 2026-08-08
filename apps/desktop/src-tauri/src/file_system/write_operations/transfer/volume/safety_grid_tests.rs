@@ -770,12 +770,13 @@ async fn run_tier_b(kind: ItemKind, concurrent: bool, is_move: bool) {
     // A move's sources are gone; a copy's are still there. Either way no byte
     // is missing from both sides.
     if !is_move {
+        // Source and destination roots are both `/` here, so a delivered path is
+        // also the source path it came from.
         for (path, content) in &expected {
-            let source_path = path.replace("/album/", "/album/");
             assert_eq!(
-                try_read_all(&source, &source_path).await.as_deref(),
+                try_read_all(&source, path).await.as_deref(),
                 Some(*content),
-                "{label}: a COPY took {source_path} from the source"
+                "{label}: a COPY took {path} from the source"
             );
         }
     }

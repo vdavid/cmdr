@@ -36,7 +36,7 @@ original path (`crate::file_system::volume::VolumeError`, `crate::pluralize`, �
   non-empty directory, `rename` of a directory carries its subtree. ❌ Never relax a contract to make a test green; the
   double is the oracle. It also LIES on request (`set_stat_failing`, `set_reported_type`, `set_reported_size`,
   `set_modified_at`, `with_delete_failing`, …), so a defense against a hostile backend is testable rather than assumed.
-  `DETAILS.md` §§ "`InMemoryVolume` honors the contracts", "The faults `InMemoryVolume` can be told to have".
+  `DETAILS.md` § "`InMemoryVolume` honors the contracts" and § "The faults `InMemoryVolume` can be told to have".
 - **A backend's `delete` never recurses** — one file, or one EMPTY directory, everywhere. Callers turn the refusal into
   data safety (the same-volume move keeps a Skipped child's only copy purely by letting the parent's delete fail), so a
   backend that recurses destroys what the user chose to keep. `volume::conformance` holds the assertion that proves it;

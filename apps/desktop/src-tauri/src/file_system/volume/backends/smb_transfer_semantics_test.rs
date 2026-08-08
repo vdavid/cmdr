@@ -696,8 +696,8 @@ async fn try_read_volume_file(vol: &Arc<dyn Volume>, path: &str) -> Option<Vec<u
 }
 
 /// The read failure the two mid-op cells inject into the LOCAL source.
-fn injected_read_failure() -> crate::file_system::volume::VolumeError {
-    crate::file_system::volume::VolumeError::IoError {
+fn injected_read_failure() -> VolumeError {
+    VolumeError::IoError {
         message: "Injected read failure".into(),
         raw_os_error: Some(5), // EIO
     }

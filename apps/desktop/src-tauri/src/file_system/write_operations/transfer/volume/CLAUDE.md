@@ -34,8 +34,8 @@ same-volume), the merge/staging engine (`strategy.rs`, `sequential_extract.rs`),
   "file": ask `strategy.rs::resolve_source_is_directory`, and the RESOLVED answer drives the cleanup/ledger branch.
   `NotFound` is an ANSWER; anything else fails the item. ❌ No `.is_directory(…).await.unwrap_or(false)`, a guessed
   `false` picks the destructive branch (`desktop-rust-probe-unwrap-justified` enforces it). **`SourceHint` has no
-  `Default`; ❌ never add one.** ❌ Don't probe where a hint EXISTS (15k MTP sources = 15k listings). `DETAILS.md` §§
-  "A missing source hint means unknown", "Every belief-default in this directory, decided".
+  `Default`; ❌ never add one.** ❌ Don't probe where a hint EXISTS (15k MTP sources = 15k listings). `DETAILS.md`
+  § "A missing source hint means unknown" and § "Every belief-default in this directory, decided".
 - **Cross-FS move deletes sources AFTER `flush_created_destinations`, preserving Skipped ones.** Same-volume move is a
   rename-merge with top-level hints only, never a subtree walk.
 
@@ -50,6 +50,6 @@ same-volume), the merge/staging engine (`strategy.rs`, `sequential_extract.rs`),
 - **A `*_tests.rs` here is a `#[path]` CHILD of the module it pins**, so `super::` is one level shallower than at file
   scope; a wrongly-deepened chain still compiles. `DETAILS.md` § Files.
 - **Inject a wrong or missing answer with `FaultyVolume`** (`faulty_volume_test_support.rs`), ❌ never a fresh
-  forwarder; `forward_volume_methods!` writes the boilerplate so a double's diff is only what it lies about.
+  forwarder; `forward_volume_methods!` writes the boilerplate, so a double's diff is only its lie.
 
 Semantics, flows, decisions, and the rollback ledger: `DETAILS.md`. Read it before any non-trivial work here.
