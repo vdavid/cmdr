@@ -42,7 +42,7 @@ use crate::file_system::volume::{DirectoryCreation, SourceItemInfo, Volume, Volu
 use crate::ignore_poison::IgnorePoison;
 use crate::operation_log::types::OpKind;
 
-use super::cleanup::{delete_volume_path_recursive, volume_rollback_with_progress};
+use super::cleanup::{clean_partial_writes, volume_rollback_with_progress};
 use super::transfer_error::{WriteFailure, write_error_event_from};
 
 /// How long a cancelled or rolled-back operation waits for its in-flight copy
@@ -991,21 +991,7 @@ pub(crate) async fn copy_volumes_with_progress(
                 partials_to_clean.push(partial.clone());
             }
         }
-        for partial_path in &partials_to_clean {
-            log::debug!(
-                "copy_volumes_with_progress: cleaning up partial file {} for op={}",
-                partial_path.display(),
-                operation_id,
-            );
-            if let Err(e) = delete_volume_path_recursive(&dest_volume, partial_path).await {
-                log::warn!(
-                    "copy_volumes_with_progress: couldn't clean up {} of partial {}: {:?}",
-                    e.path.display(),
-                    partial_path.display(),
-                    e.error
-                );
-            }
-        }
+        clean_partial_writes(&dest_volume, &partials_to_clean, operation_id).await;
 
         if copy_error.is_none() {
             // Pure cancellation (Stopped)

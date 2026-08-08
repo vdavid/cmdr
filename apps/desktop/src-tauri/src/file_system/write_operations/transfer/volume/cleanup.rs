@@ -171,6 +171,30 @@ pub(super) async fn volume_rollback_with_progress(
     true
 }
 
+/// Removes the destination partials a Stopped or errored copy left behind: the
+/// serial driver's single `last_dest_path` plus the concurrent driver's
+/// one-per-in-flight-task set, already net of anything that finished.
+///
+/// Best-effort per path: a partial that refuses to go is logged and the sweep
+/// moves on.
+pub(super) async fn clean_partial_writes(volume: &Arc<dyn Volume>, partials: &[PathBuf], operation_id: &str) {
+    for partial_path in partials {
+        log::debug!(
+            "copy_volumes_with_progress: cleaning up partial file {} for op={}",
+            partial_path.display(),
+            operation_id,
+        );
+        if let Err(e) = delete_volume_path_recursive(volume, partial_path).await {
+            log::warn!(
+                "copy_volumes_with_progress: couldn't clean up {} of partial {}: {:?}",
+                e.path.display(),
+                partial_path.display(),
+                e.error
+            );
+        }
+    }
+}
+
 /// Removes the staged `.cmdr-tmp-*` partials this operation was still writing
 /// when its tasks were abandoned.
 ///
