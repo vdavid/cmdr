@@ -4,12 +4,15 @@
 
 1. His pass over § "Copy needing David's sign-off" below. Those English drafts shipped as written and are translated
    into all nine locales, so a wording change there means re-translating just those keys.
-2. One **`pnpm i18n:shots`** run on an idle machine. M11's three new capture surfaces (`queue-failed`, `operation-chip`,
-   `operation-failure`) are wired into `i18n-capture-special.ts` but have never been shot: two attempts returned blank
-   frames for every surface after `main-window`, which is the harness's documented "machine was in use" mode (macOS
-   stops compositing a window that isn't frontmost). Nothing is broken and nothing is stale — `i18n:shots` couples only
-   after a clean capture, so the existing couplings are untouched; the new keys simply have no screenshot yet, which is
-   a translator aid, not a ship gate.
+2. One **`pnpm i18n:shots`** run with **no other app in front**. M11's three new capture surfaces (`queue-failed`,
+   `operation-chip`, `operation-failure`) are wired into `i18n-capture-special.ts` and still have no screenshot. Two
+   further attempts on 2026-08-08, on a laptop nobody was touching, reproduced the blank frames exactly (13–14 of ~71
+   surfaces captured, the rest content-free), and measured the cause: **Chrome held the front position for 40 of 40
+   samples over two minutes and Cmdr never came forward**, so an idle machine isn't the requirement, an empty front
+   position is. Full evidence and the two mechanisms (macOS 14+ won't let the raw spawned binary take the front back;
+   the retries then blow the spec's 300 s timeout, so `i18n:couple` never runs):
+   `apps/desktop/src/lib/intl/messages/DETAILS.md` § Screenshots. Nothing is broken and nothing is stale — the existing
+   couplings are untouched; the new keys simply have no screenshot yet, which is a translator aid, not a ship gate.
 
 **Owner**: David. **Date**: 2026-08-08.
 

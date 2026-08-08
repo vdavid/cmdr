@@ -192,9 +192,23 @@ photographs the empty startup frame, while every other signal looks healthy: the
 gates pass, the key dump is full, and the report records a surface that is really a dark rectangle with three traffic
 lights. **A run once wrote 31 such images and reported success.**
 
-This is the cause of blank screenshots essentially every time. It is not a bug in the app or the harness, so don't go
-hunting for one. Before starting a capture, tell David to keep his hands off the laptop until it finishes; the app's
-YELLOW `SCREENSHOT` title bar is the running reminder (see `../../app-mode.ts`).
+It is not a bug in the app or the harness, so don't go hunting for one. Before starting a capture, tell David to keep
+his hands off the laptop until it finishes; the app's YELLOW `SCREENSHOT` title bar is the running reminder (see
+`../../app-mode.ts`).
+
+**An idle machine is NOT enough: no other app may hold the front position.** The harness spawns the raw
+`target/<triple>/release/Cmdr` binary (not an `.app` through LaunchServices), and macOS 14+ cooperative activation won't
+let a process like that take the front from an app that already has it. `shoot()`'s `set_focus` remedy is then a no-op,
+and only a window that was JUST created gets composited once. Measured on 2026-08-08 (macOS 26, two consecutive runs):
+with Chrome frontmost and nobody touching the laptop, `lsappinfo front` reported Chrome for 40 of 40 samples over two
+minutes while Cmdr never once came forward; both runs captured exactly 13–14 of ~71 surfaces, and every success was the
+first shot after a window opened (`main-window`, then the four `settings-appearance*` sections, the five `viewer*`
+ones). So: quit or hide whatever app is frontmost before starting a run, and don't read "the computer was in use" as the
+only explanation.
+
+⚠️ A blank-heavy run also loses the surfaces that WOULD have worked. Three retries each across ~50 blank surfaces blow
+the spec's 300 s Playwright timeout, so the run dies part-way and `pnpm i18n:shots` never reaches `i18n:couple` (`&&`).
+Both runs above ended in a bare timeout with zero couplings written.
 
 ### Every shot is verified before the run can go green
 
