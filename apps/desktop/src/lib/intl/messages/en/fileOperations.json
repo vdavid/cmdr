@@ -985,6 +985,20 @@
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
+  "fileOperations.transferProgress.background": "Background",
+  "@fileOperations.transferProgress.background": {
+    "description": "The same button as fileOperations.transferProgress.queue, worded for an EMPTY operation queue: with nothing else running there is nothing to queue behind, so the button describes what it does instead (keep the transfer running out of sight while the user carries on). The word is a verb here, the thing you do to the transfer, not the noun for a background. Short control label; must fit the same button as \"Queue\".",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+  },
+
+  "fileOperations.transferProgress.backgroundAria": "Keep this running in the background",
+  "@fileOperations.transferProgress.backgroundAria": {
+    "description": "Screen-reader label for the progress dialog''s button while the operation queue is empty (the visible button shows only \"Background\"). Must contain the visible word, so a person using both sight and a screen reader hears what they see. Its sibling for a non-empty queue is fileOperations.transferProgress.queueAria.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+  },
+
   "fileOperations.transferProgress.queue": "Queue",
   "@fileOperations.transferProgress.queue": {
     "description": "Button on the progress dialog that sends this transfer to the background and opens the operation queue window, so the user can keep working while it runs. It does not pause the transfer. Mirrors Total Commander's copy-dialog F2. Short control label.",

@@ -1290,5 +1290,10 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     get activity() {
       return activity
     },
+    /** This operation's backend id, `null` until the start command answers. The
+     *  dialog needs it to exclude itself from the queue it's asking about. */
+    get operationId() {
+      return operationId
+    },
   }
 }

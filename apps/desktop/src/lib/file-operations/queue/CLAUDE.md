@@ -14,6 +14,8 @@ pause/resume/cancel/dismiss, multi-select + "Cancel selected", global pause/resu
   `../TransferProgressReadout.svelte`, compact, or a failure's reason. Shell: `routes/queue/+page.svelte`.
 - `failure-reason.ts`: `failureReasonFor(snapshot)` — a retained failure's title/explanation/suggestion, from the
   existing `errors.write.*` pipeline. Shared with the main window's failure toast.
+- `queue-backlog.ts`: `hasOtherQueuedWork(rows, selfId)` — the pure test behind the progress dialog's
+  Background/Queue label.
 
 ## Must-knows
 
@@ -27,7 +29,7 @@ pause/resume/cancel/dismiss, multi-select + "Cancel selected", global pause/resu
   the live bars/ETA, keyed by `operationId` and pruned to snapshot membership. ❌ Don't fatten `operations-changed`.
 - **Rows cover copy/move/delete/trash AND the instant ops** (`rename` / `create_folder` / `create_file`), which emit no
   `write-progress`, so they're a spinner + label with no bars. `QueueRow`'s icon + `queue.row.label` arms take the
-  SNAKE_CASE wire values or fall silently to the `trash-2` / "Working" fallbacks (`operation-icon.ts`).
+  SNAKE_CASE wire values or fall to the `trash-2` / "Working" fallbacks (`operation-icon.ts`).
 - **A paused op still reports `is_running: true`.** The bar-is-moving truth is the SNAPSHOT `status`, NEVER
   `is_running`.
 - **A failed row STAYS until someone dismisses it.** The backend retains failures out-of-band (`write_operations`
@@ -41,8 +43,8 @@ pause/resume/cancel/dismiss, multi-select + "Cancel selected", global pause/resu
 - **Cancel keeps partials; Rollback is the separate, opt-in undo.** Cancel maps to `cancel_operation(s)`: no rollback,
   no confirm, which is why `capabilities/queue.json` DROPS `dialog:allow-ask` and `store:default`. Rollback calls
   `cancelWriteOperation(id, true)` and shows ONLY where `supportsRollback` says so, never inferred from the type.
-- **Window perms fail SILENTLY.** Every Tauri call here is `await`ed in try/catch with a `log.warn`, so a missing grant
-  surfaces as a log line, not a dead window. Smoke-test with `pnpm dev` after a perm change.
+- **Window perms fail SILENTLY.** Every Tauri call here is `await`ed in try/catch with a `log.warn`; smoke-test with
+  `pnpm dev` after a perm change.
 - **Each child window is its own webview**, so the page inits and tears down its own i18n / theme / transparency / text
   size. Use `initWindowSettings()` (not `initializeSettings`): it also seeds the reactive layer `<Size>` reads
   (`lib/settings/CLAUDE.md`).

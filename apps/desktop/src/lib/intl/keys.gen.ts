@@ -1340,6 +1340,8 @@ export type MessageKey =
   | 'fileOperations.transferDialog.typeMismatchWarning'
   | 'fileOperations.transferProgress.annotationLarger'
   | 'fileOperations.transferProgress.annotationNewer'
+  | 'fileOperations.transferProgress.background'
+  | 'fileOperations.transferProgress.backgroundAria'
   | 'fileOperations.transferProgress.backgroundedToast'
   | 'fileOperations.transferProgress.close'
   | 'fileOperations.transferProgress.conflictCancel'

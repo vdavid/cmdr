@@ -81,6 +81,31 @@ Three typed set tests sit beside the factory, all module exports, all sets rathe
   `write-progress` at all. This window still lists them (it promises completeness); ambient surfaces like the corner
   chip skip them, since there's never a bar to draw and they're gone before the eye lands on them.
 
+## `queue-backlog.ts` — the word on the progress dialog's button
+
+`hasOtherQueuedWork(rows, selfOperationId)` answers one question for `TransferProgressDialog`: is there anything in the
+queue besides the operation the dialog is showing? No → the button reads "Background" (you're not queueing behind
+anything, you're sending this out of sight); yes → "Queue". The click, the tooltip, and the F2 binding are identical
+either way; only the word and its `aria-label` change.
+
+- **It reads the MAIN window's store** (`main-window-operations.svelte.ts`), the same live rows the corner chip reads,
+  through a `$derived` in the dialog. No new store, no new event, no polling, and the word follows the queue while the
+  dialog is open. The label flipping under the cursor when an unrelated operation finishes is accepted, deliberately:
+  the alternative is a word that lies until you close the dialog.
+- **Three gates, each one a wrong word if it's missing.** The dialog's OWN operation is excluded (it's in the queue for
+  as long as the dialog is up, so counting it pins the label to "Queue" forever); instant ops are excluded via
+  `isInstantOperation`, since a rename is over before the word could settle; and only live work counts, via
+  `!isTerminalStatus`.
+- **Decision: a retained failure does NOT count.** It's a notice, not work you'd wait behind — nothing about it delays
+  the operation in front of you, and "Queue" would promise a queue that isn't there. `!isTerminalStatus` covers it
+  along with `done` and `cancelled`, so the rule is one positive definition (`queued` / `running` / `paused`) rather
+  than a list of exclusions that a new status could slip past.
+- **The self-exclusion needs the dialog's id**, which `transfer-progress-state.svelte.ts` exposes as `operationId`
+  (null until the start command answers). The button doesn't render before then (`canPauseOrQueue` requires the id), so
+  the null case can't be seen; the function still handles it by excluding nothing.
+- Pinned by `queue-backlog.test.ts` (every gate) and `../transfer/TransferProgressDialog.queue.test.ts` (the live flip
+  through a real store instance fed by the same `operations-changed` stream).
+
 ## Retained failures
 
 The backend keeps a bounded list of failed operations and carries them on the same `operations-changed` snapshot, each

@@ -289,13 +289,16 @@ test.describe('Operation queue window', () => {
     await main.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 3000)
     await main.click(`${TRANSFER_DIALOG} .btn-primary`)
 
-    // The progress modal appears with the Queue control.
+    // The progress modal appears with the background control. This is the first
+    // operation, so the queue behind it is empty and the button reads
+    // "Background", not "Queue" — the accessible name follows the word.
     await main.waitForSelector(PROGRESS_DIALOG, 5000)
-    await main.waitForSelector(`${PROGRESS_DIALOG} [aria-label="Send to the operation queue"]`, 5000)
+    const BACKGROUND_BUTTON = `${PROGRESS_DIALOG} [aria-label="Keep this running in the background"]`
+    await main.waitForSelector(BACKGROUND_BUTTON, 5000)
 
-    // Click Queue → the modal unmounts and the queue window opens, the op still
+    // Click it → the modal unmounts and the queue window opens, the op still
     // running in the background.
-    await main.click(`${PROGRESS_DIALOG} [aria-label="Send to the operation queue"]`)
+    await main.click(BACKGROUND_BUTTON)
     await expect.poll(async () => !(await main.isVisible(PROGRESS_DIALOG)), { timeout: 5000 }).toBeTruthy()
 
     // Sending to the background fires a confirmation toast (the wording is the

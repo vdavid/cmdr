@@ -15,18 +15,25 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick, unmount } from 'svelte'
 import type { OperationSnapshot } from '$lib/ipc/bindings'
 import TransferProgressDialog from './TransferProgressDialog.svelte'
+import {
+  initMainWindowOperations,
+  destroyMainWindowOperations,
+} from '$lib/file-operations/queue/main-window-operations.svelte'
 
-// Capture the operations-changed callback so the test can flip this op's status.
-let operationsChangedCb: ((event: { operations: OperationSnapshot[] }) => void) | null = null
 // Hoisted so the `vi.mock` factory (lifted to the top of the file) can reference
 // these. Plain `const`s declared here would be in the temporal dead zone when the
 // hoisted factory runs.
-const { pauseOperationMock, resumeOperationMock, cancelWriteOperationMock, listOperationsMock } = vi.hoisted(() => ({
-  pauseOperationMock: vi.fn(() => Promise.resolve()),
-  resumeOperationMock: vi.fn(() => Promise.resolve()),
-  cancelWriteOperationMock: vi.fn(() => Promise.resolve()),
-  listOperationsMock: vi.fn(() => Promise.resolve<OperationSnapshot[]>([])),
-}))
+const { pauseOperationMock, resumeOperationMock, cancelWriteOperationMock, listOperationsMock, operationsChangedCbs } =
+  vi.hoisted(() => ({
+    pauseOperationMock: vi.fn(() => Promise.resolve()),
+    resumeOperationMock: vi.fn(() => Promise.resolve()),
+    cancelWriteOperationMock: vi.fn(() => Promise.resolve()),
+    listOperationsMock: vi.fn(() => Promise.resolve<OperationSnapshot[]>([])),
+    // EVERY `operations-changed` subscriber, not just the dialog's: the main
+    // window's operations store subscribes to the same stream, and the button's
+    // label reads that store. One emit has to reach both, as it does in the app.
+    operationsChangedCbs: [] as ((event: { operations: OperationSnapshot[] }) => void)[],
+  }))
 
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
@@ -53,9 +60,10 @@ vi.mock('$lib/tauri-commands', () => ({
   pauseOperation: pauseOperationMock,
   resumeOperation: resumeOperationMock,
   onOperationsChanged: vi.fn((cb: (event: { operations: OperationSnapshot[] }) => void) => {
-    operationsChangedCb = cb
+    operationsChangedCbs.push(cb)
     return Promise.resolve(() => {
-      operationsChangedCb = null
+      const at = operationsChangedCbs.indexOf(cb)
+      if (at >= 0) operationsChangedCbs.splice(at, 1)
     })
   }),
   listOperations: listOperationsMock,
@@ -117,7 +125,6 @@ async function mountDialog(): Promise<{
   target: HTMLDivElement
   onQueue: ReturnType<typeof vi.fn>
 }> {
-  operationsChangedCb = null
   const onQueue = vi.fn()
   const target = document.createElement('div')
   document.body.appendChild(target)
@@ -148,17 +155,49 @@ async function mountDialog(): Promise<{
   return { component, target, onQueue }
 }
 
-/** Fires an `operations-changed` snapshot through the captured subscriber. */
+/** Fires an `operations-changed` snapshot through every captured subscriber. */
 function emitSnapshot(operations: OperationSnapshot[]): void {
-  if (!operationsChangedCb) throw new Error('operations-changed subscriber never registered')
-  operationsChangedCb({ operations })
+  if (operationsChangedCbs.length === 0) throw new Error('operations-changed subscriber never registered')
+  for (const cb of [...operationsChangedCbs]) cb({ operations })
 }
 
 function queryButton(target: HTMLElement, ariaLabel: string): HTMLButtonElement | null {
   return target.querySelector<HTMLButtonElement>(`button[aria-label="${ariaLabel}"]`)
 }
 
+/** The button's two accessible names. Which one shows is the point of the last
+ *  describe block; every other test here runs with an empty queue. */
+const BACKGROUND_ARIA = 'Keep this running in the background'
+const QUEUE_ARIA = 'Send to the operation queue'
+
+/** The one visible word the button shows right now. */
+function backgroundButtonLabel(target: HTMLElement): string | null {
+  const button =
+    target.querySelector<HTMLButtonElement>(`button[aria-label="${BACKGROUND_ARIA}"]`) ??
+    target.querySelector<HTMLButtonElement>(`button[aria-label="${QUEUE_ARIA}"]`)
+  return button ? button.textContent.trim() : null
+}
+
+/** Another operation in the queue, one the dialog doesn't own. */
+function otherOp(
+  operationId: string,
+  status: OperationSnapshot['status'],
+  operationType: OperationSnapshot['operationType'] = 'copy',
+): OperationSnapshot {
+  return {
+    operationId,
+    operationType,
+    status,
+    source: '/Users/test/other',
+    destination: '/Users/test/dest',
+    supportsRollback: true,
+    error: null,
+  }
+}
+
 beforeEach(() => {
+  destroyMainWindowOperations()
+  operationsChangedCbs.length = 0
   pauseOperationMock.mockClear()
   resumeOperationMock.mockClear()
   cancelWriteOperationMock.mockClear()
@@ -201,7 +240,7 @@ describe('TransferProgressDialog Queue button', () => {
   it('backgrounds the op: opens the queue window, shows a toast, fires onQueue, and does NOT cancel', async () => {
     const { component, target, onQueue } = await mountDialog()
 
-    const queueBtn = queryButton(target, 'Send to the operation queue')
+    const queueBtn = queryButton(target, BACKGROUND_ARIA)
     expect(queueBtn, 'Queue button shows during the active phase').not.toBeNull()
     queueBtn?.click()
     await tick()
@@ -226,7 +265,7 @@ describe('TransferProgressDialog Queue button', () => {
     // manager registry.
     const { target } = await mountDialog()
 
-    queryButton(target, 'Send to the operation queue')?.click()
+    queryButton(target, BACKGROUND_ARIA)?.click()
     await tick()
     expect(openQueueWindowMock, 'Queue backgrounded the op').toHaveBeenCalledOnce()
     cancelWriteOperationMock.mockClear()
@@ -303,7 +342,6 @@ describe('TransferProgressDialog auto-queue surfacing', () => {
       ]),
     )
 
-    operationsChangedCb = null
     const onQueue = vi.fn()
     const target = document.createElement('div')
     document.body.appendChild(target)
@@ -351,7 +389,6 @@ describe('TransferProgressDialog backgrounded onDestroy stale-read regression', 
     // opened empty. The earlier Queue tests used a no-op `onQueue` + a separate
     // `unmount()`, so onDestroy ran in a LATER turn where the rune read fine, and
     // they missed this. Here `onQueue` unmounts inline, reproducing the timing.
-    operationsChangedCb = null
     const target = document.createElement('div')
     document.body.appendChild(target)
     let comp: ReturnType<typeof mount> | null = null
@@ -383,12 +420,83 @@ describe('TransferProgressDialog backgrounded onDestroy stale-read regression', 
     await tick()
     cancelWriteOperationMock.mockClear()
 
-    queryButton(target, 'Send to the operation queue')?.click()
+    queryButton(target, BACKGROUND_ARIA)?.click()
     await flushPromises()
 
     expect(
       cancelWriteOperationMock,
       'a backgrounded op must survive the synchronous modal teardown',
     ).not.toHaveBeenCalled()
+  })
+})
+
+describe('TransferProgressDialog background/queue button label', () => {
+  /** The real main-window store, subscribed to the same mocked stream the dialog
+   *  reads, so `emitSnapshot` moves the label exactly as the backend would. */
+  async function mountWithLiveQueue(): Promise<{ target: HTMLDivElement; component: ReturnType<typeof mount> }> {
+    await initMainWindowOperations()
+    const { component, target } = await mountDialog()
+    return { component, target }
+  }
+
+  it('reads "Background" with nothing else in the queue: there is nothing to queue behind', async () => {
+    const { component, target } = await mountWithLiveQueue()
+    // The snapshot holds this dialog's OWN operation and nothing else.
+    emitSnapshot(snapshot('running'))
+    await tick()
+
+    expect(backgroundButtonLabel(target)).toBe('Background')
+    expect(queryButton(target, BACKGROUND_ARIA), 'the accessible name follows the word').not.toBeNull()
+    expect(queryButton(target, QUEUE_ARIA)).toBeNull()
+
+    void unmount(component)
+  })
+
+  it('reads "Queue" once another operation is in flight', async () => {
+    const { component, target } = await mountWithLiveQueue()
+    emitSnapshot(snapshot('running', [otherOp('op-other', 'running')]))
+    await tick()
+
+    expect(backgroundButtonLabel(target)).toBe('Queue')
+    expect(queryButton(target, QUEUE_ARIA)).not.toBeNull()
+
+    void unmount(component)
+  })
+
+  it('tracks the queue LIVE: the word flips when another operation joins and leaves', async () => {
+    const { component, target } = await mountWithLiveQueue()
+    emitSnapshot(snapshot('running'))
+    await tick()
+    expect(backgroundButtonLabel(target)).toBe('Background')
+
+    emitSnapshot(snapshot('running', [otherOp('op-other', 'queued')]))
+    await tick()
+    expect(backgroundButtonLabel(target), 'a newcomer makes this a queue').toBe('Queue')
+
+    emitSnapshot(snapshot('running'))
+    await tick()
+    expect(backgroundButtonLabel(target), 'and it goes back when the newcomer finishes').toBe('Background')
+
+    void unmount(component)
+  })
+
+  it('an instant operation never flips the word: a rename is gone before the eye lands on it', async () => {
+    const { component, target } = await mountWithLiveQueue()
+    emitSnapshot(snapshot('running', [otherOp('op-rename', 'running', 'rename')]))
+    await tick()
+
+    expect(backgroundButtonLabel(target)).toBe('Background')
+
+    void unmount(component)
+  })
+
+  it('a retained failure never flips the word: it is a notice, not work to wait behind', async () => {
+    const { component, target } = await mountWithLiveQueue()
+    emitSnapshot(snapshot('running', [otherOp('op-dead', 'failed')]))
+    await tick()
+
+    expect(backgroundButtonLabel(target)).toBe('Background')
+
+    void unmount(component)
   })
 })

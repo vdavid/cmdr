@@ -26,11 +26,11 @@ Backend: `apps/desktop/src-tauri/src/file_system/write_operations/transfer/CLAUD
 - **Same-volume move disables Rollback and skips the deep scan preview** (source and dest the SAME non-default volume;
   the backend rename-merges server-side, zero-byte, no rollback). `DEFAULT_VOLUME_ID` is excluded, so local→local keeps
   both. Affordances disable with a tooltip; plain Cancel and the cheap conflict check stay live. ⚠️ A CROSS-volume move
-  can't roll back either, and this dialog doesn't know yet (the backend now says so via `supports_rollback`): DETAILS.
+  can't roll back either, and this dialog doesn't know yet (the backend says so via `supports_rollback`): DETAILS.
 - **Speed and ETA are backend-owned, SHARED with the operation queue window** via `../progress-readout.ts` +
-  `$lib/units`. ❌ No second instantaneous rate here; `ScanThroughput` is SCAN-phase only. The bars themselves are
-  shared too: `../TransferProgressReadout.svelte` renders the dual bars, amounts, percents, rates, and time left for
-  BOTH surfaces. Its fixed-width readout columns are why this dialog is 580 px wide; don't narrow it without them.
+  `$lib/units`. ❌ No second instantaneous rate here; `ScanThroughput` is SCAN-phase only. So are the bars:
+  `../TransferProgressReadout.svelte` draws both surfaces' labelled bars, amounts, percents, rates, and time left. Its
+  fixed-width columns are why this dialog is 580 px wide; don't narrow it without them.
 - **A stalled transfer drops the ETA and says why** (`transfer-stall.ts`). The BACKEND classifies; this side owns only
   the threshold. ❌ Never infer a stall from event timing: a wedge emits no events at all.
 - **Rollback / Cancel disable during the settle window.** The dialog holds open `MIN_DISPLAY_MS = 400 ms` after
@@ -39,19 +39,21 @@ Backend: `apps/desktop/src-tauri/src/file_system/write_operations/transfer/CLAUD
 - **Cancel close waits for both `write-cancelled` AND `write-settled`** (a fast second F8 mid-teardown once wedged an
   MTP session) — ❌ but never as the ONLY exit: `progress.dismiss()` backs a Close button that leaves at once.
   `CANCEL_SETTLE_FALLBACK_MS` exceeds the backend's 15 s `CANCEL_DRAIN_DEADLINE`, so the automatic path can't report
-  `0 files` just before the real count lands.
+  `0 files` before the real count lands.
 - **`archive_needs_password` is intercepted UPSTREAM**, not by `TransferErrorDialog`: `handleTransferError`
-  (`pane/dialog-state.svelte.ts`) shows `ArchivePasswordDialog` and re-dispatches on unlock.
-- **Move refreshes BOTH panes** (source files gone); copy refreshes only the destination.
+  (`pane/dialog-state.svelte.ts`) shows `ArchivePasswordDialog`, re-dispatching on unlock.
+- **Move refreshes BOTH panes** (source files gone); copy only the destination.
 - **Flushing phase** (`phase: 'flushing'`) shows "Writing the last piece..." for the backend's closing `fdatasync`, a
-  real multi-second pause on slow media. Don't let the bar sit frozen at 100%.
+  real multi-second pause on slow media; the bar mustn't sit frozen at 100%.
 - **`data-scan-state` on `.scan-stats`** is E2E's only race-free "counting done" signal; `DeleteDialog` mirrors it.
-- **Compress (the third mode) swaps the conflict-policy UI for a dest-exists overwrite check**, and its auto-confirm
-  (MCP) path must NEVER silently overwrite.
+- **Compress swaps the conflict-policy UI for a dest-exists overwrite check**, and its auto-confirm (MCP) path must
+  NEVER silently overwrite.
 - **MTP move interleaves copy + delete per file** (the copy is done once the delete phase starts).
 - **Pause/Resume and the "Paused" title follow the `operations-changed` snapshot status, never `is_running`.** Queue and
   the dialog-scoped F2 are FRONTEND-ONLY: set `backgrounded`, open the queue window, unmount via `onQueue` without
-  cancelling — that flag also makes `onDestroy` skip its safety-net cancel, and both release the foreground slot.
+  cancelling — that flag makes `onDestroy` skip its safety-net cancel, and both release the foreground slot. That
+  button reads "Background" with an empty queue, "Queue" otherwise (`../queue/queue-backlog.ts`); same action either
+  way.
 
 Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

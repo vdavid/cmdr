@@ -25,6 +25,8 @@
     import { tString } from '$lib/intl/messages.svelte'
     import type { MessageKey } from '$lib/intl/keys.gen'
     import { stallNoticeFor } from './transfer-stall'
+    import { getMainWindowOperationRows } from '$lib/file-operations/queue/main-window-operations.svelte'
+    import { hasOtherQueuedWork } from '$lib/file-operations/queue/queue-backlog'
 
     interface Props {
         operationType: TransferOperationType
@@ -205,6 +207,12 @@
     /** Non-null only once the BACKEND says the transfer has stopped moving for
      *  a reason that isn't deliberate. Drives the ETA line off the screen. */
     const stall = $derived(stallNoticeFor(progress.activity))
+
+    /** With an empty queue you're not queueing behind anything, you're sending
+     *  this out of sight, so the button says "Background" instead. It reads the
+     *  main window's operations store, the same live rows the corner chip reads,
+     *  so the word follows the queue as operations come and go. */
+    const queueHasOtherWork = $derived(hasOtherQueuedWork(getMainWindowOperationRows(), progress.operationId))
 
     /** Any command modifier or Shift: `⇧F2` and `⌘F2` are other combos, not Queue. */
     function hasModifier(event: KeyboardEvent): boolean {
@@ -456,15 +464,22 @@
                             : tString('fileOperations.transferProgress.pause')}
                     </span>
                 </Button>
+                <!-- One button, two words: "Queue" when there's something to
+                     queue behind, "Background" when there isn't. The action, the
+                     tooltip, and F2 are the same either way. -->
                 <span use:tooltip={tString('fileOperations.transferProgress.queueTooltip')}>
                     <Button
                         variant="secondary"
                         onclick={progress.handleQueue}
-                        aria-label={tString('fileOperations.transferProgress.queueAria')}
+                        aria-label={queueHasOtherWork
+                            ? tString('fileOperations.transferProgress.queueAria')
+                            : tString('fileOperations.transferProgress.backgroundAria')}
                     >
                         <span class="btn-inner">
                             <Icon name="list" size={14} />
-                            {tString('fileOperations.transferProgress.queue')}
+                            {queueHasOtherWork
+                                ? tString('fileOperations.transferProgress.queue')
+                                : tString('fileOperations.transferProgress.background')}
                         </span>
                     </Button>
                 </span>
