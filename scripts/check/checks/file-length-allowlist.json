@@ -60,6 +60,7 @@
     "apps/desktop/src/lib/file-explorer/views/FullList.svelte": 1215,
     "apps/desktop/src/lib/file-operations/transfer/TransferDialog.svelte": 976,
     "apps/desktop/src/lib/file-operations/transfer/TransferDialog.test.ts": 861,
+    "apps/desktop/src/lib/file-operations/transfer/transfer-progress-state.svelte.test.ts": 831,
     "apps/desktop/src/lib/file-operations/transfer/transfer-progress-state.svelte.ts": 1258,
     "apps/desktop/src/lib/query-ui/QueryDialog.svelte": 823,
     "apps/desktop/src/lib/query-ui/QueryResults.svelte": 945,
