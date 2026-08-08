@@ -13,6 +13,7 @@ hosts `$lib/indexing/IndexingStatusIndicator.svelte` (the hourglass) and renders
   "fix" it: that moves the corner.
 - **The row is always mounted, so it's `pointer-events: none`** with `auto` on its children (the `ToastContainer`
   pattern). An empty or gap-sized box over the pane must not eat clicks.
-- **The hourglass stays last.** It's the most ambient member; new affordances go through `children`, left of it.
+- **The hourglass stays last.** It's the most ambient member, and everything else renders left of it: a member this
+  module owns can render inline, one owned elsewhere comes in through `children`.
 
 Layout model, member contract, and decisions: `DETAILS.md`.

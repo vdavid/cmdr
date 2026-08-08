@@ -73,9 +73,9 @@ skip the one the user is already looking at in full.
 
 Decisions:
 
-- **A module-scoped signal, not a prop.** Prop-drilling would run `transfer-progress-state` →
-  `TransferProgressDialog` → `DialogManager` → `DualPaneExplorer` → `routes/(main)/+page.svelte`: four hops of a value
-  nobody in between cares about.
+- **A module-scoped signal, not a prop.** Prop-drilling would run `transfer-progress-state` → `TransferProgressDialog` →
+  `DialogManager` → `DualPaneExplorer` → `routes/(main)/+page.svelte`: four hops of a value nobody in between cares
+  about.
 - **Main-window-only by construction.** Module scope is per-webview, so the queue window can't see (or accidentally
   write) this slot.
 - **One slot, not a set.** Exactly one foreground progress dialog exists at a time; a second operation either replaces

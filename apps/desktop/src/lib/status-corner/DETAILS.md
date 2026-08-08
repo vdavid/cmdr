@@ -28,8 +28,9 @@ A member is a plain inline box:
 - ✅ `pointer-events: auto` comes free from the row's `> :global(*)` rule; a member that wants to stay click-through
   opts out itself.
 
-The hourglass renders last so the eye finds it in the same place regardless of what else is showing; new members render
-through `children`.
+The hourglass renders last so the eye finds it in the same place regardless of what else is showing. A member this
+module owns renders inline, before it; a member owned elsewhere arrives through `children`, which keeps the corner from
+importing half the app.
 
 ## Decisions
 

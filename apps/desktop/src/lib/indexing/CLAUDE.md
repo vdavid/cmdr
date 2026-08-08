@@ -10,10 +10,10 @@ indicator. Rust counterpart: `crates/cmdr-index/src/indexing/`.
 `index-dir-updated`. Pure helpers: `eta.ts` (+ `computeScanProgress`), `indexing-steps.ts` (`deriveSteps`,
 `deriveRunLabel`), `elapsed.ts`, `media-enrich-queued.ts`. The status surface (`IndexingStatusIndicator` →
 `IndexingDriveRow` wrapper → presentational `IndexingStatusBody` + `IndexingDriveSummary`) is the hourglass's per-drive
-step checklist, placed by `$lib/status-corner/`; the breadcrumb badge reuses `IndexingDriveRow`. `media-enrich-state.svelte.ts` +
-`IndexingEnrichRow.svelte`: image indexing (2nd publisher, below). Prompts (FE-owned): `first-connect-trigger.ts` +
-`FirstConnectIndexToastContent`, `StaleDriveDialog.svelte`, `drive-index-prefs.ts`. Public API barrel: `index.ts`.
-Per-file detail + the event tables: DETAILS.md or `codegraph_search`.
+step checklist, placed by `$lib/status-corner/`; the breadcrumb badge reuses `IndexingDriveRow`.
+`media-enrich-state.svelte.ts` + `IndexingEnrichRow.svelte`: image indexing (2nd publisher, below). Prompts (FE-owned):
+`first-connect-trigger.ts` + `FirstConnectIndexToastContent`, `StaleDriveDialog.svelte`, `drive-index-prefs.ts`. Public
+API barrel: `index.ts`. Per-file detail + the event tables: DETAILS.md or `codegraph_search`.
 
 ## Must-knows
 
