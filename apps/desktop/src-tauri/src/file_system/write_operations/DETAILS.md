@@ -26,8 +26,20 @@ Pre-flight scans reuse cached listings when the source volume reports an active 
 
 ## Files (top level)
 
-Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` § Module
-map. What the mechanisms DO is in the sections below: the registry, lanes, and `run_instant` in § "Operation manager";
+Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The spine: `CLAUDE.md` § Module map.
+The full top-level inventory is here:
+
+- `mod.rs` (public API + the `start_write_operation` lifecycle), `manager.rs` (registry + lane admission), `state.rs`
+  (`WriteOperationRegistry`, the status cache, `WriteOperationState`, `CopyTransaction`, the busy-volumes set, the
+  settle guard), `operation_intent.rs` (`OperationIntent`, `PauseGate`), `archive_edit/` (the zip-edit driver).
+- Scan and preview: `scan.rs`, `scan_preview.rs`, `scan_cache.rs`, `compress_estimate.rs`. Conflicts and overwrite:
+  `conflict.rs`, `overwrite.rs`. Cancellation and durability: `cancellable.rs`, `rollback.rs`, `durability.rs`.
+- Vocabulary and edges: `types.rs`, `event_sinks.rs`, `error_classification.rs`, `validation.rs`, `analytics.rs`,
+  `eta.rs`. Journaling: `journal.rs`, `journal_search.rs`. Remote archive I/O: `archive_remote_edit.rs`,
+  `scratch_dir.rs`. Entry points: `create/` + `create.rs`, `rename/` + `rename.rs`, `paste_clipboard.rs`. Fixtures:
+  `test_support.rs`.
+
+What the mechanisms DO is in the sections below: the registry, lanes, and `run_instant` in § "Operation manager";
 the zip-edit driver in § "Archive edits"; cancellation, pause, Stop-mode conflicts, safe overwrite, scan-preview caching,
 and the compressed-size estimate in § "Key patterns and gotchas"; durability and the two byte totals in § "Key
 decisions"; the estimator in § "ETA + throughput"; `WriteSettledGuard` in § "Settle contract"; journaling in
@@ -179,6 +191,8 @@ Two mechanisms close it at the choke point, and both live in `scan_cache.rs`:
 **Validation runs inside `spawn_blocking`.** The `*_files_start` functions return an `operationId` immediately, before any filesystem I/O. Validation (`validate_sources`, `validate_destination_writable`, etc.) runs inside the handler closure on the blocking thread pool. This keeps the Tauri IPC handler non-blocking, so the frontend can always open the progress dialog and offer cancel, even if a network mount is stalled.
 
 **`start_write_operation` emits `write-error` for handler errors.** The spawn wrapper matches on the handler's `Result`: `Ok(Ok(()))` and `Ok(Err(Cancelled))` are no-ops (handlers already emitted the right events), `Ok(Err(e))` emits `write-error` as a safety net, and `Err(join_error)` handles panics. Double-emit is harmless because the frontend's `handleError` removes all listeners on first receipt.
+
+**A volume-aware op never turns its own `Cancelled` into a `write-error`.** The inner handler already emitted `write-cancelled` on that path, so the outer arm passes `WriteOperationError::Cancelled` through silently (`transfer/volume/copy.rs`, `mod.rs`'s safety net, and the archive-edit driver all order it this way). Re-emitting would show the user a failure for something they asked for, and the retained-failure list would have to filter it back out (§ "Retained failures" excludes `Cancelled` by typed variant for exactly this reason).
 
 **`cancel_all_write_operations` for teardown safety.** A `beforeunload` listener calls this to cancel all active operations (with rollback) on hot-reload, tab close, window close, or navigation. Prevents orphaned background operations when the frontend is destroyed.
 
