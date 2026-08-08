@@ -233,12 +233,12 @@ of the initial design system migration.
 Leading is a property of the type style, not a per-component decision. A component never invents a number: stylelint
 allows only these four tokens (a raw `0` stays legal; it collapses a box rather than setting a rhythm).
 
-| Token                        | Value  | Where                                                                              |
-| ---------------------------- | ------ | ---------------------------------------------------------------------------------- |
-| `--font-line-height-flat`    | `1`    | Glyph boxes, badges, one-line chips: the height comes from padding, not the text    |
-| `--font-line-height-tight`   | `1.2`  | Form controls (the `app-field.css` contract) and display type                       |
-| `--font-line-height-normal`  | `1.4`  | Every reading text. Inherited, so components rarely write it                        |
-| `--font-line-height-prose`   | `1.55` | Long-measure blocks only: past ~70 characters (onboarding, consent, legal, changelog) |
+| Token                       | Value  | Where                                                                                 |
+| --------------------------- | ------ | ------------------------------------------------------------------------------------- |
+| `--font-line-height-flat`   | `1`    | Glyph boxes, badges, one-line chips: the height comes from padding, not the text      |
+| `--font-line-height-tight`  | `1.2`  | Form controls (the `app-field.css` contract) and display type                         |
+| `--font-line-height-normal` | `1.4`  | Every reading text. Inherited, so components rarely write it                          |
+| `--font-line-height-prose`  | `1.55` | Long-measure blocks only: past ~70 characters (onboarding, consent, legal, changelog) |
 
 **Why four and not a per-size ladder.** Leading is a function of type size (inversely) and measure (directly). The
 size-inverse half only bites across big jumps, and our text range is 10–16px, narrow enough that one ratio serves it;
