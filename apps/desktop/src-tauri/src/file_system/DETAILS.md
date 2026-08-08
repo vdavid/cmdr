@@ -116,3 +116,34 @@ FSEvents also resolves a **symlinked watch root** and reports events under the r
 matches against the `canonicalize`d watch dir. This bit Google Drive, whose `My Drive` is a symlink to `~/My Drive`, so
 rename/create/delete never refreshed the pane; iCloud and Dropbox mount real directories and hit the firmlink path
 instead.
+
+## Replacing a watch root
+
+The incremental watcher path classifies each event against the cached listing, so it can only learn about entries the OS
+names. When the watched directory is itself replaced (a `git checkout` across branches, `rsync --delete`, unzipping over
+a folder, a build regenerating its output dir), macOS names almost none of them.
+
+Measured against a live pane by logging the raw debounced batch (macOS 15.5, `notify-debouncer-full` 0.6, 2026-08-08),
+`rm -rf target && mkdir target && touch gamma.txt delta.txt` delivers exactly:
+
+- `Remove(Folder)` on the watch root
+- `Create(Folder)` on the watch root
+- `Modify(Metadata(Extended))` on the watch root
+- `Create(File)` for each NEW child
+
+There is **no remove event for the old children at all**: the directory went away as a unit, and FSEvents reports the
+unit. All three root-level events are correctly rejected by `rebase_event_path` (their parent isn't the watch root), so
+a child-only classifier applied the adds and kept every entry the replacement took away. The pane then showed a union of
+the old and new listing, indefinitely: no later event ever mentions a removed name, and the ghosts survive a `⌘R`-less
+session until the user navigates away and back. Repeated replacements stack more ghosts. The FSEvents stream itself
+survives the replacement, so this is not a dead watch: the pane keeps getting *some* updates, which is what made it look
+like a refresh timing issue rather than a correctness one.
+
+`watch_root_identity_changed` therefore escalates to the full re-read (`handle_directory_change`) whenever a
+`Create`, `Remove`, or `Modify(Name)` event names the watch root itself (in either path form, via
+`event_targets_watch_root`, for the same reason `rebase_event_path` needs two). The re-read diffs against disk, replaces
+the listing, and, when the directory is genuinely gone, emits `directory-deleted` and stops the watch.
+
+**Gotcha**: `Modify(Metadata(_))` on the root is deliberately not a trigger. Every ordinary child create or remove bumps
+the directory's own mtime and produces one, so counting it would route every change through the full re-read and cost
+the incremental path its entire reason to exist.

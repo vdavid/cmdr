@@ -99,6 +99,23 @@ entries for the full 10 s budget through five flushes AND a navigate-away-and-ba
 replaced, not in the test helper, and closing it means touching production refresh behavior, which is beyond what a
 de-flaking pass should change on measurement this thin.
 
+**What the gap turned out to be (2026-08-08, answered outside the harness).** It was a production defect, and it is
+fixed: a directory replaced wholesale left its old entries in the pane forever. macOS reports the replacement as
+Remove+Create on the WATCH ROOT plus one Create per new child and never a remove for the old ones, so the incremental
+classifier applied the adds and kept the vanished entries. `recreateFixtures` deletes and recreates `left/`, which is
+exactly that shape, so the pane genuinely served a union of both trees. Full mechanism and the raw event batch:
+`apps/desktop/src-tauri/src/file_system/DETAILS.md` § "Replacing a watch root".
+
+**Primitives that now work**, measured against a live app (not the harness):
+
+- The **watcher** itself: a wholesale replacement lands in the pane within one debounce window, no helper needed. This
+  is the fix, and it's what a `flushFileWatcher` after `recreateFixtures` was always trying to substitute for.
+- An explicit **refresh** (`⌘R` / the `refresh` MCP tool) has always worked, before and after the fix, and is the
+  cheapest deterministic settle if a hook wants one.
+- A **genuine navigate-away-and-back** has always worked too. Variant 5 concluded otherwise; that conclusion was an
+  artifact of driving the nav through fire-and-forget `mcp-nav-to-path`, which returns before the listing lands. Any
+  future hook that navigates must await the pane settling, or it proves nothing.
+
 **Still open, and deliberately out of scope for the guard:** what makes a pane re-read a directory whose contents
 changed externally while it was displayed. `flush_file_watcher` does not, and the guard is built so it never depends on
 the answer. Anyone attacking that should establish the primitive (an MCP `refresh`, a volume re-select, something else)

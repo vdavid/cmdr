@@ -11,7 +11,7 @@
 
 use super::listing::FileEntry;
 use super::volume::Volume;
-use super::watcher::{compute_diff, rebase_event_path};
+use super::watcher::{compute_diff, event_targets_watch_root, rebase_event_path};
 use std::path::{Path, PathBuf};
 
 fn make_entry(name: &str, size: Option<u64>) -> FileEntry {
@@ -106,6 +106,36 @@ fn test_rebase_event_path_rejects_non_children() {
         rebase_event_path(Path::new("/tmpdir/file"), Path::new("/tmp"), Path::new("/tmp")),
         None
     );
+}
+
+#[test]
+fn event_targets_watch_root_matches_the_dir_itself_in_either_path_form() {
+    // The signal that a directory was replaced wholesale is an event naming the WATCH
+    // ROOT, which `rebase_event_path` rejects (its parent isn't the watched dir). This
+    // predicate is what catches it, and it needs the same two path forms.
+    let dir = Path::new("/tmp/work");
+    assert!(event_targets_watch_root(Path::new("/tmp/work"), dir, dir));
+    assert!(
+        event_targets_watch_root(Path::new("/private/tmp/work"), dir, dir),
+        "FSEvents' canonical form of the watch root is still the watch root"
+    );
+
+    // A symlinked watch root: FSEvents reports the resolved target.
+    let listing_dir = Path::new("/Users/jane/Library/CloudStorage/GoogleDrive-jane/My Drive");
+    let canonical_dir = Path::new("/Users/jane/My Drive");
+    assert!(event_targets_watch_root(canonical_dir, listing_dir, canonical_dir));
+}
+
+#[test]
+fn event_targets_watch_root_rejects_children_and_neighbours() {
+    let dir = Path::new("/tmp/work");
+    assert!(
+        !event_targets_watch_root(Path::new("/tmp/work/file.txt"), dir, dir),
+        "a child is an ordinary incremental event, not a replacement of the root"
+    );
+    assert!(!event_targets_watch_root(Path::new("/tmp"), dir, dir));
+    // Prefix-similar but distinct (/tmp/workshop is not /tmp/work).
+    assert!(!event_targets_watch_root(Path::new("/tmp/workshop"), dir, dir));
 }
 
 #[test]
@@ -369,4 +399,62 @@ async fn test_handle_directory_change_detects_new_entries() {
     assert!(names.iter().any(|n| n == "b.txt"));
 
     get_volume_manager().unregister(&volume_id);
+}
+
+/// A pane must never keep showing entries that went away when its own directory was
+/// replaced wholesale: a `git checkout` across branches, `rsync --delete`, unzipping
+/// over a folder, a build regenerating an output dir.
+///
+/// macOS reports that replacement as `Remove(Folder)` + `Create(Folder)` on the WATCH
+/// ROOT plus one `Create` per NEW child, and never a remove for the old children
+/// (verified on macOS 15.5 / `notify-debouncer-full` 0.6, by logging the raw debounced
+/// batch against a live pane, 2026-08-08). So a classifier that only rebases
+/// direct-child events applies the adds, learns nothing about the removals, and the
+/// vanished entries sit in the pane until the user navigates away and back.
+///
+/// The listing cache IS what the pane serves, so asserting on it is the user-visible
+/// symptom, not an internal call count.
+#[cfg(target_os = "macos")]
+#[test]
+fn entries_that_went_with_a_replaced_watch_root_leave_the_listing() {
+    use crate::file_system::listing::caching_test_support::{TestListing, unique_test_id};
+    use crate::file_system::listing::list_directory_core;
+    use crate::file_system::watcher::start_watching;
+    use crate::test_support::{TestDir, wait_until};
+    use std::time::Duration;
+
+    let scratch = TestDir::new("watch-root-replaced");
+    let watched = scratch.join("target");
+    std::fs::create_dir(&watched).expect("scratch dir is writable");
+    std::fs::write(watched.join("alpha.txt"), b"a").expect("scratch dir is writable");
+    std::fs::write(watched.join("beta.txt"), b"b").expect("scratch dir is writable");
+
+    // An unregistered volume id on purpose: the re-read then goes through
+    // `handle_directory_change`'s `list_directory_core` fallback, which is the same
+    // real readdir a `LocalPosixVolume` would do, without this test depending on
+    // whatever else the shared volume registry holds.
+    let listing = TestListing::new()
+        .volume(&unique_test_id("watch-root-replaced-vol"))
+        .path(&watched)
+        .entries(list_directory_core(&watched).expect("the fresh dir lists"))
+        .insert("watch-root-replaced");
+    start_watching(listing.id(), &watched).expect("start_watching should succeed on a real dir");
+
+    // Arming an FSEvents stream is asynchronous, so prove the watch is delivering
+    // before the replacement. Without this, a miss could just mean "too early".
+    std::fs::write(watched.join("probe.txt"), b"p").expect("scratch dir is writable");
+    wait_until(Duration::from_secs(10), "the watch to deliver its first event", || {
+        listing.entry_names().iter().any(|name| name == "probe.txt")
+    });
+
+    // The replacement: same path, new inode, entirely different contents.
+    std::fs::remove_dir_all(&watched).expect("scratch dir is writable");
+    std::fs::create_dir(&watched).expect("scratch dir is writable");
+    std::fs::write(watched.join("gamma.txt"), b"g").expect("scratch dir is writable");
+
+    wait_until(
+        Duration::from_secs(15),
+        "the listing to show what the replaced directory actually holds",
+        || listing.entry_names() == vec!["gamma.txt".to_string()],
+    );
 }

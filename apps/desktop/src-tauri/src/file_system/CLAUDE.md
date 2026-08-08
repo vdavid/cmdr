@@ -36,6 +36,11 @@ Directory listing, file writing, sync status, volume management, and file watchi
 - **Watcher event paths must be rebased into the listing's path space** (`watcher.rs::rebase_event_path`). Raw
   `path.parent() == dir_path` drops every event under `/tmp`, `/var`, `/etc` (firmlinks) and under a symlinked watch
   root (Google Drive's `My Drive`). `DETAILS.md` § "Watcher path rebasing".
+- **A watch root that is itself created, removed, or renamed forces a full re-read** (`watcher.rs`), because macOS
+  reports a wholesale replacement (`git checkout`, `rsync --delete`, a build regenerating an output dir) as
+  Remove+Create on the ROOT plus one Create per NEW child, and never a remove for the old ones. ❌ Don't add
+  `Modify(Metadata(_))` to that trigger: every ordinary child change bumps the dir's mtime, so it would re-read on
+  everything. `DETAILS.md` § "Replacing a watch root".
 - **`cloud_actions.rs` is iCloud Drive only**, gated by `is_in_icloud_drive`. The cross-provider-looking
   `NSFileProviderManager` methods are reserved for the app bundling the extension. Don't widen it.
 

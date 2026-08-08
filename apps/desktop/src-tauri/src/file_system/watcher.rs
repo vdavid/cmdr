@@ -8,7 +8,10 @@
 
 use notify_debouncer_full::{
     DebounceEventResult, DebouncedEvent, Debouncer, RecommendedCache, new_debouncer,
-    notify::{RecommendedWatcher, RecursiveMode, event::EventKind},
+    notify::{
+        RecommendedWatcher, RecursiveMode,
+        event::{EventKind, ModifyKind},
+    },
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -209,6 +212,36 @@ pub(super) fn rebase_event_path(event_path: &Path, dir_path: &Path, canonical_di
     }
 }
 
+/// Whether an FSEvents/inotify path IS the watched directory itself rather than
+/// something inside it, in either path form (see `rebase_event_path` for why a
+/// listing's path and the OS's path can differ).
+pub(super) fn event_targets_watch_root(event_path: &Path, dir_path: &Path, canonical_dir: &Path) -> bool {
+    if event_path == dir_path || event_path == canonical_dir {
+        return true;
+    }
+    let event_normalized = firmlinks::normalize_path(&event_path.to_string_lossy());
+    event_normalized == firmlinks::normalize_path(&dir_path.to_string_lossy())
+        || event_normalized == firmlinks::normalize_path(&canonical_dir.to_string_lossy())
+}
+
+/// Whether this batch says the watched directory itself was replaced, removed, or
+/// renamed, so the pane's entries can no longer be trusted.
+///
+/// `Modify(Metadata(_))` on the root is deliberately NOT a trigger: every ordinary
+/// child create or remove bumps the directory's own mtime, so counting it would send
+/// every change down the full re-read path and cost the incremental path its point.
+fn watch_root_identity_changed(events: &[DebouncedEvent], dir_path: &Path, canonical_dir: &Path) -> bool {
+    events.iter().any(|event| {
+        matches!(
+            event.kind,
+            EventKind::Create(_) | EventKind::Remove(_) | EventKind::Modify(ModifyKind::Name(_))
+        ) && event
+            .paths
+            .iter()
+            .any(|path| event_targets_watch_root(path, dir_path, canonical_dir))
+    })
+}
+
 /// Processes individual file-system events incrementally instead of re-reading the whole directory.
 ///
 /// Falls back to `handle_directory_change` when events are too numerous or ambiguous.
@@ -238,6 +271,21 @@ fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEv
     // stats below, so it adds no new blocking class here; falls back to `dir_path` if
     // the dir vanished mid-batch (the re-read path handles a deleted watch root).
     let canonical_dir = std::fs::canonicalize(&dir_path).unwrap_or_else(|_| dir_path.clone());
+
+    // A watch root that was itself removed, created, or renamed is a DIFFERENT
+    // directory now, so classifying this batch's child events against the old entries
+    // would keep everything the replacement took away. macOS reports a wholesale
+    // replacement (a `git checkout` across branches, `rsync --delete`, unzipping over a
+    // folder, a build regenerating its output dir) as Remove(Folder) + Create(Folder)
+    // on the ROOT plus one Create per NEW child, and never a remove for the old ones.
+    // Re-read instead: that diffs against disk, replaces the listing, and emits
+    // `directory-deleted` plus stops the watch when the directory is really gone.
+    if watch_root_identity_changed(&events, &dir_path, &canonical_dir) {
+        let lid = listing_id.to_string();
+        // `tauri::async_runtime::spawn`, not `tokio::spawn`: see the fallback above.
+        tauri::async_runtime::spawn(async move { handle_directory_change(&lid).await });
+        return;
+    }
 
     // Collect unique direct-child paths, skipping access events. Event paths are
     // rebased into the listing's path space (see `rebase_event_path`).
