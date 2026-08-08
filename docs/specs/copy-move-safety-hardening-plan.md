@@ -349,10 +349,10 @@ test). A guard that needs a contract to be true is one `list_directory` away fro
    between two probes. It's still worth fixing (defense in depth, last destructive branch of the family), but the plan
    treated the two as independent and they aren't.
 5. **`NotFound` has to stay an answer.** Propagating every `is_directory` error at `conflict.rs:82`/`:425` would turn a
-   destination that raced away between conflict detection and resolution into a failed item, breaking a write that
-   would simply have succeeded. The shared helper carves `VolumeError::NotFound` out and only refuses to guess when the
-   probe genuinely couldn't answer. The plan's two bullets on `:82` also disagreed with each other (one said
-   "truthful-enough, leave it", the `:80` bullet said fixing `:82` is what closes `:447`); the second reading won.
+   destination that raced away between conflict detection and resolution into a failed item, breaking a write that would
+   simply have succeeded. The shared helper carves `VolumeError::NotFound` out and only refuses to guess when the probe
+   genuinely couldn't answer. The plan's two bullets on `:82` also disagreed with each other (one said "truthful-enough,
+   leave it", the `:80` bullet said fixing `:82` is what closes `:447`); the second reading won.
 
 Branch `safety-p1-cache-truth`, off `main` (after Phase 0 lands, so the one shared comment in `conflict.rs` is already
 true). Everything here is production behavior. Independently mergeable and valuable on its own.
