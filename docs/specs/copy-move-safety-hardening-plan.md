@@ -893,10 +893,15 @@ Two things the grid has to nail down before an agent writes a line of it, becaus
 - **Name the pipeline per cell, and mind that one combination is unreachable.** Tier A has no volume axis in the
   original wording, so an agent has to invent one. Use the same three-value axis Tier B uses
   (`{same-volume, cross-volume-serial, cross-volume-concurrent}`), and pin Tier A to the cross-volume-serial pipeline
-  unless a cell says otherwise. **For LOCAL copy and move, `hit-without-per-path` cannot reach the driver at all**:
-  `copy/mod.rs:126` and `move_op.rs:494` filter on `!c.files.is_empty()`, so a per-path-less local cache is a cache
-  MISS by construction. Those cells belong to the volume pipelines; if a local variant is wanted, it asserts the miss
-  and the fresh rescan, and says so in its name.
+  unless a cell says otherwise. **For LOCAL copy and move, the cache-state axis has only two meaningful values, and
+  the reason is not the one an earlier draft gave.** That draft said `copy/mod.rs:126` and `move_op.rs:494` filter on
+  `!c.files.is_empty()` so a per-path-less cache is a MISS by construction — wrong: the filter reads `files`, not
+  `per_path`, and a local walk with populated `files` and an empty `per_path` is exactly the pre-`bf6d896b3`
+  production shape, which sails through as a HIT. The real reason is simpler and stronger: **neither
+  `transfer/copy/mod.rs` nor `transfer/move_op.rs` reads `per_path` anywhere** (grep both: zero hits). So on the local
+  pipelines `hit-with-per-path` and `hit-without-per-path` are the same cell wearing two names, and writing both is
+  padding. Put those cells on the volume pipelines, where `per_path` is read. ❌ Don't write a local cell that
+  "asserts the miss and the fresh rescan" — it won't miss.
 
 **Tier B — sampled, the shape axis.** `{copy, move}` × item kind `{file, dir-onto-fresh-dest, symlink-to-directory}` ×
 driver `{serial, concurrent}` × cache state `hit-without-per-path` only = **12 cells**. Cache state is pinned to the
@@ -958,7 +963,7 @@ Three `smb_integration_*` tests in `apps/desktop/src-tauri/src/file_system/volum
 3. **An SMB delete consuming a LOCAL preview's cache**, asserting it deletes the requested tree and nothing else.
 4. **A cross-type clash where the source type is unknown**, on the wire. A local FILE onto a same-named DIRECTORY on
    the share, policy Overwrite, with the source's `is_directory` failing. That's the `conflict.rs:80` +
-   `rename_merge.rs:333` intersection (M1.5(b), B6), and it's the one combination the in-memory grid can't reach
+   `rename_merge.rs:333` intersection (both decided in M1.5(b)), and it's the one combination the grid can't reach
    honestly, because "what a real backend does when asked to delete a non-empty directory" is the whole question.
    Assert the share's directory and contents survive and the op reports a failure at that source.
 
@@ -1016,6 +1021,16 @@ Two scoping details that decide whether this check lands clean:
   excuses cmdr-fs host stubs. **Recommendation: extend the same reasoning** — a test double's zero value is a test's
   problem, so scope the check to non-test files in both trees, and say so in the check's doc comment. That leaves 23
   production derives to annotate, which is the honest number.
+- **"Non-test file" is not the same as "non-test code", and this check needs both.** `isRustTestPath`
+  (`desktop-rust-test-sleep.go:143`) excludes whole files by path, which handles the three above. It does NOT exclude
+  an inline `#[cfg(test)] mod tests` living inside a production file, and derives inside those blocks are test doubles
+  by any reading. Run `advanceTestModRegion` (`desktop-rust-test-sleep.go:247`) in INVERTED polarity — that helper
+  exists to scan only inside the test mod; here it marks the region to SKIP. Same requirement as (d), so build the
+  shared piece once.
+- **"Match both forms" of the `cfg` gate means extending the tracker, not adding a string compare.**
+  `advanceTestModRegion` only arms on the literal `#[cfg(test)]`, so the `#[cfg(any(test, feature = "testing"))]` the
+  six host stubs use needs a widened predicate inside the tracker itself. Cover it in the tracker's own `_test.go`, or
+  the carve-out silently stops working the day someone reformats an attribute.
 
 **This is what makes M1.5's `Default` removal a rule rather than a one-off.** Annotating 20-odd sites is the
 milestone's real work, and each annotation is a small honest thought: `ListingProgress`'s zero really is "nothing
@@ -1043,22 +1058,28 @@ stand and one was wrong:
 
 **Scope on the METHOD name instead.** The method is at the call site, needs no type inference, and doesn't rename
 itself: flag `\.is_directory\(.*\)\.await\.unwrap_or\(` under `apps/desktop/src-tauri/src/file_system/**`, opt-out
-`// allowed-probe-unwrap: <why the guess is truthful here>`. Today that finds **eight production sites** —
-`rename.rs:112`, `delete/walker.rs:749`, `conflict.rs:80`, `:82`, `:423`, `rename_merge.rs:333`, `move_same.rs:478`,
-`:512` — of which M1.5 fixes four, and the rest take a directive with the one-line reasoning M1.5 already writes for
-them. A real finding set, a stable predicate, and an opt-out that forces the exact thought this whole plan is about.
-That's a better check than (b), which fires on nothing.
+`// allowed-probe-unwrap: <why the guess is truthful here>`. Today that predicate matches **17 lines, eight of them
+production** — `rename.rs:112`, `delete/walker.rs:749`, `conflict.rs:80`, `:82`, `:423`, `rename_merge.rs:333`,
+`move_same.rs:478`, `:512`. **M1.5 fixes four** (`conflict.rs:80`, `rename_merge.rs:333`, `move_same.rs:478`, `:512`),
+**M1.4 fixes a fifth** (`walker.rs:749`), so **three take a directive**: `rename.rs:112`, `conflict.rs:82`, and
+`:423` — and M1.5(b) already writes the one-line reasoning each of them needs. A real finding set, a stable predicate,
+and an opt-out that forces the exact thought this whole plan is about. That's a better check than (b), which fires on
+nothing.
 
 **Landmines.**
-- Six more matches sit in test files and test wrappers (`merge_tests.rs:589`, `:650`, `:907`,
-  `strategy_sequential_tests.rs:235`, `copy_tests.rs:1055`, `:1102`, `conflict.rs:703`,
-  `strategy_test_support.rs:509`, `smb_transfer_semantics_test.rs:382`). Those are assertions reading a final state,
-  not guesses driving a branch. Scope the check to non-test files, same as (c).
+- **Nine of the 17 are test code, and one of them defeats path-based scoping.** Eight sit in dedicated test files
+  (`merge_tests.rs:589`, `:650`, `:907`, `strategy_sequential_tests.rs:235`, `copy_tests.rs:1055`, `:1102`,
+  `strategy_test_support.rs:509` — `isRustTestPath` matches `test_support` in the basename —, and
+  `smb_transfer_semantics_test.rs:382`). The ninth, **`conflict.rs:703`, is inside an inline `#[cfg(test)] mod tests`
+  in a PRODUCTION file**, and it's the recursive-delete lying volume M2.1's second red test reuses, so it will never
+  go away. Filename scoping alone leaves it flagged. Use `advanceTestModRegion` in inverted polarity, exactly as (c)
+  needs it. All nine read a final state in an assertion; none drives a branch.
 - Widening the predicate to `exists()` or `get_metadata()` would double the finding set with mostly-truthful sites.
   Start with `is_directory`, the one whose wrong answer picks a destructive branch, and widen only if a real bug
   shows up elsewhere.
-- ❌ Don't make this an error-level check on day one if four sites still carry directives; warn-level with a clean
-  slate after M1.5 is the honest ordering.
+- ❌ Don't ship this error-level ahead of M1.4 and M1.5. Until they land, five of the eight would need a directive they
+  don't deserve, and a directive written to silence a check is the opposite of the thought this check exists to force.
+  Warn-level first; promote to error once the only directives left are the three truthful ones.
 
 **Landmines for (b), (c), and (d).**
 - Register all three in `registry.go`'s `AllChecks` with the `desktop-rust-` ID prefix the convention uses
@@ -1122,6 +1143,12 @@ agents never write the same file.
 and P3.M3). **`--include-slow` once, at the very end of P3.** An agent that needs more for confidence should take it
 and say why in its report. ❌ Never `git push`.
 
+⚠️ **P3.M4 lands AFTER that phase's full check**, and it's the milestone that touches ~23 production files with derive
+annotations, three new Go checks, and the SMB suite. It's covered, because `--include-slow` at the end is a superset
+of a full run, but read the budget as "P3 gets a full check at M3.3 and a superset at the very end", not "M3.4 is
+checked by M3.3". Its own line already names `go-vet staticcheck`, `ci-coverage workspace-member-coverage`, and
+`desktop-rust-integration-tests`: run those as it goes rather than saving everything for the final command.
+
 **Doc budget.** Four `CLAUDE.md` files this plan writes to are at or near the 600-word warn (decision 6). Each
 milestone that adds a guardrail line pays for it with a `DETAILS.md` move in the SAME commit. ❌ Never add a
 `claude-md-length` allowlist entry; a warn left standing and reported to David is always the safe move.
@@ -1131,11 +1158,17 @@ before calling it done.
 
 ## Invariants register
 
-The properties every milestone must leave true. An end-of-phase conformance pass reads this list.
+The properties every milestone must leave true. An end-of-phase conformance pass reads this list. Each one maps to a
+milestone that establishes it, except 4 and 9, which the EXISTING conflict-policy suites already hold (Tier C in M3.3)
+and which every other milestone must therefore leave green rather than newly prove.
 
 1. A missing `source_hints` entry means UNKNOWN, never "file", and the RESOLVED answer drives the cleanup/ledger
    branch. ❌ No probe where a hint EXISTS.
-2. No type carrying a filesystem fact has a `Default`.
+2. Every `Default` on a type under `file_system/**` or `crates/cmdr-fs/**` carries a written justification that its
+   zero value is a truthful claim, and a type whose zero value can't be justified doesn't derive one. (Stated as a
+   flat "no type carrying a filesystem fact has a `Default`" this invariant has no mechanism: M1.5(a) removes exactly
+   one derive, and M3.4(c) PERMITS a `Default` that carries `// DEFAULT-OK`. A conformance pass reading the absolute
+   form against 23 annotated derives would report a violation on every one of them.)
 3. Cleanup and rollback for a DIRECTORY source are per-FILE, never the dir root — structurally, not by convention,
    and not by trusting a backend to refuse (M2.1's `prune_created_dir_if_empty` checks for itself).
 4. A merge never deletes or overwrites a dest file the source doesn't shadow.
@@ -1156,18 +1189,21 @@ The properties every milestone must leave true. An end-of-phase conformance pass
 All were decided provisionally so execution could proceed overnight; see § "Decisions taken on David's behalf". Each
 is cheap to reverse.
 
-1. **Phase 0 exists and goes first.** A review found `MtpVolume::delete` recursing in violation of the trait contract
-   three guards depend on, which makes it a live data-loss path on phones and cameras, not a planning concern.
-   Decided: fix it first, as option (a) plus a conformance test, and reject the opt-in `delete_tree` capability. This
-   is the one item worth reading the reasoning on before the rest.
+1. **Phase 0 exists and goes first.** A review found `MtpVolume::delete` recursing in violation of the trait contract,
+   and a second review found the reachable consequence: the same-volume move's source cleanup is empty-only BY DESIGN,
+   so on a phone a merge-move destroys the very child the user chose to Skip. That's a live data-loss path, not a
+   planning concern. Decided: fix it first, as option (a) plus a conformance test, and reject the opt-in `delete_tree`
+   capability. This is the one item worth reading the reasoning on before the rest.
 2. **M1.2's cache binding** is an addition, not on the original list. It's the highest-value thing the planning pass
    found and it touches six call sites plus every test that seeds the cache. Decided: KEEP. It also grew a scope: the
    `SCAN_PREVIEW_RESULTS` static is `pub(super)` and directly writable, so the canary only means something once the
-   static is private.
+   static is private — and privatizing it pulls in a production reader (`get_scan_preview_totals`), a `state.rs`
+   re-export, and one test that hand-removes an entry.
 3. **`hint-unwrap-or-default`**: **reversed.** Decided to BUILD it, method-scoped, as
    `desktop-rust-probe-unwrap-justified` (M3.4d). The original rejection was right that variable-name scoping can't
    work and wrong that the compiler substitutes for it: the compiler sees none of the eight hand-written
-   `is_directory(...).await.unwrap_or(false)` sites, two of which pick a destructive branch.
+   `is_directory(...).await.unwrap_or(false)` sites, two of which pick a destructive branch. After M1.4 and M1.5,
+   three keep a permanent directive.
 4. **M1.6's `PerSource` enum** (replacing the empty-`Vec`-means-two-things field): decided to DEFER as a documented
    contract plus a named follow-up.
 5. **The derives in `crates/cmdr-fs/src/volume/host/*`**: decided OUT of
