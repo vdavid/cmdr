@@ -7,9 +7,11 @@ generalizes the three lessons it taught into code, types, and checks, so the nex
 by the compiler or a check rather than by a user losing a folder.
 
 **Start with Phase 0.** A claim-by-claim review of this plan found a live data-loss path on MTP: `MtpVolume::delete`
-recurses into non-empty directories, which the `Volume::delete` trait contract forbids in bold, and which three
-different safety guards elsewhere rely on. That's not a planning concern, it's a user's photos. Phase 0 is small,
-urgent, and independently mergeable, and it goes first.
+recurses into non-empty directories, which the `Volume::delete` trait contract forbids in bold, and which the
+same-volume move's "a child the user chose to Skip keeps its only copy" guarantee rests on entirely. Move a folder
+within a phone, merge it onto a same-named folder, choose Skip on one clashing child, and the move's source cleanup
+deletes exactly the file the user chose to keep. No probe error, no race. That's not a planning concern, it's a user's
+photos. Phase 0 is small, urgent, and independently mergeable, and it goes first.
 
 Read the two commits before starting (`git show 7046e9dbb bf6d896b3`). The short version: a LOCAL scan preview cached
 `per_path: Vec::new()`, so `preflight.rs::scan_volume_sources` handed the copy drivers an EMPTY `source_hints` map,
@@ -55,11 +57,12 @@ Findings that re-shape the work. Each is grounded in a grep or a read; don't re-
   partial-file cleanup as callers that "would over-delete if this contract loosened"). LocalPosix, SMB, and
   `InMemoryVolume` honor it. `MtpVolume::delete` (`backends/mtp.rs:461`) forwards to
   `mtp/connection/mutation_ops.rs::delete_object_with_cancel`, which at `:100-146` lists a directory's children and
-  recurses per child. So on a phone or a camera the contract is a comment, not a fact, and three guards that lean on
-  it lean on nothing. **Phase 0 fixes this first.** Downstream: `walker.rs:749`'s `unwrap_or(false)` is NOT
-  under-delete-only (a directory wrongly classed a file gets a `delete` that succeeds and takes the tree),
-  `conflict.rs:405-422`'s comment asserts a false premise in writing, and invariant 10 is aspirational until Phase 0
-  lands.
+  recurses per child. So on a phone or a camera the contract is a comment, not a fact, and four guards that lean on
+  it lean on nothing. **Phase 0 fixes this first**, and the one that loses data with no probe error and no race is the
+  same-volume move's inside-out source cleanup (`rename_merge.rs:186-197`), which is empty-only BY DESIGN and is what
+  keeps a Skipped child's only copy alive. Downstream: `conflict.rs:405-422`'s comment asserts a false premise in
+  writing, `conflict.rs:447` and `rename_merge.rs:333` reach a bare `delete` on a user directory after a probe error,
+  and invariant 10 is aspirational until Phase 0 lands. `walker.rs:749` is NOT in this family — see M1.4 item 3.
 - **The real delete hole is different, and nobody listed it.** On a cache hit the LOCAL delete walker iterates
   `scan_result.files` — the paths the PREVIEW walked — and never looks at its own `sources` argument again
   (`walker.rs:34` → `:125`). Nothing anywhere verifies that the `preview_id` the frontend handed back describes the
@@ -148,19 +151,33 @@ comment.
 directory", "**must NOT recurse**", and names rollback and partial-file cleanup as callers that "would over-delete if
 this contract loosened". `MtpVolume::delete` loosened it. What that buys the user on a phone or a camera:
 
-- **Rollback's created-dirs prune destroys pre-existing files.** `cleanup.rs:146-166` deletes each directory the
-  operation created with a plain `volume.delete`, and its comment explains why that's safe: a directory still holding
-  something "won't be empty, so its `delete` fails … and we leave it standing — exactly the protection that keeps
-  rollback from destroying untouched user data." On MTP the delete succeeds and takes the contents. And MTP is
-  precisely the backend where `created_dirs` can contain a directory the user already had: `create_folder` cannot
-  signal a collision (`create_directory_errors_on_existing_dir() == false`), so `DirectoryCreation::Created` on MTP
-  means "we asked", not "it wasn't there". A failed copy into an existing `/DCIM/Camera` therefore rolls back by
-  deleting the camera roll.
+- **The same-volume move's Skip guarantee evaporates, and this is the one that needs no probe error and no race.**
+  `rename_merge.rs:186-197` cleans a source directory up inside-out with an EMPTY-ONLY `volume.delete`, and the module
+  header (`:22-27`) states the guarantee resting on it: a level still holding a skipped, errored, or unmoved child
+  "fails benignly and survives, and so do its ancestors … Never deletes a source dir while content remains."
+  `crates/cmdr-fs/src/volume/in_memory.rs:549-557` names that same reliance as the reason the test double honors the
+  contract at all. `MtpVolume` implements `rename` (`backends/mtp.rs:493`) and `move_same.rs:529` reaches
+  `rename_merge_directory`, so the path is live on a phone: **move a folder within the device, merge it onto a
+  same-named folder, choose Skip on one clashing child, and the recursive `delete` destroys exactly the file the user
+  chose to keep.** The user made a choice and the app did the opposite of it. **This is Phase 0's reason to exist**,
+  and the red test below reproduces it.
 - **`rename_merge.rs:333-339`** probes `is_directory`, falls through on a probe error to `exists()` then
   `ctx.volume.delete(&write_path)`. On MTP that takes the user's destination folder; everywhere else it fails
-  benignly.
-- **`delete/walker.rs:749`** guesses "file" on a probe error. On MTP the resulting `delete` succeeds and removes the
-  whole tree, so the plan's original "under-delete, not data loss" reading was wrong.
+  benignly. **`conflict.rs:447` is the same shape one branch over**: the `else if` arm of a cross-type Overwrite calls
+  a bare `dest_volume.delete(dest_path)` when the `dest_is_dir` probe answered `false`, and on MTP that recurses into
+  a real directory. Both need a probe error to fire, so they're a step behind the move-Skip path in reachability but
+  identical in consequence. (M1.5(b) fixes their inputs; Phase 0 makes the consequence survivable either way.)
+- **Rollback's created-dirs prune** leans on the contract in writing too. `cleanup.rs:146-166` deletes each directory
+  the operation created with a plain `volume.delete`, and its comment explains why that's safe: a directory still
+  holding something "won't be empty, so its `delete` fails … and we leave it standing — exactly the protection that
+  keeps rollback from destroying untouched user data." On MTP that delete succeeds. ❌ **Don't write a red test here**;
+  it isn't reachable. `created_dirs` can hold a directory the user already had only through a TOCTOU race, and in that
+  race MTP has made a duplicate sibling object anyway, so it isn't the user's directory: `DirectoryCreation` never
+  feeds `created_dirs` (`copy.rs:511`'s answer is used for exactly one thing, `dest_dir_is_ours` at `:526`), and both
+  `record_dir` call sites already pre-check existence on a backend that can't signal a collision
+  (`strategy.rs:734-765` records nothing when `backend_create_directory_detects_collisions()` is false; the trait
+  default `create_directory_all` gates `Created` on a real `exists() == false`, and no backend overrides it). The
+  guard is real and M2.1 hardens it anyway on principle (invariant 13); it is not the live loss.
 
 ## Options considered
 
@@ -207,7 +224,9 @@ class is a test every backend runs, which is the (c) half.
 (a) `MtpConnectionManager`'s delete gains an explicit scope: `MtpDeleteScope::{SingleNode, Tree}`, a fieldless enum
 with **no `Default` and no `From<bool>`** (same rule as `TreeRemoval` in M2.1). `SingleNode` on a non-empty directory
 returns without deleting anything. `MtpVolume::delete` / `delete_with_cancel` pass `SingleNode`; `delete_mtp_object`
-passes `Tree` and carries a doc line saying it is the only `Tree` caller in the repo and why.
+passes `Tree` and carries a doc line saying it is the only `Tree` caller in the repo and why. **There are TWO entry
+points, not one**: `delete_object` (`mutation_ops.rs:22`) and `delete_object_with_cancel` (`:44`). `delete_mtp_object`
+calls the former, `MtpVolume` the latter, so the scope threads through both or the split has a hole in it.
 
 (b) A shared conformance assertion in `cmdr-fs` (`assert_delete_leaves_a_non_empty_dir_intact(volume)`, under
 `#[cfg(any(test, feature = "testing"))]`), called from every backend's suite: `local_posix_test.rs`, the SMB suite,
@@ -215,9 +234,14 @@ passes `Tree` and carries a doc line saying it is the only `Tree` caller in the 
 comment.
 
 **Landmines.**
-- **The refusal must be a typed error**, not a message (`.claude/rules/no-string-matching.md`). If
-  `MtpConnectionError` has no ENOTEMPTY-shaped variant, add one, map it through `map_mtp_error` to
+- **The refusal must be a typed error**, not a message (`.claude/rules/no-string-matching.md`). `MtpConnectionError`
+  has no ENOTEMPTY-shaped variant (`mtp/connection/errors.rs:6-75`), so add one, map it through `map_mtp_error` to
   `VolumeError::IoError`, and assert with `matches!`.
+- **That variant crosses IPC.** `MtpConnectionError` is `specta`-exported, so adding a variant regenerates
+  `apps/desktop/src/lib/ipc/bindings.ts`, and there's a parallel stub enum at `stubs/mtp.rs:44` for builds without the
+  MTP feature. Regenerate the bindings in the same commit and keep the stub's shape consistent with whichever enum
+  feeds the committed file. `bindings.ts` sits in the `file-length` `exempt` section, so a stale regeneration surfaces
+  as a check failure rather than a compile error, which is the slow way to find out.
 - **The path-cache bookkeeping must not drift.** `delete_object_with_cancel` ends by clearing the forward AND reverse
   handle maps and invalidating the parent's listing cache; `mtp/connection/path_cache_sync_test.rs` pins both
   directions (Android reuses handles, so a stale reverse entry resolves to a deleted object's path). That block must
@@ -244,29 +268,39 @@ comment.
 - `mtp/CLAUDE.md` + `DETAILS.md`: the two scopes and who may use `Tree`. **`mtp/CLAUDE.md` is at exactly 600 words**,
   so this milestone moves at least as many words into `DETAILS.md` as it adds. ❌ No allowlist entry.
 
-**Tests — TEST-FIRST, and the red one is a data-loss proof.**
-1. **Red, on the real backend.** Virtual MTP device: a folder holding a file; call `MtpVolume::delete` on the folder.
-   Today it returns `Ok` and the file is gone. Assert the call returns a typed non-empty error AND the file is still
-   listed. Watch it go red by the file disappearing, not by a compile error.
-2. The conformance assertion, wired into all four backend suites. LocalPosix, SMB, and `InMemoryVolume` pass on day
+**Tests — TEST-FIRST, and the red one reproduces the user-visible loss.**
+1. **Red, through the real operation, not through the API.** Virtual MTP device: a source folder and a same-named
+   destination folder sharing one clashing child; run a same-volume move and answer Skip on that child. Today the
+   inside-out source cleanup calls `delete` on the source directory, MTP recurses, and the skipped child's only copy
+   is gone. Assert the skipped child still reads back from the source. Watch it go red by the file disappearing, not
+   by a compile error. **Write this one first**: a red that reproduces the loss a user would report is worth far more
+   than one asserting an API contract, and it's the difference between a phase that's obviously worth doing and a
+   phase that looks like tidying.
+2. The same defect stated as an API fact, one layer down: a folder holding a file, `MtpVolume::delete` on the folder,
+   assert a typed non-empty error AND the file still listed. This is what the conformance assertion generalizes.
+3. The conformance assertion, wired into all four backend suites. LocalPosix, SMB, and `InMemoryVolume` pass on day
    one; MTP passes after (a). A backend that fails it is the point.
-3. An empty directory still deletes on MTP through `delete` — the regression the refusal could overshoot into.
-4. `delete_mtp_object` still removes a tree, pinning the one intentional `Tree` caller so the split stays visible
+4. An empty directory still deletes on MTP through `delete` — the regression the refusal could overshoot into.
+5. `delete_mtp_object` still removes a tree, pinning the one intentional `Tree` caller so the split stays visible
    rather than accidental.
 
 **Checks.** `pnpm check --fast` while iterating, `pnpm check rust-tests` (carries `--features cmdr/virtual-mtp`), and
 **one full `pnpm check` before merging** — this phase changes production behavior on a backend.
 
 **File ownership.** `apps/desktop/src-tauri/src/mtp/connection/mutation_ops.rs`,
+`apps/desktop/src-tauri/src/mtp/connection/errors.rs` (the new variant),
+`apps/desktop/src-tauri/src/stubs/mtp.rs` (the parallel stub enum),
+`apps/desktop/src/lib/ipc/bindings.ts` (regenerated, never hand-edited),
 `apps/desktop/src-tauri/src/file_system/volume/backends/mtp.rs`, `apps/desktop/src-tauri/src/commands/mtp.rs`,
 `crates/cmdr-fs/src/volume/mod.rs`, the new conformance helper plus each backend's test file, `mtp/CLAUDE.md` +
 `DETAILS.md`, `crates/cmdr-fs/CLAUDE.md`, and a COMMENT-ONLY edit to `transfer/volume/conflict.rs:405-422`. That last
 file is also M1.5's and M2.1's; Phase 0 merges first and touches no code line in it, so the overlap is a trivial
 rebase.
 
-**DONE when.** `MtpVolume::delete` on a non-empty directory deletes nothing and returns a typed error, every backend's
-suite runs the shared conformance assertion, `delete_mtp_object` is the only `Tree`-scoped caller in the repo, and
-`conflict.rs`'s comment states something true.
+**DONE when.** A Skipped child survives a same-volume merge-move on a virtual MTP device, `MtpVolume::delete` on a
+non-empty directory deletes nothing and returns a typed error, every backend's suite runs the shared conformance
+assertion, `delete_mtp_object` is the only `Tree`-scoped caller in the repo, and `conflict.rs`'s comment states
+something true.
 
 **What Phase 0 does NOT do.** It makes invariant 10 true for the backends that exist. It does not make
 `prune_created_dir_if_empty` independent of it — that's M2.1's job, and it's worth doing anyway (see M2.1's second
