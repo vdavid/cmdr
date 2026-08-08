@@ -8,6 +8,7 @@
 //! through `super::test_support::…`. The override is also read by
 //! `super::auto_yield_tuning()` in test builds.
 
+use super::super::faulty_volume::forward_volume_methods;
 use super::*;
 use std::future::Future;
 use std::path::Path;
@@ -17,9 +18,7 @@ use std::sync::{Arc, Mutex as StdMutex};
 use std::time::Duration;
 
 use crate::file_system::listing::FileEntry;
-use crate::file_system::volume::{
-    DirectoryCreation, ListingProgress, SpaceInfo, Volume, VolumeError, VolumeReadStream,
-};
+use crate::file_system::volume::{ListingProgress, Volume, VolumeError, VolumeReadStream};
 use crate::ignore_poison::IgnorePoison;
 
 pub(super) fn make_state() -> Arc<WriteOperationState> {
@@ -293,84 +292,29 @@ impl FlakyDest {
 }
 
 impl Volume for FlakyDest {
-    fn name(&self) -> &str {
-        self.inner.name()
-    }
-    fn root(&self) -> &Path {
-        self.inner.root()
-    }
+    forward_volume_methods!(
+        inner => name,
+        root,
+        max_concurrent_ops,
+        list_directory,
+        get_metadata,
+        exists,
+        is_directory,
+        create_directory,
+        create_directory_all,
+        create_file,
+        delete,
+        rename,
+        get_space_info,
+        open_read_stream,
+        create_directory_errors_on_existing_dir,
+    );
+
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
     fn supports_streaming(&self) -> bool {
         true
-    }
-    fn max_concurrent_ops(&self) -> usize {
-        self.inner.max_concurrent_ops()
-    }
-    fn list_directory<'a>(
-        &'a self,
-        path: &'a Path,
-        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
-        self.inner.list_directory(path, on_progress)
-    }
-    fn get_metadata<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
-        self.inner.get_metadata(path)
-    }
-    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
-        self.inner.exists(path)
-    }
-    fn is_directory<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
-        self.inner.is_directory(path)
-    }
-    fn create_directory<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
-        self.inner.create_directory(path)
-    }
-    fn create_directory_all<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<DirectoryCreation, VolumeError>> + Send + 'a>> {
-        self.inner.create_directory_all(path)
-    }
-    fn create_file<'a>(
-        &'a self,
-        path: &'a Path,
-        content: &'a [u8],
-    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
-        self.inner.create_file(path, content)
-    }
-    fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
-        self.inner.delete(path)
-    }
-    fn rename<'a>(
-        &'a self,
-        from: &'a Path,
-        to: &'a Path,
-        force: bool,
-    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
-        self.inner.rename(from, to, force)
-    }
-    fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
-        self.inner.get_space_info()
-    }
-    fn open_read_stream<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
-        self.inner.open_read_stream(path)
-    }
-    fn create_directory_errors_on_existing_dir(&self) -> bool {
-        self.inner.create_directory_errors_on_existing_dir()
     }
     fn write_from_stream<'a>(
         &'a self,
@@ -431,36 +375,10 @@ impl RecursiveDeleteVolume {
 }
 
 impl Volume for RecursiveDeleteVolume {
-    fn name(&self) -> &str {
-        self.inner.name()
-    }
-    fn root(&self) -> &Path {
-        self.inner.root()
-    }
+    forward_volume_methods!(inner => name, root, list_directory, get_metadata, exists, is_directory);
+
     fn as_any(&self) -> &dyn std::any::Any {
         self
-    }
-    fn list_directory<'a>(
-        &'a self,
-        path: &'a Path,
-        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
-        self.inner.list_directory(path, on_progress)
-    }
-    fn get_metadata<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
-        self.inner.get_metadata(path)
-    }
-    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
-        self.inner.exists(path)
-    }
-    fn is_directory<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
-        self.inner.is_directory(path)
     }
     /// Recursive delete: contractually wrong, but plausible for some backends.
     fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
@@ -512,61 +430,37 @@ impl UndeletableSource {
 }
 
 impl Volume for UndeletableSource {
-    fn name(&self) -> &str {
-        self.inner.name()
-    }
-    fn root(&self) -> &Path {
-        self.inner.root()
-    }
+    // The scan/conflict surface a SOURCE volume needs comes along here too: the
+    // trait's defaults are `NotSupported`, which fails the transfer long before
+    // its delete phase.
+    forward_volume_methods!(
+        inner => name,
+        root,
+        max_concurrent_ops,
+        list_directory,
+        get_metadata,
+        exists,
+        is_directory,
+        create_directory,
+        create_directory_all,
+        create_file,
+        rename,
+        get_space_info,
+        open_read_stream,
+        create_directory_errors_on_existing_dir,
+        write_from_stream,
+        supports_export,
+        operations_are_local,
+        supports_local_fs_access,
+        scan_for_copy,
+        scan_for_conflicts,
+    );
+
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
     fn supports_streaming(&self) -> bool {
         true
-    }
-    fn max_concurrent_ops(&self) -> usize {
-        self.inner.max_concurrent_ops()
-    }
-    fn list_directory<'a>(
-        &'a self,
-        path: &'a Path,
-        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
-        self.inner.list_directory(path, on_progress)
-    }
-    fn get_metadata<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
-        self.inner.get_metadata(path)
-    }
-    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
-        self.inner.exists(path)
-    }
-    fn is_directory<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
-        self.inner.is_directory(path)
-    }
-    fn create_directory<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
-        self.inner.create_directory(path)
-    }
-    fn create_directory_all<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<DirectoryCreation, VolumeError>> + Send + 'a>> {
-        self.inner.create_directory_all(path)
-    }
-    fn create_file<'a>(
-        &'a self,
-        path: &'a Path,
-        content: &'a [u8],
-    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
-        self.inner.create_file(path, content)
     }
     fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
@@ -588,61 +482,6 @@ impl Volume for UndeletableSource {
             }
             self.inner.delete(path).await
         })
-    }
-    fn rename<'a>(
-        &'a self,
-        from: &'a Path,
-        to: &'a Path,
-        force: bool,
-    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
-        self.inner.rename(from, to, force)
-    }
-    fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
-        self.inner.get_space_info()
-    }
-    fn open_read_stream<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
-        self.inner.open_read_stream(path)
-    }
-    fn create_directory_errors_on_existing_dir(&self) -> bool {
-        self.inner.create_directory_errors_on_existing_dir()
-    }
-    fn write_from_stream<'a>(
-        &'a self,
-        dest: &'a Path,
-        size: u64,
-        stream: Box<dyn VolumeReadStream>,
-        on_progress: &'a (dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
-    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
-        self.inner.write_from_stream(dest, size, stream, on_progress)
-    }
-    // The scan/conflict surface a SOURCE volume needs: the trait's defaults are
-    // `NotSupported`, which fails the transfer long before its delete phase.
-    fn supports_export(&self) -> bool {
-        self.inner.supports_export()
-    }
-    fn operations_are_local(&self) -> bool {
-        self.inner.operations_are_local()
-    }
-    fn supports_local_fs_access(&self) -> bool {
-        self.inner.supports_local_fs_access()
-    }
-    fn scan_for_copy<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<crate::file_system::volume::CopyScanResult, VolumeError>> + Send + 'a>>
-    {
-        self.inner.scan_for_copy(path)
-    }
-    fn scan_for_conflicts<'a>(
-        &'a self,
-        source_items: &'a [crate::file_system::volume::SourceItemInfo],
-        dest_path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<crate::file_system::volume::ScanConflict>, VolumeError>> + Send + 'a>>
-    {
-        self.inner.scan_for_conflicts(source_items, dest_path)
     }
 }
 

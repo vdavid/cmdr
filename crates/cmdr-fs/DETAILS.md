@@ -187,3 +187,31 @@ The double is the oracle: two `Volume` contracts have to hold in it, not just on
   moved only the dir node made those tests pass over the exact data-loss shape they existed to catch.
 
 ❌ Never relax a contract to make a test green.
+
+## The faults `InMemoryVolume` can be told to have
+
+Everything above is what the double gets RIGHT unconditionally. On top of that it can be told to misbehave in specific,
+named ways, so a caller's defense against a hostile backend is testable rather than assumed. Each is test-only, and
+each models something a real backend genuinely does:
+
+- **`with_delete_failing()`** — `delete` returns an `IoError` instead of removing the entry. A backend that can't remove
+  a path (a permission, a lock, a dead session).
+- **`set_stat_failing(path)`** — `is_directory` and `get_metadata` FAIL for that path rather than reporting it missing.
+  The distinction is the whole point: `NotFound` is an ANSWER, and code that turns an unanswered stat into a confident
+  "not a directory" routes a folder into a file-shaped, destructive branch.
+- **`set_reported_type(path, is_directory)`** — the stat and the listing report a type the entry doesn't have, while its
+  real contents stay put. A stale or racy directory entry, and the exact lie the original cross-volume copy bug rode in
+  on.
+- **`set_reported_size(path, bytes)`** — the listed size disagrees with the real streamed byte count. A remote source
+  whose directory entry is stale; a transfer planning against the real stream still lands correct bytes.
+- **`set_modified_at(path, secs)`** — ages a file into the past or clears its mtime, for the conditional policies
+  (`OverwriteOlder`).
+- **`with_sibling_duplicates_allowed()`** — `create_directory_errors_on_existing_dir()` reports `false`, modeling MTP,
+  which can't signal a same-name collision at all.
+- **`with_read_range_unsupported()`** — positioned reads return `NotSupported`, modeling a remote backend without the
+  primitive.
+
+A fault the caller wants to arm on a call COUNT rather than on a path belongs one layer up, in the app's
+`FaultyVolume` wrapper (`file_system/write_operations/transfer/volume/faulty_volume_test_support.rs`): it wraps any
+volume and fails the Nth call to a named operation. ❌ Don't grow this list with fault shapes that aren't about what a
+real backend does.

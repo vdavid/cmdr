@@ -30,13 +30,12 @@ same-volume), the merge/staging engine (`strategy.rs`, `sequential_extract.rs`),
 - **Only `cleanup.rs::remove_tree` recurses, and its `TreeRemoval` argument names who authorized it.** Cleanup and
   rollback call `delete_written_file` / `prune_created_dir_if_empty` (which lists before it deletes), so a wrong belief
   can't reach a recursive delete: there isn't one in scope. A fourth sweep adds a variant, or it doesn't happen.
-  `DETAILS.md` § "Three ways to delete, and who may use each".
 - **An unknown "is this a directory?" is ❌ never guessed.** A missing `source_hints` entry means UNKNOWN, ❌ never
-  "file" (ask `strategy.rs::resolve_source_is_directory`; the RESOLVED answer drives the cleanup/ledger branch), and ❌
-  no `.is_directory(…).await.unwrap_or(false)` here: a guessed `false` streams a directory as a file and picks the
-  destructive branch. `NotFound` is an ANSWER; anything else fails the item. **`SourceHint` has no `Default`; ❌ never
-  add one.** ❌ Don't probe where a hint EXISTS (15k MTP sources = 15k listings). `DETAILS.md` § "A missing source hint
-  means unknown" and § "Every belief-default in this directory, decided".
+  "file": ask `strategy.rs::resolve_source_is_directory`, and the RESOLVED answer drives the cleanup/ledger branch.
+  `NotFound` is an ANSWER; anything else fails the item. ❌ No `.is_directory(…).await.unwrap_or(false)`, a guessed
+  `false` picks the destructive branch (`desktop-rust-probe-unwrap-justified` enforces it). **`SourceHint` has no
+  `Default`; ❌ never add one.** ❌ Don't probe where a hint EXISTS (15k MTP sources = 15k listings). `DETAILS.md` §§
+  "A missing source hint means unknown", "Every belief-default in this directory, decided".
 - **Cross-FS move deletes sources AFTER `flush_created_destinations`, preserving Skipped ones.** Same-volume move is a
   rename-merge with top-level hints only, never a subtree walk.
 
@@ -48,7 +47,9 @@ same-volume), the merge/staging engine (`strategy.rs`, `sequential_extract.rs`),
 - **A failure carries the path it happened ON** (`transfer_error.rs::PathedVolumeError`): ❌ never re-label with the
   top-level source, ❌ never `.at()` above the frame that knows the item; a directory sweep names the first child that
   refused. `DETAILS.md` § "Naming the item that failed".
-- **A `*_tests.rs` here is a `#[path]` CHILD of the module it pins**: inside one, `super::` is that parent and
-  `super::super::` is `volume`, one level shallower than at file scope. A wrongly-deepened chain still compiles.
+- **A `*_tests.rs` here is a `#[path]` CHILD of the module it pins**, so `super::` is one level shallower than at file
+  scope; a wrongly-deepened chain still compiles. `DETAILS.md` § Files.
+- **Inject a wrong or missing answer with `FaultyVolume`** (`faulty_volume_test_support.rs`), ❌ never a fresh
+  forwarder; `forward_volume_methods!` writes the boilerplate so a double's diff is only what it lies about.
 
 Semantics, flows, decisions, and the rollback ledger: `DETAILS.md`. Read it before any non-trivial work here.

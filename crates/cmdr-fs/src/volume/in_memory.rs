@@ -232,6 +232,20 @@ impl InMemoryVolume {
         }
     }
 
+    /// Overrides the reported TYPE of an existing entry, so `is_directory`,
+    /// `get_metadata`, and listings all report `is_directory` while the entry
+    /// keeps holding whatever it really holds. That gap is the fault this whole
+    /// area defends against: a directory answered as a file gets streamed as one
+    /// and picks the destructive cleanup branch, and until now there was no way
+    /// to express it in a test. Test-only.
+    pub fn set_reported_type(&self, path: &Path, is_directory: bool) {
+        let normalized = self.normalize(path);
+        let mut entries = self.entries.write_ignore_poison();
+        if let Some(entry) = entries.get_mut(&normalized) {
+            entry.metadata.is_directory = is_directory;
+        }
+    }
+
     /// Creates an in-memory volume pre-populated with entries.
     pub fn with_entries(name: impl Into<String>, entries: Vec<FileEntry>) -> Self {
         let volume = Self::new(name);

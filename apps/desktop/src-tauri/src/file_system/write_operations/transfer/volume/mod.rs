@@ -57,6 +57,12 @@ pub(crate) use move_same::move_within_same_volume_with_progress;
 #[cfg(test)]
 mod safety_oracle;
 
+/// The shared fault injector (`FaultyVolume`) and the forwarding macro every
+/// `Volume` double in this directory builds on.
+#[cfg(test)]
+#[path = "faulty_volume_test_support.rs"]
+mod faulty_volume;
+
 #[cfg(test)]
 mod rename_merge_mtp_tests;
 #[cfg(test)]
