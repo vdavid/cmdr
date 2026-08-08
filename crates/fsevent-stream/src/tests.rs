@@ -221,7 +221,13 @@ async fn must_receive_fs_events_impl(
             // deliver separate events; without this, rapid create+delete merges into a single event.
             f.sync_all().expect("to succeed");
             drop(f);
-            if probe_tx.send(Probe { path: path.clone(), inode }).is_err() {
+            if probe_tx
+                .send(Probe {
+                    path: path.clone(),
+                    inode,
+                })
+                .is_err()
+            {
                 return;
             }
             sleep(Duration::from_millis(200));
@@ -258,7 +264,9 @@ async fn must_receive_fs_events_impl(
     };
     let remaining = deadline.saturating_duration_since(Instant::now());
     #[cfg(feature = "tokio")]
-    let delivered = tokio::time::timeout(remaining, collect).await.unwrap_or(false);
+    let delivered = tokio::time::timeout(remaining, collect)
+        .await
+        .unwrap_or(false);
     #[cfg(feature = "async-std")]
     let delivered = async_std::future::timeout(remaining, collect)
         .await

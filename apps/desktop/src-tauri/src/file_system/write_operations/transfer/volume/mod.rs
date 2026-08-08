@@ -63,9 +63,13 @@ mod safety_oracle;
 #[path = "faulty_volume_test_support.rs"]
 mod faulty_volume;
 
-/// The coverage grid: op × cache state × outcome, and the shape axis.
+/// The coverage grid: op × cache state × outcome (Tier A), and its fixtures.
 #[cfg(test)]
 mod safety_grid_tests;
+
+/// The coverage grid's shape axis (Tier B), on Tier A's fixtures.
+#[cfg(test)]
+mod safety_grid_shape_tests;
 
 // The SMB integration suite lives outside `write_operations`, so it reaches the
 // fault injector through the facade rather than by widening the submodule.

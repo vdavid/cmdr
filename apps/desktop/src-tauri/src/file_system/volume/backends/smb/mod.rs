@@ -309,5 +309,8 @@ mod smb_test;
 #[path = "../smb_test_support.rs"]
 mod smb_test_support;
 #[cfg(test)]
+#[path = "../smb_transfer_safety_test.rs"]
+mod smb_transfer_safety_test;
+#[cfg(test)]
 #[path = "../smb_transfer_semantics_test.rs"]
 mod smb_transfer_semantics_test;

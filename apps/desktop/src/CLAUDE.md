@@ -1,8 +1,7 @@
 # Svelte frontend (`src/`)
 
 The Svelte 5 + TypeScript frontend (SvelteKit static adapter, custom CSS with design tokens). Feature must-knows live in
-each directory's colocated `CLAUDE.md`; the subsystem map is `docs/architecture.md`. These rules apply to all frontend
-code under here.
+each directory's colocated `CLAUDE.md`; the subsystem map is `docs/architecture.md`. These rules cover all frontend code.
 
 ## Frontend rules
 
@@ -12,16 +11,12 @@ code under here.
   nudges, display font sizes) may stay raw, with a `stylelint-disable` + `-- reason`.
 - Global CSS is `app.css` (tokens, base) plus `app-field` / `app-utilities` / `app-tooltip` / `app-file-list`, which
   `routes/+layout.svelte` loads AFTER it. Never `@import` those four: that hoists and inverts the cascade.
-- ❌ Never write a raw `line-height` number (stylelint rejects everything but `0`). Leading comes from the four
-  `--font-line-height-*` tokens, and the text surfaces (`.modal-dialog`, `.toast`, the sheet, the secondary windows)
-  already INHERIT `normal` from `app.css`, so a component usually writes nothing at all. The main window and file lists
-  deliberately inherit no ratio. Which token where: `docs/design-system.md` § Leading.
-- A translucent / frosted-glass surface MUST degrade when "reduce transparency" is on. Key the opaque fallback off the
-  `html.reduce-transparency` CLASS, NOT `@media (prefers-reduced-transparency)`: WKWebView never reflects that media
-  query, so the class is toggled from the backend `NSWorkspace` value via `$lib/reduce-transparency` (inited per
-  window). Drop the `backdrop-filter` (and `-webkit-` twin) under `:global(html.reduce-transparency)`, and use the
-  shared `--color-bg-glass` / `--color-border-glass` tokens, which flip to opaque under that class in `app.css` §
-  Reduced transparency. (`prefers-reduced-motion` WKWebView does honor.)
+- ❌ Never write a raw `line-height` number (stylelint rejects all but `0`). Leading comes from the
+  `--font-line-height-*` tokens, and the text surfaces already inherit theirs, so a component usually writes nothing.
+  Which token where: `docs/design-system.md` § Leading; who inherits what: `DETAILS.md` § Leading.
+- A frosted-glass surface MUST degrade under "reduce transparency", keyed off the `html.reduce-transparency` CLASS, ❌
+  never `@media (prefers-reduced-transparency)` (WKWebView never reflects it). Use the `--color-bg-glass` /
+  `--color-border-glass` tokens and drop `backdrop-filter` under that class. `DETAILS.md` § Reduced transparency.
 - ❌ No raw `invoke('…')` outside `lib/ipc/`. Call the typed `commands.*` wrappers (regenerate with
   `pnpm bindings:regen`); prefer named locals to inline primitives at call sites. `cmdr/no-raw-tauri-invoke`. See
   `lib/ipc/CLAUDE.md`.
@@ -50,7 +45,7 @@ code under here.
   (`cmdr/prefer-ui-primitive`; opt out per-element with a reason when a control is genuinely bespoke). A new primitive
   must be recorded and documented (see `docs/guides/building-ui.md`).
 - Adding code that loads remote content (`fetch`, `iframe`)? Ask whether to disable it in dev: `withGlobalTauri: true`
-  is on there, which makes remote content a security risk.
+  is on there, making remote content a security risk.
 
 Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

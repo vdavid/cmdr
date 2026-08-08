@@ -1080,4 +1080,8 @@ pub use in_memory::InMemoryVolume;
 pub use types::*;
 
 #[cfg(test)]
+mod in_memory_scan_test;
+#[cfg(test)]
+mod in_memory_stream_test;
+#[cfg(test)]
 mod in_memory_test;
