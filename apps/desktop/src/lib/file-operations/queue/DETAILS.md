@@ -72,6 +72,31 @@ page to hide settled rows. Typed set, not a string-substring test (`no-string-ma
 The progress-dialog Queue button and the auto-queue surfacing open the window via `openQueueWindow()` and read this same
 store. Don't fork a second opener or store.
 
+## The main window's instance
+
+`main-window-operations.svelte.ts` holds a second instance of the same factory, owned by `routes/(main)/+page.svelte`
+(`initMainWindowOperations()` beside `initIndexState()`, `destroyMainWindowOperations()` in `onDestroy`). It exists so
+main-window surfaces can read live operation state; the first consumer is the status corner
+(`apps/desktop/src/lib/status-corner/CLAUDE.md`).
+
+- `initMainWindowOperations(): Promise<void>` — idempotent, never throws. `destroyMainWindowOperations(): void` — safe
+  without an init, twice, or mid-init.
+- `getMainWindowOperations(): OperationsStore | null` and `getMainWindowOperationRows(): OperationRow[]` (empty before
+  init) are the read seams.
+
+Decisions:
+
+- **Two instances, not shared state.** Each window is its own webview, so they can't share a store even in principle.
+  Both subscribe to the same app-wide `payload.emit(app)` streams and seed from the same `list_operations`, so the
+  backend stays the single source of truth. No new event, IPC command, or polling was added for the main window.
+- **A fresh instance per init, never a revived one.** `dispose()` latches the store's `disposed` flag: re-initing the
+  same object would unsubscribe itself inside `init()` and silently render nothing after a remount or HMR pass.
+- **The instance holder is `$state.raw`.** The store is a getter-bearing object that must not be deeply proxied; only
+  the null → instance swap needs reactivity, so a consumer that renders before `init()` resolves re-renders when the
+  instance lands.
+- **Cost.** Two idle listeners on an empty queue; one small object per 200 ms progress event during a transfer, which is
+  what the queue window already carries. No memoisation until something measures.
+
 ## Row layout
 
 A row's actions are Pause/Resume, Cancel, and — on a reversible op only — Rollback, styled `danger` exactly like the
@@ -121,6 +146,9 @@ the MAIN window, which already holds those perms — nothing to add there (see `
 
 - `operations-store.svelte.test.ts`: the reducers (snapshot → rows, progress merge + unknown-op drop, prune on leave,
   running/paused presence) and `isTerminalStatus`.
+- `main-window-operations.svelte.test.ts`: the main window's lifecycle (subscribe once, idempotent init, both listeners
+  dropped on destroy, a re-init after destroy yielding a LIVE instance, and a destroy mid-init leaving nothing
+  subscribed).
 - `QueueRow.svelte.test.ts`: per-status controls (Pause vs Resume vs queued), click wiring, the select checkbox, the
   live bar from a progress event, and the `data-status` / `data-operation-id` E2E hooks. The readout's own behavior
   (both bars, percents, rates, time left, stall) is covered once, in `../TransferProgressReadout.svelte.test.ts`.

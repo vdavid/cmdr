@@ -31,6 +31,10 @@
     } from '$lib/file-explorer/pane/focused-pane-reads'
     import type { FileEntry } from '$lib/file-explorer/types'
     import StatusCorner from '$lib/status-corner/StatusCorner.svelte'
+    import {
+        initMainWindowOperations,
+        destroyMainWindowOperations,
+    } from '$lib/file-operations/queue/main-window-operations.svelte'
     import StaleDriveDialog from '$lib/indexing/StaleDriveDialog.svelte'
     import { initPathLimits } from '$lib/utils/filename-validation'
     import {
@@ -388,6 +392,10 @@
         // Image-enrichment progress joins the same top-right indicator, a
         // second publisher; listen-first-then-query, like initIndexState.
         await initMediaEnrichState()
+        // The main window's own view of the operation registry: the same store
+        // and the same two app-wide streams the queue window subscribes to, so
+        // corner status can read live operations with no new event or IPC.
+        await initMainWindowOperations()
         await setupWindowFocusListener(listenerSetupCtx)
         // Native Quick Look (macOS) event wiring: `quick-look-closed` flips
         // `isOpen` on the state singleton; `quick-look-key` routes panel
@@ -422,6 +430,7 @@
         destroyShortcutDispatch()
         destroyIndexState()
         destroyMediaEnrichState()
+        destroyMainWindowOperations()
         if (handleKeyDown) {
             document.removeEventListener('keydown', handleKeyDown)
         }

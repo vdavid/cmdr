@@ -1,8 +1,8 @@
 # Operation queue window
 
-The standalone macOS window listing every running and waiting copy, move, delete, trash, rename, and create operation,
-with per-row pause/resume/cancel, multi-select + "Cancel selected", and global pause/resume. Opens from View > Operation
-queue (⌥⌘Q) or the palette. Backend: `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`.
+The standalone macOS window listing every running and waiting operation, with per-row pause/resume/cancel, multi-select
++ "Cancel selected", and global pause/resume. Opens from View > Operation queue (⌥⌘Q) or the palette. Backend:
+`apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`.
 
 ## Module map
 
@@ -44,8 +44,10 @@ queue (⌥⌘Q) or the palette. Backend: `apps/desktop/src-tauri/src/file_system
   and tears down its own (`initWindowSettings`, language sync, `initAccentColor` / `initReduceTransparency` /
   `initTextSize`), mirroring Settings / Shortcuts. `initWindowSettings()` (not `initializeSettings`) also seeds the
   reactive layer `<Size>` reads, so sizes follow the user's binary/SI choice; see `lib/settings/CLAUDE.md`.
-- **The opener is the shared reuse point.** The progress dialog's Queue button and the auto-queue surfacing (starting an
-  op on a busy lane) both call `openQueueWindow` and read the same store; don't fork a second opener or a second store.
+- **One opener, one factory, one instance per webview.** The progress dialog's Queue button and the auto-queue surfacing
+  (a busy lane defers one) both call `openQueueWindow`. The main window holds its own store instance
+  (`main-window-operations.svelte.ts`, init/disposed by `routes/(main)/+page.svelte`); ❌ don't fork a second opener,
+  factory, or event.
 
 Architecture, the store's full public API, the vibrancy/reduce-transparency model, and decision detail: `DETAILS.md`.
 Read it before any non-trivial work here.
