@@ -416,6 +416,14 @@ fn a_walk_leaves_the_ground_it_covered_watched_and_written_down() {
         [scope.as_str()],
         "the walked branch is the volume's to keep current now"
     );
+    // `persist` hands the meta row to the async `IndexWriter` and `cover` only waits for
+    // the COVERAGE to read as walked, so reading the database the instant the walk returns
+    // races the writer thread. Wait for the row, then assert its exact contents.
+    cmdr_fs::testing::wait_until(
+        std::time::Duration::from_secs(10),
+        "the walk's branch to reach the database",
+        || drive.persisted_branches().is_some(),
+    );
     assert_eq!(
         drive.persisted_branches(),
         Some("/scope".to_string()),
