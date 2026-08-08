@@ -12,6 +12,7 @@ import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import {
   clickEntryInPane,
   dispatchMenuCommand,
+  flushFileWatcher,
   ensureAppReady,
   expectAndDismissToast,
   getFixtureRoot,
@@ -60,6 +61,10 @@ test.describe('Cancel and rollback', () => {
     }
 
     await ensureAppReady(tauriPage)
+    // `partial/` was created externally, and the cursor move below needs the pane
+    // to list it. Re-read the listing rather than waiting on FSEvents to deliver
+    // the create, which can lag or drop it under load.
+    await flushFileWatcher(tauriPage)
 
     // Per-file throttle still kicks in so the copy can't finish before we
     // subscribe and click. 200 ms gives the producer side plenty of room.

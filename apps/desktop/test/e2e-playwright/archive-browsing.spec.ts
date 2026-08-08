@@ -24,6 +24,7 @@ import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import { ensureMcpClient, mcpReadResource, mcpCall } from '../e2e-shared/mcp-client.js'
 import {
   ensureAppReady,
+  flushFileWatcher,
   getFixtureRoot,
   moveCursorToFile,
   fileExistsInFocusedPane,
@@ -471,6 +472,12 @@ test.describe('Archive browsing', () => {
     // stops exercising the cancel path.
     const bigName = 'big-to-cancel.dat'
     fs.writeFileSync(path.join(fixtureRoot, 'left', bigName), Buffer.alloc(24 * 1024 * 1024, 7))
+    // The pane has to SEE this write before the F5 below can cursor it, and an
+    // external 24 MB create reaches it only via FSEvents, which can lag or drop it
+    // under load. `flushFileWatcher` re-reads the listing through the Volume trait
+    // instead of waiting on delivery, so the wait can't be lost. Same missing step
+    // that made `compress-basic:151` flake on its own 24 MB write.
+    await flushFileWatcher(tauriPage)
 
     await navigatePaneTo(tauriPage, 'right', `${fixtureRoot}/left/sample.zip`)
     await expect
@@ -549,6 +556,9 @@ test.describe('Archive browsing', () => {
 
     // A source file whose name collides with an existing zip entry (`inner.txt`).
     fs.writeFileSync(path.join(fixtureRoot, 'left', 'inner.txt'), 'local copy that clashes')
+    // Re-read the listing rather than waiting on FSEvents to deliver the external
+    // create; see the sibling cancel test above.
+    await flushFileWatcher(tauriPage)
 
     await navigatePaneTo(tauriPage, 'right', `${fixtureRoot}/left/sample.zip`)
     await expect

@@ -4,6 +4,32 @@ Every test observed failing without a product defect behind it, with the evidenc
 stated confidence. Written as the input to a de-flaking pass whose goal is that each of these becomes structurally
 unable to flake, so it says WHERE the evidence came from rather than asking anyone to re-measure.
 
+**This is a living ledger.** The de-flaking pass ran on 2026-08-08 and marked every entry below. Legend:
+
+- ✅ **Fixed** — a named defect with a landed remedy, plus how it was proved.
+- 🟡 **Explained** — not open flake: the failures all predate a fix that has since landed. Verified against dates, not
+  assumed.
+- ⚪ **Accepted** — left alone on purpose, with the one-line defense.
+- ❌ **Attempted, reverted** — a remedy was tried and MEASURED WORSE than the status quo. Read these before retrying:
+  they're the expensive ones.
+
+## What the de-flaking pass changed (2026-08-08)
+
+Four fixes, ranked by how much of the board they clear:
+
+1. **No spec can inherit another's fixture tree.** `fixtures.ts`'s global `beforeEach` now runs `recreateFixtures` +
+   `flushFileWatcher` before every test. Roughly half the specs never called `recreateFixtures`, and calling it in your
+   own `beforeEach` protects you, not whoever runs after your last test. This is the class `dialog-inset` belonged to;
+   it had been fixed one spec at a time. The disk restore alone wasn't enough — the pane keeps serving its cached
+   listing until something re-reads it, which is what `flushFileWatcher` is for.
+2. **A click that never happened fails at the click.** New `clickEntryInPane` replaces the `if (entry) entry.click()`
+   idiom in `ensureAppReady` and four specs.
+3. **`selectItemsByName` is race-free and verifies its own selection** (one-snapshot index read, then an assertion that
+   the selection is exactly what was asked for).
+4. **`search-open-in-pane` resets the dialog (⌘N) before typing**, so the leftover run's rows can't satisfy its wait.
+
+Detail and the evidence for each sit in the commits; the per-entry verdicts are inline below.
+
 **Scope note.** "Flake" here means the test failed while the code under it was correct. Three failures found this night
 were NOT flake and are already fixed (`§ Fixed this night`); they're kept because they are the model for the level of
 specificity the rest of the corpus should be driven to.
@@ -48,8 +74,12 @@ Each entry: **count — spec** then the hypothesis and confidence.
 - **4 — `search-walk-handoff.spec.ts:67` keeps filling the pane, and says so in a toast**: waits on a background walk
   that outlives its dialog, then on a toast; both timing-open. Also the slowest test on the Linux lane (7.5 s against a
   2.0 s budget). Confidence medium.
+  - 🟡 **Explained.** All four failures are 2026-08-05 23:01-23:48; `c3eea06eb` (2026-08-06 02:49) says in its own
+    message that this spec "failed outright — there was no walk to outlive the dialog", and `0fc5d250c` fixed the
+    index-restore behind it. The spec has not failed in any of the nine shard-runs since. Not open flake.
 - **4 — `search-walk-handoff.spec.ts:122` reopening the dialog shows the running search**: same walk lifecycle, and it
   asserts on a run still in flight, so its window is inherently narrow. Confidence medium.
+  - 🟡 **Explained.** Same four shard-runs, same two commits, same clean record since. See the sibling above.
 - **4 — `dialog-inset.spec.ts:214` every dialog's first body section lines up with its title**: not flake. Two real
   defects, both fixed; see § Fixed this night.
 - **4 — `search-open-in-pane.spec.ts:280` ⌘[ leaves the snapshot view, ⌘] returns to it**: fails at its
@@ -57,10 +87,20 @@ Each entry: **count — spec** then the hypothesis and confidence.
   does the same setup and rarely fails, so suspicion is on `typeAndRunSearch` returning before results are ready,
   leaving "Open in pane" to act on an incomplete set. ⚠️ Its wait was ALREADY load-scaled 3 s → 10 s once; raising it
   again is the anti-pattern `docs/testing.md` forbids. Confidence medium.
+  - ✅ **Fixed, rung 1.** The suspicion was close but not the mechanism. The dialog carries its query across close +
+    reopen and RE-RUNS it on its own (this is exactly why the live-walk specs call `resetSearchDialog`), so
+    `[aria-label="Show all in main window"]:not([disabled])` could be satisfied by the LEFTOVER run's rows. The click
+    then landed while the run under test was still arriving, the button flickered back to `[disabled]` as `resultCount`
+    reset, no snapshot was created, and the spec timed out at `pollRightPaneVolumeId` — which reads as "nav history is
+    broken". `typeAndRunSearch` now does ⌘N first, so the only run that can enable the button is its own. The wait was
+    NOT raised. `typeAndRunSearch` and the shared `setSearchInputValue` also stopped swallowing a missing input, which
+    silently ran an earlier spec's query to a green pass.
 - **3 — `mtp-conflicts.spec.ts:99` MTP-to-local move with overwrite**: virtual-MTP protocol overhead; on the duration
   allowlist for both platforms. Confidence low.
 - **3 — `mtp-cancel-volume-settled.spec.ts:108` first cancel clears via settle, then immediately F8**: waits on the
   backend settle gate quieting down, a real async quiesce with no explicit readiness signal. Confidence medium.
+  - ⚪ **Accepted.** Virtual-MTP protocol overhead on a spec already on the duration allowlist; no missing readiness
+    signal was found that a wait could replace, and inventing one would mean changing production code to suit a test.
 - **3 — `file-operations.spec.ts:291` MCP rename non-autoConfirm**: two of three occurrences are the `dialog-inset`
   sheet leak (fixed); the third predates it. Mostly resolved.
 - **3 — `compress-basic.spec.ts:151` cancelling a compress**: real defect, fixed (missing `flushFileWatcher` after a 24
@@ -68,22 +108,41 @@ Each entry: **count — spec** then the hypothesis and confidence.
 - **2 — `focus-trap.spec.ts:85` command palette Escape**: both occurrences are the `dialog-inset` sheet leak. Resolved.
 - **2 — `accessibility.spec.ts:200` light mode main explorer view**: axe audit over a live view; on the duration
   allowlist as inherently heavy. Confidence low.
+  - ⚪ **Accepted.** An axe audit over a live view is inherently heavy and has no readiness signal to wait on; both
+    failures are the Linux lane under full-suite load.
 - **2 — `file-watching.spec.ts:198` handles deletion of the watched directory**: real FSEvents delivery, the same
   drop/coalesce class as the fsevent fix. A watcher test whose subject is a DELETED watch root has no mutation it can
   safely redo, so the usual remedy doesn't transfer. Confidence medium.
+  - ⚪ **Accepted.** The corpus's own reasoning holds: there is no mutation to redo once the watch root is gone, and the
+    spec already calls `flushFileWatcher` at every other step (12 of its 13 external writes). Left alone rather than
+    weakened.
 - **2 — `conflict-edge-cases.spec.ts:296` Copy with Overwrite All handles directory-over-file**: conflict spec with
   `recreateFixtures` in `beforeEach`; likely the `selectItemsByName` one-shot read described below. Confidence medium.
+  - ✅ **Fixed, rungs 1 + 4.** `selectItemsByName` was indeed the one-shot read; it now waits for the whole set in one
+    snapshot and asserts the resulting selection matches. The spec also inherited the shared-fixture leak, now fixed
+    globally.
 - **2 — `archive-browsing.spec.ts:459` cancelling a paste into the archive**: writes 24 MB externally then relies on the
   pane seeing it, as `compress-basic:151` did, but reaches it via `navigatePaneTo`, which re-reads, so the mechanism
   differs. Confidence low.
+  - ✅ **Fixed, rung 1.** The mechanism did NOT differ: `navigatePaneTo(left, …)` targets the path the pane is already
+    on, so it serves the cached listing rather than re-reading, and the 24 MB external create reached the pane only via
+    FSEvents. `flushFileWatcher` now follows the write, as it does in `compress-basic`. The sibling at `:516` had the
+    same gap and got the same fix.
 - **2 — `app.spec.ts:285` switches pane focus when clicking other pane**: silent no-op click; see § The two this run's
   board is red for. Confidence high.
+  - ✅ **Fixed, rung 4.** See § The two this run's board is red for.
 - **2 each — `file-operations.spec.ts:154`, `:214`, `:249` Rename round-trip**: all occurrences are the `dialog-inset`
   sheet leak. Resolved.
 - **2 — `mtp-copy-preflight-uses-cache.spec.ts:128` F5 pre-flight scan from cache**: one of two is the sheet leak; the
   other is virtual-MTP overhead, and it's on the duration allowlist. Confidence low.
+  - ⚪ **Accepted** for the virtual-MTP half; the sheet-leak half is 🟡 resolved by `4a4840d91`.
 - **1 each — 22 further specs**: long tail, mostly `archive-browsing`, `search-*`, `conflict-*`, `mtp-*`. Not
   individually diagnosed.
+  - 🟡 **Mostly explained by the shared-fixture leak.** Sixteen of the 22 are `file-operations` / `conflict-*` /
+    `archive-browsing` entries from ONE shard-run (`nonmtp1/1786017110`), the signature of a single spec dirtying the
+    tree and everything behind it failing inside `ensureAppReady` — the class the global `beforeEach` now closes.
+    `search-live:41` and `search-recent:31` are the 🟡 pre-`0fc5d250c` walk-ground cluster (`0fc5d250c` names
+    `search-recent` explicitly). The rest were not individually diagnosed and stay unclaimed rather than assumed fixed.
 
 `conflict-dialog-matrix.spec.ts:147` does not appear above because it first failed in the final run of this night; it is
 diagnosed below and is **not** a low-confidence entry.
@@ -153,6 +212,36 @@ Two clusters dominate, and they suggest where structural work pays:
    the global 8 s nextest cap is wall-clock, so a saturated machine starves them. Nothing about the TEST is wrong;
    `rust-test-contention.go`'s header documents that loosening the cap globally is the wrong fix because it costs every
    idle run its hang detector.
+   - ⚪ **Accepted.** `rust-test-contention` already re-runs each of these alone at the unchanged deadline and reports
+     the verdict, which is the right handling for wall-clock starvation of a test that cannot race. Nothing in the test
+     is wrong, so there is nothing in the test to fix.
+
+### ❌ `file_viewer::watcher_test::` — redo-until-delivered was tried and measured WORSE
+
+The corpus's own "what would make the board deterministic" list asked for this by name, and `.config/nextest.toml` names
+dropping these tests' `retries = 2` as the goal. **Don't retry it without reading this.** Two shapes were implemented
+and benchmarked against the unchanged baseline on the same machine under the same synthetic saturation (2026-08-08, M3
+Max, 32 spinning workers plus a concurrent `pnpm check`), six `cargo nextest run` loops each:
+
+- **Baseline (unchanged):** 0/6 runs red, 0/6 runs needed a retry.
+- **Redo the mutation** (the `downloads::watcher::observe_mutation` shape): worse.
+- **Redo + per-attempt prime** (append until the watch proves live, then mutate): **3/6 runs RED**, 6/6 needed retries.
+
+Why it doesn't transfer, despite working for `downloads::watcher` and `cmdr-archive`:
+
+- Those watch a **directory** and redo on a **fresh name**, so every attempt is an independent create the debouncer must
+  report. This watcher watches **one file** and `classify_and_emit` classifies by comparing against a REMEMBERED size
+  and inode, updating them only when it runs. Redoing therefore mutates the very state the classification depends on: a
+  second truncate of an already-empty file is `MetadataOnly`, not `Shrunk`, and a re-grow against a stale larger size
+  reports `Shrunk` for what was actually a grow. Priming fixes the bookkeeping but adds continuous churn that measurably
+  degrades delivery rather than healing it.
+- The dominant failure here is **not** coalescing, which is what redo defeats. It's the FSEvents stream never arming:
+  the observed signature is a first attempt seeing NOTHING for 15 s while the retry, in a fresh process, delivers in
+  under two. There is no mutation to redo when nothing is listening yet, and priming is bounded by the same budget.
+
+So the retries stay, and they stay honest: `rust-tests` parses nextest's `FLAKY n/m` lines and downgrades a
+retry-rescued run to a warn naming each test. Anyone revisiting this should target the arming window (a readiness signal
+out of the watcher manager that a test can wait on), not the mutation.
 
 ## Fixed this night — the model for specificity
 
@@ -205,15 +294,30 @@ Reach for these before inventing anything.
 
 ## What would make the board deterministic
 
-In rough order of evidence behind it:
+The original list, with what the 2026-08-08 pass found. Kept scored rather than rewritten, because two of the four
+predictions were wrong in instructive ways.
 
-1. Poll in `selectItemsByName`, and assert-before-click in `app.spec:285`. Two named defects, two known remedies.
-2. Give `search-*` specs an explicit readiness signal for "the search has produced its results" so
-   `search-open-in-pane:280` and the two `search-walk-handoff` specs stop racing a walk. Highest-count cluster.
-3. Apply the redo-until-delivered shape to the watcher tests still on retries (`file_viewer::watcher_test::`), which
-   `.config/nextest.toml` already asks for by name.
-4. Decide what the local macOS lane should do about `retries: 0`. Today it makes flake visible, which is the reason it
-   exists; a de-flaking pass should reduce the flake rather than turn the visibility off.
+1. ✅ Poll in `selectItemsByName`, and assert-before-click in `app.spec:285`. **Both done**, and both grew a second
+   safeguard the diagnosis hadn't asked for: `selectItemsByName` now asserts the selection it produced, and the
+   swallowed click was a whole idiom (`clickEntryInPane` replaced it in `ensureAppReady` too, which is where it did the
+   most damage).
+2. ✅ Give `search-*` specs an explicit readiness signal. **Done for the one live spec**, but not by adding a signal:
+   the ⌘N reset that already existed was simply missing. The two `search-walk-handoff` entries turned out to be 🟡, so
+   the "highest-count cluster" was really one spec.
+3. ❌ Apply redo-until-delivered to `file_viewer::watcher_test::`. **Tried twice, measured worse, reverted.** See the
+   section above before repeating it.
+4. ⚪ Decide what the local macOS lane should do about `retries: 0`. **Leave it.** Both lanes preserve signal today, in
+   different ways: the Linux lane's retry-rescued pass is downgraded to a warn naming the spec (`e2e-flaky.go`), and the
+   local lane's hard red is maximum visibility. Dropping the Linux retry would turn genuine shared-VM environment flake
+   red, which is the thing the carve-out exists to prevent; adding a local retry would remove the fastest signal we have
+   that a real race is back. The asymmetry isn't a gap, it's two lanes with different jobs.
+
+### The biggest finding wasn't on the list
+
+Half the E2E specs never restored the shared fixture tree, so any of them landing behind a mutating spec failed inside
+`ensureAppReady` against the WRONG spec's fixtures. It never showed up as a ranked entry because it doesn't concentrate
+on one test: it shows up as whichever spec happened to run next, which reads as saturation flake and is why the corpus
+sorted sixteen such entries into an undiagnosed long tail. Reproduced 5/5, fixed globally.
 
 ## Appendix: the full ledger, every spec and every shard-run it failed in
 
