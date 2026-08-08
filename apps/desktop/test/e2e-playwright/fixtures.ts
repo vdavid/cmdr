@@ -11,10 +11,19 @@
  * - globalTeardown: deletes the fixture directory
  *
  * Window-title decoration:
- * - `beforeEach` sets the main window's OS title to "<base> (Running: <test>)"
- * - `afterEach` updates it to "<base> (Running: <test>) (FINISHED)"
- *   so you can glance at the dock / Cmd-Tab / Linux title bar to see which
- *   spec is in flight (or stuck) without tailing the log.
+ * - before the test, the main window's OS title becomes "<base> (Running: <test>)"
+ * - after it returns, "(FINISHED)" is appended, so you can glance at the dock /
+ *   Cmd-Tab / Linux title bar to see which spec is in flight (or stuck) without
+ *   tailing the log.
+ *
+ * ❗ The decoration and the leak guard hang off an AUTO FIXTURE, not off
+ * `test.beforeEach` / `test.afterEach`. A hook declared at module scope HERE
+ * attaches to the suite of whichever spec file happened to trigger this import
+ * in the worker, so every OTHER file that worker runs goes unguarded — which is
+ * how leaked toasts and dirty fixture trees stayed invisible for everything but
+ * the first file each worker loaded. An auto fixture applies to every test that
+ * imports this `test`, and its teardown runs AFTER the spec's own `afterEach`
+ * hooks, so a spec's own cleanup still gets checked.
  */
 
 import { createTauriTest } from '@srsholmes/tauri-playwright'
@@ -25,7 +34,7 @@ import { describeFixtureTreeDiff, diffFixtureTree, restoreFixtureTree } from '..
 // Unix socket. The Go check runner sets CMDR_PLAYWRIGHT_SOCKET per shard.
 const socketPath = process.env.CMDR_PLAYWRIGHT_SOCKET ?? '/tmp/tauri-playwright.sock'
 
-export const { test, expect } = createTauriTest({
+const { test: baseTest, expect } = createTauriTest({
   // No devUrl: in Tauri mode, the app is already running with its built
   // frontend. Setting devUrl would redirect the webview to a nonexistent
   // dev server. devUrl is only used in browser mode (not applicable here).
@@ -35,12 +44,36 @@ export const { test, expect } = createTauriTest({
   mcpSocket: socketPath,
 })
 
-// Captured once per worker on the first beforeEach so suffixes don't accumulate
+export { expect }
+
+/**
+ * Every test gets the window-title decoration and, on the way out, the leak
+ * guard. `auto: true` is what makes that true for every spec file rather than
+ * for one file per worker (see the file header).
+ */
+export const test = baseTest.extend<{ cmdrTestGuards: undefined }>({
+  cmdrTestGuards: [
+    async ({ tauriPage }, use, testInfo) => {
+      await decorateTitle(tauriPage, testInfo, '')
+      await use(undefined)
+      await decorateTitle(tauriPage, testInfo, ' (FINISHED)')
+      await failOnLeaks(tauriPage)
+    },
+    { auto: true },
+  ],
+})
+
+// Captured once per worker on the first decoration so suffixes don't accumulate
 // across tests. Each shard owns its own Tauri instance + its own worker process,
 // so this lives correctly per-shard.
 let baseTitle: string | null = null
 
-type EvaluatablePage = { evaluate: (js: string) => Promise<unknown> }
+type EvaluatablePage = {
+  evaluate: {
+    (js: string): Promise<unknown>
+    <T>(js: string): Promise<T>
+  }
+}
 
 /** Joins describe blocks + test title into "Section > test name" style. */
 function formatTestName(info: TestInfo): string {
@@ -61,23 +94,17 @@ async function setMainTitle(tauriPage: EvaluatablePage, title: string): Promise<
   )
 }
 
-test.beforeEach(async ({ tauriPage }, testInfo) => {
+async function decorateTitle(tauriPage: EvaluatablePage, testInfo: TestInfo, suffix: string): Promise<void> {
   try {
     if (baseTitle === null) baseTitle = await readMainTitle(tauriPage)
-    await setMainTitle(tauriPage, `${baseTitle} (Running: ${formatTestName(testInfo)})`)
+    await setMainTitle(tauriPage, `${baseTitle} (Running: ${formatTestName(testInfo)})${suffix}`)
   } catch {
     // Title decoration is purely for human eyeballs — never block a test on it.
   }
-})
+}
 
-test.afterEach(async ({ tauriPage }, testInfo) => {
-  try {
-    if (baseTitle === null) baseTitle = await readMainTitle(tauriPage)
-    await setMainTitle(tauriPage, `${baseTitle} (Running: ${formatTestName(testInfo)}) (FINISHED)`)
-  } catch {
-    // See beforeEach.
-  }
-
+/** Fails the test that leaked UI artifacts or a dirty fixture tree, and cleans both up. */
+async function failOnLeaks(tauriPage: EvaluatablePage): Promise<void> {
   // ONE post-test leak guard, two kinds of leak: UI artifacts left on screen,
   // and a shared fixture tree left dirty. Both cascade into the NEXT test's
   // beforeEach if unchecked, where the failure surfaces against the wrong test
@@ -144,7 +171,7 @@ test.afterEach(async ({ tauriPage }, testInfo) => {
   if (leaked && leaked.length > 0) await reportAndCleanOverlayLeak(tauriPage, leaked, leakReports)
 
   if (leakReports.length > 0) throw new Error(leakReports.join('\n\n'))
-})
+}
 
 /** Auto-cleans the leaked overlays and toasts, and records what leaked. */
 async function reportAndCleanOverlayLeak(
