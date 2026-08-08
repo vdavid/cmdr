@@ -561,25 +561,25 @@
   "@fileOperations.transferProgress.queue": {
     "sourceHash": "3b2fe03"
   },
-  "fileOperations.transferProgress.queueAria": "Skicka till överföringskön",
+  "fileOperations.transferProgress.queueAria": "Skicka till åtgärdskön",
   "@fileOperations.transferProgress.queueAria": {
-    "sourceHash": "46845e8"
+    "sourceHash": "2bc3bd9"
   },
-  "fileOperations.transferProgress.queueTooltip": "Håll igång den här i bakgrunden och hantera den i överföringskön (F2)",
+  "fileOperations.transferProgress.queueTooltip": "Håll igång den här i bakgrunden och hantera den i åtgärdskön (F2)",
   "@fileOperations.transferProgress.queueTooltip": {
-    "sourceHash": "f24ea59"
+    "sourceHash": "89ce770"
   },
-  "fileOperations.transferProgress.queuedToast": "{countText} före den här, så den väntar på sin tur. Hitta den i överföringskön.",
+  "fileOperations.transferProgress.queuedToast": "{countText} före den här, så den väntar på sin tur. Hitta den i åtgärdskön.",
   "@fileOperations.transferProgress.queuedToast": {
-    "sourceHash": "9eb1406"
+    "sourceHash": "60a251d"
   },
-  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# överföring} other {# överföringar}}",
+  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# åtgärd} other {# åtgärder}}",
   "@fileOperations.transferProgress.queuedToastCount": {
-    "sourceHash": "b89f320"
+    "sourceHash": "85023e6"
   },
-  "fileOperations.transferProgress.backgroundedToast": "Körs fortfarande i bakgrunden. Hitta den i överföringskön.",
+  "fileOperations.transferProgress.backgroundedToast": "Körs fortfarande i bakgrunden. Hitta den i åtgärdskön.",
   "@fileOperations.transferProgress.backgroundedToast": {
-    "sourceHash": "fe4b733"
+    "sourceHash": "7c79c9a"
   },
   "fileOperations.errorDialog.technicalDetails": "Tekniska detaljer",
   "@fileOperations.errorDialog.technicalDetails": {

@@ -435,10 +435,13 @@ From the transfer-queue pass (`queue.json` + new pause/queue keys in `fileOperat
   pauzeren"), AppKit ("Pauzeer animatie"), DC ("Pauzeer alles"); bare-stem imperative "Pauzeer" per the button rule ·
   high
 - resume → Hervat (button) / hervatten · macOS Finder ("Hervat", "Hervat kopiëren") · high
-- queue (noun) → wachtrij (Overdrachtswachtrij for the transfer queue) · Double Commander + Total Commander + Thunar all
-  use "wachtrij" (no macOS term); compound "overdrachtswachtrij" for "transfer queue" · high
-- transfer (copy/move/delete operation, noun) → overdracht (plural overdrachten) · standard NL ("overdracht" for a data
-  transfer); "Transfer queue"→"Overdrachtswachtrij", the queue window title/heading · high
+- queue (noun) → wachtrij · Double Commander + Total Commander + Thunar all use "wachtrij" (no macOS term); Microsoft
+  terminology confirms queue→wachtrij (NLD/BEL) · high. ⚠️ The compound for the window is now **Bewerkingenwachtrij**,
+  NOT "Overdrachtswachtrij" — see the operation-queue rename pass (2026-08-08) at the end of this file.
+- transfer (a copy or move of data, noun) → overdracht (plural overdrachten) · standard NL ("overdracht" for a data
+  transfer) · high. Scope: the copy/move sense ONLY (`transferProgress.pauseAria` "Pause this transfer" → "Pauzeer deze
+  overdracht", `stallUnknown`, `smbNativeNote`). It is NOT the word for the queue window or for a queue row: those name
+  the wider category and take `bewerking` (operation-queue rename pass, 2026-08-08).
 - background (run in the ~) → op de achtergrond · Double Commander ("Werk op de achtergrond"); "send to
   background"→"naar de wachtrij sturen" / "op de achtergrond laten doorlopen" (the action sends it to the queue window)
   · high
@@ -452,10 +455,12 @@ REVIEW FLAGS (transfer-queue pass):
 - `queue.row.label` reuses the "Bezig met …" progress phrasing (kopiëren/verplaatsen/verwijderen) from fileOperations
   `titleActive`/`stageActive`, with the trash branch "Naar prullenmand verplaatsen" matching there. Consistent across
   files.
-- `fileOperations.transferProgress.queuedToast` + `.queuedToastCount`: the EN puts the count phrase ("1 transfer")
-  leading; Dutch needs the verb to agree, so the count phrase carries it ("gaat # overdracht" / "gaan # overdrachten")
-  and the host sentence wraps it as "Er {countText} deze voor, dus deze wacht op zijn beurt." Renders "Er gaat 1
-  overdracht deze voor" / "Er gaan 3 overdrachten deze voor". Token kept in the same slot.
+- `fileOperations.transferProgress.queuedToast` + `.queuedToastCount`: the EN puts the count phrase ("1 operation")
+  leading; Dutch needs the verb to agree with the count, so the count FRAGMENT carries the finite verb ("gaat #
+  bewerking" / "gaan # bewerkingen") and the host sentence wraps it as "Er {countText} deze voor, dus deze wacht op zijn
+  beurt." Renders "Er gaat 1 bewerking deze voor" / "Er gaan 3 bewerkingen deze voor". Token kept in the same slot. ⚠️
+  The two keys are ONE unit: never re-translate either half alone, or the verb stops agreeing (noun updated in the
+  operation-queue rename pass, 2026-08-08).
 
 From the navigation + double-click-hint pass (`settings.json` Behavior restructure + new
 `fileExplorer.doubleClickHint.*` and `breadcrumb.navigateTooltip`; first drafted glossary-only, then RE-VALIDATED
@@ -564,7 +569,7 @@ From the dialog-polish pass (new `fileOperations` keys; mined `_ignored/i18n/nl/
   (mkdir.timeoutMessage). Separable verb: "Cmdr maakt hem aan" · high
 - "doesn''t exist yet / will be created" (destination-folder warning) → "Deze map bestaat nog niet. Cmdr maakt hem aan
   tijdens het {kopiëren/verplaatsen}." · negative of macOS Finder "bestaat al" (→"bestaat nog niet"); "hem" pronoun for
-  de-word "map" (cf. in-file "Vind hem in de overdrachtswachtrij"); operation verb "het kopiëren"/"het verplaatsen"
+  de-word "map" (cf. in-file "Vind hem in de bewerkingenwachtrij"); operation verb "het kopiëren"/"het verplaatsen"
   matches in-file scanTitle/scanPhase usage. No ICU apostrophe needed (Dutch has none) · high
 - **queue.row.label progress arms (rename / create folder / create file)** · `Bezig met hernoemen` /
   `Bezig met map aanmaken` / `Bezig met bestand aanmaken` · "Bezig met [infinitief]" style of the sibling arms; Nautilus
@@ -1034,7 +1039,7 @@ Notes:
   the shared tail carries both predicates on one copula. Same technique as `askCmdr.renameUndo.*`'s
   `{count, plural, one {het is} other {ze zijn}}`. Dutch CLDR categories are `one` / `other`.
 - `stallUnknown` refers to the transfer as `hem` (de-word `overdracht`), matching `queuedToast` / `backgroundedToast`
-  ("Vind hem in de overdrachtswachtrij"), and reuses `laat … op de achtergrond doorlopen` verbatim from `queueTooltip`.
+  ("Vind hem in de bewerkingenwachtrij"), and reuses `laat … op de achtergrond doorlopen` verbatim from `queueTooltip`.
   The comma before `of` follows both the EN source and the in-catalog habit ("Probeer opnieuw, of verbreek de
   verbinding").
 - Voice rule held: no `fout` / `mislukt` anywhere in the eight values.
@@ -1059,3 +1064,52 @@ pad kloppen.
   de zustermeldingen (`{countText} onderdelen gekopieerd`), en `op het klembord` matcht `clipboard.empty` ("Geen
   bestanden op het klembord"). Geen bezittelijk voornaamwoord: er is er maar één.
 - Geen `sameAsSourceJustification` nodig: de waarde wijkt af van het Engels.
+
+## Operation queue: de hernoeming van Overdrachtswachtrij (2026-08-08)
+
+The English window widened from **"Transfer queue"** to **"Operation queue"**: it lists deletes, trashes, renames, and
+folder/file creations too, not only copies and moves, and "transfer" already means copy-or-move one level down (the
+transfer progress dialog, the transfer driver). Fourteen `nl` keys were re-translated across `queue.json`,
+`commands.json`, and `fileOperations.json`.
+
+- **operation (the category: a copy, move, delete, trash, rename, folder/file creation, or archive edit) → `bewerking`
+  (plural `bewerkingen`)** · macOS Finder/AppKit Tier 1 uses `bewerking` for exactly this concept ("… wordt gebruikt
+  voor een andere bewerking, zoals het verplaatsen of kopiëren van een onderdeel of het legen van de prullenmand", "De
+  Finder kan niet worden gestopt, omdat er nog bewerkingen worden uitgevoerd"); Microsoft terminology
+  operation→bewerking (NLD/BEL, two entries); Double Commander "Show operations progress"→"Toon voortgang van
+  bewerkingen" · high. It is also what this catalog already ships: `Bewerkingenlogboek`, `Bestandsbewerkingen`,
+  `transferDialog.operationAria` "Bewerking", `operationLog.dialog.empty` "Nog geen bewerkingen".
+- **operation queue (the window, the View menu item, and the command palette entry) → `Bewerkingenwachtrij`** ·
+  `bewerkingen` (above) + `wachtrij` (Double Commander, Total Commander, Thunar, and Microsoft terminology
+  queue→wachtrij; no macOS term) · high. One closed compound per the compound rule. **Linking morpheme `-en-`, matching
+  the shipped sibling `Bewerkingenlogboek`**: the two sit next to each other in the same View menu block (queue = what
+  runs now, log = what already ran) and have to read as a pair, and `-en-` is the plural-content link Dutch uses for a
+  container of many things (`bestandenlijst`). Microsoft's own `-ing` + wachtrij compounds take `-s-`
+  (`bezorgingswachtrij`, `faseringswachtrij`, and every `bewerkings-` compound: `bewerkingsmodus`, `bewerkingstijd`), so
+  `Bewerkingswachtrij` is defensible too; the in-catalog pair wins per the "target locale's own catalog outranks the
+  pile for the same concept" rule. Flagged below.
+- **SUPERSEDES `Overdrachtswachtrij`** (transfer-queue pass, 2026-06-21) everywhere the WINDOW is named. `overdracht`
+  keeps its narrower copy/move sense; see the amended row in that pass.
+- Command label drops its old "Toon" prefix: `commands.queueShow.label` is now exactly `Bewerkingenwachtrij`, identical
+  to `queue.windowTitle`, matching how the sibling `commands.logOperationLog.label` is exactly `Bewerkingenlogboek` ·
+  high.
+- Queue-row aria labels take `deze bewerking` (`Pauzeer/Hervat/Annuleer/Selecteer deze bewerking`), NOT
+  `deze overdracht`: the row can be a delete or a rename. The progress dialog's own
+  `transferProgress.pauseAria`/`.resumeAria` still say `deze overdracht`, because their English still says "transfer" ·
+  high.
+- No `sameAsSourceJustification` needed: all 14 values differ from English.
+
+REVIEW FLAGS (operation-queue rename pass):
+
+- **`Bewerkingenwachtrij` vs `Bewerkingswachtrij`** — the linking morpheme is the one open call. `-en-` was chosen for
+  the pair with `Bewerkingenlogboek` and the plural-content reading; Microsoft's `-ing`-noun compounds would give `-s-`.
+  Whichever a native reviewer prefers, the queue and the log must move together.
+- **`bewerking` also reads as "edit"** (the archive_edit queue row is literally "Bezig met archief bewerken"). macOS
+  Tier 1 uses `bewerking` for a file operation anyway, and the log window has shipped that reading since 2026-07-10, so
+  the risk is accepted rather than routed around.
+- **`queue.empty.body` was left alone** (its English didn't change): it still says "Kopieer-, verplaats- en
+  verwijderacties verschijnen hier …", which names the three transfer kinds and `acties`, not `bewerkingen`. Consistent
+  with its own English, but if the English empty state is ever widened, this is the key that has to follow.
+- **Keys added later to `queue.json` must reuse `Bewerkingenwachtrij` / `bewerking`.** English already has
+  `queue.failureToast.action` "Show in operation queue", `queue.failureToast.summary`, `queue.chip.failed`, and
+  `queue.chip.ariaLabel` ("Open the operation queue"), which `nl` doesn't carry yet.

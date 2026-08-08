@@ -71,13 +71,13 @@
   "@commands.helpSendErrorReport.description": {
     "sourceHash": "021d333"
   },
-  "commands.queueShow.label": "Übertragungs-Warteschlange anzeigen",
+  "commands.queueShow.label": "Vorgangswarteschlange",
   "@commands.queueShow.label": {
-    "sourceHash": "4567973"
+    "sourceHash": "fa91417"
   },
-  "commands.queueShow.description": "Ein Fenster mit allen laufenden und wartenden Übertragungen öffnen, in dem du sie anhalten, fortsetzen oder abbrechen kannst",
+  "commands.queueShow.description": "Ein Fenster mit allen laufenden und wartenden Vorgängen öffnen, in dem du sie anhalten, fortsetzen oder abbrechen kannst",
   "@commands.queueShow.description": {
-    "sourceHash": "9f9ea7e"
+    "sourceHash": "37b616a"
   },
   "commands.helpWhatsNew.label": "Neuigkeiten",
   "@commands.helpWhatsNew.label": {

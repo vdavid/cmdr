@@ -356,10 +356,13 @@ Settled while translating `queue.json` + the new pause/queue/background keys in 
   high. "Resume all" = `Mindet folytatja`.
 - queue (the transfer queue) → `sor` (`átviteli sor` = transfer queue) · double-commander (operations viewer `Queue` =
   `Sor`, `New queue` = `Új sor`), ms (`várólista`/`várakozási sor`) · high. DC's file-manager-native `Sor` beats MS's
-  generic `várólista`. Window title `queue.windowTitle` = `Átviteli sor`; the command `commands.queueShow.label` =
-  `Átviteli sor megjelenítése`; empty state "Nothing in the queue" = `A sor üres`. The progress-dialog "Queue" button
-  (sends the transfer to the background and opens the queue window) = `Sorba` (short label, "into the queue"; mirrors DC
-  `A&dd To Queue` = `Várakozási &sorba helyez`); its aria "Send to the transfer queue" = `Áthelyezés az átviteli sorba`.
+  generic `várólista`. **SUPERSEDED for the window's NAME as of 2026-08-08** (English renamed it "Operation queue"; it
+  is now `Műveleti sor` — see the dated block at the end of this file). The head `queue → sor` below still stands; only
+  the `átviteli` modifier is retired. Window title `queue.windowTitle` = `Átviteli sor`; the command
+  `commands.queueShow.label` = `Átviteli sor megjelenítése`; empty state "Nothing in the queue" = `A sor üres`. The
+  progress-dialog "Queue" button (sends the transfer to the background and opens the queue window) = `Sorba` (short
+  label, "into the queue"; mirrors DC `A&dd To Queue` = `Várakozási &sorba helyez`); its aria "Send to the transfer
+  queue" = `Áthelyezés az átviteli sorba`.
 - background / send to background → `háttér` (`a háttérben` = in the background) · double-commander ("Work in
   background" = `Háttérben futtatás`, "When application is in the background" = `Ha az alkalmazás a háttérben fut`), ms
   (`background` = `háttér`) · high. "Keep this running in the background" = `Hagyd futni a háttérben`; "Still running in
@@ -1050,3 +1053,47 @@ tehát NEM helyőrző a mondatban: a mondat kettősponttal zárul, és önmagáb
   határozói igenév a testvér toastok mintája (`{countText} elem másolva`). Birtokos rag nélkül (`a vágólapon`, nem
   `a vágólapodon`): egy vágólap van, a macOS is névelővel mondja.
 - `sameAsSourceJustification` nem kell: az érték eltér az angoltól.
+
+Settled while re-translating the renamed queue window (14 keys in `queue.json`, `commands.json`, `fileOperations.json`,
+2026-08-08). English widened the window's name from "Transfer queue" to **"Operation queue"**: the window lists deletes,
+trashes, renames, folder/file creations, and archive edits too, and "transfer" already means copy-or-move one level down
+(the transfer dialog, the transfer driver). So the Hungarian head noun had to widen the same way, not just get
+restamped:
+
+- **operation queue (the window, the View-menu item, the command) → `Műveleti sor`** · SUPERSEDES the June
+  `transfer queue → átviteli sor` entry (see the 2026-06-21 transfer-queue block above), which stays on record because
+  `transfer → átvitel` itself is unchanged and still correct for the copy/move dialog · high. Built from two settled
+  parts: the head noun `művelet` (below) and the catalog's settled `queue → sor` (Double Commander `New queue` =
+  `Új sor`, `Put first in queue` = `Első helyre tétele a sorban`). The `<activity>-i sor` shape is Tier-2 attested
+  (Microsoft `print queue` = `nyomtatási sor`) and is the exact shape the outgoing `Átviteli sor` used, so only the
+  modifier changes; the adjectival `műveleti` + head-noun formation is Double-Commander-attested (`operations panel` =
+  `műveleti panel`).
+  - **NOT the solid compound `Műveletsor`**, even though it would look more parallel to `Műveletnapló`: Microsoft
+    terminology already assigns `műveletsor` to `task flow` (id 2335491) and `visszaállítási műveletsor` to
+    `restore sequence` (id 2225865) — that is, a SEQUENCE of steps, not a waiting line. The compound would name the
+    wrong concept.
+  - NOT Microsoft's generic `queue` = `várakozási sor` either: the catalog settled the file-manager-native `sor` in June
+    and `várakozási sor` is long for a window title.
+  - Inflects regularly (back-vowel `sor`): illative `a műveleti sorba` (`transferProgress.queueAria`), inessive
+    `a műveleti sorban` (`queueTooltip`, `queuedToast`, `backgroundedToast`). **Watch the article**: `Átviteli` starts
+    with a vowel and took `az`, `műveleti` starts with a consonant and takes `a` — every one of those sites moved from
+    `az átviteli sorba/-ban` to `a műveleti sorba/-ban`.
+- **operation (the category word: a copy, move, delete, trash, rename, folder/file creation, or archive edit) →
+  `művelet`** · macOS Tier 1 throughout (`Művelet` as a bare label; "A művelet nem hajtható végre.", "Ez a művelet nem
+  vonható vissza.", `Gyorsműveletek`), Microsoft terminology (`operation` = `művelet`, two entries), Double Commander
+  (`Current operation:` = `Aktuális művelet:`, `Executing operations` = `Műveletek végrehajtása`, `File operations` =
+  `Fájlműveletek`) · high. **Matches the shipped Operation log window** (`Műveletnapló`, settled 2026-07-09) and the
+  settled `action/operation → művelet` (`Fájlműveletek`), so the deliberate English View-menu pair "Operation queue" /
+  "Operation log" survives as `Műveleti sor` / `Műveletnapló`. Do NOT fork the head noun: two different words in two
+  neighbouring menu items would be the defect. Inflects front-vowel: dative `a műveletnek`, accusative `a műveletet`,
+  plural `Műveletek`.
+- Row screen-reader labels keep their nominal shape and only swap the noun: `Ennek a műveletnek a szüneteltetése` /
+  `… a folytatása` / `… a megszakítása` / `… a kijelölése` (was `Ennek az átvitelnek a …`). The heading and the list
+  aria (`Operations`) are the bare plural `Műveletek`.
+- `commands.queueShow.label` is now the bare window title `Műveleti sor` (English dropped "Show"), matching the sibling
+  `commands.logOperationLog.label` = `Műveletnapló`, which is also bare.
+- Counted-noun plural keeps the singular in both branches, as always: `queuedToastCount` =
+  `{count, plural, one {# művelet} other {# művelet}}` (was `{# átvitel}`).
+- Untouched on purpose: `queue.empty.title` = `A sor üres` (bare anaphoric `sor`, still correct) and
+  `transferProgress.titleCancellingSlow` = `Megszakítás… (USB-átvitelek befejezése)` (a real transfer, not the queue).
+- No `sameAsSourceJustification` needed: all 14 values differ from English.

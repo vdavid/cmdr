@@ -391,9 +391,12 @@ so single apostrophes doubled below to match this doc's convention:
 - pause all → tout mettre en pause; resume all → tout reprendre · composed from the above; "tout mettre en pause"
   matches Double Commander's "&Pause all" → "Mettre tout en pause" (reordered to the "Tout éjecter"/"Tout ignorer"
   all-variant pattern used catalog-wide) · high
-- queue (transfer queue) → file d''attente · Double Commander ("Queue" → "File d''attente", "Add To Queue" → "Ajouter à
-  la file d''attente", pervasive), MS terminology FRA ("file d''attente", 36+ hits) · high — "Transfer queue" → "File
-  d''attente des transferts"; the standalone Queue button on the progress dialog → "File d''attente".
+- queue → file d''attente · Double Commander ("Queue" → "File d''attente", "Add To Queue" → "Ajouter à la file
+  d''attente", pervasive), MS terminology FRA ("file d''attente", 36+ hits) · high — the head noun "file d''attente"
+  still stands; the standalone Queue button on the progress dialog is still "File d''attente". **SUPERSEDED, the
+  QUALIFIER only**: "Transfer queue" → "File d''attente des transferts" is no longer the window''s name. English widened
+  the product noun to "Operation queue", so the qualifier is now "des opérations" — see the operation-queue-rename pass
+  at the end of this file.
 - background / send to background (keep a transfer running while the user works) → arrière-plan / en arrière-plan ·
   Double Commander ("Work in background" → "Travailler en arrière-plan", "in the &background" → "en arrière-plan"),
   Total Commander ("en arrière-plan"), MS terminology FRA ("arrière-plan", 79+ hits) · high — "Keep this running in the
@@ -1052,3 +1055,59 @@ lui.
   les deux-points, conformément à style.md § Punctuation spacing ; jamais U+202F. Pas de possessif ("votre
   presse-papiers") : macOS emploie l'article défini.
 - Pas de `sameAsSourceJustification` : la valeur diffère de l'anglais.
+
+## The operation-queue rename (2026-08-08, 14 keys in `queue` / `commands` / `fileOperations`)
+
+English renamed the product noun: the window that was the **"Transfer queue"** is now the **"Operation queue"**. This is
+a meaning change, not a copy tweak. The window lists deletes, trashes, renames, folder and file creations, and archive
+edits, not only transfers, and "transfer" already means copy-or-move one level down in Cmdr (the transfer progress
+dialog, the transfer driver). French had to widen the same way; a hash restamp would have left the catalog saying
+"transferts" for a window that is not about transfers.
+
+- **operation (a running or queued file job: copy, move, delete, trash, rename, create, archive edit) → `opération`
+  (feminine)** · macOS Finder/AppKit Tier-1, which uses "opération" for exactly this category, including the
+  same-concept sentence `LocalizableMerged.json` NE82 ("Impossible de terminer l''opération pour le moment car une autre
+  opération, telle que le déplacement ou la copie d''un élément…"), plus "Une opération est toujours en cours",
+  "Terminez les opérations et réessayer"; MS terminology FRA (`operation` → "opération", four entries, unanimous outside
+  the medical sense); already settled in this glossary as the Operation log''s head noun and in the
+  `File operations → Opérations sur les fichiers` settings section · high.
+- **operation queue (the window, the View menu item, the command palette entry) → `File d''attente des opérations`** ·
+  composed from the settled `queue → file d''attente` (Double Commander "File d''attente" / "Ajouter à la file
+  d''attente"; MS terminology FRA `queue` → "file d''attente", four of five entries) plus the `opération` head noun
+  above. The MS pile attests the exact `file d''attente des <plural noun>` shape ("file d''attente des appels", "file
+  d''attente des éléments de travail") · high. Used verbatim for `queue.windowTitle`, `commands.queueShow.label`, and
+  inside every string that names the window (`transferProgress.queueAria`, `.queueTooltip`, `.queuedToast`,
+  `.backgroundedToast`), as the English `@key` descriptions require.
+- **The View-menu PAIR is preserved**: `File d''attente des opérations` (running now) next to
+  `Historique des opérations` (already ran). Both hang off the same head noun `opérations`, so French carries the same
+  present-vs-past pairing English does. No divergence from the Operation log''s word.
+- **operations (the queue''s heading + the list''s screen-reader label) → `Opérations`** · the bare plural of the head
+  noun, staying a noun rather than a verb as the `@key` description asks · high.
+- **"this operation" (per-row screen-reader labels) → `cette opération`** · feminine demonstrative, agreeing with
+  `opération`: "Mettre cette opération en pause", "Reprendre cette opération", "Annuler cette opération", "Sélectionner
+  cette opération". Reuses the settled `pause → mettre en pause`, `resume → reprendre`, `cancel → annuler`,
+  `select → sélectionner` · high.
+
+Phrasing notes for this pass:
+
+- **The rename flips two toast pronouns to feminine.** `queuedToast` and `backgroundedToast` referred to the waiting or
+  backgrounded job with a masculine clitic ("celui-ci", "il", "Retrouvez-le"), which agreed with the old implicit
+  masculine "transfert". The job is now an `opération` (feminine), and in `queuedToast` the noun is literally on screen
+  next to the pronoun (`{countText}` renders "1 opération" / "3 opérations"), so a masculine "celui-ci" would have read
+  as a visible agreement break. Both toasts now use the feminine: "…devant celle-ci, elle attend donc son tour.
+  Retrouvez-la dans la file d''attente des opérations." and "Toujours en cours en arrière-plan. Retrouvez-la dans la
+  file d''attente des opérations." Keeping the two parallel matters: they fire from the same dialog moments apart.
+- `queueTooltip` keeps "Garder ce transfert en cours en arrière-plan…": that tooltip lives on the transfer progress
+  dialog and genuinely describes a transfer, so only the window''s NAME changed there. Same for the `queueAria` verb
+  ("Envoyer dans…").
+- `commands.queueShow.label` dropped its "Afficher" ("Show"): the English label is now the bare window name, and the
+  `@key` requires the command, the View menu item, and the window title to read identically.
+- FR CLDR `one`/`many`/`other` on `queuedToastCount`, `many` written identical to `other` (plain integers never select
+  `many`, but the parity/plural checks want the branch), matching every other plural in the `fr` set. Verified with
+  `intl-messageformat` under locale `fr` for 0/1/2/5/1 000 000: French counts 0 as `one`, and "0 opération" is correct.
+- No `:` `;` `!` `?` `%` in any of the 14 values, so the catalog''s ASCII-space-before-punctuation rule doesn''t arise.
+  Every apostrophe is ASCII (U+0027) and doubled, since all 14 are ICU keys.
+- **Length**: "File d''attente des opérations" is exactly as long as the "File d''attente des transferts" it replaces
+  (29 characters), so the rename adds no new overflow risk to the window title or the menu item. It was already long for
+  a macOS window title, and still is.
+- No `sameAsSourceJustification` needed: all 14 values differ from English.

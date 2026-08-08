@@ -71,13 +71,13 @@
   "@commands.helpSendErrorReport.description": {
     "sourceHash": "021d333"
   },
-  "commands.queueShow.label": "Afficher la file d''attente des transferts",
+  "commands.queueShow.label": "File d''attente des opérations",
   "@commands.queueShow.label": {
-    "sourceHash": "4567973"
+    "sourceHash": "fa91417"
   },
-  "commands.queueShow.description": "Ouvrir une fenêtre listant chaque transfert en cours et en attente, où vous pouvez les mettre en pause, les reprendre ou les annuler",
+  "commands.queueShow.description": "Ouvrir une fenêtre listant chaque opération en cours et en attente, où vous pouvez les mettre en pause, les reprendre ou les annuler",
   "@commands.queueShow.description": {
-    "sourceHash": "9f9ea7e"
+    "sourceHash": "37b616a"
   },
   "commands.helpWhatsNew.label": "Nouveautés",
   "@commands.helpWhatsNew.label": {

@@ -564,25 +564,25 @@
   "@fileOperations.transferProgress.queue": {
     "sourceHash": "3b2fe03"
   },
-  "fileOperations.transferProgress.queueAria": "Zur Übertragungs-Warteschlange senden",
+  "fileOperations.transferProgress.queueAria": "Zur Vorgangswarteschlange senden",
   "@fileOperations.transferProgress.queueAria": {
-    "sourceHash": "46845e8"
+    "sourceHash": "2bc3bd9"
   },
-  "fileOperations.transferProgress.queueTooltip": "Im Hintergrund weiterlaufen lassen und in der Übertragungs-Warteschlange verwalten (F2)",
+  "fileOperations.transferProgress.queueTooltip": "Im Hintergrund weiterlaufen lassen und in der Vorgangswarteschlange verwalten (F2)",
   "@fileOperations.transferProgress.queueTooltip": {
-    "sourceHash": "f24ea59"
+    "sourceHash": "89ce770"
   },
-  "fileOperations.transferProgress.queuedToast": "{countText} davor, daher wartet sie noch. Du findest sie in der Übertragungs-Warteschlange.",
+  "fileOperations.transferProgress.queuedToast": "{countText} davor, daher wartet dieser hier noch. Du findest ihn in der Vorgangswarteschlange.",
   "@fileOperations.transferProgress.queuedToast": {
-    "sourceHash": "9eb1406"
+    "sourceHash": "60a251d"
   },
-  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# Übertragung} other {# Übertragungen}}",
+  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# Vorgang} other {# Vorgänge}}",
   "@fileOperations.transferProgress.queuedToastCount": {
-    "sourceHash": "b89f320"
+    "sourceHash": "85023e6"
   },
-  "fileOperations.transferProgress.backgroundedToast": "Läuft weiter im Hintergrund. Du findest sie in der Übertragungs-Warteschlange.",
+  "fileOperations.transferProgress.backgroundedToast": "Läuft weiter im Hintergrund. Du findest ihn in der Vorgangswarteschlange.",
   "@fileOperations.transferProgress.backgroundedToast": {
-    "sourceHash": "fe4b733"
+    "sourceHash": "7c79c9a"
   },
   "fileOperations.errorDialog.technicalDetails": "Technische Details",
   "@fileOperations.errorDialog.technicalDetails": {

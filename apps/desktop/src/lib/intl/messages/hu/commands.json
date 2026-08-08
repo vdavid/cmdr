@@ -71,13 +71,13 @@
   "@commands.helpSendErrorReport.description": {
     "sourceHash": "021d333"
   },
-  "commands.queueShow.label": "Átviteli sor megjelenítése",
+  "commands.queueShow.label": "Műveleti sor",
   "@commands.queueShow.label": {
-    "sourceHash": "4567973"
+    "sourceHash": "fa91417"
   },
-  "commands.queueShow.description": "Megnyit egy ablakot, amely felsorolja az összes futó és várakozó átvitelt, ahol szüneteltetheted, folytathatod vagy megszakíthatod őket",
+  "commands.queueShow.description": "Megnyit egy ablakot, amely felsorolja az összes futó és várakozó műveletet, ahol szüneteltetheted, folytathatod vagy megszakíthatod őket",
   "@commands.queueShow.description": {
-    "sourceHash": "9f9ea7e"
+    "sourceHash": "37b616a"
   },
   "commands.helpWhatsNew.label": "Újdonságok",
   "@commands.helpWhatsNew.label": {

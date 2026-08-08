@@ -563,25 +563,25 @@
   "@fileOperations.transferProgress.queue": {
     "sourceHash": "3b2fe03"
   },
-  "fileOperations.transferProgress.queueAria": "Envoyer dans la file d''attente des transferts",
+  "fileOperations.transferProgress.queueAria": "Envoyer dans la file d''attente des opérations",
   "@fileOperations.transferProgress.queueAria": {
-    "sourceHash": "46845e8"
+    "sourceHash": "2bc3bd9"
   },
-  "fileOperations.transferProgress.queueTooltip": "Garder ce transfert en cours en arrière-plan et le gérer dans la file d''attente des transferts (F2)",
+  "fileOperations.transferProgress.queueTooltip": "Garder ce transfert en cours en arrière-plan et le gérer dans la file d''attente des opérations (F2)",
   "@fileOperations.transferProgress.queueTooltip": {
-    "sourceHash": "f24ea59"
+    "sourceHash": "89ce770"
   },
-  "fileOperations.transferProgress.queuedToast": "{countText} devant celui-ci, il attend donc son tour. Retrouvez-le dans la file d''attente des transferts.",
+  "fileOperations.transferProgress.queuedToast": "{countText} devant celle-ci, elle attend donc son tour. Retrouvez-la dans la file d''attente des opérations.",
   "@fileOperations.transferProgress.queuedToast": {
-    "sourceHash": "9eb1406"
+    "sourceHash": "60a251d"
   },
-  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# transfert} many {# transferts} other {# transferts}}",
+  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# opération} many {# opérations} other {# opérations}}",
   "@fileOperations.transferProgress.queuedToastCount": {
-    "sourceHash": "b89f320"
+    "sourceHash": "85023e6"
   },
-  "fileOperations.transferProgress.backgroundedToast": "Toujours en cours en arrière-plan. Retrouvez-le dans la file d''attente des transferts.",
+  "fileOperations.transferProgress.backgroundedToast": "Toujours en cours en arrière-plan. Retrouvez-la dans la file d''attente des opérations.",
   "@fileOperations.transferProgress.backgroundedToast": {
-    "sourceHash": "fe4b733"
+    "sourceHash": "7c79c9a"
   },
   "fileOperations.errorDialog.technicalDetails": "Détails techniques",
   "@fileOperations.errorDialog.technicalDetails": {

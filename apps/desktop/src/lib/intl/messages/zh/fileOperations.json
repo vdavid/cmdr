@@ -559,25 +559,25 @@
   "@fileOperations.transferProgress.queue": {
     "sourceHash": "3b2fe03"
   },
-  "fileOperations.transferProgress.queueAria": "发送到传输队列",
+  "fileOperations.transferProgress.queueAria": "发送到操作队列",
   "@fileOperations.transferProgress.queueAria": {
-    "sourceHash": "46845e8"
+    "sourceHash": "2bc3bd9"
   },
-  "fileOperations.transferProgress.queueTooltip": "让它在后台继续运行，并在传输队列中管理（F2）",
+  "fileOperations.transferProgress.queueTooltip": "让它在后台继续运行，并在操作队列中管理（F2）",
   "@fileOperations.transferProgress.queueTooltip": {
-    "sourceHash": "f24ea59"
+    "sourceHash": "89ce770"
   },
-  "fileOperations.transferProgress.queuedToast": "前面还有 {countText}，所以它正在排队等待。可以在传输队列中找到它。",
+  "fileOperations.transferProgress.queuedToast": "前面还有 {countText}，所以它正在排队等待。可以在操作队列中找到它。",
   "@fileOperations.transferProgress.queuedToast": {
-    "sourceHash": "9eb1406"
+    "sourceHash": "60a251d"
   },
-  "fileOperations.transferProgress.queuedToastCount": "{count, plural, other {# 个传输}}",
+  "fileOperations.transferProgress.queuedToastCount": "{count, plural, other {# 项操作}}",
   "@fileOperations.transferProgress.queuedToastCount": {
-    "sourceHash": "b89f320"
+    "sourceHash": "85023e6"
   },
-  "fileOperations.transferProgress.backgroundedToast": "仍在后台运行。可以在传输队列中找到它。",
+  "fileOperations.transferProgress.backgroundedToast": "仍在后台运行。可以在操作队列中找到它。",
   "@fileOperations.transferProgress.backgroundedToast": {
-    "sourceHash": "fe4b733"
+    "sourceHash": "7c79c9a"
   },
   "fileOperations.errorDialog.technicalDetails": "技术详情",
   "@fileOperations.errorDialog.technicalDetails": {

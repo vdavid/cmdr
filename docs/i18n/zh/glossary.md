@@ -374,22 +374,40 @@ macOS zh-CN Tier 1, Microsoft zh-Hans cross-check. Reuses prior-pass terms.
 - **`feedback.dialog.counter` kept identical** (`{currentText} / {maxText}`) · pure-placeholder fraction, no
   translatable text · `confirmed`
 
-### Transfer queue catalog (queue window + pause/resume/background, 2026-06-21)
+### Operation queue catalog (queue window + pause/resume/background, 2026-06-21; head noun renamed 2026-08-08)
 
-macOS zh-CN Tier 1, Total Commander zh-CN (the feature's origin: queue + background controls), Microsoft zh-Hans
-cross-check.
+macOS zh-CN Tier 1, Total Commander zh-CN (the feature's origin: queue + background controls), Double Commander zh-CN
+(the same orthodox two-pane feature: operation queues), Microsoft zh-Hans cross-check.
 
 - **pause** · `暂停` · macOS (`暂停`, `已暂停拷贝“^0”`), Total Commander (`暂停`), Microsoft TBX (`暂停`) · `confirmed`
 - **resume (a paused operation)** · `继续` · Microsoft TBX (`resume` → `继续`), macOS (`继续`). NOTE: NOT `恢复` (that's
   restore/recover, e.g. macOS `恢复` = restore version) — `继续` is the resume-an-operation sense. · `high`
-- **queue (noun)** · `传输队列` (the window/feature) / `队列` (bare) · Total Commander (`队列(&Q)`), Microsoft TBX
-  (`队列`) · `confirmed`
-- **add to queue / send to the transfer queue (the progress-dialog F2 button)** · `加入队列` (button) / `发送到传输队列`
-  (aria) · descriptive, built on `队列` · `high`
+- **operation (the head noun: any queued copy, move, delete, trash, rename, folder/file creation, or archive edit)** ·
+  `操作` · macOS Finder zh-CN (`NE1` `无法完成此操作。`, `NE82` `…因为正在进行其他操作，例如移动或拷贝项目…`, `NE83`
+  `请在当前操作完成后重试。`), Microsoft TBX (`operation` → `操作`), Double Commander zh-CN (`Current operation:` →
+  `当前操作：`, `File operations` → `文件操作`), and the zh catalog's own 56 existing `操作` hits (`操作日志`,
+  `文件操作`, `这项操作`). Same word as the Operation log window, so the two View-menu items pair. · `confirmed`
+- **operation queue (the window/feature)** · `操作队列` · `操作` (above) + `队列` (below); Microsoft TBX builds queue
+  names exactly this way (`报告队列`, `响应队列`, `呼叫队列`), and Double Commander zh-CN puts the two words in one
+  sentence for this very feature (`…move operations between queues` → `使用拖放在队列之间进行移动操作`). Pairs with
+  `操作日志` (Operation log) in the same View menu block. · `high`. **Supersedes `传输队列`** (the 2026-06-21 term): the
+  English widened from "Transfer queue" to "Operation queue" because the window also lists deletes, trashes, renames,
+  and folder/file creations, and "transfer" already means copy-or-move one level down (the transfer progress dialog, the
+  transfer driver). Never reintroduce `传输队列` for this window.
+- **queue (bare noun)** · `队列` · Total Commander (`队列(&Q)`), Double Commander (`New queue` → `新队列`), Microsoft
+  TBX (`队列`) · `confirmed`. Unchanged by the rename: `队列中没有任务`, `加入队列`.
+- **add to queue / send to the operation queue (the progress-dialog F2 button)** · `加入队列` (button) /
+  `发送到操作队列` (aria) · descriptive, built on `队列` + the renamed `操作队列` · `high`
 - **background / running in the background** · `后台` (`在后台运行` / `在后台继续运行`) · Total Commander (`后台`,
   `所有上传/下载都在后台进行`), Microsoft TBX (`后台的`). NOTE: NOT `背景` (visual background, wrong sense). · `high`
-- **transfer (the queued copy/move/delete unit)** · `传输` · reused; `传输队列` = transfer queue, `这个传输` = this
-  transfer · `high`
+- **transfer (a copy or move, the narrow sense)** · `传输` · still the right word for the transfer progress dialog and
+  SMB/USB transfer copy (`这个传输停住不动了`, `文件传输`), but NO LONGER the queue's head noun: a queued unit is
+  `操作`. · `high`
+- **"this operation" (per-row aria labels)** · `这项操作` · `项` is the settled classifier for 操作 in this catalog (six
+  `这项操作` hits, plus `一项系统操作`), and style.md prefers the spoken `这项` over the written `此` that Double
+  Commander uses (`此操作`) · `high`
+- **counted operations (`{count} 项操作`)** · classifier `项`, not `个` · matches `这项操作` / `一项系统操作`; the
+  generic `{count} 个项目` pattern keeps `个` for items · `high`
 - **status words (queue row)** · queued `等待中` / running `进行中` / paused `已暂停` / done `已完成` / cancelled
   `已取消` / failed `无法完成` (style.md: no bare 失败/错误) · macOS-style · `high`
 - **pause all / resume all / cancel selected (toolbar)** · `全部暂停` / `全部继续` / `取消所选` · built on settled
@@ -571,16 +589,16 @@ Settled while translating the Compress feature:
 ### Operation log catalog (`operationLog.*` + `commands.logOperationLog.*`, 2026-07-09)
 
 macOS zh-CN Tier 1, Microsoft zh-Hans cross-check. Reuses settled queue-status and transfer-verb terms so the log reads
-as one feature with the transfer queue.
+as one feature with the operation queue (`操作队列`), whose head noun `操作` it shares.
 
 - **operation log (the dialog / command name)** · `操作日志` · `操作` (operation, Microsoft TBX / search-pass result
   column) + `日志` (log, settings-pass `logging` → 日志). Standard, natural compound. · `high`
 - **operation history** · `操作历史记录` · `历史记录` = history; loadError renders
   `无法加载你的操作历史记录。请稍后重试。` (no bare 失败/错误 per style.md; `请稍后重试` = try again in a moment,
   reusing settled `重试`) · `high`
-- **lifecycle status words (match the transfer queue `queue.row.status` exactly)** · Queued `等待中` / Running `进行中`
-  / Done `已完成` / Didn''t finish `无法完成` / Canceled `已取消` · reused verbatim from `queue.json` so the two
-  surfaces agree; `无法完成` carries the style-guide "avoid failed" rule (same as the queue) · `high`
+- **lifecycle status words (match the operation queue's `queue.row.status` exactly)** · Queued `等待中` / Running
+  `进行中` / Done `已完成` / Didn''t finish `无法完成` / Canceled `已取消` · reused verbatim from `queue.json` so the
+  two surfaces agree; `无法完成` carries the style-guide "avoid failed" rule (same as the queue) · `high`
 - **roll back (reverse an operation)** · `回滚` · reused from the file-ops pass (`rollback` → `回滚`, Microsoft TBX).
   Arms: Can''t roll back `无法回滚` / Can roll back `可回滚` / Rolling back `正在回滚` (locale-wide `正在…` in-progress)
   / Rolled back `已回滚` / Partly rolled back `已部分回滚` (`已…` perfective + `部分` = partly) · `high`

@@ -327,14 +327,14 @@ the copy/move/delete verbs above; new ones:
   ("Kopiering av ”…” har pausats"). Button "Pausa", status word "Pausad". `high`.
 - **resume: `återuppta`** · macOS Finder ("Återuppta kopiering"), Total Commander ("Återuppta avbruten överföring"). The
   button that restarts a paused transfer. `high`.
-- **queue (the transfer queue): `kö`; transfer queue `överföringskö`; queued status `Väntar`** · Total Commander uses
-  the bare noun "Kö" for its job queue; Thunar renders "Job queued" as "Jobb köade" (verb "köa"). The window noun is
-  "överföringskö" (compound överföring + kö, definite "överföringskön"); the per-row queued state reads "Väntar"
-  (waiting its turn). The toolbar "Queue" button (send-to-background) on the progress dialog is the bare noun "Kö".
-  `high`.
+- **queue (the bare noun): `kö`; queued status `Väntar`** · Total Commander uses the bare noun "Kö" for its job queue;
+  Thunar renders "Job queued" as "Jobb köade" (verb "köa"). The per-row queued state reads "Väntar" (waiting its turn).
+  The toolbar "Queue" button (send-to-background) on the progress dialog is the bare noun "Kö". `high`. ⚠️ **The
+  window's NAME is no longer `överföringskö`** — see § Operation queue (2026-08-08) at the end of this file; it is now
+  `Åtgärdskö` / definite `åtgärdskön`. Don't reintroduce `överföringskö`.
 - **background / send to background: `i bakgrunden` / `skicka till …kön`** · Total Commander ("…överföringar i
   bakgrunden", "i bakgrunden"). "Keep this running in the background" → "Håll igång den här i bakgrunden"; "Send to the
-  transfer queue" → "Skicka till överföringskön" (sending to the queue IS sending to the background here). `high`.
+  operation queue" → "Skicka till åtgärdskön" (sending to the queue IS sending to the background here). `high`.
 - **transfer-row gerunds (queue row label): reuse `Kopierar` / `Flyttar` / `Raderar` / `Flyttar till papperskorgen`;
   fallback `Arbetar`** · same select branches as `fileOperations.transferProgress.titleActive`, no trailing ellipsis
   (it's a row label, not a title). "other {Working}" → "Arbetar". `high`.
@@ -897,3 +897,43 @@ INTE en platshållare i meningen: meningen slutar med kolon och måste fungera u
   `Kopierade {countText} objekt`, och `i urklipp` (inte `på urklipp`) är den redan settlade prepositionen
   (`clipboard.empty` = "Inga filer i urklipp."). Inget possessivt "ditt urklipp": det finns bara ett.
 - Inget `sameAsSourceJustification` behövs: värdet skiljer sig från engelskan.
+
+## Operation queue: kön byter huvudord (2026-08-08; the 14 `queue.*` / `commands.queueShow.*` / `fileOperations.transferProgress.queue*` keys)
+
+The English window was renamed from **"Transfer queue"** to **"Operation queue"**, because it lists deletes, trashes,
+renames, folder and file creations, and archive edits too, not only copies and moves; "transfer" also already means
+copy-or-move one level down in Cmdr (the transfer progress dialog, the transfer driver). So the source widened from a
+narrow word to the CATEGORY word, and Swedish widens the same way. This is a meaning change, not a wording tweak.
+
+- **operation (the category word for a copy, move, delete, trash, rename, create, or archive edit): `åtgärd`** (common
+  gender: en åtgärd, definite `åtgärden`, plural `åtgärder`) · already this catalog's settled head noun
+  (`operationLog.*` → `Åtgärdslogg`, `settings.section.operationLog`, `åtgärdshistorik`, the `Åtgärd:` field label), and
+  macOS Finder sv confirms it in exactly Cmdr's sense: "Du kan inte byta namn på ”^0” eftersom **en annan åtgärd** pågår
+  just nu, t.ex. flytt eller kopiering av ett objekt eller tömning av papperskorgen"
+  (`sv/macOS/Finder/LocalizableMerged.json`), plus "Åtgärden kan inte slutföras eftersom …" throughout. MS terminology
+  gives operation → `åtgärd` and the compound pattern `operation code` → `åtgärdskod`, `operation type` → `åtgärdstyp`.
+  `high`.
+- **operation queue (the window): `Åtgärdskö`, definite `åtgärdskön`** · `åtgärd` + linking `-s-` + `kö`, the same
+  compound shape as the already-shipped `Åtgärdslogg`, so the two View-menu neighbours read as the deliberate pair the
+  English intends: **Åtgärdskö** (what's running now) next to **Åtgärdslogg** (what already ran). `kö` compounds are the
+  Swedish norm for this (MS terminology: `målkö`, `leveranskö`, `administrationskö`, `mellanlagringskö`,
+  `arbetsuppgiftskö`; Total Commander sv `4005="Kö"`). macOS sv has no queue string at all, so the compound comes from
+  the MS + TC tiers on top of the Tier-1 head noun. `high`.
+- **Definite vs indefinite, kept apart.** The window TITLE and the command/menu label are indefinite `Åtgärdskö`
+  (`queue.windowTitle`, `commands.queueShow.label` — identical to each other per the key description, and matching how
+  `Åtgärdslogg` is titled). Running prose takes the definite `åtgärdskön` ("Skicka till åtgärdskön", "hantera den i
+  åtgärdskön", "Hitta den i åtgärdskön"). Don't flatten the two into one form. Also note `commands.queueShow.label` lost
+  its old "Visa " prefix: English dropped it, and the sibling `commands.logOperationLog.label` is a bare `Åtgärdslogg`,
+  so the pair now matches.
+- **"Operations" (the heading + the list's aria label): `Åtgärder`** · plural noun, not a verb, per the key description.
+  `queue.heading` and `queue.list.aria`. `high`.
+- **"this operation" (the per-row aria labels): `den här åtgärden`** · common-gender `den`, definite noun, matching the
+  `den här överföringen` shape the rows already used. `high`.
+- **ICU count phrase `queuedToastCount`: one → `# åtgärd`, other → `# åtgärder`** · regular Swedish plural on a
+  common-gender noun; sv CLDR is one/other. `high`.
+- **SUPERSEDED: `överföringskö` / `Överföringar`** (the transfer-queue pass above). Kept visible only so a future pass
+  recognizes it as the old name and doesn't restore it. `överföring` itself is NOT retired: it stays the right word for
+  a copy/move in flight (the transfer progress dialog, `Överföringen står stilla`, `Överföringsmetod`), which is exactly
+  the narrower sense English kept one level down.
+
+No `sameAsSourceJustification` needed: all 14 values differ from English.

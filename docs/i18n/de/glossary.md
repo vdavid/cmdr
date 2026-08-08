@@ -297,9 +297,11 @@ Format, the confidence scale, and the full process: `docs/guides/i18n-translatio
   "anhalten" in aria/tooltip and "Angehalten" as the status chip
 - resume (transfer) → fortsetzen ("Fortsetzen" button; "Kopieren fortsetzen", "Backup fortsetzen") · macOS Finder
   ("Kopieren fortsetzen", resume→fortsetzen) · high
-- queue (transfer queue) → Warteschlange; "Transfer queue" → Übertragungs-Warteschlange · MS terminology
-  (queue→Warteschlange); compound with transfer→Übertragung · high. The "Queue" button on the progress dialog
-  (send-to-background + open the queue window) renders as "Warteschlange"
+- queue → Warteschlange; "Operation queue" (the window) → Vorgangswarteschlange · MS terminology (queue→Warteschlange,
+  and the closed compound "Übertragungswarteschlange"), Double Commander ("Queue" → "Warteschlange", 18×) · high. The
+  "Queue" button on the progress dialog (send-to-background + open the queue window) renders as the bare
+  "Warteschlange". ❌ The old "Übertragungs-Warteschlange" is SUPERSEDED: the window lists deletes, renames, and archive
+  edits too, so it took the category noun. See § Operation queue (2026-08-08)
 - background / send to background (a transfer) → "im Hintergrund" (running); "keep running in the background" → "im
   Hintergrund weiterlaufen lassen" · macOS ("Synchronisierung im Hintergrund", "Drucken im Hintergrund"), MS ("im
   Hintergrund") · high. Cmdr's send-to-background action routes through the queue, so its button is "Warteschlange" and
@@ -804,3 +806,44 @@ Platzhalter im Satz — der Satz endet auf einem Doppelpunkt und muss ohne den P
   `Zwischenablage`: es gibt nur eine, das Possessivum wäre im Deutschen unnatürlich (macOS sagt "in die Zwischenablage
   kopieren", nie "in deine").
 - Kein `sameAsSourceJustification` nötig: der Wert unterscheidet sich vom Englischen.
+
+## Operation queue: the queue window's rename (2026-08-08)
+
+The English widened the queue window's name from "Transfer queue" to "Operation queue": the window lists deletes,
+trashes, renames, folder and file creations, and archive edits, not only copies and moves, and "transfer" already means
+copy-or-move one level down (the transfer progress dialog, the transfer driver). German widened the same way, on the
+head noun the catalog had already settled for the Operation log.
+
+- **operation (the category word for one queued/logged job) → `Vorgang` (plural `Vorgänge`)** · unchanged from §
+  Operation log (2026-07-10); reconfirmed for the queue by Double Commander de, which renders this exact window
+  ("Operations Viewer" / "File operations" → `Vorgänge in Warteschlange`), "Current operation:" → `Aktueller Vorgang:`,
+  "Cancel Current Operation" → `Aktuellen Vorgang abbrechen`, and "File operations active" → `Laufende Vorgänge`; macOS
+  Finder agrees ("Der Vorgang kann nicht abgeschlossen werden.", 58 `Vorgang` hits) · high. ❌ Still not the loanword
+  "Operation", which stays reserved for the low-level concurrent-SMB sense (`settings.network.smbConcurrency`) and the
+  Settings section name `Dateioperationen`.
+- **"Operation queue" (the window, the View menu item, the command-palette entry) → `Vorgangswarteschlange`** ·
+  `Vorgang` + the settled `queue → Warteschlange` (MS terminology; Double Commander de "Queue" → "Warteschlange") ·
+  high. Written as a CLOSED compound, matching MS's own `Übertragungswarteschlange`/`Zielwarteschlange` and this
+  catalog's other 20+ character closed compounds (`Vorgangsprotokoll`, `Laufwerksindizierung`,
+  `Dateisystemüberwachung`); at 21 characters it is shorter than the `Übertragungs-Warteschlange` it replaces, so the
+  rename costs no width. It pairs with `Vorgangsprotokoll` in the same View menu block exactly as the English pairs
+  "Operation queue" with "Operation log", one head noun for both.
+- **`commands.queueShow.label` dropped its verb.** The English is now the bare window name, so the German is the bare
+  `Vorgangswarteschlange` too (was "Übertragungs-Warteschlange anzeigen"). It must stay byte-identical to
+  `queue.windowTitle` and to the View menu item, and it sits next to the equally verbless
+  `commands.logOperationLog.label` = `Vorgangsprotokoll`.
+- **Queue-window headings → `Vorgänge`** (`queue.heading`, `queue.list.aria`) · the bare category plural, matching
+  `operationLog.dialog.empty` ("Noch keine Vorgänge.") · high.
+- **Per-row aria labels → `Diesen Vorgang anhalten` / `… fortsetzen` / `… abbrechen` / `… auswählen`** · `Vorgang` is
+  masculine, so "this operation" in an accusative object slot is `diesen Vorgang`; `Diesen Vorgang abbrechen` is Double
+  Commander's own wording minus its "Aktuellen" · high. ❌ Don't carry the old feminine `Diese Übertragung` frame over.
+  The sibling `fileOperations.transferProgress.pauseAria`/`.resumeAria` keep `Diese Übertragung`: those sit on the
+  copy/move progress dialog, where the English still says "transfer". The split is deliberate.
+- **The gender flip needs the toast pronouns re-checked, not just the noun swapped.** The two queue toasts referred to
+  the operation with feminine `sie` (agreeing with `die Übertragung`); with `der Vorgang` they take `er`/`ihn`:
+  `backgroundedToast` → "Läuft weiter im Hintergrund. Du findest ihn in der Vorgangswarteschlange." · high.
+- **`queuedToast` names the referent instead of pronouncing it**: "{countText} davor, daher wartet dieser hier noch. Du
+  findest ihn in der Vorgangswarteschlange." · high. A bare `er` would be ambiguous in the one-branch ("1 Vorgang davor,
+  daher wartet er noch." reads as if the one AHEAD were waiting), because `{countText}` now renders the same masculine
+  noun. `dieser hier` is the English's own "this one" and pins it; the closing `ihn` then has a clear antecedent.
+- No `sameAsSourceJustification` needed: every value differs from English.

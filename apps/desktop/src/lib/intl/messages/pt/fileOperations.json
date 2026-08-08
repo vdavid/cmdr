@@ -562,25 +562,25 @@
   "@fileOperations.transferProgress.queue": {
     "sourceHash": "3b2fe03"
   },
-  "fileOperations.transferProgress.queueAria": "Enviar para a fila de transferências",
+  "fileOperations.transferProgress.queueAria": "Enviar para a fila de operações",
   "@fileOperations.transferProgress.queueAria": {
-    "sourceHash": "46845e8"
+    "sourceHash": "2bc3bd9"
   },
-  "fileOperations.transferProgress.queueTooltip": "Mantenha isto rodando em segundo plano e gerencie na fila de transferências (F2)",
+  "fileOperations.transferProgress.queueTooltip": "Mantenha isto rodando em segundo plano e gerencie na fila de operações (F2)",
   "@fileOperations.transferProgress.queueTooltip": {
-    "sourceHash": "f24ea59"
+    "sourceHash": "89ce770"
   },
-  "fileOperations.transferProgress.queuedToast": "{countText} na frente desta, então ela está aguardando sua vez. Encontre-a na fila de transferências.",
+  "fileOperations.transferProgress.queuedToast": "{countText} na frente desta, então ela está aguardando sua vez. Encontre-a na fila de operações.",
   "@fileOperations.transferProgress.queuedToast": {
-    "sourceHash": "9eb1406"
+    "sourceHash": "60a251d"
   },
-  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# transferência} many {# transferências} other {# transferências}}",
+  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# operação} many {# operações} other {# operações}}",
   "@fileOperations.transferProgress.queuedToastCount": {
-    "sourceHash": "b89f320"
+    "sourceHash": "85023e6"
   },
-  "fileOperations.transferProgress.backgroundedToast": "Ainda rodando em segundo plano. Encontre-a na fila de transferências.",
+  "fileOperations.transferProgress.backgroundedToast": "Ainda rodando em segundo plano. Encontre-a na fila de operações.",
   "@fileOperations.transferProgress.backgroundedToast": {
-    "sourceHash": "fe4b733"
+    "sourceHash": "7c79c9a"
   },
   "fileOperations.errorDialog.technicalDetails": "Detalhes técnicos",
   "@fileOperations.errorDialog.technicalDetails": {

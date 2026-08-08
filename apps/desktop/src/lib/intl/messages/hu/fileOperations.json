@@ -561,25 +561,25 @@
   "@fileOperations.transferProgress.queue": {
     "sourceHash": "3b2fe03"
   },
-  "fileOperations.transferProgress.queueAria": "Áthelyezés az átviteli sorba",
+  "fileOperations.transferProgress.queueAria": "Áthelyezés a műveleti sorba",
   "@fileOperations.transferProgress.queueAria": {
-    "sourceHash": "46845e8"
+    "sourceHash": "2bc3bd9"
   },
-  "fileOperations.transferProgress.queueTooltip": "Hagyd futni a háttérben, és kezeld az átviteli sorban (F2)",
+  "fileOperations.transferProgress.queueTooltip": "Hagyd futni a háttérben, és kezeld a műveleti sorban (F2)",
   "@fileOperations.transferProgress.queueTooltip": {
-    "sourceHash": "f24ea59"
+    "sourceHash": "89ce770"
   },
-  "fileOperations.transferProgress.queuedToast": "{countText} van előtte, így várnia kell a sorára. Megtalálod az átviteli sorban.",
+  "fileOperations.transferProgress.queuedToast": "{countText} van előtte, így várnia kell a sorára. Megtalálod a műveleti sorban.",
   "@fileOperations.transferProgress.queuedToast": {
-    "sourceHash": "9eb1406"
+    "sourceHash": "60a251d"
   },
-  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# átvitel} other {# átvitel}}",
+  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# művelet} other {# művelet}}",
   "@fileOperations.transferProgress.queuedToastCount": {
-    "sourceHash": "b89f320"
+    "sourceHash": "85023e6"
   },
-  "fileOperations.transferProgress.backgroundedToast": "Tovább fut a háttérben. Megtalálod az átviteli sorban.",
+  "fileOperations.transferProgress.backgroundedToast": "Tovább fut a háttérben. Megtalálod a műveleti sorban.",
   "@fileOperations.transferProgress.backgroundedToast": {
-    "sourceHash": "fe4b733"
+    "sourceHash": "7c79c9a"
   },
   "fileOperations.errorDialog.technicalDetails": "Technikai részletek",
   "@fileOperations.errorDialog.technicalDetails": {

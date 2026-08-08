@@ -377,18 +377,22 @@ Tier 2; macOS wins ties. Reuses prior terms (sao chép/di chuyển/xóa, thùng 
 - **resume: `tiếp tục`** · macOS Finder ("Tiếp tục", the Continue/Resume action `66.title`). NOT the MS "resume" noun
   "sơ yếu lý lịch" (the CV/résumé sense — wrong here). `high`.
 - **queue (noun): `hàng đợi`; queue (verb, "send to the queue"): `đưa vào hàng đợi`** · MS terminology ("queue" noun →
-  "hàng đợi", verb → "cho vào hàng"; adapted to `đưa vào hàng đợi` for the UI action). "Transfer queue" →
-  `hàng đợi truyền`. `high`.
+  "hàng đợi", verb → "cho vào hàng"; adapted to `đưa vào hàng đợi` for the UI action). `high`. (The window-name
+  rendering that once sat here, "Transfer queue" → `hàng đợi truyền`, is SUPERSEDED: the window is now the operation
+  queue, `Hàng đợi thao tác`. See the 2026-08-08 rename section at the end of this file.)
 - **background / run in the background: `nền` / `chạy ở chế độ nền`** · MS terminology ("background task" → "tác vụ
   nền"). "Keep running in the background" → `giữ chạy ở chế độ nền`. `high`.
-- **transfer (the operation, as a countable noun): `lần truyền`** · descriptive (`lần` = instance/occurrence + `truyền`
-  = transfer); the queue lists individual copy/move/delete ops. The window/list heading "Transfers" → `Các lần truyền`.
-  `tentative`.
+- **transfer (a copy or move, as a countable noun): `lần truyền`** · descriptive (`lần` = instance/occurrence + `truyền`
+  = transfer). Still current for the NARROW copy-or-move sense (`fileOperations.transferProgress.pauseAria`,
+  `settings.network.smbConcurrency.description`, the stalled-transfer strings). `tentative`. (The queue-window use that
+  once sat here, heading "Transfers" → `Các lần truyền`, is SUPERSEDED by `Các thao tác`; see the 2026-08-08 rename
+  section at the end of this file.)
 
 Wave-1-prep phrasings settled (keep consistent): "Waiting" (queued status) → `Đang chờ`; "Running" → `Đang chạy`; "Done"
 → `Xong`; "Cancelled" → `Đã hủy`; "Couldn''t finish" (gentle failed wording) → `Chưa hoàn tất được` (negative-capability
-framing per the error voice, avoids a bare "lỗi"/"thất bại"). "Cancel selected" → `Hủy mục đã chọn`. "Show transfer
-queue" (command) → `Hiện hàng đợi truyền`.
+framing per the error voice, avoids a bare "lỗi"/"thất bại"). "Cancel selected" → `Hủy mục đã chọn`. (The command label
+that once sat here, "Show transfer queue" → `Hiện hàng đợi truyền`, is SUPERSEDED: the command now reads exactly like
+the window title, `Hàng đợi thao tác`. See the 2026-08-08 rename section at the end of this file.)
 
 Added during the navigation-and-file-ops pass (2026-06-26): the new `settings` Navigation & file ops section + the
 `fileExplorer` breadcrumb tooltip and double-click-to-parent hint toast. RE-VALIDATED against the reference pile
@@ -889,3 +893,52 @@ nó KHÔNG phải chỗ giữ chỗ trong câu: câu kết thúc bằng dấu ha
   các thông báo anh em (`Đã sao chép {countText} mục`). Gộp "it's now on your clipboard" vào cụm `vào bảng nhớ tạm`:
   dịch sát bằng đại từ `nó` sẽ lủng củng, và tiếng Việt không dùng sở hữu cho một bảng nhớ tạm duy nhất.
 - Không cần `sameAsSourceJustification`: giá trị khác tiếng Anh.
+
+## Hàng đợi thao tác: đổi tên từ "transfer queue" sang "operation queue" (2026-08-08)
+
+The queue window widened from "Transfer queue" to **"Operation queue"** in English. This is a MEANING change, not a copy
+tweak: the window lists deletes, trashes, renames, folder and file creations, and archive edits, not only transfers, and
+"transfer" already means copy-or-move one level down in Cmdr (the transfer progress dialog, the transfer driver). So the
+English moved from the narrow word to the CATEGORY word, and `vi` widens the same way. The rename also makes a
+deliberate View-menu pair: **Hàng đợi thao tác** (running now) beside **Nhật ký thao tác** (already ran). Fourteen keys
+re-translated across `queue.json`, `commands.json`, and `fileOperations.json`.
+
+- **operation (the category word for a copy, move, delete, trash, rename, folder/file creation, or archive edit):
+  `thao tác`** (CONFIRMS and re-uses the `operationLog` pass's term) · macOS Finder Tier 1 uses `thao tác` for exactly
+  this concept, densely: `thao tác sao chép ^0 mục`, `thao tác di chuyển “^1”`, `thao tác đổi tên`, `thao tác xóa`,
+  `thao tác này` (7×), `thao tác đã hoàn thành`, `thao tác chưa hoàn tất`. The vi catalog already ships it 39× and
+  already named the Operation log `Nhật ký thao tác`, so the queue takes the SAME head noun (no two words for one
+  concept in neighbouring menu items). NOT MS's first "operation" hit `phép toán` (the arithmetic sense) nor
+  `phẫu thuật` (surgery) — both wrong senses, mining gotcha 2; MS does attest `thao tác` in compounds
+  (`thao tác ghi gom` = gather-write operation, `thao tác WSDL`). `high`.
+- **operation queue (the window, the View menu item, and the command-palette entry): `Hàng đợi thao tác`** · `hàng đợi`
+  (queue, MS terminology `queue` Noun → `hàng đợi`, corroborated by GNOME Nautilus "Job queued" → "Công việc đã trong
+  hàng đợi") + `thao tác`. The `hàng đợi + <modifier>` compound is MS's own shape for this family (`hàng đợi công việc`
+  = work queue, `hàng đợi đích` = target queue, `hàng đợi cuộc gọi` = call queue), so the term is built the way
+  Vietnamese already builds queue names rather than calqued. The three surfaces stay byte-identical per the en `@key`:
+  `queue.windowTitle`, `commands.queueShow.label`, and the "operation queue" mention inside every `fileOperations`
+  string. `high`.
+- **"Operations" (bare plural heading, `queue.heading` + `queue.list.aria`): `Các thao tác`** · Vietnamese has no plural
+  morphology, so the plural has to be carried by a marker or dropped. `Các` (the definite plural marker, "the set of")
+  is the right one here because the heading names the specific set listed below it, not operations in general (`những`
+  would read indefinite). Three reasons over a bare `Thao tác`: (1) the catalog's own `queue.empty.body` in this very
+  window already opens `Các thao tác sao chép, di chuyển, và xóa…`, so the heading and the empty state now match; (2) a
+  bare `Thao tác` collides with the transfer dialog's "Action" control label, which is exactly `Thao tác`
+  (`transferDialog.operationAria`), and a heading that reads "Action" over a list is wrong; (3) macOS attests `Các` +
+  noun freely as a set marker in labels (`Các mục`, `Các thay đổi`, `Các cột`, `Các tab`). `high`.
+- **"this operation" (the four per-row screen-reader labels): `thao tác này`** · macOS Finder ships this exact phrase 7×
+  (`thao tác này`), so the row labels are Tier-1 verbatim: `Tạm dừng thao tác này`, `Tiếp tục thao tác này`,
+  `Hủy thao tác này`, `Chọn thao tác này`. `high`.
+- **Keep `lần truyền` for the NARROW sense.** The rename does not retire it: `fileOperations.transferProgress.pauseAria`
+  / `.resumeAria` sit on the copy/move progress dialog, where the thing really is a transfer, and
+  `settings.network.smbConcurrency.description` and the stalled-transfer strings mean copy-or-move too. Two words is
+  correct here because English draws the same distinction. The test is the surface: the QUEUE (which lists every kind of
+  job) says `thao tác`; the TRANSFER dialog (which only ever runs a copy or a move) says `lần truyền`.
+- **The queued toast carries `thao tác` three times and that's fine.**
+  `{countText} đang ở phía trước, nên thao tác này phải chờ đến lượt. Tìm nó trong hàng đợi thao tác.` reads as count +
+  subject + window name, and Vietnamese repeats a head noun far more comfortably than English does. Don't "fix" it by
+  pronominalizing the middle one: the new operation is FIRST mentioned there, so a bare `nó` would bind to the jobs
+  ahead of it and invert the sentence's meaning.
+- `queue.empty.title` (`Không có gì trong hàng đợi`) needed no change: it names the queue generically, and its English
+  didn't move.
+- No `sameAsSourceJustification` needed: all fourteen values differ from English.

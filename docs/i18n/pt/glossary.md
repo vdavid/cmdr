@@ -146,10 +146,30 @@ Sourced from `_ignored/i18n/pt-BR/` (macOS Finder Tier 1, then Microsoft termino
 - resume (transfer) · **Retomar** · MS terminology (resume→"retomar", ids 639983/1262427) · high. Pairs with Pausar;
   Double Commander uses generic "&Continuar" for a continue button, but MS's transfer-sense "retomar" fits the
   pause/resume toggle better. `queue.json` + `fileOperations.transferProgress.resume`
-- queue (transfers) · **Fila** (noun) · macOS-adjacent file managers: Total Commander pt-BR (`4005="&Fila"`, "Download
-  em fila"), Double Commander pt-BR ("Queue"→"Fila", "Add to queue"→"Adicionar à fila"), MS terminology (Queue→"Fila") ·
-  confirmed. Window title "Transfer queue"→"Fila de transferências"; `queue.*`, `commands.queueShow.*`,
-  `fileOperations.transferProgress.queue`
+- queue (the noun) · **Fila** · macOS-adjacent file managers: Total Commander pt-BR (`4005="&Fila"`, "Download em
+  fila"), Double Commander pt-BR ("Queue"→"Fila", "Add to queue"→"Adicionar à fila"), MS terminology (Queue→"Fila", id
+  96569 BRA, feminine) · confirmed. `queue.*`, `commands.queueShow.*`, `fileOperations.transferProgress.queue`
+- operation (the category word for one queued job: a copy, move, delete, trash, rename, folder/file creation, or archive
+  edit) · **operação** (plural **operações**, feminine) · macOS Finder pt-BR is unanimous (40+ `LocalizableMerged.json`
+  values render "operation" as "operação": `NE1` "A operação não pode ser completada.", `NE82` "…outra operação está em
+  andamento…", `A17` "…algumas operações ainda estão em andamento."), MS terminology pt-BR (operation→"operação", ids
+  333922/87969/1381673, all BRA), Double Commander pt-BR ("Current operation:"→"Operação atual:", "File
+  operations"→"Operações de arquivos"), Total Commander pt-BR (`5391="Registro de Operações com Arquivos"`), GNOME
+  Nautilus pt-BR ("All file operations have been completed"→"Todas as operações com arquivos foram concluídas") ·
+  confirmed. Already the catalog's word via `operationLog.*` ("Registro de operações").
+- operation queue (the standalone window listing running and waiting operations) · **Fila de operações** · composed from
+  the two confirmed rows above; the pt-BR model for this shape is MS's own "fila de impressão" / "fila de trabalho" ·
+  confirmed. **Supersedes "Fila de transferências"**, which was correct only while the window was called the "Transfer
+  queue": the English widened from "transfer" to the category word because the window lists deletes, trashes, renames,
+  and folder/file creations too, and "transfer" already means copy-or-move one level down (the progress dialog, the
+  transfer driver). `queue.windowTitle`, `commands.queueShow.label`, and the three `fileOperations.transferProgress.*`
+  toasts all carry the same string, so the window, the View menu item, and the command palette entry read identically.
+- ⚠️ **The pair "Fila de operações" (present) / "Registro de operações" (past) sits in one View menu block** and shares
+  the head noun on purpose. Never rename one without the other.
+- **transferência stays the narrow word.** It's still correct for the copy/move job itself
+  (`fileOperations.transferProgress.pauseAria` "Pausar esta transferência", `stallUnknown` "A transferência parou de
+  avançar", `transferDialog.smbNativeNote`), and it must NOT come back as the queue's name. The rule: the progress
+  dialog talks about one transferência; the queue window talks about operações.
 - waiting / queued (status) · **Aguardando** · Double Commander pt-BR ("Aguardando acesso à origem do arquivo",
   "Aguardando resposta do usuário") · high. The queued/waiting row status and the "waiting its turn" toast
 - background / send to background (running transfer) · **segundo plano** / **em segundo plano** · Total Commander pt-BR
@@ -685,8 +705,8 @@ The copy/move dialog stops showing an ETA it no longer believes and explains the
   Reuses the settled status word **Aguardando**. macOS Finder also offers the verbal pattern "Waiting for ^0 to accept…"
   → "Aguardando que ^0 aceite…"; the noun phrase was chosen because it's shorter for a status line and matches the
   file-manager lineage.
-- "The transfer has stopped moving" · **A transferência parou de avançar** · `transferência` is catalog-settled
-  (`queue.windowTitle` "Fila de transferências", `pauseAria` "Pausar esta transferência"); "parou de avançar" says the
+- "The transfer has stopped moving" · **A transferência parou de avançar** · `transferência` is catalog-settled for the
+  copy/move job (`fileOperations.transferProgress.pauseAria` "Pausar esta transferência"); "parou de avançar" says the
   motion stopped without implying the transfer ended or broke · high. ❌ Not "travou" (reads as a crash) and not "parou"
   alone (reads as terminated).
 - "Cancel it, or leave it running in the background" · **Cancele-a ou deixe-a rodando em segundo plano** · enclitic
@@ -718,3 +738,32 @@ NÃO é um marcador dentro da frase: a frase termina em dois-pontos e precisa fu
   O particípio inicial segue os avisos irmãos (`{countText} itens copiados`). Sem possessivo ("sua área de
   transferência"): só existe uma, e o macOS usa o artigo.
 - Sem `sameAsSourceJustification`: o valor difere do inglês.
+
+### Operation-queue rename (`queue.*` + `commands.queueShow.*` + `fileOperations.transferProgress.queue*`/`backgroundedToast`, 2026-08-08)
+
+The queue window was renamed from "Transfer queue" to "Operation queue" in English, a meaning change: it lists deletes,
+trashes, renames, and folder/file creations too, not only transfers. Fourteen pt values widened with it. The head noun
+and the window name are in the main Terms list above (**operação** / **Fila de operações**, superseding "Fila de
+transferências"); the rest of the batch is below.
+
+- "Operations" (window heading + the list's screen-reader label) · **Operações** · the bare plural, matching the
+  English's category-naming plural noun · confirmed. `queue.heading`, `queue.list.aria`.
+- The four per-row aria labels keep their settled verbs and only swap the object noun: **Pausar / Retomar / Cancelar /
+  Selecionar esta operação** · glossary pause→**Pausar**, resume→**Retomar**, Cancel→**Cancelar**, select→
+  **Selecionar** · confirmed. `queue.row.pauseAria/resumeAria/cancelAria/selectAria`.
+- `commands.queueShow.label` dropped its "Mostrar" prefix, because the English label is now the bare window name and its
+  `@key.description` requires the command palette entry, the View menu item, and the window title to be one string. So
+  the label is exactly **Fila de operações**.
+- `commands.queueShow.description` is the locale's own sibling with one noun changed (per the learnings doc's "a new key
+  that VARIANTS an existing one is an edit of the sibling"): **Abra uma janela com todas as operações em andamento e
+  aguardando, onde você pode pausar, retomar ou cancelar**. "aguardando" is the settled queued/waiting status word; the
+  explicit **você** is kept (a dropped one is a pt-PT tell).
+- `queuedToastCount` writes pt's three CLDR branches on the new noun:
+  `one {# operação} many {# operações} other {# operações}`. **operação is feminine, exactly like transferência**, so
+  every downstream agreement in the surrounding strings survived the rename untouched: `queuedToast`'s "na frente desta
+  … ela … Encontre-a", `backgroundedToast`'s "Encontre-a", and the toolbar's "Cancelar selecionadas" / "#
+  selecionada(s)".
+- Regional-variant check run value by value against the style guide's pt-PT tell list (ficheiro, `estar a` + infinitive,
+  consoante, proclisis before an infinitive, Rever, alterar o nome, a dropped você): zero hits. The batch's Brazilian
+  markers are "gerencie" (not pt-PT "gira"), "rodando em segundo plano", and the retained "você".
+- No `sameAsSourceJustification` needed: all 14 values differ from English.

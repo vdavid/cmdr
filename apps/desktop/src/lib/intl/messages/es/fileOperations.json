@@ -561,25 +561,25 @@
   "@fileOperations.transferProgress.queue": {
     "sourceHash": "3b2fe03"
   },
-  "fileOperations.transferProgress.queueAria": "Enviar a la cola de transferencias",
+  "fileOperations.transferProgress.queueAria": "Enviar a la cola de operaciones",
   "@fileOperations.transferProgress.queueAria": {
-    "sourceHash": "46845e8"
+    "sourceHash": "2bc3bd9"
   },
-  "fileOperations.transferProgress.queueTooltip": "Mantenla en ejecución en segundo plano y gestiónala en la cola de transferencias (F2)",
+  "fileOperations.transferProgress.queueTooltip": "Mantenla en ejecución en segundo plano y gestiónala en la cola de operaciones (F2)",
   "@fileOperations.transferProgress.queueTooltip": {
-    "sourceHash": "f24ea59"
+    "sourceHash": "89ce770"
   },
-  "fileOperations.transferProgress.queuedToast": "{countText} por delante de esta, así que está esperando su turno. La encontrarás en la cola de transferencias.",
+  "fileOperations.transferProgress.queuedToast": "{countText} por delante de esta, así que está esperando su turno. La encontrarás en la cola de operaciones.",
   "@fileOperations.transferProgress.queuedToast": {
-    "sourceHash": "9eb1406"
+    "sourceHash": "60a251d"
   },
-  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# transferencia} many {# transferencias} other {# transferencias}}",
+  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# operación} many {# operaciones} other {# operaciones}}",
   "@fileOperations.transferProgress.queuedToastCount": {
-    "sourceHash": "b89f320"
+    "sourceHash": "85023e6"
   },
-  "fileOperations.transferProgress.backgroundedToast": "Sigue ejecutándose en segundo plano. La encontrarás en la cola de transferencias.",
+  "fileOperations.transferProgress.backgroundedToast": "Sigue ejecutándose en segundo plano. La encontrarás en la cola de operaciones.",
   "@fileOperations.transferProgress.backgroundedToast": {
-    "sourceHash": "fe4b733"
+    "sourceHash": "7c79c9a"
   },
   "fileOperations.errorDialog.technicalDetails": "Detalles técnicos",
   "@fileOperations.errorDialog.technicalDetails": {

@@ -354,14 +354,15 @@ AppKit + SystemSettings, 2026-06-21).
   matches macOS state phrasing ("en pausa") · high. ("Paused" dialog title → "En pausa")
 - resume → Reanudar · macOS Finder ("Resume"→"Reanudar", NE101/PE108.1; "Reanudar copia", N158.1) — exact copy-resume
   sense, Tier 1 · high
-- queue (transfer queue) → cola · double-commander ("Queue"→"En cola"); macOS print "cola"; Total Commander "Adm. de
-  transf. en segundo plano". "Transfer queue" → "Cola de transferencias"; per-row/dialog "Queue" button
-  (send-to-background) → "Cola" · high
+- queue (the window) → cola · double-commander ("Queue"→"En cola"); macOS print "cola"; Total Commander "Adm. de transf.
+  en segundo plano"; per-row/dialog "Queue" button (send-to-background) → "Cola" · high. ⚠️ The window NAME settled
+  here, "Cola de transferencias", is SUPERSEDED: it is now **Cola de operaciones** (see § Cola de operaciones: el cambio
+  de nombre de la ventana). The bare `cola` = queue mapping still stands.
 - queued / waiting (queue status) → Esperando · matches the existing "Esperando…" waiting precedent in
   `fileExplorer.json`; the row sits behind another transfer on the same drive · high
 - background / send to background → en segundo plano · macOS/MS/Total Commander standard (already in glossary); "Send to
-  the transfer queue" → "Enviar a la cola de transferencias", "keep running in the background" → "mantener … en
-  ejecución en segundo plano" · high
+  the operation queue" → "Enviar a la cola de operaciones" (window name superseded, see the entry above), "keep running
+  in the background" → "mantener … en ejecución en segundo plano" · high
 - transfer (the operation) → transferencia · reaffirmed (already used across the catalog); counted phrase "{n}
   transfer(s)" → "{n} transferencia(s)" (fem., so "seleccionada(s)" agrees) · high
 - "Couldn''t finish" (failed row status, no-bare-"failed" voice) → No se pudo completar · from the errors-pass "No se
@@ -884,3 +885,44 @@ un marcador dentro de la frase: la frase acaba en dos puntos y tiene que sostene
   patrón de los avisos hermanos (`{countText} ítems copiados`). Sin posesivo (`tu portapapeles`): solo hay uno y macOS
   usa siempre el artículo.
 - No hace falta `sameAsSourceJustification`: el valor difiere del inglés.
+
+## Cola de operaciones: el cambio de nombre de la ventana (2026-08-08)
+
+The English source widened from **"Transfer queue"** to **"Operation queue"** across 14 keys (`queue.windowTitle`,
+`queue.heading`, the four `queue.row.*Aria`, `queue.list.aria`, `commands.queueShow.label`/`.description`, and the five
+`fileOperations.transferProgress.queue*`/`backgroundedToast` keys). The window lists deletes, trashes, renames, folder
+and file creations, and archive edits, not only transfers, so the narrow word was wrong on the facts; "transfer" also
+already means copy-or-move one level down (the transfer progress dialog, the transfer driver). `es` had to widen the
+same way, which is why a hash restamp was not an option.
+
+- **operation (the category: a copy, move, delete, trash, rename, folder/file creation, or archive edit) → operación** ·
+  macOS Finder Tier 1, in exactly this sense: NE82 "another operation is in progress, such as moving or copying an item
+  or emptying the Trash" → "hay otra operación en curso, como trasladar o copiar un ítem o vaciar la papelera"; NE83
+  "the current operation" → "la operación actual". Double Commander (orthodox two-pane) agrees throughout: "Current
+  operation:" → "Operación actual:", "File operations" → "Operaciones con archivos", "Executing operations" → "Ejecución
+  de operaciones", "operations panel" → "panel de operaciones"; Total Commander "operaciones activas en segundo plano".
+  The es catalog had already settled it (30+ hits, incl. `operationLog.dialog.title` = "Registro de operaciones" and
+  `settings.navigationAndFileOps.card.fileOperations` = "Operaciones de archivos") · high
+- **operation queue (the window name) → Cola de operaciones** · `cola` = queue is unchanged from the June queue pass
+  (Double Commander "New queue" → "Cola nueva", "Add To Queue" → "Añadir a cola"; macOS print "cola"), and the catalog
+  already says `queue.empty.title` = "No hay nada en la cola". Composed with the settled `operación` · high. Supersedes
+  **"Cola de transferencias"** (June queue pass), which now names the wrong scope.
+- **The View-menu pair stays parallel.** "Operation queue" / "Operation log" → **Cola de operaciones** / **Registro de
+  operaciones**: same head noun, differing only in `cola` (present, running now) vs `registro` (past, already ran),
+  exactly as the English pair does · high
+- **"this operation" (the per-row aria labels) → esta operación** · macOS Finder Tier 1, verbatim: CS203 "Authentication
+  needed to complete this operation." → "Es necesario autenticarse para completar esta operación.", plus CS205/CS207. So
+  Pausar / Reanudar / Cancelar / Seleccionar + "esta operación", reusing the settled pause→Pausar, resume→Reanudar,
+  cancel→Cancelar, select→seleccionar · high
+- **`commands.queueShow.label` is now the bare window title, not a "Mostrar…" phrase** · the English label changed from
+  a "Show …" command to plain "Operation queue" so the palette entry, the View menu item, and the window title read
+  identically. The es value follows: "Cola de operaciones", NOT "Mostrar la cola de operaciones" · high
+- **The feminine head noun keeps every clitic and participle that already agreed.** `transferencia` → `operación` are
+  both feminine singular, so `queuedToast`'s "por delante de esta … La encontrarás", `queueTooltip`'s "Mantenla …
+  gestiónala", and `queueShow.description`'s "pausarlas, reanudarlas o cancelarlas" all stayed correct unchanged; only
+  the noun and the window name moved. Worth knowing if the source ever widens again to a masculine concept · high
+- **`queuedToastCount` keeps its three CLDR branches**: `one {# operación} many {# operaciones} other {# operaciones}` ·
+  high
+- `transfer` → `transferencia` is NOT retired: it still names the copy-or-move operation itself (the progress dialog,
+  `transfer.*`, the stall copy). Only the QUEUE's name widened · high
+- No `sameAsSourceJustification` needed: all 14 values differ from English.

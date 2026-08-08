@@ -1,11 +1,11 @@
 {
-  "queue.windowTitle": "Overdrachtswachtrij",
+  "queue.windowTitle": "Bewerkingenwachtrij",
   "@queue.windowTitle": {
-    "sourceHash": "3f728ae"
+    "sourceHash": "fa91417"
   },
-  "queue.heading": "Overdrachten",
+  "queue.heading": "Bewerkingen",
   "@queue.heading": {
-    "sourceHash": "c417cb8"
+    "sourceHash": "358cc20"
   },
   "queue.empty.title": "Niets in de wachtrij",
   "@queue.empty.title": {
@@ -35,25 +35,25 @@
   "@queue.row.cancel": {
     "sourceHash": "19766ed"
   },
-  "queue.row.pauseAria": "Pauzeer deze overdracht",
+  "queue.row.pauseAria": "Pauzeer deze bewerking",
   "@queue.row.pauseAria": {
-    "sourceHash": "16504ec"
+    "sourceHash": "a836434"
   },
-  "queue.row.resumeAria": "Hervat deze overdracht",
+  "queue.row.resumeAria": "Hervat deze bewerking",
   "@queue.row.resumeAria": {
-    "sourceHash": "bbf3253"
+    "sourceHash": "be841fc"
   },
-  "queue.row.cancelAria": "Annuleer deze overdracht",
+  "queue.row.cancelAria": "Annuleer deze bewerking",
   "@queue.row.cancelAria": {
-    "sourceHash": "f85b066"
+    "sourceHash": "236ec68"
   },
-  "queue.row.selectAria": "Selecteer deze overdracht",
+  "queue.row.selectAria": "Selecteer deze bewerking",
   "@queue.row.selectAria": {
-    "sourceHash": "fb8bb14"
+    "sourceHash": "6618ecc"
   },
-  "queue.list.aria": "Overdrachten",
+  "queue.list.aria": "Bewerkingen",
   "@queue.list.aria": {
-    "sourceHash": "c417cb8"
+    "sourceHash": "358cc20"
   },
   "queue.toolbar.pauseAll": "Pauzeer alles",
   "@queue.toolbar.pauseAll": {

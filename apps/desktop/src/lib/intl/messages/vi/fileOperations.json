@@ -560,25 +560,25 @@
   "@fileOperations.transferProgress.queue": {
     "sourceHash": "3b2fe03"
   },
-  "fileOperations.transferProgress.queueAria": "Đưa vào hàng đợi truyền",
+  "fileOperations.transferProgress.queueAria": "Đưa vào hàng đợi thao tác",
   "@fileOperations.transferProgress.queueAria": {
-    "sourceHash": "46845e8"
+    "sourceHash": "2bc3bd9"
   },
-  "fileOperations.transferProgress.queueTooltip": "Giữ chạy ở chế độ nền và quản lý trong hàng đợi truyền (F2)",
+  "fileOperations.transferProgress.queueTooltip": "Giữ chạy ở chế độ nền và quản lý trong hàng đợi thao tác (F2)",
   "@fileOperations.transferProgress.queueTooltip": {
-    "sourceHash": "f24ea59"
+    "sourceHash": "89ce770"
   },
-  "fileOperations.transferProgress.queuedToast": "{countText} đang ở phía trước, nên lần truyền này phải chờ đến lượt. Tìm nó trong hàng đợi truyền.",
+  "fileOperations.transferProgress.queuedToast": "{countText} đang ở phía trước, nên thao tác này phải chờ đến lượt. Tìm nó trong hàng đợi thao tác.",
   "@fileOperations.transferProgress.queuedToast": {
-    "sourceHash": "9eb1406"
+    "sourceHash": "60a251d"
   },
-  "fileOperations.transferProgress.queuedToastCount": "{count, plural, other {# lần truyền}}",
+  "fileOperations.transferProgress.queuedToastCount": "{count, plural, other {# thao tác}}",
   "@fileOperations.transferProgress.queuedToastCount": {
-    "sourceHash": "b89f320"
+    "sourceHash": "85023e6"
   },
-  "fileOperations.transferProgress.backgroundedToast": "Vẫn đang chạy ở chế độ nền. Tìm nó trong hàng đợi truyền.",
+  "fileOperations.transferProgress.backgroundedToast": "Vẫn đang chạy ở chế độ nền. Tìm nó trong hàng đợi thao tác.",
   "@fileOperations.transferProgress.backgroundedToast": {
-    "sourceHash": "fe4b733"
+    "sourceHash": "7c79c9a"
   },
   "fileOperations.errorDialog.technicalDetails": "Chi tiết kỹ thuật",
   "@fileOperations.errorDialog.technicalDetails": {

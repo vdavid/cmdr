@@ -562,25 +562,25 @@
   "@fileOperations.transferProgress.queue": {
     "sourceHash": "3b2fe03"
   },
-  "fileOperations.transferProgress.queueAria": "Naar de overdrachtswachtrij sturen",
+  "fileOperations.transferProgress.queueAria": "Naar de bewerkingenwachtrij sturen",
   "@fileOperations.transferProgress.queueAria": {
-    "sourceHash": "46845e8"
+    "sourceHash": "2bc3bd9"
   },
-  "fileOperations.transferProgress.queueTooltip": "Laat dit op de achtergrond doorlopen en beheer het in de overdrachtswachtrij (F2)",
+  "fileOperations.transferProgress.queueTooltip": "Laat dit op de achtergrond doorlopen en beheer het in de bewerkingenwachtrij (F2)",
   "@fileOperations.transferProgress.queueTooltip": {
-    "sourceHash": "f24ea59"
+    "sourceHash": "89ce770"
   },
-  "fileOperations.transferProgress.queuedToast": "Er {countText} deze voor, dus deze wacht op zijn beurt. Vind hem in de overdrachtswachtrij.",
+  "fileOperations.transferProgress.queuedToast": "Er {countText} deze voor, dus deze wacht op zijn beurt. Vind hem in de bewerkingenwachtrij.",
   "@fileOperations.transferProgress.queuedToast": {
-    "sourceHash": "9eb1406"
+    "sourceHash": "60a251d"
   },
-  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {gaat # overdracht} other {gaan # overdrachten}}",
+  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {gaat # bewerking} other {gaan # bewerkingen}}",
   "@fileOperations.transferProgress.queuedToastCount": {
-    "sourceHash": "b89f320"
+    "sourceHash": "85023e6"
   },
-  "fileOperations.transferProgress.backgroundedToast": "Loopt nog op de achtergrond. Vind hem in de overdrachtswachtrij.",
+  "fileOperations.transferProgress.backgroundedToast": "Loopt nog op de achtergrond. Vind hem in de bewerkingenwachtrij.",
   "@fileOperations.transferProgress.backgroundedToast": {
-    "sourceHash": "fe4b733"
+    "sourceHash": "7c79c9a"
   },
   "fileOperations.errorDialog.technicalDetails": "Technische details",
   "@fileOperations.errorDialog.technicalDetails": {
