@@ -1112,4 +1112,91 @@ REVIEW FLAGS (operation-queue rename pass):
   with its own English, but if the English empty state is ever widened, this is the key that has to follow.
 - **Keys added later to `queue.json` must reuse `Bewerkingenwachtrij` / `bewerking`.** English already has
   `queue.failureToast.action` "Show in operation queue", `queue.failureToast.summary`, `queue.chip.failed`, and
-  `queue.chip.ariaLabel` ("Open the operation queue"), which `nl` doesn't carry yet.
+  `queue.chip.ariaLabel` ("Open the operation queue"), which `nl` doesn't carry yet. Done in the corner-chip +
+  failure-notice pass below.
+
+## De voortgangschip en het niet-voltooid-bericht (2026-08-08)
+
+Nine new `queue.json` keys for two surfaces: the main window's ~80 px corner progress chip (`queue.chip.*`) and the
+failure notice plus its dismissable queue rows (`queue.failureToast.*`, `queue.row.dismiss*`,
+`queue.toolbar.dismissAll`). The window name and the head noun come from the operation-queue rename pass above; this
+section records only what was new.
+
+- **dismiss (remove a finished-with-a-problem row from a list; nothing is undone, retried, or deleted) → `Wis` (button)
+  / `wissen`** · macOS Finder + AppKit Tier 1 render "Clear Menu" → "Wis menu" (key `A29`), which clears a recent-items
+  LIST without deleting anything: the same act. Already the in-catalog rendering of "clear"
+  (`settings.fileSystemWatching.clearIndex` "Index wissen", `settings.sidebar.clearSearch` "Zoekopdracht wissen",
+  `shortcuts.section.pressEscToClear` "Druk op ESC om te wissen"); the imperative stem `Wis` follows the button rule ·
+  high. ⚠️ This is a SECOND sense of "dismiss" in this catalog, deliberately split from the settled `dismiss → Sluit` /
+  `Sluit melding` (a toast or popover is CLOSED; a list row is CLEARED, and "Sluit deze bewerking" would read as "close
+  this operation", which is not what the button does).
+  - ❌ NOT `Verwijder uit lijst` (the settled `remove from list`, `goToPath.dialog.removeFromList`): honest, but it
+    leads with the delete verb on a row whose own label can be "Bezig met verwijderen", and it is far too long for a
+    `size="mini"` row button. ❌ NOT `Verberg`: implies the row can come back, and it can't.
+  - "Dismiss all" → `Wis alles`, the `<imperatief> alles` shape the toolbar already uses (`Pauzeer alles`,
+    `Hervat alles`, macOS "Selecteer alles") · high.
+  - The row aria takes the family shape `<Werkwoord> deze bewerking`
+    (`Pauzeer/Hervat/Annuleer/Selecteer deze bewerking`), so `Wis deze bewerking` · high.
+- **"Couldn''t finish X" (failure-notice headline) → `X niet voltooid`** · built on the row's own status word
+  `Niet voltooid` (`queue.row.status` failed arm) so the toast, the row, and the chip say one thing. Each arm is the
+  matching `queue.row.label` verb with "Bezig met " stripped, in the nominalized infinitive Dutch headlines take:
+  `Kopiëren niet voltooid`, `Verplaatsen niet voltooid`, `Verwijderen niet voltooid`,
+  `Naar prullenmand verplaatsen niet voltooid`, `Hernoemen niet voltooid`, `Map aanmaken niet voltooid`,
+  `Bestand aanmaken niet voltooid`, `Archief bewerken niet voltooid`, `other` = the bare `Niet voltooid` · high. No
+  `fout` / `mislukt` anywhere, per the voice rule.
+- **"N operations couldn''t finish" (count headline) → `{countText} bewerking is` / `{countText} bewerkingen zijn` + the
+  shared tail ` niet voltooid`** · the copula lives INSIDE the plural branches and the predicate is shared, per
+  `style.md` § Plurals · high. Renders "1 bewerking is niet voltooid" / "3 bewerkingen zijn niet voltooid".
+- **"Show in operation queue" (notice button) → `Toon in de bewerkingenwachtrij`** · glossary `show → Toon` (macOS
+  Finder) + the window name, lowercased mid-sentence with its article exactly as the catalog already writes it
+  (`transferProgress.queueTooltip` "… in de bewerkingenwachtrij (F2)", `queuedToast` "Vind hem in de
+  bewerkingenwachtrij") · high.
+- **"Open the operation queue (to see why)" (the chip's promise) → `Open de bewerkingenwachtrij`
+  (`… om te zien waarom`)** · glossary `open → Open` (macOS Finder imperative) + the same article-and-lowercase
+  treatment · high.
+- **"percent", spelled out for screen readers → `procent`** · the Dutch word, which VoiceOver nl reads naturally; the
+  `%` SIGN stays in the visual tooltip and takes NO space before it in Dutch (`{percentText}%`, matching the catalog's
+  "Zoom naar 100%" and `lowDiskSpace` "{percentText}%") · high.
+- **"items" in the chip tooltip → `onderdeel` / `onderdelen`** · the settled macOS Finder term (glossary above); covers
+  files and folders alike · high.
+- **"{duration} left" in the tooltip's trailing slot** arrives already rendered from
+  `fileOperations.transferProgress.etaRemaining` = `nog {duration}`, so the settled "left → nog …" phrasing needs
+  nothing here; the paused variant arrives as `Gepauzeerd` from `queue.row.status` · high.
+
+**`queue.chip.tooltip` needed a word-order change English doesn't.** English hangs the count straight off the action
+word ("Copying 214 items to Backup"). Dutch can't: `{label}` is a `queue.row.label` arm, and while "Bezig met kopiëren
+van 214 onderdelen" would work, the trash arm ("Naar prullenmand verplaatsen") and the fallback ("Bezig") take no
+`van`-object at all. So the count clause carries its OWN middle dot (` · {countText} onderdelen`) and reads as one more
+fact on the line, while the destination clause stays attached to whatever precedes it (` naar {destination}`). That
+clause is grammatical both after the count and directly after the label, and `destinationName()` returns `''` for
+deletes and trashes, so "Naar prullenmand verplaatsen naar X" can't occur. Every optional clause keeps its own leading
+space and its own separator, and both empty arms stay empty. The four combinations render:
+
+- `Bezig met kopiëren · 3 onderdelen naar Backup · 42% · nog 1m 20s`
+- `Bezig met kopiëren naar Backup · 42% · nog 1m 20s` (count 0)
+- `Bezig met verwijderen · 3 onderdelen · 42% · nog 1m 20s` (no destination)
+- `Bezig met verwijderen · 42% · nog 1m 20s` (count 0, no destination)
+
+No `sameAsSourceJustification` needed: all nine values differ from English.
+
+REVIEW FLAGS (corner-chip + failure-notice pass):
+
+- **`Wis` for "dismiss"**: `wissen` also renders "erase" in Dutch macOS ("Wis schijf" = Erase Disk), so on a row in a
+  FILE manager it carries a faint destructive echo, and the queue window has a real destructive button next to it
+  (`Terugdraaien`). Chosen anyway because Tier-1 "Wis menu" is the exact list-clearing analog, it is what this catalog
+  already says for "clear", and it is the only candidate short enough for a mini button with the `x` glyph beside it.
+  Alternatives if a native reviewer disagrees: `Verwijder uit lijst` (honest, long, delete-flavoured) or `Verberg`
+  (safe, but implies the row comes back).
+- **`Hernoemen niet voltooid`** follows `queue.row.label`'s rename arm ("Bezig met hernoemen") so the toast, the chip,
+  and the row agree today. It therefore ADDS one more instance of `hernoemen`, which the 2026-07-20 quality pass ruled
+  against in favour of the settled `naam wijzigen` (macOS + Microsoft, high) and flagged for a locale-wide sweep. When
+  that sweep runs it must move `queue.row.label` and this arm TOGETHER (to `Naam wijzigen niet voltooid`), never one
+  alone.
+- **Overflow risk, `queue.failureToast.title` trash arm**: `Naar prullenmand verplaatsen niet voltooid` is 42 characters
+  against English's 31, in a ~360 px toast. It should fit on one line, but it's the longest string on either new surface
+  and the first place to look if the toast title wraps.
+- **`Toon in de bewerkingenwachtrij`** is 30 characters against English's 23, on the notice's action button. The article
+  can't be dropped in Dutch; the fallback if it clips is `Toon in de wachtrij`, which loses the window name the `@key`
+  description asks us to keep.
+- **`Wis alles`** can read as "clear the whole list" rather than "clear the rows that couldn't finish", which is the
+  same ambiguity English's "Dismiss all" carries. Kept deliberately.

@@ -47,6 +47,14 @@
   "@queue.row.cancelAria": {
     "sourceHash": "236ec68"
   },
+  "queue.row.dismiss": "忽略",
+  "@queue.row.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "queue.row.dismissAria": "忽略这项操作",
+  "@queue.row.dismissAria": {
+    "sourceHash": "ff1b528"
+  },
   "queue.row.selectAria": "选择这项操作",
   "@queue.row.selectAria": {
     "sourceHash": "6618ecc"
@@ -67,8 +75,36 @@
   "@queue.toolbar.cancelSelected": {
     "sourceHash": "34e18e5"
   },
+  "queue.toolbar.dismissAll": "全部忽略",
+  "@queue.toolbar.dismissAll": {
+    "sourceHash": "97fac9e"
+  },
   "queue.toolbar.selectedCount": "{count, plural, other {已选 # 个}}",
   "@queue.toolbar.selectedCount": {
     "sourceHash": "5f13640"
+  },
+  "queue.failureToast.title": "{type, select, copy {无法完成拷贝操作} move {无法完成移动操作} delete {无法完成删除操作} trash {无法完成移到废纸篓的操作} rename {无法完成重命名操作} create_folder {无法完成创建文件夹的操作} create_file {无法完成创建文件的操作} archive_edit {无法完成编辑压缩文件的操作} other {无法完成这项操作}}",
+  "@queue.failureToast.title": {
+    "sourceHash": "a55f5df"
+  },
+  "queue.failureToast.action": "在操作队列中显示",
+  "@queue.failureToast.action": {
+    "sourceHash": "607fbb1"
+  },
+  "queue.failureToast.summary": "{count, plural, other {{countText} 项操作无法完成}}",
+  "@queue.failureToast.summary": {
+    "sourceHash": "6207914"
+  },
+  "queue.chip.failed": "{count, plural, other {{countText} 项操作无法完成}}。打开操作队列即可查看原因。",
+  "@queue.chip.failed": {
+    "sourceHash": "336ad46"
+  },
+  "queue.chip.ariaLabel": "{label}，已完成 {percentText}%。打开操作队列。",
+  "@queue.chip.ariaLabel": {
+    "sourceHash": "3ff7a01"
+  },
+  "queue.chip.tooltip": "{label}{hasDestination, select, yes {到“{destination}”} other {}}{count, plural, =0 {} other { · 共 {countText} 个项目}} · {percentText}%{hasDetail, select, yes { · {detail}} other {}}",
+  "@queue.chip.tooltip": {
+    "sourceHash": "c88735c"
   }
 }

@@ -148,6 +148,18 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
       'finishing up) or to one of its two progress bars.',
   },
   {
+    // The failure notice's SUMMARY form only appears past three failures at once,
+    // which no surface stages: `operation-failure` shows the single-failure toast,
+    // and both are the same pane in the same corner. `title` and `action` are
+    // captured directly there, so the direct pass keeps them and only the summary
+    // falls through to this stand-in.
+    prefix: 'queue.failureToast.',
+    screenshot: 'operation-failure.png',
+    note:
+      'The notice the main window raises when a backgrounded operation stops early, pictured here with one failure. Your ' +
+      'string is the summary that replaces these when several stop at once, in the same place, with a count instead of a name.',
+  },
+  {
     // The update status line lives in Settings > Updates & privacy; the toasts it
     // raises appear over the same panel.
     prefix: 'updates.',

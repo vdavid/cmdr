@@ -1,8 +1,9 @@
 /**
  * Special-surface capture functions for the i18n screenshot-capture driver
  * (`i18n-capture.spec.ts`): the report/feedback/license dialogs, the file-viewer
- * subsurfaces, and the license-state surfaces that need a separate
- * `CMDR_MOCK_LICENSE` launch.
+ * subsurfaces, the license-state surfaces that need a separate
+ * `CMDR_MOCK_LICENSE` launch, and the two operation surfaces that need real work
+ * in flight (the queue window and the main window's corner chip).
  *
  * Kept separate from `i18n-capture-surfaces.ts` (the original surface groups)
  * both for the file-length budget and because these share a theme: surfaces that
@@ -106,6 +107,11 @@ const QUEUE_FILES_PER_SOURCE = 24
 const QUEUE_SOURCES = ['queue-shot-a', 'queue-shot-b']
 /** Per-file delay (ms) the backend honors while capturing, so the transfers outlive the shot. */
 const QUEUE_THROTTLE_MS = 250
+/** Two source dirs deliberately NEVER created: a copy from one fails validation inside
+ *  the spawned operation, so the backend emits `write-error` for a real registered op and
+ *  retains it. The cheapest deterministic failure there is, same one `operation-queue.spec.ts`
+ *  uses. Two of them, because the "Dismiss all" toolbar button only appears past one. */
+const QUEUE_DOOMED_SOURCES = ['queue-shot-gone-a', 'queue-shot-gone-b']
 
 /** Creates `left/<name>/` with `QUEUE_FILES_PER_SOURCE` tiny files, Node-side on real disk. */
 function makeQueueSource(fixtureRoot: string, name: string): void {
@@ -116,7 +122,9 @@ function makeQueueSource(fixtureRoot: string, name: string): void {
   }
 }
 
-/** Starts a local→local copy of `left/<sourceName>/` into `right/` through the production IPC. */
+/** Starts a local→local copy of `left/<sourceName>/` into `right/` through the production IPC.
+ *  Works for both the staged sources and the never-created doomed ones: an absent source
+ *  registers the operation and then fails it, which is exactly what the failure shots need. */
 async function startQueueCopy(main: TauriPage, fixtureRoot: string, sourceName: string): Promise<void> {
   const src = JSON.stringify(join(fixtureRoot, 'left', sourceName))
   const destDir = JSON.stringify(join(fixtureRoot, 'right'))
@@ -129,18 +137,44 @@ async function startQueueCopy(main: TauriPage, fixtureRoot: string, sourceName: 
   })`)
 }
 
+/** Clears the capture throttle, cancels every live operation, and drops every retained
+ *  failure. Failures are deliberately sticky (only an explicit dismissal clears them), so
+ *  a shot that stages one MUST clean it up or it follows the app into later surfaces. */
+async function resetOperationState(main: TauriPage): Promise<void> {
+  await main
+    .evaluate(`(async function(){
+      try { await window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: null }); } catch (e) {}
+      try {
+        var ops = await window.__TAURI_INTERNALS__.invoke('list_operations');
+        var ids = ops.filter(function(o){ return o.status !== 'failed'; }).map(function(o){ return o.operationId; });
+        if (ids.length) await window.__TAURI_INTERNALS__.invoke('cancel_operations', { operationIds: ids });
+      } catch (e) {}
+      try { await window.__TAURI_INTERNALS__.invoke('dismiss_all_failed_operations'); } catch (e) {}
+    })()`)
+    .catch(() => {})
+}
+
+/** Counts the operation rows in the queue window carrying `data-status="<status>"`. */
+async function countRowsWithStatus(queue: TauriPage, status: string): Promise<number> {
+  const n = await queue.evaluate<number>(`document.querySelectorAll('.queue-row[data-status="${status}"]').length`)
+  return n
+}
+
 /**
- * Captures the TRANSFER QUEUE window in both of its states: empty, then with one
- * Running and one Queued row.
+ * Captures the OPERATION QUEUE window in its three states: empty, then with one
+ * Running and one Queued row, then with two rows that couldn't finish.
  *
  * `/queue` is its own `WebviewWindow` (own webview context, own capture sink),
- * opened by the `queue.show` registry command, and every `queue.*` key is
- * exclusive to it: nothing else in the app can stand in for this surface.
+ * opened by the `queue.show` registry command, and every queue ROW key is
+ * exclusive to it: nothing else in the app can stand in for this surface. The
+ * rest of the `queue.*` namespace (`queue.chip.*`, `queue.failureToast.*`) lives
+ * in the MAIN window and is captured by `captureOperationChipSurfaces`.
  *
  * The rows need real work in flight, so this stages the same two same-lane copies
  * `operation-queue.spec.ts` uses and slows the backend with `set_test_throttle` so
  * they outlive the screenshot. Empty first, so `queue.empty.*` couples to the
- * image that actually shows the empty state rather than to a populated list.
+ * image that actually shows the empty state rather than to a populated list, and
+ * failed LAST, because a retained failure is sticky until something dismisses it.
  *
  * The throttle is cleared and every staged operation cancelled in `finally`, so a
  * later surface never captures a queue still grinding through leftovers.
@@ -192,23 +226,103 @@ export async function captureQueueWindow(
         .toBe('queued,running')
       return { page: q, focusLabel: 'queue' }
     })
+
+    // The failed state, which no other surface can stand in for: a retained
+    // failure renders its reason through the error pipeline plus a Dismiss
+    // button, and TWO of them bring out the toolbar's "Dismiss all". Both
+    // copies name a source that was never created, so each registers a real
+    // operation and then fails validation inside it.
+    await captureSurface('queue-failed', report, failed, async () => {
+      for (const name of QUEUE_DOOMED_SOURCES) await startQueueCopy(main, fixtureRoot, name)
+      // Poll on BOTH failed rows: the "Dismiss all" button is conditional on
+      // more than one, and it's half of what this surface adds.
+      await expect.poll(async () => countRowsWithStatus(q, 'failed'), { timeout: 20000 }).toBe(2)
+      return { page: q, focusLabel: 'queue', readySelector: '.queue-row[data-status="failed"]' }
+    })
   } catch (err) {
-    for (const label of ['queue-empty', 'queue']) {
+    for (const label of ['queue-empty', 'queue', 'queue-failed']) {
       if (!(label in report) && !failed.includes(label)) failed.push(label)
     }
     console.warn(`[i18n-capture] queue window setup FAILED: ${err instanceof Error ? err.message : String(err)}`)
   } finally {
-    await main
-      .evaluate(`(async function(){
-        try { await window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: null }); } catch (e) {}
-        try {
-          var ops = await window.__TAURI_INTERNALS__.invoke('list_operations');
-          var ids = ops.map(function(o){ return o.operationId; });
-          if (ids.length) await window.__TAURI_INTERNALS__.invoke('cancel_operations', { operationIds: ids });
-        } catch (e) {}
-      })()`)
-      .catch(() => {})
+    await resetOperationState(main)
     if (queue) await closeScopedWindow(main, queue, 'queue').catch(() => {})
+  }
+}
+
+/**
+ * Captures the MAIN window's two ambient operation surfaces, the corner chip and
+ * the failure notice, in the states that only exist while work is in flight.
+ *
+ * These are the `queue.chip.*` and `queue.failureToast.*` keys. They belong to the
+ * main window rather than the queue window, which is why they can't ride along on
+ * `captureQueueWindow`, and no static surface can stand in for them: the chip only
+ * mounts while an operation is running (or a failure is retained), and it hides
+ * itself while the foreground progress dialog owns that operation.
+ *
+ * Both shots drive the operation through the production IPC rather than the
+ * progress dialog, deliberately: an op with no foreground dialog leaves
+ * `getForegroundOperationId()` empty, which is the exact condition the chip is
+ * built for (a backgrounded operation nothing else is reporting).
+ *
+ * Runs AFTER `captureQueueWindow`, which closes the queue window and clears the
+ * operation state, so the main window is the only thing on screen. The `finally`
+ * clears the state again: retained failures are sticky by design.
+ */
+export async function captureOperationChipSurfaces(
+  main: TauriPage,
+  report: Record<string, SurfaceEntry>,
+  failed: string[],
+): Promise<void> {
+  await ensureAppReady(main)
+  const fixtureRoot = getFixtureRoot()
+  makeQueueSource(fixtureRoot, QUEUE_SOURCES[0] ?? 'queue-shot-a')
+
+  try {
+    // The chip mid-transfer: the action word, the bar, and the tooltip line with
+    // the item count, destination, percentage, and time left.
+    await captureSurface('operation-chip', report, failed, async () => {
+      await captureCall(main, 'reset')
+      await captureCall<boolean>(main, 'enable')
+      await main.evaluate(
+        `window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: ${String(QUEUE_THROTTLE_MS)} })`,
+      )
+      await startQueueCopy(main, fixtureRoot, QUEUE_SOURCES[0] ?? 'queue-shot-a')
+      // The chip holds itself back for `CHIP_SETTLE_MS` before its first
+      // appearance, so work that's over in a blink never flashes the corner.
+      // Waiting on the element rides that out without hardcoding the beat.
+      await main.waitForSelector('.operation-chip', 15000)
+      return { page: main, readySelector: '.operation-chip' }
+    })
+
+    // The failure state: the persistent toast naming what stopped and offering
+    // the queue window, plus the chip's own warning mark behind it. The chip only
+    // takes the failure state when NOTHING is running (live work wins the
+    // corner), so the running copy has to go first.
+    await captureSurface('operation-failure', report, failed, async () => {
+      await resetOperationState(main)
+      await main.waitForFunction(`document.querySelector('.operation-chip') === null`, 15000)
+      await startQueueCopy(main, fixtureRoot, QUEUE_DOOMED_SOURCES[0] ?? 'queue-shot-gone-a')
+      // Both surfaces of one failure, in one frame: the toast is what the user
+      // actually sees, the chip is the trace it leaves once the toast is gone.
+      // Gate on BOTH — they're driven off the same snapshot but not necessarily
+      // in the same paint, and the toast carries the keys this surface exists
+      // for (`queue.failureToast.*`), so a chip-only shot would be a silent miss.
+      // The toast's ACTION button, not its `.reason`: the reason is conditional
+      // on the error pipeline having one, and gating on a conditional element
+      // buys a 20 s hang instead of a shot.
+      await main.waitForSelector('.operation-chip.failed', 20000)
+      await main.waitForSelector('.toast-body .actions button', 20000)
+      return { page: main, readySelector: '.operation-chip.failed' }
+    })
+  } catch (err) {
+    for (const label of ['operation-chip', 'operation-failure']) {
+      if (!(label in report) && !failed.includes(label)) failed.push(label)
+    }
+    console.warn(`[i18n-capture] operation chip setup FAILED: ${err instanceof Error ? err.message : String(err)}`)
+  } finally {
+    await resetOperationState(main)
+    await captureCall(main, 'disable').catch(() => {})
   }
 }
 

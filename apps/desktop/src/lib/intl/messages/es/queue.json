@@ -47,6 +47,14 @@
   "@queue.row.cancelAria": {
     "sourceHash": "236ec68"
   },
+  "queue.row.dismiss": "Descartar",
+  "@queue.row.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "queue.row.dismissAria": "Descartar esta operación",
+  "@queue.row.dismissAria": {
+    "sourceHash": "ff1b528"
+  },
   "queue.row.selectAria": "Seleccionar esta operación",
   "@queue.row.selectAria": {
     "sourceHash": "6618ecc"
@@ -67,8 +75,36 @@
   "@queue.toolbar.cancelSelected": {
     "sourceHash": "34e18e5"
   },
+  "queue.toolbar.dismissAll": "Descartar todo",
+  "@queue.toolbar.dismissAll": {
+    "sourceHash": "97fac9e"
+  },
   "queue.toolbar.selectedCount": "{count, plural, one {# seleccionada} many {# seleccionadas} other {# seleccionadas}}",
   "@queue.toolbar.selectedCount": {
     "sourceHash": "5f13640"
+  },
+  "queue.failureToast.title": "{type, select, copy {No se pudo completar la copia} move {No se pudo completar el movimiento} delete {No se pudo completar la eliminación} trash {No se pudo completar el movimiento a la papelera} rename {No se pudo completar el cambio de nombre} create_folder {No se pudo completar la creación de la carpeta} create_file {No se pudo completar la creación del archivo} archive_edit {No se pudo completar la edición del archivo comprimido} other {No se pudo completar}}",
+  "@queue.failureToast.title": {
+    "sourceHash": "a55f5df"
+  },
+  "queue.failureToast.action": "Mostrar en la cola de operaciones",
+  "@queue.failureToast.action": {
+    "sourceHash": "607fbb1"
+  },
+  "queue.failureToast.summary": "{count, plural, one {No se pudo completar {countText} operación} many {No se pudieron completar {countText} operaciones} other {No se pudieron completar {countText} operaciones}}",
+  "@queue.failureToast.summary": {
+    "sourceHash": "6207914"
+  },
+  "queue.chip.failed": "{count, plural, one {No se pudo completar {countText} operación} many {No se pudieron completar {countText} operaciones} other {No se pudieron completar {countText} operaciones}}. Abre la cola de operaciones para ver por qué.",
+  "@queue.chip.failed": {
+    "sourceHash": "336ad46"
+  },
+  "queue.chip.ariaLabel": "{label}, {percentText} por ciento. Abre la cola de operaciones.",
+  "@queue.chip.ariaLabel": {
+    "sourceHash": "3ff7a01"
+  },
+  "queue.chip.tooltip": "{label}{count, plural, =0 {} one { {countText} elemento} many { {countText} elementos} other { {countText} elementos}}{hasDestination, select, yes { a {destination}} other {}} · {percentText}%{hasDetail, select, yes { · {detail}} other {}}",
+  "@queue.chip.tooltip": {
+    "sourceHash": "c88735c"
   }
 }

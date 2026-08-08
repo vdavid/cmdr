@@ -1,6 +1,17 @@
 # Operation queue: make background work (and its failures) visible
 
-**Status**: specced, not started. **Owner**: David. **Date**: 2026-08-08.
+**Status**: built, M1–M11 all landed, all nine locales translated. Two things are outstanding, both needing David:
+
+1. His pass over § "Copy needing David's sign-off" below. Those English drafts shipped as written and are translated
+   into all nine locales, so a wording change there means re-translating just those keys.
+2. One **`pnpm i18n:shots`** run on an idle machine. M11's three new capture surfaces (`queue-failed`, `operation-chip`,
+   `operation-failure`) are wired into `i18n-capture-special.ts` but have never been shot: two attempts returned blank
+   frames for every surface after `main-window`, which is the harness's documented "machine was in use" mode (macOS
+   stops compositing a window that isn't frontmost). Nothing is broken and nothing is stale — `i18n:shots` couples only
+   after a clean capture, so the existing couplings are untouched; the new keys simply have no screenshot yet, which is
+   a translator aid, not a ship gate.
+
+**Owner**: David. **Date**: 2026-08-08.
 
 Backgrounded file operations are invisible. Start a copy, press Queue (F2), close the queue window, and the transfer
 keeps running with nothing in the main window saying so. If it then FAILS, the reason is gone too: the error dialog

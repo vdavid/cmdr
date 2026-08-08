@@ -49,9 +49,12 @@ build sets neither flag, re-verified by grepping the bundle for the harness's ma
    got a generous first-listing wait (`awaitFirstListing`) instead of `ensureAppReady`'s 15 s: they're the Nth launch of
    a multi-launch run against a data dir with an index backlog, often on a machine that's also compiling.
 2. **Registry-driven soft dialogs.** DONE: `i18n-capture-gallery.ts`.
-3. **The Transfers window.** DONE: `captureQueueWindow` captures `/queue` empty and with one Running + one Queued row,
-   staged from the same two same-lane copies `transfer-queue.spec.ts` uses. All 18 `queue.*` keys were uncoupled and the
-   window wasn't even in the skip list, so nothing flagged it.
+3. **The operation queue.** DONE: `captureQueueWindow` captures `/queue` empty, with one Running + one Queued row, and
+   with two failed rows (staged from the same same-lane copies `operation-queue.spec.ts` uses, plus two copies of a
+   never-created source, which is the cheapest deterministic failure). All 18 `queue.*` keys were uncoupled and the
+   window wasn't even in the skip list, so nothing flagged it. The namespace has since outgrown the window:
+   `captureOperationChipSurfaces` covers the `queue.chip.*` / `queue.failureToast.*` keys, which render in the MAIN
+   window's corner and only while an operation is in flight or a failure is retained.
 4. **Ask Cmdr.** DONE: `i18n-capture-ask-cmdr.ts` walks consent → empty → one exchange → the threads panel. Replies come
    from the scripted fake LLM (`CMDR_E2E_ASK_CMDR_FAKE=1`, now set for the main capture launch), which both answers the
    message and opens the composer's provider gate.

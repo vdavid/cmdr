@@ -909,3 +909,59 @@ wait-on-a-remote-endpoint phrasing (the exact same surface), Microsoft zh-Hans T
   与同批的粘贴提示 (`已将剪贴板{图像/PDF/文本}粘贴为 {filename}`) 同构，`已` 表示动作已完成。英文的 "it's now on your
   clipboard" 合并进 `到剪贴板`：中文不给唯一的剪贴板加物主代词。冒号用全角 `：`。
 - 无需 `sameAsSourceJustification`：该值与英文不同。
+
+### Corner progress chip + failure notice (`queue.chip.*`, `queue.failureToast.*`, `queue.row.dismiss*`, `queue.toolbar.dismissAll`, 2026-08-08)
+
+Nine keys for two new surfaces: the main window's ~80 px corner progress chip (a button that opens the queue window) and
+the never-auto-dismissing failure notice plus its failed queue row. Head noun `操作`, window name `操作队列`, and the
+classifier `项` all come from the operation-queue section above; this section only records what that one doesn't.
+
+- **dismiss (button that removes a failed row / a notice, undoing and retrying nothing)** · `忽略` · the zh catalog had
+  already settled the English "Dismiss" BUTTON as `忽略` in four places (`downloads.empty.dismiss`,
+  `downloads.fda.dismiss`, `errorReporter.sentToast.dismiss`, `errorReporter.bundleSavedToast.dismiss`) plus
+  `ui.toast.dismissAria` = `忽略通知`, and the catalog outranks the pile for a concept the app already ships. The pile
+  offers no competing first-party term: macOS has only `Dismiss Popover` → `关闭弹出窗口` (a popover, not a list row),
+  Microsoft TBX gives `消除`/`关闭` (both defined as "turn off a system notification"), and none of the five file
+  managers has "dismiss" at all. `清除` (macOS `Clear Menu` → `清除菜单`) and `移除` (macOS `Remove` → `移除`) were
+  rejected: both read as deleting something, and the row deletes nothing. `queue.row.dismissAria` = `忽略这项操作`,
+  matching the sibling arias `暂停/继续/取消/选择这项操作` verbatim · `high`
+- **dismiss all (toolbar)** · `全部忽略` · the `全部 + 动词` family shape this window already uses (`全部暂停`,
+  `全部继续`) and the rename-review pass's `全部允许`/`全部拒绝` · `high`
+- **"Couldn''t finish <action>" (the failure notice's nine `select` arms)** · `无法完成…操作` · built on the settled
+  `queue.row.status` failed arm `无法完成` so the toast and the row say the same thing, and closed with the head noun
+  `操作` so every arm is grammatical: 完成 wants a nominal object, and a bare `无法完成移到废纸篓` (a full verb phrase)
+  is not one. Disyllabic verbs compound directly (`无法完成拷贝操作`, `移动`, `删除`, `重命名`); multi-word verb phrases
+  take `的` (`无法完成移到废纸篓的操作`, `创建文件夹的`, `创建文件的`, `编辑压缩文件的`). The `other` arm is
+  `无法完成这项操作`, which is macOS Finder `NE1` (`无法完成此操作。`) with style.md's spoken `这项` for the written
+  `此`. Never `失败`/`错误` here · `high`
+- **"N operations couldn''t finish" (toast summary + chip)** · `{countText} 项操作无法完成` · classifier `项` per the
+  operation-queue section; predicate-final so the count leads the line the way English does · `high`
+- **"Show in operation queue" (the notice's button)** · `在操作队列中显示` · macOS Finder zh-CN renders every
+  `Show in X` as `在X中显示` (`A34`/`N207` `Show in Finder` → `在访达中显示`, `N162` `Show in Enclosing Folder` →
+  `在上层文件夹中显示`), and Cmdr's own catalog already ships `在 Finder 中显示`. No spaces inside, since every
+  character is Han · `high`
+- **"Open the operation queue to see why." (the chip's second sentence)** · `打开操作队列即可查看原因。` · `即可` keeps
+  the promise (press it and you get the reason) without an imperative; `查看` is the settled view verb · `high`
+- **percent, spoken (`queue.chip.ariaLabel`)** · `已完成 {percentText}%`, the `%` sign, NOT a spelled-out
+  `百分之 {percentText}` · macOS Finder zh-CN `MR22` (`^0% complete` → `已完成^0%`) and `PW13.1` (`^0%` → `^0%`) both
+  keep the sign; Chinese has no short spelled-out percent form, and VoiceOver zh-CN reads `42%` as 百分之四十二 on its
+  own. macOS's own accessibility phrasing `PW13.2` (`Percent complete: ^0` → `已完成百分比：^0`) confirms `已完成` as
+  the progress frame. ❌ No space before `%` in Chinese (that rule is de/fr/sv) · `high`
+- **the chip tooltip's shape (`queue.chip.tooltip`)** · the middle dots keep an ASCII space on BOTH sides, exactly as
+  English: an unspaced `·` is reserved in Chinese for the components of a transliterated name (`史蒂夫·乔布斯`), so
+  `个项目·42%` would misread as one compound, and the segments it joins are digit- and Han-initial in turn, where the
+  Han↔Latin spacing rule already wants the space · `high`
+- **the tooltip's item count is its OWN dot-separated fact (` · 共 {countText} 个项目`), not a noun phrase glued to
+  `{label}`** · `{label}` arrives pre-composed from `queue.row.label`, and four of its nine arms are verb phrases that
+  already carry their complement (`正在移到废纸篓`, `正在创建文件夹`, `正在创建文件`, `正在编辑压缩文件`); English can
+  append an object to them ("Moving to trash 214 items") but Chinese cannot, so the count moved out into its own fact.
+  `共` = in total, matching the placeholder's "how many items the operation covers in total"; measure word `个项目` per
+  the settled `{count} 个项目` pattern · `high`
+- **the tooltip's destination is quoted, `到“{destination}”`, with no space** · a folder name can be Han (`备份`) or
+  Latin (`Backup`), so no fixed spacing is right for both; macOS Finder zh-CN wraps exactly this kind of name in
+  full-width quotes (`已暂停拷贝“^0”`, `无法移除“^0”`), which separates the two scripts cleanly either way. The clause
+  stays glued to `{label}` because `到` is the verb's complement (`正在拷贝到“Backup”`, and `正在拷贝到“Backup”` still
+  reads right when the count clause drops out) · `high`
+- **time left, in the tooltip's `{detail}` slot** · nothing to settle: the runtime fills it from the already-settled
+  `fileOperations.transferProgress.etaRemaining` = `剩余 {duration}`, or from `queue.row.status`'s `已暂停` · n/a
+- No `sameAsSourceJustification` needed: all nine values differ from English.

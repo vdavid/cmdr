@@ -47,6 +47,14 @@
   "@queue.row.cancelAria": {
     "sourceHash": "236ec68"
   },
+  "queue.row.dismiss": "Elvetés",
+  "@queue.row.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "queue.row.dismissAria": "Ennek a műveletnek az elvetése",
+  "@queue.row.dismissAria": {
+    "sourceHash": "ff1b528"
+  },
   "queue.row.selectAria": "Ennek a műveletnek a kijelölése",
   "@queue.row.selectAria": {
     "sourceHash": "6618ecc"
@@ -67,8 +75,36 @@
   "@queue.toolbar.cancelSelected": {
     "sourceHash": "34e18e5"
   },
+  "queue.toolbar.dismissAll": "Mindet elveti",
+  "@queue.toolbar.dismissAll": {
+    "sourceHash": "97fac9e"
+  },
   "queue.toolbar.selectedCount": "{count, plural, one {# kijelölve} other {# kijelölve}}",
   "@queue.toolbar.selectedCount": {
     "sourceHash": "5f13640"
+  },
+  "queue.failureToast.title": "{type, select, copy {Nem sikerült befejezni a másolást} move {Nem sikerült befejezni az áthelyezést} delete {Nem sikerült befejezni a törlést} trash {Nem sikerült befejezni az áthelyezést a Kukába} rename {Nem sikerült befejezni az átnevezést} create_folder {Nem sikerült befejezni a mappa létrehozását} create_file {Nem sikerült befejezni a fájl létrehozását} archive_edit {Nem sikerült befejezni az archívum szerkesztését} other {Nem sikerült befejezni}}",
+  "@queue.failureToast.title": {
+    "sourceHash": "a55f5df"
+  },
+  "queue.failureToast.action": "Megjelenítés a műveleti sorban",
+  "@queue.failureToast.action": {
+    "sourceHash": "607fbb1"
+  },
+  "queue.failureToast.summary": "{count, plural, one {{countText} műveletet nem sikerült befejezni} other {{countText} műveletet nem sikerült befejezni}}",
+  "@queue.failureToast.summary": {
+    "sourceHash": "6207914"
+  },
+  "queue.chip.failed": "{count, plural, one {{countText} műveletet nem sikerült befejezni} other {{countText} műveletet nem sikerült befejezni}}. Nyisd meg a műveleti sort, hogy megtudd, miért.",
+  "@queue.chip.failed": {
+    "sourceHash": "336ad46"
+  },
+  "queue.chip.ariaLabel": "{label}, {percentText} százalék. Nyisd meg a műveleti sort.",
+  "@queue.chip.ariaLabel": {
+    "sourceHash": "3ff7a01"
+  },
+  "queue.chip.tooltip": "{label}{count, plural, =0 {} one { · {countText} elem} other { · {countText} elem}}{hasDestination, select, yes { · ide: {destination}} other {}} · {percentText}%{hasDetail, select, yes { · {detail}} other {}}",
+  "@queue.chip.tooltip": {
+    "sourceHash": "c88735c"
   }
 }

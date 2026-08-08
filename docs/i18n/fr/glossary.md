@@ -1111,3 +1111,87 @@ Phrasing notes for this pass:
   (29 characters), so the rename adds no new overflow risk to the window title or the menu item. It was already long for
   a macOS window title, and still is.
 - No `sameAsSourceJustification` needed: all 14 values differ from English.
+
+## The corner progress chip and the failure notice (2026-08-08, 9 keys in `queue`)
+
+Two new surfaces: a ~80 px progress chip in the main window's top-right corner (a button that opens the queue window,
+with a hover tooltip and a stopped-before-finishing state), and a persistent failure toast plus a Dismiss button on the
+failed queue row. The window's name and the `opération` head noun come from the rename pass above; nothing here
+re-derives them. ICU values, so single apostrophes are doubled below to match this doc's convention.
+
+- **dismiss (stop showing a row / a notice, without undoing, retrying, or deleting anything) → `Ignorer`; "Dismiss all"
+  → `Tout ignorer`; the per-row screen-reader label → `Ignorer cette opération`** · the catalog's own settled Dismiss
+  term, already shipping on six surfaces (`crashReporter.dialog.dismiss`, `downloads.empty.dismiss`,
+  `downloads.fda.dismiss`, `errorReporter.sentToast.dismiss`, `errorReporter.bundleSavedToast.dismiss`,
+  `fileOperations.mkdir.timeoutDismiss`), and recorded in style.md § Brand and do-not-translate ("Ignorer" fits a
+  non-destructive dismiss better than "Fermer"). Microsoft terminology FRA confirms it independently for exactly this
+  sense: `dismiss` "to turn off a system notification" has two FRA renderings, `ignorer` and `masquer` · high.
+  - `Tout ignorer` follows the catalog-wide all-variant pattern ("Tout éjecter", "Tout écraser", "Tout reprendre") and
+    stays parallel to its toolbar neighbours `Tout mettre en pause` / `Tout reprendre`.
+  - **Known collision, accepted**: `fileOperations.transferProgress.conflictSkipAll` (Skip all) is also `Tout ignorer`.
+    The two never share a surface (the conflict dialog has no dismiss; the queue toolbar has no skip), and diverging
+    would cost the catalog its single settled Dismiss word. Don't "fix" it by renaming one of them.
+  - `Ignorer cette opération` matches the recorded per-row aria FAMILY shape from the rename pass ("Mettre cette
+    opération en pause", "Reprendre cette opération", "Annuler cette opération", "Sélectionner cette opération"), not
+    the adjacent line.
+- **"Couldn''t finish <action>" (the failure toast headline) → `<L''action> n''a pas pu se terminer`** · built from the
+  settled `queue.row.status` failed arm `N''a pas pu se terminer` plus the `queue.row.label` verbal nouns, so the toast
+  and the row can't describe the same stop with two words · high. The nine arms make the action noun the SUBJECT, which
+  keeps the sentence impersonal (no agent, no gendered participle on the user) and lets each arm carry its own article:
+  `La copie` / `Le déplacement` / `La suppression` / `Le placement dans la corbeille` / `Le renommage` /
+  `La création du dossier` / `La création du fichier` / `La modification de l''archive`, with the `other` arm the bare
+  `N''a pas pu se terminer`. No "erreur", no "échec", no "a échoué", per style.md.
+- **"N operations couldn''t finish" (the summary toast + the chip's failed state) →
+  `{countText} opération n''a pas pu se terminer` / `{countText} opérations n''ont pas pu se terminer`** · same house
+  wording, with the verb agreeing in the plural branches. FR CLDR `one`/`many`/`other`, `many` identical to `other` as
+  everywhere else in this set · high.
+- **"Open the operation queue to see why." → `Ouvrez la file d''attente des opérations pour savoir pourquoi.`** · `vous`
+  imperative, because this is a prose sentence, not a button (style.md reserves the infinitive for labels), and the
+  settled window name verbatim · high for the terms, tentative for the purpose clause. **Why not "pour en connaître la
+  raison"**: the same string serves counts 1 and N, and French would want "les raisons" for N; `savoir pourquoi` is
+  number-neutral, shorter, and matches the friendly register. Don't re-derive this.
+- **"Show in operation queue" (the failure toast's button) → `Afficher dans la file d''attente des opérations`** ·
+  `Afficher dans …` is the macOS Tier-1 shape for this ("Finder/Reveal" → "Finder/Afficher dans le Finder"), and the
+  window name stays byte-identical to `queue.windowTitle` as the `@key` requires · high. See the overflow note below.
+- **"percent", spelled out for screen readers → `pour cent`** (two words) · the standard French reading of `%`, so a
+  French screen reader says the same thing it would for the symbol, and the aria label stays free of the
+  space-before-`%` rule · high.
+- **The chip tooltip's line shape → `{label} de {N} éléments vers {destination} · {P} % · {detail}`** · this exact
+  progress-line shape is Tier-1 and Tier-3 attested: macOS Finder `PW5_V2` "Préparation de la copie de ^0 éléments" and
+  the AirDrop panel's "Copie de « quelque chose » vers « un endroit »"; GNOME Nautilus "Copying %'d files to “%s”" →
+  "Copie de %'d fichiers vers « %s »", "Moving %'d files to “%s”" → "Déplacement de %'d fichiers vers « %s »" · high.
+  The verbal-noun label needs the linking `de` (a bare "Copie 3 éléments" would read as an imperative), and `vers` is
+  the settled destination preposition. `item → élément` per the glossary's contested block; macOS uses "éléments" in
+  this very string, so files-and-folders is covered.
+  - The destination is left BARE, not in guillemets, even though both piles quote it: English doesn't quote, and the
+    tooltip is one tight line.
+  - `{percentText} %` carries the settled ASCII space before `%` (style.md § Punctuation spacing), Tier-1 confirmed by
+    Finder's progress window `PW13.1` "^0 %". Never U+202F.
+
+Phrasing notes for this pass:
+
+- **Every optional clause carries its own leading space inside its branch** (` de {countText} éléments`,
+  ` vers {destination}`, ` · {detail}`), and the `=0 {}` / `other {}` arms stay empty, exactly as English does it. That
+  is what makes an absent part vanish without leaving a double space or a stranded `·`. All four combinations (count 0/3
+  × destination absent/present) were rendered with `intl-messageformat` under locale `fr`: "Copie · 42 %", "Copie vers
+  Backup · 42 %", "Copie de 3 éléments · 42 %", "Copie de 3 éléments vers Backup · 42 %".
+- The tooltip's `{label}` is ALWAYS the action word (`OperationChip.svelte` passes `verb`), never "En pause", so the
+  `de` linkage is safe. The aria label's `{label}` can be "En pause" or a verb, and both read correctly there ("En
+  pause, 42 pour cent.").
+- `{detail}` arrives pre-rendered from this catalog's own `fileOperations.transferProgress.etaRemaining` ("{duration}
+  restant") or the `En pause` status word, so it needs no translation here; the slot is neutral and takes any length.
+  The pile agrees on `restant` for the remaining sense (Xfce Thunar "%lu minutes restantes", GNOME Nautilus "%s
+  restantes", macOS Finder `PW2` "Estimation du temps restant…").
+- FR CLDR `one`/`many`/`other` throughout; `many` written identical to `other`. Rendered for counts 0/1/2/5/1 000 000:
+  French counts 0 as `one`, and "0 opération n''a pas pu se terminer" is correct French.
+- Register is `vous` ("Ouvrez"); every apostrophe is ASCII (U+0027) and doubled; no U+2019 leaked in from the English
+  source.
+- No `sameAsSourceJustification` needed: all nine values differ from English.
+- **Overflow watch** (French runs long, and both surfaces are tight):
+  - `queue.failureToast.action` is 46 characters against English's 23, on a button in a ~360 px toast. It can't be
+    shortened without breaking the `@key`'s "identical to the window title" requirement.
+  - `queue.failureToast.title`'s `trash` arm, "Le placement dans la corbeille n''a pas pu se terminer" (52 chars vs 31),
+    is the longest headline. Nautilus's shorter "Mise à la corbeille" was weighed and set aside: the brief binds the
+    arms to the `queue.row.label` nouns so the toast and the row agree, and that row says "Placement dans la corbeille".
+  - The chip itself only ever shows `queue.row.label` / `queue.row.status`, which this pass didn't touch, so the ~80 px
+    chip carries no new risk.

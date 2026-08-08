@@ -64,7 +64,12 @@ import {
   captureIndexingStatus,
   captureIndexingGallery,
 } from './i18n-capture-surfaces.js'
-import { captureMainDialogs, captureViewerSubsurfaces, captureQueueWindow } from './i18n-capture-special.js'
+import {
+  captureMainDialogs,
+  captureViewerSubsurfaces,
+  captureQueueWindow,
+  captureOperationChipSurfaces,
+} from './i18n-capture-special.js'
 import { captureMainExplorerSurfaces } from './i18n-capture-surfaces-main.js'
 import { captureGalleryDialogs } from './i18n-capture-gallery.js'
 import { captureAskCmdrSurfaces } from './i18n-capture-ask-cmdr.js'
@@ -546,9 +551,16 @@ test.describe('i18n screenshot capture', () => {
     })
     if (shortcuts) await closeScopedWindow(main, shortcuts, 'shortcuts').catch(() => {})
 
-    // ── Surface: operation-queue window (empty + populated) ───────────────────
-    // Its own window on `/queue`, and the only place any `queue.*` key renders.
+    // ── Surface: operation-queue window (empty + populated + failed) ──────────
+    // Its own window on `/queue`, and the only place a queue ROW renders.
     await captureQueueWindow(main, report, failed)
+
+    // ── Surface: the main window's corner chip and failure notice ─────────────
+    // The other half of the `queue.*` namespace lives in the MAIN window, and
+    // only while work is in flight. Runs after the queue window closes, so the
+    // main window is what's on screen, and last overall because a retained
+    // failure is sticky until something explicitly dismisses it.
+    await captureOperationChipSurfaces(main, report, failed)
 
     // Always write the report with whatever succeeded. The shape stays a flat
     // `surface → { screenshot, keys }` map because `couple-screenshots.ts`

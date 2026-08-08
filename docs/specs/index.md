@@ -6,28 +6,30 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
-- [ ] 2026-08-08 `operation-queue-visibility-plan.md` - Background file operations are invisible, and so are their
-      failures: press Queue, close the queue window, and a running transfer leaves no trace in the main window; if it
-      then fails, the reason is gone with the progress modal that Queue unmounted. Four parts. **A** moves `queue.show`
-      out of Help into View after "Command palette…" with a ⌥⌘Q default (written `'⌘⌥Q'` — the registry spells ⌘ before
-      ⌥, and Apple's display order would be dead on the keyboard), shifting both platforms' hardcoded menu indices.
-      **B** renames "Transfer queue" to "Operation queue" in user-facing copy only (the window lists deletes, renames,
-      and archive edits too; "transfer" already means copy-or-move in the code; and it now pairs with "Operation log" as
-      present versus past), keeping the concrete empty-state prose and every code identifier, plus nine locales and two
-      re-captured screenshots. **C** adds a corner progress chip left of the indexing hourglass, inside a new
-      `StatusCorner` wrapper, driven by a second `createOperationsStore()` instance in the main window (both streams are
-      already app-wide, so no new event, IPC, or polling), with typed visibility gates and a count-bar fallback for the
-      same-volume move that moves zero bytes. **D** is the part that needed design and the part the brief
-      under-estimates: `LifecycleStatus::Done`/`Cancelled`/`Failed` are **never assigned** — `on_settled` deletes the
-      record — so the queue page's `isTerminalStatus` filter is dead code and failures disappear because the BACKEND
-      drops them, not the frontend. The fix is bounded out-of-band retention in the operation manager (20 rows, typed
-      `error` on the snapshot, explicit dismissal only), which is the only place both webviews can read from; the queue
-      window keeps the failed row with its reason through the existing `getMessage()` error pipeline, and the main
-      window raises a persistent toast plus a chip failure state. Carries a nine-item findings list from reading the
-      code (`write-error` fires twice per op and fires for non-failures; the failure and live rows briefly share an id,
-      which would throw in the keyed `{#each}`; `ProgressBar`'s shimmer ignores `prefers-reduced-motion` despite a doc
-      claiming otherwise; the OS window title is hardcoded outside the catalog), five copy drafts needing David's
-      sign-off, and six flagged risks. SPECCED, not started.
+- [x] 2026-08-08 `operation-queue-visibility-plan.md` (built; awaiting David's copy review) - Background file operations
+      are invisible, and so are their failures: press Queue, close the queue window, and a running transfer leaves no
+      trace in the main window; if it then fails, the reason is gone with the progress modal that Queue unmounted. Four
+      parts. **A** moves `queue.show` out of Help into View after "Command palette…" with a ⌥⌘Q default (written `'⌘⌥Q'`
+      — the registry spells ⌘ before ⌥, and Apple's display order would be dead on the keyboard), shifting both
+      platforms' hardcoded menu indices. **B** renames "Transfer queue" to "Operation queue" in user-facing copy only
+      (the window lists deletes, renames, and archive edits too; "transfer" already means copy-or-move in the code; and
+      it now pairs with "Operation log" as present versus past), keeping the concrete empty-state prose and every code
+      identifier, plus nine locales and two re-captured screenshots. **C** adds a corner progress chip left of the
+      indexing hourglass, inside a new `StatusCorner` wrapper, driven by a second `createOperationsStore()` instance in
+      the main window (both streams are already app-wide, so no new event, IPC, or polling), with typed visibility gates
+      and a count-bar fallback for the same-volume move that moves zero bytes. **D** is the part that needed design and
+      the part the brief under-estimates: `LifecycleStatus::Done`/`Cancelled`/`Failed` are **never assigned** —
+      `on_settled` deletes the record — so the queue page's `isTerminalStatus` filter is dead code and failures
+      disappear because the BACKEND drops them, not the frontend. The fix is bounded out-of-band retention in the
+      operation manager (20 rows, typed `error` on the snapshot, explicit dismissal only), which is the only place both
+      webviews can read from; the queue window keeps the failed row with its reason through the existing `getMessage()`
+      error pipeline, and the main window raises a persistent toast plus a chip failure state. Carries a nine-item
+      findings list from reading the code (`write-error` fires twice per op and fires for non-failures; the failure and
+      live rows briefly share an id, which would throw in the keyed `{#each}`; `ProgressBar`'s shimmer ignores
+      `prefers-reduced-motion` despite a doc claiming otherwise; the OS window title is hardcoded outside the catalog),
+      five copy drafts needing David's sign-off, and six flagged risks. BUILT, M1–M11 all landed, including all nine
+      locales. What's left is David's pass over the five copy drafts, and one `pnpm i18n:shots` run on an idle machine
+      (the new `queue-failed` / `operation-chip` / `operation-failure` capture surfaces are wired but never yet shot).
 - [ ] 2026-08-08 `copy-move-safety-hardening-plan.md` - Generalize the three lessons of `7046e9dbb` + `bf6d896b3` (a
       cross-volume copy that streamed directories as files and could recursively delete the user's merged destination
       folder, latent for three months) into types, guards, and checks. **P0 is urgent and goes first**: a claim-by-claim

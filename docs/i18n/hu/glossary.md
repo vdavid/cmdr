@@ -1097,3 +1097,90 @@ restamped:
 - Untouched on purpose: `queue.empty.title` = `A sor üres` (bare anaphoric `sor`, still correct) and
   `transferProgress.titleCancellingSlow` = `Megszakítás… (USB-átvitelek befejezése)` (a real transfer, not the queue).
 - No `sameAsSourceJustification` needed: all 14 values differ from English.
+
+Settled while translating the corner progress chip and the failure notice (9 keys in `queue.json`, 2026-08-08). Two new
+surfaces: a ~80 px chip in the main window's top-right corner previewing the operation running in the background (a
+verb, a bar, a hover tooltip, and a stopped-early state), and a never-auto-dismissing toast for an operation that
+couldn't finish, with a matching row + Dismiss button in the queue window. The window's name, the head noun `művelet`,
+and their inflection are settled in the rename block directly above; these keys only reuse them.
+
+- **dismiss (stop showing a notice or a finished-with row) → `Elvetés`** (button), `Mindet elveti` (toolbar),
+  `Ennek a műveletnek az elvetése` (row aria) · the shipped `hu` catalog is decisive: `Elvetés` already renders every
+  `Dismiss` in the app (`crashReporter.dialog.dismiss`, `lowDiskSpace.toast.closeTooltip`, `downloads.empty.dismiss`,
+  `downloads.fda.dismiss`, `errorReporter.sentToast.dismiss`, `errorReporter.bundleSavedToast.dismiss`,
+  `fileOperations.mkdir.timeoutDismiss`), and `ui.toast.dismissAria` = `Értesítés elvetése` is this exact
+  dismiss-a-notification sense · high (upgraded from the `fileOperations`-pass `tentative`; seven shipped sites plus a
+  matching aria is stronger evidence than the pile). Deliberately NOT the pile term: macOS has one hit only (AppKit
+  TouchBar "Dismiss Popover" = `Előugró üzenet bezárása`) and Microsoft terminology gives `bezárás` / `leállítás` for
+  the notification sense, but `Bezárás` is the catalog's settled `Close` (`ui.modalDialog.close` and 10 more), so
+  adopting it would make the queue row's Dismiss indistinguishable from a window's Close.
+  - `Mindet elveti` takes the finite-verb shape its two neighbours settled (`Mindet szünetelteti`, `Mindet folytatja`),
+    not the nominal shape of `Kijelöltek megszakítása`; English's "Dismiss all" is parallel to "Pause all"/"Resume all",
+    so the Hungarian is too.
+  - The row aria joins the `Ennek a műveletnek a …` family (`… a szüneteltetése` / `… a folytatása` / `… a megszakítása`
+    / `… a kijelölése`) and is the only member taking `az`: `elvetése` is vowel-initial.
+- **"couldn't finish <action>" (the failure toast's nine `select` arms) → `Nem sikerült befejezni` + the action in the
+  accusative** · built from the `queue.row.status` `failed` arm (`Nem sikerült befejezni`) so the toast and the queue
+  row can't word the same event differently, with each action's noun taken verbatim from `queue.row.label` /
+  `operationLog.summary.*` and put in the accusative: `a másolást`, `az áthelyezést`, `a törlést`,
+  `az áthelyezést a Kukába`, `az átnevezést`, `a mappa létrehozását`, `a fájl létrehozását`,
+  `az archívum szerkesztését`; the `other` arm is the bare row wording · high. Verb-first in every arm (not the
+  topic-first `A másolást nem sikerült befejezni`) so the nine read as one family and the `other` arm is a clean
+  truncation of the rest, exactly as in English. The `nem sikerült` calm-voice rule keeps `hiba` / `sikertelen` out.
+- **"{n} operations couldn't finish" (summary toast + chip) → `{countText} műveletet nem sikerült befejezni`** · the
+  same house wording with the count as its accusative object, which is how Hungarian expresses this impersonally · high.
+  Counted noun stays SINGULAR in both plural branches (`műveletet`, never `műveleteket`), as in `queuedToastCount` /
+  `selectedCount`.
+- **"Show in operation queue" (failure-toast button) → `Megjelenítés a műveleti sorban`** · the catalog's own
+  `Show in <place>` shape, shipped twice as `Megjelenítés a Finderben` (`commands.fileShowInFinder.mac.label`,
+  `errorReporter.bundleSavedToast.reveal`); inessive `a műveleti sorban` per the rename block · high.
+- **"Open the operation queue [to see why]" (the chip's promise, `chip.ariaLabel` + `chip.failed`) →
+  `Nyisd meg a műveleti sort` / `Nyisd meg a műveleti sort, hogy megtudd, miért.`** · informal `te` imperative, matching
+  the catalog's other second-person instructions (`próbáld újra`, `Szakítsd meg, vagy hagyd futni a háttérben.`,
+  `Kattints ide az ugráshoz: {path}`); accusative `a műveleti sort` · high. The imperative is deliberate over a
+  declarative "the reason is in the queue": the chip IS the button, so the sentence has to name the action pressing it
+  performs.
+- **"percent" spelled as a word (screen-reader label) → `százalék`, unsuffixed** · Hungarian screen readers expand `%`
+  to `százalék` anyway, so spelling it out costs nothing and removes the dependency; `{percentText} százalék` needs no
+  case suffix, which also keeps the placeholder unsuffixed (per `style.md` § Notes and decisions) · high. NOTE the split
+  with the chip TOOLTIP, which is read by eye and keeps the glyph: Hungarian sets `%` tight against the number with NO
+  space (`42%`), unlike de/fr/sv.
+- **item (a file-or-folder in a count) → `elem`** · macOS Finder Tier 1 throughout (`Kuka elemei`,
+  `Másolni kívánt elemek`, `Nincsenek törölni kívánt elemek.`) and already the catalog's counted-item noun
+  (`fileExplorer.clipboard.copied` = `{countText} … elem másolva`, `operationLog.summary.*` = `{countText} elem …`,
+  `operationLog.dialog.moreItems`) · high. Singular in both plural branches.
+
+### `queue.chip.tooltip`: the dot-separated fact line
+
+The hardest string in the batch. English continues a phrase before switching to middle dots
+(`Copying 214 items to Backup · 42% · 1m 20s left`); Hungarian can't, because `{label}` arrives as a verbal NOUN
+(`Másolás`, from `queue.row.label`), and `Másolás 214 elem` is ungrammatical. So **every optional clause carries its own
+`·` inside its branch** and the whole line is one flat fact list:
+
+`{label}{count, plural, =0 {} one { · {countText} elem} other { · {countText} elem}}{hasDestination, select, yes { · ide: {destination}} other {}} · {percentText}%{hasDetail, select, yes { · {detail}} other {}}`
+
+- The flat shape is in-catalog precedent, not an invention: `ai.toast.progress` =
+  `{percentText} · {downloaded} / {total} · {speed}/s{eta, select, none {} other { · {eta} van hátra}}` is the same
+  Hungarian dot-separated progress line with the same optional-clause-carries-its-own-separator discipline.
+- **destination → ` · ide: {destination}`**, never a case suffix on the folder name · macOS Tier 1 ships exactly this
+  action-then-`ide:` shape (`Áthelyezés ide: %@` 78×, `„^0” letöltése ide: „^1”`, `Tömörítés ide: „^0”`,
+  `… másolása és áthelyezése ide: ${destination}`), and the verb it wants is already at the head of the line · high. A
+  runtime folder name can't take a harmonizing suffix (`Backupba`/`Backupbe`), which `style.md` forbids (§ Notes and
+  decisions). Runner up was the settled transfer-dialog heading `Cél:`; `ide:` wins because it reads as a continuation
+  of the leading verb instead of a form label.
+- `{detail}` arrives ALREADY in Hungarian and must not be re-derived here: `OperationChip.svelte` fills it from
+  `fileOperations.transferProgress.etaRemaining` (= `{duration} van hátra`, settled 2026-07-31) or from the
+  `queue.row.status` `paused` arm (`Szüneteltetve`). So the time-left phrasing for this surface is inherited, not
+  chosen.
+- Assembled and read for all four combinations, all clean (no double space, no dangling `·`): `Másolás · 42%` ·
+  `Másolás · ide: Backup · 42%` · `Másolás · 3 elem · 42%` · `Másolás · 3 elem · ide: Backup · 42%`, each optionally
+  plus ` · 1m 20s van hátra`.
+- The `=0 {}` and `other {}` empty arms stay empty, and `{label}` keeps NO leading separator: it is the only
+  always-present part before `{percentText}`.
+
+Flagged for a future reviewer: the failure toast's longest arm, `Nem sikerült befejezni az áthelyezést a Kukába` (46
+chars vs English's 31), is the overflow risk in a ~360 px toast; `archive_edit` (48) is longer still but far rarer. If
+either wraps badly, the fix is the shorter macOS variant `a Kukába helyezést` (attested alongside
+`Áthelyezés a Kukába`), not a new failure wording.
+
+No `sameAsSourceJustification` needed: all nine values differ from English.

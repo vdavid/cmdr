@@ -48,6 +48,14 @@
   "@queue.row.cancelAria": {
     "sourceHash": "236ec68"
   },
+  "queue.row.dismiss": "Ignorer",
+  "@queue.row.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "queue.row.dismissAria": "Ignorer cette opération",
+  "@queue.row.dismissAria": {
+    "sourceHash": "ff1b528"
+  },
   "queue.row.selectAria": "Sélectionner cette opération",
   "@queue.row.selectAria": {
     "sourceHash": "6618ecc"
@@ -68,8 +76,36 @@
   "@queue.toolbar.cancelSelected": {
     "sourceHash": "34e18e5"
   },
+  "queue.toolbar.dismissAll": "Tout ignorer",
+  "@queue.toolbar.dismissAll": {
+    "sourceHash": "97fac9e"
+  },
   "queue.toolbar.selectedCount": "{count, plural, one {# sélectionné} many {# sélectionnés} other {# sélectionnés}}",
   "@queue.toolbar.selectedCount": {
     "sourceHash": "5f13640"
+  },
+  "queue.failureToast.title": "{type, select, copy {La copie n''a pas pu se terminer} move {Le déplacement n''a pas pu se terminer} delete {La suppression n''a pas pu se terminer} trash {Le placement dans la corbeille n''a pas pu se terminer} rename {Le renommage n''a pas pu se terminer} create_folder {La création du dossier n''a pas pu se terminer} create_file {La création du fichier n''a pas pu se terminer} archive_edit {La modification de l''archive n''a pas pu se terminer} other {N''a pas pu se terminer}}",
+  "@queue.failureToast.title": {
+    "sourceHash": "a55f5df"
+  },
+  "queue.failureToast.action": "Afficher dans la file d''attente des opérations",
+  "@queue.failureToast.action": {
+    "sourceHash": "607fbb1"
+  },
+  "queue.failureToast.summary": "{count, plural, one {{countText} opération n''a pas pu se terminer} many {{countText} opérations n''ont pas pu se terminer} other {{countText} opérations n''ont pas pu se terminer}}",
+  "@queue.failureToast.summary": {
+    "sourceHash": "6207914"
+  },
+  "queue.chip.failed": "{count, plural, one {{countText} opération n''a pas pu se terminer} many {{countText} opérations n''ont pas pu se terminer} other {{countText} opérations n''ont pas pu se terminer}}. Ouvrez la file d''attente des opérations pour savoir pourquoi.",
+  "@queue.chip.failed": {
+    "sourceHash": "336ad46"
+  },
+  "queue.chip.ariaLabel": "{label}, {percentText} pour cent. Ouvrez la file d''attente des opérations.",
+  "@queue.chip.ariaLabel": {
+    "sourceHash": "3ff7a01"
+  },
+  "queue.chip.tooltip": "{label}{count, plural, =0 {} one { de {countText} élément} many { de {countText} éléments} other { de {countText} éléments}}{hasDestination, select, yes { vers {destination}} other {}} · {percentText} %{hasDetail, select, yes { · {detail}} other {}}",
+  "@queue.chip.tooltip": {
+    "sourceHash": "c88735c"
   }
 }

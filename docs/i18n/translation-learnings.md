@@ -59,6 +59,59 @@ mistranslation: the string is fluent and the checks pass. It is drift away from 
   `alteração de nome` vs `renomeação`). Grepping a new batch for two renderings of its own head noun finds the unsourced
   one fast.
 
+## Renaming a product noun that every locale already translated
+
+A rename is not a copy edit, and `--restamp` is the wrong tool for it: the stored hash catches up while nine catalogs
+keep promising the old, narrower thing. What a rename pass needs instead:
+
+- **Find the anchor in the locale's OWN catalog, not the pile.** When the app already ships a sibling surface built on
+  the same head noun, that sibling settles the term before any mining starts. Renaming the queue window to "Operation
+  queue" was decided in all nine locales by the shipped **Operation log** window: `Vorgangsprotokoll` → head noun
+  `Vorgang`, `Åtgärdslogg` → `åtgärd`, `Nhật ký thao tác` → `thao tác`, and so on. This is the general form of §
+  "Reviewing keys a feature added in passing": a deliberate English PAIR (present tense vs past tense, here in one View
+  menu block) has to survive as a pair, and it only does if both halves share a head noun.
+- **State the anchor in the brief, don't make each agent rediscover it.** Handing every language its own sibling value
+  up front turned a nine-way research problem into nine confirmations, and all nine independently corroborated it
+  against macOS/Microsoft/the two-pane pair rather than taking it on trust.
+- **A swapped noun drags grammar with it.** Renaming is where agreement breaks, because the checks can't see it: de
+  flipped gender (`die Übertragung` → `der Vorgang`, so four arias and two pronouns changed), fr moved both toasts to
+  the feminine, hu moved five sites from `az átviteli` to `a műveleti` on the article rule. Tell the translator to
+  re-read every article, clitic, pronoun, and case suffix attached to the old noun, not just to swap the word.
+- **The old term is superseded, not retired.** Every glossary here kept the narrow word alive for the narrower concept
+  one level down (`Übertragung`/`överföring`/`传输` still name a copy-or-move). Say so explicitly, or the next pass
+  reads a leftover as drift and "fixes" it.
+- **Mark the old glossary entry superseded IN PLACE, and keep it visible.** A glossary that still prescribes the old
+  term is a standing instruction to the next agent, so the rename silently undoes itself. Deleting the entry is just as
+  bad: the next agent then can't tell the old term from a mistake.
+
+## Orchestrating a two-round batch
+
+- **Let the translators write VALUES only, and restamp centrally afterwards.** `sync-locale-keys.ts --restamp <key>`
+  (repeatable) refreshes the hash for every locale in one command, which beats nine agents hand-computing 7-char hashes.
+  Check first that none of the keys carries `reviewed` / `sameAsSourceJustification`, since a restamp drops both. Then
+  `git diff` on the catalogs is pure value lines, which is a cheap, exact audit that no agent went out of scope.
+- **`--restamp` also SYNCS.** It adds every pending new key as an English skeleton on its way past. If the restamp
+  belongs to one commit and the new keys to the next, strip the skeletons back out before committing (round-tripping a
+  locale catalog through `JSON.stringify(…, null, 2) + '\n'` is byte-identical, so this is safe) and let the next
+  round's plain sync re-add them.
+- **Round two inherits round one's glossary**, so the head-noun research is paid for once. Brief the second round with
+  the terms the first settled plus the sibling keys the new strings must compose with (here: the already-translated
+  `queue.row.status` failed arm and `queue.row.label` verbs), and the batch can't invent a second wording for something
+  the app already says.
+
+## Composed one-line strings: the separators live INSIDE the branches
+
+A fact-list string (`{label}{count, plural, =0 {} other { {countText} items}}… · {percentText}%`) puts each optional
+clause's leading space and separator inside its own branch, so an absent clause disappears without leaving a double
+space or a dangling dot. Translators must keep that discipline, and the way to prove it is to ASSEMBLE the string for
+every combination of present/absent parts and read each one, not to eyeball the ICU.
+
+It's also where word order genuinely diverges, because the leading `{label}` arrives pre-composed from another key and
+can't be split. Four locales independently moved the item count out into its own `·` fact rather than gluing it to the
+label, and each for a real grammatical reason: de's label is a passive clause (`Wird kopiert`), nl's and zh's labels
+already carry their own complement (`Naar prullenmand verplaatsen`, `正在移到废纸篓`), hu's is a verbal noun. Expect
+this, and don't treat a restructured fact list as a translator taking liberties.
+
 ## Defect classes the checks cannot see
 
 Parity, ICU, plural, stale, coverage, and don't-translate are structural. These passed on 100% of the below, so the

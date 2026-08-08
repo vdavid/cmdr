@@ -48,6 +48,14 @@
   "@queue.row.cancelAria": {
     "sourceHash": "236ec68"
   },
+  "queue.row.dismiss": "Ausblenden",
+  "@queue.row.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "queue.row.dismissAria": "Diesen Vorgang ausblenden",
+  "@queue.row.dismissAria": {
+    "sourceHash": "ff1b528"
+  },
   "queue.row.selectAria": "Diesen Vorgang auswählen",
   "@queue.row.selectAria": {
     "sourceHash": "6618ecc"
@@ -68,8 +76,36 @@
   "@queue.toolbar.cancelSelected": {
     "sourceHash": "34e18e5"
   },
+  "queue.toolbar.dismissAll": "Alle ausblenden",
+  "@queue.toolbar.dismissAll": {
+    "sourceHash": "97fac9e"
+  },
   "queue.toolbar.selectedCount": "{count, plural, one {# ausgewählt} other {# ausgewählt}}",
   "@queue.toolbar.selectedCount": {
     "sourceHash": "5f13640"
+  },
+  "queue.failureToast.title": "{type, select, copy {Kopieren nicht abgeschlossen} move {Bewegen nicht abgeschlossen} delete {Löschen nicht abgeschlossen} trash {In den Papierkorb bewegen nicht abgeschlossen} rename {Umbenennen nicht abgeschlossen} create_folder {Ordner erstellen nicht abgeschlossen} create_file {Datei erstellen nicht abgeschlossen} archive_edit {Archiv bearbeiten nicht abgeschlossen} other {Nicht abgeschlossen}}",
+  "@queue.failureToast.title": {
+    "sourceHash": "a55f5df"
+  },
+  "queue.failureToast.action": "In der Vorgangswarteschlange anzeigen",
+  "@queue.failureToast.action": {
+    "sourceHash": "607fbb1"
+  },
+  "queue.failureToast.summary": "{count, plural, one {{countText} Vorgang nicht abgeschlossen} other {{countText} Vorgänge nicht abgeschlossen}}",
+  "@queue.failureToast.summary": {
+    "sourceHash": "6207914"
+  },
+  "queue.chip.failed": "{count, plural, one {{countText} Vorgang nicht abgeschlossen. Öffne die Vorgangswarteschlange, um den Grund zu sehen.} other {{countText} Vorgänge nicht abgeschlossen. Öffne die Vorgangswarteschlange, um die Gründe zu sehen.}}",
+  "@queue.chip.failed": {
+    "sourceHash": "336ad46"
+  },
+  "queue.chip.ariaLabel": "{label}, {percentText} Prozent. Öffne die Vorgangswarteschlange.",
+  "@queue.chip.ariaLabel": {
+    "sourceHash": "3ff7a01"
+  },
+  "queue.chip.tooltip": "{label}{count, plural, =0 {} one { · {countText} Objekt} other { · {countText} Objekte}}{hasDestination, select, yes { · nach {destination}} other {}} · {percentText} %{hasDetail, select, yes { · {detail}} other {}}",
+  "@queue.chip.tooltip": {
+    "sourceHash": "c88735c"
   }
 }

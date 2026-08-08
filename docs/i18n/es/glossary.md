@@ -926,3 +926,70 @@ same way, which is why a hash restamp was not an option.
 - `transfer` → `transferencia` is NOT retired: it still names the copy-or-move operation itself (the progress dialog,
   `transfer.*`, the stall copy). Only the QUEUE's name widened · high
 - No `sameAsSourceJustification` needed: all 14 values differ from English.
+
+## El chip de la esquina y el aviso de operación sin terminar (2026-08-08)
+
+Nine new keys: the corner progress chip (`queue.chip.*`), the failure notice (`queue.failureToast.*`), and the Dismiss
+buttons (`queue.row.dismiss`/`.dismissAria`, `queue.toolbar.dismissAll`). The window name, the head noun `operación`,
+and its feminine agreement come from § Cola de operaciones: el cambio de nombre de la ventana; don't re-derive them.
+
+- **dismiss (take a finished-badly row off the list; nothing is undone, retried, or deleted) → Descartar** · REAFFIRMS
+  the style-guide entry and the catalog's nine existing hits (`crashReporter.dialog.dismiss`, `downloads.empty.dismiss`,
+  `errorReporter.sentToast.dismiss`, `lowDiskSpace.toast.closeTooltip`, `ui.toast.dismissAria` = "Descartar
+  notificación", …). Sourced from macOS AppKit `Document.json` ("Discard" → "Descartar") and MS terminology ("dismiss" →
+  "descartar", id 780443/1053425, all regions incl. ESP/419; its second sense "ignorar" is the ignore-a-warning sense,
+  not this one). NOTE the near-miss: the settled `remove → Quitar` (rename-review pass) also takes a row off a list, but
+  `Quitar` is the catalog's word for editing a list the user built (a favourite, an attachment, a shortcut); this button
+  clears a NOTICE, which is `Descartar`'s job everywhere else in the catalog · high (consistency-settled)
+- **"Dismiss all" (toolbar) → Descartar todo** · parallel with the settled `Pausar todo` / `Reanudar todo`, so the three
+  toolbar buttons read as one family. NOT "Descartar todas" (which would agree with `operaciones` and break the
+  parallel) · high
+- **"Dismiss this operation" (per-row aria) → Descartar esta operación** · slots into the existing per-row aria family
+  verbatim (`Pausar` / `Reanudar` / `Cancelar` / `Seleccionar` + "esta operación") · high
+- **"Couldn't finish <action>" (the toast title's nine arms) → "No se pudo completar" + the operation NOUN** · the head
+  is `queue.row.status`'s `failed` arm verbatim, so the toast and the row can't word the same fact two ways, and the
+  `other` arm is byte-identical to it. The nouns are the catalog's own, not composed: `errors.*` already ships "Se
+  desconectó el dispositivo durante **la copia** / **el movimiento** / **el movimiento a la papelera** / **la
+  eliminación**", and `queue.empty.body` says "Las copias, los movimientos y las **eliminaciones**". So copy → la copia,
+  move → el movimiento, trash → el movimiento a la papelera, delete → la eliminación, rename → **el cambio de nombre**
+  (the settled rename NOUN, macOS "Deshacer cambio de nombre"), create_folder/create_file → la creación de la carpeta /
+  del archivo (composed; macOS has only "Fecha de creación"), archive_edit → **la edición del archivo comprimido**
+  (macOS "Deshacer edición de etiquetas" is the `edición de X` model; `archivo comprimido` is settled) · high (the six
+  sourced arms), tentative (the two `creación` arms)
+- **❌ Rejected for those arms: "No se pudo terminar de copiar".** It's fluent and shorter, but `terminar` is a second
+  verb where the row says `completar`, which is exactly the two-renderings-of-one-concept defect this family exists to
+  avoid · high
+- **Counted "N operations couldn't finish" → verb-first "No se pudo(-ieron) completar {countText} operación(es)"** ·
+  leads with the same house wording as the row and the toast title, and follows the settled counted-toast shape (the
+  whole clause lives inside each CLDR arm so the verb agrees: "Se movió" / "Se movieron"). Used identically by
+  `failureToast.summary` and the first sentence of `chip.failed` · high
+- **"Show in operation queue" (the toast's button) → Mostrar en la cola de operaciones** · `show → mostrar` (glossary)
+  in the catalog's own `Mostrar en el Finder` shape, with the window name unchanged so the button and the window title
+  match · high
+- **"Open the operation queue …" (the promise both spoken labels end on) → Abre la cola de operaciones …** · `tú`
+  imperative, matching the catalog's ~20 "Abre …" suggestions; "to see why" → "para ver por qué" (the catalog's "para
+  ver …" pattern) · high
+- **"percent", spelled as a word for the screen reader → por ciento** · no pile hit (neither macOS nor MS terminology
+  has a `percent` entry), but `por ciento` is the standard written-out form and is what Spanish VoiceOver says for `%`
+  anyway, so spelling it keeps English's intent without risking an odd reading · tentative (unsourced, uncontroversial)
+- **The `%` SIGN keeps English's spacing: `{percentText}%`, no space** · the es catalog is 10-to-1 on this
+  (`Zoom al 100%`, `indexing.progress.percentEta`, `lowDiskSpace.toast.message`); the one outlier is
+  `fileExplorer.summary.percentSelectedIn` ("({percent} %)"). Unlike de/fr/sv, Spanish has no hard space-before-`%`
+  requirement in these sources, and the chip tooltip is width-tight · high (consistency-settled). Nearby defect worth a
+  look: that outlier is the catalog's only spaced `%`.
+- **"items" in the chip tooltip (files and folders alike) → elemento / elementos** · the catalog is 44-to-8 on
+  `elemento(s)` over macOS's `ítem(s)`, and the sibling `fileOperations.json` + `operationLog.json` both use
+  `elementos`; REAFFIRMS the archive-pass note · high (consistency-settled)
+- **"to {destination}" in the chip tooltip → " a {destination}"** · Nautilus ships the literally-identical sentence
+  ("Copying %'d files to “%s”" → "Copiando %'d archivos a «%s»"). macOS Finder's own copy string uses `en` ("Copiando ^0
+  ítems **en** “^2”"), NOT taken: `{label}` here is generic across copy/move/trash, and "Moviendo … en Backup" reads
+  locative rather than directional, while `a` works for all of them (macOS itself says "Trasladando ^0 ítems **a** la
+  papelera"). Kept distinct from the `Desde` / `Hacia` dialog HEADINGS, which are field labels, not a running phrase ·
+  high (deliberate departure from macOS Tier 1, on genericness grounds)
+- **Every optional clause keeps its own leading space INSIDE the branch, and `=0 {}` / `other {}` stay empty.** Verified
+  by assembling all four combinations plus the no-detail ones: no double space, no dangling `·`. Spanish needs no
+  reordering here, so the English structure survives verbatim · high
+- **The time-left `{detail}` is NOT translated in this file**: the chip fills it from
+  `fileOperations.transferProgress.etaRemaining` = "Queda {duration}" (or from `queue.row.status`'s paused arm, "En
+  pausa"). If that key ever changes shape, the tooltip's tail changes with it · high
+- No `sameAsSourceJustification` needed: all nine values differ from English.

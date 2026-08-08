@@ -847,3 +847,55 @@ head noun the catalog had already settled for the Operation log.
   daher wartet er noch." reads as if the one AHEAD were waiting), because `{countText}` now renders the same masculine
   noun. `dieser hier` is the English's own "this one" and pins it; the closing `ihn` then has a clear antecedent.
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+## Corner progress chip + the failure notice (2026-08-08)
+
+Terms settled for the nine keys the background-progress chip and the failure notice added (`queue.row.dismiss*`,
+`queue.toolbar.dismissAll`, `queue.failureToast.*`, `queue.chip.*`). The window's own name, the head noun `Vorgang`, and
+its masculine gender are unchanged: see § Operation queue (2026-08-08).
+
+- **dismiss (a row for an operation that couldn''t finish) → `Ausblenden`**; per-row aria `Diesen Vorgang ausblenden`;
+  toolbar `Alle ausblenden` · KDE Dolphin de ships this exact frame for dismissing a notice ("Dismiss This Reminder" →
+  "Diesen Hinweis ausblenden"), and `ausblenden` is the catalog's settled hide-from-view verb (`Archivierte ausblenden`,
+  `bleiben ausgeblendet`), which macOS de confirms for a progress surface ("Fortschrittsfenster ausblenden") · high. The
+  button only stops SHOWING the row, so the hide verb is the literal one. ❌ Not `Entfernen`: the catalog's
+  `Aus Liste entfernen` (`goToPath.dialog.removeFromList`) is structurally similar, but on a queue row "entfernen" reads
+  as doing something to the operation itself. ❌ Not MS terminology's `dismiss → schließen`: that's the close-a-dialog
+  sense, already glossed above as `dismiss (button closing a dialog) → Schließen`. The aria label completes the
+  `Diesen Vorgang …` family (`anhalten` / `fortsetzen` / `abbrechen` / `auswählen`), and `Alle ausblenden` is parallel
+  to `Alle anhalten` / `Alle fortsetzen`.
+- **"Couldn''t finish X" (failure-notice headline) → `{nominalisierter Infinitiv} nicht abgeschlossen`** · built from
+  the shipped `queue.row.status` failed arm `Nicht abgeschlossen` so the notice and the row say one thing; macOS Finder
+  de backs both the head noun and the participle ("Der Vorgang konnte nicht abgeschlossen werden.", 20+ variants) ·
+  high. The nine arms: `Kopieren` / `Bewegen` / `Löschen` / `In den Papierkorb bewegen` / `Umbenennen` /
+  `Ordner erstellen` / `Datei erstellen` / `Archiv bearbeiten`, each + ` nicht abgeschlossen`; the `other` arm is the
+  bare status word `Nicht abgeschlossen`. Object-first order matches the `queue.row.label` arms (`Ordner wird erstellt`
+  → `Ordner erstellen`), and the trash arm reuses the settled chunk `In den Papierkorb bewegen`
+  (`fileOperations.delete.trashSwitch`) rather than coining a second trash phrasing. ❌ Never `Fehler` /
+  `fehlgeschlagen` (voice rule), and ❌ not `abgebrochen`, which is the cancelled status.
+- **"{n} operation(s) couldn''t finish" → `{countText} Vorgang nicht abgeschlossen` /
+  `{countText} Vorgänge nicht abgeschlossen`** · one rendering, used verbatim by BOTH `queue.failureToast.summary` and
+  the first sentence of `queue.chip.failed` (same English clause on two surfaces) · high.
+- **"Open the operation queue to see why." → `Öffne die Vorgangswarteschlange, um den Grund zu sehen.`** (plural:
+  `… um die Gründe zu sehen.`) · the catalog's own purpose-clause frame (19 `um … zu sehen` strings) plus its reason
+  noun (`queryUi.dialog.runQueryUnknownReason` "Der Grund ist unklar.") · high. **The sentence lives INSIDE both plural
+  branches of `queue.chip.failed`**, unlike the English, which keeps it outside: German has to agree the reason noun
+  with the count. ❌ Don't end on a bare `…, um zu sehen, warum.`: every sibling in the catalog completes the embedded
+  clause. The du-imperative keeps the promise that pressing the chip opens the window.
+- **"percent" spelled out (screen-reader label) → `Prozent`** · macOS de spells it out in its own progress-percentage
+  string ("Percent complete: ^0" → "Prozent abgeschlossen: ^0") · high. Only the aria label spells it; the visible
+  tooltip keeps the sign with the mandatory space (`{percentText} %`, DIN 5008).
+- **The chip's tooltip is a dot-separated FACT LIST, with a `·` before the item count too** · the German action label is
+  a passive clause (`Wird kopiert`), so English's appositive `Copying 214 items` has no grammatical German equivalent:
+  `Wird kopiert 214 Objekte` fails subject-verb agreement, and a trailing `Wird kopiert nach Backup` is marked word
+  order. Each fact therefore stands on its own dot: `Wird kopiert · 214 Objekte · nach Backup · 42 % · noch 1 Min. 20 s`
+  · high. Every optional clause carries its own leading `·` inside its branch, so a missing part leaves no double space
+  and no dangling dot; the `=0 {}` / `other {}` arms stay empty. item → `Objekt` (glossary), destination
+  `to {destination}` → `nach {destination}` (Total Commander de `663="NACH: "`, Double Commander de "Nach:", the same
+  pair as the transfer dialog's `Von`/`Nach` headings).
+- **The trailing `{detail}` needs no term work**: it arrives already formatted from the settled ETA keys ("noch 1 Min.
+  20 s") or as the status word `Angehalten`.
+- **The chip surface itself is unnamed in the UI.** No string calls it a "chip", so nothing was coined; if one ever
+  does, use `Fortschrittsanzeige` (settled `Fortschritt` + macOS's `-anzeige`/`Fortschrittsfenster` pattern) ·
+  tentative.
+- No `sameAsSourceJustification` needed: every value differs from English.

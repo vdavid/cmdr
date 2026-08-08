@@ -275,8 +275,8 @@ From the `indexing.json` + `downloads.json` + `errorReporter.json` + `shortcuts.
   `high`.
 - **notification / toast: `avisering`** · per settings glossary (MS/macOS "avisering"); "Avfärda avisering", "Gör den
   här aviseringen mer kompakt". `high`.
-- **dismiss: `avfärda`** · toast/alert dismiss button. MS gives "stäng"; chose "avfärda" to distinguish dismissing a
-  notification from closing a dialog ("Stäng"). `tentative` (MS says "stäng"; "avfärda" reads clearer for a toast).
+- **dismiss: `avfärda`** · toast/alert dismiss button, kept distinct from closing a dialog ("Stäng"). `high` — see §
+  Progress chip + failure notice at the end of this file for the macOS AppKit evidence that settled it.
 - **error report: `felrapport`** · standard Swedish compound (fel + rapport; MS "rapport"). "Skicka felrapport". The
   dialog stays calm, no bare "fel" as a status label. `high`.
 - **redact / scrub (privacy-strip logs): `maskera` / `rensa bort`** · "Loggarna maskeras lokalt", "… rensas bort innan
@@ -937,3 +937,62 @@ narrow word to the CATEGORY word, and Swedish widens the same way. This is a mea
   the narrower sense English kept one level down.
 
 No `sameAsSourceJustification` needed: all 14 values differ from English.
+
+## Progress chip + failure notice (2026-08-08; the nine `queue.row.dismiss*` / `queue.toolbar.dismissAll` / `queue.failureToast.*` / `queue.chip.*` keys)
+
+Two new surfaces on top of the queue window: a ~80 px progress chip in the main window's top-right corner (an action
+word, a bar, a hover tooltip, and a state for operations that stopped early), and a failure notice (a toast that never
+auto-dismisses) with a matching failed row carrying a Dismiss button. The head noun and the window's name are settled in
+§ Operation queue above; this section adds only what these two surfaces needed.
+
+- **dismiss (button that removes a stopped row / closes a persistent notice): `Avfärda`; "Dismiss all" → `Avfärda alla`;
+  the per-row aria → `Avfärda den här åtgärden`** · UPGRADED `tentative` → `high`: macOS AppKit ships the pair directly
+  (`sv/macOS/AppKit/TouchBar.json`, `Dismiss Popover` → **"Avfärda popover"**), which outranks MS terminology's
+  `dismiss → stäng / stänga av` (`SWEDISH.tbx` entry 780443, defined as turning off a system notification). Keeping
+  `Stäng` off this button matters: the catalog reserves `Stäng` for closing a dialog or window (the stalled-transfer
+  Close button), and the queue row is a notice, not a window. The catalog already ships `Avfärda` on eight
+  toast/notice-clearing controls (`ui.toast.dismissAria` "Avfärda avisering", `crashReporter.dialog.dismiss`,
+  `downloads.empty.dismiss`, `errorReporter.sentToast.dismiss`, …), so the row, the toolbar button, and the toast all
+  read as one action. ❌ Not `Ta bort`: it's the settled remove-from-a-list verb, but on a row that names a file
+  operation it reads as re-deleting the files, which is the one thing Dismiss does not do. `Avfärda alla` is parallel to
+  the neighbouring `Pausa alla` / `Återuppta alla`.
+- **"Couldn''t finish <action>" (the failure-notice headline family): `Gick inte att slutföra ` + the action as a
+  DEFINITE verbal noun** · macOS Finder ships this exact construction: "Det gick inte att slutföra **synkroniseringen**
+  av ^0" (`sv/macOS/Finder/LocalizableMerged.json`), and the verb-object collocation "…om du vill **slutföra
+  kopieringen**" confirms the copy arm word for word. The nine arms: `kopieringen` / `flytten` / `raderingen` /
+  `flytten till papperskorgen` / `namnbytet` / `skapandet av mappen` / `skapandet av filen` / `redigeringen av arkivet`
+  / (bare `Gick inte att slutföra`). `high`.
+  - The first three nouns are NOT re-derived: `queue.empty.body` in this same file already ships them ("Kopieringar,
+    flyttar och raderingar visas här"), so the empty state, the rows, and the toast agree.
+  - `skapandet av X` over a compound: Nautilus sv has "skapandet av mappen ”%s”" and "skapandet av katalogen"
+    (`sv/gnome-nautilus/nautilus.po`). Same for `redigeringen av arkivet` (`redigera` per the `archive_edit` row arm).
+    The `av`-phrase, not a compound (`mappskapandet`, `arkivredigeringen`), because English's definite article points at
+    THE specific folder/file/archive this operation touched, not at a feature.
+  - **Headline stays CLIPPED (`Gick inte att…`), body copy keeps `Det gick inte att…`.** English's headline drops its
+    subject too, the clipped form is byte-identical to the opening of `queue.row.status`'s `failed` arm (so the toast
+    and the row visibly say the same thing), and it saves a toast line. The full `Det gick inte att…` stays right for
+    running prose (`errors.json` throughout).
+  - ❌ Still never `fel` / `misslyckades` on any of these (style.md).
+- **`{count} operations couldn''t finish` (summary toast + chip): one → `{countText} åtgärd gick inte att slutföra`,
+  other → `{countText} åtgärder gick inte att slutföra`** · count-first forces the noun-first order here, which is fine:
+  the house phrase stays intact as the predicate. Regular common-gender plural, sv CLDR one/other. `high`.
+- **"Show in operation queue" → `Visa i åtgärdskön`; "Open the operation queue" → `Öppna åtgärdskön`** · DEFINITE, per §
+  Operation queue's definite/indefinite split: only the window title and the menu label take the bare `Åtgärdskö`. A
+  button label that is a prepositional phrase is running prose. Matches the shipped "Hitta den i åtgärdskön". `high`.
+- **"percent" spelled as a word for a screen reader: `procent`** (`queue.chip.ariaLabel`) · Swedish screen readers say
+  "procent" for `%` anyway, but spelling it out matches the English source's intent and removes the reader's dependence
+  on the symbol. The VISIBLE tooltip keeps the sign, with the mandatory Swedish space: `{percentText} %`. `high`.
+- **The chip tooltip's optional clauses each carry their own leading space, and the `=0 {}` / `other {}` arms stay
+  empty.** `item(s)` → `objekt` (invariant in both plural branches, per the settled `objekt` entry), `to {destination}`
+  → ` till {destination}`. Assembled and read for all four count/destination combinations; no double space, no dangling
+  `·`. The trailing `{detail}` is a pass-through of `fileOperations.transferProgress.etaRemaining`, already settled as
+  `{duration} kvar` (Nautilus `%T left` → **"%T kvar"**; macOS Finder's alternative is the longer "… återstår" /
+  "Beräknar återstående tid…"), or the status word `Pausad`. Nothing to translate in the slot itself; noted so a future
+  pass doesn't introduce a second time-left phrasing next to it.
+- **Known awkward arm, shared with English: `{label}` + the count clause run together, so the trash arm reads "Flyttar
+  till papperskorgen 3 objekt · 42 %".** Swedish would rather say "Flyttar 3 objekt till papperskorgen", but `{label}`
+  is opaque, and English accepts the identical wobble ("Moving to trash 3 items"). Deliberately NOT diverged (adding a
+  `·` before the count would fix trash and worsen the seven common arms). Flagged for David; the fix belongs in the
+  English key's shape, not in one locale.
+
+No `sameAsSourceJustification` needed: all nine values differ from English.

@@ -47,6 +47,14 @@
   "@queue.row.cancelAria": {
     "sourceHash": "236ec68"
   },
+  "queue.row.dismiss": "Bỏ qua",
+  "@queue.row.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "queue.row.dismissAria": "Bỏ qua thao tác này",
+  "@queue.row.dismissAria": {
+    "sourceHash": "ff1b528"
+  },
   "queue.row.selectAria": "Chọn thao tác này",
   "@queue.row.selectAria": {
     "sourceHash": "6618ecc"
@@ -67,8 +75,36 @@
   "@queue.toolbar.cancelSelected": {
     "sourceHash": "34e18e5"
   },
+  "queue.toolbar.dismissAll": "Bỏ qua tất cả",
+  "@queue.toolbar.dismissAll": {
+    "sourceHash": "97fac9e"
+  },
   "queue.toolbar.selectedCount": "{count, plural, other {# đã chọn}}",
   "@queue.toolbar.selectedCount": {
     "sourceHash": "5f13640"
+  },
+  "queue.failureToast.title": "{type, select, copy {Chưa hoàn tất được thao tác sao chép} move {Chưa hoàn tất được thao tác di chuyển} delete {Chưa hoàn tất được thao tác xóa} trash {Chưa hoàn tất được thao tác chuyển vào thùng rác} rename {Chưa hoàn tất được thao tác đổi tên} create_folder {Chưa hoàn tất được thao tác tạo thư mục} create_file {Chưa hoàn tất được thao tác tạo tệp} archive_edit {Chưa hoàn tất được thao tác chỉnh sửa tệp nén} other {Chưa hoàn tất được thao tác}}",
+  "@queue.failureToast.title": {
+    "sourceHash": "a55f5df"
+  },
+  "queue.failureToast.action": "Hiện trong hàng đợi thao tác",
+  "@queue.failureToast.action": {
+    "sourceHash": "607fbb1"
+  },
+  "queue.failureToast.summary": "{count, plural, other {{countText} thao tác chưa hoàn tất được}}",
+  "@queue.failureToast.summary": {
+    "sourceHash": "6207914"
+  },
+  "queue.chip.failed": "{count, plural, other {{countText} thao tác chưa hoàn tất được}}. Mở hàng đợi thao tác để xem lý do.",
+  "@queue.chip.failed": {
+    "sourceHash": "336ad46"
+  },
+  "queue.chip.ariaLabel": "{label}, {percentText} phần trăm. Mở hàng đợi thao tác.",
+  "@queue.chip.ariaLabel": {
+    "sourceHash": "3ff7a01"
+  },
+  "queue.chip.tooltip": "{label}{count, plural, =0 {} other { {countText} mục}}{hasDestination, select, yes { vào {destination}} other {}} · {percentText}%{hasDetail, select, yes { · {detail}} other {}}",
+  "@queue.chip.tooltip": {
+    "sourceHash": "c88735c"
   }
 }

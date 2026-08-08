@@ -47,6 +47,14 @@
   "@queue.row.cancelAria": {
     "sourceHash": "236ec68"
   },
+  "queue.row.dismiss": "Wis",
+  "@queue.row.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "queue.row.dismissAria": "Wis deze bewerking",
+  "@queue.row.dismissAria": {
+    "sourceHash": "ff1b528"
+  },
   "queue.row.selectAria": "Selecteer deze bewerking",
   "@queue.row.selectAria": {
     "sourceHash": "6618ecc"
@@ -67,8 +75,36 @@
   "@queue.toolbar.cancelSelected": {
     "sourceHash": "34e18e5"
   },
+  "queue.toolbar.dismissAll": "Wis alles",
+  "@queue.toolbar.dismissAll": {
+    "sourceHash": "97fac9e"
+  },
   "queue.toolbar.selectedCount": "{count, plural, one {# geselecteerd} other {# geselecteerd}}",
   "@queue.toolbar.selectedCount": {
     "sourceHash": "5f13640"
+  },
+  "queue.failureToast.title": "{type, select, copy {Kopiëren niet voltooid} move {Verplaatsen niet voltooid} delete {Verwijderen niet voltooid} trash {Naar prullenmand verplaatsen niet voltooid} rename {Hernoemen niet voltooid} create_folder {Map aanmaken niet voltooid} create_file {Bestand aanmaken niet voltooid} archive_edit {Archief bewerken niet voltooid} other {Niet voltooid}}",
+  "@queue.failureToast.title": {
+    "sourceHash": "a55f5df"
+  },
+  "queue.failureToast.action": "Toon in de bewerkingenwachtrij",
+  "@queue.failureToast.action": {
+    "sourceHash": "607fbb1"
+  },
+  "queue.failureToast.summary": "{count, plural, one {{countText} bewerking is} other {{countText} bewerkingen zijn}} niet voltooid",
+  "@queue.failureToast.summary": {
+    "sourceHash": "6207914"
+  },
+  "queue.chip.failed": "{count, plural, one {{countText} bewerking is} other {{countText} bewerkingen zijn}} niet voltooid. Open de bewerkingenwachtrij om te zien waarom.",
+  "@queue.chip.failed": {
+    "sourceHash": "336ad46"
+  },
+  "queue.chip.ariaLabel": "{label}, {percentText} procent. Open de bewerkingenwachtrij.",
+  "@queue.chip.ariaLabel": {
+    "sourceHash": "3ff7a01"
+  },
+  "queue.chip.tooltip": "{label}{count, plural, =0 {} one { · {countText} onderdeel} other { · {countText} onderdelen}}{hasDestination, select, yes { naar {destination}} other {}} · {percentText}%{hasDetail, select, yes { · {detail}} other {}}",
+  "@queue.chip.tooltip": {
+    "sourceHash": "c88735c"
   }
 }

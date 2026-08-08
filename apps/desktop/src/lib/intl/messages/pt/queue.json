@@ -47,6 +47,14 @@
   "@queue.row.cancelAria": {
     "sourceHash": "236ec68"
   },
+  "queue.row.dismiss": "Dispensar",
+  "@queue.row.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "queue.row.dismissAria": "Dispensar esta operação",
+  "@queue.row.dismissAria": {
+    "sourceHash": "ff1b528"
+  },
   "queue.row.selectAria": "Selecionar esta operação",
   "@queue.row.selectAria": {
     "sourceHash": "6618ecc"
@@ -67,8 +75,36 @@
   "@queue.toolbar.cancelSelected": {
     "sourceHash": "34e18e5"
   },
+  "queue.toolbar.dismissAll": "Dispensar tudo",
+  "@queue.toolbar.dismissAll": {
+    "sourceHash": "97fac9e"
+  },
   "queue.toolbar.selectedCount": "{count, plural, one {# selecionada} many {# selecionadas} other {# selecionadas}}",
   "@queue.toolbar.selectedCount": {
     "sourceHash": "5f13640"
+  },
+  "queue.failureToast.title": "{type, select, copy {Não foi possível concluir a cópia} move {Não foi possível concluir a movimentação} delete {Não foi possível concluir o apagamento} trash {Não foi possível concluir a movimentação para o Lixo} rename {Não foi possível concluir a renomeação} create_folder {Não foi possível concluir a criação da pasta} create_file {Não foi possível concluir a criação do arquivo} archive_edit {Não foi possível concluir a edição do arquivo compactado} other {Não foi possível concluir}}",
+  "@queue.failureToast.title": {
+    "sourceHash": "a55f5df"
+  },
+  "queue.failureToast.action": "Mostrar na fila de operações",
+  "@queue.failureToast.action": {
+    "sourceHash": "607fbb1"
+  },
+  "queue.failureToast.summary": "Não foi possível concluir {count, plural, one {{countText} operação} many {{countText} operações} other {{countText} operações}}",
+  "@queue.failureToast.summary": {
+    "sourceHash": "6207914"
+  },
+  "queue.chip.failed": "Não foi possível concluir {count, plural, one {{countText} operação} many {{countText} operações} other {{countText} operações}}. Abra a fila de operações para ver por quê.",
+  "@queue.chip.failed": {
+    "sourceHash": "336ad46"
+  },
+  "queue.chip.ariaLabel": "{label}, {percentText} por cento. Abra a fila de operações.",
+  "@queue.chip.ariaLabel": {
+    "sourceHash": "3ff7a01"
+  },
+  "queue.chip.tooltip": "{label}{count, plural, =0 {} one { {countText} item} many { {countText} itens} other { {countText} itens}}{hasDestination, select, yes { para {destination}} other {}} · {percentText}%{hasDetail, select, yes { · {detail}} other {}}",
+  "@queue.chip.tooltip": {
+    "sourceHash": "c88735c"
   }
 }

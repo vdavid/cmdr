@@ -47,6 +47,14 @@
   "@queue.row.cancelAria": {
     "sourceHash": "236ec68"
   },
+  "queue.row.dismiss": "Avfärda",
+  "@queue.row.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "queue.row.dismissAria": "Avfärda den här åtgärden",
+  "@queue.row.dismissAria": {
+    "sourceHash": "ff1b528"
+  },
   "queue.row.selectAria": "Markera den här åtgärden",
   "@queue.row.selectAria": {
     "sourceHash": "6618ecc"
@@ -67,8 +75,36 @@
   "@queue.toolbar.cancelSelected": {
     "sourceHash": "34e18e5"
   },
+  "queue.toolbar.dismissAll": "Avfärda alla",
+  "@queue.toolbar.dismissAll": {
+    "sourceHash": "97fac9e"
+  },
   "queue.toolbar.selectedCount": "{count, plural, one {# markerad} other {# markerade}}",
   "@queue.toolbar.selectedCount": {
     "sourceHash": "5f13640"
+  },
+  "queue.failureToast.title": "{type, select, copy {Gick inte att slutföra kopieringen} move {Gick inte att slutföra flytten} delete {Gick inte att slutföra raderingen} trash {Gick inte att slutföra flytten till papperskorgen} rename {Gick inte att slutföra namnbytet} create_folder {Gick inte att slutföra skapandet av mappen} create_file {Gick inte att slutföra skapandet av filen} archive_edit {Gick inte att slutföra redigeringen av arkivet} other {Gick inte att slutföra}}",
+  "@queue.failureToast.title": {
+    "sourceHash": "a55f5df"
+  },
+  "queue.failureToast.action": "Visa i åtgärdskön",
+  "@queue.failureToast.action": {
+    "sourceHash": "607fbb1"
+  },
+  "queue.failureToast.summary": "{count, plural, one {{countText} åtgärd gick inte att slutföra} other {{countText} åtgärder gick inte att slutföra}}",
+  "@queue.failureToast.summary": {
+    "sourceHash": "6207914"
+  },
+  "queue.chip.failed": "{count, plural, one {{countText} åtgärd gick inte att slutföra} other {{countText} åtgärder gick inte att slutföra}}. Öppna åtgärdskön för att se varför.",
+  "@queue.chip.failed": {
+    "sourceHash": "336ad46"
+  },
+  "queue.chip.ariaLabel": "{label}, {percentText} procent. Öppna åtgärdskön.",
+  "@queue.chip.ariaLabel": {
+    "sourceHash": "3ff7a01"
+  },
+  "queue.chip.tooltip": "{label}{count, plural, =0 {} one { {countText} objekt} other { {countText} objekt}}{hasDestination, select, yes { till {destination}} other {}} · {percentText} %{hasDetail, select, yes { · {detail}} other {}}",
+  "@queue.chip.tooltip": {
+    "sourceHash": "c88735c"
   }
 }

@@ -942,3 +942,75 @@ re-translated across `queue.json`, `commands.json`, and `fileOperations.json`.
 - `queue.empty.title` (`Không có gì trong hàng đợi`) needed no change: it names the queue generically, and its English
   didn't move.
 - No `sameAsSourceJustification` needed: all fourteen values differ from English.
+
+## Huy hiệu tiến trình ở góc + thông báo chưa hoàn tất (2026-08-08)
+
+Nine new keys in `queue.json` for two new surfaces: the main window's corner progress chip (`queue.chip.*`) and the
+failure notice plus its per-row / toolbar Dismiss buttons (`queue.failureToast.*`, `queue.row.dismiss*`,
+`queue.toolbar.dismissAll`). The head noun and the window name come from the rename section directly above; nothing here
+re-derives them.
+
+- **dismiss (a failed row, and the toolbar's "Dismiss all"): `Bỏ qua`** · the catalog's OWN settled dismiss word,
+  shipped in six places already (`crashReporter.dialog.dismiss`, `downloads.empty.dismiss`, `downloads.fda.dismiss`,
+  `errorReporter.sentToast.dismiss`, `errorReporter.bundleSavedToast.dismiss`, `fileOperations.mkdir.timeoutDismiss`,
+  `lowDiskSpace.toast.closeTooltip`), so the seventh matches rather than forking. Deliberately NOT `Xóa` (delete) or
+  `Gỡ` (remove, the catalog's word for `askCmdr.attachment.remove` / `settings.mediaIndex.chosenFolders.remove`): the
+  button removes a ROW, undoes nothing, and a queue row for a delete operation wearing a `Xóa` button would read as
+  "delete it again". `high` (catalog-consistent).
+- **`Bỏ qua` also renders Skip (`fileOperations.transferProgress.conflictSkip`), and that's accepted.** The two never
+  share a surface (the conflict step is a dialog inside the transfer flow; Dismiss lives on a queue row and the queue
+  toolbar), and both senses are the same everyday "pass this over" verb in Vietnamese. Don't split them.
+- **"Dismiss this operation" (row SR label): `Bỏ qua thao tác này`** · verb + macOS Finder's Tier-1 `thao tác này` (7×),
+  the exact shape the other three row labels already use (`Tạm dừng thao tác này`, `Hủy thao tác này`,
+  `Chọn thao tác này`). `high`.
+- **"Dismiss all" (toolbar): `Bỏ qua tất cả`** · parallel to the toolbar's settled `Tạm dừng tất cả` / `Tiếp tục tất cả`
+  (verb + `tất cả`). `high`.
+- **"Couldn't finish <action>" (the nine `failureToast.title` arms): `Chưa hoàn tất được thao tác <verb>`** · keeps the
+  catalog's settled failed wording `Chưa hoàn tất được` (`queue.row.status`) verbatim as the head, then names the
+  operation with the settled head noun. macOS Finder attests both halves densely: `Không thể hoàn tất thao tác này.`,
+  `Cần xác thực để hoàn tất thao tác này.`, and the `thao tác + verb` compounds `thao tác sao chép ^0 mục`,
+  `thao tác di chuyển “^1”`, `thao tác cắt`, `thao tác dán`. So the toast and the row now say the same thing. `high`.
+- **`thao tác` is load-bearing here, not filler: dropping it flips the sentence to a passive.** Finder also attests the
+  nominalizer-free `hoàn tất sao chép` ("Bạn có thể hoàn tất sao chép bây giờ"), which tempts a shorter
+  `Chưa hoàn tất được sao chép`. Don't: with the short verbs, `được` + bare verb is the standard PASSIVE (`được xóa` =
+  "was deleted", `được đổi tên` = "was renamed"), so `Chưa hoàn tất được xóa` reads "hasn't finished being deleted"
+  instead of "couldn't finish deleting". A noun after `được` forces the potential reading. This is the vi elided-word
+  trap in `docs/i18n/translation-learnings.md` in a new costume: the short version is fluent and wrong.
+- **The `other` arm is `Chưa hoàn tất được thao tác`, not the bare `Chưa hoàn tất được`.** English degrades to a bare
+  "Couldn't finish" there, which works as an English headline; in Vietnamese the bare form is a status LABEL (it earns
+  its keep in the row's status cell, where a bare state is expected) and reads as a fragment missing its object when it
+  headlines a notice. The generic head noun completes it and keeps all nine arms parallel. `high`.
+- **"N operations couldn't finish" (`failureToast.summary`, and the first sentence of `chip.failed`):
+  `{countText} thao tác chưa hoàn tất được`** · count + noun with NO plural marker (`Các` is for the bare plural heading
+  only; a counted noun takes neither `các` nor any inflection). The settled `chưa hoàn tất được` follows as the
+  predicate. Finder's own subject-predicate form is `thao tác chưa hoàn tất` (without `được`), but `được` is kept: it
+  carries the "couldn't" (inability) that English says and plain `chưa hoàn tất` ("didn't finish") drops. `high`.
+- **"Open the operation queue to see why.": `Mở hàng đợi thao tác để xem lý do.`** · `mở` (settled open verb, macOS
+  AppKit) + the window name lowercased mid-sentence, same as the rename pass's `Tìm nó trong hàng đợi thao tác.` `high`.
+- **"Show in operation queue" (the toast's button): `Hiện trong hàng đợi thao tác`** · `Hiện trong X` is the catalog's
+  settled "Show in X" shape (`commands.fileShowInFinder.mac.label` and `errorReporter.bundleSavedToast.reveal`, both
+  `Hiện trong Finder`). `high`.
+- **"percent" spelled as a word for screen readers: `phần trăm`** · MS terminology (`phần trăm`,
+  `phần trăm hoàn thành`). `{percentText} phần trăm` puts the number first, as Vietnamese does. Used ONLY in
+  `chip.ariaLabel`; the visible tooltip keeps the `%` sign. `high`.
+- **The `%` sign takes NO space before it in vi.** Unlike de/fr/sv. The catalog already ships `Phóng to 100%`,
+  `({percent}%) đã chọn trong`, `({percentText}%)`, and `indexing.progress.percentEta` is justified as identical to
+  English on exactly this ground. So `{percentText}%` stays glued in `chip.tooltip`.
+- **items (files and folders alike, in the chip tooltip): `mục`** · macOS Finder (`^0 mục`, `Các mục`), already the
+  catalog's word (`Đã sao chép {countText} mục`). No classifier and no plural marker with a count. `high`.
+- **"to {destination}": `vào {destination}`** · `vào` (into) is the catalog's preposition for a destination folder
+  (`Dán các tệp … vào thư mục hiện tại`, `sao chép "{name}" vào thư mục con của chính nó`) and macOS's
+  (`Di chuyển các mục vào Thùng rác`). NOT `sang`, which this catalog reserves for switching/converting
+  (`Chuyển sang dạng xem Rút gọn`, `đổi đuôi từ ".{oldExt}" sang ".{newExt}"`). `high`.
+- **`chip.tooltip` plural: write `=0 {}` plus `other`, and no `one`.** vi's CLDR set is `other` only; the explicit `=0`
+  arm is an exact-value match, which ICU allows alongside `other` regardless of the language's categories, and it's what
+  makes the item-count clause vanish before the first progress arrives. Every optional clause keeps its own LEADING
+  space (` {countText} mục`, ` vào {destination}`, ` · {detail}`) so the four combinations never produce a double space
+  or a dangling `·`. Verified by formatting all four.
+- **The chip word itself (`huy hiệu`) appears in no value.** It's only the surface's name; recorded here because the
+  Settings labels that name Cmdr's other chips already use it (`Hiện huy hiệu kho`,
+  `Hiện huy hiệu trạng thái trên tệp hình ảnh`), so a future string that has to SAY "chip" should say `huy hiệu`.
+  `tentative`.
+- ETA / time-left inside `{detail}` is formatted elsewhere and arrives as the settled `còn {duration}`; these keys pass
+  it through untouched.
+- No `sameAsSourceJustification` needed: all nine values differ from English.

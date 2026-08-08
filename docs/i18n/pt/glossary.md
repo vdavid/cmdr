@@ -767,3 +767,72 @@ transferências"); the rest of the batch is below.
   consoante, proclisis before an infinitive, Rever, alterar o nome, a dropped você): zero hits. The batch's Brazilian
   markers are "gerencie" (not pt-PT "gira"), "rodando em segundo plano", and the retained "você".
 - No `sameAsSourceJustification` needed: all 14 values differ from English.
+
+### Progress-chip and failure-notice terms (`queue.row.dismiss*` + `queue.toolbar.dismissAll` + `queue.failureToast.*` + `queue.chip.*`, 2026-08-08)
+
+Two new surfaces on top of the queue window: a corner progress chip (~80 px) previewing the background operation, and a
+failure notice (a ~360 px toast) plus a dismissible failed row. The head noun and the window name are settled in the
+main Terms list (**operação** / **Fila de operações**); this section only adds what those two surfaces needed.
+
+- dismiss (stop showing a notice or a finished-badly row; nothing is undone, retried, or deleted) · **Dispensar** · the
+  pt catalog's own settled verb, five hits for the same concept before this batch (`ui.toast.dismissAria` "Dispensar
+  notificação", `downloads.empty.dismiss`, `downloads.fda.dismiss`, `errorReporter.sentToast.dismiss`,
+  `errorReporter.bundleSavedToast.dismiss`, `fileOperations.mkdir.timeoutDismiss`, and the viewer's
+  `reloadToast.dismissTooltip` "Dispensar sem recarregar") · high. ❌ **Never MS terminology's `dismiss` → "ignorar"**
+  (id 780443/1044462, BRA): **Ignorar is this catalog's Skip** (`transferProgress.conflictSkip`,
+  `transferDialog.policySkip` "Ignorar todos"), so a Dismiss button labelled "Ignorar" would sit two rows from a Skip
+  button meaning something else. KDE Dolphin pt-BR's "Descartar lembrete" is the runner-up and is why two stragglers
+  still say "Descartar" (see the flag below). `queue.row.dismiss`; the aria takes the sibling row shape, **Dispensar
+  esta operação** (matching "Pausar / Retomar / Cancelar / Selecionar esta operação").
+- Dismiss all (toolbar) · **Dispensar tudo** · parallel to the shipped `Pausar tudo` / `Retomar tudo`, and "tudo" is the
+  catalog's settled bare-all-object pattern (`Selecionar tudo`, `Permitir tudo`), which also sidesteps agreement with
+  the feminine "operações" · high. `queue.toolbar.dismissAll`.
+- "Couldn''t finish <doing X>" (the failure toast's nine `select` arms) · **Não foi possível concluir + [article +
+  action noun]** · macOS Finder pt-BR ships this exact frame dozens of times (`NE113` "Não foi possível concluir a
+  sincronização do ^0", `PW38`/`NE9`/`NE13`/`NE63` "Não foi possível concluir a operação porque…") · confirmed. The
+  `other` arm is byte-identical to the `queue.row.status` `failed` arm (**Não foi possível concluir**), so the toast,
+  the queue row, and the chip say the same thing; the other eight are that phrase plus the operation's noun.
+- The eight action NOUNS behind those arms, each Tier-1 or catalog-settled: cópia (Finder `NE111` "concluir a cópia"),
+  **movimentação** (Finder `MV2_V1` "Desfazer Movimentação de ^1", `LA17` "a movimentação ou cópia de um item"),
+  **apagamento** (Finder `PW33` "Apagamento do Volume" and Localizable "até a conclusão do apagamento"), movimentação
+  para o Lixo, **renomeação** (glossary row; Nautilus pt-BR "Desfazer renomeação", TC `6601` "Renomeação em Lote"),
+  criação da pasta, criação do arquivo, edição do arquivo compactado · high. ⚠️ **apagamento is the delete NOUN**,
+  nominalizing the settled `Apagar`: it is what keeps the banned "exclusão" out of this family. The shipped
+  `queue.empty.body` still says "exclusões" (see the flag below).
+- "Show in operation queue" (the toast's button) · **Mostrar na fila de operações** · glossary `Show in Finder` →
+  "Mostrar no Finder" + the window name inflected the way the catalog already inflects it in running text
+  (`transferProgress.queueTooltip` "gerencie na fila de operações", `backgroundedToast` "Encontre-a na fila de
+  operações") · confirmed.
+- "N operations couldn''t finish" (the coalesced toast + the chip's failed state) · **Não foi possível concluir
+  {countText} operação/operações** · the invariant house phrase is hoisted OUTSIDE the plural and only the counted noun
+  branches, the same shape `askCmdr.renameReview.rename` uses for "Renomear # arquivo(s)" · high. Hoisting also means no
+  participle has to agree, so the three CLDR branches (`one` / `many` / `other`) differ only in the noun. The chip's
+  second sentence, "Open the operation queue to see why", is **Abra a fila de operações para ver por quê** (imperative,
+  matching the catalog's "Ative-a em…" / "Encontre-a na fila de operações"; sentence-final **por quê** takes the
+  circumflex). `queue.failureToast.summary`, `queue.chip.failed`.
+- "percent", spelled as a word for the screen reader · **por cento** ("42 por cento") · pt-BR reads `%` aloud as "por
+  cento", so spelling it out changes nothing for VoiceOver and protects the aria label from a reader that would say
+  "porcentagem" or skip the sign · high. Only in `queue.chip.ariaLabel`; the visible tooltip keeps the sign as
+  **{percentText}%**, with NO space before `%` — pt-BR sets it tight, and the whole catalog already does ("100%", "50% e
+  200 MB", `lowDiskSpace` "({percentText}%)"). This is the one place the de/fr/sv space-before-% rule must NOT be
+  copied.
+- item (the tooltip's countable, covering files and folders alike) · **item** / plural **itens** · macOS Finder pt-BR
+  throughout ("^0 itens", "Remover ^0 itens", `PW5_V2` "Preparando para copiar ^0 itens") · confirmed.
+- destination clause in the tooltip · **para {destination}** · Finder pt-BR ("copiado para o destino") and the transfer
+  dialog's own **Para** heading · confirmed. Keep the leading space INSIDE the branch (` para {destination}`), like the
+  count and detail clauses, so an absent clause leaves no double space and the empty `=0 {}` / `other {}` arms stay
+  empty.
+- time left, the tooltip's trailing `{detail}` · **{duration} restantes** · NOT translated in this batch: the chip
+  reuses `fileOperations.transferProgress.etaRemaining` verbatim (and `queue.row.status` `paused` → **Pausado** when
+  there's no honest countdown), so the chip and the progress dialog can't drift. Don't re-derive a second time-left
+  phrasing for the chip.
+- Regional-variant check run value by value against the style guide's pt-PT tell list (ficheiro, `estar a` + infinitive,
+  consoante, proclisis before an infinitive, Rever, alterar o nome, a dropped você), plus U+2019 and double-space scans:
+  zero hits across all nine. Brazilian markers in the batch: **arquivo** (never ficheiro) in two toast arms, **Lixo**
+  (never Reciclagem), **renomeação** (never "alteração de nome"), and the pt-BR gerund labels the chip borrows from
+  `queue.row.label`.
+- No `sameAsSourceJustification` needed: all nine values differ from English.
+- ⚠️ Two nearby inconsistencies found while settling **Dispensar**, both out of this batch's scope:
+  `crashReporter.dialog.dismiss` and `lowDiskSpace.toast.closeTooltip` still render "Dismiss" as **Descartar**, against
+  the catalog's five "Dispensar"; and `queue.empty.body` still lists deletes as **exclusões**, against the settled
+  delete family (Apagar / Apagando / Apagou / apagamento). Worth one reconciliation pass each.
