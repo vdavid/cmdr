@@ -36,6 +36,12 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   six `rust-tests` contention verdicts, with a cause hypothesis and confidence per entry, plus the structural levers a
   de-flaking pass should reach for. ⚠️ Its E2E counts come from `/tmp` logs that age out, so they can't be re-derived.
 
+- `silent-inertness-hunt-2026-08-08.md` — a sweep for mechanisms that look active but aren't reaching their subject
+  (inert guards, tests that can't touch their code, unanswerable questions turned into facts). Carries the two
+  capability flags a backend answers wrongly today, the shared `volume::conformance` assertions added to fence the
+  class, and the leads that turned up nothing so nobody re-runs them. Keep it until its two open recommendations (a
+  mount-kind answer for `LocalPosixVolume`, and measuring FSEvents on an `smbfs` mount) are settled.
+
 **A decision record for something we evaluated and rejected**, kept so nobody re-proposes it from the same premises:
 
 - `size-only-subtrees-rejected-2026-08-06.md` — why storing folder totals instead of per-file rows under `CACHEDIR.TAG`
