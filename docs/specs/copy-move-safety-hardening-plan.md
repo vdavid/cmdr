@@ -706,6 +706,25 @@ noted option.
 
 # Phase 2 — Make the destructive path unfoolable
 
+**Status: DONE**, on branch `safety-p2-cleanup-intent`. Five corrections it turned up:
+
+1. **The post-loop sweep was not a function.** M2.1's first test says "a unit test on the post-loop sweep function"; the
+   sweep was 15 inline lines inside `copy_volumes_with_progress`, reachable only by driving a whole copy operation. It
+   comes out first as `cleanup.rs::clean_partial_writes`, verbatim, in its own commit — then the red can address it.
+2. **The lying-volume double isn't at `conflict.rs:690-710`.** It's `RecursiveDeleteVolume` in `conflict_tests.rs`, the
+   `#[path]` child (`conflict.rs:675` is only where the module is declared). It moved to
+   `strategy_test_support.rs` as `pub(crate)`, because `pub(super)` items in that file resolve for `strategy`'s
+   descendants only, and `cleanup_tests.rs` is a sibling's child.
+3. **`copy_tests.rs` reached the sweep through `use super::*`**, not through an import of its own: it inherited
+   `copy.rs`'s `use super::cleanup::delete_volume_path_recursive`. So moving one function out of `copy.rs` broke the
+   four tests before a single rename happened. They now import from `super::super::cleanup` directly.
+4. **`delete_written_file` needs a `NotFound`-is-success carve-out**, which the plan doesn't mention. Today's recursive
+   helper returns `Ok` for a path that isn't there (its `is_directory` probe errors into `Ok(false)`), and the rollback
+   ledger legitimately holds paths that never landed. A bare `volume.delete` would have turned every one of those into
+   a warn on the cancel path.
+5. **`remove_tree` is `pub(in write_operations)`, so `conflict.rs` and `copy_into.rs` need a named `preserve` local.**
+   `&HashSet::new()` inline is a temporary dropped at the end of the statement, which doesn't outlive the `.await`.
+
 Branch `safety-p2-cleanup-intent`, off `main`. One milestone, deliberately. Independently mergeable: it depends on
 nothing in Phase 1 and touches no file Phase 1 touches (except `conflict.rs`, at a different line). It's the complement
 to Phase 0, not a duplicate of it: Phase 0 makes the "delete stops at one node" contract TRUE, this makes the cleanup
