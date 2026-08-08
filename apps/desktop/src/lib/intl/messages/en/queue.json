@@ -75,6 +75,16 @@
     "screenshot": "queue.png"
   },
 
+  "queue.row.dismiss": "Dismiss",
+  "@queue.row.dismiss": {
+    "description": "Button on an operation row that couldn''t finish, removing that row from the list. It only stops showing the row: nothing is undone, retried, or deleted. It''s the only way a row like that goes away, so the reason stays readable until the user is done with it."
+  },
+
+  "queue.row.dismissAria": "Dismiss this operation",
+  "@queue.row.dismissAria": {
+    "description": "Screen-reader label for the per-row Dismiss button on an operation that couldn''t finish (the visible button shows only \"Dismiss\")."
+  },
+
   "queue.row.selectAria": "Select this operation",
   "@queue.row.selectAria": {
     "description": "Screen-reader label for the checkbox that selects an operation row so it can be cancelled together with others via \"Cancel selected\".",
@@ -103,6 +113,11 @@
   "@queue.toolbar.cancelSelected": {
     "description": "Toolbar button that cancels the operations the user has selected via the row checkboxes. Files already copied are kept.",
     "screenshot": "queue-empty.png"
+  },
+
+  "queue.toolbar.dismissAll": "Dismiss all",
+  "@queue.toolbar.dismissAll": {
+    "description": "Toolbar button that removes every row for an operation that couldn''t finish, in one go. It appears only when more than one such row is listed. Like the per-row Dismiss, it only stops showing them; nothing is undone or retried."
   },
 
   "queue.toolbar.selectedCount": "{count, plural, one {# selected} other {# selected}}",

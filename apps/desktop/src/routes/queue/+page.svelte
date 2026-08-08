@@ -15,6 +15,8 @@
         cancelOperation,
         cancelOperations,
         cancelWriteOperation,
+        dismissAllFailedOperations,
+        dismissFailedOperation,
         pauseAll,
         pauseOperation,
         resumeAll,
@@ -24,7 +26,7 @@
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import QueueRow from '$lib/file-operations/queue/QueueRow.svelte'
-    import { createOperationsStore, isTerminalStatus } from '$lib/file-operations/queue/operations-store.svelte'
+    import { createOperationsStore, isHiddenSettledStatus } from '$lib/file-operations/queue/operations-store.svelte'
 
     const log = getAppLogger('queue')
 
@@ -40,10 +42,11 @@
      *  selection pattern. */
     const selectedIds = new SvelteSet<string>()
 
-    /** Only non-terminal rows are shown/actionable. A terminal op lingers in the
-     *  snapshot briefly before the backend prunes it; we hide it so the window
-     *  reads as "live work" only. */
-    const rows = $derived(store.operations.filter((row) => !isTerminalStatus(row.snapshot.status)))
+    /** Live work, plus every retained failure. A `done` or `cancelled` op can
+     *  linger in the snapshot for a tick before the backend prunes it, and it
+     *  has nothing left to say, so it stays hidden; a failure stays visible
+     *  until someone dismisses it. */
+    const rows = $derived(store.operations.filter((row) => !isHiddenSettledStatus(row.snapshot.status)))
     const isEmpty = $derived(rows.length === 0)
 
     // Selection that points at rows no longer present gets dropped so the count
@@ -102,6 +105,25 @@
             selectedIds.clear()
         } catch (error) {
             log.warn('Failed to cancel selected operations: {error}', { error: String(error) })
+        }
+    }
+
+    /** Stop showing one retained failure. Explicit only: nothing else in the app
+     *  drops a failed row, so a copy that died while the user was away is still
+     *  here when they come back. */
+    async function dismissRow(operationId: string): Promise<void> {
+        try {
+            await dismissFailedOperation(operationId)
+        } catch (error) {
+            log.warn('Failed to dismiss operation {operationId}: {error}', { operationId, error: String(error) })
+        }
+    }
+
+    async function dismissAll(): Promise<void> {
+        try {
+            await dismissAllFailedOperations()
+        } catch (error) {
+            log.warn('Failed to dismiss all failed operations: {error}', { error: String(error) })
         }
     }
 
@@ -213,6 +235,13 @@
             <Button variant="secondary" size="mini" onclick={handleResumeAll} disabled={!store.hasPaused}>
                 <span class="btn-inner"><Icon name="play" size={13} />{tString('queue.toolbar.resumeAll')}</span>
             </Button>
+            <!-- One failure has its own Dismiss on the row; the toolbar button
+                 earns its place only once there's a pile to clear. -->
+            {#if store.failureCount > 1}
+                <Button variant="secondary" size="mini" onclick={() => void dismissAll()}>
+                    <span class="btn-inner"><Icon name="x" size={13} />{tString('queue.toolbar.dismissAll')}</span>
+                </Button>
+            {/if}
             <span class="toolbar-spacer"></span>
             {#if selectedCount > 0}
                 <span class="selected-count">{tString('queue.toolbar.selectedCount', { count: selectedCount })}</span>
@@ -241,6 +270,7 @@
                             void pauseResumeRow(row.snapshot.operationId, row.snapshot.status === 'paused')}
                         onCancel={() => void cancelRow(row.snapshot.operationId)}
                         onRollback={() => void rollbackRow(row.snapshot.operationId)}
+                        onDismiss={() => void dismissRow(row.snapshot.operationId)}
                     />
                 {/each}
             </ul>

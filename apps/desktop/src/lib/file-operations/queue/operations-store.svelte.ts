@@ -52,6 +52,18 @@ export function isTerminalStatus(status: OperationSnapshot['status']): boolean {
   return TERMINAL_STATUSES.has(status)
 }
 
+/** Settled statuses the queue window hides. A `done` or `cancelled` op has
+ *  nothing left to say, so it goes quietly; a FAILURE stays, because the reason
+ *  it stopped is the one thing the user still needs, and only an explicit
+ *  Dismiss takes it away. A separate set from `TERMINAL_STATUSES` on purpose:
+ *  "finished" and "not worth showing" stopped meaning the same thing once
+ *  failures were retained. */
+const HIDDEN_SETTLED_STATUSES = new Set<OperationSnapshot['status']>(['done', 'cancelled'])
+
+export function isHiddenSettledStatus(status: OperationSnapshot['status']): boolean {
+  return HIDDEN_SETTLED_STATUSES.has(status)
+}
+
 /** Operation types that finish in a blink: pure metadata work that emits no
  *  `write-progress` at all, so there's never a bar to draw for one. The queue
  *  window still lists them (it promises completeness); ambient surfaces skip
@@ -189,6 +201,11 @@ export function createOperationsStore() {
     /** Whether any operation is currently paused. */
     get hasPaused(): boolean {
       return snapshots.some((op) => op.status === 'paused')
+    },
+    /** How many retained failures the snapshot carries. Gates "Dismiss all"
+     *  (offered only past one) and drives the corner chip's failure state. */
+    get failureCount(): number {
+      return snapshots.reduce((count, op) => (op.status === 'failed' ? count + 1 : count), 0)
     },
     init,
     dispose,

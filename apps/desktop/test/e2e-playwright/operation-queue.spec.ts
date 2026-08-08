@@ -29,7 +29,14 @@ import path from 'path'
 import { test, expect } from './fixtures.js'
 import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { ensureAppReady, expectAndDismissToast, getFixtureRoot, moveCursorToFile, TRANSFER_DIALOG } from './helpers.js'
+import {
+  closeScopedWindow,
+  ensureAppReady,
+  expectAndDismissToast,
+  getFixtureRoot,
+  moveCursorToFile,
+  TRANSFER_DIALOG,
+} from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
 const QUEUE_LABEL = 'queue'
@@ -49,6 +56,8 @@ const FILES_PER_SOURCE = 24
  *  (they share the local lane, so they still serialize: one Running, one Queued). */
 const SOURCE_A = 'queue-src-a'
 const SOURCE_B = 'queue-src-b'
+/** Deliberately never created: a copy from here fails validation. */
+const MISSING_SOURCE = 'queue-src-gone'
 
 test.setTimeout(90_000)
 
@@ -82,6 +91,23 @@ async function startCopy(tauriPage: TauriPage, fixtureRoot: string, sourceName: 
   })()`)
 }
 
+/** Starts a copy that CANNOT succeed: the source doesn't exist, so validation
+ *  fails inside the spawned operation and the backend emits `write-error` for a
+ *  real, registered op. The cheapest deterministic failure there is. */
+async function startDoomedCopy(tauriPage: TauriPage, fixtureRoot: string): Promise<void> {
+  const src = JSON.stringify(`${fixtureRoot}/left/${MISSING_SOURCE}`)
+  const destDir = JSON.stringify(`${fixtureRoot}/right`)
+  await tauriPage.evaluate(`(async function() {
+    await window.__TAURI_INTERNALS__.invoke('copy_between_volumes', {
+      sourceVolumeId: 'root',
+      sourcePaths: [${src}],
+      destVolumeId: 'root',
+      destPath: ${destDir},
+      config: { conflictResolution: 'rename', progressIntervalMs: 100, maxConflictsToShow: 10, previewId: null, preKnownConflicts: [] }
+    });
+  })()`)
+}
+
 /** Reads the queue window's rows as `{ id, status }[]` from its live DOM. */
 async function readRows(queuePage: TauriPage): Promise<{ id: string; status: string }[]> {
   const json = await queuePage.evaluate(`(function() {
@@ -91,6 +117,27 @@ async function readRows(queuePage: TauriPage): Promise<{ id: string; status: str
     }));
   })()`)
   return JSON.parse(json as string) as { id: string; status: string }[]
+}
+
+/** The reason text of the first failed row, or `''` when there's no failed row. */
+async function readFailureReason(queuePage: TauriPage): Promise<string> {
+  const text = await queuePage.evaluate(`(function() {
+    var row = document.querySelector('.queue-row[data-status="failed"]');
+    if (!row) return '';
+    var reason = row.querySelector('.reason-cell');
+    return reason ? reason.textContent.replace(/\\s+/g, ' ').trim() : '';
+  })()`)
+  return text as string
+}
+
+/** Opens (or raises) the queue window the way the menu and the palette do. */
+async function openQueueWindow(main: TauriPage): Promise<TauriPage> {
+  await main.evaluate(`(function() {
+    window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
+      event: 'execute-command', payload: { commandId: 'queue.show' }
+    });
+  })()`)
+  return main.waitForWindow((w) => w.label === QUEUE_LABEL, { timeout: 10000 })
 }
 
 async function clickRowButton(queuePage: TauriPage, operationId: string, ariaLabel: string): Promise<void> {
@@ -133,6 +180,9 @@ test.afterEach(async ({ tauriPage }) => {
   // progress modal never opens — the Linux `operation-queue` flake (rarer on the
   // faster macOS lane). The drain loop runs in the webview so it doesn't depend
   // on `evaluate` returning an async value; Node awaits the IIFE either way.
+  // A retained failure never leaves the snapshot on its own (that's the point),
+  // so it's dismissed explicitly here — otherwise the drain loop below would
+  // spin out its whole budget waiting for a row that is designed to stay.
   await tauriPage.evaluate(`(async function() {
     try { await window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: null }); } catch (e) {}
     try {
@@ -140,6 +190,7 @@ test.afterEach(async ({ tauriPage }) => {
       var ids = ops.map(function(o) { return o.operationId; });
       if (ids.length) await window.__TAURI_INTERNALS__.invoke('cancel_operations', { operationIds: ids });
     } catch (e) {}
+    try { await window.__TAURI_INTERNALS__.invoke('dismiss_all_failed_operations'); } catch (e) {}
     for (var i = 0; i < 60; i++) {
       var remaining = await window.__TAURI_INTERNALS__.invoke('list_operations');
       if (!remaining || remaining.length === 0) break;
@@ -161,12 +212,7 @@ test.describe('Operation queue window', () => {
     await startCopy(main, fixtureRoot, SOURCE_B)
 
     // Open the queue window via the same command the menu / palette use.
-    await main.evaluate(`(function() {
-      window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
-        event: 'execute-command', payload: { commandId: 'queue.show' }
-      });
-    })()`)
-    const queuePage = await main.waitForWindow((w) => w.label === QUEUE_LABEL, { timeout: 10000 })
+    const queuePage = await openQueueWindow(main)
 
     // One Running + one Queued.
     await expect
@@ -288,5 +334,42 @@ test.describe('Operation queue window', () => {
 
     // No progress modal stacked in the main window for the queued op.
     expect(await main.isVisible(PROGRESS_DIALOG), 'no second modal for the queued op').toBe(false)
+  })
+
+  // The whole reason failures are retained in the backend: the window that would
+  // have shown the error is closed at the moment the operation dies.
+  test('a failure that happens while the window is closed is still there, with its reason, when it reopens', async ({
+    tauriPage,
+  }) => {
+    const fixtureRoot = getFixtureRoot()
+    const main = tauriPage as TauriPage
+
+    // Start a copy that can't succeed, with no queue window open at all.
+    await startDoomedCopy(main, fixtureRoot)
+
+    // Open the window: the failure is waiting there, with the real reason.
+    let queuePage = await openQueueWindow(main)
+    await expect
+      .poll(async () => (await readRows(queuePage)).map((r) => r.status).join(','), { timeout: 15000 })
+      .toBe('failed')
+    expect(await readFailureReason(queuePage)).toContain('no longer exists')
+
+    // Close it and let the webview go, taking any frontend-held state with it.
+    await closeScopedWindow(main, queuePage, QUEUE_LABEL)
+
+    // Reopen: the row survived the window, because the backend held it.
+    queuePage = await openQueueWindow(main)
+    await expect
+      .poll(async () => (await readRows(queuePage)).map((r) => r.status).join(','), { timeout: 15000 })
+      .toBe('failed')
+    expect(await readFailureReason(queuePage)).toContain('no longer exists')
+
+    // Dismiss is the only thing that takes it away, and it takes it away for
+    // good.
+    const failedId = (await readRows(queuePage)).find((r) => r.status === 'failed')?.id
+    expect(failedId, 'a failed row exists').toBeTruthy()
+    if (!failedId) throw new Error('no failed row')
+    await clickRowButton(queuePage, failedId, 'Dismiss this operation')
+    await expect.poll(async () => (await readRows(queuePage)).length, { timeout: 10000 }).toBe(0)
   })
 })

@@ -11,7 +11,7 @@ vi.mock('$lib/tauri-commands', () => ({
   onWriteProgress: vi.fn(() => Promise.resolve(() => {})),
 }))
 
-import { createOperationsStore, isTerminalStatus } from './operations-store.svelte'
+import { createOperationsStore, isHiddenSettledStatus, isTerminalStatus } from './operations-store.svelte'
 
 function snapshot(
   id: string,
@@ -125,6 +125,26 @@ describe('operations store reducers', () => {
     })
     cleanup()
   })
+
+  it('counts retained failures, which is what gates "Dismiss all"', () => {
+    const cleanup = $effect.root(() => {
+      const store = createOperationsStore()
+      store._testApplySnapshot([snapshot('a', 'running'), snapshot('b', 'failed')])
+      flushSync()
+      expect(store.failureCount).toBe(1)
+
+      store._testApplySnapshot([snapshot('b', 'failed'), snapshot('c', 'failed')])
+      flushSync()
+      expect(store.failureCount).toBe(2)
+
+      // Dismissal is the only way out, and it comes back as a snapshot without
+      // the row.
+      store._testApplySnapshot([snapshot('c', 'failed')])
+      flushSync()
+      expect(store.failureCount).toBe(1)
+    })
+    cleanup()
+  })
 })
 
 describe('isTerminalStatus', () => {
@@ -135,5 +155,18 @@ describe('isTerminalStatus', () => {
     expect(isTerminalStatus('running')).toBe(false)
     expect(isTerminalStatus('queued')).toBe(false)
     expect(isTerminalStatus('paused')).toBe(false)
+  })
+})
+
+describe('isHiddenSettledStatus', () => {
+  it('hides done and cancelled, but never a failure', () => {
+    // A failure is the one settled status the window keeps: it's the whole
+    // point of retaining it, and only an explicit Dismiss takes it away.
+    expect(isHiddenSettledStatus('done')).toBe(true)
+    expect(isHiddenSettledStatus('cancelled')).toBe(true)
+    expect(isHiddenSettledStatus('failed')).toBe(false)
+    expect(isHiddenSettledStatus('running')).toBe(false)
+    expect(isHiddenSettledStatus('queued')).toBe(false)
+    expect(isHiddenSettledStatus('paused')).toBe(false)
   })
 })

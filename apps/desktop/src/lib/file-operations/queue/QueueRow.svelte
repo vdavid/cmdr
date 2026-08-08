@@ -7,6 +7,7 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import type { OperationRow } from './operations-store.svelte'
     import { operationTypeIcon } from './operation-icon'
+    import { failureReasonFor } from './failure-reason'
     import { transferReadout } from '../progress-readout'
     import TransferProgressReadout from '../TransferProgressReadout.svelte'
     import { stallNoticeFor } from '../transfer/transfer-stall'
@@ -20,9 +21,12 @@
         /** Cancel AND delete what this op has already written. Offered only on
          *  rows the backend says can be reversed (`supportsRollback`). */
         onRollback: () => void
+        /** Stop showing a retained failure. The only way one leaves the list:
+         *  no timer, no window close, no next operation. */
+        onDismiss: () => void
     }
 
-    const { row, selected, onToggleSelect, onPauseResume, onCancel, onRollback }: Props = $props()
+    const { row, selected, onToggleSelect, onPauseResume, onCancel, onRollback, onDismiss }: Props = $props()
 
     const snapshot = $derived(row.snapshot)
     const progress = $derived(row.progress)
@@ -35,6 +39,16 @@
     const isPaused = $derived(status === 'paused')
     const isQueued = $derived(status === 'queued')
     const isActionable = $derived(status === 'running' || status === 'paused' || status === 'queued')
+
+    /** The operation stopped and the backend kept its reason. The row is a
+     *  record now: nothing to pause, cancel, roll back, or select in bulk, and
+     *  the only control left is Dismiss. */
+    const isFailed = $derived(status === 'failed')
+
+    /** Why it stopped, in the error dialog's own words. Null on every live row.
+     *  `reason.message` is markup from the pipeline (escaped names, size tiers),
+     *  so it goes through `{@html}` exactly as the dialog's body does. */
+    const reason = $derived(failureReasonFor(snapshot))
 
     const typeIcon = $derived(operationTypeIcon(snapshot.operationType))
 
@@ -96,7 +110,11 @@
 
 <li class="queue-row" class:selected data-operation-id={snapshot.operationId} data-status={status}>
     <div class="select-cell">
-        <Checkbox checked={selected} onCheckedChange={onToggleSelect} ariaLabel={tString('queue.row.selectAria')} />
+        <!-- The checkbox exists for "Cancel selected", so a settled failure has
+             nothing to offer it. -->
+        {#if !isFailed}
+            <Checkbox checked={selected} onCheckedChange={onToggleSelect} ariaLabel={tString('queue.row.selectAria')} />
+        {/if}
     </div>
 
     <span class="type-cell" aria-hidden="true">
@@ -114,9 +132,17 @@
         {/if}
     </div>
 
-    <span class="status-cell" class:running={isRunning} class:paused={isPaused} class:queued={isQueued}>
+    <span
+        class="status-cell"
+        class:running={isRunning}
+        class:paused={isPaused}
+        class:queued={isQueued}
+        class:failed={isFailed}
+    >
         {#if isRunning}
             <Spinner size="sm" />
+        {:else if isFailed}
+            <Icon name="triangle-alert" size={14} />
         {/if}
         <span class="status-text">{statusLabel}</span>
     </span>
@@ -138,6 +164,14 @@
                 </span>
             </Button>
         {/if}
+        {#if isFailed}
+            <Button variant="secondary" size="mini" onclick={onDismiss} aria-label={tString('queue.row.dismissAria')}>
+                <span class="btn-inner">
+                    <Icon name="x" size={13} />
+                    {tString('queue.row.dismiss')}
+                </span>
+            </Button>
+        {/if}
         {#if canRollback}
             <!-- Danger, like the progress dialog's: the same click deletes the
                  same files, so it can't read as gentler here. -->
@@ -151,6 +185,19 @@
             </span>
         {/if}
     </div>
+
+    <!-- Second line for a failure: why it stopped and what to do about it, in
+         full. The queue is the surface that promises completeness, so nothing
+         is truncated here (the toast is the one that has to abbreviate).
+         The pipeline's own title is left out on purpose: it would read
+         "Copy failed" right beside the status cell's "Couldn't finish". -->
+    {#if reason}
+        <div class="reason-cell">
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -- markup from the typed error via `failureReasonFor`: escaped names/paths plus size tiers, no user input. Same boundary as `FallbackErrorContent`. -->
+            <p class="reason-message selectable">{@html reason.message}</p>
+            <p class="reason-suggestion selectable">{reason.suggestion}</p>
+        </div>
+    {/if}
 
     <!-- Second line, spanning everything right of the icon gutter: the same
          dual-bar readout the copy dialog shows, in its compact density. -->
@@ -215,6 +262,35 @@
         min-width: 0;
     }
 
+    /* The failure's reason takes the readout's line: a settled row has no bars
+       to draw, and the prose needs the same full width. An interpolated path
+       can be arbitrarily long, so it wraps mid-token rather than pushing the
+       row sideways. */
+    .reason-cell {
+        grid-column: 3 / -1;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .reason-message {
+        margin: 0;
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+    }
+
+    .reason-suggestion {
+        margin: var(--spacing-xxs) 0 0;
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+    }
+
+    /* The reason is the one thing on a row worth copying out of it. */
+    .selectable {
+        user-select: text;
+        -webkit-user-select: text;
+        cursor: text;
+    }
+
     .op-label {
         font-weight: 500;
         color: var(--color-text-primary);
@@ -258,6 +334,12 @@
     /* Queued reads as "waiting", a notch quieter than running/paused. */
     .status-cell.queued {
         color: var(--color-text-tertiary);
+    }
+
+    /* A failure is the one row state that earns a colour: warning, matching the
+       glyph beside it and the corner chip's failure state. */
+    .status-cell.failed {
+        color: var(--color-warning-text);
     }
 
     .actions-cell {

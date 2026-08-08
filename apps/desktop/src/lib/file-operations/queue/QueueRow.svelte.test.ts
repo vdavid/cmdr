@@ -3,7 +3,7 @@ import { mount, unmount, flushSync, type ComponentProps } from 'svelte'
 import QueueRow from './QueueRow.svelte'
 import { operationTypeIcon } from './operation-icon'
 import type { OperationRow } from './operations-store.svelte'
-import type { OperationSnapshot, WriteProgressEvent } from '$lib/ipc/bindings'
+import type { OperationSnapshot, WriteOperationError, WriteProgressEvent } from '$lib/ipc/bindings'
 import { seconds } from '$lib/units'
 
 // The component reads reactive settings (file-size format) deep in `<Size>`. The
@@ -34,6 +34,16 @@ function buildRow(
   }
 }
 
+/** A retained failure as the backend hands it over: settled, unrollbackable,
+ *  carrying the typed error that stopped it. */
+function buildFailedRow(
+  error: WriteOperationError,
+  opType: OperationSnapshot['operationType'] = 'copy',
+): OperationRow {
+  const failed = buildRow('failed', opType)
+  return { ...failed, snapshot: { ...failed.snapshot, error } }
+}
+
 let target: HTMLElement
 let instance: ReturnType<typeof mount> | undefined
 
@@ -50,6 +60,7 @@ function render(props: Partial<ComponentProps<typeof QueueRow>> & { row: Operati
       onPauseResume: () => {},
       onCancel: () => {},
       onRollback: () => {},
+      onDismiss: () => {},
       ...props,
     },
   })
@@ -209,6 +220,41 @@ describe('QueueRow', () => {
     expect(target.querySelector('.status-text')?.textContent.trim()).toBe('Rolling back...')
     expect(rollbackButton()).toBeNull()
     expect(target.querySelector('[aria-label="Cancel this operation"]')).not.toBeNull()
+  })
+
+  it("a failed row says it couldn't finish and drops every live control", () => {
+    render({ row: buildFailedRow({ type: 'read_only_device', path: '/Volumes/Stick', deviceName: 'Stick' }) })
+
+    expect(target.querySelector('.status-text')?.textContent.trim()).toBe("Couldn't finish")
+    expect(target.querySelector('[aria-label="Pause this operation"]')).toBeNull()
+    expect(target.querySelector('[aria-label="Resume this operation"]')).toBeNull()
+    expect(target.querySelector('[aria-label="Cancel this operation"]')).toBeNull()
+    expect(rollbackButton()).toBeNull()
+    // Nothing to cancel in bulk, so the row leaves the multi-select out.
+    expect(target.querySelector('input[type="checkbox"]')).toBeNull()
+  })
+
+  it('a failed row renders the real reason, per error variant and per operation', () => {
+    // Two variants and two operation types, so a broken variant-key selection
+    // can't hide behind one lucky lookup.
+    render({ row: buildFailedRow({ type: 'read_only_device', path: '/Volumes/Stick', deviceName: 'Stick' }) })
+    let reason = target.querySelector('.reason-cell')?.textContent ?? ''
+    expect(reason).toContain('Stick is read-only')
+    expect(reason).toContain('Choose a different destination that supports writing.')
+
+    if (instance) void unmount(instance)
+    render({
+      row: buildFailedRow({ type: 'permission_denied', path: '/protected', message: 'nope' }, 'delete'),
+    })
+    reason = target.querySelector('.reason-cell')?.textContent ?? ''
+    expect(reason).toContain("You don't have permission to delete files here.")
+  })
+
+  it('clicking Dismiss fires onDismiss', () => {
+    const onDismiss = vi.fn()
+    render({ row: buildFailedRow({ type: 'source_not_found', path: '/gone.txt' }), onDismiss })
+    target.querySelector<HTMLButtonElement>('[aria-label="Dismiss this operation"]')?.click()
+    expect(onDismiss).toHaveBeenCalledOnce()
   })
 
   it('exposes the lifecycle status as a data attribute for E2E', () => {

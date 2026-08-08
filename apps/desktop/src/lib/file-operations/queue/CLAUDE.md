@@ -11,7 +11,9 @@ plus "Cancel selected", and global pause/resume. Opens from View > Operation que
 - `operations-store.svelte.ts`: `createOperationsStore()` — the single reactive source the window renders from, merging
   two streams. Public API + the progress-dialog-facing seams: `DETAILS.md`.
 - `QueueRow.svelte`: one operation row. Line 1 is chrome (select, icon, source→dest, status, actions); line 2 the shared
-  `../TransferProgressReadout.svelte`, compact. Shell: `routes/queue/+page.svelte`.
+  `../TransferProgressReadout.svelte`, compact, or a failure's reason. Shell: `routes/queue/+page.svelte`.
+- `failure-reason.ts`: `failureReasonFor(snapshot)` — a retained failure's title/explanation/suggestion, from the
+  existing `errors.write.*` pipeline. Shared with the main window's failure toast.
 
 ## Must-knows
 
@@ -33,6 +35,14 @@ plus "Cancel selected", and global pause/resume. Opens from View > Operation que
 - **A paused op still reports `is_running: true`** from the backend status query (it stays in the write-op-state map).
   The bar-is-moving truth is the SNAPSHOT `status` (`'running'` vs `'paused'`), NEVER `is_running`. Rows read
   `snapshot.status`.
+- **A failed row STAYS until someone dismisses it.** The backend retains failures out-of-band (`write_operations`
+  DETAILS § "Retained failures"), the page hides only `done` / `cancelled` (`isHiddenSettledStatus`, ❌ not
+  `isTerminalStatus`), and the row's Dismiss / the toolbar's "Dismiss all" are the ONLY ways one leaves: no timer, no
+  window close, no next operation. A 40-minute copy that died while the user was at lunch must still be there.
+- **A failure's reason comes from the error pipeline, never new prose** (`failure-reason.ts` →
+  `../transfer/transfer-error-messages.ts`, `getMessage()` raw lookup, per-operation variant keys). Its `message` is
+  MARKUP (escaped names, size tiers), so it renders through `{@html}` like the dialog's body does. The pipeline's own
+  title is deliberately dropped in the row: it would read "Copy failed" right beside "Couldn't finish".
 - **Cancel keeps partials; Rollback is the separate, opt-in undo.** Cancel (per-row and "Cancel selected") maps to
   `cancel_operation(s)`: no rollback, no confirm, which is why `capabilities/queue.json` DROPS `dialog:allow-ask` and
   `store:default`. Per-row **Rollback** calls `cancelWriteOperation(id, true)` and shows ONLY where the snapshot's

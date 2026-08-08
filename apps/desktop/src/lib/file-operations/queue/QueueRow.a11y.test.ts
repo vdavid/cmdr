@@ -61,6 +61,7 @@ async function mountRow(r: OperationRow, selected = false): Promise<HTMLElement>
       onPauseResume: () => {},
       onCancel: () => {},
       onRollback: () => {},
+      onDismiss: () => {},
     },
   })
   await tick()
@@ -92,6 +93,20 @@ describe('QueueRow a11y', () => {
   // one whose accessible name comes from its label rather than an aria-label.
   it('a rollbackable copy row has no a11y violations', async () => {
     const list = await mountRow(row('running', 'copy', runningProgress, true))
+    await expectNoA11yViolations(list)
+  })
+
+  // The failed row is the only one carrying prose, and its explanation is
+  // injected as markup by the error pipeline.
+  it('a failed row with its reason has no a11y violations', async () => {
+    const failed = row('failed', 'copy')
+    const list = await mountRow({
+      ...failed,
+      snapshot: {
+        ...failed.snapshot,
+        error: { type: 'insufficient_space', required: 1073741824, available: 1024, volumeName: 'Backup' },
+      },
+    })
     await expectNoA11yViolations(list)
   })
 })

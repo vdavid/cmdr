@@ -66,13 +66,39 @@ spinner and an animated bar; `'paused'` shows a static bar and the Paused label.
 - `dispose(): void` — drops both listeners. Call on window teardown.
 - `_testApplySnapshot` / `_testApplyProgress` — test seams that drive the reducers without a live backend.
 
-Two typed set tests sit beside the factory, both module exports, both sets rather than substring tests
+- `failureCount: number` — how many rows are retained failures. Gates the toolbar's "Dismiss all" (offered only past
+  one) and feeds the corner chip's failure state.
+
+Three typed set tests sit beside the factory, all module exports, all sets rather than substring tests
 (`no-string-matching`):
 
-- `isTerminalStatus(status)` — `done` / `cancelled` / `failed`, used by the page to hide settled rows.
+- `isTerminalStatus(status)` — `done` / `cancelled` / `failed`: the op has stopped, whatever the outcome.
+- `isHiddenSettledStatus(status)` — `done` / `cancelled`, the settled statuses the window drops. Separate from
+  `isTerminalStatus` because the two stopped meaning the same thing when failures became retainable: a `done` op has
+  nothing left to say, a failed one has the only thing the user still wants.
 - `isInstantOperation(type)` — `rename` / `create_folder` / `create_file`, the metadata ops that emit no
   `write-progress` at all. This window still lists them (it promises completeness); ambient surfaces like the corner
   chip skip them, since there's never a bar to draw and they're gone before the eye lands on them.
+
+## Retained failures
+
+The backend keeps a bounded list of failed operations and carries them on the same `operations-changed` snapshot, each
+with its typed `error` (`write_operations/DETAILS.md` § "Retained failures" owns the mechanism). This window is the
+durable surface for them: it survives a dismissed toast, a closed window, and a reopen.
+
+- **The row.** No pause, cancel, rollback, or select checkbox — there's nothing live left to act on. A `triangle-alert`
+  glyph and "Couldn't finish" in `--color-warning-text`, one Dismiss button, and the reason on line 2 where the readout
+  would be.
+- **The reason.** `failure-reason.ts` maps the snapshot onto `../transfer/transfer-error-messages.ts`. It owns exactly
+  one decision the pipeline can't make: a snapshot carries the WIRE operation type (`archive_edit`, `create_folder`, …)
+  while the `errors.write.*` catalog only phrases `copy` / `move` / `delete` / `trash`, so a `Record` keyed by every
+  wire type maps the rest onto the copy arms. A cast would resolve a missing catalog key at runtime instead.
+- **Untruncated, on purpose.** The queue promises completeness, so the explanation AND the suggestion both render in
+  full, wrapping mid-token (an interpolated path can be arbitrarily long). The main window's toast is the surface that
+  abbreviates; it points here for the rest.
+- **Dismissal is explicit, always.** Per-row Dismiss → `dismiss_failed_operation`; the toolbar's "Dismiss all" (shown
+  only when `failureCount > 1`) → `dismiss_all_failed_operations`. Nothing else drops a failed row — the whole feature
+  exists for the user who was away from the keyboard.
 
 The progress-dialog Queue button and the auto-queue surfacing open the window via `openQueueWindow()` and read this same
 store. Don't fork a second opener or store.
@@ -154,9 +180,15 @@ the MAIN window, which already holds those perms — nothing to add there (see `
 - `main-window-operations.svelte.test.ts`: the main window's lifecycle (subscribe once, idempotent init, both listeners
   dropped on destroy, a re-init after destroy yielding a LIVE instance, and a destroy mid-init leaving nothing
   subscribed).
-- `QueueRow.svelte.test.ts`: per-status controls (Pause vs Resume vs queued), click wiring, the select checkbox, the
-  live bar from a progress event, and the `data-status` / `data-operation-id` E2E hooks. The readout's own behavior
+- `failure-reason.test.ts`: the wire-type → catalog-arm mapping (per-operation wording, the copy fallback for the types
+  the catalog has no arm for) and the null-for-a-live-row contract.
+- `QueueRow.svelte.test.ts`: per-status controls (Pause vs Resume vs queued vs failed), click wiring, the select
+  checkbox, the live bar from a progress event, the failed row's reason across two error variants and two operation
+  types, and the `data-status` / `data-operation-id` E2E hooks. The readout's own behavior
   (both bars, percents, rates, time left, stall) is covered once, in `../TransferProgressReadout.svelte.test.ts`.
 - `QueueRow.a11y.test.ts`: axe over the row in running / paused / queued / selected states.
 - E2E: `test/e2e-playwright/operation-queue.spec.ts` — two same-lane ops → one Running + one Queued, cancel the queued,
-  pause + resume the running.
+  pause + resume the running; plus the retention contract: a copy fails with NO queue window open, the window opens on
+  the failed row and its reason, closes on Escape, reopens still showing it, and only Dismiss clears it. That spec's
+  `afterEach` dismisses retained failures explicitly — its drain loop waits for an empty `list_operations`, and a
+  failure is designed never to leave on its own.
