@@ -3,11 +3,13 @@
 use std::fs;
 use std::fs::File;
 use std::os::unix::fs::MetadataExt;
-use std::sync::atomic::Ordering;
+use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::channel;
+use std::sync::Arc;
 use std::thread;
 use std::thread::sleep;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 #[cfg(feature = "async-std")]
 use async_std1 as async_std;
@@ -24,7 +26,7 @@ use crate::ffi::{
     FSEventStreamCreateFlags,
 };
 use crate::stream::{
-    create_event_stream, StreamContextInfo, StreamFlags, TEST_RUNNING_RUNLOOP_COUNT,
+    create_event_stream, Event, StreamContextInfo, StreamFlags, TEST_RUNNING_RUNLOOP_COUNT,
 };
 
 #[cfg(feature = "tokio")]
@@ -117,45 +119,74 @@ async fn must_receive_fs_events() {
     // which causes directory-level events to be delivered instead of file-level events on
     // macOS Sequoia.
     let ci = option_env!("CI").is_some();
+    let deadline = Instant::now() + DELIVERY_BUDGET;
     must_receive_fs_events_impl(
         kFSEventStreamCreateFlagFileEvents
             | kFSEventStreamCreateFlagUseCFTypes
             | kFSEventStreamCreateFlagUseExtendedData,
         !ci,
         !ci,
+        deadline,
     )
     .await;
     must_receive_fs_events_impl(
         kFSEventStreamCreateFlagFileEvents | kFSEventStreamCreateFlagUseCFTypes,
         false,
         !ci,
+        deadline,
     )
     .await;
-    must_receive_fs_events_impl(kFSEventStreamCreateFlagFileEvents, false, !ci).await;
+    must_receive_fs_events_impl(kFSEventStreamCreateFlagFileEvents, false, !ci, deadline).await;
     must_receive_fs_events_impl(
         kFSEventStreamCreateFlagUseCFTypes | kFSEventStreamCreateFlagUseExtendedData,
         false,
         false,
+        deadline,
     )
     .await;
-    must_receive_fs_events_impl(kFSEventStreamCreateFlagUseCFTypes, false, false).await;
+    must_receive_fs_events_impl(kFSEventStreamCreateFlagUseCFTypes, false, false, deadline).await;
+}
+
+/// How long the five flag combinations get between them to have the watch deliver.
+/// ONE shared budget, not one per combination: five stacked budgets could outlast
+/// the nextest cap and turn a slow scenario into a killed process with no panic.
+/// The producer below keeps making fresh create/delete pairs the whole time, so
+/// this is a backstop for "the watch never delivers", not a guess at latency — the
+/// whole test is ~7 s idle and the pairs land in well under a second each.
+const DELIVERY_BUDGET: Duration = Duration::from_secs(20);
+
+/// One create/delete pair the producer made, and the inode it had.
+struct Probe {
+    path: PathBuf,
+    inode: i64,
+}
+
+/// Whether `events` carry the file-level creation AND removal of one probe.
+fn probe_was_delivered(events: &[Event], probes: &[Probe], verify_inode: bool) -> bool {
+    probes.iter().any(|probe| {
+        let delivered = |wanted: StreamFlags| {
+            events.iter().any(|event| {
+                event.path.as_path() == probe.path.as_path()
+                    && event.flags.contains(wanted | StreamFlags::IS_FILE)
+                    && (!verify_inode || event.inode == Some(probe.inode))
+            })
+        };
+        delivered(StreamFlags::ITEM_CREATED) && delivered(StreamFlags::ITEM_REMOVED)
+    })
 }
 
 async fn must_receive_fs_events_impl(
     flags: FSEventStreamCreateFlags,
     verify_inode: bool,
     verify_file_events: bool,
+    deadline: Instant,
 ) {
     // Create the test dir.
     let dir = tempdir().expect("to be created");
-    let test_file = dir
+    let watch_dir = dir
         .path()
-        .canonicalize() // ensure it's an canonical path because FSEvent api returns that
-        .expect("to succeed")
-        .join("test_file");
-
-    // Create a channel to inform the abort thread that fs operations are completed.
-    let (tx, rx) = channel();
+        .canonicalize() // ensure it's a canonical path because FSEvent api returns that
+        .expect("to succeed");
 
     // Create the stream to be tested.
     let (stream, mut handler) = create_event_stream(
@@ -165,79 +196,92 @@ async fn must_receive_fs_events_impl(
         flags | kFSEventStreamCreateFlagNoDefer,
     )
     .expect("to be created");
-    let abort_thread = thread::spawn(move || {
-        // Once fs operations are completed, abort the stream.
-        rx.recv().expect("to be signaled");
-        // Tolerance time
-        sleep(Duration::from_secs(1));
-        handler.abort();
+
+    // Keep producing create/delete pairs until the watch delivers one. macOS drops the
+    // mutation that lands in a just-armed watch's window, and coalesces a lone
+    // create+delete into a single event; neither is recoverable by waiting, so a single
+    // attempt is a coin flip. Redoing the mutation is what makes the assertions below
+    // reachable without weakening them.
+    let stop = Arc::new(AtomicBool::new(false));
+    let (probe_tx, probe_rx) = channel::<Probe>();
+    let producer_stop = Arc::clone(&stop);
+    let producer = thread::spawn(move || {
+        let mut serial = 0_u32;
+        while !producer_stop.load(Ordering::SeqCst) {
+            let path = watch_dir.join(format!("test_file_{serial}"));
+            serial += 1;
+
+            // First we create a file.
+            let f = File::create(&path).expect("to be created");
+            let inode = f.metadata().expect("to be fetched").ino() as i64;
+            // Sync and wait so that ITEM_CREATE and ITEM_DELETE events won't be coalesced.
+            // On macOS Sequoia, FSEvents needs a brief window between close() and unlink() to
+            // deliver separate events; without this, rapid create+delete merges into a single event.
+            f.sync_all().expect("to succeed");
+            drop(f);
+            if probe_tx.send(Probe { path: path.clone(), inode }).is_err() {
+                return;
+            }
+            sleep(Duration::from_millis(200));
+
+            // Now we delete this file.
+            fs::remove_file(&path).expect("to be removed");
+            // Ensure the filesystem is up to date.
+            unsafe { libc::sync() };
+            sleep(Duration::from_millis(300));
+        }
     });
 
-    // First we create a file.
-    let f = File::create(&test_file).expect("to be created");
-    let inode = f.metadata().expect("to be fetched").ino() as i64;
-    // Sync and wait so that ITEM_CREATE and ITEM_DELETE events won't be coalesced.
-    // On macOS Sequoia, FSEvents needs a brief window between close() and unlink() to
-    // deliver separate events; without this, rapid create+delete merges into a single event.
-    f.sync_all().expect("to succeed");
-    drop(f);
-    sleep(Duration::from_millis(200));
-    // Now we delete this file.
-    fs::remove_file(&test_file).expect("to be removed");
-    // Ensure the filesystem is up to date.
-    unsafe { libc::sync() };
-    // Signal the abort thread that we are ready.
-    tx.send(()).expect("to signal");
-
-    // It's fine to consume the stream later because it's reactive and can still be consumed if it's aborted.
+    let mut events: Vec<Event> = Vec::new();
+    let mut probes: Vec<Probe> = Vec::new();
+    let mut stream = Box::pin(stream.into_flatten());
+    let collect = async {
+        loop {
+            let Some(event) = stream.next().await else {
+                return false;
+            };
+            events.push(event);
+            while let Ok(probe) = probe_rx.try_recv() {
+                probes.push(probe);
+            }
+            if !verify_file_events {
+                // These flag combinations carry no file-level detail, so any event
+                // at all is the whole claim (unchanged from the assertion below).
+                return true;
+            }
+            if probe_was_delivered(&events, &probes, verify_inode) {
+                return true;
+            }
+        }
+    };
+    let remaining = deadline.saturating_duration_since(Instant::now());
     #[cfg(feature = "tokio")]
-    let events: Vec<_> =
-        tokio::time::timeout(Duration::from_secs(6), stream.into_flatten().collect())
-            .await
-            .expect("to complete");
+    let delivered = tokio::time::timeout(remaining, collect).await.unwrap_or(false);
     #[cfg(feature = "async-std")]
-    let events: Vec<_> =
-        async_std::future::timeout(Duration::from_secs(6), stream.into_flatten().collect())
-            .await
-            .expect("to complete");
+    let delivered = async_std::future::timeout(remaining, collect)
+        .await
+        .unwrap_or(false);
 
-    if verify_file_events {
-        // We expect at least a create and a delete event. Additional directory-level events
-        // may be present (macOS Sequoia delivers these alongside file events).
-        assert!(
-            events.len() >= 2,
-            "expected at least 2 events, got {}",
-            events.len()
-        );
+    // Stop producing before the temp dir goes away, then tear the stream down.
+    stop.store(true, Ordering::SeqCst);
+    producer.join().expect("to join");
+    handler.abort();
 
-        // Find the file creation event (by path and flags, not position).
-        let create_event = events
+    assert!(
+        delivered,
+        "the watch delivered no {} inside the test's {:?} budget for flags {:#x}; got {} event(s): {}",
+        if verify_file_events {
+            "file-level create+delete pair"
+        } else {
+            "event"
+        },
+        DELIVERY_BUDGET,
+        flags,
+        events.len(),
+        events
             .iter()
-            .find(|e| {
-                e.path.as_path() == test_file.as_path()
-                    && e.flags
-                        .contains(StreamFlags::ITEM_CREATED | StreamFlags::IS_FILE)
-            })
-            .expect("to find file creation event");
-        if verify_inode {
-            assert_eq!(create_event.inode, Some(inode));
-        }
-
-        // Find the file deletion event.
-        let remove_event = events
-            .iter()
-            .find(|e| {
-                e.path.as_path() == test_file.as_path()
-                    && e.flags
-                        .contains(StreamFlags::ITEM_REMOVED | StreamFlags::IS_FILE)
-            })
-            .expect("to find file removal event");
-        if verify_inode {
-            assert_eq!(remove_event.inode, Some(inode));
-        }
-    } else {
-        assert!(!events.is_empty());
-    }
-
-    abort_thread.join().expect("to join");
+            .map(ToString::to_string)
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
 }

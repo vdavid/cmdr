@@ -195,13 +195,16 @@ test-group = 'real-notify'
 slow-timeout = { period = "20s", terminate-after = 1 }
 
 [[profile.default.overrides]]
-# The vendored `cmdr-fsevent-stream` fork's own delivery test. One `#[test]` runs FIVE
-# real-FSEvents scenarios back to back (one per create-flag combination), and each pays a
-# hard 200 ms create/delete separation (macOS Sequoia coalesces a faster pair into one
-# event) plus a 1 s abort tolerance before its stream can be collected. So the floor is
-# structural, not slowness: 8.6 s idle, measured 3/3 on an M3 Max, 2026-07-31. 30 s covers
-# the saturated case while keeping the hang backstop; `real-notify` stops its five live
-# streams from multiplying the other watcher tests' starvation.
+# The vendored `cmdr-fsevent-stream` fork's own delivery test — SELF-HEALING, no retries.
+# One `#[test]` runs FIVE real-FSEvents scenarios back to back (one per create-flag
+# combination), and each pays a hard 200 ms create/delete separation (macOS Sequoia
+# coalesces a faster pair into one event). A producer thread keeps redoing that pair on a
+# fresh name until the watch delivers a matching file-level create AND removal, inside a
+# per-scenario 8 s budget, so neither the just-armed-watch drop nor a coalesced lone pair
+# can starve it. So the floor is structural, not slowness: ~7 s idle, measured 10/10 on an
+# M3 Max, 2026-08-08. 30 s covers the saturated case while keeping the hang backstop;
+# `real-notify` stops its five live streams from multiplying the other watcher tests'
+# starvation.
 #
 # Splitting it into five `#[test]`s would fit the global cap and is the cleaner test, but
 # `crates/fsevent-stream/` is a vendored fork of a third-party crate where diff-vs-upstream
