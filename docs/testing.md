@@ -420,6 +420,13 @@ entry needs a real "we can't make this faster" justification, not convenience.
 - **New write-side operation (copy / move / delete / etc.)**: Unit tests for the core + at least one E2E covering cancel
   and a conflict policy
 - **New volume implementation**: Integration tests against the virtual fixture for that volume kind
+- **A fixture for a type that crosses a subsystem boundary** (the scan cache, the preflight hints): build it through the
+  type's named constructor, ❌ never a struct literal. A hand-written literal reproduces the author's assumptions rather
+  than a shape production emits, which is how a suite full of fully-populated `per_path` fixtures certified a data-loss
+  bug for three months. `desktop-rust-no-hand-rolled-fixture` enforces it.
+- **A `Volume` double that misbehaves**: reach for `FaultyVolume`
+  (`write_operations/transfer/volume/faulty_volume_test_support.rs`) or one of `InMemoryVolume`'s named lies, ❌ never a
+  fresh 40-method forwarder. The fault the test needs should be the whole diff.
 
 ## Hot spots: modules with the strictest testing bar
 

@@ -35,6 +35,8 @@ pub struct AppIcon {
 }
 
 /// "Open with" data for a (possibly multi-) selection.
+// DEFAULT-OK: an empty candidate list says "no app can open every file in this
+// selection", which is exactly what an empty intersection means.
 #[derive(Clone, Debug, Default)]
 pub struct OpenWithChoices {
     /// Apps that can open every file in the selection. First entry is the OS default

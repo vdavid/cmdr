@@ -76,6 +76,8 @@ pub enum WriteOperationPhase {
 // ============================================================================
 
 /// How to handle conflicts when destination files already exist.
+// DEFAULT-OK: the zero value is `Stop`, the most conservative policy there is — it asks
+// the user instead of deciding for them.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ConflictResolution {

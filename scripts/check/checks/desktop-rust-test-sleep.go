@@ -153,18 +153,41 @@ func isRustTestPath(relPath, baseName string) bool {
 	return false
 }
 
-// rustTestModState tracks the inline `#[cfg(test)] mod { ... }` region inside a
-// production file. It arms on a `#[cfg(test)]` attribute, enters on the next
+// rustTestModState tracks the inline test-gated `mod { ... }` region inside a
+// production file. It arms on a test-gated `cfg` attribute, enters on the next
 // `mod ... {`, and leaves when brace depth returns to where the mod opened. It
 // mirrors lock-poison's tracker but INVERTS the verdict: lock-poison skips the
 // test mod, we scan only inside it.
 //
-// Shared by every scanner whose jurisdiction is test code (test-sleep,
-// fixed-temp-dir), so the region rules can't drift apart between them.
+// Shared by every scanner that has to tell test code from production code —
+// test-sleep and fixed-temp-dir scan ONLY inside the region, derive-default and
+// probe-unwrap scan only OUTSIDE it — so the region rules can't drift apart
+// between them.
 type rustTestModState struct {
 	inTestMod      bool
 	testModDepth   int
 	pendingCfgTest bool
+}
+
+// testGatedCfgRegex matches a `cfg` attribute whose predicate turns a module
+// into test-only code. Both spellings count: the bare `#[cfg(test)]`, and the
+// `#[cfg(any(test, feature = "testing"))]` the `cmdr-fs` host stubs use, which
+// exists because `cfg(test)` is OFF in a consumer's test build (see that
+// crate's `DETAILS.md`). Matching only the literal form would leave six test
+// doubles looking like production code to every scanner here.
+//
+// `\btest\b` deliberately misses `feature = "testing"` on its own — that gate
+// alone doesn't make a module test-only — and `not(` is excluded so
+// `#[cfg(not(test))]`, which marks the PRODUCTION arm, never arms the tracker.
+var testGatedCfgRegex = regexp.MustCompile(`#\[cfg\([^]]*\btest\b`)
+
+// isTestGatedCfg reports whether a line carries a cfg attribute that makes what
+// follows test-only.
+func isTestGatedCfg(line string) bool {
+	if strings.Contains(line, "not(") {
+		return false
+	}
+	return testGatedCfgRegex.MatchString(line)
 }
 
 // scanRustFileForTestSleep scans one file. When wholeFileIsTest is true every
@@ -253,7 +276,7 @@ func advanceTestModRegion(line string, state *rustTestModState) bool {
 		return true
 	}
 
-	if strings.Contains(line, "#[cfg(test)]") {
+	if isTestGatedCfg(line) {
 		state.pendingCfgTest = true
 	}
 	if state.pendingCfgTest && strings.Contains(line, "mod ") && strings.Contains(line, "{") {

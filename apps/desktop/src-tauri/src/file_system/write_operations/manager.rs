@@ -118,6 +118,8 @@ pub(crate) struct OperationDescriptor {
 }
 
 /// Best-effort human-readable source/destination summary for the queue window.
+// DEFAULT-OK: both sides `None` means "couldn't summarize", and the queue window renders
+// that absence rather than an empty string.
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct OperationSummaryText {

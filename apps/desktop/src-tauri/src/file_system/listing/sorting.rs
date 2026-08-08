@@ -9,6 +9,7 @@ use crate::file_system::listing::metadata::FileEntry;
 // ============================================================================
 
 /// Column to sort files by.
+// DEFAULT-OK: a preference default (by name), not a claim about anything on disk.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum SortColumn {
@@ -21,6 +22,7 @@ pub enum SortColumn {
 }
 
 /// Sort order (ascending or descending).
+// DEFAULT-OK: a preference default (ascending), not a claim about anything on disk.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum SortOrder {
@@ -30,6 +32,7 @@ pub enum SortOrder {
 }
 
 /// How to sort directories relative to the current sort column.
+// DEFAULT-OK: a preference default (dirs sort like files), not a claim about disk state.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum DirectorySortMode {

@@ -637,8 +637,24 @@ Checks by app and tech:
   sleep-is-the-subject site with `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture built on
   `std::env::temp_dir()`, where every process on the machine shares the path and two suite runs delete each other's live
   fixtures; the sanctioned fixture is `crate::test_support::TestDir`, and a site where the temp root is load bearing
-  opts out with `// allowed-fixed-temp-dir: <reason>`), mtp-dropping-timeout, mtp-no-transport-reset, bindings-fresh,
-  ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow)
+  opts out with `// allowed-fixed-temp-dir: <reason>`), no-hand-rolled-fixture (bans a struct literal of
+  `CachedScanResult` / `SourceHint` / `VolumePreflight` in test code, so a fixture can only be one of the shapes a named
+  constructor actually builds; it ships with ZERO findings on purpose and is a regression fence rather than a finder —
+  the shapes are already clean, and the point is that the next test author can't undo that by copy-pasting an old
+  literal), derive-default-justified (every `#[derive(..., Default, ...)]` under `file_system/` and `cmdr-fs` carries a
+  `// DEFAULT-OK: <why>` line, because a zero value on a fact-carrying type isn't "no information", it's a claim about
+  the disk that nobody made), probe-unwrap-justified (flags
+  `\.is_directory(…).await.unwrap_or(…)` in production `file_system/` code, where a probe that COULDN'T answer gets
+  collapsed into a confident "no" and picks the branch that deletes; opt out with `// allowed-probe-unwrap: <why the
+  guess is truthful>`), mtp-dropping-timeout, mtp-no-transport-reset, bindings-fresh, ipc-enum-camelcase, tests,
+  integration-tests (Docker SMB), tests-linux (slow)
+
+The last three share one region tracker, `rustTestModState` / `advanceTestModRegion` (`desktop-rust-test-sleep.go`), in
+opposite polarities: test-sleep and fixed-temp-dir scan ONLY inside an inline test module, derive-default and
+probe-unwrap scan only OUTSIDE one. It arms on both test-gating `cfg` forms (`#[cfg(test)]` and the
+`#[cfg(any(test, feature = "testing"))]` the `cmdr-fs` host stubs need), which `isTestGatedCfg` decides and
+`TestTestModRegion_ArmsOnBothTestGatedCfgForms` pins. A tracker that only knew the literal form would read six test
+doubles as production code.
 - **Crates / Rust**: workspace-member-coverage (every workspace member is reachable by the cargo lanes and the source
   scanners, and every Rust check has declared which of the two it is), index-crate-isolation (no guarded crate —
   `cmdr-index`, `cmdr-fs`, `cmdr-archive` — reaches `tauri`, `tauri-specta`, or `cmdr` anywhere in its `cargo metadata`

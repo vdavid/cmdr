@@ -35,6 +35,8 @@ use super::types::{
 /// - A choice latched on a *file-to-folder* clash applies to subsequent
 ///   file-to-folder clashes. If it was the **first** clash of the whole
 ///   operation, the latch spreads to the normal bucket too.
+// DEFAULT-OK: nothing latched and no clash seen yet is precisely the state before the
+// operation's first conflict.
 #[derive(Debug, Default, Clone, Copy)]
 pub(super) struct ApplyToAll {
     normal: Option<ConflictResolution>,

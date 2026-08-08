@@ -278,6 +278,8 @@ pub fn query_mimalloc_heap() -> MimallocHeap {
 // ── System malloc zones: everything EXCEPT our allocator ─────────────
 
 /// `malloc_statistics_t` from `<malloc/malloc.h>`.
+// DEFAULT-OK: an all-zero out-param is what `malloc_zone_statistics` expects and fills
+// in; nothing reads a field before that call returns.
 #[cfg(target_os = "macos")]
 #[repr(C)]
 #[derive(Default)]

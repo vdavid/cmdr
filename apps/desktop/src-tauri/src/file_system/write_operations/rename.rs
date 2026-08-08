@@ -113,6 +113,7 @@ pub(crate) async fn rename_managed(
             // value only labels the journal row's entry type for the undo
             // history. It reaches no destructive branch, so a mislabeled undo
             // entry is the whole cost of getting it wrong.
+            // allowed-probe-unwrap: labels an undo-history row only; reaches no destructive branch
             Some(v) => v.is_directory(&from).await.unwrap_or(false),
             None => false,
         }

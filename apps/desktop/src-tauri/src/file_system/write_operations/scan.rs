@@ -360,6 +360,8 @@ fn walk_cached_entries<E>(
 /// `per_path` carries one entry per direct child of the scanned `path`, sized
 /// to feed into a parent `BatchScanResult` upstream. The vec is empty when
 /// `path` itself is a file (the caller knows it's a file in that case).
+// DEFAULT-OK: zeroed totals are what a walk that hasn't counted anything has counted.
+// This is an accumulator seed, not a finding: it only ever grows from here.
 #[derive(Debug, Clone, Default)]
 pub(super) struct SubtreeTotals {
     pub file_count: usize,

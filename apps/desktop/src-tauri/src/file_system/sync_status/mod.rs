@@ -30,6 +30,8 @@ use std::sync::{Arc, LazyLock};
 use std::time::Duration;
 
 /// Sync status for a file in a cloud-synced folder (Dropbox, iCloud, etc.).
+// DEFAULT-OK: the zero value is `Unknown`, which is the ABSENCE of a claim rather than
+// one — the variant exists to carry exactly that.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum SyncStatus {

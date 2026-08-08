@@ -39,6 +39,18 @@ var rustScannerJurisdictions = map[string]ScannerJurisdiction{
 	"desktop-rust-error-string-match": {Kinds: []MemberKind{KindApp, KindTool}},
 	"desktop-rust-test-sleep":         {Kinds: []MemberKind{KindApp, KindTool}},
 	"desktop-rust-fixed-temp-dir":     {Kinds: []MemberKind{KindApp, KindTool}},
+	"desktop-rust-no-hand-rolled-fixture": {
+		Kinds: []MemberKind{KindApp, KindTool},
+		Why:   "a test that hand-builds a cross-boundary scan type is the same mistake wherever it lives",
+	},
+	"desktop-rust-derive-default-justified": {
+		Kinds: []MemberKind{KindApp},
+		Why:   "narrowed further to the two filesystem trees (`file_system/` and all of `cmdr-fs`), where a zero value is a claim about a disk; elsewhere a `Default` carries no filesystem fact and the rule would be churn",
+	},
+	"desktop-rust-probe-unwrap-justified": {
+		Kinds: []MemberKind{KindApp},
+		Why:   "narrowed further to `file_system/`, the only tree where `Volume::is_directory` is called at all",
+	},
 	"desktop-rust-ipc-enum-camelcase": {Kinds: []MemberKind{KindApp, KindTool}},
 	"desktop-rust-jscpd":              {Kinds: []MemberKind{KindApp, KindTool}},
 	"desktop-rust-sqlite-open-direct": {

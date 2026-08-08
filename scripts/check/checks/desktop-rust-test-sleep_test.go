@@ -206,3 +206,48 @@ fn t() {
 		t.Errorf("unexpected message: %s", res.Message)
 	}
 }
+
+// The region tracker is shared by four scanners, so which `cfg` forms arm it is
+// a contract of its own, not an implementation detail of any one of them.
+func TestTestModRegion_ArmsOnBothTestGatedCfgForms(t *testing.T) {
+	cases := []struct {
+		line string
+		want bool
+	}{
+		{`#[cfg(test)]`, true},
+		{`#[cfg(any(test, feature = "testing"))]`, true},
+		{`    #[cfg(all(test, target_os = "macos"))]`, true},
+		// `testing` alone doesn't make a module test-only, and `not(test)` marks
+		// the PRODUCTION arm.
+		{`#[cfg(feature = "testing")]`, false},
+		{`#[cfg(not(test))]`, false},
+		{`#[cfg(target_os = "macos")]`, false},
+		{`let x = 1; // mentions test in prose`, false},
+	}
+	for _, c := range cases {
+		if got := isTestGatedCfg(c.line); got != c.want {
+			t.Errorf("isTestGatedCfg(%q) = %v, want %v", c.line, got, c.want)
+		}
+	}
+}
+
+func TestTestSleep_FlagsSleepInsideATestingFeatureGatedMod(t *testing.T) {
+	_, err := runTestSleepOn(t, map[string]string{
+		"stub.rs": `
+pub fn production() {}
+
+#[cfg(any(test, feature = "testing"))]
+mod recording {
+    fn slow() {
+        std::thread::sleep(Duration::from_millis(20));
+    }
+}
+`,
+	})
+	if err == nil {
+		t.Fatal("expected the sleep inside a testing-gated mod to be flagged, got success")
+	}
+	if !strings.Contains(err.Error(), "stub.rs:7") {
+		t.Errorf("expected stub.rs:7, got: %s", err.Error())
+	}
+}

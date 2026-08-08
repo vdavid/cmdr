@@ -83,6 +83,8 @@ struct PhaseState {
 /// Per-operation estimator. Constructed once when the operation starts; updated
 /// from each progress emission. `Default` is the only way to make one;
 /// there's no useful state to seed.
+// DEFAULT-OK: `None` phase state is an estimator that hasn't seen a progress emission,
+// and it reports no ETA until it has.
 #[derive(Debug, Default)]
 pub struct EtaEstimator {
     state: Option<PhaseState>,

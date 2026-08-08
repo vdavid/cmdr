@@ -676,6 +676,8 @@ impl Volume for MtpVolume {
             //     `/DCIM/Camera`-style absolute). This is what the oracle is looked up against.
             //   - `mtp_parent`: the MTP-relative form used by `list_directory` on the cold-cache fallthrough.
             //     Stored so we don't call `to_mtp_path` twice per group.
+            // DEFAULT-OK: a group with no children and no resolved paths is what it is
+            // for the one statement between its creation and its first insert.
             #[derive(Default)]
             struct ParentGroup<'p> {
                 original_parent: PathBuf,

@@ -196,6 +196,15 @@ jobs:
       - name: Check fixed-temp-dir
         run: ./scripts/check/check --check desktop-rust-fixed-temp-dir --ci
 
+      - name: Check no-hand-rolled-fixture
+        run: ./scripts/check/check --check desktop-rust-no-hand-rolled-fixture --ci
+
+      - name: Check derive-default-justified
+        run: ./scripts/check/check --check desktop-rust-derive-default-justified --ci
+
+      - name: Check probe-unwrap-justified
+        run: ./scripts/check/check --check desktop-rust-probe-unwrap-justified --ci
+
       - name: Check mtp-dropping-timeout
         run: ./scripts/check/check --check desktop-rust-mtp-dropping-timeout --ci
 

@@ -136,6 +136,8 @@ impl std::fmt::Display for LaneKey {
 /// invocation). `files` excludes directories and `bytes` is the sum of file
 /// sizes only (directories contribute 0). Consumers that want the total
 /// entry count for "Loading N entries…" displays read `files + dirs`.
+// DEFAULT-OK: zero really is "nothing enumerated yet", the state a listing is in before
+// its walk starts.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct ListingProgress {
     /// Files enumerated so far, directories excluded.

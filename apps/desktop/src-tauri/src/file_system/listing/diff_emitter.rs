@@ -25,6 +25,8 @@ use crate::file_system::watcher::{DiffChange, DirectoryDiff, WATCHER_MANAGER};
 /// listing per second.
 const FLUSH_WINDOW_MS: u64 = 50;
 
+// DEFAULT-OK: an empty change list with no flush scheduled is the honest state of a
+// listing nobody has queued anything for.
 #[derive(Default)]
 struct PendingDiff {
     changes: Vec<DiffChange>,
