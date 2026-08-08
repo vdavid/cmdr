@@ -208,7 +208,9 @@ async fn tier_a_source() -> Arc<InMemoryVolume> {
 async fn tier_a_dest() -> Arc<dyn Volume> {
     let vol: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest").with_space_info(10_000_000, 10_000_000));
     vol.create_directory(Path::new("/album")).await.unwrap();
-    vol.create_file(Path::new("/album/keep.txt"), b"DEST-keep").await.unwrap();
+    vol.create_file(Path::new("/album/keep.txt"), b"DEST-keep")
+        .await
+        .unwrap();
     vol.create_directory(Path::new("/album/inner")).await.unwrap();
     vol.create_file(Path::new("/album/inner/keep2.txt"), b"DEST-keep2")
         .await
@@ -284,7 +286,10 @@ fn read_gave_up() -> VolumeError {
 /// shrugs, which is the silent cap this whole tier exists to avoid.
 fn assert_interruption_landed(label: &str, interrupted: bool, failed: bool) {
     if interrupted {
-        assert!(failed, "{label}: the cell armed an interruption and the operation completed anyway");
+        assert!(
+            failed,
+            "{label}: the cell armed an interruption and the operation completed anyway"
+        );
     } else {
         assert!(!failed, "{label}: a clean cell should complete");
     }
@@ -648,7 +653,12 @@ const ITEM_KINDS: &[ItemKind] = &[
 async fn tier_b_fixture(
     kind: ItemKind,
     concurrent: bool,
-) -> (Arc<dyn Volume>, Arc<dyn Volume>, Vec<PathBuf>, Vec<(&'static str, &'static [u8])>) {
+) -> (
+    Arc<dyn Volume>,
+    Arc<dyn Volume>,
+    Vec<PathBuf>,
+    Vec<(&'static str, &'static [u8])>,
+) {
     let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
     let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest").with_space_info(10_000_000, 10_000_000));
 
@@ -663,7 +673,10 @@ async fn tier_b_fixture(
         }
         ItemKind::DirOntoFreshDest => {
             source.create_directory(Path::new("/album")).await.unwrap();
-            source.create_file(Path::new("/album/one.bin"), b"SRC-one").await.unwrap();
+            source
+                .create_file(Path::new("/album/one.bin"), b"SRC-one")
+                .await
+                .unwrap();
             source.create_directory(Path::new("/album/inner")).await.unwrap();
             source
                 .create_file(Path::new("/album/inner/two.bin"), b"SRC-two")
@@ -674,7 +687,10 @@ async fn tier_b_fixture(
         }
         ItemKind::DirOntoExistingFile => {
             source.create_directory(Path::new("/album")).await.unwrap();
-            source.create_file(Path::new("/album/one.bin"), b"SRC-one").await.unwrap();
+            source
+                .create_file(Path::new("/album/one.bin"), b"SRC-one")
+                .await
+                .unwrap();
             dest.create_file(Path::new("/album"), b"DEST-was-a-file").await.unwrap();
             sources.push(PathBuf::from("/album"));
             expected = vec![("/album/one.bin", b"SRC-one")];

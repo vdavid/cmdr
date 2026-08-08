@@ -1,6 +1,6 @@
 # A copy that fails can never take data with it
 
-**Status**: SPECCED, not started. **Owner**: David. **Date**: 2026-08-08.
+**Status**: DONE (all four phases landed on their branches). **Owner**: David. **Date**: 2026-08-08.
 
 `7046e9dbb` + `bf6d896b3` closed a data-safety hole that lived for three months in the cross-volume copy. This plan
 generalizes the three lessons it taught into code, types, and checks, so the next instance of the same shape is caught
@@ -712,16 +712,16 @@ noted option.
    sweep was 15 inline lines inside `copy_volumes_with_progress`, reachable only by driving a whole copy operation. It
    comes out first as `cleanup.rs::clean_partial_writes`, verbatim, in its own commit — then the red can address it.
 2. **The lying-volume double isn't at `conflict.rs:690-710`.** It's `RecursiveDeleteVolume` in `conflict_tests.rs`, the
-   `#[path]` child (`conflict.rs:675` is only where the module is declared). It moved to
-   `strategy_test_support.rs` as `pub(crate)`, because `pub(super)` items in that file resolve for `strategy`'s
-   descendants only, and `cleanup_tests.rs` is a sibling's child.
+   `#[path]` child (`conflict.rs:675` is only where the module is declared). It moved to `strategy_test_support.rs` as
+   `pub(crate)`, because `pub(super)` items in that file resolve for `strategy`'s descendants only, and
+   `cleanup_tests.rs` is a sibling's child.
 3. **`copy_tests.rs` reached the sweep through `use super::*`**, not through an import of its own: it inherited
    `copy.rs`'s `use super::cleanup::delete_volume_path_recursive`. So moving one function out of `copy.rs` broke the
    four tests before a single rename happened. They now import from `super::super::cleanup` directly.
 4. **`delete_written_file` needs a `NotFound`-is-success carve-out**, which the plan doesn't mention. Today's recursive
    helper returns `Ok` for a path that isn't there (its `is_directory` probe errors into `Ok(false)`), and the rollback
-   ledger legitimately holds paths that never landed. A bare `volume.delete` would have turned every one of those into
-   a warn on the cancel path.
+   ledger legitimately holds paths that never landed. A bare `volume.delete` would have turned every one of those into a
+   warn on the cancel path.
 5. **`remove_tree` is `pub(in write_operations)`, so `conflict.rs` and `copy_into.rs` need a named `preserve` local.**
    `&HashSet::new()` inline is a temporary dropped at the end of the statement, which doesn't outlive the `.await`.
 
@@ -855,6 +855,48 @@ recursion just moved behind `Volume::delete`.
 ---
 
 # Phase 3 — The coverage grid and the checks
+
+**Status: DONE**, on branch `safety-p3-grid-and-checks`. Eight corrections it turned up:
+
+1. **`InMemoryVolume` has no symlinks, so Tier B's third item kind wasn't writable.** The double has no symlink API at
+   all, and the rule the cell would pin ("a transfer copies the LINK, never dereferences it") lives in the LOCAL walker,
+   `scan.rs`, where the local scan tests already hold it. Faking it on a double asserts the double. Substituted
+   `dir-onto-an-existing-file` (the cross-type clash, where a wrong type answer IS destructive) and put symlinks on the
+   explicitly-NOT-covered list next to hardlinks, for the same reason.
+2. **The grid's nine cancel cells were silent no-ops until an explicit assertion caught them.** The delete walker gates
+   progress emission on `state.progress_interval`, so at the conventional 50 ms test state a small fixture finished
+   before the cancelling sink ever fired: the cells passed without cancelling anything. Every interrupted cell now
+   asserts that it WAS interrupted, and `make_state` uses a zero interval. ❌ Don't drop that assertion; it's the only
+   thing standing between "27 cells" and "18 cells and nine shrugs".
+3. **The finding counts are all different from the plan's, and only one direction was predicted.**
+   `probe-unwrap-justified` finds **one** production site (`rename.rs:116`), not eight: M1.4 and M1.5 fixed five, and
+   `conflict.rs:82` / `:423` no longer match the predicate at all after Phase 1 reshaped them.
+   `derive-default-justified` finds **16** production derives, not 23 (25 total in the two trees, not 26 — M1.5 removed
+   `SourceHint`'s). `no-hand-rolled-fixture` finds **zero**, exactly as predicted.
+4. **`advanceTestModRegion` needed WIDENING as well as inverting, and the widening is the load-bearing half.** Inverting
+   alone leaves the six `cmdr-fs` host stubs looking like production code, because the tracker only armed on the literal
+   `#[cfg(test)]`. Relatedly, the plan's "`conflict.rs`'s inline test module is the live case" is stale for BOTH new
+   checks: Phase 2 moved `RecursiveDeleteVolume` into `strategy_test_support.rs`, so today no production file's inline
+   test mod holds either a `Default` derive or a probe-unwrap. The inverted polarity is a fence, not a fix.
+5. **M3.2's "`transfer/volume/CLAUDE.md` LOSES the two support files it absorbs" describes a file map that doesn't
+   exist**, and the absorption isn't possible either: `copy_wedge_test_support.rs` holds stream doubles and
+   `strategy_test_support.rs` holds behavioral ones, neither of which `FaultyVolume` replaces. What they actually shared
+   was the FORWARDING boilerplate, so the deliverable became `forward_volume_methods!` plus a `DETAILS.md` § splitting
+   the three support files by what each one fakes. `strategy_test_support.rs` still shrank by 176 lines and landed back
+   under its `file-length` entry.
+6. **Decision 6's word counts are stale for every file it names.** `transfer/volume/CLAUDE.md` was at 574, not 592 —
+   Phase 2 had already condensed it. Measure with `wc -w` before budgeting, don't trust the plan's numbers.
+7. **The tier structure is single-sourced in the test module's doc comment, not duplicated into `DETAILS.md`.** The plan
+   asks for both; `.claude/rules/docs.md` forbids restating a load-bearing claim in two places. `DETAILS.md` points at
+   the module comment, which is where an agent adding a cell looks anyway.
+8. **The four SMB cells needed three new `#[cfg(test)] pub(crate)` reach-throughs**, which the plan doesn't mention: the
+   suite sits outside `write_operations`. `FaultyVolume` / `FaultyOp` and the incoherent-cache seeder go through facade
+   re-exports; the delete walker goes through a thin `#[cfg(test)] pub(crate)` WRAPPER rather than a re-export, because
+   the function is `pub(in write_operations)` and re-exporting it wider is a compile error — and widening it would give
+   production a path it shouldn't have.
+
+⚠️ **The four real-SMB cells (M3.4a) are UNRUN.** Docker was down for the whole session, so they are written, compiled,
+and never executed.
 
 Branch `safety-p3-grid-and-checks`, off `main`. Nothing here changes production behavior; it can merge before or after
 Phases 1-2 with one stated exception (M3.4 wants Phase 1's `SourceHint` derive already gone, or it annotates one extra

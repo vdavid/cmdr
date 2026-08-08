@@ -52,7 +52,10 @@ async fn the_armed_call_fails_and_the_one_before_it_does_not() {
         "the first call must forward"
     );
     assert!(
-        matches!(faulty.is_directory(Path::new("/dir")).await, Err(VolumeError::IoError { .. })),
+        matches!(
+            faulty.is_directory(Path::new("/dir")).await,
+            Err(VolumeError::IoError { .. })
+        ),
         "the second call is the armed one"
     );
     assert!(
@@ -77,7 +80,10 @@ async fn each_operation_counts_its_own_calls() {
     let _ = faulty.is_directory(Path::new("/dir")).await;
 
     assert!(
-        matches!(faulty.delete(Path::new("/dir/a.txt")).await, Err(VolumeError::IoError { .. })),
+        matches!(
+            faulty.delete(Path::new("/dir/a.txt")).await,
+            Err(VolumeError::IoError { .. })
+        ),
         "the FIRST delete is the armed one, whatever else ran before it"
     );
     assert!(

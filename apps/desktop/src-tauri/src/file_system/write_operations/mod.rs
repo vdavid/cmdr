@@ -154,13 +154,22 @@ pub(crate) use types::CollectorEventSink;
 // a cache entry that counted files but recorded no per-source result, and a
 // volume that stops answering partway through.
 #[cfg(test)]
-#[allow(unused_imports, reason = "Used by SMB integration tests in file_system::volume::backends")]
+#[allow(
+    unused_imports,
+    reason = "Used by SMB integration tests in file_system::volume::backends"
+)]
 pub(crate) use delete::delete_volume_files_for_test;
 #[cfg(test)]
-#[allow(unused_imports, reason = "Used by SMB integration tests in file_system::volume::backends")]
+#[allow(
+    unused_imports,
+    reason = "Used by SMB integration tests in file_system::volume::backends"
+)]
 pub(crate) use scan_cache::seed_incoherent_scan_result_for_test;
 #[cfg(test)]
-#[allow(unused_imports, reason = "Used by SMB integration tests in file_system::volume::backends")]
+#[allow(
+    unused_imports,
+    reason = "Used by SMB integration tests in file_system::volume::backends"
+)]
 pub(crate) use transfer::volume::{FaultyOp, FaultyVolume};
 
 // Re-export volume copy types and functions

@@ -191,8 +191,8 @@ The double is the oracle: two `Volume` contracts have to hold in it, not just on
 ## The faults `InMemoryVolume` can be told to have
 
 Everything above is what the double gets RIGHT unconditionally. On top of that it can be told to misbehave in specific,
-named ways, so a caller's defense against a hostile backend is testable rather than assumed. Each is test-only, and
-each models something a real backend genuinely does:
+named ways, so a caller's defense against a hostile backend is testable rather than assumed. Each is test-only, and each
+models something a real backend genuinely does:
 
 - **`with_delete_failing()`** — `delete` returns an `IoError` instead of removing the entry. A backend that can't remove
   a path (a permission, a lock, a dead session).
@@ -211,7 +211,6 @@ each models something a real backend genuinely does:
 - **`with_read_range_unsupported()`** — positioned reads return `NotSupported`, modeling a remote backend without the
   primitive.
 
-A fault the caller wants to arm on a call COUNT rather than on a path belongs one layer up, in the app's
-`FaultyVolume` wrapper (`file_system/write_operations/transfer/volume/faulty_volume_test_support.rs`): it wraps any
-volume and fails the Nth call to a named operation. ❌ Don't grow this list with fault shapes that aren't about what a
-real backend does.
+A fault the caller wants to arm on a call COUNT rather than on a path belongs one layer up, in the app's `FaultyVolume`
+wrapper (`file_system/write_operations/transfer/volume/faulty_volume_test_support.rs`): it wraps any volume and fails
+the Nth call to a named operation. ❌ Don't grow this list with fault shapes that aren't about what a real backend does.

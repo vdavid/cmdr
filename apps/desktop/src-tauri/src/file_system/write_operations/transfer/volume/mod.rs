@@ -70,7 +70,10 @@ mod safety_grid_tests;
 // The SMB integration suite lives outside `write_operations`, so it reaches the
 // fault injector through the facade rather than by widening the submodule.
 #[cfg(test)]
-#[allow(unused_imports, reason = "used by SMB integration tests in file_system::volume::backends")]
+#[allow(
+    unused_imports,
+    reason = "used by SMB integration tests in file_system::volume::backends"
+)]
 pub(crate) use faulty_volume::{FaultyOp, FaultyVolume};
 
 #[cfg(test)]

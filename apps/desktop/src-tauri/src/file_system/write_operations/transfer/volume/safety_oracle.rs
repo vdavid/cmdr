@@ -119,11 +119,7 @@ pub(super) struct SafetySpec<'a> {
 ///
 /// Pass the same volume twice for a same-volume operation; the two roots keep
 /// the sides apart.
-pub(super) async fn assert_operation_was_safe(
-    source: &Arc<dyn Volume>,
-    dest: &Arc<dyn Volume>,
-    spec: &SafetySpec<'_>,
-) {
+pub(super) async fn assert_operation_was_safe(source: &Arc<dyn Volume>, dest: &Arc<dyn Volume>, spec: &SafetySpec<'_>) {
     let label = spec.label;
 
     // Clause 1: no byte is gone from BOTH sides.

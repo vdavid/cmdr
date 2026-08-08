@@ -793,7 +793,9 @@ async fn smb_integration_failed_dir_copy_onto_a_merged_share_folder_keeps_the_us
 
     // ❗ The share's pre-existing files survive at every depth.
     assert_eq!(
-        try_read_volume_file(&dest_vol, &format!("{album}/keep.txt")).await.as_deref(),
+        try_read_volume_file(&dest_vol, &format!("{album}/keep.txt"))
+            .await
+            .as_deref(),
         Some(&b"DEST-keep"[..]),
         "a failed copy swept a dest-only file off the share"
     );
@@ -866,7 +868,9 @@ async fn smb_integration_failed_dir_move_onto_a_merged_share_folder_loses_no_byt
 
     // ❗ The share's pre-existing files survive.
     assert_eq!(
-        try_read_volume_file(&dest_vol, &format!("{album}/keep.txt")).await.as_deref(),
+        try_read_volume_file(&dest_vol, &format!("{album}/keep.txt"))
+            .await
+            .as_deref(),
         Some(&b"DEST-keep"[..]),
         "a failed move swept a dest-only file off the share"
     );
@@ -1032,7 +1036,9 @@ async fn smb_integration_unknown_source_type_never_clears_a_share_folder() {
         "the share's directory was replaced after an unanswerable source probe"
     );
     assert_eq!(
-        try_read_volume_file(&dest_vol, &format!("{swap}/inner.txt")).await.as_deref(),
+        try_read_volume_file(&dest_vol, &format!("{swap}/inner.txt"))
+            .await
+            .as_deref(),
         Some(&b"DEST-inner"[..]),
         "the share folder's contents were cleared after an unanswerable source probe"
     );
