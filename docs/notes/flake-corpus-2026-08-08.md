@@ -302,8 +302,8 @@ Two clusters dominate, and they suggest where structural work pays:
    retry-carrying, and names dropping the retries as the goal.
    - `file_system::watcher_test::entries_that_went_with_a_replaced_watch_root_leave_the_listing` belongs to this family
      too, and its membership tracks machine load rather than the test: it appeared in the set on two runs taken while
-     five other agents were building, and not at all on a lighter run of the same commit. Widening its waits (now
-     30 s / 45 s) didn't decide it either way, so the cost is arming a real FSEvents stream inside a fully parallel test
+     five other agents were building, and not at all on a lighter run of the same commit. Widening its waits (now 30 s /
+     45 s) didn't decide it either way, so the cost is arming a real FSEvents stream inside a fully parallel test
      binary, not a tight deadline. Keeping the real stream is deliberate: a synthetic event batch would pin our own idea
      of what macOS reports, which is the exact assumption the bug it guards was hiding in.
 2. **`walk_memory_tests` and `go_to_latest_*`** — pure compute and pure logic, which cannot race. They fail only because
