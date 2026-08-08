@@ -103,8 +103,8 @@
   "@queue.chip.ariaLabel": {
     "sourceHash": "3ff7a01"
   },
-  "queue.chip.tooltip": "{label}{count, plural, =0 {} one { {countText} elemento} many { {countText} elementos} other { {countText} elementos}}{hasDestination, select, yes { a {destination}} other {}} · {percentText}%{hasDetail, select, yes { · {detail}} other {}}",
+  "queue.chip.tooltip": "{label}{count, plural, =0 {} one { · {countText} elemento} many { · {countText} elementos} other { · {countText} elementos}}{hasDestination, select, yes { · a {destination}} other {}} · {percentText}%{hasDetail, select, yes { · {detail}} other {}}",
   "@queue.chip.tooltip": {
-    "sourceHash": "c88735c"
+    "sourceHash": "6680100"
   }
 }

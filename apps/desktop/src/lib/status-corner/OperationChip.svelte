@@ -71,8 +71,8 @@
 
     const visible = $derived(chipState !== null && settledId === candidateId)
 
-    /** The action word, always: "Copying", "Moving to trash". The tooltip leads
-     *  with it even while paused, where the chip itself says "Paused". */
+    /** The action word: "Copying", "Moving to trash". Only the running chip
+     *  shows it; `chipLabel` is what any surface describing the chip leads with. */
     const verb = $derived(
         candidate === null ? '' : tString('queue.row.label', { type: candidate.row.snapshot.operationType }),
     )
@@ -93,12 +93,12 @@
             : tString('queue.chip.failed', { count: chipState.count, countText: formatInteger(chipState.count) }),
     )
 
-    /** The tooltip's trailing fact: how long is left, or that it's paused (a
-     *  paused operation has no honest countdown). Absent while the backend's
-     *  estimate is still warming up. */
+    /** The tooltip's trailing fact: how long is left. Absent while the backend's
+     *  estimate is still warming up, and while paused, which has no honest
+     *  countdown and whose state the tooltip's leading label already carries. */
     const detail = $derived.by(() => {
         if (candidate === null) return null
-        if (candidate.paused) return pausedWord
+        if (candidate.paused) return null
         const eta = candidate.row.etaSecondsDisplay
         // The SMOOTHED ETA from the store, never `progress.etaSeconds`: the
         // queue window renders the smoothed one, and two surfaces disagreeing
@@ -112,8 +112,11 @@
         if (candidate === null) return ''
         const count = candidate.row.progress?.filesTotal ?? 0
         const destination = destinationName(candidate.row.snapshot.destination)
+        // `chipLabel`, never `verb`: hovering a chip that reads "Paused" must
+        // not open a line claiming the copy is running right now. English's
+        // aspect-free "Copying" hid that; zh's 正在拷贝 says it outright.
         return tString('queue.chip.tooltip', {
-            label: verb,
+            label: chipLabel,
             count,
             countText: formatInteger(count),
             hasDestination: destination === '' ? 'no' : 'yes',
@@ -198,6 +201,15 @@
 
     .chip-label {
         white-space: nowrap;
+        /* Capped, or a long localized verb grows the chip leftward across the
+           pane: German's "Wird in den Papierkorb bewegt" is 29 characters
+           against English's 15, and Dutch and French aren't far behind. 12em
+           clears every English label with room to spare and ellipsizes the
+           outliers, whose full text the tooltip carries. `em`, not a px token,
+           so the cap follows the app's text-size setting. */
+        max-width: 12em;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .chip-bar {

@@ -227,7 +227,7 @@ describe('OperationChip', () => {
     store?._testApplyProgress(progress())
     renderChip()
     expect(target.querySelector('.tooltip-content')?.textContent).toBe(
-      'Copying 214 items to Backup · 42% · 1m 20s left',
+      'Copying · 214 items · to Backup · 42% · 1m 20s left',
     )
   })
 
@@ -235,20 +235,24 @@ describe('OperationChip', () => {
     store?._testApplySnapshot([snapshot({ operationType: 'delete', destination: null })])
     store?._testApplyProgress(progress({ operationType: 'delete', etaSeconds: null }))
     renderChip()
-    expect(target.querySelector('.tooltip-content')?.textContent).toBe('Deleting 214 items · 42%')
+    expect(target.querySelector('.tooltip-content')?.textContent).toBe('Deleting · 214 items · 42%')
   })
 
-  it('says paused in the tooltip instead of a countdown it no longer believes', () => {
+  // The tooltip leads with what the chip itself says, so hovering "Paused" can't
+  // open a line claiming the copy is running right now. Pre-fix it read
+  // "Copying … · Paused", which English's aspect-free gerund hid and zh's 正在拷贝
+  // stated outright next to 已暂停.
+  it('leads with the paused state rather than contradicting it', () => {
     store?._testApplySnapshot([snapshot({ status: 'paused' })])
     store?._testApplyProgress(progress())
     renderChip()
-    expect(target.querySelector('.tooltip-content')?.textContent).toBe('Copying 214 items to Backup · 42% · Paused')
+    expect(target.querySelector('.tooltip-content')?.textContent).toBe('Paused · 214 items · to Backup · 42%')
   })
 
   it('leaves the count out of the tooltip before the first progress tick', () => {
     store?._testApplySnapshot([snapshot()])
     renderChip()
-    expect(target.querySelector('.tooltip-content')?.textContent).toBe('Copying to Backup · 0%')
+    expect(target.querySelector('.tooltip-content')?.textContent).toBe('Copying · to Backup · 0%')
   })
 
   it('keeps an ambient trace of a failure once the toast is gone', () => {

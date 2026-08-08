@@ -64,7 +64,9 @@ without a modal in front of it, and clicking it opens (or raises) the queue wind
   The zero-bytes case is real rather than defensive: a same-volume move renames server-side and moves no bytes, so a
   bytes bar would sit at 0% for the whole operation. With neither metric it reads 0% rather than dividing by zero.
 - **The label**: the verb from `queue.row.label` (the queue rows' own vocabulary), except while paused, where it becomes
-  the status word "Paused" — a frozen bar under "Copying" is ambiguous, and the tooltip still leads with the verb.
+  the status word "Paused" — a frozen bar under "Copying" is ambiguous. It's capped at `12em` and ellipsized, because a
+  localized verb runs to twice English's longest ("Wird in den Papierkorb bewegt"), and the corner must not grow across
+  the pane; the tooltip carries the full text. The tooltip and the spoken label both lead with this same label.
 - **Nothing else**: no percentage text, no "+N" affix for the operations it isn't showing. Both were considered and cut
   as noise; the queue window is the surface that promises completeness.
 
@@ -117,9 +119,17 @@ re-trigger itself.
 
 ### The tooltip
 
-`queue.chip.tooltip`, one line of middle-dot-separated facts: "Copying 214 items to Backup · 42% · 1m 20s left". The
+`queue.chip.tooltip`, one line of middle-dot-separated facts: "Copying · 214 items · to Backup · 42% · 1m 20s left". The
 count and the destination drop out when there's nothing to say (no progress yet, or a delete with no destination), and
-the trailing detail is either the time left or the word "Paused" — a paused operation has no honest countdown.
+so does the trailing time left while the estimate is warming up or the operation is paused (a paused operation has no
+honest countdown).
+
+- **It leads with `chipLabel`, not the verb**, so a chip reading "Paused" can't open a line claiming the copy is running
+  right now. English's aspect-free "Copying" hid that; zh's `正在拷贝` states it outright. The cost is that a paused
+  tooltip no longer names the operation type, which is the queue window's job one click away.
+- **Every clause carries its own leading `·`**, in all ten catalogs. The label is a whole fact, and once it can be a
+  state word rather than a verb, a clause glued to it ("Paused 214 items", zh `已暂停到“Backup”`, which reads "paused
+  until Backup") stops being grammatical. ⚠️ A locale that re-glues one is the bug coming back.
 
 It goes through the tooltip action's `contentEl` rather than `text` because the numbers tick while the tooltip is up: an
 adopted element keeps updating in place. ⚠️ The action adopts the element it's given and an adopted element keeps its

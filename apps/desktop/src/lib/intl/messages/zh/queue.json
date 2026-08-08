@@ -103,8 +103,8 @@
   "@queue.chip.ariaLabel": {
     "sourceHash": "3ff7a01"
   },
-  "queue.chip.tooltip": "{label}{hasDestination, select, yes {到“{destination}”} other {}}{count, plural, =0 {} other { · 共 {countText} 个项目}} · {percentText}%{hasDetail, select, yes { · {detail}} other {}}",
+  "queue.chip.tooltip": "{label}{count, plural, =0 {} other { · 共 {countText} 个项目}}{hasDestination, select, yes { · 目标：“{destination}”} other {}} · {percentText}%{hasDetail, select, yes { · {detail}} other {}}",
   "@queue.chip.tooltip": {
-    "sourceHash": "c88735c"
+    "sourceHash": "6680100"
   }
 }
