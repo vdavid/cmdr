@@ -505,6 +505,7 @@
     onclose={handleCancel}
     containerStyle="width: 500px"
     growDownward
+    resizable="horizontal"
 >
     {#snippet title()}{dialogTitle}{/snippet}
 

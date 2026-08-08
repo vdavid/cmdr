@@ -281,7 +281,7 @@
         title: tString('search.dialog.title'),
         badge: getBadgeStatus('search'),
         dialogType: 'search',
-        maxWidth: 'min(1080px, 80vw)',
+        width: 'min(1080px, 80vw)',
 
         state: searchQueryState,
 

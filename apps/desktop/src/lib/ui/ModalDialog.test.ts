@@ -124,6 +124,49 @@ describe('ModalDialog body padding and resizing', () => {
     expect(target.querySelector('.modal-dialog')?.classList.contains('resizable')).toBe(false)
     target.remove()
   })
+
+  it('locks the height under resizable="horizontal", and only then', () => {
+    const horizontal = mountDialog({ resizable: 'horizontal' })
+    const panel = horizontal.querySelector('.modal-dialog')
+    expect(panel?.classList.contains('resizable')).toBe(true)
+    expect(panel?.classList.contains('resize-horizontal')).toBe(true)
+    horizontal.remove()
+
+    const both = mountDialog({ resizable: true })
+    expect(both.querySelector('.modal-dialog')?.classList.contains('resize-horizontal')).toBe(false)
+    both.remove()
+  })
+
+  // `fillBody`'s inner region owns the scrolling; `resizable` only adds the grip and the
+  // floors. Combining them is how the query dialogs and the operation log get resized.
+  it('combines resizable with fillBody', () => {
+    const target = mountDialog({ resizable: true, fillBody: true })
+    const panel = target.querySelector('.modal-dialog')
+    expect(panel?.classList.contains('resizable')).toBe(true)
+    expect(panel?.classList.contains('fill-body')).toBe(true)
+    target.remove()
+  })
+
+  // The resize grip parks the user's size in the panel's inline `style`, so re-rendering
+  // that attribute on every drag frame would snap a resized dialog back. Position rides on
+  // inline PROPERTIES instead, leaving the attribute to `containerStyle` alone.
+  it('keeps a user-set width across a title-bar drag', async () => {
+    const target = mountDialog({ resizable: true, containerStyle: 'width: 500px' })
+    const panel = target.querySelector<HTMLElement>('.modal-dialog')
+    expect(panel).not.toBeNull()
+    if (!panel) return
+    panel.style.width = '820px'
+
+    const titleBar = target.querySelector('.dialog-title-bar')
+    titleBar?.dispatchEvent(new MouseEvent('mousedown', { clientX: 10, clientY: 10, bubbles: true }))
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 60, clientY: 40 }))
+    document.dispatchEvent(new MouseEvent('mouseup'))
+    await tick()
+
+    expect(panel.style.width).toBe('820px')
+    expect(panel.style.left).toBe('50px')
+    target.remove()
+  })
 })
 
 describe('ModalDialog Enter key', () => {

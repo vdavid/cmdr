@@ -14,6 +14,7 @@
     import Spinner from '$lib/ui/Spinner.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import StatusBadge from '$lib/ui/StatusBadge.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import { getBadgeStatus } from '$lib/feature-status'
     import { tString } from '$lib/intl/messages.svelte'
     import { formatInteger } from '$lib/intl/number-format'
@@ -85,6 +86,8 @@
     onclose={handleClose}
     ariaDescribedby="operation-log-body"
     containerStyle="width: 620px; max-width: calc(100vw - 2 * var(--spacing-xl))"
+    fillBody
+    resizable
 >
     <!-- The title bar's `<h2>` is already the row (gap + badge alignment live there),
          so the words and the badge are its direct children. -->
@@ -144,12 +147,16 @@
                                         <ul class="item-list">
                                             {#each items.items as item (item.seq)}
                                                 <li class="item">
-                                                    <span class="item-path" title={item.sourcePath}
+                                                    <span
+                                                        class="item-path"
+                                                        use:tooltip={{ text: item.sourcePath, overflowOnly: true }}
                                                         >{item.sourcePath}</span
                                                     >
                                                     {#if item.destPath != null}
                                                         <Icon name="chevron-right" size={12} />
-                                                        <span class="item-path" title={item.destPath}
+                                                        <span
+                                                            class="item-path"
+                                                            use:tooltip={{ text: item.destPath, overflowOnly: true }}
                                                             >{item.destPath}</span
                                                         >
                                                     {/if}
@@ -193,14 +200,17 @@
 </ModalDialog>
 
 <style>
+    /* Fills `fillBody`'s slot so a drag on the resize grip lands in the list, not in
+       dead space above the Close button. The panel's own max-height does the capping. */
     .body {
         display: flex;
         flex-direction: column;
-        max-height: calc(100vh - 2 * var(--spacing-2xl) - var(--titlebar-height));
+        flex: 1 1 auto;
         min-height: 0;
     }
 
     .scroll-area {
+        flex: 1 1 auto;
         overflow-y: auto;
         min-height: 0;
         padding-right: var(--spacing-xs);

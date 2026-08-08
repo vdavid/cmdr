@@ -20,8 +20,10 @@
      *
      * Chrome comes from `ModalDialog` (standard radius, two-hairline panel edge, shadow,
      * title bar + × button, focus trap, MCP registry, focus restore). This component opts
-     * into `align="top"`, `fillBody`, `padded={false}`, `ownsKeyboard`, and
-     * `closeOnOverlayClick`; see DETAILS.md § Chrome.
+     * into `align="top"`, `fillBody`, `resizable`, `padded={false}`, `ownsKeyboard`, and
+     * `closeOnOverlayClick`; see DETAILS.md § Chrome. `config.width` is the width the panel
+     * OPENS at, not a cap: the resize grip goes wider, which is how a user reads a long path
+     * that the result rows shorten.
      *
      * Layout (top → bottom), three zones separated by surface + hairline:
      *   Zone 1 "what to look for": QueryBar, then ModeChips + the Count-only switch,
@@ -527,9 +529,10 @@
     overlayClass="search-overlay"
     align="top"
     fillBody
+    resizable
     ownsKeyboard
     closeOnOverlayClick
-    containerStyle="width: 100%; max-width: {config.maxWidth}; max-height: 80vh;"
+    containerStyle="width: min(100%, {config.width}); max-height: 80vh;"
     onkeydown={handleKeyDown}
     onclose={config.onClose}
 >

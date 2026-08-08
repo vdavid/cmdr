@@ -162,6 +162,7 @@
     dialogId="new-file-confirmation"
     onclose={onCancel}
     containerStyle="width: 400px"
+    resizable="horizontal"
 >
     {#snippet title()}{tString('fileOperations.mkfile.title')}{/snippet}
 

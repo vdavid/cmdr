@@ -91,7 +91,7 @@ function mountQueryDialog(opts: MountOptions = {}): MountedDialog {
     badge: opts.badge,
     // A real registered id: `dialogType` is a `SoftDialogId`, so no placeholder here.
     dialogType: 'search',
-    maxWidth: 'min(800px, 80vw)',
+    width: 'min(800px, 80vw)',
     state,
     aiEnabled: true,
     inputsDisabled: false,

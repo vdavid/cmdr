@@ -505,7 +505,7 @@
         title,
         badge: getBadgeStatus('select-files'),
         dialogType: mode === 'add' ? 'selection-add' : 'selection-remove',
-        maxWidth: 'min(720px, 60vw)',
+        width: 'min(720px, 60vw)',
 
         state: selectionQueryState,
 

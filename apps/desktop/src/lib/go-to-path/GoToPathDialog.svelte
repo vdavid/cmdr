@@ -198,6 +198,7 @@
     dialogId="go-to-path"
     onclose={onCancel}
     containerStyle="width: 440px"
+    resizable="horizontal"
 >
     {#snippet title()}{tString('goToPath.dialog.title')}{/snippet}
 

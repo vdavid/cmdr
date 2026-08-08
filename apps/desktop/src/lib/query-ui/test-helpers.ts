@@ -43,7 +43,7 @@ export function makeQueryDialogConfig(overrides: Partial<QueryDialogConfig> = {}
   const config: QueryDialogConfig = {
     title: 'Test dialog',
     dialogType: 'search',
-    maxWidth: 'min(800px, 80vw)',
+    width: 'min(800px, 80vw)',
     state: createQueryFilterState({ defaultMode: 'filename' }),
     aiEnabled: true,
     inputsDisabled: false,

@@ -204,8 +204,11 @@ export interface QueryDialogConfig<E = unknown> {
    * ship a dialog MCP doesn't know about.
    */
   dialogType: SoftDialogId
-  /** Dialog max-width, e.g. `'min(1080px, 80vw)'`. */
-  maxWidth: string
+  /**
+   * The width the dialog OPENS at, e.g. `'min(1080px, 80vw)'`. Not a cap: the panel is
+   * resizable, so the user can drag it wider (up to the viewport).
+   */
+  width: string
 
   /** Cross-consumer state instance (the core factory's output). */
   state: QueryFilterState

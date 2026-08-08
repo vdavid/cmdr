@@ -36,9 +36,17 @@
         /**
          * Lets the user drag the bottom-right corner to resize the dialog. The
          * body region grows and scrolls; the caller still passes the initial
-         * size via `containerStyle`. Off by default.
+         * size via `containerStyle`. Off by default. Combines with `fillBody`:
+         * there the inner scroll region keeps ownership of the scrolling and
+         * only the grip and the size floors come from here.
+         *
+         * `'horizontal'` is the right choice whenever the body has nothing to do
+         * with extra height (a short form, a capped list): free vertical dragging
+         * would just open a band of dead space above the footer. Use `true` when a
+         * region inside actually absorbs the slack, which in practice means
+         * `fillBody` with a scrolling child.
          */
-        resizable?: boolean
+        resizable?: boolean | 'horizontal'
         /**
          * Pins the dialog's TOP edge where centering first put it, so a body that
          * grows (a mode switch revealing extra controls) extends downward instead
@@ -60,7 +68,7 @@
          * when a child region (a results list) should scroll while the title bar and
          * footer stay put. The body is a flex column too, so its own child can take
          * `flex: 1 1 auto` and own the scrolling. `resizable` brings its own version
-         * of this (with a scrolling body); don't combine the two.
+         * of this (with a scrolling body); combined, `fillBody`'s inner region wins.
          */
         fillBody?: boolean
         /**
@@ -143,12 +151,28 @@
      * `left` / `top` shift the panel visually without reflowing siblings (same as the
      * transform did) and establish no containing block. `will-change: transform` is the
      * tempting "smooth out the drag" change that would bring the bug straight back.
+     *
+     * They're written as inline PROPERTIES from an effect, not into the `style` attribute:
+     * `resize: both` parks the user's dragged size in that same attribute, so re-rendering
+     * it (which a drag does on every mousemove) would snap a resized dialog back to its
+     * starting size mid-drag. `containerStyle` is the only thing left on the attribute.
      */
-    const dialogStyle = $derived(
-        `left: ${String(dialogPosition.x)}px; top: ${String(dialogPosition.y)}px;` +
-            (anchoredTop === null ? '' : ` align-self: flex-start; margin-top: ${String(anchoredTop)}px;`) +
-            (containerStyle ? ` ${containerStyle}` : ''),
-    )
+    $effect(() => {
+        const el = dialogElement
+        if (!el) return
+        // Read so that a `containerStyle` change — which rewrites the attribute and wipes
+        // these properties with it — re-applies them.
+        void containerStyle
+        el.style.left = `${String(dialogPosition.x)}px`
+        el.style.top = `${String(dialogPosition.y)}px`
+        if (anchoredTop === null) {
+            el.style.removeProperty('align-self')
+            el.style.removeProperty('margin-top')
+        } else {
+            el.style.alignSelf = 'flex-start'
+            el.style.marginTop = `${String(anchoredTop)}px`
+        }
+    })
 
     /** Where flex centering puts the dialog's top right now. */
     function centeredTop(): number {
@@ -291,9 +315,10 @@
         bind:this={dialogElement}
         class="modal-dialog"
         class:dragging={isDragging}
-        class:resizable
+        class:resizable={resizable !== false}
+        class:resize-horizontal={resizable === 'horizontal'}
         class:fill-body={fillBody}
-        style={dialogStyle}
+        style={containerStyle}
     >
         {#if onclose}
             <!--
@@ -374,17 +399,27 @@
        rounded corners and gives `resize` a scroll container to grab.
        min-* keep the dialog usable when dragged small; max-* keep it inside the
        viewport (the overlay starts below the OS title bar). The caller's
-       `containerStyle` still sets the initial width/height. */
+       `containerStyle` still sets the initial width/height, and raises `min-width`
+       there when its content needs a wider floor than 360px (a progress readout,
+       a multi-column table). */
     .modal-dialog.resizable {
         display: flex;
         flex-direction: column;
         resize: both;
         overflow: hidden;
-        /* No design token for these floors; they're layout minimums, not spacing. */
+        /* No design token for this floor; it's a layout minimum, not spacing. There's
+           deliberately no `min-height` twin: the panel is a flex item, so `auto` floors
+           it at its own content and every dialog opens at its natural height instead of
+           padding itself out to a number. */
         min-width: 360px;
-        min-height: 240px;
         max-width: calc(100vw - 2 * var(--spacing-xl));
         max-height: calc(100vh - var(--titlebar-height) - 2 * var(--spacing-xl));
+    }
+
+    /* Width only: the height stays content-driven, so the panel can't be dragged
+       into a band of empty space above the footer. */
+    .modal-dialog.resize-horizontal {
+        resize: horizontal;
     }
 
     .modal-dialog.resizable .modal-body {
@@ -408,6 +443,14 @@
         min-height: 0;
         display: flex;
         flex-direction: column;
+    }
+
+    /* Both at once: the grip, the floors, and the viewport caps come from `resizable`,
+       the body layout from `fillBody`. The body must NOT scroll here — its child region
+       already does, and two nested scrollers means the user drags one scrollbar and the
+       other one moves. */
+    .modal-dialog.resizable.fill-body .modal-body {
+        overflow: hidden;
     }
 
     /* Fixed square + `--radius-full` so the hover fill is a circle around the glyph,

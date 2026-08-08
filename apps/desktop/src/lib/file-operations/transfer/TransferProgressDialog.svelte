@@ -92,8 +92,10 @@
     }: Props = $props()
 
     /** Wide enough that the shared readout's fixed columns (amount, percent,
-     *  rate, time left) still leave the bars a readable width. */
-    const DIALOG_WIDTH_STYLE = 'width: 580px'
+     *  rate, time left) still leave the bars a readable width. It's also the
+     *  resize floor: the columns don't shrink, so anything narrower squeezes the
+     *  bars out of existence rather than the numbers. */
+    const DIALOG_WIDTH_STYLE = 'width: 580px; min-width: 580px'
 
     /** The select discriminator the catalog's gerund/verb messages key on. */
     const gerundKind = $derived(operationType)
@@ -265,6 +267,7 @@
         void progress.handleCancel(false)
     }}
     containerStyle={DIALOG_WIDTH_STYLE}
+    resizable="horizontal"
 >
     {#snippet title()}
         {#if waitingForScan}

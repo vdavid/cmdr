@@ -61,6 +61,7 @@
     onclose={onClose}
     ariaDescribedby="alert-dialog-message"
     containerStyle="width: {path === undefined ? WIDTH_PX : PATH_WIDTH_PX}px"
+    resizable="horizontal"
 >
     {#snippet title()}{dialogTitle}{/snippet}
 

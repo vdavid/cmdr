@@ -24,8 +24,9 @@ Primitives shared by Search and Selection. Filter chips: `filter-chips/CLAUDE.md
 - **`createQueryFilterState()` owns ONLY cross-consumer fields.** Adding one, ask "would Selection care?" Yes → core; no
   → the extras. `recordAiTranslation` (core) writes ONLY `handTyped[mode]`; label/pattern slots are the extras'.
 - **`stopPropagation()` on every dialog `keydown`** (else keys reach the explorer and trigger quick-search/nav).
-- **All chrome is `ModalDialog`'s; never re-add it here.** Opt-ins: `align="top"`, `fillBody`, `ownsKeyboard`,
-  `closeOnOverlayClick`, `overlayClass="search-overlay"`. ❌ Strips pad VERTICALLY only.
+- **All chrome is `ModalDialog`'s; never re-add it here.** Opt-ins: `align="top"`, `fillBody`, `resizable`,
+  `ownsKeyboard`, `closeOnOverlayClick`, `overlayClass="search-overlay"`. ❌ Strips pad VERTICALLY only.
+  `config.width` is the OPENING width, not a cap; don't reintroduce a `max-width`, it would pin the resize grip.
 - **Two silent-failure traps.** Count-only OFF re-runs via `runFromButton()`, not `scheduleSearch()` (else a stale count
   stays); never swallow a `runQuery` rejection (it reads as "nothing matched").
 - **Never wipe state from a lifecycle hook.** State survives unmount by design; `⌘N` is the ONLY sanctioned reset.

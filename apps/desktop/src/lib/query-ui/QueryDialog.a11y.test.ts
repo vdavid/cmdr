@@ -57,7 +57,7 @@ function buildConfig(opts: BuildOpts, state: QueryFilterState): QueryDialogConfi
   return {
     title: 'Search',
     dialogType: 'search',
-    maxWidth: 'min(1080px, 80vw)',
+    width: 'min(1080px, 80vw)',
     state,
     aiEnabled: opts.aiEnabled,
     inputsDisabled: opts.inputsDisabled,

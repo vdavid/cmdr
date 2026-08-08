@@ -72,6 +72,7 @@ Props:
 | `growDownward`        | `boolean`                     | Default `false`. Pins the top edge so a growing body extends downward |
 | `align`               | `'center'` \| `'top'`         | Default `'center'`. `'top'` drops the panel 10vh from the overlay top |
 | `fillBody`            | `boolean`                     | Default `false`. Fixed-height frame; the body absorbs the slack       |
+| `resizable`           | `boolean` \| `'horizontal'`   | Default `false`. Bottom-right grip; `'horizontal'` locks the height   |
 | `ownsKeyboard`        | `boolean`                     | Default `false`. Forwards EVERY key to `onkeydown`, Escape included   |
 | `overlayClass`        | `string`                      | Extra class on the overlay, for a shared dialog's stable test hook    |
 | `closeOnOverlayClick` | `boolean`                     | Default `false`. Scrim click dismisses                                |
@@ -122,6 +123,14 @@ dialog hosts a `Popover` today (the query dialogs, the only `Popover` consumers,
 transform this one can't just be dropped — the filter IS the feature. So if a blurred dialog ever needs a popover, that
 one has to portal.
 
+**`resizable` is the answer to a path that doesn't fit**, so every dialog rendering one takes it (delete, copy/move,
+progress, transfer error, operation log, go to path, new file/folder, alert, and the query dialogs). Two things make it
+work. The user's dragged size lands in the panel's inline `style`, which is why the drag offset is written as inline
+PROPERTIES from an effect instead of re-rendering that attribute: rendering it would snap a resized dialog back to its
+opening size on the next mousemove. And the panel carries no `min-height` — it's a flex item, so `auto` floors it at its
+own content, which is what lets a short form opt in without padding itself out to a number. A caller whose content
+needs more than the 360px `min-width` (the progress readout's fixed columns) states its own in `containerStyle`.
+
 **`growDownward`** is for a dialog whose height changes while it's open (a mode switch revealing extra controls). The
 overlay centers with flex, so a taller body would push the title up and re-center everything under the user's eyes. With
 this on, `ModalDialog` measures where centering put the dialog at mount and pins that top edge with
@@ -136,7 +145,8 @@ filter popover. Those three props exist so it gets the standard chrome without f
 
 - `fillBody` makes the panel a flex column with `overflow: hidden` (so full-bleed bands clip to the 27px radius) and the
   body a flex column that takes the slack; the caller caps the height via `containerStyle`. `resizable` covers the same
-  ground for a body that scrolls as a whole; the two aren't meant to be combined.
+  ground for a body that scrolls as a whole; combined, `fillBody` wins the body and `resizable` contributes only the
+  grip and the size floors, so the inner region does the scrolling and there's never a scrollbar inside a scrollbar.
 - `ownsKeyboard` skips this component's Escape-closes and Enter-on-a-focused-button rules and forwards the event, after
   still calling `stopPropagation()` (which shields the file explorer behind the scrim). `onclose` keeps driving the ×
   button, the focus-trap escape fallback, and the MCP close registry, so nothing about closing changes.

@@ -59,6 +59,7 @@
     onclose={onClose}
     ariaDescribedby="error-dialog-message"
     {containerStyle}
+    resizable="horizontal"
 >
     {#snippet title()}
         <span class="error-title-content">
