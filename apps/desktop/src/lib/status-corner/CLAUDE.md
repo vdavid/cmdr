@@ -18,12 +18,13 @@ toast.
   pattern). An empty or gap-sized box over the pane must not eat clicks.
 - **The hourglass stays last**, the most ambient member. Everything else renders left of it: inline if this module owns
   it, through `children` if not.
-- **The chip is a PREVIEW, not a queue.** One operation (the first running one, else the first paused one), a verb and
-  an 80 px bar, no percentage text and no "+N" affix. Detail belongs to its tooltip, completeness to the queue window.
-  ❌ Don't reuse `TransferProgressReadout` here: its fixed-width cells blow past the corner.
-- **Every gate lives in `pickChipOperation`**, so add and test one there, not in the markup. The bar is bytes, falling
-  back to the file count when `bytesTotal` is 0 (a same-volume move moves no bytes, so a bytes bar would read 0%
-  throughout). Instant ops are excluded by TYPED `operationType`, never a substring test.
+- **The chip is a PREVIEW, not a queue.** One operation (first running, else first paused), a verb and an 80 px bar, no
+  percentage text, no "+N" affix. Detail belongs to its tooltip, completeness to the queue window. ❌ Don't reuse
+  `TransferProgressReadout` here: its fixed-width cells blow past the corner.
+- **Both gates are pure and live in `operation-chip.ts`** (`pickChipOperation`, `pickChipState`), so add and test one
+  there, not in the markup. The bar is bytes, falling back to the file count when `bytesTotal` is 0 (a same-volume move
+  moves no bytes, so a bytes bar would read 0% throughout). Instant ops are excluded by TYPED `operationType`, never a
+  substring test.
 - **A paused-only queue KEEPS the chip**, with a still bar (`animated={false}`) and the word "Paused". Hiding it on
   pause would re-hide the work, the bug the chip exists to fix. Tooltip and aria-label lead with that same label, ❌
   never the verb: zh's `正在拷贝` beside "Paused" contradicts itself. So every `queue.chip.tooltip` clause carries its

@@ -98,6 +98,10 @@ Each of these is a branch of `pickChipOperation`, each with its own test:
   full;
 - a queue that's only `queued`: something else holds the lane it's waiting on, and that row speaks for it.
 
+`pickChipState` applies the same instant-op and foreground exclusions to the FAILURE count, so the two states agree
+about what the corner is allowed to mention: a rename that couldn't finish stays in the queue window and never marks the
+corner.
+
 The chip deliberately does NOT check whether the queue window is open. It's ambient status, not a notification, and it
 stays put while the window is up.
 

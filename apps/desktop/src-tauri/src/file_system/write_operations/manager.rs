@@ -612,7 +612,10 @@ impl OperationManager {
     ///   variant, never by message text.
     /// - **Overwrite an existing entry**: `write-error` can fire twice for one
     ///   op, and the FIRST error is the one that stopped it.
-    /// - **Emit**: the record is still live here, see [`ManagerInner::snapshot`].
+    /// - **Emit while the record is LIVE**: the snapshot would carry the same
+    ///   `operation_id` twice (see [`ManagerInner::snapshot`]), and `on_settled`
+    ///   always comes to emit it. With the record already GONE it DOES emit: no
+    ///   duplicate is possible, and nothing else would broadcast the row.
     pub(crate) fn record_failure(
         &self,
         operation_id: &str,
@@ -627,9 +630,9 @@ impl OperationManager {
         }
 
         // Everything below runs inside this block so the lock is released before
-        // the log call: the manager's critical sections stay tiny, and a logger
-        // doing file I/O must never hold up admission.
-        {
+        // the log call and the emit: the manager's critical sections stay tiny,
+        // and a logger doing file I/O must never hold up admission.
+        let record_gone = {
             let mut inner = self.inner.lock_ignore_poison();
             if inner.failures.iter().any(|f| f.operation_id == operation_id) {
                 return;
@@ -638,13 +641,14 @@ impl OperationManager {
             // Prefer the live record's descriptor, so the failed row reads like the
             // running row it replaces. It's gone only if the op settled before its
             // own error event landed, and then the event's own type is all there is.
-            let (operation_type, source, destination) = match inner.records.get(operation_id) {
+            let (operation_type, source, destination, record_gone) = match inner.records.get(operation_id) {
                 Some(rec) => (
                     rec.descriptor.operation_type,
                     rec.descriptor.summary.source.clone(),
                     rec.descriptor.summary.destination.clone(),
+                    false,
                 ),
-                None => (operation_type, None, None),
+                None => (operation_type, None, None, true),
             };
 
             if inner.failures.len() == FAILURE_CAPACITY {
@@ -661,8 +665,14 @@ impl OperationManager {
                 supports_rollback: false,
                 error: Some(error.clone()),
             });
-        }
+            record_gone
+        };
         log::info!(target: "op_manager", "retain failure op={operation_id}");
+        // No record means no `on_settled` to carry the row out, so without this
+        // there'd be no toast and no chip until the queue window next opens.
+        if record_gone {
+            self.emit_changed();
+        }
     }
 
     /// Drops one retained failure and re-broadcasts. Unknown id: a no-op that

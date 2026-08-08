@@ -112,8 +112,14 @@ export function pickChipState(
   const operation = pickChipOperation(rows, foregroundOperationId)
   if (operation) return { kind: 'progress', operation }
 
+  // Instant ops are out of both states, for the same reason: the corner is about
+  // work worth watching, and a rename is over before the eye lands on it. The
+  // queue window still lists them — it promises completeness, the corner doesn't.
   const count = rows.filter(
-    (row) => row.snapshot.status === 'failed' && row.snapshot.operationId !== foregroundFailureId,
+    (row) =>
+      row.snapshot.status === 'failed' &&
+      row.snapshot.operationId !== foregroundFailureId &&
+      !isInstantOperation(row.snapshot.operationType),
   ).length
   return count > 0 ? { kind: 'failure', count } : null
 }

@@ -1,8 +1,8 @@
 /**
- * The chip's pick-and-measure rules, as pure data. Every visibility gate the
- * corner chip has lives in `pickChipOperation`, so it can be proven here without
- * a DOM: which operation wins, which ones the chip must stay silent about, and
- * how full the bar is.
+ * The chip's pick-and-measure rules, as pure data. Every visibility gate but the
+ * appearance delay lives in `pickChipOperation` / `pickChipState`, so it can be
+ * proven here without a DOM: which operation wins, which ones the chip must stay
+ * silent about, when a failure gets the corner instead, and how full the bar is.
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -152,8 +152,12 @@ describe('pickChipOperation', () => {
 })
 
 /** A retained failure as it arrives on the snapshot. */
-function failedRow(operationId = 'gone'): OperationRow {
-  return row({ operationId, status: 'failed', error: { type: 'source_not_found', path: '/gone.txt' } }, null, null)
+function failedRow(operationId = 'gone', operationType: OperationSnapshot['operationType'] = 'copy'): OperationRow {
+  return row(
+    { operationId, operationType, status: 'failed', error: { type: 'source_not_found', path: '/gone.txt' } },
+    null,
+    null,
+  )
 }
 
 describe('pickChipState', () => {
@@ -187,5 +191,13 @@ describe('pickChipState', () => {
   it('stays quiet about the failure the foreground error dialog is showing', () => {
     expect(pickChipState([failedRow('a')], null, 'a')).toBeNull()
     expect(pickChipState([failedRow('a'), failedRow('b')], null, 'a')).toEqual({ kind: 'failure', count: 1 })
+  })
+
+  it('leaves an instant op out of the count, exactly as it leaves it out of the bar', () => {
+    expect(pickChipState([failedRow('quick', 'rename')], null, null)).toBeNull()
+    expect(pickChipState([failedRow('quick', 'rename'), failedRow('slow')], null, null)).toEqual({
+      kind: 'failure',
+      count: 1,
+    })
   })
 })

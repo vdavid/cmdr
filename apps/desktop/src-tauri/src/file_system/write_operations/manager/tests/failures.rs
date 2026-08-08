@@ -163,6 +163,22 @@ fn cancels_and_password_prompts_are_not_retained_as_failures() {
 }
 
 #[test]
+fn a_failure_with_no_live_record_broadcasts_itself() {
+    // The other branch: the record is already gone, so no `on_settled` emit is
+    // coming to carry this row out. Emitting here is safe precisely because the
+    // record is absent — the duplicate-id hazard needs a LIVE record.
+    let mgr = private_manager();
+    let emits_before = mgr.emit_count();
+
+    mgr.record_failure("op-orphan", WriteOperationType::Copy, &io_error("/a"));
+
+    assert!(
+        mgr.emit_count() > emits_before,
+        "an unbroadcast row means no toast, no chip, and nothing until the queue window next opens"
+    );
+}
+
+#[test]
 fn retained_failures_evict_the_oldest_past_capacity() {
     let mgr = private_manager();
     for i in 0..(FAILURE_CAPACITY + 5) {

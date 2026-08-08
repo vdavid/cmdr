@@ -31,8 +31,9 @@ The window renders from `createOperationsStore()`, which merges:
 
 1. **`operations-changed`** (`onOperationsChanged`): the thin registry snapshot the backend emits whenever an operation
    is registered, admitted, paused, resumed, or settles. Payload is `{ operations: OperationSnapshot[] }`, where each
-   `OperationSnapshot` is `{ operationId, operationType, status, source, destination }` — membership + lifecycle status
-   only, NOT 200 ms progress. This decides which rows exist and each row's status.
+   `OperationSnapshot` is `{ operationId, operationType, status, source, destination, supportsRollback, error }` —
+   membership, lifecycle status, whether the row may offer Rollback, and (on a retained failure only) the typed
+   `WriteOperationError` that stopped it. No 200 ms progress. This decides which rows exist and each row's status.
 2. **`write-progress`** (`onWriteProgress`, the existing per-file stream): drives the live per-row progress bars and
    ETA. The store keys the latest `WriteProgressEvent` by `operationId`.
 
