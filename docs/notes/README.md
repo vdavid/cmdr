@@ -30,6 +30,12 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   measured two ways), that it cost no scan latency, and the A/B method for comparing two builds on a machine running
   other work.
 
+**Load-bearing as the input to a job that hasn't been done yet:**
+
+- `flake-corpus-2026-08-08.md` — every test seen failing without a defect behind it, ranked over 48 E2E shard-runs and
+  six `rust-tests` contention verdicts, with a cause hypothesis and confidence per entry, plus the structural levers a
+  de-flaking pass should reach for. ⚠️ Its E2E counts come from `/tmp` logs that age out, so they can't be re-derived.
+
 **A decision record for something we evaluated and rejected**, kept so nobody re-proposes it from the same premises:
 
 - `size-only-subtrees-rejected-2026-08-06.md` — why storing folder totals instead of per-file rows under `CACHEDIR.TAG`
