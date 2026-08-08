@@ -328,6 +328,32 @@ test). A guard that needs a contract to be true is one `list_directory` away fro
 
 # Phase 1 — Close the blast radius
 
+**Status: DONE**, on branch `safety-p1-cache-truth`. Five corrections it turned up, for the phases that follow:
+
+1. **A `#[path]` test sibling does NOT shift `super::`.** M1.1's landmine list warned that "any `super::super::` in the
+   moved code shifts by one level". It doesn't: `#[path = "x_tests.rs"] mod tests;` declared inside the module keeps the
+   test module at the same position in the module tree as an inline `mod tests`, so every `super::` chain and every
+   `scan.rs::tests::…` doc reference keeps resolving untouched. `#[path]` changes where the file lives on disk, nothing
+   else. (The one-level-shallower rule in `transfer/volume/CLAUDE.md` is about a sibling declared from `mod.rs`, which
+   is a different thing.)
+2. **`insert_scan_result`'s canary collides with a deliberate fixture, and the fixture is right.**
+   `copy_source_hint_tests.rs` seeds the incoherent shape (`file_count > 0`, empty `per_path`) on purpose, because the
+   canary is a `debug_assert!`: a release build still admits such an entry and the drivers still have to survive it.
+   Privatizing the static therefore needs a narrowly-named test-only bypass, not just a seeding helper. M1.3 then takes
+   it further: the bypass builds the literal itself, so no `CachedScanResult` literal exists outside `scan_cache.rs`.
+3. **The named constructors caught an invented fixture immediately**, which is lesson 3 paying out on day one.
+   `get_scan_preview_totals`'s test claimed seven files with an EMPTY file list and two directories no walk had
+   produced. It matched neither production shape and only compiled because the struct took a literal.
+4. **M1.5's `conflict.rs` fix closes `rename_merge.rs:333`'s input.** Once the resolver propagates its dest probe, an
+   unanswerable dest fails the item BEFORE `:333` is reached, so `:333`'s remaining exposure is a transient fault
+   between two probes. It's still worth fixing (defense in depth, last destructive branch of the family), but the plan
+   treated the two as independent and they aren't.
+5. **`NotFound` has to stay an answer.** Propagating every `is_directory` error at `conflict.rs:82`/`:425` would turn a
+   destination that raced away between conflict detection and resolution into a failed item, breaking a write that
+   would simply have succeeded. The shared helper carves `VolumeError::NotFound` out and only refuses to guess when the
+   probe genuinely couldn't answer. The plan's two bullets on `:82` also disagreed with each other (one said
+   "truthful-enough, leave it", the `:80` bullet said fixing `:82` is what closes `:447`); the second reading won.
+
 Branch `safety-p1-cache-truth`, off `main` (after Phase 0 lands, so the one shared comment in `conflict.rs` is already
 true). Everything here is production behavior. Independently mergeable and valuable on its own.
 
