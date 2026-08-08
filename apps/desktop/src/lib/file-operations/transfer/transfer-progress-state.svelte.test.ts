@@ -150,7 +150,12 @@ import {
 } from '$lib/tauri-commands'
 import { openQueueWindow } from '$lib/file-operations/queue/queue-window'
 import { addToast } from '$lib/ui/toast'
-import { getForegroundOperationId, setForegroundOperationId } from '../foreground-operation.svelte'
+import {
+  getForegroundOperationId,
+  setForegroundOperationId,
+  isForegroundClaimPending,
+  endForegroundClaim,
+} from '../foreground-operation.svelte'
 
 /** Drains the microtask queue so the machine's `await` chains settle. Fake
  *  timers don't fake microtasks, so this works with timers active. */
@@ -239,6 +244,7 @@ beforeEach(() => {
   // The slot is module-scoped, so a test that leaves an owner behind would poison
   // the next one.
   setForegroundOperationId(null)
+  while (isForegroundClaimPending()) endForegroundClaim()
 })
 
 afterEach(() => {
@@ -732,6 +738,56 @@ describe('createTransferProgressState: foreground-operation ownership', () => {
     })
     state.destroy()
     expect(getForegroundOperationId()).toBeNull()
+  })
+
+  it('flags a claim while the dispatch is in flight, and settles it with the id', async () => {
+    // The conflict host defers its ownership decision while this is up: a
+    // `write-conflict` can beat the start command's response, and deciding
+    // against an empty slot would prompt for an operation the modal owns.
+    let resolveDispatch: (r: WriteOperationStartResult) => void = () => {}
+    vi.mocked(copyBetweenVolumes).mockImplementationOnce(
+      () => new Promise<WriteOperationStartResult>((res) => (resolveDispatch = res)),
+    )
+    const state = createTransferProgressState(makeConfig())
+    state.start()
+    await flushMicro()
+
+    expect(isForegroundClaimPending()).toBe(true)
+    expect(getForegroundOperationId()).toBeNull()
+
+    resolveDispatch({ operationId: 'op-1', operationType: 'copy' })
+    await flushMicro()
+
+    expect(isForegroundClaimPending()).toBe(false)
+    expect(getForegroundOperationId()).toBe('op-1')
+    state.destroy()
+  })
+
+  it('settles the claim when the dispatch itself never succeeds', async () => {
+    // Nothing is ever going to own this operation, so a deferred conflict must
+    // stop waiting on it rather than sit there forever.
+    vi.mocked(copyBetweenVolumes).mockImplementationOnce(() => Promise.reject(new Error('ipc down')))
+    const state = createTransferProgressState(makeConfig())
+    state.start()
+    await flushMicro()
+
+    expect(isForegroundClaimPending()).toBe(false)
+    state.destroy()
+  })
+
+  it('settles the claim when the dialog is torn down before the id arrives', async () => {
+    let resolveDispatch: (r: WriteOperationStartResult) => void = () => {}
+    vi.mocked(copyBetweenVolumes).mockImplementationOnce(
+      () => new Promise<WriteOperationStartResult>((res) => (resolveDispatch = res)),
+    )
+    const state = createTransferProgressState(makeConfig())
+    state.start()
+    await flushMicro()
+    state.destroy()
+    resolveDispatch({ operationId: 'op-1', operationType: 'copy' })
+    await flushMicro()
+
+    expect(isForegroundClaimPending()).toBe(false)
   })
 
   it('a late teardown does not release the slot the next dialog claimed', async () => {

@@ -70,7 +70,12 @@ import {
 } from '$lib/tauri-commands'
 import { emit } from '@tauri-apps/api/event'
 import { openQueueWindow } from '$lib/file-operations/queue/queue-window'
-import { clearForegroundOperation, setForegroundOperationId } from '../foreground-operation.svelte'
+import {
+  beginForegroundClaim,
+  clearForegroundOperation,
+  endForegroundClaim,
+  setForegroundOperationId,
+} from '../foreground-operation.svelte'
 import { addToast } from '$lib/ui/toast'
 import type {
   TransferOperationType,
@@ -768,45 +773,58 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
 
     log.debug('Event subscriptions ready, starting {op}', { op: config.operationType })
 
+    // From here until the slot is claimed (or the dispatch is abandoned), this
+    // dialog owns an operation nothing can name yet. The conflict host waits out
+    // that window rather than deciding ownership against an empty slot; see
+    // `../foreground-operation.svelte.ts`.
+    beginForegroundClaim()
+
     try {
-      const result = await dispatchOperation()
+      try {
+        const result = await dispatchOperation()
 
-      operationId = result.operationId
-      log.info('{op} operation started with operationId: {operationId}', {
-        op: operationLabel,
-        operationId,
-      })
-
-      // Reply to the MCP round-trip (if this op was started via an auto-confirmed
-      // MCP tool) with the spawned operationId, so the waiting tool can return it
-      // for a follow-up `queue` / `await operation_complete`. Fire-and-forget: the
-      // op is already running regardless of whether the reply lands.
-      if (config.mcpRequestId) {
-        void emit('mcp-response', { requestId: config.mcpRequestId, ok: true, operationId })
-      }
-
-      // If the dialog was destroyed/cancelled while waiting for the IPC response,
-      // cancel the operation immediately and bail out. Crucially, we must call
-      // `onCancelled` so the parent removes the dialog from state — otherwise
-      // the listeners are torn down by `cleanup()` but the `<TransferProgressDialog>`
-      // stays mounted forever (the BE eventually emits `write-cancelled` +
-      // `write-settled`, but no one's listening anymore). That stuck dialog
-      // poisons every following operation through ensureAppReady's Escape.
-      if (destroyed) {
-        log.info('Dialog destroyed before operationId arrived; cancelling op={operationId}', {
+        operationId = result.operationId
+        log.info('{op} operation started with operationId: {operationId}', {
+          op: operationLabel,
           operationId,
         })
-        void cancelWriteOperation(operationId, true)
-        cleanup()
-        config.onCancelled(0)
-        return
-      }
 
-      // This dialog now owns the operation in the foreground, so ambient
-      // surfaces stay quiet about it (`../foreground-operation.svelte.ts`).
-      // Claimed after the `destroyed` bail-out above: a dialog that's already
-      // gone owns nothing.
-      setForegroundOperationId(operationId)
+        // Reply to the MCP round-trip (if this op was started via an auto-confirmed
+        // MCP tool) with the spawned operationId, so the waiting tool can return it
+        // for a follow-up `queue` / `await operation_complete`. Fire-and-forget: the
+        // op is already running regardless of whether the reply lands.
+        if (config.mcpRequestId) {
+          void emit('mcp-response', { requestId: config.mcpRequestId, ok: true, operationId })
+        }
+
+        // If the dialog was destroyed/cancelled while waiting for the IPC response,
+        // cancel the operation immediately and bail out. Crucially, we must call
+        // `onCancelled` so the parent removes the dialog from state — otherwise
+        // the listeners are torn down by `cleanup()` but the `<TransferProgressDialog>`
+        // stays mounted forever (the BE eventually emits `write-cancelled` +
+        // `write-settled`, but no one's listening anymore). That stuck dialog
+        // poisons every following operation through ensureAppReady's Escape.
+        if (destroyed) {
+          log.info('Dialog destroyed before operationId arrived; cancelling op={operationId}', {
+            operationId,
+          })
+          void cancelWriteOperation(operationId, true)
+          cleanup()
+          config.onCancelled(0)
+          return
+        }
+
+        // This dialog now owns the operation in the foreground, so ambient
+        // surfaces stay quiet about it (`../foreground-operation.svelte.ts`).
+        // Claimed after the `destroyed` bail-out above: a dialog that's already
+        // gone owns nothing.
+        setForegroundOperationId(operationId)
+      } finally {
+        // Every route out of the dispatch settles the claim: the id landed, the
+        // dialog was already gone, or the command threw. A leaked claim would
+        // leave every later conflict deferred forever.
+        endForegroundClaim()
+      }
 
       replayBufferedEvents()
 

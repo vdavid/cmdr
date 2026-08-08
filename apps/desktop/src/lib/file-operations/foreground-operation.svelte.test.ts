@@ -17,11 +17,15 @@ import {
   clearForegroundOperation,
   setForegroundFailureId,
   getForegroundFailureId,
+  beginForegroundClaim,
+  endForegroundClaim,
+  isForegroundClaimPending,
 } from './foreground-operation.svelte'
 
 beforeEach(() => {
   setForegroundOperationId(null)
   setForegroundFailureId(null)
+  while (isForegroundClaimPending()) endForegroundClaim()
 })
 
 describe('foreground operation slot', () => {
@@ -58,6 +62,55 @@ describe('foreground operation slot', () => {
   it('tolerates a clear with nothing in the slot', () => {
     clearForegroundOperation('op-1')
     expect(getForegroundOperationId()).toBeNull()
+  })
+})
+
+describe('foreground claim', () => {
+  it('is not pending when nothing is starting', () => {
+    expect(isForegroundClaimPending()).toBe(false)
+  })
+
+  it('is pending between the dispatch and the operation id landing', () => {
+    // The window a conflict can arrive in: the operation exists on the backend
+    // and can already emit, but no slot names it yet.
+    beginForegroundClaim()
+    expect(isForegroundClaimPending()).toBe(true)
+
+    setForegroundOperationId('op-1')
+    endForegroundClaim()
+    expect(isForegroundClaimPending()).toBe(false)
+  })
+
+  it('settles on an abandoned dispatch, with the slot still empty', () => {
+    // Escape during dispatch: the dialog cancels the operation it just started
+    // and never claims the slot. The claim still has to end, or every later
+    // conflict would defer forever.
+    beginForegroundClaim()
+    endForegroundClaim()
+
+    expect(isForegroundClaimPending()).toBe(false)
+    expect(getForegroundOperationId()).toBeNull()
+  })
+
+  it('stays pending while a second dispatch is in flight', () => {
+    // Two claims can overlap: a dialog's dispatch is still awaiting its response
+    // when the next dialog starts one. A boolean would have the first one's
+    // teardown clear the second one's claim, and the second conflict would be
+    // decided against an empty slot.
+    beginForegroundClaim()
+    beginForegroundClaim()
+
+    endForegroundClaim()
+    expect(isForegroundClaimPending()).toBe(true)
+
+    endForegroundClaim()
+    expect(isForegroundClaimPending()).toBe(false)
+  })
+
+  it('never goes negative, so a stray end cannot hide a real claim', () => {
+    endForegroundClaim()
+    beginForegroundClaim()
+    expect(isForegroundClaimPending()).toBe(true)
   })
 })
 

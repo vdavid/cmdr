@@ -56,6 +56,45 @@ export function clearForegroundOperation(id: string): void {
 }
 
 /**
+ * How many progress dialogs are mid-dispatch: they have started an operation and
+ * are waiting for the start command's response to name it.
+ *
+ * In that window the operation is already live on the backend and can already
+ * emit — a `write-conflict` from a fast clash routinely beats the response,
+ * which is why the dialog buffers events until its id lands. The slot above is
+ * still empty then, so anything asking "does the foreground own this operation?"
+ * would get a confident wrong answer. Ambient surfaces that only DISPLAY can
+ * live with that (the corner chip rides it out on its settle delay); a conflict
+ * prompt can't, because guessing wrong either double-prompts or leaves the
+ * operation parked with nobody asking. So the conflict host defers while this is
+ * pending, and re-decides the moment it settles.
+ *
+ * A counter rather than a flag: a dispatch can still be in flight when the next
+ * dialog begins its own claim (Escape during dispatch abandons the first without
+ * ending it any sooner), and a flag would let the first one's teardown clear the
+ * second one's claim.
+ */
+let foregroundClaims = $state(0)
+
+/** Marks a start command as dispatched but not yet named. Pair every call with
+ *  exactly one {@link endForegroundClaim}, including on the abandoned path. */
+export function beginForegroundClaim(): void {
+  foregroundClaims += 1
+}
+
+/** Settles a claim, whether the operation id landed or the dispatch was
+ *  abandoned. Floors at zero so a stray end can't mask a real claim. */
+export function endForegroundClaim(): void {
+  foregroundClaims = Math.max(0, foregroundClaims - 1)
+}
+
+/** True while any progress dialog is waiting to learn its operation id.
+ *  Reactive: reading this in a `$derived` / `$effect` re-runs it on settle. */
+export function isForegroundClaimPending(): boolean {
+  return foregroundClaims > 0
+}
+
+/**
  * The operation whose FAILURE the foreground error dialog is showing, or `null`.
  *
  * A second slot, and it has to be, because of the order things happen in: the
