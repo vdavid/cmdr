@@ -27,6 +27,8 @@ import {
   ensureAppReady,
   flushFileWatcher,
   getFixtureRoot,
+  getFocusedPaneActiveTabPath,
+  settleFocusedPaneOnLeft,
   moveCursorToFile,
   fileExistsInFocusedPane,
   openViewerWindow,
@@ -57,27 +59,6 @@ test.beforeEach(() => {
 test.afterEach(() => {
   restoreFixtureTree(getFixtureRoot())
 })
-
-/**
- * Reads the focused pane's active-tab path from the MCP `cmdr://state` resource.
- * The active-tab line carries the path in parentheses; inside an archive this is
- * the transparent `…/sample.zip[/inner]` path (the tab keeps the parent-drive id,
- * MCP reports the full path). Mirrors `go-to-path.spec.ts`.
- */
-async function getFocusedPaneActiveTabPath(): Promise<string | null> {
-  const state = await mcpReadResource('cmdr://state?compact=true')
-  const focusedMatch = /^focused:\s*(left|right)/m.exec(state)
-  if (focusedMatch === null) return null
-  const pane = focusedMatch[1]
-  const marker = `\n${pane}:\n`
-  const idx = state.indexOf(marker)
-  if (idx === -1) return null
-  const block = state.slice(idx + marker.length)
-  const endIdx = block.search(/\n[a-z]/)
-  const scoped = endIdx === -1 ? block : block.slice(0, endIdx)
-  const m = /^\s+- i:\d+ id:\S+ \[active\][^\n]*\(([^)\n]+)\)\s*$/m.exec(scoped)
-  return m?.[1] ?? null
-}
 
 /** Dismisses every open toast. For flows whose completion-toast wording is
  *  timing-dependent (a cancel that may or may not have caught the write; a
@@ -146,33 +127,6 @@ async function navigatePaneTo(tauriPage: PageLike, pane: 'left' | 'right', targe
             payload: { pane: ${JSON.stringify(pane)}, path: ${JSON.stringify(targetPath)} }
         });
     })()`)
-}
-
-/**
- * Waits until the LEFT pane is both focused and showing `targetPath`, re-requesting
- * left focus on every pass.
- *
- * Navigating a pane shifts focus to it on ITS listing-complete, and `ensureAppReady`
- * navigates the right pane too — so the right pane's shift can land after this spec's
- * left-pane nav and leave the wrong pane focused, which reads as "the nav went to the
- * wrong place". Re-clicking each pass outlasts that late shift, the same way
- * `ensureAppReady`'s own focus loop does.
- */
-async function settleFocusedPaneOnLeft(tauriPage: PageLike, targetPath: string): Promise<void> {
-  await expect
-    .poll(
-      async () => {
-        // `handlePaneClick` → `onRequestFocus` → `handleFocus('left')`, the same
-        // re-focus `ensureAppReady` uses.
-        await tauriPage.evaluate(`(function() {
-            var left = document.querySelectorAll('.file-pane')[0];
-            if (left && !left.classList.contains('is-focused')) left.click();
-        })()`)
-        return getFocusedPaneActiveTabPath()
-      },
-      { timeout: 5000 },
-    )
-    .toBe(targetPath)
 }
 
 const ENTER_MENU = '.menu-content'

@@ -12,8 +12,15 @@
  */
 
 import { test, expect } from './fixtures.js'
-import { ensureAppReady, dispatchMenuCommand, pressKey, getFixtureRoot, expectAndDismissToast } from './helpers.js'
-import { ensureMcpClient, mcpReadResource } from '../e2e-shared/mcp-client.js'
+import {
+  ensureAppReady,
+  dispatchMenuCommand,
+  pressKey,
+  getFixtureRoot,
+  getFocusedPaneActiveTabPath,
+  expectAndDismissToast,
+} from './helpers.js'
+import { ensureMcpClient } from '../e2e-shared/mcp-client.js'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 
 type PageLike = TauriPage | BrowserPageAdapter
@@ -25,30 +32,6 @@ const GO_TO_PATH_INPUT = `${GO_TO_PATH_DIALOG} input[aria-label="Path to go to"]
 async function openGoToPathDialog(tauriPage: PageLike): Promise<void> {
   await dispatchMenuCommand(tauriPage, 'nav.goToPath')
   await tauriPage.waitForSelector(GO_TO_PATH_INPUT, 3000)
-}
-
-/**
- * Reads the focused pane's active-tab path from the MCP `cmdr://state`
- * resource. We first read the top-level `focused:` field, then parse that
- * pane's `[active]` tab line, which carries the path in parentheses:
- * `- i:N id:... [active] ... (<path>)`. This is the same active-tab line
- * `search-open-in-pane.spec.ts` parses; it's synced independently of the
- * (sometimes-stale) `volume:` field.
- */
-async function getFocusedPaneActiveTabPath(): Promise<string | null> {
-  const state = await mcpReadResource('cmdr://state?compact=true')
-  const focusedMatch = /^focused:\s*(left|right)/m.exec(state)
-  if (focusedMatch === null) return null
-  const pane = focusedMatch[1]
-  const marker = `\n${pane}:\n`
-  const idx = state.indexOf(marker)
-  if (idx === -1) return null
-  // The pane block runs until the next top-level YAML key (no leading spaces).
-  const block = state.slice(idx + marker.length)
-  const endIdx = block.search(/\n[a-z]/)
-  const scoped = endIdx === -1 ? block : block.slice(0, endIdx)
-  const m = /^\s+- i:\d+ id:\S+ \[active\][^\n]*\(([^)\n]+)\)\s*$/m.exec(scoped)
-  return m?.[1] ?? null
 }
 
 /** Sets the dialog input value and fires `input` so the bound state updates. */
