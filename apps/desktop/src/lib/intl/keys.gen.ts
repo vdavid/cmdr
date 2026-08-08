@@ -1288,6 +1288,8 @@ export type MessageKey =
   | 'fileOperations.mkfile.nameAria'
   | 'fileOperations.mkfile.placeholder'
   | 'fileOperations.mkfile.title'
+  | 'fileOperations.operationConflict.context'
+  | 'fileOperations.operationConflict.pausedNote'
   | 'fileOperations.scanPhase.fromLabel'
   | 'fileOperations.scanPhase.scanDir'
   | 'fileOperations.scanPhase.scanFile'

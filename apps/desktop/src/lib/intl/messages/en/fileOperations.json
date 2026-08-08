@@ -710,7 +710,7 @@
 
   "fileOperations.transferProgress.titleConflict": "File already exists",
   "@fileOperations.transferProgress.titleConflict": {
-    "description": "Progress-dialog title when a name clash needs the user to decide what to do. Deliberately plain; the destructive detail is spelled out in the body.",
+    "description": "Dialog title when a name clash needs the user to decide what to do. It heads two dialogs that ask the same question: the copy/move progress dialog, and the standalone prompt that appears when the clash turns up in an operation running in the background. Deliberately plain; the destructive detail is spelled out in the body.",
     "screenshot": "conflict-dialog.png"
   },
 
@@ -881,6 +881,21 @@
   "@fileOperations.transferProgress.conflictRollback": {
     "description": "Button in the conflict step that stops and undoes the operation so far (deletes the partial files it created). 'Rollback' means undoing the work done so far.",
     "screenshot": "conflict-dialog.png"
+  },
+
+  "fileOperations.operationConflict.context": "{type, select, copy {Copying} move {Moving} other {Working}}{hasDestination, select, yes { to {destination}} other {}}",
+  "@fileOperations.operationConflict.context": {
+    "description": "Line above the file comparison in the standalone conflict prompt, naming which operation is asking. That prompt appears when an operation running in the background hits a name clash, and several can be running at once, so this is how the user tells which transfer the buttons below act on. Reads as a present-continuous action followed by where the items are going, for example \"Copying to Backup\". The destination clause disappears when there is nothing to name.",
+    "placeholders": {
+      "type": "the kind of operation: copy, move, or something else",
+      "hasDestination": "\"yes\" when the destination folder is known, anything else when it isn't",
+      "destination": "the name of the destination folder, for example Backup"
+    }
+  },
+
+  "fileOperations.operationConflict.pausedNote": "Everything else is paused until you answer.",
+  "@fileOperations.operationConflict.pausedNote": {
+    "description": "Quiet line under the buttons of the standalone conflict prompt, explaining why the rest of the operation queue has stopped moving. It only shows when there IS something else on hold, so it never claims a pause that isn't happening. \"Paused\" is the same word the operation queue's rows use for the same state."
   },
 
   "fileOperations.transferProgress.progressBytes": "Bytes",

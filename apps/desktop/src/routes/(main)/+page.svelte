@@ -39,6 +39,11 @@
         startOperationFailureWatch,
         stopOperationFailureWatch,
     } from '$lib/status-corner/operation-failure-watch.svelte'
+    import OperationConflictDialog from '$lib/file-operations/OperationConflictDialog.svelte'
+    import {
+        startOperationConflictHost,
+        stopOperationConflictHost,
+    } from '$lib/file-operations/operation-conflict.svelte'
     import StaleDriveDialog from '$lib/indexing/StaleDriveDialog.svelte'
     import { initPathLimits } from '$lib/utils/filename-validation'
     import {
@@ -404,6 +409,10 @@
         // and says so. After the store, so the first snapshot has somewhere to
         // land before anything reads it.
         startOperationFailureWatch()
+        // The main window's answer to a conflict in an operation no progress
+        // dialog is showing. After the store too: it pauses and resumes off the
+        // rows, and reads them to name which operation is asking.
+        await startOperationConflictHost()
         await setupWindowFocusListener(listenerSetupCtx)
         // Native Quick Look (macOS) event wiring: `quick-look-closed` flips
         // `isOpen` on the state singleton; `quick-look-key` routes panel
@@ -439,6 +448,7 @@
         destroyIndexState()
         destroyMediaEnrichState()
         stopOperationFailureWatch()
+        stopOperationConflictHost()
         destroyMainWindowOperations()
         if (handleKeyDown) {
             document.removeEventListener('keydown', handleKeyDown)
@@ -746,6 +756,7 @@
             {/if}
             <StatusCorner />
             <StaleDriveDialog />
+            <OperationConflictDialog />
         {/if}
 
         {#if showApp}

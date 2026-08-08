@@ -152,6 +152,15 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     states: [],
   },
   {
+    dialogId: 'operation-conflict',
+    label: 'Operation conflict',
+    hostWindow: 'main',
+    status: 'not-triggerable',
+    reason:
+      'Only a real operation can raise it. It appears when a copy or move that no progress dialog is showing (one sent to the queue with F2) hits a name clash deep inside a merging folder, which the upfront check can’t see. Getting here means staging a genuine clash under a folder that already exists at the destination, picking “Ask for each”, backgrounding the operation, and letting it reach that file — the body is the same TransferConflictDialog the progress dialog embeds, so the gallery’s transfer-progress row covers what it looks like.',
+    states: [],
+  },
+  {
     dialogId: 'transfer-error',
     label: 'Transfer error',
     hostWindow: 'main',

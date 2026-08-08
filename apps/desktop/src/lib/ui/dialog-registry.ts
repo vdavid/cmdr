@@ -13,6 +13,10 @@ export const SOFT_DIALOG_REGISTRY = [
   { id: 'transfer-confirmation', description: 'Opened by the copy/move tool, not directly' },
   { id: 'transfer-error', description: 'Shown after a copy/move failure' },
   { id: 'transfer-progress', description: 'Active during a copy/move operation' },
+  {
+    id: 'operation-conflict',
+    description: 'Asks how to handle a name clash in an operation running with no progress dialog in front of it',
+  },
   { id: 'archive-password', description: 'Prompts for an encrypted archive password before extracting' },
   { id: 'expiration', description: 'Shown when a commercial license expires' },
   { id: 'onboarding', description: 'First-launch (and re-openable) setup wizard' },
