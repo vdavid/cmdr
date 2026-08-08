@@ -6,6 +6,17 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
+- [x] 2026-08-09 `background-conflict-prompt.md` (built) - A backgrounded transfer that hits a name clash deep inside a
+      merging folder used to wedge invisibly: the upfront check is top-level only, folders always merge, and the app's
+      only `write-conflict` listener is the progress dialog the Queue button just unmounted, so the operation parked on
+      a oneshot nobody could answer. The fix is a main-window host that owns conflict prompts for operations no
+      foreground dialog is showing: pause what's running (remembered by id, so a resume can't override a pause the user
+      made by hand), raise the same `TransferConflictDialog` through the same `resolveWriteConflict` path, resume on the
+      answer. Ownership is one pure function, and the pause width is another, because "pause only this operation" is
+      where this is going. Carries the claim-race fix the naive version would have shipped with (a conflict can arrive
+      before the start command's response names the operation, so the foreground slot grew a claim counter and the
+      controller defers instead of guessing), a FIFO of one prompt at a time, and three exits for an operation that dies
+      mid-prompt.
 - [x] 2026-08-08 `operation-queue-visibility-plan.md` (built; awaiting David's copy review) - Background file operations
       are invisible, and so are their failures: press Queue, close the queue window, and a running transfer leaves no
       trace in the main window; if it then fails, the reason is gone with the progress modal that Queue unmounted. Four
