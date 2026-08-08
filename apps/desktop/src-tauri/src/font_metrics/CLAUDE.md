@@ -8,14 +8,17 @@ Brief mode via `file_system::listing::brief_columns` (which powers the `get_brie
 
 ## Public API
 
-- **`store_metrics(font_id, widths)`**: store a `HashMap<u32 code point, f32 px width>` into the in-memory cache.
+- **`store_and_persist(app, font_id, widths)`**: replace a font's entry (cache + `{font_id}.bin`) from the eager
+  measurement. Takes ownership of the map.
+- **`extend_and_persist(app, font_id, widths)`**: merge on-demand measured widths into an existing entry and rewrite
+  its file. Errors if the font isn't cached.
 - **`has_metrics(font_id)`**: is this font ID cached?
-- **`calculate_max_width_with_suffixes(items, font_id)`**: widest of `(text, trailing-px-suffix)` pairs (suffix `0.0`
-  is the plain widest-string case; the Brief tag-dot reservation passes a per-row cluster width); `None` if the font ID
-  isn't cached. Primary
-  width entry point (`FontMetrics::calculate_text_width` is the per-string method used internally).
-- **`load_from_disk` / `save_to_disk`**: read/write `{font_id}.bin` (bincode2) under `~/…/font-metrics/`.
-- **`init_font_metrics(app, font_id)`**: startup load of one font ID from disk if its file exists. Idempotent.
+- **`calculate_max_width_with_suffixes(items, font_id, missing)`**: widest of `(text, trailing-px-suffix)` pairs
+  (suffix `0.0` is the plain widest-string case; the Brief tag-dot reservation passes a per-row cluster width); `None`
+  if the font ID isn't cached. Records every unmeasured code point into `missing`. Primary width entry point
+  (`FontMetrics::calculate_text_width` is the per-string method used internally).
+- **`load_from_disk` / `init_font_metrics(app, font_id)`**: read `{font_id}.bin` (bincode2) under `~/…/font-metrics/`;
+  the latter is an idempotent startup load of one ID.
 - **`load_all_metrics_from_disk(app)`**: startup scan that pre-loads every `*.bin`, so user-customized text sizes are
   warm on first paint.
 
@@ -24,20 +27,24 @@ Cache: `METRICS_CACHE: LazyLock<RwLock<HashMap<String, FontMetrics>>>`. `FontMet
 
 ## Must-knows
 
+- **`average_width` is a one-paint stand-in, never a resting state.** An unmeasured code point is costed at the average
+  AND reported through `missing`, so the frontend measures it and calls `extend_font_metrics`; from the next query on
+  the width is exact. ❌ Don't drop the `missing` out-param to "simplify" a width call — that silently reinstates
+  permanently-approximate columns for every non-Latin filename. The frontend measures only a small eager set (Latin,
+  punctuation, symbols, common emoji), so this path is normal, not exceptional.
 - **Cache key is `"{family}-{weight}-{size}"`** (for example `"system-400-12"`) and MUST match the frontend's
   `getCurrentFontId()`. No validation: a mismatch just returns `None`. Size varies with `appearance.textSize` × system
   Accessibility text size, so several sizes can coexist in cache. If `getCurrentFontId()`'s format changes, width
   calculation silently breaks. The Brief-column path surfaces a missing key as `BriefColumnsError::FontMetricsNotReady`
   → `IpcError { message: "font_metrics_not_ready" }`; the frontend catches that, calls `ensureFontMetricsLoaded()`, and
-  retries once, rendering at `MAX_BRIEF_COLUMN_WIDTH` until widths arrive. The same race fires on a scale flip
-  (~100-300 ms uncached).
-- **Unmeasured code points fall back to `average_width`** (mean of measured widths), never zero: zero would collapse
-  unknown characters to invisible width and break alignment. The frontend measures only Latin, BMP-printable, and
-  common emoji (U+1F300-U+1FAFF), so CJK / Arabic / complex scripts are approximate; Latin and emoji are pixel-accurate.
+  retries once, rendering at `MAX_BRIEF_COLUMN_WIDTH` until widths arrive.
+- **Both writes serialize under the lock, then write the file after releasing it.** That's what lets `extend` merge
+  into the cached map without cloning it out; a few thousand pairs is not a map you want to copy per call, and this
+  path used to clone it twice.
 
 ## Dependencies
 
-External: `bincode2`. Internal: `crate::config::resolved_app_data_dir`.
+External: `bincode2`. Internal: `crate::config::resolved_app_data_dir`, `crate::ignore_poison`.
 
-Full details (decisions: Canvas-measure over Rust fonts, binary-over-JSON format, `RwLock`, average fallback):
+Full details (decisions: Canvas-measure over Rust fonts, binary-over-JSON format, `RwLock`, the fill-in contract):
 `DETAILS.md`.

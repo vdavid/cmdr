@@ -132,6 +132,18 @@ bands; `BriefList.autoScrollDuringDrag(position, elapsedMs)` scrolls `scrollLeft
 bands. Both call `fetchVisibleRange()` when they move so newly revealed rows/columns can be hit-tested immediately by
 the drag controller.
 
+### Brief column widths and the font-metrics fill-in
+
+`BriefList.doFetchColumnWidths` gets `{ widths, missingCodePoints }` back from `get_brief_column_text_widths`. It paints
+the widths immediately; a non-empty `missingCodePoints` means some characters were costed at the font's average width,
+so it calls `fillMissingFontMetrics` (which measures them off the main thread) and re-fetches once for exact widths. The
+full contract lives in `$lib/font-metrics/DETAILS.md` § On-demand fill-in.
+
+**The `retry` parameter bounds both retry paths**, and that's load-bearing. A re-entry with `retry = true` neither
+re-fetches on `font_metrics_not_ready` nor starts another fill, so a code point that stays unmeasurable (it comes back
+in `missingCodePoints` again) can't drive an endless measure-and-refetch loop. ❌ Don't reset or thread a fresh `false`
+through the recursive call.
+
 ## Key decisions
 
 **Decision**: `FullList`'s column header lives **inside** the scroll container as a `position: sticky; top: 0;` child,

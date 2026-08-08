@@ -232,8 +232,10 @@
 
             await initReduceTransparency()
 
-            // Apply compounded text size (system Accessibility × user setting)
-            await initTextSize()
+            // Apply compounded text size (system Accessibility × user setting).
+            // This is the window that renders Brief mode, so it's the one that
+            // measures font metrics; the others opt out by default.
+            await initTextSize({ measuresFontMetrics: true })
 
             // Initialize keyboard shortcuts store (loads custom shortcuts from disk)
             await initializeShortcuts()

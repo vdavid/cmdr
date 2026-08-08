@@ -31,6 +31,7 @@ export {
   createFile,
   getSyncStatus,
   storeFontMetrics,
+  extendFontMetrics,
   hasFontMetrics,
   onListingOpening,
   onListingProgress,

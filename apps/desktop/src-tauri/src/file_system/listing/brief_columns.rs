@@ -16,10 +16,24 @@
 //! columns shift by `items_per_column - 1`. With `has_parent = false`, columns
 //! contain `items_per_column` entries each.
 
+use std::collections::BTreeSet;
 use std::time::Instant;
 
 use crate::file_system::listing::caching::LISTING_CACHE;
 use crate::file_system::listing::metadata::FileEntry;
+
+/// Per-column widths plus the code points that had to be estimated.
+///
+/// `missing_code_points` is empty in the steady state. When it isn't, the
+/// widths are still usable (unmeasured characters counted at the font's average
+/// width), and the caller measures those code points and asks again. Ascending
+/// and deduplicated, from the `BTreeSet` they're gathered in.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct BriefColumnWidths {
+    pub widths: Vec<f32>,
+    pub missing_code_points: Vec<u32>,
+}
 
 /// Errors from `compute_brief_column_text_widths`. Internal to the backend;
 /// the IPC command wrapper maps these to `IpcError` for the wire.
@@ -70,10 +84,14 @@ fn tag_cluster_width(colored_count: usize) -> f32 {
 
 /// Computes the widest filename's text-only width per Brief-mode column.
 ///
-/// Returns a `Vec<f32>` of length equal to the number of columns required to
-/// display all visible entries (plus the `".."` parent literal when
-/// `has_parent`). Values are guaranteed finite (no NaN, no Infinity), so the
-/// FE's `Float64Array` prefix sums stay valid.
+/// Returns one width per column required to display all visible entries (plus
+/// the `".."` parent literal when `has_parent`). Values are guaranteed finite
+/// (no NaN, no Infinity), so the FE's `Float64Array` prefix sums stay valid.
+///
+/// Never blocks on measurement: a filename containing a code point the font
+/// cache has no width for is costed at the font's average width and that code
+/// point is reported in `missing_code_points`, so the caller can measure it and
+/// come back for exact widths.
 ///
 /// Reads `LISTING_CACHE` with a read lock. Caller is responsible for wrapping
 /// the call in a timeout if `LISTING_CACHE` could be write-locked.
@@ -83,7 +101,7 @@ pub fn compute_brief_column_text_widths(
     has_parent: bool,
     font_id: &str,
     include_hidden: bool,
-) -> Result<Vec<f32>, BriefColumnsError> {
+) -> Result<BriefColumnWidths, BriefColumnsError> {
     if items_per_column == 0 {
         return Err(BriefColumnsError::InvalidItemsPerColumn);
     }
@@ -108,11 +126,16 @@ pub fn compute_brief_column_text_widths(
     // Total cells (display slots): visible entries + ".." if has_parent.
     let total_cells = visible.len() + usize::from(has_parent);
     if total_cells == 0 {
-        return Ok(Vec::new());
+        return Ok(BriefColumnWidths {
+            widths: Vec::new(),
+            missing_code_points: Vec::new(),
+        });
     }
 
     let total_columns = total_cells.div_ceil(items_per_column);
     let mut widths = Vec::with_capacity(total_columns);
+    // Accumulated across every column so one report covers the whole listing.
+    let mut missing = BTreeSet::new();
 
     for col in 0..total_columns {
         // Compute the slice of `visible` covered by this column. The math
@@ -149,16 +172,17 @@ pub fn compute_brief_column_text_widths(
             items.push((entry.name.as_str(), tag_cluster_width(colored_tag_count(entry))));
         }
 
-        let width = crate::font_metrics::calculate_max_width_with_suffixes(&items, font_id).ok_or_else(|| {
-            log::warn!(
-                target: "brief_columns",
-                "Font metrics not ready for font_id='{}' (listing={}, col={})",
-                font_id,
-                listing_id,
-                col,
-            );
-            BriefColumnsError::FontMetricsNotReady
-        })?;
+        let width =
+            crate::font_metrics::calculate_max_width_with_suffixes(&items, font_id, &mut missing).ok_or_else(|| {
+                log::warn!(
+                    target: "brief_columns",
+                    "Font metrics not ready for font_id='{}' (listing={}, col={})",
+                    font_id,
+                    listing_id,
+                    col,
+                );
+                BriefColumnsError::FontMetricsNotReady
+            })?;
 
         // Guarantee finite values so FE prefix-sums (Float64Array) stay valid.
         // `calculate_max_width_with_suffixes` returns sums over per-char widths from the cached
@@ -178,8 +202,19 @@ pub fn compute_brief_column_text_widths(
             elapsed.as_micros(),
         );
     }
+    if !missing.is_empty() {
+        log::debug!(
+            target: "brief_columns",
+            "{} code point(s) not yet measured for font_id='{}'; widths are estimated until they're filled in",
+            missing.len(),
+            font_id,
+        );
+    }
 
-    Ok(widths)
+    Ok(BriefColumnWidths {
+        widths,
+        missing_code_points: missing.into_iter().collect(),
+    })
 }
 
 #[cfg(test)]

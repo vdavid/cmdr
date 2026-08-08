@@ -204,6 +204,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::file_viewer::viewer_set_tail_mode,
         crate::commands::file_viewer::viewer_reload,
         crate::commands::font_metrics::store_font_metrics,
+        crate::commands::font_metrics::extend_font_metrics,
         crate::commands::font_metrics::has_font_metrics,
         crate::commands::icons::get_icons,
         crate::commands::icons::get_custom_folder_icon_ids,

@@ -13,7 +13,7 @@ pub(crate) mod streaming;
 
 // Re-export types so they're available both externally and locally in this module
 // (call sites import them from `crate::file_system::listing` directly).
-pub use brief_columns::{BriefColumnsError, compute_brief_column_text_widths};
+pub use brief_columns::{BriefColumnWidths, BriefColumnsError, compute_brief_column_text_widths};
 pub use fuzzy_jump::fuzzy_find_first_match_in_listing;
 // `FileEntry` and its siblings moved to `cmdr-fs` (the `Volume` trait exchanges
 // them, and that trait is the crate's centrepiece). Aliased, not just

@@ -31,7 +31,7 @@
         updateIndexSizesInPlace,
         type DirStats,
     } from './file-list-utils'
-    import { ensureFontMetricsLoaded, getCurrentFontId } from '$lib/font-metrics'
+    import { ensureFontMetricsLoaded, fillMissingFontMetrics, getCurrentFontId } from '$lib/font-metrics'
     import { getBriefColumnTextWidths, getDirStatsBatch } from '$lib/tauri-commands'
     import { buildDirSizeTooltip, hasSizeMismatch } from './full-list-utils'
     import {
@@ -393,7 +393,7 @@
                 // until the next trigger arrives.
                 return
             }
-            const textWidths = result.data
+            const { widths: textWidths, missingCodePoints } = result.data
             const clamped = new Array<number>(textWidths.length)
             const wasEmpty = columnWidths.length === 0
             for (let i = 0; i < textWidths.length; i++) {
@@ -411,9 +411,37 @@
                 })
             }
             columnWidths = clamped
+
+            // These widths are exact unless the backend had to estimate some
+            // characters. Fill those in off the main thread and come back for
+            // exact ones; `retry` bounds this to one extra round.
+            if (missingCodePoints.length > 0 && !retry) {
+                void fillAndRefetch(fontId, missingCodePoints, capturedListingId, capturedGeneration)
+            }
         } catch {
             // IPC threw outside the typed-error path (timeout, missing handler). Leave widths.
         }
+    }
+
+    /**
+     * Measures the code points the backend reported as unmeasured, then asks
+     * again so the columns settle on exact widths.
+     *
+     * Runs detached from the first fetch: the estimated widths are already on
+     * screen, and the correction lands a beat later.
+     */
+    async function fillAndRefetch(
+        fontId: string,
+        missingCodePoints: number[],
+        capturedListingId: string,
+        capturedGeneration: number,
+    ): Promise<void> {
+        const filled = await fillMissingFontMetrics(fontId, missingCodePoints)
+        if (!filled) return
+        // Only re-fetch if nothing has moved on: a new listing or a newer fetch
+        // will compute its own widths against the now-complete metrics.
+        if (capturedListingId !== listingId || capturedGeneration !== widthsGeneration) return
+        await doFetchColumnWidths(true)
     }
 
     function fetchColumnWidths() {

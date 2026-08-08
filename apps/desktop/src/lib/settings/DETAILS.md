@@ -172,7 +172,9 @@ in exactly one place**: `text-size.svelte.ts`'s `computeAndApply()`. The CSS
 `html { font-size: calc(16px * var(--font-scale, 1)) }` plus rem-based `--font-size-*` tokens in `app.css` cover
 typography; `applyDensity()` in `settings-applier.ts` multiplies row-height/icon-size/density-spacing by the same
 `--font-scale` so layout grows with text. After each scale change, `text-size.ts` re-triggers
-`ensureFontMetricsLoaded()` on a 1 s debounce so Rust gets fresh Brief-mode width data for the new font ID.
+`ensureFontMetricsLoaded()` on a 1 s debounce so Rust gets fresh Brief-mode width data for the new font ID — but only in
+a window that passed `initTextSize({ measuresFontMetrics: true })`, which is the main one alone
+(`$lib/font-metrics/CLAUDE.md`).
 
 ### Date display (one source of truth)
 

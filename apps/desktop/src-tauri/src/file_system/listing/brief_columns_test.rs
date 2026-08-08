@@ -30,6 +30,29 @@ fn seed_font(width_per_char: f32) -> String {
     font_id
 }
 
+/// Column widths for a listing that is expected to be fully measurable.
+///
+/// Asserts the fill-in report came back empty, which is the real contract for
+/// every case below: `seed_font` covers ASCII and the filenames are ASCII. The
+/// cases that exercise unmeasured code points call
+/// `compute_brief_column_text_widths` directly.
+fn column_widths(
+    listing_id: &str,
+    items_per_column: usize,
+    has_parent: bool,
+    font_id: &str,
+    include_hidden: bool,
+) -> Vec<f32> {
+    let result = compute_brief_column_text_widths(listing_id, items_per_column, has_parent, font_id, include_hidden)
+        .expect("the listing and font are seeded, so widths compute");
+    assert!(
+        result.missing_code_points.is_empty(),
+        "seeded ASCII names should need no fill-in, got {:?}",
+        result.missing_code_points,
+    );
+    result.widths
+}
+
 fn make_entry(name: &str) -> FileEntry {
     FileEntry::new(name.to_string(), format!("/test/{}", name), false, false)
 }
@@ -47,7 +70,7 @@ fn empty_listing_returns_empty_vec() {
     let font = seed_font(7.0);
     let listing = insert_listing("bc_empty", vec![]);
 
-    let widths = compute_brief_column_text_widths(listing.id(), 5, false, &font, false).unwrap();
+    let widths = column_widths(listing.id(), 5, false, &font, false);
     assert!(widths.is_empty());
 }
 
@@ -57,7 +80,7 @@ fn empty_listing_with_has_parent_returns_one_column() {
     let font = seed_font(7.0);
     let listing = insert_listing("bc_empty_parent", vec![]);
 
-    let widths = compute_brief_column_text_widths(listing.id(), 5, true, &font, false).unwrap();
+    let widths = column_widths(listing.id(), 5, true, &font, false);
     assert_eq!(widths.len(), 1);
     // Width of ".." (2 chars) * 7.0
     assert_eq!(widths[0], 14.0);
@@ -72,7 +95,7 @@ fn single_column_single_short_name() {
     let font = seed_font(10.0);
     let listing = insert_listing("bc_single", vec![make_entry("abc")]);
 
-    let widths = compute_brief_column_text_widths(listing.id(), 5, false, &font, false).unwrap();
+    let widths = column_widths(listing.id(), 5, false, &font, false);
     assert_eq!(widths.len(), 1);
     assert_eq!(widths[0], 30.0);
 }
@@ -89,7 +112,7 @@ fn long_name_unclamped_width() {
     let long = "a".repeat(200);
     let listing = insert_listing("bc_long", vec![make_entry(&long)]);
 
-    let widths = compute_brief_column_text_widths(listing.id(), 5, false, &font, false).unwrap();
+    let widths = column_widths(listing.id(), 5, false, &font, false);
     assert_eq!(widths.len(), 1);
     assert_eq!(widths[0], 8.0 * 200.0);
 }
@@ -114,7 +137,7 @@ fn two_columns_second_shorter() {
     ];
     let listing = insert_listing("bc_two_cols", entries);
 
-    let widths = compute_brief_column_text_widths(listing.id(), 3, false, &font, false).unwrap();
+    let widths = column_widths(listing.id(), 3, false, &font, false);
     assert_eq!(widths.len(), 2);
     assert_eq!(widths[0], 9.0 * 5.0); // "wide-name"
     assert_eq!(widths[1], 6.0 * 5.0); // "ok.txt"
@@ -171,7 +194,7 @@ fn has_parent_offset_math_items_per_column_5() {
 
     let listing = insert_listing("bc_parent", entries);
 
-    let widths = compute_brief_column_text_widths(listing.id(), 5, true, &font, false).unwrap();
+    let widths = column_widths(listing.id(), 5, true, &font, false);
     assert_eq!(widths.len(), 3, "expected 3 columns, got {:?}", widths);
     assert_eq!(widths[0], 7.0 * 3.0, "col 0: widest is 'ddddddd' (7 chars)");
     assert_eq!(widths[1], 9.0 * 3.0, "col 1: widest is 'iiiiiiiii' (9 chars)");
@@ -185,7 +208,7 @@ fn has_parent_parent_literal_counts_in_col0() {
 
     let listing = insert_listing("bc_parent_widest", vec![make_entry("a"), make_entry("b")]);
 
-    let widths = compute_brief_column_text_widths(listing.id(), 5, true, &font, false).unwrap();
+    let widths = column_widths(listing.id(), 5, true, &font, false);
     assert_eq!(widths.len(), 1);
     assert_eq!(
         widths[0],
@@ -204,7 +227,7 @@ fn has_parent_items_per_column_1() {
 
     let listing = insert_listing("bc_parent_ipc1", vec![make_entry("foo"), make_entry("longername")]);
 
-    let widths = compute_brief_column_text_widths(listing.id(), 1, true, &font, false).unwrap();
+    let widths = column_widths(listing.id(), 1, true, &font, false);
     assert_eq!(widths.len(), 3);
     assert_eq!(widths[0], 2.0 * 2.0); // ".."
     assert_eq!(widths[1], 3.0 * 2.0); // "foo"
@@ -223,7 +246,7 @@ fn include_hidden_false_filters_dotfiles() {
         vec![make_entry(".hidden-very-long-name"), make_entry("v")],
     );
 
-    let widths = compute_brief_column_text_widths(listing.id(), 5, false, &font, false).unwrap();
+    let widths = column_widths(listing.id(), 5, false, &font, false);
     assert_eq!(widths.len(), 1);
     // Only "v" remains; ".hidden..." is filtered out.
     assert_eq!(widths[0], 1.0 * 5.0);
@@ -240,7 +263,7 @@ fn include_hidden_true_includes_dotfiles() {
         ],
     );
 
-    let widths = compute_brief_column_text_widths(listing.id(), 5, false, &font, true).unwrap();
+    let widths = column_widths(listing.id(), 5, false, &font, true);
     assert_eq!(widths.len(), 1);
     assert_eq!(widths[0], 22.0 * 5.0);
 }
@@ -256,8 +279,8 @@ fn non_default_font_id_uses_alt_metrics() {
 
     let listing = insert_listing("bc_alt_font", vec![make_entry("hello")]);
 
-    let widths_default = compute_brief_column_text_widths(listing.id(), 5, false, &font, false).unwrap();
-    let widths_alt = compute_brief_column_text_widths(listing.id(), 5, false, &alt_font, false).unwrap();
+    let widths_default = column_widths(listing.id(), 5, false, &font, false);
+    let widths_alt = column_widths(listing.id(), 5, false, &alt_font, false);
 
     assert_eq!(widths_default[0], 5.0 * 5.0);
     assert_eq!(widths_alt[0], 5.0 * 8.0);
@@ -304,11 +327,68 @@ fn all_returned_widths_are_finite() {
     let entries: Vec<FileEntry> = (0..50).map(|i| make_entry(&format!("entry-{:03}", i))).collect();
     let listing = insert_listing("bc_finite", entries);
 
-    let widths = compute_brief_column_text_widths(listing.id(), 7, true, &font, false).unwrap();
+    let widths = column_widths(listing.id(), 7, true, &font, false);
 
     assert!(!widths.is_empty());
     for (i, w) in widths.iter().enumerate() {
         assert!(w.is_finite(), "column {} returned non-finite width {}", i, w);
         assert!(*w >= 0.0, "column {} returned negative width {}", i, w);
     }
+}
+
+// ============================================================================
+// On-demand fill-in: unmeasured code points are estimated and reported
+// ============================================================================
+
+#[test]
+fn unmeasured_code_points_are_reported_without_failing() {
+    // `seed_font` covers ASCII only, so the CJK character below has no width.
+    let font = seed_font(4.0);
+    let listing = insert_listing("bc_fill_report", vec![make_entry("猫.txt"), make_entry("plain.txt")]);
+
+    let result = compute_brief_column_text_widths(listing.id(), 5, false, &font, false)
+        .expect("an unmeasured code point must not fail the query");
+
+    assert_eq!(result.widths.len(), 1, "two entries in one column of five");
+    assert!(
+        result.widths[0].is_finite() && result.widths[0] > 0.0,
+        "estimated, not zero"
+    );
+    assert_eq!(
+        result.missing_code_points,
+        vec!['猫' as u32],
+        "exactly the unmeasured code point comes back, so the FE can measure it",
+    );
+}
+
+#[test]
+fn fill_in_report_is_ascending_and_deduplicated() {
+    let font = seed_font(4.0);
+    // 'é' repeats across entries and columns; 'ß' sorts before it by code point.
+    let listing = insert_listing(
+        "bc_fill_dedup",
+        vec![make_entry("éa.txt"), make_entry("éb.txt"), make_entry("ß.txt")],
+    );
+
+    let result = compute_brief_column_text_widths(listing.id(), 1, false, &font, false)
+        .expect("unmeasured code points must not fail the query");
+
+    assert_eq!(
+        result.missing_code_points,
+        vec!['ß' as u32, 'é' as u32],
+        "each code point once, ascending, however many names contain it",
+    );
+}
+
+#[test]
+fn fully_measured_listing_reports_nothing_to_fill() {
+    let font = seed_font(4.0);
+    let listing = insert_listing("bc_fill_none", vec![make_entry("ascii.txt")]);
+
+    let result = compute_brief_column_text_widths(listing.id(), 5, false, &font, false).expect("widths compute");
+
+    assert!(
+        result.missing_code_points.is_empty(),
+        "the steady state reports nothing, so the FE never re-queries",
+    );
 }

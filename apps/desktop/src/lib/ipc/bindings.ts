@@ -238,8 +238,13 @@ export const commands = {
    *  measures each column's widest filename with `font_metrics::calculate_max_width_with_suffixes`.
    *  The FE applies chrome + clamp on top.
    *
+   *  Answers without waiting on measurement. A filename containing a code point
+   *  the font cache hasn't measured is costed at the average width and that code
+   *  point comes back in `missingCodePoints`; the FE measures those, calls
+   *  `extend_font_metrics`, and re-queries for exact widths.
+   *
    *  Error mapping (consumed by the FE):
-   *  - `font_metrics_not_ready`: at least one column had no measurable filename in the font cache. FE
+   *  - `font_metrics_not_ready`: the font ID isn't in the cache at all. FE
    *    retries after `ensureFontMetricsLoaded` resolves.
    *  - `invalid_items_per_column`: caller sent 0; FE clamps to >= 1 normally.
    *  - `listing_not_found:{id}`: listing already ended (or never started).
@@ -252,7 +257,7 @@ export const commands = {
     fontId: string,
     includeHidden: boolean,
   ) =>
-    typedError<number[], IpcError>(
+    typedError<BriefColumnWidths, IpcError>(
       __TAURI_INVOKE('get_brief_column_text_widths', { listingId, itemsPerColumn, hasParent, fontId, includeHidden }),
     ),
   findFileIndex: (listingId: string, name: string, includeHidden: boolean) =>
@@ -3673,6 +3678,19 @@ export type BetaSignupResult =
    *  try-again. Covers a network failure, a non-2xx server response, or a missing-config 500.
    */
   | { kind: 'softFailure' }
+
+/**
+ *  Per-column widths plus the code points that had to be estimated.
+ *
+ *  `missing_code_points` is empty in the steady state. When it isn't, the
+ *  widths are still usable (unmeasured characters counted at the font's average
+ *  width), and the caller measures those code points and asks again. Ascending
+ *  and deduplicated, from the `BTreeSet` they're gathered in.
+ */
+export type BriefColumnWidths = {
+  widths: number[]
+  missingCodePoints: number[]
+}
 
 export type BulkRenameBlockReason =
   | 'unknownRow'

@@ -442,14 +442,33 @@ export async function getSyncStatus(paths: string[]): Promise<TimedOut<Record<st
 }
 
 /**
- * Stores font metrics for a font configuration.
+ * Stores the eagerly measured widths for a font, replacing any existing entry.
+ *
+ * Code points and widths travel as parallel arrays, not a
+ * `Record<codePoint, width>`: the object form spends a quoted key per entry,
+ * and there are thousands of them.
+ *
  * @param fontId - Font identifier (like "system-400-12")
- * @param widths - Map of code point -> width in pixels
+ * @param codePoints - Code points, parallel to `widths`
+ * @param widths - Width in pixels for each code point
  */
-export async function storeFontMetrics(fontId: string, widths: Record<number, number>): Promise<void> {
+export async function storeFontMetrics(fontId: string, codePoints: number[], widths: number[]): Promise<void> {
   const { invoke } = await import('@tauri-apps/api/core')
   // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic (<R: tauri::Runtime>); excluded from typed bindings
-  await invoke('store_font_metrics', { fontId, widths })
+  await invoke('store_font_metrics', { fontId, codePoints, widths })
+}
+
+/**
+ * Merges on-demand measured widths into a font's existing entry.
+ *
+ * Serves the fill-in loop: `getBriefColumnTextWidths` reports the code points
+ * it had no width for, the frontend measures exactly those, and this folds them
+ * in so every later query is exact.
+ */
+export async function extendFontMetrics(fontId: string, codePoints: number[], widths: number[]): Promise<void> {
+  const { invoke } = await import('@tauri-apps/api/core')
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic (<R: tauri::Runtime>); excluded from typed bindings
+  await invoke('extend_font_metrics', { fontId, codePoints, widths })
 }
 
 /**

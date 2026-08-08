@@ -33,7 +33,7 @@ import { getSystemTextSizeMultiplier, onSystemTextSizeChanged } from '$lib/tauri
 import { SvelteSet } from 'svelte/reactivity'
 import { getAppLogger } from '$lib/logging/logger'
 import { getSetting, onSpecificSettingChange } from '$lib/settings'
-import { ensureFontMetricsLoaded } from '$lib/font-metrics'
+import { ensureFontMetricsLoaded, setMeasuresFontMetrics } from '$lib/font-metrics'
 
 const log = getAppLogger('text-size')
 
@@ -147,13 +147,29 @@ function computeAndApply(triggerRemeasure: boolean): number {
   return effective
 }
 
+/** Per-window options for `initTextSize`. */
+export interface TextSizeOptions {
+  /**
+   * Whether this window measures font metrics when the scale changes.
+   *
+   * Only the main window renders Brief mode, which is the sole consumer, but
+   * every window runs `initTextSize`. Left on for all of them, one text-size
+   * change made each window measure the same font concurrently on the thread
+   * they share, so a ⌘- froze the app for as long as the measuring took.
+   * Defaults to `false`, so a newly added window opts in deliberately.
+   */
+  measuresFontMetrics?: boolean
+}
+
 /**
  * Reads the system multiplier from Rust, applies the compounded scale, then
  * subscribes to both the system event and the user setting.
  *
  * Call once per window on startup.
  */
-export async function initTextSize(): Promise<void> {
+export async function initTextSize(options: TextSizeOptions = {}): Promise<void> {
+  setMeasuresFontMetrics(options.measuresFontMetrics ?? false)
+
   try {
     systemMultiplier = await getSystemTextSizeMultiplier()
     log.debug('System text size multiplier: {multiplier}', {

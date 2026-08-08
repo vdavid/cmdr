@@ -3,8 +3,8 @@
 use crate::file_system::get_files_at_indices as ops_get_files_at_indices;
 use crate::file_system::get_paths_at_indices as ops_get_paths_at_indices;
 use crate::file_system::{
-    BriefColumnsError, DirectorySortMode, FileEntry, ListingStartResult, ListingStats, ResortResult, SortColumn,
-    SortOrder, StreamingListingStartResult, cancel_listing as ops_cancel_listing,
+    BriefColumnWidths, BriefColumnsError, DirectorySortMode, FileEntry, ListingStartResult, ListingStats, ResortResult,
+    SortColumn, SortOrder, StreamingListingStartResult, cancel_listing as ops_cancel_listing,
     compute_brief_column_text_widths as ops_compute_brief_column_text_widths, find_file_index as ops_find_file_index,
     find_file_indices as ops_find_file_indices,
     fuzzy_find_first_match_in_listing as ops_fuzzy_find_first_match_in_listing, get_file_at as ops_get_file_at,
@@ -295,8 +295,13 @@ pub fn get_total_count(listing_id: String, include_hidden: bool) -> Result<usize
 /// measures each column's widest filename with `font_metrics::calculate_max_width_with_suffixes`.
 /// The FE applies chrome + clamp on top.
 ///
+/// Answers without waiting on measurement. A filename containing a code point
+/// the font cache hasn't measured is costed at the average width and that code
+/// point comes back in `missingCodePoints`; the FE measures those, calls
+/// `extend_font_metrics`, and re-queries for exact widths.
+///
 /// Error mapping (consumed by the FE):
-/// - `font_metrics_not_ready`: at least one column had no measurable filename in the font cache. FE
+/// - `font_metrics_not_ready`: the font ID isn't in the cache at all. FE
 ///   retries after `ensureFontMetricsLoaded` resolves.
 /// - `invalid_items_per_column`: caller sent 0; FE clamps to >= 1 normally.
 /// - `listing_not_found:{id}`: listing already ended (or never started).
@@ -309,7 +314,7 @@ pub async fn get_brief_column_text_widths(
     has_parent: bool,
     font_id: String,
     include_hidden: bool,
-) -> Result<Vec<f32>, IpcError> {
+) -> Result<BriefColumnWidths, IpcError> {
     blocking_result_with_timeout(Duration::from_secs(2), move || {
         ops_compute_brief_column_text_widths(&listing_id, items_per_column, has_parent, &font_id, include_hidden)
             .map_err(|e| match e {
