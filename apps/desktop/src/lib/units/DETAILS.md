@@ -4,7 +4,7 @@ Pull-tier docs for `apps/desktop/src/lib/units/`. Must-knows are in `CLAUDE.md`.
 
 ## Why this module exists
 
-A 764-file copy to an SMB share showed 83.65 MB in the copy dialog and 79.78 "MB" in the Transfers window for the same
+A 764-file copy to an SMB share showed 83.65 MB in the copy dialog and 79.78 "MB" in the operation queue for the same
 byte count, and "~8m 12s remaining" in one window against "5m 46s" in the other. Two separate causes, one shape: the
 same quantity was turned into text in more than one place.
 

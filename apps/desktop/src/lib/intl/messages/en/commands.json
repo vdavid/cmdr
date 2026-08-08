@@ -85,14 +85,14 @@
   "@commands.helpSendErrorReport.description": {
     "description": "Longer help text for the \"Send error report…\" command, shown as a secondary line in the command palette. \"Cmdr\" is the brand name, do not translate it."
   },
-  "commands.queueShow.label": "Show transfer queue",
+  "commands.queueShow.label": "Operation queue",
   "@commands.queueShow.label": {
-    "description": "Command name that opens the transfer queue window, which lists every running and waiting copy, move, and delete operation. Appears in the command palette and the Help menu.",
+    "description": "Command name that opens the operation queue window, which lists every running and waiting copy, move, delete, trash, rename, and folder- or file-creation operation. Appears in the command palette and in the View menu, where it reads exactly the same: keep this identical to the queue window''s own title (queue.windowTitle).",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-  "commands.queueShow.description": "Open a window listing every running and waiting transfer, where you can pause, resume, or cancel them",
+  "commands.queueShow.description": "Open a window listing every running and waiting operation, where you can pause, resume, or cancel them",
   "@commands.queueShow.description": {
-    "description": "Longer help text for the \"Show transfer queue\" command, shown as a secondary line in the command palette."
+    "description": "Longer help text for the \"Operation queue\" command, shown as a secondary line in the command palette. \"Operation\" is the category word for a copy, move, delete, trash, rename, or folder- or file-creation job; the window is not limited to transfers."
   },
   "commands.helpWhatsNew.label": "What''s new",
   "@commands.helpWhatsNew.label": {

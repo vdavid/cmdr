@@ -245,7 +245,7 @@ describe('transfer progress dialog chrome (en)', () => {
     expect(tString('fileOperations.transferProgress.progressFiles')).toBe('Files')
     expect(tString('fileOperations.transferProgress.sizeProgressAria')).toBe('Size progress')
     expect(tString('fileOperations.transferProgress.fileProgressAria')).toBe('File progress')
-    // Both the progress dialog and the Transfers window's rows render these two.
+    // Both the progress dialog and the operation queue's rows render these two.
     expect(t('fileOperations.transferProgress.etaRemaining', { duration: '2m 30s' })).toBe('2m 30s left')
     expect(t('fileOperations.transferProgress.stallNotice', { duration: '45s' })).toBe('No progress for 45s')
     expect(tString('fileOperations.transferProgress.smbNativeNote')).toBe(

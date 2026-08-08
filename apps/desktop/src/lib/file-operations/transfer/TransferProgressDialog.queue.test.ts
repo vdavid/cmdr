@@ -200,7 +200,7 @@ describe('TransferProgressDialog Queue button', () => {
   it('backgrounds the op: opens the queue window, shows a toast, fires onQueue, and does NOT cancel', async () => {
     const { component, target, onQueue } = await mountDialog()
 
-    const queueBtn = queryButton(target, 'Send to the transfer queue')
+    const queueBtn = queryButton(target, 'Send to the operation queue')
     expect(queueBtn, 'Queue button shows during the active phase').not.toBeNull()
     queueBtn?.click()
     await tick()
@@ -225,7 +225,7 @@ describe('TransferProgressDialog Queue button', () => {
     // manager registry.
     const { target } = await mountDialog()
 
-    queryButton(target, 'Send to the transfer queue')?.click()
+    queryButton(target, 'Send to the operation queue')?.click()
     await tick()
     expect(openQueueWindowMock, 'Queue backgrounded the op').toHaveBeenCalledOnce()
     cancelWriteOperationMock.mockClear()
@@ -381,7 +381,7 @@ describe('TransferProgressDialog backgrounded onDestroy stale-read regression', 
     await tick()
     cancelWriteOperationMock.mockClear()
 
-    queryButton(target, 'Send to the transfer queue')?.click()
+    queryButton(target, 'Send to the operation queue')?.click()
     await flushPromises()
 
     expect(

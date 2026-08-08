@@ -1,5 +1,5 @@
 /**
- * E2E for the transfer-queue window.
+ * E2E for the operation-queue window.
  *
  * Two same-lane local copies serialize behind the operation manager (lane budget
  * 1 per device, and both copies touch the local volume's lane): the first runs,
@@ -130,7 +130,7 @@ test.afterEach(async ({ tauriPage }) => {
   // `cancel_operations` returns once cancellation is REQUESTED, not once the ops
   // have wound down; a still-cancelling op leaves the local lane busy, so the
   // next test's foreground F5 copy is admitted as Queued (not Running) and its
-  // progress modal never opens — the Linux `transfer-queue` flake (rarer on the
+  // progress modal never opens — the Linux `operation-queue` flake (rarer on the
   // faster macOS lane). The drain loop runs in the webview so it doesn't depend
   // on `evaluate` returning an async value; Node awaits the IIFE either way.
   await tauriPage.evaluate(`(async function() {
@@ -148,7 +148,7 @@ test.afterEach(async ({ tauriPage }) => {
   })()`)
 })
 
-test.describe('Transfer queue window', () => {
+test.describe('Operation queue window', () => {
   test('shows Running + Queued, cancels the queued op, pauses and resumes the running op', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     // The fixture is `TauriPage | BrowserPageAdapter`; the Tauri-only seam here
@@ -185,7 +185,7 @@ test.describe('Transfer queue window', () => {
     const queuedId = rowsBefore.find((r) => r.status === 'queued')?.id
     expect(queuedId, 'a queued row exists').toBeTruthy()
     if (!queuedId) throw new Error('no queued row')
-    await clickRowButton(queuePage, queuedId, 'Cancel this transfer')
+    await clickRowButton(queuePage, queuedId, 'Cancel this operation')
 
     await expect
       .poll(
@@ -201,7 +201,7 @@ test.describe('Transfer queue window', () => {
     const runningId = (await readRows(queuePage)).find((r) => r.status === 'running')?.id
     expect(runningId, 'a running row exists').toBeTruthy()
     if (!runningId) throw new Error('no running row')
-    await clickRowButton(queuePage, runningId, 'Pause this transfer')
+    await clickRowButton(queuePage, runningId, 'Pause this operation')
 
     await expect
       .poll(
@@ -214,7 +214,7 @@ test.describe('Transfer queue window', () => {
       .toBe('paused')
 
     // Resume it → status flips back to Running.
-    await clickRowButton(queuePage, runningId, 'Resume this transfer')
+    await clickRowButton(queuePage, runningId, 'Resume this operation')
 
     await expect
       .poll(
@@ -245,11 +245,11 @@ test.describe('Transfer queue window', () => {
 
     // The progress modal appears with the Queue control.
     await main.waitForSelector(PROGRESS_DIALOG, 5000)
-    await main.waitForSelector(`${PROGRESS_DIALOG} [aria-label="Send to the transfer queue"]`, 5000)
+    await main.waitForSelector(`${PROGRESS_DIALOG} [aria-label="Send to the operation queue"]`, 5000)
 
     // Click Queue → the modal unmounts and the queue window opens, the op still
     // running in the background.
-    await main.click(`${PROGRESS_DIALOG} [aria-label="Send to the transfer queue"]`)
+    await main.click(`${PROGRESS_DIALOG} [aria-label="Send to the operation queue"]`)
     await expect.poll(async () => !(await main.isVisible(PROGRESS_DIALOG)), { timeout: 5000 }).toBeTruthy()
 
     // Sending to the background fires a confirmation toast (the wording is the

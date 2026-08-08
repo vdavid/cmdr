@@ -1,7 +1,21 @@
-# Transfer queue window — details
+# Operation queue window — details
 
-Depth for `CLAUDE.md`. The window is the frontend of the transfer-queue + pause feature; the backend lives in
+Depth for `CLAUDE.md`. The window is the frontend of the operation-queue + pause feature; the backend lives in
 `src-tauri/src/file_system/write_operations/` (DETAILS § "Operation manager").
+
+## Why it's the "operation queue", not the "transfer queue"
+
+The window lists deletes, trashes, renames, folder and file creates, and archive edits, not only transfers, so the old
+name was wrong on the facts. "Transfer" also already means copy-or-move in the code (`transfer/`, the transfer driver,
+`TransferProgressReadout`), and the old name made one word mean two different things at two altitudes: a reader could
+reasonably wonder whether a delete belonged in a "transfer" queue. The new name pairs with "Operation log" as present
+tense versus past tense, and the two sit next to each other in the same View block.
+
+Scope of the rename: user-facing copy ONLY. The code identifiers stay as they are (`operations-store`,
+`OperationSnapshot`, `operations-changed`, `openQueueWindow`, `queue.show`, `QUEUE_SHOW_ID`, the `/queue` route, the
+`queue.*` message namespace, the `transfer-queue` toast group). The label uses the category noun; body copy stays
+concrete, which is why `queue.empty.body` still reads "Copies, moves, and deletes show up here while they run" rather
+than abstracting into "operations".
 
 ## Why a hard window
 
@@ -43,7 +57,7 @@ spinner and an animated bar; `'paused'` shows a static bar and the Paused label.
   `{ snapshot: OperationSnapshot, progress: WriteProgressEvent | null }`. Ordered as the backend emits them.
 - `supportsRollback` on each snapshot — whether cancelling can also undo what the op wrote, decided per spawn path in
   the backend (`write_operations/DETAILS.md` § "Rollback availability"). The row shows Rollback on exactly that set, so
-  this window and the progress dialog can't disagree about which transfers are reversible.
+  this window and the progress dialog can't disagree about which operations are reversible.
 - `hasRunning: boolean` — any op with `status === 'running'` (gates "Pause all").
 - `hasPaused: boolean` — any op with `status === 'paused'` (gates "Resume all").
 - `init(): Promise<void>` — subscribes to both streams, then seeds from `list_operations`. Subscribe-before-seed so a
@@ -96,10 +110,10 @@ the MAIN window, which already holds those perms — nothing to add there (see `
 
 ## Opening the window
 
-- Command palette + View menu, default ⌥⌘Q: `queue.show` ("Show transfer queue"), handled in
+- Command palette + View menu, default ⌥⌘Q: `queue.show` ("Operation queue"), handled in
   `routes/(main)/command-handlers/app-dialog-handlers.ts` → `openQueueWindow()`. Wired through the full command path
-  (id, registry with the default shortcut, handler, Rust menu mappings, both platform menu builders, `menuCommands` so
-  a rebind syncs the accelerator). It sits immediately after "Command palette…" and before "Operation log", pairing the
+  (id, registry with the default shortcut, handler, Rust menu mappings, both platform menu builders, `menuCommands` so a
+  rebind syncs the accelerator). It sits immediately after "Command palette…" and before "Operation log", pairing the
   present-tense and past-tense views of the same work.
 - The progress dialog also opens/raises it automatically when an op lands on a busy lane (auto-queue surfacing).
 
@@ -111,5 +125,5 @@ the MAIN window, which already holds those perms — nothing to add there (see `
   live bar from a progress event, and the `data-status` / `data-operation-id` E2E hooks. The readout's own behavior
   (both bars, percents, rates, time left, stall) is covered once, in `../TransferProgressReadout.svelte.test.ts`.
 - `QueueRow.a11y.test.ts`: axe over the row in running / paused / queued / selected states.
-- E2E: `test/e2e-playwright/transfer-queue.spec.ts` — two same-lane ops → one Running + one Queued, cancel the queued,
+- E2E: `test/e2e-playwright/operation-queue.spec.ts` — two same-lane ops → one Running + one Queued, cancel the queued,
   pause + resume the running.

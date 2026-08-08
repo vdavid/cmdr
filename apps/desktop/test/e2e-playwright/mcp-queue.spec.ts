@@ -8,7 +8,7 @@
  * resume it, then `await operation_complete` for the same id.
  *
  * The copy source is a dedicated multi-file directory plus the per-file
- * `set_test_throttle`, for the same two reasons as `transfer-queue.spec.ts`: the
+ * `set_test_throttle`, for the same two reasons as `operation-queue.spec.ts`: the
  * throttle sleeps once PER FILE (so many files keep the op in flight long enough
  * to observe), and pause gates BETWEEN files (so a one-file copy can't be paused
  * at all).

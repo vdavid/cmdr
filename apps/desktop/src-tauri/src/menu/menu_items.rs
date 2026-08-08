@@ -387,7 +387,10 @@ mod tests {
                 );
                 checked += 1;
             }
-            assert!(checked > 20, "{name}: only {checked} registrations were verifiable");
+            assert!(
+                checked > 20,
+                "{name}: the verifiable-registration count fell to {checked}; the parser stopped matching the source"
+            );
         }
     }
 

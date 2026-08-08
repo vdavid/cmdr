@@ -1,11 +1,11 @@
 /**
- * Transfer-queue window management.
+ * Operation-queue window management.
  *
  * A real macOS vibrancy window (a sibling of Settings / Keyboard shortcuts, NOT
  * a modal): it lists every running and queued copy, move, delete, and trash
  * operation with per-row pause/resume/cancel, multi-select + "Cancel selected",
  * and global pause/resume. It's a hard window so the user can keep working in
- * the main window while transfers run in the background and still manage them.
+ * the main window while operations run in the background and still manage them.
  *
  * Cloned from `lib/settings/settings-window.ts`: open-or-focus a singleton
  * `queue` window, position via the shared `$lib/window-positioning` helpers,
@@ -22,6 +22,7 @@ import { emitTo } from '@tauri-apps/api/event'
 import { Effect, EffectState } from '@tauri-apps/api/window'
 import { getShouldReduceTransparency } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
+import { tString } from '$lib/intl/messages.svelte'
 import { getEffectiveScale } from '$lib/text-size.svelte'
 import { decorateChildWindowTitle, isE2eRun, orderChildWindowToBackInE2e } from '$lib/app-mode'
 import { readMainRect, readMonitors, readSavedRect, resolveChildPosition } from '$lib/window-positioning'
@@ -41,7 +42,7 @@ const MIN_WIDTH = 540
 const MIN_HEIGHT = 280
 
 /**
- * Opens the transfer-queue window, or focuses it if already open (singleton,
+ * Opens the operation-queue window, or focuses it if already open (singleton,
  * like Settings). Cross-window `setFocus()` doesn't reliably raise a window on
  * macOS, so an already-open window self-focuses via the `focus-self` event.
  *
@@ -67,7 +68,7 @@ export async function openQueueWindow(): Promise<void> {
     return
   }
 
-  log.debug('Creating new transfer-queue window')
+  log.debug('Creating new operation-queue window')
 
   const scale = getEffectiveScale()
   const width = BASE_WIDTH * scale
@@ -98,7 +99,7 @@ export async function openQueueWindow(): Promise<void> {
 
   const win = new WebviewWindow('queue', {
     url: '/queue',
-    title: decorateChildWindowTitle('Transfer queue'),
+    title: decorateChildWindowTitle(tString('queue.windowTitle')),
     width: rect?.width ?? width,
     height: rect?.height ?? height,
     minWidth: MIN_WIDTH * scale,

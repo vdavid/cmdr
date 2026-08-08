@@ -28,10 +28,10 @@ Backend: `apps/desktop/src-tauri/src/file_system/write_operations/transfer/CLAUD
   the backend rename-merges server-side, zero-byte, no rollback). `DEFAULT_VOLUME_ID` is excluded, so local→local keeps
   both. Affordances disable with a tooltip; plain Cancel and the cheap conflict check stay live. ⚠️ A CROSS-volume move
   can't roll back either, and this dialog doesn't know yet (the backend now says so via `supports_rollback`): DETAILS.
-- **Speed and ETA are backend-owned, SHARED with the Transfers window** via `../progress-readout.ts` + `$lib/units`. ❌
-  No second instantaneous rate here; `ScanThroughput` is SCAN-phase only. The bars themselves are shared too:
-  `../TransferProgressReadout.svelte` renders the dual bars, amounts, percents, rates, and time left for BOTH surfaces.
-  Its fixed-width readout columns are why this dialog is 580 px wide; don't narrow it without them.
+- **Speed and ETA are backend-owned, SHARED with the operation queue window** via `../progress-readout.ts` +
+  `$lib/units`. ❌ No second instantaneous rate here; `ScanThroughput` is SCAN-phase only. The bars themselves are
+  shared too: `../TransferProgressReadout.svelte` renders the dual bars, amounts, percents, rates, and time left for
+  BOTH surfaces. Its fixed-width readout columns are why this dialog is 580 px wide; don't narrow it without them.
 - **A stalled transfer drops the ETA and says why** (`transfer-stall.ts`). The BACKEND classifies; this side owns only
   the threshold. ❌ Never infer a stall from event timing: a wedge emits no events at all.
 - **Rollback / Cancel disable during the settle window.** The dialog holds open `MIN_DISPLAY_MS = 400 ms` after

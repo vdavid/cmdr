@@ -1,13 +1,13 @@
 {
-  "queue.windowTitle": "Transfer queue",
+  "queue.windowTitle": "Operation queue",
   "@queue.windowTitle": {
-    "description": "Title of the standalone window that lists every running and queued copy, move, delete, and trash operation, with controls to pause, resume, and cancel them. Shown as the window title and the page heading.",
+    "description": "Title of the standalone window that lists every running and queued copy, move, delete, trash, rename, and folder- or file-creation operation, with controls to pause, resume, and cancel them. It''s the operating-system window title (shown in the window list and app switcher) and the screen-reader heading for the page. It matches the View menu item and the command palette entry that open the window, so keep those three identical. \"Operation\" is the category word covering all of them; the window is not limited to transfers.",
     "screenshot": "queue-empty.png"
   },
 
-  "queue.heading": "Transfers",
+  "queue.heading": "Operations",
   "@queue.heading": {
-    "description": "Heading at the top of the transfer queue window, above the list of operations.",
+    "description": "Heading at the top of the operation queue window, above the list of operations. It names the category of things listed below it, so it stays a plural noun rather than a verb.",
     "screenshot": "queue-empty.png"
   },
 
@@ -19,7 +19,7 @@
 
   "queue.empty.body": "Copies, moves, and deletes show up here while they run, so you can pause, resume, or cancel them.",
   "@queue.empty.body": {
-    "description": "Supporting line under the empty-state title, explaining what will appear in the transfer queue window and why.",
+    "description": "Supporting line under the empty-state title, explaining what will appear in the operation queue window and why. It deliberately names the concrete actions rather than the category word \"operations\": the window title carries the category, this line tells the user what they''ll actually see.",
     "screenshot": "queue-empty.png"
   },
 
@@ -34,7 +34,7 @@
 
   "queue.row.status": "{status, select, queued {Waiting} running {Running} paused {Paused} done {Done} cancelled {Cancelled} failed {Couldn''t finish} other {Running}}",
   "@queue.row.status": {
-    "description": "Short status word for an operation row in the transfer queue. \"Waiting\" means it''s queued behind another transfer on the same drive; \"Paused\" means the user paused it; \"Couldn''t finish\" is the gentle wording for a failed operation (avoid the words error/failed).",
+    "description": "Short status word for an operation row in the operation queue. \"Waiting\" means it''s queued behind another operation on the same drive; \"Paused\" means the user paused it; \"Couldn''t finish\" is the gentle wording for a failed operation (avoid the words error/failed).",
     "placeholders": {
       "status": "the lifecycle status: queued, running, paused, done, cancelled, or failed"
     },
@@ -43,65 +43,65 @@
 
   "queue.row.pause": "Pause",
   "@queue.row.pause": {
-    "description": "Button on an operation row that pauses that transfer in place. It can be resumed later. Toggles to \"Resume\".",
+    "description": "Button on an operation row that pauses that operation in place. It can be resumed later. Toggles to \"Resume\".",
     "screenshot": "queue.png"
   },
 
   "queue.row.resume": "Resume",
   "@queue.row.resume": {
-    "description": "Button on a paused operation row that resumes the transfer. Toggles back from \"Pause\"."
+    "description": "Button on a paused operation row that resumes the operation. Toggles back from \"Pause\"."
   },
 
   "queue.row.cancel": "Cancel",
   "@queue.row.cancel": {
-    "description": "Button on an operation row that stops that transfer. Files already copied are kept; only the half-written file is removed.",
+    "description": "Button on an operation row that stops that operation. Files already copied are kept; only the half-written file is removed.",
     "screenshot": "queue.png"
   },
 
-  "queue.row.pauseAria": "Pause this transfer",
+  "queue.row.pauseAria": "Pause this operation",
   "@queue.row.pauseAria": {
     "description": "Screen-reader label for the per-row Pause button (the visible button shows only \"Pause\").",
     "screenshot": "queue.png"
   },
 
-  "queue.row.resumeAria": "Resume this transfer",
+  "queue.row.resumeAria": "Resume this operation",
   "@queue.row.resumeAria": {
     "description": "Screen-reader label for the per-row Resume button (the visible button shows only \"Resume\")."
   },
 
-  "queue.row.cancelAria": "Cancel this transfer",
+  "queue.row.cancelAria": "Cancel this operation",
   "@queue.row.cancelAria": {
     "description": "Screen-reader label for the per-row Cancel button (the visible button shows only \"Cancel\").",
     "screenshot": "queue.png"
   },
 
-  "queue.row.selectAria": "Select this transfer",
+  "queue.row.selectAria": "Select this operation",
   "@queue.row.selectAria": {
     "description": "Screen-reader label for the checkbox that selects an operation row so it can be cancelled together with others via \"Cancel selected\".",
     "screenshot": "queue.png"
   },
 
-  "queue.list.aria": "Transfers",
+  "queue.list.aria": "Operations",
   "@queue.list.aria": {
-    "description": "Screen-reader label for the list of transfer operations in the queue window.",
+    "description": "Screen-reader label for the list of operations in the queue window. It names the category, matching the visible heading above the list.",
     "screenshot": "queue.png"
   },
 
   "queue.toolbar.pauseAll": "Pause all",
   "@queue.toolbar.pauseAll": {
-    "description": "Toolbar button that pauses every running transfer at once.",
+    "description": "Toolbar button that pauses every running operation at once.",
     "screenshot": "queue-empty.png"
   },
 
   "queue.toolbar.resumeAll": "Resume all",
   "@queue.toolbar.resumeAll": {
-    "description": "Toolbar button that resumes every paused transfer at once.",
+    "description": "Toolbar button that resumes every paused operation at once.",
     "screenshot": "queue-empty.png"
   },
 
   "queue.toolbar.cancelSelected": "Cancel selected",
   "@queue.toolbar.cancelSelected": {
-    "description": "Toolbar button that cancels the transfers the user has selected via the row checkboxes. Files already copied are kept.",
+    "description": "Toolbar button that cancels the operations the user has selected via the row checkboxes. Files already copied are kept.",
     "screenshot": "queue-empty.png"
   },
 

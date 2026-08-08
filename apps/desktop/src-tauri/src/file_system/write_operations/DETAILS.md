@@ -282,7 +282,7 @@ Independently, the archive-edit tests still give each op its OWN lane (`archive_
 
 `OperationDescriptor::supports_rollback` says whether cancelling this op can also UNDO what it has written
 (`cancel_write_operation(id, rollback = true)`), and it rides through to `OperationSnapshot` so the queue window can
-offer Rollback on exactly the rows the progress dialog would. It's on the snapshot because the Transfers window is its
+offer Rollback on exactly the rows the progress dialog would. It's on the snapshot because the operation queue window is its
 own webview: it never sees the source/destination volume ids the dialog decides from, and two surfaces disagreeing about
 whether an operation is reversible is the kind of drift that ends with a button that lies.
 
@@ -298,7 +298,7 @@ Every construction site states its own verdict (a struct literal, so a new spawn
 
 ⚠️ The progress DIALOG doesn't read this flag yet: it decides from the volume ids it holds, disabling Rollback only for
 a same-volume move. So it still offers Rollback on a cross-volume move, where the click only cancels. Pointing the
-dialog at this flag (or teaching the cross-volume move driver to reverse) is the fix; until then, the Transfers window
+dialog at this flag (or teaching the cross-volume move driver to reverse) is the fix; until then, the operation queue window
 is the honest one.
 
 The flag is a property of the op's STRATEGY, so it never changes over the op's life. Whether Rollback is offered *right

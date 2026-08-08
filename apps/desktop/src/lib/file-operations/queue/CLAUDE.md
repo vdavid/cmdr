@@ -1,8 +1,8 @@
-# Transfer queue window
+# Operation queue window
 
-The standalone macOS window listing every running and waiting copy, move, delete, and trash operation, with per-row
-pause/resume/cancel, multi-select + "Cancel selected", and global pause/resume. Backend: the operation manager in
-`apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`.
+The standalone macOS window listing every running and waiting copy, move, delete, trash, rename, and create operation,
+with per-row pause/resume/cancel, multi-select + "Cancel selected", and global pause/resume. Opens from View > Operation
+queue (⌥⌘Q) or the palette. Backend: `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`.
 
 ## Module map
 
@@ -15,7 +15,7 @@ pause/resume/cancel, multi-select + "Cancel selected", and global pause/resume. 
 
 ## Must-knows
 
-- **It's a HARD window, not a modal.** The whole point is to keep working in the main window while transfers run; a
+- **It's a HARD window, not a modal.** The whole point is to keep working in the main window while operations run; a
   modal would block that. So it's a real `WebviewWindow` on the `/queue` route, sibling to Settings / Shortcuts.
 - **Progress is DEFINED with the copy dialog, not here.** Speed and ETA are the backend's; the ETA goes through
   `createEtaSmoother()` in `../progress-readout.ts` and rows pass `row.etaSecondsDisplay`, NEVER `progress.etaSeconds`

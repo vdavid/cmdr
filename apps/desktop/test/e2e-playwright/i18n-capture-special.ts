@@ -138,7 +138,7 @@ async function startQueueCopy(main: TauriPage, fixtureRoot: string, sourceName: 
  * exclusive to it: nothing else in the app can stand in for this surface.
  *
  * The rows need real work in flight, so this stages the same two same-lane copies
- * `transfer-queue.spec.ts` uses and slows the backend with `set_test_throttle` so
+ * `operation-queue.spec.ts` uses and slows the backend with `set_test_throttle` so
  * they outlive the screenshot. Empty first, so `queue.empty.*` couples to the
  * image that actually shows the empty state rather than to a populated list.
  *

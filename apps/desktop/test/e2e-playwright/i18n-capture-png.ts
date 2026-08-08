@@ -171,7 +171,7 @@ export function decodePng(buf: Buffer): DecodedPng {
  *
  * Calibrated against a full 133-surface run: every blank shot had exactly 8
  * (window background + the three macOS traffic lights and their antialiasing),
- * while the sparsest REAL surface (the empty transfer-queue window) had 60. The
+ * while the sparsest REAL surface (the empty operation-queue window) had 60. The
  * threshold sits an order of magnitude clear of the blanks and 2.5x under the
  * sparsest real surface.
  */

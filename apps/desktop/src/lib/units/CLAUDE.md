@@ -12,7 +12,7 @@ formatDuration(seconds(492)) // "8m 12s"
 
 A transfer RATE is a size plus a per-second marker; that marker is user-facing copy, so render
 `<Trans key="fileOperations.shared.byteRate" snippets={{ size }} />` over a `<Size bytes={rate}>` snippet (what the copy
-dialog and the Transfers window both do) rather than adding a code-side rate formatter.
+dialog and the operation queue both do) rather than adding a code-side rate formatter.
 
 ## Module map
 

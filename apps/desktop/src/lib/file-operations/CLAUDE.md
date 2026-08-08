@@ -10,7 +10,7 @@ file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete)
 - `delete/CLAUDE.md`: F8 / Shift+F8 delete + trash confirmation dialog and pure utilities.
 - `mkdir/CLAUDE.md`: F7 new-folder dialog with AI suggestions.
 - `mkfile/CLAUDE.md`: Shift+F4 new-file dialog.
-- `queue/CLAUDE.md`: the standalone transfer-queue window (lists every running/waiting operation with per-row
+- `queue/CLAUDE.md`: the standalone operation-queue window (lists every running/waiting operation with per-row
   pause/resume/cancel, multi-select + Cancel selected, global pause/resume). Renders from the operations store that
   merges the thin `operations-changed` snapshot with the live `write-progress` stream.
 - `TransferProgressReadout.svelte`: the dual-bar readout (size + count, each with amount, percent, rate, plus one
@@ -32,7 +32,7 @@ file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete)
   (`file-operations-i18n-parity.test.ts` + the count-phrase unit tests for dialog copy;
   `transfer/transfer-error-messages.parity.test.ts` for the write-error copy); a copy edit lands in the catalog AND the
   test together. See [`$lib/intl/messages/CLAUDE.md`](../intl/messages/CLAUDE.md).
-- **One dual-bar readout, two surfaces.** The progress dialog and the Transfers window's rows both render
+- **One dual-bar readout, two surfaces.** The progress dialog and the operation queue's rows both render
   `TransferProgressReadout.svelte`, so what a running operation looks like is defined once. Its readout cells are
   fixed-width by design (the bars must follow the window, not the digits), which puts a floor under whatever hosts it:
   the queue window's `MIN_WIDTH` and the dialog's 580 px both exist for it. Depth: `DETAILS.md`.

@@ -69,13 +69,13 @@ describe('QueueRow', () => {
   it('shows Pause for a running op and Resume for a paused op', () => {
     const onPauseResume = vi.fn()
     render({ row: buildRow('running'), selected: false, onToggleSelect: () => {}, onPauseResume, onCancel: () => {} })
-    expect(target.querySelector('[aria-label="Pause this transfer"]')).not.toBeNull()
-    expect(target.querySelector('[aria-label="Resume this transfer"]')).toBeNull()
+    expect(target.querySelector('[aria-label="Pause this operation"]')).not.toBeNull()
+    expect(target.querySelector('[aria-label="Resume this operation"]')).toBeNull()
     if (instance) void unmount(instance)
 
     render({ row: buildRow('paused'), selected: false, onToggleSelect: () => {}, onPauseResume, onCancel: () => {} })
-    expect(target.querySelector('[aria-label="Resume this transfer"]')).not.toBeNull()
-    expect(target.querySelector('[aria-label="Pause this transfer"]')).toBeNull()
+    expect(target.querySelector('[aria-label="Resume this operation"]')).not.toBeNull()
+    expect(target.querySelector('[aria-label="Pause this operation"]')).toBeNull()
   })
 
   it('a queued op has Cancel but no Pause/Resume', () => {
@@ -86,9 +86,9 @@ describe('QueueRow', () => {
       onPauseResume: () => {},
       onCancel: () => {},
     })
-    expect(target.querySelector('[aria-label="Cancel this transfer"]')).not.toBeNull()
-    expect(target.querySelector('[aria-label="Pause this transfer"]')).toBeNull()
-    expect(target.querySelector('[aria-label="Resume this transfer"]')).toBeNull()
+    expect(target.querySelector('[aria-label="Cancel this operation"]')).not.toBeNull()
+    expect(target.querySelector('[aria-label="Pause this operation"]')).toBeNull()
+    expect(target.querySelector('[aria-label="Resume this operation"]')).toBeNull()
   })
 
   it('clicking Pause fires onPauseResume; clicking Cancel fires onCancel', () => {
@@ -96,11 +96,11 @@ describe('QueueRow', () => {
     const onCancel = vi.fn()
     render({ row: buildRow('running'), selected: false, onToggleSelect: () => {}, onPauseResume, onCancel })
 
-    const pauseBtn = target.querySelector<HTMLButtonElement>('[aria-label="Pause this transfer"]')
+    const pauseBtn = target.querySelector<HTMLButtonElement>('[aria-label="Pause this operation"]')
     pauseBtn?.click()
     expect(onPauseResume).toHaveBeenCalledOnce()
 
-    const cancelBtn = target.querySelector<HTMLButtonElement>('[aria-label="Cancel this transfer"]')
+    const cancelBtn = target.querySelector<HTMLButtonElement>('[aria-label="Cancel this operation"]')
     cancelBtn?.click()
     expect(onCancel).toHaveBeenCalledOnce()
   })
@@ -187,7 +187,7 @@ describe('QueueRow', () => {
 
   it('a queued op has no Rollback: nothing has been written to undo', () => {
     render({ row: buildRow('queued', 'copy', null, true) })
-    expect(target.querySelector('[aria-label="Cancel this transfer"]')).not.toBeNull()
+    expect(target.querySelector('[aria-label="Cancel this operation"]')).not.toBeNull()
     expect(rollbackButton()).toBeNull()
   })
 
@@ -207,7 +207,7 @@ describe('QueueRow', () => {
     render({ row: buildRow('running', 'copy', progress, true) })
     expect(target.querySelector('.status-text')?.textContent.trim()).toBe('Rolling back...')
     expect(rollbackButton()).toBeNull()
-    expect(target.querySelector('[aria-label="Cancel this transfer"]')).not.toBeNull()
+    expect(target.querySelector('[aria-label="Cancel this operation"]')).not.toBeNull()
   })
 
   it('exposes the lifecycle status as a data attribute for E2E', () => {

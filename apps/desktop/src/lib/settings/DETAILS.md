@@ -225,7 +225,7 @@ wraps every route — so a new window gets settings for free and can't forget.
   in its own `onMount` (the queue, settings, shortcuts, and viewer windows do); a child's `onMount` fires before its
   parent's, so without memoization the page and the root layout would race and load the store twice. **The snapshot
   allowlist is the second half of the fix.** Initializing the reactive layer in a restricted window only helps for
-  settings the snapshot actually carries: it's a fixed typed struct, not the whole registry. The Transfers window
+  settings the snapshot actually carries: it's a fixed typed struct, not the whole registry. The operation queue window
   renders `<Size>`, so `appearance.fileSizeFormat` had to join it (`settings/loader.rs::RestrictedWindowSettings` →
   `bindings.ts` → the `mapped` table in `initializeSettingsRestricted`). When a restricted window starts rendering
   something new that depends on a setting, extend all three; a value missing from the snapshot silently reads as its

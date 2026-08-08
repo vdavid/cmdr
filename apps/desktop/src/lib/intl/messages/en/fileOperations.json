@@ -663,7 +663,7 @@
 
   "fileOperations.transferProgress.stallNotice": "No progress for {duration}",
   "@fileOperations.transferProgress.stallNotice": {
-    "description": "Replaces the time-left text when a transfer has stopped moving, so we stop showing a countdown we no longer believe. Appears on both surfaces that show a running transfer: the copy/move/delete progress dialog and the rows of the Transfers window. {duration} is a formatted length of time such as '45s' or '2m 30s'.",
+    "description": "Replaces the time-left text when a transfer has stopped moving, so we stop showing a countdown we no longer believe. Appears on both surfaces that show a running transfer: the copy/move/delete progress dialog and the rows of the operation queue window. {duration} is a formatted length of time such as '45s' or '2m 30s'.",
     "placeholders": {
       "duration": { "content": "$1", "example": "45s" }
     },
@@ -918,7 +918,7 @@
 
   "fileOperations.transferProgress.etaRemaining": "{duration} left",
   "@fileOperations.transferProgress.etaRemaining": {
-    "description": "Estimated time left, shown next to the progress bars, for example \"2m 30s left\". Appears on both surfaces that show a running transfer: the copy/move/delete progress dialog and the rows of the Transfers window. It sits in a narrow fixed-width cell, so keep it short. The duration comes in ready-made.",
+    "description": "Estimated time left, shown next to the progress bars, for example \"2m 30s left\". Appears on both surfaces that show a running transfer: the copy/move/delete progress dialog and the rows of the operation queue window. It sits in a narrow fixed-width cell, so keep it short. The duration comes in ready-made.",
     "placeholders": {
       "duration": "the estimated time left, already formatted (e.g. 2m 30s)"
     },
@@ -974,45 +974,45 @@
 
   "fileOperations.transferProgress.queue": "Queue",
   "@fileOperations.transferProgress.queue": {
-    "description": "Button on the progress dialog that sends this transfer to the background and opens the transfer queue window, so the user can keep working while it runs. It does not pause the transfer. Mirrors Total Commander's copy-dialog F2. Short control label.",
+    "description": "Button on the progress dialog that sends this transfer to the background and opens the operation queue window, so the user can keep working while it runs. It does not pause the transfer. Mirrors Total Commander's copy-dialog F2. Short control label.",
     "screenshot": "conflict-dialog.png"
   },
 
-  "fileOperations.transferProgress.queueAria": "Send to the transfer queue",
+  "fileOperations.transferProgress.queueAria": "Send to the operation queue",
   "@fileOperations.transferProgress.queueAria": {
-    "description": "Screen-reader label for the Queue button on the progress dialog (the visible button shows only \"Queue\"). Explains that the transfer moves to the background and is managed in the queue window.",
+    "description": "Screen-reader label for the Queue button on the progress dialog (the visible button shows only \"Queue\"). Explains that the transfer moves to the background and is managed in the operation queue window. \"Operation queue\" is that window''s name; keep it identical to queue.windowTitle.",
     "screenshot": "conflict-dialog.png"
   },
 
-  "fileOperations.transferProgress.queueTooltip": "Keep this running in the background and manage it in the transfer queue (F2)",
+  "fileOperations.transferProgress.queueTooltip": "Keep this running in the background and manage it in the operation queue (F2)",
   "@fileOperations.transferProgress.queueTooltip": {
-    "description": "Tooltip on the Queue button explaining that the transfer keeps running in the background and is managed in the transfer queue window. F2 is the keyboard shortcut for the same action while this dialog is open.",
+    "description": "Tooltip on the Queue button explaining that the transfer keeps running in the background and is managed in the operation queue window. \"Operation queue\" is that window''s name; keep it identical to queue.windowTitle. F2 is the keyboard shortcut for the same action while this dialog is open.",
     "screenshot": "conflict-dialog.png"
   },
 
-  "fileOperations.transferProgress.queuedToast": "{countText} ahead of this one, so it''s waiting its turn. Find it in the transfer queue.",
+  "fileOperations.transferProgress.queuedToast": "{countText} ahead of this one, so it''s waiting its turn. Find it in the operation queue.",
   "@fileOperations.transferProgress.queuedToast": {
-    "description": "Quiet toast shown when a new copy/move/delete can''t start right away because another transfer is busy on the same drive, so it waits in the queue. The queue window comes forward at the same time.",
+    "description": "Quiet toast shown when a new copy/move/delete can''t start right away because another operation is busy on the same drive, so it waits in the queue. The operation queue window comes forward at the same time. \"Operation queue\" is that window''s name; keep it identical to queue.windowTitle.",
     "placeholders": {
-      "countText": "preformatted count phrase of transfers ahead, for example \"1 transfer\" or \"3 transfers\""
+      "countText": "preformatted count phrase of operations ahead, for example \"1 operation\" or \"3 operations\""
     },
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
-  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# transfer} other {# transfers}}",
+  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# operation} other {# operations}}",
   "@fileOperations.transferProgress.queuedToastCount": {
-    "description": "Count phrase of how many transfers are ahead of a newly-queued one, slotted into the queued toast (for example \"1 transfer\" or \"3 transfers\").",
+    "description": "Count phrase of how many operations are ahead of a newly-queued one, slotted into the queued toast (for example \"1 operation\" or \"3 operations\"). What''s ahead can be a delete or a rename, not only a copy or move, so it names the category rather than \"transfer\".",
     "placeholders": {
-      "count": "how many transfers are ahead in the queue"
+      "count": "how many operations are ahead in the queue"
     },
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
-  "fileOperations.transferProgress.backgroundedToast": "Still running in the background. Find it in the transfer queue.",
+  "fileOperations.transferProgress.backgroundedToast": "Still running in the background. Find it in the operation queue.",
   "@fileOperations.transferProgress.backgroundedToast": {
-    "description": "Quiet toast shown after the user sends a running transfer to the background (via the Queue button or F2). The transfer keeps going; the queue window comes forward to manage it.",
+    "description": "Quiet toast shown after the user sends a running transfer to the background (via the Queue button or F2). The transfer keeps going; the operation queue window comes forward to manage it. \"Operation queue\" is that window''s name; keep it identical to queue.windowTitle.",
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },

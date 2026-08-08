@@ -376,7 +376,7 @@
             </div>
         {:else}
             <!-- Dual progress bars (size + count) for the active phase. The
-                 Transfers window's rows render the same component, so the two
+                 operation queue's rows render the same component, so the two
                  surfaces can't drift apart on what a running op looks like. -->
             <div class="progress-section">
                 <TransferProgressReadout

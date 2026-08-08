@@ -3,7 +3,7 @@
     done/total, percent, and rate, over one time-left line shared by both.
 
     ONE widget serves both surfaces that show a running write operation — the
-    copy/move/delete progress dialog and the Transfers window's rows — so the two
+    copy/move/delete progress dialog and the operation queue's rows — so the two
     can't drift apart in what they show or how it reads. The numbers themselves
     are single-sourced elsewhere (`progress-readout.ts` for speed and ETA,
     `$lib/units` for the text); this file owns the layout only.

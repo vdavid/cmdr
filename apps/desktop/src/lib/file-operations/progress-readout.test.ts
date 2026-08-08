@@ -1,5 +1,5 @@
 /**
- * The one ETA smoother, shared by the copy dialog and the Transfers window.
+ * The one ETA smoother, shared by the copy dialog and the operation queue window.
  *
  * The regression this pins: the dialog smoothed the backend's ETA while the
  * queue row rendered it raw, so one operation showed "8m 12s remaining" in one

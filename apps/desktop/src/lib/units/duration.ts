@@ -26,7 +26,7 @@ export function seconds(count: number): Seconds {
  * Format seconds as a human-readable duration ("45s", "2m 30s", "1h 5m").
  *
  * The canonical duration formatter for every ETA and elapsed-time readout, so
- * the copy dialog and the Transfers window can't phrase the same number two
+ * the copy dialog and the operation queue can't phrase the same number two
  * ways. Takes a branded {@link Seconds}: brand at the edge with `seconds(...)`
  * so a byte count or a file tally can't arrive here by accident.
  */

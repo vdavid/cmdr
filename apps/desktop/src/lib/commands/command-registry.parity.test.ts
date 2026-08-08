@@ -1,11 +1,11 @@
 /**
- * Base-locale (en) parity net for the command registry's i18n migration.
+ * Base-locale (en) parity net for the command registry.
  *
- * Every command's `name` (and `description`, where it has one) now resolves from
+ * Every command's `name` (and `description`, where it has one) resolves from
  * `messages/en/commands.json` through `t()`. This pins the EXACT English each
- * command rendered BEFORE the migration, so the reviewer can trust "current
- * users see no change" — the migration is readiness, not a copy edit. A drifted
- * catalog value (a typo, a dropped ellipsis, a mangled apostrophe) fails here.
+ * command renders, so an accidental catalog drift (a typo, a dropped ellipsis, a
+ * mangled apostrophe) fails here. A DELIBERATE copy change lands in the catalog
+ * and in this pin together.
  *
  * The license command (`app.licenseKey`) has two states; both are pinned via
  * `updateLicenseCommandName`. The three platform-conditional commands
@@ -31,7 +31,7 @@ const EXPECTED_NAMES: Record<string, string> = {
   'app.checkForUpdates': 'Check for updates…',
   'cmdr.openOnboarding': 'Onboarding…',
   'help.openShortcuts': 'Keyboard shortcuts',
-  'queue.show': 'Show transfer queue',
+  'queue.show': 'Operation queue',
   'help.sendErrorReport': 'Send error report…',
   'help.whatsNew': "What's new",
   'feedback.send': 'Send feedback',
@@ -153,7 +153,8 @@ const EXPECTED_DESCRIPTIONS: Record<string, string | undefined> = {
   'app.checkForUpdates': 'Check whether a newer version of Cmdr is available, and download it if so',
   'cmdr.openOnboarding': 'Reopen the onboarding wizard to review or change first-launch setup options',
   'help.openShortcuts': 'Open a read-only window listing every keyboard shortcut, live-synced with your customizations',
-  'queue.show': 'Open a window listing every running and waiting transfer, where you can pause, resume, or cancel them',
+  'queue.show':
+    'Open a window listing every running and waiting operation, where you can pause, resume, or cancel them',
   'help.sendErrorReport': 'Send Cmdr logs to the team to help fix something that went wrong',
   'help.whatsNew': 'See what changed in the latest releases of Cmdr',
   'feedback.send': 'Tell the maker of Cmdr what you think: ideas, wishes, anything',

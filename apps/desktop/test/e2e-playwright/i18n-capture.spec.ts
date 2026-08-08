@@ -546,7 +546,7 @@ test.describe('i18n screenshot capture', () => {
     })
     if (shortcuts) await closeScopedWindow(main, shortcuts, 'shortcuts').catch(() => {})
 
-    // ── Surface: transfer-queue window (empty + populated) ────────────────────
+    // ── Surface: operation-queue window (empty + populated) ───────────────────
     // Its own window on `/queue`, and the only place any `queue.*` key renders.
     await captureQueueWindow(main, report, failed)
 

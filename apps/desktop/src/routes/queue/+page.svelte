@@ -180,7 +180,7 @@
             // Remember position/size within the session so a reopen lands in place.
             unlistenRectTracking = await trackOwnRect('queue')
         } catch (error) {
-            log.error('Failed to initialize transfer-queue window: {error}', { error })
+            log.error('Failed to initialize operation-queue window: {error}', { error })
         }
     })
 

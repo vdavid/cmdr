@@ -316,7 +316,7 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
   let bytesPerSecond = $state<BytesPerSecond | null>(null)
   let filesPerSecond = $state<number | null>(null)
   /** Display ETA: the backend value through the SHARED smoother, so this
-   *  dialog and the Transfers window can't show two different numbers for the
+   *  dialog and the operation queue can't show two different numbers for the
    *  same operation. See `file-operations/progress-readout.ts`. */
   let etaSecondsDisplay = $state<Seconds | null>(null)
   const etaSmoother = createEtaSmoother()

@@ -620,7 +620,7 @@ mod tests {
 
     #[test]
     fn restricted_window_settings_carry_the_size_format() {
-        // The Transfers window is restricted (no `store:default`) but renders
+        // The operation queue window is restricted (no `store:default`) but renders
         // `<Size>`, so it needs the binary/SI choice in the snapshot. Without it
         // the window silently falls back to the registry default and shows a
         // different number than the copy dialog for the same byte count.

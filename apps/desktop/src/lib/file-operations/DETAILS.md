@@ -28,7 +28,7 @@ temp+rename rewrite), surfaced through the same transfer/queue UI as any write:
 
 The dual-bar readout — a bytes bar and a count bar, each with its amount, percent, and rate, over one shared time-left
 line — is ONE component rendered by both surfaces that show a running write op: `TransferProgressDialog`
-(copy/move/delete/trash) and the Transfers window's `QueueRow`. It owns layout only; the numbers are single-sourced by
+(copy/move/delete/trash) and the operation queue's `QueueRow`. It owns layout only; the numbers are single-sourced by
 `progress-readout.ts` (speed, ETA) and `$lib/units` (text), and the strings by the `fileOperations.transferProgress.*`
 catalog keys.
 
@@ -47,7 +47,7 @@ catalog keys.
   firm up from "1h 8m left" to "56m 24s left" without moving anything above it. The row renders even while empty (a
   `:empty::before` no-break space), so the estimator warming up doesn't shove the rest of the dialog down.
 - **The bar column has a min width** (80 px, 64 px compact), below which a bar reads as a smudge rather than progress.
-  Whatever hosts the readout owes it that width: it's why the Transfers window's `MIN_WIDTH` is what it is
+  Whatever hosts the readout owes it that width: it's why the operation queue window's `MIN_WIDTH` is what it is
   (`queue/queue-window.ts`) and why the progress dialog is 580 px wide.
 - **The dialog has no "Copying" chip.** A phase banner renders for SCANNING only, where nothing else on screen says what
   the wait is for. During the copy the title says "Copying...", the bars are labelled, and a third copy of the word

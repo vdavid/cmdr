@@ -18,7 +18,7 @@
  * A transfer RATE is a size plus a per-second marker, and that marker is
  * user-facing copy, so it lives in the i18n catalog, not here: render
  * `<Trans key="fileOperations.shared.byteRate" snippets={{ size }} />` with a
- * `<Size bytes={rate}>` snippet, as the copy dialog and the Transfers window
+ * `<Size bytes={rate}>` snippet, as the copy dialog and the operation queue
  * both do. Brand the rate with `bytesPerSecond(...)` so it can't be mistaken
  * for a file size on the way there.
  *

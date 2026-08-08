@@ -233,9 +233,9 @@ Then:
    `Some("Cmd+Alt+Q")`, inserted between `command_palette_item` and `operation_log_item`. Drop it from the Help
    `Submenu::with_items` list.
 2. `menu/macos.rs` position comments and `register_item` indices — **both menus shift**:
-    - View becomes full(0), brief(1), sep(2), hidden(3), sort(4), zoom(5), sep(6), switch(7), swap(8), sep(9),
-      command(10), **queue(11)**, operation_log(**12**), ask_cmdr(**13**).
-    - Help becomes shortcuts(0), sep(1), whats_new(**2**), send_feedback(**3**), send_error_report(**4**).
+   - View becomes full(0), brief(1), sep(2), hidden(3), sort(4), zoom(5), sep(6), switch(7), swap(8), sep(9),
+     command(10), **queue(11)**, operation_log(**12**), ask_cmdr(**13**).
+   - Help becomes shortcuts(0), sep(1), whats_new(**2**), send_feedback(**3**), send_error_report(**4**).
 3. `menu/linux.rs`: same move. Label `"Operation &queue"` — `q` is the free mnemonic (`L`, `R`, `h`, `S`, `w`, `p`, `C`,
    `O`, `A` are taken in the View menu; verify against the current labels before committing). View indices match
    macOS's. Help becomes about(0), acknowledgements(1), sep(2), shortcuts(3), whats_new(**4**), send_feedback(**5**),
@@ -479,24 +479,23 @@ Part D, Rust side. Nothing renders it yet; the test is that the snapshot carries
 
 1. `types.rs`: nothing new. `WriteOperationError` already derives `Serialize` + `specta::Type`.
 2. `manager.rs`:
-    - `OperationSnapshot` gains `pub error: Option<WriteOperationError>`, `None` for live rows.
-    - `ManagerInner` gains `failures: VecDeque<OperationSnapshot>`, capped at `FAILURE_CAPACITY = 20`, oldest evicted.
-    - `OperationManager::record_failure(&self, operation_id: &str, operation_type: WriteOperationType, error: &WriteOperationError)`:
-        - returns early on
-          `matches!(error, WriteOperationError::Cancelled { .. } | WriteOperationError::ArchiveNeedsPassword { .. })`
-          (F3);
-        - returns early if `failures` already holds this id (F4, first-write-wins);
-        - builds the row from the still-live record's descriptor (source / destination summary), falling back to the
-          event's `operation_type` and `None` summaries if the record is gone;
-        - pushes with `status: LifecycleStatus::Failed` and `supports_rollback: false` (a settled failure offers no
-          rollback from this row).
-        - ❌ Does NOT emit. See the next point.
-    - `ManagerInner::snapshot()` appends failure rows AFTER the live rows, **skipping any failure whose id is still in
-      `records`**. ⚠️ This is load-bearing (F9): `emit_error` runs before `on_settled`, so for a moment the op is both
-      live and failed, and a duplicate `operationId` in the list would throw in the keyed `{#each}`. The failure row
-      appears on `on_settled`'s existing `emit_changed`, which is the correct moment anyway.
-    - `dismiss_failed_operation(operation_id)` / `dismiss_all_failed_operations()`: drop from `failures`, then
-      `emit_changed()`.
+   - `OperationSnapshot` gains `pub error: Option<WriteOperationError>`, `None` for live rows.
+   - `ManagerInner` gains `failures: VecDeque<OperationSnapshot>`, capped at `FAILURE_CAPACITY = 20`, oldest evicted.
+   - `OperationManager::record_failure(&self, operation_id: &str, operation_type: WriteOperationType, error: &WriteOperationError)`:
+     - returns early on
+       `matches!(error, WriteOperationError::Cancelled { .. } | WriteOperationError::ArchiveNeedsPassword { .. })` (F3);
+     - returns early if `failures` already holds this id (F4, first-write-wins);
+     - builds the row from the still-live record's descriptor (source / destination summary), falling back to the
+       event's `operation_type` and `None` summaries if the record is gone;
+     - pushes with `status: LifecycleStatus::Failed` and `supports_rollback: false` (a settled failure offers no
+       rollback from this row).
+     - ❌ Does NOT emit. See the next point.
+   - `ManagerInner::snapshot()` appends failure rows AFTER the live rows, **skipping any failure whose id is still in
+     `records`**. ⚠️ This is load-bearing (F9): `emit_error` runs before `on_settled`, so for a moment the op is both
+     live and failed, and a duplicate `operationId` in the list would throw in the keyed `{#each}`. The failure row
+     appears on `on_settled`'s existing `emit_changed`, which is the correct moment anyway.
+   - `dismiss_failed_operation(operation_id)` / `dismiss_all_failed_operations()`: drop from `failures`, then
+     `emit_changed()`.
 3. `event_sinks.rs`: in `TauriEventSink::emit_error`, call `manager().record_failure(...)` next to the existing
    `mcp::terminal_ops::record(...)`. Same emit-site pattern, same place, one more line. ❌ Do NOT put it in the trait or
    in `CollectorEventSink`: test sinks must stay side-effect-free.
@@ -533,11 +532,11 @@ Frontend: `desktop-svelte-type-drift` and `desktop-bindings-fresh` cover the new
    before touching it, and ❌ do not invent new error prose. The composed explanation and suggestion are
    `{@html}`-injected via the same escaping boundary the dialog uses; if the row renders them, it goes through
    `renderErrorMarkdown`, never a raw interpolation.
-    - The row shows the title inline and the explanation on a second line; the suggestion is the natural tooltip or an
-      expandable, David's call on layout.
-    - ⚠️ `operationType` on a snapshot is the wire enum (`archive_edit`, `create_folder`), while
-      `transfer-error-messages.ts` takes `TransferOperationType` (`copy | move | delete | trash`). Map explicitly and
-      fall back to the generic arm for `archive_edit`; do NOT cast.
+   - The row shows the title inline and the explanation on a second line; the suggestion is the natural tooltip or an
+     expandable, David's call on layout.
+   - ⚠️ `operationType` on a snapshot is the wire enum (`archive_edit`, `create_folder`), while
+     `transfer-error-messages.ts` takes `TransferOperationType` (`copy | move | delete | trash`). Map explicitly and
+     fall back to the generic arm for `archive_edit`; do NOT cast.
 4. Toolbar: "Dismiss all" appears only when more than one failure is retained.
 5. New strings (dismiss labels, aria labels) in `en/queue.json` with `@key` descriptions.
 
@@ -577,17 +576,17 @@ against a running op.
    chip. If a direct chip capture proves fiddly, a `screenshotNote` mapping onto an existing main-window surface is
    acceptable and is the established fallback. Then `pnpm i18n:shots`.
 3. Docs, all of them in this milestone so nothing ships undocumented:
-    - `lib/file-operations/queue/CLAUDE.md` + `DETAILS.md`: the new name and the "why" from this spec's § "Why
-      'Operation queue'"; the failure-retention model; the fact that `LifecycleStatus::Failed` is now reachable and how
-      (F1 corrected); the reduced-motion correction (F6).
-    - `src-tauri/src/file_system/write_operations/DETAILS.md`: the removal-on-terminal exception — failures are retained
-      out-of-band in a bounded list, lanes and busy-state are freed exactly as before, and why.
-    - `src-tauri/src/mcp/terminal_ops.rs`'s module doc asserts "`LifecycleStatus` never reaches
-      `Done`/`Cancelled`/`Failed` on a live record". After M8 that's still true of LIVE records but no longer of the
-      snapshot. Correct it, or the next reader trusts a stale claim.
-    - New `lib/status-corner/CLAUDE.md` + `DETAILS.md` (they're enforced as a pair).
-    - `docs/architecture.md`: a map line for `status-corner` (what + where + pointer, never how).
-    - `lib/file-operations/CLAUDE.md`'s module map: the queue entry's description.
+   - `lib/file-operations/queue/CLAUDE.md` + `DETAILS.md`: the new name and the "why" from this spec's § "Why 'Operation
+     queue'"; the failure-retention model; the fact that `LifecycleStatus::Failed` is now reachable and how (F1
+     corrected); the reduced-motion correction (F6).
+   - `src-tauri/src/file_system/write_operations/DETAILS.md`: the removal-on-terminal exception — failures are retained
+     out-of-band in a bounded list, lanes and busy-state are freed exactly as before, and why.
+   - `src-tauri/src/mcp/terminal_ops.rs`'s module doc asserts "`LifecycleStatus` never reaches
+     `Done`/`Cancelled`/`Failed` on a live record". After M8 that's still true of LIVE records but no longer of the
+     snapshot. Correct it, or the next reader trusts a stale claim.
+   - New `lib/status-corner/CLAUDE.md` + `DETAILS.md` (they're enforced as a pair).
+   - `docs/architecture.md`: a map line for `status-corner` (what + where + pointer, never how).
+   - `lib/file-operations/CLAUDE.md`'s module map: the queue entry's description.
 4. `pnpm check` in full, then `pnpm check --include-slow`.
 
 ## Copy needing David's sign-off

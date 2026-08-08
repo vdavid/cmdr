@@ -18,11 +18,11 @@
  *
  * The smoother is stateful, which is exactly why it lives here rather than
  * being re-implemented per window: the copy dialog smoothed the ETA while the
- * Transfers window rendered it raw, so one operation showed "8m 12s remaining"
+ * operation queue window rendered it raw, so one operation showed "8m 12s remaining"
  * in one window and "5m 46s" in the other at the same moment.
  *
  * Consumers: `transfer/transfer-progress-state.svelte.ts` (the copy dialog) and
- * `queue/operations-store.svelte.ts` (the Transfers window).
+ * `queue/operations-store.svelte.ts` (the operation queue window).
  */
 
 import { bytes, bytesPerSecond, seconds, type ByteCount, type BytesPerSecond, type Seconds } from '$lib/units'

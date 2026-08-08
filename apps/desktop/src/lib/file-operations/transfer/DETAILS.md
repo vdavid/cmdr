@@ -380,8 +380,8 @@ When the directory has a parent entry shown at index 0, frontend indices are off
 - **A cross-volume move can't be rolled back at all**, and this dialog doesn't know it yet: it disables Rollback only
   for a SAME-volume move, so on a cross-volume one it still offers a button whose click only cancels (the driver treats
   `RollingBack` exactly like `Stopped` and reports `rolled_back: false`). The backend now publishes the real verdict as
-  `supportsRollback` on the operation snapshot, which the Transfers window reads; pointing this dialog at the same flag
-  is the open fix. See `src-tauri/src/file_system/write_operations/DETAILS.md` § "Rollback availability".
+  `supportsRollback` on the operation snapshot, which the operation queue window reads; pointing this dialog at the same
+  flag is the open fix. See `src-tauri/src/file_system/write_operations/DETAILS.md` § "Rollback availability".
 - **Dry-run conflict sampling.** If >200 conflicts, `DryRunResult.conflicts` contains a random sample. Check
   `conflictsSampled: true` and `conflictsTotal` for the exact count.
 - **Progress dialog edge case.** Same-FS move completes so fast that the complete event may fire before the dialog
