@@ -1020,3 +1020,38 @@ fn same_lane_key_means_same_lane_distinct_means_different() {
     assert_eq!(a.lane_key(), b.lane_key());
     assert_ne!(a.lane_key(), c.lane_key());
 }
+
+/// `set_stat_failing` models an UNANSWERED stat, not a missing path. The
+/// difference is the whole reason the knob exists: a `NotFound` is an answer,
+/// and code that collapses an unanswered stat into "not a directory" routes a
+/// folder into a file-shaped destructive branch.
+#[tokio::test]
+async fn set_stat_failing_fails_the_stat_without_making_the_path_disappear() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_directory(Path::new("/album")).await.unwrap();
+    volume.set_stat_failing(Path::new("/album"));
+
+    assert!(
+        matches!(
+            volume.is_directory(Path::new("/album")).await,
+            Err(VolumeError::IoError { .. })
+        ),
+        "an unanswerable stat is an IoError, never a NotFound"
+    );
+    assert!(matches!(
+        volume.get_metadata(Path::new("/album")).await,
+        Err(VolumeError::IoError { .. })
+    ));
+    assert!(
+        volume.exists(Path::new("/album")).await,
+        "the path is still there; only the stat refuses to answer"
+    );
+    assert!(
+        volume.is_directory(Path::new("/other")).await.is_err(),
+        "a genuinely missing path still reports NotFound"
+    );
+    assert!(matches!(
+        volume.is_directory(Path::new("/other")).await,
+        Err(VolumeError::NotFound(_))
+    ));
+}

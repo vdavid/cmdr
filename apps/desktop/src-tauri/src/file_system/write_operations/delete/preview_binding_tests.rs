@@ -113,7 +113,11 @@ fn a_local_delete_never_acts_on_a_preview_of_a_different_selection() {
     let preview_id = unique("stale-preview");
     insert_scan_result(
         preview_id.clone(),
-        local_preview_of(&root, std::slice::from_ref(&untouched), &[std::slice::from_ref(&untouched_file)]),
+        local_preview_of(
+            &root,
+            std::slice::from_ref(&untouched),
+            &[std::slice::from_ref(&untouched_file)],
+        ),
     );
 
     let op_id = unique("op");
@@ -164,7 +168,10 @@ fn a_local_delete_never_acts_on_a_preview_covering_more_than_was_asked_for() {
         local_preview_of(
             &root,
             &[requested.clone(), deselected.clone()],
-            &[std::slice::from_ref(&requested_file), std::slice::from_ref(&deselected_file)],
+            &[
+                std::slice::from_ref(&requested_file),
+                std::slice::from_ref(&deselected_file),
+            ],
         ),
     );
 

@@ -481,3 +481,134 @@ async fn delete_cancel_during_scan_emits_write_cancelled() {
 
     get_volume_manager().unregister(&vid);
 }
+
+// ----------------------------------------------------------------------------
+// What each branch does with a missing or wrong fact
+// ----------------------------------------------------------------------------
+
+/// A source whose stat can't be answered fails that item, instead of being
+/// guessed into a file.
+///
+/// On the no-preview path the walker used to resolve the top level itself with
+/// `is_directory(source).await.unwrap_or(false)`, so an unanswerable stat became
+/// a confident "file". The entry then went in as `is_dir: false` with zero
+/// bytes: the dialog described one file and no bytes for what might be a whole
+/// tree, and the `delete` that followed either took the tree anyway (a backend
+/// that recursed) or died on a confusing `ENOTEMPTY`. Either way the app acted
+/// on a fact nobody established. The cached path one screen up has always
+/// propagated the same probe error, so this was an asymmetry as much as a
+/// defect.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_source_whose_stat_fails_surfaces_that_failure_instead_of_being_guessed_a_file() {
+    let vid = unique("stat_fails");
+
+    let vol = Arc::new(CountingVolume::new("stat-fail-vol", false));
+    vol.inner
+        .create_directory(Path::new("/album"))
+        .await
+        .expect("seed album dir");
+    vol.inner
+        .create_file(Path::new("/album/photo.jpg"), b"photo")
+        .await
+        .expect("seed album child");
+    vol.inner.set_stat_failing(Path::new("/album"));
+    get_volume_manager().register(&vid, vol.clone() as Arc<dyn Volume>);
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state();
+    let config = WriteOperationConfig::default(); // no preview: the walker resolves the type itself
+
+    let result = delete_volume_files_with_progress_inner(
+        vol.clone() as Arc<dyn Volume>,
+        &vid,
+        events.as_ref(),
+        "test-op-stat-fails",
+        &state,
+        &[PathBuf::from("/album")],
+        &config,
+    )
+    .await;
+
+    let err = result.expect_err("an unanswerable stat must fail the item, not resolve it");
+    assert!(
+        matches!(&err, WriteOperationError::IoError { path, .. } if path == "/album"),
+        "the failure must name the path whose stat failed; got {err:?}"
+    );
+    assert_eq!(
+        vol.delete_count(),
+        0,
+        "nothing may be deleted on a fact the walker never established"
+    );
+
+    get_volume_manager().unregister(&vid);
+}
+
+/// The production shape the original bug rode in on: a cache hit whose
+/// `per_path` is EMPTY while `file_count` is non-zero. Every source misses the
+/// `by_path` lookup, so each falls to the `None` arm, which forwards
+/// `is_dir_hint: None` and lets `scan_volume_recursive` resolve the type with a
+/// PROPAGATING probe. That arm looks like the bug and isn't; this pins it.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_cache_hit_with_no_per_source_results_still_deletes_the_right_tree() {
+    let vid = unique("empty_per_path");
+    let preview_id = unique("preview_empty_per_path");
+
+    let vol = Arc::new(CountingVolume::new("empty-per-path-vol", false));
+    vol.inner
+        .create_directory(Path::new("/album"))
+        .await
+        .expect("seed album dir");
+    vol.inner
+        .create_file(Path::new("/album/one.jpg"), b"one")
+        .await
+        .expect("seed child one");
+    vol.inner
+        .create_file(Path::new("/album/two.jpg"), b"two")
+        .await
+        .expect("seed child two");
+    get_volume_manager().register(&vid, vol.clone() as Arc<dyn Volume>);
+
+    // Seeds past `insert_scan_result`'s canary on purpose: the canary is a
+    // `debug_assert!`, so a release build still admits this entry and the walker
+    // still has to handle it correctly.
+    crate::file_system::write_operations::scan_cache::seed_incoherent_scan_result_for_test(
+        preview_id.clone(),
+        vec![PathBuf::from("/album")],
+        2,
+        6,
+    );
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state();
+    let config = WriteOperationConfig {
+        preview_id: Some(preview_id),
+        ..WriteOperationConfig::default()
+    };
+
+    let result = delete_volume_files_with_progress_inner(
+        vol.clone() as Arc<dyn Volume>,
+        &vid,
+        events.as_ref(),
+        "test-op-empty-per-path",
+        &state,
+        &[PathBuf::from("/album")],
+        &config,
+    )
+    .await;
+
+    assert!(result.is_ok(), "the delete must succeed: {result:?}");
+    assert!(
+        !vol.inner.exists(Path::new("/album/one.jpg")).await,
+        "the tree's children must be deleted"
+    );
+    assert!(
+        !vol.inner.exists(Path::new("/album/two.jpg")).await,
+        "the tree's children must be deleted"
+    );
+    assert!(
+        !vol.inner.exists(Path::new("/album")).await,
+        "the directory itself must be deleted"
+    );
+
+    get_volume_manager().unregister(&vid);
+}

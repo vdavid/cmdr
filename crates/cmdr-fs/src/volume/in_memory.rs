@@ -11,7 +11,7 @@ use super::{
 use crate::entry::FileEntry;
 use crate::ignore_poison::IgnorePoison;
 use crate::ignore_poison::RwLockIgnorePoison;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -71,6 +71,14 @@ pub struct InMemoryVolume {
     /// failure never fails the surrounding edit (the edit commits via a
     /// rename-overwrite swap, which doesn't call `delete`). Default `false`.
     delete_fails: bool,
+    /// Paths whose [`Volume::is_directory`] and [`Volume::get_metadata`] fail with
+    /// an `IoError` instead of answering, modeling a stat that couldn't complete
+    /// (a dropped MTP session, a hung mount) rather than a path that isn't there.
+    /// That distinction is the whole point: a `NotFound` is an answer, and code
+    /// that turns an unanswered stat into a confident "not a directory" is what
+    /// routes a folder into a destructive file-shaped branch. Set via
+    /// [`Self::set_stat_failing`]. Empty by default.
+    stat_failing: RwLock<HashSet<PathBuf>>,
     /// What [`Volume::smb_connection_state`] reports. `None` (the default) is a
     /// volume that isn't a share at all; `Some` lets a test drive a code path
     /// gated on a live smb2 session without a server.
@@ -94,6 +102,7 @@ impl InMemoryVolume {
             read_range_unsupported: false,
             sibling_duplicates_allowed: false,
             delete_fails: false,
+            stat_failing: RwLock::new(HashSet::new()),
             smb_connection_state: None,
             #[cfg(feature = "playwright-e2e")]
             injected_error: std::sync::Mutex::new(None),
@@ -130,6 +139,20 @@ impl InMemoryVolume {
     pub fn with_delete_failing(mut self) -> Self {
         self.delete_fails = true;
         self
+    }
+
+    /// Test helper: makes `is_directory` and `get_metadata` FAIL for `path`
+    /// (typed `IoError`), rather than reporting it missing. The path keeps
+    /// existing for everything else, so a test can put an unanswerable stat in
+    /// front of code that has to decide what to do without one.
+    pub fn set_stat_failing(&self, path: &Path) {
+        let normalized = self.normalize(path);
+        self.stat_failing.write_ignore_poison().insert(normalized);
+    }
+
+    /// Whether `path`'s stat is configured to fail.
+    fn stat_fails_for(&self, normalized: &Path) -> bool {
+        self.stat_failing.read_ignore_poison().contains(normalized)
     }
 
     /// Test helper: overwrites an existing entry's `modified_at` (unix seconds), so
@@ -399,6 +422,12 @@ impl Volume for InMemoryVolume {
             })?;
 
             let normalized = self.normalize(path);
+            if self.stat_fails_for(&normalized) {
+                return Err(VolumeError::IoError {
+                    message: format!("Stat unavailable for {}", normalized.display()),
+                    raw_os_error: None,
+                });
+            }
 
             entries
                 .get(&normalized)
@@ -430,6 +459,12 @@ impl Volume for InMemoryVolume {
             })?;
 
             let normalized = self.normalize(path);
+            if self.stat_fails_for(&normalized) {
+                return Err(VolumeError::IoError {
+                    message: format!("Stat unavailable for {}", normalized.display()),
+                    raw_os_error: None,
+                });
+            }
 
             entries
                 .get(&normalized)

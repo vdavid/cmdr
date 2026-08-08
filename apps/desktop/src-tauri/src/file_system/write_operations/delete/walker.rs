@@ -674,7 +674,14 @@ pub(in crate::file_system::write_operations) async fn delete_volume_files_with_p
                 None => {
                     // Scan preview was non-volume (local-FS) or didn't include
                     // this source. Fall back to the no-preview shape for this
-                    // path: oracle-aware walker resolves the type.
+                    // path: the oracle-aware walker resolves the type.
+                    //
+                    // ❌ Don't "fix" the `None` here into a default. It looks
+                    // like the bug this module's guardrails are about and is the
+                    // opposite: forwarding `is_dir_hint: None` is what makes
+                    // `scan_volume_recursive` PROPAGATE a failed probe
+                    // (`map_err(...)?`) instead of guessing. A `Some(false)`
+                    // here would be the guess.
                     let result = scan_volume_recursive(
                         &*volume,
                         volume_id,
@@ -748,39 +755,33 @@ pub(in crate::file_system::write_operations) async fn delete_volume_files_with_p
                     .map(|e| e.is_directory)
             });
 
-            let is_dir = match parent_hint {
-                Some(v) => v,
-                None => volume.is_directory(source).await.unwrap_or(false),
-            };
-
-            if is_dir {
-                let result = scan_volume_recursive(
-                    &*volume,
-                    volume_id,
-                    source,
-                    Some(true),
-                    &mut entries,
-                    &mut total_bytes,
-                    &mut seen_inodes,
-                    state,
-                    events,
-                    operation_id,
-                    &tracker,
-                )
-                .await;
-                emit_cancelled_if_aborted(&result, events, operation_id, &tracker);
-                result?;
-            } else {
-                // Top-level file: size unknown without listing the parent, use 0.
-                // Progress still tracks file count accurately, and individual file
-                // deletes are near-instant on MTP.
-                tracker.files_so_far.fetch_add(1, Ordering::Relaxed);
-                entries.push(VolumeDeleteEntry {
-                    path: source.to_path_buf(),
-                    progress_bytes: 0,
-                    is_dir: false,
-                });
-            }
+            // Hand the hint (or the lack of one) straight to the walker: it
+            // resolves an absent hint with a PROPAGATING probe and handles both
+            // the directory and the top-level-file case. Resolving it here
+            // instead would mean owning a second answer to the same question,
+            // and the obvious way to write that second answer is
+            // `.unwrap_or(false)`, which turns an unanswerable stat into a
+            // confident "file". Then the entry goes in as `is_dir: false` with
+            // zero bytes, so the dialog describes one file and no bytes for
+            // what may be a whole tree, and the `delete` that follows acts on a
+            // fact nobody established. A source that can't be stat'd fails that
+            // item instead, which is the honest outcome and cheap to retry.
+            let result = scan_volume_recursive(
+                &*volume,
+                volume_id,
+                source,
+                parent_hint,
+                &mut entries,
+                &mut total_bytes,
+                &mut seen_inodes,
+                state,
+                events,
+                operation_id,
+                &tracker,
+            )
+            .await;
+            emit_cancelled_if_aborted(&result, events, operation_id, &tracker);
+            result?;
         }
     }
 
