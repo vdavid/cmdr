@@ -550,15 +550,15 @@ inset to the panel edge. A path a dialog is ABOUT (rather than one mentioned in 
 it's monospace, selectable, and copyable; `AlertDialog`'s `path` prop does that and widens the panel to 1.5× for it. The
 opt-ins:
 
-- `resizable`: lets the user drag any edge or corner to resize the dialog (default off), the way a macOS window
-  resizes — no visible grip, just the arrow the pointer picks up on the edge. **Any dialog that renders a path or a
-  filename turns this on**, because a fixed width is what forces the shortening in the first place; the body region
-  grows and scrolls, and the caller still passes the initial size via `containerStyle`. Pass `"horizontal"` (rather than
-  `true`) unless something inside actually absorbs extra height, which in practice means `fillBody` with a scrolling
-  child: it then offers the left and right edges only, so a vertical drag can't open a band of dead space above the
-  footer. The dialog can't grow past the viewport, and its own content is the floor it can't shrink below. A dialog
-  never remembers a dragged size; it reopens at its `containerStyle` one. Note a `max-width` in `containerStyle` caps
-  how far the drag can widen it, so state an opening `width` instead.
+- `resizable`: lets the user drag any edge or corner to resize the dialog (default off), the way a macOS window resizes
+  — no visible grip, just the arrow the pointer picks up on the edge. **Any dialog that renders a path or a filename
+  turns this on**, because a fixed width is what forces the shortening in the first place; the body region grows and
+  scrolls, and the caller still passes the initial size via `containerStyle`. Pass `"horizontal"` (rather than `true`)
+  unless something inside actually absorbs extra height, which in practice means `fillBody` with a scrolling child: it
+  then offers the left and right edges only, so a vertical drag can't open a band of dead space above the footer. The
+  dialog can't grow past the viewport, and its own content is the floor it can't shrink below. A dialog never remembers
+  a dragged size; it reopens at its `containerStyle` one. Note a `max-width` in `containerStyle` caps how far the drag
+  can widen it, so state an opening `width` instead.
 - `fillBody`: a fixed-height frame instead of one that grows with its content. The panel becomes a flex column, the body
   absorbs the vertical slack (as a column, so its own child can take `flex: 1 1 auto` and scroll), and the content clips
   to the panel's radius. Cap the height via `containerStyle`. Combines with `resizable`, and then the inner scroll

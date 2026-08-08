@@ -109,7 +109,6 @@ describe('ModalDialog body padding and resizing', () => {
     return target
   }
 
-
   it('wraps children in a .modal-body element', () => {
     const target = mountDialog({})
     const body = target.querySelector('.modal-body')

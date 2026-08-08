@@ -23,11 +23,8 @@ Reusable components; only silent-breakage rules live here. Ark UI backs the comp
 - **`ModalDialog`'s overlay starts at `inset: var(--titlebar-height) 0 0 0`**, keeping the macOS title bar's window-drag
   region live; any full-window backdrop must too. A dialog showing a path is `resizable` (`"horizontal"` unless
   something inside absorbs height) and tooltips its shortened text (`overflowOnly`), never via `title`. ❌ Keep the drag
-  offset and the dragged size OFF the `style` attribute: that one is `containerStyle`'s, and rewriting it mid-drag snaps
-  the panel back.
-- **`resizable` grabs on bands that HANG OVER the panel edge**, so ❌ never put `overflow: hidden` back on
-  `.modal-dialog`: it halves every band. The clip lives on `.modal-content` (DETAILS § resizable), which also keeps the
-  opposite edge pinned by paying back the centering drift.
+  offset and dragged size OFF the `style` attribute (`containerStyle` owns it), and ❌ never restore `overflow: hidden`
+  on `.modal-dialog` (the resize bands hang over its edge; `.modal-content` clips).
 - **Don't restyle `.btn-*` colors from a scoped feature component** (`scripts/check-btn-restyle`; one-offs need
   `/* allowed-btn-restyle: <reason> */`). `LinkButton` is the ONLY `cursor: pointer` opt-in.
 - **Toasts**: pick a level by feedback kind, not wording; a full all-persistent stack silently drops new ones;
