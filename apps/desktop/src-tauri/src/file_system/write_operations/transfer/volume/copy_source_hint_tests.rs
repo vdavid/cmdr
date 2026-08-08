@@ -17,18 +17,21 @@ use super::tests::{make_state, make_volumes};
 use super::*;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{CopyScanResult, InMemoryVolume, ListingProgress, SpaceInfo, VolumeReadStream};
-use crate::file_system::write_operations::state::{CachedScanResult, SCAN_PREVIEW_RESULTS};
+use crate::file_system::write_operations::scan_cache::seed_incoherent_scan_result_for_test;
+use crate::file_system::write_operations::state::CachedScanResult;
 use crate::file_system::write_operations::types::{CollectorEventSink, ConflictResolution, WriteConflictEvent};
-use crate::ignore_poison::{IgnorePoison, RwLockIgnorePoison};
+use crate::ignore_poison::IgnorePoison;
 
 /// Seeds the scan-preview cache with a COMPLETED preview that carries no
-/// per-path data — byte-for-byte what `scan_preview::run_scan_preview` (the
-/// LOCAL `std::fs` walk) caches for a local source. The copy's preflight takes
-/// its cached-hit branch, so the per-source hint map comes out empty.
-fn seed_preview_without_per_path(preview_id: &str, file_count: usize, total_bytes: u64) {
-    SCAN_PREVIEW_RESULTS.write_ignore_poison().insert(
+/// per-path data. `insert_scan_result`'s canary rejects this shape, but the
+/// canary is a `debug_assert!`: in a release build the entry lands anyway and
+/// the drivers still have to handle it without lying about what a source is.
+/// These fixtures are that defense's proof, so they seed past the canary.
+fn seed_preview_without_per_path(preview_id: &str, sources: &[&str], file_count: usize, total_bytes: u64) {
+    seed_incoherent_scan_result_for_test(
         preview_id.to_string(),
         CachedScanResult {
+            sources: sources.iter().map(PathBuf::from).collect(),
             files: Vec::new(),
             dirs: Vec::new(),
             file_count,
@@ -177,7 +180,7 @@ async fn directory_source_copies_when_preview_carries_no_per_path_serial() {
         .unwrap();
 
     let preview_id = "test-preview-no-per-path-serial";
-    seed_preview_without_per_path(preview_id, 2, 11);
+    seed_preview_without_per_path(preview_id, &["/album"], 2, 11);
 
     let events = Arc::new(CollectorEventSink::new());
     let state = make_state();
@@ -225,7 +228,7 @@ async fn directory_source_copies_when_preview_carries_no_per_path_concurrent() {
     source.create_file(Path::new("/loose_b.bin"), b"bbbb").await.unwrap();
 
     let preview_id = "test-preview-no-per-path-concurrent";
-    seed_preview_without_per_path(preview_id, 4, 19);
+    seed_preview_without_per_path(preview_id, &["/album", "/loose_a.bin", "/loose_b.bin"], 4, 19);
 
     let events = Arc::new(CollectorEventSink::new());
     let state = make_state();
@@ -284,7 +287,7 @@ async fn failed_directory_copy_spares_preexisting_dest_dir_serial() {
     let (source, dest) = poisoned_dir_source_and_merged_dest(&[]).await;
 
     let preview_id = "test-preview-no-per-path-fail-serial";
-    seed_preview_without_per_path(preview_id, 1, 4096);
+    seed_preview_without_per_path(preview_id, &["/album"], 1, 4096);
 
     let events = Arc::new(CollectorEventSink::new());
     let state = make_state();
@@ -323,7 +326,7 @@ async fn failed_directory_copy_spares_preexisting_dest_dir_concurrent() {
     let (source, dest) = poisoned_dir_source_and_merged_dest(&["/loose_a.bin", "/loose_b.bin"]).await;
 
     let preview_id = "test-preview-no-per-path-fail-concurrent";
-    seed_preview_without_per_path(preview_id, 3, 4104);
+    seed_preview_without_per_path(preview_id, &["/album", "/loose_a.bin", "/loose_b.bin"], 3, 4104);
 
     let events = Arc::new(CollectorEventSink::new());
     let state = make_state();

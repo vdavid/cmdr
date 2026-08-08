@@ -689,3 +689,92 @@ fn cross_fs_move_preserves_empty_directories() {
     );
     assert!(!source.exists(), "the source tree should be removed after the move");
 }
+
+// ============================================================================
+// The preview cache is bound to the operation's own sources
+// ============================================================================
+
+/// A cross-FS local move asked to move `selected.bin` while the cache holds a
+/// preview of `other.bin` must move `selected.bin` and leave `other.bin` where
+/// it is, on both sides.
+///
+/// `move_with_staging` takes the file LIST from the cache but re-reads
+/// `sources` for `create_scanned_dirs_at_destination` and again for Phase 3's
+/// per-top-level staged rename. On a mismatched preview it stages the cached
+/// tree and then looks in staging for the REQUESTED name, which isn't there —
+/// a half-staged move, the worst shape available: bytes copied out of a file
+/// nobody asked about, and a failure that has to unwind cleanly.
+#[test]
+fn a_local_move_never_acts_on_a_preview_of_a_different_selection() {
+    use crate::file_system::volume::CopyScanResult;
+    use crate::file_system::write_operations::state::{CachedScanResult, FileInfo, insert_scan_result};
+    use std::time::Instant;
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_dir = tmp.path().join("src");
+    let dst_dir = tmp.path().join("dst");
+    fs::create_dir_all(&src_dir).expect("create src");
+    fs::create_dir_all(&dst_dir).expect("create dst");
+
+    let selected = src_dir.join("selected.bin");
+    fs::write(&selected, b"the file the user picked").expect("write selected");
+    let other = src_dir.join("other.bin");
+    fs::write(&other, b"a file from an earlier scan").expect("write other");
+
+    let preview_id = "move-binding-foreign-preview".to_string();
+    let other_metadata = fs::symlink_metadata(&other).expect("other exists");
+    insert_scan_result(
+        preview_id.clone(),
+        CachedScanResult {
+            sources: vec![other.clone()],
+            files: vec![FileInfo::new(other.clone(), src_dir.clone(), &other_metadata)],
+            dirs: Vec::new(),
+            file_count: 1,
+            total_bytes: other_metadata.len(),
+            dedup_bytes: other_metadata.len(),
+            per_path: vec![(
+                other.clone(),
+                CopyScanResult {
+                    file_count: 1,
+                    dir_count: 0,
+                    total_bytes: other_metadata.len(),
+                    dedup_bytes: other_metadata.len(),
+                    top_level_is_directory: false,
+                },
+            )],
+            estimated_compressed_bytes: None,
+            inserted_at: Instant::now(),
+        },
+    );
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state(0);
+    let config = WriteOperationConfig {
+        preview_id: Some(preview_id),
+        ..WriteOperationConfig::default()
+    };
+
+    let result = move_with_staging(
+        &*events,
+        "op-move-preview-binding",
+        &state,
+        std::slice::from_ref(&selected),
+        &dst_dir,
+        &config,
+    );
+
+    assert!(result.is_ok(), "the move must succeed: {result:?}");
+    assert!(
+        dst_dir.join("selected.bin").exists(),
+        "the file the user selected must reach the destination"
+    );
+    assert!(!selected.exists(), "the moved source must be gone");
+    assert!(
+        other.exists(),
+        "a preview of another file must never authorize moving it"
+    );
+    assert!(
+        !dst_dir.join("other.bin").exists(),
+        "a preview of another file must never put it at the destination"
+    );
+}

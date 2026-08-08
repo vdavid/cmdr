@@ -3,11 +3,15 @@
 //! safety-net for the result cache.
 //!
 //! These types are owned here but re-exported from `lifecycle/state.rs`, so existing
-//! `state::FileInfo` / `state::ScanResult` / `state::CachedScanResult` /
-//! `state::SCAN_PREVIEW_RESULTS` paths keep resolving.
+//! `state::FileInfo` / `state::ScanResult` / `state::CachedScanResult` paths
+//! keep resolving.
+//!
+//! `SCAN_PREVIEW_RESULTS` itself is private to this module: every insert, read,
+//! and take goes through a function here, so the coherence canary and the
+//! request binding can't be bypassed by a new call site writing the map.
 
-use std::collections::HashMap;
-use std::path::PathBuf;
+use std::collections::{HashMap, HashSet};
+use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, LazyLock, RwLock};
 use std::time::{Duration, Instant};
@@ -27,6 +31,12 @@ pub(super) struct ScanPreviewState {
 /// Cached result from a completed scan preview.
 #[allow(dead_code, reason = "Fields read via take_cached_scan_result")]
 pub(super) struct CachedScanResult {
+    /// The top-level paths the preview was asked to walk. A `preview_id` proves
+    /// the frontend once asked for a scan; it proves nothing about WHICH scan,
+    /// so `take_cached_scan_result` refuses an entry whose sources don't match
+    /// the operation's own. Without this, an operation on `/b` would happily
+    /// act on a cached preview of `/a` — and on delete, that has no rollback.
+    pub sources: Vec<PathBuf>,
     pub files: Vec<FileInfo>,
     pub dirs: Vec<PathBuf>,
     pub file_count: usize,
@@ -76,8 +86,28 @@ pub(super) fn expired_scan_result_ids<'a>(
 
 /// Evicts cache entries older than `SCAN_RESULT_TTL`, then inserts `result`
 /// under `preview_id`. The single choke point for `SCAN_PREVIEW_RESULTS`
-/// inserts so the TTL sweep can't be forgotten by a new call site.
+/// inserts so the TTL sweep can't be forgotten by a new call site, and the one
+/// place the coherence canary below can see every entry.
 pub(super) fn insert_scan_result(preview_id: String, result: CachedScanResult) {
+    // The incoherent shape: a completed walk that counted files but recorded no
+    // per-source result. Downstream that reads as "no information", and a copy
+    // driver turns "no information" into a confident `is_directory: false` — the
+    // exact lie that streamed a directory as a file and let a failed copy
+    // recursively delete a merged destination. One-directional on purpose: a
+    // volume batch legitimately caches an empty `files` list with a populated
+    // `per_path`, never the reverse.
+    if result.file_count > 0 && result.per_path.is_empty() {
+        log::warn!(
+            target: "cmdr_lib::write_operations",
+            "scan preview {} completed a walk of {} files with no per-source results; downstream hints will be empty",
+            preview_id,
+            result.file_count
+        );
+        debug_assert!(
+            false,
+            "a completed walk with file_count > 0 must carry per_path entries (preview {preview_id})"
+        );
+    }
     if let Ok(mut cache) = SCAN_PREVIEW_RESULTS.write() {
         let now = Instant::now();
         let expired = expired_scan_result_ids(cache.iter().map(|(k, v)| (k, v.inserted_at)), now, SCAN_RESULT_TTL);
@@ -89,18 +119,73 @@ pub(super) fn insert_scan_result(preview_id: String, result: CachedScanResult) {
 }
 
 /// Tries to get cached scan results for a preview, removing them from cache.
-pub(super) fn take_cached_scan_result(preview_id: &str) -> Option<ScanResult> {
+///
+/// `requested_sources` is the selection the OPERATION was asked to act on. A
+/// cached entry that describes a different set is not a cache hit: the entry is
+/// dropped, a warn names both lists, and the caller falls through to its own
+/// fresh scan. Order doesn't matter (it's a frontend detail, and `per_path` is
+/// already order-rebuilt), so the comparison is set-wise — and deliberately
+/// literal: if the frontend can hand back a path that differs only by a
+/// trailing separator, that belongs fixed at the IPC edge, not softened here
+/// into another belief.
+pub(super) fn take_cached_scan_result(preview_id: &str, requested_sources: &[PathBuf]) -> Option<ScanResult> {
+    let Ok(mut cache) = SCAN_PREVIEW_RESULTS.write() else {
+        return None;
+    };
+    let cached = cache.remove(preview_id)?;
+    if !same_path_set(&cached.sources, requested_sources) {
+        log::warn!(
+            target: "cmdr_lib::write_operations",
+            "scan preview {} describes {:?}, but the operation asked for {:?}; ignoring the cache and rescanning",
+            preview_id,
+            cached.sources,
+            requested_sources
+        );
+        return None;
+    }
+    Some(ScanResult {
+        files: cached.files,
+        dirs: cached.dirs,
+        file_count: cached.file_count,
+        total_bytes: cached.total_bytes,
+        dedup_bytes: cached.dedup_bytes,
+        per_path: cached.per_path,
+    })
+}
+
+/// Whether two path lists hold the same paths, ignoring order and duplicates.
+fn same_path_set(a: &[PathBuf], b: &[PathBuf]) -> bool {
+    let left: HashSet<&Path> = a.iter().map(PathBuf::as_path).collect();
+    let right: HashSet<&Path> = b.iter().map(PathBuf::as_path).collect();
+    left == right
+}
+
+/// Reads the cached totals for `preview_id` without consuming the entry. Keeps
+/// the lock and the map behind the module wall for `get_scan_preview_totals`,
+/// the compress dialog's size estimate.
+pub(super) fn cached_scan_totals(preview_id: &str) -> Option<super::types::ScanPreviewTotals> {
+    let cache = SCAN_PREVIEW_RESULTS.read().ok()?;
+    let cached = cache.get(preview_id)?;
+    Some(super::types::ScanPreviewTotals {
+        files_total: cached.file_count,
+        dirs_total: cached.dirs.len(),
+        bytes_total: cached.total_bytes,
+        dedup_bytes_total: cached.dedup_bytes,
+        estimated_compressed_bytes: cached.estimated_compressed_bytes.clone(),
+    })
+}
+
+/// Seeds an entry that deliberately fails `insert_scan_result`'s coherence
+/// canary, for the fixtures that pin what downstream does when a half-empty
+/// preview reaches it anyway. The canary is a `debug_assert!`, so in a release
+/// build an incoherent entry still lands in the cache and the drivers still
+/// have to handle it without lying; these fixtures are that defense's only
+/// proof. ❌ Not a general-purpose seeder: everything else goes through
+/// `insert_scan_result`.
+#[cfg(test)]
+pub(super) fn seed_incoherent_scan_result_for_test(preview_id: String, result: CachedScanResult) {
     if let Ok(mut cache) = SCAN_PREVIEW_RESULTS.write() {
-        cache.remove(preview_id).map(|cached| ScanResult {
-            files: cached.files,
-            dirs: cached.dirs,
-            file_count: cached.file_count,
-            total_bytes: cached.total_bytes,
-            dedup_bytes: cached.dedup_bytes,
-            per_path: cached.per_path,
-        })
-    } else {
-        None
+        cache.insert(preview_id, result);
     }
 }
 
@@ -117,8 +202,12 @@ pub(super) fn release_scan_result(preview_id: &str) {
 pub(super) static SCAN_PREVIEW_STATE: LazyLock<RwLock<HashMap<String, Arc<ScanPreviewState>>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
-/// Global cache for completed scan preview results.
-pub(super) static SCAN_PREVIEW_RESULTS: LazyLock<RwLock<HashMap<String, CachedScanResult>>> =
+/// Global cache for completed scan preview results. ❌ Private on purpose, and
+/// it stays that way: every entry has to pass `insert_scan_result`'s coherence
+/// canary, and every read has to go through `take_cached_scan_result`'s
+/// request binding. A `pub(super)` static is a choke point anyone can walk
+/// around.
+static SCAN_PREVIEW_RESULTS: LazyLock<RwLock<HashMap<String, CachedScanResult>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
 // ============================================================================
@@ -207,7 +296,7 @@ impl FileInfo {
     }
 
     /// Compute the destination path for this file given the destination root.
-    pub fn dest_path(&self, destination: &std::path::Path) -> PathBuf {
+    pub fn dest_path(&self, destination: &Path) -> PathBuf {
         // Strip source_root from path to get relative path, then join with destination
         if let Ok(relative) = self.path.strip_prefix(&self.source_root) {
             destination.join(relative)
@@ -238,6 +327,10 @@ pub(super) struct ScanResult {
     /// local-FS scans.
     pub per_path: Vec<(PathBuf, CopyScanResult)>,
 }
+
+#[cfg(test)]
+#[path = "scan_cache_tests.rs"]
+mod cache_binding_tests;
 
 #[cfg(test)]
 mod tests {

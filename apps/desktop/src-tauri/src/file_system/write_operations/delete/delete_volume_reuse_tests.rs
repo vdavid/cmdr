@@ -14,7 +14,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::time::Duration;
 
-use super::super::state::{CachedScanResult, OperationIntent, SCAN_PREVIEW_RESULTS, WriteOperationState};
+use super::super::state::{CachedScanResult, OperationIntent, WriteOperationState, insert_scan_result};
 use super::super::types::{CollectorEventSink, WriteOperationConfig, WriteOperationError};
 use super::walker::delete_volume_files_with_progress_inner;
 use crate::file_system::listing::caching_test_support::{TestListing, TestListingGuard};
@@ -183,8 +183,9 @@ fn make_state() -> Arc<WriteOperationState> {
 
 /// Test 1: `delete_files_start` with a fresh `preview_id` consumes the cached
 /// scan and skips the rescan. `list_directory` is called once total (the
-/// preview's listing — simulated here by seeding `SCAN_PREVIEW_RESULTS`
-/// directly, the same shape `run_volume_scan_preview` produces); during the
+/// preview's listing — simulated here by seeding the scan-preview cache
+/// through `insert_scan_result`, the same shape `run_volume_scan_preview`
+/// produces); during the
 /// delete itself, the call count stays at zero.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn delete_consumes_preview_id_skips_rescan() {
@@ -200,9 +201,10 @@ async fn delete_consumes_preview_id_skips_rescan() {
     // Simulate a completed scan preview: per-path entries for two top-level
     // files. The real `start_scan_preview` path produces this same structure
     // (see `run_volume_scan_preview` → `CachedScanResult`).
-    SCAN_PREVIEW_RESULTS.write().unwrap().insert(
+    insert_scan_result(
         preview_id.clone(),
         CachedScanResult {
+            sources: vec![PathBuf::from("/a.jpg"), PathBuf::from("/b.jpg")],
             files: Vec::new(),
             dirs: Vec::new(),
             file_count: 2,

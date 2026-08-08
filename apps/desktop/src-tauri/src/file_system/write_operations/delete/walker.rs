@@ -32,7 +32,7 @@ pub(in crate::file_system::write_operations) fn delete_files_with_progress_inner
         // Volume scans cache aggregate stats with an empty `files` list; the
         // per-file delete loop needs the file list, so treat an empty-files
         // cache hit the same as a miss and fall through to a fresh local scan.
-        if let Some(cached) = take_cached_scan_result(preview_id).filter(|c| !c.files.is_empty()) {
+        if let Some(cached) = take_cached_scan_result(preview_id, sources).filter(|c| !c.files.is_empty()) {
             log::debug!(
                 "delete_files_with_progress: reusing cached scan for operation_id={}, preview_id={}, files={}, bytes={}",
                 operation_id,
@@ -588,7 +588,10 @@ pub(in crate::file_system::write_operations) async fn delete_volume_files_with_p
     // `run_volume_scan_preview`. We still need to recurse into top-level dirs to
     // get the per-file paths delete needs — but the recursion's walker is now
     // oracle-aware, so a watched subtree skips the `list_directory` round-trip.
-    let cached_scan = config.preview_id.as_deref().and_then(take_cached_scan_result);
+    let cached_scan = config
+        .preview_id
+        .as_deref()
+        .and_then(|preview_id| take_cached_scan_result(preview_id, sources));
 
     let mut entries: Vec<VolumeDeleteEntry> = Vec::new();
     let mut total_bytes = 0u64;

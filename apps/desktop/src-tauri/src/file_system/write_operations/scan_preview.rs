@@ -12,9 +12,9 @@ use std::time::{Duration, Instant};
 use uuid::Uuid;
 
 use super::scan::{SubtreeTotals, WalkContext, scan_subtree_with_oracle, sort_files, walk_sources_with_per_path};
+use super::scan_cache::cached_scan_totals;
 use super::state::{
-    CachedScanResult, FileInfo, SCAN_PREVIEW_RESULTS, SCAN_PREVIEW_STATE, ScanPreviewState, insert_scan_result,
-    release_scan_result,
+    CachedScanResult, FileInfo, SCAN_PREVIEW_STATE, ScanPreviewState, insert_scan_result, release_scan_result,
 };
 use super::types::{
     ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent, ScanPreviewProgressEvent,
@@ -96,15 +96,7 @@ pub fn start_scan_preview(
 /// surfaced by M2a's watcher-backed oracle, which can complete a scan in
 /// ~5 ms — faster than the FE's `await startScanPreview()` IPC round-trip).
 pub fn get_scan_preview_totals(preview_id: &str) -> Option<super::types::ScanPreviewTotals> {
-    let cache = SCAN_PREVIEW_RESULTS.read().ok()?;
-    let cached = cache.get(preview_id)?;
-    Some(super::types::ScanPreviewTotals {
-        files_total: cached.file_count,
-        dirs_total: cached.dirs.len(),
-        bytes_total: cached.total_bytes,
-        dedup_bytes_total: cached.dedup_bytes,
-        estimated_compressed_bytes: cached.estimated_compressed_bytes.clone(),
-    })
+    cached_scan_totals(preview_id)
 }
 
 /// Cancels a running scan preview AND frees any cached result.
@@ -274,6 +266,7 @@ fn run_scan_preview(
                 insert_scan_result(
                     preview_id.clone(),
                     CachedScanResult {
+                        sources,
                         files,
                         dirs,
                         file_count,
@@ -411,6 +404,7 @@ async fn run_volume_scan_preview(
                 insert_scan_result(
                     preview_id.clone(),
                     CachedScanResult {
+                        sources,
                         files: Vec::new(),
                         dirs: Vec::new(),
                         file_count: total_files,
@@ -677,15 +671,29 @@ mod tests {
     #[test]
     fn get_scan_preview_totals_returns_cached_counts_after_complete() {
         let preview_id = format!("test-{}", Uuid::new_v4());
-        SCAN_PREVIEW_RESULTS.write().unwrap().insert(
+        let source = PathBuf::from("/src");
+        insert_scan_result(
             preview_id.clone(),
             CachedScanResult {
+                sources: vec![source.clone()],
                 files: Vec::new(),
                 dirs: vec![PathBuf::from("/d1"), PathBuf::from("/d2")],
                 file_count: 7,
                 total_bytes: 12_345,
                 dedup_bytes: 12_345,
-                per_path: Vec::new(),
+                // A completed walk that counted seven files carries a per-source
+                // result for each source; an empty map here would be the
+                // incoherent shape `insert_scan_result`'s canary rejects.
+                per_path: vec![(
+                    source,
+                    CopyScanResult {
+                        file_count: 7,
+                        dir_count: 2,
+                        total_bytes: 12_345,
+                        dedup_bytes: 12_345,
+                        top_level_is_directory: true,
+                    },
+                )],
                 estimated_compressed_bytes: None,
                 inserted_at: Instant::now(),
             },
@@ -696,7 +704,7 @@ mod tests {
         assert_eq!(totals.dirs_total, 2);
         assert_eq!(totals.bytes_total, 12_345);
 
-        SCAN_PREVIEW_RESULTS.write().unwrap().remove(&preview_id);
+        release_scan_result(&preview_id);
     }
 
     /// `get_scan_preview_totals` returns `None` while the scan is still

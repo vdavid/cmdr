@@ -492,7 +492,7 @@ fn move_with_staging(
         // Volume scans cache aggregate stats with an empty `files` list; the
         // per-file move loop needs the file list, so treat an empty-files
         // cache hit the same as a miss and fall through to a fresh local scan.
-        if let Some(cached) = take_cached_scan_result(preview_id).filter(|c| !c.files.is_empty()) {
+        if let Some(cached) = take_cached_scan_result(preview_id, sources).filter(|c| !c.files.is_empty()) {
             log::debug!(
                 "move_with_staging: reusing cached scan for operation_id={}, preview_id={}, files={}, bytes={}",
                 operation_id,

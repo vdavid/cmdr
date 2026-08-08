@@ -1281,15 +1281,16 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
     dest_inner.create_file(Path::new("/photo.jpg"), b"old").await.unwrap();
     let dest: Arc<dyn Volume> = dest_inner;
 
-    // Prime the scan-preview cache via the real `start_scan_preview` path would
-    // require a Tauri AppHandle. Instead, seed it directly: the cached branch
-    // reads from `SCAN_PREVIEW_RESULTS` keyed by `preview_id`.
+    // Priming the cache through the real `start_scan_preview` path would need a
+    // Tauri AppHandle. Seed it through the same choke point instead: the cached
+    // branch takes the entry back out keyed by `preview_id`.
     use crate::file_system::volume::CopyScanResult as CSR;
-    use crate::file_system::write_operations::state::{CachedScanResult, SCAN_PREVIEW_RESULTS};
+    use crate::file_system::write_operations::state::{CachedScanResult, insert_scan_result};
     let preview_id = "test-preview-id-skip-source-scan".to_string();
-    SCAN_PREVIEW_RESULTS.write().unwrap().insert(
+    insert_scan_result(
         preview_id.clone(),
         CachedScanResult {
+            sources: vec![PathBuf::from("/photo.jpg")],
             files: Vec::new(),
             dirs: Vec::new(),
             file_count: 1,
@@ -1348,9 +1349,10 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
     assert_eq!(scans_via_skip, 0, "Skip mode must not call scan_for_copy on the source",);
 
     // ── Stop mode with a hint: also no scan ─────────────────────────
-    SCAN_PREVIEW_RESULTS.write().unwrap().insert(
+    insert_scan_result(
         "test-preview-id-stop".to_string(),
         CachedScanResult {
+            sources: vec![PathBuf::from("/photo.jpg")],
             files: Vec::new(),
             dirs: Vec::new(),
             file_count: 1,

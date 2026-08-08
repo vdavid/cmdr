@@ -18,13 +18,17 @@ use super::types::{
 
 // The operation-intent / pause-gate state machines and the scan-preview caches
 // live in sibling modules. Re-export them here so the established
-// `state::OperationIntent`, `state::PauseGate`, `state::FileInfo`,
-// `state::SCAN_PREVIEW_RESULTS`, etc. paths keep resolving for every caller.
+// `state::OperationIntent`, `state::PauseGate`, `state::FileInfo`, etc. paths
+// keep resolving for every caller. The completed-result map itself is NOT
+// re-exported: it's private to `scan_cache`, reachable only through
+// `insert_scan_result` / `take_cached_scan_result` / `cached_scan_totals` /
+// `release_scan_result`, so no caller can seed or read an entry that skipped
+// the coherence canary and the request binding.
 pub use super::operation_intent::PauseGate;
 pub(crate) use super::operation_intent::{OperationIntent, is_cancelled, load_intent};
 pub(super) use super::scan_cache::{
-    CachedScanResult, FileInfo, SCAN_PREVIEW_RESULTS, SCAN_PREVIEW_STATE, ScanPreviewState, ScanResult,
-    insert_scan_result, release_scan_result,
+    CachedScanResult, FileInfo, SCAN_PREVIEW_STATE, ScanPreviewState, ScanResult, insert_scan_result,
+    release_scan_result,
 };
 
 // ============================================================================

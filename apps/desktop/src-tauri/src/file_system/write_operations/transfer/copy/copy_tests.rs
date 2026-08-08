@@ -216,3 +216,86 @@ fn copy_empty_directory_does_not_clobber_same_named_dest_file() {
     assert!(dest.is_file(), "the existing dest file must survive");
     assert_eq!(fs::read(&dest).unwrap(), b"existing user data");
 }
+
+// ============================================================================
+// The preview cache is bound to the operation's own sources
+// ============================================================================
+
+/// A local copy asked to copy `selected/` while the cache holds a preview of
+/// `other/` must copy `selected/`, not `other/`.
+///
+/// The file LIST comes from the cache, but `mod.rs` re-reads `sources`
+/// afterwards for the bulk-skip set, so the two disagree on a mismatched
+/// preview and the copy silently writes the wrong tree to the destination.
+/// Nothing is lost here (copy creates), but the user gets files they never
+/// asked for and not the ones they did.
+#[test]
+fn a_local_copy_never_acts_on_a_preview_of_a_different_selection() {
+    use crate::file_system::volume::CopyScanResult;
+    use crate::file_system::write_operations::state::{CachedScanResult, FileInfo, insert_scan_result};
+    use std::time::Instant;
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_dir = tmp.path().join("src");
+    let dst_dir = tmp.path().join("dst");
+    fs::create_dir_all(&src_dir).expect("create src");
+    fs::create_dir_all(&dst_dir).expect("create dst");
+
+    let selected = src_dir.join("selected.bin");
+    fs::write(&selected, b"the file the user picked").expect("write selected");
+    let other = src_dir.join("other.bin");
+    fs::write(&other, b"a file from an earlier scan").expect("write other");
+
+    // A completed local preview of the OTHER file.
+    let preview_id = "copy-binding-foreign-preview".to_string();
+    let other_metadata = fs::symlink_metadata(&other).expect("other exists");
+    insert_scan_result(
+        preview_id.clone(),
+        CachedScanResult {
+            sources: vec![other.clone()],
+            files: vec![FileInfo::new(other.clone(), src_dir.clone(), &other_metadata)],
+            dirs: Vec::new(),
+            file_count: 1,
+            total_bytes: other_metadata.len(),
+            dedup_bytes: other_metadata.len(),
+            per_path: vec![(
+                other.clone(),
+                CopyScanResult {
+                    file_count: 1,
+                    dir_count: 0,
+                    total_bytes: other_metadata.len(),
+                    dedup_bytes: other_metadata.len(),
+                    top_level_is_directory: false,
+                },
+            )],
+            estimated_compressed_bytes: None,
+            inserted_at: Instant::now(),
+        },
+    );
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state(0);
+    let config = WriteOperationConfig {
+        preview_id: Some(preview_id),
+        ..WriteOperationConfig::default()
+    };
+
+    let result = copy_files_with_progress_inner(
+        &*events,
+        "op-copy-preview-binding",
+        &state,
+        std::slice::from_ref(&selected),
+        &dst_dir,
+        &config,
+    );
+
+    assert!(result.is_ok(), "the copy must succeed: {result:?}");
+    assert!(
+        dst_dir.join("selected.bin").exists(),
+        "the file the user selected must reach the destination"
+    );
+    assert!(
+        !dst_dir.join("other.bin").exists(),
+        "a preview of another file must never authorize copying it"
+    );
+}

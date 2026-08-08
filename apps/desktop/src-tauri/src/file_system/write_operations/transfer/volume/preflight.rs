@@ -134,7 +134,11 @@ pub(super) async fn scan_volume_sources(
 
     // Cached preview from the TransferDialog: same scan results, no second
     // walk over the device.
-    if let Some(cached) = config.preview_id.as_deref().and_then(take_cached_scan_result) {
+    if let Some(cached) = config
+        .preview_id
+        .as_deref()
+        .and_then(|preview_id| take_cached_scan_result(preview_id, source_paths))
+    {
         log::debug!(
             "scan_volume_sources: reused cached preview for op={}, files={}, bytes={}, per_path={}",
             operation_id,
@@ -312,7 +316,11 @@ pub(super) async fn top_level_move_hints(
     config: &VolumeCopyConfig,
 ) -> Result<TopLevelMoveHints, WriteOperationError> {
     // Cached preview: read only the per-top-level-path type + (file) size.
-    if let Some(cached) = config.preview_id.as_deref().and_then(take_cached_scan_result) {
+    if let Some(cached) = config
+        .preview_id
+        .as_deref()
+        .and_then(|preview_id| take_cached_scan_result(preview_id, source_paths))
+    {
         let mut source_hints = HashMap::with_capacity(cached.per_path.len());
         for (path, scan) in cached.per_path {
             let size = if scan.top_level_is_directory {

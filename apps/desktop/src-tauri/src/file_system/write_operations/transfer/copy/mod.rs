@@ -122,7 +122,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
         // Volume scans (MTP, etc.) cache aggregate stats only (empty `files` list).
         // This per-file copy path needs the file list, so treat an empty-files cache
         // hit the same as a miss and fall through to a fresh local scan.
-        if let Some(cached) = take_cached_scan_result(preview_id).filter(|c| !c.files.is_empty()) {
+        if let Some(cached) = take_cached_scan_result(preview_id, sources).filter(|c| !c.files.is_empty()) {
             log::debug!(
                 "copy_files_with_progress: reusing cached scan for operation_id={}, preview_id={}, files={}, bytes={}",
                 operation_id,
