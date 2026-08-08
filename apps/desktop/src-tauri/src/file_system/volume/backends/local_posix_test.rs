@@ -148,6 +148,29 @@ async fn test_write_operations() {
     assert!(test_dir.join("new.txt").exists());
 }
 
+/// The shared `Volume::delete` non-recursion assertion. LocalPosix gets it for
+/// free from `std::fs::remove_dir`'s `ENOTEMPTY`, which is exactly why it's
+/// worth pinning: "free" is what makes a contract invisible until a backend
+/// that doesn't get it free comes along.
+#[tokio::test]
+async fn delete_honors_the_shared_non_recursion_contract() {
+    let test_dir = TestDir::new("delete_non_recursion_test");
+    let volume = LocalPosixVolume::new("Test", &*test_dir);
+
+    volume.create_directory(Path::new("album")).await.unwrap();
+    volume
+        .create_file(Path::new("album/keep.txt"), b"content")
+        .await
+        .unwrap();
+
+    cmdr_fs::volume::conformance::assert_delete_leaves_a_non_empty_dir_intact(
+        &volume,
+        Path::new("album"),
+        "keep.txt",
+    )
+    .await;
+}
+
 #[tokio::test]
 async fn test_rename_conflict_no_force() {
     let test_dir = TestDir::new("rename_conflict_test");

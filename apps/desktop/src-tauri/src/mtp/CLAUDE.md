@@ -28,19 +28,17 @@ picker, reactive volume state). It's a passive consumer of `volumes-changed` and
   payload: that watch is USB-only, so E2E's virtual device would never connect. Every event funnels into
   `check_for_device_changes()`, which re-enumerates and diffs `KNOWN_DEVICES`. Why the initial `Arrived` burst can't
   double-connect: DETAILS.md.
-- **`MTP_ENABLED` (`AtomicBool`, default `true`, in `watcher.rs`) gates all auto-connect.** The watcher loop always runs
-  (`OnceLock`, no shutdown channel); `check_for_device_changes()` returns early when disabled. Setting key:
-  `fileOperations.mtpEnabled` in `settings.json`, read by `settings/loader.rs` at startup.
-  - `set_mtp_enabled_flag(bool)`: flag only; called before `start_mtp_watcher()` so startup respects the persisted
-    setting.
-  - `set_mtp_enabled(bool)`: the Tauri-command path. Disabling disconnects everything, clears `KNOWN_DEVICES`, and
-    restores ptpcamerad (macOS); enabling re-runs `check_for_device_changes()`.
+- **`MTP_ENABLED` (`AtomicBool` in `watcher.rs`, default `true`) gates all auto-connect**, never the watcher loop
+  itself. Setting key `fileOperations.mtpEnabled`; two setters, one flag-only for startup. `DETAILS.md`.
+- **`delete` has two scopes; only `delete_mtp_object` may recurse.** `MtpVolume::delete` passes
+  `MtpDeleteScope::SingleNode`: a folder that still has children is refused (`DirectoryNotEmpty`), and nothing is
+  deleted. ❌ Never widen a caller to `Tree` — the same-volume move's "a Skipped child keeps its only copy" guarantee IS
+  that refusal.
 - **Write-capability probe.** `probe_write_capability()` creates a hidden `.cmdr_write_probe` folder to catch cameras
   that claim write support but reject it (`StoreReadOnly`). Timeouts and non-fatal errors count as writable.
-- **macOS ptpcamerad suppression.** The watcher suppresses `ptpcamerad` (`launchctl disable` + `pkill -9`) before
-  connecting, restores it when the last device leaves or on exit, and runs `ensure_ptpcamerad_enabled()` at startup for
-  crash recovery. Suppression failing falls back to the `ExclusiveAccess` dialog; disabling MTP calls
-  `restore_ptpcamerad_unconditionally()`.
+- **macOS ptpcamerad suppression.** The watcher suppresses `ptpcamerad` before connecting and restores it when the last
+  device leaves, on exit, or on MTP being disabled; `ensure_ptpcamerad_enabled()` at startup covers a crash. A failed
+  suppression falls back to the `ExclusiveAccess` dialog. `DETAILS.md`.
 - **Error events the frontend depends on:** `mtp-exclusive-access-error` (ptpcamerad still holds the device; carries the
   blocking process name from `ioreg`, `None` on Linux), `mtp-permission-error` (Linux missing udev rules →
   `MtpPermissionDialog` with the install command).
@@ -54,11 +52,10 @@ picker, reactive volume state). It's a passive consumer of `volumes-changed` and
 - **❌ The session layer never registers volumes.** `connect()` attaches storages through the `OnceLock` registrar in
   `connection/volume_registrar.rs`, installed at startup by `volume_wiring.rs`. Keep it synchronous: the attach must
   finish before the event loop starts. New backends copy this (`DETAILS.md`).
-- **Cancel propagation bails at the next per-USB-roundtrip boundary** (per-handle in `ObjectListing::next`): a
-  `CancellationToken` (`WriteOperationState.backend_cancel`, `StreamingListingState.cancel`) bridged to an
-  `mtp_rs::CancelToken` by `MtpCancelBridge`. It's the ONLY safe way to stop an MTP op early: ❌ never a
-  `tokio::time::timeout` or a task abort, which drop the future mid-transaction and wedge the phone (enforced by
-  `pnpm check mtp-dropping-timeout`). Don't switch list/delete to PTP `CancelTransaction` (rationale in `DETAILS.md`).
+- **Cancel propagation bails at the next per-USB-roundtrip boundary**: a `CancellationToken` bridged to an
+  `mtp_rs::CancelToken` by `MtpCancelBridge`. It's the ONLY safe way to stop an MTP op early — ❌ never a
+  `tokio::time::timeout` or a task abort, which drop the future mid-transaction and wedge the phone (`pnpm check
+  mtp-dropping-timeout`), and ❌ never PTP `CancelTransaction` for list/delete. `DETAILS.md`.
 
 Full details (data-flow diagram, virtual-device activation gating, cancel-propagation wiring, why-not-CancelTransaction,
 hardware caveats, dependencies): `DETAILS.md`.

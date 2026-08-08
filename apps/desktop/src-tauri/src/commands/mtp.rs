@@ -4,6 +4,7 @@ use log::debug;
 use serde::{Deserialize, Serialize};
 
 use crate::file_system::FileEntry;
+use crate::mtp::connection::MtpDeleteScope;
 use crate::mtp::{self, ConnectedDeviceInfo, MtpConnectionError, MtpDeviceInfo, MtpObjectInfo, MtpStorageInfo};
 use tauri::AppHandle;
 
@@ -163,8 +164,16 @@ pub async fn list_mtp_directory(
 
 /// Deletes an object (file or folder) from an MTP device.
 ///
-/// For folders, this recursively deletes all contents first since MTP
-/// requires folders to be empty before deletion.
+/// For folders, this recursively deletes all contents first since MTP requires
+/// folders to be empty before deletion.
+///
+/// **The only `MtpDeleteScope::Tree` caller in the repo.** Every other delete
+/// goes through `MtpVolume::delete`, which is bound by `Volume::delete`'s
+/// "one file or one EMPTY directory" contract and passes `SingleNode`; the
+/// tree-shaped deletes (the delete walker, the transfer engine's cleanup) walk
+/// the tree themselves so each node gets its own error attribution and its own
+/// chance to be preserved. This command exists as a direct recursive-delete
+/// entry point, so it names that intent explicitly rather than inheriting it.
 ///
 /// # Arguments
 ///
@@ -179,7 +188,7 @@ pub async fn delete_mtp_object(
     object_path: String,
 ) -> Result<(), MtpConnectionError> {
     mtp::connection_manager()
-        .delete_object(&device_id, storage_id, &object_path)
+        .delete_object(&device_id, storage_id, &object_path, MtpDeleteScope::Tree)
         .await
 }
 

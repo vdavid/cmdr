@@ -88,10 +88,51 @@ Each event is only a trigger; `check_for_device_changes()` stays the reconciler,
 - **Cmdr's ids.** Auto-connect keys on `cmdr_fs::volume::mtp_ids::device_id_for(serial, location_id)`, derived in
   `discovery.rs`.
 
+**The two setters.** `set_mtp_enabled_flag(bool)` writes the flag and nothing else; `start_mtp_watcher()` is called
+after it, so startup respects the persisted setting instead of connecting and then tearing down.
+`set_mtp_enabled(bool)` is the Tauri-command path: disabling disconnects every device, clears `KNOWN_DEVICES`, and
+restores ptpcamerad on macOS; enabling re-runs `check_for_device_changes()`. The watcher loop itself always runs
+(`OnceLock`, no shutdown channel) and `check_for_device_changes()` returns early when the flag is off. The persisted
+key is `fileOperations.mtpEnabled` in `settings.json`, read by `settings/loader.rs` at startup.
+
 **No double-count at startup:** `start_mtp_watcher` enumerates and seeds `KNOWN_DEVICES` synchronously, *before* it
 spawns the watcher task, so the stream's initial already-connected `Arrived` burst diffs to nothing. When MTP is
 disabled at startup the seed is deliberately left empty (we're not connecting those devices), so a later
 `set_mtp_enabled(true)` still sees them as new; that mirrors the disable path, which clears the set.
+
+## Delete has two scopes
+
+`MtpConnectionManager`'s delete takes an explicit `MtpDeleteScope` (`connection/mutation_ops.rs`), because PTP
+`DeleteObject` on a folder is whatever the code around it decides — POSIX gets `ENOTEMPTY` from `remove_dir` and SMB
+gets `STATUS_DIRECTORY_NOT_EMPTY` from the server, but MTP has to choose.
+
+- **`SingleNode`**: one file, or one EMPTY folder. A folder that still has children returns
+  `MtpConnectionError::DirectoryNotEmpty` and deletes nothing — not the object, and not its path-cache bookkeeping,
+  which still describes a live object. `MtpVolume::delete` / `delete_with_cancel` pass this, because `Volume::delete`
+  means one node on every backend (`crates/cmdr-fs/src/volume/mod.rs`).
+- **`Tree`**: the whole subtree, children first, with the cancel token checked between children.
+  `commands::mtp::delete_mtp_object` is the ONLY caller in the repo, and says so in its own doc comment.
+
+**The enum is fieldless with no `Default` and no `From<bool>`**, so a new caller has to decide rather than inherit.
+Both entry points (`delete_object` and `delete_object_with_cancel`) take it, or the split would have a hole in it.
+
+**Why the refusal is free.** The directory branch already lists its children before it can do anything else: MTP can't
+delete a folder that holds anything, so `Tree` needs the listing to recurse and `SingleNode` needs it to decide.
+Refusing costs one fewer USB roundtrip than deleting, never one more. ❌ Don't reach for `is_directory` here — on MTP
+that's `get_metadata`, which lists the node's whole PARENT to stat one child, per node.
+
+**Decision / why this shape rather than an opt-in `delete_tree` trait capability.** Naming a capability wouldn't have
+caught the bug that motivated this: MTP never claimed recursion, it just did it. And a backend-native tree delete
+serves zero callers — every genuine tree delete in the app walks caller-side (`delete/walker.rs` phase 2,
+`transfer/volume/cleanup.rs::delete_preserving_inner`) precisely because it needs per-child error attribution and a
+`preserve` set, neither of which a device-side recursive delete can offer. What catches the class is the shared
+conformance assertion every backend's suite runs (`cmdr_fs::volume::conformance`).
+
+**What changed for users on MTP.** Deleting a folder whose stat failed now reports a per-item failure with the folder
+still there, instead of appearing to delete "one file" and quietly taking the whole tree (`delete/walker.rs` guesses
+"file" when the no-preview `is_directory` probe errors, and a guessed file goes straight to a bare `delete`). That's
+the honest outcome: Cmdr never removes more than it told the user it was removing, and a retry after a transient MTP
+stat failure is cheap. It fires only on a probe error, so no normal delete changes.
 
 ## Architecture / data flow
 
@@ -125,6 +166,11 @@ Event loop (event_loop.rs)
 
 `MtpDisconnectReason` distinguishes explicit toggle-off from hotplug-loss in logs and UI. Re-enabling MTP triggers
 auto-connect, which re-suppresses ptpcamerad if devices are found.
+
+**ptpcamerad suppression mechanics (macOS).** `macos_workaround.rs` suppresses with `launchctl disable` plus
+`pkill -9`, and restores with the matching enable. `restore_ptpcamerad_unconditionally()` is the disable-MTP path (it
+doesn't wait for a device to leave), and `ensure_ptpcamerad_enabled()` runs at startup so a crash mid-suppression
+can't leave the user's camera unusable in Photos.
 
 ## Backends never register themselves
 

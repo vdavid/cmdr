@@ -35,6 +35,10 @@ original path (`crate::file_system::volume::VolumeError`, `crate::pluralize`, �
 - **`InMemoryVolume` honors the `Volume` contracts data safety LEANS on**, not just the happy path: `delete` refuses a
   non-empty directory, `rename` of a directory carries its subtree. ❌ Never relax a contract to make a test green; the
   double is the oracle. `DETAILS.md` § "`InMemoryVolume` honors the contracts".
+- **A backend's `delete` never recurses** — one file, or one EMPTY directory, everywhere. Callers turn the refusal into
+  data safety (the same-volume move keeps a Skipped child's only copy purely by letting the parent's delete fail), so a
+  backend that recurses destroys what the user chose to keep. `volume::conformance` holds the assertion that proves it;
+  every backend's suite runs it, and a new backend adds its own call.
 - **Nothing here produces user-facing prose.** Errors carry typed reasons and structured params; the frontend renders
   every word. `pluralize` and `display_size` are the named exceptions.
 

@@ -9,7 +9,7 @@ use super::{
 };
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::try_get_watched_listing;
-use crate::mtp::connection::{MtpConnectionError, MtpReadSession, connection_manager};
+use crate::mtp::connection::{MtpConnectionError, MtpDeleteScope, MtpReadSession, connection_manager};
 use log::debug;
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -473,8 +473,16 @@ impl Volume for MtpVolume {
             let bridge = MtpCancelBridge::open(cancel);
             let cancel_ref = bridge.as_ref().map(MtpCancelBridge::token);
 
+            // `SingleNode`, because `Volume::delete` means one node on every
+            // backend. A caller that wants a tree walks it itself.
             connection_manager()
-                .delete_object_with_cancel(&self.device_id, self.storage_id, &mtp_path, cancel_ref)
+                .delete_object_with_cancel(
+                    &self.device_id,
+                    self.storage_id,
+                    &mtp_path,
+                    MtpDeleteScope::SingleNode,
+                    cancel_ref,
+                )
                 .await
                 .map_err(map_mtp_error)?;
 
@@ -1138,6 +1146,13 @@ impl VolumeReadStream for MtpReadStream {
 }
 
 /// Maps MTP connection errors to Volume errors.
+/// `ENOTEMPTY`, which POSIX numbers differently per platform. MTP builds on
+/// macOS and Linux only, so those are the two that exist.
+#[cfg(target_os = "linux")]
+const ENOTEMPTY: i32 = 39;
+#[cfg(not(target_os = "linux"))]
+const ENOTEMPTY: i32 = 66;
+
 fn map_mtp_error(e: MtpConnectionError) -> VolumeError {
     match e {
         MtpConnectionError::DeviceNotFound { .. } | MtpConnectionError::NotConnected { .. } => {
@@ -1159,6 +1174,13 @@ fn map_mtp_error(e: MtpConnectionError) -> VolumeError {
         MtpConnectionError::Timeout { .. } => VolumeError::ConnectionTimeout(e.to_string()),
         MtpConnectionError::StorageFull { .. } => VolumeError::StorageFull { message: e.to_string() },
         MtpConnectionError::StoreReadOnly { .. } => VolumeError::ReadOnly(e.to_string()),
+        // The trait contract's refusal, carrying the errno POSIX would have
+        // raised, so a caller that classifies on `raw_os_error` sees the same
+        // thing here as it does over `LocalPosixVolume` or SMB.
+        MtpConnectionError::DirectoryNotEmpty { .. } => VolumeError::IoError {
+            message: e.to_string(),
+            raw_os_error: Some(ENOTEMPTY),
+        },
         _ => VolumeError::IoError {
             message: e.to_string(),
             raw_os_error: None,

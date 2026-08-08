@@ -2727,8 +2727,16 @@ export const commands = {
   /**
    *  Deletes an object (file or folder) from an MTP device.
    *
-   *  For folders, this recursively deletes all contents first since MTP
-   *  requires folders to be empty before deletion.
+   *  For folders, this recursively deletes all contents first since MTP requires
+   *  folders to be empty before deletion.
+   *
+   *  **The only `MtpDeleteScope::Tree` caller in the repo.** Every other delete
+   *  goes through `MtpVolume::delete`, which is bound by `Volume::delete`'s
+   *  "one file or one EMPTY directory" contract and passes `SingleNode`; the
+   *  tree-shaped deletes (the delete walker, the transfer engine's cleanup) walk
+   *  the tree themselves so each node gets its own error attribution and its own
+   *  chance to be preserved. This command exists as a direct recursive-delete
+   *  entry point, so it names that intent explicitly rather than inheriting it.
    *
    *  # Arguments
    *
@@ -6342,6 +6350,17 @@ export type MtpConnectionError =
   | { type: 'permissionDenied'; device_id: string }
   | { type: 'cancelled'; device_id: string; message: string }
   | { type: 'objectNotFound'; device_id: string; path: string }
+  /**
+   *  A `SingleNode`-scoped delete was asked to remove a directory that still
+   *  has children, and refused. Nothing was deleted.
+   *
+   *  This is MTP's side of `Volume::delete`'s "one file or one EMPTY
+   *  directory" contract, which POSIX answers with `ENOTEMPTY` and SMB with
+   *  `STATUS_DIRECTORY_NOT_EMPTY`. Real data-safety logic leans on the
+   *  refusal: the same-volume move's source cleanup keeps a skipped child's
+   *  only copy purely by letting the parent's delete fail here.
+   */
+  | { type: 'directoryNotEmpty'; device_id: string; path: string }
   /**
    *  The cached parent-folder handle was rejected by the device during an
    *  upload's `SendObjectInfo` (the device re-keyed its object handles since

@@ -11,7 +11,7 @@
 //!
 //! These tests assert the invariant at the point each mutation writes it.
 
-use super::connection_manager;
+use super::{MtpDeleteScope, connection_manager};
 use crate::mtp::virtual_device::{
     VirtualDeviceFixture, setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
 };
@@ -195,7 +195,12 @@ async fn delete_clears_the_reverse_entry_too() {
         .expect("the listed file should be in the forward cache");
 
     connection_manager()
-        .delete_object(&device.id, device.storage_id, "/Documents/notes.txt")
+        .delete_object(
+            &device.id,
+            device.storage_id,
+            "/Documents/notes.txt",
+            MtpDeleteScope::SingleNode,
+        )
         .await
         .expect("delete_object should succeed");
 

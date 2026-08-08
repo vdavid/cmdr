@@ -31,6 +31,7 @@ use cache::{EVENT_DEBOUNCE_MS, EventDebouncer, ListingCache, PathHandleCache};
 pub use errors::MtpConnectionError;
 use errors::map_mtp_error;
 pub(crate) use file_ops::MtpReadSession;
+pub(crate) use mutation_ops::MtpDeleteScope;
 use scheduler::{DevicePriorityGate, ForegroundGuard};
 pub(crate) use volume_registrar::{MtpVolumeRegistrar, set_volume_registrar};
 use volume_registrar::{attach_storage_volume, detach_storage_volume};

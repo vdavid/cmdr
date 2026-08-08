@@ -46,6 +46,18 @@ pub enum MtpConnectionError {
         device_id: String,
         path: String,
     },
+    /// A `SingleNode`-scoped delete was asked to remove a directory that still
+    /// has children, and refused. Nothing was deleted.
+    ///
+    /// This is MTP's side of `Volume::delete`'s "one file or one EMPTY
+    /// directory" contract, which POSIX answers with `ENOTEMPTY` and SMB with
+    /// `STATUS_DIRECTORY_NOT_EMPTY`. Real data-safety logic leans on the
+    /// refusal: the same-volume move's source cleanup keeps a skipped child's
+    /// only copy purely by letting the parent's delete fail here.
+    DirectoryNotEmpty {
+        device_id: String,
+        path: String,
+    },
     /// The cached parent-folder handle was rejected by the device during an
     /// upload's `SendObjectInfo` (the device re-keyed its object handles since
     /// the folder was last listed). The cache has been refreshed; the caller
@@ -120,6 +132,9 @@ impl std::fmt::Display for MtpConnectionError {
             }
             Self::ObjectNotFound { device_id, path } => {
                 write!(f, "Object not found on {device_id}: {path}")
+            }
+            Self::DirectoryNotEmpty { device_id, path } => {
+                write!(f, "Folder still has contents on {device_id}: {path}")
             }
             Self::StaleParentHandle { device_id, dest_folder } => {
                 write!(f, "Stale destination folder handle on {device_id}: {dest_folder}")

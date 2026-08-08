@@ -343,10 +343,18 @@ pub trait Volume: Send + Sync {
     /// uses `is_directory` + skip-delete to enforce "Overwrite means merge for dirs"
     /// architecturally, but other call sites (rollback, partial-file cleanup) assume
     /// they only ever delete one node at a time and would over-delete if this contract
-    /// loosened.
+    /// loosened. The same-volume move's source cleanup goes further and treats the
+    /// refusal AS the guarantee: a level still holding a child the user chose to
+    /// Skip survives only because its delete fails.
+    ///
+    /// **A shared conformance assertion enforces this**, not the wording above:
+    /// every backend's suite runs
+    /// [`assert_delete_leaves_a_non_empty_dir_intact`](conformance::assert_delete_leaves_a_non_empty_dir_intact).
+    /// A backend that recurses fails it.
     ///
     /// For recursive deletes, callers should walk the tree themselves and call
-    /// `delete` per leaf. See `delete_volume_path_recursive` in `volume/copy.rs`.
+    /// `delete` per leaf. See `delete_volume_path_recursive` in
+    /// `apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/cleanup.rs`.
     ///
     /// Default: `NotSupported`.
     fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
@@ -358,8 +366,8 @@ pub trait Volume: Send + Sync {
     ///
     /// MTP overrides this to thread the token through to mtp-rs's
     /// `delete_with_cancel`, which bails before issuing the `DeleteObject` PTP
-    /// request once the token is cancelled. For non-empty directories the MTP
-    /// implementation also checks it between recursive child deletes.
+    /// request once the token is cancelled, and through the per-handle
+    /// `GetObjectInfo` roundtrips of the directory listing it takes on the way.
     ///
     /// Default impl delegates to `delete`, dropping the token.
     fn delete_with_cancel<'a>(
@@ -1057,6 +1065,12 @@ mod types;
 
 /// Typed, word-free classification of why a volume operation failed.
 pub mod friendly_error;
+
+/// The safety promises every `Volume` implementation is asserted against, so a
+/// backend can't quietly opt out of one. `any(test, feature = "testing")`, not
+/// `cfg(test)`: the backends that need it most live in other crates.
+#[cfg(any(test, feature = "testing"))]
+pub mod conformance;
 
 // Everything a backend needs from the application around it, as named seams.
 pub mod host;

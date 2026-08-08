@@ -182,6 +182,23 @@ async fn test_delete_removes_entry() {
     assert!(!volume.exists(Path::new("/test.txt")).await);
 }
 
+/// The shared `Volume::delete` non-recursion assertion, over the test double
+/// that every other suite's fixtures stand on. If `InMemoryVolume` ever stops
+/// honoring the contract, hundreds of tests keep passing while the thing they
+/// were proving quietly stops being true — so it runs the same assertion the
+/// real backends do.
+#[tokio::test]
+async fn delete_honors_the_shared_non_recursion_contract() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_directory(Path::new("/album")).await.unwrap();
+    volume
+        .create_file(Path::new("/album/keep.txt"), b"content")
+        .await
+        .unwrap();
+
+    conformance::assert_delete_leaves_a_non_empty_dir_intact(&volume, Path::new("/album"), "keep.txt").await;
+}
+
 #[tokio::test]
 async fn test_delete_nonexistent_returns_error() {
     let volume = InMemoryVolume::new("Test");

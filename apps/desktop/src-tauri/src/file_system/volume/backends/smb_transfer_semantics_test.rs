@@ -640,3 +640,32 @@ async fn smb_integration_a_running_copy_survives_the_volume_being_replaced() {
     manager.unregister(&volume_id);
     ensure_clean(&smb_vol, &base).await;
 }
+
+/// The shared `Volume::delete` non-recursion assertion, against a real SMB
+/// server. Docker-gated like the rest of this file, because SMB has no
+/// in-process double: the answer we need is the server's
+/// (`STATUS_DIRECTORY_NOT_EMPTY`), not smb2's.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_delete_honors_the_shared_non_recursion_contract() {
+    let smb_vol = Arc::new(make_docker_volume().await);
+    let base = test_dir_name();
+    ensure_clean(&smb_vol, &base).await;
+
+    let album = format!("{base}/album");
+    smb_vol.create_directory(Path::new(&base)).await.unwrap();
+    smb_vol.create_directory(Path::new(&album)).await.unwrap();
+    smb_vol
+        .create_file(Path::new(&format!("{album}/keep.txt")), b"content")
+        .await
+        .unwrap();
+
+    cmdr_fs::volume::conformance::assert_delete_leaves_a_non_empty_dir_intact(
+        smb_vol.as_ref(),
+        Path::new(&album),
+        "keep.txt",
+    )
+    .await;
+
+    ensure_clean(&smb_vol, &base).await;
+}

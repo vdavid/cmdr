@@ -143,6 +143,11 @@ He asked to be shown pushback; these are the calls made so execution could start
 
 # Phase 0 — `delete` stops at one node, on every backend
 
+**Status: DONE**, on branch `safety-p0-delete-contract`. Two corrections it turned up, for the phases that follow:
+`stubs/mtp.rs`'s enum is a single `NotSupported` variant, not a parallel copy of `MtpConnectionError`, so a new variant
+needs nothing there; and the conformance assertion takes a caller-seeded fixture (`volume`, `dir`, `child_name`)
+rather than just a volume, because seeding is the one part no two backends share.
+
 Branch `safety-p0-delete-contract`, off `main`. **Do this first, merge it on its own, and don't bundle it.** It's the
 only part of this plan that closes a hole users can fall into today. It touches nothing Phases 1-3 touch except one
 comment.

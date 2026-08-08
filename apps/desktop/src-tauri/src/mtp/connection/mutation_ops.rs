@@ -8,31 +8,49 @@ use std::sync::Arc;
 use super::errors::MtpConnectionError;
 use super::{MtpConnectionManager, MtpObjectInfo, acquire_device_lock, map_mtp_error, normalize_mtp_path};
 
+/// How far a delete may reach.
+///
+/// Fieldless on purpose, with **no `Default` and no `From<bool>`**: which scope
+/// a call wants is a decision, and a zero value would hand recursion to whoever
+/// didn't make it. `Volume::delete` means the same thing on every backend
+/// (`crates/cmdr-fs/src/volume/mod.rs`), so `MtpVolume` passes `SingleNode`;
+/// `Tree` exists for the one IPC command that asks for a recursive delete by
+/// name.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MtpDeleteScope {
+    /// One file, or one **empty** directory. A directory that still has
+    /// children is refused with [`MtpConnectionError::DirectoryNotEmpty`] and
+    /// nothing is deleted.
+    SingleNode,
+    /// The whole subtree, children first. ❌ The only caller is
+    /// `commands::mtp::delete_mtp_object`; see its doc comment.
+    Tree,
+}
+
 impl MtpConnectionManager {
-    /// Deletes an object (file or folder) from the MTP device.
-    ///
-    /// For folders, this recursively deletes all contents first since MTP
-    /// requires folders to be empty before deletion.
+    /// Deletes an object from the MTP device, as far as `scope` allows.
     ///
     /// # Arguments
     ///
     /// * `device_id` - The connected device ID
     /// * `storage_id` - The storage ID within the device
     /// * `object_path` - Virtual path on the device
+    /// * `scope` - Whether a non-empty directory is refused or recursed into
     pub async fn delete_object(
         &self,
         device_id: &str,
         storage_id: u32,
         object_path: &str,
+        scope: MtpDeleteScope,
     ) -> Result<(), MtpConnectionError> {
-        self.delete_object_with_cancel(device_id, storage_id, object_path, None)
+        self.delete_object_with_cancel(device_id, storage_id, object_path, scope, None)
             .await
     }
 
     /// Like [`delete_object`](Self::delete_object) but accepts a cooperative
     /// cancel token. Cancellation is checked:
     /// 1. Before each recursive child delete (between iterations of the
-    ///    children loop).
+    ///    children loop, `Tree` only).
     /// 2. Before each per-handle `GetObjectInfo` USB roundtrip inside
     ///    `list_objects` (via `mtp-rs`'s `list_objects_with_cancel`).
     /// 3. Before issuing the final `DeleteObject` PTP request (via
@@ -41,11 +59,17 @@ impl MtpConnectionManager {
     /// A flipped token bails with `MtpConnectionError::Cancelled` within ≈one
     /// USB roundtrip's latency, so `OperationIntent::Stopped` actually stops
     /// the wire activity instead of just the loop above it.
+    ///
+    /// **The emptiness answer costs nothing.** The directory branch already
+    /// lists its children before it can do anything else, so `SingleNode`
+    /// refuses on the listing it was going to fetch anyway — one fewer USB
+    /// roundtrip than deleting, never one more.
     pub async fn delete_object_with_cancel(
         &self,
         device_id: &str,
         storage_id: u32,
         object_path: &str,
+        scope: MtpDeleteScope,
         cancel: Option<&CancelToken>,
     ) -> Result<(), MtpConnectionError> {
         // Fast bail before any I/O if cancel is already set. Cheap and avoids
@@ -59,16 +83,17 @@ impl MtpConnectionManager {
             });
         }
 
-        // Foreground priority: a user delete preempts the background scan. The
-        // recursive child deletes nest the guard count (harmless — it just keeps
-        // the scan yielded for the whole subtree delete).
+        // Foreground priority: a user delete preempts the background scan. A
+        // `Tree` delete's recursive child calls nest the guard count (harmless —
+        // it just keeps the scan yielded for the whole subtree delete).
         let _fg = self.foreground_guard(device_id).await;
 
         debug!(
-            "MTP delete_object: device={}, storage={}, path={}, cancel={}",
+            "MTP delete_object: device={}, storage={}, path={}, scope={:?}, cancel={}",
             device_id,
             storage_id,
             object_path,
+            scope,
             cancel.is_some()
         );
 
@@ -100,11 +125,13 @@ impl MtpConnectionManager {
         let is_dir = object_info.is_folder();
 
         if is_dir {
-            // For directories, recursively delete contents first. Threading the
-            // cancel token into `list_objects_with_cancel` is what makes the
-            // 950-entry `/DCIM/Camera` listing bail at the next per-handle USB
-            // boundary instead of running all 950 GetObjectInfo roundtrips to
-            // completion.
+            // The children have to be listed either way: MTP can't delete a
+            // folder that still holds anything, so `Tree` needs the list to
+            // recurse and `SingleNode` needs it to know whether to refuse.
+            // Threading the cancel token into `list_objects_with_cancel` is what
+            // makes the 950-entry `/DCIM/Camera` listing bail at the next
+            // per-handle USB boundary instead of running all 950 GetObjectInfo
+            // roundtrips to completion.
             let children = storage
                 .list_objects_with_cancel(Some(object_handle), cancel)
                 .await
@@ -112,6 +139,24 @@ impl MtpConnectionManager {
 
             drop(storage);
             drop(device);
+
+            if scope == MtpDeleteScope::SingleNode && !children.is_empty() {
+                // Refuse, and delete nothing — including the path-cache
+                // bookkeeping below, which describes an object that's still
+                // there. `Volume::delete`'s contract is "one file or one EMPTY
+                // directory", and callers lean on the refusal to protect data:
+                // the same-volume move's source cleanup keeps a skipped child's
+                // only copy purely by letting this fail.
+                debug!(
+                    "MTP delete refused (folder still has {} entries): {}",
+                    children.len(),
+                    object_path
+                );
+                return Err(MtpConnectionError::DirectoryNotEmpty {
+                    device_id: device_id.to_string(),
+                    path: object_path.to_string(),
+                });
+            }
 
             // Recursively delete children. The token is checked between
             // iterations and inside each child's own list/delete USB call.
@@ -143,7 +188,7 @@ impl MtpConnectionManager {
                 }
 
                 // Use Box::pin for recursive async call
-                Box::pin(self.delete_object_with_cancel(device_id, storage_id, &child_path_str, cancel)).await?;
+                Box::pin(self.delete_object_with_cancel(device_id, storage_id, &child_path_str, scope, cancel)).await?;
             }
 
             // Re-acquire device and storage lock to delete the now-empty folder

@@ -411,13 +411,15 @@ async fn apply_volume_conflict_resolution(
             //   the dest content is being intentionally replaced wholesale).
             //
             // The same-type dir branch is enforced HERE rather than relying on `Volume::delete`'s
-            // "file or empty directory" trait contract. Today every backend honors
-            // that contract (delete of a non-empty dir fails benignly), but a future
-            // backend with recursive delete semantics, or a refactor that consolidates
-            // delete + delete_recursive, would silently flip the UX from merge to
-            // wholesale replace, deleting files unique to dest. That's a data-loss
-            // footgun. Stat-and-skip makes the merge guarantee architectural, not
-            // emergent. See `dir_overwrite_must_merge_not_replace_even_with_recursive_delete`
+            // "file or empty directory" trait contract. That contract is real — a shared
+            // conformance assertion every backend's suite runs enforces it
+            // (`cmdr_fs::volume::conformance`) — but it's a promise a backend keeps, and
+            // MTP once broke it for months with nothing to catch that. A backend with
+            // recursive delete semantics, or a refactor that consolidates delete +
+            // delete_recursive, would silently flip the UX from merge to wholesale replace,
+            // deleting files unique to dest. That's a data-loss footgun. Stat-and-skip makes
+            // the merge guarantee architectural rather than borrowed from a backend's good
+            // behavior. See `dir_overwrite_must_merge_not_replace_even_with_recursive_delete`
             // in the test module; it pins this with a wrapper Volume that violates
             // the contract.
             let dest_is_dir = dest_volume.is_directory(dest_path).await.unwrap_or(false);
