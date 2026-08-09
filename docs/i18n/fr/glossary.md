@@ -1235,6 +1235,7 @@ Phrasing notes for this pass:
   the five `type` paths, with destinations "Backup", "photos.zip", "Archives 2026", "Été"). Every apostrophe is ASCII
   (U+0027) and doubled; no `:` `;` `!` `?` `%`, so the spacing rule doesn''t arise.
 - No `sameAsSourceJustification` needed: both values differ from English.
+
 ## The progress dialog's empty-queue button label (2026-08-09, 2 keys in `fileOperations.transferProgress`)
 
 The progress dialog's primary action is ONE button with two wordings: `queue` ("File d''attente") when the operation
@@ -1245,28 +1246,27 @@ already at its width budget. ICU values; neither value contains an apostrophe, s
 - **background (the empty-queue arm of the progress dialog''s primary button, "put this transfer in the background") →
   `En arrière-plan`** · Microsoft terminology FRA renders `background` in exactly this sense (adjective, "operating
   without interaction with the user while the user is working on another task", id 18761) as "en arrière-plan", and
-  `background task` as "tâche en arrière-plan"; Double Commander agrees ("in the &background" → "en arrière-plan",
-  "Work in background" → "Travailler en arrière-plan"), as does Total Commander · high. The label is the ELLIPTICAL
-  form of the settled phrase, mirroring English''s own elliptical "Background": the implied verb is spelled out one
-  paragraph up in this very dialog, in `transferProgress.stallUnknown` ("Annulez-le ou laissez-le **continuer en
-  arrière-plan**."), which is why the ellipsis reads on this surface.
+  `background task` as "tâche en arrière-plan"; Double Commander agrees ("in the &background" → "en arrière-plan", "Work
+  in background" → "Travailler en arrière-plan"), as does Total Commander · high. The label is the ELLIPTICAL form of
+  the settled phrase, mirroring English''s own elliptical "Background": the implied verb is spelled out one paragraph up
+  in this very dialog, in `transferProgress.stallUnknown` ("Annulez-le ou laissez-le **continuer en arrière-plan**."),
+  which is why the ellipsis reads on this surface.
   - **Why not the bare noun `Arrière-plan`**: in the pile the bare noun is the BACKDROP sense almost everywhere (macOS
     Finder "Arrière-plan :" for a folder''s picture, Nautilus "Définir comme arrière-plan…", Dolphin and Double
     Commander colour settings), so a button reading "Arrière-plan" would name a wallpaper. The preposition is what
     carries the process sense, and MS FRA attaches it for exactly that reason.
-  - **Why not the full infinitive `Continuer / Passer en arrière-plan`** (the shape style.md prescribes for buttons,
-    and the shape MS FRA uses for the PowerPoint control "Play in Background" → "exécuter en arrière-plan", id
-    1761393): **width, a hard constraint here.** See the overflow note below. `Continuer` alone also sits badly next to
-    its neighbour: the Pause button''s other state reads "Reprendre", and two adjacent keep-going verbs invite a
-    misread.
+  - **Why not the full infinitive `Continuer / Passer en arrière-plan`** (the shape style.md prescribes for buttons, and
+    the shape MS FRA uses for the PowerPoint control "Play in Background" → "exécuter en arrière-plan", id 1761393):
+    **width, a hard constraint here.** See the overflow note below. `Continuer` alone also sits badly next to its
+    neighbour: the Pause button''s other state reads "Reprendre", and two adjacent keep-going verbs invite a misread.
   - **Known shape resemblance, accepted**: `En <noun>` is this catalog''s STATUS shape (`queue.row.status` → "En
     attente", "En pause"), and the pile bears that out (macOS "En attente…", "En attente du téléchargement"; Double
-    Commander "En pause", "En cours", "En avant-plan" for a colour setting) — French UI keeps bare prepositional
-    phrases for states and positions, and puts actions in the infinitive. It is accepted here because the SURFACE
-    disambiguates: this is a footer button with a list icon, in a row with "Pause", "Annuler", and "Annuler et
-    restaurer", and buttons are read as actions. There is no actual collision to trip over either: no status string in
-    the `fr` catalog reads "En arrière-plan" (`queue.row.status` never uses it). Don''t "fix" this by expanding the
-    label without re-checking the width.
+    Commander "En pause", "En cours", "En avant-plan" for a colour setting) — French UI keeps bare prepositional phrases
+    for states and positions, and puts actions in the infinitive. It is accepted here because the SURFACE disambiguates:
+    this is a footer button with a list icon, in a row with "Pause", "Annuler", and "Annuler et restaurer", and buttons
+    are read as actions. There is no actual collision to trip over either: no status string in the `fr` catalog reads
+    "En arrière-plan" (`queue.row.status` never uses it). Don''t "fix" this by expanding the label without re-checking
+    the width.
 - **"Keep this running in the background" (the same button''s screen-reader name) →
   `Garder ce transfert en cours en arrière-plan`** · the first clause of the shipped `transferProgress.queueTooltip`
   verbatim, which is this locale''s settled rendering of the same English sentence, so the button''s two states, its
@@ -1275,8 +1275,7 @@ already at its width budget. ICU values; neither value contains an apostrophe, s
     "cliquez sur En arrière-plan". Containment is case-insensitive at the END of the string ("… en arrière-plan"),
     exactly the bar English keeps with "Background" ⊂ "Keep this running in the background". Only the label''s capital
     `E` differs. Don''t reword the aria''s tail: dropping or splitting "en arrière-plan" breaks the containment.
-- `queueTooltip` is unchanged: it is shared by both button states and describes a transfer, which is correct either
-  way.
+- `queueTooltip` is unchanged: it is shared by both button states and describes a transfer, which is correct either way.
 
 Phrasing notes for this pass:
 
@@ -1286,8 +1285,8 @@ Phrasing notes for this pass:
   restaurer" (20 chars). Each `Button` adds 40 px of padding and the row adds 12 px gaps, which puts the row within a
   few pixels of the content width when this button reads the 14-char "File d''attente". "En arrière-plan" (15) costs
   about 7 px more, so it carries no new risk; "Passer en arrière-plan" (22) and "Continuer en arrière-plan" (25) push
-  the row past the budget, and `.button-row` has `flex-wrap: wrap`, so it would not clip, it would WRAP the footer.
-  The English `@key` says it directly: "Short control label; must fit the same button as \"Queue\"".
+  the row past the budget, and `.button-row` has `flex-wrap: wrap`, so it would not clip, it would WRAP the footer. The
+  English `@key` says it directly: "Short control label; must fit the same button as \"Queue\"".
 - No `: ; ! ? %` in either value, so the ASCII-space-before-punctuation rule doesn''t arise; no apostrophe, so no ICU
   doubling; no U+2019 or U+202F leaked in.
 - Neither value is identical to English, so no `sameAsSourceJustification` is needed.

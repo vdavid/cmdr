@@ -1235,18 +1235,19 @@ context line under the title `Bestand bestaat al`, and the quiet note under the 
 
 REVIEW FLAG: `Bezig in {destination}` is the terse fallback arm and reads slightly clipped on its own; the fuller
 `Bezig in de map {destination}` is wrong whenever the operand isn't a folder, so the short form stands.
+
 ## De knop voor een lege wachtrij: "Background" (2026-08-09)
 
 Two `fileOperations.transferProgress` keys: the progress dialog's primary button when the operation queue is EMPTY
-(`background`), plus its screen-reader name (`backgroundAria`). Same button as `queue` / `queueAria`, other state:
-with nothing to queue behind, English names the act instead of the destination. "Background" is a VERB there.
+(`background`), plus its screen-reader name (`backgroundAria`). Same button as `queue` / `queueAria`, other state: with
+nothing to queue behind, English names the act instead of the destination. "Background" is a VERB there.
 
 - **"Background" (imperative button, send this running operation out of sight) → `Op de achtergrond`** · the settled
   in-catalog sense-term (transfer-queue pass: `background (run in the ~) → op de achtergrond`, Double Commander "Work in
   background" → "Werk op de achtergrond"), now carrying a whole button · high.
-  - ❌ NOT the bare `Achtergrond`, even though Total Commander nl ships exactly that on this exact button
-    (`WCMD.LNG` `{COMMON}` `4004="&Achtergrond"`, right next to `4005="Wachtrij"`, the pair Cmdr's two states mirror).
-    macOS Dutch (Tier 1) uses `Achtergrond` ONLY for the visual backdrop ("Achtergrond:", "Wijzig achtergrond…",
+  - ❌ NOT the bare `Achtergrond`, even though Total Commander nl ships exactly that on this exact button (`WCMD.LNG`
+    `{COMMON}` `4004="&Achtergrond"`, right next to `4005="Wachtrij"`, the pair Cmdr's two states mirror). macOS Dutch
+    (Tier 1) uses `Achtergrond` ONLY for the visual backdrop ("Achtergrond:", "Wijzig achtergrond…",
     "achtergrondkleur"), so a lone `Achtergrond` on a progress dialog reads as a picture-or-color label, not as
     something you do to a transfer. TC's own siblings split the same way: Swedish took `I bakgrunden` and Hungarian
     `Háttérben`, both the "in the background" phrase rather than the noun; `Op de achtergrond` is that shape in Dutch.
@@ -1272,5 +1273,5 @@ REVIEW FLAGS (empty-queue button pass):
 
 - **Width**: `Op de achtergrond` is 17 characters against English's 10, on the same button that shows `Wachtrij` (8) in
   its other state, so the dialog's primary button changes width noticeably between the two states. If it crowds the
-  neighbouring `Pauzeer` / `Annuleer`, the fallback is the TC-nl bare `Achtergrond` (11), which costs the
-  action reading and the exact-containment aria.
+  neighbouring `Pauzeer` / `Annuleer`, the fallback is the TC-nl bare `Achtergrond` (11), which costs the action reading
+  and the exact-containment aria.

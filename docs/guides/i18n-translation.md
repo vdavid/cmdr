@@ -147,10 +147,10 @@ the documented last resort, used only when natural restructuring genuinely isn't
 ## An `*Aria` key must contain its visible label (WCAG 2.5.3)
 
 When a `*Aria` key is the accessible name of a control whose visible label is another key (`…queue` / `…queueAria`,
-`…background` / `…backgroundAria`), the accessible name has to CONTAIN the visible label's words, verbatim and in
-order. Voice-control users say what they can see, so a name that paraphrases the label leaves them unable to press the
-button. Case may differ (English itself only manages "Background" ⊂ "Keep this running in the background"); word order
-and wording may not.
+`…background` / `…backgroundAria`), the accessible name has to CONTAIN the visible label's words, verbatim and in order.
+Voice-control users say what they can see, so a name that paraphrases the label leaves them unable to press the button.
+Case may differ (English itself only manages "Background" ⊂ "Keep this running in the background"); word order and
+wording may not.
 
 Inflection is what breaks this, silently and per-language, which is why it's stated here once rather than rediscovered
 nine times:

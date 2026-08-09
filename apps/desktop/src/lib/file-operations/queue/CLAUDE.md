@@ -14,8 +14,8 @@ pause/resume/cancel/dismiss, multi-select + "Cancel selected", global pause/resu
   `../TransferProgressReadout.svelte`, compact, or a failure's reason. Shell: `routes/queue/+page.svelte`.
 - `failure-reason.ts`: `failureReasonFor(snapshot)` — a retained failure's title/explanation/suggestion, from the
   existing `errors.write.*` pipeline. Shared with the main window's failure toast.
-- `queue-backlog.ts`: `hasOtherQueuedWork(rows, selfId)` — the pure test behind the progress dialog's
-  Background/Queue label.
+- `queue-backlog.ts`: `hasOtherQueuedWork(rows, selfId)` — the pure test behind the progress dialog's Background/Queue
+  label.
 
 ## Must-knows
 

@@ -1216,10 +1216,10 @@ asking and a quiet note explains why the rest of the queue stopped.
   (`Tartsa csatlakoztatva az eszközt, amíg a törlés be nem fejeződik.`) and needs no `addig` correlative; informal `te`
   (`válaszolsz`) per Formality; `minden más` is already the catalog's phrase (`zárj be minden más appot`) · high.
   Deliberately the stative `szüneteltetve van` over the intransitive `szünetel`: the latter is correct Hungarian but
-  would show the user a different word than the row they are being told about.
-Settled while translating the empty-queue state of the progress dialog's primary button
-(`fileOperations.transferProgress.background` + `.backgroundAria`, 2026-08-09). Same button as `.queue` = `Sorba`, worded
-for an EMPTY operation queue: with nothing to queue behind, it names what pressing it does instead:
+  would show the user a different word than the row they are being told about. Settled while translating the empty-queue
+  state of the progress dialog's primary button (`fileOperations.transferProgress.background` + `.backgroundAria`,
+  2026-08-09). Same button as `.queue` = `Sorba`, worded for an EMPTY operation queue: with nothing to queue behind, it
+  names what pressing it does instead:
 
 - **"Background" (the button, a verb: put this transfer in the background) → `Háttérben`** · Total Commander hu is a
   direct hit on THIS control: `4004="Háttérben"` sits in the copy-dialog button strip right next to `4005="Sorba állít"`
@@ -1242,6 +1242,6 @@ for an EMPTY operation queue: with nothing to queue behind, it names what pressi
 - **WCAG 2.5.3 containment**: the aria ends in `a háttérben`, so the visible label `Háttérben` is a whole-word substring
   of it (case-insensitively, the same bar English meets with "Background" ⊂ "…in the background"; a capital mid-sentence
   would be ungrammatical in Hungarian). Choosing the label's CASE FORM to be the one the natural aria sentence already
-  uses is what makes this free — see `style.md` § Notes and decisions. The sibling pair holds the same way:
-  `Sorba` ⊂ `Áthelyezés a műveleti sorba`.
+  uses is what makes this free — see `style.md` § Notes and decisions. The sibling pair holds the same way: `Sorba` ⊂
+  `Áthelyezés a műveleti sorba`.
 - No `sameAsSourceJustification` needed: both values differ from English.

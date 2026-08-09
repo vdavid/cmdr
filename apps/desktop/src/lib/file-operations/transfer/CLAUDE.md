@@ -51,9 +51,8 @@ Backend: `apps/desktop/src-tauri/src/file_system/write_operations/transfer/CLAUD
 - **MTP move interleaves copy + delete per file** (the copy is done once the delete phase starts).
 - **Pause/Resume and the "Paused" title follow the `operations-changed` snapshot status, never `is_running`.** Queue and
   the dialog-scoped F2 are FRONTEND-ONLY: set `backgrounded`, open the queue window, unmount via `onQueue` without
-  cancelling — that flag makes `onDestroy` skip its safety-net cancel, and both release the foreground slot. That
-  button reads "Background" with an empty queue, "Queue" otherwise (`../queue/queue-backlog.ts`); same action either
-  way.
+  cancelling — that flag makes `onDestroy` skip its safety-net cancel, and both release the foreground slot. That button
+  reads "Background" with an empty queue, "Queue" otherwise (`../queue/queue-backlog.ts`); same action either way.
 
 Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

@@ -934,6 +934,7 @@ was new is how the destination gets INSIDE the passive clause.
   own frame (`errors` "bis du es entsperrst", `settings` "bis du ihn löschst") · high. State passive `ist angehalten`,
   not `wurde angehalten`: the line describes the situation now, and it reassures rather than reports an event.
   `antworten` is the settled respond verb (`transferProgress.stallWaitingDestination` "eine Antwort vom Ziel").
+
 ## The progress dialog's empty-queue button (2026-08-09)
 
 Two keys (`transferProgress.background`, `.backgroundAria`): the same button as `.queue`, worded for an EMPTY operation

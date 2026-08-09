@@ -999,6 +999,7 @@ forms and only add the destination clause.
   `queue.row.status`'s paused word. `其余` (the rest of a known set) carries "everything else" without a `都` pile.
   `做出选择` over a literal `回答`: the Chinese title `文件已存在` is a STATEMENT, not a question, so "answer" has
   nothing to answer, while the buttons below are literally a choice · `high`
+
 ### Empty-queue state of the progress dialog's F2 button (`fileOperations.transferProgress.background`/`backgroundAria`, 2026-08-09)
 
 The same button as `transferProgress.queue`, worded for an EMPTY operation queue: with nothing to queue behind, it names
@@ -1008,10 +1009,10 @@ cross-check. macOS has NO coverage: every `background` hit in the Finder/AppKit 
 (`背景颜色`, `选择图片作为“^0”的背景`), which is why `背景` stays banned for this concept.
 
 - **"Background" (the button, empty-queue state)** · `后台运行` · TC gives the button as a bare noun `后台`, but Cmdr
-  already rejected TC's bare `队列` for the action `加入队列`, so this sibling takes the verb too: `后台运行` is
-  the attested action form (TC `后台运行时不刷新`, Double Commander `程序在后台运行时(&B)`) and echoes the toast the
-  press produces, `transferProgress.backgroundedToast` = `仍在后台运行。`. It also lands at four characters, exactly the
-  width of `加入队列` on the same button, so the label doesn't jump when the queue empties. `转入后台` / `放到后台` were
+  already rejected TC's bare `队列` for the action `加入队列`, so this sibling takes the verb too: `后台运行` is the
+  attested action form (TC `后台运行时不刷新`, Double Commander `程序在后台运行时(&B)`) and echoes the toast the press
+  produces, `transferProgress.backgroundedToast` = `仍在后台运行。`. It also lands at four characters, exactly the width
+  of `加入队列` on the same button, so the label doesn't jump when the queue empties. `转入后台` / `放到后台` were
   rejected as unattested coinages · `high`
 - **"Keep this running in the background" (the aria)** · `让它继续在后台运行` · the settled
   `transferProgress.queueTooltip` phrasing (`让它在后台继续运行`) with `继续` moved ahead of `在后台`, purely so the

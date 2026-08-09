@@ -864,6 +864,7 @@ The main window now hosts the name-clash prompt for a backgrounded operation, so
   proclisis before an infinitive, Rever, alterar o nome, a dropped você), plus U+2019 and double-space scans: zero hits.
   Brazilian markers: the gerunds **Copiando / Movendo / Editando** (never "a copiar"), **arquivo compactado** (never
   "ficheiro"), and the retained **você**.
+
 ### Empty-queue button label (`fileOperations.transferProgress.background/backgroundAria`, 2026-08-09)
 
 The progress dialog's one button in its second state: with an empty operation queue there's nothing to queue behind, so
@@ -874,9 +875,9 @@ it names the action instead of the destination ("Background" / "Queue"; same cli
   adjective entry (id 18758 → "em segundo plano") and the noun-of-an-inactive-window entry (id 18784 → "em segundo
   plano"); Total Commander pt-BR phrases its own background actions the same way (`1185` "Download em segundo plano",
   `1189` "Enviar em segundo plano", `1190` "Apagar em segundo plano") · high. Reads as an elliptical command ("[deixe
-  isto] em segundo plano"), which a bare **Segundo plano** would not: that's the noun and would title a section. ❌ Never
-  MS's wallpaper senses (**tela de fundo**, **papel de parede**), and ❌ never Double Commander pt-BR's abbreviated **2º
-  plano**. Same length class as the sibling **Fila**, so the shared button doesn't reflow.
+  isto] em segundo plano"), which a bare **Segundo plano** would not: that's the noun and would title a section. ❌
+  Never MS's wallpaper senses (**tela de fundo**, **papel de parede**), and ❌ never Double Commander pt-BR's
+  abbreviated **2º plano**. Same length class as the sibling **Fila**, so the shared button doesn't reflow.
 - "Keep this running in the background" (the accessible name) · **Manter isto rodando em segundo plano** · the shipped
   `queueTooltip` already says "Mantenha isto rodando em segundo plano"; the aria takes the infinitive to match its own
   sibling `queueAria` ("Enviar para a fila de operações"), the way every aria in this dialog names the action ·

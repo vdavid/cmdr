@@ -1019,6 +1019,7 @@ and the quiet note under the buttons.
   `queue.row.status`'s `paused` arm verbatim, so the note and the rows it describes use one word for one state; "hasta
   que + subjunctive" matches the catalog's own `tú` pattern ("hasta que la elimines", "hasta que lo desbloquees"), and
   it promises the resume rather than warning about the stop · high
+
 ## El botón con la cola vacía: "Background" (2026-08-09)
 
 Dos claves, `fileOperations.transferProgress.background` + `.backgroundAria`: el MISMO botón que `queue` / `queueAria`
@@ -1038,11 +1039,11 @@ medio"), no por el sustantivo del fondo de una imagen.
   - ❌ **No el sustantivo pelado `Segundo plano`, aunque Total Commander es lo lleve en ESTE mismo botón**
     (`WCMD.LNG.utf8` `{COMMON}`: `4001="Aceptar"`, `4002="Cancelar"`, `4003="Ayuda"`, **`4004="&Segundo plano"`**,
     `4005="Para &después"` = el botón Queue, `4006="Solo &Errores"`). El motivo es una colisión de la propia categoría:
-    en los ajustes de color de Double Commander es, `Primer plano` / `Segundo plano` son el par de colores de texto y
-    de fondo ("Color segundo plano:", "Segundo plano:"), y MS mantiene el mismo par ("primer plano", "color de primer
+    en los ajustes de color de Double Commander es, `Primer plano` / `Segundo plano` son el par de colores de texto y de
+    fondo ("Color segundo plano:", "Segundo plano:"), y MS mantiene el mismo par ("primer plano", "color de primer
     plano"). La preposición desambigua y, de paso, aporta el verbo elidido: `En segundo plano` = "[déjala en] segundo
-    plano". Los hermanos sueco y neerlandés llegaron a la misma forma preposicional (`I bakgrunden`, `Op de
-    achtergrond`) por un camino distinto.
+    plano". Los hermanos sueco y neerlandés llegaron a la misma forma preposicional (`I bakgrunden`,
+    `Op de achtergrond`) por un camino distinto.
   - ❌ **Tampoco el infinitivo completo `Pasar a segundo plano` / `Continuar en segundo plano`.** Son mandatos
     impecables y encajan con la regla de estilo "botones en infinitivo", pero miden 21–25 caracteres en el botón que en
     su otro estado dice `Cola` (4), y la clave inglesa pide expresamente "short control label; must fit the same button
@@ -1050,16 +1051,17 @@ medio"), no por el sustantivo del fondo de una imagen.
   - **La regla "botones en infinitivo" cede aquí a propósito**: este par de estados ya vive fuera de ella, porque el
     hermano `queue` es el sustantivo `Cola`. Los dos botones nombran el DESTINO de la operación (la cola / el segundo
     plano), y así el cambio de estado no cambia de registro.
-- **"Keep this running in the background" (la etiqueta para el lector de pantalla) → `Mantenerla en ejecución en
-  segundo plano`** · calca la primera oración del propio `queueTooltip` del catálogo ("Mantenla en ejecución en segundo
-  plano…") y adopta el infinitivo del hermano `queueAria` ("Enviar a la cola de operaciones"), que es el registro de
-  las arias de este diálogo. El clítico `-la` concuerda con la femenina `la operación` · high
+- **"Keep this running in the background" (la etiqueta para el lector de pantalla) →
+  `Mantenerla en ejecución en segundo plano`** · calca la primera oración del propio `queueTooltip` del catálogo
+  ("Mantenla en ejecución en segundo plano…") y adopta el infinitivo del hermano `queueAria` ("Enviar a la cola de
+  operaciones"), que es el registro de las arias de este diálogo. El clítico `-la` concuerda con la femenina
+  `la operación` · high
   - **WCAG 2.5.3 (Label in Name)**: la etiqueta visible `En segundo plano` va contenida en el aria como
     `…en ejecución **en segundo plano**`, verbatim salvo la mayúscula inicial. Es exactamente el listón del inglés
     ("Background" ⊂ "…in the background") y satisface el criterio, cuya comparación no distingue mayúsculas. ⚠️ Las dos
     claves son UNA unidad: si alguna vez se reescribe la etiqueta, hay que rehacer el aria para que siga conteniéndola.
-  - La containment exacta (aria empezando por `En segundo plano`) obligaría a algo como "En segundo plano: mantenerla
-    en ejecución", que rompe el paralelo de registro con `queueAria` y suena a título con subtítulo. Se descartó a
+  - La containment exacta (aria empezando por `En segundo plano`) obligaría a algo como "En segundo plano: mantenerla en
+    ejecución", que rompe el paralelo de registro con `queueAria` y suena a título con subtítulo. Se descartó a
     conciencia.
 - Ninguno de los dos valores lleva apóstrofo, así que no hay nada que duplicar para ICU; tampoco hay marcadores.
 - No hace falta `sameAsSourceJustification`: los dos valores difieren del inglés.

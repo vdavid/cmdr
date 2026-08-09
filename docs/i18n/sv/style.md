@@ -173,11 +173,11 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
 - **Warning badges are noun-shaped, not imperative.** A compact badge beside a row names a STATE, so it takes a noun
   ("(överskrivning!)"), never the imperative that would double as a command to the user ("(skriv över!)"). The
   underlying action verb (`skriv över`) is unchanged on buttons and menu items.
-- **The definite form is what breaks aria containment in Swedish** (the shared rule:
-  `../../guides/i18n-translation.md` § An `*Aria` key must contain its visible label). A bare indefinite label
-  (`Bakgrund`) isn't inside the definite phrase a natural aria uses (`i bakgrunden`), so take the definite form for the
-  label too (`I bakgrunden`). Swedish capitalizes nothing mid-sentence, so containment here is always case-insensitive.
-  Worked example: the glossary's § Empty-queue state of the queue button.
+- **The definite form is what breaks aria containment in Swedish** (the shared rule: `../../guides/i18n-translation.md`
+  § An `*Aria` key must contain its visible label). A bare indefinite label (`Bakgrund`) isn't inside the definite
+  phrase a natural aria uses (`i bakgrunden`), so take the definite form for the label too (`I bakgrunden`). Swedish
+  capitalizes nothing mid-sentence, so containment here is always case-insensitive. Worked example: the glossary's §
+  Empty-queue state of the queue button.
 - **Numbers and dates come from the formatter layer.** Swedish uses a comma decimal and space thousands separator (1
   000), but `formatNumber()`/`formatByteSize()` produce these from the locale: never hardcode separators in a string.
 - **Length.** Swedish runs close to English in width, so overflow risk is lower than German, but still overflow-check

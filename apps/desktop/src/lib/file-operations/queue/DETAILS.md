@@ -97,12 +97,12 @@ either way; only the word and its `aria-label` change.
   `isInstantOperation`, since a rename is over before the word could settle; and only live work counts, via
   `!isTerminalStatus`.
 - **Decision: a retained failure does NOT count.** It's a notice, not work you'd wait behind — nothing about it delays
-  the operation in front of you, and "Queue" would promise a queue that isn't there. `!isTerminalStatus` covers it
-  along with `done` and `cancelled`, so the rule is one positive definition (`queued` / `running` / `paused`) rather
-  than a list of exclusions that a new status could slip past.
-- **The self-exclusion needs the dialog's id**, which `transfer-progress-state.svelte.ts` exposes as `operationId`
-  (null until the start command answers). The button doesn't render before then (`canPauseOrQueue` requires the id), so
-  the null case can't be seen; the function still handles it by excluding nothing.
+  the operation in front of you, and "Queue" would promise a queue that isn't there. `!isTerminalStatus` covers it along
+  with `done` and `cancelled`, so the rule is one positive definition (`queued` / `running` / `paused`) rather than a
+  list of exclusions that a new status could slip past.
+- **The self-exclusion needs the dialog's id**, which `transfer-progress-state.svelte.ts` exposes as `operationId` (null
+  until the start command answers). The button doesn't render before then (`canPauseOrQueue` requires the id), so the
+  null case can't be seen; the function still handles it by excluding nothing.
 - Pinned by `queue-backlog.test.ts` (every gate) and `../transfer/TransferProgressDialog.queue.test.ts` (the live flip
   through a real store instance fed by the same `operations-changed` stream).
 
