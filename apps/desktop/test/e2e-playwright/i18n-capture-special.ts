@@ -329,21 +329,18 @@ export async function captureOperationChipSurfaces(
 /**
  * Captures the FILE VIEWER subsurfaces, each in its own viewer window.
  *
- * The base `viewer` surface (default text chrome) is captured by the spec. This
- * adds the states that need a trigger or a different file type:
- *  - `viewer-search`: the find bar (⌘F / Ctrl+F inside the viewer).
+ * Every viewer state worth photographing, each needing its own trigger:
+ *  - `viewer-search`: the find bar (⌘F / Ctrl+F inside the viewer). It runs
+ *    FIRST, so the chrome every viewer state shares couples here, and it's what
+ *    the `viewer.` representative points at.
  *  - `viewer-context-menu`: the right-click menu on `.file-content`.
  *  - `viewer-view-mode` / `viewer-encoding`: the toolbar Select dropdowns
  *    (their group labels + items only mount while open).
- *  - `viewer-image` / `viewer-pdf`: media rendering, opened on the committed
- *    `sample.png` / `sample.pdf` fixtures (`createFixtures` copies them to
- *    `left/`).
  *
  * Each viewer state opens a fresh viewer window (own webview context + sink),
  * focuses it (occluded child windows throttle paint), captures, and closes it.
  * Per-surface isolation via `captureSurface` means one viewer state failing
- * doesn't stop the rest. The text-file states reuse the base text fixture; the
- * media states open their own typed fixture.
+ * doesn't stop the rest. They all reuse the one text fixture.
  */
 export async function captureViewerSubsurfaces(
   main: TauriPage,
