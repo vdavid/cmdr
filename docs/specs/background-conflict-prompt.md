@@ -35,10 +35,10 @@ the queue window, and would work unchanged if the queue became a popover inside 
 
 ### Who owns a conflict: one function, one seam
 
-`conflictOwner(operationId, foreground)` in `operation-conflict-rules.ts` is the whole ownership test, pure and
-tested per branch. It returns `here` / `foreground` / `unknown`; today `here` means "not the foreground dialog's
-operation". The upcoming Foreground work (adopting
-a running operation back into the progress dialog) changes who holds the foreground slot, not this function.
+`conflictOwner(operationId, foreground)` in `operation-conflict-rules.ts` is the whole ownership test, pure and tested
+per branch. It returns `here` / `foreground` / `unknown`; today `here` means "not the foreground dialog's operation".
+The upcoming Foreground work (adopting a running operation back into the progress dialog) changes who holds the
+foreground slot, not this function.
 
 **The claim race is real, and it isn't fixed by a timer.** A conflict can arrive before the start command's response
 gives `transfer-progress-state` its `operationId` — that's exactly why the dialog buffers events in `pendingEvents`. In
