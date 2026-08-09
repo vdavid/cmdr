@@ -116,8 +116,9 @@ dialog (the app's only listener) unmounts, and the operation waits for an answer
 
 The host is started and stopped by `routes/(main)/+page.svelte` next to the failure watch, listens for the life of the
 window, and on a conflict nobody owns: pauses, raises the main window, and prompts. The dialog is chrome around the same
-`TransferConflictDialog` the progress dialog embeds, resolving through the same `resolveWriteConflict(operationId,
-resolution, applyToAll)` and cancelling through the same `cancelWriteOperation(operationId, rollback)`.
+`TransferConflictDialog` the progress dialog embeds, resolving through the same
+`resolveWriteConflict(operationId, resolution, applyToAll)` and cancelling through the same
+`cancelWriteOperation(operationId, rollback)`.
 
 - **Ownership is `conflictOwner(operationId, foreground)`**, returning `here` / `foreground` / `unknown`. `unknown`
   means a dialog is mid-dispatch: the empty slot proves nothing, so the event is HELD and re-decided when the claim
@@ -128,8 +129,8 @@ resolution, applyToAll)` and cancelling through the same `cancelWriteOperation(o
   one included. `queued` and `paused` rows stay out, and the ids are remembered so the answer resumes exactly them. ❌
   Never `pauseAll()` / `resumeAll()`: resuming everything restarts an operation the USER paused by hand.
 - **The asking operation is paused too**, though the backend already has it parked on the oneshot. The pause gate is a
-  flag read at the next between-files boundary and the operation isn't at one, so it costs nothing and buys honesty:
-  the queue window and the corner chip both read `paused`, instead of one row claiming to run with a frozen bar.
+  flag read at the next between-files boundary and the operation isn't at one, so it costs nothing and buys honesty: the
+  queue window and the corner chip both read `paused`, instead of one row claiming to run with a frozen bar.
 - **Resolve lands before resume.** A resolve that doesn't land leaves the prompt up and everything paused, which is the
   honest state for an unanswered question. The resolved operation may park for the moment before its resume arrives;
   parking between files is what pause is for, and cancel still wins over both.
@@ -150,6 +151,10 @@ resolution, applyToAll)` and cancelling through the same `cancelWriteOperation(o
 - **No `onclose`, so no × and no Escape.** Every exit is a decision about the user's files, and the conflict body's own
   Cancel / Rollback row is the way out. ⚠️ It follows that E2E's `ensureAppReady` Escape can't clear this dialog; only a
   real background conflict raises it, so no automated run should meet one.
+- **It can stack over an open progress dialog**, when a backgrounded operation clashes while a new one is running in the
+  foreground. That's supported rather than avoided: `trapFocus` hands enforcement to the most recently mounted trap and
+  back on close, and this dialog is mounted after `DualPaneExplorer` so it paints on top. Deferring the prompt until the
+  foreground dialog closed would be a softer version of the wedge this fixes.
 - **`rollbackUnavailable` comes from the snapshot's `supportsRollback`**, which is more than the progress dialog knows:
   a CROSS-volume move can't roll back either, and that dialog still derives the same-volume case itself.
 

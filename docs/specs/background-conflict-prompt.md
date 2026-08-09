@@ -5,7 +5,7 @@
 ## The bug
 
 `TransferDialog`'s upfront conflict check is one destination listing, top level only. Folders always merge, so a file
-clash *inside* a merged folder can't be found before the operation starts; it surfaces mid-operation. With the "Ask for
+clash _inside_ a merged folder can't be found before the operation starts; it surfaces mid-operation. With the "Ask for
 each" policy (`ConflictResolution::Stop`) the backend emits `write-conflict` and parks the operation on a oneshot,
 waiting for `resolve_write_conflict`.
 
@@ -35,8 +35,9 @@ the queue window, and would work unchanged if the queue became a popover inside 
 
 ### Who owns a conflict: one function, one seam
 
-`shouldPromptFor(event, foregroundId, claimPending)` in `operation-conflict-rules.ts` is the whole ownership test, pure
-and tested per branch. Today it answers "not the foreground dialog's operation". The upcoming Foreground work (adopting
+`conflictOwner(operationId, foreground)` in `operation-conflict-rules.ts` is the whole ownership test, pure and
+tested per branch. It returns `here` / `foreground` / `unknown`; today `here` means "not the foreground dialog's
+operation". The upcoming Foreground work (adopting
 a running operation back into the progress dialog) changes who holds the foreground slot, not this function.
 
 **The claim race is real, and it isn't fixed by a timer.** A conflict can arrive before the start command's response

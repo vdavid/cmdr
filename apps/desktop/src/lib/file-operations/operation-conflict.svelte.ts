@@ -96,8 +96,8 @@ let stopEffects: (() => void) | null = null
 
 /** The prompt on screen, or `null`. Reactive. */
 export function getConflictPrompt(): ConflictPrompt | null {
+  if (promptQueue.length === 0) return null
   const entry = promptQueue[0]
-  if (!entry) return null
   const operationId = entry.event.operationId
   const snapshot = getMainWindowOperationRows().find((r) => r.snapshot.operationId === operationId)?.snapshot ?? null
   return { operationId, event: entry.event, snapshot, pausedOthers: pausedIds.length > 1 }
@@ -220,9 +220,8 @@ function dropPrompt(operationId: string): void {
  * built for, and a cancel still wins over both.
  */
 export async function resolveConflictPrompt(resolution: ConflictResolution, applyToAll: boolean): Promise<void> {
-  const entry = promptQueue[0]
-  if (!entry || resolving) return
-  const operationId = entry.event.operationId
+  if (promptQueue.length === 0 || resolving) return
+  const operationId = promptQueue[0].event.operationId
 
   resolving = true
   let resolved = false
@@ -244,9 +243,8 @@ export async function resolveConflictPrompt(resolution: ConflictResolution, appl
  *  what it already wrote. The backend drops the conflict's oneshot sender, which
  *  is what unblocks the parked operation. */
 export async function cancelConflictPrompt(rollback: boolean): Promise<void> {
-  const entry = promptQueue[0]
-  if (!entry || cancelling) return
-  const operationId = entry.event.operationId
+  if (promptQueue.length === 0 || cancelling) return
+  const operationId = promptQueue[0].event.operationId
 
   cancelling = true
   let sent = false

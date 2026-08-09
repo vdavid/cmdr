@@ -144,7 +144,7 @@ describe('OperationConflictDialog', () => {
     const host = render()
 
     const buttons = [...host.querySelectorAll('button')]
-    const skipAll = buttons.find((b) => b.textContent?.trim() === 'Skip all')
+    const skipAll = buttons.find((b) => b.textContent.trim() === 'Skip all')
     skipAll?.click()
 
     expect(resolveConflictPrompt).toHaveBeenCalledWith('skip', true)
@@ -155,7 +155,7 @@ describe('OperationConflictDialog', () => {
     const host = render()
 
     const buttons = [...host.querySelectorAll('button')]
-    const rollback = buttons.find((b) => b.textContent?.trim() === 'Rollback')
+    const rollback = buttons.find((b) => b.textContent.trim() === 'Rollback')
     expect(rollback?.disabled).toBe(false)
     rollback?.click()
 
@@ -170,8 +170,8 @@ describe('OperationConflictDialog', () => {
     const host = render()
 
     const buttons = [...host.querySelectorAll('button')]
-    expect(buttons.find((b) => b.textContent?.trim() === 'Rollback')?.disabled).toBe(true)
-    buttons.find((b) => b.textContent?.trim() === 'Cancel')?.click()
+    expect(buttons.find((b) => b.textContent.trim() === 'Rollback')?.disabled).toBe(true)
+    buttons.find((b) => b.textContent.trim() === 'Cancel')?.click()
 
     expect(cancelConflictPrompt).toHaveBeenCalledWith(false)
   })
@@ -182,9 +182,7 @@ describe('OperationConflictDialog', () => {
 
     expect(host.querySelector('.modal-close-button')).toBeNull()
 
-    host
-      .querySelector('[role="dialog"]')
-      ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    host.querySelector('[role="dialog"]')?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     flushSync()
 
     expect(cancelConflictPrompt).not.toHaveBeenCalled()
