@@ -172,9 +172,11 @@ export class BlankShotError extends Error {
  * DRAFT (David reviews human-facing copy).
  */
 const BLANK_SHOT_EXPLANATION =
-  'Leave the machine alone while `pnpm i18n:capture` runs, then re-run. macOS stops compositing a window ' +
-  "that isn't frontmost, so the capture reads a stale frame from before the UI painted; it usually means " +
-  'the computer was in use during the run, not that Cmdr or the harness is broken.'
+  'Quit or hide whatever app is frontmost, leave the machine alone, and re-run. macOS stops compositing a ' +
+  "window that isn't frontmost, so the capture reads a stale frame from before the UI painted. An idle " +
+  'machine is not enough on its own: this binary runs outside LaunchServices, so it cannot take the front ' +
+  'position from an app that already holds it, and a run can go blank with nobody touching the laptop. ' +
+  'Either way the cause is the front position, not a broken Cmdr or harness.'
 
 /** Per-shot framing and hygiene knobs. Every field is optional; the defaults suit a plain window shot. */
 export interface ShotOptions {
