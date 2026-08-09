@@ -165,12 +165,14 @@ Only the layout facts that none of those carry live here:
   non-MTP spec that way needlessly serializes it). `i18n-capture.spec.ts` is excluded from every normal lane (`all` /
   `mtp` / `non-mtp`) and runs only under its own `i18n-capture` shard kind via `pnpm i18n:capture`: it's a screenshot
   driver, not a pass/fail suite.
-- **❗ Don't touch the computer while `pnpm i18n:capture` runs, and tell David the same before starting one.** The
-  native screenshot returns the window's last COMPOSITED frame, and macOS stops compositing a window that isn't
-  frontmost. Clicking into another app mid-run therefore leaves the capture reading a stale, pre-paint frame, and the
-  result is a dark rectangle with three traffic lights while every other signal stays healthy (DOM correct, selectors
-  matched, keys recorded). This is the known cause of blank screenshots; it is not an app or harness bug. One run
-  shipped 31 blank images this way.
+- **❗ Before `pnpm i18n:capture`: quit or hide whatever app is frontmost, then leave the computer alone, and tell David
+  both halves.** The native screenshot returns the window's last COMPOSITED frame, and macOS stops compositing a window
+  that isn't frontmost, so the capture reads a stale, pre-paint frame: a dark rectangle with three traffic lights, while
+  every other signal stays healthy (DOM correct, selectors matched, keys recorded). One run shipped 31 blank images this
+  way. ❗ **An idle machine is NOT enough on its own.** The harness spawns the raw binary rather than an `.app` through
+  LaunchServices, so it cannot take the front position from an app that already holds it, and `shoot()`'s `set_focus`
+  remedy becomes a no-op: a run can go blank with nobody touching the laptop. Measured evidence for both halves, and
+  what a blank-heavy run costs: `src/lib/intl/messages/DETAILS.md` § Screenshots.
 - **The capture harness photographs through `shoot()`, and `shoot()` verifies the pixels.** Per attempt (in
   `i18n-capture-helpers.ts`) it brings the window to the front, settles the paint, shoots, waits for a WHOLE PNG on
   disk, then decodes it and rejects a uniform / content-free image (`i18n-capture-png.ts`, a dependency-free RGBA8

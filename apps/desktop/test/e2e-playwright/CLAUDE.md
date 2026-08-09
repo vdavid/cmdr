@@ -29,8 +29,10 @@ Linux (Docker), so a modifier key comes from `CTRL_OR_META`, never a hardcoded �
   walk takes the index away first (`search-walk-ground.ts`).
 - **Two fakes**: the clipboard is mocked (a Rust `Mutex`, not `NSPasteboard`), and `tauri-plugin-store` reads your REAL
   store files unless redirected, so a locally flipped setting becomes a failure CI never sees.
-- **❗ A capture run needs the machine left alone, so say so before starting one**, and it photographs only through
-  `shoot()` — ❌ never `page.screenshot()`, never a looser pixel check, never a longer sleep for a blank surface.
+- **❗ A capture run needs the machine left alone AND no other app holding the front position** (an idle machine alone
+  isn't enough: this binary can't take the front from an app that has it), so say both before starting one. It
+  photographs only through `shoot()` — ❌ never `page.screenshot()`, never a looser pixel check, never a longer sleep
+  for a blank surface.
 
 Run recipes, architecture, sharding, app modes, the overlay and capture contracts, and decisions: `DETAILS.md`. Read it
 before any non-trivial work here: editing, planning, reorganizing, or advising.
