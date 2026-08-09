@@ -565,6 +565,14 @@
   "@fileOperations.transferProgress.resumeAria": {
     "sourceHash": "bbf3253"
   },
+  "fileOperations.transferProgress.background": "Háttérben",
+  "@fileOperations.transferProgress.background": {
+    "sourceHash": "ea2b8a8"
+  },
+  "fileOperations.transferProgress.backgroundAria": "Hagyd futni a háttérben",
+  "@fileOperations.transferProgress.backgroundAria": {
+    "sourceHash": "bd71d60"
+  },
   "fileOperations.transferProgress.queue": "Sorba",
   "@fileOperations.transferProgress.queue": {
     "sourceHash": "3b2fe03"

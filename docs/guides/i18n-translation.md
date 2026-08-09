@@ -144,6 +144,30 @@ is mostly commands and status, so this is almost free.
 awkward version: flag it as a "Decisions to confirm with David" item instead. The generic (usually masculine) form is
 the documented last resort, used only when natural restructuring genuinely isn't available.
 
+## An `*Aria` key must contain its visible label (WCAG 2.5.3)
+
+When a `*Aria` key is the accessible name of a control whose visible label is another key (`…queue` / `…queueAria`,
+`…background` / `…backgroundAria`), the accessible name has to CONTAIN the visible label's words, verbatim and in
+order. Voice-control users say what they can see, so a name that paraphrases the label leaves them unable to press the
+button. Case may differ (English itself only manages "Background" ⊂ "Keep this running in the background"); word order
+and wording may not.
+
+Inflection is what breaks this, silently and per-language, which is why it's stated here once rather than rediscovered
+nine times:
+
+- A German label wants a case the aria sentence doesn't (`In den Hintergrund` is not inside `… im Hintergrund …`).
+- A Hungarian/Finnish/Turkish case suffix does the same (`Háttérbe` vs `a háttérben`), and a coincidental PREFIX match
+  doesn't count: whole-word voice matching won't honor it.
+- A Swedish/Danish/Norwegian definite form does it too (`Bakgrund` vs `i bakgrunden`).
+
+**The fix is always the same: pick the LABEL's form to be the one the natural aria sentence already uses, then cut the
+label out of that sentence** (ideally as its opening words, the shape that survives later rewording). Don't bend the
+aria around an awkward label. Two consequences worth knowing: the pair is ONE unit, so re-wording the label alone can
+break containment, and a later "make these consistent" pass over the aria can break it too, so record the constraint in
+the glossary next to both terms.
+
+No check enforces this today; it's on the translator and the reviewer.
+
 ## Deliberately-identical strings (the `sameAsSourceJustification` field)
 
 Some keys are CORRECTLY identical to English in your language and must never be force-translated: a brand name
@@ -196,8 +220,9 @@ Mechanism + schema: `apps/desktop/src/lib/intl/messages/DETAILS.md` § `@key` me
 4. **Translate** with the agent-handoff block below, feeding each key its `@key` context + the style guide.
 5. **Run the checks**:
    `pnpm check desktop-i18n-parity desktop-i18n-icu desktop-i18n-plural desktop-i18n-stale desktop-i18n-coverage desktop-i18n-dont-translate`.
-   Parity (placeholder/tag/token sets), ICU validity, and plural coverage are ERROR class (a failure is a runtime
-   break); stale, coverage, and don't-translate are WARN class. What each catches: `i18n.md` § Enforcement.
+   Parity (placeholder/tag/token sets), ICU validity, plural coverage, and translation coverage are ERROR class, so a
+   locale can't ship half-translated; stale and don't-translate are WARN class. What each catches: `i18n.md` §
+   Enforcement.
 6. **Overflow-check the layout.** Drive the app and look for clipping; the pseudolocale (`en-XA`) is the deliberately
    long stand-in for this. See `i18n.md` § Pseudolocale.
 7. **Human review (optional, not a ship gate).** If a native reviewer is available, set `@key.reviewed: true` per key as
@@ -286,6 +311,14 @@ ERRORS ARE RAW: Any key under errors.* does NOT use ICU. There, use NORMAL apost
 keep {token} verbatim as a literal replacement target (never add ICU formatting), treat <…> as literal text, and pass
 markdown (#, **, backticks) through untouched. The catalog's @key context flags these. Full note: i18n.md § Error
 pipeline.
+
+ARIA LABELS: A *Aria key is the accessible name of a control whose VISIBLE label is another key. Its value must CONTAIN
+that label's words, verbatim and in order (WCAG 2.5.3, Label in Name) — case may differ, wording and order may not.
+Inflection breaks this silently (a case suffix, a definite form, a preposition the label omits), and a coincidental
+prefix match doesn't count. Fix it by picking the LABEL's form to be the one the natural aria sentence already uses,
+then cutting the label out of that sentence; never bend the aria around an awkward label. The two keys are one unit:
+say in your report which substring satisfies containment, and record the constraint in the glossary beside both terms.
+Full rule: docs/guides/i18n-translation.md § An *Aria key must contain its visible label.
 
 GENDER: Achieve inclusivity by neutral RESTRUCTURING, never typographic glyphs (no German *innen/:innen, no French
 ·e·, no Spanish/Portuguese -e/-x, no Italian schwa, no Cyrillic/Hebrew/Arabic splits — they break screen readers). Name

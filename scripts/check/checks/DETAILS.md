@@ -680,8 +680,8 @@ doubles as production code.
   handler, because `Trans` lets the tag win the merged lookup), i18n-trans-snippets (ERROR; a message `<tag>` with no
   matching `snippets={{ … }}` key at the call site renders as nothing, so its inner text silently vanishes; catches a
   rename finished on only one side), i18n-plural (ERROR; each plural covers its locale's required CLDR categories, gated
-  on the English source's plural shape), i18n-coverage (warn-only; keys missing from a locale, or byte-identical to
-  English), i18n-dont-translate (warn-only; a curated brand/system token English carries but the locale dropped), knip,
+  on the English source's plural shape), i18n-coverage (ERROR; keys missing from a locale, or byte-identical to English
+  without a `@key.sameAsSourceJustification`, either of which ships a half-translated locale), i18n-dont-translate (warn-only; a curated brand/system token English carries but the locale dropped), knip,
   type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)
 - **Desktop / Docs**: pluralize-noun, third-party-notices (regenerate-and-diff `THIRD-PARTY-NOTICES.md` from
   `Cargo.lock` + `pnpm-lock.yaml` via cargo-about and `pnpm licenses list`; the accepted-license list is derived from

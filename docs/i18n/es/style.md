@@ -36,7 +36,9 @@ copy that pattern.
   "Activa…"), matching macOS Finder ("Selecciona Continuar…", "activa Bluetooth").
 - **Buttons and menu items: infinitive.** "Copiar", "Cancelar", "Enviar", "Eliminar", "Buscar". This is the macOS
   convention for action buttons/menu items (Finder/AppKit: "Copiar", "Cancelar", "Enviar"). The infinitive is the label
-  form; the `tú` imperative is for sentences that address the user.
+  form; the `tú` imperative is for sentences that address the user. The one documented carve-out: when the English
+  source is itself a bare noun or an elliptical phrase on a very tight button, a matching noun phrase can beat a longer
+  infinitive. See the glossary's `Cola` / `En segundo plano` pair (§ El botón con la cola vacía).
 
 ## Decision points
 

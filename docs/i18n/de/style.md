@@ -168,6 +168,10 @@ Dateien".
   Overflow-check the layout hard against the pseudolocale (`en-XA`); look for clipped buttons, labels, and toasts.
 - **Case-marked placeholders are a trap.** A `{name}` that lands in a genitive/dative slot can't be inflected by the
   catalog. Restructure the sentence so the placeholder stays nominative, or carries its own preposition.
+- **German case marking is what breaks aria containment** (the shared rule: `../../guides/i18n-translation.md` § An
+  `*Aria` key must contain its visible label). The natural label and the natural aria sentence often want different
+  cases: `In den Hintergrund` is not inside "… im Hintergrund weiterlaufen lassen". Take the case the aria needs.
+  Worked example: `glossary.md` § The progress dialog's empty-queue button.
 - **Numbers and dates come from the formatter layer** (comma decimal, period/space thousands). Never hardcode
   separators.
 - **A space goes before the percent sign** (`{percent} %`, "Auf 100 % zoomen"), per DIN 5008 and the rest of the

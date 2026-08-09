@@ -563,6 +563,14 @@
   "@fileOperations.transferProgress.resumeAria": {
     "sourceHash": "bbf3253"
   },
+  "fileOperations.transferProgress.background": "后台运行",
+  "@fileOperations.transferProgress.background": {
+    "sourceHash": "ea2b8a8"
+  },
+  "fileOperations.transferProgress.backgroundAria": "让它继续在后台运行",
+  "@fileOperations.transferProgress.backgroundAria": {
+    "sourceHash": "bd71d60"
+  },
   "fileOperations.transferProgress.queue": "加入队列",
   "@fileOperations.transferProgress.queue": {
     "sourceHash": "3b2fe03"

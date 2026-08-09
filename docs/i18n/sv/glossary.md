@@ -1024,3 +1024,34 @@ already-shipped title `Filen finns redan`, so it has to read as running text, no
   button row. `high` for `pausat`, `tentative` for the `tills du svarar` clause (no pile hit for the idiom; composed).
 
 No `sameAsSourceJustification` needed: both values differ from English.
+## Empty-queue state of the queue button (2026-08-09; `fileOperations.transferProgress.background` + `.backgroundAria`)
+
+The SAME progress-dialog button as `fileOperations.transferProgress.queue`, worded for an EMPTY operation queue: with
+nothing to queue behind, English swaps the noun "Queue" for the verb "Background" (an imperative, "put this transfer out
+of sight"), not the backdrop noun.
+
+- **"Background" (the button, empty-queue state): `I bakgrunden`** · Total Commander sv ships this exact button:
+  `WCMD.LNG.utf8` `{COMMON}` runs `4001="OK"`, `4002="Avbryt"`, `4003="Hjälp"`, **`4004="I &bakgrunden"`**,
+  `4005="Kö"`, `4006="&Endast fel"` — the copy-dialog control row, and `4005` is already this catalog's source for `Kö`.
+  So the sibling state's Swedish comes from the neighbouring ID in the same dialog of the same orthodox two-pane
+  ancestor. Tiers 1 and 2 have nothing to weigh against it: macOS sv has only the backdrop/wallpaper sense ("Bakgrund",
+  "Ändra bakgrund…", "bakgrundsfärg") and no run-in-the-background action at all, and Nautilus/Thunar/Dolphin likewise
+  only ever mean the view's backdrop ("vyns bakgrund"). MS terminology corroborates the adverbial for the running sense
+  (`direktuppspelning i bakgrunden` = background streaming) while its bare `background` entries are all the noun. `high`.
+  - ❌ Not the bare noun `Bakgrund`: on a button that reads as the backdrop (and it's what macOS's wallpaper strings
+    mean), so it lands as a label, not a command. The preposition is what carries the verb sense: `i` + definite forces
+    the "where the work goes" reading, exactly the ellipsis English makes ("[run it in the] background").
+  - ❌ Not the fuller imperative `Kör i bakgrunden`: correct Swedish, but it's a wordier control than the two-character
+    `Kö` it swaps places with, and no source puts a verb on this button. Keep it in reserve if a native reviewer finds
+    `I bakgrunden` too elliptical.
+- **"Keep this running in the background" (the aria): `Håll igång den här i bakgrunden`** · byte-identical to the
+  opening of the shared `queueTooltip` ("Håll igång den här i bakgrunden och hantera den i åtgärdskön (F2)"), so the
+  tooltip a sighted user reads and the name a screen reader speaks are the same sentence. Reuses the settled `i
+  bakgrunden` (§ transfer-queue pass) and matches `queueAria`'s imperative shape ("Skicka till åtgärdskön"). `high`.
+- **WCAG 2.5.3 containment: the label `I bakgrunden` sits inside the aria as `i bakgrunden`**, matching
+  case-insensitively (identical letters, only the sentence-case initial differs) — the same bar English keeps
+  ("Background" ⊂ "…in the background"). Exact-case containment isn't reachable in natural Swedish here: the aria is a
+  clause that starts with its verb (`Håll`), and Swedish capitalizes nothing mid-sentence. See style.md § Label in Name
+  for the trap this avoids: the bare noun `Bakgrund` is NOT a substring of `i bakgrunden` (indefinite vs definite), so
+  the noun choice would have broken containment as well as the part of speech.
+- No `sameAsSourceJustification` needed: both values differ from English.

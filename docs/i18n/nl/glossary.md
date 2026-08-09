@@ -1235,3 +1235,42 @@ context line under the title `Bestand bestaat al`, and the quiet note under the 
 
 REVIEW FLAG: `Bezig in {destination}` is the terse fallback arm and reads slightly clipped on its own; the fuller
 `Bezig in de map {destination}` is wrong whenever the operand isn't a folder, so the short form stands.
+## De knop voor een lege wachtrij: "Background" (2026-08-09)
+
+Two `fileOperations.transferProgress` keys: the progress dialog's primary button when the operation queue is EMPTY
+(`background`), plus its screen-reader name (`backgroundAria`). Same button as `queue` / `queueAria`, other state:
+with nothing to queue behind, English names the act instead of the destination. "Background" is a VERB there.
+
+- **"Background" (imperative button, send this running operation out of sight) → `Op de achtergrond`** · the settled
+  in-catalog sense-term (transfer-queue pass: `background (run in the ~) → op de achtergrond`, Double Commander "Work in
+  background" → "Werk op de achtergrond"), now carrying a whole button · high.
+  - ❌ NOT the bare `Achtergrond`, even though Total Commander nl ships exactly that on this exact button
+    (`WCMD.LNG` `{COMMON}` `4004="&Achtergrond"`, right next to `4005="Wachtrij"`, the pair Cmdr's two states mirror).
+    macOS Dutch (Tier 1) uses `Achtergrond` ONLY for the visual backdrop ("Achtergrond:", "Wijzig achtergrond…",
+    "achtergrondkleur"), so a lone `Achtergrond` on a progress dialog reads as a picture-or-color label, not as
+    something you do to a transfer. TC's own siblings split the same way: Swedish took `I bakgrunden` and Hungarian
+    `Háttérben`, both the "in the background" phrase rather than the noun; `Op de achtergrond` is that shape in Dutch.
+  - ❌ NOT `Naar achtergrond` (the `Naar prullenmand` directional shape): grammatical, but "op de achtergrond" is the
+    settled collocation for RUNNING there, while "naar de achtergrond" suggests moving a window behind another.
+  - Dutch has no verb for "to background" (no `achtergronden`), so the bare-stem imperative button rule can't apply
+    here; the prepositional phrase is the closest thing to a command, exactly as in the in-catalog sentences "laat hem
+    op de achtergrond doorlopen" (`stallUnknown`) and "Laat dit op de achtergrond doorlopen" (`queueTooltip`).
+- **"Keep this running in the background" (aria) → `Op de achtergrond laten doorlopen`** · `doorlopen` is the catalog's
+  settled verb for an operation that keeps running (`queueTooltip`, `stallUnknown`, `backgroundedToast` "Loopt nog op de
+  achtergrond"), and the infinitive-final shape matches the sibling `queueAria` "Naar de bewerkingenwachtrij sturen" ·
+  high.
+  - **WCAG 2.5.3 (Label in Name) containment is EXACT here**: the aria begins with the visible label verbatim,
+    `Op de achtergrond` ⊂ `Op de achtergrond laten doorlopen`, capital included. Better than English, which only manages
+    case-insensitive containment. ⚠️ The two keys are ONE unit: if the label is ever re-worded, the aria has to be
+    re-shaped so it still opens with the label verbatim.
+  - The imperative alternative `Laat dit op de achtergrond doorlopen` (the tooltip's first clause word for word) was
+    passed over: it only contains the label case-insensitively, and it breaks the aria-register parallel with
+    `queueAria`.
+- No ICU apostrophes in either value; no placeholders. No `sameAsSourceJustification` needed (both differ from English).
+
+REVIEW FLAGS (empty-queue button pass):
+
+- **Width**: `Op de achtergrond` is 17 characters against English's 10, on the same button that shows `Wachtrij` (8) in
+  its other state, so the dialog's primary button changes width noticeably between the two states. If it crowds the
+  neighbouring `Pauzeer` / `Annuleer`, the fallback is the TC-nl bare `Achtergrond` (11), which costs the
+  action reading and the exact-containment aria.

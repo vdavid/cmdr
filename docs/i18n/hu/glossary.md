@@ -1217,4 +1217,31 @@ asking and a quiet note explains why the rest of the queue stopped.
   (`válaszolsz`) per Formality; `minden más` is already the catalog's phrase (`zárj be minden más appot`) · high.
   Deliberately the stative `szüneteltetve van` over the intransitive `szünetel`: the latter is correct Hungarian but
   would show the user a different word than the row they are being told about.
+Settled while translating the empty-queue state of the progress dialog's primary button
+(`fileOperations.transferProgress.background` + `.backgroundAria`, 2026-08-09). Same button as `.queue` = `Sorba`, worded
+for an EMPTY operation queue: with nothing to queue behind, it names what pressing it does instead:
+
+- **"Background" (the button, a verb: put this transfer in the background) → `Háttérben`** · Total Commander hu is a
+  direct hit on THIS control: `4004="Háttérben"` sits in the copy-dialog button strip right next to `4005="Sorba állít"`
+  (Queue) and `4002="Mégse"`, so the pile ships the exact two-state pair Cmdr mirrors, and the catalog's `Sorba` is
+  already the short form of TC's `4005`. Double Commander agrees on the form (`Háttérben futtatás` = "Work in
+  background", `Ha az alkalmazás a háttérben fut`), as does Microsoft (`background task` = `háttérben futó feladat`) ·
+  high. No macOS tier for this sense: Finder has no such control and `hu/macOS/` holds `háttér` only in the backdrop
+  sense (`Háttérkép`, `háttérszín`), so the Tier-1 tiebreak is absent (mining gotcha 2), not missing.
+  - **NOT the illative `Háttérbe`**, even though it would look more parallel to `Sorba`: Hungarian puts work INTO a
+    queue (`sorba állít`) but runs it IN the background (`háttérben futtat`), the illative has ZERO attestation across
+    the whole `hu` pile (only the unrelated adjective `háttérbeli`), and `háttérbe helyez`/`szorít` idiomatically means
+    "sideline, deprioritize" — the opposite of the promise that the transfer keeps running.
+  - NOT the bare noun `Háttér`: that's the backdrop (`Háttérszín`, `Háttérkép`). The inessive is the case-inflected,
+    non-noun short form the sibling `Sorba` establishes for this button.
+- **"Keep this running in the background" (`.backgroundAria`) → `Hagyd futni a háttérben`** · REUSED verbatim: this
+  exact English sentence is already the first clause of the tooltip on the SAME button (`queueTooltip` =
+  `Hagyd futni a háttérben, és kezeld a műveleti sorban (F2)`) and closes `transferProgress.stallUnknown`. One sentence,
+  one rendering; the aria is the tooltip's opening clause, exactly as in English · high. Informal `te` imperative per
+  Formality, no period (matching `queueAria`).
+- **WCAG 2.5.3 containment**: the aria ends in `a háttérben`, so the visible label `Háttérben` is a whole-word substring
+  of it (case-insensitively, the same bar English meets with "Background" ⊂ "…in the background"; a capital mid-sentence
+  would be ungrammatical in Hungarian). Choosing the label's CASE FORM to be the one the natural aria sentence already
+  uses is what makes this free — see `style.md` § Notes and decisions. The sibling pair holds the same way:
+  `Sorba` ⊂ `Áthelyezés a műveleti sorba`.
 - No `sameAsSourceJustification` needed: both values differ from English.

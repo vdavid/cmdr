@@ -35,6 +35,10 @@ so don't copy that pattern.
   "Tonen"). (verified in `nl/macOS/`, key cross-ref by value, 2026-06-19.)
   - Caveat: the GNOME/Xfce catalogs use the infinitive for buttons ("Verzenden"). macOS is Tier 1 and the imperative
     stem is the native-Mac feel, so prefer it for Cmdr's buttons.
+  - When the English button is a verb Dutch has no verb for (English "Background" as an act; there is no
+    `achtergronden`), don't fall back to the bare noun, which reads as a label: use the prepositional or directional
+    phrase the catalog already uses for the concept ("Op de achtergrond", like the settled "Naar prullenmand"). See the
+    glossary's empty-queue button pass.
 
 ## Terminology and glossary
 

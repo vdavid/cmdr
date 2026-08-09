@@ -16,8 +16,9 @@ go HERE or in the guide. When a learning becomes a hard rule, promote it into th
    (the per-string context) + the ICU rules in the guide's agent-prompt block.
 4. **Check**:
    `pnpm check desktop-i18n-parity desktop-i18n-icu desktop-i18n-plural desktop-i18n-stale desktop-i18n-coverage desktop-i18n-dont-translate`.
-   Parity/ICU/plural are ERROR (must pass). Coverage (WARN) lists every value still byte-identical to English — that's
-   the honest "what's left untranslated" signal; drive it to only the legitimately-identical keys.
+   Parity/ICU/plural/coverage are all ERROR (must pass). Coverage lists every key still missing or byte-identical to
+   English, which is the honest "what's left untranslated" signal; drive it to only the legitimately-identical keys,
+   each carrying a `@key.sameAsSourceJustification`.
 5. **Overflow-check** later against the pseudolocale (`en-XA`) per the guide.
 
 ## Catalog mechanics (verified 2026-06-21)

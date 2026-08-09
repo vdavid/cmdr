@@ -566,6 +566,14 @@
   "@fileOperations.transferProgress.resumeAria": {
     "sourceHash": "bbf3253"
   },
+  "fileOperations.transferProgress.background": "Op de achtergrond",
+  "@fileOperations.transferProgress.background": {
+    "sourceHash": "ea2b8a8"
+  },
+  "fileOperations.transferProgress.backgroundAria": "Op de achtergrond laten doorlopen",
+  "@fileOperations.transferProgress.backgroundAria": {
+    "sourceHash": "bd71d60"
+  },
   "fileOperations.transferProgress.queue": "Wachtrij",
   "@fileOperations.transferProgress.queue": {
     "sourceHash": "3b2fe03"

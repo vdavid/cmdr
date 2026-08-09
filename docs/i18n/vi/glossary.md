@@ -1046,4 +1046,38 @@ the paused word.
   `tạm dừng cho đến khi …` is the ordinary vi collocation for a pause with an endpoint. `trả lời` (answer) over
   `phản hồi` (respond): the glossary reserves `phản hồi` for a machine responding (macOS AppKit "ứng dụng không phản
   hồi"). `high` (on the parts); `tentative` (on `trả lời` for answering a dialog).
+## Nút "Chạy nền": trạng thái hàng đợi trống của nút Hàng đợi (2026-08-09)
+
+Two keys, `fileOperations.transferProgress.background` + `.backgroundAria`: the SAME button as
+`.queue`/`.queueAria`, worded for an EMPTY operation queue (nothing to queue behind, so the button names what it does).
+"Background" is a VERB in the English, not the backdrop noun.
+
+- **"Background" (the button, empty-queue state): `Chạy nền`** · verb `chạy` + the settled `nền`, the compact everyday
+  vi form ("cho phép ứng dụng chạy nền"). Reads as a command, which a bare `Nền` would not: in THIS app `nền` alone is
+  already the visual sense (`nền khung` = pane background, macOS `màu nền`/`hình nền`/`Màn hình nền`), so the noun would
+  name a backdrop, not an action. Total Commander vi ships exactly this button pair in its `{COMMON}` block —
+  `4004="&Nền"` (Background) beside `4005="&Hàng đợi"` (Queue), the orthodox dialog Cmdr mirrors — which settles the
+  head noun (`nền`) and confirms the catalog's `Hàng đợi` for the sibling, but its bare `&Nền` is a calque of the
+  English button and isn't adopted. TC also attests the concept for running work: `1237` =
+  "%i thao tác đang hoạt động trong nền!", `1185`/`1189`/`1190` = "Tải xuống/Tải lên/Xóa trong nền (luồng riêng biệt)".
+  MS terminology agrees on the head noun (`background` Noun → `nền`, `background task` → `tác vụ nền`) and on the
+  `chạy + <place>` shape (`ứng dụng chạy trong hộp cát`, `SharePoint chạy trên máy chủ`). macOS has NO
+  run-in-the-background string at all (every vi `nền` hit in the pile is visual: `màu nền chữ`, `Màn hình nền`,
+  `Đặt Màu nền`), so Tier 1 is silent here and Tier 3's orthodox pair carries it. `high`.
+- **`chạy nền` is a BUTTON-LENGTH compression of the settled `chạy ở chế độ nền`, not a fork.** Prose keeps the full
+  form everywhere it already ships (`queueTooltip` = `Giữ chạy ở chế độ nền và quản lý…`, `backgroundedToast` =
+  `Vẫn đang chạy ở chế độ nền.`, `stallUnknown` = `để nó tiếp tục chạy ở chế độ nền`); only the button label and its
+  aria use `chạy nền`. The full form is 17 characters against English's 10 on a button that must also fit `Hàng đợi`
+  (8), and vi already runs ~20-25% long; the compressed form lands at 8, exactly the sibling's width. Rule for future
+  keys: a running-in-the-background SENTENCE says `chạy ở chế độ nền`; a CONTROL says `chạy nền`.
+- **"Keep this running in the background" (screen-reader name): `Giữ chạy nền`** · the `queueTooltip`'s shipped
+  rendering of the same English clause (`Giữ chạy ở chế độ nền`), with the same subject elision, compressed to match the
+  label. Eliding the object matches its direct partner `queueAria` (`Đưa vào hàng đợi thao tác`, also object-less);
+  naming one would force a `lần truyền`-vs-`thao tác` call the English deliberately dodges with "this". `Giữ` is the
+  catalog's and macOS's keep-verb (`Giữ thư mục ở trên cùng`, `Giữ cả hai`, `Giữ lại bản gốc`). `high`.
+- **WCAG 2.5.3 (Label in Name) drove the aria's shape.** The visible label must appear inside the accessible name, so a
+  voice-control user saying "bấm Chạy nền" is understood. `Giữ chạy nền` contains `chạy nền` — same
+  case-insensitive containment English ships (`Background` ⊂ `…in the background`), the `G`/`C` difference being
+  Vietnamese sentence case on the label's first letter. Any future rewording of either key must preserve the
+  containment: the aria is not free to drop the label's words.
 - No `sameAsSourceJustification` needed: both values differ from English.

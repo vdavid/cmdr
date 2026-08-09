@@ -934,4 +934,33 @@ was new is how the destination gets INSIDE the passive clause.
   own frame (`errors` "bis du es entsperrst", `settings` "bis du ihn löschst") · high. State passive `ist angehalten`,
   not `wurde angehalten`: the line describes the situation now, and it reassures rather than reports an event.
   `antworten` is the settled respond verb (`transferProgress.stallWaitingDestination` "eine Antwort vom Ziel").
+## The progress dialog's empty-queue button (2026-08-09)
+
+Two keys (`transferProgress.background`, `.backgroundAria`): the same button as `.queue`, worded for an EMPTY operation
+queue. "Background" is a VERB in the English; German says that action with the preposition, never with the bare noun.
+
+- **"Background" (button label, empty queue) → `Im Hintergrund`** · the settled background phrasing
+  (`im Hintergrund weiterlaufen lassen`, § Operation queue and `transferProgress.queueTooltip`) shortened to its
+  prepositional head; the pile's action pattern is always `im Hintergrund` + verb (Total Commander de
+  `1185="Im &Hintergrund laden"`, `1189="Im &Hintergrund senden"`, `1214="Übertragung im Hintergrund"`; Double Commander
+  de "Im Hintergrund ausführen", "Vorgänge anzeigen, die im Hintergrund ablaufen") · high. At 14 characters it fits the
+  same button as the 13-character `Warteschlange`.
+- ❌ **Not the bare noun `Hintergrund`**, even though Total Commander de ships exactly that on this very button
+  (`4004="&Hintergrund"`, sitting right next to `4005="Warteschlange"`): standing alone, `Hintergrund` is the BACKDROP
+  in every higher-tier source (macOS de has only `Hintergrundfarbe`, `Hintergrundbild`, `Hintergrund:` in view options;
+  MS terminology glosses `background` → `Hintergrund` with wallpaper senses; Nautilus "Als Hintergrund festlegen";
+  Dolphin "Hintergrund der Ansicht"), and this catalog uses it that way itself (`Bereichshintergrund`,
+  `Hintergrund-Farbton`). The preposition is what turns the thing into the action: `im` can only answer "wo läuft das
+  weiter?", so the label can't be read as a backdrop setting.
+- ❌ **Not `In den Hintergrund`** (accusative, directional): that is the German for sending a WINDOW behind the others
+  (z-order), so on a dialog it reads as "hide this window" rather than "keep the copy running". The dative `im` says the
+  transfer keeps running there, which is what the button does.
+- **"Keep this running in the background" (screen-reader label) → `Im Hintergrund weiterlaufen lassen`** ·
+  byte-identical to the settled phrase and to the leading clause of `transferProgress.queueTooltip` · high. Infinitive
+  command, exactly like the sibling `queueAria` = `Zur Vorgangswarteschlange senden`; the visible label is its
+  elliptical short form, the same label/aria split the sibling pair already ships.
+- **WCAG 2.5.3 (Label in Name) holds by construction**: the aria STARTS with the visible label, so `Im Hintergrund` is
+  an exact substring of `Im Hintergrund weiterlaufen lassen`, capitalization included. German case marking is the trap
+  here: a directional label (`In den Hintergrund`) would force the aria to be rebuilt around the accusative and to drop
+  the settled wording. If either string is ever re-worded, keep the label a prefix of the aria.
 - No `sameAsSourceJustification` needed: both values differ from English.

@@ -149,6 +149,10 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
 - **Numbers and dates come from the formatter layer.** Hungarian uses a comma decimal and space thousands separator, and
   a native `YYYY. MM. DD.` date order; `formatNumber()`/`formatByteSize()`/the date formatters produce these from the
   locale. Never hardcode separators or date order in a string.
+- **Case suffixes are what break aria containment in Hungarian** (the shared rule:
+  `../../guides/i18n-translation.md` § An `*Aria` key must contain its visible label). Take the case form the aria
+  sentence already uses: `Háttérben` ⊂ `Hagyd futni a háttérben`, `Sorba` ⊂ `Áthelyezés a műveleti sorba`. A capital
+  mid-sentence isn't Hungarian, so containment here is always case-insensitive.
 - **Length** runs near English; still overflow-check against the pseudolocale (`en-XA`).
 - Record case-by-case rulings here so they aren't relitigated.
 
