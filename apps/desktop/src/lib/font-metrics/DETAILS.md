@@ -70,8 +70,14 @@ re-fetch mid-flight) measure once. On failure the entries are removed again, so 
 those code points on the average forever — the next listing reports them and the fill retries. That self-healing is why
 Rust doesn't need to track what it has already announced.
 
-`retry` bounds the round-trip: the re-fetch never triggers a second fill, so a code point the font genuinely can't
-measure (it comes back with the same width) can't loop.
+`BriefList`'s `WidthFetchAttempt.afterFill` bounds the round-trip: the re-fetch never triggers a second fill, so a code
+point the font genuinely can't measure (it comes back reported again) can't loop.
+
+Measured end to end on 2026-08-09 (dev build, macOS 15, machine mid-index-scan): the eager set is 5,199 code points and
+took 11,010 ms to measure with the machine loaded, during which the main thread's longest stall was **16 ms** — one
+frame. The same work on the old code held the main thread for its entire duration. Storing took 8 ms, the fill-in for
+four CJK/Hangul/Ethiopic/Myanmar code points took 1 ms, and `system-400-12.bin` landed at 41 KB against the ~426 KB the
+old full sweep produced.
 
 ## Decisions
 

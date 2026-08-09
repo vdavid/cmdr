@@ -139,10 +139,13 @@ the widths immediately; a non-empty `missingCodePoints` means some characters we
 so it calls `fillMissingFontMetrics` (which measures them off the main thread) and re-fetches once for exact widths. The
 full contract lives in `$lib/font-metrics/DETAILS.md` § On-demand fill-in.
 
-**The `retry` parameter bounds both retry paths**, and that's load-bearing. A re-entry with `retry = true` neither
-re-fetches on `font_metrics_not_ready` nor starts another fill, so a code point that stays unmeasurable (it comes back
-in `missingCodePoints` again) can't drive an endless measure-and-refetch loop. ❌ Don't reset or thread a fresh `false`
-through the recursive call.
+**`WidthFetchAttempt` carries one flag per recovery step (`afterFontLoad`, `afterFill`), and each bounds only its own
+recursion.** That's load-bearing twice over. A fetch that already filled won't fill again, so a code point that stays
+unmeasurable (it comes back in `missingCodePoints` regardless) can't drive an endless measure-and-refetch loop. And
+because the flags are separate, a fetch that waited for `ensureFontMetricsLoaded` can still fill afterwards — collapsing
+them into one `retry` boolean silently strands non-Latin names at the average width on exactly the path where the font
+was measured fresh. ❌ Don't merge them, and thread `{ ...attempt, … }` through recursive calls rather than a bare
+literal.
 
 ## Key decisions
 

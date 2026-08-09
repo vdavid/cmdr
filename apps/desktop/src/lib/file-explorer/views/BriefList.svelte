@@ -367,7 +367,21 @@
         }
     }
 
-    async function doFetchColumnWidths(retry: boolean): Promise<void> {
+    /**
+     * Which recovery steps this attempt has already spent.
+     *
+     * One flag per step, not a single `retry`: they're independent, and sharing
+     * a flag would mean a fetch that waited for the font could never then fill
+     * in its unmeasured characters. Each flag bounds only its own recursion.
+     */
+    type WidthFetchAttempt = {
+        /** Already waited for `ensureFontMetricsLoaded` once. */
+        afterFontLoad?: boolean
+        /** Already measured the reported code points once. */
+        afterFill?: boolean
+    }
+
+    async function doFetchColumnWidths(attempt: WidthFetchAttempt = {}): Promise<void> {
         widthsGeneration++
         const capturedListingId = listingId
         const capturedGeneration = widthsGeneration
@@ -383,10 +397,10 @@
             )
             if (capturedListingId !== listingId || capturedGeneration !== widthsGeneration) return
             if (result.status === 'error') {
-                if (result.error.message === 'font_metrics_not_ready' && !retry) {
+                if (result.error.message === 'font_metrics_not_ready' && !attempt.afterFontLoad) {
                     await ensureFontMetricsLoaded()
                     if (capturedListingId !== listingId || capturedGeneration !== widthsGeneration) return
-                    await doFetchColumnWidths(true)
+                    await doFetchColumnWidths({ ...attempt, afterFontLoad: true })
                     return
                 }
                 // Bail: leave `columnWidths` untouched. Fallback (`capPx`) covers rendering
@@ -414,9 +428,9 @@
 
             // These widths are exact unless the backend had to estimate some
             // characters. Fill those in off the main thread and come back for
-            // exact ones; `retry` bounds this to one extra round.
-            if (missingCodePoints.length > 0 && !retry) {
-                void fillAndRefetch(fontId, missingCodePoints, capturedListingId, capturedGeneration)
+            // exact ones; `afterFill` bounds this to one extra round.
+            if (missingCodePoints.length > 0 && !attempt.afterFill) {
+                void fillAndRefetch(fontId, missingCodePoints, capturedListingId, capturedGeneration, attempt)
             }
         } catch {
             // IPC threw outside the typed-error path (timeout, missing handler). Leave widths.
@@ -435,13 +449,14 @@
         missingCodePoints: number[],
         capturedListingId: string,
         capturedGeneration: number,
+        attempt: WidthFetchAttempt,
     ): Promise<void> {
         const filled = await fillMissingFontMetrics(fontId, missingCodePoints)
         if (!filled) return
         // Only re-fetch if nothing has moved on: a new listing or a newer fetch
         // will compute its own widths against the now-complete metrics.
         if (capturedListingId !== listingId || capturedGeneration !== widthsGeneration) return
-        await doFetchColumnWidths(true)
+        await doFetchColumnWidths({ ...attempt, afterFill: true })
     }
 
     function fetchColumnWidths() {
@@ -451,12 +466,12 @@
         // immediately so the cursor-hidden gap is as short as possible. Subsequent
         // re-fetches keep the 50 ms coalesce to absorb resize bursts.
         if (columnWidths.length === 0) {
-            void doFetchColumnWidths(false)
+            void doFetchColumnWidths()
             return
         }
         pendingFetchTimer = setTimeout(() => {
             pendingFetchTimer = null
-            void doFetchColumnWidths(false)
+            void doFetchColumnWidths()
         }, 50)
     }
 
